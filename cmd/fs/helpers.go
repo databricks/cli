@@ -37,12 +37,12 @@ func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, er
 
 	// If the specified path has the "Volumes" prefix, use the Files API.
 	if strings.HasPrefix(path, "/Volumes/") {
-		f, err := filer.NewFilesClient(w, "/")
+		f, err := filer.NewFilesClientWithProgressLogging(w, "/")
 		return f, path, err
 	}
 
 	// The file is a dbfs file, and uses the DBFS APIs
-	f, err := filer.NewDbfsClient(w, "/")
+	f, err := filer.NewDbfsClientWithProgressLogging(w, "/")
 	return f, path, err
 }
 

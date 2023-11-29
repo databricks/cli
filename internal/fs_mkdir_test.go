@@ -106,7 +106,7 @@ func TestAccFsMkdirWhenFileExistsAtPath(t *testing.T) {
 	// create file hello
 	f, err := filer.NewDbfsClient(w, tmpDir)
 	require.NoError(t, err)
-	err = f.Write(ctx, "hello", strings.NewReader("abc"))
+	err = f.Write(ctx, "hello", strings.NewReader("abc"), -1)
 	require.NoError(t, err)
 
 	// assert run fails

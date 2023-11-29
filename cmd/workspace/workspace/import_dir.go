@@ -80,15 +80,18 @@ func (opts importDirOptions) callback(ctx context.Context, workspaceFiler filer.
 			return err
 		}
 		defer f.Close()
-
+		info, err := d.Info()
+		if err != nil {
+			return err
+		}
 		// Create file in WSFS
 		if overwrite {
-			err = workspaceFiler.Write(ctx, nameForApiCall, f, filer.OverwriteIfExists)
+			err = workspaceFiler.Write(ctx, nameForApiCall, f, info.Size(), filer.OverwriteIfExists)
 			if err != nil {
 				return err
 			}
 		} else {
-			err = workspaceFiler.Write(ctx, nameForApiCall, f)
+			err = workspaceFiler.Write(ctx, nameForApiCall, f, info.Size())
 			if errors.Is(err, fs.ErrExist) {
 				// Emit file skipped event with the appropriate template
 				fileSkippedEvent := newFileSkippedEvent(localName, path.Join(targetDir, remoteName))
@@ -129,7 +132,7 @@ Notebooks will have their extensions (one of .scala, .py, .sql, .ipynb, .r) stri
 		opts.targetDir = args[1]
 
 		// Initialize a filer rooted at targetDir
-		workspaceFiler, err := filer.NewWorkspaceFilesClient(w, opts.targetDir)
+		workspaceFiler, err := filer.NewWorkspaceFilesClientWithProgressLogging(w, opts.targetDir)
 		if err != nil {
 			return err
 		}

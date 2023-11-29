@@ -45,8 +45,12 @@ func (c *copy) cpWriteCallback(sourceDir, targetDir string) fs.WalkDirFunc {
 		if d.IsDir() {
 			return c.targetFiler.Mkdir(c.ctx, targetPath)
 		}
+		info, err := d.Info()
+		if err != nil {
+			return err
+		}
 
-		return c.cpFileToFile(sourcePath, targetPath)
+		return c.cpFileToFile(sourcePath, targetPath, info.Size())
 	}
 }
 
@@ -59,14 +63,14 @@ func (c *copy) cpDirToDir(sourceDir, targetDir string) error {
 	return fs.WalkDir(sourceFs, sourceDir, c.cpWriteCallback(sourceDir, targetDir))
 }
 
-func (c *copy) cpFileToDir(sourcePath, targetDir string) error {
+func (c *copy) cpFileToDir(sourcePath, targetDir string, size int64) error {
 	fileName := path.Base(sourcePath)
 	targetPath := path.Join(targetDir, fileName)
 
-	return c.cpFileToFile(sourcePath, targetPath)
+	return c.cpFileToFile(sourcePath, targetPath, size)
 }
 
-func (c *copy) cpFileToFile(sourcePath, targetPath string) error {
+func (c *copy) cpFileToFile(sourcePath, targetPath string, size int64) error {
 	// Get reader for file at source path
 	r, err := c.sourceFiler.Read(c.ctx, sourcePath)
 	if err != nil {
@@ -75,12 +79,12 @@ func (c *copy) cpFileToFile(sourcePath, targetPath string) error {
 	defer r.Close()
 
 	if c.overwrite {
-		err = c.targetFiler.Write(c.ctx, targetPath, r, filer.OverwriteIfExists)
+		err = c.targetFiler.Write(c.ctx, targetPath, r, size, filer.OverwriteIfExists)
 		if err != nil {
 			return err
 		}
 	} else {
-		err = c.targetFiler.Write(c.ctx, targetPath, r)
+		err = c.targetFiler.Write(c.ctx, targetPath, r, size)
 		// skip if file already exists
 		if err != nil && errors.Is(err, fs.ErrExist) {
 			return c.emitFileSkippedEvent(sourcePath, targetPath)
@@ -196,11 +200,11 @@ func newCpCommand() *cobra.Command {
 		// case 2: source path is a file, and target path is a directory. In this case
 		// we copy the file to inside the directory
 		if targetInfo, err := targetFiler.Stat(ctx, targetPath); err == nil && targetInfo.IsDir() {
-			return c.cpFileToDir(sourcePath, targetPath)
+			return c.cpFileToDir(sourcePath, targetPath, sourceInfo.Size())
 		}
 
 		// case 3: source path is a file, and target path is a file
-		return c.cpFileToFile(sourcePath, targetPath)
+		return c.cpFileToFile(sourcePath, targetPath, sourceInfo.Size())
 	}
 
 	return cmd

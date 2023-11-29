@@ -108,7 +108,9 @@ func (err CannotDeleteRootError) Is(other error) bool {
 type Filer interface {
 	// Write file at `path`.
 	// Use the mode to further specify behavior.
-	Write(ctx context.Context, path string, reader io.Reader, mode ...WriteMode) error
+	// size is used to indicate size of tge content being uploaded and visualise the write progress with percentage
+	// it can be set to -1 if the size is unknown.
+	Write(ctx context.Context, path string, reader io.Reader, size int64, mode ...WriteMode) error
 
 	// Read file at `path`.
 	Read(ctx context.Context, path string) (io.ReadCloser, error)

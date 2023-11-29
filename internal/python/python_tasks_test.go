@@ -232,16 +232,16 @@ func prepareDBFSFiles(t *testing.T) *testFiles {
 	f, err := filer.NewDbfsClient(w, baseDir)
 	require.NoError(t, err)
 
-	err = f.Write(ctx, "test.py", strings.NewReader(PY_CONTENT))
+	err = f.Write(ctx, "test.py", strings.NewReader(PY_CONTENT), -1)
 	require.NoError(t, err)
 
-	err = f.Write(ctx, "spark.py", strings.NewReader(SPARK_PY_CONTENT))
+	err = f.Write(ctx, "spark.py", strings.NewReader(SPARK_PY_CONTENT), -1)
 	require.NoError(t, err)
 
 	raw, err := os.ReadFile("./testdata/my_test_code-0.0.1-py3-none-any.whl")
 	require.NoError(t, err)
 
-	err = f.Write(ctx, "my_test_code-0.0.1-py3-none-any.whl", bytes.NewReader(raw))
+	err = f.Write(ctx, "my_test_code-0.0.1-py3-none-any.whl", bytes.NewReader(raw), -1)
 	require.NoError(t, err)
 
 	return &testFiles{

@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/schollz/progressbar/v3"
 )
 
 // Type that implements fs.FileInfo for the Files API.
@@ -61,6 +62,8 @@ type FilesClient struct {
 
 	// File operations will be relative to this path.
 	root WorkspaceRootPath
+
+	bar *progressbar.ProgressBar
 }
 
 func filesNotImplementedError(fn string) error {
@@ -81,6 +84,22 @@ func NewFilesClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
 	}, nil
 }
 
+func NewFilesClientWithProgressLogging(w *databricks.WorkspaceClient, root string) (Filer, error) {
+	apiClient, err := client.New(w.Config)
+	if err != nil {
+		return nil, err
+	}
+
+	return &FilesClient{
+		workspaceClient: w,
+		apiClient:       apiClient,
+
+		root: NewWorkspaceRootPath(root),
+
+		bar: progressbar.DefaultBytes(100, "uploading"),
+	}, nil
+}
+
 func (w *FilesClient) urlPath(name string) (string, string, error) {
 	absPath, err := w.root.Join(name)
 	if err != nil {
@@ -96,7 +115,7 @@ func (w *FilesClient) urlPath(name string) (string, string, error) {
 	return absPath, urlPath, nil
 }
 
-func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, mode ...WriteMode) error {
+func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, size int64, mode ...WriteMode) error {
 	absPath, urlPath, err := w.urlPath(name)
 	if err != nil {
 		return err
@@ -105,7 +124,15 @@ func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, 
 	overwrite := slices.Contains(mode, OverwriteIfExists)
 	urlPath = fmt.Sprintf("%s?overwrite=%t", urlPath, overwrite)
 	headers := map[string]string{"Content-Type": "application/octet-stream"}
-	err = w.apiClient.Do(ctx, http.MethodPut, urlPath, headers, reader, nil)
+
+	r := reader
+	if w.bar != nil {
+		w.bar.ChangeMax64(size)
+		reader := progressbar.NewReader(r, w.bar)
+		r = &reader
+	}
+
+	err = w.apiClient.Do(ctx, http.MethodPut, urlPath, headers, r, nil)
 
 	// Return early on success.
 	if err == nil {

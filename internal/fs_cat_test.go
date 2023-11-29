@@ -25,7 +25,7 @@ func TestAccFsCatForDbfs(t *testing.T) {
 	f, err := filer.NewDbfsClient(w, tmpDir)
 	require.NoError(t, err)
 
-	err = f.Write(ctx, "a/hello.txt", strings.NewReader("abc"), filer.CreateParentDirectories)
+	err = f.Write(ctx, "a/hello.txt", strings.NewReader("abc"), -1, filer.CreateParentDirectories)
 	require.NoError(t, err)
 
 	stdout, stderr := RequireSuccessfulRun(t, "fs", "cat", "dbfs:"+path.Join(tmpDir, "a", "hello.txt"))
@@ -59,7 +59,7 @@ func TestAccFsCatDoesNotSupportOutputModeJson(t *testing.T) {
 	f, err := filer.NewDbfsClient(w, tmpDir)
 	require.NoError(t, err)
 
-	err = f.Write(ctx, "hello.txt", strings.NewReader("abc"))
+	err = f.Write(ctx, "hello.txt", strings.NewReader("abc"), -1)
 	require.NoError(t, err)
 
 	_, _, err = RequireErrorRun(t, "fs", "cat", "dbfs:"+path.Join(tmpDir, "hello.txt"), "--output=json")

@@ -53,7 +53,7 @@ func TestWorkpaceExportPrintsContents(t *testing.T) {
 
 	// Write file to workspace
 	contents := "#!/usr/bin/bash\necho hello, world\n"
-	err = f.Write(ctx, "file-a", strings.NewReader(contents))
+	err = f.Write(ctx, "file-a", strings.NewReader(contents), -1)
 	require.NoError(t, err)
 
 	// Run export
@@ -110,15 +110,15 @@ func TestAccExportDir(t *testing.T) {
 	var err error
 
 	// Write test data to the workspace
-	err = f.Write(ctx, "file-a", strings.NewReader("abc"))
+	err = f.Write(ctx, "file-a", strings.NewReader("abc"), -1)
 	require.NoError(t, err)
-	err = f.Write(ctx, "pyNotebook.py", strings.NewReader("# Databricks notebook source"))
+	err = f.Write(ctx, "pyNotebook.py", strings.NewReader("# Databricks notebook source"), -1)
 	require.NoError(t, err)
-	err = f.Write(ctx, "sqlNotebook.sql", strings.NewReader("-- Databricks notebook source"))
+	err = f.Write(ctx, "sqlNotebook.sql", strings.NewReader("-- Databricks notebook source"), -1)
 	require.NoError(t, err)
-	err = f.Write(ctx, "scalaNotebook.scala", strings.NewReader("// Databricks notebook source"))
+	err = f.Write(ctx, "scalaNotebook.scala", strings.NewReader("// Databricks notebook source"), -1)
 	require.NoError(t, err)
-	err = f.Write(ctx, "rNotebook.r", strings.NewReader("# Databricks notebook source"))
+	err = f.Write(ctx, "rNotebook.r", strings.NewReader("# Databricks notebook source"), -1)
 	require.NoError(t, err)
 	err = f.Write(ctx, "a/b/c/file-b", strings.NewReader("def"), filer.CreateParentDirectories)
 	require.NoError(t, err)
@@ -142,7 +142,7 @@ func TestAccExportDirDoesNotOverwrite(t *testing.T) {
 	var err error
 
 	// Write remote file
-	err = f.Write(ctx, "file-a", strings.NewReader("content from workspace"))
+	err = f.Write(ctx, "file-a", strings.NewReader("content from workspace"), -1)
 	require.NoError(t, err)
 
 	// Write local file
@@ -163,7 +163,7 @@ func TestAccExportDirWithOverwriteFlag(t *testing.T) {
 	var err error
 
 	// Write remote file
-	err = f.Write(ctx, "file-a", strings.NewReader("content from workspace"))
+	err = f.Write(ctx, "file-a", strings.NewReader("content from workspace"), -1)
 	require.NoError(t, err)
 
 	// Write local file
@@ -197,9 +197,9 @@ func TestAccImportDirDoesNotOverwrite(t *testing.T) {
 	var err error
 
 	// create preexisting files in the workspace
-	err = workspaceFiler.Write(ctx, "file-a", strings.NewReader("old file"))
+	err = workspaceFiler.Write(ctx, "file-a", strings.NewReader("old file"), -1)
 	require.NoError(t, err)
-	err = workspaceFiler.Write(ctx, "pyNotebook.py", strings.NewReader("# Databricks notebook source\nprint(\"old notebook\")"))
+	err = workspaceFiler.Write(ctx, "pyNotebook.py", strings.NewReader("# Databricks notebook source\nprint(\"old notebook\")"), -1)
 	require.NoError(t, err)
 
 	// Assert contents of pre existing files
@@ -225,9 +225,9 @@ func TestAccImportDirWithOverwriteFlag(t *testing.T) {
 	var err error
 
 	// create preexisting files in the workspace
-	err = workspaceFiler.Write(ctx, "file-a", strings.NewReader("old file"))
+	err = workspaceFiler.Write(ctx, "file-a", strings.NewReader("old file"), -1)
 	require.NoError(t, err)
-	err = workspaceFiler.Write(ctx, "pyNotebook.py", strings.NewReader("# Databricks notebook source\nprint(\"old notebook\")"))
+	err = workspaceFiler.Write(ctx, "pyNotebook.py", strings.NewReader("# Databricks notebook source\nprint(\"old notebook\")"), -1)
 	require.NoError(t, err)
 
 	// Assert contents of pre existing files
@@ -254,7 +254,7 @@ func TestAccExport(t *testing.T) {
 	var err error
 
 	// Export vanilla file
-	err = f.Write(ctx, "file-a", strings.NewReader("abc"))
+	err = f.Write(ctx, "file-a", strings.NewReader("abc"), -1)
 	require.NoError(t, err)
 	stdout, _ := RequireSuccessfulRun(t, "workspace", "export", path.Join(sourceDir, "file-a"))
 	b, err := io.ReadAll(&stdout)
@@ -262,7 +262,7 @@ func TestAccExport(t *testing.T) {
 	assert.Equal(t, "abc", string(b))
 
 	// Export python notebook
-	err = f.Write(ctx, "pyNotebook.py", strings.NewReader("# Databricks notebook source"))
+	err = f.Write(ctx, "pyNotebook.py", strings.NewReader("# Databricks notebook source"), -1)
 	require.NoError(t, err)
 	stdout, _ = RequireSuccessfulRun(t, "workspace", "export", path.Join(sourceDir, "pyNotebook"))
 	b, err = io.ReadAll(&stdout)
@@ -284,7 +284,7 @@ func TestAccExportWithFileFlag(t *testing.T) {
 	var err error
 
 	// Export vanilla file
-	err = f.Write(ctx, "file-a", strings.NewReader("abc"))
+	err = f.Write(ctx, "file-a", strings.NewReader("abc"), -1)
 	require.NoError(t, err)
 	stdout, _ := RequireSuccessfulRun(t, "workspace", "export", path.Join(sourceDir, "file-a"), "--file", filepath.Join(localTmpDir, "file.txt"))
 	b, err := io.ReadAll(&stdout)
@@ -294,7 +294,7 @@ func TestAccExportWithFileFlag(t *testing.T) {
 	assertLocalFileContents(t, filepath.Join(localTmpDir, "file.txt"), "abc")
 
 	// Export python notebook
-	err = f.Write(ctx, "pyNotebook.py", strings.NewReader("# Databricks notebook source"))
+	err = f.Write(ctx, "pyNotebook.py", strings.NewReader("# Databricks notebook source"), -1)
 	require.NoError(t, err)
 	stdout, _ = RequireSuccessfulRun(t, "workspace", "export", path.Join(sourceDir, "pyNotebook"), "--file", filepath.Join(localTmpDir, "pyNb.py"))
 	b, err = io.ReadAll(&stdout)
