@@ -10,11 +10,12 @@ from setuptools import setup, find_packages
 import sys
 sys.path.append('./src')
 
+import datetime
 import {{.project_name}}
 
 setup(
     name="{{.project_name}}",
-    version={{.project_name}}.__version__,
+    version=datetime.datetime.utcnow().strftime("%Y%m%d.%H%M%S"),
     url="https://databricks.com",
     author="{{user_name}}",
     description="wheel file based on {{.project_name}}/src",
