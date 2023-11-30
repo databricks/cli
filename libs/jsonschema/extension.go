@@ -26,4 +26,8 @@ type Extension struct {
 	// If the CLI version is less than this value, then validation for this
 	// schema will fail.
 	MinDatabricksCliVersion string `json:"min_databricks_cli_version,omitempty"`
+
+	// Version of the schema. This is used to determine if the schema is
+	// compatible with the current CLI version.
+	Version *int `json:"version,omitempty"`
 }
