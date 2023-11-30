@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"log/slog"
+	"strings"
 	"testing"
 	"time"
 
@@ -32,7 +33,7 @@ func TestFriendlyHandler(t *testing.T) {
 		} {
 			out.Reset()
 			logger.Log(context.Background(), level, "simple message")
-			t.Log(out.String())
+			t.Log(strings.TrimSpace(out.String()))
 		}
 	}
 
@@ -40,56 +41,56 @@ func TestFriendlyHandler(t *testing.T) {
 		// Single key/value pair.
 		out.Reset()
 		logger.Info("simple message", "key", "value")
-		t.Log(out.String())
+		t.Log(strings.TrimSpace(out.String()))
 	}
 
 	{
 		// Multiple key/value pairs.
 		out.Reset()
 		logger.Info("simple message", "key1", "value", "key2", "value")
-		t.Log(out.String())
+		t.Log(strings.TrimSpace(out.String()))
 	}
 
 	{
 		// Multiple key/value pairs with duplicate keys.
 		out.Reset()
 		logger.Info("simple message", "key", "value", "key", "value")
-		t.Log(out.String())
+		t.Log(strings.TrimSpace(out.String()))
 	}
 
 	{
 		// Log message with time.
 		out.Reset()
 		logger.Info("simple message", "time", time.Now())
-		t.Log(out.String())
+		t.Log(strings.TrimSpace(out.String()))
 	}
 
 	{
 		// Log message with grouped key/value pairs.
 		out.Reset()
 		logger.Info("simple message", slog.Group("group", slog.String("key", "value")))
-		t.Log(out.String())
+		t.Log(strings.TrimSpace(out.String()))
 	}
 
 	{
 		// Add key/value pairs to logger.
 		out.Reset()
 		logger.With("logger_key", "value").Info("simple message")
-		t.Log(out.String())
+		t.Log(strings.TrimSpace(out.String()))
 	}
 
 	{
 		// Add group to logger.
 		out.Reset()
 		logger.WithGroup("logger_group").Info("simple message", "key", "value")
-		t.Log(out.String())
+		t.Log(strings.TrimSpace(out.String()))
 	}
 
 	{
 		// Add group and key/value pairs to logger.
 		out.Reset()
 		logger.WithGroup("logger_group").With("logger_key", "value").Info("simple message")
-		t.Log(out.String())
+		t.Log(strings.TrimSpace(out.String()))
 	}
 }
 
