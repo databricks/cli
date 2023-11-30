@@ -50,7 +50,7 @@ func configureInteractive(cmd *cobra.Command, flags *configureFlags, cfg *config
 		if err != nil {
 			return err
 		}
-		clusterID, err := cfgpickers.AskForCluster(cmd.Context(), w)
+		clusterID, err := cfgpickers.AskForCluster(cmd.Context(), w, cfgpickers.WithoutSystemClusters())
 		if err != nil {
 			return err
 		}
