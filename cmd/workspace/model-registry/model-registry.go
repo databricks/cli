@@ -627,11 +627,7 @@ func newDeleteComment() *cobra.Command {
 	cmd.Short = `Delete a comment.`
 	cmd.Long = `Delete a comment.
   
-  Deletes a comment on a model version.
-
-  Arguments:
-    ID: 
-    `
+  Deletes a comment on a model version.`
 
 	cmd.Annotations = make(map[string]string)
 

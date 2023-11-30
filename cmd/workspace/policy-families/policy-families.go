@@ -60,11 +60,7 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get policy family information.`
 	cmd.Long = `Get policy family information.
   
-  Retrieve the information for an policy family based on its identifier.
-
-  Arguments:
-    POLICY_FAMILY_ID: 
-    `
+  Retrieve the information for an policy family based on its identifier.`
 
 	cmd.Annotations = make(map[string]string)
 

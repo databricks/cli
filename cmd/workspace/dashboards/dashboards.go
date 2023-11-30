@@ -124,11 +124,7 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Remove a dashboard.
   
   Moves a dashboard to the trash. Trashed dashboards do not appear in list views
-  or searches, and cannot be shared.
-
-  Arguments:
-    DASHBOARD_ID: 
-    `
+  or searches, and cannot be shared.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -202,11 +198,7 @@ func newGet() *cobra.Command {
 	cmd.Long = `Retrieve a definition.
   
   Returns a JSON representation of a dashboard object, including its
-  visualization and query objects.
-
-  Arguments:
-    DASHBOARD_ID: 
-    `
+  visualization and query objects.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -343,11 +335,7 @@ func newRestore() *cobra.Command {
 	cmd.Short = `Restore a dashboard.`
 	cmd.Long = `Restore a dashboard.
   
-  A restored dashboard appears in list views and searches and can be shared.
-
-  Arguments:
-    DASHBOARD_ID: 
-    `
+  A restored dashboard appears in list views and searches and can be shared.`
 
 	cmd.Annotations = make(map[string]string)
 

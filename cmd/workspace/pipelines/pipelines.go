@@ -135,11 +135,7 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a pipeline.`
 	cmd.Long = `Delete a pipeline.
   
-  Deletes a pipeline.
-
-  Arguments:
-    PIPELINE_ID: 
-    `
+  Deletes a pipeline.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -215,11 +211,7 @@ func newGet() *cobra.Command {
 
 	cmd.Use = "get PIPELINE_ID"
 	cmd.Short = `Get a pipeline.`
-	cmd.Long = `Get a pipeline.
-
-  Arguments:
-    PIPELINE_ID: 
-    `
+	cmd.Long = `Get a pipeline.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -520,11 +512,7 @@ func newListPipelineEvents() *cobra.Command {
 	cmd.Short = `List pipeline events.`
 	cmd.Long = `List pipeline events.
   
-  Retrieves events for a pipeline.
-
-  Arguments:
-    PIPELINE_ID: 
-    `
+  Retrieves events for a pipeline.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -747,11 +735,7 @@ func newReset() *cobra.Command {
 	cmd.Short = `Reset a pipeline.`
 	cmd.Long = `Reset a pipeline.
   
-  Resets a pipeline.
-
-  Arguments:
-    PIPELINE_ID: 
-    `
+  Resets a pipeline.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -932,11 +916,7 @@ func newStartUpdate() *cobra.Command {
 	cmd.Long = `Start a pipeline.
   
   Starts a new update for the pipeline. If there is already an active update for
-  the pipeline, the request will fail and the active update will remain running.
-
-  Arguments:
-    PIPELINE_ID: 
-    `
+  the pipeline, the request will fail and the active update will remain running.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1021,11 +1001,7 @@ func newStop() *cobra.Command {
 	cmd.Long = `Stop a pipeline.
   
   Stops the pipeline by canceling the active update. If there is no active
-  update for the pipeline, this request is a no-op.
-
-  Arguments:
-    PIPELINE_ID: 
-    `
+  update for the pipeline, this request is a no-op.`
 
 	cmd.Annotations = make(map[string]string)
 

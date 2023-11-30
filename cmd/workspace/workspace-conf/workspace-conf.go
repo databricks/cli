@@ -52,11 +52,7 @@ func newGetStatus() *cobra.Command {
 	cmd.Short = `Check configuration status.`
 	cmd.Long = `Check configuration status.
   
-  Gets the configuration status for a workspace.
-
-  Arguments:
-    KEYS: 
-    `
+  Gets the configuration status for a workspace.`
 
 	cmd.Annotations = make(map[string]string)
 

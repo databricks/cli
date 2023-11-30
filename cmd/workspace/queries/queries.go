@@ -133,11 +133,7 @@ func newDelete() *cobra.Command {
   
   Moves a query to the trash. Trashed queries immediately disappear from
   searches and list views, and they cannot be used for alerts. The trash is
-  deleted after 30 days.
-
-  Arguments:
-    QUERY_ID: 
-    `
+  deleted after 30 days.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -211,11 +207,7 @@ func newGet() *cobra.Command {
 	cmd.Long = `Get a query definition.
   
   Retrieve a query object definition along with contextual permissions
-  information about the currently authenticated user.
-
-  Arguments:
-    QUERY_ID: 
-    `
+  information about the currently authenticated user.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -354,11 +346,7 @@ func newRestore() *cobra.Command {
 	cmd.Long = `Restore a query.
   
   Restore a query that has been moved to the trash. A restored query appears in
-  list views and searches. You can use restored queries for alerts.
-
-  Arguments:
-    QUERY_ID: 
-    `
+  list views and searches. You can use restored queries for alerts.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -441,11 +429,7 @@ func newUpdate() *cobra.Command {
   
   Modify this query definition.
   
-  **Note**: You cannot undo this operation.
-
-  Arguments:
-    QUERY_ID: 
-    `
+  **Note**: You cannot undo this operation.`
 
 	cmd.Annotations = make(map[string]string)
 

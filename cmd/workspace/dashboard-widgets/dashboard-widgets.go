@@ -121,11 +121,7 @@ func newDelete() *cobra.Command {
 
 	cmd.Use = "delete ID"
 	cmd.Short = `Remove widget.`
-	cmd.Long = `Remove widget.
-
-  Arguments:
-    ID: 
-    `
+	cmd.Long = `Remove widget.`
 
 	cmd.Annotations = make(map[string]string)
 
