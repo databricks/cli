@@ -1,5 +1,22 @@
 # Version changelog
 
+## 0.210.1
+
+This is a bugfix release to address issues with v0.210.0.
+
+CLI:
+ * Fix `panic:  is not set` ([#1027](https://github.com/databricks/cli/pull/1027)).
+ * Fix `databricks configure` if new profile is specified ([#1030](https://github.com/databricks/cli/pull/1030)).
+ * Filter out system clusters for `--configure-cluster` ([#1031](https://github.com/databricks/cli/pull/1031)).
+
+Bundles:
+ * Fixed panic when job has trigger and in development mode ([#1026](https://github.com/databricks/cli/pull/1026)).
+
+Internal:
+ * Use `fetch-tags` option in release workflows ([#1025](https://github.com/databricks/cli/pull/1025)).
+
+
+
 ## 0.210.0
 
 This release includes the new `databricks labs` command to install, manage, and run Databricks Labs projects.
