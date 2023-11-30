@@ -131,6 +131,7 @@ func new{{.PascalName}}() *cobra.Command {
 		{{- range .Request.RequiredFields -}}
 			{{- if .HasComment -}}
 				{{- $atleastOneArgumentWithDescription = true -}}
+				{{- break -}}
 			{{- end -}}
 		{{- end -}}
 	{{- end -}}
