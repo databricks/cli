@@ -55,7 +55,7 @@ func (h *hook) runHook(cmd *cobra.Command) error {
 	if err != nil {
 		return fmt.Errorf("prepare: %w", err)
 	}
-	libDir := h.EffectiveLibDir(ctx)
+	libDir := h.EffectiveLibDir()
 	args := []string{}
 	if strings.HasSuffix(h.Script, ".py") {
 		args = append(args, h.virtualEnvPython(ctx))
@@ -80,14 +80,20 @@ type installer struct {
 }
 
 func (i *installer) Install(ctx context.Context) error {
-	err := i.EnsureFoldersExist(ctx)
+	err := i.EnsureFoldersExist()
 	if err != nil {
 		return fmt.Errorf("folders: %w", err)
 	}
-	i.folder = PathInLabs(ctx, i.Name)
+	i.folder, err = PathInLabs(ctx, i.Name)
+	if err != nil {
+		return err
+	}
 	w, err := i.login(ctx)
 	if err != nil && errors.Is(err, databrickscfg.ErrNoConfiguration) {
-		cfg := i.Installer.envAwareConfig(ctx)
+		cfg, err := i.Installer.envAwareConfig(ctx)
+		if err != nil {
+			return err
+		}
 		w, err = databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 		if err != nil {
 			return fmt.Errorf("no ~/.databrickscfg: %w", err)
@@ -138,7 +144,7 @@ func (i *installer) warningf(text string, v ...any) {
 }
 
 func (i *installer) cleanupLib(ctx context.Context) error {
-	libDir := i.LibDir(ctx)
+	libDir := i.LibDir()
 	err := os.RemoveAll(libDir)
 	if err != nil {
 		return fmt.Errorf("remove all: %w", err)
@@ -157,7 +163,10 @@ func (i *installer) login(ctx context.Context) (*databricks.WorkspaceClient, err
 	}
 	cfg, err := i.metaEntrypoint(ctx).validLogin(i.cmd)
 	if errors.Is(err, ErrNoLoginConfig) {
-		cfg = i.Installer.envAwareConfig(ctx)
+		cfg, err = i.Installer.envAwareConfig(ctx)
+		if err != nil {
+			return nil, err
+		}
 	} else if err != nil {
 		return nil, fmt.Errorf("valid: %w", err)
 	}
@@ -188,7 +197,7 @@ func (i *installer) downloadLibrary(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("cleanup: %w", err)
 	}
-	libTarget := i.LibDir(ctx)
+	libTarget := i.LibDir()
 	// we may support wheels, jars, and golang binaries. but those are not zipballs
 	if i.IsZipball() {
 		feedback <- fmt.Sprintf("Downloading and unpacking zipball for %s", i.version)
@@ -254,10 +263,10 @@ func (i *installer) setupPythonVirtualEnvironment(ctx context.Context, w *databr
 }
 
 func (i *installer) installPythonDependencies(ctx context.Context, spec string) error {
-	if !i.IsPythonProject(ctx) {
+	if !i.IsPythonProject() {
 		return nil
 	}
-	libDir := i.LibDir(ctx)
+	libDir := i.LibDir()
 	log.Debugf(ctx, "Installing Python dependencies for: %s", libDir)
 	// maybe we'll need to add call one of the two scripts:
 	// - python3 -m ensurepip --default-pip
@@ -281,6 +290,6 @@ func (i *installer) runInstallHook(ctx context.Context) error {
 	if i.Installer.Script == "" {
 		return nil
 	}
-	log.Debugf(ctx, "Launching installer script %s in %s", i.Installer.Script, i.LibDir(ctx))
+	log.Debugf(ctx, "Launching installer script %s in %s", i.Installer.Script, i.LibDir())
 	return i.Installer.runHook(i.cmd)
 }

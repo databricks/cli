@@ -54,10 +54,10 @@ func transformDevelopmentMode(b *bundle.Bundle) error {
 		if r.Jobs[i].Schedule != nil && r.Jobs[i].Schedule.PauseStatus != jobs.PauseStatusUnpaused {
 			r.Jobs[i].Schedule.PauseStatus = jobs.PauseStatusPaused
 		}
-		if r.Jobs[i].Continuous != nil && r.Jobs[i].Schedule.PauseStatus != jobs.PauseStatusUnpaused {
+		if r.Jobs[i].Continuous != nil && r.Jobs[i].Continuous.PauseStatus != jobs.PauseStatusUnpaused {
 			r.Jobs[i].Continuous.PauseStatus = jobs.PauseStatusPaused
 		}
-		if r.Jobs[i].Trigger != nil && r.Jobs[i].Schedule.PauseStatus != jobs.PauseStatusUnpaused {
+		if r.Jobs[i].Trigger != nil && r.Jobs[i].Trigger.PauseStatus != jobs.PauseStatusUnpaused {
 			r.Jobs[i].Trigger.PauseStatus = jobs.PauseStatusPaused
 		}
 	}

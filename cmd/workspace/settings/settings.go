@@ -16,16 +16,24 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "settings",
-		Short:   `// TODO(yuyuan.tang) to add the description for the setting.`,
-		Long:    `// TODO(yuyuan.tang) to add the description for the setting`,
+		Use:   "settings",
+		Short: `The default namespace setting API allows users to configure the default namespace for a Databricks workspace.`,
+		Long: `The default namespace setting API allows users to configure the default
+  namespace for a Databricks workspace.
+  
+  Through this API, users can retrieve, set, or modify the default namespace
+  used when queries do not reference a fully qualified three-level name. For
+  example, if you use the API to set 'retail_prod' as the default catalog, then
+  a query 'SELECT * FROM myTable' would reference the object
+  'retail_prod.default.myTable' (the schema 'default' is always assumed).
+  
+  This setting requires a restart of clusters and SQL warehouses to take effect.
+  Additionally, the default namespace only applies when using Unity
+  Catalog-enabled compute.`,
 		GroupID: "settings",
 		Annotations: map[string]string{
 			"package": "settings",
 		},
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
 	}
 
 	// Apply optional overrides to this command.
@@ -53,10 +61,14 @@ func newDeleteDefaultWorkspaceNamespace() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Use = "delete-default-workspace-namespace ETAG"
-	cmd.Short = `Delete the default namespace.`
-	cmd.Long = `Delete the default namespace.
+	cmd.Short = `Delete the default namespace setting.`
+	cmd.Long = `Delete the default namespace setting.
   
-  Deletes the default namespace.`
+  Deletes the default namespace setting for the workspace. A fresh etag needs to
+  be provided in DELETE requests (as a query parameter). The etag can be
+  retrieved by making a GET request before the DELETE request. If the setting is
+  updated/deleted concurrently, DELETE will fail with 409 and the request will
+  need to be retried by using the fresh etag in the 409 response.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -114,10 +126,10 @@ func newReadDefaultWorkspaceNamespace() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Use = "read-default-workspace-namespace ETAG"
-	cmd.Short = `Get the default namespace.`
-	cmd.Long = `Get the default namespace.
+	cmd.Short = `Get the default namespace setting.`
+	cmd.Long = `Get the default namespace setting.
   
-  Gets the default namespace.`
+  Gets the default namespace setting.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -176,19 +188,21 @@ func newUpdateDefaultWorkspaceNamespace() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateDefaultWorkspaceNamespaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&updateDefaultWorkspaceNamespaceReq.AllowMissing, "allow-missing", updateDefaultWorkspaceNamespaceReq.AllowMissing, `This should always be set to true for Settings RPCs.`)
-	cmd.Flags().StringVar(&updateDefaultWorkspaceNamespaceReq.FieldMask, "field-mask", updateDefaultWorkspaceNamespaceReq.FieldMask, `Field mask required to be passed into the PATCH request.`)
+	cmd.Flags().BoolVar(&updateDefaultWorkspaceNamespaceReq.AllowMissing, "allow-missing", updateDefaultWorkspaceNamespaceReq.AllowMissing, `This should always be set to true for Settings API.`)
+	cmd.Flags().StringVar(&updateDefaultWorkspaceNamespaceReq.FieldMask, "field-mask", updateDefaultWorkspaceNamespaceReq.FieldMask, `Field mask is required to be passed into the PATCH request.`)
 	// TODO: complex arg: setting
 
 	cmd.Use = "update-default-workspace-namespace"
-	cmd.Short = `Updates the default namespace setting.`
-	cmd.Long = `Updates the default namespace setting.
+	cmd.Short = `Update the default namespace setting.`
+	cmd.Long = `Update the default namespace setting.
   
   Updates the default namespace setting for the workspace. A fresh etag needs to
-  be provided in PATCH requests (as part the setting field). The etag can be
+  be provided in PATCH requests (as part of the setting field). The etag can be
   retrieved by making a GET request before the PATCH request. Note that if the
   setting does not exist, GET will return a NOT_FOUND error and the etag will be
-  present in the error response, which should be set in the PATCH request.`
+  present in the error response, which should be set in the PATCH request. If
+  the setting is updated concurrently, PATCH will fail with 409 and the request
+  will need to be retried by using the fresh etag in the 409 response.`
 
 	cmd.Annotations = make(map[string]string)
 

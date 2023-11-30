@@ -35,3 +35,10 @@ func TestValueAsMap(t *testing.T) {
 	assert.True(t, ok)
 	assert.Len(t, m, 1)
 }
+
+func TestValueIsValid(t *testing.T) {
+	var zeroValue config.Value
+	assert.False(t, zeroValue.IsValid())
+	var intValue = config.NewValue(1, config.Location{})
+	assert.True(t, intValue.IsValid())
+}

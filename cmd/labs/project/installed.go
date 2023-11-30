@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/folders"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -26,7 +27,13 @@ func projectInDevMode(ctx context.Context) (*Project, error) {
 }
 
 func Installed(ctx context.Context) (projects []*Project, err error) {
-	labsDir, err := os.ReadDir(PathInLabs(ctx))
+	root, err := PathInLabs(ctx)
+	if errors.Is(err, env.ErrNoHomeEnv) {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+	labsDir, err := os.ReadDir(root)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return nil, err
 	}
@@ -44,7 +51,7 @@ func Installed(ctx context.Context) (projects []*Project, err error) {
 		if projectDev != nil && v.Name() == projectDev.Name {
 			continue
 		}
-		labsYml := PathInLabs(ctx, v.Name(), "lib", "labs.yml")
+		labsYml := filepath.Join(root, v.Name(), "lib", "labs.yml")
 		prj, err := Load(ctx, labsYml)
 		if errors.Is(err, fs.ErrNotExist) {
 			continue
