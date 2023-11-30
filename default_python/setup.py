@@ -7,6 +7,7 @@ the default_python project.
 """
 from setuptools import setup, find_packages
 
+import datetime
 import sys
 sys.path.append('./src')
 
@@ -14,7 +15,7 @@ import default_python
 
 setup(
     name="default_python",
-    version=default_python.__version__,
+    version=datetime.datetime.utcnow().strftime("%Y%m%d.%H%M%S"),
     url="https://databricks.com",
     author="user@company.com",
     description="wheel file based on default_python/src",
