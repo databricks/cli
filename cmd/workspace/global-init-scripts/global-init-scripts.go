@@ -72,9 +72,7 @@ func newCreate() *cobra.Command {
 
   Arguments:
     NAME: The name of the script
-    
-    SCRIPT: The Base64-encoded content of the script.
-    `
+    SCRIPT: The Base64-encoded content of the script.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -156,8 +154,7 @@ func newDelete() *cobra.Command {
   Deletes a global init script.
 
   Arguments:
-    SCRIPT_ID: The ID of the global init script.
-    `
+    SCRIPT_ID: The ID of the global init script.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -233,8 +230,7 @@ func newGet() *cobra.Command {
   Gets all the details of a script, including its Base64-encoded contents.
 
   Arguments:
-    SCRIPT_ID: The ID of the global init script.
-    `
+    SCRIPT_ID: The ID of the global init script.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -368,11 +364,8 @@ func newUpdate() *cobra.Command {
 
   Arguments:
     SCRIPT_ID: The ID of the global init script.
-    
     NAME: The name of the script
-    
-    SCRIPT: The Base64-encoded content of the script.
-    `
+    SCRIPT: The Base64-encoded content of the script.`
 
 	cmd.Annotations = make(map[string]string)
 

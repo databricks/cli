@@ -153,13 +153,10 @@ func newDelete() *cobra.Command {
 
   Arguments:
     FULL_NAME: Full name of the table referenced by the constraint.
-    
     CONSTRAINT_NAME: The name of the constraint to delete.
-    
     CASCADE: If true, try deleting all child constraints of the current constraint. If
-    false, reject this operation if the current constraint has any child
-    constraints.
-    `
+      false, reject this operation if the current constraint has any child
+      constraints.`
 
 	cmd.Annotations = make(map[string]string)
 

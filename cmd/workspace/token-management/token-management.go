@@ -65,9 +65,7 @@ func newCreateOboToken() *cobra.Command {
 
   Arguments:
     APPLICATION_ID: Application ID of the service principal.
-    
-    LIFETIME_SECONDS: The number of seconds before the token expires.
-    `
+    LIFETIME_SECONDS: The number of seconds before the token expires.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -152,8 +150,7 @@ func newDelete() *cobra.Command {
   Deletes a token, specified by its ID.
 
   Arguments:
-    TOKEN_ID: The ID of the token to get.
-    `
+    TOKEN_ID: The ID of the token to get.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -229,8 +226,7 @@ func newGet() *cobra.Command {
   Gets information about a token, specified by its ID.
 
   Arguments:
-    TOKEN_ID: The ID of the token to get.
-    `
+    TOKEN_ID: The ID of the token to get.`
 
 	cmd.Annotations = make(map[string]string)
 

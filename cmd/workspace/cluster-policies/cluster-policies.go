@@ -89,8 +89,7 @@ func newCreate() *cobra.Command {
 
   Arguments:
     NAME: Cluster Policy name requested by the user. This has to be unique. Length
-    must be between 1 and 100 characters.
-    `
+      must be between 1 and 100 characters.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -172,8 +171,7 @@ func newDelete() *cobra.Command {
   but cannot be edited.
 
   Arguments:
-    POLICY_ID: The ID of the policy to delete.
-    `
+    POLICY_ID: The ID of the policy to delete.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -267,10 +265,8 @@ func newEdit() *cobra.Command {
 
   Arguments:
     POLICY_ID: The ID of the policy to update.
-    
     NAME: Cluster Policy name requested by the user. This has to be unique. Length
-    must be between 1 and 100 characters.
-    `
+      must be between 1 and 100 characters.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -352,8 +348,7 @@ func newGet() *cobra.Command {
   Get a cluster policy entity. Creation and editing is available to admins only.
 
   Arguments:
-    POLICY_ID: Canonical unique identifier for the cluster policy.
-    `
+    POLICY_ID: Canonical unique identifier for the cluster policy.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -429,8 +424,7 @@ func newGetPermissionLevels() *cobra.Command {
   Gets the permission levels that a user can have on an object.
 
   Arguments:
-    CLUSTER_POLICY_ID: The cluster policy for which to get or manage permissions.
-    `
+    CLUSTER_POLICY_ID: The cluster policy for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -507,8 +501,7 @@ func newGetPermissions() *cobra.Command {
   permissions from their root object.
 
   Arguments:
-    CLUSTER_POLICY_ID: The cluster policy for which to get or manage permissions.
-    `
+    CLUSTER_POLICY_ID: The cluster policy for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -651,8 +644,7 @@ func newSetPermissions() *cobra.Command {
   from their root object.
 
   Arguments:
-    CLUSTER_POLICY_ID: The cluster policy for which to get or manage permissions.
-    `
+    CLUSTER_POLICY_ID: The cluster policy for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -739,8 +731,7 @@ func newUpdatePermissions() *cobra.Command {
   permissions from their root object.
 
   Arguments:
-    CLUSTER_POLICY_ID: The cluster policy for which to get or manage permissions.
-    `
+    CLUSTER_POLICY_ID: The cluster policy for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 

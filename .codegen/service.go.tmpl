@@ -143,8 +143,8 @@ func new{{.PascalName}}() *cobra.Command {
 
   Arguments:
     {{- range .Request.RequiredFields }}
-    {{ .ConstantName }}: {{.Comment "    " 80 | without "`"}}
-    {{ end }}
+    {{ .ConstantName }}: {{.Comment "      " 80 | without "`"}}
+    {{- end -}}
     {{- end -}}
 	`
 	{{- end }}

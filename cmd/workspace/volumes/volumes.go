@@ -88,13 +88,9 @@ func newCreate() *cobra.Command {
 
   Arguments:
     CATALOG_NAME: The name of the catalog where the schema and the volume are
-    
     SCHEMA_NAME: The name of the schema where the volume is
-    
     NAME: The name of the volume
-    
-    VOLUME_TYPE: 
-    `
+    VOLUME_TYPE: `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -189,8 +185,7 @@ func newDelete() *cobra.Command {
   on the parent catalog and the **USE_SCHEMA** privilege on the parent schema.
 
   Arguments:
-    FULL_NAME_ARG: The three-level (fully qualified) name of the volume
-    `
+    FULL_NAME_ARG: The three-level (fully qualified) name of the volume`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -277,9 +272,7 @@ func newList() *cobra.Command {
 
   Arguments:
     CATALOG_NAME: The identifier of the catalog
-    
-    SCHEMA_NAME: The identifier of the schema
-    `
+    SCHEMA_NAME: The identifier of the schema`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true
@@ -352,8 +345,7 @@ func newRead() *cobra.Command {
   the **USE_SCHEMA** privilege on the parent schema.
 
   Arguments:
-    FULL_NAME_ARG: The three-level (fully qualified) name of the volume
-    `
+    FULL_NAME_ARG: The three-level (fully qualified) name of the volume`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -442,8 +434,7 @@ func newUpdate() *cobra.Command {
   updated.
 
   Arguments:
-    FULL_NAME_ARG: The three-level (fully qualified) name of the volume
-    `
+    FULL_NAME_ARG: The three-level (fully qualified) name of the volume`
 
 	cmd.Annotations = make(map[string]string)
 

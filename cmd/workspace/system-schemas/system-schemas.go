@@ -61,9 +61,7 @@ func newDisable() *cobra.Command {
 
   Arguments:
     METASTORE_ID: The metastore ID under which the system schema lives.
-    
-    SCHEMA_NAME: Full name of the system schema.
-    `
+    SCHEMA_NAME: Full name of the system schema.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -133,9 +131,7 @@ func newEnable() *cobra.Command {
 
   Arguments:
     METASTORE_ID: The metastore ID under which the system schema lives.
-    
-    SCHEMA_NAME: Full name of the system schema.
-    `
+    SCHEMA_NAME: Full name of the system schema.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -204,8 +200,7 @@ func newList() *cobra.Command {
   admin or a metastore admin.
 
   Arguments:
-    METASTORE_ID: The ID for the metastore in which the system schema resides.
-    `
+    METASTORE_ID: The ID for the metastore in which the system schema resides.`
 
 	cmd.Annotations = make(map[string]string)
 

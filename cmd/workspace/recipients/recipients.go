@@ -86,9 +86,7 @@ func newCreate() *cobra.Command {
 
   Arguments:
     NAME: Name of Recipient.
-    
-    AUTHENTICATION_TYPE: The delta sharing authentication type.
-    `
+    AUTHENTICATION_TYPE: The delta sharing authentication type.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -174,8 +172,7 @@ func newDelete() *cobra.Command {
   owner of the recipient.
 
   Arguments:
-    NAME: Name of the recipient.
-    `
+    NAME: Name of the recipient.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -253,8 +250,7 @@ func newGet() *cobra.Command {
   * the caller is the owner of the share recipient, or: * is a metastore admin
 
   Arguments:
-    NAME: Name of the recipient.
-    `
+    NAME: Name of the recipient.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -398,12 +394,10 @@ func newRotateToken() *cobra.Command {
 
   Arguments:
     NAME: The name of the recipient.
-    
     EXISTING_TOKEN_EXPIRE_IN_SECONDS: The expiration time of the bearer token in ISO 8601 format. This will set
-    the expiration_time of existing token only to a smaller timestamp, it cannot
-    extend the expiration_time. Use 0 to expire the existing token immediately,
-    negative number will return an error.
-    `
+      the expiration_time of existing token only to a smaller timestamp, it
+      cannot extend the expiration_time. Use 0 to expire the existing token
+      immediately, negative number will return an error.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -487,8 +481,7 @@ func newSharePermissions() *cobra.Command {
   metastore admin or the owner of the Recipient.
 
   Arguments:
-    NAME: The name of the Recipient.
-    `
+    NAME: The name of the Recipient.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -574,8 +567,7 @@ func newUpdate() *cobra.Command {
   the user must be both a metastore admin and the owner of the recipient.
 
   Arguments:
-    NAME: Name of Recipient.
-    `
+    NAME: Name of Recipient.`
 
 	cmd.Annotations = make(map[string]string)
 

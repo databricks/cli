@@ -130,8 +130,7 @@ func newDeleteApp() *cobra.Command {
   Delete an application definition
 
   Arguments:
-    NAME: The name of an application. This field is required.
-    `
+    NAME: The name of an application. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -195,8 +194,7 @@ func newGetApp() *cobra.Command {
   Get an application definition
 
   Arguments:
-    NAME: The name of an application. This field is required.
-    `
+    NAME: The name of an application. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -262,8 +260,7 @@ func newGetAppDeploymentStatus() *cobra.Command {
   Get deployment status for an application
 
   Arguments:
-    DEPLOYMENT_ID: The deployment id for an application. This field is required.
-    `
+    DEPLOYMENT_ID: The deployment id for an application. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -375,8 +372,7 @@ func newGetEvents() *cobra.Command {
   Get deployment events for an application
 
   Arguments:
-    NAME: The name of an application. This field is required.
-    `
+    NAME: The name of an application. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
 

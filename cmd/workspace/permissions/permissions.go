@@ -104,9 +104,7 @@ func newGet() *cobra.Command {
 
   Arguments:
     REQUEST_OBJECT_TYPE: <needs content>
-    
-    REQUEST_OBJECT_ID: 
-    `
+    REQUEST_OBJECT_ID: `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -172,9 +170,7 @@ func newGetPermissionLevels() *cobra.Command {
 
   Arguments:
     REQUEST_OBJECT_TYPE: <needs content>
-    
-    REQUEST_OBJECT_ID: <needs content>
-    `
+    REQUEST_OBJECT_ID: <needs content>`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -245,9 +241,7 @@ func newSet() *cobra.Command {
 
   Arguments:
     REQUEST_OBJECT_TYPE: <needs content>
-    
-    REQUEST_OBJECT_ID: 
-    `
+    REQUEST_OBJECT_ID: `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -324,9 +318,7 @@ func newUpdate() *cobra.Command {
 
   Arguments:
     REQUEST_OBJECT_TYPE: <needs content>
-    
-    REQUEST_OBJECT_ID: 
-    `
+    REQUEST_OBJECT_ID: `
 
 	cmd.Annotations = make(map[string]string)
 

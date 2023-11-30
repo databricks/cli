@@ -138,8 +138,7 @@ func newDelete() *cobra.Command {
   **RESOURCE_DOES_NOT_EXIST**.
 
   Arguments:
-    TOKEN_ID: The ID of the token to be revoked.
-    `
+    TOKEN_ID: The ID of the token to be revoked.`
 
 	cmd.Annotations = make(map[string]string)
 

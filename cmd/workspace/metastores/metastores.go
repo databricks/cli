@@ -75,11 +75,8 @@ func newAssign() *cobra.Command {
 
   Arguments:
     WORKSPACE_ID: A workspace ID.
-    
     METASTORE_ID: The unique ID of the metastore.
-    
-    DEFAULT_CATALOG_NAME: The name of the default catalog in the metastore.
-    `
+    DEFAULT_CATALOG_NAME: The name of the default catalog in the metastore.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -174,8 +171,7 @@ func newCreate() *cobra.Command {
   System User instead.
 
   Arguments:
-    NAME: The user-specified name of the metastore.
-    `
+    NAME: The user-specified name of the metastore.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -304,8 +300,7 @@ func newDelete() *cobra.Command {
   Deletes a metastore. The caller must be a metastore admin.
 
   Arguments:
-    ID: Unique ID of the metastore.
-    `
+    ID: Unique ID of the metastore.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -382,8 +377,7 @@ func newGet() *cobra.Command {
   admin to retrieve this info.
 
   Arguments:
-    ID: Unique ID of the metastore.
-    `
+    ID: Unique ID of the metastore.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -559,9 +553,7 @@ func newUnassign() *cobra.Command {
 
   Arguments:
     WORKSPACE_ID: A workspace ID.
-    
-    METASTORE_ID: Query for the ID of the metastore to delete.
-    `
+    METASTORE_ID: Query for the ID of the metastore to delete.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -641,8 +633,7 @@ func newUpdate() *cobra.Command {
   ownership is updated to the System User.
 
   Arguments:
-    ID: Unique ID of the metastore.
-    `
+    ID: Unique ID of the metastore.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -732,8 +723,7 @@ func newUpdateAssignment() *cobra.Command {
   to update __metastore_id__; otherwise, the caller can be a Workspace admin.
 
   Arguments:
-    WORKSPACE_ID: A workspace ID.
-    `
+    WORKSPACE_ID: A workspace ID.`
 
 	cmd.Annotations = make(map[string]string)
 

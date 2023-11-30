@@ -135,8 +135,7 @@ func newDelete() *cobra.Command {
   owner of the clean room.
 
   Arguments:
-    NAME_ARG: The name of the clean room.
-    `
+    NAME_ARG: The name of the clean room.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -203,8 +202,7 @@ func newGet() *cobra.Command {
   metastore admin or the owner of the clean room.
 
   Arguments:
-    NAME_ARG: The name of the clean room.
-    `
+    NAME_ARG: The name of the clean room.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -352,8 +350,7 @@ func newUpdate() *cobra.Command {
   Table removals through **update** do not require additional privileges.
 
   Arguments:
-    NAME_ARG: The name of the clean room.
-    `
+    NAME_ARG: The name of the clean room.`
 
 	cmd.Annotations = make(map[string]string)
 

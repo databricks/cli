@@ -140,8 +140,7 @@ func newDelete() *cobra.Command {
 
   Arguments:
     NAME: The fully-qualified name of the function (of the form
-    __catalog_name__.__schema_name__.__function__name__).
-    `
+      __catalog_name__.__schema_name__.__function__name__).`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -224,8 +223,7 @@ func newGet() *cobra.Command {
 
   Arguments:
     NAME: The fully-qualified name of the function (of the form
-    __catalog_name__.__schema_name__.__function__name__).
-    `
+      __catalog_name__.__schema_name__.__function__name__).`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -308,9 +306,7 @@ func newList() *cobra.Command {
 
   Arguments:
     CATALOG_NAME: Name of parent catalog for functions of interest.
-    
-    SCHEMA_NAME: Parent schema of functions.
-    `
+    SCHEMA_NAME: Parent schema of functions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -387,8 +383,7 @@ func newUpdate() *cobra.Command {
 
   Arguments:
     NAME: The fully-qualified name of the function (of the form
-    __catalog_name__.__schema_name__.__function__name__).
-    `
+      __catalog_name__.__schema_name__.__function__name__).`
 
 	cmd.Annotations = make(map[string]string)
 

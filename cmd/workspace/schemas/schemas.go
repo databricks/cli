@@ -71,9 +71,7 @@ func newCreate() *cobra.Command {
 
   Arguments:
     NAME: Name of schema, relative to parent catalog.
-    
-    CATALOG_NAME: Name of parent catalog.
-    `
+    CATALOG_NAME: Name of parent catalog.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -156,8 +154,7 @@ func newDelete() *cobra.Command {
   owner of the schema or an owner of the parent catalog.
 
   Arguments:
-    FULL_NAME: Full name of the schema.
-    `
+    FULL_NAME: Full name of the schema.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -235,8 +232,7 @@ func newGet() *cobra.Command {
   privilege on the schema.
 
   Arguments:
-    FULL_NAME: Full name of the schema.
-    `
+    FULL_NAME: Full name of the schema.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -316,8 +312,7 @@ func newList() *cobra.Command {
   no guarantee of a specific ordering of the elements in the array.
 
   Arguments:
-    CATALOG_NAME: Parent catalog for schemas of interest.
-    `
+    CATALOG_NAME: Parent catalog for schemas of interest.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -393,8 +388,7 @@ func newUpdate() *cobra.Command {
   the parent catalog.
 
   Arguments:
-    FULL_NAME: Full name of the schema.
-    `
+    FULL_NAME: Full name of the schema.`
 
 	cmd.Annotations = make(map[string]string)
 

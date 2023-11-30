@@ -141,8 +141,7 @@ func newDelete() *cobra.Command {
   Delete a single service principal in the Databricks account.
 
   Arguments:
-    ID: Unique ID for a service principal in the Databricks account.
-    `
+    ID: Unique ID for a service principal in the Databricks account.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -219,8 +218,7 @@ func newGet() *cobra.Command {
   account.
 
   Arguments:
-    ID: Unique ID for a service principal in the Databricks account.
-    `
+    ID: Unique ID for a service principal in the Databricks account.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -369,8 +367,7 @@ func newPatch() *cobra.Command {
   account.
 
   Arguments:
-    ID: Unique ID for a service principal in the Databricks account.
-    `
+    ID: Unique ID for a service principal in the Databricks account.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -466,8 +463,7 @@ func newUpdate() *cobra.Command {
   This action replaces the existing service principal with the same name.
 
   Arguments:
-    ID: Databricks service principal ID.
-    `
+    ID: Databricks service principal ID.`
 
 	cmd.Annotations = make(map[string]string)
 

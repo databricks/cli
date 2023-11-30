@@ -97,8 +97,7 @@ func newCreate() *cobra.Command {
   workspace becomes available when the status changes to RUNNING.
 
   Arguments:
-    WORKSPACE_NAME: The workspace's human-readable name.
-    `
+    WORKSPACE_NAME: The workspace's human-readable name.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -196,8 +195,7 @@ func newDelete() *cobra.Command {
   account.
 
   Arguments:
-    WORKSPACE_ID: Workspace ID.
-    `
+    WORKSPACE_ID: Workspace ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -289,8 +287,7 @@ func newGet() *cobra.Command {
   [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html
 
   Arguments:
-    WORKSPACE_ID: Workspace ID.
-    `
+    WORKSPACE_ID: Workspace ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -549,8 +546,7 @@ func newUpdate() *cobra.Command {
   [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html
 
   Arguments:
-    WORKSPACE_ID: Workspace ID.
-    `
+    WORKSPACE_ID: Workspace ID.`
 
 	cmd.Annotations = make(map[string]string)
 

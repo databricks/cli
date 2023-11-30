@@ -90,14 +90,12 @@ func newCreate() *cobra.Command {
 
   Arguments:
     INSTANCE_POOL_NAME: Pool name requested by the user. Pool name must be unique. Length must be
-    between 1 and 100 characters.
-    
-    NODE_TYPE_ID: This field encodes, through a single value, the resources available to each
-    of the Spark nodes in this cluster. For example, the Spark nodes can be
-    provisioned and optimized for memory or compute intensive workloads. A list
-    of available node types can be retrieved by using the
-    :method:clusters/listNodeTypes API call.
-    `
+      between 1 and 100 characters.
+    NODE_TYPE_ID: This field encodes, through a single value, the resources available to
+      each of the Spark nodes in this cluster. For example, the Spark nodes can
+      be provisioned and optimized for memory or compute intensive workloads. A
+      list of available node types can be retrieved by using the
+      :method:clusters/listNodeTypes API call.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -182,8 +180,7 @@ func newDelete() *cobra.Command {
   terminated asynchronously.
 
   Arguments:
-    INSTANCE_POOL_ID: The instance pool to be terminated.
-    `
+    INSTANCE_POOL_ID: The instance pool to be terminated.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -274,16 +271,13 @@ func newEdit() *cobra.Command {
 
   Arguments:
     INSTANCE_POOL_ID: Instance pool ID
-    
     INSTANCE_POOL_NAME: Pool name requested by the user. Pool name must be unique. Length must be
-    between 1 and 100 characters.
-    
-    NODE_TYPE_ID: This field encodes, through a single value, the resources available to each
-    of the Spark nodes in this cluster. For example, the Spark nodes can be
-    provisioned and optimized for memory or compute intensive workloads. A list
-    of available node types can be retrieved by using the
-    :method:clusters/listNodeTypes API call.
-    `
+      between 1 and 100 characters.
+    NODE_TYPE_ID: This field encodes, through a single value, the resources available to
+      each of the Spark nodes in this cluster. For example, the Spark nodes can
+      be provisioned and optimized for memory or compute intensive workloads. A
+      list of available node types can be retrieved by using the
+      :method:clusters/listNodeTypes API call.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -368,8 +362,7 @@ func newGet() *cobra.Command {
   Retrieve the information for an instance pool based on its identifier.
 
   Arguments:
-    INSTANCE_POOL_ID: The canonical unique identifier for the instance pool.
-    `
+    INSTANCE_POOL_ID: The canonical unique identifier for the instance pool.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -445,8 +438,7 @@ func newGetPermissionLevels() *cobra.Command {
   Gets the permission levels that a user can have on an object.
 
   Arguments:
-    INSTANCE_POOL_ID: The instance pool for which to get or manage permissions.
-    `
+    INSTANCE_POOL_ID: The instance pool for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -523,8 +515,7 @@ func newGetPermissions() *cobra.Command {
   permissions from their root object.
 
   Arguments:
-    INSTANCE_POOL_ID: The instance pool for which to get or manage permissions.
-    `
+    INSTANCE_POOL_ID: The instance pool for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -653,8 +644,7 @@ func newSetPermissions() *cobra.Command {
   from their root object.
 
   Arguments:
-    INSTANCE_POOL_ID: The instance pool for which to get or manage permissions.
-    `
+    INSTANCE_POOL_ID: The instance pool for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -741,8 +731,7 @@ func newUpdatePermissions() *cobra.Command {
   permissions from their root object.
 
   Arguments:
-    INSTANCE_POOL_ID: The instance pool for which to get or manage permissions.
-    `
+    INSTANCE_POOL_ID: The instance pool for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 

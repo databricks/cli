@@ -129,8 +129,7 @@ func newDelete() *cobra.Command {
   Deletes a Unity Catalog metastore for an account, both specified by ID.
 
   Arguments:
-    METASTORE_ID: Unity Catalog metastore ID
-    `
+    METASTORE_ID: Unity Catalog metastore ID`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -194,8 +193,7 @@ func newGet() *cobra.Command {
   Gets a Unity Catalog metastore from an account, both specified by ID.
 
   Arguments:
-    METASTORE_ID: Unity Catalog metastore ID
-    `
+    METASTORE_ID: Unity Catalog metastore ID`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -311,8 +309,7 @@ func newUpdate() *cobra.Command {
   Updates an existing Unity Catalog metastore.
 
   Arguments:
-    METASTORE_ID: Unity Catalog metastore ID
-    `
+    METASTORE_ID: Unity Catalog metastore ID`
 
 	cmd.Annotations = make(map[string]string)
 

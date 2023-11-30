@@ -127,8 +127,7 @@ func newDelete() *cobra.Command {
   Deletes the budget specified by its UUID.
 
   Arguments:
-    BUDGET_ID: Budget ID
-    `
+    BUDGET_ID: Budget ID`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -205,8 +204,7 @@ func newGet() *cobra.Command {
   day that the budget is configured to include.
 
   Arguments:
-    BUDGET_ID: Budget ID
-    `
+    BUDGET_ID: Budget ID`
 
 	cmd.Annotations = make(map[string]string)
 

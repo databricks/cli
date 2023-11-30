@@ -76,8 +76,7 @@ func newCreate() *cobra.Command {
   metastore admin or has the **CREATE_CATALOG** privilege.
 
   Arguments:
-    NAME: Name of catalog.
-    `
+    NAME: Name of catalog.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -159,8 +158,7 @@ func newDelete() *cobra.Command {
   metastore admin or the owner of the catalog.
 
   Arguments:
-    NAME: The name of the catalog.
-    `
+    NAME: The name of the catalog.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -226,8 +224,7 @@ func newGet() *cobra.Command {
   privilege set for their account.
 
   Arguments:
-    NAME: The name of the catalog.
-    `
+    NAME: The name of the catalog.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -354,8 +351,7 @@ func newUpdate() *cobra.Command {
   of the catalog).
 
   Arguments:
-    NAME: Name of catalog.
-    `
+    NAME: Name of catalog.`
 
 	cmd.Annotations = make(map[string]string)
 

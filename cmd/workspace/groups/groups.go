@@ -143,8 +143,7 @@ func newDelete() *cobra.Command {
   Deletes a group from the Databricks workspace.
 
   Arguments:
-    ID: Unique ID for a group in the Databricks workspace.
-    `
+    ID: Unique ID for a group in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -220,8 +219,7 @@ func newGet() *cobra.Command {
   Gets the information for a specific group in the Databricks workspace.
 
   Arguments:
-    ID: Unique ID for a group in the Databricks workspace.
-    `
+    ID: Unique ID for a group in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -369,8 +367,7 @@ func newPatch() *cobra.Command {
   Partially updates the details of a group.
 
   Arguments:
-    ID: Unique ID for a group in the Databricks workspace.
-    `
+    ID: Unique ID for a group in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -464,8 +461,7 @@ func newUpdate() *cobra.Command {
   Updates the details of a group by replacing the entire group entity.
 
   Arguments:
-    ID: Databricks group ID
-    `
+    ID: Databricks group ID`
 
 	cmd.Annotations = make(map[string]string)
 

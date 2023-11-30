@@ -66,8 +66,7 @@ func newCreate() *cobra.Command {
   **CREATE_STORAGE_CREDENTIAL** privilege on the metastore.
 
   Arguments:
-    METASTORE_ID: Unity Catalog metastore ID
-    `
+    METASTORE_ID: Unity Catalog metastore ID`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -141,9 +140,7 @@ func newDelete() *cobra.Command {
 
   Arguments:
     METASTORE_ID: Unity Catalog metastore ID
-    
-    STORAGE_CREDENTIAL_NAME: Name of the storage credential.
-    `
+    STORAGE_CREDENTIAL_NAME: Name of the storage credential.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -211,9 +208,7 @@ func newGet() *cobra.Command {
 
   Arguments:
     METASTORE_ID: Unity Catalog metastore ID
-    
-    STORAGE_CREDENTIAL_NAME: Name of the storage credential.
-    `
+    STORAGE_CREDENTIAL_NAME: Name of the storage credential.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -279,8 +274,7 @@ func newList() *cobra.Command {
   metastore.
 
   Arguments:
-    METASTORE_ID: Unity Catalog metastore ID
-    `
+    METASTORE_ID: Unity Catalog metastore ID`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -351,9 +345,7 @@ func newUpdate() *cobra.Command {
 
   Arguments:
     METASTORE_ID: Unity Catalog metastore ID
-    
-    STORAGE_CREDENTIAL_NAME: Name of the storage credential.
-    `
+    STORAGE_CREDENTIAL_NAME: Name of the storage credential.`
 
 	cmd.Annotations = make(map[string]string)
 

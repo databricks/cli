@@ -138,8 +138,7 @@ func newDelete() *cobra.Command {
   configuration that is associated with any workspace.
 
   Arguments:
-    STORAGE_CONFIGURATION_ID: Databricks Account API storage configuration ID.
-    `
+    STORAGE_CONFIGURATION_ID: Databricks Account API storage configuration ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -215,8 +214,7 @@ func newGet() *cobra.Command {
   Gets a Databricks storage configuration for an account, both specified by ID.
 
   Arguments:
-    STORAGE_CONFIGURATION_ID: Databricks Account API storage configuration ID.
-    `
+    STORAGE_CONFIGURATION_ID: Databricks Account API storage configuration ID.`
 
 	cmd.Annotations = make(map[string]string)
 

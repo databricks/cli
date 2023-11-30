@@ -81,14 +81,12 @@ func newCreateNetworkConnectivityConfiguration() *cobra.Command {
 
   Arguments:
     NAME: The name of the network connectivity configuration. The name can contain
-    alphanumeric characters, hyphens, and underscores. The length must be
-    between 3 and 30 characters. The name must match the regular expression
-    ^[0-9a-zA-Z-_]{3,30}$.
-    
+      alphanumeric characters, hyphens, and underscores. The length must be
+      between 3 and 30 characters. The name must match the regular expression
+      ^[0-9a-zA-Z-_]{3,30}$.
     REGION: The Azure region for this network connectivity configuration. Only
-    workspaces in the same Azure region can be attached to this network
-    connectivity configuration.
-    `
+      workspaces in the same Azure region can be attached to this network
+      connectivity configuration.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -182,13 +180,10 @@ func newCreatePrivateEndpointRule() *cobra.Command {
 
   Arguments:
     NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectvity Configuration ID.
-    
     RESOURCE_ID: The Azure resource ID of the target resource.
-    
     GROUP_ID: The sub-resource type (group ID) of the target resource. Note that to
-    connect to workspace root storage (root DBFS), you need two endpoints, one
-    for blob and one for dfs.
-    `
+      connect to workspace root storage (root DBFS), you need two endpoints, one
+      for blob and one for dfs.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -274,8 +269,7 @@ func newDeleteNetworkConnectivityConfiguration() *cobra.Command {
   Deletes a network connectivity configuration.
 
   Arguments:
-    NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectvity Configuration ID.
-    `
+    NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectvity Configuration ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -344,9 +338,7 @@ func newDeletePrivateEndpointRule() *cobra.Command {
 
   Arguments:
     NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectvity Configuration ID.
-    
-    PRIVATE_ENDPOINT_RULE_ID: Your private endpoint rule ID.
-    `
+    PRIVATE_ENDPOINT_RULE_ID: Your private endpoint rule ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -411,8 +403,7 @@ func newGetNetworkConnectivityConfiguration() *cobra.Command {
   Gets a network connectivity configuration.
 
   Arguments:
-    NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectvity Configuration ID.
-    `
+    NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectvity Configuration ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -477,9 +468,7 @@ func newGetPrivateEndpointRule() *cobra.Command {
 
   Arguments:
     NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectvity Configuration ID.
-    
-    PRIVATE_ENDPOINT_RULE_ID: Your private endpoint rule ID.
-    `
+    PRIVATE_ENDPOINT_RULE_ID: Your private endpoint rule ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -607,8 +596,7 @@ func newListPrivateEndpointRules() *cobra.Command {
   Gets an array of private endpoint rules.
 
   Arguments:
-    NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectvity Configuration ID.
-    `
+    NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectvity Configuration ID.`
 
 	cmd.Annotations = make(map[string]string)
 

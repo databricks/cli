@@ -73,11 +73,9 @@ func newBuildLogs() *cobra.Command {
 
   Arguments:
     NAME: The name of the serving endpoint that the served model belongs to. This
-    field is required.
-    
+      field is required.
     SERVED_MODEL_NAME: The name of the served model that build logs will be retrieved for. This
-    field is required.
-    `
+      field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -223,8 +221,7 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete a serving endpoint.
 
   Arguments:
-    NAME: The name of the serving endpoint. This field is required.
-    `
+    NAME: The name of the serving endpoint. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -290,8 +287,7 @@ func newExportMetrics() *cobra.Command {
 
   Arguments:
     NAME: The name of the serving endpoint to retrieve metrics for. This field is
-    required.
-    `
+      required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -355,8 +351,7 @@ func newGet() *cobra.Command {
   Retrieves the details for a single serving endpoint.
 
   Arguments:
-    NAME: The name of the serving endpoint. This field is required.
-    `
+    NAME: The name of the serving endpoint. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -420,8 +415,7 @@ func newGetPermissionLevels() *cobra.Command {
   Gets the permission levels that a user can have on an object.
 
   Arguments:
-    SERVING_ENDPOINT_ID: The serving endpoint for which to get or manage permissions.
-    `
+    SERVING_ENDPOINT_ID: The serving endpoint for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -486,8 +480,7 @@ func newGetPermissions() *cobra.Command {
   permissions from their root object.
 
   Arguments:
-    SERVING_ENDPOINT_ID: The serving endpoint for which to get or manage permissions.
-    `
+    SERVING_ENDPOINT_ID: The serving endpoint for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -599,11 +592,9 @@ func newLogs() *cobra.Command {
 
   Arguments:
     NAME: The name of the serving endpoint that the served model belongs to. This
-    field is required.
-    
-    SERVED_MODEL_NAME: The name of the served model that logs will be retrieved for. This field is
-    required.
-    `
+      field is required.
+    SERVED_MODEL_NAME: The name of the served model that logs will be retrieved for. This field
+      is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -675,8 +666,7 @@ func newPatch() *cobra.Command {
 
   Arguments:
     NAME: The name of the serving endpoint who's tags to patch. This field is
-    required.
-    `
+      required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -751,8 +741,7 @@ func newQuery() *cobra.Command {
 	cmd.Long = `Query a serving endpoint with provided model input.
 
   Arguments:
-    NAME: The name of the serving endpoint. This field is required.
-    `
+    NAME: The name of the serving endpoint. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -827,8 +816,7 @@ func newSetPermissions() *cobra.Command {
   permissions from their root object.
 
   Arguments:
-    SERVING_ENDPOINT_ID: The serving endpoint for which to get or manage permissions.
-    `
+    SERVING_ENDPOINT_ID: The serving endpoint for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -991,8 +979,7 @@ func newUpdatePermissions() *cobra.Command {
   permissions from their root object.
 
   Arguments:
-    SERVING_ENDPOINT_ID: The serving endpoint for which to get or manage permissions.
-    `
+    SERVING_ENDPOINT_ID: The serving endpoint for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 

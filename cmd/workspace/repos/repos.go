@@ -75,11 +75,9 @@ func newCreate() *cobra.Command {
 
   Arguments:
     URL: URL of the Git repository to be linked.
-    
     PROVIDER: Git provider. This field is case-insensitive. The available Git providers
-    are gitHub, bitbucketCloud, gitLab, azureDevOpsServices, gitHubEnterprise,
-    bitbucketServer, gitLabEnterpriseEdition and awsCodeCommit.
-    `
+      are gitHub, bitbucketCloud, gitLab, azureDevOpsServices, gitHubEnterprise,
+      bitbucketServer, gitLabEnterpriseEdition and awsCodeCommit.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -161,8 +159,7 @@ func newDelete() *cobra.Command {
   Deletes the specified repo.
 
   Arguments:
-    REPO_ID: The ID for the corresponding repo to access.
-    `
+    REPO_ID: The ID for the corresponding repo to access.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -241,8 +238,7 @@ func newGet() *cobra.Command {
   Returns the repo with the given repo ID.
 
   Arguments:
-    REPO_ID: The ID for the corresponding repo to access.
-    `
+    REPO_ID: The ID for the corresponding repo to access.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -321,8 +317,7 @@ func newGetPermissionLevels() *cobra.Command {
   Gets the permission levels that a user can have on an object.
 
   Arguments:
-    REPO_ID: The repo for which to get or manage permissions.
-    `
+    REPO_ID: The repo for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -399,8 +394,7 @@ func newGetPermissions() *cobra.Command {
   object.
 
   Arguments:
-    REPO_ID: The repo for which to get or manage permissions.
-    `
+    REPO_ID: The repo for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -544,8 +538,7 @@ func newSetPermissions() *cobra.Command {
   object.
 
   Arguments:
-    REPO_ID: The repo for which to get or manage permissions.
-    `
+    REPO_ID: The repo for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -634,8 +627,7 @@ func newUpdate() *cobra.Command {
   latest commit on the same branch.
 
   Arguments:
-    REPO_ID: The ID for the corresponding repo to access.
-    `
+    REPO_ID: The ID for the corresponding repo to access.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -725,8 +717,7 @@ func newUpdatePermissions() *cobra.Command {
   root object.
 
   Arguments:
-    REPO_ID: The repo for which to get or manage permissions.
-    `
+    REPO_ID: The repo for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 

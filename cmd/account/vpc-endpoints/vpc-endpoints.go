@@ -76,8 +76,7 @@ func newCreate() *cobra.Command {
   [endpoint service]: https://docs.aws.amazon.com/vpc/latest/privatelink/privatelink-share-your-services.html
 
   Arguments:
-    VPC_ENDPOINT_NAME: The human-readable name of the storage configuration.
-    `
+    VPC_ENDPOINT_NAME: The human-readable name of the storage configuration.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -164,8 +163,7 @@ func newDelete() *cobra.Command {
   [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html
 
   Arguments:
-    VPC_ENDPOINT_ID: Databricks VPC endpoint ID.
-    `
+    VPC_ENDPOINT_ID: Databricks VPC endpoint ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -245,8 +243,7 @@ func newGet() *cobra.Command {
   [VPC endpoint]: https://docs.aws.amazon.com/vpc/latest/privatelink/concepts.html
 
   Arguments:
-    VPC_ENDPOINT_ID: Databricks VPC endpoint ID.
-    `
+    VPC_ENDPOINT_ID: Databricks VPC endpoint ID.`
 
 	cmd.Annotations = make(map[string]string)
 

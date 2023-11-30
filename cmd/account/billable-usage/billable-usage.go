@@ -67,12 +67,10 @@ func newDownload() *cobra.Command {
   [CSV file schema]: https://docs.databricks.com/administration-guide/account-settings/usage-analysis.html#schema
 
   Arguments:
-    START_MONTH: Format: YYYY-MM. First month to return billable usage logs for. This field
-    is required.
-    
-    END_MONTH: Format: YYYY-MM. Last month to return billable usage logs for. This field
-    is required.
-    `
+    START_MONTH: Format: YYYY-MM. First month to return billable usage logs for. This
+      field is required.
+    END_MONTH: Format: YYYY-MM. Last month to return billable usage logs for. This
+      field is required.`
 
 	cmd.Annotations = make(map[string]string)
 

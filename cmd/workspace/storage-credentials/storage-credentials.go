@@ -80,8 +80,7 @@ func newCreate() *cobra.Command {
   Creates a new storage credential.
 
   Arguments:
-    NAME: The credential name. The name must be unique within the metastore.
-    `
+    NAME: The credential name. The name must be unique within the metastore.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -163,8 +162,7 @@ func newDelete() *cobra.Command {
   of the storage credential.
 
   Arguments:
-    NAME: Name of the storage credential.
-    `
+    NAME: Name of the storage credential.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -242,8 +240,7 @@ func newGet() *cobra.Command {
   storage credential.
 
   Arguments:
-    NAME: Name of the storage credential.
-    `
+    NAME: Name of the storage credential.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -384,8 +381,7 @@ func newUpdate() *cobra.Command {
   Updates a storage credential on the metastore.
 
   Arguments:
-    NAME: The credential name. The name must be unique within the metastore.
-    `
+    NAME: The credential name. The name must be unique within the metastore.`
 
 	cmd.Annotations = make(map[string]string)
 

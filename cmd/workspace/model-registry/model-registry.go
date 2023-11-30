@@ -70,21 +70,18 @@ func newApproveTransitionRequest() *cobra.Command {
 
   Arguments:
     NAME: Name of the model.
-    
     VERSION: Version of the model.
-    
     STAGE: Target stage of the transition. Valid values are:
-    
-    * None: The initial stage of a model version.
-    
-    * Staging: Staging or pre-production stage.
-    
-    * Production: Production stage.
-    
-    * Archived: Archived stage.
-    
-    ARCHIVE_EXISTING_VERSIONS: Specifies whether to archive all current model versions in the target stage.
-    `
+      
+      * None: The initial stage of a model version.
+      
+      * Staging: Staging or pre-production stage.
+      
+      * Production: Production stage.
+      
+      * Archived: Archived stage.
+    ARCHIVE_EXISTING_VERSIONS: Specifies whether to archive all current model versions in the target
+      stage.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -183,11 +180,8 @@ func newCreateComment() *cobra.Command {
 
   Arguments:
     NAME: Name of the model.
-    
     VERSION: Version of the model.
-    
-    COMMENT: User-provided comment on the action.
-    `
+    COMMENT: User-provided comment on the action.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -280,8 +274,7 @@ func newCreateModel() *cobra.Command {
   exists.
 
   Arguments:
-    NAME: Register models under this name
-    `
+    NAME: Register models under this name`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -368,9 +361,7 @@ func newCreateModelVersion() *cobra.Command {
 
   Arguments:
     NAME: Register model under this name
-    
-    SOURCE: URI indicating the location of the model artifacts.
-    `
+    SOURCE: URI indicating the location of the model artifacts.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -457,19 +448,16 @@ func newCreateTransitionRequest() *cobra.Command {
 
   Arguments:
     NAME: Name of the model.
-    
     VERSION: Version of the model.
-    
     STAGE: Target stage of the transition. Valid values are:
-    
-    * None: The initial stage of a model version.
-    
-    * Staging: Staging or pre-production stage.
-    
-    * Production: Production stage.
-    
-    * Archived: Archived stage.
-    `
+      
+      * None: The initial stage of a model version.
+      
+      * Staging: Staging or pre-production stage.
+      
+      * Production: Production stage.
+      
+      * Archived: Archived stage.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -691,8 +679,7 @@ func newDeleteModel() *cobra.Command {
   Deletes a registered model.
 
   Arguments:
-    NAME: Registered model unique name identifier.
-    `
+    NAME: Registered model unique name identifier.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -757,10 +744,8 @@ func newDeleteModelTag() *cobra.Command {
 
   Arguments:
     NAME: Name of the registered model that the tag was logged under.
-    
-    KEY: Name of the tag. The name must be an exact match; wild-card deletion is not
-    supported. Maximum size is 250 bytes.
-    `
+    KEY: Name of the tag. The name must be an exact match; wild-card deletion is
+      not supported. Maximum size is 250 bytes.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -826,9 +811,7 @@ func newDeleteModelVersion() *cobra.Command {
 
   Arguments:
     NAME: Name of the registered model
-    
-    VERSION: Model version number
-    `
+    VERSION: Model version number`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -894,12 +877,9 @@ func newDeleteModelVersionTag() *cobra.Command {
 
   Arguments:
     NAME: Name of the registered model that the tag was logged under.
-    
     VERSION: Model version number that the tag was logged under.
-    
-    KEY: Name of the tag. The name must be an exact match; wild-card deletion is not
-    supported. Maximum size is 250 bytes.
-    `
+    KEY: Name of the tag. The name must be an exact match; wild-card deletion is
+      not supported. Maximum size is 250 bytes.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -968,23 +948,19 @@ func newDeleteTransitionRequest() *cobra.Command {
 
   Arguments:
     NAME: Name of the model.
-    
     VERSION: Version of the model.
-    
     STAGE: Target stage of the transition request. Valid values are:
-    
-    * None: The initial stage of a model version.
-    
-    * Staging: Staging or pre-production stage.
-    
-    * Production: Production stage.
-    
-    * Archived: Archived stage.
-    
+      
+      * None: The initial stage of a model version.
+      
+      * Staging: Staging or pre-production stage.
+      
+      * Production: Production stage.
+      
+      * Archived: Archived stage.
     CREATOR: Username of the user who created this request. Of the transition requests
-    matching the specified details, only the one transition created by this user
-    will be deleted.
-    `
+      matching the specified details, only the one transition created by this
+      user will be deleted.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1121,8 +1097,7 @@ func newGetLatestVersions() *cobra.Command {
   Gets the latest version of a registered model.
 
   Arguments:
-    NAME: Registered model unique name identifier.
-    `
+    NAME: Registered model unique name identifier.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1205,8 +1180,7 @@ func newGetModel() *cobra.Command {
   [MLflow endpoint]: https://www.mlflow.org/docs/latest/rest-api.html#get-registeredmodel
 
   Arguments:
-    NAME: Registered model unique name identifier.
-    `
+    NAME: Registered model unique name identifier.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1271,9 +1245,7 @@ func newGetModelVersion() *cobra.Command {
 
   Arguments:
     NAME: Name of the registered model
-    
-    VERSION: Model version number
-    `
+    VERSION: Model version number`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1339,9 +1311,7 @@ func newGetModelVersionDownloadUri() *cobra.Command {
 
   Arguments:
     NAME: Name of the registered model
-    
-    VERSION: Model version number
-    `
+    VERSION: Model version number`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1406,8 +1376,7 @@ func newGetPermissionLevels() *cobra.Command {
   Gets the permission levels that a user can have on an object.
 
   Arguments:
-    REGISTERED_MODEL_ID: The registered model for which to get or manage permissions.
-    `
+    REGISTERED_MODEL_ID: The registered model for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1472,8 +1441,7 @@ func newGetPermissions() *cobra.Command {
   permissions from their root object.
 
   Arguments:
-    REGISTERED_MODEL_ID: The registered model for which to get or manage permissions.
-    `
+    REGISTERED_MODEL_ID: The registered model for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1601,9 +1569,7 @@ func newListTransitionRequests() *cobra.Command {
 
   Arguments:
     NAME: Name of the model.
-    
-    VERSION: Version of the model.
-    `
+    VERSION: Version of the model.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1738,19 +1704,16 @@ func newRejectTransitionRequest() *cobra.Command {
 
   Arguments:
     NAME: Name of the model.
-    
     VERSION: Version of the model.
-    
     STAGE: Target stage of the transition. Valid values are:
-    
-    * None: The initial stage of a model version.
-    
-    * Staging: Staging or pre-production stage.
-    
-    * Production: Production stage.
-    
-    * Archived: Archived stage.
-    `
+      
+      * None: The initial stage of a model version.
+      
+      * Staging: Staging or pre-production stage.
+      
+      * Production: Production stage.
+      
+      * Archived: Archived stage.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1842,8 +1805,7 @@ func newRenameModel() *cobra.Command {
   Renames a registered model.
 
   Arguments:
-    NAME: Registered model unique name identifier.
-    `
+    NAME: Registered model unique name identifier.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -2053,16 +2015,13 @@ func newSetModelTag() *cobra.Command {
 
   Arguments:
     NAME: Unique name of the model.
-    
-    KEY: Name of the tag. Maximum size depends on storage backend. If a tag with this
-    name already exists, its preexisting value will be replaced by the specified
-    value. All storage backends are guaranteed to support key values up to 250
-    bytes in size.
-    
+    KEY: Name of the tag. Maximum size depends on storage backend. If a tag with
+      this name already exists, its preexisting value will be replaced by the
+      specified value. All storage backends are guaranteed to support key
+      values up to 250 bytes in size.
     VALUE: String value of the tag being logged. Maximum size depends on storage
-    backend. All storage backends are guaranteed to support key values up to
-    5000 bytes in size.
-    `
+      backend. All storage backends are guaranteed to support key values up to
+      5000 bytes in size.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -2150,18 +2109,14 @@ func newSetModelVersionTag() *cobra.Command {
 
   Arguments:
     NAME: Unique name of the model.
-    
     VERSION: Model version number.
-    
-    KEY: Name of the tag. Maximum size depends on storage backend. If a tag with this
-    name already exists, its preexisting value will be replaced by the specified
-    value. All storage backends are guaranteed to support key values up to 250
-    bytes in size.
-    
+    KEY: Name of the tag. Maximum size depends on storage backend. If a tag with
+      this name already exists, its preexisting value will be replaced by the
+      specified value. All storage backends are guaranteed to support key
+      values up to 250 bytes in size.
     VALUE: String value of the tag being logged. Maximum size depends on storage
-    backend. All storage backends are guaranteed to support key values up to
-    5000 bytes in size.
-    `
+      backend. All storage backends are guaranteed to support key values up to
+      5000 bytes in size.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -2254,8 +2209,7 @@ func newSetPermissions() *cobra.Command {
   permissions from their root object.
 
   Arguments:
-    REGISTERED_MODEL_ID: The registered model for which to get or manage permissions.
-    `
+    REGISTERED_MODEL_ID: The registered model for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -2331,8 +2285,7 @@ func newTestRegistryWebhook() *cobra.Command {
   Tests a registry webhook.
 
   Arguments:
-    ID: Webhook ID
-    `
+    ID: Webhook ID`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -2420,21 +2373,18 @@ func newTransitionStage() *cobra.Command {
 
   Arguments:
     NAME: Name of the model.
-    
     VERSION: Version of the model.
-    
     STAGE: Target stage of the transition. Valid values are:
-    
-    * None: The initial stage of a model version.
-    
-    * Staging: Staging or pre-production stage.
-    
-    * Production: Production stage.
-    
-    * Archived: Archived stage.
-    
-    ARCHIVE_EXISTING_VERSIONS: Specifies whether to archive all current model versions in the target stage.
-    `
+      
+      * None: The initial stage of a model version.
+      
+      * Staging: Staging or pre-production stage.
+      
+      * Production: Production stage.
+      
+      * Archived: Archived stage.
+    ARCHIVE_EXISTING_VERSIONS: Specifies whether to archive all current model versions in the target
+      stage.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -2531,9 +2481,7 @@ func newUpdateComment() *cobra.Command {
 
   Arguments:
     ID: Unique identifier of an activity
-    
-    COMMENT: User-provided comment on the action.
-    `
+    COMMENT: User-provided comment on the action.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -2619,8 +2567,7 @@ func newUpdateModel() *cobra.Command {
   Updates a registered model.
 
   Arguments:
-    NAME: Registered model unique name identifier.
-    `
+    NAME: Registered model unique name identifier.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -2704,9 +2651,7 @@ func newUpdateModelVersion() *cobra.Command {
 
   Arguments:
     NAME: Name of the registered model
-    
-    VERSION: Model version number
-    `
+    VERSION: Model version number`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -2793,8 +2738,7 @@ func newUpdatePermissions() *cobra.Command {
   permissions from their root object.
 
   Arguments:
-    REGISTERED_MODEL_ID: The registered model for which to get or manage permissions.
-    `
+    REGISTERED_MODEL_ID: The registered model for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -2874,8 +2818,7 @@ func newUpdateWebhook() *cobra.Command {
   Updates a registry webhook.
 
   Arguments:
-    ID: Webhook ID
-    `
+    ID: Webhook ID`
 
 	cmd.Annotations = make(map[string]string)
 

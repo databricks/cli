@@ -68,8 +68,7 @@ func newCreate() *cobra.Command {
   **CREATE_SHARE** privilege on the metastore.
 
   Arguments:
-    NAME: Name of the share.
-    `
+    NAME: Name of the share.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -149,8 +148,7 @@ func newDelete() *cobra.Command {
   the share.
 
   Arguments:
-    NAME: The name of the share.
-    `
+    NAME: The name of the share.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -217,8 +215,7 @@ func newGet() *cobra.Command {
   admin or the owner of the share.
 
   Arguments:
-    NAME: The name of the share.
-    `
+    NAME: The name of the share.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -333,8 +330,7 @@ func newSharePermissions() *cobra.Command {
   metastore admin or the owner of the share.
 
   Arguments:
-    NAME: The name of the share.
-    `
+    NAME: The name of the share.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -418,8 +414,7 @@ func newUpdate() *cobra.Command {
   Table removals through **update** do not require additional privileges.
 
   Arguments:
-    NAME: Name of the share.
-    `
+    NAME: Name of the share.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -497,8 +492,7 @@ func newUpdatePermissions() *cobra.Command {
   recipient revocations do not require additional privileges.
 
   Arguments:
-    NAME: The name of the share.
-    `
+    NAME: The name of the share.`
 
 	cmd.Annotations = make(map[string]string)
 

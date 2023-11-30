@@ -287,8 +287,7 @@ func newGetPermissionLevels() *cobra.Command {
   Gets the permission levels that a user can have on an object.
 
   Arguments:
-    PIPELINE_ID: The pipeline for which to get or manage permissions.
-    `
+    PIPELINE_ID: The pipeline for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -365,8 +364,7 @@ func newGetPermissions() *cobra.Command {
   their root object.
 
   Arguments:
-    PIPELINE_ID: The pipeline for which to get or manage permissions.
-    `
+    PIPELINE_ID: The pipeline for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -443,9 +441,7 @@ func newGetUpdate() *cobra.Command {
 
   Arguments:
     PIPELINE_ID: The ID of the pipeline.
-    
-    UPDATE_ID: The ID of the update.
-    `
+    UPDATE_ID: The ID of the update.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -656,8 +652,7 @@ func newListUpdates() *cobra.Command {
   List updates for an active pipeline.
 
   Arguments:
-    PIPELINE_ID: The pipeline to return updates for.
-    `
+    PIPELINE_ID: The pipeline to return updates for.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -828,8 +823,7 @@ func newSetPermissions() *cobra.Command {
   root object.
 
   Arguments:
-    PIPELINE_ID: The pipeline for which to get or manage permissions.
-    `
+    PIPELINE_ID: The pipeline for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1112,8 +1106,7 @@ func newUpdate() *cobra.Command {
   Updates a pipeline with the supplied configuration.
 
   Arguments:
-    PIPELINE_ID: Unique identifier for this pipeline.
-    `
+    PIPELINE_ID: Unique identifier for this pipeline.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1200,8 +1193,7 @@ func newUpdatePermissions() *cobra.Command {
   their root object.
 
   Arguments:
-    PIPELINE_ID: The pipeline for which to get or manage permissions.
-    `
+    PIPELINE_ID: The pipeline for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 

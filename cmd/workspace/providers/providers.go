@@ -67,9 +67,7 @@ func newCreate() *cobra.Command {
 
   Arguments:
     NAME: The name of the Provider.
-    
-    AUTHENTICATION_TYPE: The delta sharing authentication type.
-    `
+    AUTHENTICATION_TYPE: The delta sharing authentication type.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -155,8 +153,7 @@ func newDelete() *cobra.Command {
   the owner of the provider.
 
   Arguments:
-    NAME: Name of the provider.
-    `
+    NAME: Name of the provider.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -234,8 +231,7 @@ func newGet() *cobra.Command {
   provider.
 
   Arguments:
-    NAME: Name of the provider.
-    `
+    NAME: Name of the provider.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -377,8 +373,7 @@ func newListShares() *cobra.Command {
   * the caller is a metastore admin, or * the caller is the owner.
 
   Arguments:
-    NAME: Name of the provider in which to list shares.
-    `
+    NAME: Name of the provider in which to list shares.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -464,8 +459,7 @@ func newUpdate() *cobra.Command {
   provider.
 
   Arguments:
-    NAME: The name of the Provider.
-    `
+    NAME: The name of the Provider.`
 
 	cmd.Annotations = make(map[string]string)
 

@@ -76,8 +76,7 @@ func newCreateExperiment() *cobra.Command {
   Throws RESOURCE_ALREADY_EXISTS if a experiment with the given name exists.
 
   Arguments:
-    NAME: Experiment name.
-    `
+    NAME: Experiment name.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -236,8 +235,7 @@ func newDeleteExperiment() *cobra.Command {
   experiment are also deleted.
 
   Arguments:
-    EXPERIMENT_ID: ID of the associated experiment.
-    `
+    EXPERIMENT_ID: ID of the associated experiment.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -318,8 +316,7 @@ func newDeleteRun() *cobra.Command {
   Marks a run for deletion.
 
   Arguments:
-    RUN_ID: ID of the run to delete.
-    `
+    RUN_ID: ID of the run to delete.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -404,10 +401,9 @@ func newDeleteRuns() *cobra.Command {
 
   Arguments:
     EXPERIMENT_ID: The ID of the experiment containing the runs to delete.
-    
     MAX_TIMESTAMP_MILLIS: The maximum creation timestamp in milliseconds since the UNIX epoch for
-    deleting runs. Only runs created prior to or at this timestamp are deleted.
-    `
+      deleting runs. Only runs created prior to or at this timestamp are
+      deleted.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -496,9 +492,7 @@ func newDeleteTag() *cobra.Command {
 
   Arguments:
     RUN_ID: ID of the run that the tag was logged under. Must be provided.
-    
-    KEY: Name of the tag. Maximum size is 255 bytes. Must be provided.
-    `
+    KEY: Name of the tag. Maximum size is 255 bytes. Must be provided.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -588,8 +582,7 @@ func newGetByName() *cobra.Command {
   exists.
 
   Arguments:
-    EXPERIMENT_NAME: Name of the associated experiment.
-    `
+    EXPERIMENT_NAME: Name of the associated experiment.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -653,8 +646,7 @@ func newGetExperiment() *cobra.Command {
   Gets metadata for an experiment. This method works on deleted experiments.
 
   Arguments:
-    EXPERIMENT_ID: ID of the associated experiment.
-    `
+    EXPERIMENT_ID: ID of the associated experiment.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -723,8 +715,7 @@ func newGetHistory() *cobra.Command {
   Gets a list of all values for the specified metric for a given run.
 
   Arguments:
-    METRIC_KEY: Name of the metric.
-    `
+    METRIC_KEY: Name of the metric.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -788,8 +779,7 @@ func newGetPermissionLevels() *cobra.Command {
   Gets the permission levels that a user can have on an object.
 
   Arguments:
-    EXPERIMENT_ID: The experiment for which to get or manage permissions.
-    `
+    EXPERIMENT_ID: The experiment for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -854,8 +844,7 @@ func newGetPermissions() *cobra.Command {
   from their root object.
 
   Arguments:
-    EXPERIMENT_ID: The experiment for which to get or manage permissions.
-    `
+    EXPERIMENT_ID: The experiment for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -926,8 +915,7 @@ func newGetRun() *cobra.Command {
   these values.
 
   Arguments:
-    RUN_ID: ID of the run to fetch. Must be provided.
-    `
+    RUN_ID: ID of the run to fetch. Must be provided.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1309,11 +1297,8 @@ func newLogMetric() *cobra.Command {
 
   Arguments:
     KEY: Name of the metric.
-    
     VALUE: Double value of the metric being logged.
-    
-    TIMESTAMP: Unix timestamp in milliseconds at the time metric was logged.
-    `
+    TIMESTAMP: Unix timestamp in milliseconds at the time metric was logged.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1485,9 +1470,7 @@ func newLogParam() *cobra.Command {
 
   Arguments:
     KEY: Name of the param. Maximum size is 255 bytes.
-    
-    VALUE: String value of the param being logged. Maximum size is 500 bytes.
-    `
+    VALUE: String value of the param being logged. Maximum size is 500 bytes.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1576,8 +1559,7 @@ func newRestoreExperiment() *cobra.Command {
   permanently deleted.
 
   Arguments:
-    EXPERIMENT_ID: ID of the associated experiment.
-    `
+    EXPERIMENT_ID: ID of the associated experiment.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1658,8 +1640,7 @@ func newRestoreRun() *cobra.Command {
   Restores a deleted run.
 
   Arguments:
-    RUN_ID: ID of the run to restore.
-    `
+    RUN_ID: ID of the run to restore.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1744,11 +1725,9 @@ func newRestoreRuns() *cobra.Command {
 
   Arguments:
     EXPERIMENT_ID: The ID of the experiment containing the runs to restore.
-    
     MIN_TIMESTAMP_MILLIS: The minimum deletion timestamp in milliseconds since the UNIX epoch for
-    restoring runs. Only runs deleted no earlier than this timestamp are
-    restored.
-    `
+      restoring runs. Only runs deleted no earlier than this timestamp are
+      restored.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1987,14 +1966,11 @@ func newSetExperimentTag() *cobra.Command {
 
   Arguments:
     EXPERIMENT_ID: ID of the experiment under which to log the tag. Must be provided.
-    
     KEY: Name of the tag. Maximum size depends on storage backend. All storage
-    backends are guaranteed to support key values up to 250 bytes in size.
-    
+      backends are guaranteed to support key values up to 250 bytes in size.
     VALUE: String value of the tag being logged. Maximum size depends on storage
-    backend. All storage backends are guaranteed to support key values up to
-    5000 bytes in size.
-    `
+      backend. All storage backends are guaranteed to support key values up to
+      5000 bytes in size.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -2084,8 +2060,7 @@ func newSetPermissions() *cobra.Command {
   their root object.
 
   Arguments:
-    EXPERIMENT_ID: The experiment for which to get or manage permissions.
-    `
+    EXPERIMENT_ID: The experiment for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -2162,12 +2137,10 @@ func newSetTag() *cobra.Command {
 
   Arguments:
     KEY: Name of the tag. Maximum size depends on storage backend. All storage
-    backends are guaranteed to support key values up to 250 bytes in size.
-    
+      backends are guaranteed to support key values up to 250 bytes in size.
     VALUE: String value of the tag being logged. Maximum size depends on storage
-    backend. All storage backends are guaranteed to support key values up to
-    5000 bytes in size.
-    `
+      backend. All storage backends are guaranteed to support key values up to
+      5000 bytes in size.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -2253,8 +2226,7 @@ func newUpdateExperiment() *cobra.Command {
   Updates experiment metadata.
 
   Arguments:
-    EXPERIMENT_ID: ID of the associated experiment.
-    `
+    EXPERIMENT_ID: ID of the associated experiment.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -2338,8 +2310,7 @@ func newUpdatePermissions() *cobra.Command {
   from their root object.
 
   Arguments:
-    EXPERIMENT_ID: The experiment for which to get or manage permissions.
-    `
+    EXPERIMENT_ID: The experiment for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 

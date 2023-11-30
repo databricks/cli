@@ -71,9 +71,7 @@ func newGet() *cobra.Command {
 
   Arguments:
     SECURABLE_TYPE: Type of securable.
-    
-    FULL_NAME: Full name of securable.
-    `
+    FULL_NAME: Full name of securable.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -144,9 +142,7 @@ func newGetEffective() *cobra.Command {
 
   Arguments:
     SECURABLE_TYPE: Type of securable.
-    
-    FULL_NAME: Full name of securable.
-    `
+    FULL_NAME: Full name of securable.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -219,9 +215,7 @@ func newUpdate() *cobra.Command {
 
   Arguments:
     SECURABLE_TYPE: Type of securable.
-    
-    FULL_NAME: Full name of securable.
-    `
+    FULL_NAME: Full name of securable.`
 
 	cmd.Annotations = make(map[string]string)
 

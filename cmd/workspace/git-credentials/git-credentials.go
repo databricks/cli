@@ -72,9 +72,8 @@ func newCreate() *cobra.Command {
 
   Arguments:
     GIT_PROVIDER: Git provider. This field is case-insensitive. The available Git providers
-    are gitHub, bitbucketCloud, gitLab, azureDevOpsServices, gitHubEnterprise,
-    bitbucketServer, gitLabEnterpriseEdition and awsCodeCommit.
-    `
+      are gitHub, bitbucketCloud, gitLab, azureDevOpsServices, gitHubEnterprise,
+      bitbucketServer, gitLabEnterpriseEdition and awsCodeCommit.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -153,8 +152,7 @@ func newDelete() *cobra.Command {
   Deletes the specified Git credential.
 
   Arguments:
-    CREDENTIAL_ID: The ID for the corresponding credential to access.
-    `
+    CREDENTIAL_ID: The ID for the corresponding credential to access.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -233,8 +231,7 @@ func newGet() *cobra.Command {
   Gets the Git credential with the specified credential ID.
 
   Arguments:
-    CREDENTIAL_ID: The ID for the corresponding credential to access.
-    `
+    CREDENTIAL_ID: The ID for the corresponding credential to access.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -368,8 +365,7 @@ func newUpdate() *cobra.Command {
   Updates the specified Git credential.
 
   Arguments:
-    CREDENTIAL_ID: The ID for the corresponding credential to access.
-    `
+    CREDENTIAL_ID: The ID for the corresponding credential to access.`
 
 	cmd.Annotations = make(map[string]string)
 

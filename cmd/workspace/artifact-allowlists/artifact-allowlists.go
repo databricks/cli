@@ -61,8 +61,7 @@ func newGet() *cobra.Command {
   metastore admin or have the **MANAGE ALLOWLIST** privilege on the metastore.
 
   Arguments:
-    ARTIFACT_TYPE: The artifact type of the allowlist.
-    `
+    ARTIFACT_TYPE: The artifact type of the allowlist.`
 
 	cmd.Annotations = make(map[string]string)
 

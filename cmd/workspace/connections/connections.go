@@ -141,8 +141,7 @@ func newDelete() *cobra.Command {
   Deletes the connection that matches the supplied name.
 
   Arguments:
-    NAME_ARG: The name of the connection to be deleted.
-    `
+    NAME_ARG: The name of the connection to be deleted.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -218,8 +217,7 @@ func newGet() *cobra.Command {
   Gets a connection from it's name.
 
   Arguments:
-    NAME_ARG: Name of the connection.
-    `
+    NAME_ARG: Name of the connection.`
 
 	cmd.Annotations = make(map[string]string)
 

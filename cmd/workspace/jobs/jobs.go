@@ -156,8 +156,7 @@ func newCancelRun() *cobra.Command {
   still be running when this request completes.
 
   Arguments:
-    RUN_ID: This field is required.
-    `
+    RUN_ID: This field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -329,8 +328,7 @@ func newDelete() *cobra.Command {
   Deletes a job.
 
   Arguments:
-    JOB_ID: The canonical identifier of the job to delete. This field is required.
-    `
+    JOB_ID: The canonical identifier of the job to delete. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -418,8 +416,7 @@ func newDeleteRun() *cobra.Command {
   Deletes a non-active run. Returns an error if the run is active.
 
   Arguments:
-    RUN_ID: The canonical identifier of the run for which to retrieve the metadata.
-    `
+    RUN_ID: The canonical identifier of the run for which to retrieve the metadata.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -507,8 +504,7 @@ func newExportRun() *cobra.Command {
   Export and retrieve the job run task.
 
   Arguments:
-    RUN_ID: The canonical identifier for the run. This field is required.
-    `
+    RUN_ID: The canonical identifier for the run. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -588,8 +584,7 @@ func newGet() *cobra.Command {
 
   Arguments:
     JOB_ID: The canonical identifier of the job to retrieve information about. This
-    field is required.
-    `
+      field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -668,8 +663,7 @@ func newGetPermissionLevels() *cobra.Command {
   Gets the permission levels that a user can have on an object.
 
   Arguments:
-    JOB_ID: The job for which to get or manage permissions.
-    `
+    JOB_ID: The job for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -746,8 +740,7 @@ func newGetPermissions() *cobra.Command {
   object.
 
   Arguments:
-    JOB_ID: The job for which to get or manage permissions.
-    `
+    JOB_ID: The job for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -831,9 +824,8 @@ func newGetRun() *cobra.Command {
   Retrieve the metadata of a run.
 
   Arguments:
-    RUN_ID: The canonical identifier of the run for which to retrieve the metadata. This
-    field is required.
-    `
+    RUN_ID: The canonical identifier of the run for which to retrieve the metadata.
+      This field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -921,8 +913,7 @@ func newGetRunOutput() *cobra.Command {
   60 days, you must save old run results before they expire.
 
   Arguments:
-    RUN_ID: The canonical identifier for the run. This field is required.
-    `
+    RUN_ID: The canonical identifier for the run. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1159,8 +1150,7 @@ func newRepairRun() *cobra.Command {
   for the original job run.
 
   Arguments:
-    RUN_ID: The job run ID of the run to repair. The run must not be in progress.
-    `
+    RUN_ID: The job run ID of the run to repair. The run must not be in progress.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1350,8 +1340,7 @@ func newRunNow() *cobra.Command {
   Run a job and return the run_id of the triggered run.
 
   Arguments:
-    JOB_ID: The ID of the job to be executed
-    `
+    JOB_ID: The ID of the job to be executed`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1461,8 +1450,7 @@ func newSetPermissions() *cobra.Command {
   object.
 
   Arguments:
-    JOB_ID: The job for which to get or manage permissions.
-    `
+    JOB_ID: The job for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1657,8 +1645,7 @@ func newUpdate() *cobra.Command {
   to overwrite all job settings.
 
   Arguments:
-    JOB_ID: The canonical identifier of the job to update. This field is required.
-    `
+    JOB_ID: The canonical identifier of the job to update. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1749,8 +1736,7 @@ func newUpdatePermissions() *cobra.Command {
   object.
 
   Arguments:
-    JOB_ID: The job for which to get or manage permissions.
-    `
+    JOB_ID: The job for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 

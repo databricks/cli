@@ -150,8 +150,7 @@ func newDelete() *cobra.Command {
   objects associated with the user.
 
   Arguments:
-    ID: Unique ID for a user in the Databricks workspace.
-    `
+    ID: Unique ID for a user in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -235,8 +234,7 @@ func newGet() *cobra.Command {
   Gets information for a specific user in Databricks workspace.
 
   Arguments:
-    ID: Unique ID for a user in the Databricks workspace.
-    `
+    ID: Unique ID for a user in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -482,8 +480,7 @@ func newPatch() *cobra.Command {
   specific user attributes.
 
   Arguments:
-    ID: Unique ID for a user in the Databricks workspace.
-    `
+    ID: Unique ID for a user in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -651,8 +648,7 @@ func newUpdate() *cobra.Command {
 
   Arguments:
     ID: Databricks user ID. This is automatically set by Databricks. Any value
-    provided by the client will be ignored.
-    `
+      provided by the client will be ignored.`
 
 	cmd.Annotations = make(map[string]string)
 

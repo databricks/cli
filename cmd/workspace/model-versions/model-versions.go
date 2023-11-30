@@ -71,9 +71,7 @@ func newDelete() *cobra.Command {
 
   Arguments:
     FULL_NAME: The three-level (fully qualified) name of the model version
-    
-    VERSION: The integer version number of the model version
-    `
+    VERSION: The integer version number of the model version`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -147,9 +145,7 @@ func newGet() *cobra.Command {
 
   Arguments:
     FULL_NAME: The three-level (fully qualified) name of the model version
-    
-    VERSION: The integer version number of the model version
-    `
+    VERSION: The integer version number of the model version`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -223,9 +219,7 @@ func newGetByAlias() *cobra.Command {
 
   Arguments:
     FULL_NAME: The three-level (fully qualified) name of the registered model
-    
-    ALIAS: The name of the alias
-    `
+    ALIAS: The name of the alias`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -304,9 +298,8 @@ func newList() *cobra.Command {
   There is no guarantee of a specific ordering of the elements in the response.
 
   Arguments:
-    FULL_NAME: The full three-level name of the registered model under which to list model
-    versions
-    `
+    FULL_NAME: The full three-level name of the registered model under which to list
+      model versions`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -382,9 +375,7 @@ func newUpdate() *cobra.Command {
 
   Arguments:
     FULL_NAME: The three-level (fully qualified) name of the model version
-    
-    VERSION: The integer version number of the model version
-    `
+    VERSION: The integer version number of the model version`
 
 	cmd.Annotations = make(map[string]string)
 

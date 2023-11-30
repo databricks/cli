@@ -89,9 +89,7 @@ func newChangeOwner() *cobra.Command {
 
   Arguments:
     CLUSTER_ID: <needs content added>
-    
-    OWNER_USERNAME: New owner of the cluster_id after this RPC.
-    `
+    OWNER_USERNAME: New owner of the cluster_id after this RPC.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -216,9 +214,8 @@ func newCreate() *cobra.Command {
 
   Arguments:
     SPARK_VERSION: The Spark version of the cluster, e.g. 3.3.x-scala2.11. A list of
-    available Spark versions can be retrieved by using the
-    :method:clusters/sparkVersions API call.
-    `
+      available Spark versions can be retrieved by using the
+      :method:clusters/sparkVersions API call.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -319,8 +316,7 @@ func newDelete() *cobra.Command {
   TERMINATED state, nothing will happen.
 
   Arguments:
-    CLUSTER_ID: The cluster to be terminated.
-    `
+    CLUSTER_ID: The cluster to be terminated.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -462,11 +458,9 @@ func newEdit() *cobra.Command {
 
   Arguments:
     CLUSTER_ID: ID of the cluser
-    
     SPARK_VERSION: The Spark version of the cluster, e.g. 3.3.x-scala2.11. A list of
-    available Spark versions can be retrieved by using the
-    :method:clusters/sparkVersions API call.
-    `
+      available Spark versions can be retrieved by using the
+      :method:clusters/sparkVersions API call.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -571,8 +565,7 @@ func newEvents() *cobra.Command {
   nparameters necessary to request the next page of events.
 
   Arguments:
-    CLUSTER_ID: The ID of the cluster to retrieve events about.
-    `
+    CLUSTER_ID: The ID of the cluster to retrieve events about.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -661,8 +654,7 @@ func newGet() *cobra.Command {
   described while they are running, or up to 60 days after they are terminated.
 
   Arguments:
-    CLUSTER_ID: The cluster about which to retrieve information.
-    `
+    CLUSTER_ID: The cluster about which to retrieve information.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -738,8 +730,7 @@ func newGetPermissionLevels() *cobra.Command {
   Gets the permission levels that a user can have on an object.
 
   Arguments:
-    CLUSTER_ID: The cluster for which to get or manage permissions.
-    `
+    CLUSTER_ID: The cluster for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -816,8 +807,7 @@ func newGetPermissions() *cobra.Command {
   root object.
 
   Arguments:
-    CLUSTER_ID: The cluster for which to get or manage permissions.
-    `
+    CLUSTER_ID: The cluster for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1067,8 +1057,7 @@ func newPermanentDelete() *cobra.Command {
   deleted clusters.
 
   Arguments:
-    CLUSTER_ID: The cluster to be deleted.
-    `
+    CLUSTER_ID: The cluster to be deleted.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1155,8 +1144,7 @@ func newPin() *cobra.Command {
   effect. This API can only be called by workspace admins.
 
   Arguments:
-    CLUSTER_ID: <needs content added>
-    `
+    CLUSTER_ID: <needs content added>`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1250,8 +1238,7 @@ func newResize() *cobra.Command {
   the cluster is in a RUNNING state.
 
   Arguments:
-    CLUSTER_ID: The cluster to be resized.
-    `
+    CLUSTER_ID: The cluster to be resized.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1356,8 +1343,7 @@ func newRestart() *cobra.Command {
   in a RUNNING state, nothing will happen.
 
   Arguments:
-    CLUSTER_ID: The cluster to be started.
-    `
+    CLUSTER_ID: The cluster to be started.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1457,8 +1443,7 @@ func newSetPermissions() *cobra.Command {
   root object.
 
   Arguments:
-    CLUSTER_ID: The cluster for which to get or manage permissions.
-    `
+    CLUSTER_ID: The cluster for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1603,8 +1588,7 @@ func newStart() *cobra.Command {
   happen. * Clusters launched to run a job cannot be started.
 
   Arguments:
-    CLUSTER_ID: The cluster to be started.
-    `
+    CLUSTER_ID: The cluster to be started.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1703,8 +1687,7 @@ func newUnpin() *cobra.Command {
   This API can only be called by workspace admins.
 
   Arguments:
-    CLUSTER_ID: <needs content added>
-    `
+    CLUSTER_ID: <needs content added>`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1792,8 +1775,7 @@ func newUpdatePermissions() *cobra.Command {
   their root object.
 
   Arguments:
-    CLUSTER_ID: The cluster for which to get or manage permissions.
-    `
+    CLUSTER_ID: The cluster for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 

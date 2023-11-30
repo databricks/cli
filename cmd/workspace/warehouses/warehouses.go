@@ -167,8 +167,7 @@ func newDelete() *cobra.Command {
   Deletes a SQL warehouse.
 
   Arguments:
-    ID: Required. Id of the SQL warehouse.
-    `
+    ID: Required. Id of the SQL warehouse.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -265,8 +264,7 @@ func newEdit() *cobra.Command {
   Updates the configuration for a SQL warehouse.
 
   Arguments:
-    ID: Required. Id of the warehouse to configure.
-    `
+    ID: Required. Id of the warehouse to configure.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -372,8 +370,7 @@ func newGet() *cobra.Command {
   Gets the information for a single SQL warehouse.
 
   Arguments:
-    ID: Required. Id of the SQL warehouse.
-    `
+    ID: Required. Id of the SQL warehouse.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -449,8 +446,7 @@ func newGetPermissionLevels() *cobra.Command {
   Gets the permission levels that a user can have on an object.
 
   Arguments:
-    WAREHOUSE_ID: The SQL warehouse for which to get or manage permissions.
-    `
+    WAREHOUSE_ID: The SQL warehouse for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -527,8 +523,7 @@ func newGetPermissions() *cobra.Command {
   permissions from their root object.
 
   Arguments:
-    WAREHOUSE_ID: The SQL warehouse for which to get or manage permissions.
-    `
+    WAREHOUSE_ID: The SQL warehouse for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -719,8 +714,7 @@ func newSetPermissions() *cobra.Command {
   from their root object.
 
   Arguments:
-    WAREHOUSE_ID: The SQL warehouse for which to get or manage permissions.
-    `
+    WAREHOUSE_ID: The SQL warehouse for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -886,8 +880,7 @@ func newStart() *cobra.Command {
   Starts a SQL warehouse.
 
   Arguments:
-    ID: Required. Id of the SQL warehouse.
-    `
+    ID: Required. Id of the SQL warehouse.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -987,8 +980,7 @@ func newStop() *cobra.Command {
   Stops a SQL warehouse.
 
   Arguments:
-    ID: Required. Id of the SQL warehouse.
-    `
+    ID: Required. Id of the SQL warehouse.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1088,8 +1080,7 @@ func newUpdatePermissions() *cobra.Command {
   permissions from their root object.
 
   Arguments:
-    WAREHOUSE_ID: The SQL warehouse for which to get or manage permissions.
-    `
+    WAREHOUSE_ID: The SQL warehouse for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 

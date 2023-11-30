@@ -157,8 +157,7 @@ func newDelete() *cobra.Command {
   Deletes an IP access list, specified by its list ID.
 
   Arguments:
-    IP_ACCESS_LIST_ID: The ID for the corresponding IP access list.
-    `
+    IP_ACCESS_LIST_ID: The ID for the corresponding IP access list.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -234,8 +233,7 @@ func newGet() *cobra.Command {
   Gets an IP access list, specified by its list ID.
 
   Arguments:
-    IP_ACCESS_LIST_ID: The ID for the corresponding IP access list.
-    `
+    IP_ACCESS_LIST_ID: The ID for the corresponding IP access list.`
 
 	cmd.Annotations = make(map[string]string)
 

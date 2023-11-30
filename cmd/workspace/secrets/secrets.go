@@ -77,8 +77,7 @@ func newCreateScope() *cobra.Command {
   in a workspace is 100.
 
   Arguments:
-    SCOPE: Scope name requested by the user. Scope names are unique.
-    `
+    SCOPE: Scope name requested by the user. Scope names are unique.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -165,9 +164,7 @@ func newDeleteAcl() *cobra.Command {
 
   Arguments:
     SCOPE: The name of the scope to remove permissions from.
-    
-    PRINCIPAL: The principal to remove an existing ACL from.
-    `
+    PRINCIPAL: The principal to remove an existing ACL from.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -255,8 +252,7 @@ func newDeleteScope() *cobra.Command {
   call.
 
   Arguments:
-    SCOPE: Name of the scope to delete.
-    `
+    SCOPE: Name of the scope to delete.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -343,9 +339,7 @@ func newDeleteSecret() *cobra.Command {
 
   Arguments:
     SCOPE: The name of the scope that contains the secret to delete.
-    
-    KEY: Name of the secret to delete.
-    `
+    KEY: Name of the secret to delete.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -433,9 +427,7 @@ func newGetAcl() *cobra.Command {
 
   Arguments:
     SCOPE: The name of the scope to fetch ACL information from.
-    
-    PRINCIPAL: The principal to fetch ACL information for.
-    `
+    PRINCIPAL: The principal to fetch ACL information for.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -512,9 +504,7 @@ func newGetSecret() *cobra.Command {
 
   Arguments:
     SCOPE: The name of the scope to fetch secret information from.
-    
-    KEY: The key to fetch secret for.
-    `
+    KEY: The key to fetch secret for.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -584,8 +574,7 @@ func newListAcls() *cobra.Command {
   call.
 
   Arguments:
-    SCOPE: The name of the scope to fetch ACL information from.
-    `
+    SCOPE: The name of the scope to fetch ACL information from.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -707,8 +696,7 @@ func newListSecrets() *cobra.Command {
   call.
 
   Arguments:
-    SCOPE: The name of the scope to list secrets within.
-    `
+    SCOPE: The name of the scope to list secrets within.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -800,11 +788,8 @@ func newPutAcl() *cobra.Command {
 
   Arguments:
     SCOPE: The name of the scope to apply permissions to.
-    
     PRINCIPAL: The principal in which the permission is applied.
-    
-    PERMISSION: The permission level applied to the principal.
-    `
+    PERMISSION: The permission level applied to the principal.`
 
 	cmd.Annotations = make(map[string]string)
 

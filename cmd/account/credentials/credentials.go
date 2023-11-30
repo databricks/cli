@@ -142,8 +142,7 @@ func newDelete() *cobra.Command {
   workspace.
 
   Arguments:
-    CREDENTIALS_ID: Databricks Account API credential configuration ID
-    `
+    CREDENTIALS_ID: Databricks Account API credential configuration ID`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -220,8 +219,7 @@ func newGet() *cobra.Command {
   specified by ID.
 
   Arguments:
-    CREDENTIALS_ID: Databricks Account API credential configuration ID
-    `
+    CREDENTIALS_ID: Databricks Account API credential configuration ID`
 
 	cmd.Annotations = make(map[string]string)
 

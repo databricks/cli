@@ -141,8 +141,7 @@ func newClusterStatus() *cobra.Command {
   guarantee.
 
   Arguments:
-    CLUSTER_ID: Unique identifier of the cluster whose status should be retrieved.
-    `
+    CLUSTER_ID: Unique identifier of the cluster whose status should be retrieved.`
 
 	cmd.Annotations = make(map[string]string)
 

@@ -70,8 +70,7 @@ func newDelete() *cobra.Command {
   **USE_SCHEMA** privilege on the parent schema.
 
   Arguments:
-    FULL_NAME: Full name of the table.
-    `
+    FULL_NAME: Full name of the table.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -153,8 +152,7 @@ func newGet() *cobra.Command {
   **SELECT** privilege on it as well.
 
   Arguments:
-    FULL_NAME: Full name of the table.
-    `
+    FULL_NAME: Full name of the table.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -240,9 +238,7 @@ func newList() *cobra.Command {
 
   Arguments:
     CATALOG_NAME: Name of parent catalog for tables of interest.
-    
-    SCHEMA_NAME: Parent schema of tables.
-    `
+    SCHEMA_NAME: Parent schema of tables.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -322,8 +318,7 @@ func newListSummaries() *cobra.Command {
   There is no guarantee of a specific ordering of the elements in the array.
 
   Arguments:
-    CATALOG_NAME: Name of parent catalog for tables of interest.
-    `
+    CATALOG_NAME: Name of parent catalog for tables of interest.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -407,8 +402,7 @@ func newUpdate() *cobra.Command {
   privilege on the parent schema.
 
   Arguments:
-    FULL_NAME: Full name of the table.
-    `
+    FULL_NAME: Full name of the table.`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true

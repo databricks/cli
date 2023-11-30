@@ -103,11 +103,8 @@ func newCreate() *cobra.Command {
 
   Arguments:
     CATALOG_NAME: The name of the catalog where the schema and the registered model reside
-    
     SCHEMA_NAME: The name of the schema where the registered model resides
-    
-    NAME: The name of the registered model
-    `
+    NAME: The name of the registered model`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -198,8 +195,7 @@ func newDelete() *cobra.Command {
   schema.
 
   Arguments:
-    FULL_NAME: The three-level (fully qualified) name of the registered model
-    `
+    FULL_NAME: The three-level (fully qualified) name of the registered model`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -281,9 +277,7 @@ func newDeleteAlias() *cobra.Command {
 
   Arguments:
     FULL_NAME: The three-level (fully qualified) name of the registered model
-    
-    ALIAS: The name of the alias
-    `
+    ALIAS: The name of the alias`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -353,8 +347,7 @@ func newGet() *cobra.Command {
   the **USE_SCHEMA** privilege on the parent schema.
 
   Arguments:
-    FULL_NAME: The three-level (fully qualified) name of the registered model
-    `
+    FULL_NAME: The three-level (fully qualified) name of the registered model`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -513,11 +506,8 @@ func newSetAlias() *cobra.Command {
 
   Arguments:
     FULL_NAME: Full name of the registered model
-    
     ALIAS: The name of the alias
-    
-    VERSION_NUM: The version number of the model version to which the alias points
-    `
+    VERSION_NUM: The version number of the model version to which the alias points`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -615,8 +605,7 @@ func newUpdate() *cobra.Command {
   be updated.
 
   Arguments:
-    FULL_NAME: The three-level (fully qualified) name of the registered model
-    `
+    FULL_NAME: The three-level (fully qualified) name of the registered model`
 
 	cmd.Annotations = make(map[string]string)
 

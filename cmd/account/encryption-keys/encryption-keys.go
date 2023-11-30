@@ -158,8 +158,7 @@ func newDelete() *cobra.Command {
   delete a configuration that is associated with a running workspace.
 
   Arguments:
-    CUSTOMER_MANAGED_KEY_ID: Databricks encryption key configuration ID.
-    `
+    CUSTOMER_MANAGED_KEY_ID: Databricks encryption key configuration ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -237,8 +236,7 @@ func newGet() *cobra.Command {
   platform.",
 
   Arguments:
-    CUSTOMER_MANAGED_KEY_ID: Databricks encryption key configuration ID.
-    `
+    CUSTOMER_MANAGED_KEY_ID: Databricks encryption key configuration ID.`
 
 	cmd.Annotations = make(map[string]string)
 

@@ -63,9 +63,7 @@ func newCreate() *cobra.Command {
 
   Arguments:
     WORKSPACE_ID: Workspace ID.
-    
-    METASTORE_ID: Unity Catalog metastore ID
-    `
+    METASTORE_ID: Unity Catalog metastore ID`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -141,9 +139,7 @@ func newDelete() *cobra.Command {
 
   Arguments:
     WORKSPACE_ID: Workspace ID.
-    
-    METASTORE_ID: Unity Catalog metastore ID
-    `
+    METASTORE_ID: Unity Catalog metastore ID`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -214,8 +210,7 @@ func newGet() *cobra.Command {
   404 returned.
 
   Arguments:
-    WORKSPACE_ID: Workspace ID.
-    `
+    WORKSPACE_ID: Workspace ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -283,8 +278,7 @@ func newList() *cobra.Command {
   metastore.
 
   Arguments:
-    METASTORE_ID: Unity Catalog metastore ID
-    `
+    METASTORE_ID: Unity Catalog metastore ID`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -354,9 +348,7 @@ func newUpdate() *cobra.Command {
 
   Arguments:
     WORKSPACE_ID: Workspace ID.
-    
-    METASTORE_ID: Unity Catalog metastore ID
-    `
+    METASTORE_ID: Unity Catalog metastore ID`
 
 	cmd.Annotations = make(map[string]string)
 

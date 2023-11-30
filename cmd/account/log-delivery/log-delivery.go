@@ -211,8 +211,7 @@ func newGet() *cobra.Command {
   specified by ID.
 
   Arguments:
-    LOG_DELIVERY_CONFIGURATION_ID: Databricks log delivery configuration ID
-    `
+    LOG_DELIVERY_CONFIGURATION_ID: Databricks log delivery configuration ID`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -359,13 +358,11 @@ func newPatchStatus() *cobra.Command {
 
   Arguments:
     LOG_DELIVERY_CONFIGURATION_ID: Databricks log delivery configuration ID
-    
     STATUS: Status of log delivery configuration. Set to ENABLED (enabled) or
-    DISABLED (disabled). Defaults to ENABLED. You can [enable or disable the
-    configuration](#operation/patch-log-delivery-config-status) later. Deletion
-    of a configuration is not supported, so disable a log delivery configuration
-    that is no longer needed.
-    `
+      DISABLED (disabled). Defaults to ENABLED. You can [enable or disable
+      the configuration](#operation/patch-log-delivery-config-status) later.
+      Deletion of a configuration is not supported, so disable a log delivery
+      configuration that is no longer needed.`
 
 	cmd.Annotations = make(map[string]string)
 

@@ -74,8 +74,7 @@ func newGet() *cobra.Command {
   or an owner of the catalog.
 
   Arguments:
-    NAME: The name of the catalog.
-    `
+    NAME: The name of the catalog.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -141,9 +140,7 @@ func newGetBindings() *cobra.Command {
 
   Arguments:
     SECURABLE_TYPE: The type of the securable.
-    
-    SECURABLE_NAME: The name of the securable.
-    `
+    SECURABLE_NAME: The name of the securable.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -214,8 +211,7 @@ func newUpdate() *cobra.Command {
   admin or an owner of the catalog.
 
   Arguments:
-    NAME: The name of the catalog.
-    `
+    NAME: The name of the catalog.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -292,9 +288,7 @@ func newUpdateBindings() *cobra.Command {
 
   Arguments:
     SECURABLE_TYPE: The type of the securable.
-    
-    SECURABLE_NAME: The name of the securable.
-    `
+    SECURABLE_NAME: The name of the securable.`
 
 	cmd.Annotations = make(map[string]string)
 

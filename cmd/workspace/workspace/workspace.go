@@ -73,8 +73,7 @@ func newDelete() *cobra.Command {
   atomic.
 
   Arguments:
-    PATH: The absolute path of the notebook or directory.
-    `
+    PATH: The absolute path of the notebook or directory.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -166,9 +165,8 @@ func newExport() *cobra.Command {
   library.
 
   Arguments:
-    PATH: The absolute path of the object or directory. Exporting a directory is only
-    supported for the DBC, SOURCE, and AUTO format.
-    `
+    PATH: The absolute path of the object or directory. Exporting a directory is
+      only supported for the DBC, SOURCE, and AUTO format.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -245,9 +243,7 @@ func newGetPermissionLevels() *cobra.Command {
 
   Arguments:
     WORKSPACE_OBJECT_TYPE: The workspace object type for which to get or manage permissions.
-    
-    WORKSPACE_OBJECT_ID: The workspace object for which to get or manage permissions.
-    `
+    WORKSPACE_OBJECT_ID: The workspace object for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -314,9 +310,7 @@ func newGetPermissions() *cobra.Command {
 
   Arguments:
     WORKSPACE_OBJECT_TYPE: The workspace object type for which to get or manage permissions.
-    
-    WORKSPACE_OBJECT_ID: The workspace object for which to get or manage permissions.
-    `
+    WORKSPACE_OBJECT_ID: The workspace object for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -382,8 +376,7 @@ func newGetStatus() *cobra.Command {
   call returns an error RESOURCE_DOES_NOT_EXIST.
 
   Arguments:
-    PATH: The absolute path of the notebook or directory.
-    `
+    PATH: The absolute path of the notebook or directory.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -459,9 +452,8 @@ func newImport() *cobra.Command {
   language field.
 
   Arguments:
-    PATH: The absolute path of the object or directory. Importing a directory is only
-    supported for the DBC and SOURCE formats.
-    `
+    PATH: The absolute path of the object or directory. Importing a directory is
+      only supported for the DBC and SOURCE formats.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -544,8 +536,7 @@ func newList() *cobra.Command {
   RESOURCE_DOES_NOT_EXIST.
 
   Arguments:
-    PATH: The absolute path of the notebook or directory.
-    `
+    PATH: The absolute path of the notebook or directory.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -616,10 +607,9 @@ func newMkdirs() *cobra.Command {
   the necessary parent directories.
 
   Arguments:
-    PATH: The absolute path of the directory. If the parent directories do not exist,
-    it will also create them. If the directory already exists, this command will
-    do nothing and succeed.
-    `
+    PATH: The absolute path of the directory. If the parent directories do not
+      exist, it will also create them. If the directory already exists, this
+      command will do nothing and succeed.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -708,9 +698,7 @@ func newSetPermissions() *cobra.Command {
 
   Arguments:
     WORKSPACE_OBJECT_TYPE: The workspace object type for which to get or manage permissions.
-    
-    WORKSPACE_OBJECT_ID: The workspace object for which to get or manage permissions.
-    `
+    WORKSPACE_OBJECT_ID: The workspace object for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -787,9 +775,7 @@ func newUpdatePermissions() *cobra.Command {
 
   Arguments:
     WORKSPACE_OBJECT_TYPE: The workspace object type for which to get or manage permissions.
-    
-    WORKSPACE_OBJECT_ID: The workspace object for which to get or manage permissions.
-    `
+    WORKSPACE_OBJECT_ID: The workspace object for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 

@@ -69,8 +69,7 @@ func newCreate() *cobra.Command {
   pre-existing VPC and subnets.
 
   Arguments:
-    NETWORK_NAME: The human-readable name of the network configuration.
-    `
+    NETWORK_NAME: The human-readable name of the network configuration.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -154,8 +153,7 @@ func newDelete() *cobra.Command {
   platform.
 
   Arguments:
-    NETWORK_ID: Databricks Account API network configuration ID.
-    `
+    NETWORK_ID: Databricks Account API network configuration ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -232,8 +230,7 @@ func newGet() *cobra.Command {
   resources.
 
   Arguments:
-    NETWORK_ID: Databricks Account API network configuration ID.
-    `
+    NETWORK_ID: Databricks Account API network configuration ID.`
 
 	cmd.Annotations = make(map[string]string)
 

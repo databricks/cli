@@ -81,11 +81,8 @@ func newCreate() *cobra.Command {
 
   Arguments:
     NAME: Name of the external location.
-    
     URL: Path URL of the external location.
-    
-    CREDENTIAL_NAME: Name of the storage credential used with this location.
-    `
+    CREDENTIAL_NAME: Name of the storage credential used with this location.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -173,8 +170,7 @@ func newDelete() *cobra.Command {
   the owner of the external location.
 
   Arguments:
-    NAME: Name of the external location.
-    `
+    NAME: Name of the external location.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -240,8 +236,7 @@ func newGet() *cobra.Command {
   privilege on the external location.
 
   Arguments:
-    NAME: Name of the external location.
-    `
+    NAME: Name of the external location.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -371,8 +366,7 @@ func newUpdate() *cobra.Command {
   can only update the name of the external location.
 
   Arguments:
-    NAME: Name of the external location.
-    `
+    NAME: Name of the external location.`
 
 	cmd.Annotations = make(map[string]string)
 
