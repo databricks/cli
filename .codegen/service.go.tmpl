@@ -106,7 +106,7 @@ func new{{.PascalName}}() *cobra.Command {
 			{{else if .Entity.ArrayValue }}// TODO: array: {{.Name}}
 			{{else if .Entity.MapValue }}// TODO: map via StringToStringVar: {{.Name}}
 			{{else if .Entity.IsEmpty }}// TODO: output-only field
-			{{else if .Entity.Enum }}cmd.Flags().Var(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", `{{.Summary | without "`"}}`)
+			{{else if .Entity.Enum }}cmd.Flags().Var(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", `{{.Summary | without "`" | trimSuffix "."}}. Supported values: [{{range $index, $element := .Entity.Enum}}{{if ne $index 0}}, {{end}}{{$element.Name}}{{end}}]`)
 			{{else}}cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{$method.CamelName}}Req.{{.PascalName}}, `{{.Summary | without "`"}}`)
 			{{end}}
 		{{- end -}}

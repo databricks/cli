@@ -146,7 +146,7 @@ func newExport() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Flags().Var(&exportReq.Format, "format", `This specifies the format of the exported file.`)
+	cmd.Flags().Var(&exportReq.Format, "format", `This specifies the format of the exported file. Supported values: [AUTO, DBC, HTML, JUPYTER, R_MARKDOWN, SOURCE]`)
 
 	cmd.Use = "export PATH"
 	cmd.Short = `Export a workspace object.`
@@ -418,8 +418,8 @@ func newImport() *cobra.Command {
 	cmd.Flags().Var(&importJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&importReq.Content, "content", importReq.Content, `The base64-encoded content.`)
-	cmd.Flags().Var(&importReq.Format, "format", `This specifies the format of the file to be imported.`)
-	cmd.Flags().Var(&importReq.Language, "language", `The language of the object.`)
+	cmd.Flags().Var(&importReq.Format, "format", `This specifies the format of the file to be imported. Supported values: [AUTO, DBC, HTML, JUPYTER, R_MARKDOWN, SOURCE]`)
+	cmd.Flags().Var(&importReq.Language, "language", `The language of the object. Supported values: [PYTHON, R, SCALA, SQL]`)
 	cmd.Flags().BoolVar(&importReq.Overwrite, "overwrite", importReq.Overwrite, `The flag that specifies whether to overwrite existing object.`)
 
 	cmd.Use = "import PATH"

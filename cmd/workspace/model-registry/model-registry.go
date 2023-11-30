@@ -504,7 +504,7 @@ func newCreateWebhook() *cobra.Command {
 	// TODO: complex arg: http_url_spec
 	// TODO: complex arg: job_spec
 	cmd.Flags().StringVar(&createWebhookReq.ModelName, "model-name", createWebhookReq.ModelName, `Name of the model whose events would trigger this webhook.`)
-	cmd.Flags().Var(&createWebhookReq.Status, "status", `Enable or disable triggering the webhook, or put the webhook into test mode.`)
+	cmd.Flags().Var(&createWebhookReq.Status, "status", `Enable or disable triggering the webhook, or put the webhook into test mode. Supported values: [ACTIVE, DISABLED, TEST_MODE]`)
 
 	cmd.Use = "create-webhook"
 	cmd.Short = `Create a webhook.`
@@ -2136,7 +2136,7 @@ func newTestRegistryWebhook() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&testRegistryWebhookJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().Var(&testRegistryWebhookReq.Event, "event", `If event is specified, the test trigger uses the specified event.`)
+	cmd.Flags().Var(&testRegistryWebhookReq.Event, "event", `If event is specified, the test trigger uses the specified event. Supported values: [COMMENT_CREATED, MODEL_VERSION_CREATED, MODEL_VERSION_TAG_SET, MODEL_VERSION_TRANSITIONED_STAGE, MODEL_VERSION_TRANSITIONED_TO_ARCHIVED, MODEL_VERSION_TRANSITIONED_TO_PRODUCTION, MODEL_VERSION_TRANSITIONED_TO_STAGING, REGISTERED_MODEL_CREATED, TRANSITION_REQUEST_CREATED, TRANSITION_REQUEST_TO_ARCHIVED_CREATED, TRANSITION_REQUEST_TO_PRODUCTION_CREATED, TRANSITION_REQUEST_TO_STAGING_CREATED]`)
 
 	cmd.Use = "test-registry-webhook ID"
 	cmd.Short = `Test a webhook.`
@@ -2637,7 +2637,7 @@ func newUpdateWebhook() *cobra.Command {
 	// TODO: array: events
 	// TODO: complex arg: http_url_spec
 	// TODO: complex arg: job_spec
-	cmd.Flags().Var(&updateWebhookReq.Status, "status", `Enable or disable triggering the webhook, or put the webhook into test mode.`)
+	cmd.Flags().Var(&updateWebhookReq.Status, "status", `Enable or disable triggering the webhook, or put the webhook into test mode. Supported values: [ACTIVE, DISABLED, TEST_MODE]`)
 
 	cmd.Use = "update-webhook ID"
 	cmd.Short = `Update a webhook.`

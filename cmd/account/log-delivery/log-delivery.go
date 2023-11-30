@@ -278,7 +278,7 @@ func newList() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Flags().StringVar(&listReq.CredentialsId, "credentials-id", listReq.CredentialsId, `Filter by credential configuration ID.`)
-	cmd.Flags().Var(&listReq.Status, "status", `Filter by status ENABLED or DISABLED.`)
+	cmd.Flags().Var(&listReq.Status, "status", `Filter by status ENABLED or DISABLED. Supported values: [DISABLED, ENABLED]`)
 	cmd.Flags().StringVar(&listReq.StorageConfigurationId, "storage-configuration-id", listReq.StorageConfigurationId, `Filter by storage configuration ID.`)
 
 	cmd.Use = "list"
