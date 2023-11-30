@@ -1,0 +1,18 @@
+resources:
+  jobs:
+    example_job:
+      name: "Poetry example"
+      tasks:
+        - task_key: task
+
+          python_wheel_task:
+            package_name: python_wheel_poetry
+            entry_point: python_wheel_poetry
+
+          libraries:
+            - whl: ../dist/*.whl
+
+          new_cluster:
+            node_type_id: i3.xlarge
+            num_workers: 1
+            spark_version: 13.3.x-scala2.12
