@@ -42,7 +42,11 @@ func configureInteractive(cmd *cobra.Command, flags *configureFlags, cfg *config
 
 	// Ask user to specify a cluster if not already set.
 	if flags.ConfigureCluster && cfg.ClusterID == "" {
-		w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+		// Create workspace client with configuration without the profile name set.
+		w, err := databricks.NewWorkspaceClient(&databricks.Config{
+			Host:  cfg.Host,
+			Token: cfg.Token,
+		})
 		if err != nil {
 			return err
 		}
