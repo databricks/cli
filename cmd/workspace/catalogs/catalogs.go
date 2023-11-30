@@ -73,7 +73,11 @@ func newCreate() *cobra.Command {
 	cmd.Long = `Create a catalog.
   
   Creates a new catalog instance in the parent metastore if the caller is a
-  metastore admin or has the **CREATE_CATALOG** privilege.`
+  metastore admin or has the **CREATE_CATALOG** privilege.
+
+  Arguments:
+    NAME: Name of catalog.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -152,7 +156,11 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete a catalog.
   
   Deletes the catalog that matches the supplied name. The caller must be a
-  metastore admin or the owner of the catalog.`
+  metastore admin or the owner of the catalog.
+
+  Arguments:
+    NAME: The name of the catalog.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -215,7 +223,11 @@ func newGet() *cobra.Command {
   
   Gets the specified catalog in a metastore. The caller must be a metastore
   admin, the owner of the catalog, or a user that has the **USE_CATALOG**
-  privilege set for their account.`
+  privilege set for their account.
+
+  Arguments:
+    NAME: The name of the catalog.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -339,7 +351,11 @@ func newUpdate() *cobra.Command {
   
   Updates the catalog that matches the supplied name. The caller must be either
   the owner of the catalog, or a metastore admin (when changing the owner field
-  of the catalog).`
+  of the catalog).
+
+  Arguments:
+    NAME: Name of catalog.
+    `
 
 	cmd.Annotations = make(map[string]string)
 

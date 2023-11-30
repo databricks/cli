@@ -67,7 +67,13 @@ func newDelete() *cobra.Command {
   The caller must be a metastore admin or an owner of the parent registered
   model. For the latter case, the caller must also be the owner or have the
   **USE_CATALOG** privilege on the parent catalog and the **USE_SCHEMA**
-  privilege on the parent schema.`
+  privilege on the parent schema.
+
+  Arguments:
+    FULL_NAME: The three-level (fully qualified) name of the model version
+    
+    VERSION: The integer version number of the model version
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -137,7 +143,13 @@ func newGet() *cobra.Command {
   The caller must be a metastore admin or an owner of (or have the **EXECUTE**
   privilege on) the parent registered model. For the latter case, the caller
   must also be the owner or have the **USE_CATALOG** privilege on the parent
-  catalog and the **USE_SCHEMA** privilege on the parent schema.`
+  catalog and the **USE_SCHEMA** privilege on the parent schema.
+
+  Arguments:
+    FULL_NAME: The three-level (fully qualified) name of the model version
+    
+    VERSION: The integer version number of the model version
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -207,7 +219,13 @@ func newGetByAlias() *cobra.Command {
   The caller must be a metastore admin or an owner of (or have the **EXECUTE**
   privilege on) the registered model. For the latter case, the caller must also
   be the owner or have the **USE_CATALOG** privilege on the parent catalog and
-  the **USE_SCHEMA** privilege on the parent schema.`
+  the **USE_SCHEMA** privilege on the parent schema.
+
+  Arguments:
+    FULL_NAME: The three-level (fully qualified) name of the registered model
+    
+    ALIAS: The name of the alias
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -283,7 +301,12 @@ func newList() *cobra.Command {
   privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent
   schema.
   
-  There is no guarantee of a specific ordering of the elements in the response.`
+  There is no guarantee of a specific ordering of the elements in the response.
+
+  Arguments:
+    FULL_NAME: The full three-level name of the registered model under which to list model
+    versions
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -355,7 +378,13 @@ func newUpdate() *cobra.Command {
   **USE_CATALOG** privilege on the parent catalog and the **USE_SCHEMA**
   privilege on the parent schema.
   
-  Currently only the comment of the model version can be updated.`
+  Currently only the comment of the model version can be updated.
+
+  Arguments:
+    FULL_NAME: The three-level (fully qualified) name of the model version
+    
+    VERSION: The integer version number of the model version
+    `
 
 	cmd.Annotations = make(map[string]string)
 

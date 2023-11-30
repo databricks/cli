@@ -68,7 +68,13 @@ func newCreate() *cobra.Command {
 	cmd.Short = `Create init script.`
 	cmd.Long = `Create init script.
   
-  Creates a new global init script in this workspace.`
+  Creates a new global init script in this workspace.
+
+  Arguments:
+    NAME: The name of the script
+    
+    SCRIPT: The Base64-encoded content of the script.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -147,7 +153,11 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete init script.`
 	cmd.Long = `Delete init script.
   
-  Deletes a global init script.`
+  Deletes a global init script.
+
+  Arguments:
+    SCRIPT_ID: The ID of the global init script.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -220,7 +230,11 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get an init script.`
 	cmd.Long = `Get an init script.
   
-  Gets all the details of a script, including its Base64-encoded contents.`
+  Gets all the details of a script, including its Base64-encoded contents.
+
+  Arguments:
+    SCRIPT_ID: The ID of the global init script.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -350,7 +364,15 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Update init script.
   
   Updates a global init script, specifying only the fields to change. All fields
-  are optional. Unspecified fields retain their current value.`
+  are optional. Unspecified fields retain their current value.
+
+  Arguments:
+    SCRIPT_ID: The ID of the global init script.
+    
+    NAME: The name of the script
+    
+    SCRIPT: The Base64-encoded content of the script.
+    `
 
 	cmd.Annotations = make(map[string]string)
 

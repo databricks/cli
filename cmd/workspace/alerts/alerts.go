@@ -131,7 +131,11 @@ func newDelete() *cobra.Command {
   
   Deletes an alert. Deleted alerts are no longer accessible and cannot be
   restored. **Note:** Unlike queries and dashboards, alerts cannot be moved to
-  the trash.`
+  the trash.
+
+  Arguments:
+    ALERT_ID: 
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -204,7 +208,11 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get an alert.`
 	cmd.Long = `Get an alert.
   
-  Gets an alert.`
+  Gets an alert.
+
+  Arguments:
+    ALERT_ID: 
+    `
 
 	cmd.Annotations = make(map[string]string)
 

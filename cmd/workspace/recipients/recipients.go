@@ -82,7 +82,13 @@ func newCreate() *cobra.Command {
   
   Creates a new recipient with the delta sharing authentication type in the
   metastore. The caller must be a metastore admin or has the
-  **CREATE_RECIPIENT** privilege on the metastore.`
+  **CREATE_RECIPIENT** privilege on the metastore.
+
+  Arguments:
+    NAME: Name of Recipient.
+    
+    AUTHENTICATION_TYPE: The delta sharing authentication type.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -165,7 +171,11 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete a share recipient.
   
   Deletes the specified recipient from the metastore. The caller must be the
-  owner of the recipient.`
+  owner of the recipient.
+
+  Arguments:
+    NAME: Name of the recipient.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -240,7 +250,11 @@ func newGet() *cobra.Command {
   
   Gets a share recipient from the metastore if:
   
-  * the caller is the owner of the share recipient, or: * is a metastore admin`
+  * the caller is the owner of the share recipient, or: * is a metastore admin
+
+  Arguments:
+    NAME: Name of the recipient.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -380,7 +394,16 @@ func newRotateToken() *cobra.Command {
 	cmd.Long = `Rotate a token.
   
   Refreshes the specified recipient's delta sharing authentication token with
-  the provided token info. The caller must be the owner of the recipient.`
+  the provided token info. The caller must be the owner of the recipient.
+
+  Arguments:
+    NAME: The name of the recipient.
+    
+    EXISTING_TOKEN_EXPIRE_IN_SECONDS: The expiration time of the bearer token in ISO 8601 format. This will set
+    the expiration_time of existing token only to a smaller timestamp, it cannot
+    extend the expiration_time. Use 0 to expire the existing token immediately,
+    negative number will return an error.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -461,7 +484,11 @@ func newSharePermissions() *cobra.Command {
 	cmd.Long = `Get recipient share permissions.
   
   Gets the share permissions for the specified Recipient. The caller must be a
-  metastore admin or the owner of the Recipient.`
+  metastore admin or the owner of the Recipient.
+
+  Arguments:
+    NAME: The name of the Recipient.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -544,7 +571,11 @@ func newUpdate() *cobra.Command {
   
   Updates an existing recipient in the metastore. The caller must be a metastore
   admin or the owner of the recipient. If the recipient name will be updated,
-  the user must be both a metastore admin and the owner of the recipient.`
+  the user must be both a metastore admin and the owner of the recipient.
+
+  Arguments:
+    NAME: Name of Recipient.
+    `
 
 	cmd.Annotations = make(map[string]string)
 

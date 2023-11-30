@@ -135,7 +135,11 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a pipeline.`
 	cmd.Long = `Delete a pipeline.
   
-  Deletes a pipeline.`
+  Deletes a pipeline.
+
+  Arguments:
+    PIPELINE_ID: 
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -211,7 +215,11 @@ func newGet() *cobra.Command {
 
 	cmd.Use = "get PIPELINE_ID"
 	cmd.Short = `Get a pipeline.`
-	cmd.Long = `Get a pipeline.`
+	cmd.Long = `Get a pipeline.
+
+  Arguments:
+    PIPELINE_ID: 
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -284,7 +292,11 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Short = `Get pipeline permission levels.`
 	cmd.Long = `Get pipeline permission levels.
   
-  Gets the permission levels that a user can have on an object.`
+  Gets the permission levels that a user can have on an object.
+
+  Arguments:
+    PIPELINE_ID: The pipeline for which to get or manage permissions.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -358,7 +370,11 @@ func newGetPermissions() *cobra.Command {
 	cmd.Long = `Get pipeline permissions.
   
   Gets the permissions of a pipeline. Pipelines can inherit permissions from
-  their root object.`
+  their root object.
+
+  Arguments:
+    PIPELINE_ID: The pipeline for which to get or manage permissions.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -431,7 +447,13 @@ func newGetUpdate() *cobra.Command {
 	cmd.Short = `Get a pipeline update.`
 	cmd.Long = `Get a pipeline update.
   
-  Gets an update from an active pipeline.`
+  Gets an update from an active pipeline.
+
+  Arguments:
+    PIPELINE_ID: The ID of the pipeline.
+    
+    UPDATE_ID: The ID of the update.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -498,7 +520,11 @@ func newListPipelineEvents() *cobra.Command {
 	cmd.Short = `List pipeline events.`
 	cmd.Long = `List pipeline events.
   
-  Retrieves events for a pipeline.`
+  Retrieves events for a pipeline.
+
+  Arguments:
+    PIPELINE_ID: 
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -639,7 +665,11 @@ func newListUpdates() *cobra.Command {
 	cmd.Short = `List pipeline updates.`
 	cmd.Long = `List pipeline updates.
   
-  List updates for an active pipeline.`
+  List updates for an active pipeline.
+
+  Arguments:
+    PIPELINE_ID: The pipeline to return updates for.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -717,7 +747,11 @@ func newReset() *cobra.Command {
 	cmd.Short = `Reset a pipeline.`
 	cmd.Long = `Reset a pipeline.
   
-  Resets a pipeline.`
+  Resets a pipeline.
+
+  Arguments:
+    PIPELINE_ID: 
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -807,7 +841,11 @@ func newSetPermissions() *cobra.Command {
 	cmd.Long = `Set pipeline permissions.
   
   Sets permissions on a pipeline. Pipelines can inherit permissions from their
-  root object.`
+  root object.
+
+  Arguments:
+    PIPELINE_ID: The pipeline for which to get or manage permissions.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -894,7 +932,11 @@ func newStartUpdate() *cobra.Command {
 	cmd.Long = `Start a pipeline.
   
   Starts a new update for the pipeline. If there is already an active update for
-  the pipeline, the request will fail and the active update will remain running.`
+  the pipeline, the request will fail and the active update will remain running.
+
+  Arguments:
+    PIPELINE_ID: 
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -979,7 +1021,11 @@ func newStop() *cobra.Command {
 	cmd.Long = `Stop a pipeline.
   
   Stops the pipeline by canceling the active update. If there is no active
-  update for the pipeline, this request is a no-op.`
+  update for the pipeline, this request is a no-op.
+
+  Arguments:
+    PIPELINE_ID: 
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1087,7 +1133,11 @@ func newUpdate() *cobra.Command {
 	cmd.Short = `Edit a pipeline.`
 	cmd.Long = `Edit a pipeline.
   
-  Updates a pipeline with the supplied configuration.`
+  Updates a pipeline with the supplied configuration.
+
+  Arguments:
+    PIPELINE_ID: Unique identifier for this pipeline.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1171,7 +1221,11 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Long = `Update pipeline permissions.
   
   Updates the permissions on a pipeline. Pipelines can inherit permissions from
-  their root object.`
+  their root object.
+
+  Arguments:
+    PIPELINE_ID: The pipeline for which to get or manage permissions.
+    `
 
 	cmd.Annotations = make(map[string]string)
 

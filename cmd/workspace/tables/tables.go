@@ -67,7 +67,11 @@ func newDelete() *cobra.Command {
   be the owner of the parent catalog, have the **USE_CATALOG** privilege on the
   parent catalog and be the owner of the parent schema, or be the owner of the
   table and have the **USE_CATALOG** privilege on the parent catalog and the
-  **USE_SCHEMA** privilege on the parent schema.`
+  **USE_SCHEMA** privilege on the parent schema.
+
+  Arguments:
+    FULL_NAME: Full name of the table.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -146,7 +150,11 @@ func newGet() *cobra.Command {
   must be a metastore admin, be the owner of the table and have the
   **USE_CATALOG** privilege on the parent catalog and the **USE_SCHEMA**
   privilege on the parent schema, or be the owner of the table and have the
-  **SELECT** privilege on it as well.`
+  **SELECT** privilege on it as well.
+
+  Arguments:
+    FULL_NAME: Full name of the table.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -228,7 +236,13 @@ func newList() *cobra.Command {
   **SELECT** privilege on) the table. For the latter case, the caller must also
   be the owner or have the **USE_CATALOG** privilege on the parent catalog and
   the **USE_SCHEMA** privilege on the parent schema. There is no guarantee of a
-  specific ordering of the elements in the array.`
+  specific ordering of the elements in the array.
+
+  Arguments:
+    CATALOG_NAME: Name of parent catalog for tables of interest.
+    
+    SCHEMA_NAME: Parent schema of tables.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -305,7 +319,11 @@ func newListSummaries() *cobra.Command {
   or **USE_SCHEMA** privilege on the schema, provided that the user also has
   ownership or the **USE_CATALOG** privilege on the parent catalog.
   
-  There is no guarantee of a specific ordering of the elements in the array.`
+  There is no guarantee of a specific ordering of the elements in the array.
+
+  Arguments:
+    CATALOG_NAME: Name of parent catalog for tables of interest.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -386,7 +404,11 @@ func newUpdate() *cobra.Command {
   catalog, have the **USE_CATALOG** privilege on the parent catalog and be the
   owner of the parent schema, or be the owner of the table and have the
   **USE_CATALOG** privilege on the parent catalog and the **USE_SCHEMA**
-  privilege on the parent schema.`
+  privilege on the parent schema.
+
+  Arguments:
+    FULL_NAME: Full name of the table.
+    `
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true

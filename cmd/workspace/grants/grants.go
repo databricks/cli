@@ -67,7 +67,13 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get permissions.`
 	cmd.Long = `Get permissions.
   
-  Gets the permissions for a securable.`
+  Gets the permissions for a securable.
+
+  Arguments:
+    SECURABLE_TYPE: Type of securable.
+    
+    FULL_NAME: Full name of securable.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -134,7 +140,13 @@ func newGetEffective() *cobra.Command {
 	cmd.Short = `Get effective permissions.`
 	cmd.Long = `Get effective permissions.
   
-  Gets the effective permissions for a securable.`
+  Gets the effective permissions for a securable.
+
+  Arguments:
+    SECURABLE_TYPE: Type of securable.
+    
+    FULL_NAME: Full name of securable.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -203,7 +215,13 @@ func newUpdate() *cobra.Command {
 	cmd.Short = `Update permissions.`
 	cmd.Long = `Update permissions.
   
-  Updates the permissions for a securable.`
+  Updates the permissions for a securable.
+
+  Arguments:
+    SECURABLE_TYPE: Type of securable.
+    
+    FULL_NAME: Full name of securable.
+    `
 
 	cmd.Annotations = make(map[string]string)
 

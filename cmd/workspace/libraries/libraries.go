@@ -138,7 +138,11 @@ func newClusterStatus() *cobra.Command {
   
   3. Libraries that were previously requested on this cluster or on all
   clusters, but now marked for removal. Within this group there is no order
-  guarantee.`
+  guarantee.
+
+  Arguments:
+    CLUSTER_ID: Unique identifier of the cluster whose status should be retrieved.
+    `
 
 	cmd.Annotations = make(map[string]string)
 

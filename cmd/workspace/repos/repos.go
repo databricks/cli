@@ -71,7 +71,15 @@ func newCreate() *cobra.Command {
   
   Creates a repo in the workspace and links it to the remote Git repo specified.
   Note that repos created programmatically must be linked to a remote Git repo,
-  unlike repos created in the browser.`
+  unlike repos created in the browser.
+
+  Arguments:
+    URL: URL of the Git repository to be linked.
+    
+    PROVIDER: Git provider. This field is case-insensitive. The available Git providers
+    are gitHub, bitbucketCloud, gitLab, azureDevOpsServices, gitHubEnterprise,
+    bitbucketServer, gitLabEnterpriseEdition and awsCodeCommit.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -150,7 +158,11 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a repo.`
 	cmd.Long = `Delete a repo.
   
-  Deletes the specified repo.`
+  Deletes the specified repo.
+
+  Arguments:
+    REPO_ID: The ID for the corresponding repo to access.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -226,7 +238,11 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get a repo.`
 	cmd.Long = `Get a repo.
   
-  Returns the repo with the given repo ID.`
+  Returns the repo with the given repo ID.
+
+  Arguments:
+    REPO_ID: The ID for the corresponding repo to access.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -302,7 +318,11 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Short = `Get repo permission levels.`
 	cmd.Long = `Get repo permission levels.
   
-  Gets the permission levels that a user can have on an object.`
+  Gets the permission levels that a user can have on an object.
+
+  Arguments:
+    REPO_ID: The repo for which to get or manage permissions.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -376,7 +396,11 @@ func newGetPermissions() *cobra.Command {
 	cmd.Long = `Get repo permissions.
   
   Gets the permissions of a repo. Repos can inherit permissions from their root
-  object.`
+  object.
+
+  Arguments:
+    REPO_ID: The repo for which to get or manage permissions.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -517,7 +541,11 @@ func newSetPermissions() *cobra.Command {
 	cmd.Long = `Set repo permissions.
   
   Sets permissions on a repo. Repos can inherit permissions from their root
-  object.`
+  object.
+
+  Arguments:
+    REPO_ID: The repo for which to get or manage permissions.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -603,7 +631,11 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Update a repo.
   
   Updates the repo to a different branch or tag, or updates the repo to the
-  latest commit on the same branch.`
+  latest commit on the same branch.
+
+  Arguments:
+    REPO_ID: The ID for the corresponding repo to access.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -690,7 +722,11 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Long = `Update repo permissions.
   
   Updates the permissions on a repo. Repos can inherit permissions from their
-  root object.`
+  root object.
+
+  Arguments:
+    REPO_ID: The repo for which to get or manage permissions.
+    `
 
 	cmd.Annotations = make(map[string]string)
 

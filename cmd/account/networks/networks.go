@@ -66,7 +66,11 @@ func newCreate() *cobra.Command {
   
   Creates a Databricks network configuration that represents an VPC and its
   resources. The VPC will be used for new Databricks clusters. This requires a
-  pre-existing VPC and subnets.`
+  pre-existing VPC and subnets.
+
+  Arguments:
+    NETWORK_NAME: The human-readable name of the network configuration.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -147,7 +151,11 @@ func newDelete() *cobra.Command {
   workspace.
   
   This operation is available only if your account is on the E2 version of the
-  platform.`
+  platform.
+
+  Arguments:
+    NETWORK_ID: Databricks Account API network configuration ID.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -221,7 +229,11 @@ func newGet() *cobra.Command {
 	cmd.Long = `Get a network configuration.
   
   Gets a Databricks network configuration, which represents a cloud VPC and its
-  resources.`
+  resources.
+
+  Arguments:
+    NETWORK_ID: Databricks Account API network configuration ID.
+    `
 
 	cmd.Annotations = make(map[string]string)
 

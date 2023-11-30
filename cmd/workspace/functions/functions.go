@@ -136,7 +136,12 @@ func newDelete() *cobra.Command {
   of the function's parent catalog - Is the owner of the function's parent
   schema and have the **USE_CATALOG** privilege on its parent catalog - Is the
   owner of the function itself and have both the **USE_CATALOG** privilege on
-  its parent catalog and the **USE_SCHEMA** privilege on its parent schema`
+  its parent catalog and the **USE_SCHEMA** privilege on its parent schema
+
+  Arguments:
+    NAME: The fully-qualified name of the function (of the form
+    __catalog_name__.__schema_name__.__function__name__).
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -215,7 +220,12 @@ func newGet() *cobra.Command {
   **USE_CATALOG** privilege on the function's parent catalog and be the owner of
   the function - Have the **USE_CATALOG** privilege on the function's parent
   catalog, the **USE_SCHEMA** privilege on the function's parent schema, and the
-  **EXECUTE** privilege on the function itself`
+  **EXECUTE** privilege on the function itself
+
+  Arguments:
+    NAME: The fully-qualified name of the function (of the form
+    __catalog_name__.__schema_name__.__function__name__).
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -294,7 +304,13 @@ func newList() *cobra.Command {
   **USE_SCHEMA** privilege on the schema, and the output list contains only
   functions for which either the user has the **EXECUTE** privilege or the user
   is the owner. There is no guarantee of a specific ordering of the elements in
-  the array.`
+  the array.
+
+  Arguments:
+    CATALOG_NAME: Name of parent catalog for functions of interest.
+    
+    SCHEMA_NAME: Parent schema of functions.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -367,7 +383,12 @@ func newUpdate() *cobra.Command {
   function's parent schema and has the **USE_CATALOG** privilege on its parent
   catalog - Is the owner of the function itself and has the **USE_CATALOG**
   privilege on its parent catalog as well as the **USE_SCHEMA** privilege on the
-  function's parent schema.`
+  function's parent schema.
+
+  Arguments:
+    NAME: The fully-qualified name of the function (of the form
+    __catalog_name__.__schema_name__.__function__name__).
+    `
 
 	cmd.Annotations = make(map[string]string)
 

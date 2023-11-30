@@ -135,7 +135,11 @@ func newDelete() *cobra.Command {
   Revokes an access token.
   
   If a token with the specified ID is not valid, this call returns an error
-  **RESOURCE_DOES_NOT_EXIST**.`
+  **RESOURCE_DOES_NOT_EXIST**.
+
+  Arguments:
+    TOKEN_ID: The ID of the token to be revoked.
+    `
 
 	cmd.Annotations = make(map[string]string)
 

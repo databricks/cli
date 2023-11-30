@@ -61,7 +61,11 @@ func newGetActivationUrlInfo() *cobra.Command {
 	cmd.Short = `Get a share activation URL.`
 	cmd.Long = `Get a share activation URL.
   
-  Gets an activation URL for a share.`
+  Gets an activation URL for a share.
+
+  Arguments:
+    ACTIVATION_URL: The one time activation url. It also accepts activation token.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -123,7 +127,11 @@ func newRetrieveToken() *cobra.Command {
 	cmd.Long = `Get an access token.
   
   Retrieve access token with an activation url. This is a public API without any
-  authentication.`
+  authentication.
+
+  Arguments:
+    ACTIVATION_URL: The one time activation url. It also accepts activation token.
+    `
 
 	cmd.Annotations = make(map[string]string)
 

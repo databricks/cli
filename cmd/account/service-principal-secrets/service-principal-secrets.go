@@ -66,7 +66,11 @@ func newCreate() *cobra.Command {
 	cmd.Short = `Create service principal secret.`
 	cmd.Long = `Create service principal secret.
   
-  Create a secret for the given service principal.`
+  Create a secret for the given service principal.
+
+  Arguments:
+    SERVICE_PRINCIPAL_ID: The service principal ID.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -130,7 +134,13 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete service principal secret.`
 	cmd.Long = `Delete service principal secret.
   
-  Delete a secret from the given service principal.`
+  Delete a secret from the given service principal.
+
+  Arguments:
+    SERVICE_PRINCIPAL_ID: The service principal ID.
+    
+    SECRET_ID: The secret ID.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -197,7 +207,11 @@ func newList() *cobra.Command {
   
   List all secrets associated with the given service principal. This operation
   only returns information about the secrets themselves and does not include the
-  secret values.`
+  secret values.
+
+  Arguments:
+    SERVICE_PRINCIPAL_ID: The service principal ID.
+    `
 
 	cmd.Annotations = make(map[string]string)
 

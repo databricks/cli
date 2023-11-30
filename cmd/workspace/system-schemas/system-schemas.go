@@ -57,7 +57,13 @@ func newDisable() *cobra.Command {
 	cmd.Long = `Disable a system schema.
   
   Disables the system schema and removes it from the system catalog. The caller
-  must be an account admin or a metastore admin.`
+  must be an account admin or a metastore admin.
+
+  Arguments:
+    METASTORE_ID: The metastore ID under which the system schema lives.
+    
+    SCHEMA_NAME: Full name of the system schema.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -123,7 +129,13 @@ func newEnable() *cobra.Command {
 	cmd.Long = `Enable a system schema.
   
   Enables the system schema and adds it to the system catalog. The caller must
-  be an account admin or a metastore admin.`
+  be an account admin or a metastore admin.
+
+  Arguments:
+    METASTORE_ID: The metastore ID under which the system schema lives.
+    
+    SCHEMA_NAME: Full name of the system schema.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -189,7 +201,11 @@ func newList() *cobra.Command {
 	cmd.Long = `List system schemas.
   
   Gets an array of system schemas for a metastore. The caller must be an account
-  admin or a metastore admin.`
+  admin or a metastore admin.
+
+  Arguments:
+    METASTORE_ID: The ID for the metastore in which the system schema resides.
+    `
 
 	cmd.Annotations = make(map[string]string)
 

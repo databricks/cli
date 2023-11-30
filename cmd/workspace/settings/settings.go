@@ -68,7 +68,17 @@ func newDeleteDefaultWorkspaceNamespace() *cobra.Command {
   be provided in DELETE requests (as a query parameter). The etag can be
   retrieved by making a GET request before the DELETE request. If the setting is
   updated/deleted concurrently, DELETE will fail with 409 and the request will
-  need to be retried by using the fresh etag in the 409 response.`
+  need to be retried by using the fresh etag in the 409 response.
+
+  Arguments:
+    ETAG: etag used for versioning. The response is at least as fresh as the eTag
+    provided. This is used for optimistic concurrency control as a way to help
+    prevent simultaneous writes of a setting overwriting each other. It is
+    strongly suggested that systems make use of the etag in the read -> delete
+    pattern to perform setting deletions in order to avoid race conditions. That
+    is, get an etag from a GET request, and pass it with the DELETE request to
+    identify the rule set version you are deleting.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -129,7 +139,17 @@ func newReadDefaultWorkspaceNamespace() *cobra.Command {
 	cmd.Short = `Get the default namespace setting.`
 	cmd.Long = `Get the default namespace setting.
   
-  Gets the default namespace setting.`
+  Gets the default namespace setting.
+
+  Arguments:
+    ETAG: etag used for versioning. The response is at least as fresh as the eTag
+    provided. This is used for optimistic concurrency control as a way to help
+    prevent simultaneous writes of a setting overwriting each other. It is
+    strongly suggested that systems make use of the etag in the read -> delete
+    pattern to perform setting deletions in order to avoid race conditions. That
+    is, get an etag from a GET request, and pass it with the DELETE request to
+    identify the rule set version you are deleting.
+    `
 
 	cmd.Annotations = make(map[string]string)
 

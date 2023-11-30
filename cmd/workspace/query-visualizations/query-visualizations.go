@@ -121,7 +121,11 @@ func newDelete() *cobra.Command {
 
 	cmd.Use = "delete ID"
 	cmd.Short = `Remove visualization.`
-	cmd.Long = `Remove visualization.`
+	cmd.Long = `Remove visualization.
+
+  Arguments:
+    ID: 
+    `
 
 	cmd.Annotations = make(map[string]string)
 

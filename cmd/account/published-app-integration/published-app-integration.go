@@ -130,7 +130,11 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete Published OAuth App Integration.
   
   Delete an existing Published OAuth App Integration. You can retrieve the
-  published oauth app integration via :method:PublishedAppIntegration/get.`
+  published oauth app integration via :method:PublishedAppIntegration/get.
+
+  Arguments:
+    INTEGRATION_ID: The oauth app integration ID.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -191,7 +195,11 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get OAuth Published App Integration.`
 	cmd.Long = `Get OAuth Published App Integration.
   
-  Gets the Published OAuth App Integration for the given integration id.`
+  Gets the Published OAuth App Integration for the given integration id.
+
+  Arguments:
+    INTEGRATION_ID: The oauth app integration ID.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -306,7 +314,11 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Updates Published OAuth App Integration.
   
   Updates an existing published OAuth App Integration. You can retrieve the
-  published oauth app integration via :method:PublishedAppIntegration/get.`
+  published oauth app integration via :method:PublishedAppIntegration/get.
+
+  Arguments:
+    INTEGRATION_ID: The oauth app integration ID.
+    `
 
 	cmd.Annotations = make(map[string]string)
 

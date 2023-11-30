@@ -130,7 +130,15 @@ func new{{.PascalName}}() *cobra.Command {
 	cmd.Use = "{{.KebabName}}{{if $hasPosArgs}}{{range .Request.RequiredFields}} {{.ConstantName}}{{end}}{{end}}"
 	{{- if .Description }}
 	cmd.Short = `{{.Summary | without "`"}}`
-	cmd.Long = `{{.Comment  "  " 80 | without "`"}}`
+	cmd.Long = `{{.Comment  "  " 80 | without "`"}}
+	{{- if and $hasPosArgs (gt (len .Request.RequiredFields) 0) }}
+
+  Arguments:
+    {{- range .Request.RequiredFields }}
+    {{ .ConstantName }}: {{.Comment "    " 80 | without "`"}}
+    {{ end }}
+    {{- end -}}
+	`
 	{{- end }}
 	{{- if .IsPrivatePreview }}
 

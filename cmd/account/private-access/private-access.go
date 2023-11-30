@@ -75,7 +75,14 @@ func newCreate() *cobra.Command {
   PrivateLink].
   
   [AWS PrivateLink]: https://aws.amazon.com/privatelink
-  [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`
+  [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html
+
+  Arguments:
+    PRIVATE_ACCESS_SETTINGS_NAME: The human-readable name of the private access settings object.
+    
+    REGION: The cloud region for workspaces associated with this private access settings
+    object.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -161,7 +168,11 @@ func newDelete() *cobra.Command {
   PrivateLink].
   
   [AWS PrivateLink]: https://aws.amazon.com/privatelink
-  [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`
+  [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html
+
+  Arguments:
+    PRIVATE_ACCESS_SETTINGS_ID: Databricks Account API private access settings ID.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -241,7 +252,11 @@ func newGet() *cobra.Command {
   PrivateLink].
   
   [AWS PrivateLink]: https://aws.amazon.com/privatelink
-  [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`
+  [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html
+
+  Arguments:
+    PRIVATE_ACCESS_SETTINGS_ID: Databricks Account API private access settings ID.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -389,7 +404,16 @@ func newReplace() *cobra.Command {
   PrivateLink].
   
   [AWS PrivateLink]: https://aws.amazon.com/privatelink
-  [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`
+  [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html
+
+  Arguments:
+    PRIVATE_ACCESS_SETTINGS_ID: Databricks Account API private access settings ID.
+    
+    PRIVATE_ACCESS_SETTINGS_NAME: The human-readable name of the private access settings object.
+    
+    REGION: The cloud region for workspaces associated with this private access settings
+    object.
+    `
 
 	cmd.Annotations = make(map[string]string)
 

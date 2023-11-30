@@ -140,7 +140,11 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a group.`
 	cmd.Long = `Delete a group.
   
-  Deletes a group from the Databricks account.`
+  Deletes a group from the Databricks account.
+
+  Arguments:
+    ID: Unique ID for a group in the Databricks account.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -213,7 +217,11 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get group details.`
 	cmd.Long = `Get group details.
   
-  Gets the information for a specific group in the Databricks account.`
+  Gets the information for a specific group in the Databricks account.
+
+  Arguments:
+    ID: Unique ID for a group in the Databricks account.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -358,7 +366,11 @@ func newPatch() *cobra.Command {
 	cmd.Short = `Update group details.`
 	cmd.Long = `Update group details.
   
-  Partially updates the details of a group.`
+  Partially updates the details of a group.
+
+  Arguments:
+    ID: Unique ID for a group in the Databricks account.
+    `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -449,7 +461,11 @@ func newUpdate() *cobra.Command {
 	cmd.Short = `Replace a group.`
 	cmd.Long = `Replace a group.
   
-  Updates the details of a group by replacing the entire group entity.`
+  Updates the details of a group by replacing the entire group entity.
+
+  Arguments:
+    ID: Databricks group ID
+    `
 
 	cmd.Annotations = make(map[string]string)
 
