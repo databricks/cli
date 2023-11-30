@@ -164,7 +164,10 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a warehouse.`
 	cmd.Long = `Delete a warehouse.
   
-  Deletes a SQL warehouse.`
+  Deletes a SQL warehouse.
+
+  Arguments:
+    ID: Required. Id of the SQL warehouse.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -258,7 +261,10 @@ func newEdit() *cobra.Command {
 	cmd.Short = `Update a warehouse.`
 	cmd.Long = `Update a warehouse.
   
-  Updates the configuration for a SQL warehouse.`
+  Updates the configuration for a SQL warehouse.
+
+  Arguments:
+    ID: Required. Id of the warehouse to configure.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -361,7 +367,10 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get warehouse info.`
 	cmd.Long = `Get warehouse info.
   
-  Gets the information for a single SQL warehouse.`
+  Gets the information for a single SQL warehouse.
+
+  Arguments:
+    ID: Required. Id of the SQL warehouse.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -434,7 +443,10 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Short = `Get SQL warehouse permission levels.`
 	cmd.Long = `Get SQL warehouse permission levels.
   
-  Gets the permission levels that a user can have on an object.`
+  Gets the permission levels that a user can have on an object.
+
+  Arguments:
+    WAREHOUSE_ID: The SQL warehouse for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -508,7 +520,10 @@ func newGetPermissions() *cobra.Command {
 	cmd.Long = `Get SQL warehouse permissions.
   
   Gets the permissions of a SQL warehouse. SQL warehouses can inherit
-  permissions from their root object.`
+  permissions from their root object.
+
+  Arguments:
+    WAREHOUSE_ID: The SQL warehouse for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -696,7 +711,10 @@ func newSetPermissions() *cobra.Command {
 	cmd.Long = `Set SQL warehouse permissions.
   
   Sets permissions on a SQL warehouse. SQL warehouses can inherit permissions
-  from their root object.`
+  from their root object.
+
+  Arguments:
+    WAREHOUSE_ID: The SQL warehouse for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -859,7 +877,10 @@ func newStart() *cobra.Command {
 	cmd.Short = `Start a warehouse.`
 	cmd.Long = `Start a warehouse.
   
-  Starts a SQL warehouse.`
+  Starts a SQL warehouse.
+
+  Arguments:
+    ID: Required. Id of the SQL warehouse.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -956,7 +977,10 @@ func newStop() *cobra.Command {
 	cmd.Short = `Stop a warehouse.`
 	cmd.Long = `Stop a warehouse.
   
-  Stops a SQL warehouse.`
+  Stops a SQL warehouse.
+
+  Arguments:
+    ID: Required. Id of the SQL warehouse.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1053,7 +1077,10 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Long = `Update SQL warehouse permissions.
   
   Updates the permissions on a SQL warehouse. SQL warehouses can inherit
-  permissions from their root object.`
+  permissions from their root object.
+
+  Arguments:
+    WAREHOUSE_ID: The SQL warehouse for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 

@@ -63,7 +63,16 @@ func newDeleteAccountNetworkPolicy() *cobra.Command {
 	cmd.Short = `Delete Account Network Policy.`
 	cmd.Long = `Delete Account Network Policy.
   
-  Reverts back all the account network policies back to default.`
+  Reverts back all the account network policies back to default.
+
+  Arguments:
+    ETAG: etag used for versioning. The response is at least as fresh as the eTag
+      provided. This is used for optimistic concurrency control as a way to help
+      prevent simultaneous writes of a setting overwriting each other. It is
+      strongly suggested that systems make use of the etag in the read -> delete
+      pattern to perform setting deletions in order to avoid race conditions.
+      That is, get an etag from a GET request, and pass it with the DELETE
+      request to identify the rule set version you are deleting.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -124,7 +133,16 @@ func newReadAccountNetworkPolicy() *cobra.Command {
 	cmd.Short = `Get Account Network Policy.`
 	cmd.Long = `Get Account Network Policy.
   
-  Gets the value of Account level Network Policy.`
+  Gets the value of Account level Network Policy.
+
+  Arguments:
+    ETAG: etag used for versioning. The response is at least as fresh as the eTag
+      provided. This is used for optimistic concurrency control as a way to help
+      prevent simultaneous writes of a setting overwriting each other. It is
+      strongly suggested that systems make use of the etag in the read -> delete
+      pattern to perform setting deletions in order to avoid race conditions.
+      That is, get an etag from a GET request, and pass it with the DELETE
+      request to identify the rule set version you are deleting.`
 
 	cmd.Annotations = make(map[string]string)
 

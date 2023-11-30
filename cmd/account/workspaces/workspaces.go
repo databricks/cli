@@ -94,7 +94,10 @@ func newCreate() *cobra.Command {
   workspace status is typically PROVISIONING. Use the workspace ID
   (workspace_id) field in the response to identify the new workspace and make
   repeated GET requests with the workspace ID and check its status. The
-  workspace becomes available when the status changes to RUNNING.`
+  workspace becomes available when the status changes to RUNNING.
+
+  Arguments:
+    WORKSPACE_NAME: The workspace's human-readable name.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -189,7 +192,10 @@ func newDelete() *cobra.Command {
   
   This operation is available only if your account is on the E2 version of the
   platform or on a select custom plan that allows multiple workspaces per
-  account.`
+  account.
+
+  Arguments:
+    WORKSPACE_ID: Workspace ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -278,7 +284,10 @@ func newGet() *cobra.Command {
   platform or on a select custom plan that allows multiple workspaces per
   account.
   
-  [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`
+  [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html
+
+  Arguments:
+    WORKSPACE_ID: Workspace ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -534,7 +543,10 @@ func newUpdate() *cobra.Command {
   account.
   
   [Account Console]: https://docs.databricks.com/administration-guide/account-settings-e2/account-console-e2.html
-  [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`
+  [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html
+
+  Arguments:
+    WORKSPACE_ID: Workspace ID.`
 
 	cmd.Annotations = make(map[string]string)
 

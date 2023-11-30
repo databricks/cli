@@ -71,7 +71,12 @@ func newAssign() *cobra.Command {
   
   Creates a new metastore assignment. If an assignment for the same
   __workspace_id__ exists, it will be overwritten by the new __metastore_id__
-  and __default_catalog_name__. The caller must be an account admin.`
+  and __default_catalog_name__. The caller must be an account admin.
+
+  Arguments:
+    WORKSPACE_ID: A workspace ID.
+    METASTORE_ID: The unique ID of the metastore.
+    DEFAULT_CATALOG_NAME: The name of the default catalog in the metastore.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -163,7 +168,10 @@ func newCreate() *cobra.Command {
   path. By default (if the __owner__ field is not set), the owner of the new
   metastore is the user calling the __createMetastore__ API. If the __owner__
   field is set to the empty string (**""**), the ownership is assigned to the
-  System User instead.`
+  System User instead.
+
+  Arguments:
+    NAME: The user-specified name of the metastore.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -289,7 +297,10 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a metastore.`
 	cmd.Long = `Delete a metastore.
   
-  Deletes a metastore. The caller must be a metastore admin.`
+  Deletes a metastore. The caller must be a metastore admin.
+
+  Arguments:
+    ID: Unique ID of the metastore.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -363,7 +374,10 @@ func newGet() *cobra.Command {
 	cmd.Long = `Get a metastore.
   
   Gets a metastore that matches the supplied ID. The caller must be a metastore
-  admin to retrieve this info.`
+  admin to retrieve this info.
+
+  Arguments:
+    ID: Unique ID of the metastore.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -535,7 +549,11 @@ func newUnassign() *cobra.Command {
 	cmd.Short = `Delete an assignment.`
 	cmd.Long = `Delete an assignment.
   
-  Deletes a metastore assignment. The caller must be an account administrator.`
+  Deletes a metastore assignment. The caller must be an account administrator.
+
+  Arguments:
+    WORKSPACE_ID: A workspace ID.
+    METASTORE_ID: Query for the ID of the metastore to delete.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -612,7 +630,10 @@ func newUpdate() *cobra.Command {
   
   Updates information for a specific metastore. The caller must be a metastore
   admin. If the __owner__ field is set to the empty string (**""**), the
-  ownership is updated to the System User.`
+  ownership is updated to the System User.
+
+  Arguments:
+    ID: Unique ID of the metastore.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -699,7 +720,10 @@ func newUpdateAssignment() *cobra.Command {
   Updates a metastore assignment. This operation can be used to update
   __metastore_id__ or __default_catalog_name__ for a specified Workspace, if the
   Workspace is already assigned a metastore. The caller must be an account admin
-  to update __metastore_id__; otherwise, the caller can be a Workspace admin.`
+  to update __metastore_id__; otherwise, the caller can be a Workspace admin.
+
+  Arguments:
+    WORKSPACE_ID: A workspace ID.`
 
 	cmd.Annotations = make(map[string]string)
 

@@ -74,7 +74,10 @@ func newCreateScope() *cobra.Command {
   
   The scope name must consist of alphanumeric characters, dashes, underscores,
   and periods, and may not exceed 128 characters. The maximum number of scopes
-  in a workspace is 100.`
+  in a workspace is 100.
+
+  Arguments:
+    SCOPE: Scope name requested by the user. Scope names are unique.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -157,7 +160,11 @@ func newDeleteAcl() *cobra.Command {
   Users must have the MANAGE permission to invoke this API. Throws
   RESOURCE_DOES_NOT_EXIST if no such secret scope, principal, or ACL exists.
   Throws PERMISSION_DENIED if the user does not have permission to make this
-  API call.`
+  API call.
+
+  Arguments:
+    SCOPE: The name of the scope to remove permissions from.
+    PRINCIPAL: The principal to remove an existing ACL from.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -242,7 +249,10 @@ func newDeleteScope() *cobra.Command {
   
   Throws RESOURCE_DOES_NOT_EXIST if the scope does not exist. Throws
   PERMISSION_DENIED if the user does not have permission to make this API
-  call.`
+  call.
+
+  Arguments:
+    SCOPE: Name of the scope to delete.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -325,7 +335,11 @@ func newDeleteSecret() *cobra.Command {
   
   Throws RESOURCE_DOES_NOT_EXIST if no such secret scope or secret exists.
   Throws PERMISSION_DENIED if the user does not have permission to make this
-  API call.`
+  API call.
+
+  Arguments:
+    SCOPE: The name of the scope that contains the secret to delete.
+    KEY: Name of the secret to delete.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -409,7 +423,11 @@ func newGetAcl() *cobra.Command {
   
   Throws RESOURCE_DOES_NOT_EXIST if no such secret scope exists. Throws
   PERMISSION_DENIED if the user does not have permission to make this API
-  call.`
+  call.
+
+  Arguments:
+    SCOPE: The name of the scope to fetch ACL information from.
+    PRINCIPAL: The principal to fetch ACL information for.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -482,7 +500,11 @@ func newGetSecret() *cobra.Command {
   
   Throws PERMISSION_DENIED if the user does not have permission to make this
   API call. Throws RESOURCE_DOES_NOT_EXIST if no such secret or secret scope
-  exists.`
+  exists.
+
+  Arguments:
+    SCOPE: The name of the scope to fetch secret information from.
+    KEY: The key to fetch secret for.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -549,7 +571,10 @@ func newListAcls() *cobra.Command {
   
   Throws RESOURCE_DOES_NOT_EXIST if no such secret scope exists. Throws
   PERMISSION_DENIED if the user does not have permission to make this API
-  call.`
+  call.
+
+  Arguments:
+    SCOPE: The name of the scope to fetch ACL information from.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -668,7 +693,10 @@ func newListSecrets() *cobra.Command {
   The lastUpdatedTimestamp returned is in milliseconds since epoch. Throws
   RESOURCE_DOES_NOT_EXIST if no such secret scope exists. Throws
   PERMISSION_DENIED if the user does not have permission to make this API
-  call.`
+  call.
+
+  Arguments:
+    SCOPE: The name of the scope to list secrets within.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -756,7 +784,12 @@ func newPutAcl() *cobra.Command {
   RESOURCE_ALREADY_EXISTS if a permission for the principal already exists.
   Throws INVALID_PARAMETER_VALUE if the permission or principal is invalid.
   Throws PERMISSION_DENIED if the user does not have permission to make this
-  API call.`
+  API call.
+
+  Arguments:
+    SCOPE: The name of the scope to apply permissions to.
+    PRINCIPAL: The principal in which the permission is applied.
+    PERMISSION: The permission level applied to the principal.`
 
 	cmd.Annotations = make(map[string]string)
 
