@@ -14,6 +14,7 @@ type ttyColor int
 const (
 	ttyColorInvalid ttyColor = iota
 	ttyColorTime
+	ttyColorMessage
 	ttyColorAttrKey
 	ttyColorAttrSeparator
 	ttyColorAttrValue
@@ -30,10 +31,11 @@ const (
 func newColors(enable bool) ttyColors {
 	ttyColors := make(ttyColors, ttyColorLevelLast)
 	ttyColors[ttyColorInvalid] = color.New(color.FgWhite)
-	ttyColors[ttyColorTime] = color.New(color.FgWhite, color.Bold)
+	ttyColors[ttyColorTime] = color.New(color.FgBlack, color.Bold)
+	ttyColors[ttyColorMessage] = color.New(color.FgWhite, color.Bold)
 	ttyColors[ttyColorAttrKey] = color.New(color.FgCyan)
-	ttyColors[ttyColorAttrSeparator] = color.New(color.FgWhite)
-	ttyColors[ttyColorAttrValue] = color.New(color.FgWhite)
+	ttyColors[ttyColorAttrSeparator] = color.New(color.Reset)
+	ttyColors[ttyColorAttrValue] = color.New(color.Reset)
 	ttyColors[ttyColorLevelTrace] = color.New(color.FgMagenta)
 	ttyColors[ttyColorLevelDebug] = color.New(color.FgCyan)
 	ttyColors[ttyColorLevelInfo] = color.New(color.FgBlue)

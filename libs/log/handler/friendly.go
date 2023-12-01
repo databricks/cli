@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"strings"
 	"sync"
 	"time"
 
@@ -164,12 +165,19 @@ func (s *handleState) appendAttr(a slog.Attr) {
 			s.h.sprint(ttyColorAttrValue, a.Value.Time().Format(time.RFC3339Nano)),
 		)
 	default:
-		// Quote string values, to make them easy to parse.
+		str := a.Value.String()
+		format := "%s"
+
+		// Quote values wih spaces, to make them easy to parse.
+		if strings.ContainsAny(str, " \t\n") {
+			format = "%q"
+		}
+
 		s.append(
 			" ",
 			s.h.sprint(ttyColorAttrKey, s.prefix, a.Key),
 			s.h.sprint(ttyColorAttrSeparator, "="),
-			s.h.sprint(ttyColorAttrValue, fmt.Sprintf("%q", a.Value.String())),
+			s.h.sprint(ttyColorAttrValue, fmt.Sprintf(format, str)),
 		)
 	}
 }
@@ -179,7 +187,7 @@ func (h *friendlyHandler) Handle(ctx context.Context, r slog.Record) error {
 	state := h.handleState()
 	state.append(h.sprintf(ttyColorTime, "%02d:%02d:%02d ", r.Time.Hour(), r.Time.Minute(), r.Time.Second()))
 	state.appendf("%s ", h.coloredLevel(r))
-	state.append(r.Message)
+	state.append(h.sprint(ttyColorMessage, r.Message))
 
 	// Handle state from WithGroup and WithAttrs.
 	goas := h.goas
