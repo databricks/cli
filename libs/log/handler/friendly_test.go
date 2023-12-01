@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/log"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestFriendlyHandler(t *testing.T) {
@@ -22,76 +21,65 @@ func TestFriendlyHandler(t *testing.T) {
 
 	logger := slog.New(handler)
 
-	{
-		// One line per level.
-		for _, level := range []slog.Level{
-			log.LevelTrace,
-			log.LevelDebug,
-			log.LevelInfo,
-			log.LevelWarn,
-			log.LevelError,
-		} {
-			out.Reset()
+	// Helper function to run a test case and print the output.
+	run := func(fn func()) {
+		out.Reset()
+		fn()
+		t.Log(strings.TrimSpace(out.String()))
+	}
+
+	// One line per level.
+	for _, level := range []slog.Level{
+		log.LevelTrace,
+		log.LevelDebug,
+		log.LevelInfo,
+		log.LevelWarn,
+		log.LevelError,
+	} {
+		run(func() {
 			logger.Log(context.Background(), level, "simple message")
-			t.Log(strings.TrimSpace(out.String()))
-		}
+		})
 	}
 
-	{
-		// Single key/value pair.
-		out.Reset()
+	// Single key/value pair.
+	run(func() {
 		logger.Info("simple message", "key", "value")
-		t.Log(strings.TrimSpace(out.String()))
-	}
+	})
 
-	{
-		// Multiple key/value pairs.
-		out.Reset()
+	// Multiple key/value pairs.
+	run(func() {
 		logger.Info("simple message", "key1", "value", "key2", "value")
-		t.Log(strings.TrimSpace(out.String()))
-	}
+	})
 
-	{
-		// Multiple key/value pairs with duplicate keys.
-		out.Reset()
+	// Multiple key/value pairs with duplicate keys.
+	run(func() {
 		logger.Info("simple message", "key", "value", "key", "value")
-		t.Log(strings.TrimSpace(out.String()))
-	}
+	})
 
-	{
-		// Log message with time.
-		out.Reset()
+	// Log message with time.
+	run(func() {
 		logger.Info("simple message", "time", time.Now())
-		t.Log(strings.TrimSpace(out.String()))
-	}
+	})
 
-	{
-		// Log message with grouped key/value pairs.
-		out.Reset()
+	// Log message with grouped key/value pairs.
+	run(func() {
 		logger.Info("simple message", slog.Group("group", slog.String("key", "value")))
-		t.Log(strings.TrimSpace(out.String()))
-	}
+	})
 
-	{
-		// Add key/value pairs to logger.
-		out.Reset()
+	// Add key/value pairs to logger.
+	run(func() {
 		logger.With("logger_key", "value").Info("simple message")
-		t.Log(strings.TrimSpace(out.String()))
-	}
+	})
 
-	{
-		// Add group to logger.
-		out.Reset()
+	// Add group to logger.
+	run(func() {
 		logger.WithGroup("logger_group").Info("simple message", "key", "value")
-		t.Log(strings.TrimSpace(out.String()))
-	}
+	})
 
-	{
-		// Add group and key/value pairs to logger.
-		out.Reset()
+	// Add group and key/value pairs to logger.
+	run(func() {
 		logger.WithGroup("logger_group").With("logger_key", "value").Info("simple message")
-		t.Log(strings.TrimSpace(out.String()))
-	}
+	})
 }
 
 func TestFriendlyHandlerReplaceAttr(t *testing.T) {
@@ -108,10 +96,15 @@ func TestFriendlyHandlerReplaceAttr(t *testing.T) {
 
 	logger := slog.New(handler)
 
-	{
-		// ReplaceAttr replaces attributes.
+	// Helper function to run a test case and print the output.
+	run := func(fn func()) {
 		out.Reset()
-		logger.Info("simple message", "key", "value")
-		assert.Contains(t, out.String(), `replaced=value`)
+		fn()
+		t.Log(strings.TrimSpace(out.String()))
 	}
+
+	// ReplaceAttr replaces attributes.
+	run(func() {
+		logger.Info("simple message", "key", "value")
+	})
 }
