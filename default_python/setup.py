@@ -15,7 +15,9 @@ import default_python
 
 setup(
     name="default_python",
-    version=datetime.datetime.utcnow().strftime("%Y%m%d.%H%M%S"),
+    # We use timestamp as Local version identifier (https://peps.python.org/pep-0440/#local-version-identifiers.)
+    # to ensure that changes to wheel package are picked up when used on all-purpose clusters
+    version=default_python.__version__ + "+" + datetime.datetime.utcnow().strftime("%Y%m%d.%H%M%S"),
     url="https://databricks.com",
     author="user@company.com",
     description="wheel file based on default_python/src",
