@@ -62,6 +62,18 @@ func runResource(t *testing.T, path string, key string) (string, error) {
 	return stdout.String(), err
 }
 
+func runResourceWithParams(t *testing.T, path string, key string, params ...string) (string, error) {
+	ctx := context.Background()
+	ctx = cmdio.NewContext(ctx, cmdio.Default())
+
+	args := make([]string, 0)
+	args = append(args, "bundle", "run", key)
+	args = append(args, params...)
+	c := internal.NewCobraTestRunnerWithContext(t, ctx, args...)
+	stdout, _, err := c.Run()
+	return stdout.String(), err
+}
+
 func destroyBundle(t *testing.T, path string) error {
 	t.Setenv("BUNDLE_ROOT", path)
 	c := internal.NewCobraTestRunner(t, "bundle", "destroy", "--auto-approve")
