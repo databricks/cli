@@ -112,6 +112,6 @@ func TestFriendlyHandlerReplaceAttr(t *testing.T) {
 		// ReplaceAttr replaces attributes.
 		out.Reset()
 		logger.Info("simple message", "key", "value")
-		assert.Contains(t, out.String(), `replaced="value"`)
+		assert.Contains(t, out.String(), `replaced=value`)
 	}
 }
