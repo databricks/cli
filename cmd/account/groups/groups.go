@@ -140,7 +140,10 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a group.`
 	cmd.Long = `Delete a group.
   
-  Deletes a group from the Databricks account.`
+  Deletes a group from the Databricks account.
+
+  Arguments:
+    ID: Unique ID for a group in the Databricks account.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -213,7 +216,10 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get group details.`
 	cmd.Long = `Get group details.
   
-  Gets the information for a specific group in the Databricks account.`
+  Gets the information for a specific group in the Databricks account.
+
+  Arguments:
+    ID: Unique ID for a group in the Databricks account.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -283,12 +289,12 @@ func newList() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Flags().StringVar(&listReq.Attributes, "attributes", listReq.Attributes, `Comma-separated list of attributes to return in response.`)
-	cmd.Flags().IntVar(&listReq.Count, "count", listReq.Count, `Desired number of results per page.`)
+	cmd.Flags().Int64Var(&listReq.Count, "count", listReq.Count, `Desired number of results per page.`)
 	cmd.Flags().StringVar(&listReq.ExcludedAttributes, "excluded-attributes", listReq.ExcludedAttributes, `Comma-separated list of attributes to exclude in response.`)
 	cmd.Flags().StringVar(&listReq.Filter, "filter", listReq.Filter, `Query by which the results have to be filtered.`)
 	cmd.Flags().StringVar(&listReq.SortBy, "sort-by", listReq.SortBy, `Attribute to sort the results.`)
 	cmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order to sort the results.`)
-	cmd.Flags().IntVar(&listReq.StartIndex, "start-index", listReq.StartIndex, `Specifies the index of the first result.`)
+	cmd.Flags().Int64Var(&listReq.StartIndex, "start-index", listReq.StartIndex, `Specifies the index of the first result.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List group details.`
@@ -358,7 +364,10 @@ func newPatch() *cobra.Command {
 	cmd.Short = `Update group details.`
 	cmd.Long = `Update group details.
   
-  Partially updates the details of a group.`
+  Partially updates the details of a group.
+
+  Arguments:
+    ID: Unique ID for a group in the Databricks account.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -449,7 +458,10 @@ func newUpdate() *cobra.Command {
 	cmd.Short = `Replace a group.`
 	cmd.Long = `Replace a group.
   
-  Updates the details of a group by replacing the entire group entity.`
+  Updates the details of a group by replacing the entire group entity.
+
+  Arguments:
+    ID: Databricks group ID`
 
 	cmd.Annotations = make(map[string]string)
 

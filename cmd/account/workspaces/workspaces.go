@@ -94,15 +94,22 @@ func newCreate() *cobra.Command {
   workspace status is typically PROVISIONING. Use the workspace ID
   (workspace_id) field in the response to identify the new workspace and make
   repeated GET requests with the workspace ID and check its status. The
-  workspace becomes available when the status changes to RUNNING.`
+  workspace becomes available when the status changes to RUNNING.
+
+  Arguments:
+    WORKSPACE_NAME: The workspace's human-readable name.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'workspace_name' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -185,7 +192,10 @@ func newDelete() *cobra.Command {
   
   This operation is available only if your account is on the E2 version of the
   platform or on a select custom plan that allows multiple workspaces per
-  account.`
+  account.
+
+  Arguments:
+    WORKSPACE_ID: Workspace ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -274,7 +284,10 @@ func newGet() *cobra.Command {
   platform or on a select custom plan that allows multiple workspaces per
   account.
   
-  [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`
+  [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html
+
+  Arguments:
+    WORKSPACE_ID: Workspace ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -409,6 +422,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.CredentialsId, "credentials-id", updateReq.CredentialsId, `ID of the workspace's credential configuration object.`)
 	// TODO: map via StringToStringVar: custom_tags
 	cmd.Flags().StringVar(&updateReq.ManagedServicesCustomerManagedKeyId, "managed-services-customer-managed-key-id", updateReq.ManagedServicesCustomerManagedKeyId, `The ID of the workspace's managed services encryption key configuration object.`)
+	cmd.Flags().StringVar(&updateReq.NetworkConnectivityConfigId, "network-connectivity-config-id", updateReq.NetworkConnectivityConfigId, `The ID of the network connectivity configuration object, which is the parent resource of this private endpoint rule object.`)
 	cmd.Flags().StringVar(&updateReq.NetworkId, "network-id", updateReq.NetworkId, `The ID of the workspace's network configuration object.`)
 	cmd.Flags().StringVar(&updateReq.StorageConfigurationId, "storage-configuration-id", updateReq.StorageConfigurationId, `The ID of the workspace's storage configuration object.`)
 	cmd.Flags().StringVar(&updateReq.StorageCustomerManagedKeyId, "storage-customer-managed-key-id", updateReq.StorageCustomerManagedKeyId, `The ID of the key configuration object for workspace storage.`)
@@ -529,7 +543,10 @@ func newUpdate() *cobra.Command {
   account.
   
   [Account Console]: https://docs.databricks.com/administration-guide/account-settings-e2/account-console-e2.html
-  [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`
+  [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html
+
+  Arguments:
+    WORKSPACE_ID: Workspace ID.`
 
 	cmd.Annotations = make(map[string]string)
 

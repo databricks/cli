@@ -3,6 +3,7 @@ package template
 import (
 	"context"
 	"embed"
+	"fmt"
 	"io/fs"
 	"os"
 	"path"
@@ -42,6 +43,10 @@ func Materialize(ctx context.Context, configFilePath, templateRoot, outputDir st
 	libraryPath := filepath.Join(templateRoot, libraryDirName)
 	schemaPath := filepath.Join(templateRoot, schemaFileName)
 	helpers := loadHelpers(ctx)
+
+	if _, err := os.Stat(schemaPath); os.IsNotExist(err) {
+		return fmt.Errorf("not a bundle template: expected to find a template schema file at %s", schemaPath)
+	}
 
 	config, err := newConfig(ctx, schemaPath)
 	if err != nil {
@@ -104,6 +109,12 @@ func Materialize(ctx context.Context, configFilePath, templateRoot, outputDir st
 
 // If the given templateRoot matches
 func prepareBuiltinTemplates(templateRoot string, tempDir string) (string, error) {
+	// Check that `templateRoot` is a clean basename, i.e. `some_path` and not `./some_path` or "."
+	// Return early if that's not the case.
+	if templateRoot == "." || path.Base(templateRoot) != templateRoot {
+		return templateRoot, nil
+	}
+
 	_, err := fs.Stat(builtinTemplates, path.Join("templates", templateRoot))
 	if err != nil {
 		// The given path doesn't appear to be using out built-in templates

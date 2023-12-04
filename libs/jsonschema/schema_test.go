@@ -48,6 +48,7 @@ func TestSchemaLoadIntegers(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), schema.Properties["abc"].Default)
 	assert.Equal(t, []any{int64(1), int64(2), int64(3)}, schema.Properties["abc"].Enum)
+	assert.Equal(t, int64(5), schema.Properties["def"].Const)
 }
 
 func TestSchemaLoadIntegersWithInvalidDefault(t *testing.T) {
@@ -58,6 +59,11 @@ func TestSchemaLoadIntegersWithInvalidDefault(t *testing.T) {
 func TestSchemaLoadIntegersWithInvalidEnums(t *testing.T) {
 	_, err := Load("./testdata/schema-load-int/schema-invalid-enum.json")
 	assert.EqualError(t, err, "failed to parse enum value 2.4 at index 1 for property abc: expected integer value, got: 2.4")
+}
+
+func TestSchemaLoadIntergersWithInvalidConst(t *testing.T) {
+	_, err := Load("./testdata/schema-load-int/schema-invalid-const.json")
+	assert.EqualError(t, err, "failed to parse const value for property def: expected integer value, got: 5.1")
 }
 
 func TestSchemaValidateDefaultType(t *testing.T) {
@@ -175,24 +181,13 @@ func TestSchemaValidateIncorrectRegex(t *testing.T) {
 	assert.EqualError(t, s.validate(), "invalid regex pattern \"(abc\" provided for property \"foo\": error parsing regexp: missing closing ): `(abc`")
 }
 
-func TestSchemaValidatePatternDefault(t *testing.T) {
+func TestSchemaDefaultValueIsNotValidatedAgainstPattern(t *testing.T) {
 	s := &Schema{
 		Properties: map[string]*Schema{
 			"foo": {
 				Type:    "string",
 				Pattern: "abc",
 				Default: "def",
-			},
-		},
-	}
-	assert.EqualError(t, s.validate(), "default value \"def\" for property \"foo\" does not match specified regex pattern: \"abc\"")
-
-	s = &Schema{
-		Properties: map[string]*Schema{
-			"foo": {
-				Type:    "string",
-				Pattern: "a.*d",
-				Default: "axyzd",
 			},
 		},
 	}
@@ -259,5 +254,54 @@ func TestValidateSchemaMinimumCliVersion(t *testing.T) {
 	assert.ErrorContains(t, err, "minimum CLI version \"v1.0.5\" is greater than current CLI version \"v0.0.1\". Please upgrade your current Databricks CLI")
 
 	err = s.validateSchemaMinimumCliVersion("v0.0.0-dev")()
+	assert.NoError(t, err)
+}
+
+func TestValidateSchemaConstTypes(t *testing.T) {
+	s := &Schema{
+		Properties: map[string]*Schema{
+			"foo": {
+				Type:  "string",
+				Const: "abc",
+			},
+		},
+	}
+	err := s.validate()
+	assert.NoError(t, err)
+
+	s = &Schema{
+		Properties: map[string]*Schema{
+			"foo": {
+				Type:  "string",
+				Const: 123,
+			},
+		},
+	}
+	err = s.validate()
+	assert.EqualError(t, err, "type validation for const value of property foo failed: expected type string, but value is 123")
+}
+
+func TestValidateSchemaSkippedPropertiesHaveDefaults(t *testing.T) {
+	s := &Schema{
+		Properties: map[string]*Schema{
+			"foo": {
+				Type:      "string",
+				Extension: Extension{SkipPromptIf: &Schema{}},
+			},
+		},
+	}
+	err := s.validate()
+	assert.EqualError(t, err, "property \"foo\" has a skip_prompt_if clause but no default value")
+
+	s = &Schema{
+		Properties: map[string]*Schema{
+			"foo": {
+				Type:      "string",
+				Default:   "abc",
+				Extension: Extension{SkipPromptIf: &Schema{}},
+			},
+		},
+	}
+	err = s.validate()
 	assert.NoError(t, err)
 }

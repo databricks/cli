@@ -3,7 +3,6 @@ package artifacts
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
 	"errors"
 	"fmt"
 	"os"
@@ -62,13 +61,13 @@ func (m *basicBuild) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return fmt.Errorf("artifact doesn't exist: %s", m.name)
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("artifacts.Build(%s): Building...", m.name))
+	cmdio.LogString(ctx, fmt.Sprintf("Building %s...", m.name))
 
 	out, err := artifact.Build(ctx)
 	if err != nil {
-		return fmt.Errorf("artifacts.Build(%s): %w, output: %s", m.name, err, out)
+		return fmt.Errorf("build for %s failed, error: %w, output: %s", m.name, err, out)
 	}
-	cmdio.LogString(ctx, fmt.Sprintf("artifacts.Build(%s): Build succeeded", m.name))
+	cmdio.LogString(ctx, "Build succeeded")
 
 	return nil
 }
@@ -108,7 +107,7 @@ func (m *basicUpload) Apply(ctx context.Context, b *bundle.Bundle) error {
 
 	err = uploadArtifact(ctx, artifact, uploadPath, client)
 	if err != nil {
-		return fmt.Errorf("artifacts.Upload(%s): %w", m.name, err)
+		return fmt.Errorf("upload for %s failed, error: %w", m.name, err)
 	}
 
 	return nil
@@ -119,15 +118,14 @@ func uploadArtifact(ctx context.Context, a *config.Artifact, uploadPath string, 
 		f := &a.Files[i]
 		if f.NeedsUpload() {
 			filename := filepath.Base(f.Source)
-			cmdio.LogString(ctx, fmt.Sprintf("artifacts.Upload(%s): Uploading...", filename))
+			cmdio.LogString(ctx, fmt.Sprintf("Uploading %s...", filename))
 
-			remotePath, err := uploadArtifactFile(ctx, f.Source, uploadPath, client)
+			err := uploadArtifactFile(ctx, f.Source, client)
 			if err != nil {
 				return err
 			}
-			cmdio.LogString(ctx, fmt.Sprintf("artifacts.Upload(%s): Upload succeeded", filename))
-
-			f.RemotePath = remotePath
+			cmdio.LogString(ctx, "Upload succeeded")
+			f.RemotePath = path.Join(uploadPath, filepath.Base(f.Source))
 		}
 	}
 
@@ -136,31 +134,23 @@ func uploadArtifact(ctx context.Context, a *config.Artifact, uploadPath string, 
 }
 
 // Function to upload artifact file to Workspace
-func uploadArtifactFile(ctx context.Context, file string, uploadPath string, client filer.Filer) (string, error) {
+func uploadArtifactFile(ctx context.Context, file string, client filer.Filer) error {
 	raw, err := os.ReadFile(file)
 	if err != nil {
-		return "", fmt.Errorf("unable to read %s: %w", file, errors.Unwrap(err))
+		return fmt.Errorf("unable to read %s: %w", file, errors.Unwrap(err))
 	}
 
-	fileHash := sha256.Sum256(raw)
-	relPath := path.Join(fmt.Sprintf("%x", fileHash), filepath.Base(file))
-	remotePath := path.Join(uploadPath, relPath)
-
-	err = client.Mkdir(ctx, path.Dir(relPath))
+	filename := filepath.Base(file)
+	err = client.Write(ctx, filename, bytes.NewReader(raw), filer.OverwriteIfExists, filer.CreateParentDirectories)
 	if err != nil {
-		return "", fmt.Errorf("unable to import %s: %w", remotePath, err)
+		return fmt.Errorf("unable to import %s: %w", filename, err)
 	}
 
-	err = client.Write(ctx, relPath, bytes.NewReader(raw), filer.OverwriteIfExists, filer.CreateParentDirectories)
-	if err != nil {
-		return "", fmt.Errorf("unable to import %s: %w", remotePath, err)
-	}
-
-	return remotePath, nil
+	return nil
 }
 
 func getUploadBasePath(b *bundle.Bundle) (string, error) {
-	artifactPath := b.Config.Workspace.ArtifactsPath
+	artifactPath := b.Config.Workspace.ArtifactPath
 	if artifactPath == "" {
 		return "", fmt.Errorf("remote artifact path not configured")
 	}

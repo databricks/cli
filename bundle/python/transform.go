@@ -31,7 +31,20 @@ except ImportError: # for Python<3.8
 from contextlib import redirect_stdout
 import io
 import sys
+import json
+
+params = []
+try:
+	python_params = dbutils.widgets.get("__python_params")
+	if python_params:
+		params = json.loads(python_params)
+except Exception as e:
+	print(e)
+
 sys.argv = [{{.Params}}]
+
+if params:
+	sys.argv = [sys.argv[0]] + params
 
 entry = [ep for ep in metadata.distribution("{{.Task.PackageName}}").entry_points if ep.name == "{{.Task.EntryPoint}}"]
 

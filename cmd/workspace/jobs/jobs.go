@@ -153,7 +153,10 @@ func newCancelRun() *cobra.Command {
 	cmd.Long = `Cancel a run.
   
   Cancels a job run or a task run. The run is canceled asynchronously, so it may
-  still be running when this request completes.`
+  still be running when this request completes.
+
+  Arguments:
+    RUN_ID: This field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -322,7 +325,10 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a job.`
 	cmd.Long = `Delete a job.
   
-  Deletes a job.`
+  Deletes a job.
+
+  Arguments:
+    JOB_ID: The canonical identifier of the job to delete. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -407,7 +413,10 @@ func newDeleteRun() *cobra.Command {
 	cmd.Short = `Delete a job run.`
 	cmd.Long = `Delete a job run.
   
-  Deletes a non-active run. Returns an error if the run is active.`
+  Deletes a non-active run. Returns an error if the run is active.
+
+  Arguments:
+    RUN_ID: The canonical identifier of the run for which to retrieve the metadata.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -492,7 +501,10 @@ func newExportRun() *cobra.Command {
 	cmd.Short = `Export and retrieve a job run.`
 	cmd.Long = `Export and retrieve a job run.
   
-  Export and retrieve the job run task.`
+  Export and retrieve the job run task.
+
+  Arguments:
+    RUN_ID: The canonical identifier for the run. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -568,7 +580,11 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get a single job.`
 	cmd.Long = `Get a single job.
   
-  Retrieves the details for a single job.`
+  Retrieves the details for a single job.
+
+  Arguments:
+    JOB_ID: The canonical identifier of the job to retrieve information about. This
+      field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -644,7 +660,10 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Short = `Get job permission levels.`
 	cmd.Long = `Get job permission levels.
   
-  Gets the permission levels that a user can have on an object.`
+  Gets the permission levels that a user can have on an object.
+
+  Arguments:
+    JOB_ID: The job for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -718,7 +737,10 @@ func newGetPermissions() *cobra.Command {
 	cmd.Long = `Get job permissions.
   
   Gets the permissions of a job. Jobs can inherit permissions from their root
-  object.`
+  object.
+
+  Arguments:
+    JOB_ID: The job for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -793,12 +815,17 @@ func newGetRun() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Flags().BoolVar(&getRunReq.IncludeHistory, "include-history", getRunReq.IncludeHistory, `Whether to include the repair history in the response.`)
+	cmd.Flags().BoolVar(&getRunReq.IncludeResolvedValues, "include-resolved-values", getRunReq.IncludeResolvedValues, `Whether to include resolved parameter values in the response.`)
 
 	cmd.Use = "get-run RUN_ID"
 	cmd.Short = `Get a single job run.`
 	cmd.Long = `Get a single job run.
   
-  Retrieve the metadata of a run.`
+  Retrieve the metadata of a run.
+
+  Arguments:
+    RUN_ID: The canonical identifier of the run for which to retrieve the metadata.
+      This field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -883,7 +910,10 @@ func newGetRunOutput() *cobra.Command {
   This endpoint validates that the __run_id__ parameter is valid and returns an
   HTTP status code 400 if the __run_id__ parameter is invalid. Runs are
   automatically removed after 60 days. If you to want to reference them beyond
-  60 days, you must save old run results before they expire.`
+  60 days, you must save old run results before they expire.
+
+  Arguments:
+    RUN_ID: The canonical identifier for the run. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1117,7 +1147,10 @@ func newRepairRun() *cobra.Command {
   
   Re-run one or more tasks. Tasks are re-run as part of the original job run.
   They use the current job and task settings, and can be viewed in the history
-  for the original job run.`
+  for the original job run.
+
+  Arguments:
+    RUN_ID: The job run ID of the run to repair. The run must not be in progress.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1304,7 +1337,10 @@ func newRunNow() *cobra.Command {
 	cmd.Short = `Trigger a new job run.`
 	cmd.Long = `Trigger a new job run.
   
-  Run a job and return the run_id of the triggered run.`
+  Run a job and return the run_id of the triggered run.
+
+  Arguments:
+    JOB_ID: The ID of the job to be executed`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1411,7 +1447,10 @@ func newSetPermissions() *cobra.Command {
 	cmd.Long = `Set job permissions.
   
   Sets permissions on a job. Jobs can inherit permissions from their root
-  object.`
+  object.
+
+  Arguments:
+    JOB_ID: The job for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1603,7 +1642,10 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Partially update a job.
   
   Add, update, or remove specific settings of an existing job. Use the ResetJob
-  to overwrite all job settings.`
+  to overwrite all job settings.
+
+  Arguments:
+    JOB_ID: The canonical identifier of the job to update. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1691,7 +1733,10 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Long = `Update job permissions.
   
   Updates the permissions on a job. Jobs can inherit permissions from their root
-  object.`
+  object.
+
+  Arguments:
+    JOB_ID: The job for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 

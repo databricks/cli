@@ -15,9 +15,9 @@ jobs:
     steps:
       - name: Checkout repository and submodules
         uses: actions/checkout@v4
-
-      - name: Unshallow
-        run: git fetch --prune --unshallow
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
       - name: Setup Go
         uses: actions/setup-go@v4
@@ -91,5 +91,29 @@ jobs:
                 darwin_arm64_sha: artifacts.get('darwin_arm64'),
                 linux_amd64_sha: artifacts.get('linux_amd64'),
                 linux_arm64_sha: artifacts.get('linux_arm64')
+              }
+            });
+
+  create-vscode-extension-update-pr:
+    needs: goreleaser
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set VERSION variable from tag
+        run: |
+          VERSION=${{ github.ref_name }}
+          echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
+
+      - name: Update CLI version in the VSCode extension
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.DECO_GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: 'databricks',
+              repo: 'databricks-vscode',
+              workflow_id: 'update-cli-version.yml',
+              ref: 'main',
+              inputs: {
+                version: "${{ env.VERSION }}",
               }
             });

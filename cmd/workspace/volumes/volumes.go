@@ -84,15 +84,25 @@ func newCreate() *cobra.Command {
   must have **CREATE EXTERNAL VOLUME** privilege on the external location. -
   There are no other tables, nor volumes existing in the specified storage
   location. - The specified storage location is not under the location of other
-  tables, nor volumes, or catalogs or schemas.`
+  tables, nor volumes, or catalogs or schemas.
+
+  Arguments:
+    CATALOG_NAME: The name of the catalog where the schema and the volume are
+    SCHEMA_NAME: The name of the schema where the volume is
+    NAME: The name of the volume
+    VOLUME_TYPE: `
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(4)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'catalog_name', 'schema_name', 'name', 'volume_type' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(4)
 		return check(cmd, args)
 	}
 
@@ -172,7 +182,10 @@ func newDelete() *cobra.Command {
   
   The caller must be a metastore admin or an owner of the volume. For the latter
   case, the caller must also be the owner or have the **USE_CATALOG** privilege
-  on the parent catalog and the **USE_SCHEMA** privilege on the parent schema.`
+  on the parent catalog and the **USE_SCHEMA** privilege on the parent schema.
+
+  Arguments:
+    FULL_NAME_ARG: The three-level (fully qualified) name of the volume`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -255,7 +268,11 @@ func newList() *cobra.Command {
   also be the owner or have the **USE_CATALOG** privilege on the parent catalog
   and the **USE_SCHEMA** privilege on the parent schema.
   
-  There is no guarantee of a specific ordering of the elements in the array.`
+  There is no guarantee of a specific ordering of the elements in the array.
+
+  Arguments:
+    CATALOG_NAME: The identifier of the catalog
+    SCHEMA_NAME: The identifier of the schema`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true
@@ -325,7 +342,10 @@ func newRead() *cobra.Command {
   The caller must be a metastore admin or an owner of (or have the **READ
   VOLUME** privilege on) the volume. For the latter case, the caller must also
   be the owner or have the **USE_CATALOG** privilege on the parent catalog and
-  the **USE_SCHEMA** privilege on the parent schema.`
+  the **USE_SCHEMA** privilege on the parent schema.
+
+  Arguments:
+    FULL_NAME_ARG: The three-level (fully qualified) name of the volume`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -411,7 +431,10 @@ func newUpdate() *cobra.Command {
   on the parent catalog and the **USE_SCHEMA** privilege on the parent schema.
   
   Currently only the name, the owner or the comment of the volume could be
-  updated.`
+  updated.
+
+  Arguments:
+    FULL_NAME_ARG: The three-level (fully qualified) name of the volume`
 
 	cmd.Annotations = make(map[string]string)
 

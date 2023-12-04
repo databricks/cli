@@ -126,11 +126,28 @@ func new{{.PascalName}}() *cobra.Command {
 	{{- $hasRequiredArgs :=  and (not $hasIdPrompt) $hasPosArgs -}}
 	{{- $hasSingleRequiredRequestBodyFieldWithPrompt := and (and $hasIdPrompt .Request) (eq 1 (len .Request.RequiredRequestBodyFields))  -}}
 
+	{{- $atleastOneArgumentWithDescription := false -}}
+	{{- if $hasPosArgs -}}
+		{{- range .Request.RequiredFields -}}
+			{{- if .HasComment -}}
+				{{- $atleastOneArgumentWithDescription = true -}}
+				{{- break -}}
+			{{- end -}}
+		{{- end -}}
+	{{- end -}}
 
 	cmd.Use = "{{.KebabName}}{{if $hasPosArgs}}{{range .Request.RequiredFields}} {{.ConstantName}}{{end}}{{end}}"
 	{{- if .Description }}
 	cmd.Short = `{{.Summary | without "`"}}`
-	cmd.Long = `{{.Comment  "  " 80 | without "`"}}`
+	cmd.Long = `{{.Comment  "  " 80 | without "`"}}
+	{{- if $atleastOneArgumentWithDescription }}
+
+  Arguments:
+    {{- range .Request.RequiredFields }}
+    {{ .ConstantName }}: {{.Comment "      " 80 | without "`"}}
+    {{- end -}}
+    {{- end -}}
+	`
 	{{- end }}
 	{{- if .IsPrivatePreview }}
 
@@ -141,12 +158,20 @@ func new{{.PascalName}}() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 	{{if $hasRequiredArgs }}
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs({{len .Request.RequiredFields}})
 		{{- if and .CanUseJson .Request.HasRequiredRequestBodyFields }}
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs({{len .Request.RequiredPathFields}})
+			err := cobra.ExactArgs({{len .Request.RequiredPathFields}})(cmd, args)
+			if err != nil {
+			{{- if eq 0 (len .Request.RequiredPathFields) }}
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide{{- range $index, $field := .Request.RequiredFields}}{{if $index}},{{end}} '{{$field.Name}}'{{end}} in your JSON input")
+			{{- else }}
+				return fmt.Errorf("when --json flag is specified, provide only{{- range $index, $field := .Request.RequiredPathFields}}{{if $index}},{{end}} {{$field.ConstantName}}{{end}} as positional arguments. Provide{{- range $index, $field := .Request.RequiredRequestBodyFields}}{{if $index}},{{end}} '{{$field.Name}}'{{end}} in your JSON input")
+			{{- end }}
+			}
+			return nil
 		}
 		{{- end }}
+		check := cobra.ExactArgs({{len .Request.RequiredFields}})
 		return check(cmd, args)
 	}
 	{{end}}

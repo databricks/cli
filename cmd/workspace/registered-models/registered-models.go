@@ -99,15 +99,24 @@ func newCreate() *cobra.Command {
   parent catalog and schema, or have the **USE_CATALOG** privilege on the parent
   catalog and the **USE_SCHEMA** privilege on the parent schema. - The caller
   must have the **CREATE MODEL** or **CREATE FUNCTION** privilege on the parent
-  schema.`
+  schema.
+
+  Arguments:
+    CATALOG_NAME: The name of the catalog where the schema and the registered model reside
+    SCHEMA_NAME: The name of the schema where the registered model resides
+    NAME: The name of the registered model`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(3)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'catalog_name', 'schema_name', 'name' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(3)
 		return check(cmd, args)
 	}
 
@@ -183,7 +192,10 @@ func newDelete() *cobra.Command {
   The caller must be a metastore admin or an owner of the registered model. For
   the latter case, the caller must also be the owner or have the **USE_CATALOG**
   privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent
-  schema.`
+  schema.
+
+  Arguments:
+    FULL_NAME: The three-level (fully qualified) name of the registered model`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -261,7 +273,11 @@ func newDeleteAlias() *cobra.Command {
   The caller must be a metastore admin or an owner of the registered model. For
   the latter case, the caller must also be the owner or have the **USE_CATALOG**
   privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent
-  schema.`
+  schema.
+
+  Arguments:
+    FULL_NAME: The three-level (fully qualified) name of the registered model
+    ALIAS: The name of the alias`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -328,7 +344,10 @@ func newGet() *cobra.Command {
   The caller must be a metastore admin or an owner of (or have the **EXECUTE**
   privilege on) the registered model. For the latter case, the caller must also
   be the owner or have the **USE_CATALOG** privilege on the parent catalog and
-  the **USE_SCHEMA** privilege on the parent schema.`
+  the **USE_SCHEMA** privilege on the parent schema.
+
+  Arguments:
+    FULL_NAME: The three-level (fully qualified) name of the registered model`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -483,15 +502,24 @@ func newSetAlias() *cobra.Command {
   The caller must be a metastore admin or an owner of the registered model. For
   the latter case, the caller must also be the owner or have the **USE_CATALOG**
   privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent
-  schema.`
+  schema.
+
+  Arguments:
+    FULL_NAME: Full name of the registered model
+    ALIAS: The name of the alias
+    VERSION_NUM: The version number of the model version to which the alias points`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(3)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(2)
+			err := cobra.ExactArgs(2)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, provide only FULL_NAME, ALIAS as positional arguments. Provide 'version_num' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(3)
 		return check(cmd, args)
 	}
 
@@ -574,7 +602,10 @@ func newUpdate() *cobra.Command {
   schema.
   
   Currently only the name, the owner or the comment of the registered model can
-  be updated.`
+  be updated.
+
+  Arguments:
+    FULL_NAME: The three-level (fully qualified) name of the registered model`
 
 	cmd.Annotations = make(map[string]string)
 

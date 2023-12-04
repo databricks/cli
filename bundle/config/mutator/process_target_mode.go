@@ -47,13 +47,17 @@ func transformDevelopmentMode(b *bundle.Bundle) error {
 		if r.Jobs[i].MaxConcurrentRuns == 0 {
 			r.Jobs[i].MaxConcurrentRuns = developmentConcurrentRuns
 		}
-		if r.Jobs[i].Schedule != nil {
+
+		// Pause each job. As an exception, we don't pause jobs that are explicitly
+		// marked as "unpaused". This allows users to override the default behavior
+		// of the development mode.
+		if r.Jobs[i].Schedule != nil && r.Jobs[i].Schedule.PauseStatus != jobs.PauseStatusUnpaused {
 			r.Jobs[i].Schedule.PauseStatus = jobs.PauseStatusPaused
 		}
-		if r.Jobs[i].Continuous != nil {
+		if r.Jobs[i].Continuous != nil && r.Jobs[i].Continuous.PauseStatus != jobs.PauseStatusUnpaused {
 			r.Jobs[i].Continuous.PauseStatus = jobs.PauseStatusPaused
 		}
-		if r.Jobs[i].Trigger != nil {
+		if r.Jobs[i].Trigger != nil && r.Jobs[i].Trigger.PauseStatus != jobs.PauseStatusUnpaused {
 			r.Jobs[i].Trigger.PauseStatus = jobs.PauseStatusPaused
 		}
 	}
@@ -116,11 +120,11 @@ func findIncorrectPath(b *bundle.Bundle, mode config.Mode) string {
 	if strings.Contains(b.Config.Workspace.StatePath, username) != containsExpected {
 		return "state_path"
 	}
-	if strings.Contains(b.Config.Workspace.FilesPath, username) != containsExpected {
-		return "files_path"
+	if strings.Contains(b.Config.Workspace.FilePath, username) != containsExpected {
+		return "file_path"
 	}
-	if strings.Contains(b.Config.Workspace.ArtifactsPath, username) != containsExpected {
-		return "artifacts_path"
+	if strings.Contains(b.Config.Workspace.ArtifactPath, username) != containsExpected {
+		return "artifact_path"
 	}
 	return ""
 }

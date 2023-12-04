@@ -10,6 +10,9 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+// The latest template schema version supported by the CLI
+const latestSchemaVersion = 1
+
 type config struct {
 	ctx    context.Context
 	values map[string]any
@@ -24,6 +27,13 @@ func newConfig(ctx context.Context, schemaPath string) (*config, error) {
 	}
 	if err := validateSchema(schema); err != nil {
 		return nil, err
+	}
+
+	// Validate that all properties have a description
+	for name, p := range schema.Properties {
+		if p.Description == "" {
+			return nil, fmt.Errorf("template property %s is missing a description", name)
+		}
 	}
 
 	// Do not allow template input variables that are not defined in the schema.
@@ -42,6 +52,9 @@ func validateSchema(schema *jsonschema.Schema) error {
 		if v.Type == jsonschema.ArrayType || v.Type == jsonschema.ObjectType {
 			return fmt.Errorf("property type %s is not supported by bundle templates", v.Type)
 		}
+	}
+	if schema.Version != nil && *schema.Version > latestSchemaVersion {
+		return fmt.Errorf("template schema version %d is not supported by this version of the CLI. Please upgrade your CLI to the latest version", *schema.Version)
 	}
 	return nil
 }
@@ -93,16 +106,45 @@ func (c *config) assignDefaultValues(r *renderer) error {
 	return nil
 }
 
-func (c *config) promptSelect(property jsonschema.Property, r *renderer) error {
-	name := property.Name
-	schema := property.Schema
-
-	// Compute description
-	description, err := r.executeTemplate(schema.Description)
-	if err != nil {
-		return err
+func (c *config) skipPrompt(p jsonschema.Property, r *renderer) (bool, error) {
+	// Config already has a value assigned. We don't have to prompt for a user input.
+	if _, ok := c.values[p.Name]; ok {
+		return true, nil
 	}
 
+	if p.Schema.SkipPromptIf == nil {
+		return false, nil
+	}
+
+	// Check if conditions specified by template author for skipping the prompt
+	// are satisfied. If they are not, we have to prompt for a user input.
+	for name, property := range p.Schema.SkipPromptIf.Properties {
+		if v, ok := c.values[name]; ok && v == property.Const {
+			continue
+		}
+		return false, nil
+	}
+
+	if p.Schema.Default == nil {
+		return false, fmt.Errorf("property %s has skip_prompt_if set but no default value", p.Name)
+	}
+
+	// Assign default value to property if we are skipping it.
+	if p.Schema.Type != jsonschema.StringType {
+		c.values[p.Name] = p.Schema.Default
+		return true, nil
+	}
+
+	// Execute the default value as a template and assign it to the property.
+	var err error
+	c.values[p.Name], err = r.executeTemplate(p.Schema.Default.(string))
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (c *config) promptSelect(name, description string, schema *jsonschema.Schema) error {
 	// List of options to display to user
 	options, err := schema.EnumStringSlice()
 	if err != nil {
@@ -125,26 +167,7 @@ func (c *config) promptSelect(property jsonschema.Property, r *renderer) error {
 	return c.schema.ValidateInstance(c.values)
 }
 
-func (c *config) promptText(property jsonschema.Property, r *renderer) error {
-	name := property.Name
-	schema := property.Schema
-
-	// Compute description
-	description, err := r.executeTemplate(schema.Description)
-	if err != nil {
-		return err
-	}
-
-	// Compute default value
-	defaultRaw, err := schema.DefaultString()
-	if err != nil {
-		return err
-	}
-	defaultVal, err := r.executeTemplate(defaultRaw)
-	if err != nil {
-		return err
-	}
-
+func (c *config) promptText(name, description, defaultVal string, schema *jsonschema.Schema) error {
 	for {
 		// Get user input. Parse the string back to a value
 		userInput, err := cmdio.Ask(c.ctx, description, defaultVal)
@@ -177,21 +200,55 @@ func (c *config) promptText(property jsonschema.Property, r *renderer) error {
 			}
 			continue
 		}
-		return err
+		return nil
 	}
-}
-
-func (c *config) prompt(property jsonschema.Property, r *renderer) error {
-	if property.Schema.Enum != nil {
-		return c.promptSelect(property, r)
-	}
-	return c.promptText(property, r)
 }
 
 // Prompts user for values for properties that do not have a value set yet
 func (c *config) promptForValues(r *renderer) error {
 	for _, p := range c.schema.OrderedProperties() {
-		err := c.prompt(p, r)
+		name := p.Name
+		schema := p.Schema
+
+		// Skip prompting if we can.
+		skip, err := c.skipPrompt(p, r)
+		if err != nil {
+			return err
+		}
+		if skip {
+			continue
+		}
+
+		// Compute default value to display by converting it to a string
+		var defaultVal string
+		if schema.Default != nil {
+			defaultValRaw, err := schema.DefaultString()
+			if err != nil {
+				return err
+			}
+			defaultVal, err = r.executeTemplate(defaultValRaw)
+			if err != nil {
+				return err
+			}
+		}
+
+		// Compute description for the prompt
+		description, err := r.executeTemplate(schema.Description)
+		if err != nil {
+			return err
+		}
+
+		// Display selection UI to the user if the property is an enum
+		if schema.Enum != nil {
+			err = c.promptSelect(name, description, schema)
+			if err != nil {
+				return err
+			}
+			continue
+		}
+
+		// Display text input UI to the user
+		err = c.promptText(name, description, defaultVal, schema)
 		if err != nil {
 			return err
 		}

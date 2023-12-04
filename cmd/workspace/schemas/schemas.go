@@ -67,15 +67,23 @@ func newCreate() *cobra.Command {
   
   Creates a new schema for catalog in the Metatastore. The caller must be a
   metastore admin, or have the **CREATE_SCHEMA** privilege in the parent
-  catalog.`
+  catalog.
+
+  Arguments:
+    NAME: Name of schema, relative to parent catalog.
+    CATALOG_NAME: Name of parent catalog.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'catalog_name' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -143,7 +151,10 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete a schema.
   
   Deletes the specified schema from the parent catalog. The caller must be the
-  owner of the schema or an owner of the parent catalog.`
+  owner of the schema or an owner of the parent catalog.
+
+  Arguments:
+    FULL_NAME: Full name of the schema.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -218,7 +229,10 @@ func newGet() *cobra.Command {
   
   Gets the specified schema within the metastore. The caller must be a metastore
   admin, the owner of the schema, or a user that has the **USE_SCHEMA**
-  privilege on the schema.`
+  privilege on the schema.
+
+  Arguments:
+    FULL_NAME: Full name of the schema.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -295,7 +309,10 @@ func newList() *cobra.Command {
   metastore admin or the owner of the parent catalog, all schemas for the
   catalog will be retrieved. Otherwise, only schemas owned by the caller (or for
   which the caller has the **USE_SCHEMA** privilege) will be retrieved. There is
-  no guarantee of a specific ordering of the elements in the array.`
+  no guarantee of a specific ordering of the elements in the array.
+
+  Arguments:
+    CATALOG_NAME: Parent catalog for schemas of interest.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -355,6 +372,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
+	cmd.Flags().Var(&updateReq.EnablePredictiveOptimization, "enable-predictive-optimization", `Whether predictive optimization should be enabled for this object and objects under it.`)
 	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of schema, relative to parent catalog.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of schema.`)
 	// TODO: map via StringToStringVar: properties
@@ -367,7 +385,10 @@ func newUpdate() *cobra.Command {
   a metastore admin. If the caller is a metastore admin, only the __owner__
   field can be changed in the update. If the __name__ field must be updated, the
   caller must be a metastore admin or have the **CREATE_SCHEMA** privilege on
-  the parent catalog.`
+  the parent catalog.
+
+  Arguments:
+    FULL_NAME: Full name of the schema.`
 
 	cmd.Annotations = make(map[string]string)
 

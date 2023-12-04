@@ -34,8 +34,8 @@ func TestMutator(t *testing.T) {
 		},
 	}
 
-	bundle := &Bundle{}
-	err := Apply(context.Background(), bundle, m)
+	b := &Bundle{}
+	err := Apply(context.Background(), b, m)
 	assert.NoError(t, err)
 
 	assert.Equal(t, 1, m.applyCalled)

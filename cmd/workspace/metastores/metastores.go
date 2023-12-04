@@ -71,15 +71,24 @@ func newAssign() *cobra.Command {
   
   Creates a new metastore assignment. If an assignment for the same
   __workspace_id__ exists, it will be overwritten by the new __metastore_id__
-  and __default_catalog_name__. The caller must be an account admin.`
+  and __default_catalog_name__. The caller must be an account admin.
+
+  Arguments:
+    WORKSPACE_ID: A workspace ID.
+    METASTORE_ID: The unique ID of the metastore.
+    DEFAULT_CATALOG_NAME: The name of the default catalog in the metastore.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(3)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(1)
+			err := cobra.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, provide only WORKSPACE_ID as positional arguments. Provide 'metastore_id', 'default_catalog_name' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(3)
 		return check(cmd, args)
 	}
 
@@ -149,20 +158,32 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Region, "region", createReq.Region, `Cloud region which the metastore serves (e.g., us-west-2, westus).`)
+	cmd.Flags().StringVar(&createReq.StorageRoot, "storage-root", createReq.StorageRoot, `The storage root URL for metastore.`)
 
-	cmd.Use = "create NAME STORAGE_ROOT"
+	cmd.Use = "create NAME"
 	cmd.Short = `Create a metastore.`
 	cmd.Long = `Create a metastore.
   
-  Creates a new metastore based on a provided name and storage root path.`
+  Creates a new metastore based on a provided name and optional storage root
+  path. By default (if the __owner__ field is not set), the owner of the new
+  metastore is the user calling the __createMetastore__ API. If the __owner__
+  field is set to the empty string (**""**), the ownership is assigned to the
+  System User instead.
+
+  Arguments:
+    NAME: The user-specified name of the metastore.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -179,9 +200,6 @@ func newCreate() *cobra.Command {
 		}
 		if !cmd.Flags().Changed("json") {
 			createReq.Name = args[0]
-		}
-		if !cmd.Flags().Changed("json") {
-			createReq.StorageRoot = args[1]
 		}
 
 		response, err := w.Metastores.Create(ctx, createReq)
@@ -279,7 +297,10 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a metastore.`
 	cmd.Long = `Delete a metastore.
   
-  Deletes a metastore. The caller must be a metastore admin.`
+  Deletes a metastore. The caller must be a metastore admin.
+
+  Arguments:
+    ID: Unique ID of the metastore.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -332,89 +353,6 @@ func init() {
 	})
 }
 
-// start enable-optimization command
-
-// Slice with functions to override default command behavior.
-// Functions can be added from the `init()` function in manually curated files in this directory.
-var enableOptimizationOverrides []func(
-	*cobra.Command,
-	*catalog.UpdatePredictiveOptimization,
-)
-
-func newEnableOptimization() *cobra.Command {
-	cmd := &cobra.Command{}
-
-	var enableOptimizationReq catalog.UpdatePredictiveOptimization
-	var enableOptimizationJson flags.JsonFlag
-
-	// TODO: short flags
-	cmd.Flags().Var(&enableOptimizationJson, "json", `either inline JSON string or @path/to/file.json with request body`)
-
-	cmd.Use = "enable-optimization METASTORE_ID ENABLE"
-	cmd.Short = `Toggle predictive optimization on the metastore.`
-	cmd.Long = `Toggle predictive optimization on the metastore.
-  
-  Enables or disables predictive optimization on the metastore.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
-	cmd.Annotations = make(map[string]string)
-
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	}
-
-	cmd.PreRunE = root.MustWorkspaceClient
-	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
-		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			err = enableOptimizationJson.Unmarshal(&enableOptimizationReq)
-			if err != nil {
-				return err
-			}
-		}
-		if !cmd.Flags().Changed("json") {
-			enableOptimizationReq.MetastoreId = args[0]
-		}
-		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &enableOptimizationReq.Enable)
-			if err != nil {
-				return fmt.Errorf("invalid ENABLE: %s", args[1])
-			}
-		}
-
-		response, err := w.Metastores.EnableOptimization(ctx, enableOptimizationReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
-	}
-
-	// Disable completions since they are not applicable.
-	// Can be overridden by manual implementation in `override.go`.
-	cmd.ValidArgsFunction = cobra.NoFileCompletions
-
-	// Apply optional overrides to this command.
-	for _, fn := range enableOptimizationOverrides {
-		fn(cmd, &enableOptimizationReq)
-	}
-
-	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newEnableOptimization())
-	})
-}
-
 // start get command
 
 // Slice with functions to override default command behavior.
@@ -436,7 +374,10 @@ func newGet() *cobra.Command {
 	cmd.Long = `Get a metastore.
   
   Gets a metastore that matches the supplied ID. The caller must be a metastore
-  admin to retrieve this info.`
+  admin to retrieve this info.
+
+  Arguments:
+    ID: Unique ID of the metastore.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -608,7 +549,11 @@ func newUnassign() *cobra.Command {
 	cmd.Short = `Delete an assignment.`
 	cmd.Long = `Delete an assignment.
   
-  Deletes a metastore assignment. The caller must be an account administrator.`
+  Deletes a metastore assignment. The caller must be an account administrator.
+
+  Arguments:
+    WORKSPACE_ID: A workspace ID.
+    METASTORE_ID: Query for the ID of the metastore to delete.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -684,7 +629,11 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Update a metastore.
   
   Updates information for a specific metastore. The caller must be a metastore
-  admin.`
+  admin. If the __owner__ field is set to the empty string (**""**), the
+  ownership is updated to the System User.
+
+  Arguments:
+    ID: Unique ID of the metastore.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -771,7 +720,10 @@ func newUpdateAssignment() *cobra.Command {
   Updates a metastore assignment. This operation can be used to update
   __metastore_id__ or __default_catalog_name__ for a specified Workspace, if the
   Workspace is already assigned a metastore. The caller must be an account admin
-  to update __metastore_id__; otherwise, the caller can be a Workspace admin.`
+  to update __metastore_id__; otherwise, the caller can be a Workspace admin.
+
+  Arguments:
+    WORKSPACE_ID: A workspace ID.`
 
 	cmd.Annotations = make(map[string]string)
 

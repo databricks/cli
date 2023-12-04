@@ -61,15 +61,23 @@ func newCreateOboToken() *cobra.Command {
 	cmd.Short = `Create on-behalf token.`
 	cmd.Long = `Create on-behalf token.
   
-  Creates a token on behalf of a service principal.`
+  Creates a token on behalf of a service principal.
+
+  Arguments:
+    APPLICATION_ID: Application ID of the service principal.
+    LIFETIME_SECONDS: The number of seconds before the token expires.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'application_id', 'lifetime_seconds' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -139,7 +147,10 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a token.`
 	cmd.Long = `Delete a token.
   
-  Deletes a token, specified by its ID.`
+  Deletes a token, specified by its ID.
+
+  Arguments:
+    TOKEN_ID: The ID of the token to get.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -212,7 +223,10 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get token info.`
 	cmd.Long = `Get token info.
   
-  Gets information about a token, specified by its ID.`
+  Gets information about a token, specified by its ID.
+
+  Arguments:
+    TOKEN_ID: The ID of the token to get.`
 
 	cmd.Annotations = make(map[string]string)
 

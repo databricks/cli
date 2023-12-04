@@ -15,7 +15,7 @@ import (
 )
 
 func TestProcessInclude(t *testing.T) {
-	bundle := &bundle.Bundle{
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Path: t.TempDir(),
 			Workspace: config.Workspace{
@@ -25,14 +25,14 @@ func TestProcessInclude(t *testing.T) {
 	}
 
 	relPath := "./file.yml"
-	fullPath := filepath.Join(bundle.Config.Path, relPath)
+	fullPath := filepath.Join(b.Config.Path, relPath)
 	f, err := os.Create(fullPath)
 	require.NoError(t, err)
 	fmt.Fprint(f, "workspace:\n  host: bar\n")
 	f.Close()
 
-	assert.Equal(t, "foo", bundle.Config.Workspace.Host)
-	err = mutator.ProcessInclude(fullPath, relPath).Apply(context.Background(), bundle)
+	assert.Equal(t, "foo", b.Config.Workspace.Host)
+	err = bundle.Apply(context.Background(), b, mutator.ProcessInclude(fullPath, relPath))
 	require.NoError(t, err)
-	assert.Equal(t, "bar", bundle.Config.Workspace.Host)
+	assert.Equal(t, "bar", b.Config.Workspace.Host)
 }

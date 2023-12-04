@@ -63,7 +63,10 @@ func newCreate() *cobra.Command {
   credentials * **GcpServiceAcountKey** for GCP credentials.
   
   The caller must be a metastore admin and have the
-  **CREATE_STORAGE_CREDENTIAL** privilege on the metastore.`
+  **CREATE_STORAGE_CREDENTIAL** privilege on the metastore.
+
+  Arguments:
+    METASTORE_ID: Unity Catalog metastore ID`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -133,7 +136,11 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete a storage credential.
   
   Deletes a storage credential from the metastore. The caller must be an owner
-  of the storage credential.`
+  of the storage credential.
+
+  Arguments:
+    METASTORE_ID: Unity Catalog metastore ID
+    STORAGE_CREDENTIAL_NAME: Name of the storage credential.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -197,7 +204,11 @@ func newGet() *cobra.Command {
   
   Gets a storage credential from the metastore. The caller must be a metastore
   admin, the owner of the storage credential, or have a level of privilege on
-  the storage credential.`
+  the storage credential.
+
+  Arguments:
+    METASTORE_ID: Unity Catalog metastore ID
+    STORAGE_CREDENTIAL_NAME: Name of the storage credential.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -260,7 +271,10 @@ func newList() *cobra.Command {
 	cmd.Long = `Get all storage credentials assigned to a metastore.
   
   Gets a list of all storage credentials that have been assigned to given
-  metastore.`
+  metastore.
+
+  Arguments:
+    METASTORE_ID: Unity Catalog metastore ID`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -327,7 +341,11 @@ func newUpdate() *cobra.Command {
   
   Updates a storage credential on the metastore. The caller must be the owner of
   the storage credential. If the caller is a metastore admin, only the __owner__
-  credential can be changed.`
+  credential can be changed.
+
+  Arguments:
+    METASTORE_ID: Unity Catalog metastore ID
+    STORAGE_CREDENTIAL_NAME: Name of the storage credential.`
 
 	cmd.Annotations = make(map[string]string)
 

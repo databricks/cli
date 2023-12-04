@@ -66,15 +66,22 @@ func newCreate() *cobra.Command {
   
   Creates a Databricks network configuration that represents an VPC and its
   resources. The VPC will be used for new Databricks clusters. This requires a
-  pre-existing VPC and subnets.`
+  pre-existing VPC and subnets.
+
+  Arguments:
+    NETWORK_NAME: The human-readable name of the network configuration.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'network_name' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -143,7 +150,10 @@ func newDelete() *cobra.Command {
   workspace.
   
   This operation is available only if your account is on the E2 version of the
-  platform.`
+  platform.
+
+  Arguments:
+    NETWORK_ID: Databricks Account API network configuration ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -217,7 +227,10 @@ func newGet() *cobra.Command {
 	cmd.Long = `Get a network configuration.
   
   Gets a Databricks network configuration, which represents a cloud VPC and its
-  resources.`
+  resources.
+
+  Arguments:
+    NETWORK_ID: Databricks Account API network configuration ID.`
 
 	cmd.Annotations = make(map[string]string)
 

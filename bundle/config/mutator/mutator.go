@@ -10,6 +10,7 @@ func DefaultMutators() []bundle.Mutator {
 	return []bundle.Mutator{
 		scripts.Execute(config.ScriptPreInit),
 		ProcessRootIncludes(),
+		InitializeVariables(),
 		DefineDefaultTarget(),
 		LoadGitDetails(),
 	}

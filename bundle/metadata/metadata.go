@@ -11,7 +11,7 @@ type Bundle struct {
 }
 
 type Workspace struct {
-	FilesPath string `json:"file_path,omitempty"`
+	FilePath string `json:"file_path"`
 }
 
 type Job struct {
@@ -19,7 +19,7 @@ type Job struct {
 
 	// Relative path from the bundle root to the configuration file that holds
 	// the definition of this resource.
-	RelativePath string `json:"relative_path,omitempty"`
+	RelativePath string `json:"relative_path"`
 }
 
 type Resources struct {

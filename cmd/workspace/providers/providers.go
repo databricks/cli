@@ -63,15 +63,23 @@ func newCreate() *cobra.Command {
 	cmd.Long = `Create an auth provider.
   
   Creates a new authentication provider minimally based on a name and
-  authentication type. The caller must be an admin on the metastore.`
+  authentication type. The caller must be an admin on the metastore.
+
+  Arguments:
+    NAME: The name of the Provider.
+    AUTHENTICATION_TYPE: The delta sharing authentication type.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'authentication_type' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -142,7 +150,10 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete a provider.
   
   Deletes an authentication provider, if the caller is a metastore admin or is
-  the owner of the provider.`
+  the owner of the provider.
+
+  Arguments:
+    NAME: Name of the provider.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -217,7 +228,10 @@ func newGet() *cobra.Command {
   
   Gets a specific authentication provider. The caller must supply the name of
   the provider, and must either be a metastore admin or the owner of the
-  provider.`
+  provider.
+
+  Arguments:
+    NAME: Name of the provider.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -356,7 +370,10 @@ func newListShares() *cobra.Command {
   
   Gets an array of a specified provider's shares within the metastore where:
   
-  * the caller is a metastore admin, or * the caller is the owner.`
+  * the caller is a metastore admin, or * the caller is the owner.
+
+  Arguments:
+    NAME: Name of the provider in which to list shares.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -439,7 +456,10 @@ func newUpdate() *cobra.Command {
   Updates the information for an authentication provider, if the caller is a
   metastore admin or is the owner of the provider. If the update changes the
   provider name, the caller must be both a metastore admin and the owner of the
-  provider.`
+  provider.
+
+  Arguments:
+    NAME: The name of the Provider.`
 
 	cmd.Annotations = make(map[string]string)
 

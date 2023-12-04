@@ -75,15 +75,24 @@ func newCreate() *cobra.Command {
   PrivateLink].
   
   [AWS PrivateLink]: https://aws.amazon.com/privatelink
-  [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`
+  [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html
+
+  Arguments:
+    PRIVATE_ACCESS_SETTINGS_NAME: The human-readable name of the private access settings object.
+    REGION: The cloud region for workspaces associated with this private access
+      settings object.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'private_access_settings_name', 'region' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -157,7 +166,10 @@ func newDelete() *cobra.Command {
   PrivateLink].
   
   [AWS PrivateLink]: https://aws.amazon.com/privatelink
-  [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`
+  [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html
+
+  Arguments:
+    PRIVATE_ACCESS_SETTINGS_ID: Databricks Account API private access settings ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -237,7 +249,10 @@ func newGet() *cobra.Command {
   PrivateLink].
   
   [AWS PrivateLink]: https://aws.amazon.com/privatelink
-  [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`
+  [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html
+
+  Arguments:
+    PRIVATE_ACCESS_SETTINGS_ID: Databricks Account API private access settings ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -385,15 +400,25 @@ func newReplace() *cobra.Command {
   PrivateLink].
   
   [AWS PrivateLink]: https://aws.amazon.com/privatelink
-  [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`
+  [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html
+
+  Arguments:
+    PRIVATE_ACCESS_SETTINGS_ID: Databricks Account API private access settings ID.
+    PRIVATE_ACCESS_SETTINGS_NAME: The human-readable name of the private access settings object.
+    REGION: The cloud region for workspaces associated with this private access
+      settings object.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(3)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(1)
+			err := cobra.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, provide only PRIVATE_ACCESS_SETTINGS_ID as positional arguments. Provide 'private_access_settings_name', 'region' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(3)
 		return check(cmd, args)
 	}
 

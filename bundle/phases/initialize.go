@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/bundle/deploy/terraform"
+	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/python"
 	"github.com/databricks/cli/bundle/scripts"
 )
@@ -18,6 +19,7 @@ func Initialize() bundle.Mutator {
 	return newPhase(
 		"initialize",
 		[]bundle.Mutator{
+			mutator.InitializeWorkspaceClient(),
 			mutator.PopulateCurrentUser(),
 			mutator.SetRunAs(),
 			mutator.DefineDefaultWorkspaceRoot(),
@@ -34,6 +36,7 @@ func Initialize() bundle.Mutator {
 			mutator.ExpandPipelineGlobPaths(),
 			mutator.TranslatePaths(),
 			python.WrapperWarning(),
+			permissions.ApplyBundlePermissions(),
 			terraform.Initialize(),
 			scripts.Execute(config.ScriptPostInit),
 		},

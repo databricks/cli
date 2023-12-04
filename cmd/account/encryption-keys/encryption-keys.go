@@ -155,7 +155,10 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete encryption key configuration.
   
   Deletes a customer-managed key configuration object for an account. You cannot
-  delete a configuration that is associated with a running workspace.`
+  delete a configuration that is associated with a running workspace.
+
+  Arguments:
+    CUSTOMER_MANAGED_KEY_ID: Databricks encryption key configuration ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -230,7 +233,10 @@ func newGet() *cobra.Command {
   types, subscription types, and AWS regions.
   
   This operation is available only if your account is on the E2 version of the
-  platform.",`
+  platform.",
+
+  Arguments:
+    CUSTOMER_MANAGED_KEY_ID: Databricks encryption key configuration ID.`
 
 	cmd.Annotations = make(map[string]string)
 

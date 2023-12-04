@@ -3,6 +3,8 @@
 package catalogs
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -71,15 +73,22 @@ func newCreate() *cobra.Command {
 	cmd.Long = `Create a catalog.
   
   Creates a new catalog instance in the parent metastore if the caller is a
-  metastore admin or has the **CREATE_CATALOG** privilege.`
+  metastore admin or has the **CREATE_CATALOG** privilege.
+
+  Arguments:
+    NAME: Name of catalog.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -146,7 +155,10 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete a catalog.
   
   Deletes the catalog that matches the supplied name. The caller must be a
-  metastore admin or the owner of the catalog.`
+  metastore admin or the owner of the catalog.
+
+  Arguments:
+    NAME: The name of the catalog.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -209,7 +221,10 @@ func newGet() *cobra.Command {
   
   Gets the specified catalog in a metastore. The caller must be a metastore
   admin, the owner of the catalog, or a user that has the **USE_CATALOG**
-  privilege set for their account.`
+  privilege set for their account.
+
+  Arguments:
+    NAME: The name of the catalog.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -321,6 +336,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
+	cmd.Flags().Var(&updateReq.EnablePredictiveOptimization, "enable-predictive-optimization", `Whether predictive optimization should be enabled for this object and objects under it.`)
 	cmd.Flags().Var(&updateReq.IsolationMode, "isolation-mode", `Whether the current securable is accessible from all workspaces or a specific set of workspaces.`)
 	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of catalog.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of catalog.`)
@@ -332,7 +348,10 @@ func newUpdate() *cobra.Command {
   
   Updates the catalog that matches the supplied name. The caller must be either
   the owner of the catalog, or a metastore admin (when changing the owner field
-  of the catalog).`
+  of the catalog).
+
+  Arguments:
+    NAME: Name of catalog.`
 
 	cmd.Annotations = make(map[string]string)
 
