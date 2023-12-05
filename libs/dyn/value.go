@@ -2,6 +2,11 @@ package dyn
 
 import (
 	"fmt"
+	"sort"
+	"time"
+
+	"golang.org/x/exp/maps"
+	"gopkg.in/yaml.v3"
 )
 
 type Value struct {
@@ -40,6 +45,16 @@ func NewValue(v any, loc Location) Value {
 		k: kindOf(v),
 		l: loc,
 	}
+}
+
+func (v Value) AsMap() (map[string]Value, bool) {
+	m, ok := v.v.(map[string]Value)
+	return m, ok
+}
+
+func (v Value) AsSequence() ([]Value, bool) {
+	s, ok := v.v.([]Value)
+	return s, ok
 }
 
 func (v Value) Kind() Kind {
@@ -129,4 +144,96 @@ func (v Value) MarkAnchor() Value {
 
 func (v Value) IsAnchor() bool {
 	return v.anchor
+}
+
+func (v Value) MustMap() map[string]Value {
+	return v.v.(map[string]Value)
+}
+
+func (v Value) MustSequence() []Value {
+	return v.v.([]Value)
+}
+
+func (v Value) MustString() string {
+	return v.v.(string)
+}
+
+func (v Value) MustBool() bool {
+	return v.v.(bool)
+}
+
+func (v Value) MustInt() int64 {
+	switch vv := v.v.(type) {
+	case int:
+		return int64(vv)
+	case int32:
+		return int64(vv)
+	case int64:
+		return int64(vv)
+	default:
+		panic("not an int")
+	}
+}
+
+func (v Value) MustFloat() float64 {
+	switch vv := v.v.(type) {
+	case float32:
+		return float64(vv)
+	case float64:
+		return float64(vv)
+	default:
+		panic("not a float")
+	}
+}
+
+func (v Value) MustTime() time.Time {
+	return v.v.(time.Time)
+}
+
+func (v Value) MarshalYAML() (interface{}, error) {
+	if v.Kind() == KindMap {
+		m, _ := v.AsMap()
+		keys := maps.Keys(m)
+		// We're using location lines to define the order of keys in YAML.
+		// The location is set when we convert API response struct to config.Value representation
+		// See convert.convertMap for details
+		sort.SliceStable(keys, func(i, j int) bool {
+			return m[keys[i]].Location().Line < m[keys[j]].Location().Line
+		})
+
+		content := make([]*yaml.Node, 0)
+		for _, k := range keys {
+			item := m[k]
+			node := yaml.Node{Kind: yaml.ScalarNode, Value: k}
+			in, err := item.MarshalYAML()
+			c := in.(*yaml.Node)
+			if err != nil {
+				return nil, err
+			}
+			content = append(content, &node)
+			content = append(content, c)
+		}
+
+		return &yaml.Node{Kind: yaml.MappingNode, Content: content}, nil
+	}
+
+	if v.Kind() == KindSequence {
+		s, _ := v.AsSequence()
+		content := make([]*yaml.Node, 0)
+		for _, item := range s {
+			in, err := item.MarshalYAML()
+			c := in.(*yaml.Node)
+			if err != nil {
+				return nil, err
+			}
+			content = append(content, c)
+		}
+		return &yaml.Node{Kind: yaml.SequenceNode, Content: content}, nil
+	}
+
+	return &yaml.Node{Kind: yaml.ScalarNode, Value: fmt.Sprint(v.AsAny())}, nil
+}
+
+func (v *Value) SetLocation(l Location) {
+	v.l = l
 }
