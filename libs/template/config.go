@@ -144,9 +144,9 @@ func (c *config) skipPrompt(p jsonschema.Property, r *renderer) (bool, error) {
 	return true, nil
 }
 
-func (c *config) promptSelect(name, description string, schema *jsonschema.Schema) error {
+func (c *config) promptSelect(name, description string, propertySchema *jsonschema.Schema) error {
 	// List of options to display to user
-	options, err := schema.EnumStringSlice()
+	options, err := propertySchema.EnumStringSlice()
 	if err != nil {
 		return err
 	}
@@ -158,7 +158,7 @@ func (c *config) promptSelect(name, description string, schema *jsonschema.Schem
 	}
 
 	// Convert user input string back to a value
-	c.values[name], err = schema.ParseString(userInput)
+	c.values[name], err = propertySchema.ParseString(userInput)
 	if err != nil {
 		return err
 	}
@@ -167,7 +167,7 @@ func (c *config) promptSelect(name, description string, schema *jsonschema.Schem
 	return c.schema.ValidateInstance(c.values)
 }
 
-func (c *config) promptText(name, description, defaultVal string, schema *jsonschema.Schema) error {
+func (c *config) promptText(name, description, defaultVal string, propertySchema *jsonschema.Schema) error {
 	for {
 		// Get user input. Parse the string back to a value
 		userInput, err := cmdio.Ask(c.ctx, description, defaultVal)
@@ -176,7 +176,7 @@ func (c *config) promptText(name, description, defaultVal string, schema *jsonsc
 		}
 
 		// Convert user input string back to a Go value
-		c.values[name], err = schema.ParseString(userInput)
+		c.values[name], err = propertySchema.ParseString(userInput)
 		// Error parsing user input. Retry if parsing fails.
 		if err != nil {
 			target := &jsonschema.ParseStringError{}
