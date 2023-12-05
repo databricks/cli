@@ -147,7 +147,10 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete a user.
   
   Deletes a user. Deleting a user from a Databricks workspace also removes
-  objects associated with the user.`
+  objects associated with the user.
+
+  Arguments:
+    ID: Unique ID for a user in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -228,7 +231,10 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get user details.`
 	cmd.Long = `Get user details.
   
-  Gets information for a specific user in Databricks workspace.`
+  Gets information for a specific user in Databricks workspace.
+
+  Arguments:
+    ID: Unique ID for a user in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -471,7 +477,10 @@ func newPatch() *cobra.Command {
 	cmd.Long = `Update user details.
   
   Partially updates a user resource by applying the supplied operations on
-  specific user attributes.`
+  specific user attributes.
+
+  Arguments:
+    ID: Unique ID for a user in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -635,7 +644,11 @@ func newUpdate() *cobra.Command {
 	cmd.Short = `Replace a user.`
 	cmd.Long = `Replace a user.
   
-  Replaces a user's information with the data supplied in request.`
+  Replaces a user's information with the data supplied in request.
+
+  Arguments:
+    ID: Databricks user ID. This is automatically set by Databricks. Any value
+      provided by the client will be ignored.`
 
 	cmd.Annotations = make(map[string]string)
 

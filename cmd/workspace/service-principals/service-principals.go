@@ -138,7 +138,10 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a service principal.`
 	cmd.Long = `Delete a service principal.
   
-  Delete a single service principal in the Databricks workspace.`
+  Delete a single service principal in the Databricks workspace.
+
+  Arguments:
+    ID: Unique ID for a service principal in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -212,7 +215,10 @@ func newGet() *cobra.Command {
 	cmd.Long = `Get service principal details.
   
   Gets the details for a single service principal define in the Databricks
-  workspace.`
+  workspace.
+
+  Arguments:
+    ID: Unique ID for a service principal in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -358,7 +364,10 @@ func newPatch() *cobra.Command {
 	cmd.Long = `Update service principal details.
   
   Partially updates the details of a single service principal in the Databricks
-  workspace.`
+  workspace.
+
+  Arguments:
+    ID: Unique ID for a service principal in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -451,7 +460,10 @@ func newUpdate() *cobra.Command {
   
   Updates the details of a single service principal.
   
-  This action replaces the existing service principal with the same name.`
+  This action replaces the existing service principal with the same name.
+
+  Arguments:
+    ID: Databricks service principal ID.`
 
 	cmd.Annotations = make(map[string]string)
 

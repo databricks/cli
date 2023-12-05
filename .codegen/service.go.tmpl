@@ -126,11 +126,28 @@ func new{{.PascalName}}() *cobra.Command {
 	{{- $hasRequiredArgs :=  and (not $hasIdPrompt) $hasPosArgs -}}
 	{{- $hasSingleRequiredRequestBodyFieldWithPrompt := and (and $hasIdPrompt .Request) (eq 1 (len .Request.RequiredRequestBodyFields))  -}}
 
+	{{- $atleastOneArgumentWithDescription := false -}}
+	{{- if $hasPosArgs -}}
+		{{- range .Request.RequiredFields -}}
+			{{- if .HasComment -}}
+				{{- $atleastOneArgumentWithDescription = true -}}
+				{{- break -}}
+			{{- end -}}
+		{{- end -}}
+	{{- end -}}
 
 	cmd.Use = "{{.KebabName}}{{if $hasPosArgs}}{{range .Request.RequiredFields}} {{.ConstantName}}{{end}}{{end}}"
 	{{- if .Description }}
 	cmd.Short = `{{.Summary | without "`"}}`
-	cmd.Long = `{{.Comment  "  " 80 | without "`"}}`
+	cmd.Long = `{{.Comment  "  " 80 | without "`"}}
+	{{- if $atleastOneArgumentWithDescription }}
+
+  Arguments:
+    {{- range .Request.RequiredFields }}
+    {{ .ConstantName }}: {{.Comment "      " 80 | without "`"}}
+    {{- end -}}
+    {{- end -}}
+	`
 	{{- end }}
 	{{- if .IsPrivatePreview }}
 

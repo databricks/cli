@@ -152,7 +152,11 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		if b := bundle.GetOrNil(cmd.Context()); b != nil {
-			cfg = b.WorkspaceClient().Config
+			client, err := b.InitializeWorkspaceClient()
+			if err != nil {
+				return err
+			}
+			cfg = client.Config
 		}
 	}
 

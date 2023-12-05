@@ -100,7 +100,11 @@ func newGet() *cobra.Command {
 	cmd.Long = `Get object permissions.
   
   Gets the permissions of an object. Objects can inherit permissions from their
-  parent objects or root object.`
+  parent objects or root object.
+
+  Arguments:
+    REQUEST_OBJECT_TYPE: <needs content>
+    REQUEST_OBJECT_ID: `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -162,7 +166,11 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Short = `Get object permission levels.`
 	cmd.Long = `Get object permission levels.
   
-  Gets the permission levels that a user can have on an object.`
+  Gets the permission levels that a user can have on an object.
+
+  Arguments:
+    REQUEST_OBJECT_TYPE: <needs content>
+    REQUEST_OBJECT_ID: <needs content>`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -229,7 +237,11 @@ func newSet() *cobra.Command {
 	cmd.Long = `Set object permissions.
   
   Sets permissions on an object. Objects can inherit permissions from their
-  parent objects or root object.`
+  parent objects or root object.
+
+  Arguments:
+    REQUEST_OBJECT_TYPE: <needs content>
+    REQUEST_OBJECT_ID: `
 
 	cmd.Annotations = make(map[string]string)
 
@@ -302,7 +314,11 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Update object permissions.
   
   Updates the permissions on an object. Objects can inherit permissions from
-  their parent objects or root object.`
+  their parent objects or root object.
+
+  Arguments:
+    REQUEST_OBJECT_TYPE: <needs content>
+    REQUEST_OBJECT_ID: `
 
 	cmd.Annotations = make(map[string]string)
 

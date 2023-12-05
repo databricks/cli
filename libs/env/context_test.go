@@ -51,6 +51,7 @@ func TestContext(t *testing.T) {
 func TestHome(t *testing.T) {
 	ctx := context.Background()
 	ctx = WithUserHomeDir(ctx, "...")
-	home := UserHomeDir(ctx)
+	home, err := UserHomeDir(ctx)
 	assert.Equal(t, "...", home)
+	assert.NoError(t, err)
 }

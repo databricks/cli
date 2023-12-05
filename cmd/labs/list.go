@@ -16,7 +16,10 @@ type labsMeta struct {
 }
 
 func allRepos(ctx context.Context) (github.Repositories, error) {
-	cacheDir := project.PathInLabs(ctx)
+	cacheDir, err := project.PathInLabs(ctx)
+	if err != nil {
+		return nil, err
+	}
 	cache := github.NewRepositoryCache("databrickslabs", cacheDir)
 	return cache.Load(ctx)
 }

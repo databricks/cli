@@ -77,7 +77,16 @@ func newCreateNetworkConnectivityConfiguration() *cobra.Command {
   multiple workspaces from the same Azure region within the same Databricks
   account. See [configure serverless secure connectivity].
   
-  [configure serverless secure connectivity]: https://learn.microsoft.com/azure/databricks/security/network/serverless-network-security`
+  [configure serverless secure connectivity]: https://learn.microsoft.com/azure/databricks/security/network/serverless-network-security
+
+  Arguments:
+    NAME: The name of the network connectivity configuration. The name can contain
+      alphanumeric characters, hyphens, and underscores. The length must be
+      between 3 and 30 characters. The name must match the regular expression
+      ^[0-9a-zA-Z-_]{3,30}$.
+    REGION: The Azure region for this network connectivity configuration. Only
+      workspaces in the same Azure region can be attached to this network
+      connectivity configuration.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -167,7 +176,14 @@ func newCreatePrivateEndpointRule() *cobra.Command {
   private endpoint created, make a GET request on the new private endpoint
   rule. See [serverless private link].
   
-  [serverless private link]: https://learn.microsoft.com/azure/databricks/security/network/serverless-network-security/serverless-private-link`
+  [serverless private link]: https://learn.microsoft.com/azure/databricks/security/network/serverless-network-security/serverless-private-link
+
+  Arguments:
+    NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectvity Configuration ID.
+    RESOURCE_ID: The Azure resource ID of the target resource.
+    GROUP_ID: The sub-resource type (group ID) of the target resource. Note that to
+      connect to workspace root storage (root DBFS), you need two endpoints, one
+      for blob and one for dfs.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -250,7 +266,10 @@ func newDeleteNetworkConnectivityConfiguration() *cobra.Command {
 	cmd.Short = `Delete a network connectivity configuration.`
 	cmd.Long = `Delete a network connectivity configuration.
   
-  Deletes a network connectivity configuration.`
+  Deletes a network connectivity configuration.
+
+  Arguments:
+    NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectvity Configuration ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -315,7 +334,11 @@ func newDeletePrivateEndpointRule() *cobra.Command {
   deactivated and will be purged after seven days of deactivation. When a
   private endpoint is in deactivated state, deactivated field is set to true
   and the private endpoint is not available to your serverless compute
-  resources.`
+  resources.
+
+  Arguments:
+    NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectvity Configuration ID.
+    PRIVATE_ENDPOINT_RULE_ID: Your private endpoint rule ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -377,7 +400,10 @@ func newGetNetworkConnectivityConfiguration() *cobra.Command {
 	cmd.Short = `Get a network connectivity configuration.`
 	cmd.Long = `Get a network connectivity configuration.
   
-  Gets a network connectivity configuration.`
+  Gets a network connectivity configuration.
+
+  Arguments:
+    NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectvity Configuration ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -438,7 +464,11 @@ func newGetPrivateEndpointRule() *cobra.Command {
 	cmd.Short = `Get a private endpoint rule.`
 	cmd.Long = `Get a private endpoint rule.
   
-  Gets the private endpoint rule.`
+  Gets the private endpoint rule.
+
+  Arguments:
+    NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectvity Configuration ID.
+    PRIVATE_ENDPOINT_RULE_ID: Your private endpoint rule ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -563,7 +593,10 @@ func newListPrivateEndpointRules() *cobra.Command {
 	cmd.Short = `List private endpoint rules.`
 	cmd.Long = `List private endpoint rules.
   
-  Gets an array of private endpoint rules.`
+  Gets an array of private endpoint rules.
+
+  Arguments:
+    NETWORK_CONNECTIVITY_CONFIG_ID: Your Network Connectvity Configuration ID.`
 
 	cmd.Annotations = make(map[string]string)
 
