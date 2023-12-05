@@ -208,7 +208,7 @@ func (c *config) promptText(name, description, defaultVal string, schema *jsonsc
 func (c *config) promptForValues(r *renderer) error {
 	for _, p := range c.schema.OrderedProperties() {
 		name := p.Name
-		schema := p.Schema
+		propertySchema := p.Schema
 
 		// Skip prompting if we can.
 		skip, err := c.skipPrompt(p, r)
@@ -221,8 +221,8 @@ func (c *config) promptForValues(r *renderer) error {
 
 		// Compute default value to display by converting it to a string
 		var defaultVal string
-		if schema.Default != nil {
-			defaultValRaw, err := schema.DefaultString()
+		if propertySchema.Default != nil {
+			defaultValRaw, err := propertySchema.DefaultString()
 			if err != nil {
 				return err
 			}
@@ -233,14 +233,14 @@ func (c *config) promptForValues(r *renderer) error {
 		}
 
 		// Compute description for the prompt
-		description, err := r.executeTemplate(schema.Description)
+		description, err := r.executeTemplate(propertySchema.Description)
 		if err != nil {
 			return err
 		}
 
 		// Display selection UI to the user if the property is an enum
-		if schema.Enum != nil {
-			err = c.promptSelect(name, description, schema)
+		if propertySchema.Enum != nil {
+			err = c.promptSelect(name, description, propertySchema)
 			if err != nil {
 				return err
 			}
@@ -248,7 +248,7 @@ func (c *config) promptForValues(r *renderer) error {
 		}
 
 		// Display text input UI to the user
-		err = c.promptText(name, description, defaultVal, schema)
+		err = c.promptText(name, description, defaultVal, propertySchema)
 		if err != nil {
 			return err
 		}
