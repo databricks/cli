@@ -192,12 +192,7 @@ func (c *config) promptText(name, description, defaultVal string, schema *jsonsc
 		err = c.schema.ValidateInstance(c.values)
 		// Error validating user input. Retry if validation fails.
 		if err != nil {
-			target := &jsonschema.PatternMatchFailedError{}
-			if errors.As(err, target) {
-				cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %q is expected to match regex pattern %s. %s", target.PropertyValue, target.Pattern, target.FailureMessage))
-			} else {
-				cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %s", target.Error()))
-			}
+			cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %s", err.Error()))
 			continue
 		}
 		return nil
