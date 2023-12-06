@@ -900,7 +900,14 @@ func newStartUpdate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&startUpdateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().Var(&startUpdateReq.Cause, "cause", ``)
+	cmd.Flags().Var(&startUpdateReq.Cause, "cause", `. Supported values: [
+  API_CALL,
+  JOB_TASK,
+  RETRY_ON_FAILURE,
+  SCHEMA_CHANGE,
+  SERVICE_UPGRADE,
+  USER_ACTION,
+]`)
 	cmd.Flags().BoolVar(&startUpdateReq.FullRefresh, "full-refresh", startUpdateReq.FullRefresh, `If true, this update will reset all tables before running.`)
 	// TODO: array: full_refresh_selection
 	// TODO: array: refresh_selection
