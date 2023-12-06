@@ -133,7 +133,7 @@ func fromString(s string, T Type) (any, error) {
 	return v, err
 }
 
-// Error indicated a value entered by the user failed to match the pattern specified
+// Error indicates a value entered by the user failed to match the pattern specified
 // in the template schema.
 type PatternMatchError struct {
 	// The name of the property that failed to match the pattern
