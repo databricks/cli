@@ -17,6 +17,10 @@ const readonlyTag = "readonly"
 // Fields can be tagged as "internal" to remove them from the generated schema.
 const internalTag = "internal"
 
+// Annotation for bundle fields that have been deprecated.
+// Fields tagged as "deprecated" are removed/omitted from the generated schema.
+const deprecatedTag = "deprecated"
+
 // This function translates golang types into json schema. Here is the mapping
 // between json schema types and golang types
 //
@@ -205,7 +209,9 @@ func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*jsonschem
 		required := []string{}
 		for _, child := range children {
 			bundleTag := child.Tag.Get("bundle")
-			if bundleTag == readonlyTag || bundleTag == internalTag {
+			// Fields marked as "readonly", "internal" or "deprecated" are skipped
+			// while generating the schema
+			if bundleTag == readonlyTag || bundleTag == internalTag || bundleTag == deprecatedTag {
 				continue
 			}
 
