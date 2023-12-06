@@ -1,5 +1,27 @@
 # Version changelog
 
+## 0.210.2
+
+CLI:
+ * Add documentation for positional args in commands generated from the Databricks OpenAPI specification ([#1033](https://github.com/databricks/cli/pull/1033)).
+ * Ask for host when .databrickscfg doesn't exist ([#1041](https://github.com/databricks/cli/pull/1041)).
+ * Add list of supported values for flags that represent an enum field ([#1036](https://github.com/databricks/cli/pull/1036)).
+
+Bundles:
+ * Fix panic when bundle auth resolution fails ([#1002](https://github.com/databricks/cli/pull/1002)).
+ * Add versioning for bundle templates ([#972](https://github.com/databricks/cli/pull/972)).
+ * Add support for conditional prompting in bundle init ([#971](https://github.com/databricks/cli/pull/971)).
+ * Pass parameters to task when run with `--python-params` and `python_wheel_wrapper` is true ([#1037](https://github.com/databricks/cli/pull/1037)).
+ * Change default_python template to auto-update version on each wheel build ([#1034](https://github.com/databricks/cli/pull/1034)).
+
+Internal:
+ * Rewrite the friendly log handler ([#1038](https://github.com/databricks/cli/pull/1038)).
+ * Move bundle schema update to an internal module ([#1012](https://github.com/databricks/cli/pull/1012)).
+
+
+Dependency updates:
+ * Bump github.com/databricks/databricks-sdk-go from 0.26.0 to 0.26.1 ([#1040](https://github.com/databricks/cli/pull/1040)).
+
 ## 0.210.1
 
 This is a bugfix release to address issues with v0.210.0.
