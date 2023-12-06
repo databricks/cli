@@ -29,7 +29,10 @@ func (d *devInstallation) Install(ctx context.Context) error {
 	}
 	_, err := d.Installer.validLogin(d.Command)
 	if errors.Is(err, ErrNoLoginConfig) {
-		cfg := d.Installer.envAwareConfig(ctx)
+		cfg, err := d.Installer.envAwareConfig(ctx)
+		if err != nil {
+			return err
+		}
 		lc := &loginConfig{Entrypoint: d.Installer.Entrypoint}
 		_, err = lc.askWorkspace(ctx, cfg)
 		if err != nil {
@@ -39,7 +42,7 @@ func (d *devInstallation) Install(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("ask for account: %w", err)
 		}
-		err = lc.EnsureFoldersExist(ctx)
+		err = lc.EnsureFoldersExist()
 		if err != nil {
 			return fmt.Errorf("folders: %w", err)
 		}
@@ -97,7 +100,10 @@ func NewUpgrader(cmd *cobra.Command, name string) (*installer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("remote: %w", err)
 	}
-	prj.folder = PathInLabs(cmd.Context(), name)
+	prj.folder, err = PathInLabs(cmd.Context(), name)
+	if err != nil {
+		return nil, err
+	}
 	return &installer{
 		Project: prj,
 		version: version,
@@ -111,7 +117,10 @@ type fetcher struct {
 
 func (f *fetcher) checkReleasedVersions(cmd *cobra.Command, version string) (string, error) {
 	ctx := cmd.Context()
-	cacheDir := PathInLabs(ctx, f.name, "cache")
+	cacheDir, err := PathInLabs(ctx, f.name, "cache")
+	if err != nil {
+		return "", err
+	}
 	// `databricks labs isntall X` doesn't know which exact version to fetch, so first
 	// we fetch all versions and then pick the latest one dynamically.
 	versions, err := github.NewReleaseCache("databrickslabs", f.name, cacheDir).Load(ctx)

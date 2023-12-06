@@ -30,9 +30,6 @@ jobs:
       - name: Checkout repository and submodules
         uses: actions/checkout@v4
 
-      - name: Unshallow
-        run: git fetch --prune --unshallow
-
       - name: Setup Go
         uses: actions/setup-go@v4
         with:

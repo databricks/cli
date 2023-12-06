@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/qa"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -42,6 +43,27 @@ func TestIsCompatibleWithSnapshots(t *testing.T) {
 		SparkVersion:     "14.x-snapshot-cpu-ml-scala2.12",
 		DataSecurityMode: compute.DataSecurityModeUserIsolation,
 	}, "14.0"))
+}
+
+func TestWithoutSystemClusters(t *testing.T) {
+	fn := WithoutSystemClusters()
+
+	// Sources to exclude.
+	for _, v := range []string{
+		"JOB",
+		"PIPELINE",
+		"SOME_UNKNOWN_VALUE",
+	} {
+		assert.False(t, fn(&compute.ClusterDetails{ClusterSource: compute.ClusterSource(v)}, nil))
+	}
+
+	// Sources to include.
+	for _, v := range []string{
+		"UI",
+		"API",
+	} {
+		assert.True(t, fn(&compute.ClusterDetails{ClusterSource: compute.ClusterSource(v)}, nil))
+	}
 }
 
 func TestFirstCompatibleCluster(t *testing.T) {

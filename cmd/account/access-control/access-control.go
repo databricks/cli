@@ -59,7 +59,10 @@ func newGetAssignableRolesForResource() *cobra.Command {
   
   Gets all the roles that can be granted on an account level resource. A role is
   grantable if the rule set on the resource can contain an access rule of the
-  role.`
+  role.
+
+  Arguments:
+    RESOURCE: The resource name for which assignable roles will be listed.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -122,7 +125,18 @@ func newGetRuleSet() *cobra.Command {
   
   Get a rule set by its name. A rule set is always attached to a resource and
   contains a list of access rules on the said resource. Currently only a default
-  rule set for each resource is supported.`
+  rule set for each resource is supported.
+
+  Arguments:
+    NAME: The ruleset name associated with the request.
+    ETAG: Etag used for versioning. The response is at least as fresh as the eTag
+      provided. Etag is used for optimistic concurrency control as a way to help
+      prevent simultaneous updates of a rule set from overwriting each other. It
+      is strongly suggested that systems make use of the etag in the read ->
+      modify -> write pattern to perform rule set updates in order to avoid race
+      conditions that is get an etag from a GET rule set request, and pass it
+      with the PUT update request to identify the rule set version you are
+      updating.`
 
 	cmd.Annotations = make(map[string]string)
 

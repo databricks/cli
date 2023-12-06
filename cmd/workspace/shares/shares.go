@@ -65,7 +65,10 @@ func newCreate() *cobra.Command {
   
   Creates a new share for data objects. Data objects can be added after creation
   with **update**. The caller must be a metastore admin or have the
-  **CREATE_SHARE** privilege on the metastore.`
+  **CREATE_SHARE** privilege on the metastore.
+
+  Arguments:
+    NAME: Name of the share.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -142,7 +145,10 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete a share.
   
   Deletes a data object share from the metastore. The caller must be an owner of
-  the share.`
+  the share.
+
+  Arguments:
+    NAME: The name of the share.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -206,7 +212,10 @@ func newGet() *cobra.Command {
 	cmd.Long = `Get a share.
   
   Gets a data object share from the metastore. The caller must be a metastore
-  admin or the owner of the share.`
+  admin or the owner of the share.
+
+  Arguments:
+    NAME: The name of the share.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -318,7 +327,10 @@ func newSharePermissions() *cobra.Command {
 	cmd.Long = `Get permissions.
   
   Gets the permissions for a data share from the metastore. The caller must be a
-  metastore admin or the owner of the share.`
+  metastore admin or the owner of the share.
+
+  Arguments:
+    NAME: The name of the share.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -399,7 +411,10 @@ func newUpdate() *cobra.Command {
   indefinitely for recipients to be able to access the table. Typically, you
   should use a group as the share owner.
   
-  Table removals through **update** do not require additional privileges.`
+  Table removals through **update** do not require additional privileges.
+
+  Arguments:
+    NAME: Name of the share.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -474,7 +489,10 @@ func newUpdatePermissions() *cobra.Command {
   a metastore admin or an owner of the share.
   
   For new recipient grants, the user must also be the owner of the recipients.
-  recipient revocations do not require additional privileges.`
+  recipient revocations do not require additional privileges.
+
+  Arguments:
+    NAME: The name of the share.`
 
 	cmd.Annotations = make(map[string]string)
 

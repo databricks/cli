@@ -208,7 +208,10 @@ func newGet() *cobra.Command {
 	cmd.Long = `Get log delivery configuration.
   
   Gets a Databricks log delivery configuration object for an account, both
-  specified by ID.`
+  specified by ID.
+
+  Arguments:
+    LOG_DELIVERY_CONFIGURATION_ID: Databricks log delivery configuration ID`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -278,7 +281,7 @@ func newList() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Flags().StringVar(&listReq.CredentialsId, "credentials-id", listReq.CredentialsId, `Filter by credential configuration ID.`)
-	cmd.Flags().Var(&listReq.Status, "status", `Filter by status ENABLED or DISABLED.`)
+	cmd.Flags().Var(&listReq.Status, "status", `Filter by status ENABLED or DISABLED. Supported values: [DISABLED, ENABLED]`)
 	cmd.Flags().StringVar(&listReq.StorageConfigurationId, "storage-configuration-id", listReq.StorageConfigurationId, `Filter by storage configuration ID.`)
 
 	cmd.Use = "list"
@@ -351,7 +354,15 @@ func newPatchStatus() *cobra.Command {
   configurations is not supported, so disable log delivery configurations that
   are no longer needed. Note that you can't re-enable a delivery configuration
   if this would violate the delivery configuration limits described under
-  [Create log delivery](:method:LogDelivery/Create).`
+  [Create log delivery](:method:LogDelivery/Create).
+
+  Arguments:
+    LOG_DELIVERY_CONFIGURATION_ID: Databricks log delivery configuration ID
+    STATUS: Status of log delivery configuration. Set to ENABLED (enabled) or
+      DISABLED (disabled). Defaults to ENABLED. You can [enable or disable
+      the configuration](#operation/patch-log-delivery-config-status) later.
+      Deletion of a configuration is not supported, so disable a log delivery
+      configuration that is no longer needed.`
 
 	cmd.Annotations = make(map[string]string)
 

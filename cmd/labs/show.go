@@ -37,7 +37,7 @@ func newShowCommand() *cobra.Command {
 			}
 			name := args[0]
 			for _, v := range installed {
-				isDev := name == "." && v.IsDeveloperMode(ctx)
+				isDev := name == "." && v.IsDeveloperMode()
 				isMatch := name == v.Name
 				if !(isDev || isMatch) {
 					continue
@@ -45,10 +45,10 @@ func newShowCommand() *cobra.Command {
 				return cmdio.Render(ctx, map[string]any{
 					"name":        v.Name,
 					"description": v.Description,
-					"cache_dir":   v.CacheDir(ctx),
-					"config_dir":  v.ConfigDir(ctx),
-					"lib_dir":     v.EffectiveLibDir(ctx),
-					"is_python":   v.IsPythonProject(ctx),
+					"cache_dir":   v.CacheDir(),
+					"config_dir":  v.ConfigDir(),
+					"lib_dir":     v.EffectiveLibDir(),
+					"is_python":   v.IsPythonProject(),
 				})
 			}
 			return nil

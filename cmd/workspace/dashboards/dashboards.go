@@ -267,7 +267,7 @@ func newList() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Flags().Var(&listReq.Order, "order", `Name of dashboard attribute to order by.`)
+	cmd.Flags().Var(&listReq.Order, "order", `Name of dashboard attribute to order by. Supported values: [created_at, name]`)
 	cmd.Flags().IntVar(&listReq.Page, "page", listReq.Page, `Page number to retrieve.`)
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Number of dashboards to return per page.`)
 	cmd.Flags().StringVar(&listReq.Q, "q", listReq.Q, `Full text search term.`)

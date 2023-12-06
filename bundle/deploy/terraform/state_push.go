@@ -10,14 +10,16 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-type statePush struct{}
+type statePush struct {
+	filerFunc
+}
 
 func (l *statePush) Name() string {
 	return "terraform:state-push"
 }
 
 func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) error {
-	f, err := filer.NewWorkspaceFilesClient(b.WorkspaceClient(), b.Config.Workspace.StatePath)
+	f, err := l.filerFunc(b)
 	if err != nil {
 		return err
 	}
@@ -45,5 +47,5 @@ func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) error {
 }
 
 func StatePush() bundle.Mutator {
-	return &statePush{}
+	return &statePush{stateFiler}
 }

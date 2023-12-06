@@ -138,7 +138,10 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a service principal.`
 	cmd.Long = `Delete a service principal.
   
-  Delete a single service principal in the Databricks workspace.`
+  Delete a single service principal in the Databricks workspace.
+
+  Arguments:
+    ID: Unique ID for a service principal in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -212,7 +215,10 @@ func newGet() *cobra.Command {
 	cmd.Long = `Get service principal details.
   
   Gets the details for a single service principal define in the Databricks
-  workspace.`
+  workspace.
+
+  Arguments:
+    ID: Unique ID for a service principal in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -282,12 +288,12 @@ func newList() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Flags().StringVar(&listReq.Attributes, "attributes", listReq.Attributes, `Comma-separated list of attributes to return in response.`)
-	cmd.Flags().IntVar(&listReq.Count, "count", listReq.Count, `Desired number of results per page.`)
+	cmd.Flags().Int64Var(&listReq.Count, "count", listReq.Count, `Desired number of results per page.`)
 	cmd.Flags().StringVar(&listReq.ExcludedAttributes, "excluded-attributes", listReq.ExcludedAttributes, `Comma-separated list of attributes to exclude in response.`)
 	cmd.Flags().StringVar(&listReq.Filter, "filter", listReq.Filter, `Query by which the results have to be filtered.`)
 	cmd.Flags().StringVar(&listReq.SortBy, "sort-by", listReq.SortBy, `Attribute to sort the results.`)
-	cmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order to sort the results.`)
-	cmd.Flags().IntVar(&listReq.StartIndex, "start-index", listReq.StartIndex, `Specifies the index of the first result.`)
+	cmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order to sort the results. Supported values: [ascending, descending]`)
+	cmd.Flags().Int64Var(&listReq.StartIndex, "start-index", listReq.StartIndex, `Specifies the index of the first result.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List service principals.`
@@ -358,7 +364,10 @@ func newPatch() *cobra.Command {
 	cmd.Long = `Update service principal details.
   
   Partially updates the details of a single service principal in the Databricks
-  workspace.`
+  workspace.
+
+  Arguments:
+    ID: Unique ID for a service principal in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -451,7 +460,10 @@ func newUpdate() *cobra.Command {
   
   Updates the details of a single service principal.
   
-  This action replaces the existing service principal with the same name.`
+  This action replaces the existing service principal with the same name.
+
+  Arguments:
+    ID: Databricks service principal ID.`
 
 	cmd.Annotations = make(map[string]string)
 

@@ -8,6 +8,12 @@
         ".codegen/cmds-account.go.tmpl": "cmd/account/cmd.go"
     },
     "toolchain": {
-        "required": ["go"]
+        "required": ["go"],
+        "post_generate": [
+            "go run ./bundle/internal/bundle/schema/main.go ./bundle/schema/docs/bundle_descriptions.json",
+            "echo 'bundle/internal/tf/schema/\\*.go linguist-generated=true' >> ./.gitattributes",
+            "echo 'go.sum linguist-generated=true' >> ./.gitattributes",
+            "echo 'bundle/schema/docs/bundle_descriptions.json linguist-generated=true' >> ./.gitattributes"
+        ]
     }
 }
