@@ -135,7 +135,7 @@ func fromString(s string, T Type) (any, error) {
 
 // Error indicated a value entered by the user failed to match the pattern specified
 // in the template schema.
-type PatternMatchFailedError struct {
+type PatternMatchError struct {
 	// The name of the property that failed to match the pattern
 	PropertyName string
 
@@ -150,7 +150,7 @@ type PatternMatchFailedError struct {
 	FailureMessage string
 }
 
-func (e PatternMatchFailedError) Error() string {
+func (e PatternMatchError) Error() string {
 	// If custom user error message is defined, return error with the custom message
 	msg := e.FailureMessage
 	if msg == "" {
@@ -180,7 +180,7 @@ func validatePatternMatch(name string, value any, propertySchema *Schema) error 
 		return nil
 	}
 
-	return PatternMatchFailedError{
+	return PatternMatchError{
 		PropertyName:   name,
 		PropertyValue:  value,
 		Pattern:        propertySchema.Pattern,
