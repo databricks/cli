@@ -1,0 +1,27 @@
+bundle:
+  name: spark-jar-task
+
+workspace:
+  root_path: "~/.bundle/{{.unique_id}}"
+
+artifacts:
+  my_java_code:
+    path: ./{{.project_name}}
+    build: "javac PrintArgs.java && jar cvfm PrintArgs.jar META-INF/MANIFEST.MF PrintArgs.class"
+    files:
+      - source: {{.root}}/{{.project_name}}/PrintArgs.jar
+
+resources:
+  jobs:
+    jar_job:
+      name: "[${bundle.target}] Test Spark Jar Job {{.unique_id}}"
+      tasks:
+        - task_key: TestSparkJarTask
+          new_cluster:
+            num_workers: 1
+            spark_version: "{{.spark_version}}"
+            node_type_id: "{{.node_type_id}}"
+          spark_jar_task:
+            main_class_name: PrintArgs
+          libraries:
+            - jar: ./{{.project_name}}/PrintArgs.jar
