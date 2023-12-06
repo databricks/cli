@@ -169,7 +169,7 @@ func (c *config) promptSelect(name, description string, propertySchema *jsonsche
 
 func (c *config) promptText(name, description, defaultVal string, propertySchema *jsonschema.Schema) error {
 	for {
-		// Get user input. Parse the string back to a value
+		// Get user input.
 		userInput, err := cmdio.Ask(c.ctx, description, defaultVal)
 		if err != nil {
 			return err
