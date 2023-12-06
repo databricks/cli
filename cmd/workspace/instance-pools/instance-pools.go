@@ -86,7 +86,16 @@ func newCreate() *cobra.Command {
 	cmd.Short = `Create a new instance pool.`
 	cmd.Long = `Create a new instance pool.
   
-  Creates a new instance pool using idle and ready-to-use cloud instances.`
+  Creates a new instance pool using idle and ready-to-use cloud instances.
+
+  Arguments:
+    INSTANCE_POOL_NAME: Pool name requested by the user. Pool name must be unique. Length must be
+      between 1 and 100 characters.
+    NODE_TYPE_ID: This field encodes, through a single value, the resources available to
+      each of the Spark nodes in this cluster. For example, the Spark nodes can
+      be provisioned and optimized for memory or compute intensive workloads. A
+      list of available node types can be retrieved by using the
+      :method:clusters/listNodeTypes API call.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -168,7 +177,10 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete an instance pool.
   
   Deletes the instance pool permanently. The idle instances in the pool are
-  terminated asynchronously.`
+  terminated asynchronously.
+
+  Arguments:
+    INSTANCE_POOL_ID: The instance pool to be terminated.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -255,7 +267,17 @@ func newEdit() *cobra.Command {
 	cmd.Short = `Edit an existing instance pool.`
 	cmd.Long = `Edit an existing instance pool.
   
-  Modifies the configuration of an existing instance pool.`
+  Modifies the configuration of an existing instance pool.
+
+  Arguments:
+    INSTANCE_POOL_ID: Instance pool ID
+    INSTANCE_POOL_NAME: Pool name requested by the user. Pool name must be unique. Length must be
+      between 1 and 100 characters.
+    NODE_TYPE_ID: This field encodes, through a single value, the resources available to
+      each of the Spark nodes in this cluster. For example, the Spark nodes can
+      be provisioned and optimized for memory or compute intensive workloads. A
+      list of available node types can be retrieved by using the
+      :method:clusters/listNodeTypes API call.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -337,7 +359,10 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get instance pool information.`
 	cmd.Long = `Get instance pool information.
   
-  Retrieve the information for an instance pool based on its identifier.`
+  Retrieve the information for an instance pool based on its identifier.
+
+  Arguments:
+    INSTANCE_POOL_ID: The canonical unique identifier for the instance pool.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -410,7 +435,10 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Short = `Get instance pool permission levels.`
 	cmd.Long = `Get instance pool permission levels.
   
-  Gets the permission levels that a user can have on an object.`
+  Gets the permission levels that a user can have on an object.
+
+  Arguments:
+    INSTANCE_POOL_ID: The instance pool for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -484,7 +512,10 @@ func newGetPermissions() *cobra.Command {
 	cmd.Long = `Get instance pool permissions.
   
   Gets the permissions of an instance pool. Instance pools can inherit
-  permissions from their root object.`
+  permissions from their root object.
+
+  Arguments:
+    INSTANCE_POOL_ID: The instance pool for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -610,7 +641,10 @@ func newSetPermissions() *cobra.Command {
 	cmd.Long = `Set instance pool permissions.
   
   Sets permissions on an instance pool. Instance pools can inherit permissions
-  from their root object.`
+  from their root object.
+
+  Arguments:
+    INSTANCE_POOL_ID: The instance pool for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -694,7 +728,10 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Long = `Update instance pool permissions.
   
   Updates the permissions on an instance pool. Instance pools can inherit
-  permissions from their root object.`
+  permissions from their root object.
+
+  Arguments:
+    INSTANCE_POOL_ID: The instance pool for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 

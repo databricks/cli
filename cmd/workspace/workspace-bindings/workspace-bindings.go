@@ -71,7 +71,10 @@ func newGet() *cobra.Command {
 	cmd.Long = `Get catalog workspace bindings.
   
   Gets workspace bindings of the catalog. The caller must be a metastore admin
-  or an owner of the catalog.`
+  or an owner of the catalog.
+
+  Arguments:
+    NAME: The name of the catalog.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -133,7 +136,11 @@ func newGetBindings() *cobra.Command {
 	cmd.Long = `Get securable workspace bindings.
   
   Gets workspace bindings of the securable. The caller must be a metastore admin
-  or an owner of the securable.`
+  or an owner of the securable.
+
+  Arguments:
+    SECURABLE_TYPE: The type of the securable.
+    SECURABLE_NAME: The name of the securable.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -201,7 +208,10 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Update catalog workspace bindings.
   
   Updates workspace bindings of the catalog. The caller must be a metastore
-  admin or an owner of the catalog.`
+  admin or an owner of the catalog.
+
+  Arguments:
+    NAME: The name of the catalog.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -274,7 +284,11 @@ func newUpdateBindings() *cobra.Command {
 	cmd.Long = `Update securable workspace bindings.
   
   Updates workspace bindings of the securable. The caller must be a metastore
-  admin or an owner of the securable.`
+  admin or an owner of the securable.
+
+  Arguments:
+    SECURABLE_TYPE: The type of the securable.
+    SECURABLE_NAME: The name of the securable.`
 
 	cmd.Annotations = make(map[string]string)
 

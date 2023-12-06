@@ -147,7 +147,10 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete a user.
   
   Deletes a user. Deleting a user from a Databricks workspace also removes
-  objects associated with the user.`
+  objects associated with the user.
+
+  Arguments:
+    ID: Unique ID for a user in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -221,14 +224,17 @@ func newGet() *cobra.Command {
 	cmd.Flags().StringVar(&getReq.ExcludedAttributes, "excluded-attributes", getReq.ExcludedAttributes, `Comma-separated list of attributes to exclude in response.`)
 	cmd.Flags().StringVar(&getReq.Filter, "filter", getReq.Filter, `Query by which the results have to be filtered.`)
 	cmd.Flags().StringVar(&getReq.SortBy, "sort-by", getReq.SortBy, `Attribute to sort the results.`)
-	cmd.Flags().Var(&getReq.SortOrder, "sort-order", `The order to sort the results.`)
+	cmd.Flags().Var(&getReq.SortOrder, "sort-order", `The order to sort the results. Supported values: [ascending, descending]`)
 	cmd.Flags().IntVar(&getReq.StartIndex, "start-index", getReq.StartIndex, `Specifies the index of the first result.`)
 
 	cmd.Use = "get ID"
 	cmd.Short = `Get user details.`
 	cmd.Long = `Get user details.
   
-  Gets information for a specific user in Databricks workspace.`
+  Gets information for a specific user in Databricks workspace.
+
+  Arguments:
+    ID: Unique ID for a user in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -395,12 +401,12 @@ func newList() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Flags().StringVar(&listReq.Attributes, "attributes", listReq.Attributes, `Comma-separated list of attributes to return in response.`)
-	cmd.Flags().IntVar(&listReq.Count, "count", listReq.Count, `Desired number of results per page.`)
+	cmd.Flags().Int64Var(&listReq.Count, "count", listReq.Count, `Desired number of results per page.`)
 	cmd.Flags().StringVar(&listReq.ExcludedAttributes, "excluded-attributes", listReq.ExcludedAttributes, `Comma-separated list of attributes to exclude in response.`)
 	cmd.Flags().StringVar(&listReq.Filter, "filter", listReq.Filter, `Query by which the results have to be filtered.`)
 	cmd.Flags().StringVar(&listReq.SortBy, "sort-by", listReq.SortBy, `Attribute to sort the results.`)
-	cmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order to sort the results.`)
-	cmd.Flags().IntVar(&listReq.StartIndex, "start-index", listReq.StartIndex, `Specifies the index of the first result.`)
+	cmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order to sort the results. Supported values: [ascending, descending]`)
+	cmd.Flags().Int64Var(&listReq.StartIndex, "start-index", listReq.StartIndex, `Specifies the index of the first result.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List users.`
@@ -471,7 +477,10 @@ func newPatch() *cobra.Command {
 	cmd.Long = `Update user details.
   
   Partially updates a user resource by applying the supplied operations on
-  specific user attributes.`
+  specific user attributes.
+
+  Arguments:
+    ID: Unique ID for a user in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -635,7 +644,11 @@ func newUpdate() *cobra.Command {
 	cmd.Short = `Replace a user.`
 	cmd.Long = `Replace a user.
   
-  Replaces a user's information with the data supplied in request.`
+  Replaces a user's information with the data supplied in request.
+
+  Arguments:
+    ID: Databricks user ID. This is automatically set by Databricks. Any value
+      provided by the client will be ignored.`
 
 	cmd.Annotations = make(map[string]string)
 

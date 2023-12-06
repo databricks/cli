@@ -32,17 +32,17 @@ func (m *detectPkg) Apply(ctx context.Context, b *bundle.Bundle) error {
 		log.Infof(ctx, "No local wheel tasks in databricks.yml config, skipping auto detect")
 		return nil
 	}
-	cmdio.LogString(ctx, "artifacts.whl.AutoDetect: Detecting Python wheel project...")
+	cmdio.LogString(ctx, "Detecting Python wheel project...")
 
 	// checking if there is setup.py in the bundle root
 	setupPy := filepath.Join(b.Config.Path, "setup.py")
 	_, err := os.Stat(setupPy)
 	if err != nil {
-		cmdio.LogString(ctx, "artifacts.whl.AutoDetect: No Python wheel project found at bundle root folder")
+		cmdio.LogString(ctx, "No Python wheel project found at bundle root folder")
 		return nil
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("artifacts.whl.AutoDetect: Found Python wheel project at %s", b.Config.Path))
+	cmdio.LogString(ctx, fmt.Sprintf("Found Python wheel project at %s", b.Config.Path))
 	module := extractModuleName(setupPy)
 
 	if b.Config.Artifacts == nil {

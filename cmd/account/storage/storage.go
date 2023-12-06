@@ -135,7 +135,10 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete storage configuration.
   
   Deletes a Databricks storage configuration. You cannot delete a storage
-  configuration that is associated with any workspace.`
+  configuration that is associated with any workspace.
+
+  Arguments:
+    STORAGE_CONFIGURATION_ID: Databricks Account API storage configuration ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -208,7 +211,10 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get storage configuration.`
 	cmd.Long = `Get storage configuration.
   
-  Gets a Databricks storage configuration for an account, both specified by ID.`
+  Gets a Databricks storage configuration for an account, both specified by ID.
+
+  Arguments:
+    STORAGE_CONFIGURATION_ID: Databricks Account API storage configuration ID.`
 
 	cmd.Annotations = make(map[string]string)
 
