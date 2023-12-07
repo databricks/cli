@@ -42,7 +42,7 @@ func Deploy() bundle.Mutator {
 					),
 				),
 			),
-			lock.Release(lock.GoalDeploy),
+			lock.Release(lock.GoalDeploy, "Deployment complete!"),
 		),
 		scripts.Execute(config.ScriptPostDeploy),
 	)

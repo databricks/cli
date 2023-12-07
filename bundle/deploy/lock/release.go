@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
 )
@@ -17,11 +18,12 @@ const (
 )
 
 type release struct {
-	goal Goal
+	goal           Goal
+	successMessage string
 }
 
-func Release(goal Goal) bundle.Mutator {
-	return &release{goal}
+func Release(goal Goal, successMessage string) bundle.Mutator {
+	return &release{goal, successMessage}
 }
 
 func (m *release) Name() string {
@@ -45,10 +47,21 @@ func (m *release) Apply(ctx context.Context, b *bundle.Bundle) error {
 	log.Infof(ctx, "Releasing deployment lock")
 	switch m.goal {
 	case GoalDeploy:
-		return b.Locker.Unlock(ctx)
+		err := b.Locker.Unlock(ctx)
+		if err != nil {
+			return err
+		}
 	case GoalDestroy:
-		return b.Locker.Unlock(ctx, locker.AllowLockFileNotExist)
+		err := b.Locker.Unlock(ctx, locker.AllowLockFileNotExist)
+		if err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("unknown goal for lock release: %s", m.goal)
 	}
+
+	if m.successMessage != "" {
+		cmdio.LogString(ctx, m.successMessage)
+	}
+	return nil
 }
