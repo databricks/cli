@@ -139,7 +139,10 @@ func newDelete() *cobra.Command {
   
   Deletes a Databricks credential configuration object for an account, both
   specified by ID. You cannot delete a credential that is associated with any
-  workspace.`
+  workspace.
+
+  Arguments:
+    CREDENTIALS_ID: Databricks Account API credential configuration ID`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -213,7 +216,10 @@ func newGet() *cobra.Command {
 	cmd.Long = `Get credential configuration.
   
   Gets a Databricks credential configuration object for an account, both
-  specified by ID.`
+  specified by ID.
+
+  Arguments:
+    CREDENTIALS_ID: Databricks Account API credential configuration ID`
 
 	cmd.Annotations = make(map[string]string)
 

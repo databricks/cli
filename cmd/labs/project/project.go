@@ -49,6 +49,11 @@ func readFromBytes(ctx context.Context, labsYmlRaw []byte) (*Project, error) {
 	if project.Uninstaller != nil {
 		project.Uninstaller.Entrypoint = e
 	}
+	rootDir, err := PathInLabs(ctx, project.Name)
+	if err != nil {
+		return nil, err
+	}
+	project.rootDir = rootDir
 	return &project, nil
 }
 
@@ -63,7 +68,8 @@ type Project struct {
 	MinPython   string   `yaml:"min_python"`
 	Commands    []*proxy `yaml:"commands,omitempty"`
 
-	folder string
+	folder  string
+	rootDir string
 }
 
 func (p *Project) IsZipball() bool {
@@ -108,22 +114,22 @@ func (p *Project) fileExists(name string) bool {
 	return err == nil
 }
 
-func (p *Project) projectFilePath(ctx context.Context, name string) string {
-	return filepath.Join(p.EffectiveLibDir(ctx), name)
+func (p *Project) projectFilePath(name string) string {
+	return filepath.Join(p.EffectiveLibDir(), name)
 }
 
-func (p *Project) IsPythonProject(ctx context.Context) bool {
-	if p.fileExists(p.projectFilePath(ctx, "setup.py")) {
+func (p *Project) IsPythonProject() bool {
+	if p.fileExists(p.projectFilePath("setup.py")) {
 		return true
 	}
-	if p.fileExists(p.projectFilePath(ctx, "pyproject.toml")) {
+	if p.fileExists(p.projectFilePath("pyproject.toml")) {
 		return true
 	}
 	return false
 }
 
-func (p *Project) IsDeveloperMode(ctx context.Context) bool {
-	return p.folder != "" && !strings.HasPrefix(p.LibDir(ctx), p.folder)
+func (p *Project) IsDeveloperMode() bool {
+	return p.folder != "" && !strings.HasPrefix(p.LibDir(), p.folder)
 }
 
 func (p *Project) HasFolder() bool {
@@ -161,36 +167,32 @@ func (p *Project) Register(parent *cobra.Command) {
 	}
 }
 
-func (p *Project) rootDir(ctx context.Context) string {
-	return PathInLabs(ctx, p.Name)
+func (p *Project) CacheDir() string {
+	return filepath.Join(p.rootDir, "cache")
 }
 
-func (p *Project) CacheDir(ctx context.Context) string {
-	return filepath.Join(p.rootDir(ctx), "cache")
+func (p *Project) ConfigDir() string {
+	return filepath.Join(p.rootDir, "config")
 }
 
-func (p *Project) ConfigDir(ctx context.Context) string {
-	return filepath.Join(p.rootDir(ctx), "config")
+func (p *Project) LibDir() string {
+	return filepath.Join(p.rootDir, "lib")
 }
 
-func (p *Project) LibDir(ctx context.Context) string {
-	return filepath.Join(p.rootDir(ctx), "lib")
-}
-
-func (p *Project) EffectiveLibDir(ctx context.Context) string {
-	if p.IsDeveloperMode(ctx) {
+func (p *Project) EffectiveLibDir() string {
+	if p.IsDeveloperMode() {
 		// developer is working on a local checkout, that is not inside of installed root
 		return p.folder
 	}
-	return p.LibDir(ctx)
+	return p.LibDir()
 }
 
-func (p *Project) StateDir(ctx context.Context) string {
-	return filepath.Join(p.rootDir(ctx), "state")
+func (p *Project) StateDir() string {
+	return filepath.Join(p.rootDir, "state")
 }
 
-func (p *Project) EnsureFoldersExist(ctx context.Context) error {
-	dirs := []string{p.CacheDir(ctx), p.ConfigDir(ctx), p.LibDir(ctx), p.StateDir(ctx)}
+func (p *Project) EnsureFoldersExist() error {
+	dirs := []string{p.CacheDir(), p.ConfigDir(), p.LibDir(), p.StateDir()}
 	for _, v := range dirs {
 		err := os.MkdirAll(v, ownerRWXworldRX)
 		if err != nil {
@@ -209,11 +211,11 @@ func (p *Project) Uninstall(cmd *cobra.Command) error {
 	}
 	ctx := cmd.Context()
 	log.Infof(ctx, "Removing project: %s", p.Name)
-	return os.RemoveAll(p.rootDir(ctx))
+	return os.RemoveAll(p.rootDir)
 }
 
 func (p *Project) virtualEnvPath(ctx context.Context) string {
-	if p.IsDeveloperMode(ctx) {
+	if p.IsDeveloperMode() {
 		// When a virtual environment has been activated, the VIRTUAL_ENV environment variable
 		// is set to the path of the environment. Since explicitly activating a virtual environment
 		// is not required to use it, VIRTUAL_ENV cannot be relied upon to determine whether a virtual
@@ -225,14 +227,14 @@ func (p *Project) virtualEnvPath(ctx context.Context) string {
 			logger.Debugf(ctx, "(development mode) using active virtual environment from: %s", activatedVenv)
 			return activatedVenv
 		}
-		nonActivatedVenv, err := python.DetectVirtualEnvPath(p.EffectiveLibDir(ctx))
+		nonActivatedVenv, err := python.DetectVirtualEnvPath(p.EffectiveLibDir())
 		if err == nil {
 			logger.Debugf(ctx, "(development mode) using virtual environment from: %s", nonActivatedVenv)
 			return nonActivatedVenv
 		}
 	}
 	// by default, we pick Virtual Environment from DATABRICKS_LABS_STATE_DIR
-	return filepath.Join(p.StateDir(ctx), "venv")
+	return filepath.Join(p.StateDir(), "venv")
 }
 
 func (p *Project) virtualEnvPython(ctx context.Context) string {
@@ -247,13 +249,13 @@ func (p *Project) virtualEnvPython(ctx context.Context) string {
 }
 
 func (p *Project) loginFile(ctx context.Context) string {
-	if p.IsDeveloperMode(ctx) {
+	if p.IsDeveloperMode() {
 		// developers may not want to pollute the state in
 		// ~/.databricks/labs/X/config while the version is not yet
 		// released
-		return p.projectFilePath(ctx, ".databricks-login.json")
+		return p.projectFilePath(".databricks-login.json")
 	}
-	return filepath.Join(p.ConfigDir(ctx), "login.json")
+	return filepath.Join(p.ConfigDir(), "login.json")
 }
 
 func (p *Project) loadLoginConfig(ctx context.Context) (*loginConfig, error) {
@@ -268,11 +270,11 @@ func (p *Project) loadLoginConfig(ctx context.Context) (*loginConfig, error) {
 }
 
 func (p *Project) versionFile(ctx context.Context) string {
-	return filepath.Join(p.StateDir(ctx), "version.json")
+	return filepath.Join(p.StateDir(), "version.json")
 }
 
 func (p *Project) InstalledVersion(ctx context.Context) (*version, error) {
-	if p.IsDeveloperMode(ctx) {
+	if p.IsDeveloperMode() {
 		return &version{
 			Version: "*",
 			Date:    time.Now(),
@@ -300,12 +302,12 @@ func (p *Project) writeVersionFile(ctx context.Context, ver string) error {
 // giving users hints when they need to update their installations.
 func (p *Project) checkUpdates(cmd *cobra.Command) error {
 	ctx := cmd.Context()
-	if p.IsDeveloperMode(ctx) {
+	if p.IsDeveloperMode() {
 		// skipping update check for projects in developer mode, that
 		// might not be installed yet
 		return nil
 	}
-	r := github.NewReleaseCache("databrickslabs", p.Name, p.CacheDir(ctx))
+	r := github.NewReleaseCache("databrickslabs", p.Name, p.CacheDir())
 	versions, err := r.Load(ctx)
 	if err != nil {
 		return err

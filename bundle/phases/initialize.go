@@ -19,6 +19,7 @@ func Initialize() bundle.Mutator {
 	return newPhase(
 		"initialize",
 		[]bundle.Mutator{
+			mutator.InitializeWorkspaceClient(),
 			mutator.PopulateCurrentUser(),
 			mutator.SetRunAs(),
 			mutator.DefineDefaultWorkspaceRoot(),

@@ -41,6 +41,12 @@ func runPythonWheelTest(t *testing.T, sparkVersion string, pythonWheelWrapper bo
 	require.Contains(t, out, "Hello from my func")
 	require.Contains(t, out, "Got arguments:")
 	require.Contains(t, out, "['my_test_code', 'one', 'two']")
+
+	out, err = runResourceWithParams(t, bundleRoot, "some_other_job", "--python-params=param1,param2")
+	require.NoError(t, err)
+	require.Contains(t, out, "Hello from my func")
+	require.Contains(t, out, "Got arguments:")
+	require.Contains(t, out, "['my_test_code', 'param1', 'param2']")
 }
 
 func TestAccPythonWheelTaskDeployAndRunWithoutWrapper(t *testing.T) {

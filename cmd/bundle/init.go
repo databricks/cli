@@ -2,8 +2,10 @@ package bundle
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/cmd/root"
@@ -18,9 +20,52 @@ var gitUrlPrefixes = []string{
 	"git@",
 }
 
-var aliasedTemplates = map[string]string{
-	"mlops-stack":  "https://github.com/databricks/mlops-stacks",
-	"mlops-stacks": "https://github.com/databricks/mlops-stacks",
+type nativeTemplate struct {
+	name        string
+	gitUrl      string
+	description string
+	aliases     []string
+}
+
+var nativeTemplates = []nativeTemplate{
+	{
+		name:        "default-python",
+		description: "The default Python template",
+	},
+	{
+		name:        "mlops-stacks",
+		gitUrl:      "https://github.com/databricks/mlops-stacks",
+		description: "The Databricks MLOps Stacks template (https://github.com/databricks/mlops-stacks)",
+		aliases:     []string{"mlops-stack"},
+	},
+}
+
+func nativeTemplateDescriptions() string {
+	var lines []string
+	for _, template := range nativeTemplates {
+		lines = append(lines, fmt.Sprintf("- %s: %s", template.name, template.description))
+	}
+	return strings.Join(lines, "\n")
+}
+
+func nativeTemplateOptions() []string {
+	names := make([]string, 0, len(nativeTemplates))
+	for _, template := range nativeTemplates {
+		names = append(names, template.name)
+	}
+	return names
+}
+
+func getUrlForNativeTemplate(name string) string {
+	for _, template := range nativeTemplates {
+		if template.name == name {
+			return template.gitUrl
+		}
+		if slices.Contains(template.aliases, name) {
+			return template.gitUrl
+		}
+	}
+	return ""
 }
 
 func isRepoUrl(url string) bool {
@@ -47,14 +92,14 @@ func newInitCommand() *cobra.Command {
 		Use:   "init [TEMPLATE_PATH]",
 		Short: "Initialize using a bundle template",
 		Args:  cobra.MaximumNArgs(1),
-		Long: `Initialize using a bundle template.
+		Long: fmt.Sprintf(`Initialize using a bundle template.
 
 TEMPLATE_PATH optionally specifies which template to use. It can be one of the following:
-- 'default-python' for the default Python template
+%s
 - a local file system path with a template directory
 - a Git repository URL, e.g. https://github.com/my/repository
 
-See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more information on templates.`,
+See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more information on templates.`, nativeTemplateDescriptions()),
 	}
 
 	var configFile string
@@ -89,15 +134,16 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 			if !cmdio.IsOutTTY(ctx) || !cmdio.IsInTTY(ctx) {
 				return errors.New("please specify a template")
 			}
-			templatePath, err = cmdio.Ask(ctx, "Template to use", "default-python")
+			templatePath, err = cmdio.AskSelect(ctx, "Template to use", nativeTemplateOptions())
 			if err != nil {
 				return err
 			}
 		}
 
-		// Expand templatePath if it's an alias for a known template
-		if _, ok := aliasedTemplates[templatePath]; ok {
-			templatePath = aliasedTemplates[templatePath]
+		// Expand templatePath to a git URL if it's an alias for a known native template
+		// and we know it's git URL.
+		if gitUrl := getUrlForNativeTemplate(templatePath); gitUrl != "" {
+			templatePath = gitUrl
 		}
 
 		if !isRepoUrl(templatePath) {

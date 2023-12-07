@@ -133,6 +133,24 @@ func TestToTypedStructNilOverwrite(t *testing.T) {
 	assert.Equal(t, Tmp{}, out)
 }
 
+func TestToTypedStructWithValueField(t *testing.T) {
+	type Tmp struct {
+		Foo string `json:"foo"`
+
+		ConfigValue config.Value
+	}
+
+	var out Tmp
+	v := config.V(map[string]config.Value{
+		"foo": config.V("bar"),
+	})
+
+	err := ToTyped(&out, v)
+	require.NoError(t, err)
+	assert.Equal(t, "bar", out.Foo)
+	assert.Equal(t, v, out.ConfigValue)
+}
+
 func TestToTypedMap(t *testing.T) {
 	var out = map[string]string{}
 

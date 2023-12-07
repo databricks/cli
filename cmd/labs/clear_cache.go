@@ -19,13 +19,17 @@ func newClearCacheCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			_ = os.Remove(project.PathInLabs(ctx, "databrickslabs-repositories.json"))
+			cache, err := project.PathInLabs(ctx, "databrickslabs-repositories.json")
+			if err != nil {
+				return err
+			}
+			_ = os.Remove(cache)
 			logger := log.GetLogger(ctx)
 			for _, prj := range projects {
 				logger.Info("clearing labs project cache", slog.String("name", prj.Name))
-				_ = os.RemoveAll(prj.CacheDir(ctx))
+				_ = os.RemoveAll(prj.CacheDir())
 				// recreating empty cache folder for downstream apps to work normally
-				_ = prj.EnsureFoldersExist(ctx)
+				_ = prj.EnsureFoldersExist()
 			}
 			return nil
 		},

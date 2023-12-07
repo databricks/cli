@@ -67,7 +67,11 @@ func newAdd() *cobra.Command {
 	cmd.Long = `Register an instance profile.
   
   In the UI, you can select the instance profile when launching clusters. This
-  API is only available to admin users.`
+  API is only available to admin users.
+
+  Arguments:
+    INSTANCE_PROFILE_ARN: The AWS ARN of the instance profile to register with Databricks. This
+      field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -162,7 +166,11 @@ func newEdit() *cobra.Command {
   This API is only available to admin users.
   
   [Databricks SQL Serverless]: https://docs.databricks.com/sql/admin/serverless.html
-  [Enable serverless SQL warehouses]: https://docs.databricks.com/sql/admin/serverless.html`
+  [Enable serverless SQL warehouses]: https://docs.databricks.com/sql/admin/serverless.html
+
+  Arguments:
+    INSTANCE_PROFILE_ARN: The AWS ARN of the instance profile to register with Databricks. This
+      field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -293,7 +301,10 @@ func newRemove() *cobra.Command {
   Remove the instance profile with the provided ARN. Existing clusters with this
   instance profile will continue to function.
   
-  This API is only accessible to admin users.`
+  This API is only accessible to admin users.
+
+  Arguments:
+    INSTANCE_PROFILE_ARN: The ARN of the instance profile to remove. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
 

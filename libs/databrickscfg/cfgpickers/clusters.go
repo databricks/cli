@@ -118,6 +118,18 @@ func WithDatabricksConnect(minVersion string) func(*compute.ClusterDetails, *iam
 	}
 }
 
+// WithoutSystemClusters removes clusters created for system purposes (e.g. job runs, pipeline maintenance, etc.).
+// It does this by keeping only clusters created through the UI or an API call.
+func WithoutSystemClusters() func(*compute.ClusterDetails, *iam.User) bool {
+	return func(cluster *compute.ClusterDetails, me *iam.User) bool {
+		switch cluster.ClusterSource {
+		case compute.ClusterSourceApi, compute.ClusterSourceUi:
+			return true
+		}
+		return false
+	}
+}
+
 func loadInteractiveClusters(ctx context.Context, w *databricks.WorkspaceClient, filters []clusterFilter) ([]compatibleCluster, error) {
 	promptSpinner := cmdio.Spinner(ctx)
 	promptSpinner <- "Loading list of clusters to select from"

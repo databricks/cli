@@ -62,6 +62,24 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 							},
 						},
 					},
+					"job3": {
+						JobSettings: &jobs.JobSettings{
+							Name: "job3",
+							Trigger: &jobs.TriggerSettings{
+								FileArrival: &jobs.FileArrivalTriggerConfiguration{
+									Url: "test.com",
+								},
+							},
+						},
+					},
+					"job4": {
+						JobSettings: &jobs.JobSettings{
+							Name: "job4",
+							Continuous: &jobs.Continuous{
+								PauseStatus: jobs.PauseStatusPaused,
+							},
+						},
+					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline1": {PipelineSpec: &pipelines.PipelineSpec{Name: "pipeline1"}},
@@ -205,6 +223,8 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	b.Config.Resources.Jobs["job1"].Permissions = permissions
 	b.Config.Resources.Jobs["job1"].RunAs = &jobs.JobRunAs{UserName: "user@company.com"}
 	b.Config.Resources.Jobs["job2"].RunAs = &jobs.JobRunAs{UserName: "user@company.com"}
+	b.Config.Resources.Jobs["job3"].RunAs = &jobs.JobRunAs{UserName: "user@company.com"}
+	b.Config.Resources.Jobs["job4"].RunAs = &jobs.JobRunAs{UserName: "user@company.com"}
 	b.Config.Resources.Pipelines["pipeline1"].Permissions = permissions
 	b.Config.Resources.Experiments["experiment1"].Permissions = permissions
 	b.Config.Resources.Experiments["experiment2"].Permissions = permissions
