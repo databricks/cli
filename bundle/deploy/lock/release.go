@@ -60,7 +60,7 @@ func (m *release) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return fmt.Errorf("unknown goal for lock release: %s", m.goal)
 	}
 
-	if m.successMessage != "" {
+	if m.successMessage != "" && bundle.ErrFromContext(ctx) == nil {
 		cmdio.LogString(ctx, m.successMessage)
 	}
 	return nil
