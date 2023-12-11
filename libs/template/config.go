@@ -147,7 +147,7 @@ func (c *config) skipPrompt(p jsonschema.Property, r *renderer) (bool, error) {
 func (c *config) promptForValues(r *renderer) error {
 	for _, p := range c.schema.OrderedProperties() {
 		name := p.Name
-		propertySchema := p.Schema
+		property := p.Schema
 
 		// Skip prompting if we can.
 		skip, err := c.skipPrompt(p, r)
@@ -160,8 +160,8 @@ func (c *config) promptForValues(r *renderer) error {
 
 		// Compute default value to display by converting it to a string
 		var defaultVal string
-		if propertySchema.Default != nil {
-			defaultValRaw, err := propertySchema.DefaultString()
+		if property.Default != nil {
+			defaultValRaw, err := property.DefaultString()
 			if err != nil {
 				return err
 			}
@@ -172,7 +172,7 @@ func (c *config) promptForValues(r *renderer) error {
 		}
 
 		// Compute description for the prompt
-		description, err := r.executeTemplate(propertySchema.Description)
+		description, err := r.executeTemplate(property.Description)
 		if err != nil {
 			return err
 		}
@@ -183,9 +183,9 @@ func (c *config) promptForValues(r *renderer) error {
 			// Display selection UI to the user if the property is an enum
 			var userInput string
 			var err error
-			if propertySchema.Enum != nil {
+			if property.Enum != nil {
 				// List of options to display to user
-				options, err := propertySchema.EnumStringSlice()
+				options, err := property.EnumStringSlice()
 				if err != nil {
 					return err
 				}
@@ -203,7 +203,7 @@ func (c *config) promptForValues(r *renderer) error {
 			}
 
 			// Convert user input string back to a Go value
-			c.values[name], err = propertySchema.ParseString(userInput)
+			c.values[name], err = property.ParseString(userInput)
 			if err != nil {
 				// Show error and retry if validation fails
 				cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %s", err.Error()))
