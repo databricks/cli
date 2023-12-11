@@ -180,17 +180,14 @@ func (c *config) promptForValues(r *renderer) error {
 		// We wrap this function in a retry loop to allow retries when the user
 		// entered value is invalid.
 		for {
-			// Display selection UI to the user if the property is an enum
 			var userInput string
 			var err error
 			if property.Enum != nil {
-				// List of options to display to user
+				// List options for the user to select
 				options, err := property.EnumStringSlice()
 				if err != nil {
 					return err
 				}
-
-				// Get user input
 				userInput, err = cmdio.AskSelect(c.ctx, description, options)
 				if err != nil {
 					return err
