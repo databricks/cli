@@ -45,9 +45,9 @@ type ResourceSqlQueryParameterDatetimesecRange struct {
 }
 
 type ResourceSqlQueryParameterEnumMultiple struct {
-	Prefix    string `json:"prefix"`
+	Prefix    string `json:"prefix,omitempty"`
 	Separator string `json:"separator"`
-	Suffix    string `json:"suffix"`
+	Suffix    string `json:"suffix,omitempty"`
 }
 
 type ResourceSqlQueryParameterEnum struct {
@@ -62,9 +62,9 @@ type ResourceSqlQueryParameterNumber struct {
 }
 
 type ResourceSqlQueryParameterQueryMultiple struct {
-	Prefix    string `json:"prefix"`
+	Prefix    string `json:"prefix,omitempty"`
 	Separator string `json:"separator"`
-	Suffix    string `json:"suffix"`
+	Suffix    string `json:"suffix,omitempty"`
 }
 
 type ResourceSqlQueryParameterQuery struct {

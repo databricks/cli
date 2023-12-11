@@ -3,7 +3,9 @@
 package schema
 
 type ResourceStorageCredentialAwsIamRole struct {
-	RoleArn string `json:"role_arn"`
+	ExternalId         string `json:"external_id,omitempty"`
+	RoleArn            string `json:"role_arn"`
+	UnityCatalogIamArn string `json:"unity_catalog_iam_arn,omitempty"`
 }
 
 type ResourceStorageCredentialAzureManagedIdentity struct {
