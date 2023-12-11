@@ -167,6 +167,8 @@ func (c *config) promptSelect(name, description string, propertySchema *jsonsche
 }
 
 func (c *config) promptText(name, description, defaultVal string, propertySchema *jsonschema.Schema) error {
+	// We wrap this function in a retry loop to allow retries when the user
+	// entered value is invalid.
 	for {
 		// Get user input.
 		userInput, err := cmdio.Ask(c.ctx, description, defaultVal)
