@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -140,7 +139,6 @@ var ErrStubContinue = errors.New("continue executing the stub after callback")
 func (s *processStub) run(cmd *exec.Cmd) error {
 	s.calls = append(s.calls, cmd)
 	for pattern, resp := range s.responses {
-		pattern = strings.ReplaceAll(pattern, string(os.PathSeparator), "/")
 		re := regexp.MustCompile(pattern)
 		norm := s.normCmd(cmd)
 		if !re.MatchString(norm) {
