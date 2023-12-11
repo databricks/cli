@@ -2,9 +2,11 @@ package process
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -128,14 +130,24 @@ func (s *processStub) normCmd(v *exec.Cmd) string {
 	// "/var/folders/bc/7qf8yghj6v14t40096pdcqy40000gp/T/tmp.03CAcYcbOI/python3" becomes "python3".
 	// Use [processStub.WithCallback] if you need to match against the full executable path.
 	binaryName := filepath.Base(v.Path)
-	args := strings.Join(v.Args[1:], " ")
+	var unixArgs []string
+	for _, arg := range v.Args[1:] {
+		unixArgs = append(unixArgs, filepath.ToSlash(arg))
+	}
+	args := strings.Join(unixArgs, " ")
 	return fmt.Sprintf("%s %s", binaryName, args)
 }
 
+var ErrStubContinue = errors.New("continue executing the stub after callback")
+
 func (s *processStub) run(cmd *exec.Cmd) error {
 	s.calls = append(s.calls, cmd)
-	resp, ok := s.responses[s.normCmd(cmd)]
-	if ok {
+	for pattern, resp := range s.responses {
+		re := regexp.MustCompile(pattern)
+		norm := s.normCmd(cmd)
+		if !re.MatchString(norm) {
+			continue
+		}
 		if resp.stdout != "" {
 			cmd.Stdout.Write([]byte(resp.stdout))
 		}
@@ -146,6 +158,10 @@ func (s *processStub) run(cmd *exec.Cmd) error {
 	}
 	if s.callback != nil {
 		return s.callback(cmd)
+	}
+	var zeroStub reponseStub
+	if s.reponseStub == zeroStub {
+		return fmt.Errorf("no default process stub")
 	}
 	if s.reponseStub.stdout != "" {
 		cmd.Stdout.Write([]byte(s.reponseStub.stdout))
