@@ -2,7 +2,6 @@ package template
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -179,12 +178,7 @@ func (c *config) promptText(name, description, defaultVal string, propertySchema
 		c.values[name], err = propertySchema.ParseString(userInput)
 		// Error parsing user input. Retry if parsing fails.
 		if err != nil {
-			target := &jsonschema.ParseStringError{}
-			if errors.As(err, target) {
-				cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %q is not a %s", target.Value, target.ExpectedType))
-			} else {
-				cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %s", err.Error()))
-			}
+			cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %s", err.Error()))
 			continue
 		}
 

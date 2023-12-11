@@ -8,19 +8,16 @@ import (
 )
 
 // This error indicates an failure to parse a string as a particular JSON schema type.
-type ParseStringError struct {
+type parseStringError struct {
 	// Expected JSON schema type for the value
 	ExpectedType Type
 
 	// The string value that failed to parse
 	Value string
-
-	// The error returned by the underlying parser
-	ParseError error
 }
 
-func (e ParseStringError) Error() string {
-	return fmt.Sprintf("could not parse %q as a %s: %s", e.Value, e.ExpectedType, e.ParseError.Error())
+func (e parseStringError) Error() string {
+	return fmt.Sprintf("%q is not a %s", e.Value, e.ExpectedType)
 }
 
 // function to check whether a float value represents an integer
@@ -124,10 +121,9 @@ func fromString(s string, T Type) (any, error) {
 
 	// Return more readable error incase of a syntax error
 	if errors.Is(err, strconv.ErrSyntax) {
-		return nil, ParseStringError{
+		return nil, parseStringError{
 			ExpectedType: T,
 			Value:        s,
-			ParseError:   err,
 		}
 	}
 	return v, err
