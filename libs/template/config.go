@@ -183,7 +183,7 @@ func (c *config) promptForValues(r *renderer) error {
 			var userInput string
 			var err error
 			if property.Enum != nil {
-				// List options for the user to select
+				// List options for the user to select from
 				options, err := property.EnumStringSlice()
 				if err != nil {
 					return err
