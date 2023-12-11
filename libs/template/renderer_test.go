@@ -37,10 +37,10 @@ func assertFilePermissions(t *testing.T, path string, perm fs.FileMode) {
 	assert.Equal(t, perm, info.Mode().Perm())
 }
 
-func assertBuiltinTemplateValid(t *testing.T, settings map[string]any, target string, isServicePrincipal bool, build bool, tempDir string) {
+func assertBuiltinTemplateValid(t *testing.T, template string, settings map[string]any, target string, isServicePrincipal bool, build bool, tempDir string) {
 	ctx := context.Background()
 
-	templatePath, err := prepareBuiltinTemplates("default-python", tempDir)
+	templatePath, err := prepareBuiltinTemplates(template, tempDir)
 	require.NoError(t, err)
 	libraryPath := filepath.Join(templatePath, "library")
 
@@ -98,7 +98,7 @@ func TestPrepareBuiltInTemplatesWithRelativePaths(t *testing.T) {
 	assert.Equal(t, "./default-python", dir)
 }
 
-func TestBuiltinTemplateValid(t *testing.T) {
+func TestBuiltinPythonTemplateValid(t *testing.T) {
 	// Test option combinations
 	options := []string{"yes", "no"}
 	isServicePrincipal := false
@@ -114,7 +114,7 @@ func TestBuiltinTemplateValid(t *testing.T) {
 						"include_python":   includePython,
 					}
 					tempDir := t.TempDir()
-					assertBuiltinTemplateValid(t, config, "dev", isServicePrincipal, build, tempDir)
+					assertBuiltinTemplateValid(t, "default-python", config, "dev", isServicePrincipal, build, tempDir)
 				}
 			}
 		}
@@ -136,8 +136,20 @@ func TestBuiltinTemplateValid(t *testing.T) {
 	require.NoError(t, err)
 	defer os.RemoveAll(tempDir)
 
-	assertBuiltinTemplateValid(t, config, "prod", isServicePrincipal, build, tempDir)
+	assertBuiltinTemplateValid(t, "default-python", config, "prod", isServicePrincipal, build, tempDir)
 	defer os.RemoveAll(tempDir)
+}
+
+func TestBuiltinSQLTemplateValid(t *testing.T) {
+	// Test prod mode + build
+	config := map[string]any{
+		"project_name":            "my_project",
+		"workspace_host_override": "yes",
+		"http_path":               "/sql/warehouses/123",
+	}
+	build := false
+	assertBuiltinTemplateValid(t, "default-sql", config, "dev", true, build, t.TempDir())
+	assertBuiltinTemplateValid(t, "default-sql", config, "prod", false, build, t.TempDir())
 }
 
 func TestRendererWithAssociatedTemplateInLibrary(t *testing.T) {

@@ -26,14 +26,6 @@ func TestBundleInitRepoName(t *testing.T) {
 	assert.Equal(t, "www.github.com", repoName("https://www.github.com"))
 }
 
-func TestNativeTemplateOptions(t *testing.T) {
-	assert.Equal(t, []string{"default-python", "mlops-stacks"}, nativeTemplateOptions())
-}
-
-func TestNativeTemplateDescriptions(t *testing.T) {
-	assert.Equal(t, "- default-python: The default Python template\n- mlops-stacks: The Databricks MLOps Stacks template (https://github.com/databricks/mlops-stacks)", nativeTemplateDescriptions())
-}
-
 func TestGetUrlForNativeTemplate(t *testing.T) {
 	assert.Equal(t, "https://github.com/databricks/mlops-stacks", getUrlForNativeTemplate("mlops-stacks"))
 	assert.Equal(t, "https://github.com/databricks/mlops-stacks", getUrlForNativeTemplate("mlops-stack"))

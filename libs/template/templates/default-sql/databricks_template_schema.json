@@ -1,0 +1,30 @@
+{
+    "welcome_message": "\nWelcome to the default SQL template for Databricks Asset Bundles!",
+    "properties": {
+        "project_name": {
+            "type": "string",
+            "default": "my_sql_project",
+            "description": "Please provide the following details to tailor the template to your preferences.\n\nUnique name for this project",
+            "order": 1,
+            "pattern": "^[A-Za-z0-9_]+$",
+            "pattern_match_failure_message": "Name must consist of letters, numbers, and underscores."
+        },
+        "workspace_host_override": {
+            "comment": "We explicitly ask users for the workspace_host since we ask for a http_path below. A downside of doing this is that {{user_name}} may not be correct if they pick a different workspace than the one from the current profile.",
+            "type": "string",
+            "pattern": "^https:\\/\\/[^/]+$",
+            "pattern_match_failure_message": "URL must be of the form https://my.databricks.host",
+            "description": "Workspace URL to use",
+            "default": "{{workspace_host}}",
+            "order": 3
+        },
+        "http_path": {
+            "type": "string",
+            "pattern": "^/sql/.\\../warehouses/[a-z0-9]+$",
+            "pattern_match_failure_message": "Path must be of the form /sql/1.0/warehouses/abcdef1234567890",
+            "description": "SQL warehouse path to use (find this path by clicking on \"Connection Details\" on a SQL warehouse",
+            "order": 4
+        }
+    },
+    "success_message": "✨ Your new project has been created in the '{{.project_name}}' directory!\n\nPlease refer to the README.md file for \"getting started\" instructions.\nSee also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html."
+}

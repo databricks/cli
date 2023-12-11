@@ -1,0 +1,35 @@
+# A job running a notebook on a cluster
+resources:
+  jobs:
+    {{.project_name}}_notebook_job:
+      name: {{.project_name}}_notebook_job
+
+      schedule:
+        # Run every day at 7:17 AM
+        quartz_cron_expression: '44 17 7 * * ?'
+        timezone_id: Europe/Amsterdam
+
+      {{- if not is_service_principal}}
+
+      email_notifications:
+        on_failure:
+          - {{user_name}}
+
+      {{else}}
+
+      {{end -}}
+
+      tasks:
+        - task_key: notebook_task
+          job_cluster_key: job_cluster
+          notebook_task:
+            notebook_path: ../src/sample_notebook.ipynb
+      {{/* We'd use a SQL warehouse here, but Workflows doesn't yet support warehouses for notebooks */}}
+      job_clusters:
+        - job_cluster_key: job_cluster
+          new_cluster:
+            spark_version: {{template "latest_lts_dbr_version"}}
+            node_type_id: {{smallest_node_type}}
+            autoscale:
+                min_workers: 1
+                max_workers: 4

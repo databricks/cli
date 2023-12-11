@@ -33,6 +33,10 @@ var nativeTemplates = []nativeTemplate{
 		description: "The default Python template",
 	},
 	{
+		name:        "default-sql",
+		description: "The default SQL template for Notebooks / Delta Live Tables / Workflows",
+	},
+	{
 		name:        "mlops-stacks",
 		gitUrl:      "https://github.com/databricks/mlops-stacks",
 		description: "The Databricks MLOps Stacks template (https://github.com/databricks/mlops-stacks)",
