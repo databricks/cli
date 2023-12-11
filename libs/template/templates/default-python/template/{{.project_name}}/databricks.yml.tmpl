@@ -10,9 +10,9 @@ targets:
   # The 'dev' target, for development purposes. This target is the default.
   dev:
     # We use 'mode: development' to indicate this is a personal development copy:
-    # - deployed resources get prefixed with '[dev my_user_name]'
-    # - any job schedules and triggers are paused by default
-    # - the 'development' mode is used for Delta Live Tables pipelines
+    # - Deployed resources get prefixed with '[dev my_user_name]'
+    # - Any job schedules and triggers are paused by default
+    # - The 'development' mode is used for Delta Live Tables pipelines
     mode: development
     default: true
     workspace:
@@ -37,6 +37,6 @@ targets:
     {{- if not is_service_principal}}
     run_as:
       # This runs as {{user_name}} in production. We could also use a service principal here
-      # using service_principal_name (see the Databricks documentation).
+      # using service_principal_name (see https://docs.databricks.com/dev-tools/bundles/permissions.html).
       user_name: {{user_name}}
     {{end -}}

@@ -1,8 +1,8 @@
-# The main job for {{.project_name}}
+# The main job for {{.project_name}}.
 
 {{- /* Clarify what this job is for for DLT-only users. */}}
 {{if and (eq .include_dlt "yes") (and (eq .include_notebook "no") (eq .include_python "no")) -}}
-# this job runs {{.project_name}}_pipeline on a schedule
+# This job runs {{.project_name}}_pipeline on a schedule.
 {{end -}}
 
 resources:
