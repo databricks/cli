@@ -191,7 +191,8 @@ func (v Value) MustTime() time.Time {
 }
 
 func (v Value) MarshalYAML() (interface{}, error) {
-	if v.Kind() == KindMap {
+	switch v.Kind() {
+	case KindMap:
 		m, _ := v.AsMap()
 		keys := maps.Keys(m)
 		// We're using location lines to define the order of keys in YAML.
@@ -215,9 +216,7 @@ func (v Value) MarshalYAML() (interface{}, error) {
 		}
 
 		return &yaml.Node{Kind: yaml.MappingNode, Content: content}, nil
-	}
-
-	if v.Kind() == KindSequence {
+	case KindSequence:
 		s, _ := v.AsSequence()
 		content := make([]*yaml.Node, 0)
 		for _, item := range s {
@@ -229,9 +228,22 @@ func (v Value) MarshalYAML() (interface{}, error) {
 			content = append(content, c)
 		}
 		return &yaml.Node{Kind: yaml.SequenceNode, Content: content}, nil
+	case KindNil:
+		return &yaml.Node{Kind: yaml.ScalarNode, Value: "null"}, nil
+	case KindString:
+		return &yaml.Node{Kind: yaml.ScalarNode, Value: v.MustString()}, nil
+	case KindBool:
+		return &yaml.Node{Kind: yaml.ScalarNode, Value: fmt.Sprint(v.MustBool())}, nil
+	case KindInt:
+		return &yaml.Node{Kind: yaml.ScalarNode, Value: fmt.Sprint(v.MustInt())}, nil
+	case KindFloat:
+		return &yaml.Node{Kind: yaml.ScalarNode, Value: fmt.Sprint(v.MustFloat())}, nil
+	case KindTime:
+		return &yaml.Node{Kind: yaml.ScalarNode, Value: v.MustTime().Format(time.RFC3339)}, nil
+	default:
+		// Panic because we only want to deal with known types.
+		panic(fmt.Sprintf("invalid kind: %d", v.k))
 	}
-
-	return &yaml.Node{Kind: yaml.ScalarNode, Value: fmt.Sprint(v.AsAny())}, nil
 }
 
 func (v *Value) SetLocation(l Location) {

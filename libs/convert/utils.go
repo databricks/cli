@@ -4,12 +4,13 @@ import (
 	"reflect"
 	"slices"
 	"strings"
+	"unicode"
 
 	"github.com/databricks/cli/libs/config"
 	"github.com/databricks/cli/libs/config/convert"
 )
 
-var skipFields = []string{"ForceSendFields"}
+var skipFields = []string{"ForceSendFields", "Format"}
 
 // Returns config name to be used in YAML configuration for
 // the config value passed. Uses the name defined in 'json' tag
@@ -24,37 +25,10 @@ func key(v any, name string) string {
 		return name
 	}
 	key, _, _ := strings.Cut(field.Tag.Get("json"), ",")
-	return key
-}
-
-// This struct is used to generate indexes for ordering of map keys.
-// The ordering defined based on any predefined order in `order` field
-// or running order based on `index`
-type order struct {
-	index int
-	order []string
-}
-
-func newOrder(o []string) *order {
-	return &order{index: 0, order: o}
-}
-
-// Returns an integer which represents the order of map key in resulting
-// The lower the index, the earlier in the list the key is.
-// If the order is not predefined, it uses running order and any subsequential call to
-// order.get returns an increasing index.
-func (o *order) get(key string) int {
-	index := slices.Index(o.order, key)
-	// If the key is found in predefined order list
-	// We return a negative index which put the value at the top of the order compared to other
-	// not predefined keys. The earlier value in predefined list, the lower negative index value
-	if index != -1 {
-		return index - len(o.order)
+	if key == "-" || key == "" {
+		return name
 	}
-
-	// Otherwise we just increase the order index
-	o.index += 1
-	return o.index
+	return key
 }
 
 // Converts a struct to map. Skips any nil fields.
@@ -93,4 +67,18 @@ func convertToMapValue(strct any, order *order, dst map[string]config.Value) (co
 	}
 
 	return config.V(dst), nil
+}
+
+func replaceNonAlphanumeric(r rune) rune {
+	if unicode.IsLetter(r) || unicode.IsDigit(r) {
+		return r
+	}
+	return '_'
+}
+
+// We leave the full range of unicode letters in tact, but remove all "special" characters,
+// including spaces and dots, which are not supported in e.g. experiment names or YAML keys.
+func NormaliseString(name string) string {
+	name = strings.ToLower(name)
+	return strings.Map(replaceNonAlphanumeric, name)
 }

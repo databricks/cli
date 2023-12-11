@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/cmd/root"
@@ -53,7 +54,7 @@ func NewGenerateJobCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			input, err := cmdio.Ask(ctx, "Output dir", wd)
+			input, err := cmdio.Ask(ctx, "Output dir", filepath.Join(wd, "resources"))
 			if err != nil {
 				return err
 			}
@@ -61,10 +62,11 @@ func NewGenerateJobCommand() *cobra.Command {
 		}
 
 		var getReq jobs.GetJobRequest
-		_, err := fmt.Sscan(args[0], &getReq.JobId)
+		id, err := strconv.ParseInt(args[0], 10, 64)
 		if err != nil {
 			return fmt.Errorf("invalid JOB_ID: %s", args[0])
 		}
+		getReq.JobId = id
 
 		job, err := w.Jobs.Get(ctx, getReq)
 		if err != nil {
@@ -88,7 +90,7 @@ func NewGenerateJobCommand() *cobra.Command {
 			return err
 		}
 
-		jobName := fmt.Sprintf("job_%d", getReq.JobId)
+		jobName := fmt.Sprintf("job_%s", convert.NormaliseString(job.Settings.Name))
 		result := map[string]any{
 			"resources": map[string]any{
 				"jobs": map[string]config.Value{
