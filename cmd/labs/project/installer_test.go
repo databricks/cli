@@ -197,9 +197,10 @@ func TestInstallerWorksForReleases(t *testing.T) {
 
 	ctx, stub := process.WithStub(ctx)
 	stub.WithStdoutFor(`python[\S]+ --version`, "Python 3.10.5")
+	// on Unix, we call `python3`, but on Windows it is `python.exe`
 	stub.WithStderrFor(`python[\S]+ -m venv .*/.databricks/labs/blueprint/state/venv`, "[mock venv create]")
-	stub.WithStderrFor(`python3 -m pip install .`, "[mock pip install]")
-	stub.WithStdoutFor(`python3 install.py`, "setting up important infrastructure")
+	stub.WithStderrFor(`python[\S]+ -m pip install .`, "[mock pip install]")
+	stub.WithStdoutFor(`python[\S]+ install.py`, "setting up important infrastructure")
 
 	// simulate the case of GitHub Actions
 	ctx = env.Set(ctx, "DATABRICKS_HOST", server.URL)
