@@ -30,13 +30,17 @@ type nativeTemplate struct {
 var nativeTemplates = []nativeTemplate{
 	{
 		name:        "default-python",
-		description: "The default Python template",
+		description: "The default Python template for Notebooks / Delta Live Tables / Workflows",
 	},
 	{
 		name:        "mlops-stacks",
 		gitUrl:      "https://github.com/databricks/mlops-stacks",
-		description: "The Databricks MLOps Stacks template (https://github.com/databricks/mlops-stacks)",
+		description: "The Databricks MLOps Stacks template (github.com/databricks/mlops-stacks)",
 		aliases:     []string{"mlops-stack"},
+	},
+	{
+		name:        "custom...",
+		description: "Bring your own template",
 	},
 }
 
@@ -48,12 +52,25 @@ func nativeTemplateDescriptions() string {
 	return strings.Join(lines, "\n")
 }
 
-func nativeTemplateOptions() []string {
-	names := make([]string, 0, len(nativeTemplates))
+func nativeTemplateOptions() []cmdio.Tuple {
+	names := make([]cmdio.Tuple, 0, len(nativeTemplates))
 	for _, template := range nativeTemplates {
-		names = append(names, template.name)
+		tuple := cmdio.Tuple{
+			Name: template.name,
+			Id:   template.description,
+		}
+		names = append(names, tuple)
 	}
 	return names
+}
+
+func getNativeTemplateByDescription(description string) string {
+	for _, template := range nativeTemplates {
+		if template.description == description {
+			return template.name
+		}
+	}
+	return ""
 }
 
 func getUrlForNativeTemplate(name string) string {
@@ -134,10 +151,17 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 			if !cmdio.IsOutTTY(ctx) || !cmdio.IsInTTY(ctx) {
 				return errors.New("please specify a template")
 			}
-			templatePath, err = cmdio.AskSelect(ctx, "Template to use", nativeTemplateOptions())
+			description, err := cmdio.SelectOrdered(ctx, nativeTemplateOptions(), "Template to use")
 			if err != nil {
 				return err
 			}
+			templatePath = getNativeTemplateByDescription(description)
+		}
+
+		if templatePath == "custom..." {
+			cmdio.LogString(ctx, "Please specify a path or Git repository to use a custom template.")
+			cmdio.LogString(ctx, "See https://docs.databricks.com/en/dev-tools/bundles/templates.html to learn more about custom templates.")
+			return nil
 		}
 
 		// Expand templatePath to a git URL if it's an alias for a known native template

@@ -130,19 +130,13 @@ func RenderReader(ctx context.Context, r io.Reader) error {
 	}
 }
 
-type tuple struct{ Name, Id string }
+type Tuple struct{ Name, Id string }
 
-func (c *cmdIO) Select(names map[string]string, label string) (id string, err error) {
+func (c *cmdIO) Select(items []Tuple, label string) (id string, err error) {
 	if !c.interactive {
 		return "", fmt.Errorf("expected to have %s", label)
 	}
-	var items []tuple
-	for k, v := range names {
-		items = append(items, tuple{k, v})
-	}
-	slices.SortFunc(items, func(a, b tuple) int {
-		return strings.Compare(a.Name, b.Name)
-	})
+
 	idx, _, err := (&promptui.Select{
 		Label:             label,
 		Items:             items,
@@ -167,11 +161,19 @@ func (c *cmdIO) Select(names map[string]string, label string) (id string, err er
 
 func Select[V any](ctx context.Context, names map[string]V, label string) (id string, err error) {
 	c := fromContext(ctx)
-	stringNames := map[string]string{}
+	var items []Tuple
 	for k, v := range names {
-		stringNames[k] = fmt.Sprint(v)
+		items = append(items, Tuple{k, fmt.Sprint(v)})
 	}
-	return c.Select(stringNames, label)
+	slices.SortFunc(items, func(a, b Tuple) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+	return c.Select(items, label)
+}
+
+func SelectOrdered(ctx context.Context, items []Tuple, label string) (id string, err error) {
+	c := fromContext(ctx)
+	return c.Select(items, label)
 }
 
 func (c *cmdIO) Secret(label string) (value string, err error) {
