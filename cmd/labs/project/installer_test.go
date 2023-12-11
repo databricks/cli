@@ -21,6 +21,7 @@ import (
 	"github.com/databricks/cli/cmd/labs/project"
 	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/process"
 	"github.com/databricks/cli/libs/python"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -194,6 +195,12 @@ func TestInstallerWorksForReleases(t *testing.T) {
 
 	ctx := installerContext(t, server)
 
+	ctx, stub := process.WithStub(ctx)
+	stub.WithStdoutFor(`python[\S]+ --version`, "Python 3.10.5")
+	stub.WithStderrFor(`python[\S]+ -m venv .*/.databricks/labs/blueprint/state/venv`, "[mock venv create]")
+	stub.WithStderrFor(`python3 -m pip install .`, "[mock pip install]")
+	stub.WithStdoutFor(`python3 install.py`, "setting up important infrastructure")
+
 	// simulate the case of GitHub Actions
 	ctx = env.Set(ctx, "DATABRICKS_HOST", server.URL)
 	ctx = env.Set(ctx, "DATABRICKS_TOKEN", "...")
@@ -228,7 +235,7 @@ func TestInstallerWorksForReleases(t *testing.T) {
 	//     │               │   │       └── site-packages
 	//     │               │   │           ├── ...
 	//     │               │   │           ├── distutils-precedence.pth
-	r := internal.NewCobraTestRunnerWithContext(t, ctx, "labs", "install", "blueprint")
+	r := internal.NewCobraTestRunnerWithContext(t, ctx, "labs", "install", "blueprint", "--debug")
 	r.RunAndExpectOutput("setting up important infrastructure")
 }
 
