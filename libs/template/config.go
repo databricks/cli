@@ -143,58 +143,6 @@ func (c *config) skipPrompt(p jsonschema.Property, r *renderer) (bool, error) {
 	return true, nil
 }
 
-func (c *config) promptSelect(name, description string, propertySchema *jsonschema.Schema) error {
-	// List of options to display to user
-	options, err := propertySchema.EnumStringSlice()
-	if err != nil {
-		return err
-	}
-
-	// Get user input
-	userInput, err := cmdio.AskSelect(c.ctx, description, options)
-	if err != nil {
-		return err
-	}
-
-	// Convert user input string back to a value
-	c.values[name], err = propertySchema.ParseString(userInput)
-	if err != nil {
-		return err
-	}
-
-	// Validate the partial config which includes the new value
-	return c.schema.ValidateInstance(c.values)
-}
-
-func (c *config) promptText(name, description, defaultVal string, propertySchema *jsonschema.Schema) error {
-	// We wrap this function in a retry loop to allow retries when the user
-	// entered value is invalid.
-	for {
-		// Get user input.
-		userInput, err := cmdio.Ask(c.ctx, description, defaultVal)
-		if err != nil {
-			return err
-		}
-
-		// Convert user input string back to a Go value
-		c.values[name], err = propertySchema.ParseString(userInput)
-		if err != nil {
-			// Show error and retry if validation fails
-			cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %s", err.Error()))
-			continue
-		}
-
-		// Validate the partial config which includes the new value
-		err = c.schema.ValidateInstance(c.values)
-		if err != nil {
-			// Show error and retry if validation fails
-			cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %s", err.Error()))
-			continue
-		}
-		return nil
-	}
-}
-
 // Prompts user for values for properties that do not have a value set yet
 func (c *config) promptForValues(r *renderer) error {
 	for _, p := range c.schema.OrderedProperties() {
@@ -229,19 +177,47 @@ func (c *config) promptForValues(r *renderer) error {
 			return err
 		}
 
-		// Display selection UI to the user if the property is an enum
-		if propertySchema.Enum != nil {
-			err = c.promptSelect(name, description, propertySchema)
-			if err != nil {
-				return err
-			}
-			continue
-		}
+		// We wrap this function in a retry loop to allow retries when the user
+		// entered value is invalid.
+		for {
+			// Display selection UI to the user if the property is an enum
+			var userInput string
+			var err error
+			if propertySchema.Enum != nil {
+				// List of options to display to user
+				options, err := propertySchema.EnumStringSlice()
+				if err != nil {
+					return err
+				}
 
-		// Display text input UI to the user
-		err = c.promptText(name, description, defaultVal, propertySchema)
-		if err != nil {
-			return err
+				// Get user input
+				userInput, err = cmdio.AskSelect(c.ctx, description, options)
+				if err != nil {
+					return err
+				}
+			} else {
+				userInput, err = cmdio.Ask(c.ctx, description, defaultVal)
+				if err != nil {
+					return err
+				}
+			}
+
+			// Convert user input string back to a Go value
+			c.values[name], err = propertySchema.ParseString(userInput)
+			if err != nil {
+				// Show error and retry if validation fails
+				cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %s", err.Error()))
+				continue
+			}
+
+			// Validate the partial config which includes the new value
+			err = c.schema.ValidateInstance(c.values)
+			if err != nil {
+				// Show error and retry if validation fails
+				cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %s", err.Error()))
+				continue
+			}
+			break
 		}
 	}
 	return nil
