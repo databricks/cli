@@ -1,10 +1,10 @@
 {
-    "welcome_message": "\nWelcome to the default Python template for Databricks Asset Bundles!\nPlease provide the following details to tailor the template to your preferences.\n",
+    "welcome_message": "\nWelcome to the default Python template for Databricks Asset Bundles!",
     "properties": {
         "project_name": {
             "type": "string",
             "default": "my_project",
-            "description": "Unique name for this project",
+            "description": "Please provide the following details to tailor the template to your preferences.\n\nUnique name for this project",
             "order": 1,
             "pattern": "^[A-Za-z0-9_]+$",
             "pattern_match_failure_message": "Name must consist of letters, numbers, and underscores."
