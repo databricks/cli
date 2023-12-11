@@ -162,7 +162,7 @@ func (c *config) promptSelect(name, description string, propertySchema *jsonsche
 		return err
 	}
 
-	// Validate the partial config based on this update
+	// Validate the partial config which includes the new value
 	return c.schema.ValidateInstance(c.values)
 }
 
@@ -178,16 +178,16 @@ func (c *config) promptText(name, description, defaultVal string, propertySchema
 
 		// Convert user input string back to a Go value
 		c.values[name], err = propertySchema.ParseString(userInput)
-		// Error parsing user input. Retry if parsing fails.
 		if err != nil {
+			// Show error and retry if validation fails
 			cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %s", err.Error()))
 			continue
 		}
 
-		// Validate the partial config based on this new value by the user
+		// Validate the partial config which includes the new value
 		err = c.schema.ValidateInstance(c.values)
-		// Error validating user input. Retry if validation fails.
 		if err != nil {
+			// Show error and retry if validation fails
 			cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %s", err.Error()))
 			continue
 		}
