@@ -139,6 +139,26 @@ func TestConvertPipeline(t *testing.T) {
 					},
 				},
 			},
+			Notifications: []pipelines.Notifications{
+				{
+					Alerts: []string{
+						"on-update-fatal-failure",
+					},
+					EmailRecipients: []string{
+						"jane@doe.com",
+					},
+				},
+				{
+					Alerts: []string{
+						"on-update-failure",
+						"on-flow-failure",
+					},
+					EmailRecipients: []string{
+						"jane@doe.com",
+						"john@doe.com",
+					},
+				},
+			},
 		},
 	}
 
@@ -153,6 +173,12 @@ func TestConvertPipeline(t *testing.T) {
 	out := BundleToTerraform(&config)
 	assert.Equal(t, "my pipeline", out.Resource.Pipeline["my_pipeline"].Name)
 	assert.Len(t, out.Resource.Pipeline["my_pipeline"].Library, 2)
+	notifs := out.Resource.Pipeline["my_pipeline"].Notification
+	assert.Len(t, notifs, 2)
+	assert.Equal(t, notifs[0].Alerts, []string{"on-update-fatal-failure"})
+	assert.Equal(t, notifs[0].EmailRecipients, []string{"jane@doe.com"})
+	assert.Equal(t, notifs[1].Alerts, []string{"on-update-failure", "on-flow-failure"})
+	assert.Equal(t, notifs[1].EmailRecipients, []string{"jane@doe.com", "john@doe.com"})
 	assert.Nil(t, out.Data)
 }
 

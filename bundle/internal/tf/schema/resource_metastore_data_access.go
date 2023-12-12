@@ -3,7 +3,9 @@
 package schema
 
 type ResourceMetastoreDataAccessAwsIamRole struct {
-	RoleArn string `json:"role_arn"`
+	ExternalId         string `json:"external_id,omitempty"`
+	RoleArn            string `json:"role_arn"`
+	UnityCatalogIamArn string `json:"unity_catalog_iam_arn,omitempty"`
 }
 
 type ResourceMetastoreDataAccessAzureManagedIdentity struct {
@@ -34,7 +36,7 @@ type ResourceMetastoreDataAccess struct {
 	ForceDestroy                bool                                                    `json:"force_destroy,omitempty"`
 	Id                          string                                                  `json:"id,omitempty"`
 	IsDefault                   bool                                                    `json:"is_default,omitempty"`
-	MetastoreId                 string                                                  `json:"metastore_id"`
+	MetastoreId                 string                                                  `json:"metastore_id,omitempty"`
 	Name                        string                                                  `json:"name"`
 	Owner                       string                                                  `json:"owner,omitempty"`
 	ReadOnly                    bool                                                    `json:"read_only,omitempty"`

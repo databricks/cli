@@ -10,16 +10,19 @@ type DataSources struct {
 	Cluster               map[string]*DataSourceCluster               `json:"databricks_cluster,omitempty"`
 	ClusterPolicy         map[string]*DataSourceClusterPolicy         `json:"databricks_cluster_policy,omitempty"`
 	Clusters              map[string]*DataSourceClusters              `json:"databricks_clusters,omitempty"`
+	CurrentConfig         map[string]*DataSourceCurrentConfig         `json:"databricks_current_config,omitempty"`
 	CurrentUser           map[string]*DataSourceCurrentUser           `json:"databricks_current_user,omitempty"`
 	DbfsFile              map[string]*DataSourceDbfsFile              `json:"databricks_dbfs_file,omitempty"`
 	DbfsFilePaths         map[string]*DataSourceDbfsFilePaths         `json:"databricks_dbfs_file_paths,omitempty"`
 	Directory             map[string]*DataSourceDirectory             `json:"databricks_directory,omitempty"`
 	Group                 map[string]*DataSourceGroup                 `json:"databricks_group,omitempty"`
 	InstancePool          map[string]*DataSourceInstancePool          `json:"databricks_instance_pool,omitempty"`
+	InstanceProfiles      map[string]*DataSourceInstanceProfiles      `json:"databricks_instance_profiles,omitempty"`
 	Job                   map[string]*DataSourceJob                   `json:"databricks_job,omitempty"`
 	Jobs                  map[string]*DataSourceJobs                  `json:"databricks_jobs,omitempty"`
 	Metastore             map[string]*DataSourceMetastore             `json:"databricks_metastore,omitempty"`
 	Metastores            map[string]*DataSourceMetastores            `json:"databricks_metastores,omitempty"`
+	MlflowModel           map[string]*DataSourceMlflowModel           `json:"databricks_mlflow_model,omitempty"`
 	MwsCredentials        map[string]*DataSourceMwsCredentials        `json:"databricks_mws_credentials,omitempty"`
 	MwsWorkspaces         map[string]*DataSourceMwsWorkspaces         `json:"databricks_mws_workspaces,omitempty"`
 	NodeType              map[string]*DataSourceNodeType              `json:"databricks_node_type,omitempty"`
@@ -49,16 +52,19 @@ func NewDataSources() *DataSources {
 		Cluster:               make(map[string]*DataSourceCluster),
 		ClusterPolicy:         make(map[string]*DataSourceClusterPolicy),
 		Clusters:              make(map[string]*DataSourceClusters),
+		CurrentConfig:         make(map[string]*DataSourceCurrentConfig),
 		CurrentUser:           make(map[string]*DataSourceCurrentUser),
 		DbfsFile:              make(map[string]*DataSourceDbfsFile),
 		DbfsFilePaths:         make(map[string]*DataSourceDbfsFilePaths),
 		Directory:             make(map[string]*DataSourceDirectory),
 		Group:                 make(map[string]*DataSourceGroup),
 		InstancePool:          make(map[string]*DataSourceInstancePool),
+		InstanceProfiles:      make(map[string]*DataSourceInstanceProfiles),
 		Job:                   make(map[string]*DataSourceJob),
 		Jobs:                  make(map[string]*DataSourceJobs),
 		Metastore:             make(map[string]*DataSourceMetastore),
 		Metastores:            make(map[string]*DataSourceMetastores),
+		MlflowModel:           make(map[string]*DataSourceMlflowModel),
 		MwsCredentials:        make(map[string]*DataSourceMwsCredentials),
 		MwsWorkspaces:         make(map[string]*DataSourceMwsWorkspaces),
 		NodeType:              make(map[string]*DataSourceNodeType),
