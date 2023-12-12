@@ -24,6 +24,7 @@ func (m *annotateJobs) Apply(_ context.Context, b *bundle.Bundle) error {
 			Kind:             jobs.JobDeploymentKindBundle,
 			MetadataFilePath: path.Join(b.Config.Workspace.StatePath, MetadataFileName),
 		}
+		job.JobSettings.EditMode = jobs.JobSettingsEditModeUiLocked
 	}
 
 	return nil
