@@ -239,7 +239,7 @@ func (v Value) MarshalYAML() (interface{}, error) {
 	case KindFloat:
 		return &yaml.Node{Kind: yaml.ScalarNode, Value: fmt.Sprint(v.MustFloat())}, nil
 	case KindTime:
-		return &yaml.Node{Kind: yaml.ScalarNode, Value: v.MustTime().Format(time.RFC3339)}, nil
+		return &yaml.Node{Kind: yaml.ScalarNode, Value: v.MustTime().UTC().String()}, nil
 	default:
 		// Panic because we only want to deal with known types.
 		panic(fmt.Sprintf("invalid kind: %d", v.k))
