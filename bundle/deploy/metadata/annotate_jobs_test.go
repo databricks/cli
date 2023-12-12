@@ -44,6 +44,8 @@ func TestAnnotateJobsMutator(t *testing.T) {
 		},
 		b.Config.Resources.Jobs["my-job-1"].JobSettings.Deployment)
 	assert.Equal(t, jobs.JobSettingsEditModeUiLocked, b.Config.Resources.Jobs["my-job-1"].EditMode)
+	assert.Equal(t, jobs.FormatMultiTask, b.Config.Resources.Jobs["my-job-1"].Format)
+
 	assert.Equal(t,
 		&jobs.JobDeployment{
 			Kind:             jobs.JobDeploymentKindBundle,
@@ -51,4 +53,5 @@ func TestAnnotateJobsMutator(t *testing.T) {
 		},
 		b.Config.Resources.Jobs["my-job-2"].JobSettings.Deployment)
 	assert.Equal(t, jobs.JobSettingsEditModeUiLocked, b.Config.Resources.Jobs["my-job-2"].EditMode)
+	assert.Equal(t, jobs.FormatMultiTask, b.Config.Resources.Jobs["my-job-2"].Format)
 }
