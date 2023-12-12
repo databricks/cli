@@ -140,6 +140,12 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 				conv(v, &l)
 				dst.Cluster = append(dst.Cluster, l)
 			}
+
+			for _, v := range src.Notifications {
+				var l schema.ResourcePipelineNotification
+				conv(v, &l)
+				dst.Notification = append(dst.Notification, l)
+			}
 		}
 
 		tfroot.Resource.Pipeline[k] = &dst

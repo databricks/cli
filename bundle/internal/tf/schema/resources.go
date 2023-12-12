@@ -15,6 +15,7 @@ type Resources struct {
 	ClusterPolicy            map[string]*ResourceClusterPolicy            `json:"databricks_cluster_policy,omitempty"`
 	Connection               map[string]*ResourceConnection               `json:"databricks_connection,omitempty"`
 	DbfsFile                 map[string]*ResourceDbfsFile                 `json:"databricks_dbfs_file,omitempty"`
+	DefaultNamespaceSetting  map[string]*ResourceDefaultNamespaceSetting  `json:"databricks_default_namespace_setting,omitempty"`
 	Directory                map[string]*ResourceDirectory                `json:"databricks_directory,omitempty"`
 	Entitlements             map[string]*ResourceEntitlements             `json:"databricks_entitlements,omitempty"`
 	ExternalLocation         map[string]*ResourceExternalLocation         `json:"databricks_external_location,omitempty"`
@@ -99,6 +100,7 @@ func NewResources() *Resources {
 		ClusterPolicy:            make(map[string]*ResourceClusterPolicy),
 		Connection:               make(map[string]*ResourceConnection),
 		DbfsFile:                 make(map[string]*ResourceDbfsFile),
+		DefaultNamespaceSetting:  make(map[string]*ResourceDefaultNamespaceSetting),
 		Directory:                make(map[string]*ResourceDirectory),
 		Entitlements:             make(map[string]*ResourceEntitlements),
 		ExternalLocation:         make(map[string]*ResourceExternalLocation),
