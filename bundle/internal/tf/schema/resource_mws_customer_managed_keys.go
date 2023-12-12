@@ -3,7 +3,7 @@
 package schema
 
 type ResourceMwsCustomerManagedKeysAwsKeyInfo struct {
-	KeyAlias  string `json:"key_alias"`
+	KeyAlias  string `json:"key_alias,omitempty"`
 	KeyArn    string `json:"key_arn"`
 	KeyRegion string `json:"key_region,omitempty"`
 }
