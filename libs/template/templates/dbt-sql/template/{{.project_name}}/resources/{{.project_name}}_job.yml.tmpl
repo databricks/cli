@@ -1,0 +1,37 @@
+resources:
+  jobs:
+    {{.project_name}}_job:
+      name: {{.project_name}}_job
+      
+      schedule:
+        # Run every day at 9:27 AM
+        quartz_cron_expression: 21 27 9 * * ?
+        timezone_id: UTC
+      
+      email_notifications:
+        on_failure:
+          - {{user_name}}
+      
+      tasks:
+        - task_key: dbt
+          dbt_task:
+            project_directory: .. # use the root of this project
+            commands: 
+            - dbt deps
+            - dbt seed
+            - dbt run
+            warehouse_id: ${var.warehouse_id}
+            catalog: ${var.catalog}
+            schema: ${var.schema}
+          new_cluster:
+            spark_version: {{template "latest_lts_dbr_version"}}
+            node_type_id: {{smallest_node_type}}
+            num_workers: 0
+            spark_conf:
+                spark.master: "local[*, 4]"
+                spark.databricks.cluster.profile: singleNode
+            custom_tags:
+              ResourceClass: SingleNode
+          libraries:
+          - pypi:
+              package: dbt-databricks>=1.0.0,<2.0.0
