@@ -34,7 +34,7 @@ var nativeTemplates = []nativeTemplate{
 	},
 	{
 		name:        "default-sql",
-		description: "The default SQL template for Notebooks / Delta Live Tables / Workflows",
+		description: "The default SQL template for .sql files executed with Workflows",
 	},
 	{
 		name:        "mlops-stacks",

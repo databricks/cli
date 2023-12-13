@@ -20,8 +20,16 @@ resources:
       {{end -}}
 
       tasks:
-        - task_key: sql_task
+        - task_key: sample_1
           sql_task:
             warehouse_id: ${var.warehouse_id}
             file:
-              path: ../src/sample.sql
+              path: ../src/sample_1.sql
+
+        - task_key: sample_2
+          depends_on:
+            - task_key: sample_1
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: ../src/sample_2.sql
