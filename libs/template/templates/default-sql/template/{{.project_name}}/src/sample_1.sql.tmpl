@@ -1,0 +1,4 @@
+-- This query is executed using Databricks Workflows as defined in resources/{{.project_name}}_sql_job.yml.
+
+CREATE OR REPLACE VIEW taxis AS
+SELECT * FROM json.`/databricks-datasets/nyctaxi/sample/json/`
