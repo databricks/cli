@@ -20,6 +20,10 @@ func (m *annotateJobs) Name() string {
 
 func (m *annotateJobs) Apply(_ context.Context, b *bundle.Bundle) error {
 	for _, job := range b.Config.Resources.Jobs {
+		if job.JobSettings == nil {
+			continue
+		}
+
 		job.JobSettings.Deployment = &jobs.JobDeployment{
 			Kind:             jobs.JobDeploymentKindBundle,
 			MetadataFilePath: path.Join(b.Config.Workspace.StatePath, MetadataFileName),

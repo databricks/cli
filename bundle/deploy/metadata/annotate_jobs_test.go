@@ -55,3 +55,18 @@ func TestAnnotateJobsMutator(t *testing.T) {
 	assert.Equal(t, jobs.JobSettingsEditModeUiLocked, b.Config.Resources.Jobs["my-job-2"].EditMode)
 	assert.Equal(t, jobs.FormatMultiTask, b.Config.Resources.Jobs["my-job-2"].Format)
 }
+
+func TestAnnotateJobsMutatorJobWithoutSettings(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"my-job-1": {},
+				},
+			},
+		},
+	}
+
+	err := AnnotateJobs().Apply(context.Background(), b)
+	assert.NoError(t, err)
+}
