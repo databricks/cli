@@ -11,7 +11,6 @@ cmd/account/log-delivery/log-delivery.go linguist-generated=true
 cmd/account/metastore-assignments/metastore-assignments.go linguist-generated=true
 cmd/account/metastores/metastores.go linguist-generated=true
 cmd/account/network-connectivity/network-connectivity.go linguist-generated=true
-cmd/account/network-policy/network-policy.go linguist-generated=true
 cmd/account/networks/networks.go linguist-generated=true
 cmd/account/o-auth-published-apps/o-auth-published-apps.go linguist-generated=true
 cmd/account/private-access/private-access.go linguist-generated=true
