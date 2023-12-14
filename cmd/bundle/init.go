@@ -34,7 +34,7 @@ var nativeTemplates = []nativeTemplate{
 	},
 	{
 		name:        "default-sql",
-		description: "The default SQL template for .sql files executed with Workflows",
+		description: "The default SQL template for .sql files that run with Workflows",
 	},
 	{
 		name:        "mlops-stacks",
