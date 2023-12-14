@@ -390,7 +390,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
-	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of the share.`)
+	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the share.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of share.`)
 	// TODO: array: updates
 
@@ -414,7 +414,7 @@ func newUpdate() *cobra.Command {
   Table removals through **update** do not require additional privileges.
 
   Arguments:
-    NAME: Name of the share.`
+    NAME: The name of the share.`
 
 	cmd.Annotations = make(map[string]string)
 

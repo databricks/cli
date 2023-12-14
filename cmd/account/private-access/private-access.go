@@ -163,7 +163,7 @@ func newDelete() *cobra.Command {
   is accessed over [AWS PrivateLink].
   
   Before configuring PrivateLink, read the [Databricks article about
-  PrivateLink].
+  PrivateLink].",
   
   [AWS PrivateLink]: https://aws.amazon.com/privatelink
   [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html
@@ -246,7 +246,7 @@ func newGet() *cobra.Command {
   accessed over [AWS PrivateLink].
   
   Before configuring PrivateLink, read the [Databricks article about
-  PrivateLink].
+  PrivateLink].",
   
   [AWS PrivateLink]: https://aws.amazon.com/privatelink
   [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html
