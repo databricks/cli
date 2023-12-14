@@ -1,5 +1,19 @@
 # Version changelog
 
+## 0.211.0
+
+CLI:
+ * Upgrade Go SDK to 0.27.0 ([#1064](https://github.com/databricks/cli/pull/1064)).
+
+
+API Changes:
+ * Changed `databricks connections update` command with new required argument order.
+ * Changed `databricks serving-endpoints update-config` command with new required argument order.
+ * Added `databricks serving-endpoints put` command.
+ * Removed `databricks account network-policy` command group.
+
+OpenAPI commit 63caa3cb0c05045e81d3dcf2451fa990d8670f36 (2023-12-12)
+
 ## 0.210.3
 
 Bundles:
