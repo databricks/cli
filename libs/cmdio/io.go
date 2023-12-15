@@ -104,9 +104,8 @@ func IsGitBash(ctx context.Context) bool {
 	// Check if the MSYSTEM environment variable is set to "MINGW64"
 	msystem := os.Getenv("MSYSTEM")
 	if strings.EqualFold(msystem, "MINGW64") {
-		// Check for typical Git Bash prompt patterns
-		prompt := os.Getenv("PS1")
-		return strings.Contains(prompt, "MINGW")
+		// Check for typical Git Bash env variable for prompts
+		return os.Getenv("PS1") != ""
 	}
 
 	return false
