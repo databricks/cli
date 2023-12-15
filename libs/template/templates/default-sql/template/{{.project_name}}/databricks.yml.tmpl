@@ -27,7 +27,7 @@ targets:
       warehouse_id: {{index ((regexp "[^/]+$").FindStringSubmatch .http_path) 0}}
 
   ## Optionally, there could be a 'staging' target here.
-  ## (See Databricks docs on CI/CD at https://docs.databricks.com/dev-tools/bundles/index.html.)
+  ## (See Databricks docs on CI/CD at https://docs.databricks.com/dev-tools/bundles/ci-cd.html.)
   #
   # staging:
   #   workspace:
