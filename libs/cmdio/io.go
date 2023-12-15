@@ -88,6 +88,30 @@ func (c *cmdIO) IsTTY() bool {
 	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
 }
 
+func IsPromptSupported(ctx context.Context) bool {
+	// We do not allow prompting in non-interactive mode and in Git Bash.
+	// Likely due to fact that Git Bash does not (correctly support ANSI escape sequences,
+	// we cannot use promptui package there.
+	// See known issues:
+	// - https://github.com/manifoldco/promptui/issues/208
+	// - https://github.com/chzyer/readline/issues/191
+	// We also do not allow prompting in non-interactive mode,
+	// because it's not possible to read from stdin in non-interactive mode.
+	return IsInteractive(ctx) && IsOutTTY(ctx) && IsInTTY(ctx) && !IsGitBash(ctx)
+}
+
+func IsGitBash(ctx context.Context) bool {
+	// Check if the MSYSTEM environment variable is set to "MINGW64"
+	msystem := os.Getenv("MSYSTEM")
+	if strings.EqualFold(msystem, "MINGW64") {
+		// Check for typical Git Bash prompt patterns
+		prompt := os.Getenv("PS1")
+		return strings.Contains(prompt, "MINGW")
+	}
+
+	return false
+}
+
 func Render(ctx context.Context, v any) error {
 	c := fromContext(ctx)
 	return RenderWithTemplate(ctx, v, c.template)
