@@ -34,7 +34,7 @@ var nativeTemplates = []nativeTemplate{
 	},
 	{
 		name:        "default-sql",
-		description: "The default SQL template for .sql files executed with Databricks SQL",
+		description: "The default SQL template for .sql files that run with Databricks SQL",
 	},
 	{
 		name:        "mlops-stacks",
