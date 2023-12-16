@@ -1,5 +1,20 @@
 # Version changelog
 
+## 0.210.3
+
+Bundles:
+ * Improve default template ([#1046](https://github.com/databricks/cli/pull/1046)).
+ * Fix passthrough of pipeline notifications ([#1058](https://github.com/databricks/cli/pull/1058)).
+
+Internal:
+ * Stub out Python virtual environment installation for `labs` commands ([#1057](https://github.com/databricks/cli/pull/1057)).
+ * Upgrade Terraform schema version to v1.31.1 ([#1055](https://github.com/databricks/cli/pull/1055)).
+
+
+Dependency updates:
+ * Bump github.com/hashicorp/hc-install from 0.6.1 to 0.6.2 ([#1054](https://github.com/databricks/cli/pull/1054)).
+ * Bump github.com/databricks/databricks-sdk-go from 0.26.1 to 0.26.2 ([#1053](https://github.com/databricks/cli/pull/1053)).
+
 ## 0.210.2
 
 CLI:
