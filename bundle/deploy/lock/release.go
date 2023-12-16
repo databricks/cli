@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
 )
@@ -18,12 +17,11 @@ const (
 )
 
 type release struct {
-	goal           Goal
-	successMessage string
+	goal Goal
 }
 
-func Release(goal Goal, successMessage string) bundle.Mutator {
-	return &release{goal, successMessage}
+func Release(goal Goal) bundle.Mutator {
+	return &release{goal}
 }
 
 func (m *release) Name() string {
@@ -60,8 +58,5 @@ func (m *release) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return fmt.Errorf("unknown goal for lock release: %s", m.goal)
 	}
 
-	if m.successMessage != "" {
-		cmdio.LogString(ctx, m.successMessage)
-	}
 	return nil
 }

@@ -22,8 +22,9 @@ func Destroy() bundle.Mutator {
 				terraform.StatePush(),
 				files.Delete(),
 			),
-			lock.Release(lock.GoalDestroy, "Destroy complete!"),
+			lock.Release(lock.GoalDestroy),
 		),
+		bundle.Print("Destroy complete!"),
 	)
 
 	return newPhase(
