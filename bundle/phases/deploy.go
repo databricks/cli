@@ -45,7 +45,7 @@ func Deploy() bundle.Mutator {
 			lock.Release(lock.GoalDeploy),
 		),
 		scripts.Execute(config.ScriptPostDeploy),
-		bundle.Print("Deployment complete!"),
+		bundle.LogString("Deployment complete!"),
 	)
 
 	return newPhase(

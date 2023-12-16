@@ -24,7 +24,7 @@ func Destroy() bundle.Mutator {
 			),
 			lock.Release(lock.GoalDestroy),
 		),
-		bundle.Print("Destroy complete!"),
+		bundle.LogString("Destroy complete!"),
 	)
 
 	return newPhase(
