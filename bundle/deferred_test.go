@@ -22,24 +22,6 @@ func (t *mutatorWithError) Apply(_ context.Context, b *Bundle) error {
 	return fmt.Errorf(t.errorMsg)
 }
 
-type checkErrorMutator struct {
-	applyCalled   int
-	expectedError string
-}
-
-func (c *checkErrorMutator) Name() string {
-	return "checkError"
-}
-
-func (c *checkErrorMutator) Apply(ctx context.Context, b *Bundle) error {
-	c.applyCalled++
-	mainErr := ErrFromContext(ctx)
-	if mainErr != nil && mainErr.Error() == c.expectedError {
-		return nil // Correct error found
-	}
-	return fmt.Errorf("expected error '%s', but found '%v'", c.expectedError, mainErr)
-}
-
 func TestDeferredMutatorWhenAllMutatorsSucceed(t *testing.T) {
 	m1 := &testMutator{}
 	m2 := &testMutator{}
@@ -123,22 +105,4 @@ func TestDeferredMutatorCombinesErrorMessages(t *testing.T) {
 	assert.Equal(t, 1, m2.applyCalled)
 	assert.Equal(t, 1, mErr.applyCalled)
 	assert.Equal(t, 1, cleanupErr.applyCalled)
-}
-
-func TestDeferredMutatorPassesErrorToFinally(t *testing.T) {
-	mErr := &mutatorWithError{errorMsg: "mutator error occurred"}
-	finalCheck := &testMutator{
-		nestedMutators: []Mutator{
-			&checkErrorMutator{expectedError: "mutator error occurred"},
-		},
-	}
-	deferredMutator := Defer(mErr, finalCheck)
-
-	b := &Bundle{}
-	err := Apply(context.Background(), b, deferredMutator)
-
-	assert.ErrorContains(t, err, "mutator error occurred")
-	assert.Equal(t, 1, mErr.applyCalled)
-	assert.Equal(t, 1, finalCheck.applyCalled)
-	assert.Equal(t, 1, finalCheck.nestedMutators[0].(*checkErrorMutator).applyCalled)
 }
