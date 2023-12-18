@@ -307,3 +307,14 @@ func (r *Root) MergeTargetOverrides(name string) error {
 
 	return nil
 }
+
+// ForceLocationInConfig walks all nodes in the configuration tree and
+// sets their location to the specified value.
+func (r *Root) ForceLocationInConfig(path string) {
+	out, _ := config.Walk(r.value, func(v config.Value) (config.Value, error) {
+		return v.WithLocation(config.Location{
+			File: path,
+		}), nil
+	})
+	r.value = out
+}
