@@ -18,6 +18,7 @@ import (
 
 func NewGenerateJobCommand() *cobra.Command {
 	var outputDir string
+	var force bool
 
 	cmd := &cobra.Command{
 		Use:     "job JOB_ID",
@@ -27,6 +28,7 @@ func NewGenerateJobCommand() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&outputDir, "output-dir", "d", "", `Dir path where the output config and necessary files will be stored`)
+	cmd.Flags().BoolVarP(&force, "force", "f", false, `Force overwrite existing files in the output directory`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -80,7 +82,7 @@ func NewGenerateJobCommand() *cobra.Command {
 		}
 
 		for _, task := range job.Settings.Tasks {
-			err := downloadNotebookAndReplaceTaskPath(ctx, &task, w, outputDir)
+			err := downloadNotebookAndReplaceTaskPath(ctx, &task, w, outputDir, force)
 			if err != nil {
 				return err
 			}
@@ -100,7 +102,7 @@ func NewGenerateJobCommand() *cobra.Command {
 			},
 		}
 
-		err = saveConfigToFile(ctx, result, filepath.Join(outputDir, fmt.Sprintf("%s.yml", jobName)))
+		err = saveConfigToFile(ctx, result, filepath.Join(outputDir, fmt.Sprintf("%s.yml", jobName)), force)
 		if err != nil {
 			return err
 		}

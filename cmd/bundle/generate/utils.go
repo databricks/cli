@@ -16,7 +16,18 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func saveConfigToFile(ctx context.Context, data any, filename string) error {
+func saveConfigToFile(ctx context.Context, data any, filename string, force bool) error {
+	// check that file exists
+	info, err := os.Stat(filename)
+	if err == nil {
+		if info.IsDir() {
+			return fmt.Errorf("%s is a directory", filename)
+		}
+		if !force {
+			return fmt.Errorf("%s already exists. Use --force to overwrite", filename)
+		}
+	}
+
 	file, err := os.Create(filename)
 	if err != nil {
 		return err
@@ -38,7 +49,13 @@ func encode(data any, w io.Writer) error {
 	return enc.Encode(data)
 }
 
-func downloadNotebookAndReplaceTaskPath(ctx context.Context, task *jobs.Task, w *databricks.WorkspaceClient, outputDir string) error {
+func downloadNotebookAndReplaceTaskPath(
+	ctx context.Context,
+	task *jobs.Task,
+	w *databricks.WorkspaceClient,
+	outputDir string,
+	force bool,
+) error {
 	if task.NotebookTask == nil {
 		return nil
 	}
@@ -57,6 +74,16 @@ func downloadNotebookAndReplaceTaskPath(ctx context.Context, task *jobs.Task, w 
 
 	filename := path.Base(task.NotebookTask.NotebookPath) + ext
 	targetPath := filepath.Join(outputDir, filename)
+
+	fileInfo, err := os.Stat(filename)
+	if err == nil {
+		if fileInfo.IsDir() {
+			return fmt.Errorf("%s is a directory", filename)
+		}
+		if !force {
+			return fmt.Errorf("%s already exists. Use --force to overwrite", filename)
+		}
+	}
 	f, err := os.Create(targetPath)
 	if err != nil {
 		return err
