@@ -103,7 +103,7 @@ func IsPromptSupported(ctx context.Context) bool {
 
 func IsGitBash(ctx context.Context) bool {
 	// Check if the MSYSTEM environment variable is set to "MINGW64"
-	msystem := os.Getenv("MSYSTEM")
+	msystem := env.Get(ctx, "MSYSTEM")
 	if strings.EqualFold(msystem, "MINGW64") {
 		// Check for typical Git Bash env variable for prompts
 		ps1 := env.Get(ctx, "PS1")
