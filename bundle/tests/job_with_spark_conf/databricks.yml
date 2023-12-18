@@ -1,0 +1,25 @@
+resources:
+  jobs:
+    job_with_spark_conf:
+      name: Test job
+      max_concurrent_runs: 1
+
+      job_clusters:
+        - job_cluster_key: test_cluster
+          new_cluster:
+            spark_version: 14.2.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 2
+            spark_conf:
+
+              # Test behavior if non-string values are specified.
+              spark.string: string
+              spark.int: 1
+              spark.bool: true
+              spark.float: 1.2
+
+      tasks:
+        - task_key: test_task
+          job_cluster_key: test_cluster
+          spark_python_task:
+            python_file: test.py

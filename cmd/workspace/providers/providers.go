@@ -63,7 +63,11 @@ func newCreate() *cobra.Command {
 	cmd.Long = `Create an auth provider.
   
   Creates a new authentication provider minimally based on a name and
-  authentication type. The caller must be an admin on the metastore.`
+  authentication type. The caller must be an admin on the metastore.
+
+  Arguments:
+    NAME: The name of the Provider.
+    AUTHENTICATION_TYPE: The delta sharing authentication type.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -146,7 +150,10 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete a provider.
   
   Deletes an authentication provider, if the caller is a metastore admin or is
-  the owner of the provider.`
+  the owner of the provider.
+
+  Arguments:
+    NAME: Name of the provider.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -221,7 +228,10 @@ func newGet() *cobra.Command {
   
   Gets a specific authentication provider. The caller must supply the name of
   the provider, and must either be a metastore admin or the owner of the
-  provider.`
+  provider.
+
+  Arguments:
+    NAME: Name of the provider.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -360,7 +370,10 @@ func newListShares() *cobra.Command {
   
   Gets an array of a specified provider's shares within the metastore where:
   
-  * the caller is a metastore admin, or * the caller is the owner.`
+  * the caller is a metastore admin, or * the caller is the owner.
+
+  Arguments:
+    NAME: Name of the provider in which to list shares.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -432,7 +445,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Description about the provider.`)
-	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The name of the Provider.`)
+	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the provider.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of Provider owner.`)
 	cmd.Flags().StringVar(&updateReq.RecipientProfileStr, "recipient-profile-str", updateReq.RecipientProfileStr, `This field is required when the __authentication_type__ is **TOKEN** or not provided.`)
 
@@ -443,7 +456,10 @@ func newUpdate() *cobra.Command {
   Updates the information for an authentication provider, if the caller is a
   metastore admin or is the owner of the provider. If the update changes the
   provider name, the caller must be both a metastore admin and the owner of the
-  provider.`
+  provider.
+
+  Arguments:
+    NAME: Name of the provider.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -466,14 +482,14 @@ func newUpdate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Providers drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "The name of the Provider")
+			id, err := cmdio.Select(ctx, names, "Name of the provider")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the name of the provider")
+			return fmt.Errorf("expected to have name of the provider")
 		}
 		updateReq.Name = args[0]
 

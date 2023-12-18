@@ -38,6 +38,11 @@ func (m *expandPipelineGlobPaths) Apply(_ context.Context, b *bundle.Bundle) err
 				return err
 			}
 
+			if len(matches) == 0 {
+				expandedLibraries = append(expandedLibraries, *library)
+				continue
+			}
+
 			for _, match := range matches {
 				m, err := filepath.Rel(dir, match)
 				if err != nil {

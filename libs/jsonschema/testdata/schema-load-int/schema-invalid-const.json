@@ -1,0 +1,9 @@
+{
+    "type": "object",
+    "properties": {
+        "def": {
+            "type": "integer",
+            "const": 5.1
+        }
+    }
+}

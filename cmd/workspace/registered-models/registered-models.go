@@ -99,7 +99,12 @@ func newCreate() *cobra.Command {
   parent catalog and schema, or have the **USE_CATALOG** privilege on the parent
   catalog and the **USE_SCHEMA** privilege on the parent schema. - The caller
   must have the **CREATE MODEL** or **CREATE FUNCTION** privilege on the parent
-  schema.`
+  schema.
+
+  Arguments:
+    CATALOG_NAME: The name of the catalog where the schema and the registered model reside
+    SCHEMA_NAME: The name of the schema where the registered model resides
+    NAME: The name of the registered model`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -187,7 +192,10 @@ func newDelete() *cobra.Command {
   The caller must be a metastore admin or an owner of the registered model. For
   the latter case, the caller must also be the owner or have the **USE_CATALOG**
   privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent
-  schema.`
+  schema.
+
+  Arguments:
+    FULL_NAME: The three-level (fully qualified) name of the registered model`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -265,7 +273,11 @@ func newDeleteAlias() *cobra.Command {
   The caller must be a metastore admin or an owner of the registered model. For
   the latter case, the caller must also be the owner or have the **USE_CATALOG**
   privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent
-  schema.`
+  schema.
+
+  Arguments:
+    FULL_NAME: The three-level (fully qualified) name of the registered model
+    ALIAS: The name of the alias`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -332,7 +344,10 @@ func newGet() *cobra.Command {
   The caller must be a metastore admin or an owner of (or have the **EXECUTE**
   privilege on) the registered model. For the latter case, the caller must also
   be the owner or have the **USE_CATALOG** privilege on the parent catalog and
-  the **USE_SCHEMA** privilege on the parent schema.`
+  the **USE_SCHEMA** privilege on the parent schema.
+
+  Arguments:
+    FULL_NAME: The three-level (fully qualified) name of the registered model`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -487,7 +502,12 @@ func newSetAlias() *cobra.Command {
   The caller must be a metastore admin or an owner of the registered model. For
   the latter case, the caller must also be the owner or have the **USE_CATALOG**
   privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent
-  schema.`
+  schema.
+
+  Arguments:
+    FULL_NAME: Full name of the registered model
+    ALIAS: The name of the alias
+    VERSION_NUM: The version number of the model version to which the alias points`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -568,6 +588,7 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `The comment attached to the registered model.`)
 	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The name of the registered model.`)
+	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the registered model.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `The identifier of the user who owns the registered model.`)
 
 	cmd.Use = "update FULL_NAME"
@@ -582,7 +603,10 @@ func newUpdate() *cobra.Command {
   schema.
   
   Currently only the name, the owner or the comment of the registered model can
-  be updated.`
+  be updated.
+
+  Arguments:
+    FULL_NAME: The three-level (fully qualified) name of the registered model`
 
 	cmd.Annotations = make(map[string]string)
 

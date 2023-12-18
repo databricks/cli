@@ -2,7 +2,7 @@ package env
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"os"
 	"runtime"
 	"strings"
@@ -76,12 +76,15 @@ func WithUserHomeDir(ctx context.Context, value string) context.Context {
 	return Set(ctx, homeEnvVar(), value)
 }
 
-func UserHomeDir(ctx context.Context) string {
+// ErrNoHomeEnv indicates the absence of $HOME env variable
+var ErrNoHomeEnv = errors.New("$HOME is not set")
+
+func UserHomeDir(ctx context.Context) (string, error) {
 	home := Get(ctx, homeEnvVar())
 	if home == "" {
-		panic(fmt.Errorf("$HOME is not set"))
+		return "", ErrNoHomeEnv
 	}
-	return home
+	return home, nil
 }
 
 // All returns environment variables that are defined in both os.Environ

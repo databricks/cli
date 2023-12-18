@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/cmd/labs/project"
+	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
 )
 
@@ -30,7 +31,8 @@ func New(ctx context.Context) *cobra.Command {
 	)
 	all, err := project.Installed(ctx)
 	if err != nil {
-		panic(err)
+		log.Errorf(ctx, "Cannot retrieve installed labs: %s", err)
+		return cmd
 	}
 	for _, v := range all {
 		v.Register(cmd)

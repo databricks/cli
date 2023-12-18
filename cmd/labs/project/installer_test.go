@@ -21,6 +21,7 @@ import (
 	"github.com/databricks/cli/cmd/labs/project"
 	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/process"
 	"github.com/databricks/cli/libs/python"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -105,7 +106,7 @@ func installerContext(t *testing.T, server *httptest.Server) context.Context {
 	ctx = github.WithUserContentOverride(ctx, server.URL)
 	ctx = env.WithUserHomeDir(ctx, t.TempDir())
 	// trick release cache to thing it went to github already
-	cachePath := project.PathInLabs(ctx, "blueprint", "cache")
+	cachePath, _ := project.PathInLabs(ctx, "blueprint", "cache")
 	err := os.MkdirAll(cachePath, ownerRWXworldRX)
 	require.NoError(t, err)
 	bs := []byte(`{"refreshed_at": "2033-01-01T00:00:00.92857+02:00","data": [{"tag_name": "v0.3.15"}]}`)
@@ -194,6 +195,13 @@ func TestInstallerWorksForReleases(t *testing.T) {
 
 	ctx := installerContext(t, server)
 
+	ctx, stub := process.WithStub(ctx)
+	stub.WithStdoutFor(`python[\S]+ --version`, "Python 3.10.5")
+	// on Unix, we call `python3`, but on Windows it is `python.exe`
+	stub.WithStderrFor(`python[\S]+ -m venv .*/.databricks/labs/blueprint/state/venv`, "[mock venv create]")
+	stub.WithStderrFor(`python[\S]+ -m pip install .`, "[mock pip install]")
+	stub.WithStdoutFor(`python[\S]+ install.py`, "setting up important infrastructure")
+
 	// simulate the case of GitHub Actions
 	ctx = env.Set(ctx, "DATABRICKS_HOST", server.URL)
 	ctx = env.Set(ctx, "DATABRICKS_TOKEN", "...")
@@ -228,7 +236,7 @@ func TestInstallerWorksForReleases(t *testing.T) {
 	//     │               │   │       └── site-packages
 	//     │               │   │           ├── ...
 	//     │               │   │           ├── distutils-precedence.pth
-	r := internal.NewCobraTestRunnerWithContext(t, ctx, "labs", "install", "blueprint")
+	r := internal.NewCobraTestRunnerWithContext(t, ctx, "labs", "install", "blueprint", "--debug")
 	r.RunAndExpectOutput("setting up important infrastructure")
 }
 
@@ -317,8 +325,8 @@ func TestInstallerWorksForDevelopment(t *testing.T) {
 
 	// development installer assumes it's in the active virtualenv
 	ctx = env.Set(ctx, "PYTHON_BIN", py)
-
-	err = os.WriteFile(filepath.Join(env.UserHomeDir(ctx), ".databrickscfg"), []byte(fmt.Sprintf(`
+	home, _ := env.UserHomeDir(ctx)
+	err = os.WriteFile(filepath.Join(home, ".databrickscfg"), []byte(fmt.Sprintf(`
 [profile-one]
 host = %s
 token = ...
@@ -399,7 +407,7 @@ func TestUpgraderWorksForReleases(t *testing.T) {
 	py, _ = filepath.Abs(py)
 	ctx = env.Set(ctx, "PYTHON_BIN", py)
 
-	cachePath := project.PathInLabs(ctx, "blueprint", "cache")
+	cachePath, _ := project.PathInLabs(ctx, "blueprint", "cache")
 	bs := []byte(`{"refreshed_at": "2033-01-01T00:00:00.92857+02:00","data": [{"tag_name": "v0.4.0"}]}`)
 	err := os.WriteFile(filepath.Join(cachePath, "databrickslabs-blueprint-releases.json"), bs, ownerRW)
 	require.NoError(t, err)

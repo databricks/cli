@@ -29,11 +29,11 @@ func New() *cobra.Command {
   scalable REST API endpoints using serverless compute. This means the endpoints
   and associated compute resources are fully managed by Databricks and will not
   appear in your cloud account. A serving endpoint can consist of one or more
-  MLflow models from the Databricks Model Registry, called served models. A
-  serving endpoint can have at most ten served models. You can configure traffic
-  settings to define how requests should be routed to your served models behind
-  an endpoint. Additionally, you can configure the scale of resources that
-  should be applied to each served model.`,
+  MLflow models from the Databricks Model Registry, called served entities. A
+  serving endpoint can have at most ten served entities. You can configure
+  traffic settings to define how requests should be routed to your served
+  entities behind an endpoint. Additionally, you can configure the scale of
+  resources that should be applied to each served entity.`,
 		GroupID: "serving",
 		Annotations: map[string]string{
 			"package": "serving",
@@ -69,7 +69,13 @@ func newBuildLogs() *cobra.Command {
 	cmd.Long = `Retrieve the logs associated with building the model's environment for a given
   serving endpoint's served model.
   
-  Retrieves the build logs associated with the provided served model.`
+  Retrieves the build logs associated with the provided served model.
+
+  Arguments:
+    NAME: The name of the serving endpoint that the served model belongs to. This
+      field is required.
+    SERVED_MODEL_NAME: The name of the served model that build logs will be retrieved for. This
+      field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -134,6 +140,7 @@ func newCreate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: array: rate_limits
 	// TODO: array: tags
 
 	cmd.Use = "create"
@@ -212,7 +219,10 @@ func newDelete() *cobra.Command {
 
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a serving endpoint.`
-	cmd.Long = `Delete a serving endpoint.`
+	cmd.Long = `Delete a serving endpoint.
+
+  Arguments:
+    NAME: The name of the serving endpoint. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -274,7 +284,11 @@ func newExportMetrics() *cobra.Command {
 	cmd.Long = `Retrieve the metrics associated with a serving endpoint.
   
   Retrieves the metrics associated with the provided serving endpoint in either
-  Prometheus or OpenMetrics exposition format.`
+  Prometheus or OpenMetrics exposition format.
+
+  Arguments:
+    NAME: The name of the serving endpoint to retrieve metrics for. This field is
+      required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -335,7 +349,10 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get a single serving endpoint.`
 	cmd.Long = `Get a single serving endpoint.
   
-  Retrieves the details for a single serving endpoint.`
+  Retrieves the details for a single serving endpoint.
+
+  Arguments:
+    NAME: The name of the serving endpoint. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -396,7 +413,10 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Short = `Get serving endpoint permission levels.`
 	cmd.Long = `Get serving endpoint permission levels.
   
-  Gets the permission levels that a user can have on an object.`
+  Gets the permission levels that a user can have on an object.
+
+  Arguments:
+    SERVING_ENDPOINT_ID: The serving endpoint for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -458,7 +478,10 @@ func newGetPermissions() *cobra.Command {
 	cmd.Long = `Get serving endpoint permissions.
   
   Gets the permissions of a serving endpoint. Serving endpoints can inherit
-  permissions from their root object.`
+  permissions from their root object.
+
+  Arguments:
+    SERVING_ENDPOINT_ID: The serving endpoint for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -566,7 +589,13 @@ func newLogs() *cobra.Command {
 	cmd.Long = `Retrieve the most recent log lines associated with a given serving endpoint's
   served model.
   
-  Retrieves the service logs associated with the provided served model.`
+  Retrieves the service logs associated with the provided served model.
+
+  Arguments:
+    NAME: The name of the serving endpoint that the served model belongs to. This
+      field is required.
+    SERVED_MODEL_NAME: The name of the served model that logs will be retrieved for. This field
+      is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -634,7 +663,11 @@ func newPatch() *cobra.Command {
 	cmd.Long = `Patch the tags of a serving endpoint.
   
   Used to batch add and delete tags from a serving endpoint with a single API
-  call.`
+  call.
+
+  Arguments:
+    NAME: The name of the serving endpoint who's tags to patch. This field is
+      required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -681,6 +714,82 @@ func init() {
 	})
 }
 
+// start put command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var putOverrides []func(
+	*cobra.Command,
+	*serving.PutRequest,
+)
+
+func newPut() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var putReq serving.PutRequest
+	var putJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&putJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: rate_limits
+
+	cmd.Use = "put NAME"
+	cmd.Short = `Update the rate limits of a serving endpoint.`
+	cmd.Long = `Update the rate limits of a serving endpoint.
+  
+  Used to update the rate limits of a serving endpoint. NOTE: only external and
+  foundation model endpoints are supported as of now.
+
+  Arguments:
+    NAME: The name of the serving endpoint whose rate limits are being updated. This
+      field is required.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = putJson.Unmarshal(&putReq)
+			if err != nil {
+				return err
+			}
+		}
+		putReq.Name = args[0]
+
+		response, err := w.ServingEndpoints.Put(ctx, putReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range putOverrides {
+		fn(cmd, &putReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newPut())
+	})
+}
+
 // start query command
 
 // Slice with functions to override default command behavior.
@@ -701,12 +810,24 @@ func newQuery() *cobra.Command {
 
 	// TODO: array: dataframe_records
 	// TODO: complex arg: dataframe_split
+	// TODO: map via StringToStringVar: extra_params
+	// TODO: any: input
 	// TODO: any: inputs
 	// TODO: array: instances
+	cmd.Flags().IntVar(&queryReq.MaxTokens, "max-tokens", queryReq.MaxTokens, `The max tokens field used ONLY for __completions__ and __chat external & foundation model__ serving endpoints.`)
+	// TODO: array: messages
+	cmd.Flags().IntVar(&queryReq.N, "n", queryReq.N, `The n (number of candidates) field used ONLY for __completions__ and __chat external & foundation model__ serving endpoints.`)
+	// TODO: any: prompt
+	// TODO: array: stop
+	cmd.Flags().BoolVar(&queryReq.Stream, "stream", queryReq.Stream, `The stream field used ONLY for __completions__ and __chat external & foundation model__ serving endpoints.`)
+	cmd.Flags().Float64Var(&queryReq.Temperature, "temperature", queryReq.Temperature, `The temperature field used ONLY for __completions__ and __chat external & foundation model__ serving endpoints.`)
 
 	cmd.Use = "query NAME"
 	cmd.Short = `Query a serving endpoint with provided model input.`
-	cmd.Long = `Query a serving endpoint with provided model input.`
+	cmd.Long = `Query a serving endpoint with provided model input.
+
+  Arguments:
+    NAME: The name of the serving endpoint. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -778,7 +899,10 @@ func newSetPermissions() *cobra.Command {
 	cmd.Long = `Set serving endpoint permissions.
   
   Sets permissions on a serving endpoint. Serving endpoints can inherit
-  permissions from their root object.`
+  permissions from their root object.
+
+  Arguments:
+    SERVING_ENDPOINT_ID: The serving endpoint for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -848,14 +972,16 @@ func newUpdateConfig() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: auto_capture_config
+	// TODO: array: served_models
 	// TODO: complex arg: traffic_config
 
 	cmd.Use = "update-config"
 	cmd.Short = `Update a serving endpoint with a new config.`
 	cmd.Long = `Update a serving endpoint with a new config.
   
-  Updates any combination of the serving endpoint's served models, the compute
-  configuration of those served models, and the endpoint's traffic config. An
+  Updates any combination of the serving endpoint's served entities, the compute
+  configuration of those served entities, and the endpoint's traffic config. An
   endpoint that already has an update in progress can not be updated until the
   current update completes or fails.`
 
@@ -938,7 +1064,10 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Long = `Update serving endpoint permissions.
   
   Updates the permissions on a serving endpoint. Serving endpoints can inherit
-  permissions from their root object.`
+  permissions from their root object.
+
+  Arguments:
+    SERVING_ENDPOINT_ID: The serving endpoint for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 

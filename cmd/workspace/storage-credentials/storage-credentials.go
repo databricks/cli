@@ -68,6 +68,7 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: aws_iam_role
 	// TODO: complex arg: azure_managed_identity
 	// TODO: complex arg: azure_service_principal
+	// TODO: complex arg: cloudflare_api_token
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Comment associated with the credential.`)
 	// TODO: output-only field
 	cmd.Flags().BoolVar(&createReq.ReadOnly, "read-only", createReq.ReadOnly, `Whether the storage credential is only usable for read operations.`)
@@ -77,7 +78,10 @@ func newCreate() *cobra.Command {
 	cmd.Short = `Create a storage credential.`
 	cmd.Long = `Create a storage credential.
   
-  Creates a new storage credential.`
+  Creates a new storage credential.
+
+  Arguments:
+    NAME: The credential name. The name must be unique within the metastore.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -156,7 +160,10 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete a credential.
   
   Deletes a storage credential from the metastore. The caller must be an owner
-  of the storage credential.`
+  of the storage credential.
+
+  Arguments:
+    NAME: Name of the storage credential.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -231,7 +238,10 @@ func newGet() *cobra.Command {
   
   Gets a storage credential from the metastore. The caller must be a metastore
   admin, the owner of the storage credential, or have some permission on the
-  storage credential.`
+  storage credential.
+
+  Arguments:
+    NAME: Name of the storage credential.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -357,10 +367,11 @@ func newUpdate() *cobra.Command {
 	// TODO: complex arg: aws_iam_role
 	// TODO: complex arg: azure_managed_identity
 	// TODO: complex arg: azure_service_principal
+	// TODO: complex arg: cloudflare_api_token
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Comment associated with the credential.`)
 	// TODO: output-only field
 	cmd.Flags().BoolVar(&updateReq.Force, "force", updateReq.Force, `Force update even if there are dependent external locations or external tables.`)
-	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The credential name.`)
+	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the storage credential.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of credential.`)
 	cmd.Flags().BoolVar(&updateReq.ReadOnly, "read-only", updateReq.ReadOnly, `Whether the storage credential is only usable for read operations.`)
 	cmd.Flags().BoolVar(&updateReq.SkipValidation, "skip-validation", updateReq.SkipValidation, `Supplying true to this argument skips validation of the updated credential.`)
@@ -369,7 +380,10 @@ func newUpdate() *cobra.Command {
 	cmd.Short = `Update a credential.`
 	cmd.Long = `Update a credential.
   
-  Updates a storage credential on the metastore.`
+  Updates a storage credential on the metastore.
+
+  Arguments:
+    NAME: Name of the storage credential.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -392,14 +406,14 @@ func newUpdate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Storage Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "The credential name")
+			id, err := cmdio.Select(ctx, names, "Name of the storage credential")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the credential name")
+			return fmt.Errorf("expected to have name of the storage credential")
 		}
 		updateReq.Name = args[0]
 
@@ -449,6 +463,7 @@ func newValidate() *cobra.Command {
 	// TODO: complex arg: aws_iam_role
 	// TODO: complex arg: azure_managed_identity
 	// TODO: complex arg: azure_service_principal
+	// TODO: complex arg: cloudflare_api_token
 	// TODO: output-only field
 	cmd.Flags().StringVar(&validateReq.ExternalLocationName, "external-location-name", validateReq.ExternalLocationName, `The name of an existing external location to validate.`)
 	cmd.Flags().BoolVar(&validateReq.ReadOnly, "read-only", validateReq.ReadOnly, `Whether the storage credential is only usable for read operations.`)

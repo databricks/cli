@@ -9,6 +9,9 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+// The latest template schema version supported by the CLI
+const latestSchemaVersion = 1
+
 type config struct {
 	ctx    context.Context
 	values map[string]any
@@ -48,6 +51,9 @@ func validateSchema(schema *jsonschema.Schema) error {
 		if v.Type == jsonschema.ArrayType || v.Type == jsonschema.ObjectType {
 			return fmt.Errorf("property type %s is not supported by bundle templates", v.Type)
 		}
+	}
+	if schema.Version != nil && *schema.Version > latestSchemaVersion {
+		return fmt.Errorf("template schema version %d is not supported by this version of the CLI. Please upgrade your CLI to the latest version", *schema.Version)
 	}
 	return nil
 }
@@ -99,20 +105,61 @@ func (c *config) assignDefaultValues(r *renderer) error {
 	return nil
 }
 
+func (c *config) skipPrompt(p jsonschema.Property, r *renderer) (bool, error) {
+	// Config already has a value assigned. We don't have to prompt for a user input.
+	if _, ok := c.values[p.Name]; ok {
+		return true, nil
+	}
+
+	if p.Schema.SkipPromptIf == nil {
+		return false, nil
+	}
+
+	// Check if conditions specified by template author for skipping the prompt
+	// are satisfied. If they are not, we have to prompt for a user input.
+	for name, property := range p.Schema.SkipPromptIf.Properties {
+		if v, ok := c.values[name]; ok && v == property.Const {
+			continue
+		}
+		return false, nil
+	}
+
+	if p.Schema.Default == nil {
+		return false, fmt.Errorf("property %s has skip_prompt_if set but no default value", p.Name)
+	}
+
+	// Assign default value to property if we are skipping it.
+	if p.Schema.Type != jsonschema.StringType {
+		c.values[p.Name] = p.Schema.Default
+		return true, nil
+	}
+
+	// Execute the default value as a template and assign it to the property.
+	var err error
+	c.values[p.Name], err = r.executeTemplate(p.Schema.Default.(string))
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 // Prompts user for values for properties that do not have a value set yet
 func (c *config) promptForValues(r *renderer) error {
 	for _, p := range c.schema.OrderedProperties() {
 		name := p.Name
 		property := p.Schema
 
-		// Config already has a value assigned
-		if _, ok := c.values[name]; ok {
+		// Skip prompting if we can.
+		skip, err := c.skipPrompt(p, r)
+		if err != nil {
+			return err
+		}
+		if skip {
 			continue
 		}
 
 		// Compute default value to display by converting it to a string
 		var defaultVal string
-		var err error
 		if property.Default != nil {
 			defaultValRaw, err := property.DefaultString()
 			if err != nil {
@@ -165,7 +212,7 @@ func (c *config) promptForValues(r *renderer) error {
 // Prompt user for any missing config values. Assign default values if
 // terminal is not TTY
 func (c *config) promptOrAssignDefaultValues(r *renderer) error {
-	if cmdio.IsOutTTY(c.ctx) && cmdio.IsInTTY(c.ctx) {
+	if cmdio.IsPromptSupported(c.ctx) {
 		return c.promptForValues(r)
 	}
 	return c.assignDefaultValues(r)

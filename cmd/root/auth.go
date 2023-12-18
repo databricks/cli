@@ -41,7 +41,7 @@ func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt 
 	}
 
 	prompt := false
-	if allowPrompt && err != nil && cmdio.IsInteractive(ctx) {
+	if allowPrompt && err != nil && cmdio.IsPromptSupported(ctx) {
 		// Prompt to select a profile if the current configuration is not an account client.
 		prompt = prompt || errors.Is(err, databricks.ErrNotAccountClient)
 		// Prompt to select a profile if the current configuration doesn't resolve to a credential provider.
@@ -65,7 +65,7 @@ func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt 
 			return nil, err
 		}
 	}
-	return a, nil
+	return a, err
 }
 
 func MustAccountClient(cmd *cobra.Command, args []string) error {
@@ -109,7 +109,7 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 	}
 
 	prompt := false
-	if allowPrompt && err != nil && cmdio.IsInteractive(ctx) {
+	if allowPrompt && err != nil && cmdio.IsPromptSupported(ctx) {
 		// Prompt to select a profile if the current configuration is not a workspace client.
 		prompt = prompt || errors.Is(err, databricks.ErrNotWorkspaceClient)
 		// Prompt to select a profile if the current configuration doesn't resolve to a credential provider.
@@ -133,7 +133,7 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 			return nil, err
 		}
 	}
-	return w, nil
+	return w, err
 }
 
 func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
@@ -152,7 +152,11 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		if b := bundle.GetOrNil(cmd.Context()); b != nil {
-			cfg = b.WorkspaceClient().Config
+			client, err := b.InitializeWorkspaceClient()
+			if err != nil {
+				return err
+			}
+			cfg = client.Config
 		}
 	}
 

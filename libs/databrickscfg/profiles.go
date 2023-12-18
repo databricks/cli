@@ -76,7 +76,10 @@ func GetPath(ctx context.Context) (string, error) {
 		configFile = "~/.databrickscfg"
 	}
 	if strings.HasPrefix(configFile, "~") {
-		homedir := env.UserHomeDir(ctx)
+		homedir, err := env.UserHomeDir(ctx)
+		if err != nil {
+			return "", err
+		}
 		configFile = filepath.Join(homedir, configFile[1:])
 	}
 	return configFile, nil
@@ -108,7 +111,11 @@ func LoadProfiles(ctx context.Context, fn ProfileMatchFunction) (file string, pr
 	// Replace homedir with ~ if applicable.
 	// This is to make the output more readable.
 	file = filepath.Clean(f.Path())
-	homedir := filepath.Clean(env.UserHomeDir(ctx))
+	home, err := env.UserHomeDir(ctx)
+	if err != nil {
+		return "", nil, err
+	}
+	homedir := filepath.Clean(home)
 	if strings.HasPrefix(file, homedir) {
 		file = "~" + file[len(homedir):]
 	}

@@ -77,7 +77,12 @@ func newCreate() *cobra.Command {
   
   Creates a new external location entry in the metastore. The caller must be a
   metastore admin or have the **CREATE_EXTERNAL_LOCATION** privilege on both the
-  metastore and the associated storage credential.`
+  metastore and the associated storage credential.
+
+  Arguments:
+    NAME: Name of the external location.
+    URL: Path URL of the external location.
+    CREDENTIAL_NAME: Name of the storage credential used with this location.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -162,7 +167,10 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete an external location.
   
   Deletes the specified external location from the metastore. The caller must be
-  the owner of the external location.`
+  the owner of the external location.
+
+  Arguments:
+    NAME: Name of the external location.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -225,7 +233,10 @@ func newGet() *cobra.Command {
   
   Gets an external location from the metastore. The caller must be either a
   metastore admin, the owner of the external location, or a user that has some
-  privilege on the external location.`
+  privilege on the external location.
+
+  Arguments:
+    NAME: Name of the external location.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -340,7 +351,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.CredentialName, "credential-name", updateReq.CredentialName, `Name of the storage credential used with this location.`)
 	// TODO: complex arg: encryption_details
 	cmd.Flags().BoolVar(&updateReq.Force, "force", updateReq.Force, `Force update even if changing url invalidates dependent external tables or mounts.`)
-	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of the external location.`)
+	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the external location.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `The owner of the external location.`)
 	cmd.Flags().BoolVar(&updateReq.ReadOnly, "read-only", updateReq.ReadOnly, `Indicates whether the external location is read-only.`)
 	cmd.Flags().BoolVar(&updateReq.SkipValidation, "skip-validation", updateReq.SkipValidation, `Skips validation of the storage credential associated with the external location.`)
@@ -352,7 +363,10 @@ func newUpdate() *cobra.Command {
   
   Updates an external location in the metastore. The caller must be the owner of
   the external location, or be a metastore admin. In the second case, the admin
-  can only update the name of the external location.`
+  can only update the name of the external location.
+
+  Arguments:
+    NAME: Name of the external location.`
 
 	cmd.Annotations = make(map[string]string)
 

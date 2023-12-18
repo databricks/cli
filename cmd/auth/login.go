@@ -133,7 +133,7 @@ func setHost(ctx context.Context, profileName string, persistentAuth *auth.Persi
 		return p.Name == profileName
 	})
 	// Tolerate ErrNoConfiguration here, as we will write out a configuration as part of the login flow.
-	if !errors.Is(err, databrickscfg.ErrNoConfiguration) {
+	if err != nil && !errors.Is(err, databrickscfg.ErrNoConfiguration) {
 		return err
 	}
 	if persistentAuth.Host == "" {

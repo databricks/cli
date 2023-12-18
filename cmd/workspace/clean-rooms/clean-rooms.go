@@ -132,7 +132,10 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete a clean room.
   
   Deletes a data object clean room from the metastore. The caller must be an
-  owner of the clean room.`
+  owner of the clean room.
+
+  Arguments:
+    NAME_ARG: The name of the clean room.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -196,7 +199,10 @@ func newGet() *cobra.Command {
 	cmd.Long = `Get a clean room.
   
   Gets a data object clean room from the metastore. The caller must be a
-  metastore admin or the owner of the clean room.`
+  metastore admin or the owner of the clean room.
+
+  Arguments:
+    NAME_ARG: The name of the clean room.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -321,7 +327,6 @@ func newUpdate() *cobra.Command {
 
 	// TODO: array: catalog_updates
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
-	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of the clean room.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of clean room.`)
 
 	cmd.Use = "update NAME_ARG"
@@ -341,7 +346,10 @@ func newUpdate() *cobra.Command {
   indefinitely for recipients to be able to access the table. Typically, you
   should use a group as the clean room owner.
   
-  Table removals through **update** do not require additional privileges.`
+  Table removals through **update** do not require additional privileges.
+
+  Arguments:
+    NAME_ARG: The name of the clean room.`
 
 	cmd.Annotations = make(map[string]string)
 

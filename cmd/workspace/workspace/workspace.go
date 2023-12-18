@@ -70,7 +70,10 @@ func newDelete() *cobra.Command {
   DIRECTORY_NOT_EMPTY.
   
   Object deletion cannot be undone and deleting a directory recursively is not
-  atomic.`
+  atomic.
+
+  Arguments:
+    PATH: The absolute path of the notebook or directory.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -146,7 +149,14 @@ func newExport() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Flags().Var(&exportReq.Format, "format", `This specifies the format of the exported file.`)
+	cmd.Flags().Var(&exportReq.Format, "format", `This specifies the format of the exported file. Supported values: [
+  AUTO,
+  DBC,
+  HTML,
+  JUPYTER,
+  R_MARKDOWN,
+  SOURCE,
+]`)
 
 	cmd.Use = "export PATH"
 	cmd.Short = `Export a workspace object.`
@@ -159,7 +169,11 @@ func newExport() *cobra.Command {
   
   If the exported data would exceed size limit, this call returns
   MAX_NOTEBOOK_SIZE_EXCEEDED. Currently, this API does not support exporting a
-  library.`
+  library.
+
+  Arguments:
+    PATH: The absolute path of the object or directory. Exporting a directory is
+      only supported for the DBC, SOURCE, and AUTO format.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -232,7 +246,11 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Short = `Get workspace object permission levels.`
 	cmd.Long = `Get workspace object permission levels.
   
-  Gets the permission levels that a user can have on an object.`
+  Gets the permission levels that a user can have on an object.
+
+  Arguments:
+    WORKSPACE_OBJECT_TYPE: The workspace object type for which to get or manage permissions.
+    WORKSPACE_OBJECT_ID: The workspace object for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -295,7 +313,11 @@ func newGetPermissions() *cobra.Command {
 	cmd.Long = `Get workspace object permissions.
   
   Gets the permissions of a workspace object. Workspace objects can inherit
-  permissions from their parent objects or root object.`
+  permissions from their parent objects or root object.
+
+  Arguments:
+    WORKSPACE_OBJECT_TYPE: The workspace object type for which to get or manage permissions.
+    WORKSPACE_OBJECT_ID: The workspace object for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -358,7 +380,10 @@ func newGetStatus() *cobra.Command {
 	cmd.Long = `Get status.
   
   Gets the status of an object or a directory. If path does not exist, this
-  call returns an error RESOURCE_DOES_NOT_EXIST.`
+  call returns an error RESOURCE_DOES_NOT_EXIST.
+
+  Arguments:
+    PATH: The absolute path of the notebook or directory.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -418,8 +443,15 @@ func newImport() *cobra.Command {
 	cmd.Flags().Var(&importJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&importReq.Content, "content", importReq.Content, `The base64-encoded content.`)
-	cmd.Flags().Var(&importReq.Format, "format", `This specifies the format of the file to be imported.`)
-	cmd.Flags().Var(&importReq.Language, "language", `The language of the object.`)
+	cmd.Flags().Var(&importReq.Format, "format", `This specifies the format of the file to be imported. Supported values: [
+  AUTO,
+  DBC,
+  HTML,
+  JUPYTER,
+  R_MARKDOWN,
+  SOURCE,
+]`)
+	cmd.Flags().Var(&importReq.Language, "language", `The language of the object. Supported values: [PYTHON, R, SCALA, SQL]`)
 	cmd.Flags().BoolVar(&importReq.Overwrite, "overwrite", importReq.Overwrite, `The flag that specifies whether to overwrite existing object.`)
 
 	cmd.Use = "import PATH"
@@ -431,7 +463,11 @@ func newImport() *cobra.Command {
   false, this call returns an error RESOURCE_ALREADY_EXISTS. To import a
   directory, you can use either the DBC format or the SOURCE format with the
   language field unset. To import a single file as SOURCE, you must set the
-  language field.`
+  language field.
+
+  Arguments:
+    PATH: The absolute path of the object or directory. Importing a directory is
+      only supported for the DBC and SOURCE formats.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -511,7 +547,10 @@ func newList() *cobra.Command {
   
   Lists the contents of a directory, or the object if it is not a directory. If
   the input path does not exist, this call returns an error
-  RESOURCE_DOES_NOT_EXIST.`
+  RESOURCE_DOES_NOT_EXIST.
+
+  Arguments:
+    PATH: The absolute path of the notebook or directory.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -579,7 +618,12 @@ func newMkdirs() *cobra.Command {
   path, this call returns an error RESOURCE_ALREADY_EXISTS.
   
   Note that if this operation fails it may have succeeded in creating some of
-  the necessary parent directories.`
+  the necessary parent directories.
+
+  Arguments:
+    PATH: The absolute path of the directory. If the parent directories do not
+      exist, it will also create them. If the directory already exists, this
+      command will do nothing and succeed.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -664,7 +708,11 @@ func newSetPermissions() *cobra.Command {
 	cmd.Long = `Set workspace object permissions.
   
   Sets permissions on a workspace object. Workspace objects can inherit
-  permissions from their parent objects or root object.`
+  permissions from their parent objects or root object.
+
+  Arguments:
+    WORKSPACE_OBJECT_TYPE: The workspace object type for which to get or manage permissions.
+    WORKSPACE_OBJECT_ID: The workspace object for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -737,7 +785,11 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Long = `Update workspace object permissions.
   
   Updates the permissions on a workspace object. Workspace objects can inherit
-  permissions from their parent objects or root object.`
+  permissions from their parent objects or root object.
+
+  Arguments:
+    WORKSPACE_OBJECT_TYPE: The workspace object type for which to get or manage permissions.
+    WORKSPACE_OBJECT_ID: The workspace object for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
