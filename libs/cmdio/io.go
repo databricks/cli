@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/briandowns/spinner"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/manifoldco/promptui"
 	"github.com/mattn/go-isatty"
@@ -89,7 +90,7 @@ func (c *cmdIO) IsTTY() bool {
 }
 
 func IsPromptSupported(ctx context.Context) bool {
-	// We do not allow prompting in non-interactive mode and in Git Bash.
+	// We do not allow prompting in non-interactive mode and in Git Bash on Windows.
 	// Likely due to fact that Git Bash does not (correctly support ANSI escape sequences,
 	// we cannot use promptui package there.
 	// See known issues:
@@ -97,7 +98,7 @@ func IsPromptSupported(ctx context.Context) bool {
 	// - https://github.com/chzyer/readline/issues/191
 	// We also do not allow prompting in non-interactive mode,
 	// because it's not possible to read from stdin in non-interactive mode.
-	return IsInteractive(ctx) && IsOutTTY(ctx) && IsInTTY(ctx) && !IsGitBash(ctx)
+	return (IsInteractive(ctx) || (IsOutTTY(ctx) && IsInTTY(ctx))) && !IsGitBash(ctx)
 }
 
 func IsGitBash(ctx context.Context) bool {
@@ -105,7 +106,8 @@ func IsGitBash(ctx context.Context) bool {
 	msystem := os.Getenv("MSYSTEM")
 	if strings.EqualFold(msystem, "MINGW64") {
 		// Check for typical Git Bash env variable for prompts
-		return os.Getenv("PS1") != ""
+		ps1 := env.Get(ctx, "PS1")
+		return strings.Contains(ps1, "MINGW") || strings.Contains(ps1, "MSYSTEM")
 	}
 
 	return false
