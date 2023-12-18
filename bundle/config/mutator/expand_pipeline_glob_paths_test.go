@@ -8,8 +8,9 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/paths"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/internal/bundletest"
+	cv "github.com/databricks/cli/libs/config"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/require"
@@ -42,9 +43,6 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						Paths: paths.Paths{
-							ConfigFilePath: filepath.Join(dir, "resource.yml"),
-						},
 						PipelineSpec: &pipelines.PipelineSpec{
 							Libraries: []pipelines.PipelineLibrary{
 								{
@@ -97,6 +95,8 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 			},
 		},
 	}
+
+	bundletest.SetLocation(b, cv.EmptyPath, filepath.Join(dir, "resource.yml"))
 
 	m := ExpandPipelineGlobPaths()
 	err := bundle.Apply(context.Background(), b, m)

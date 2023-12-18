@@ -124,27 +124,27 @@ func (r *Resources) VerifyUniqueResourceIdentifiers() (*UniqueResourceIdTracker,
 	return tracker, nil
 }
 
-// SetConfigFilePath sets the specified path for all resources contained in this instance.
+// ConfigureConfigFilePath sets the specified path for all resources contained in this instance.
 // This property is used to correctly resolve paths relative to the path
 // of the configuration file they were defined in.
-func (r *Resources) SetConfigFilePath(path string) {
+func (r *Resources) ConfigureConfigFilePath() {
 	for _, e := range r.Jobs {
-		e.ConfigFilePath = path
+		e.ConfigureConfigFilePath()
 	}
 	for _, e := range r.Pipelines {
-		e.ConfigFilePath = path
+		e.ConfigureConfigFilePath()
 	}
 	for _, e := range r.Models {
-		e.ConfigFilePath = path
+		e.ConfigureConfigFilePath()
 	}
 	for _, e := range r.Experiments {
-		e.ConfigFilePath = path
+		e.ConfigureConfigFilePath()
 	}
 	for _, e := range r.ModelServingEndpoints {
-		e.ConfigFilePath = path
+		e.ConfigureConfigFilePath()
 	}
 	for _, e := range r.RegisteredModels {
-		e.ConfigFilePath = path
+		e.ConfigureConfigFilePath()
 	}
 }
 

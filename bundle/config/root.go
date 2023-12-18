@@ -115,32 +115,70 @@ func Load(path string) (*Root, error) {
 	return &r, err
 }
 
-func (r *Root) MarkMutatorEntry() {
-	r.depth++
-
+func (r *Root) initializeValue() {
 	// Many test cases initialize a config as a Go struct literal.
-	// The zero-initialized value for [wasLoaded] will be false,
-	// and indicates we need to populate [r.value].
-	if !r.value.IsValid() {
-		nv, err := convert.FromTyped(r, config.NilValue)
-		if err != nil {
-			panic(err)
-		}
-
-		r.value = nv
+	// The value will be invalid and we need to populate it from the typed configuration.
+	if r.value.IsValid() {
+		return
 	}
+
+	nv, err := convert.FromTyped(r, config.NilValue)
+	if err != nil {
+		panic(err)
+	}
+
+	r.value = nv
+}
+
+func (r *Root) toTyped(v config.Value) error {
+	// Hack: restore path; it may be cleared by [ToTyped] if
+	// the configuration equals nil (happens in tests).
+	p := r.Path
+	defer func() {
+		r.Path = p
+	}()
+
+	// Convert normalized configuration tree to typed configuration.
+	err := convert.ToTyped(r, v)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Root) Mutate(fn func(config.Value) (config.Value, error)) error {
+	r.initializeValue()
+	nv, err := fn(r.value)
+	if err != nil {
+		return err
+	}
+	err = r.toTyped(nv)
+	if err != nil {
+		return err
+	}
+	r.value = nv
+	return nil
+}
+
+func (r *Root) MarkMutatorEntry() {
+	r.initializeValue()
+	r.depth++
 
 	// If we are entering a mutator at depth 1, we need to convert
 	// the dynamic configuration tree to typed configuration.
 	if r.depth == 1 {
 		// Always run ToTyped upon entering a mutator.
 		// Convert normalized configuration tree to typed configuration.
-		err := convert.ToTyped(r, r.value)
+		err := r.toTyped(r.value)
 		if err != nil {
 			panic(err)
 		}
+
+		r.ConfigureConfigFilePath()
+
 	} else {
-		nv, err := convert.FromTyped(r, config.NilValue)
+		nv, err := convert.FromTyped(r, r.value)
 		if err != nil {
 			panic(err)
 		}
@@ -155,7 +193,7 @@ func (r *Root) MarkMutatorExit() {
 	// If we are exiting a mutator at depth 0, we need to convert
 	// the typed configuration to a dynamic configuration tree.
 	if r.depth == 0 {
-		nv, err := convert.FromTyped(r, config.NilValue)
+		nv, err := convert.FromTyped(r, r.value)
 		if err != nil {
 			panic(err)
 		}
@@ -170,26 +208,10 @@ func (r *Root) Diagnostics() diag.Diagnostics {
 
 // SetConfigFilePath configures the path that its configuration
 // was loaded from in configuration leafs that require it.
-func (r *Root) SetConfigFilePath(path string) {
-	panic("nope")
-
-	r.Resources.SetConfigFilePath(path)
+func (r *Root) ConfigureConfigFilePath() {
+	r.Resources.ConfigureConfigFilePath()
 	if r.Artifacts != nil {
-		r.Artifacts.SetConfigFilePath(path)
-	}
-
-	if r.Targets != nil {
-		for _, env := range r.Targets {
-			if env == nil {
-				continue
-			}
-			if env.Resources != nil {
-				env.Resources.SetConfigFilePath(path)
-			}
-			if env.Artifacts != nil {
-				env.Artifacts.SetConfigFilePath(path)
-			}
-		}
+		r.Artifacts.ConfigureConfigFilePath()
 	}
 }
 
@@ -246,7 +268,7 @@ func (r *Root) Merge(other *Root) error {
 	r.value = nv
 
 	// Convert normalized configuration tree to typed configuration.
-	err = convert.ToTyped(r, r.value)
+	err = r.toTyped(r.value)
 	if err != nil {
 		panic(err)
 	}
@@ -300,7 +322,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 	}
 
 	// Convert normalized configuration tree to typed configuration.
-	err = convert.ToTyped(r, r.value)
+	err = r.toTyped(r.value)
 	if err != nil {
 		panic(err)
 	}
@@ -308,13 +330,13 @@ func (r *Root) MergeTargetOverrides(name string) error {
 	return nil
 }
 
-// ForceLocationInConfig walks all nodes in the configuration tree and
-// sets their location to the specified value.
-func (r *Root) ForceLocationInConfig(path string) {
-	out, _ := config.Walk(r.value, func(v config.Value) (config.Value, error) {
-		return v.WithLocation(config.Location{
-			File: path,
-		}), nil
-	})
-	r.value = out
-}
+// // ForceLocationInConfig walks all nodes in the configuration tree and
+// // sets their location to the specified value.
+// func (r *Root) ForceLocationInConfig(path string) {
+// 	out, _ := config.Walk(r.value, func(v config.Value) (config.Value, error) {
+// 		return v.WithLocation(config.Location{
+// 			File: path,
+// 		}), nil
+// 	})
+// 	r.value = out
+// }
