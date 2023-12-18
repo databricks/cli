@@ -12,9 +12,7 @@ func TestJobWithSparkConf(t *testing.T) {
 
 	job := b.Config.Resources.Jobs["job_with_spark_conf"]
 	assert.Len(t, job.JobClusters, 1)
-
-	jobCluster := job.JobClusters[0]
-	assert.Equal(t, "test_cluster", jobCluster.JobClusterKey)
+	assert.Equal(t, "test_cluster", job.JobClusters[0].JobClusterKey)
 
 	// Existing behavior is such that including non-string values
 	// in the spark_conf map will cause the job to fail to load.
