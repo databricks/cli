@@ -1,14 +1,12 @@
 package config
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"path"
-	"strings"
 
 	"github.com/databricks/cli/bundle/config/paths"
-	"github.com/databricks/cli/libs/process"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
@@ -52,20 +50,8 @@ func (a *Artifact) Build(ctx context.Context) ([]byte, error) {
 		return nil, fmt.Errorf("no build property defined")
 	}
 
-	out := make([][]byte, 0)
-	commands := strings.Split(a.BuildCommand, " && ")
-	for _, command := range commands {
-		buildParts := strings.Split(command, " ")
-		var buf bytes.Buffer
-		_, err := process.Background(ctx, buildParts,
-			process.WithCombinedOutput(&buf),
-			process.WithDir(a.Path))
-		if err != nil {
-			return buf.Bytes(), err
-		}
-		out = append(out, buf.Bytes())
-	}
-	return bytes.Join(out, []byte{}), nil
+	exec := cmdio.NewCommandExecutor(a.Path)
+	return exec.Exec(ctx, a.BuildCommand)
 }
 
 func (a *Artifact) NormalisePaths() {

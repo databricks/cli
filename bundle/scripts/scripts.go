@@ -56,26 +56,8 @@ func executeHook(ctx context.Context, b *bundle.Bundle, hook config.ScriptHook) 
 		return nil, nil, nil
 	}
 
-	interpreter, err := findInterpreter()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// TODO: switch to process.Background(...)
-	cmd := exec.CommandContext(ctx, interpreter, "-c", string(command))
-	cmd.Dir = b.Config.Path
-
-	outPipe, err := cmd.StdoutPipe()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	errPipe, err := cmd.StderrPipe()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return cmd, io.MultiReader(outPipe, errPipe), cmd.Start()
+	executor := cmdio.NewCommandExecutor(b.Config.Path)
+	return executor.StartCommand(ctx, string(command))
 }
 
 func getCommmand(b *bundle.Bundle, hook config.ScriptHook) config.Command {
@@ -84,9 +66,4 @@ func getCommmand(b *bundle.Bundle, hook config.ScriptHook) config.Command {
 	}
 
 	return b.Config.Experimental.Scripts[hook]
-}
-
-func findInterpreter() (string, error) {
-	// At the moment we just return 'sh' on all platforms and use it to execute scripts
-	return "sh", nil
 }
