@@ -15,10 +15,21 @@ func TestKeyReturnsNameFromJsonTag(T *testing.T) {
 	}
 
 	v := &test{}
-	assert.Equal(T, "name", key(v, "Name"))
-	assert.Equal(T, "Description", key(v, "Description"))
-	assert.Equal(T, "Another", key(v, "Another"))
-	assert.Equal(T, "NotExists", key(v, "NotExists"))
+	k, ok := config.Key(v, "Name")
+	assert.True(T, ok)
+	assert.Equal(T, "name", k)
+
+	k, ok = config.Key(v, "Description")
+	assert.False(T, ok)
+	assert.Equal(T, "Description", k)
+
+	k, ok = config.Key(v, "Another")
+	assert.False(T, ok)
+	assert.Equal(T, "Another", k)
+
+	k, ok = config.Key(v, "NotExists")
+	assert.False(T, ok)
+	assert.Equal(T, "NotExists", k)
 }
 
 func TestConvertToMapValue(t *testing.T) {
@@ -40,7 +51,7 @@ func TestConvertToMapValue(t *testing.T) {
 			"Name",
 		},
 	}
-	result, err := convertToMapValue(v, newOrder([]string{}), map[string]config.Value{})
+	result, err := ConvertToMapValue(v, config.NewOrder([]string{}), map[string]config.Value{})
 	assert.NoError(t, err)
 
 	assert.Equal(t, map[string]config.Value{
@@ -76,7 +87,7 @@ func TestConvertToMapValueWithOrder(t *testing.T) {
 			"Name",
 		},
 	}
-	result, err := convertToMapValue(v, newOrder([]string{"List", "Name", "Map"}), map[string]config.Value{})
+	result, err := ConvertToMapValue(v, config.NewOrder([]string{"List", "Name", "Map"}), map[string]config.Value{})
 	assert.NoError(t, err)
 
 	assert.Equal(t, map[string]config.Value{

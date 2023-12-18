@@ -1,7 +1,8 @@
-package convert
+package generate
 
 import (
 	"github.com/databricks/cli/libs/config"
+	"github.com/databricks/cli/libs/config/convert"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
@@ -9,12 +10,12 @@ var taskFieldOrder = []string{"TaskKey", "DependsOn", "ExistingClusterId", "NewC
 var jobFieldOrder = []string{"Name", "Format", "NewCluster", "JobClusters", "ExistingClusterId", "Compute", "Tasks"}
 
 func ConvertJobToValue(job *jobs.Job) (config.Value, error) {
-	jobOrder := newOrder(jobFieldOrder)
-	taskOrder := newOrder(taskFieldOrder)
+	jobOrder := config.NewOrder(jobFieldOrder)
+	taskOrder := config.NewOrder(taskFieldOrder)
 	value := make(map[string]config.Value)
 
 	if job.Settings.Tasks != nil {
-		k := key(job.Settings, "Tasks")
+		k, _ := config.Key(job.Settings, "Tasks")
 		tasks := make([]config.Value, 0)
 		for _, task := range job.Settings.Tasks {
 			v, err := convertTaskToValue(task, taskOrder)
@@ -23,13 +24,13 @@ func ConvertJobToValue(job *jobs.Job) (config.Value, error) {
 			}
 			tasks = append(tasks, v)
 		}
-		value[k] = config.NewValue(tasks, config.Location{Line: jobOrder.get("Tasks")})
+		value[k] = config.NewValue(tasks, config.Location{Line: jobOrder.Get("Tasks")})
 	}
 
-	return convertToMapValue(job.Settings, jobOrder, value)
+	return convert.ConvertToMapValue(job.Settings, jobOrder, value)
 }
 
-func convertTaskToValue(task jobs.Task, order *order) (config.Value, error) {
+func convertTaskToValue(task jobs.Task, order *config.Order) (config.Value, error) {
 	dst := make(map[string]config.Value)
-	return convertToMapValue(task, order, dst)
+	return convert.ConvertToMapValue(task, order, dst)
 }

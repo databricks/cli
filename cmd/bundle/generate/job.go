@@ -7,10 +7,11 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/generate"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/config"
-	"github.com/databricks/cli/libs/convert"
+	"github.com/databricks/cli/libs/config/convert"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
 )
@@ -85,7 +86,7 @@ func NewGenerateJobCommand() *cobra.Command {
 			}
 		}
 
-		v, err := convert.ConvertJobToValue(job)
+		v, err := generate.ConvertJobToValue(job)
 		if err != nil {
 			return err
 		}

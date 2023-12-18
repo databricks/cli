@@ -3,6 +3,10 @@ package notebook
 import "github.com/databricks/databricks-sdk-go/service/workspace"
 
 func GetExtensionByLanguage(objectInfo *workspace.ObjectInfo) string {
+	if objectInfo.ObjectType != workspace.ObjectTypeNotebook {
+		return ""
+	}
+
 	switch objectInfo.Language {
 	case workspace.LanguagePython:
 		return ".py"
