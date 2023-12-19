@@ -2,6 +2,7 @@ package cmdio
 
 import (
 	"context"
+	"errors"
 	"io"
 	"os/exec"
 )
@@ -22,8 +23,9 @@ func (e *Executor) StartCommand(ctx context.Context, command string) (*exec.Cmd,
 		return nil, nil, err
 	}
 
-	// TODO: switch to process.Background(...)
-	cmd := exec.CommandContext(ctx, interpreter, "-c", command)
+	args := interpreter.args
+	args = append(args, command)
+	cmd := exec.CommandContext(ctx, interpreter.executable, args...)
 	cmd.Dir = e.dir
 
 	outPipe, err := cmd.StdoutPipe()
@@ -54,7 +56,63 @@ func (e *Executor) Exec(ctx context.Context, command string) ([]byte, error) {
 	return res, cmd.Wait()
 }
 
-func findInterpreter() (string, error) {
-	// At the moment we just return 'sh' on all platforms and use it to execute scripts
-	return "sh", nil
+type interpreter struct {
+	executable string
+	args       []string
+}
+
+func findInterpreter() (*interpreter, error) {
+	// Lookup for bash executable first
+	out, err := exec.LookPath("bash")
+	if err != nil && !errors.Is(err, exec.ErrNotFound) {
+		return nil, err
+	}
+
+	if out != "" {
+		return &interpreter{
+			executable: out,
+			args:       []string{"-c"},
+		}, nil
+	}
+
+	// Lookup for sh executable
+	out, err = exec.LookPath("sh")
+	if err != nil && !errors.Is(err, exec.ErrNotFound) {
+		return nil, err
+	}
+
+	if out != "" {
+		return &interpreter{
+			executable: out,
+			args:       []string{"-c"},
+		}, nil
+	}
+
+	// Lookup for PowerShell executable
+	out, err = exec.LookPath("powershell")
+	if err != nil && !errors.Is(err, exec.ErrNotFound) {
+		return nil, err
+	}
+
+	if out != "" {
+		return &interpreter{
+			executable: out,
+			args:       []string{"-Command"},
+		}, nil
+	}
+
+	// Lookup for CMD executable
+	out, err = exec.LookPath("cmd")
+	if err != nil && !errors.Is(err, exec.ErrNotFound) {
+		return nil, err
+	}
+
+	if out != "" {
+		return &interpreter{
+			executable: out,
+			args:       []string{"/C"},
+		}, nil
+	}
+
+	return nil, errors.New("no interpreter found")
 }
