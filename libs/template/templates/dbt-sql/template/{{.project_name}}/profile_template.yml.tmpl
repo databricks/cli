@@ -24,7 +24,7 @@ prompts:
     default: {{.catalog}}
   {{- end}}
   schema:
-    hint: 'default schema where dbt will build objects, e.g. lennart_dev'
+    hint: 'default schema where dbt will build objects, e.g. {{.schema}} or lennart_dev'
     default: {{.schema}}
   threads:
     hint: '1 or more'
