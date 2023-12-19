@@ -21,7 +21,7 @@ targets:
     default: true
     mode: development
     workspace:
-      host: {{.workspace_host_override}}
+      host: {{workspace_host}}
     variables:
       warehouse_id: {{index ((regexp "[^/]+$").FindStringSubmatch .http_path) 0}}
       catalog: {{.catalog}}
@@ -30,7 +30,7 @@ targets:
   prod:
     mode: production
     workspace:
-      host: {{.workspace_host_override}}
+      host: {{workspace_host}}
     variables:
       warehouse_id: {{index ((regexp "[^/]+$").FindStringSubmatch .http_path) 0}}
       catalog: {{.catalog}}

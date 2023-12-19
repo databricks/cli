@@ -9,15 +9,6 @@
             "description": "\nPlease provide a unique name for this project.\nproject_name",
             "order": 1
         },
-        "workspace_host_override": {
-            "comment": "We explicitly ask users for the workspace_host since we ask for a http_path below. A downside of doing this is that {{user_name}} may not be correct if they pick a different workspace than the one from the current profile.",
-            "type": "string",
-            "pattern": "^https:\\/\\/[^/]+$",
-            "pattern_match_failure_message": "URL must be of the form https://my.databricks.host",
-            "description": "\nPlease provide the workspace URL to use.\nworkspace_url",
-            "default": "{{workspace_host}}",
-            "order": 2
-        },
         "http_path": {
             "type": "string",
             "pattern": "^/sql/.\\../warehouses/[a-z0-9]+$",

@@ -5,7 +5,7 @@ fixed:
   type: databricks
 prompts:
   host:
-    default: {{(regexp "^https?://").ReplaceAllString .workspace_host_override ""}}
+    default: {{(regexp "^https?://").ReplaceAllString workspace_host ""}}
   token:
     hint: 'personal access token to use, dapiXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
     hide_input: true
@@ -24,7 +24,7 @@ prompts:
     default: {{.catalog}}
   {{- end}}
   schema:
-    hint: 'default schema where dbt will build objects, e.g. {{.schema}} or lennart_dev'
+    hint: 'default schema where dbt will build objects, e.g. {{.schema}} or {{short_name}}_dev'
     default: {{.schema}}
   threads:
     hint: '1 or more'

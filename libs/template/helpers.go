@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"text/template"
 
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -93,6 +94,20 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 				}
 			}
 			result := cachedUser.UserName
+			if result == "" {
+				result = cachedUser.Id
+			}
+			return result, nil
+		},
+		"short_name": func() (string, error) {
+			if cachedUser == nil {
+				var err error
+				cachedUser, err = w.CurrentUser.Me(ctx)
+				if err != nil {
+					return "", err
+				}
+			}
+			result := mutator.GetShortUserName(cachedUser.UserName)
 			if result == "" {
 				result = cachedUser.Id
 			}
