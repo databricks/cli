@@ -554,7 +554,7 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Description about the recipient.`)
 	// TODO: complex arg: ip_access_list
-	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of Recipient.`)
+	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the recipient.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of the recipient owner.`)
 	// TODO: complex arg: properties_kvpairs
 
@@ -567,7 +567,7 @@ func newUpdate() *cobra.Command {
   the user must be both a metastore admin and the owner of the recipient.
 
   Arguments:
-    NAME: Name of Recipient.`
+    NAME: Name of the recipient.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -590,14 +590,14 @@ func newUpdate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Recipients drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "Name of Recipient")
+			id, err := cmdio.Select(ctx, names, "Name of the recipient")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have name of recipient")
+			return fmt.Errorf("expected to have name of the recipient")
 		}
 		updateReq.Name = args[0]
 

@@ -157,7 +157,7 @@ func (i *installer) recordVersion(ctx context.Context) error {
 }
 
 func (i *installer) login(ctx context.Context) (*databricks.WorkspaceClient, error) {
-	if !cmdio.IsInteractive(ctx) {
+	if !cmdio.IsPromptSupported(ctx) {
 		log.Debugf(ctx, "Skipping workspace profile prompts in non-interactive mode")
 		return nil, nil
 	}

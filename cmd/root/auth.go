@@ -41,7 +41,7 @@ func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt 
 	}
 
 	prompt := false
-	if allowPrompt && err != nil && cmdio.IsInteractive(ctx) {
+	if allowPrompt && err != nil && cmdio.IsPromptSupported(ctx) {
 		// Prompt to select a profile if the current configuration is not an account client.
 		prompt = prompt || errors.Is(err, databricks.ErrNotAccountClient)
 		// Prompt to select a profile if the current configuration doesn't resolve to a credential provider.
@@ -109,7 +109,7 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 	}
 
 	prompt := false
-	if allowPrompt && err != nil && cmdio.IsInteractive(ctx) {
+	if allowPrompt && err != nil && cmdio.IsPromptSupported(ctx) {
 		// Prompt to select a profile if the current configuration is not a workspace client.
 		prompt = prompt || errors.Is(err, databricks.ErrNotWorkspaceClient)
 		// Prompt to select a profile if the current configuration doesn't resolve to a credential provider.
