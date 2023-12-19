@@ -77,7 +77,7 @@ type interpreter struct {
 }
 
 func wrapInShellCall(command string) (*interpreter, error) {
-	// Lookup for bash executable first
+	// Lookup for bash executable first (Linux, MacOS, maybe Windows)
 	out, err := exec.LookPath("bash")
 	if err != nil && !errors.Is(err, exec.ErrNotFound) {
 		return nil, err
@@ -95,43 +95,7 @@ func wrapInShellCall(command string) (*interpreter, error) {
 		}, nil
 	}
 
-	// Lookup for sh executable
-	out, err = exec.LookPath("sh")
-	if err != nil && !errors.Is(err, exec.ErrNotFound) {
-		return nil, err
-	}
-
-	if out != "" {
-		filename, err := createTempScript(command, ".sh")
-		if err != nil {
-			return nil, err
-		}
-		return &interpreter{
-			executable: out,
-			args:       []string{"-e", filename},
-			scriptFile: filename,
-		}, nil
-	}
-
-	// Lookup for PowerShell executable
-	out, err = exec.LookPath("powershell")
-	if err != nil && !errors.Is(err, exec.ErrNotFound) {
-		return nil, err
-	}
-
-	if out != "" {
-		filename, err := createTempScript(command, ".ps1")
-		if err != nil {
-			return nil, err
-		}
-		return &interpreter{
-			executable: out,
-			args:       []string{"-Command", fmt.Sprintf(". '%s'", filename)},
-			scriptFile: filename,
-		}, nil
-	}
-
-	// Lookup for CMD executable
+	// Lookup for CMD executable (Windows)
 	out, err = exec.LookPath("cmd")
 	if err != nil && !errors.Is(err, exec.ErrNotFound) {
 		return nil, err
@@ -144,7 +108,7 @@ func wrapInShellCall(command string) (*interpreter, error) {
 		}
 		return &interpreter{
 			executable: out,
-			args:       []string{"/D", "/E:ON", "/V:OFF", "/S", "/C", fmt.Sprintf(`CALL "%s"`, filename)},
+			args:       []string{"/D", "/E:ON", "/V:OFF", "/S", "/C", fmt.Sprintf(`CALL %s`, filename)},
 			scriptFile: filename,
 		}, nil
 	}
