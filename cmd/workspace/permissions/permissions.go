@@ -103,8 +103,11 @@ func newGet() *cobra.Command {
   parent objects or root object.
 
   Arguments:
-    REQUEST_OBJECT_TYPE: <needs content>
-    REQUEST_OBJECT_ID: `
+    REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following:
+      authorization, clusters, cluster-policies, directories, experiments,
+      files, instance-pools, jobs, notebooks, pipelines, registered-models,
+      repos, serving-endpoints, or sql-warehouses.
+    REQUEST_OBJECT_ID: The id of the request object.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -240,8 +243,11 @@ func newSet() *cobra.Command {
   parent objects or root object.
 
   Arguments:
-    REQUEST_OBJECT_TYPE: <needs content>
-    REQUEST_OBJECT_ID: `
+    REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following:
+      authorization, clusters, cluster-policies, directories, experiments,
+      files, instance-pools, jobs, notebooks, pipelines, registered-models,
+      repos, serving-endpoints, or sql-warehouses.
+    REQUEST_OBJECT_ID: The id of the request object.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -317,8 +323,11 @@ func newUpdate() *cobra.Command {
   their parent objects or root object.
 
   Arguments:
-    REQUEST_OBJECT_TYPE: <needs content>
-    REQUEST_OBJECT_ID: `
+    REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following:
+      authorization, clusters, cluster-policies, directories, experiments,
+      files, instance-pools, jobs, notebooks, pipelines, registered-models,
+      repos, serving-endpoints, or sql-warehouses.
+    REQUEST_OBJECT_ID: The id of the request object.`
 
 	cmd.Annotations = make(map[string]string)
 

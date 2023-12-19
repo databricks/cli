@@ -417,7 +417,7 @@ func newUpdate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.DataSourceId, "data-source-id", updateReq.DataSourceId, `Data source ID.`)
+	cmd.Flags().StringVar(&updateReq.DataSourceId, "data-source-id", updateReq.DataSourceId, `Data source ID maps to the ID of the data source used by the resource and is distinct from the warehouse ID.`)
 	cmd.Flags().StringVar(&updateReq.Description, "description", updateReq.Description, `General description that conveys additional information about this query such as usage notes.`)
 	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The title of this query that appears in list views, widget headings, and on the query page.`)
 	// TODO: any: options
