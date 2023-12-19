@@ -1210,7 +1210,7 @@
                           "description": "The path of the notebook to be run in the Databricks workspace or remote repository.\nFor notebooks stored in the Databricks workspace, the path must be absolute and begin with a slash.\nFor notebooks stored in a remote repository, the path must be relative. This field is required.\n"
                         },
                         "source": {
-                          "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
+                          "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
                         }
                       }
                     },
@@ -1312,7 +1312,7 @@
                           "description": "The Python file to be executed. Cloud file URIs (such as dbfs:/, s3:/, adls:/, gcs:/) and workspace paths are supported. For python files stored in the Databricks workspace, the path must be absolute and begin with `/`. For files stored in a remote repository, the path must be relative. This field is required."
                         },
                         "source": {
-                          "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
+                          "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
                         }
                       }
                     },
@@ -3569,7 +3569,7 @@
                                 "description": "The path of the notebook to be run in the Databricks workspace or remote repository.\nFor notebooks stored in the Databricks workspace, the path must be absolute and begin with a slash.\nFor notebooks stored in a remote repository, the path must be relative. This field is required.\n"
                               },
                               "source": {
-                                "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
+                                "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
                               }
                             }
                           },
@@ -3671,7 +3671,7 @@
                                 "description": "The Python file to be executed. Cloud file URIs (such as dbfs:/, s3:/, adls:/, gcs:/) and workspace paths are supported. For python files stored in the Databricks workspace, the path must be absolute and begin with `/`. For files stored in a remote repository, the path must be relative. This field is required."
                               },
                               "source": {
-                                "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
+                                "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
                               }
                             }
                           },
