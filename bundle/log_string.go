@@ -11,7 +11,7 @@ type LogStringMutator struct {
 }
 
 func (d *LogStringMutator) Name() string {
-	return "deferred"
+	return "log_string"
 }
 
 func LogString(message string) Mutator {
