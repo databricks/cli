@@ -62,19 +62,6 @@ type interpreter struct {
 }
 
 func wrapInShellCall(command string) (*interpreter, error) {
-	file, err := os.CreateTemp(os.TempDir(), "cli-exec")
-	if err != nil {
-		return nil, err
-	}
-
-	defer file.Close()
-
-	_, err = io.WriteString(file, command)
-	file.Close()
-	if err != nil {
-		return nil, err
-	}
-
 	// Lookup for bash executable first
 	out, err := exec.LookPath("bash")
 	if err != nil && !errors.Is(err, exec.ErrNotFound) {
@@ -82,9 +69,13 @@ func wrapInShellCall(command string) (*interpreter, error) {
 	}
 
 	if out != "" {
+		filename, err := createTempScript(command, ".sh")
+		if err != nil {
+			return nil, err
+		}
 		return &interpreter{
 			executable: out,
-			args:       []string{"-e", file.Name()},
+			args:       []string{"-e", filename},
 		}, nil
 	}
 
@@ -95,9 +86,13 @@ func wrapInShellCall(command string) (*interpreter, error) {
 	}
 
 	if out != "" {
+		filename, err := createTempScript(command, ".sh")
+		if err != nil {
+			return nil, err
+		}
 		return &interpreter{
 			executable: out,
-			args:       []string{"-e", file.Name()},
+			args:       []string{"-e", filename},
 		}, nil
 	}
 
@@ -108,9 +103,13 @@ func wrapInShellCall(command string) (*interpreter, error) {
 	}
 
 	if out != "" {
+		filename, err := createTempScript(command, ".ps1")
+		if err != nil {
+			return nil, err
+		}
 		return &interpreter{
 			executable: out,
-			args:       []string{"-Command", fmt.Sprintf(". %s'", file.Name())},
+			args:       []string{"-Command", fmt.Sprintf(". '%s'", filename)},
 		}, nil
 	}
 
@@ -121,11 +120,32 @@ func wrapInShellCall(command string) (*interpreter, error) {
 	}
 
 	if out != "" {
+		filename, err := createTempScript(command, ".cmd")
+		if err != nil {
+			return nil, err
+		}
 		return &interpreter{
 			executable: out,
-			args:       []string{"/C", fmt.Sprintf(`CALL "%s"`, file.Name())},
+			args:       []string{"/D", "/E:ON", "/V:OFF", "/S", "/C", fmt.Sprintf(`CALL "%s"`, filename)},
 		}, nil
 	}
 
 	return nil, errors.New("no interpreter found")
+}
+
+func createTempScript(command string, extension string) (string, error) {
+	file, err := os.CreateTemp(os.TempDir(), "cli-exec")
+	if err != nil {
+		return "", err
+	}
+
+	defer file.Close()
+
+	_, err = io.WriteString(file, command)
+	file.Close()
+	if err != nil {
+		return "", err
+	}
+
+	return file.Name() + extension, nil
 }
