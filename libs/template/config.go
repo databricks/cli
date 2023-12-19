@@ -212,7 +212,7 @@ func (c *config) promptForValues(r *renderer) error {
 // Prompt user for any missing config values. Assign default values if
 // terminal is not TTY
 func (c *config) promptOrAssignDefaultValues(r *renderer) error {
-	if cmdio.IsOutTTY(c.ctx) && cmdio.IsInTTY(c.ctx) {
+	if cmdio.IsPromptSupported(c.ctx) {
 		return c.promptForValues(r)
 	}
 	return c.assignDefaultValues(r)

@@ -148,7 +148,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 			templatePath = args[0]
 		} else {
 			var err error
-			if !cmdio.IsOutTTY(ctx) || !cmdio.IsInTTY(ctx) {
+			if !cmdio.IsPromptSupported(ctx) {
 				return errors.New("please specify a template")
 			}
 			description, err := cmdio.SelectOrdered(ctx, nativeTemplateOptions(), "Template to use")
