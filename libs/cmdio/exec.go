@@ -10,21 +10,25 @@ import (
 )
 
 type Executor struct {
-	dir string
+	dir         string
+	scriptFiles []string
 }
 
 func NewCommandExecutor(dir string) *Executor {
 	return &Executor{
-		dir: dir,
+		dir:         dir,
+		scriptFiles: nil,
 	}
 }
 
 func (e *Executor) StartCommand(ctx context.Context, command string) (*exec.Cmd, io.Reader, error) {
 	interpreter, err := wrapInShellCall(command)
+
 	if err != nil {
 		return nil, nil, err
 	}
 
+	e.scriptFiles = append(e.scriptFiles, interpreter.scriptFile)
 	cmd := exec.CommandContext(ctx, interpreter.executable, interpreter.args...)
 	cmd.Dir = e.dir
 
@@ -53,12 +57,23 @@ func (e *Executor) Exec(ctx context.Context, command string) ([]byte, error) {
 		return nil, err
 	}
 
+	defer e.Cleanup()
 	return res, cmd.Wait()
+}
+
+func (e *Executor) Cleanup() {
+	if e.scriptFiles != nil {
+		for _, file := range e.scriptFiles {
+			os.Remove(file)
+		}
+	}
+	e.scriptFiles = nil
 }
 
 type interpreter struct {
 	executable string
 	args       []string
+	scriptFile string
 }
 
 func wrapInShellCall(command string) (*interpreter, error) {
@@ -76,6 +91,7 @@ func wrapInShellCall(command string) (*interpreter, error) {
 		return &interpreter{
 			executable: out,
 			args:       []string{"-e", filename},
+			scriptFile: filename,
 		}, nil
 	}
 
@@ -93,6 +109,7 @@ func wrapInShellCall(command string) (*interpreter, error) {
 		return &interpreter{
 			executable: out,
 			args:       []string{"-e", filename},
+			scriptFile: filename,
 		}, nil
 	}
 
@@ -110,6 +127,7 @@ func wrapInShellCall(command string) (*interpreter, error) {
 		return &interpreter{
 			executable: out,
 			args:       []string{"-Command", fmt.Sprintf(". '%s'", filename)},
+			scriptFile: filename,
 		}, nil
 	}
 
@@ -127,6 +145,7 @@ func wrapInShellCall(command string) (*interpreter, error) {
 		return &interpreter{
 			executable: out,
 			args:       []string{"/D", "/E:ON", "/V:OFF", "/S", "/C", fmt.Sprintf(`CALL "%s"`, filename)},
+			scriptFile: filename,
 		}, nil
 	}
 
@@ -134,7 +153,7 @@ func wrapInShellCall(command string) (*interpreter, error) {
 }
 
 func createTempScript(command string, extension string) (string, error) {
-	file, err := os.CreateTemp(os.TempDir(), "cli-exec")
+	file, err := os.CreateTemp(os.TempDir(), "cli-exec*"+extension)
 	if err != nil {
 		return "", err
 	}
@@ -147,5 +166,5 @@ func createTempScript(command string, extension string) (string, error) {
 		return "", err
 	}
 
-	return file.Name() + extension, nil
+	return file.Name(), nil
 }
