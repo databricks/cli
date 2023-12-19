@@ -143,9 +143,8 @@ func TestBuiltinPythonTemplateValid(t *testing.T) {
 func TestBuiltinSQLTemplateValid(t *testing.T) {
 	// Test prod mode + build
 	config := map[string]any{
-		"project_name":            "my_project",
-		"workspace_host_override": "yes",
-		"http_path":               "/sql/warehouses/123",
+		"project_name": "my_project",
+		"http_path":    "/sql/warehouses/123",
 	}
 	build := false
 	assertBuiltinTemplateValid(t, "default-sql", config, "dev", true, build, t.TempDir())

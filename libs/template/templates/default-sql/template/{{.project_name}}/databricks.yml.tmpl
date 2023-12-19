@@ -22,7 +22,7 @@ targets:
     mode: development
     default: true
     workspace:
-      host: {{.workspace_host_override}}
+      host: {{workspace_host}}
     variables:
       warehouse_id: {{index ((regexp "[^/]+$").FindStringSubmatch .http_path) 0}}
 
@@ -31,7 +31,7 @@ targets:
   #
   # staging:
   #   workspace:
-  #     host: {{.workspace_host_override}}
+  #     host: {{workspace_host}}
 
   # The 'prod' target, used for production deployment.
   prod:
@@ -39,7 +39,7 @@ targets:
     # Doing so enables strict verification of the settings below.
     mode: production
     workspace:
-      host: {{.workspace_host_override}}
+      host: {{workspace_host}}
       # We only have a single deployment copy for production, so we use a shared path.
       root_path: /Shared/.bundle/prod/${bundle.name}
     variables:
