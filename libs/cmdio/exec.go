@@ -3,7 +3,9 @@ package cmdio
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
+	"os"
 	"os/exec"
 )
 
@@ -18,14 +20,12 @@ func NewCommandExecutor(dir string) *Executor {
 }
 
 func (e *Executor) StartCommand(ctx context.Context, command string) (*exec.Cmd, io.Reader, error) {
-	interpreter, err := findInterpreter()
+	interpreter, err := wrapInShellCall(command)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	args := interpreter.args
-	args = append(args, command)
-	cmd := exec.CommandContext(ctx, interpreter.executable, args...)
+	cmd := exec.CommandContext(ctx, interpreter.executable, interpreter.args...)
 	cmd.Dir = e.dir
 
 	outPipe, err := cmd.StdoutPipe()
@@ -61,7 +61,20 @@ type interpreter struct {
 	args       []string
 }
 
-func findInterpreter() (*interpreter, error) {
+func wrapInShellCall(command string) (*interpreter, error) {
+	file, err := os.CreateTemp(os.TempDir(), "cli-exec")
+	if err != nil {
+		return nil, err
+	}
+
+	defer file.Close()
+
+	_, err = io.WriteString(file, command)
+	file.Close()
+	if err != nil {
+		return nil, err
+	}
+
 	// Lookup for bash executable first
 	out, err := exec.LookPath("bash")
 	if err != nil && !errors.Is(err, exec.ErrNotFound) {
@@ -71,7 +84,7 @@ func findInterpreter() (*interpreter, error) {
 	if out != "" {
 		return &interpreter{
 			executable: out,
-			args:       []string{"-c"},
+			args:       []string{"-e", file.Name()},
 		}, nil
 	}
 
@@ -84,7 +97,7 @@ func findInterpreter() (*interpreter, error) {
 	if out != "" {
 		return &interpreter{
 			executable: out,
-			args:       []string{"-c"},
+			args:       []string{"-e", file.Name()},
 		}, nil
 	}
 
@@ -97,7 +110,7 @@ func findInterpreter() (*interpreter, error) {
 	if out != "" {
 		return &interpreter{
 			executable: out,
-			args:       []string{"-Command"},
+			args:       []string{"-Command", fmt.Sprintf(". %s'", file.Name())},
 		}, nil
 	}
 
@@ -110,7 +123,7 @@ func findInterpreter() (*interpreter, error) {
 	if out != "" {
 		return &interpreter{
 			executable: out,
-			args:       []string{"/C"},
+			args:       []string{"/C", fmt.Sprintf(`CALL "%s"`, file.Name())},
 		}, nil
 	}
 

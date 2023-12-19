@@ -28,12 +28,7 @@ func TestExecutorWithInvalidCommand(t *testing.T) {
 	executor := NewCommandExecutor(".")
 	out, err := executor.Exec(context.Background(), "invalid-command")
 	assert.Error(t, err)
-
-	if runtime.GOOS == "windows" {
-		assert.Contains(t, string(out), "'invalid-command' is not recognized")
-	} else {
-		assert.Contains(t, string(out), "invalid-command: command not found")
-	}
+	assert.Contains(t, string(out), "invalid-command: command not found")
 }
 
 func TestExecutorWithInvalidCommandWithWindowsLikePath(t *testing.T) {
@@ -44,5 +39,5 @@ func TestExecutorWithInvalidCommandWithWindowsLikePath(t *testing.T) {
 	executor := NewCommandExecutor(".")
 	out, err := executor.Exec(context.Background(), `"C:\Program Files\invalid-command.exe"`)
 	assert.Error(t, err)
-	assert.Contains(t, string(out), "'C:\\Program Files\\invalid-command.exe' is not recognized")
+	assert.Contains(t, string(out), "C:\\Program Files\\invalid-command.exe: No such file or directory")
 }
