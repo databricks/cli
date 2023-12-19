@@ -45,18 +45,10 @@ func (m *release) Apply(ctx context.Context, b *bundle.Bundle) error {
 	log.Infof(ctx, "Releasing deployment lock")
 	switch m.goal {
 	case GoalDeploy:
-		err := b.Locker.Unlock(ctx)
-		if err != nil {
-			return err
-		}
+		return b.Locker.Unlock(ctx)
 	case GoalDestroy:
-		err := b.Locker.Unlock(ctx, locker.AllowLockFileNotExist)
-		if err != nil {
-			return err
-		}
+		return b.Locker.Unlock(ctx, locker.AllowLockFileNotExist)
 	default:
 		return fmt.Errorf("unknown goal for lock release: %s", m.goal)
 	}
-
-	return nil
 }
