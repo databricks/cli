@@ -4,12 +4,12 @@ go 1.21
 
 require (
 	github.com/briandowns/spinner v1.23.0 // Apache 2.0
-	github.com/databricks/databricks-sdk-go v0.26.1 // Apache 2.0
+	github.com/databricks/databricks-sdk-go v0.27.0 // Apache 2.0
 	github.com/fatih/color v1.16.0 // MIT
 	github.com/ghodss/yaml v1.0.0 // MIT + NOTICE
-	github.com/google/uuid v1.4.0 // BSD-3-Clause
+	github.com/google/uuid v1.5.0 // BSD-3-Clause
 	github.com/hashicorp/go-version v1.6.0 // MPL 2.0
-	github.com/hashicorp/hc-install v0.6.1 // MPL 2.0
+	github.com/hashicorp/hc-install v0.6.2 // MPL 2.0
 	github.com/hashicorp/terraform-exec v0.19.0 // MPL 2.0
 	github.com/hashicorp/terraform-json v0.18.0 // MPL 2.0
 	github.com/imdario/mergo v0.3.15 // BSD-3-Clause
@@ -58,7 +58,7 @@ require (
 	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
-	google.golang.org/api v0.152.0 // indirect
+	google.golang.org/api v0.153.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231120223509-83a465c0220f // indirect
 	google.golang.org/grpc v1.59.0 // indirect

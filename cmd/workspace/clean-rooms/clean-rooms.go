@@ -327,7 +327,6 @@ func newUpdate() *cobra.Command {
 
 	// TODO: array: catalog_updates
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
-	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of the clean room.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of clean room.`)
 
 	cmd.Use = "update NAME_ARG"

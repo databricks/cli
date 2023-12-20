@@ -50,7 +50,7 @@ func (lc *loginConfig) askWorkspaceProfile(ctx context.Context, cfg *config.Conf
 		lc.WorkspaceProfile = cfg.Profile
 		return
 	}
-	if !cmdio.IsInteractive(ctx) {
+	if !cmdio.IsPromptSupported(ctx) {
 		return ErrNotInTTY
 	}
 	lc.WorkspaceProfile, err = root.AskForWorkspaceProfile(ctx)
@@ -66,7 +66,7 @@ func (lc *loginConfig) askCluster(ctx context.Context, w *databricks.WorkspaceCl
 		lc.ClusterID = w.Config.ClusterID
 		return
 	}
-	if !cmdio.IsInteractive(ctx) {
+	if !cmdio.IsPromptSupported(ctx) {
 		return ErrNotInTTY
 	}
 	clusterID, err := cfgpickers.AskForCluster(ctx, w,
@@ -87,7 +87,7 @@ func (lc *loginConfig) askWarehouse(ctx context.Context, w *databricks.Workspace
 		lc.WarehouseID = w.Config.WarehouseID
 		return
 	}
-	if !cmdio.IsInteractive(ctx) {
+	if !cmdio.IsPromptSupported(ctx) {
 		return ErrNotInTTY
 	}
 	lc.WarehouseID, err = cfgpickers.AskForWarehouse(ctx, w,
@@ -99,7 +99,7 @@ func (lc *loginConfig) askAccountProfile(ctx context.Context, cfg *config.Config
 	if !lc.HasAccountLevelCommands() {
 		return nil
 	}
-	if !cmdio.IsInteractive(ctx) {
+	if !cmdio.IsPromptSupported(ctx) {
 		return ErrNotInTTY
 	}
 	lc.AccountProfile, err = root.AskForAccountProfile(ctx)

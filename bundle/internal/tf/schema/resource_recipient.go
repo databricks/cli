@@ -22,6 +22,7 @@ type ResourceRecipient struct {
 	DataRecipientGlobalMetastoreId string                         `json:"data_recipient_global_metastore_id,omitempty"`
 	Id                             string                         `json:"id,omitempty"`
 	Name                           string                         `json:"name"`
+	Owner                          string                         `json:"owner,omitempty"`
 	SharingCode                    string                         `json:"sharing_code,omitempty"`
 	IpAccessList                   *ResourceRecipientIpAccessList `json:"ip_access_list,omitempty"`
 	Tokens                         []ResourceRecipientTokens      `json:"tokens,omitempty"`
