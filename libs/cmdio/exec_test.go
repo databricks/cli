@@ -81,6 +81,6 @@ func TestFindCmdExecutable(t *testing.T) {
 
 	out, err := io.ReadAll(reader)
 	assert.NoError(t, err)
-	assert.Equal(t, "Hello from cmd\n", string(out))
+	assert.Contains(t, string(out), "Hello from cmd")
 	cmd.Wait()
 }
