@@ -27,6 +27,8 @@ type nativeTemplate struct {
 	aliases     []string
 }
 
+const customTemplate = "custom..."
+
 var nativeTemplates = []nativeTemplate{
 	{
 		name:        "default-python",
@@ -39,7 +41,7 @@ var nativeTemplates = []nativeTemplate{
 		aliases:     []string{"mlops-stack"},
 	},
 	{
-		name:        "custom...",
+		name:        customTemplate,
 		description: "Bring your own template",
 	},
 }
@@ -158,7 +160,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 			templatePath = getNativeTemplateByDescription(description)
 		}
 
-		if templatePath == "custom..." {
+		if templatePath == customTemplate {
 			cmdio.LogString(ctx, "Please specify a path or Git repository to use a custom template.")
 			cmdio.LogString(ctx, "See https://docs.databricks.com/en/dev-tools/bundles/templates.html to learn more about custom templates.")
 			return nil
