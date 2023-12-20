@@ -20,7 +20,15 @@ func load(t *testing.T, path string) *bundle.Bundle {
 
 func loadTarget(t *testing.T, path, env string) *bundle.Bundle {
 	b := load(t, path)
-	err := bundle.Apply(context.Background(), b, mutator.SelectTarget(env))
+	err := bundle.Apply(
+		context.Background(), b,
+		bundle.Seq(
+			mutator.SelectTarget(env),
+			mutator.MergeJobClusters(),
+			mutator.MergeJobTasks(),
+			mutator.MergePipelineClusters(),
+		),
+	)
 	require.NoError(t, err)
 	return b
 }

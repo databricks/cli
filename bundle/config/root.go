@@ -155,6 +155,10 @@ func (r *Root) Mutate(fn func(config.Value) (config.Value, error)) error {
 		return err
 	}
 	r.value = nv
+
+	// Assign config file paths after mutating the configuration.
+	r.ConfigureConfigFilePath()
+
 	return nil
 }
 
