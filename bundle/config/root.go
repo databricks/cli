@@ -20,7 +20,6 @@ import (
 type Root struct {
 	value config.Value
 	diags diag.Diagnostics
-
 	depth int
 
 	// Path contains the directory path to the root of the bundle.
@@ -99,15 +98,6 @@ func Load(path string) (*Root, error) {
 	// Store dynamic configuration for later reference (e.g. location information on all nodes).
 	r.value = v
 
-	// if r.Environments != nil && r.Targets != nil {
-	// 	return nil, fmt.Errorf("both 'environments' and 'targets' are specified, only 'targets' should be used: %s", path)
-	// }
-
-	// if r.Environments != nil {
-	// 	//TODO: add a command line notice that this is a deprecated option.
-	// 	r.Targets = r.Environments
-	// }
-
 	r.Path = filepath.Dir(path)
 	// r.SetConfigFilePath(path)
 
@@ -131,11 +121,18 @@ func (r *Root) initializeValue() {
 }
 
 func (r *Root) toTyped(v config.Value) error {
-	// Hack: restore path; it may be cleared by [ToTyped] if
+	// Hack: restore state; it may be cleared by [ToTyped] if
 	// the configuration equals nil (happens in tests).
-	p := r.Path
+	value := r.value
+	diags := r.diags
+	depth := r.depth
+	path := r.Path
+
 	defer func() {
-		r.Path = p
+		r.value = value
+		r.diags = diags
+		r.depth = depth
+		r.Path = path
 	}()
 
 	// Convert normalized configuration tree to typed configuration.
@@ -244,12 +241,6 @@ func (r *Root) Merge(other *Root) error {
 	// // Merge diagnostics.
 	// r.diags = append(r.diags, other.diags...)
 
-	// err := r.Sync.Merge(r, other)
-	// if err != nil {
-	// 	return err
-	// }
-	// other.Sync = Sync{}
-
 	// // TODO: when hooking into merge semantics, disallow setting path on the target instance.
 	// other.Path = ""
 
@@ -273,6 +264,8 @@ func (r *Root) Merge(other *Root) error {
 		panic(err)
 	}
 
+	r.ConfigureConfigFilePath()
+
 	// TODO: define and test semantics for merging.
 	// return mergo.Merge(r, other, mergo.WithOverride)
 	return nil
@@ -295,6 +288,34 @@ func (r *Root) MergeTargetOverrides(name string) error {
 
 		r.value.MustMap()[name] = tmp
 		return nil
+	}
+
+	if mode := target.Get("mode"); mode != config.NilValue {
+		bundle := r.value.Get("bundle")
+		if bundle == config.NilValue {
+			bundle = config.NewValue(map[string]config.Value{}, config.Location{})
+		}
+		bundle.MustMap()["mode"] = mode
+		r.value.MustMap()["bundle"] = bundle
+	}
+
+	// if target.Mode != "" {
+	// 	r.Bundle.Mode = target.Mode
+	// }
+
+	// if target.ComputeID != "" {
+	// 	r.Bundle.ComputeID = target.ComputeID
+	// }
+
+	// The "run_as" field must be overwritten if set, not merged.
+	// Otherwise we end up with a merged version where both the
+	// "user_name" and "service_principal_name" fields are set.
+	if runAs := target.Get("run_as"); runAs != config.NilValue {
+		r.value.MustMap()["run_as"] = runAs
+		// Clear existing field to convert.ToTyped() merging
+		// the new value with the existing value.
+		// TODO(@pietern): Address this structurally.
+		r.RunAs = nil
 	}
 
 	if err = mergeField("bundle"); err != nil {
@@ -327,16 +348,6 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		panic(err)
 	}
 
+	r.ConfigureConfigFilePath()
 	return nil
 }
-
-// // ForceLocationInConfig walks all nodes in the configuration tree and
-// // sets their location to the specified value.
-// func (r *Root) ForceLocationInConfig(path string) {
-// 	out, _ := config.Walk(r.value, func(v config.Value) (config.Value, error) {
-// 		return v.WithLocation(config.Location{
-// 			File: path,
-// 		}), nil
-// 	})
-// 	r.value = out
-// }

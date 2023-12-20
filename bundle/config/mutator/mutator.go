@@ -8,6 +8,8 @@ func DefaultMutators() []bundle.Mutator {
 	return []bundle.Mutator{
 		// scripts.Execute(config.ScriptPreInit),
 		ProcessRootIncludes(),
+		RewriteSyncPaths(),
+		EnvironmentsToTargets(),
 		InitializeVariables(),
 		DefineDefaultTarget(),
 		LoadGitDetails(),
