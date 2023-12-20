@@ -8,7 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/exec"
 	"github.com/stretchr/testify/require"
 )
 
@@ -23,7 +23,8 @@ func TestExecutesHook(t *testing.T) {
 		},
 	}
 
-	executor := cmdio.NewCommandExecutor(b.Config.Path)
+	executor, err := exec.NewCommandExecutor(b.Config.Path)
+	require.NoError(t, err)
 	_, out, err := executeHook(context.Background(), executor, b, config.ScriptPreBuild)
 	require.NoError(t, err)
 

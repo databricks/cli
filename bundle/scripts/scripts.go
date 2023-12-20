@@ -5,12 +5,12 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os/exec"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/exec"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -29,12 +29,16 @@ func (m *script) Name() string {
 }
 
 func (m *script) Apply(ctx context.Context, b *bundle.Bundle) error {
-	executor := cmdio.NewCommandExecutor(b.Config.Path)
-	cmd, out, err := executeHook(ctx, executor, b, m.scriptHook)
+	executor, err := exec.NewCommandExecutor(b.Config.Path)
 	if err != nil {
 		return err
 	}
-	if cmd == nil {
+	defer executor.Cleanup()
+	wait, out, err := executeHook(ctx, executor, b, m.scriptHook)
+	if err != nil {
+		return err
+	}
+	if wait == nil {
 		log.Debugf(ctx, "No script defined for %s, skipping", m.scriptHook)
 		return nil
 	}
@@ -48,11 +52,10 @@ func (m *script) Apply(ctx context.Context, b *bundle.Bundle) error {
 		line, err = reader.ReadString('\n')
 	}
 
-	defer executor.Cleanup()
-	return cmd.Wait()
+	return wait()
 }
 
-func executeHook(ctx context.Context, executor *cmdio.Executor, b *bundle.Bundle, hook config.ScriptHook) (*exec.Cmd, io.Reader, error) {
+func executeHook(ctx context.Context, executor *exec.Executor, b *bundle.Bundle, hook config.ScriptHook) (func() error, io.Reader, error) {
 	command := getCommmand(b, hook)
 	if command == "" {
 		return nil, nil, nil

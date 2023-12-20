@@ -6,7 +6,7 @@ import (
 	"path"
 
 	"github.com/databricks/cli/bundle/config/paths"
-	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/exec"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
@@ -50,8 +50,11 @@ func (a *Artifact) Build(ctx context.Context) ([]byte, error) {
 		return nil, fmt.Errorf("no build property defined")
 	}
 
-	exec := cmdio.NewCommandExecutor(a.Path)
-	return exec.Exec(ctx, a.BuildCommand)
+	e, err := exec.NewCommandExecutor(a.Path)
+	if err != nil {
+		return nil, err
+	}
+	return e.Exec(ctx, a.BuildCommand)
 }
 
 func (a *Artifact) NormalisePaths() {

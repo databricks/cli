@@ -1,8 +1,7 @@
-package cmdio
+package exec
 
 import (
 	"context"
-	"io"
 	"runtime"
 	"testing"
 
@@ -10,7 +9,8 @@ import (
 )
 
 func TestExecutorWithSimpleInput(t *testing.T) {
-	executor := NewCommandExecutor(".")
+	executor, err := NewCommandExecutor(".")
+	assert.NoError(t, err)
 	out, err := executor.Exec(context.Background(), "echo 'Hello'")
 	assert.NoError(t, err)
 	assert.NotNil(t, out)
@@ -18,7 +18,8 @@ func TestExecutorWithSimpleInput(t *testing.T) {
 }
 
 func TestExecutorWithComplexInput(t *testing.T) {
-	executor := NewCommandExecutor(".")
+	executor, err := NewCommandExecutor(".")
+	assert.NoError(t, err)
 	out, err := executor.Exec(context.Background(), "echo 'Hello' && echo 'World'")
 	assert.NoError(t, err)
 	assert.NotNil(t, out)
@@ -26,7 +27,8 @@ func TestExecutorWithComplexInput(t *testing.T) {
 }
 
 func TestExecutorWithInvalidCommand(t *testing.T) {
-	executor := NewCommandExecutor(".")
+	executor, err := NewCommandExecutor(".")
+	assert.NoError(t, err)
 	out, err := executor.Exec(context.Background(), "invalid-command")
 	assert.Error(t, err)
 	assert.Contains(t, string(out), "invalid-command: command not found")
@@ -37,7 +39,8 @@ func TestExecutorWithInvalidCommandWithWindowsLikePath(t *testing.T) {
 		t.SkipNow()
 	}
 
-	executor := NewCommandExecutor(".")
+	executor, err := NewCommandExecutor(".")
+	assert.NoError(t, err)
 	out, err := executor.Exec(context.Background(), `"C:\Program Files\invalid-command.exe"`)
 	assert.Error(t, err)
 	assert.Contains(t, string(out), "C:\\Program Files\\invalid-command.exe: No such file or directory")
@@ -48,20 +51,19 @@ func TestFindBashExecutableNonWindows(t *testing.T) {
 		t.SkipNow()
 	}
 
-	executable, err := findBashExecutable(`echo "Hello from bash"`)
+	executable, err := findBashExecutable()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, executable)
 
-	e := NewCommandExecutor(".")
-	cmd, reader, err := e.start(context.Background(), executable)
+	e, err := NewCommandExecutor(".")
 	assert.NoError(t, err)
-	assert.NotNil(t, cmd)
-	assert.NotNil(t, reader)
+	e.interpreter = executable
 
-	out, err := io.ReadAll(reader)
 	assert.NoError(t, err)
+	out, err := e.Exec(context.Background(), `echo "Hello from bash"`)
+	assert.NoError(t, err)
+
 	assert.Equal(t, "Hello from bash\n", string(out))
-	cmd.Wait()
 }
 
 func TestFindCmdExecutable(t *testing.T) {
@@ -69,18 +71,17 @@ func TestFindCmdExecutable(t *testing.T) {
 		t.SkipNow()
 	}
 
-	executable, err := findCmdExecutable(`echo "Hello from cmd"`)
+	executable, err := findCmdExecutable()
 	assert.NoError(t, err)
 	assert.NotEmpty(t, executable)
 
-	e := NewCommandExecutor(".")
-	cmd, reader, err := e.start(context.Background(), executable)
+	e, err := NewCommandExecutor(".")
 	assert.NoError(t, err)
-	assert.NotNil(t, cmd)
-	assert.NotNil(t, reader)
+	e.interpreter = executable
 
-	out, err := io.ReadAll(reader)
 	assert.NoError(t, err)
+	out, err := e.Exec(context.Background(), `echo "Hello from cmd"`)
+	assert.NoError(t, err)
+
 	assert.Contains(t, string(out), "Hello from cmd")
-	cmd.Wait()
 }
