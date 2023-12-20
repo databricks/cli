@@ -28,8 +28,12 @@ func (e *Executor) StartCommand(ctx context.Context, command string) (*exec.Cmd,
 		return nil, nil, err
 	}
 
-	e.scriptFiles = append(e.scriptFiles, interpreter.scriptFile)
-	cmd := exec.CommandContext(ctx, interpreter.executable, interpreter.args...)
+	return e.start(ctx, interpreter)
+}
+
+func (e *Executor) start(ctx context.Context, i *interpreter) (*exec.Cmd, io.Reader, error) {
+	e.scriptFiles = append(e.scriptFiles, i.scriptFile)
+	cmd := exec.CommandContext(ctx, i.executable, i.args...)
 	cmd.Dir = e.dir
 
 	outPipe, err := cmd.StdoutPipe()
@@ -43,7 +47,6 @@ func (e *Executor) StartCommand(ctx context.Context, command string) (*exec.Cmd,
 	}
 
 	return cmd, io.MultiReader(outPipe, errPipe), cmd.Start()
-
 }
 
 func (e *Executor) Exec(ctx context.Context, command string) ([]byte, error) {
@@ -77,6 +80,28 @@ type interpreter struct {
 }
 
 func wrapInShellCall(command string) (*interpreter, error) {
+	interpreter, err := findBashExecutable(command)
+	if err != nil {
+		return nil, err
+	}
+
+	if interpreter != nil {
+		return interpreter, nil
+	}
+
+	interpreter, err = findCmdExecutable(command)
+	if err != nil {
+		return nil, err
+	}
+
+	if interpreter != nil {
+		return interpreter, nil
+	}
+
+	return nil, errors.New("no interpreter found")
+}
+
+func findBashExecutable(command string) (*interpreter, error) {
 	// Lookup for bash executable first (Linux, MacOS, maybe Windows)
 	out, err := exec.LookPath("bash")
 	if err != nil && !errors.Is(err, exec.ErrNotFound) {
@@ -95,8 +120,12 @@ func wrapInShellCall(command string) (*interpreter, error) {
 		}, nil
 	}
 
+	return nil, nil
+}
+
+func findCmdExecutable(command string) (*interpreter, error) {
 	// Lookup for CMD executable (Windows)
-	out, err = exec.LookPath("cmd")
+	out, err := exec.LookPath("cmd")
 	if err != nil && !errors.Is(err, exec.ErrNotFound) {
 		return nil, err
 	}
@@ -112,8 +141,7 @@ func wrapInShellCall(command string) (*interpreter, error) {
 			scriptFile: filename,
 		}, nil
 	}
-
-	return nil, errors.New("no interpreter found")
+	return nil, nil
 }
 
 func createTempScript(command string, extension string) (string, error) {
