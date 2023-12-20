@@ -12,6 +12,9 @@ var ErrDrop = errors.New("drop value from subtree")
 var ErrSkip = errors.New("skip traversal of subtree")
 
 // Walk walks the configuration tree and calls the given function on each node.
+// The callback may return ErrDrop to remove a value from the subtree.
+// The callback may return ErrSkip to skip traversal of a subtree.
+// If the callback returns another error, the walk is aborted, and the error is returned.
 func Walk(v Value, fn func(p Path, v Value) (Value, error)) (Value, error) {
 	return walk(v, EmptyPath, fn)
 }

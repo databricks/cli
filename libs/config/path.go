@@ -10,22 +10,30 @@ type pathComponent struct {
 	index int
 }
 
+// Path represents a path to a value in a [Value] configuration tree.
 type Path []pathComponent
 
+// EmptyPath is the empty path.
+// It is defined for convenience and clarity.
 var EmptyPath = Path{}
 
+// Key returns a path component for a key.
 func Key(k string) pathComponent {
 	return pathComponent{key: k}
 }
 
+// Index returns a path component for an index.
 func Index(i int) pathComponent {
 	return pathComponent{index: i}
 }
 
+// NewPath returns a new path from the given components.
+// The individual components may be created with [Key] or [Index].
 func NewPath(cs ...pathComponent) Path {
 	return cs
 }
 
+// Join joins the given paths.
 func (p Path) Join(qs ...Path) Path {
 	for _, q := range qs {
 		p = p.Append(q...)
@@ -33,10 +41,12 @@ func (p Path) Join(qs ...Path) Path {
 	return p
 }
 
+// Append appends the given components to the path.
 func (p Path) Append(cs ...pathComponent) Path {
 	return append(p, cs...)
 }
 
+// Equal returns true if the paths are equal.
 func (p Path) Equal(q Path) bool {
 	pl := len(p)
 	ql := len(q)
@@ -51,6 +61,8 @@ func (p Path) Equal(q Path) bool {
 	return true
 }
 
+// HasPrefix returns true if the path has the specified prefix.
+// The empty path is a prefix of all paths.
 func (p Path) HasPrefix(q Path) bool {
 	pl := len(p)
 	ql := len(q)
@@ -65,6 +77,7 @@ func (p Path) HasPrefix(q Path) bool {
 	return true
 }
 
+// String returns a string representation of the path.
 func (p Path) String() string {
 	var buf bytes.Buffer
 
