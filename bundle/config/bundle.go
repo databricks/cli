@@ -41,6 +41,10 @@ type Bundle struct {
 	// Annotated readonly as this should be set at the target level.
 	Mode Mode `json:"mode,omitempty" bundle:"readonly"`
 
+	// Prefix for the names of the resources deployed in development mode
+	// The default one is "[dev ${workspace.current_user.userName}]"
+	ResourceNamePrefix string `json:"resource_name_prefix,omitempty" bundle:"readonly"`
+
 	// Overrides the compute used for jobs and other supported assets.
 	ComputeID string `json:"compute_id,omitempty"`
 }

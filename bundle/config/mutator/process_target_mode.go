@@ -34,6 +34,9 @@ func transformDevelopmentMode(b *bundle.Bundle) error {
 
 	shortName := b.Config.Workspace.CurrentUser.ShortName
 	prefix := "[dev " + shortName + "] "
+	if b.Config.Bundle.ResourceNamePrefix != "" {
+		prefix = "[" + b.Config.Bundle.ResourceNamePrefix + "] "
+	}
 
 	// Generate a normalized version of the short name that can be used as a tag value.
 	tagValue := b.Tagging.NormalizeValue(shortName)

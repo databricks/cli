@@ -227,6 +227,8 @@ func (r *Root) MergeTargetOverrides(target *Target) error {
 		r.RunAs = target.RunAs
 	}
 
+	r.Bundle.ResourceNamePrefix = target.ResourceNamePrefix
+
 	if target.Mode != "" {
 		r.Bundle.Mode = target.Mode
 	}
