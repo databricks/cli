@@ -20,7 +20,7 @@ type Target struct {
 	Mode Mode `json:"mode,omitempty"`
 
 	// Prefix for the names of the resources deployed in development mode
-	// The default one is "[dev ${workspace.current_user.userName}]"
+	// The default one is "dev ${workspace.current_user.shortName}"
 	ResourceNamePrefix string `json:"resource_name_prefix,omitempty"`
 
 	// Overrides the compute used for jobs and other supported assets.
@@ -50,7 +50,7 @@ type Target struct {
 
 const (
 	// Development mode: deployments done purely for running things in development.
-	// Any deployed resources will be marked as "dev" and might be hidden or cleaned up.
+	// Any deployed resources will be marked as "dev" (or custom a `tag`) and might be hidden or cleaned up.
 	Development Mode = "development"
 
 	// Production mode: deployments done for production purposes.

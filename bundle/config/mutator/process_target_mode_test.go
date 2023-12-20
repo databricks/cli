@@ -160,6 +160,20 @@ func TestProcessTargetModeDevelopmentCustomResourceNamePrefix(t *testing.T) {
 	assert.Equal(t, b.Config.Resources.Jobs["job1"].Schedule.PauseStatus, jobs.PauseStatusPaused)
 }
 
+func TestProcessTargetModeDevelopmentCustomDeploymentTag(t *testing.T) {
+	b := mockBundle(config.Development)
+	b.Config.Bundle.ResourceNamePrefix = "custom"
+
+	m := ProcessTargetMode()
+	err := bundle.Apply(context.Background(), b, m)
+	require.NoError(t, err)
+
+	// Job 1
+	assert.Equal(t, "[custom] job1", b.Config.Resources.Jobs["job1"].Name)
+	assert.Equal(t, b.Config.Resources.Jobs["job1"].Tags["dev"], "lennart")
+	assert.Equal(t, b.Config.Resources.Jobs["job1"].Schedule.PauseStatus, jobs.PauseStatusPaused)
+}
+
 func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Tagging = tags.ForCloud(&sdkconfig.Config{

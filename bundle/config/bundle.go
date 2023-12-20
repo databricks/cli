@@ -42,7 +42,7 @@ type Bundle struct {
 	Mode Mode `json:"mode,omitempty" bundle:"readonly"`
 
 	// Prefix for the names of the resources deployed in development mode
-	// The default one is "[dev ${workspace.current_user.userName}]"
+	// The default one is "dev ${workspace.current_user.shortName}"
 	ResourceNamePrefix string `json:"resource_name_prefix,omitempty" bundle:"readonly"`
 
 	// Overrides the compute used for jobs and other supported assets.
