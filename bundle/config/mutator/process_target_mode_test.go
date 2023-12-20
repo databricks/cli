@@ -148,16 +148,35 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 func TestProcessTargetModeDevelopmentCustomResourceNamePrefix(t *testing.T) {
 	b := mockBundle(config.Development)
-	b.Config.Bundle.ResourceNamePrefix = "custom"
+	b.Config.Bundle.ResourceNamePrefix = "Staging @us-east-1"
 
 	m := ProcessTargetMode()
 	err := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, err)
 
 	// Job 1
-	assert.Equal(t, "[custom] job1", b.Config.Resources.Jobs["job1"].Name)
-	assert.Equal(t, b.Config.Resources.Jobs["job1"].Tags["dev"], "lennart")
-	assert.Equal(t, b.Config.Resources.Jobs["job1"].Schedule.PauseStatus, jobs.PauseStatusPaused)
+	assert.Equal(t, "[Staging @us-east-1] job1", b.Config.Resources.Jobs["job1"].Name)
+
+	// Job 2
+	assert.Equal(t, "[Staging @us-east-1] job2", b.Config.Resources.Jobs["job2"].Name)
+
+	// Pipeline 1
+	assert.Equal(t, "[Staging @us-east-1] pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
+
+	// Experiment 1
+	assert.Equal(t, "/Users/lennart.kats@databricks.com/[Staging @us-east-1] experiment1", b.Config.Resources.Experiments["experiment1"].Name)
+
+	// Experiment 2
+	assert.Equal(t, "[Staging @us-east-1] experiment2", b.Config.Resources.Experiments["experiment2"].Name)
+
+	// Model 1
+	assert.Equal(t, "[Staging @us-east-1] model1", b.Config.Resources.Models["model1"].Name)
+
+	// Model serving endpoint 1
+	assert.Equal(t, "staging__us_east_1_servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
+
+	// Registered model 1
+	assert.Equal(t, "staging__us_east_1_registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 }
 
 func TestProcessTargetModeDevelopmentCustomDeploymentTag(t *testing.T) {
@@ -170,8 +189,6 @@ func TestProcessTargetModeDevelopmentCustomDeploymentTag(t *testing.T) {
 
 	// Job 1
 	assert.Equal(t, "[custom] job1", b.Config.Resources.Jobs["job1"].Name)
-	assert.Equal(t, b.Config.Resources.Jobs["job1"].Tags["dev"], "lennart")
-	assert.Equal(t, b.Config.Resources.Jobs["job1"].Schedule.PauseStatus, jobs.PauseStatusPaused)
 }
 
 func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {

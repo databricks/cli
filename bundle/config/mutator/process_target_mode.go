@@ -26,6 +26,12 @@ func (m *processTargetMode) Name() string {
 	return "ProcessTargetMode"
 }
 
+// Normalize the resource name prefix in order to use it
+// in constrained contexts such as model serving endpoints names
+func normalizeResourceNamePrefix(prefix string) string {
+	return strings.Map(replaceNonAlphanumeric, strings.ToLower(strings.ReplaceAll(prefix, " ", "_") + "_"))
+}
+
 // Mark all resources as being for 'development' purposes, i.e.
 // changing their their name, adding tags, and (in the future)
 // marking them as 'hidden' in the UI.
@@ -34,8 +40,11 @@ func transformDevelopmentMode(b *bundle.Bundle) error {
 
 	shortName := b.Config.Workspace.CurrentUser.ShortName
 	prefix := "[dev " + shortName + "] "
+	normalizedPrefix := "dev_" + shortName + "_"
+
 	if b.Config.Bundle.ResourceNamePrefix != "" {
 		prefix = "[" + b.Config.Bundle.ResourceNamePrefix + "] "
+		normalizedPrefix = normalizeResourceNamePrefix(b.Config.Bundle.ResourceNamePrefix)
 	}
 
 	// Generate a normalized version of the short name that can be used as a tag value.
@@ -89,14 +98,12 @@ func transformDevelopmentMode(b *bundle.Bundle) error {
 	}
 
 	for i := range r.ModelServingEndpoints {
-		prefix = "dev_" + b.Config.Workspace.CurrentUser.ShortName + "_"
-		r.ModelServingEndpoints[i].Name = prefix + r.ModelServingEndpoints[i].Name
+		r.ModelServingEndpoints[i].Name = normalizedPrefix + r.ModelServingEndpoints[i].Name
 		// (model serving doesn't yet support tags)
 	}
 
 	for i := range r.RegisteredModels {
-		prefix = "dev_" + b.Config.Workspace.CurrentUser.ShortName + "_"
-		r.RegisteredModels[i].Name = prefix + r.RegisteredModels[i].Name
+		r.RegisteredModels[i].Name = normalizedPrefix + r.RegisteredModels[i].Name
 		// (registered models in Unity Catalog don't yet support tags)
 	}
 
