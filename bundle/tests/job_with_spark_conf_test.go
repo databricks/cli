@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestJobWithSparkConf(t *testing.T) {
@@ -14,9 +15,17 @@ func TestJobWithSparkConf(t *testing.T) {
 	assert.Len(t, job.JobClusters, 1)
 	assert.Equal(t, "test_cluster", job.JobClusters[0].JobClusterKey)
 
-	// Existing behavior is such that including non-string values
-	// in the spark_conf map will cause the job to fail to load.
-	// This is expected to be solved once we switch to the custom YAML loader.
-	tasks := job.Tasks
-	assert.Len(t, tasks, 0, "see https://github.com/databricks/cli/issues/992")
+	// This test exists because of https://github.com/databricks/cli/issues/992.
+	// It is solved as of **TODO**.
+	require.Len(t, job.JobClusters, 1)
+	cluster := job.JobClusters[0]
+	assert.Equal(t, "14.2.x-scala2.12", cluster.NewCluster.SparkVersion)
+	assert.Equal(t, "i3.xlarge", cluster.NewCluster.NodeTypeId)
+	assert.Equal(t, 2, cluster.NewCluster.NumWorkers)
+	assert.Equal(t, map[string]string{
+		"spark.string": "string",
+		"spark.int":    "1",
+		"spark.bool":   "true",
+		"spark.float":  "1.2",
+	}, cluster.NewCluster.SparkConf)
 }
