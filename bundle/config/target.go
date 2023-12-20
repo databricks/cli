@@ -50,7 +50,7 @@ type Target struct {
 
 const (
 	// Development mode: deployments done purely for running things in development.
-	// Any deployed resources will be marked as "dev" (or custom a `tag`) and might be hidden or cleaned up.
+	// Any deployed resources will be marked as "dev" and might be hidden or cleaned up.
 	Development Mode = "development"
 
 	// Production mode: deployments done for production purposes.

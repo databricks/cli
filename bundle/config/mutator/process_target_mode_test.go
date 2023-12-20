@@ -179,18 +179,6 @@ func TestProcessTargetModeDevelopmentCustomResourceNamePrefix(t *testing.T) {
 	assert.Equal(t, "staging__us_east_1_registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 }
 
-func TestProcessTargetModeDevelopmentCustomDeploymentTag(t *testing.T) {
-	b := mockBundle(config.Development)
-	b.Config.Bundle.ResourceNamePrefix = "custom"
-
-	m := ProcessTargetMode()
-	err := bundle.Apply(context.Background(), b, m)
-	require.NoError(t, err)
-
-	// Job 1
-	assert.Equal(t, "[custom] job1", b.Config.Resources.Jobs["job1"].Name)
-}
-
 func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Tagging = tags.ForCloud(&sdkconfig.Config{
