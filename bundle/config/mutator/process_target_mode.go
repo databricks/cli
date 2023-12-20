@@ -29,7 +29,7 @@ func (m *processTargetMode) Name() string {
 // Normalize the resource name prefix in order to use it
 // in constrained contexts such as model serving endpoints names
 func normalizeResourceNamePrefix(prefix string) string {
-	return strings.Map(replaceNonAlphanumeric, strings.ToLower(strings.ReplaceAll(prefix, " ", "_") + "_"))
+	return strings.Map(replaceNonAlphanumeric, strings.ToLower(strings.ReplaceAll(prefix, " ", "_")+"_"))
 }
 
 // Mark all resources as being for 'development' purposes, i.e.
