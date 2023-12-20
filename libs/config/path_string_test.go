@@ -15,6 +15,14 @@ func TestNewPathFromString(t *testing.T) {
 		err    error
 	}{
 		{
+			input:  "",
+			output: NewPath(),
+		},
+		{
+			input:  ".",
+			output: NewPath(),
+		},
+		{
 			input:  "foo.bar",
 			output: NewPath(Key("foo"), Key("bar")),
 		},
@@ -49,6 +57,10 @@ func TestNewPathFromString(t *testing.T) {
 		{
 			input: "foo..bar",
 			err:   fmt.Errorf("invalid path: foo..bar"),
+		},
+		{
+			input: "foo.bar.",
+			err:   fmt.Errorf("invalid path: foo.bar."),
 		},
 		{
 			// Every component may have a leading dot.

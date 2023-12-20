@@ -6,14 +6,45 @@ import (
 	"strings"
 )
 
+// MustPathFromString is like NewPathFromString but panics on error.
+func MustPathFromString(input string) Path {
+	p, err := NewPathFromString(input)
+	if err != nil {
+		panic(err)
+	}
+	return p
+}
+
+// NewPathFromString parses a path from a string.
+//
+// The string must be a sequence of keys and indices separated by dots.
+// Indices must be enclosed in square brackets.
+// The string may include a leading dot.
+//
+// Examples:
+//   - foo.bar
+//   - foo[1].bar
+//   - foo.bar[1]
+//   - foo.bar[1][2]
+//   - .
 func NewPathFromString(input string) (Path, error) {
 	var path Path
 
 	p := input
+
+	// Trim leading dot.
+	if p != "" && p[0] == '.' {
+		p = p[1:]
+	}
+
 	for p != "" {
 		// Every component may have a leading dot.
 		if p != "" && p[0] == '.' {
 			p = p[1:]
+		}
+
+		if p == "" {
+			return nil, fmt.Errorf("invalid path: %s", input)
 		}
 
 		if p[0] == '[' {
