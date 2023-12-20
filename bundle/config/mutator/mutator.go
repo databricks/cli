@@ -17,5 +17,11 @@ func DefaultMutators() []bundle.Mutator {
 }
 
 func DefaultMutatorsForTarget(env string) []bundle.Mutator {
-	return append(DefaultMutators(), SelectTarget(env))
+	return append(
+		DefaultMutators(),
+		SelectTarget(env),
+		MergeJobClusters(),
+		MergeJobTasks(),
+		MergePipelineClusters(),
+	)
 }

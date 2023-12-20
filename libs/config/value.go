@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"maps"
-	"slices"
 	"time"
 )
 
@@ -59,68 +58,6 @@ func (v Value) AsMap() (map[string]Value, bool) {
 	return m, ok
 }
 
-func (v Value) set(prefix, suffix Path, value Value) (Value, error) {
-	var err error
-
-	if len(suffix) == 0 {
-		return value, nil
-	}
-
-	prefix = prefix.Append(suffix[0])
-
-	// Pick first component.
-	pc := suffix[0]
-	switch v.k {
-	case KindMap:
-		// Expect a key to be set if this is a map.
-		if len(pc.key) == 0 {
-			return InvalidValue, fmt.Errorf("expected a key index at %s", prefix)
-		}
-
-		m := maps.Clone(v.MustMap())
-		m[pc.key], err = v.set(prefix, suffix[1:], value)
-		if err != nil {
-			return InvalidValue, err
-		}
-
-		// Return an updated map value.
-		return Value{
-			v: m,
-			k: KindMap,
-			l: v.l,
-		}, nil
-
-	case KindSequence:
-		// Expect an index to be set if this is a sequence.
-		if len(pc.key) > 0 {
-			return InvalidValue, fmt.Errorf("expected an index at %s", prefix)
-		}
-
-		s := slices.Clone(v.MustSequence())
-		if pc.index < 0 || pc.index >= len(s) {
-			return InvalidValue, fmt.Errorf("index out of bounds under %s", prefix)
-		}
-		s[pc.index], err = v.set(prefix, suffix[1:], value)
-		if err != nil {
-			return InvalidValue, err
-		}
-
-		// Return an updated sequence value.
-		return Value{
-			v: s,
-			k: KindSequence,
-			l: v.l,
-		}, nil
-
-	default:
-		return InvalidValue, fmt.Errorf("expected a map or sequence under %s", prefix)
-	}
-}
-
-func (v Value) Set(p Path, value Value) (Value, error) {
-	return v.set(EmptyPath, p, value)
-}
-
 func (v Value) SetKey(key string, value Value) Value {
 	m, ok := v.AsMap()
 	if !ok {
@@ -139,8 +76,10 @@ func (v Value) SetKey(key string, value Value) Value {
 }
 
 func (v Value) AsSequence() ([]Value, bool) {
-	s, ok := v.v.([]Value)
-	return s, ok
+	if v.k != KindSequence {
+		return nil, false
+	}
+	return v.v.([]Value), true
 }
 
 func (v Value) Kind() Kind {

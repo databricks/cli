@@ -2,6 +2,7 @@ package mutator_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -17,7 +18,7 @@ func TestMergePipelineClusters(t *testing.T) {
 		Config: config.Root{
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
-					"foo": &resources.Pipeline{
+					"foo": {
 						PipelineSpec: &pipelines.PipelineSpec{
 							Clusters: []pipelines.PipelineCluster{
 								{
@@ -59,4 +60,66 @@ func TestMergePipelineClusters(t *testing.T) {
 	// The maintenance cluster was left untouched.
 	pc1 := p.Clusters[1]
 	assert.Equal(t, "i3.2xlarge", pc1.NodeTypeId)
+}
+
+func TestMergePipelineClustersCaseInsensitive(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Pipelines: map[string]*resources.Pipeline{
+					"foo": {
+						PipelineSpec: &pipelines.PipelineSpec{
+							Clusters: []pipelines.PipelineCluster{
+								{
+									Label:      "default",
+									NumWorkers: 2,
+								},
+								{
+									Label:      "DEFAULT",
+									NumWorkers: 4,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	err := bundle.Apply(context.Background(), b, mutator.MergePipelineClusters())
+	assert.NoError(t, err)
+
+	p := b.Config.Resources.Pipelines["foo"]
+	assert.Len(t, p.Clusters, 1)
+
+	// The default cluster was merged with a subsequent one.
+	pc0 := p.Clusters[0]
+	assert.Equal(t, "default", strings.ToLower(pc0.Label))
+	assert.Equal(t, 4, pc0.NumWorkers)
+}
+
+func TestMergePipelineClustersNilPipelines(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Pipelines: nil,
+			},
+		},
+	}
+
+	err := bundle.Apply(context.Background(), b, mutator.MergePipelineClusters())
+	assert.NoError(t, err)
+}
+
+func TestMergePipelineClustersEmptyPipelines(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Pipelines: map[string]*resources.Pipeline{},
+			},
+		},
+	}
+
+	err := bundle.Apply(context.Background(), b, mutator.MergePipelineClusters())
+	assert.NoError(t, err)
 }
