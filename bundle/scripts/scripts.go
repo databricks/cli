@@ -33,12 +33,12 @@ func (m *script) Apply(ctx context.Context, b *bundle.Bundle) error {
 	if err != nil {
 		return err
 	}
-	defer executor.Cleanup()
-	wait, out, err := executeHook(ctx, executor, b, m.scriptHook)
+
+	cmd, out, err := executeHook(ctx, executor, b, m.scriptHook)
 	if err != nil {
 		return err
 	}
-	if wait == nil {
+	if cmd == nil {
 		log.Debugf(ctx, "No script defined for %s, skipping", m.scriptHook)
 		return nil
 	}
@@ -52,16 +52,21 @@ func (m *script) Apply(ctx context.Context, b *bundle.Bundle) error {
 		line, err = reader.ReadString('\n')
 	}
 
-	return wait()
+	return cmd.Wait()
 }
 
-func executeHook(ctx context.Context, executor *exec.Executor, b *bundle.Bundle, hook config.ScriptHook) (func() error, io.Reader, error) {
+func executeHook(ctx context.Context, executor *exec.Executor, b *bundle.Bundle, hook config.ScriptHook) (exec.Command, io.Reader, error) {
 	command := getCommmand(b, hook)
 	if command == "" {
 		return nil, nil, nil
 	}
 
-	return executor.StartCommand(ctx, string(command))
+	cmd, err := executor.StartCommand(ctx, string(command))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return cmd, io.MultiReader(cmd.Stdout(), cmd.Stderr()), nil
 }
 
 func getCommmand(b *bundle.Bundle, hook config.ScriptHook) config.Command {

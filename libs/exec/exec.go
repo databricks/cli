@@ -9,10 +9,44 @@ import (
 	osexec "os/exec"
 )
 
+type Command interface {
+	// Wait for command to terminate. It must have been previously started.
+	Wait() error
+
+	// StdinPipe returns a pipe that will be connected to the command's standard input when the command starts.
+	Stdout() io.ReadCloser
+
+	// StderrPipe returns a pipe that will be connected to the command's standard error when the command starts.
+	Stderr() io.ReadCloser
+}
+
+type command struct {
+	done   chan bool
+	err    chan error
+	stdout io.ReadCloser
+	stderr io.ReadCloser
+}
+
+func (c *command) Wait() error {
+	select {
+	case <-c.done:
+		return nil
+	case err := <-c.err:
+		return err
+	}
+}
+
+func (c *command) Stdout() io.ReadCloser {
+	return c.stdout
+}
+
+func (c *command) Stderr() io.ReadCloser {
+	return c.stderr
+}
+
 type Executor struct {
 	interpreter interpreter
 	dir         string
-	scriptFiles []string
 }
 
 func NewCommandExecutor(dir string) (*Executor, error) {
@@ -23,59 +57,62 @@ func NewCommandExecutor(dir string) (*Executor, error) {
 	return &Executor{
 		interpreter: interpreter,
 		dir:         dir,
-		scriptFiles: nil,
 	}, nil
 }
 
-func (e *Executor) StartCommand(ctx context.Context, command string) (func() error, io.Reader, error) {
+func (e *Executor) StartCommand(ctx context.Context, command string) (Command, error) {
 	e.interpreter.prepare(command)
 	return e.start(ctx)
 }
 
-func (e *Executor) start(ctx context.Context) (func() error, io.Reader, error) {
-	e.scriptFiles = append(e.scriptFiles, e.interpreter.getScriptFile())
+func (e *Executor) start(ctx context.Context) (Command, error) {
 	cmd := osexec.CommandContext(ctx, e.interpreter.getExecutable(), e.interpreter.getArgs()...)
 	cmd.Dir = e.dir
 
-	outPipe, err := cmd.StdoutPipe()
+	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	errPipe, err := cmd.StderrPipe()
+	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return cmd.Wait, io.MultiReader(outPipe, errPipe), cmd.Start()
+	err = cmd.Start()
+
+	done := make(chan bool)
+	errCh := make(chan error)
+
+	go func() {
+		err := cmd.Wait()
+		e.interpreter.cleanup()
+		if err != nil {
+			errCh <- err
+		}
+		close(done)
+		close(errCh)
+	}()
+
+	return &command{done, errCh, stdout, stderr}, err
 }
 
 func (e *Executor) Exec(ctx context.Context, command string) ([]byte, error) {
-	wait, out, err := e.StartCommand(ctx, command)
+	cmd, err := e.StartCommand(ctx, command)
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := io.ReadAll(out)
+	res, err := io.ReadAll(io.MultiReader(cmd.Stdout(), cmd.Stderr()))
 	if err != nil {
 		return nil, err
 	}
 
-	defer e.Cleanup()
-	return res, wait()
-}
-
-func (e *Executor) Cleanup() {
-	if e.scriptFiles != nil {
-		for _, file := range e.scriptFiles {
-			os.Remove(file)
-		}
-	}
-	e.scriptFiles = nil
+	return res, cmd.Wait()
 }
 
 func findInterpreter() (interpreter, error) {
-	interpreter, err := findBashExecutable()
+	interpreter, err := findBashInterpreter()
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +121,7 @@ func findInterpreter() (interpreter, error) {
 		return interpreter, nil
 	}
 
-	interpreter, err = findCmdExecutable()
+	interpreter, err = findCmdInterpreter()
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +137,7 @@ type interpreter interface {
 	prepare(command string) error
 	getExecutable() string
 	getArgs() []string
-	getScriptFile() string
+	cleanup() error
 }
 
 type bashInterpreter struct {
@@ -129,8 +166,8 @@ func (b *bashInterpreter) getArgs() []string {
 	return b.args
 }
 
-func (b *bashInterpreter) getScriptFile() string {
-	return b.scriptFile
+func (b *bashInterpreter) cleanup() error {
+	return os.Remove(b.scriptFile)
 }
 
 type cmdInterpreter struct {
@@ -159,11 +196,11 @@ func (c *cmdInterpreter) getArgs() []string {
 	return c.args
 }
 
-func (c *cmdInterpreter) getScriptFile() string {
-	return c.scriptFile
+func (c *cmdInterpreter) cleanup() error {
+	return os.Remove(c.scriptFile)
 }
 
-func findBashExecutable() (interpreter, error) {
+func findBashInterpreter() (interpreter, error) {
 	// Lookup for bash executable first (Linux, MacOS, maybe Windows)
 	out, err := osexec.LookPath("bash")
 	if err != nil && !errors.Is(err, osexec.ErrNotFound) {
@@ -178,7 +215,7 @@ func findBashExecutable() (interpreter, error) {
 	return &bashInterpreter{executable: out}, nil
 }
 
-func findCmdExecutable() (interpreter, error) {
+func findCmdInterpreter() (interpreter, error) {
 	// Lookup for CMD executable (Windows)
 	out, err := osexec.LookPath("cmd")
 	if err != nil && !errors.Is(err, osexec.ErrNotFound) {

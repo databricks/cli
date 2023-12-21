@@ -46,18 +46,18 @@ func TestExecutorWithInvalidCommandWithWindowsLikePath(t *testing.T) {
 	assert.Contains(t, string(out), "C:\\Program Files\\invalid-command.exe: No such file or directory")
 }
 
-func TestFindBashExecutableNonWindows(t *testing.T) {
+func TestFindBashInterpreterNonWindows(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.SkipNow()
 	}
 
-	executable, err := findBashExecutable()
+	interpreter, err := findBashInterpreter()
 	assert.NoError(t, err)
-	assert.NotEmpty(t, executable)
+	assert.NotEmpty(t, interpreter)
 
 	e, err := NewCommandExecutor(".")
 	assert.NoError(t, err)
-	e.interpreter = executable
+	e.interpreter = interpreter
 
 	assert.NoError(t, err)
 	out, err := e.Exec(context.Background(), `echo "Hello from bash"`)
@@ -66,22 +66,38 @@ func TestFindBashExecutableNonWindows(t *testing.T) {
 	assert.Equal(t, "Hello from bash\n", string(out))
 }
 
-func TestFindCmdExecutable(t *testing.T) {
+func TestFindCmdInterpreter(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		t.SkipNow()
 	}
 
-	executable, err := findCmdExecutable()
+	interpreter, err := findCmdInterpreter()
 	assert.NoError(t, err)
-	assert.NotEmpty(t, executable)
+	assert.NotEmpty(t, interpreter)
 
 	e, err := NewCommandExecutor(".")
 	assert.NoError(t, err)
-	e.interpreter = executable
+	e.interpreter = interpreter
 
 	assert.NoError(t, err)
 	out, err := e.Exec(context.Background(), `echo "Hello from cmd"`)
 	assert.NoError(t, err)
 
 	assert.Contains(t, string(out), "Hello from cmd")
+}
+
+func TestExecutorCleanupsTempFiles(t *testing.T) {
+	executor, err := NewCommandExecutor(".")
+	assert.NoError(t, err)
+
+	cmd, err := executor.StartCommand(context.Background(), "echo 'Hello'")
+	args := executor.interpreter.getArgs()
+	assert.NoError(t, err)
+
+	fileName := args[1]
+	assert.FileExists(t, fileName)
+
+	err = cmd.Wait()
+	assert.NoError(t, err)
+	assert.NoFileExists(t, fileName)
 }
