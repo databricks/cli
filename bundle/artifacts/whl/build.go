@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/python"
 )
 
@@ -44,7 +45,7 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) error {
 	if err != nil {
 		return fmt.Errorf("build failed %s, error: %w, output: %s", m.name, err, out)
 	}
-	cmdio.LogString(ctx, "Build succeeded")
+	log.Infof(ctx, "Build succeeded")
 
 	wheels := python.FindFilesWithSuffixInPath(distPath, ".whl")
 	if len(wheels) == 0 {
