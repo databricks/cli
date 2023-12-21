@@ -2,10 +2,7 @@ package exec
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"io"
-	"os"
 	osexec "os/exec"
 )
 
@@ -21,19 +18,18 @@ type Command interface {
 }
 
 type command struct {
-	done   chan bool
 	err    chan error
 	stdout io.ReadCloser
 	stderr io.ReadCloser
 }
 
 func (c *command) Wait() error {
-	select {
-	case <-c.done:
-		return nil
-	case err := <-c.err:
+	err, ok := <-c.err
+	// If there's a value in the channel, it means that the command finished with an error
+	if ok {
 		return err
 	}
+	return nil
 }
 
 func (c *command) Stdout() io.ReadCloser {
@@ -61,12 +57,15 @@ func NewCommandExecutor(dir string) (*Executor, error) {
 }
 
 func (e *Executor) StartCommand(ctx context.Context, command string) (Command, error) {
-	e.interpreter.prepare(command)
-	return e.start(ctx)
+	ec, err := e.interpreter.prepare(command)
+	if err != nil {
+		return nil, err
+	}
+	return e.start(ctx, ec)
 }
 
-func (e *Executor) start(ctx context.Context) (Command, error) {
-	cmd := osexec.CommandContext(ctx, e.interpreter.getExecutable(), e.interpreter.getArgs()...)
+func (e *Executor) start(ctx context.Context, ec *execContext) (Command, error) {
+	cmd := osexec.CommandContext(ctx, ec.executable, ec.args...)
 	cmd.Dir = e.dir
 
 	stdout, err := cmd.StdoutPipe()
@@ -80,21 +79,18 @@ func (e *Executor) start(ctx context.Context) (Command, error) {
 	}
 
 	err = cmd.Start()
-
-	done := make(chan bool)
 	errCh := make(chan error)
 
-	go func() {
+	go func(cmd *osexec.Cmd, errCh chan error) {
 		err := cmd.Wait()
-		e.interpreter.cleanup()
+		e.interpreter.cleanup(ec)
 		if err != nil {
 			errCh <- err
 		}
-		close(done)
 		close(errCh)
-	}()
+	}(cmd, errCh)
 
-	return &command{done, errCh, stdout, stderr}, err
+	return &command{errCh, stdout, stderr}, err
 }
 
 func (e *Executor) Exec(ctx context.Context, command string) ([]byte, error) {
@@ -109,141 +105,4 @@ func (e *Executor) Exec(ctx context.Context, command string) ([]byte, error) {
 	}
 
 	return res, cmd.Wait()
-}
-
-func findInterpreter() (interpreter, error) {
-	interpreter, err := findBashInterpreter()
-	if err != nil {
-		return nil, err
-	}
-
-	if interpreter != nil {
-		return interpreter, nil
-	}
-
-	interpreter, err = findCmdInterpreter()
-	if err != nil {
-		return nil, err
-	}
-
-	if interpreter != nil {
-		return interpreter, nil
-	}
-
-	return nil, errors.New("no interpreter found")
-}
-
-type interpreter interface {
-	prepare(command string) error
-	getExecutable() string
-	getArgs() []string
-	cleanup() error
-}
-
-type bashInterpreter struct {
-	executable string
-	args       []string
-	scriptFile string
-}
-
-func (b *bashInterpreter) prepare(command string) error {
-	filename, err := createTempScript(command, ".sh")
-	if err != nil {
-		return err
-	}
-
-	b.args = []string{"-e", filename}
-	b.scriptFile = filename
-
-	return nil
-}
-
-func (b *bashInterpreter) getExecutable() string {
-	return b.executable
-}
-
-func (b *bashInterpreter) getArgs() []string {
-	return b.args
-}
-
-func (b *bashInterpreter) cleanup() error {
-	return os.Remove(b.scriptFile)
-}
-
-type cmdInterpreter struct {
-	executable string
-	args       []string
-	scriptFile string
-}
-
-func (c *cmdInterpreter) prepare(command string) error {
-	filename, err := createTempScript(command, ".cmd")
-	if err != nil {
-		return err
-	}
-
-	c.args = []string{"/D", "/E:ON", "/V:OFF", "/S", "/C", fmt.Sprintf(`CALL %s`, filename)}
-	c.scriptFile = filename
-
-	return nil
-}
-
-func (c *cmdInterpreter) getExecutable() string {
-	return c.executable
-}
-
-func (c *cmdInterpreter) getArgs() []string {
-	return c.args
-}
-
-func (c *cmdInterpreter) cleanup() error {
-	return os.Remove(c.scriptFile)
-}
-
-func findBashInterpreter() (interpreter, error) {
-	// Lookup for bash executable first (Linux, MacOS, maybe Windows)
-	out, err := osexec.LookPath("bash")
-	if err != nil && !errors.Is(err, osexec.ErrNotFound) {
-		return nil, err
-	}
-
-	// Bash executable is not found, returning early
-	if out == "" {
-		return nil, nil
-	}
-
-	return &bashInterpreter{executable: out}, nil
-}
-
-func findCmdInterpreter() (interpreter, error) {
-	// Lookup for CMD executable (Windows)
-	out, err := osexec.LookPath("cmd")
-	if err != nil && !errors.Is(err, osexec.ErrNotFound) {
-		return nil, err
-	}
-
-	// CMD executable is not found, returning early
-	if out == "" {
-		return nil, nil
-	}
-
-	return &cmdInterpreter{executable: out}, nil
-}
-
-func createTempScript(command string, extension string) (string, error) {
-	file, err := os.CreateTemp(os.TempDir(), "cli-exec*"+extension)
-	if err != nil {
-		return "", err
-	}
-
-	defer file.Close()
-
-	_, err = io.WriteString(file, command)
-	if err != nil {
-		// Try to remove the file if we failed to write to it
-		os.Remove(file.Name())
-		return "", err
-	}
-
-	return file.Name(), nil
 }

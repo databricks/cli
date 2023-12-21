@@ -2,7 +2,10 @@ package exec
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"runtime"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -90,14 +93,44 @@ func TestExecutorCleanupsTempFiles(t *testing.T) {
 	executor, err := NewCommandExecutor(".")
 	assert.NoError(t, err)
 
-	cmd, err := executor.StartCommand(context.Background(), "echo 'Hello'")
-	args := executor.interpreter.getArgs()
+	ec, err := executor.interpreter.prepare("echo 'Hello'")
 	assert.NoError(t, err)
 
-	fileName := args[1]
+	cmd, err := executor.start(context.Background(), ec)
+	assert.NoError(t, err)
+
+	fileName := ec.args[1]
 	assert.FileExists(t, fileName)
 
 	err = cmd.Wait()
 	assert.NoError(t, err)
 	assert.NoFileExists(t, fileName)
+}
+
+func TestMultipleCommandsRunInParrallel(t *testing.T) {
+	executor, err := NewCommandExecutor(".")
+	assert.NoError(t, err)
+
+	const count = 5
+	var wg sync.WaitGroup
+
+	for i := 0; i < count; i++ {
+		wg.Add(1)
+		cmd, err := executor.StartCommand(context.Background(), fmt.Sprintf("echo 'Hello %d'", i))
+		go func(cmd Command, i int) {
+			defer wg.Done()
+
+			stdout := cmd.Stdout()
+			out, err := io.ReadAll(stdout)
+			assert.NoError(t, err)
+
+			err = cmd.Wait()
+			assert.NoError(t, err)
+
+			assert.Equal(t, fmt.Sprintf("Hello %d\n", i), string(out))
+		}(cmd, i)
+		assert.NoError(t, err)
+	}
+
+	wg.Wait()
 }
