@@ -213,7 +213,7 @@ func (c *config) promptForValues(r *renderer) error {
 // terminal is not TTY
 func (c *config) promptOrAssignDefaultValues(r *renderer) error {
 	// TODO: replace with IsPromptSupported call (requires fixing TestAccBundleInitErrorOnUnknownFields test)
-	if cmdio.IsOutTTY(c.ctx) && cmdio.IsInTTY(c.ctx) {
+	if cmdio.IsOutTTY(c.ctx) && cmdio.IsInTTY(c.ctx) && !cmdio.IsGitBash(c.ctx) {
 		return c.promptForValues(r)
 	}
 	return c.assignDefaultValues(r)
