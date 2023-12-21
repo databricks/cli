@@ -117,14 +117,14 @@ func TestMultipleCommandsRunInParrallel(t *testing.T) {
 	for i := 0; i < count; i++ {
 		wg.Add(1)
 		cmd, err := executor.StartCommand(context.Background(), fmt.Sprintf("echo 'Hello %d'", i))
+		// Execute cmd.Wait only when all goroutines are done
+		defer cmd.Wait()
+
 		go func(cmd Command, i int) {
 			defer wg.Done()
 
 			stdout := cmd.Stdout()
 			out, err := io.ReadAll(stdout)
-			assert.NoError(t, err)
-
-			err = cmd.Wait()
 			assert.NoError(t, err)
 
 			assert.Equal(t, fmt.Sprintf("Hello %d\n", i), string(out))
