@@ -3,6 +3,7 @@ package exec
 import (
 	"context"
 	"io"
+	"os"
 	osexec "os/exec"
 )
 
@@ -18,17 +19,21 @@ type Command interface {
 }
 
 type command struct {
-	err    chan error
-	stdout io.ReadCloser
-	stderr io.ReadCloser
+	cmd         *osexec.Cmd
+	execContext *execContext
+	stdout      io.ReadCloser
+	stderr      io.ReadCloser
 }
 
 func (c *command) Wait() error {
-	err, ok := <-c.err
-	// If there's a value in the channel, it means that the command finished with an error
-	if ok {
+	// After the command has finished (cmd.Wait call), remove the temporary script file
+	defer os.Remove(c.execContext.scriptFile)
+
+	err := c.cmd.Wait()
+	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -78,19 +83,7 @@ func (e *Executor) start(ctx context.Context, ec *execContext) (Command, error) 
 		return nil, err
 	}
 
-	err = cmd.Start()
-	errCh := make(chan error)
-
-	go func(cmd *osexec.Cmd, errCh chan error) {
-		err := cmd.Wait()
-		e.interpreter.cleanup(ec)
-		if err != nil {
-			errCh <- err
-		}
-		close(errCh)
-	}(cmd, errCh)
-
-	return &command{errCh, stdout, stderr}, err
+	return &command{cmd, ec, stdout, stderr}, cmd.Start()
 }
 
 func (e *Executor) Exec(ctx context.Context, command string) ([]byte, error) {

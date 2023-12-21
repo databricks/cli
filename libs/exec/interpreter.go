@@ -10,7 +10,6 @@ import (
 
 type interpreter interface {
 	prepare(string) (*execContext, error)
-	cleanup(*execContext) error
 }
 
 type execContext struct {
@@ -36,10 +35,6 @@ func (b *bashInterpreter) prepare(command string) (*execContext, error) {
 	}, nil
 }
 
-func (b *bashInterpreter) cleanup(ec *execContext) error {
-	return os.Remove(ec.scriptFile)
-}
-
 type cmdInterpreter struct {
 	executable string
 }
@@ -55,10 +50,6 @@ func (c *cmdInterpreter) prepare(command string) (*execContext, error) {
 		args:       []string{"/D", "/E:ON", "/V:OFF", "/S", "/C", fmt.Sprintf(`CALL %s`, filename)},
 		scriptFile: filename,
 	}, nil
-}
-
-func (c *cmdInterpreter) cleanup(ec *execContext) error {
-	return os.Remove(ec.scriptFile)
 }
 
 func findInterpreter() (interpreter, error) {
