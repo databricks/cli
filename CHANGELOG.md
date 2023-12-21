@@ -11,6 +11,7 @@ CLI:
 Bundles:
 * Set metadata fields required to enable break-glass UI for jobs ([#880](https://github.com/databricks/cli/pull/880)).
 * Do not prompt for template values in Git Bash ([#1082](https://github.com/databricks/cli/pull/1082)).
+* Tune output of bundle deploy command ([#1047](https://github.com/databricks/cli/pull/1047)).
 
 API Changes:
  * Changed `databricks connections update` command with new required argument order.
