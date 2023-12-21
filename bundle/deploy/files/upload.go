@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
 )
 
 type upload struct{}
@@ -15,7 +16,7 @@ func (m *upload) Name() string {
 }
 
 func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) error {
-	cmdio.LogString(ctx, "Starting upload of bundle files")
+	cmdio.LogString(ctx, fmt.Sprintf("Uploading bundle files to %s...", b.Config.Workspace.FilePath))
 	sync, err := getSync(ctx, b)
 	if err != nil {
 		return err
@@ -26,7 +27,7 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Uploaded bundle files at %s!\n", b.Config.Workspace.FilePath))
+	log.Infof(ctx, "Uploaded bundle files")
 	return nil
 }
 

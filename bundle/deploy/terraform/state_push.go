@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 )
@@ -37,6 +38,7 @@ func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) error {
 	defer local.Close()
 
 	// Upload state file from local cache directory to filer.
+	cmdio.LogString(ctx, "Updating deployment state...")
 	log.Infof(ctx, "Writing local state file to remote state directory")
 	err = f.Write(ctx, TerraformStateFileName, local, filer.CreateParentDirectories, filer.OverwriteIfExists)
 	if err != nil {

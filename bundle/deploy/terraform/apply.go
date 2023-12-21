@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
@@ -21,7 +22,7 @@ func (w *apply) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return fmt.Errorf("terraform not initialized")
 	}
 
-	cmdio.LogString(ctx, "Starting resource deployment")
+	cmdio.LogString(ctx, "Deploying resources...")
 
 	err := tf.Init(ctx, tfexec.Upgrade(true))
 	if err != nil {
@@ -33,7 +34,7 @@ func (w *apply) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return fmt.Errorf("terraform apply: %w", err)
 	}
 
-	cmdio.LogString(ctx, "Resource deployment completed!")
+	log.Infof(ctx, "Resource deployment completed")
 	return nil
 }
 
