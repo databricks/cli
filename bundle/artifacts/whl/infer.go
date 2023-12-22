@@ -33,7 +33,7 @@ func (m *infer) Apply(ctx context.Context, b *bundle.Bundle) error {
 	//   version=datetime.datetime.utcnow().strftime("%Y%m%d.%H%M%S"),
 	// ...
 	//)
-	artifact.BuildCommand = fmt.Sprintf("%s setup.py bdist_wheel", py)
+	artifact.BuildCommand = fmt.Sprintf(`"%s" setup.py bdist_wheel`, py)
 
 	return nil
 }
