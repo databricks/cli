@@ -231,10 +231,9 @@ func (c *config) promptForValues(r *renderer) error {
 			if err == nil {
 				break
 			}
-			if errors.As(err, &retriableError{}) {
-				continue
+			if !errors.As(err, &retriableError{}) {
+				return err
 			}
-			return err
 		}
 	}
 	return nil
