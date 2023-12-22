@@ -5,8 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/config"
-	cv "github.com/databricks/cli/libs/config"
+	"github.com/databricks/cli/libs/dyn"
 )
 
 type environmentsToTargets struct{}
@@ -27,13 +26,13 @@ func (m *environmentsToTargets) Apply(ctx context.Context, b *bundle.Bundle) err
 	}
 
 	// The "environments" key is set; validate and rewrite it to "targets".
-	return b.Config.Mutate(func(v config.Value) (config.Value, error) {
+	return b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		environments := v.Get("environments")
 		targets := v.Get("targets")
 
 		// Return an error if both "environments" and "targets" are set.
-		if environments != cv.NilValue && targets != cv.NilValue {
-			return cv.NilValue, fmt.Errorf(
+		if environments != dyn.NilValue && targets != dyn.NilValue {
+			return dyn.NilValue, fmt.Errorf(
 				"both 'environments' and 'targets' are specified; only 'targets' should be used. "+
 					"Instance of 'environments' found at %s.",
 				environments.Location().String(),
@@ -41,7 +40,7 @@ func (m *environmentsToTargets) Apply(ctx context.Context, b *bundle.Bundle) err
 		}
 
 		// Rewrite "environments" to "targets".
-		if environments != cv.NilValue && targets == cv.NilValue {
+		if environments != dyn.NilValue && targets == dyn.NilValue {
 			return v.SetKey("targets", environments), nil
 		}
 

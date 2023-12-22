@@ -8,7 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 
-	cv "github.com/databricks/cli/libs/config"
+	cv "github.com/databricks/cli/libs/dyn"
 )
 
 type rewriteSyncPaths struct{}

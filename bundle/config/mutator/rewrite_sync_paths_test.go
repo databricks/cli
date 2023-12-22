@@ -8,7 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/internal/bundletest"
-	cv "github.com/databricks/cli/libs/config"
+	cv "github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
 )
 

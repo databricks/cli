@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/config"
-	"github.com/databricks/cli/libs/config/merge"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/merge"
 )
 
 type mergeJobTasks struct{}
@@ -22,7 +22,7 @@ func (m *mergeJobTasks) Name() string {
 // The tasks field is a slice, and as such, overrides are appended to it.
 // We can identify a task by its task key, however, so we can use this key
 // to figure out which definitions are actually overrides and merge them.
-func (m *mergeJobTasks) mergeJobTasks(v config.Value) (config.Value, error) {
+func (m *mergeJobTasks) mergeJobTasks(v dyn.Value) (dyn.Value, error) {
 	// We know the type of this value is a sequence.
 	// For additional defence, return self if it is not.
 	tasks, ok := v.AsSequence()
@@ -30,7 +30,7 @@ func (m *mergeJobTasks) mergeJobTasks(v config.Value) (config.Value, error) {
 		return v, nil
 	}
 
-	seen := make(map[string]config.Value, len(tasks))
+	seen := make(map[string]dyn.Value, len(tasks))
 	keys := make([]string, 0, len(tasks))
 
 	// Target overrides are always appended, so we can iterate in natural order to
@@ -40,7 +40,7 @@ func (m *mergeJobTasks) mergeJobTasks(v config.Value) (config.Value, error) {
 
 		// Get task key if present.
 		kv := tasks[i].Get("task_key")
-		if kv.Kind() == config.KindString {
+		if kv.Kind() == dyn.KindString {
 			key = kv.MustString()
 		}
 
@@ -63,22 +63,22 @@ func (m *mergeJobTasks) mergeJobTasks(v config.Value) (config.Value, error) {
 	}
 
 	// Gather resulting clusters in natural order.
-	out := make([]config.Value, 0, len(keys))
+	out := make([]dyn.Value, 0, len(keys))
 	for _, key := range keys {
 		out = append(out, seen[key])
 	}
 
-	return config.NewValue(out, v.Location()), nil
+	return dyn.NewValue(out, v.Location()), nil
 
 }
 
-func (m *mergeJobTasks) foreachJob(v config.Value) (config.Value, error) {
+func (m *mergeJobTasks) foreachJob(v dyn.Value) (dyn.Value, error) {
 	jobs, ok := v.AsMap()
 	if !ok {
 		return v, nil
 	}
 
-	out := make(map[string]config.Value)
+	out := make(map[string]dyn.Value)
 	for key, job := range jobs {
 		var err error
 		out[key], err = job.Transform("tasks", m.mergeJobTasks)
@@ -87,19 +87,19 @@ func (m *mergeJobTasks) foreachJob(v config.Value) (config.Value, error) {
 		}
 	}
 
-	return config.NewValue(out, v.Location()), nil
+	return dyn.NewValue(out, v.Location()), nil
 }
 
 func (m *mergeJobTasks) Apply(ctx context.Context, b *bundle.Bundle) error {
-	return b.Config.Mutate(func(v config.Value) (config.Value, error) {
-		if v == config.NilValue {
+	return b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		if v == dyn.NilValue {
 			return v, nil
 		}
 
 		nv, err := v.Transform("resources.jobs", m.foreachJob)
 
 		// It is not a problem if the pipelines key is not set.
-		if config.IsNoSuchKeyError(err) {
+		if dyn.IsNoSuchKeyError(err) {
 			return v, nil
 		}
 

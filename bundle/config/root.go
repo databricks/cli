@@ -9,16 +9,16 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/config/variable"
-	"github.com/databricks/cli/libs/config"
-	"github.com/databricks/cli/libs/config/convert"
-	"github.com/databricks/cli/libs/config/merge"
-	"github.com/databricks/cli/libs/config/yamlloader"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/cli/libs/dyn/merge"
+	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 type Root struct {
-	value config.Value
+	value dyn.Value
 	diags diag.Diagnostics
 	depth int
 
@@ -112,7 +112,7 @@ func (r *Root) initializeValue() {
 		return
 	}
 
-	nv, err := convert.FromTyped(r, config.NilValue)
+	nv, err := convert.FromTyped(r, dyn.NilValue)
 	if err != nil {
 		panic(err)
 	}
@@ -120,7 +120,7 @@ func (r *Root) initializeValue() {
 	r.value = nv
 }
 
-func (r *Root) toTyped(v config.Value) error {
+func (r *Root) toTyped(v dyn.Value) error {
 	// Hack: restore state; it may be cleared by [ToTyped] if
 	// the configuration equals nil (happens in tests).
 	value := r.value
@@ -144,7 +144,7 @@ func (r *Root) toTyped(v config.Value) error {
 	return nil
 }
 
-func (r *Root) Mutate(fn func(config.Value) (config.Value, error)) error {
+func (r *Root) Mutate(fn func(dyn.Value) (dyn.Value, error)) error {
 	r.initializeValue()
 	nv, err := fn(r.value)
 	if err != nil {
@@ -276,11 +276,11 @@ func (r *Root) Merge(other *Root) error {
 }
 
 func (r *Root) MergeTargetOverrides(name string) error {
-	var tmp config.Value
+	var tmp dyn.Value
 	var err error
 
 	target := r.value.Get("targets").Get(name)
-	if target == config.NilValue {
+	if target == dyn.NilValue {
 		return nil
 	}
 
@@ -294,10 +294,10 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		return nil
 	}
 
-	if mode := target.Get("mode"); mode != config.NilValue {
+	if mode := target.Get("mode"); mode != dyn.NilValue {
 		bundle := r.value.Get("bundle")
-		if bundle == config.NilValue {
-			bundle = config.NewValue(map[string]config.Value{}, config.Location{})
+		if bundle == dyn.NilValue {
+			bundle = dyn.NewValue(map[string]dyn.Value{}, dyn.Location{})
 		}
 		bundle.MustMap()["mode"] = mode
 		r.value.MustMap()["bundle"] = bundle
@@ -314,7 +314,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 	// The "run_as" field must be overwritten if set, not merged.
 	// Otherwise we end up with a merged version where both the
 	// "user_name" and "service_principal_name" fields are set.
-	if runAs := target.Get("run_as"); runAs != config.NilValue {
+	if runAs := target.Get("run_as"); runAs != dyn.NilValue {
 		r.value.MustMap()["run_as"] = runAs
 		// Clear existing field to convert.ToTyped() merging
 		// the new value with the existing value.

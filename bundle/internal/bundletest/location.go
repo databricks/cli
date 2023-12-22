@@ -2,18 +2,18 @@ package bundletest
 
 import (
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/config"
+	"github.com/databricks/cli/libs/dyn"
 )
 
 // SetLocation sets the location of all values in the bundle to the given path.
 // This is useful for testing where we need to associate configuration
 // with the path it is loaded from.
-func SetLocation(b *bundle.Bundle, pathPrefix config.Path, filePath string) {
-	b.Config.Mutate(func(root config.Value) (config.Value, error) {
-		return config.Walk(root, func(p config.Path, v config.Value) (config.Value, error) {
+func SetLocation(b *bundle.Bundle, pathPrefix dyn.Path, filePath string) {
+	b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
+		return dyn.Walk(root, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			// If the path has the given prefix, set the location.
 			if p.HasPrefix(pathPrefix) {
-				return v.WithLocation(config.Location{
+				return v.WithLocation(dyn.Location{
 					File: filePath,
 				}), nil
 			}
@@ -25,7 +25,7 @@ func SetLocation(b *bundle.Bundle, pathPrefix config.Path, filePath string) {
 			}
 
 			// Return verbatim, but skip traversal.
-			return v, config.ErrSkip
+			return v, dyn.ErrSkip
 		})
 	})
 

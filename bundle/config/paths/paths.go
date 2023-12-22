@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/databricks/cli/libs/config"
+	"github.com/databricks/cli/libs/dyn"
 )
 
 type Paths struct {
@@ -12,9 +12,9 @@ type Paths struct {
 	// the definition of this resource.
 	ConfigFilePath string `json:"-" bundle:"readonly"`
 
-	// DynamicValue stores the [config.Value] of the containing struct.
+	// DynamicValue stores the [dyn.Value] of the containing struct.
 	// This assumes that this struct is always embedded.
-	DynamicValue config.Value
+	DynamicValue dyn.Value
 }
 
 func (p *Paths) ConfigureConfigFilePath() {
