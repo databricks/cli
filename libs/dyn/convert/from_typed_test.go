@@ -19,7 +19,7 @@ func TestFromTypedStructZeroFields(t *testing.T) {
 
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	assert.Equal(t, dyn.NilValue, nv)
+	assert.Equal(t, dyn.V(map[string]dyn.Value{}), nv)
 }
 
 func TestFromTypedStructSetFields(t *testing.T) {
