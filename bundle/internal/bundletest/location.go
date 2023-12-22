@@ -8,11 +8,12 @@ import (
 // SetLocation sets the location of all values in the bundle to the given path.
 // This is useful for testing where we need to associate configuration
 // with the path it is loaded from.
-func SetLocation(b *bundle.Bundle, pathPrefix dyn.Path, filePath string) {
+func SetLocation(b *bundle.Bundle, prefix string, filePath string) {
+	start := dyn.MustPathFromString(prefix)
 	b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		return dyn.Walk(root, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			// If the path has the given prefix, set the location.
-			if p.HasPrefix(pathPrefix) {
+			if p.HasPrefix(start) {
 				return v.WithLocation(dyn.Location{
 					File: filePath,
 				}), nil
@@ -20,7 +21,7 @@ func SetLocation(b *bundle.Bundle, pathPrefix dyn.Path, filePath string) {
 
 			// The path is not nested under the given prefix.
 			// If the path is a prefix of the prefix, keep traversing and return the node verbatim.
-			if pathPrefix.HasPrefix(p) {
+			if start.HasPrefix(p) {
 				return v, nil
 			}
 
