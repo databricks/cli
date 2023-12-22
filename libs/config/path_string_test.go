@@ -43,12 +43,28 @@ func TestNewPathFromString(t *testing.T) {
 			output: NewPath(Key("foo"), Key("bar"), Index(1), Index(2)),
 		},
 		{
+			input:  "foo.bar[1][2][3]",
+			output: NewPath(Key("foo"), Key("bar"), Index(1), Index(2), Index(3)),
+		},
+		{
 			input:  "foo[1234]",
 			output: NewPath(Key("foo"), Index(1234)),
 		},
 		{
 			input: "foo[123",
 			err:   fmt.Errorf("invalid path: foo[123"),
+		},
+		{
+			input: "foo[123]]",
+			err:   fmt.Errorf("invalid path: foo[123]]"),
+		},
+		{
+			input: "foo[[123]",
+			err:   fmt.Errorf("invalid path: foo[[123]"),
+		},
+		{
+			input: "foo[[123]]",
+			err:   fmt.Errorf("invalid path: foo[[123]]"),
 		},
 		{
 			input: "foo[foo]",
