@@ -8,7 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 
-	cv "github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn"
 )
 
 type rewriteSyncPaths struct{}
@@ -21,9 +21,9 @@ func (m *rewriteSyncPaths) Name() string {
 	return "RewriteSyncPaths"
 }
 
-func (m *rewriteSyncPaths) makeRelativeTo(root string, seq cv.Value) (cv.Value, error) {
-	if seq == cv.NilValue || seq.Kind() != cv.KindSequence {
-		return cv.NilValue, nil
+func (m *rewriteSyncPaths) makeRelativeTo(root string, seq dyn.Value) (dyn.Value, error) {
+	if seq == dyn.NilValue || seq.Kind() != dyn.KindSequence {
+		return dyn.NilValue, nil
 	}
 
 	out, ok := seq.AsSequence()
@@ -33,29 +33,29 @@ func (m *rewriteSyncPaths) makeRelativeTo(root string, seq cv.Value) (cv.Value, 
 
 	out = slices.Clone(out)
 	for i, v := range out {
-		if v.Kind() != cv.KindString {
+		if v.Kind() != dyn.KindString {
 			continue
 		}
 
 		dir := filepath.Dir(v.Location().File)
 		rel, err := filepath.Rel(root, dir)
 		if err != nil {
-			return cv.NilValue, err
+			return dyn.NilValue, err
 		}
 
-		out[i] = cv.NewValue(filepath.Join(rel, v.MustString()), v.Location())
+		out[i] = dyn.NewValue(filepath.Join(rel, v.MustString()), v.Location())
 	}
 
-	return cv.NewValue(out, seq.Location()), nil
+	return dyn.NewValue(out, seq.Location()), nil
 }
 
-func (m *rewriteSyncPaths) fn(root string) func(c cv.Value) (cv.Value, error) {
-	return func(c cv.Value) (cv.Value, error) {
+func (m *rewriteSyncPaths) fn(root string) func(c dyn.Value) (dyn.Value, error) {
+	return func(c dyn.Value) (dyn.Value, error) {
 		var err error
 
 		// First build a new sync object
 		sync := c.Get("sync")
-		if sync == cv.NilValue {
+		if sync == dyn.NilValue {
 			return c, nil
 		}
 
@@ -77,7 +77,7 @@ func (m *rewriteSyncPaths) fn(root string) func(c cv.Value) (cv.Value, error) {
 		}
 
 		// Then replace the sync object with the new one
-		return c.SetKey("sync", cv.NewValue(out, sync.Location())), nil
+		return c.SetKey("sync", dyn.NewValue(out, sync.Location())), nil
 	}
 }
 

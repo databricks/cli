@@ -8,7 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/internal/bundletest"
-	cv "github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -29,10 +29,10 @@ func TestRewriteSyncPathsRelative(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, cv.NewPath(cv.Key("sync"), cv.Key("include"), cv.Index(0)), "./file.yml")
-	bundletest.SetLocation(b, cv.NewPath(cv.Key("sync"), cv.Key("include"), cv.Index(1)), "./a/file.yml")
-	bundletest.SetLocation(b, cv.NewPath(cv.Key("sync"), cv.Key("exclude"), cv.Index(0)), "./a/b/file.yml")
-	bundletest.SetLocation(b, cv.NewPath(cv.Key("sync"), cv.Key("exclude"), cv.Index(1)), "./a/b/c/file.yml")
+	bundletest.SetLocation(b, dyn.NewPath(dyn.Key("sync"), dyn.Key("include"), dyn.Index(0)), "./file.yml")
+	bundletest.SetLocation(b, dyn.NewPath(dyn.Key("sync"), dyn.Key("include"), dyn.Index(1)), "./a/file.yml")
+	bundletest.SetLocation(b, dyn.NewPath(dyn.Key("sync"), dyn.Key("exclude"), dyn.Index(0)), "./a/b/file.yml")
+	bundletest.SetLocation(b, dyn.NewPath(dyn.Key("sync"), dyn.Key("exclude"), dyn.Index(1)), "./a/b/c/file.yml")
 
 	err := bundle.Apply(context.Background(), b, mutator.RewriteSyncPaths())
 	assert.NoError(t, err)
@@ -60,10 +60,10 @@ func TestRewriteSyncPathsAbsolute(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, cv.NewPath(cv.Key("sync"), cv.Key("include"), cv.Index(0)), "/tmp/dir/file.yml")
-	bundletest.SetLocation(b, cv.NewPath(cv.Key("sync"), cv.Key("include"), cv.Index(1)), "/tmp/dir/a/file.yml")
-	bundletest.SetLocation(b, cv.NewPath(cv.Key("sync"), cv.Key("exclude"), cv.Index(0)), "/tmp/dir/a/b/file.yml")
-	bundletest.SetLocation(b, cv.NewPath(cv.Key("sync"), cv.Key("exclude"), cv.Index(1)), "/tmp/dir/a/b/c/file.yml")
+	bundletest.SetLocation(b, dyn.NewPath(dyn.Key("sync"), dyn.Key("include"), dyn.Index(0)), "/tmp/dir/file.yml")
+	bundletest.SetLocation(b, dyn.NewPath(dyn.Key("sync"), dyn.Key("include"), dyn.Index(1)), "/tmp/dir/a/file.yml")
+	bundletest.SetLocation(b, dyn.NewPath(dyn.Key("sync"), dyn.Key("exclude"), dyn.Index(0)), "/tmp/dir/a/b/file.yml")
+	bundletest.SetLocation(b, dyn.NewPath(dyn.Key("sync"), dyn.Key("exclude"), dyn.Index(1)), "/tmp/dir/a/b/c/file.yml")
 
 	err := bundle.Apply(context.Background(), b, mutator.RewriteSyncPaths())
 	assert.NoError(t, err)
