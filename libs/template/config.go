@@ -154,7 +154,6 @@ func (c *config) skipPrompt(p jsonschema.Property, r *renderer) (bool, error) {
 
 func (c *config) promptOnce(property *jsonschema.Schema, name, defaultVal, description string) error {
 	var userInput string
-	var err error
 	if property.Enum != nil {
 		// List options for the user to select from
 		options, err := property.EnumStringSlice()
@@ -166,6 +165,7 @@ func (c *config) promptOnce(property *jsonschema.Schema, name, defaultVal, descr
 			return err
 		}
 	} else {
+		var err error
 		userInput, err = cmdio.Ask(c.ctx, description, defaultVal)
 		if err != nil {
 			return err
@@ -173,6 +173,7 @@ func (c *config) promptOnce(property *jsonschema.Schema, name, defaultVal, descr
 	}
 
 	// Convert user input string back to a Go value
+	var err error
 	c.values[name], err = property.ParseString(userInput)
 	if err != nil {
 		// Show error and retry if validation fails
