@@ -184,6 +184,8 @@ func (c *cmdIO) Select(items []Tuple, label string) (id string, err error) {
 	return
 }
 
+// Show a selection prompt where the user can pick one of the name/id items.
+// The items are sorted alphabetically by name.
 func Select[V any](ctx context.Context, names map[string]V, label string) (id string, err error) {
 	c := fromContext(ctx)
 	var items []Tuple
@@ -196,6 +198,8 @@ func Select[V any](ctx context.Context, names map[string]V, label string) (id st
 	return c.Select(items, label)
 }
 
+// Show a selection prompt where the user can pick one of the name/id items.
+// The items can appear in a custom order and are not alphabetically sorted.
 func SelectOrdered(ctx context.Context, items []Tuple, label string) (id string, err error) {
 	c := fromContext(ctx)
 	return c.Select(items, label)

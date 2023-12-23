@@ -46,14 +46,18 @@ var nativeTemplates = []nativeTemplate{
 	},
 }
 
+// Return template descriptions for command-line help
 func nativeTemplateDescriptions() string {
 	var lines []string
 	for _, template := range nativeTemplates {
-		lines = append(lines, fmt.Sprintf("- %s: %s", template.name, template.description))
+		if template.name != customTemplate {
+			lines = append(lines, fmt.Sprintf("- %s: %s", template.name, template.description))
+		}
 	}
 	return strings.Join(lines, "\n")
 }
 
+// Return template options for an interactive prompt
 func nativeTemplateOptions() []cmdio.Tuple {
 	names := make([]cmdio.Tuple, 0, len(nativeTemplates))
 	for _, template := range nativeTemplates {
