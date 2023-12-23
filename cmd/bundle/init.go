@@ -47,7 +47,7 @@ var nativeTemplates = []nativeTemplate{
 }
 
 // Return template descriptions for command-line help
-func nativeTemplateDescriptions() string {
+func nativeTemplateHelpDescriptions() string {
 	var lines []string
 	for _, template := range nativeTemplates {
 		if template.name != customTemplate {
@@ -122,7 +122,7 @@ TEMPLATE_PATH optionally specifies which template to use. It can be one of the f
 - a local file system path with a template directory
 - a Git repository URL, e.g. https://github.com/my/repository
 
-See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more information on templates.`, nativeTemplateDescriptions()),
+See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more information on templates.`, nativeTemplateHelpDescriptions()),
 	}
 
 	var configFile string

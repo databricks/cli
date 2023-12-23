@@ -36,10 +36,10 @@ func TestNativeTemplateOptions(t *testing.T) {
 	assert.Equal(t, expected, nativeTemplateOptions())
 }
 
-func TestNativeTemplateDescriptions(t *testing.T) {
+func TestNativeTemplateHelpDescriptions(t *testing.T) {
 	expected := `- default-python: The default Python template for Notebooks / Delta Live Tables / Workflows
 - mlops-stacks: The Databricks MLOps Stacks template (github.com/databricks/mlops-stacks)`
-	assert.Equal(t, expected, nativeTemplateDescriptions())
+	assert.Equal(t, expected, nativeTemplateHelpDescriptions())
 }
 
 func TestGetUrlForNativeTemplate(t *testing.T) {
