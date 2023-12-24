@@ -31,6 +31,7 @@ targets:
     mode: production
     workspace:
       host: {{workspace_host}}
+      root_path: /Shared/.bundle/prod/${bundle.name}
     variables:
       warehouse_id: {{index ((regexp "[^/]+$").FindStringSubmatch .http_path) 0}}
       catalog: {{.catalog}}

@@ -21,7 +21,7 @@
             "default": "",
             "pattern": "^\\w*$",
             "pattern_match_failure_message": "Invalid catalog name.",
-            "description": "\nPlease provide an initial catalog (leave blank if you would not want to use an initial catalog).\ncatalog",
+            "description": "\nPlease provide an initial catalog (leave blank to use the workspace's default catalog).\ncatalog",
             "order": 4
         },
         "schema": {
