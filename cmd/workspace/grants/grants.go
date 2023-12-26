@@ -19,7 +19,7 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "grants",
-		Short: `In Unity Catalog, data is secure by default.`,
+		Short: `Manage privileges granted in Unity Catalog.`,
 		Long: `In Unity Catalog, data is secure by default. Initially, users have no access
   to data in a metastore. Access can be granted by either a metastore admin, the
   owner of an object, or the owner of the catalog or schema that contains the
