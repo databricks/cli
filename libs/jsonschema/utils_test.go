@@ -110,10 +110,10 @@ func TestTemplateFromString(t *testing.T) {
 	assert.EqualError(t, err, "cannot parse string as object of type array. Value of string: \"qrt\"")
 
 	_, err = fromString("abc", IntegerType)
-	assert.EqualError(t, err, "could not parse \"abc\" as a integer: strconv.ParseInt: parsing \"abc\": invalid syntax")
+	assert.EqualError(t, err, "\"abc\" is not a integer")
 
 	_, err = fromString("1.0", IntegerType)
-	assert.EqualError(t, err, "could not parse \"1.0\" as a integer: strconv.ParseInt: parsing \"1.0\": invalid syntax")
+	assert.EqualError(t, err, "\"1.0\" is not a integer")
 
 	_, err = fromString("1.0", "foobar")
 	assert.EqualError(t, err, "unknown json schema type: \"foobar\"")

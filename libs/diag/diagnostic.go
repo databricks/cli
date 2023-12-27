@@ -3,7 +3,7 @@ package diag
 import (
 	"fmt"
 
-	"github.com/databricks/cli/libs/config"
+	"github.com/databricks/cli/libs/dyn"
 )
 
 type Diagnostic struct {
@@ -19,7 +19,7 @@ type Diagnostic struct {
 
 	// Location is a source code location associated with the diagnostic message.
 	// It may be zero if there is no associated location.
-	Location config.Location
+	Location dyn.Location
 }
 
 // Errorf creates a new error diagnostic.

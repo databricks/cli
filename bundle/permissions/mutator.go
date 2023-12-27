@@ -72,60 +72,60 @@ func validate(b *bundle.Bundle) error {
 }
 
 func applyForJobs(ctx context.Context, b *bundle.Bundle) {
-	for _, job := range b.Config.Resources.Jobs {
+	for key, job := range b.Config.Resources.Jobs {
 		job.Permissions = append(job.Permissions, convert(
 			ctx,
 			b.Config.Permissions,
 			job.Permissions,
-			job.Name,
+			key,
 			levelsMap["jobs"],
 		)...)
 	}
 }
 
 func applyForPipelines(ctx context.Context, b *bundle.Bundle) {
-	for _, pipeline := range b.Config.Resources.Pipelines {
+	for key, pipeline := range b.Config.Resources.Pipelines {
 		pipeline.Permissions = append(pipeline.Permissions, convert(
 			ctx,
 			b.Config.Permissions,
 			pipeline.Permissions,
-			pipeline.Name,
+			key,
 			levelsMap["pipelines"],
 		)...)
 	}
 }
 
 func applyForMlExperiments(ctx context.Context, b *bundle.Bundle) {
-	for _, experiment := range b.Config.Resources.Experiments {
+	for key, experiment := range b.Config.Resources.Experiments {
 		experiment.Permissions = append(experiment.Permissions, convert(
 			ctx,
 			b.Config.Permissions,
 			experiment.Permissions,
-			experiment.Name,
+			key,
 			levelsMap["mlflow_experiments"],
 		)...)
 	}
 }
 
 func applyForMlModels(ctx context.Context, b *bundle.Bundle) {
-	for _, model := range b.Config.Resources.Models {
+	for key, model := range b.Config.Resources.Models {
 		model.Permissions = append(model.Permissions, convert(
 			ctx,
 			b.Config.Permissions,
 			model.Permissions,
-			model.Name,
+			key,
 			levelsMap["mlflow_models"],
 		)...)
 	}
 }
 
 func applyForModelServiceEndpoints(ctx context.Context, b *bundle.Bundle) {
-	for _, model := range b.Config.Resources.ModelServingEndpoints {
+	for key, model := range b.Config.Resources.ModelServingEndpoints {
 		model.Permissions = append(model.Permissions, convert(
 			ctx,
 			b.Config.Permissions,
 			model.Permissions,
-			model.Name,
+			key,
 			levelsMap["model_serving_endpoints"],
 		)...)
 	}
