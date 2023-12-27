@@ -41,7 +41,6 @@ func (m *acquire) Apply(ctx context.Context, b *bundle.Bundle) error {
 	}
 
 	err := m.init(b)
-	existError := filer.NoSuchDirectoryError{}
 	if err != nil {
 		return err
 	}
@@ -51,8 +50,12 @@ func (m *acquire) Apply(ctx context.Context, b *bundle.Bundle) error {
 	err = b.Locker.Lock(ctx, force)
 	if err != nil {
 		log.Errorf(ctx, "Failed to acquire deployment lock: %v", err)
+
+		existError := filer.NoSuchDirectoryError{}
 		if errors.As(err, &existError) {
-			return fmt.Errorf("access denied to deployment root (this can indicate a previous deploy was done with a different identity): %s", b.Config.Workspace.RootPath)
+			// If we get a "doesn't exist" error from the API this indicates
+			// we either don't have permissions or the path is invalid.
+			return fmt.Errorf("cannot write to deployment root (this can indicate a previous deploy was done with a different identity): %s", b.Config.Workspace.RootPath)
 		}
 		return err
 	}
