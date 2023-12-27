@@ -199,7 +199,7 @@ func Select[V any](ctx context.Context, names map[string]V, label string) (id st
 }
 
 // Show a selection prompt where the user can pick one of the name/id items.
-// The items can appear in a custom order and are not alphabetically sorted.
+// The items appear in the order specified in the "items" argument.
 func SelectOrdered(ctx context.Context, items []Tuple, label string) (id string, err error) {
 	c := fromContext(ctx)
 	return c.Select(items, label)
