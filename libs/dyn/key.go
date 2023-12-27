@@ -1,4 +1,4 @@
-package config
+package dyn
 
 import (
 	"reflect"
@@ -10,7 +10,7 @@ import (
 // for the structure. If the name is not defined or
 // there is no 'json' tag defined, it returns the field name itself.
 // Second return value is true if the name was defined in 'json' tag.
-func Key(v any, name string) (string, bool) {
+func ConfigKey(v any, name string) (string, bool) {
 	t := reflect.TypeOf(v)
 	if t.Kind() == reflect.Pointer {
 		t = reflect.TypeOf(v).Elem()

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/databricks/cli/libs/config"
+	"github.com/databricks/cli/libs/dyn"
 )
 
 var skipFields = []string{"Format"}
@@ -14,7 +14,7 @@ var skipFields = []string{"Format"}
 // Converts a struct to map. Skips any nil fields.
 // It uses `skipFields` to skip unnecessary fields.
 // Uses `order` to define the order of keys in resulting outout
-func ConvertToMapValue(strct any, order *config.Order, dst map[string]config.Value) (config.Value, error) {
+func ConvertToMapValue(strct any, order *dyn.Order, dst map[string]dyn.Value) (dyn.Value, error) {
 	itemValue := reflect.ValueOf(strct)
 	if itemValue.Kind() == reflect.Pointer {
 		itemValue = itemValue.Elem()
@@ -30,7 +30,7 @@ func ConvertToMapValue(strct any, order *config.Order, dst map[string]config.Val
 		}
 
 		// If the field is not defined as json field, we're skipping it
-		k, isJson := config.Key(strct, f.Name)
+		k, isJson := dyn.ConfigKey(strct, f.Name)
 		if !isJson {
 			continue
 		}
@@ -42,19 +42,19 @@ func ConvertToMapValue(strct any, order *config.Order, dst map[string]config.Val
 			continue
 		}
 
-		ref := config.NilValue
+		ref := dyn.NilValue
 		nv, err := FromTyped(itemValue.Field(i).Interface(), ref)
 		if err != nil {
-			return config.NilValue, err
+			return dyn.NilValue, err
 		}
 
-		if nv.Kind() != config.KindNil {
-			nv.SetLocation(config.Location{Line: order.Get(f.Name)})
+		if nv.Kind() != dyn.KindNil {
+			nv.SetLocation(dyn.Location{Line: order.Get(f.Name)})
 			dst[k] = nv
 		}
 	}
 
-	return config.V(dst), nil
+	return dyn.V(dst), nil
 }
 
 func replaceNonAlphanumeric(r rune) rune {

@@ -10,8 +10,8 @@ import (
 	"github.com/databricks/cli/bundle/config/generate"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/config"
-	"github.com/databricks/cli/libs/config/convert"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
 )
@@ -96,7 +96,7 @@ func NewGenerateJobCommand() *cobra.Command {
 		jobName := fmt.Sprintf("job_%s", convert.NormaliseString(job.Settings.Name))
 		result := map[string]any{
 			"resources": map[string]any{
-				"jobs": map[string]config.Value{
+				"jobs": map[string]dyn.Value{
 					jobName: v,
 				},
 			},

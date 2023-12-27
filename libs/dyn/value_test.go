@@ -52,14 +52,14 @@ func TestValueIsValid(t *testing.T) {
 }
 
 func TestMarshalYAMLNilValue(t *testing.T) {
-	var nilValue = config.NilValue
+	var nilValue = dyn.NilValue
 	v, err := nilValue.MarshalYAML()
 	assert.NoError(t, err)
 	assert.Equal(t, "null", v.(*yaml.Node).Value)
 }
 
 func TestMarshalYAMLIntValue(t *testing.T) {
-	var intValue = config.NewValue(1, config.Location{})
+	var intValue = dyn.NewValue(1, dyn.Location{})
 	v, err := intValue.MarshalYAML()
 	assert.NoError(t, err)
 	assert.Equal(t, "1", v.(*yaml.Node).Value)
@@ -67,7 +67,7 @@ func TestMarshalYAMLIntValue(t *testing.T) {
 }
 
 func TestMarshalYAMLFloatValue(t *testing.T) {
-	var floatValue = config.NewValue(1.0, config.Location{})
+	var floatValue = dyn.NewValue(1.0, dyn.Location{})
 	v, err := floatValue.MarshalYAML()
 	assert.NoError(t, err)
 	assert.Equal(t, "1", v.(*yaml.Node).Value)
@@ -75,7 +75,7 @@ func TestMarshalYAMLFloatValue(t *testing.T) {
 }
 
 func TestMarshalYAMLBoolValue(t *testing.T) {
-	var boolValue = config.NewValue(true, config.Location{})
+	var boolValue = dyn.NewValue(true, dyn.Location{})
 	v, err := boolValue.MarshalYAML()
 	assert.NoError(t, err)
 	assert.Equal(t, "true", v.(*yaml.Node).Value)
@@ -83,7 +83,7 @@ func TestMarshalYAMLBoolValue(t *testing.T) {
 }
 
 func TestMarshalYAMLTimeValue(t *testing.T) {
-	var timeValue = config.NewValue(time.Unix(0, 0), config.Location{})
+	var timeValue = dyn.NewValue(time.Unix(0, 0), dyn.Location{})
 	v, err := timeValue.MarshalYAML()
 	assert.NoError(t, err)
 	assert.Equal(t, "1970-01-01 00:00:00 +0000 UTC", v.(*yaml.Node).Value)
@@ -91,12 +91,12 @@ func TestMarshalYAMLTimeValue(t *testing.T) {
 }
 
 func TestMarshalYAMLSequenceValue(t *testing.T) {
-	var sequenceValue = config.NewValue(
-		[]config.Value{
-			config.NewValue("value1", config.Location{File: "file", Line: 1, Column: 2}),
-			config.NewValue("value2", config.Location{File: "file", Line: 2, Column: 2}),
+	var sequenceValue = dyn.NewValue(
+		[]dyn.Value{
+			dyn.NewValue("value1", dyn.Location{File: "file", Line: 1, Column: 2}),
+			dyn.NewValue("value2", dyn.Location{File: "file", Line: 2, Column: 2}),
 		},
-		config.Location{File: "file", Line: 1, Column: 2},
+		dyn.Location{File: "file", Line: 1, Column: 2},
 	)
 	v, err := sequenceValue.MarshalYAML()
 	assert.NoError(t, err)
@@ -106,7 +106,7 @@ func TestMarshalYAMLSequenceValue(t *testing.T) {
 }
 
 func TestMarshalYAMLStringValue(t *testing.T) {
-	var stringValue = config.NewValue("value", config.Location{})
+	var stringValue = dyn.NewValue("value", dyn.Location{})
 	v, err := stringValue.MarshalYAML()
 	assert.NoError(t, err)
 	assert.Equal(t, "value", v.(*yaml.Node).Value)
@@ -114,13 +114,13 @@ func TestMarshalYAMLStringValue(t *testing.T) {
 }
 
 func TestMarshalYAMLMapValue(t *testing.T) {
-	var mapValue = config.NewValue(
-		map[string]config.Value{
-			"key3": config.NewValue("value3", config.Location{File: "file", Line: 3, Column: 2}),
-			"key2": config.NewValue("value2", config.Location{File: "file", Line: 2, Column: 2}),
-			"key1": config.NewValue("value1", config.Location{File: "file", Line: 1, Column: 2}),
+	var mapValue = dyn.NewValue(
+		map[string]dyn.Value{
+			"key3": dyn.NewValue("value3", dyn.Location{File: "file", Line: 3, Column: 2}),
+			"key2": dyn.NewValue("value2", dyn.Location{File: "file", Line: 2, Column: 2}),
+			"key1": dyn.NewValue("value1", dyn.Location{File: "file", Line: 1, Column: 2}),
 		},
-		config.Location{File: "file", Line: 1, Column: 2},
+		dyn.Location{File: "file", Line: 1, Column: 2},
 	)
 	v, err := mapValue.MarshalYAML()
 	assert.NoError(t, err)
@@ -136,16 +136,16 @@ func TestMarshalYAMLMapValue(t *testing.T) {
 }
 
 func TestMarshalYAMLNestedValues(t *testing.T) {
-	var mapValue = config.NewValue(
-		map[string]config.Value{
-			"key1": config.NewValue(
-				map[string]config.Value{
-					"key2": config.NewValue("value", config.Location{File: "file", Line: 1, Column: 2}),
+	var mapValue = dyn.NewValue(
+		map[string]dyn.Value{
+			"key1": dyn.NewValue(
+				map[string]dyn.Value{
+					"key2": dyn.NewValue("value", dyn.Location{File: "file", Line: 1, Column: 2}),
 				},
-				config.Location{File: "file", Line: 1, Column: 2},
+				dyn.Location{File: "file", Line: 1, Column: 2},
 			),
 		},
-		config.Location{File: "file", Line: 1, Column: 2},
+		dyn.Location{File: "file", Line: 1, Column: 2},
 	)
 	v, err := mapValue.MarshalYAML()
 	assert.NoError(t, err)
