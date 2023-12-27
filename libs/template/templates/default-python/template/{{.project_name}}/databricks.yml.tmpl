@@ -33,6 +33,12 @@ targets:
     workspace:
       host: {{workspace_host}}
       # We always use /Users/{{user_name}} for all resources to make sure we only have a single copy.
+      {{- /*
+      Internal note 2023-12: CLI versions v0.211.0 and before would show an error when using `mode: production`
+      with a path that doesn't say "/Shared". For now, we'll include an extra comment in the template
+      to explain that customers should update if they see this.
+      */}}
+      # If this path results in an error, please make sure you have a recent version of the CLI installed.
       root_path: /Users/{{user_name}}/.bundle/${bundle.name}/${bundle.target}
     run_as:
       {{- if is_service_principal}}
