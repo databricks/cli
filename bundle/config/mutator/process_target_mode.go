@@ -138,7 +138,22 @@ func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUs
 		}
 	}
 
+	if !isPrincipalUsed && !isRunAsSet(r) {
+		return fmt.Errorf("'run_as' must be set for all jobs when using 'mode: production'")
+	}
 	return nil
+}
+
+// Determines whether run_as is explicitly set for all resources.
+// We do this in a best-effort fashion rather than check the top-level
+// 'run_as' field because the latter is not required to be set.
+func isRunAsSet(r config.Resources) bool {
+	for i := range r.Jobs {
+		if r.Jobs[i].RunAs == nil {
+			return false
+		}
+	}
+	return true
 }
 
 func (m *processTargetMode) Apply(ctx context.Context, b *bundle.Bundle) error {
