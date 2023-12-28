@@ -30,7 +30,6 @@ type ResourceJobDeployment struct {
 }
 
 type ResourceJobEmailNotifications struct {
-	AlertOnLastAttempt                 bool     `json:"alert_on_last_attempt,omitempty"`
 	NoAlertForSkippedRuns              bool     `json:"no_alert_for_skipped_runs,omitempty"`
 	OnDurationWarningThresholdExceeded []string `json:"on_duration_warning_threshold_exceeded,omitempty"`
 	OnFailure                          []string `json:"on_failure,omitempty"`
@@ -492,8 +491,6 @@ type ResourceJobTaskDependsOn struct {
 }
 
 type ResourceJobTaskEmailNotifications struct {
-	AlertOnLastAttempt                 bool     `json:"alert_on_last_attempt,omitempty"`
-	NoAlertForSkippedRuns              bool     `json:"no_alert_for_skipped_runs,omitempty"`
 	OnDurationWarningThresholdExceeded []string `json:"on_duration_warning_threshold_exceeded,omitempty"`
 	OnFailure                          []string `json:"on_failure,omitempty"`
 	OnStart                            []string `json:"on_start,omitempty"`
@@ -777,6 +774,29 @@ type ResourceJobTaskSqlTask struct {
 	Query       *ResourceJobTaskSqlTaskQuery     `json:"query,omitempty"`
 }
 
+type ResourceJobTaskWebhookNotificationsOnDurationWarningThresholdExceeded struct {
+	Id string `json:"id,omitempty"`
+}
+
+type ResourceJobTaskWebhookNotificationsOnFailure struct {
+	Id string `json:"id,omitempty"`
+}
+
+type ResourceJobTaskWebhookNotificationsOnStart struct {
+	Id string `json:"id,omitempty"`
+}
+
+type ResourceJobTaskWebhookNotificationsOnSuccess struct {
+	Id string `json:"id,omitempty"`
+}
+
+type ResourceJobTaskWebhookNotifications struct {
+	OnDurationWarningThresholdExceeded []ResourceJobTaskWebhookNotificationsOnDurationWarningThresholdExceeded `json:"on_duration_warning_threshold_exceeded,omitempty"`
+	OnFailure                          []ResourceJobTaskWebhookNotificationsOnFailure                          `json:"on_failure,omitempty"`
+	OnStart                            []ResourceJobTaskWebhookNotificationsOnStart                            `json:"on_start,omitempty"`
+	OnSuccess                          []ResourceJobTaskWebhookNotificationsOnSuccess                          `json:"on_success,omitempty"`
+}
+
 type ResourceJobTask struct {
 	ComputeKey             string                               `json:"compute_key,omitempty"`
 	Description            string                               `json:"description,omitempty"`
@@ -804,6 +824,7 @@ type ResourceJobTask struct {
 	SparkPythonTask        *ResourceJobTaskSparkPythonTask      `json:"spark_python_task,omitempty"`
 	SparkSubmitTask        *ResourceJobTaskSparkSubmitTask      `json:"spark_submit_task,omitempty"`
 	SqlTask                *ResourceJobTaskSqlTask              `json:"sql_task,omitempty"`
+	WebhookNotifications   *ResourceJobTaskWebhookNotifications `json:"webhook_notifications,omitempty"`
 }
 
 type ResourceJobTriggerFileArrival struct {
@@ -818,19 +839,19 @@ type ResourceJobTrigger struct {
 }
 
 type ResourceJobWebhookNotificationsOnDurationWarningThresholdExceeded struct {
-	Id string `json:"id"`
+	Id string `json:"id,omitempty"`
 }
 
 type ResourceJobWebhookNotificationsOnFailure struct {
-	Id string `json:"id"`
+	Id string `json:"id,omitempty"`
 }
 
 type ResourceJobWebhookNotificationsOnStart struct {
-	Id string `json:"id"`
+	Id string `json:"id,omitempty"`
 }
 
 type ResourceJobWebhookNotificationsOnSuccess struct {
-	Id string `json:"id"`
+	Id string `json:"id,omitempty"`
 }
 
 type ResourceJobWebhookNotifications struct {
@@ -843,6 +864,8 @@ type ResourceJobWebhookNotifications struct {
 type ResourceJob struct {
 	AlwaysRunning          bool                             `json:"always_running,omitempty"`
 	ControlRunState        bool                             `json:"control_run_state,omitempty"`
+	Description            string                           `json:"description,omitempty"`
+	EditMode               string                           `json:"edit_mode,omitempty"`
 	ExistingClusterId      string                           `json:"existing_cluster_id,omitempty"`
 	Format                 string                           `json:"format,omitempty"`
 	Id                     string                           `json:"id,omitempty"`

@@ -1,5 +1,45 @@
 # Version changelog
 
+## 0.211.0
+
+CLI:
+ * Upgrade Go SDK to 0.27.0 ([#1064](https://github.com/databricks/cli/pull/1064)).
+ * Skip profile resolution if `DATABRICKS_AUTH_TYPE` is set ([#1068](https://github.com/databricks/cli/pull/1068)).
+ * Do not allow input prompts in Git Bash terminal ([#1069](https://github.com/databricks/cli/pull/1069)).
+ * Added output template for list-secrets command ([#1074](https://github.com/databricks/cli/pull/1074)).
+
+Bundles:
+* Set metadata fields required to enable break-glass UI for jobs ([#880](https://github.com/databricks/cli/pull/880)).
+* Do not prompt for template values in Git Bash ([#1082](https://github.com/databricks/cli/pull/1082)).
+* Tune output of bundle deploy command ([#1047](https://github.com/databricks/cli/pull/1047)).
+
+API Changes:
+ * Changed `databricks connections update` command with new required argument order.
+ * Changed `databricks serving-endpoints update-config` command with new required argument order.
+ * Added `databricks serving-endpoints put` command.
+ * Removed `databricks account network-policy` command group.
+
+OpenAPI commit 63caa3cb0c05045e81d3dcf2451fa990d8670f36 (2023-12-12)
+
+Dependency updates:
+ * Bump github.com/google/uuid from 1.4.0 to 1.5.0 ([#1073](https://github.com/databricks/cli/pull/1073)).
+ * Bump golang.org/x/crypto from 0.16.0 to 0.17.0 ([#1076](https://github.com/databricks/cli/pull/1076)).
+
+## 0.210.3
+
+Bundles:
+ * Improve default template ([#1046](https://github.com/databricks/cli/pull/1046)).
+ * Fix passthrough of pipeline notifications ([#1058](https://github.com/databricks/cli/pull/1058)).
+
+Internal:
+ * Stub out Python virtual environment installation for `labs` commands ([#1057](https://github.com/databricks/cli/pull/1057)).
+ * Upgrade Terraform schema version to v1.31.1 ([#1055](https://github.com/databricks/cli/pull/1055)).
+
+
+Dependency updates:
+ * Bump github.com/hashicorp/hc-install from 0.6.1 to 0.6.2 ([#1054](https://github.com/databricks/cli/pull/1054)).
+ * Bump github.com/databricks/databricks-sdk-go from 0.26.1 to 0.26.2 ([#1053](https://github.com/databricks/cli/pull/1053)).
+
 ## 0.210.2
 
 CLI:

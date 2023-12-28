@@ -32,6 +32,23 @@ func TestLoaderSkipsExistingAuth(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestLoaderSkipsExplicitAuthType(t *testing.T) {
+	cfg := config.Config{
+		Loaders: []config.Loader{
+			ResolveProfileFromHost,
+		},
+		ConfigFile: "testdata/databrickscfg",
+		Host:       "https://default",
+		AuthType:   "azure-cli",
+	}
+
+	err := cfg.EnsureResolved()
+	assert.NoError(t, err)
+	assert.Equal(t, "azure-cli", cfg.AuthType)
+	assert.Empty(t, cfg.Profile)
+	assert.Empty(t, cfg.Token)
+}
+
 func TestLoaderSkipsNonExistingConfigFile(t *testing.T) {
 	cfg := config.Config{
 		Loaders: []config.Loader{

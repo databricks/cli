@@ -1275,7 +1275,10 @@
                           "description": "ID of the job to trigger."
                         },
                         "job_parameters": {
-                          "description": ""
+                          "description": "Job-level parameters used to trigger the job.",
+                          "additionalproperties": {
+                            "description": ""
+                          }
                         }
                       }
                     },
@@ -1414,7 +1417,7 @@
                       "description": "An optional timeout applied to each run of this job task. A value of `0` means no timeout."
                     },
                     "webhook_notifications": {
-                      "description": "A collection of system notification IDs to notify when runs of this job begin or complete.",
+                      "description": "A collection of system notification IDs to notify when runs of this task begin or complete. The default behavior is to not send any system notifications.",
                       "properties": {
                         "on_duration_warning_threshold_exceeded": {
                           "description": "An optional list of system notification IDs to call when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. A maximum of 3 destinations can be specified for the `on_duration_warning_threshold_exceeded` property.",
@@ -1491,7 +1494,7 @@
                 }
               },
               "webhook_notifications": {
-                "description": "A collection of system notification IDs to notify when runs of this job begin or complete.",
+                "description": "A collection of system notification IDs to notify when runs of this task begin or complete. The default behavior is to not send any system notifications.",
                 "properties": {
                   "on_duration_warning_threshold_exceeded": {
                     "description": "An optional list of system notification IDs to call when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. A maximum of 3 destinations can be specified for the `on_duration_warning_threshold_exceeded` property.",
@@ -1550,8 +1553,162 @@
               "config": {
                 "description": "The core config of the serving endpoint.",
                 "properties": {
+                  "auto_capture_config": {
+                    "description": "Configuration for Inference Tables which automatically logs requests and responses to Unity Catalog.",
+                    "properties": {
+                      "catalog_name": {
+                        "description": "The name of the catalog in Unity Catalog. NOTE: On update, you cannot change the catalog name if it was already set."
+                      },
+                      "enabled": {
+                        "description": "If inference tables are enabled or not. NOTE: If you have already disabled payload logging once, you cannot enable again."
+                      },
+                      "schema_name": {
+                        "description": "The name of the schema in Unity Catalog. NOTE: On update, you cannot change the schema name if it was already set."
+                      },
+                      "table_name_prefix": {
+                        "description": "The prefix of the table in Unity Catalog. NOTE: On update, you cannot change the prefix name if it was already set."
+                      }
+                    }
+                  },
+                  "served_entities": {
+                    "description": "A list of served entities for the endpoint to serve. A serving endpoint can have up to 10 served entities.",
+                    "items": {
+                      "description": "",
+                      "properties": {
+                        "entity_name": {
+                          "description": "The name of the entity to be served. The entity may be a model in the Databricks Model Registry, a model in the Unity Catalog (UC),\nor a function of type FEATURE_SPEC in the UC. If it is a UC object, the full name of the object should be given in the form of\n__catalog_name__.__schema_name__.__model_name__.\n"
+                        },
+                        "entity_version": {
+                          "description": "The version of the model in Databricks Model Registry to be served or empty if the entity is a FEATURE_SPEC."
+                        },
+                        "environment_vars": {
+                          "description": "An object containing a set of optional, user-specified environment variable key-value pairs used for serving this entity.\nNote: this is an experimental feature and subject to change. \nExample entity environment variables that refer to Databricks secrets: `{\"OPENAI_API_KEY\": \"{{secrets/my_scope/my_key}}\", \"DATABRICKS_TOKEN\": \"{{secrets/my_scope2/my_key2}}\"}`",
+                          "additionalproperties": {
+                            "description": ""
+                          }
+                        },
+                        "external_model": {
+                          "description": "The external model to be served. NOTE: Only one of external_model and (entity_name, entity_version, workload_size, workload_type, and scale_to_zero_enabled)\ncan be specified with the latter set being used for custom model serving for a Databricks registered model. When an external_model is present, the served\nentities list can only have one served_entity object. For an existing endpoint with external_model, it can not be updated to an endpoint without external_model.\nIf the endpoint is created without external_model, users cannot update it to add external_model later.\n",
+                          "properties": {
+                            "config": {
+                              "description": "The config for the external model, which must match the provider.",
+                              "properties": {
+                                "ai21labs_config": {
+                                  "description": "AI21Labs Config",
+                                  "properties": {
+                                    "ai21labs_api_key": {
+                                      "description": "The Databricks secret key reference for an AI21Labs API key."
+                                    }
+                                  }
+                                },
+                                "anthropic_config": {
+                                  "description": "Anthropic Config",
+                                  "properties": {
+                                    "anthropic_api_key": {
+                                      "description": "The Databricks secret key reference for an Anthropic API key."
+                                    }
+                                  }
+                                },
+                                "aws_bedrock_config": {
+                                  "description": "AWS Bedrock Config",
+                                  "properties": {
+                                    "aws_access_key_id": {
+                                      "description": "The Databricks secret key reference for an AWS Access Key ID with permissions to interact with Bedrock services."
+                                    },
+                                    "aws_region": {
+                                      "description": "The AWS region to use. Bedrock has to be enabled there."
+                                    },
+                                    "aws_secret_access_key": {
+                                      "description": "The Databricks secret key reference for an AWS Secret Access Key paired with the access key ID, with permissions to interact with Bedrock services."
+                                    },
+                                    "bedrock_provider": {
+                                      "description": "The underlying provider in AWS Bedrock. Supported values (case insensitive) include: Anthropic, Cohere, AI21Labs, Amazon."
+                                    }
+                                  }
+                                },
+                                "cohere_config": {
+                                  "description": "Cohere Config",
+                                  "properties": {
+                                    "cohere_api_key": {
+                                      "description": "The Databricks secret key reference for a Cohere API key."
+                                    }
+                                  }
+                                },
+                                "databricks_model_serving_config": {
+                                  "description": "Databricks Model Serving Config",
+                                  "properties": {
+                                    "databricks_api_token": {
+                                      "description": "The Databricks secret key reference for a Databricks API token that corresponds to a user or service\nprincipal with Can Query access to the model serving endpoint pointed to by this external model.\n"
+                                    },
+                                    "databricks_workspace_url": {
+                                      "description": "The URL of the Databricks workspace containing the model serving endpoint pointed to by this external model.\n"
+                                    }
+                                  }
+                                },
+                                "openai_config": {
+                                  "description": "OpenAI Config",
+                                  "properties": {
+                                    "openai_api_base": {
+                                      "description": "This is the base URL for the OpenAI API (default: \"https://api.openai.com/v1\").\nFor Azure OpenAI, this field is required, and is the base URL for the Azure OpenAI API service\nprovided by Azure.\n"
+                                    },
+                                    "openai_api_key": {
+                                      "description": "The Databricks secret key reference for an OpenAI or Azure OpenAI API key."
+                                    },
+                                    "openai_api_type": {
+                                      "description": "This is an optional field to specify the type of OpenAI API to use.\nFor Azure OpenAI, this field is required, and adjust this parameter to represent the preferred security\naccess validation protocol. For access token validation, use azure. For authentication using Azure Active\nDirectory (Azure AD) use, azuread.\n"
+                                    },
+                                    "openai_api_version": {
+                                      "description": "This is an optional field to specify the OpenAI API version.\nFor Azure OpenAI, this field is required, and is the version of the Azure OpenAI service to\nutilize, specified by a date.\n"
+                                    },
+                                    "openai_deployment_name": {
+                                      "description": "This field is only required for Azure OpenAI and is the name of the deployment resource for the\nAzure OpenAI service.\n"
+                                    },
+                                    "openai_organization": {
+                                      "description": "This is an optional field to specify the organization in OpenAI or Azure OpenAI.\n"
+                                    }
+                                  }
+                                },
+                                "palm_config": {
+                                  "description": "PaLM Config",
+                                  "properties": {
+                                    "palm_api_key": {
+                                      "description": "The Databricks secret key reference for a PaLM API key."
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "name": {
+                              "description": "The name of the external model."
+                            },
+                            "provider": {
+                              "description": "The name of the provider for the external model. Currently, the supported providers are 'ai21labs', 'anthropic',\n'aws-bedrock', 'cohere', 'databricks-model-serving', 'openai', and 'palm'.\",\n"
+                            },
+                            "task": {
+                              "description": "The task type of the external model."
+                            }
+                          }
+                        },
+                        "instance_profile_arn": {
+                          "description": "ARN of the instance profile that the served entity uses to access AWS resources."
+                        },
+                        "name": {
+                          "description": "The name of a served entity. It must be unique across an endpoint. A served entity name can consist of alphanumeric characters, dashes, and underscores.\nIf not specified for an external model, this field defaults to external_model.name, with '.' and ':' replaced with '-', and if not specified for other\nentities, it defaults to \u003centity-name\u003e-\u003centity-version\u003e.\n"
+                        },
+                        "scale_to_zero_enabled": {
+                          "description": "Whether the compute resources for the served entity should scale down to zero."
+                        },
+                        "workload_size": {
+                          "description": "The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between.\nA single unit of provisioned concurrency can process one request at a time.\nValid workload sizes are \"Small\" (4 - 4 provisioned concurrency), \"Medium\" (8 - 16 provisioned concurrency), and \"Large\" (16 - 64 provisioned concurrency).\nIf scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0.\n"
+                        },
+                        "workload_type": {
+                          "description": "The workload type of the served entity. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is\n\"CPU\". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others.\nSee the available [GPU types](https://docs.databricks.com/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).\n"
+                        }
+                      }
+                    }
+                  },
                   "served_models": {
-                    "description": "A list of served models for the endpoint to serve. A serving endpoint can have up to 10 served models.",
+                    "description": "(Deprecated, use served_entities instead) A list of served models for the endpoint to serve. A serving endpoint can have up to 10 served models.",
                     "items": {
                       "description": "",
                       "properties": {
@@ -1580,7 +1737,7 @@
                           "description": "The workload size of the served model. The workload size corresponds to a range of provisioned concurrency that the compute will autoscale between.\nA single unit of provisioned concurrency can process one request at a time.\nValid workload sizes are \"Small\" (4 - 4 provisioned concurrency), \"Medium\" (8 - 16 provisioned concurrency), and \"Large\" (16 - 64 provisioned concurrency).\nIf scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size will be 0.\n"
                         },
                         "workload_type": {
-                          "description": "The workload type of the served model. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is\n\"CPU\". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others. See documentation for all\noptions.\n"
+                          "description": "The workload type of the served model. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is\n\"CPU\". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others.\nSee the available [GPU types](https://docs.databricks.com/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).\n"
                         }
                       }
                     }
@@ -1589,7 +1746,7 @@
                     "description": "The traffic config defining how invocations to the serving endpoint should be routed.",
                     "properties": {
                       "routes": {
-                        "description": "The list of routes that define traffic to each served model.",
+                        "description": "The list of routes that define traffic to each served entity.",
                         "items": {
                           "description": "",
                           "properties": {
@@ -1625,6 +1782,23 @@
                     },
                     "user_name": {
                       "description": ""
+                    }
+                  }
+                }
+              },
+              "rate_limits": {
+                "description": "Rate limits to be applied to the serving endpoint. NOTE: only external and foundation model endpoints are supported as of now.",
+                "items": {
+                  "description": "",
+                  "properties": {
+                    "calls": {
+                      "description": "Used to specify how many calls are allowed for a key within the renewal_period."
+                    },
+                    "key": {
+                      "description": "Key field for a serving endpoint rate limit. Currently, only 'user' and 'endpoint' are supported, with 'endpoint' being the default if not specified."
+                    },
+                    "renewal_period": {
+                      "description": "Renewal period field for a serving endpoint rate limit. Currently, only 'minute' is supported."
                     }
                   }
                 }
@@ -3460,7 +3634,10 @@
                                 "description": "ID of the job to trigger."
                               },
                               "job_parameters": {
-                                "description": ""
+                                "description": "Job-level parameters used to trigger the job.",
+                                "additionalproperties": {
+                                  "description": ""
+                                }
                               }
                             }
                           },
@@ -3599,7 +3776,7 @@
                             "description": "An optional timeout applied to each run of this job task. A value of `0` means no timeout."
                           },
                           "webhook_notifications": {
-                            "description": "A collection of system notification IDs to notify when runs of this job begin or complete.",
+                            "description": "A collection of system notification IDs to notify when runs of this task begin or complete. The default behavior is to not send any system notifications.",
                             "properties": {
                               "on_duration_warning_threshold_exceeded": {
                                 "description": "An optional list of system notification IDs to call when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. A maximum of 3 destinations can be specified for the `on_duration_warning_threshold_exceeded` property.",
@@ -3676,7 +3853,7 @@
                       }
                     },
                     "webhook_notifications": {
-                      "description": "A collection of system notification IDs to notify when runs of this job begin or complete.",
+                      "description": "A collection of system notification IDs to notify when runs of this task begin or complete. The default behavior is to not send any system notifications.",
                       "properties": {
                         "on_duration_warning_threshold_exceeded": {
                           "description": "An optional list of system notification IDs to call when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. A maximum of 3 destinations can be specified for the `on_duration_warning_threshold_exceeded` property.",
@@ -3735,8 +3912,162 @@
                     "config": {
                       "description": "The core config of the serving endpoint.",
                       "properties": {
+                        "auto_capture_config": {
+                          "description": "Configuration for Inference Tables which automatically logs requests and responses to Unity Catalog.",
+                          "properties": {
+                            "catalog_name": {
+                              "description": "The name of the catalog in Unity Catalog. NOTE: On update, you cannot change the catalog name if it was already set."
+                            },
+                            "enabled": {
+                              "description": "If inference tables are enabled or not. NOTE: If you have already disabled payload logging once, you cannot enable again."
+                            },
+                            "schema_name": {
+                              "description": "The name of the schema in Unity Catalog. NOTE: On update, you cannot change the schema name if it was already set."
+                            },
+                            "table_name_prefix": {
+                              "description": "The prefix of the table in Unity Catalog. NOTE: On update, you cannot change the prefix name if it was already set."
+                            }
+                          }
+                        },
+                        "served_entities": {
+                          "description": "A list of served entities for the endpoint to serve. A serving endpoint can have up to 10 served entities.",
+                          "items": {
+                            "description": "",
+                            "properties": {
+                              "entity_name": {
+                                "description": "The name of the entity to be served. The entity may be a model in the Databricks Model Registry, a model in the Unity Catalog (UC),\nor a function of type FEATURE_SPEC in the UC. If it is a UC object, the full name of the object should be given in the form of\n__catalog_name__.__schema_name__.__model_name__.\n"
+                              },
+                              "entity_version": {
+                                "description": "The version of the model in Databricks Model Registry to be served or empty if the entity is a FEATURE_SPEC."
+                              },
+                              "environment_vars": {
+                                "description": "An object containing a set of optional, user-specified environment variable key-value pairs used for serving this entity.\nNote: this is an experimental feature and subject to change. \nExample entity environment variables that refer to Databricks secrets: `{\"OPENAI_API_KEY\": \"{{secrets/my_scope/my_key}}\", \"DATABRICKS_TOKEN\": \"{{secrets/my_scope2/my_key2}}\"}`",
+                                "additionalproperties": {
+                                  "description": ""
+                                }
+                              },
+                              "external_model": {
+                                "description": "The external model to be served. NOTE: Only one of external_model and (entity_name, entity_version, workload_size, workload_type, and scale_to_zero_enabled)\ncan be specified with the latter set being used for custom model serving for a Databricks registered model. When an external_model is present, the served\nentities list can only have one served_entity object. For an existing endpoint with external_model, it can not be updated to an endpoint without external_model.\nIf the endpoint is created without external_model, users cannot update it to add external_model later.\n",
+                                "properties": {
+                                  "config": {
+                                    "description": "The config for the external model, which must match the provider.",
+                                    "properties": {
+                                      "ai21labs_config": {
+                                        "description": "AI21Labs Config",
+                                        "properties": {
+                                          "ai21labs_api_key": {
+                                            "description": "The Databricks secret key reference for an AI21Labs API key."
+                                          }
+                                        }
+                                      },
+                                      "anthropic_config": {
+                                        "description": "Anthropic Config",
+                                        "properties": {
+                                          "anthropic_api_key": {
+                                            "description": "The Databricks secret key reference for an Anthropic API key."
+                                          }
+                                        }
+                                      },
+                                      "aws_bedrock_config": {
+                                        "description": "AWS Bedrock Config",
+                                        "properties": {
+                                          "aws_access_key_id": {
+                                            "description": "The Databricks secret key reference for an AWS Access Key ID with permissions to interact with Bedrock services."
+                                          },
+                                          "aws_region": {
+                                            "description": "The AWS region to use. Bedrock has to be enabled there."
+                                          },
+                                          "aws_secret_access_key": {
+                                            "description": "The Databricks secret key reference for an AWS Secret Access Key paired with the access key ID, with permissions to interact with Bedrock services."
+                                          },
+                                          "bedrock_provider": {
+                                            "description": "The underlying provider in AWS Bedrock. Supported values (case insensitive) include: Anthropic, Cohere, AI21Labs, Amazon."
+                                          }
+                                        }
+                                      },
+                                      "cohere_config": {
+                                        "description": "Cohere Config",
+                                        "properties": {
+                                          "cohere_api_key": {
+                                            "description": "The Databricks secret key reference for a Cohere API key."
+                                          }
+                                        }
+                                      },
+                                      "databricks_model_serving_config": {
+                                        "description": "Databricks Model Serving Config",
+                                        "properties": {
+                                          "databricks_api_token": {
+                                            "description": "The Databricks secret key reference for a Databricks API token that corresponds to a user or service\nprincipal with Can Query access to the model serving endpoint pointed to by this external model.\n"
+                                          },
+                                          "databricks_workspace_url": {
+                                            "description": "The URL of the Databricks workspace containing the model serving endpoint pointed to by this external model.\n"
+                                          }
+                                        }
+                                      },
+                                      "openai_config": {
+                                        "description": "OpenAI Config",
+                                        "properties": {
+                                          "openai_api_base": {
+                                            "description": "This is the base URL for the OpenAI API (default: \"https://api.openai.com/v1\").\nFor Azure OpenAI, this field is required, and is the base URL for the Azure OpenAI API service\nprovided by Azure.\n"
+                                          },
+                                          "openai_api_key": {
+                                            "description": "The Databricks secret key reference for an OpenAI or Azure OpenAI API key."
+                                          },
+                                          "openai_api_type": {
+                                            "description": "This is an optional field to specify the type of OpenAI API to use.\nFor Azure OpenAI, this field is required, and adjust this parameter to represent the preferred security\naccess validation protocol. For access token validation, use azure. For authentication using Azure Active\nDirectory (Azure AD) use, azuread.\n"
+                                          },
+                                          "openai_api_version": {
+                                            "description": "This is an optional field to specify the OpenAI API version.\nFor Azure OpenAI, this field is required, and is the version of the Azure OpenAI service to\nutilize, specified by a date.\n"
+                                          },
+                                          "openai_deployment_name": {
+                                            "description": "This field is only required for Azure OpenAI and is the name of the deployment resource for the\nAzure OpenAI service.\n"
+                                          },
+                                          "openai_organization": {
+                                            "description": "This is an optional field to specify the organization in OpenAI or Azure OpenAI.\n"
+                                          }
+                                        }
+                                      },
+                                      "palm_config": {
+                                        "description": "PaLM Config",
+                                        "properties": {
+                                          "palm_api_key": {
+                                            "description": "The Databricks secret key reference for a PaLM API key."
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "name": {
+                                    "description": "The name of the external model."
+                                  },
+                                  "provider": {
+                                    "description": "The name of the provider for the external model. Currently, the supported providers are 'ai21labs', 'anthropic',\n'aws-bedrock', 'cohere', 'databricks-model-serving', 'openai', and 'palm'.\",\n"
+                                  },
+                                  "task": {
+                                    "description": "The task type of the external model."
+                                  }
+                                }
+                              },
+                              "instance_profile_arn": {
+                                "description": "ARN of the instance profile that the served entity uses to access AWS resources."
+                              },
+                              "name": {
+                                "description": "The name of a served entity. It must be unique across an endpoint. A served entity name can consist of alphanumeric characters, dashes, and underscores.\nIf not specified for an external model, this field defaults to external_model.name, with '.' and ':' replaced with '-', and if not specified for other\nentities, it defaults to \u003centity-name\u003e-\u003centity-version\u003e.\n"
+                              },
+                              "scale_to_zero_enabled": {
+                                "description": "Whether the compute resources for the served entity should scale down to zero."
+                              },
+                              "workload_size": {
+                                "description": "The workload size of the served entity. The workload size corresponds to a range of provisioned concurrency that the compute autoscales between.\nA single unit of provisioned concurrency can process one request at a time.\nValid workload sizes are \"Small\" (4 - 4 provisioned concurrency), \"Medium\" (8 - 16 provisioned concurrency), and \"Large\" (16 - 64 provisioned concurrency).\nIf scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size is 0.\n"
+                              },
+                              "workload_type": {
+                                "description": "The workload type of the served entity. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is\n\"CPU\". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others.\nSee the available [GPU types](https://docs.databricks.com/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).\n"
+                              }
+                            }
+                          }
+                        },
                         "served_models": {
-                          "description": "A list of served models for the endpoint to serve. A serving endpoint can have up to 10 served models.",
+                          "description": "(Deprecated, use served_entities instead) A list of served models for the endpoint to serve. A serving endpoint can have up to 10 served models.",
                           "items": {
                             "description": "",
                             "properties": {
@@ -3765,7 +4096,7 @@
                                 "description": "The workload size of the served model. The workload size corresponds to a range of provisioned concurrency that the compute will autoscale between.\nA single unit of provisioned concurrency can process one request at a time.\nValid workload sizes are \"Small\" (4 - 4 provisioned concurrency), \"Medium\" (8 - 16 provisioned concurrency), and \"Large\" (16 - 64 provisioned concurrency).\nIf scale-to-zero is enabled, the lower bound of the provisioned concurrency for each workload size will be 0.\n"
                               },
                               "workload_type": {
-                                "description": "The workload type of the served model. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is\n\"CPU\". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others. See documentation for all\noptions.\n"
+                                "description": "The workload type of the served model. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is\n\"CPU\". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others.\nSee the available [GPU types](https://docs.databricks.com/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).\n"
                               }
                             }
                           }
@@ -3774,7 +4105,7 @@
                           "description": "The traffic config defining how invocations to the serving endpoint should be routed.",
                           "properties": {
                             "routes": {
-                              "description": "The list of routes that define traffic to each served model.",
+                              "description": "The list of routes that define traffic to each served entity.",
                               "items": {
                                 "description": "",
                                 "properties": {
@@ -3810,6 +4141,23 @@
                           },
                           "user_name": {
                             "description": ""
+                          }
+                        }
+                      }
+                    },
+                    "rate_limits": {
+                      "description": "Rate limits to be applied to the serving endpoint. NOTE: only external and foundation model endpoints are supported as of now.",
+                      "items": {
+                        "description": "",
+                        "properties": {
+                          "calls": {
+                            "description": "Used to specify how many calls are allowed for a key within the renewal_period."
+                          },
+                          "key": {
+                            "description": "Key field for a serving endpoint rate limit. Currently, only 'user' and 'endpoint' are supported, with 'endpoint' being the default if not specified."
+                          },
+                          "renewal_period": {
+                            "description": "Renewal period field for a serving endpoint rate limit. Currently, only 'minute' is supported."
                           }
                         }
                       }
