@@ -64,9 +64,6 @@ func newCreate() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -80,7 +77,6 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
 		}
 
 		response, err := a.Metastores.Create(ctx, createReq)
@@ -130,7 +126,10 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a metastore.`
 	cmd.Long = `Delete a metastore.
   
-  Deletes a Unity Catalog metastore for an account, both specified by ID.`
+  Deletes a Unity Catalog metastore for an account, both specified by ID.
+
+  Arguments:
+    METASTORE_ID: Unity Catalog metastore ID`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -191,7 +190,10 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get a metastore.`
 	cmd.Long = `Get a metastore.
   
-  Gets a Unity Catalog metastore from an account, both specified by ID.`
+  Gets a Unity Catalog metastore from an account, both specified by ID.
+
+  Arguments:
+    METASTORE_ID: Unity Catalog metastore ID`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -255,7 +257,7 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		response, err := a.Metastores.List(ctx)
+		response, err := a.Metastores.ListAll(ctx)
 		if err != nil {
 			return err
 		}
@@ -304,7 +306,10 @@ func newUpdate() *cobra.Command {
 	cmd.Short = `Update a metastore.`
 	cmd.Long = `Update a metastore.
   
-  Updates an existing Unity Catalog metastore.`
+  Updates an existing Unity Catalog metastore.
+
+  Arguments:
+    METASTORE_ID: Unity Catalog metastore ID`
 
 	cmd.Annotations = make(map[string]string)
 

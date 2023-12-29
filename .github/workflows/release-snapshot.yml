@@ -13,32 +13,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository and submodules
-        uses: actions/checkout@v3
-
-      - name: Unshallow
-        run: git fetch --prune --unshallow
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
       - name: Setup Go
-        id: go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
-          go-version: 1.19.5
-
-      - name: Locate cache paths
-        id: cache
-        run: |
-          echo "GOMODCACHE=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
-          echo "GOCACHE=$(go env GOCACHE)" >> $GITHUB_OUTPUT
-
-      # Note: use custom caching because below performs a cross platform build
-      # through goreleaser and don't want to share a cache with the test builds.
-      - name: Setup caching
-        uses: actions/cache@v3
-        with:
-          path: |
-            ${{ steps.cache.outputs.GOMODCACHE }}
-            ${{ steps.cache.outputs.GOCACHE }}
-          key: release-${{ runner.os }}-go-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', '.goreleaser.yaml') }}
+          go-version: 1.21.0
 
       - name: Hide snapshot tag to outsmart GoReleaser
         run: git tag -d snapshot || true
@@ -73,7 +56,7 @@ jobs:
       - name: Update snapshot tag
 
         # Snapshot release may only be updated for commits to the main branch.
-        # if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main'
 
         run: |
           git tag snapshot
@@ -82,7 +65,7 @@ jobs:
       - name: Update snapshot release
 
         # Snapshot release may only be updated for commits to the main branch.
-        # if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main'
 
         uses: softprops/action-gh-release@v1
         with:

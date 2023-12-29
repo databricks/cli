@@ -3,10 +3,10 @@ package mutator
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/variable"
+	"github.com/databricks/cli/libs/env"
 )
 
 const bundleVarPrefix = "BUNDLE_VAR_"
@@ -21,7 +21,7 @@ func (m *setVariables) Name() string {
 	return "SetVariables"
 }
 
-func setVariable(v *variable.Variable, name string) error {
+func setVariable(ctx context.Context, v *variable.Variable, name string) error {
 	// case: variable already has value initialized, so skip
 	if v.HasValue() {
 		return nil
@@ -29,7 +29,7 @@ func setVariable(v *variable.Variable, name string) error {
 
 	// case: read and set variable value from process environment
 	envVarName := bundleVarPrefix + name
-	if val, ok := os.LookupEnv(envVarName); ok {
+	if val, ok := env.Lookup(ctx, envVarName); ok {
 		err := v.Set(val)
 		if err != nil {
 			return fmt.Errorf(`failed to assign value "%s" to variable %s from environment variable %s with error: %w`, val, name, envVarName, err)
@@ -54,7 +54,7 @@ func setVariable(v *variable.Variable, name string) error {
 
 func (m *setVariables) Apply(ctx context.Context, b *bundle.Bundle) error {
 	for name, variable := range b.Config.Variables {
-		err := setVariable(variable, name)
+		err := setVariable(ctx, variable, name)
 		if err != nil {
 			return err
 		}

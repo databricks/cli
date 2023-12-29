@@ -12,6 +12,8 @@ import (
 
 const gitIgnoreFileName = ".gitignore"
 
+var GitDirectoryName = ".git"
+
 // Repository represents a Git repository or a directory
 // that could later be initialized as Git repository.
 type Repository struct {
@@ -38,14 +40,14 @@ type Repository struct {
 	config *config
 }
 
-// Root returns the repository root.
+// Root returns the absolute path to the repository root.
 func (r *Repository) Root() string {
 	return r.rootPath
 }
 
 func (r *Repository) CurrentBranch() (string, error) {
 	// load .git/HEAD
-	ref, err := LoadReferenceFile(filepath.Join(r.rootPath, ".git", "HEAD"))
+	ref, err := LoadReferenceFile(filepath.Join(r.rootPath, GitDirectoryName, "HEAD"))
 	if err != nil {
 		return "", err
 	}
@@ -62,7 +64,7 @@ func (r *Repository) CurrentBranch() (string, error) {
 
 func (r *Repository) LatestCommit() (string, error) {
 	// load .git/HEAD
-	ref, err := LoadReferenceFile(filepath.Join(r.rootPath, ".git", "HEAD"))
+	ref, err := LoadReferenceFile(filepath.Join(r.rootPath, GitDirectoryName, "HEAD"))
 	if err != nil {
 		return "", err
 	}
@@ -81,7 +83,7 @@ func (r *Repository) LatestCommit() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	branchHeadRef, err := LoadReferenceFile(filepath.Join(r.rootPath, ".git", branchHeadPath))
+	branchHeadRef, err := LoadReferenceFile(filepath.Join(r.rootPath, GitDirectoryName, branchHeadPath))
 	if err != nil {
 		return "", err
 	}
@@ -158,6 +160,11 @@ func (r *Repository) Ignore(relPath string) (bool, error) {
 		trailingSlash = "/"
 	}
 
+	// Never ignore the root path (an unnamed path)
+	if len(parts) == 1 && parts[0] == "." {
+		return false, nil
+	}
+
 	// Walk over path prefixes to check applicable gitignore files.
 	for i := range parts {
 		prefix := path.Clean(strings.Join(parts[:i], "/"))
@@ -186,7 +193,7 @@ func NewRepository(path string) (*Repository, error) {
 	}
 
 	real := true
-	rootPath, err := folders.FindDirWithLeaf(path, ".git")
+	rootPath, err := folders.FindDirWithLeaf(path, GitDirectoryName)
 	if err != nil {
 		if !os.IsNotExist(err) {
 			return nil, err

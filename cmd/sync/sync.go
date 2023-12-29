@@ -13,7 +13,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/sync"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/spf13/cobra"
 )
 
@@ -30,14 +29,21 @@ func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, args []string, b *
 		return nil, fmt.Errorf("SRC and DST are not configurable in the context of a bundle")
 	}
 
-	cacheDir, err := b.CacheDir()
+	cacheDir, err := b.CacheDir(cmd.Context())
 	if err != nil {
 		return nil, fmt.Errorf("cannot get bundle cache directory: %w", err)
 	}
 
+	includes, err := b.GetSyncIncludePatterns(cmd.Context())
+	if err != nil {
+		return nil, fmt.Errorf("cannot get list of sync includes: %w", err)
+	}
+
 	opts := sync.SyncOptions{
 		LocalPath:    b.Config.Path,
-		RemotePath:   b.Config.Workspace.FilesPath,
+		RemotePath:   b.Config.Workspace.FilePath,
+		Include:      includes,
+		Exclude:      b.Config.Sync.Exclude,
 		Full:         f.full,
 		PollInterval: f.interval,
 
@@ -63,16 +69,17 @@ func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*syn
 		// The sync code will automatically create this directory if it doesn't
 		// exist and add it to the `.gitignore` file in the root.
 		SnapshotBasePath: filepath.Join(args[0], ".databricks"),
-		WorkspaceClient:  databricks.Must(databricks.NewWorkspaceClient()),
+		WorkspaceClient:  root.WorkspaceClient(cmd.Context()),
 	}
 	return &opts, nil
 }
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "sync [flags] SRC DST",
-		Short: "Synchronize a local directory to a workspace directory",
-		Args:  cobra.MaximumNArgs(2),
+		Use:     "sync [flags] SRC DST",
+		Short:   "Synchronize a local directory to a workspace directory",
+		Args:    cobra.MaximumNArgs(2),
+		GroupID: "development",
 	}
 
 	f := syncFlags{
@@ -83,6 +90,13 @@ func New() *cobra.Command {
 	cmd.Flags().BoolVar(&f.watch, "watch", false, "watch local file system for changes")
 	cmd.Flags().Var(&f.output, "output", "type of output format")
 
+	// Wrapper for [root.MustWorkspaceClient] that disables loading authentication configuration from a bundle.
+	mustWorkspaceClient := func(cmd *cobra.Command, args []string) error {
+		cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
+		return root.MustWorkspaceClient(cmd, args)
+	}
+
+	cmd.PreRunE = mustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		var opts *sync.SyncOptions
 		var err error
@@ -142,7 +156,9 @@ func New() *cobra.Command {
 	}
 
 	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		err := root.TryConfigureBundle(cmd, args)
+		cmd.SetContext(root.SkipPrompt(cmd.Context()))
+
+		err := mustWorkspaceClient(cmd, args)
 		if err != nil {
 			return nil, cobra.ShellCompDirectiveError
 		}
@@ -158,10 +174,7 @@ func New() *cobra.Command {
 		case 0:
 			return nil, cobra.ShellCompDirectiveFilterDirs
 		case 1:
-			wsc, err := databricks.NewWorkspaceClient()
-			if err != nil {
-				return nil, cobra.ShellCompDirectiveError
-			}
+			wsc := root.WorkspaceClient(cmd.Context())
 			return completeRemotePath(cmd.Context(), wsc, toComplete)
 		default:
 			return nil, cobra.ShellCompDirectiveNoFileComp

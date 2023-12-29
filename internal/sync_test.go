@@ -75,7 +75,7 @@ func setupSyncTest(t *testing.T, args ...string) *syncTest {
 
 	w := databricks.Must(databricks.NewWorkspaceClient())
 	localRoot := t.TempDir()
-	remoteRoot := temporaryWorkspaceDir(t, w)
+	remoteRoot := TemporaryWorkspaceDir(t, w)
 	f, err := filer.NewWorkspaceFilesClient(w, remoteRoot)
 	require.NoError(t, err)
 
@@ -159,7 +159,7 @@ func (a *syncTest) remoteFileContent(ctx context.Context, relativePath string, e
 
 	var res []byte
 	a.c.Eventually(func() bool {
-		err = apiClient.Do(ctx, http.MethodGet, urlPath, nil, &res)
+		err = apiClient.Do(ctx, http.MethodGet, urlPath, nil, nil, &res)
 		require.NoError(a.t, err)
 		actualContent := string(res)
 		return actualContent == expectedContent
@@ -222,10 +222,10 @@ func (a *syncTest) snapshotContains(files []string) {
 	assert.Equal(a.t, s.Host, a.w.Config.Host)
 	assert.Equal(a.t, s.RemotePath, a.remoteRoot)
 	for _, filePath := range files {
-		_, ok := s.LastUpdatedTimes[filePath]
-		assert.True(a.t, ok, fmt.Sprintf("%s not in snapshot file: %v", filePath, s.LastUpdatedTimes))
+		_, ok := s.LastModifiedTimes[filePath]
+		assert.True(a.t, ok, fmt.Sprintf("%s not in snapshot file: %v", filePath, s.LastModifiedTimes))
 	}
-	assert.Equal(a.t, len(files), len(s.LastUpdatedTimes))
+	assert.Equal(a.t, len(files), len(s.LastModifiedTimes))
 }
 
 func TestAccSyncFullFileSync(t *testing.T) {

@@ -11,3 +11,5 @@ resources:
           python_wheel_task:
             package_name: "my_test_code"
             entry_point: "run"
+          libraries:
+          - whl: ./dist/*.whl

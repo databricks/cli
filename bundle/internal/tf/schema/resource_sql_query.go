@@ -45,9 +45,9 @@ type ResourceSqlQueryParameterDatetimesecRange struct {
 }
 
 type ResourceSqlQueryParameterEnumMultiple struct {
-	Prefix    string `json:"prefix"`
+	Prefix    string `json:"prefix,omitempty"`
 	Separator string `json:"separator"`
-	Suffix    string `json:"suffix"`
+	Suffix    string `json:"suffix,omitempty"`
 }
 
 type ResourceSqlQueryParameterEnum struct {
@@ -62,9 +62,9 @@ type ResourceSqlQueryParameterNumber struct {
 }
 
 type ResourceSqlQueryParameterQueryMultiple struct {
-	Prefix    string `json:"prefix"`
+	Prefix    string `json:"prefix,omitempty"`
 	Separator string `json:"separator"`
-	Suffix    string `json:"suffix"`
+	Suffix    string `json:"suffix,omitempty"`
 }
 
 type ResourceSqlQueryParameterQuery struct {
@@ -118,6 +118,7 @@ type ResourceSqlQuerySchedule struct {
 }
 
 type ResourceSqlQuery struct {
+	CreatedAt    string                      `json:"created_at,omitempty"`
 	DataSourceId string                      `json:"data_source_id"`
 	Description  string                      `json:"description,omitempty"`
 	Id           string                      `json:"id,omitempty"`
@@ -126,6 +127,7 @@ type ResourceSqlQuery struct {
 	Query        string                      `json:"query"`
 	RunAsRole    string                      `json:"run_as_role,omitempty"`
 	Tags         []string                    `json:"tags,omitempty"`
+	UpdatedAt    string                      `json:"updated_at,omitempty"`
 	Parameter    []ResourceSqlQueryParameter `json:"parameter,omitempty"`
 	Schedule     *ResourceSqlQuerySchedule   `json:"schedule,omitempty"`
 }

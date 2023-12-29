@@ -5,31 +5,15 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"path/filepath"
-	"strings"
 	"sync"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 	"gopkg.in/ini.v1"
 )
-
-func getDatabricksCfg() (*ini.File, error) {
-	configFile := os.Getenv("DATABRICKS_CONFIG_FILE")
-	if configFile == "" {
-		configFile = "~/.databrickscfg"
-	}
-	if strings.HasPrefix(configFile, "~") {
-		homedir, err := os.UserHomeDir()
-		if err != nil {
-			return nil, fmt.Errorf("cannot find homedir: %w", err)
-		}
-		configFile = filepath.Join(homedir, configFile[1:])
-	}
-	return ini.Load(configFile)
-}
 
 type profileMetadata struct {
 	Name      string `json:"name"`
@@ -111,10 +95,12 @@ func newProfilesCommand() *cobra.Command {
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		var profiles []*profileMetadata
-		iniFile, err := getDatabricksCfg()
+		iniFile, err := databrickscfg.Get(cmd.Context())
 		if os.IsNotExist(err) {
 			// return empty list for non-configured machines
-			iniFile = ini.Empty()
+			iniFile = &config.File{
+				File: &ini.File{},
+			}
 		} else if err != nil {
 			return fmt.Errorf("cannot parse config file: %w", err)
 		}

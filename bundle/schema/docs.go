@@ -23,68 +23,67 @@ type Docs struct {
 //go:embed docs/bundle_descriptions.json
 var bundleDocs []byte
 
-func BundleDocs(openapiSpecPath string) (*Docs, error) {
-	docs, err := initializeBundleDocs()
-	if err != nil {
-		return nil, err
+func (docs *Docs) refreshTargetsDocs() error {
+	targetsDocs, ok := docs.Properties["targets"]
+	if !ok || targetsDocs.AdditionalProperties == nil ||
+		targetsDocs.AdditionalProperties.Properties == nil {
+		return fmt.Errorf("invalid targets descriptions")
 	}
-	if openapiSpecPath != "" {
-		openapiSpec, err := os.ReadFile(openapiSpecPath)
-		if err != nil {
-			return nil, err
-		}
-		spec := &openapi.Specification{}
-		err = json.Unmarshal(openapiSpec, spec)
-		if err != nil {
-			return nil, err
-		}
-		openapiReader := &OpenapiReader{
-			OpenapiSpec: spec,
-			Memo:        make(map[string]*jsonschema.Schema),
-		}
-		resourcesDocs, err := openapiReader.ResourcesDocs()
-		if err != nil {
-			return nil, err
-		}
-		resourceSchema, err := New(reflect.TypeOf(config.Resources{}), resourcesDocs)
-		if err != nil {
-			return nil, err
-		}
-		docs.Properties["resources"] = schemaToDocs(resourceSchema)
-	}
-	docs.refreshEnvironmentsDocs()
-	return docs, nil
-}
-
-func (docs *Docs) refreshEnvironmentsDocs() error {
-	environmentsDocs, ok := docs.Properties["environments"]
-	if !ok || environmentsDocs.AdditionalProperties == nil ||
-		environmentsDocs.AdditionalProperties.Properties == nil {
-		return fmt.Errorf("invalid environments descriptions")
-	}
-	environmentProperties := environmentsDocs.AdditionalProperties.Properties
+	targetProperties := targetsDocs.AdditionalProperties.Properties
 	propertiesToCopy := []string{"artifacts", "bundle", "resources", "workspace"}
 	for _, p := range propertiesToCopy {
-		environmentProperties[p] = docs.Properties[p]
+		targetProperties[p] = docs.Properties[p]
 	}
 	return nil
 }
 
-func initializeBundleDocs() (*Docs, error) {
-	// load embedded descriptions
+func LoadBundleDescriptions() (*Docs, error) {
 	embedded := Docs{}
 	err := json.Unmarshal(bundleDocs, &embedded)
+	return &embedded, err
+}
+
+func UpdateBundleDescriptions(openapiSpecPath string) (*Docs, error) {
+	embedded, err := LoadBundleDescriptions()
 	if err != nil {
 		return nil, err
 	}
-	// generate schema with the embedded descriptions
-	schema, err := New(reflect.TypeOf(config.Root{}), &embedded)
+
+	// Generate schema from the embedded descriptions, and convert it back to docs.
+	// This creates empty descriptions for any properties that were missing in the
+	// embedded descriptions.
+	schema, err := New(reflect.TypeOf(config.Root{}), embedded)
 	if err != nil {
 		return nil, err
 	}
-	// converting the schema back to docs. This creates empty descriptions
-	// for any properties that were missing in the embedded descriptions
 	docs := schemaToDocs(schema)
+
+	// Load the Databricks OpenAPI spec
+	openapiSpec, err := os.ReadFile(openapiSpecPath)
+	if err != nil {
+		return nil, err
+	}
+	spec := &openapi.Specification{}
+	err = json.Unmarshal(openapiSpec, spec)
+	if err != nil {
+		return nil, err
+	}
+	openapiReader := &OpenapiReader{
+		OpenapiSpec: spec,
+		Memo:        make(map[string]*jsonschema.Schema),
+	}
+
+	// Generate descriptions for the "resources" field
+	resourcesDocs, err := openapiReader.ResourcesDocs()
+	if err != nil {
+		return nil, err
+	}
+	resourceSchema, err := New(reflect.TypeOf(config.Resources{}), resourcesDocs)
+	if err != nil {
+		return nil, err
+	}
+	docs.Properties["resources"] = schemaToDocs(resourceSchema)
+	docs.refreshTargetsDocs()
 	return docs, nil
 }
 

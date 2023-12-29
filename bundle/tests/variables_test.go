@@ -34,10 +34,10 @@ func TestVariablesLoadingFailsWhenRequiredVariableIsNotSpecified(t *testing.T) {
 	assert.ErrorContains(t, err, "no value assigned to required variable b. Assignment can be done through the \"--var\" flag or by setting the BUNDLE_VAR_b environment variable")
 }
 
-func TestVariablesEnvironmentsBlockOverride(t *testing.T) {
+func TestVariablesTargetsBlockOverride(t *testing.T) {
 	b := load(t, "./variables/env_overrides")
 	err := bundle.Apply(context.Background(), b, bundle.Seq(
-		mutator.SelectEnvironment("env-with-single-variable-override"),
+		mutator.SelectTarget("env-with-single-variable-override"),
 		mutator.SetVariables(),
 		interpolation.Interpolate(
 			interpolation.IncludeLookupsInPath(variable.VariableReferencePrefix),
@@ -46,10 +46,10 @@ func TestVariablesEnvironmentsBlockOverride(t *testing.T) {
 	assert.Equal(t, "default-a dev-b", b.Config.Workspace.Profile)
 }
 
-func TestVariablesEnvironmentsBlockOverrideForMultipleVariables(t *testing.T) {
+func TestVariablesTargetsBlockOverrideForMultipleVariables(t *testing.T) {
 	b := load(t, "./variables/env_overrides")
 	err := bundle.Apply(context.Background(), b, bundle.Seq(
-		mutator.SelectEnvironment("env-with-two-variable-overrides"),
+		mutator.SelectTarget("env-with-two-variable-overrides"),
 		mutator.SetVariables(),
 		interpolation.Interpolate(
 			interpolation.IncludeLookupsInPath(variable.VariableReferencePrefix),
@@ -58,11 +58,11 @@ func TestVariablesEnvironmentsBlockOverrideForMultipleVariables(t *testing.T) {
 	assert.Equal(t, "prod-a prod-b", b.Config.Workspace.Profile)
 }
 
-func TestVariablesEnvironmentsBlockOverrideWithProcessEnvVars(t *testing.T) {
+func TestVariablesTargetsBlockOverrideWithProcessEnvVars(t *testing.T) {
 	t.Setenv("BUNDLE_VAR_b", "env-var-b")
 	b := load(t, "./variables/env_overrides")
 	err := bundle.Apply(context.Background(), b, bundle.Seq(
-		mutator.SelectEnvironment("env-with-two-variable-overrides"),
+		mutator.SelectTarget("env-with-two-variable-overrides"),
 		mutator.SetVariables(),
 		interpolation.Interpolate(
 			interpolation.IncludeLookupsInPath(variable.VariableReferencePrefix),
@@ -71,10 +71,10 @@ func TestVariablesEnvironmentsBlockOverrideWithProcessEnvVars(t *testing.T) {
 	assert.Equal(t, "prod-a env-var-b", b.Config.Workspace.Profile)
 }
 
-func TestVariablesEnvironmentsBlockOverrideWithMissingVariables(t *testing.T) {
+func TestVariablesTargetsBlockOverrideWithMissingVariables(t *testing.T) {
 	b := load(t, "./variables/env_overrides")
 	err := bundle.Apply(context.Background(), b, bundle.Seq(
-		mutator.SelectEnvironment("env-missing-a-required-variable-assignment"),
+		mutator.SelectTarget("env-missing-a-required-variable-assignment"),
 		mutator.SetVariables(),
 		interpolation.Interpolate(
 			interpolation.IncludeLookupsInPath(variable.VariableReferencePrefix),
@@ -82,13 +82,25 @@ func TestVariablesEnvironmentsBlockOverrideWithMissingVariables(t *testing.T) {
 	assert.ErrorContains(t, err, "no value assigned to required variable b. Assignment can be done through the \"--var\" flag or by setting the BUNDLE_VAR_b environment variable")
 }
 
-func TestVariablesEnvironmentsBlockOverrideWithUndefinedVariables(t *testing.T) {
+func TestVariablesTargetsBlockOverrideWithUndefinedVariables(t *testing.T) {
 	b := load(t, "./variables/env_overrides")
 	err := bundle.Apply(context.Background(), b, bundle.Seq(
-		mutator.SelectEnvironment("env-using-an-undefined-variable"),
+		mutator.SelectTarget("env-using-an-undefined-variable"),
 		mutator.SetVariables(),
 		interpolation.Interpolate(
 			interpolation.IncludeLookupsInPath(variable.VariableReferencePrefix),
 		)))
 	assert.ErrorContains(t, err, "variable c is not defined but is assigned a value")
+}
+
+func TestVariablesWithoutDefinition(t *testing.T) {
+	t.Setenv("BUNDLE_VAR_a", "foo")
+	t.Setenv("BUNDLE_VAR_b", "bar")
+	b := load(t, "./variables/without_definition")
+	err := bundle.Apply(context.Background(), b, mutator.SetVariables())
+	require.NoError(t, err)
+	require.True(t, b.Config.Variables["a"].HasValue())
+	require.True(t, b.Config.Variables["b"].HasValue())
+	assert.Equal(t, "foo", *b.Config.Variables["a"].Value)
+	assert.Equal(t, "bar", *b.Config.Variables["b"].Value)
 }

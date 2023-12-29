@@ -20,3 +20,15 @@ func TestInterpolation(t *testing.T) {
 	assert.Equal(t, "foo bar", b.Config.Bundle.Name)
 	assert.Equal(t, "foo bar | bar", b.Config.Resources.Jobs["my_job"].Name)
 }
+
+func TestInterpolationWithTarget(t *testing.T) {
+	b := loadTarget(t, "./interpolation_target", "development")
+	err := bundle.Apply(context.Background(), b, interpolation.Interpolate(
+		interpolation.IncludeLookupsInPath("bundle"),
+		interpolation.IncludeLookupsInPath("workspace"),
+	))
+	require.NoError(t, err)
+	assert.Equal(t, "foo bar", b.Config.Bundle.Name)
+	assert.Equal(t, "foo bar | bar | development | development", b.Config.Resources.Jobs["my_job"].Name)
+
+}

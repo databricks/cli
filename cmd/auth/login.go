@@ -2,15 +2,16 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/spf13/cobra"
 )
 
@@ -27,6 +28,8 @@ func configureHost(ctx context.Context, persistentAuth *auth.PersistentAuth, arg
 	persistentAuth.Host = host
 	return nil
 }
+
+const minimalDbConnectVersion = "13.1"
 
 func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 	cmd := &cobra.Command{
@@ -48,7 +51,7 @@ func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 		profileFlag := cmd.Flag("profile")
 		if profileFlag != nil && profileFlag.Value.String() != "" {
 			profileName = profileFlag.Value.String()
-		} else {
+		} else if cmdio.IsInTTY(ctx) {
 			prompt := cmdio.Prompt(ctx)
 			prompt.Label = "Databricks Profile Name"
 			prompt.Default = persistentAuth.ProfileName()
@@ -60,19 +63,9 @@ func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 			profileName = profile
 		}
 
-		// If the chosen profile has a hostname and the user hasn't specified a host, infer the host from the profile.
-		_, profiles, err := databrickscfg.LoadProfiles(databrickscfg.DefaultPath, func(p databrickscfg.Profile) bool {
-			return p.Name == profileName
-		})
+		err := setHost(ctx, profileName, persistentAuth, args)
 		if err != nil {
 			return err
-		}
-		if persistentAuth.Host == "" {
-			if len(profiles) > 0 && profiles[0].Host != "" {
-				persistentAuth.Host = profiles[0].Host
-			} else {
-				configureHost(ctx, persistentAuth, args, 0)
-			}
 		}
 		defer persistentAuth.Close()
 
@@ -105,30 +98,50 @@ func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 				return err
 			}
 			ctx := cmd.Context()
-
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "Loading list of clusters to select from"
-			names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load clusters list. Original error: %w", err)
-			}
-			clusterId, err := cmdio.Select(ctx, names, "Choose cluster")
+			clusterID, err := cfgpickers.AskForCluster(ctx, w,
+				cfgpickers.WithDatabricksConnect(minimalDbConnectVersion))
 			if err != nil {
 				return err
 			}
-			cfg.ClusterID = clusterId
+			cfg.ClusterID = clusterID
 		}
 
-		cfg.Profile = profileName
-		err = databrickscfg.SaveToProfile(ctx, &cfg)
-		if err != nil {
-			return err
+		if profileName != "" {
+			err = databrickscfg.SaveToProfile(ctx, &config.Config{
+				Profile:   profileName,
+				Host:      cfg.Host,
+				AuthType:  cfg.AuthType,
+				AccountID: cfg.AccountID,
+				ClusterID: cfg.ClusterID,
+			})
+			if err != nil {
+				return err
+			}
+
+			cmdio.LogString(ctx, fmt.Sprintf("Profile %s was successfully saved", profileName))
 		}
 
-		cmdio.LogString(ctx, fmt.Sprintf("Profile %s was successfully saved", profileName))
 		return nil
 	}
 
 	return cmd
+}
+
+func setHost(ctx context.Context, profileName string, persistentAuth *auth.PersistentAuth, args []string) error {
+	// If the chosen profile has a hostname and the user hasn't specified a host, infer the host from the profile.
+	_, profiles, err := databrickscfg.LoadProfiles(ctx, func(p databrickscfg.Profile) bool {
+		return p.Name == profileName
+	})
+	// Tolerate ErrNoConfiguration here, as we will write out a configuration as part of the login flow.
+	if err != nil && !errors.Is(err, databrickscfg.ErrNoConfiguration) {
+		return err
+	}
+	if persistentAuth.Host == "" {
+		if len(profiles) > 0 && profiles[0].Host != "" {
+			persistentAuth.Host = profiles[0].Host
+		} else {
+			configureHost(ctx, persistentAuth, args, 0)
+		}
+	}
+	return nil
 }

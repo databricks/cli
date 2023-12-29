@@ -59,7 +59,11 @@ func newCreate() *cobra.Command {
 	cmd.Short = `Assigns a workspace to a metastore.`
 	cmd.Long = `Assigns a workspace to a metastore.
   
-  Creates an assignment to a metastore for a workspace`
+  Creates an assignment to a metastore for a workspace
+
+  Arguments:
+    WORKSPACE_ID: Workspace ID.
+    METASTORE_ID: Unity Catalog metastore ID`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -131,7 +135,11 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete a metastore assignment.
   
   Deletes a metastore assignment to a workspace, leaving the workspace with no
-  metastore.`
+  metastore.
+
+  Arguments:
+    WORKSPACE_ID: Workspace ID.
+    METASTORE_ID: Unity Catalog metastore ID`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -199,7 +207,10 @@ func newGet() *cobra.Command {
   Gets the metastore assignment, if any, for the workspace specified by ID. If
   the workspace is assigned a metastore, the mappig will be returned. If no
   metastore is assigned to the workspace, the assignment will not be found and a
-  404 returned.`
+  404 returned.
+
+  Arguments:
+    WORKSPACE_ID: Workspace ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -264,7 +275,10 @@ func newList() *cobra.Command {
 	cmd.Long = `Get all workspaces assigned to a metastore.
   
   Gets a list of all Databricks workspace IDs that have been assigned to given
-  metastore.`
+  metastore.
+
+  Arguments:
+    METASTORE_ID: Unity Catalog metastore ID`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -280,7 +294,7 @@ func newList() *cobra.Command {
 
 		listReq.MetastoreId = args[0]
 
-		response, err := a.MetastoreAssignments.List(ctx, listReq)
+		response, err := a.MetastoreAssignments.ListAll(ctx, listReq)
 		if err != nil {
 			return err
 		}
@@ -330,7 +344,11 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Updates a metastore assignment to a workspaces.
   
   Updates an assignment to a metastore for a workspace. Currently, only the
-  default catalog may be updated.`
+  default catalog may be updated.
+
+  Arguments:
+    WORKSPACE_ID: Workspace ID.
+    METASTORE_ID: Unity Catalog metastore ID`
 
 	cmd.Annotations = make(map[string]string)
 

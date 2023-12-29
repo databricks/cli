@@ -2,16 +2,17 @@ package mutator_test
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -23,12 +24,12 @@ func touch(t *testing.T, path, file string) {
 }
 
 func TestProcessRootIncludesEmpty(t *testing.T) {
-	bundle := &bundle.Bundle{
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Path: ".",
 		},
 	}
-	err := mutator.ProcessRootIncludes().Apply(context.Background(), bundle)
+	err := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
 	require.NoError(t, err)
 }
 
@@ -40,7 +41,7 @@ func TestProcessRootIncludesAbs(t *testing.T) {
 		t.Skip("skipping temperorilty to make windows unit tests green")
 	}
 
-	bundle := &bundle.Bundle{
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Path: ".",
 			Include: []string{
@@ -48,13 +49,13 @@ func TestProcessRootIncludesAbs(t *testing.T) {
 			},
 		},
 	}
-	err := mutator.ProcessRootIncludes().Apply(context.Background(), bundle)
+	err := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "must be relative paths")
 }
 
 func TestProcessRootIncludesSingleGlob(t *testing.T) {
-	bundle := &bundle.Bundle{
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Path: t.TempDir(),
 			Include: []string{
@@ -63,18 +64,18 @@ func TestProcessRootIncludesSingleGlob(t *testing.T) {
 		},
 	}
 
-	touch(t, bundle.Config.Path, "databricks.yml")
-	touch(t, bundle.Config.Path, "a.yml")
-	touch(t, bundle.Config.Path, "b.yml")
+	touch(t, b.Config.Path, "databricks.yml")
+	touch(t, b.Config.Path, "a.yml")
+	touch(t, b.Config.Path, "b.yml")
 
-	err := mutator.ProcessRootIncludes().Apply(context.Background(), bundle)
+	err := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
 	require.NoError(t, err)
 
-	assert.Equal(t, []string{"a.yml", "b.yml"}, bundle.Config.Include)
+	assert.Equal(t, []string{"a.yml", "b.yml"}, b.Config.Include)
 }
 
 func TestProcessRootIncludesMultiGlob(t *testing.T) {
-	bundle := &bundle.Bundle{
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Path: t.TempDir(),
 			Include: []string{
@@ -84,17 +85,17 @@ func TestProcessRootIncludesMultiGlob(t *testing.T) {
 		},
 	}
 
-	touch(t, bundle.Config.Path, "a1.yml")
-	touch(t, bundle.Config.Path, "b1.yml")
+	touch(t, b.Config.Path, "a1.yml")
+	touch(t, b.Config.Path, "b1.yml")
 
-	err := mutator.ProcessRootIncludes().Apply(context.Background(), bundle)
+	err := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
 	require.NoError(t, err)
 
-	assert.Equal(t, []string{"a1.yml", "b1.yml"}, bundle.Config.Include)
+	assert.Equal(t, []string{"a1.yml", "b1.yml"}, b.Config.Include)
 }
 
 func TestProcessRootIncludesRemoveDups(t *testing.T) {
-	bundle := &bundle.Bundle{
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Path: t.TempDir(),
 			Include: []string{
@@ -104,15 +105,15 @@ func TestProcessRootIncludesRemoveDups(t *testing.T) {
 		},
 	}
 
-	touch(t, bundle.Config.Path, "a.yml")
+	touch(t, b.Config.Path, "a.yml")
 
-	err := mutator.ProcessRootIncludes().Apply(context.Background(), bundle)
+	err := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
 	require.NoError(t, err)
-	assert.Equal(t, []string{"a.yml"}, bundle.Config.Include)
+	assert.Equal(t, []string{"a.yml"}, b.Config.Include)
 }
 
 func TestProcessRootIncludesNotExists(t *testing.T) {
-	bundle := &bundle.Bundle{
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Path: t.TempDir(),
 			Include: []string{
@@ -120,7 +121,7 @@ func TestProcessRootIncludesNotExists(t *testing.T) {
 			},
 		},
 	}
-	err := mutator.ProcessRootIncludes().Apply(context.Background(), bundle)
+	err := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "notexist.yml defined in 'include' section does not match any files")
 }
@@ -129,35 +130,38 @@ func TestProcessRootIncludesExtrasFromEnvVar(t *testing.T) {
 	rootPath := t.TempDir()
 	testYamlName := "extra_include_path.yml"
 	touch(t, rootPath, testYamlName)
-	os.Setenv(bundle.ExtraIncludePathsKey, path.Join(rootPath, testYamlName))
-	t.Cleanup(func() {
-		os.Unsetenv(bundle.ExtraIncludePathsKey)
-	})
+	t.Setenv(env.IncludesVariable, path.Join(rootPath, testYamlName))
 
-	bundle := &bundle.Bundle{
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Path: rootPath,
 		},
 	}
 
-	err := mutator.ProcessRootIncludes().Apply(context.Background(), bundle)
+	err := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
 	require.NoError(t, err)
-	assert.Contains(t, bundle.Config.Include, testYamlName)
+	assert.Contains(t, b.Config.Include, testYamlName)
 }
 
 func TestProcessRootIncludesDedupExtrasFromEnvVar(t *testing.T) {
 	rootPath := t.TempDir()
 	testYamlName := "extra_include_path.yml"
 	touch(t, rootPath, testYamlName)
-	t.Setenv(bundle.ExtraIncludePathsKey, fmt.Sprintf("%s%s%s", path.Join(rootPath, testYamlName), string(os.PathListSeparator), path.Join(rootPath, testYamlName)))
+	t.Setenv(env.IncludesVariable, strings.Join(
+		[]string{
+			path.Join(rootPath, testYamlName),
+			path.Join(rootPath, testYamlName),
+		},
+		string(os.PathListSeparator),
+	))
 
-	bundle := &bundle.Bundle{
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Path: rootPath,
 		},
 	}
 
-	err := mutator.ProcessRootIncludes().Apply(context.Background(), bundle)
+	err := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
 	require.NoError(t, err)
-	assert.Equal(t, []string{testYamlName}, bundle.Config.Include)
+	assert.Equal(t, []string{testYamlName}, b.Config.Include)
 }

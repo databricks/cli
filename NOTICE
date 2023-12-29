@@ -16,6 +16,10 @@ go-ini/ini - https://github.com/go-ini/ini
 Copyright ini authors
 License - https://github.com/go-ini/ini/blob/main/LICENSE
 
+uber-go/mock - https://go.uber.org/mock
+Copyright Google Inc.
+License - https://github.com/uber-go/mock/blob/main/LICENSE
+
 —--
 
 This software contains code from the following open source projects, licensed under the MPL 2.0 license:

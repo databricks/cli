@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/run"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
 )
@@ -16,9 +17,9 @@ import (
 func newRunCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run [flags] KEY",
-		Short: "Run a workload (e.g. a job or a pipeline)",
+		Short: "Run a resource (e.g. a job or a pipeline)",
 
-		Args:    cobra.ExactArgs(1),
+		Args:    cobra.MaximumNArgs(1),
 		PreRunE: ConfigureBundleWithVariables,
 	}
 
@@ -29,17 +30,36 @@ func newRunCommand() *cobra.Command {
 	cmd.Flags().BoolVar(&noWait, "no-wait", false, "Don't wait for the run to complete.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		b := bundle.Get(cmd.Context())
+		ctx := cmd.Context()
+		b := bundle.Get(ctx)
 
-		err := bundle.Apply(cmd.Context(), b, bundle.Seq(
+		err := bundle.Apply(ctx, b, bundle.Seq(
 			phases.Initialize(),
 			terraform.Interpolate(),
 			terraform.Write(),
 			terraform.StatePull(),
-			terraform.Load(),
+			terraform.Load(terraform.ErrorOnEmptyState),
 		))
 		if err != nil {
 			return err
+		}
+
+		// If no arguments are specified, prompt the user to select something to run.
+		if len(args) == 0 && cmdio.IsPromptSupported(ctx) {
+			// Invert completions from KEY -> NAME, to NAME -> KEY.
+			inv := make(map[string]string)
+			for k, v := range run.ResourceCompletionMap(b) {
+				inv[v] = k
+			}
+			id, err := cmdio.Select(ctx, inv, "Resource to run")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+
+		if len(args) != 1 {
+			return fmt.Errorf("expected a KEY of the resource to run")
 		}
 
 		runner, err := run.Find(b, args[0])
@@ -48,7 +68,7 @@ func newRunCommand() *cobra.Command {
 		}
 
 		runOptions.NoWait = noWait
-		output, err := runner.Run(cmd.Context(), &runOptions)
+		output, err := runner.Run(ctx, &runOptions)
 		if err != nil {
 			return err
 		}

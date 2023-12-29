@@ -35,12 +35,6 @@ builds:
   goarch:
     - amd64
     - arm64
-    - '386'
-  ignore:
-    - goos: darwin
-      goarch: '386'
-    - goos: linux
-      goarch: '386'
   binary: databricks
 archives:
 - format: zip

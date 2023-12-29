@@ -54,7 +54,7 @@ func TestDefaultConfigureNoInteractive(t *testing.T) {
 	})
 	os.Stdin = inp
 
-	cmd := cmd.New()
+	cmd := cmd.New(ctx)
 	cmd.SetArgs([]string{"configure", "--token", "--host", "https://host"})
 
 	err := cmd.ExecuteContext(ctx)
@@ -87,7 +87,7 @@ func TestConfigFileFromEnvNoInteractive(t *testing.T) {
 	t.Cleanup(func() { os.Stdin = oldStdin })
 	os.Stdin = inp
 
-	cmd := cmd.New()
+	cmd := cmd.New(ctx)
 	cmd.SetArgs([]string{"configure", "--token", "--host", "https://host"})
 
 	err := cmd.ExecuteContext(ctx)
@@ -106,6 +106,72 @@ func TestConfigFileFromEnvNoInteractive(t *testing.T) {
 	assertKeyValueInSection(t, defaultSection, "token", "token")
 }
 
+func TestEnvVarsConfigureNoInteractive(t *testing.T) {
+	ctx := context.Background()
+	tempHomeDir := setup(t)
+	cfgPath := filepath.Join(tempHomeDir, ".databrickscfg")
+	inp := getTempFileWithContent(t, tempHomeDir, "token\n")
+	defer inp.Close()
+	oldStdin := os.Stdin
+	t.Cleanup(func() { os.Stdin = oldStdin })
+	os.Stdin = inp
+
+	t.Setenv("DATABRICKS_HOST", "https://host")
+	t.Setenv("DATABRICKS_AUTH_TYPE", "metadata-service")
+	t.Setenv("DATABRICKS_METADATA_SERVICE_URL", "https://metadata")
+
+	cmd := cmd.New(ctx)
+	cmd.SetArgs([]string{"configure", "--token"})
+
+	err := cmd.ExecuteContext(ctx)
+	assert.NoError(t, err)
+
+	_, err = os.Stat(cfgPath)
+	assert.NoError(t, err)
+
+	cfg, err := ini.Load(cfgPath)
+	assert.NoError(t, err)
+
+	defaultSection, err := cfg.GetSection("DEFAULT")
+	assert.NoError(t, err)
+
+	assertKeyValueInSection(t, defaultSection, "host", "https://host")
+	assertKeyValueInSection(t, defaultSection, "token", "token")
+
+	// We should only save host and token for a profile, other env variables should not be saved
+	_, err = defaultSection.GetKey("auth_type")
+	assert.NotNil(t, err)
+	_, err = defaultSection.GetKey("metadata_service_url")
+	assert.NotNil(t, err)
+}
+
+func TestEnvVarsConfigureNoArgsNoInteractive(t *testing.T) {
+	ctx := context.Background()
+	tempHomeDir := setup(t)
+	cfgPath := filepath.Join(tempHomeDir, ".databrickscfg")
+
+	t.Setenv("DATABRICKS_HOST", "https://host")
+	t.Setenv("DATABRICKS_TOKEN", "secret")
+
+	cmd := cmd.New(ctx)
+	cmd.SetArgs([]string{"configure"})
+
+	err := cmd.ExecuteContext(ctx)
+	assert.NoError(t, err)
+
+	_, err = os.Stat(cfgPath)
+	assert.NoError(t, err)
+
+	cfg, err := ini.Load(cfgPath)
+	assert.NoError(t, err)
+
+	defaultSection, err := cfg.GetSection("DEFAULT")
+	assert.NoError(t, err)
+
+	assertKeyValueInSection(t, defaultSection, "host", "https://host")
+	assertKeyValueInSection(t, defaultSection, "token", "secret")
+}
+
 func TestCustomProfileConfigureNoInteractive(t *testing.T) {
 	ctx := context.Background()
 	tempHomeDir := setup(t)
@@ -116,7 +182,7 @@ func TestCustomProfileConfigureNoInteractive(t *testing.T) {
 	t.Cleanup(func() { os.Stdin = oldStdin })
 	os.Stdin = inp
 
-	cmd := cmd.New()
+	cmd := cmd.New(ctx)
 	cmd.SetArgs([]string{"configure", "--token", "--host", "https://host", "--profile", "CUSTOM"})
 
 	err := cmd.ExecuteContext(ctx)

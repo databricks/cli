@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"testing"
 
 	"github.com/databricks/cli/cmd"
@@ -15,7 +16,7 @@ func TestCommandsDontUseUnderscoreInName(t *testing.T) {
 	// This test lives in the main package because this is where
 	// all commands are imported.
 	//
-	queue := []*cobra.Command{cmd.New()}
+	queue := []*cobra.Command{cmd.New(context.Background())}
 	for len(queue) > 0 {
 		cmd := queue[0]
 		assert.NotContains(t, cmd.Name(), "_")

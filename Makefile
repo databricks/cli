@@ -24,10 +24,11 @@ build: vendor
 
 snapshot:
 	@echo "✓ Building dev snapshot"
-	@goreleaser build --snapshot --clean --single-target
+	@go build -o .databricks/databricks
 
 vendor:
 	@echo "✓ Filling vendor folder with library code ..."
 	@go mod vendor
 
 .PHONY: build vendor coverage test lint fmt
+

@@ -20,7 +20,7 @@ func TestAccFsMkdirCreatesDirectory(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
-	tmpDir := temporaryDbfsDir(t, w)
+	tmpDir := TemporaryDbfsDir(t, w)
 
 	f, err := filer.NewDbfsClient(w, tmpDir)
 	require.NoError(t, err)
@@ -44,7 +44,7 @@ func TestAccFsMkdirCreatesMultipleDirectories(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
-	tmpDir := temporaryDbfsDir(t, w)
+	tmpDir := TemporaryDbfsDir(t, w)
 
 	f, err := filer.NewDbfsClient(w, tmpDir)
 	require.NoError(t, err)
@@ -80,7 +80,7 @@ func TestAccFsMkdirWhenDirectoryAlreadyExists(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
-	tmpDir := temporaryDbfsDir(t, w)
+	tmpDir := TemporaryDbfsDir(t, w)
 
 	// create directory "a"
 	f, err := filer.NewDbfsClient(w, tmpDir)
@@ -101,7 +101,7 @@ func TestAccFsMkdirWhenFileExistsAtPath(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
-	tmpDir := temporaryDbfsDir(t, w)
+	tmpDir := TemporaryDbfsDir(t, w)
 
 	// create file hello
 	f, err := filer.NewDbfsClient(w, tmpDir)
@@ -112,6 +112,6 @@ func TestAccFsMkdirWhenFileExistsAtPath(t *testing.T) {
 	// assert run fails
 	_, _, err = RequireErrorRun(t, "fs", "mkdir", "dbfs:"+path.Join(tmpDir, "hello"))
 	// Different cloud providers return different errors.
-	regex := regexp.MustCompile(`^Path is a file: .*$|^Cannot create directory .* because .* is an existing file\.$|^mkdirs\(hadoopPath: .*, permission: rwxrwxrwx\): failed$`)
+	regex := regexp.MustCompile(`(^|: )Path is a file: .*$|(^|: )Cannot create directory .* because .* is an existing file\.$|(^|: )mkdirs\(hadoopPath: .*, permission: rwxrwxrwx\): failed$`)
 	assert.Regexp(t, regex, err.Error())
 }

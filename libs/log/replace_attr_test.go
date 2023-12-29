@@ -1,10 +1,10 @@
 package log
 
 import (
+	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/exp/slog"
 )
 
 func testReplaceA(groups []string, a slog.Attr) slog.Attr {

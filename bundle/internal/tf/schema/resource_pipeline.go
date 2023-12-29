@@ -47,6 +47,7 @@ type ResourcePipelineClusterClusterLogConf struct {
 type ResourcePipelineClusterGcpAttributes struct {
 	Availability         string `json:"availability,omitempty"`
 	GoogleServiceAccount string `json:"google_service_account,omitempty"`
+	LocalSsdCount        int    `json:"local_ssd_count,omitempty"`
 	ZoneId               string `json:"zone_id,omitempty"`
 }
 
@@ -76,6 +77,10 @@ type ResourcePipelineClusterInitScriptsS3 struct {
 	Region           string `json:"region,omitempty"`
 }
 
+type ResourcePipelineClusterInitScriptsVolumes struct {
+	Destination string `json:"destination,omitempty"`
+}
+
 type ResourcePipelineClusterInitScriptsWorkspace struct {
 	Destination string `json:"destination,omitempty"`
 }
@@ -86,6 +91,7 @@ type ResourcePipelineClusterInitScripts struct {
 	File      *ResourcePipelineClusterInitScriptsFile      `json:"file,omitempty"`
 	Gcs       *ResourcePipelineClusterInitScriptsGcs       `json:"gcs,omitempty"`
 	S3        *ResourcePipelineClusterInitScriptsS3        `json:"s3,omitempty"`
+	Volumes   *ResourcePipelineClusterInitScriptsVolumes   `json:"volumes,omitempty"`
 	Workspace *ResourcePipelineClusterInitScriptsWorkspace `json:"workspace,omitempty"`
 }
 

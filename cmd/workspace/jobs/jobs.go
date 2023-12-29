@@ -71,7 +71,10 @@ func newCancelAllRuns() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&cancelAllRunsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Use = "cancel-all-runs JOB_ID"
+	cmd.Flags().BoolVar(&cancelAllRunsReq.AllQueuedRuns, "all-queued-runs", cancelAllRunsReq.AllQueuedRuns, `Optional boolean parameter to cancel all queued runs.`)
+	cmd.Flags().Int64Var(&cancelAllRunsReq.JobId, "job-id", cancelAllRunsReq.JobId, `The canonical identifier of the job to cancel all runs of.`)
+
+	cmd.Use = "cancel-all-runs"
 	cmd.Short = `Cancel all runs of a job.`
 	cmd.Long = `Cancel all runs of a job.
   
@@ -79,6 +82,11 @@ func newCancelAllRuns() *cobra.Command {
   doesn't prevent new runs from being started.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -89,28 +97,6 @@ func newCancelAllRuns() *cobra.Command {
 			err = cancelAllRunsJson.Unmarshal(&cancelAllRunsReq)
 			if err != nil {
 				return err
-			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
-				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The canonical identifier of the job to cancel all runs of")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the canonical identifier of the job to cancel all runs of")
-			}
-			_, err = fmt.Sscan(args[0], &cancelAllRunsReq.JobId)
-			if err != nil {
-				return fmt.Errorf("invalid JOB_ID: %s", args[0])
 			}
 		}
 
@@ -163,11 +149,14 @@ func newCancelRun() *cobra.Command {
 	cmd.Flags().Var(&cancelRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "cancel-run RUN_ID"
-	cmd.Short = `Cancel a job run.`
-	cmd.Long = `Cancel a job run.
+	cmd.Short = `Cancel a run.`
+	cmd.Long = `Cancel a run.
   
-  Cancels a job run. The run is canceled asynchronously, so it may still be
-  running when this request completes.`
+  Cancels a job run or a task run. The run is canceled asynchronously, so it may
+  still be running when this request completes.
+
+  Arguments:
+    RUN_ID: This field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -275,14 +264,6 @@ func newCreate() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -344,7 +325,10 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a job.`
 	cmd.Long = `Delete a job.
   
-  Deletes a job.`
+  Deletes a job.
+
+  Arguments:
+    JOB_ID: The canonical identifier of the job to delete. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -429,7 +413,10 @@ func newDeleteRun() *cobra.Command {
 	cmd.Short = `Delete a job run.`
 	cmd.Long = `Delete a job run.
   
-  Deletes a non-active run. Returns an error if the run is active.`
+  Deletes a non-active run. Returns an error if the run is active.
+
+  Arguments:
+    RUN_ID: The canonical identifier of the run for which to retrieve the metadata.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -508,13 +495,16 @@ func newExportRun() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Flags().Var(&exportRunReq.ViewsToExport, "views-to-export", `Which views to export (CODE, DASHBOARDS, or ALL).`)
+	cmd.Flags().Var(&exportRunReq.ViewsToExport, "views-to-export", `Which views to export (CODE, DASHBOARDS, or ALL). Supported values: [ALL, CODE, DASHBOARDS]`)
 
 	cmd.Use = "export-run RUN_ID"
 	cmd.Short = `Export and retrieve a job run.`
 	cmd.Long = `Export and retrieve a job run.
   
-  Export and retrieve the job run task.`
+  Export and retrieve the job run task.
+
+  Arguments:
+    RUN_ID: The canonical identifier for the run. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -590,7 +580,11 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get a single job.`
 	cmd.Long = `Get a single job.
   
-  Retrieves the details for a single job.`
+  Retrieves the details for a single job.
+
+  Arguments:
+    JOB_ID: The canonical identifier of the job to retrieve information about. This
+      field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -646,6 +640,159 @@ func init() {
 	})
 }
 
+// start get-permission-levels command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getPermissionLevelsOverrides []func(
+	*cobra.Command,
+	*jobs.GetJobPermissionLevelsRequest,
+)
+
+func newGetPermissionLevels() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getPermissionLevelsReq jobs.GetJobPermissionLevelsRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-permission-levels JOB_ID"
+	cmd.Short = `Get job permission levels.`
+	cmd.Long = `Get job permission levels.
+  
+  Gets the permission levels that a user can have on an object.
+
+  Arguments:
+    JOB_ID: The job for which to get or manage permissions.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
+			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The job for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the job for which to get or manage permissions")
+		}
+		getPermissionLevelsReq.JobId = args[0]
+
+		response, err := w.Jobs.GetPermissionLevels(ctx, getPermissionLevelsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getPermissionLevelsOverrides {
+		fn(cmd, &getPermissionLevelsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetPermissionLevels())
+	})
+}
+
+// start get-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getPermissionsOverrides []func(
+	*cobra.Command,
+	*jobs.GetJobPermissionsRequest,
+)
+
+func newGetPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getPermissionsReq jobs.GetJobPermissionsRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-permissions JOB_ID"
+	cmd.Short = `Get job permissions.`
+	cmd.Long = `Get job permissions.
+  
+  Gets the permissions of a job. Jobs can inherit permissions from their root
+  object.
+
+  Arguments:
+    JOB_ID: The job for which to get or manage permissions.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
+			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The job for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the job for which to get or manage permissions")
+		}
+		getPermissionsReq.JobId = args[0]
+
+		response, err := w.Jobs.GetPermissions(ctx, getPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getPermissionsOverrides {
+		fn(cmd, &getPermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetPermissions())
+	})
+}
+
 // start get-run command
 
 // Slice with functions to override default command behavior.
@@ -668,12 +815,17 @@ func newGetRun() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Flags().BoolVar(&getRunReq.IncludeHistory, "include-history", getRunReq.IncludeHistory, `Whether to include the repair history in the response.`)
+	cmd.Flags().BoolVar(&getRunReq.IncludeResolvedValues, "include-resolved-values", getRunReq.IncludeResolvedValues, `Whether to include resolved parameter values in the response.`)
 
 	cmd.Use = "get-run RUN_ID"
 	cmd.Short = `Get a single job run.`
 	cmd.Long = `Get a single job run.
   
-  Retrieve the metadata of a run.`
+  Retrieve the metadata of a run.
+
+  Arguments:
+    RUN_ID: The canonical identifier of the run for which to retrieve the metadata.
+      This field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -758,7 +910,10 @@ func newGetRunOutput() *cobra.Command {
   This endpoint validates that the __run_id__ parameter is valid and returns an
   HTTP status code 400 if the __run_id__ parameter is invalid. Runs are
   automatically removed after 60 days. If you to want to reference them beyond
-  60 days, you must save old run results before they expire.`
+  60 days, you must save old run results before they expire.
+
+  Arguments:
+    RUN_ID: The canonical identifier for the run. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -827,10 +982,8 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq jobs.ListJobsRequest
-	var listJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&listReq.ExpandTasks, "expand-tasks", listReq.ExpandTasks, `Whether to include task and cluster details in the response.`)
 	cmd.Flags().IntVar(&listReq.Limit, "limit", listReq.Limit, `The number of jobs to return.`)
@@ -848,9 +1001,6 @@ func newList() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -858,14 +1008,6 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			err = listJson.Unmarshal(&listReq)
-			if err != nil {
-				return err
-			}
-		} else {
-		}
 
 		response, err := w.Jobs.ListAll(ctx, listReq)
 		if err != nil {
@@ -905,10 +1047,8 @@ func newListRuns() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listRunsReq jobs.ListRunsRequest
-	var listRunsJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&listRunsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&listRunsReq.ActiveOnly, "active-only", listRunsReq.ActiveOnly, `If active_only is true, only active runs are included in the results; otherwise, lists both active and completed runs.`)
 	cmd.Flags().BoolVar(&listRunsReq.CompletedOnly, "completed-only", listRunsReq.CompletedOnly, `If completed_only is true, only completed runs are included in the results; otherwise, lists both active and completed runs.`)
@@ -917,7 +1057,7 @@ func newListRuns() *cobra.Command {
 	cmd.Flags().IntVar(&listRunsReq.Limit, "limit", listRunsReq.Limit, `The number of runs to return.`)
 	cmd.Flags().IntVar(&listRunsReq.Offset, "offset", listRunsReq.Offset, `The offset of the first run to return, relative to the most recent run.`)
 	cmd.Flags().StringVar(&listRunsReq.PageToken, "page-token", listRunsReq.PageToken, `Use next_page_token or prev_page_token returned from the previous request to list the next or previous page of runs respectively.`)
-	cmd.Flags().Var(&listRunsReq.RunType, "run-type", `The type of runs to return.`)
+	cmd.Flags().Var(&listRunsReq.RunType, "run-type", `The type of runs to return. Supported values: [JOB_RUN, SUBMIT_RUN, WORKFLOW_RUN]`)
 	cmd.Flags().IntVar(&listRunsReq.StartTimeFrom, "start-time-from", listRunsReq.StartTimeFrom, `Show runs that started _at or after_ this value.`)
 	cmd.Flags().IntVar(&listRunsReq.StartTimeTo, "start-time-to", listRunsReq.StartTimeTo, `Show runs that started _at or before_ this value.`)
 
@@ -931,9 +1071,6 @@ func newListRuns() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -941,14 +1078,6 @@ func newListRuns() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			err = listRunsJson.Unmarshal(&listRunsReq)
-			if err != nil {
-				return err
-			}
-		} else {
-		}
 
 		response, err := w.Jobs.ListRunsAll(ctx, listRunsReq)
 		if err != nil {
@@ -1000,6 +1129,7 @@ func newRepairRun() *cobra.Command {
 
 	// TODO: array: dbt_commands
 	// TODO: array: jar_params
+	// TODO: map via StringToStringVar: job_parameters
 	cmd.Flags().Int64Var(&repairRunReq.LatestRepairId, "latest-repair-id", repairRunReq.LatestRepairId, `The ID of the latest repair.`)
 	// TODO: map via StringToStringVar: notebook_params
 	// TODO: complex arg: pipeline_params
@@ -1017,7 +1147,10 @@ func newRepairRun() *cobra.Command {
   
   Re-run one or more tasks. Tasks are re-run as part of the original job run.
   They use the current job and task settings, and can be viewed in the history
-  for the original job run.`
+  for the original job run.
+
+  Arguments:
+    RUN_ID: The job run ID of the run to repair. The run must not be in progress.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1118,11 +1251,11 @@ func newReset() *cobra.Command {
 	cmd.Flags().Var(&resetJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "reset"
-	cmd.Short = `Overwrites all settings for a job.`
-	cmd.Long = `Overwrites all settings for a job.
+	cmd.Short = `Overwrite all settings for a job.`
+	cmd.Long = `Overwrite all settings for a job.
   
-  Overwrites all the settings for a specific job. Use the Update endpoint to
-  update job settings partially.`
+  Overwrite all settings for the given job. Use the Update endpoint to update
+  job settings partially.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1191,11 +1324,12 @@ func newRunNow() *cobra.Command {
 	// TODO: array: dbt_commands
 	cmd.Flags().StringVar(&runNowReq.IdempotencyToken, "idempotency-token", runNowReq.IdempotencyToken, `An optional token to guarantee the idempotency of job run requests.`)
 	// TODO: array: jar_params
-	// TODO: array: job_parameters
+	// TODO: map via StringToStringVar: job_parameters
 	// TODO: map via StringToStringVar: notebook_params
 	// TODO: complex arg: pipeline_params
 	// TODO: map via StringToStringVar: python_named_params
 	// TODO: array: python_params
+	// TODO: complex arg: queue
 	// TODO: array: spark_submit_params
 	// TODO: map via StringToStringVar: sql_params
 
@@ -1203,7 +1337,10 @@ func newRunNow() *cobra.Command {
 	cmd.Short = `Trigger a new job run.`
 	cmd.Long = `Trigger a new job run.
   
-  Run a job and return the run_id of the triggered run.`
+  Run a job and return the run_id of the triggered run.
+
+  Arguments:
+    JOB_ID: The ID of the job to be executed`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1285,6 +1422,93 @@ func init() {
 	})
 }
 
+// start set-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var setPermissionsOverrides []func(
+	*cobra.Command,
+	*jobs.JobPermissionsRequest,
+)
+
+func newSetPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var setPermissionsReq jobs.JobPermissionsRequest
+	var setPermissionsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "set-permissions JOB_ID"
+	cmd.Short = `Set job permissions.`
+	cmd.Long = `Set job permissions.
+  
+  Sets permissions on a job. Jobs can inherit permissions from their root
+  object.
+
+  Arguments:
+    JOB_ID: The job for which to get or manage permissions.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = setPermissionsJson.Unmarshal(&setPermissionsReq)
+			if err != nil {
+				return err
+			}
+		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
+			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The job for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the job for which to get or manage permissions")
+		}
+		setPermissionsReq.JobId = args[0]
+
+		response, err := w.Jobs.SetPermissions(ctx, setPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range setPermissionsOverrides {
+		fn(cmd, &setPermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newSetPermissions())
+	})
+}
+
 // start submit command
 
 // Slice with functions to override default command behavior.
@@ -1314,6 +1538,7 @@ func newSubmit() *cobra.Command {
 	// TODO: complex arg: health
 	cmd.Flags().StringVar(&submitReq.IdempotencyToken, "idempotency-token", submitReq.IdempotencyToken, `An optional token that can be used to guarantee the idempotency of job run requests.`)
 	// TODO: complex arg: notification_settings
+	// TODO: complex arg: queue
 	cmd.Flags().StringVar(&submitReq.RunName, "run-name", submitReq.RunName, `An optional name for the run.`)
 	// TODO: array: tasks
 	cmd.Flags().IntVar(&submitReq.TimeoutSeconds, "timeout-seconds", submitReq.TimeoutSeconds, `An optional timeout applied to each run of this job.`)
@@ -1332,9 +1557,6 @@ func newSubmit() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -1348,7 +1570,6 @@ func newSubmit() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
 		}
 
 		wait, err := w.Jobs.Submit(ctx, submitReq)
@@ -1421,7 +1642,10 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Partially update a job.
   
   Add, update, or remove specific settings of an existing job. Use the ResetJob
-  to overwrite all job settings.`
+  to overwrite all job settings.
+
+  Arguments:
+    JOB_ID: The canonical identifier of the job to update. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1481,6 +1705,93 @@ func newUpdate() *cobra.Command {
 func init() {
 	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
 		cmd.AddCommand(newUpdate())
+	})
+}
+
+// start update-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updatePermissionsOverrides []func(
+	*cobra.Command,
+	*jobs.JobPermissionsRequest,
+)
+
+func newUpdatePermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updatePermissionsReq jobs.JobPermissionsRequest
+	var updatePermissionsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "update-permissions JOB_ID"
+	cmd.Short = `Update job permissions.`
+	cmd.Long = `Update job permissions.
+  
+  Updates the permissions on a job. Jobs can inherit permissions from their root
+  object.
+
+  Arguments:
+    JOB_ID: The job for which to get or manage permissions.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = updatePermissionsJson.Unmarshal(&updatePermissionsReq)
+			if err != nil {
+				return err
+			}
+		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
+			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The job for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the job for which to get or manage permissions")
+		}
+		updatePermissionsReq.JobId = args[0]
+
+		response, err := w.Jobs.UpdatePermissions(ctx, updatePermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updatePermissionsOverrides {
+		fn(cmd, &updatePermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdatePermissions())
 	})
 }
 

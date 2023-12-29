@@ -18,14 +18,21 @@ type syncFlags struct {
 }
 
 func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) (*sync.SyncOptions, error) {
-	cacheDir, err := b.CacheDir()
+	cacheDir, err := b.CacheDir(cmd.Context())
 	if err != nil {
 		return nil, fmt.Errorf("cannot get bundle cache directory: %w", err)
 	}
 
+	includes, err := b.GetSyncIncludePatterns(cmd.Context())
+	if err != nil {
+		return nil, fmt.Errorf("cannot get list of sync includes: %w", err)
+	}
+
 	opts := sync.SyncOptions{
 		LocalPath:    b.Config.Path,
-		RemotePath:   b.Config.Workspace.FilesPath,
+		RemotePath:   b.Config.Workspace.FilePath,
+		Include:      includes,
+		Exclude:      b.Config.Sync.Exclude,
 		Full:         f.full,
 		PollInterval: f.interval,
 

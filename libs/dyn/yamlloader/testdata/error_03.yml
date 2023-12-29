@@ -1,0 +1,4 @@
+# Extend a mapping with a literal string.
+map:
+  <<: value
+  key: value

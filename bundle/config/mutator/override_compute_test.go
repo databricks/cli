@@ -2,7 +2,6 @@ package mutator_test
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -16,8 +15,8 @@ import (
 )
 
 func TestOverrideDevelopment(t *testing.T) {
-	os.Setenv("DATABRICKS_CLUSTER_ID", "")
-	bundle := &bundle.Bundle{
+	t.Setenv("DATABRICKS_CLUSTER_ID", "")
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Mode:      config.Development,
@@ -34,6 +33,12 @@ func TestOverrideDevelopment(t *testing.T) {
 							{
 								ExistingClusterId: "cluster2",
 							},
+							{
+								ComputeKey: "compute_key",
+							},
+							{
+								JobClusterKey: "cluster_key",
+							},
 						},
 					}},
 				},
@@ -42,16 +47,22 @@ func TestOverrideDevelopment(t *testing.T) {
 	}
 
 	m := mutator.OverrideCompute()
-	err := m.Apply(context.Background(), bundle)
+	err := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, err)
-	assert.Nil(t, bundle.Config.Resources.Jobs["job1"].Tasks[0].NewCluster)
-	assert.Equal(t, "newClusterID", bundle.Config.Resources.Jobs["job1"].Tasks[0].ExistingClusterId)
-	assert.Equal(t, "newClusterID", bundle.Config.Resources.Jobs["job1"].Tasks[1].ExistingClusterId)
+	assert.Nil(t, b.Config.Resources.Jobs["job1"].Tasks[0].NewCluster)
+	assert.Equal(t, "newClusterID", b.Config.Resources.Jobs["job1"].Tasks[0].ExistingClusterId)
+	assert.Equal(t, "newClusterID", b.Config.Resources.Jobs["job1"].Tasks[1].ExistingClusterId)
+	assert.Equal(t, "newClusterID", b.Config.Resources.Jobs["job1"].Tasks[2].ExistingClusterId)
+	assert.Equal(t, "newClusterID", b.Config.Resources.Jobs["job1"].Tasks[3].ExistingClusterId)
+
+	assert.Nil(t, b.Config.Resources.Jobs["job1"].Tasks[0].NewCluster)
+	assert.Empty(t, b.Config.Resources.Jobs["job1"].Tasks[2].ComputeKey)
+	assert.Empty(t, b.Config.Resources.Jobs["job1"].Tasks[3].JobClusterKey)
 }
 
 func TestOverrideDevelopmentEnv(t *testing.T) {
-	os.Setenv("DATABRICKS_CLUSTER_ID", "newClusterId")
-	bundle := &bundle.Bundle{
+	t.Setenv("DATABRICKS_CLUSTER_ID", "newClusterId")
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -72,13 +83,38 @@ func TestOverrideDevelopmentEnv(t *testing.T) {
 	}
 
 	m := mutator.OverrideCompute()
-	err := m.Apply(context.Background(), bundle)
+	err := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, err)
-	assert.Equal(t, "cluster2", bundle.Config.Resources.Jobs["job1"].Tasks[1].ExistingClusterId)
+	assert.Equal(t, "cluster2", b.Config.Resources.Jobs["job1"].Tasks[1].ExistingClusterId)
+}
+
+func TestOverridePipelineTask(t *testing.T) {
+	t.Setenv("DATABRICKS_CLUSTER_ID", "newClusterId")
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job1": {JobSettings: &jobs.JobSettings{
+						Name: "job1",
+						Tasks: []jobs.Task{
+							{
+								PipelineTask: &jobs.PipelineTask{},
+							},
+						},
+					}},
+				},
+			},
+		},
+	}
+
+	m := mutator.OverrideCompute()
+	err := bundle.Apply(context.Background(), b, m)
+	require.NoError(t, err)
+	assert.Empty(t, b.Config.Resources.Jobs["job1"].Tasks[0].ExistingClusterId)
 }
 
 func TestOverrideProduction(t *testing.T) {
-	bundle := &bundle.Bundle{
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Bundle: config.Bundle{
 				ComputeID: "newClusterID",
@@ -102,13 +138,13 @@ func TestOverrideProduction(t *testing.T) {
 	}
 
 	m := mutator.OverrideCompute()
-	err := m.Apply(context.Background(), bundle)
+	err := bundle.Apply(context.Background(), b, m)
 	require.Error(t, err)
 }
 
 func TestOverrideProductionEnv(t *testing.T) {
-	os.Setenv("DATABRICKS_CLUSTER_ID", "newClusterId")
-	bundle := &bundle.Bundle{
+	t.Setenv("DATABRICKS_CLUSTER_ID", "newClusterId")
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -129,6 +165,6 @@ func TestOverrideProductionEnv(t *testing.T) {
 	}
 
 	m := mutator.OverrideCompute()
-	err := m.Apply(context.Background(), bundle)
+	err := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, err)
 }

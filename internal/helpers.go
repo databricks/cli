@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
@@ -17,6 +18,13 @@ import (
 
 	"github.com/databricks/cli/cmd"
 	_ "github.com/databricks/cli/cmd/version"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/files"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/require"
@@ -37,7 +45,6 @@ func GetEnvOrSkipTest(t *testing.T, name string) string {
 
 // RandomName gives random name with optional prefix. e.g. qa.RandomName("tf-")
 func RandomName(prefix ...string) string {
-	rand.Seed(time.Now().UnixNano())
 	randLen := 12
 	b := make([]byte, randLen)
 	for i := range b {
@@ -58,6 +65,10 @@ type cobraTestRunner struct {
 	args   []string
 	stdout bytes.Buffer
 	stderr bytes.Buffer
+	stdinR *io.PipeReader
+	stdinW *io.PipeWriter
+
+	ctx context.Context
 
 	// Line-by-line output.
 	// Background goroutines populate these channels by reading from stdout/stderr pipes.
@@ -112,15 +123,46 @@ func (t *cobraTestRunner) registerFlagCleanup(c *cobra.Command) {
 	})
 }
 
+// Like [cobraTestRunner.Eventually], but more specific
+func (t *cobraTestRunner) WaitForTextPrinted(text string, timeout time.Duration) {
+	t.Eventually(func() bool {
+		currentStdout := t.stdout.String()
+		return strings.Contains(currentStdout, text)
+	}, timeout, 50*time.Millisecond)
+}
+
+func (t *cobraTestRunner) WithStdin() {
+	reader, writer := io.Pipe()
+	t.stdinR = reader
+	t.stdinW = writer
+}
+
+func (t *cobraTestRunner) CloseStdin() {
+	if t.stdinW == nil {
+		panic("no standard input configured")
+	}
+	t.stdinW.Close()
+}
+
+func (t *cobraTestRunner) SendText(text string) {
+	if t.stdinW == nil {
+		panic("no standard input configured")
+	}
+	t.stdinW.Write([]byte(text + "\n"))
+}
+
 func (t *cobraTestRunner) RunBackground() {
 	var stdoutR, stderrR io.Reader
 	var stdoutW, stderrW io.WriteCloser
 	stdoutR, stdoutW = io.Pipe()
 	stderrR, stderrW = io.Pipe()
-	root := cmd.New()
+	root := cmd.New(t.ctx)
 	root.SetOut(stdoutW)
 	root.SetErr(stderrW)
 	root.SetArgs(t.args)
+	if t.stdinW != nil {
+		root.SetIn(t.stdinR)
+	}
 
 	// Register cleanup function to restore flags to their original values
 	// once test has been executed. This is needed because flag values reside
@@ -129,7 +171,7 @@ func (t *cobraTestRunner) RunBackground() {
 	t.registerFlagCleanup(root)
 
 	errch := make(chan error)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.ctx)
 
 	// Tee stdout/stderr to buffers.
 	stdoutR = io.TeeReader(stdoutR, &t.stdout)
@@ -232,9 +274,31 @@ func (c *cobraTestRunner) Eventually(condition func() bool, waitFor time.Duratio
 	}
 }
 
+func (t *cobraTestRunner) RunAndExpectOutput(heredoc string) {
+	stdout, _, err := t.Run()
+	require.NoError(t, err)
+	require.Equal(t, cmdio.Heredoc(heredoc), strings.TrimSpace(stdout.String()))
+}
+
+func (t *cobraTestRunner) RunAndParseJSON(v any) {
+	stdout, _, err := t.Run()
+	require.NoError(t, err)
+	err = json.Unmarshal(stdout.Bytes(), &v)
+	require.NoError(t, err)
+}
+
 func NewCobraTestRunner(t *testing.T, args ...string) *cobraTestRunner {
 	return &cobraTestRunner{
 		T:    t,
+		ctx:  context.Background(),
+		args: args,
+	}
+}
+
+func NewCobraTestRunnerWithContext(t *testing.T, ctx context.Context, args ...string) *cobraTestRunner {
+	return &cobraTestRunner{
+		T:    t,
+		ctx:  ctx,
 		args: args,
 	}
 }
@@ -261,4 +325,159 @@ func writeFile(t *testing.T, name string, body string) string {
 	require.NoError(t, err)
 	f.Close()
 	return f.Name()
+}
+
+func GenerateNotebookTasks(notebookPath string, versions []string, nodeTypeId string) []jobs.SubmitTask {
+	tasks := make([]jobs.SubmitTask, 0)
+	for i := 0; i < len(versions); i++ {
+		task := jobs.SubmitTask{
+			TaskKey: fmt.Sprintf("notebook_%s", strings.ReplaceAll(versions[i], ".", "_")),
+			NotebookTask: &jobs.NotebookTask{
+				NotebookPath: notebookPath,
+			},
+			NewCluster: &compute.ClusterSpec{
+				SparkVersion:     versions[i],
+				NumWorkers:       1,
+				NodeTypeId:       nodeTypeId,
+				DataSecurityMode: compute.DataSecurityModeUserIsolation,
+			},
+		}
+		tasks = append(tasks, task)
+	}
+
+	return tasks
+}
+
+func GenerateSparkPythonTasks(notebookPath string, versions []string, nodeTypeId string) []jobs.SubmitTask {
+	tasks := make([]jobs.SubmitTask, 0)
+	for i := 0; i < len(versions); i++ {
+		task := jobs.SubmitTask{
+			TaskKey: fmt.Sprintf("spark_%s", strings.ReplaceAll(versions[i], ".", "_")),
+			SparkPythonTask: &jobs.SparkPythonTask{
+				PythonFile: notebookPath,
+			},
+			NewCluster: &compute.ClusterSpec{
+				SparkVersion:     versions[i],
+				NumWorkers:       1,
+				NodeTypeId:       nodeTypeId,
+				DataSecurityMode: compute.DataSecurityModeUserIsolation,
+			},
+		}
+		tasks = append(tasks, task)
+	}
+
+	return tasks
+}
+
+func GenerateWheelTasks(wheelPath string, versions []string, nodeTypeId string) []jobs.SubmitTask {
+	tasks := make([]jobs.SubmitTask, 0)
+	for i := 0; i < len(versions); i++ {
+		task := jobs.SubmitTask{
+			TaskKey: fmt.Sprintf("whl_%s", strings.ReplaceAll(versions[i], ".", "_")),
+			PythonWheelTask: &jobs.PythonWheelTask{
+				PackageName: "my_test_code",
+				EntryPoint:  "run",
+			},
+			NewCluster: &compute.ClusterSpec{
+				SparkVersion:     versions[i],
+				NumWorkers:       1,
+				NodeTypeId:       nodeTypeId,
+				DataSecurityMode: compute.DataSecurityModeUserIsolation,
+			},
+			Libraries: []compute.Library{
+				{Whl: wheelPath},
+			},
+		}
+		tasks = append(tasks, task)
+	}
+
+	return tasks
+}
+
+func TemporaryWorkspaceDir(t *testing.T, w *databricks.WorkspaceClient) string {
+	ctx := context.Background()
+	me, err := w.CurrentUser.Me(ctx)
+	require.NoError(t, err)
+
+	basePath := fmt.Sprintf("/Users/%s/%s", me.UserName, RandomName("integration-test-wsfs-"))
+
+	t.Logf("Creating %s", basePath)
+	err = w.Workspace.MkdirsByPath(ctx, basePath)
+	require.NoError(t, err)
+
+	// Remove test directory on test completion.
+	t.Cleanup(func() {
+		t.Logf("Removing %s", basePath)
+		err := w.Workspace.Delete(ctx, workspace.Delete{
+			Path:      basePath,
+			Recursive: true,
+		})
+		if err == nil || apierr.IsMissing(err) {
+			return
+		}
+		t.Logf("Unable to remove temporary workspace directory %s: %#v", basePath, err)
+	})
+
+	return basePath
+}
+
+func TemporaryDbfsDir(t *testing.T, w *databricks.WorkspaceClient) string {
+	ctx := context.Background()
+	path := fmt.Sprintf("/tmp/%s", RandomName("integration-test-dbfs-"))
+
+	t.Logf("Creating DBFS folder:%s", path)
+	err := w.Dbfs.MkdirsByPath(ctx, path)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		t.Logf("Removing DBFS folder:%s", path)
+		err := w.Dbfs.Delete(ctx, files.Delete{
+			Path:      path,
+			Recursive: true,
+		})
+		if err == nil || apierr.IsMissing(err) {
+			return
+		}
+		t.Logf("unable to remove temporary dbfs directory %s: %#v", path, err)
+	})
+
+	return path
+}
+
+func TemporaryRepo(t *testing.T, w *databricks.WorkspaceClient) string {
+	ctx := context.Background()
+	me, err := w.CurrentUser.Me(ctx)
+	require.NoError(t, err)
+
+	repoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, RandomName("integration-test-repo-"))
+
+	t.Logf("Creating repo:%s", repoPath)
+	repoInfo, err := w.Repos.Create(ctx, workspace.CreateRepo{
+		Url:      "https://github.com/databricks/cli",
+		Provider: "github",
+		Path:     repoPath,
+	})
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		t.Logf("Removing repo: %s", repoPath)
+		err := w.Repos.Delete(ctx, workspace.DeleteRepoRequest{
+			RepoId: repoInfo.Id,
+		})
+		if err == nil || apierr.IsMissing(err) {
+			return
+		}
+		t.Logf("unable to remove repo %s: %#v", repoPath, err)
+	})
+
+	return repoPath
+}
+
+func GetNodeTypeId(env string) string {
+	if env == "gcp" {
+		return "n1-standard-4"
+	} else if env == "aws" {
+		return "i3.xlarge"
+	}
+	return "Standard_DS4_v2"
 }

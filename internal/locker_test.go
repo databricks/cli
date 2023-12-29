@@ -90,7 +90,7 @@ func TestAccLock(t *testing.T) {
 				indexOfAnInactiveLocker = i
 			}
 			assert.ErrorContains(t, lockerErrs[i], "lock acquired by")
-			assert.ErrorContains(t, lockerErrs[i], "Use --force to override")
+			assert.ErrorContains(t, lockerErrs[i], "Use --force-lock to override")
 		}
 	}
 	assert.Equal(t, 1, countActive, "Exactly one locker should successfull acquire the lock")
@@ -169,7 +169,7 @@ func setupLockerTest(ctx context.Context, t *testing.T) (*lockpkg.Locker, filer.
 	require.NoError(t, err)
 
 	// create temp wsfs dir
-	tmpDir := temporaryWorkspaceDir(t, w)
+	tmpDir := TemporaryWorkspaceDir(t, w)
 	f, err := filer.NewWorkspaceFilesClient(w, tmpDir)
 	require.NoError(t, err)
 

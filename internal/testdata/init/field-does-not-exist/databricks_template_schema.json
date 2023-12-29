@@ -1,0 +1,9 @@
+{
+    "properties": {
+        "foo": {
+            "type": "string",
+            "default": "abc",
+            "description": "foo-bar"
+        }
+    }
+}

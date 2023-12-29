@@ -44,6 +44,22 @@ func convPermission(ac resources.Permission) schema.ResourcePermissionsAccessCon
 	return dst
 }
 
+func convGrants(acl []resources.Grant) *schema.ResourceGrants {
+	if len(acl) == 0 {
+		return nil
+	}
+
+	resource := schema.ResourceGrants{}
+	for _, ac := range acl {
+		resource.Grant = append(resource.Grant, schema.ResourceGrantsGrant{
+			Privileges: ac.Privileges,
+			Principal:  ac.Principal,
+		})
+	}
+
+	return &resource
+}
+
 // BundleToTerraform converts resources in a bundle configuration
 // to the equivalent Terraform JSON representation.
 //
@@ -53,8 +69,10 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 	tfroot := schema.NewRoot()
 	tfroot.Provider = schema.NewProviders()
 	tfroot.Resource = schema.NewResources()
+	noResources := true
 
 	for k, src := range config.Resources.Jobs {
+		noResources = false
 		var dst schema.ResourceJob
 		conv(src, &dst)
 
@@ -88,6 +106,12 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 					Tag:      git.GitTag,
 				}
 			}
+
+			for _, v := range src.Parameters {
+				var t schema.ResourceJobParameter
+				conv(v, &t)
+				dst.Parameter = append(dst.Parameter, t)
+			}
 		}
 
 		tfroot.Resource.Job[k] = &dst
@@ -100,6 +124,7 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 	}
 
 	for k, src := range config.Resources.Pipelines {
+		noResources = false
 		var dst schema.ResourcePipeline
 		conv(src, &dst)
 
@@ -115,6 +140,12 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 				conv(v, &l)
 				dst.Cluster = append(dst.Cluster, l)
 			}
+
+			for _, v := range src.Notifications {
+				var l schema.ResourcePipelineNotification
+				conv(v, &l)
+				dst.Notification = append(dst.Notification, l)
+			}
 		}
 
 		tfroot.Resource.Pipeline[k] = &dst
@@ -127,6 +158,7 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 	}
 
 	for k, src := range config.Resources.Models {
+		noResources = false
 		var dst schema.ResourceMlflowModel
 		conv(src, &dst)
 		tfroot.Resource.MlflowModel[k] = &dst
@@ -139,6 +171,7 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 	}
 
 	for k, src := range config.Resources.Experiments {
+		noResources = false
 		var dst schema.ResourceMlflowExperiment
 		conv(src, &dst)
 		tfroot.Resource.MlflowExperiment[k] = &dst
@@ -150,10 +183,47 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 		}
 	}
 
+	for k, src := range config.Resources.ModelServingEndpoints {
+		noResources = false
+		var dst schema.ResourceModelServing
+		conv(src, &dst)
+		tfroot.Resource.ModelServing[k] = &dst
+
+		// Configure permissions for this resource.
+		if rp := convPermissions(src.Permissions); rp != nil {
+			rp.ServingEndpointId = fmt.Sprintf("${databricks_model_serving.%s.serving_endpoint_id}", k)
+			tfroot.Resource.Permissions["model_serving_"+k] = rp
+		}
+	}
+
+	for k, src := range config.Resources.RegisteredModels {
+		noResources = false
+		var dst schema.ResourceRegisteredModel
+		conv(src, &dst)
+		tfroot.Resource.RegisteredModel[k] = &dst
+
+		// Configure permissions for this resource.
+		if rp := convGrants(src.Grants); rp != nil {
+			rp.Function = fmt.Sprintf("${databricks_registered_model.%s.id}", k)
+			tfroot.Resource.Grants["registered_model_"+k] = rp
+		}
+	}
+
+	// We explicitly set "resource" to nil to omit it from a JSON encoding.
+	// This is required because the terraform CLI requires >= 1 resources defined
+	// if the "resource" property is used in a .tf.json file.
+	if noResources {
+		tfroot.Resource = nil
+	}
 	return tfroot
 }
 
 func TerraformToBundle(state *tfjson.State, config *config.Root) error {
+	// This is a no-op if the state is empty.
+	if state.Values == nil || state.Values.RootModule == nil {
+		return nil
+	}
+
 	for _, resource := range state.Values.RootModule.Resources {
 		// Limit to resources.
 		if resource.Mode != tfjson.ManagedResourceMode {
@@ -185,7 +255,20 @@ func TerraformToBundle(state *tfjson.State, config *config.Root) error {
 			cur := config.Resources.Experiments[resource.Name]
 			conv(tmp, &cur)
 			config.Resources.Experiments[resource.Name] = cur
+		case "databricks_model_serving":
+			var tmp schema.ResourceModelServing
+			conv(resource.AttributeValues, &tmp)
+			cur := config.Resources.ModelServingEndpoints[resource.Name]
+			conv(tmp, &cur)
+			config.Resources.ModelServingEndpoints[resource.Name] = cur
+		case "databricks_registered_model":
+			var tmp schema.ResourceRegisteredModel
+			conv(resource.AttributeValues, &tmp)
+			cur := config.Resources.RegisteredModels[resource.Name]
+			conv(tmp, &cur)
+			config.Resources.RegisteredModels[resource.Name] = cur
 		case "databricks_permissions":
+		case "databricks_grants":
 			// Ignore; no need to pull these back into the configuration.
 		default:
 			return fmt.Errorf("missing mapping for %s", resource.Type)

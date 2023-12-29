@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )
@@ -39,7 +40,7 @@ func emptyCommand(t *testing.T) *cobra.Command {
 func setup(t *testing.T, cmd *cobra.Command, host string) *bundle.Bundle {
 	setupDatabricksCfg(t)
 
-	err := configureBundle(cmd, []string{"validate"}, func() (*bundle.Bundle, error) {
+	err := configureBundle(cmd, []string{"validate"}, func(_ context.Context) (*bundle.Bundle, error) {
 		return &bundle.Bundle{
 			Config: config.Root{
 				Bundle: config.Bundle{
@@ -56,6 +57,8 @@ func setup(t *testing.T, cmd *cobra.Command, host string) *bundle.Bundle {
 }
 
 func TestBundleConfigureDefault(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
 	cmd := emptyCommand(t)
 	b := setup(t, cmd, "https://x.com")
 	assert.NotPanics(t, func() {
@@ -64,6 +67,8 @@ func TestBundleConfigureDefault(t *testing.T) {
 }
 
 func TestBundleConfigureWithMultipleMatches(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
 	cmd := emptyCommand(t)
 	b := setup(t, cmd, "https://a.com")
 	assert.Panics(t, func() {
@@ -72,26 +77,32 @@ func TestBundleConfigureWithMultipleMatches(t *testing.T) {
 }
 
 func TestBundleConfigureWithNonExistentProfileFlag(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
 	cmd := emptyCommand(t)
 	cmd.Flag("profile").Value.Set("NOEXIST")
 
 	b := setup(t, cmd, "https://x.com")
-	assert.PanicsWithError(t, "no matching config profiles found", func() {
+	assert.Panics(t, func() {
 		b.WorkspaceClient()
 	})
 }
 
 func TestBundleConfigureWithMismatchedProfile(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
 	cmd := emptyCommand(t)
 	cmd.Flag("profile").Value.Set("PROFILE-1")
 
 	b := setup(t, cmd, "https://x.com")
-	assert.PanicsWithError(t, "config host mismatch: profile uses host https://a.com, but CLI configured to use https://x.com", func() {
+	assert.PanicsWithError(t, "cannot resolve bundle auth configuration: config host mismatch: profile uses host https://a.com, but CLI configured to use https://x.com", func() {
 		b.WorkspaceClient()
 	})
 }
 
 func TestBundleConfigureWithCorrectProfile(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
 	cmd := emptyCommand(t)
 	cmd.Flag("profile").Value.Set("PROFILE-1")
 
@@ -102,23 +113,19 @@ func TestBundleConfigureWithCorrectProfile(t *testing.T) {
 }
 
 func TestBundleConfigureWithMismatchedProfileEnvVariable(t *testing.T) {
+	testutil.CleanupEnvironment(t)
 	t.Setenv("DATABRICKS_CONFIG_PROFILE", "PROFILE-1")
-	t.Cleanup(func() {
-		t.Setenv("DATABRICKS_CONFIG_PROFILE", "")
-	})
 
 	cmd := emptyCommand(t)
 	b := setup(t, cmd, "https://x.com")
-	assert.PanicsWithError(t, "config host mismatch: profile uses host https://a.com, but CLI configured to use https://x.com", func() {
+	assert.PanicsWithError(t, "cannot resolve bundle auth configuration: config host mismatch: profile uses host https://a.com, but CLI configured to use https://x.com", func() {
 		b.WorkspaceClient()
 	})
 }
 
 func TestBundleConfigureWithProfileFlagAndEnvVariable(t *testing.T) {
+	testutil.CleanupEnvironment(t)
 	t.Setenv("DATABRICKS_CONFIG_PROFILE", "NOEXIST")
-	t.Cleanup(func() {
-		t.Setenv("DATABRICKS_CONFIG_PROFILE", "")
-	})
 
 	cmd := emptyCommand(t)
 	cmd.Flag("profile").Value.Set("PROFILE-1")
@@ -127,4 +134,42 @@ func TestBundleConfigureWithProfileFlagAndEnvVariable(t *testing.T) {
 	assert.NotPanics(t, func() {
 		b.WorkspaceClient()
 	})
+}
+
+func TestTargetFlagFull(t *testing.T) {
+	cmd := emptyCommand(t)
+	initTargetFlag(cmd)
+	cmd.SetArgs([]string{"version", "--target", "development"})
+
+	ctx := context.Background()
+	err := cmd.ExecuteContext(ctx)
+	assert.NoError(t, err)
+
+	assert.Equal(t, getTarget(cmd), "development")
+}
+
+func TestTargetFlagShort(t *testing.T) {
+	cmd := emptyCommand(t)
+	initTargetFlag(cmd)
+	cmd.SetArgs([]string{"version", "-t", "production"})
+
+	ctx := context.Background()
+	err := cmd.ExecuteContext(ctx)
+	assert.NoError(t, err)
+
+	assert.Equal(t, getTarget(cmd), "production")
+}
+
+// TODO: remove when environment flag is fully deprecated
+func TestTargetEnvironmentFlag(t *testing.T) {
+	cmd := emptyCommand(t)
+	initTargetFlag(cmd)
+	initEnvironmentFlag(cmd)
+	cmd.SetArgs([]string{"version", "--environment", "development"})
+
+	ctx := context.Background()
+	err := cmd.ExecuteContext(ctx)
+	assert.NoError(t, err)
+
+	assert.Equal(t, getTarget(cmd), "development")
 }

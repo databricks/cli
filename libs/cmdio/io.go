@@ -5,14 +5,15 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/briandowns/spinner"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/manifoldco/promptui"
 	"github.com/mattn/go-isatty"
-	"golang.org/x/exp/slices"
 )
 
 // cmdIO is the private instance, that is not supposed to be accessed
@@ -88,6 +89,30 @@ func (c *cmdIO) IsTTY() bool {
 	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
 }
 
+func IsPromptSupported(ctx context.Context) bool {
+	// We do not allow prompting in non-interactive mode and in Git Bash on Windows.
+	// Likely due to fact that Git Bash does not (correctly support ANSI escape sequences,
+	// we cannot use promptui package there.
+	// See known issues:
+	// - https://github.com/manifoldco/promptui/issues/208
+	// - https://github.com/chzyer/readline/issues/191
+	// We also do not allow prompting in non-interactive mode,
+	// because it's not possible to read from stdin in non-interactive mode.
+	return (IsInteractive(ctx) || (IsOutTTY(ctx) && IsInTTY(ctx))) && !IsGitBash(ctx)
+}
+
+func IsGitBash(ctx context.Context) bool {
+	// Check if the MSYSTEM environment variable is set to "MINGW64"
+	msystem := env.Get(ctx, "MSYSTEM")
+	if strings.EqualFold(msystem, "MINGW64") {
+		// Check for typical Git Bash env variable for prompts
+		ps1 := env.Get(ctx, "PS1")
+		return strings.Contains(ps1, "MINGW") || strings.Contains(ps1, "MSYSTEM")
+	}
+
+	return false
+}
+
 func Render(ctx context.Context, v any) error {
 	c := fromContext(ctx)
 	return RenderWithTemplate(ctx, v, c.template)
@@ -130,19 +155,13 @@ func RenderReader(ctx context.Context, r io.Reader) error {
 	}
 }
 
-type tuple struct{ Name, Id string }
+type Tuple struct{ Name, Id string }
 
-func (c *cmdIO) Select(names map[string]string, label string) (id string, err error) {
+func (c *cmdIO) Select(items []Tuple, label string) (id string, err error) {
 	if !c.interactive {
 		return "", fmt.Errorf("expected to have %s", label)
 	}
-	var items []tuple
-	for k, v := range names {
-		items = append(items, tuple{k, v})
-	}
-	slices.SortFunc(items, func(a, b tuple) bool {
-		return a.Name < b.Name
-	})
+
 	idx, _, err := (&promptui.Select{
 		Label:             label,
 		Items:             items,
@@ -165,13 +184,25 @@ func (c *cmdIO) Select(names map[string]string, label string) (id string, err er
 	return
 }
 
+// Show a selection prompt where the user can pick one of the name/id items.
+// The items are sorted alphabetically by name.
 func Select[V any](ctx context.Context, names map[string]V, label string) (id string, err error) {
 	c := fromContext(ctx)
-	stringNames := map[string]string{}
+	var items []Tuple
 	for k, v := range names {
-		stringNames[k] = fmt.Sprint(v)
+		items = append(items, Tuple{k, fmt.Sprint(v)})
 	}
-	return c.Select(stringNames, label)
+	slices.SortFunc(items, func(a, b Tuple) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+	return c.Select(items, label)
+}
+
+// Show a selection prompt where the user can pick one of the name/id items.
+// The items appear in the order specified in the "items" argument.
+func SelectOrdered(ctx context.Context, items []Tuple, label string) (id string, err error) {
+	c := fromContext(ctx)
+	return c.Select(items, label)
 }
 
 func (c *cmdIO) Secret(label string) (value string, err error) {
@@ -203,6 +234,42 @@ func Prompt(ctx context.Context) *promptui.Prompt {
 		Stdin:  io.NopCloser(c.in),
 		Stdout: nopWriteCloser{c.out},
 	}
+}
+
+func RunSelect(ctx context.Context, prompt *promptui.Select) (int, string, error) {
+	c := fromContext(ctx)
+	prompt.Stdin = io.NopCloser(c.in)
+	prompt.Stdout = nopWriteCloser{c.err}
+	return prompt.Run()
+}
+
+func (c *cmdIO) simplePrompt(label string) *promptui.Prompt {
+	return &promptui.Prompt{
+		Label:  label,
+		Stdin:  io.NopCloser(c.in),
+		Stdout: nopWriteCloser{c.out},
+	}
+}
+
+func (c *cmdIO) SimplePrompt(label string) (value string, err error) {
+	return c.simplePrompt(label).Run()
+}
+
+func SimplePrompt(ctx context.Context, label string) (value string, err error) {
+	c := fromContext(ctx)
+	return c.SimplePrompt(label)
+}
+
+func (c *cmdIO) DefaultPrompt(label, defaultValue string) (value string, err error) {
+	prompt := c.simplePrompt(label)
+	prompt.Default = defaultValue
+	prompt.AllowEdit = true
+	return prompt.Run()
+}
+
+func DefaultPrompt(ctx context.Context, label, defaultValue string) (value string, err error) {
+	c := fromContext(ctx)
+	return c.DefaultPrompt(label, defaultValue)
 }
 
 func (c *cmdIO) Spinner(ctx context.Context) chan string {

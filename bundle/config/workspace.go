@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
@@ -24,7 +25,7 @@ type Workspace struct {
 	Host               string `json:"host,omitempty"`
 	Profile            string `json:"profile,omitempty"`
 	AuthType           string `json:"auth_type,omitempty"`
-	MetadataServiceURL string `json:"metadata_service_url,omitempty"`
+	MetadataServiceURL string `json:"metadata_service_url,omitempty" bundle:"internal"`
 
 	// OAuth specific attributes.
 	ClientID string `json:"client_id,omitempty"`
@@ -45,17 +46,17 @@ type Workspace struct {
 	CurrentUser *User `json:"current_user,omitempty" bundle:"readonly"`
 
 	// Remote workspace base path for deployment state, for artifacts, as synchronization target.
-	// This defaults to "~/.bundle/${bundle.name}/${bundle.environment}" where "~" expands to
+	// This defaults to "~/.bundle/${bundle.name}/${bundle.target}" where "~" expands to
 	// the current user's home directory in the workspace (e.g. `/Users/jane@doe.com`).
 	RootPath string `json:"root_path,omitempty"`
 
 	// Remote workspace path to synchronize local files to.
 	// This defaults to "${workspace.root}/files".
-	FilesPath string `json:"file_path,omitempty"`
+	FilePath string `json:"file_path,omitempty"`
 
 	// Remote workspace path for build artifacts.
 	// This defaults to "${workspace.root}/artifacts".
-	ArtifactsPath string `json:"artifact_path,omitempty"`
+	ArtifactPath string `json:"artifact_path,omitempty"`
 
 	// Remote workspace path for deployment state.
 	// This defaults to "${workspace.root}/state".
@@ -69,8 +70,16 @@ type User struct {
 	*iam.User
 }
 
+func (s *User) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s User) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
+}
+
 func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {
-	cfg := databricks.Config{
+	cfg := config.Config{
 		// Generic
 		Host:               w.Host,
 		Profile:            w.Profile,
@@ -105,14 +114,23 @@ func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {
 		}
 	}
 
-	if w.Profile != "" && w.Host != "" {
+	// Resolve the configuration. This is done by [databricks.NewWorkspaceClient] as well, but here
+	// we need to verify that a profile, if loaded, matches the host configured in the bundle.
+	err := cfg.EnsureResolved()
+	if err != nil {
+		return nil, err
+	}
+
+	// Now that the configuration is resolved, we can verify that the host in the bundle configuration
+	// is identical to the host associated with the selected profile.
+	if w.Host != "" && w.Profile != "" {
 		err := databrickscfg.ValidateConfigAndProfileHost(&cfg, w.Profile)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return databricks.NewWorkspaceClient(&cfg)
+	return databricks.NewWorkspaceClient((*databricks.Config)(&cfg))
 }
 
 func init() {

@@ -66,6 +66,7 @@ func newCreate() *cobra.Command {
 	// TODO: array: groups
 	cmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Databricks service principal ID.`)
 	// TODO: array: roles
+	// TODO: array: schemas
 
 	cmd.Use = "create"
 	cmd.Short = `Create a service principal.`
@@ -77,9 +78,6 @@ func newCreate() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -93,7 +91,6 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
 		}
 
 		response, err := a.ServicePrincipals.Create(ctx, createReq)
@@ -141,7 +138,10 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a service principal.`
 	cmd.Long = `Delete a service principal.
   
-  Delete a single service principal in the Databricks account.`
+  Delete a single service principal in the Databricks account.
+
+  Arguments:
+    ID: Unique ID for a service principal in the Databricks account.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -215,7 +215,10 @@ func newGet() *cobra.Command {
 	cmd.Long = `Get service principal details.
   
   Gets the details for a single service principal define in the Databricks
-  account.`
+  account.
+
+  Arguments:
+    ID: Unique ID for a service principal in the Databricks account.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -281,18 +284,16 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq iam.ListAccountServicePrincipalsRequest
-	var listJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&listReq.Attributes, "attributes", listReq.Attributes, `Comma-separated list of attributes to return in response.`)
-	cmd.Flags().IntVar(&listReq.Count, "count", listReq.Count, `Desired number of results per page.`)
+	cmd.Flags().Int64Var(&listReq.Count, "count", listReq.Count, `Desired number of results per page.`)
 	cmd.Flags().StringVar(&listReq.ExcludedAttributes, "excluded-attributes", listReq.ExcludedAttributes, `Comma-separated list of attributes to exclude in response.`)
 	cmd.Flags().StringVar(&listReq.Filter, "filter", listReq.Filter, `Query by which the results have to be filtered.`)
 	cmd.Flags().StringVar(&listReq.SortBy, "sort-by", listReq.SortBy, `Attribute to sort the results.`)
-	cmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order to sort the results.`)
-	cmd.Flags().IntVar(&listReq.StartIndex, "start-index", listReq.StartIndex, `Specifies the index of the first result.`)
+	cmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order to sort the results. Supported values: [ascending, descending]`)
+	cmd.Flags().Int64Var(&listReq.StartIndex, "start-index", listReq.StartIndex, `Specifies the index of the first result.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List service principals.`
@@ -304,9 +305,6 @@ func newList() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -314,14 +312,6 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			err = listJson.Unmarshal(&listReq)
-			if err != nil {
-				return err
-			}
-		} else {
-		}
 
 		response, err := a.ServicePrincipals.ListAll(ctx, listReq)
 		if err != nil {
@@ -367,14 +357,17 @@ func newPatch() *cobra.Command {
 	cmd.Flags().Var(&patchJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: Operations
-	// TODO: array: schema
+	// TODO: array: schemas
 
 	cmd.Use = "patch ID"
 	cmd.Short = `Update service principal details.`
 	cmd.Long = `Update service principal details.
   
   Partially updates the details of a single service principal in the Databricks
-  account.`
+  account.
+
+  Arguments:
+    ID: Unique ID for a service principal in the Databricks account.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -459,6 +452,7 @@ func newUpdate() *cobra.Command {
 	// TODO: array: groups
 	cmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `Databricks service principal ID.`)
 	// TODO: array: roles
+	// TODO: array: schemas
 
 	cmd.Use = "update ID"
 	cmd.Short = `Replace service principal.`
@@ -466,7 +460,10 @@ func newUpdate() *cobra.Command {
   
   Updates the details of a single service principal.
   
-  This action replaces the existing service principal with the same name.`
+  This action replaces the existing service principal with the same name.
+
+  Arguments:
+    ID: Databricks service principal ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -480,26 +477,25 @@ func newUpdate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No ID argument specified. Loading names for Account Service Principals drop-down."
-				names, err := a.ServicePrincipals.ServicePrincipalDisplayNameToIdMap(ctx, iam.ListAccountServicePrincipalsRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Account Service Principals drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Databricks service principal ID")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have databricks service principal id")
-			}
-			updateReq.Id = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No ID argument specified. Loading names for Account Service Principals drop-down."
+			names, err := a.ServicePrincipals.ServicePrincipalDisplayNameToIdMap(ctx, iam.ListAccountServicePrincipalsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Account Service Principals drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Databricks service principal ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have databricks service principal id")
+		}
+		updateReq.Id = args[0]
 
 		err = a.ServicePrincipals.Update(ctx, updateReq)
 		if err != nil {

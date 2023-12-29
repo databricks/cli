@@ -210,6 +210,32 @@ func (reader *OpenapiReader) modelsDocs() (*Docs, error) {
 	return modelsDocs, nil
 }
 
+func (reader *OpenapiReader) modelServingEndpointsDocs() (*Docs, error) {
+	modelServingEndpointsSpecSchema, err := reader.readResolvedSchema(SchemaPathPrefix + "serving.CreateServingEndpoint")
+	if err != nil {
+		return nil, err
+	}
+	modelServingEndpointsDocs := schemaToDocs(modelServingEndpointsSpecSchema)
+	modelServingEndpointsAllDocs := &Docs{
+		Description:          "List of Model Serving Endpoints",
+		AdditionalProperties: modelServingEndpointsDocs,
+	}
+	return modelServingEndpointsAllDocs, nil
+}
+
+func (reader *OpenapiReader) registeredModelDocs() (*Docs, error) {
+	registeredModelsSpecSchema, err := reader.readResolvedSchema(SchemaPathPrefix + "catalog.CreateRegisteredModelRequest")
+	if err != nil {
+		return nil, err
+	}
+	registeredModelsDocs := schemaToDocs(registeredModelsSpecSchema)
+	registeredModelsAllDocs := &Docs{
+		Description:          "List of Registered Models",
+		AdditionalProperties: registeredModelsDocs,
+	}
+	return registeredModelsAllDocs, nil
+}
+
 func (reader *OpenapiReader) ResourcesDocs() (*Docs, error) {
 	jobsDocs, err := reader.jobsDocs()
 	if err != nil {
@@ -227,14 +253,24 @@ func (reader *OpenapiReader) ResourcesDocs() (*Docs, error) {
 	if err != nil {
 		return nil, err
 	}
+	modelServingEndpointsDocs, err := reader.modelServingEndpointsDocs()
+	if err != nil {
+		return nil, err
+	}
+	registeredModelsDocs, err := reader.registeredModelDocs()
+	if err != nil {
+		return nil, err
+	}
 
 	return &Docs{
 		Description: "Collection of Databricks resources to deploy.",
 		Properties: map[string]*Docs{
-			"jobs":        jobsDocs,
-			"pipelines":   pipelinesDocs,
-			"experiments": experimentsDocs,
-			"models":      modelsDocs,
+			"jobs":                    jobsDocs,
+			"pipelines":               pipelinesDocs,
+			"experiments":             experimentsDocs,
+			"models":                  modelsDocs,
+			"model_serving_endpoints": modelServingEndpointsDocs,
+			"registered_models":       registeredModelsDocs,
 		},
 	}, nil
 }

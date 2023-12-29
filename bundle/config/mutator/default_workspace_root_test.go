@@ -12,15 +12,15 @@ import (
 )
 
 func TestDefaultWorkspaceRoot(t *testing.T) {
-	bundle := &bundle.Bundle{
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Bundle: config.Bundle{
-				Name:        "name",
-				Environment: "environment",
+				Name:   "name",
+				Target: "environment",
 			},
 		},
 	}
-	err := mutator.DefineDefaultWorkspaceRoot().Apply(context.Background(), bundle)
+	err := bundle.Apply(context.Background(), b, mutator.DefineDefaultWorkspaceRoot())
 	require.NoError(t, err)
-	assert.Equal(t, "~/.bundle/name/environment", bundle.Config.Workspace.RootPath)
+	assert.Equal(t, "~/.bundle/name/environment", b.Config.Workspace.RootPath)
 }

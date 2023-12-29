@@ -9,40 +9,111 @@ on:
 
 jobs:
   goreleaser:
+    outputs:
+      artifacts: ${{ steps.releaser.outputs.artifacts }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository and submodules
-        uses: actions/checkout@v3
-
-      - name: Unshallow
-        run: git fetch --prune --unshallow
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
       - name: Setup Go
-        id: go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
-          go-version: 1.19.5
-
-      - name: Locate cache paths
-        id: cache
-        run: |
-          echo "GOMODCACHE=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
-          echo "GOCACHE=$(go env GOCACHE)" >> $GITHUB_OUTPUT
-
-      # Note: use custom caching because below performs a cross platform build
-      # through goreleaser and don't want to share a cache with the test builds.
-      - name: Setup caching
-        uses: actions/cache@v3
-        with:
-          path: |
-            ${{ steps.cache.outputs.GOMODCACHE }}
-            ${{ steps.cache.outputs.GOCACHE }}
-          key: release-${{ runner.os }}-go-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', '.goreleaser.yaml') }}
+          go-version: 1.21.0
 
       - name: Run GoReleaser
+        id: releaser
         uses: goreleaser/goreleaser-action@v4
         with:
           version: latest
           args: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  create-setup-cli-release-pr:
+    needs: goreleaser
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set VERSION variable from tag
+        run: |
+          VERSION=${{ github.ref_name }}
+          echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
+
+      - name: Update setup-cli
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.DECO_GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: 'databricks',
+              repo: 'setup-cli',
+              workflow_id: 'release-pr.yml',
+              ref: 'main',
+              inputs: {
+                version: "${{ env.VERSION }}",
+              }
+            });
+
+  create-homebrew-tap-release-pr:
+    needs: goreleaser
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set VERSION variable from tag
+        run: |
+          VERSION=${{ github.ref_name }}
+          echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
+
+      - name: Update homebrew-tap
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.DECO_GITHUB_TOKEN }}
+          script: |
+            let artifacts = JSON.parse('${{ needs.goreleaser.outputs.artifacts }}')
+            artifacts = artifacts.filter(a => a.type == "Archive")
+            artifacts = new Map(
+              artifacts.map(a => [
+                a.goos + "_" + a.goarch,
+                a.extra.Checksum.replace("sha256:", "")
+              ])
+            )
+
+            await github.rest.actions.createWorkflowDispatch({
+              owner: 'databricks',
+              repo: 'homebrew-tap',
+              workflow_id: 'release-pr.yml',
+              ref: 'main',
+              inputs: {
+                version: "${{ env.VERSION }}",
+                darwin_amd64_sha: artifacts.get('darwin_amd64'),
+                darwin_arm64_sha: artifacts.get('darwin_arm64'),
+                linux_amd64_sha: artifacts.get('linux_amd64'),
+                linux_arm64_sha: artifacts.get('linux_arm64')
+              }
+            });
+
+  create-vscode-extension-update-pr:
+    needs: goreleaser
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set VERSION variable from tag
+        run: |
+          VERSION=${{ github.ref_name }}
+          echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
+
+      - name: Update CLI version in the VSCode extension
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.DECO_GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: 'databricks',
+              repo: 'databricks-vscode',
+              workflow_id: 'update-cli-version.yml',
+              ref: 'main',
+              inputs: {
+                version: "${{ env.VERSION }}",
+              }
+            });

@@ -1,6 +1,6 @@
 package log
 
-import "golang.org/x/exp/slog"
+import "log/slog"
 
 const (
 	LevelTrace slog.Level = -8

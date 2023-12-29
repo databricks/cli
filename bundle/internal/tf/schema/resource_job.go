@@ -24,20 +24,42 @@ type ResourceJobDbtTask struct {
 	WarehouseId       string   `json:"warehouse_id,omitempty"`
 }
 
+type ResourceJobDeployment struct {
+	Kind             string `json:"kind"`
+	MetadataFilePath string `json:"metadata_file_path,omitempty"`
+}
+
 type ResourceJobEmailNotifications struct {
-	AlertOnLastAttempt    bool     `json:"alert_on_last_attempt,omitempty"`
-	NoAlertForSkippedRuns bool     `json:"no_alert_for_skipped_runs,omitempty"`
-	OnFailure             []string `json:"on_failure,omitempty"`
-	OnStart               []string `json:"on_start,omitempty"`
-	OnSuccess             []string `json:"on_success,omitempty"`
+	NoAlertForSkippedRuns              bool     `json:"no_alert_for_skipped_runs,omitempty"`
+	OnDurationWarningThresholdExceeded []string `json:"on_duration_warning_threshold_exceeded,omitempty"`
+	OnFailure                          []string `json:"on_failure,omitempty"`
+	OnStart                            []string `json:"on_start,omitempty"`
+	OnSuccess                          []string `json:"on_success,omitempty"`
+}
+
+type ResourceJobGitSourceJobSource struct {
+	DirtyState          string `json:"dirty_state,omitempty"`
+	ImportFromGitBranch string `json:"import_from_git_branch"`
+	JobConfigPath       string `json:"job_config_path"`
 }
 
 type ResourceJobGitSource struct {
-	Branch   string `json:"branch,omitempty"`
-	Commit   string `json:"commit,omitempty"`
-	Provider string `json:"provider,omitempty"`
-	Tag      string `json:"tag,omitempty"`
-	Url      string `json:"url"`
+	Branch    string                         `json:"branch,omitempty"`
+	Commit    string                         `json:"commit,omitempty"`
+	Provider  string                         `json:"provider,omitempty"`
+	Tag       string                         `json:"tag,omitempty"`
+	Url       string                         `json:"url"`
+	JobSource *ResourceJobGitSourceJobSource `json:"job_source,omitempty"`
+}
+
+type ResourceJobHealthRules struct {
+	Metric string `json:"metric,omitempty"`
+	Op     string `json:"op,omitempty"`
+	Value  int    `json:"value,omitempty"`
+}
+
+type ResourceJobHealth struct {
+	Rules []ResourceJobHealthRules `json:"rules,omitempty"`
 }
 
 type ResourceJobJobClusterNewClusterAutoscale struct {
@@ -106,6 +128,7 @@ type ResourceJobJobClusterNewClusterGcpAttributes struct {
 	Availability            string `json:"availability,omitempty"`
 	BootDiskSize            int    `json:"boot_disk_size,omitempty"`
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
+	LocalSsdCount           int    `json:"local_ssd_count,omitempty"`
 	UsePreemptibleExecutors bool   `json:"use_preemptible_executors,omitempty"`
 	ZoneId                  string `json:"zone_id,omitempty"`
 }
@@ -136,6 +159,10 @@ type ResourceJobJobClusterNewClusterInitScriptsS3 struct {
 	Region           string `json:"region,omitempty"`
 }
 
+type ResourceJobJobClusterNewClusterInitScriptsVolumes struct {
+	Destination string `json:"destination,omitempty"`
+}
+
 type ResourceJobJobClusterNewClusterInitScriptsWorkspace struct {
 	Destination string `json:"destination,omitempty"`
 }
@@ -146,6 +173,7 @@ type ResourceJobJobClusterNewClusterInitScripts struct {
 	File      *ResourceJobJobClusterNewClusterInitScriptsFile      `json:"file,omitempty"`
 	Gcs       *ResourceJobJobClusterNewClusterInitScriptsGcs       `json:"gcs,omitempty"`
 	S3        *ResourceJobJobClusterNewClusterInitScriptsS3        `json:"s3,omitempty"`
+	Volumes   *ResourceJobJobClusterNewClusterInitScriptsVolumes   `json:"volumes,omitempty"`
 	Workspace *ResourceJobJobClusterNewClusterInitScriptsWorkspace `json:"workspace,omitempty"`
 }
 
@@ -287,6 +315,7 @@ type ResourceJobNewClusterGcpAttributes struct {
 	Availability            string `json:"availability,omitempty"`
 	BootDiskSize            int    `json:"boot_disk_size,omitempty"`
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
+	LocalSsdCount           int    `json:"local_ssd_count,omitempty"`
 	UsePreemptibleExecutors bool   `json:"use_preemptible_executors,omitempty"`
 	ZoneId                  string `json:"zone_id,omitempty"`
 }
@@ -317,6 +346,10 @@ type ResourceJobNewClusterInitScriptsS3 struct {
 	Region           string `json:"region,omitempty"`
 }
 
+type ResourceJobNewClusterInitScriptsVolumes struct {
+	Destination string `json:"destination,omitempty"`
+}
+
 type ResourceJobNewClusterInitScriptsWorkspace struct {
 	Destination string `json:"destination,omitempty"`
 }
@@ -327,6 +360,7 @@ type ResourceJobNewClusterInitScripts struct {
 	File      *ResourceJobNewClusterInitScriptsFile      `json:"file,omitempty"`
 	Gcs       *ResourceJobNewClusterInitScriptsGcs       `json:"gcs,omitempty"`
 	S3        *ResourceJobNewClusterInitScriptsS3        `json:"s3,omitempty"`
+	Volumes   *ResourceJobNewClusterInitScriptsVolumes   `json:"volumes,omitempty"`
 	Workspace *ResourceJobNewClusterInitScriptsWorkspace `json:"workspace,omitempty"`
 }
 
@@ -383,8 +417,14 @@ type ResourceJobNotificationSettings struct {
 	NoAlertForSkippedRuns  bool `json:"no_alert_for_skipped_runs,omitempty"`
 }
 
+type ResourceJobParameter struct {
+	Default string `json:"default,omitempty"`
+	Name    string `json:"name,omitempty"`
+}
+
 type ResourceJobPipelineTask struct {
-	PipelineId string `json:"pipeline_id"`
+	FullRefresh bool   `json:"full_refresh,omitempty"`
+	PipelineId  string `json:"pipeline_id"`
 }
 
 type ResourceJobPythonWheelTask struct {
@@ -395,11 +435,17 @@ type ResourceJobPythonWheelTask struct {
 }
 
 type ResourceJobQueue struct {
+	Enabled bool `json:"enabled"`
 }
 
 type ResourceJobRunAs struct {
 	ServicePrincipalName string `json:"service_principal_name,omitempty"`
 	UserName             string `json:"user_name,omitempty"`
+}
+
+type ResourceJobRunJobTask struct {
+	JobId         int               `json:"job_id"`
+	JobParameters map[string]string `json:"job_parameters,omitempty"`
 }
 
 type ResourceJobSchedule struct {
@@ -445,11 +491,20 @@ type ResourceJobTaskDependsOn struct {
 }
 
 type ResourceJobTaskEmailNotifications struct {
-	AlertOnLastAttempt    bool     `json:"alert_on_last_attempt,omitempty"`
-	NoAlertForSkippedRuns bool     `json:"no_alert_for_skipped_runs,omitempty"`
-	OnFailure             []string `json:"on_failure,omitempty"`
-	OnStart               []string `json:"on_start,omitempty"`
-	OnSuccess             []string `json:"on_success,omitempty"`
+	OnDurationWarningThresholdExceeded []string `json:"on_duration_warning_threshold_exceeded,omitempty"`
+	OnFailure                          []string `json:"on_failure,omitempty"`
+	OnStart                            []string `json:"on_start,omitempty"`
+	OnSuccess                          []string `json:"on_success,omitempty"`
+}
+
+type ResourceJobTaskHealthRules struct {
+	Metric string `json:"metric,omitempty"`
+	Op     string `json:"op,omitempty"`
+	Value  int    `json:"value,omitempty"`
+}
+
+type ResourceJobTaskHealth struct {
+	Rules []ResourceJobTaskHealthRules `json:"rules,omitempty"`
 }
 
 type ResourceJobTaskLibraryCran struct {
@@ -543,6 +598,7 @@ type ResourceJobTaskNewClusterGcpAttributes struct {
 	Availability            string `json:"availability,omitempty"`
 	BootDiskSize            int    `json:"boot_disk_size,omitempty"`
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
+	LocalSsdCount           int    `json:"local_ssd_count,omitempty"`
 	UsePreemptibleExecutors bool   `json:"use_preemptible_executors,omitempty"`
 	ZoneId                  string `json:"zone_id,omitempty"`
 }
@@ -573,6 +629,10 @@ type ResourceJobTaskNewClusterInitScriptsS3 struct {
 	Region           string `json:"region,omitempty"`
 }
 
+type ResourceJobTaskNewClusterInitScriptsVolumes struct {
+	Destination string `json:"destination,omitempty"`
+}
+
 type ResourceJobTaskNewClusterInitScriptsWorkspace struct {
 	Destination string `json:"destination,omitempty"`
 }
@@ -583,6 +643,7 @@ type ResourceJobTaskNewClusterInitScripts struct {
 	File      *ResourceJobTaskNewClusterInitScriptsFile      `json:"file,omitempty"`
 	Gcs       *ResourceJobTaskNewClusterInitScriptsGcs       `json:"gcs,omitempty"`
 	S3        *ResourceJobTaskNewClusterInitScriptsS3        `json:"s3,omitempty"`
+	Volumes   *ResourceJobTaskNewClusterInitScriptsVolumes   `json:"volumes,omitempty"`
 	Workspace *ResourceJobTaskNewClusterInitScriptsWorkspace `json:"workspace,omitempty"`
 }
 
@@ -634,8 +695,15 @@ type ResourceJobTaskNotebookTask struct {
 	Source         string            `json:"source,omitempty"`
 }
 
+type ResourceJobTaskNotificationSettings struct {
+	AlertOnLastAttempt     bool `json:"alert_on_last_attempt,omitempty"`
+	NoAlertForCanceledRuns bool `json:"no_alert_for_canceled_runs,omitempty"`
+	NoAlertForSkippedRuns  bool `json:"no_alert_for_skipped_runs,omitempty"`
+}
+
 type ResourceJobTaskPipelineTask struct {
-	PipelineId string `json:"pipeline_id"`
+	FullRefresh bool   `json:"full_refresh,omitempty"`
+	PipelineId  string `json:"pipeline_id"`
 }
 
 type ResourceJobTaskPythonWheelTask struct {
@@ -643,6 +711,11 @@ type ResourceJobTaskPythonWheelTask struct {
 	NamedParameters map[string]string `json:"named_parameters,omitempty"`
 	PackageName     string            `json:"package_name,omitempty"`
 	Parameters      []string          `json:"parameters,omitempty"`
+}
+
+type ResourceJobTaskRunJobTask struct {
+	JobId         int               `json:"job_id"`
+	JobParameters map[string]string `json:"job_parameters,omitempty"`
 }
 
 type ResourceJobTaskSparkJarTask struct {
@@ -701,30 +774,57 @@ type ResourceJobTaskSqlTask struct {
 	Query       *ResourceJobTaskSqlTaskQuery     `json:"query,omitempty"`
 }
 
+type ResourceJobTaskWebhookNotificationsOnDurationWarningThresholdExceeded struct {
+	Id string `json:"id,omitempty"`
+}
+
+type ResourceJobTaskWebhookNotificationsOnFailure struct {
+	Id string `json:"id,omitempty"`
+}
+
+type ResourceJobTaskWebhookNotificationsOnStart struct {
+	Id string `json:"id,omitempty"`
+}
+
+type ResourceJobTaskWebhookNotificationsOnSuccess struct {
+	Id string `json:"id,omitempty"`
+}
+
+type ResourceJobTaskWebhookNotifications struct {
+	OnDurationWarningThresholdExceeded []ResourceJobTaskWebhookNotificationsOnDurationWarningThresholdExceeded `json:"on_duration_warning_threshold_exceeded,omitempty"`
+	OnFailure                          []ResourceJobTaskWebhookNotificationsOnFailure                          `json:"on_failure,omitempty"`
+	OnStart                            []ResourceJobTaskWebhookNotificationsOnStart                            `json:"on_start,omitempty"`
+	OnSuccess                          []ResourceJobTaskWebhookNotificationsOnSuccess                          `json:"on_success,omitempty"`
+}
+
 type ResourceJobTask struct {
-	ComputeKey             string                             `json:"compute_key,omitempty"`
-	Description            string                             `json:"description,omitempty"`
-	ExistingClusterId      string                             `json:"existing_cluster_id,omitempty"`
-	JobClusterKey          string                             `json:"job_cluster_key,omitempty"`
-	MaxRetries             int                                `json:"max_retries,omitempty"`
-	MinRetryIntervalMillis int                                `json:"min_retry_interval_millis,omitempty"`
-	RetryOnTimeout         bool                               `json:"retry_on_timeout,omitempty"`
-	RunIf                  string                             `json:"run_if,omitempty"`
-	TaskKey                string                             `json:"task_key,omitempty"`
-	TimeoutSeconds         int                                `json:"timeout_seconds,omitempty"`
-	ConditionTask          *ResourceJobTaskConditionTask      `json:"condition_task,omitempty"`
-	DbtTask                *ResourceJobTaskDbtTask            `json:"dbt_task,omitempty"`
-	DependsOn              []ResourceJobTaskDependsOn         `json:"depends_on,omitempty"`
-	EmailNotifications     *ResourceJobTaskEmailNotifications `json:"email_notifications,omitempty"`
-	Library                []ResourceJobTaskLibrary           `json:"library,omitempty"`
-	NewCluster             *ResourceJobTaskNewCluster         `json:"new_cluster,omitempty"`
-	NotebookTask           *ResourceJobTaskNotebookTask       `json:"notebook_task,omitempty"`
-	PipelineTask           *ResourceJobTaskPipelineTask       `json:"pipeline_task,omitempty"`
-	PythonWheelTask        *ResourceJobTaskPythonWheelTask    `json:"python_wheel_task,omitempty"`
-	SparkJarTask           *ResourceJobTaskSparkJarTask       `json:"spark_jar_task,omitempty"`
-	SparkPythonTask        *ResourceJobTaskSparkPythonTask    `json:"spark_python_task,omitempty"`
-	SparkSubmitTask        *ResourceJobTaskSparkSubmitTask    `json:"spark_submit_task,omitempty"`
-	SqlTask                *ResourceJobTaskSqlTask            `json:"sql_task,omitempty"`
+	ComputeKey             string                               `json:"compute_key,omitempty"`
+	Description            string                               `json:"description,omitempty"`
+	ExistingClusterId      string                               `json:"existing_cluster_id,omitempty"`
+	JobClusterKey          string                               `json:"job_cluster_key,omitempty"`
+	MaxRetries             int                                  `json:"max_retries,omitempty"`
+	MinRetryIntervalMillis int                                  `json:"min_retry_interval_millis,omitempty"`
+	RetryOnTimeout         bool                                 `json:"retry_on_timeout,omitempty"`
+	RunIf                  string                               `json:"run_if,omitempty"`
+	TaskKey                string                               `json:"task_key,omitempty"`
+	TimeoutSeconds         int                                  `json:"timeout_seconds,omitempty"`
+	ConditionTask          *ResourceJobTaskConditionTask        `json:"condition_task,omitempty"`
+	DbtTask                *ResourceJobTaskDbtTask              `json:"dbt_task,omitempty"`
+	DependsOn              []ResourceJobTaskDependsOn           `json:"depends_on,omitempty"`
+	EmailNotifications     *ResourceJobTaskEmailNotifications   `json:"email_notifications,omitempty"`
+	Health                 *ResourceJobTaskHealth               `json:"health,omitempty"`
+	Library                []ResourceJobTaskLibrary             `json:"library,omitempty"`
+	NewCluster             *ResourceJobTaskNewCluster           `json:"new_cluster,omitempty"`
+	NotebookTask           *ResourceJobTaskNotebookTask         `json:"notebook_task,omitempty"`
+	NotificationSettings   *ResourceJobTaskNotificationSettings `json:"notification_settings,omitempty"`
+	PipelineTask           *ResourceJobTaskPipelineTask         `json:"pipeline_task,omitempty"`
+	PythonWheelTask        *ResourceJobTaskPythonWheelTask      `json:"python_wheel_task,omitempty"`
+	RunJobTask             *ResourceJobTaskRunJobTask           `json:"run_job_task,omitempty"`
+	SparkJarTask           *ResourceJobTaskSparkJarTask         `json:"spark_jar_task,omitempty"`
+	SparkPythonTask        *ResourceJobTaskSparkPythonTask      `json:"spark_python_task,omitempty"`
+	SparkSubmitTask        *ResourceJobTaskSparkSubmitTask      `json:"spark_submit_task,omitempty"`
+	SqlTask                *ResourceJobTaskSqlTask              `json:"sql_task,omitempty"`
+	WebhookNotifications   *ResourceJobTaskWebhookNotifications `json:"webhook_notifications,omitempty"`
 }
 
 type ResourceJobTriggerFileArrival struct {
@@ -738,26 +838,34 @@ type ResourceJobTrigger struct {
 	FileArrival *ResourceJobTriggerFileArrival `json:"file_arrival,omitempty"`
 }
 
+type ResourceJobWebhookNotificationsOnDurationWarningThresholdExceeded struct {
+	Id string `json:"id,omitempty"`
+}
+
 type ResourceJobWebhookNotificationsOnFailure struct {
-	Id string `json:"id"`
+	Id string `json:"id,omitempty"`
 }
 
 type ResourceJobWebhookNotificationsOnStart struct {
-	Id string `json:"id"`
+	Id string `json:"id,omitempty"`
 }
 
 type ResourceJobWebhookNotificationsOnSuccess struct {
-	Id string `json:"id"`
+	Id string `json:"id,omitempty"`
 }
 
 type ResourceJobWebhookNotifications struct {
-	OnFailure []ResourceJobWebhookNotificationsOnFailure `json:"on_failure,omitempty"`
-	OnStart   []ResourceJobWebhookNotificationsOnStart   `json:"on_start,omitempty"`
-	OnSuccess []ResourceJobWebhookNotificationsOnSuccess `json:"on_success,omitempty"`
+	OnDurationWarningThresholdExceeded []ResourceJobWebhookNotificationsOnDurationWarningThresholdExceeded `json:"on_duration_warning_threshold_exceeded,omitempty"`
+	OnFailure                          []ResourceJobWebhookNotificationsOnFailure                          `json:"on_failure,omitempty"`
+	OnStart                            []ResourceJobWebhookNotificationsOnStart                            `json:"on_start,omitempty"`
+	OnSuccess                          []ResourceJobWebhookNotificationsOnSuccess                          `json:"on_success,omitempty"`
 }
 
 type ResourceJob struct {
 	AlwaysRunning          bool                             `json:"always_running,omitempty"`
+	ControlRunState        bool                             `json:"control_run_state,omitempty"`
+	Description            string                           `json:"description,omitempty"`
+	EditMode               string                           `json:"edit_mode,omitempty"`
 	ExistingClusterId      string                           `json:"existing_cluster_id,omitempty"`
 	Format                 string                           `json:"format,omitempty"`
 	Id                     string                           `json:"id,omitempty"`
@@ -772,17 +880,21 @@ type ResourceJob struct {
 	Compute                []ResourceJobCompute             `json:"compute,omitempty"`
 	Continuous             *ResourceJobContinuous           `json:"continuous,omitempty"`
 	DbtTask                *ResourceJobDbtTask              `json:"dbt_task,omitempty"`
+	Deployment             *ResourceJobDeployment           `json:"deployment,omitempty"`
 	EmailNotifications     *ResourceJobEmailNotifications   `json:"email_notifications,omitempty"`
 	GitSource              *ResourceJobGitSource            `json:"git_source,omitempty"`
+	Health                 *ResourceJobHealth               `json:"health,omitempty"`
 	JobCluster             []ResourceJobJobCluster          `json:"job_cluster,omitempty"`
 	Library                []ResourceJobLibrary             `json:"library,omitempty"`
 	NewCluster             *ResourceJobNewCluster           `json:"new_cluster,omitempty"`
 	NotebookTask           *ResourceJobNotebookTask         `json:"notebook_task,omitempty"`
 	NotificationSettings   *ResourceJobNotificationSettings `json:"notification_settings,omitempty"`
+	Parameter              []ResourceJobParameter           `json:"parameter,omitempty"`
 	PipelineTask           *ResourceJobPipelineTask         `json:"pipeline_task,omitempty"`
 	PythonWheelTask        *ResourceJobPythonWheelTask      `json:"python_wheel_task,omitempty"`
 	Queue                  *ResourceJobQueue                `json:"queue,omitempty"`
 	RunAs                  *ResourceJobRunAs                `json:"run_as,omitempty"`
+	RunJobTask             *ResourceJobRunJobTask           `json:"run_job_task,omitempty"`
 	Schedule               *ResourceJobSchedule             `json:"schedule,omitempty"`
 	SparkJarTask           *ResourceJobSparkJarTask         `json:"spark_jar_task,omitempty"`
 	SparkPythonTask        *ResourceJobSparkPythonTask      `json:"spark_python_task,omitempty"`

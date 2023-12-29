@@ -68,15 +68,24 @@ func newCreate() *cobra.Command {
   Creates a Git credential entry for the user. Only one Git credential per user
   is supported, so any attempts to create credentials if an entry already exists
   will fail. Use the PATCH endpoint to update existing credentials, or the
-  DELETE endpoint to delete existing credentials.`
+  DELETE endpoint to delete existing credentials.
+
+  Arguments:
+    GIT_PROVIDER: Git provider. This field is case-insensitive. The available Git providers
+      are gitHub, bitbucketCloud, gitLab, azureDevOpsServices, gitHubEnterprise,
+      bitbucketServer, gitLabEnterpriseEdition and awsCodeCommit.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'git_provider' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -90,7 +99,8 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			createReq.GitProvider = args[0]
 		}
 
@@ -139,7 +149,10 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a credential.`
 	cmd.Long = `Delete a credential.
   
-  Deletes the specified Git credential.`
+  Deletes the specified Git credential.
+
+  Arguments:
+    CREDENTIAL_ID: The ID for the corresponding credential to access.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -215,7 +228,10 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get a credential entry.`
 	cmd.Long = `Get a credential entry.
   
-  Gets the Git credential with the specified credential ID.`
+  Gets the Git credential with the specified credential ID.
+
+  Arguments:
+    CREDENTIAL_ID: The ID for the corresponding credential to access.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -333,8 +349,10 @@ func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var updateReq workspace.UpdateCredentials
+	var updateJson flags.JsonFlag
 
 	// TODO: short flags
+	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.GitProvider, "git-provider", updateReq.GitProvider, `Git provider.`)
 	cmd.Flags().StringVar(&updateReq.GitUsername, "git-username", updateReq.GitUsername, `Git username.`)
@@ -344,7 +362,10 @@ func newUpdate() *cobra.Command {
 	cmd.Short = `Update a credential.`
 	cmd.Long = `Update a credential.
   
-  Updates the specified Git credential.`
+  Updates the specified Git credential.
+
+  Arguments:
+    CREDENTIAL_ID: The ID for the corresponding credential to access.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -353,6 +374,12 @@ func newUpdate() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
+			if err != nil {
+				return err
+			}
+		}
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down."

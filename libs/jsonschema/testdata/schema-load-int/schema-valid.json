@@ -1,0 +1,14 @@
+{
+    "type": "object",
+    "properties": {
+        "abc": {
+            "type": "integer",
+            "default": 1,
+            "enum": [1,2,3]
+        },
+        "def": {
+            "type": "integer",
+            "const": 5
+        }
+    }
+}

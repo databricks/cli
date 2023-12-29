@@ -1,0 +1,35 @@
+bundle:
+  name: bundle_permissions
+
+permissions:
+  - level: CAN_RUN
+    user_name: test@company.com
+
+targets:
+  development:
+    permissions:
+      - level: CAN_MANAGE
+        group_name: devs
+      - level: CAN_VIEW
+        service_principal_name: 1234-abcd
+      - level: CAN_RUN
+        user_name: bot@company.com
+
+resources:
+  pipelines:
+    nyc_taxi_pipeline:
+      target: nyc_taxi_production
+      development: false
+      photon: true
+
+  jobs:
+    pipeline_schedule:
+      name: Daily refresh of production pipeline
+
+      schedule:
+        quartz_cron_expression: 6 6 11 * * ?
+        timezone_id: UTC
+
+      tasks:
+        - pipeline_task:
+            pipeline_id: "to be interpolated"

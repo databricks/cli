@@ -70,9 +70,6 @@ func newCreate() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -86,7 +83,6 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
 		}
 
 		response, err := w.Tokens.Create(ctx, createReq)
@@ -139,7 +135,10 @@ func newDelete() *cobra.Command {
   Revokes an access token.
   
   If a token with the specified ID is not valid, this call returns an error
-  **RESOURCE_DOES_NOT_EXIST**.`
+  **RESOURCE_DOES_NOT_EXIST**.
+
+  Arguments:
+    TOKEN_ID: The ID of the token to be revoked.`
 
 	cmd.Annotations = make(map[string]string)
 

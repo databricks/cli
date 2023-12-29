@@ -3,6 +3,8 @@
 package schema
 
 type Resources struct {
+	AccessControlRuleSet     map[string]*ResourceAccessControlRuleSet     `json:"databricks_access_control_rule_set,omitempty"`
+	ArtifactAllowlist        map[string]*ResourceArtifactAllowlist        `json:"databricks_artifact_allowlist,omitempty"`
 	AwsS3Mount               map[string]*ResourceAwsS3Mount               `json:"databricks_aws_s3_mount,omitempty"`
 	AzureAdlsGen1Mount       map[string]*ResourceAzureAdlsGen1Mount       `json:"databricks_azure_adls_gen1_mount,omitempty"`
 	AzureAdlsGen2Mount       map[string]*ResourceAzureAdlsGen2Mount       `json:"databricks_azure_adls_gen2_mount,omitempty"`
@@ -11,7 +13,9 @@ type Resources struct {
 	CatalogWorkspaceBinding  map[string]*ResourceCatalogWorkspaceBinding  `json:"databricks_catalog_workspace_binding,omitempty"`
 	Cluster                  map[string]*ResourceCluster                  `json:"databricks_cluster,omitempty"`
 	ClusterPolicy            map[string]*ResourceClusterPolicy            `json:"databricks_cluster_policy,omitempty"`
+	Connection               map[string]*ResourceConnection               `json:"databricks_connection,omitempty"`
 	DbfsFile                 map[string]*ResourceDbfsFile                 `json:"databricks_dbfs_file,omitempty"`
+	DefaultNamespaceSetting  map[string]*ResourceDefaultNamespaceSetting  `json:"databricks_default_namespace_setting,omitempty"`
 	Directory                map[string]*ResourceDirectory                `json:"databricks_directory,omitempty"`
 	Entitlements             map[string]*ResourceEntitlements             `json:"databricks_entitlements,omitempty"`
 	ExternalLocation         map[string]*ResourceExternalLocation         `json:"databricks_external_location,omitempty"`
@@ -51,6 +55,7 @@ type Resources struct {
 	Pipeline                 map[string]*ResourcePipeline                 `json:"databricks_pipeline,omitempty"`
 	Provider                 map[string]*ResourceProvider                 `json:"databricks_provider,omitempty"`
 	Recipient                map[string]*ResourceRecipient                `json:"databricks_recipient,omitempty"`
+	RegisteredModel          map[string]*ResourceRegisteredModel          `json:"databricks_registered_model,omitempty"`
 	Repo                     map[string]*ResourceRepo                     `json:"databricks_repo,omitempty"`
 	Schema                   map[string]*ResourceSchema                   `json:"databricks_schema,omitempty"`
 	Secret                   map[string]*ResourceSecret                   `json:"databricks_secret,omitempty"`
@@ -70,6 +75,7 @@ type Resources struct {
 	SqlVisualization         map[string]*ResourceSqlVisualization         `json:"databricks_sql_visualization,omitempty"`
 	SqlWidget                map[string]*ResourceSqlWidget                `json:"databricks_sql_widget,omitempty"`
 	StorageCredential        map[string]*ResourceStorageCredential        `json:"databricks_storage_credential,omitempty"`
+	SystemSchema             map[string]*ResourceSystemSchema             `json:"databricks_system_schema,omitempty"`
 	Table                    map[string]*ResourceTable                    `json:"databricks_table,omitempty"`
 	Token                    map[string]*ResourceToken                    `json:"databricks_token,omitempty"`
 	User                     map[string]*ResourceUser                     `json:"databricks_user,omitempty"`
@@ -82,6 +88,8 @@ type Resources struct {
 
 func NewResources() *Resources {
 	return &Resources{
+		AccessControlRuleSet:     make(map[string]*ResourceAccessControlRuleSet),
+		ArtifactAllowlist:        make(map[string]*ResourceArtifactAllowlist),
 		AwsS3Mount:               make(map[string]*ResourceAwsS3Mount),
 		AzureAdlsGen1Mount:       make(map[string]*ResourceAzureAdlsGen1Mount),
 		AzureAdlsGen2Mount:       make(map[string]*ResourceAzureAdlsGen2Mount),
@@ -90,7 +98,9 @@ func NewResources() *Resources {
 		CatalogWorkspaceBinding:  make(map[string]*ResourceCatalogWorkspaceBinding),
 		Cluster:                  make(map[string]*ResourceCluster),
 		ClusterPolicy:            make(map[string]*ResourceClusterPolicy),
+		Connection:               make(map[string]*ResourceConnection),
 		DbfsFile:                 make(map[string]*ResourceDbfsFile),
+		DefaultNamespaceSetting:  make(map[string]*ResourceDefaultNamespaceSetting),
 		Directory:                make(map[string]*ResourceDirectory),
 		Entitlements:             make(map[string]*ResourceEntitlements),
 		ExternalLocation:         make(map[string]*ResourceExternalLocation),
@@ -130,6 +140,7 @@ func NewResources() *Resources {
 		Pipeline:                 make(map[string]*ResourcePipeline),
 		Provider:                 make(map[string]*ResourceProvider),
 		Recipient:                make(map[string]*ResourceRecipient),
+		RegisteredModel:          make(map[string]*ResourceRegisteredModel),
 		Repo:                     make(map[string]*ResourceRepo),
 		Schema:                   make(map[string]*ResourceSchema),
 		Secret:                   make(map[string]*ResourceSecret),
@@ -149,6 +160,7 @@ func NewResources() *Resources {
 		SqlVisualization:         make(map[string]*ResourceSqlVisualization),
 		SqlWidget:                make(map[string]*ResourceSqlWidget),
 		StorageCredential:        make(map[string]*ResourceStorageCredential),
+		SystemSchema:             make(map[string]*ResourceSystemSchema),
 		Table:                    make(map[string]*ResourceTable),
 		Token:                    make(map[string]*ResourceToken),
 		User:                     make(map[string]*ResourceUser),

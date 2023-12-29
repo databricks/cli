@@ -11,8 +11,10 @@ type Resources struct {
 	Jobs      map[string]*resources.Job      `json:"jobs,omitempty"`
 	Pipelines map[string]*resources.Pipeline `json:"pipelines,omitempty"`
 
-	Models      map[string]*resources.MlflowModel      `json:"models,omitempty"`
-	Experiments map[string]*resources.MlflowExperiment `json:"experiments,omitempty"`
+	Models                map[string]*resources.MlflowModel          `json:"models,omitempty"`
+	Experiments           map[string]*resources.MlflowExperiment     `json:"experiments,omitempty"`
+	ModelServingEndpoints map[string]*resources.ModelServingEndpoint `json:"model_serving_endpoints,omitempty"`
+	RegisteredModels      map[string]*resources.RegisteredModel      `json:"registered_models,omitempty"`
 }
 
 type UniqueResourceIdTracker struct {
@@ -93,6 +95,32 @@ func (r *Resources) VerifyUniqueResourceIdentifiers() (*UniqueResourceIdTracker,
 		tracker.Type[k] = "mlflow_experiment"
 		tracker.ConfigPath[k] = r.Experiments[k].ConfigFilePath
 	}
+	for k := range r.ModelServingEndpoints {
+		if _, ok := tracker.Type[k]; ok {
+			return tracker, fmt.Errorf("multiple resources named %s (%s at %s, %s at %s)",
+				k,
+				tracker.Type[k],
+				tracker.ConfigPath[k],
+				"model_serving_endpoint",
+				r.ModelServingEndpoints[k].ConfigFilePath,
+			)
+		}
+		tracker.Type[k] = "model_serving_endpoint"
+		tracker.ConfigPath[k] = r.ModelServingEndpoints[k].ConfigFilePath
+	}
+	for k := range r.RegisteredModels {
+		if _, ok := tracker.Type[k]; ok {
+			return tracker, fmt.Errorf("multiple resources named %s (%s at %s, %s at %s)",
+				k,
+				tracker.Type[k],
+				tracker.ConfigPath[k],
+				"registered_model",
+				r.RegisteredModels[k].ConfigFilePath,
+			)
+		}
+		tracker.Type[k] = "registered_model"
+		tracker.ConfigPath[k] = r.RegisteredModels[k].ConfigFilePath
+	}
 	return tracker, nil
 }
 
@@ -112,4 +140,31 @@ func (r *Resources) SetConfigFilePath(path string) {
 	for _, e := range r.Experiments {
 		e.ConfigFilePath = path
 	}
+	for _, e := range r.ModelServingEndpoints {
+		e.ConfigFilePath = path
+	}
+	for _, e := range r.RegisteredModels {
+		e.ConfigFilePath = path
+	}
+}
+
+// Merge iterates over all resources and merges chunks of the
+// resource configuration that can be merged. For example, for
+// jobs, this merges job cluster definitions and tasks that
+// use the same `job_cluster_key`, or `task_key`, respectively.
+func (r *Resources) Merge() error {
+	for _, job := range r.Jobs {
+		if err := job.MergeJobClusters(); err != nil {
+			return err
+		}
+		if err := job.MergeTasks(); err != nil {
+			return err
+		}
+	}
+	for _, pipeline := range r.Pipelines {
+		if err := pipeline.MergeClusters(); err != nil {
+			return err
+		}
+	}
+	return nil
 }

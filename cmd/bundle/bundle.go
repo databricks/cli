@@ -6,8 +6,10 @@ import (
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "bundle",
-		Short: "Databricks Asset Bundles",
+		Use:     "bundle",
+		Short:   "Databricks Asset Bundles let you express data/AI/analytics projects as code.",
+		Long:    "Databricks Asset Bundles let you express data/AI/analytics projects as code.\n\nOnline documentation: https://docs.databricks.com/en/dev-tools/bundles",
+		GroupID: "development",
 	}
 
 	initVariableFlag(cmd)
@@ -19,5 +21,6 @@ func New() *cobra.Command {
 	cmd.AddCommand(newSyncCommand())
 	cmd.AddCommand(newTestCommand())
 	cmd.AddCommand(newValidateCommand())
+	cmd.AddCommand(newInitCommand())
 	return cmd
 }

@@ -6,7 +6,7 @@ import (
 
 // FileSet is Git repository aware implementation of [fileset.FileSet].
 // It forces checking if gitignore files have been modified every
-// time a call to [FileSet.All] or [FileSet.RecursiveListFiles] is made.
+// time a call to [FileSet.All] is made.
 type FileSet struct {
 	fileset *fileset.FileSet
 	view    *View
@@ -41,11 +41,6 @@ func (f *FileSet) Root() string {
 func (f *FileSet) All() ([]fileset.File, error) {
 	f.view.repo.taintIgnoreRules()
 	return f.fileset.All()
-}
-
-func (f *FileSet) RecursiveListFiles(dir string) ([]fileset.File, error) {
-	f.view.repo.taintIgnoreRules()
-	return f.fileset.RecursiveListFiles(dir)
 }
 
 func (f *FileSet) EnsureValidGitIgnoreExists() error {

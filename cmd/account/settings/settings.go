@@ -64,7 +64,16 @@ func newDeletePersonalComputeSetting() *cobra.Command {
 	cmd.Short = `Delete Personal Compute setting.`
 	cmd.Long = `Delete Personal Compute setting.
   
-  Reverts back the Personal Compute setting value to default (ON)`
+  Reverts back the Personal Compute setting value to default (ON)
+
+  Arguments:
+    ETAG: etag used for versioning. The response is at least as fresh as the eTag
+      provided. This is used for optimistic concurrency control as a way to help
+      prevent simultaneous writes of a setting overwriting each other. It is
+      strongly suggested that systems make use of the etag in the read -> delete
+      pattern to perform setting deletions in order to avoid race conditions.
+      That is, get an etag from a GET request, and pass it with the DELETE
+      request to identify the rule set version you are deleting.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -125,7 +134,16 @@ func newReadPersonalComputeSetting() *cobra.Command {
 	cmd.Short = `Get Personal Compute setting.`
 	cmd.Long = `Get Personal Compute setting.
   
-  Gets the value of the Personal Compute setting.`
+  Gets the value of the Personal Compute setting.
+
+  Arguments:
+    ETAG: etag used for versioning. The response is at least as fresh as the eTag
+      provided. This is used for optimistic concurrency control as a way to help
+      prevent simultaneous writes of a setting overwriting each other. It is
+      strongly suggested that systems make use of the etag in the read -> delete
+      pattern to perform setting deletions in order to avoid race conditions.
+      That is, get an etag from a GET request, and pass it with the DELETE
+      request to identify the rule set version you are deleting.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -197,9 +215,6 @@ func newUpdatePersonalComputeSetting() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -213,7 +228,6 @@ func newUpdatePersonalComputeSetting() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
 		}
 
 		response, err := a.Settings.UpdatePersonalComputeSetting(ctx, updatePersonalComputeSettingReq)

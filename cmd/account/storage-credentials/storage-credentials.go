@@ -63,7 +63,10 @@ func newCreate() *cobra.Command {
   credentials * **GcpServiceAcountKey** for GCP credentials.
   
   The caller must be a metastore admin and have the
-  **CREATE_STORAGE_CREDENTIAL** privilege on the metastore.`
+  **CREATE_STORAGE_CREDENTIAL** privilege on the metastore.
+
+  Arguments:
+    METASTORE_ID: Unity Catalog metastore ID`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -128,12 +131,16 @@ func newDelete() *cobra.Command {
 
 	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the Storage Credential is not empty.`)
 
-	cmd.Use = "delete METASTORE_ID NAME"
+	cmd.Use = "delete METASTORE_ID STORAGE_CREDENTIAL_NAME"
 	cmd.Short = `Delete a storage credential.`
 	cmd.Long = `Delete a storage credential.
   
   Deletes a storage credential from the metastore. The caller must be an owner
-  of the storage credential.`
+  of the storage credential.
+
+  Arguments:
+    METASTORE_ID: Unity Catalog metastore ID
+    STORAGE_CREDENTIAL_NAME: Name of the storage credential.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -148,7 +155,7 @@ func newDelete() *cobra.Command {
 		a := root.AccountClient(ctx)
 
 		deleteReq.MetastoreId = args[0]
-		deleteReq.Name = args[1]
+		deleteReq.StorageCredentialName = args[1]
 
 		err = a.StorageCredentials.Delete(ctx, deleteReq)
 		if err != nil {
@@ -191,13 +198,17 @@ func newGet() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Use = "get METASTORE_ID NAME"
+	cmd.Use = "get METASTORE_ID STORAGE_CREDENTIAL_NAME"
 	cmd.Short = `Gets the named storage credential.`
 	cmd.Long = `Gets the named storage credential.
   
   Gets a storage credential from the metastore. The caller must be a metastore
   admin, the owner of the storage credential, or have a level of privilege on
-  the storage credential.`
+  the storage credential.
+
+  Arguments:
+    METASTORE_ID: Unity Catalog metastore ID
+    STORAGE_CREDENTIAL_NAME: Name of the storage credential.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -212,7 +223,7 @@ func newGet() *cobra.Command {
 		a := root.AccountClient(ctx)
 
 		getReq.MetastoreId = args[0]
-		getReq.Name = args[1]
+		getReq.StorageCredentialName = args[1]
 
 		response, err := a.StorageCredentials.Get(ctx, getReq)
 		if err != nil {
@@ -260,7 +271,10 @@ func newList() *cobra.Command {
 	cmd.Long = `Get all storage credentials assigned to a metastore.
   
   Gets a list of all storage credentials that have been assigned to given
-  metastore.`
+  metastore.
+
+  Arguments:
+    METASTORE_ID: Unity Catalog metastore ID`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -321,13 +335,17 @@ func newUpdate() *cobra.Command {
 
 	// TODO: complex arg: credential_info
 
-	cmd.Use = "update METASTORE_ID NAME"
+	cmd.Use = "update METASTORE_ID STORAGE_CREDENTIAL_NAME"
 	cmd.Short = `Updates a storage credential.`
 	cmd.Long = `Updates a storage credential.
   
   Updates a storage credential on the metastore. The caller must be the owner of
   the storage credential. If the caller is a metastore admin, only the __owner__
-  credential can be changed.`
+  credential can be changed.
+
+  Arguments:
+    METASTORE_ID: Unity Catalog metastore ID
+    STORAGE_CREDENTIAL_NAME: Name of the storage credential.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -348,7 +366,7 @@ func newUpdate() *cobra.Command {
 			}
 		}
 		updateReq.MetastoreId = args[0]
-		updateReq.Name = args[1]
+		updateReq.StorageCredentialName = args[1]
 
 		response, err := a.StorageCredentials.Update(ctx, updateReq)
 		if err != nil {

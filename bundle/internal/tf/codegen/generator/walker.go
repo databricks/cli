@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"strings"
 
+	"slices"
+
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/iancoleman/strcase"
 	"github.com/zclconf/go-cty/cty"
-	"golang.org/x/exp/slices"
 )
 
 type field struct {

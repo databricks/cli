@@ -1,9 +1,14 @@
 package databrickscfg
 
 import (
-	"os"
+	"context"
+	"errors"
+	"fmt"
+	"io/fs"
+	"path/filepath"
 	"strings"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
@@ -64,22 +69,53 @@ func MatchAllProfiles(p Profile) bool {
 	return true
 }
 
-const DefaultPath = "~/.databrickscfg"
-
-func LoadProfiles(path string, fn ProfileMatchFunction) (file string, profiles Profiles, err error) {
-	f, err := config.LoadFile(path)
-	if err != nil {
-		return
+// Get the path to the .databrickscfg file, falling back to the default in the current user's home directory.
+func GetPath(ctx context.Context) (string, error) {
+	configFile := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
+	if configFile == "" {
+		configFile = "~/.databrickscfg"
 	}
+	if strings.HasPrefix(configFile, "~") {
+		homedir, err := env.UserHomeDir(ctx)
+		if err != nil {
+			return "", err
+		}
+		configFile = filepath.Join(homedir, configFile[1:])
+	}
+	return configFile, nil
+}
 
-	homedir, err := os.UserHomeDir()
+var ErrNoConfiguration = errors.New("no configuration file found")
+
+func Get(ctx context.Context) (*config.File, error) {
+	path, err := GetPath(ctx)
 	if err != nil {
-		return
+		return nil, fmt.Errorf("cannot determine Databricks config file path: %w", err)
+	}
+	configFile, err := config.LoadFile(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		// downstreams depend on ErrNoConfiguration. TODO: expose this error through SDK
+		return nil, fmt.Errorf("%w at %s; please create one first", ErrNoConfiguration, path)
+	} else if err != nil {
+		return nil, err
+	}
+	return configFile, nil
+}
+
+func LoadProfiles(ctx context.Context, fn ProfileMatchFunction) (file string, profiles Profiles, err error) {
+	f, err := Get(ctx)
+	if err != nil {
+		return "", nil, fmt.Errorf("cannot load Databricks config file: %w", err)
 	}
 
 	// Replace homedir with ~ if applicable.
 	// This is to make the output more readable.
-	file = f.Path()
+	file = filepath.Clean(f.Path())
+	home, err := env.UserHomeDir(ctx)
+	if err != nil {
+		return "", nil, err
+	}
+	homedir := filepath.Clean(home)
 	if strings.HasPrefix(file, homedir) {
 		file = "~" + file[len(homedir):]
 	}
@@ -106,7 +142,7 @@ func LoadProfiles(path string, fn ProfileMatchFunction) (file string, profiles P
 }
 
 func ProfileCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	_, profiles, err := LoadProfiles(DefaultPath, MatchAllProfiles)
+	_, profiles, err := LoadProfiles(cmd.Context(), MatchAllProfiles)
 	if err != nil {
 		return nil, cobra.ShellCompDirectiveError
 	}

@@ -6,14 +6,15 @@ import (
 	"os"
 	"strings"
 
+	"log/slog"
+
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/slog"
 )
 
-func New() *cobra.Command {
+func New(ctx context.Context) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "databricks",
 		Short:   "Databricks CLI",
@@ -29,12 +30,17 @@ func New() *cobra.Command {
 		SilenceErrors: true,
 	}
 
+	// Pass the context along through the command during initialization.
+	// It will be overwritten when the command is executed.
+	cmd.SetContext(ctx)
+
 	// Initialize flags
 	logFlags := initLogFlags(cmd)
 	progressLoggerFlag := initProgressLoggerFlag(cmd, logFlags)
 	outputFlag := initOutputFlag(cmd)
 	initProfileFlag(cmd)
 	initEnvironmentFlag(cmd)
+	initTargetFlag(cmd)
 
 	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()

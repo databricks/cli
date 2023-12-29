@@ -4,12 +4,16 @@ package workspace
 
 import (
 	alerts "github.com/databricks/cli/cmd/workspace/alerts"
+	apps "github.com/databricks/cli/cmd/workspace/apps"
+	artifact_allowlists "github.com/databricks/cli/cmd/workspace/artifact-allowlists"
 	catalogs "github.com/databricks/cli/cmd/workspace/catalogs"
 	clean_rooms "github.com/databricks/cli/cmd/workspace/clean-rooms"
 	cluster_policies "github.com/databricks/cli/cmd/workspace/cluster-policies"
 	clusters "github.com/databricks/cli/cmd/workspace/clusters"
 	connections "github.com/databricks/cli/cmd/workspace/connections"
+	credentials_manager "github.com/databricks/cli/cmd/workspace/credentials-manager"
 	current_user "github.com/databricks/cli/cmd/workspace/current-user"
+	dashboard_widgets "github.com/databricks/cli/cmd/workspace/dashboard-widgets"
 	dashboards "github.com/databricks/cli/cmd/workspace/dashboards"
 	data_sources "github.com/databricks/cli/cmd/workspace/data-sources"
 	experiments "github.com/databricks/cli/cmd/workspace/experiments"
@@ -26,19 +30,23 @@ import (
 	libraries "github.com/databricks/cli/cmd/workspace/libraries"
 	metastores "github.com/databricks/cli/cmd/workspace/metastores"
 	model_registry "github.com/databricks/cli/cmd/workspace/model-registry"
+	model_versions "github.com/databricks/cli/cmd/workspace/model-versions"
 	permissions "github.com/databricks/cli/cmd/workspace/permissions"
 	pipelines "github.com/databricks/cli/cmd/workspace/pipelines"
 	policy_families "github.com/databricks/cli/cmd/workspace/policy-families"
 	providers "github.com/databricks/cli/cmd/workspace/providers"
 	queries "github.com/databricks/cli/cmd/workspace/queries"
 	query_history "github.com/databricks/cli/cmd/workspace/query-history"
+	query_visualizations "github.com/databricks/cli/cmd/workspace/query-visualizations"
 	recipient_activation "github.com/databricks/cli/cmd/workspace/recipient-activation"
 	recipients "github.com/databricks/cli/cmd/workspace/recipients"
+	registered_models "github.com/databricks/cli/cmd/workspace/registered-models"
 	repos "github.com/databricks/cli/cmd/workspace/repos"
 	schemas "github.com/databricks/cli/cmd/workspace/schemas"
 	secrets "github.com/databricks/cli/cmd/workspace/secrets"
 	service_principals "github.com/databricks/cli/cmd/workspace/service-principals"
 	serving_endpoints "github.com/databricks/cli/cmd/workspace/serving-endpoints"
+	settings "github.com/databricks/cli/cmd/workspace/settings"
 	shares "github.com/databricks/cli/cmd/workspace/shares"
 	storage_credentials "github.com/databricks/cli/cmd/workspace/storage-credentials"
 	system_schemas "github.com/databricks/cli/cmd/workspace/system-schemas"
@@ -59,12 +67,16 @@ func All() []*cobra.Command {
 	var out []*cobra.Command
 
 	out = append(out, alerts.New())
+	out = append(out, apps.New())
+	out = append(out, artifact_allowlists.New())
 	out = append(out, catalogs.New())
 	out = append(out, clean_rooms.New())
 	out = append(out, cluster_policies.New())
 	out = append(out, clusters.New())
 	out = append(out, connections.New())
+	out = append(out, credentials_manager.New())
 	out = append(out, current_user.New())
+	out = append(out, dashboard_widgets.New())
 	out = append(out, dashboards.New())
 	out = append(out, data_sources.New())
 	out = append(out, experiments.New())
@@ -81,19 +93,23 @@ func All() []*cobra.Command {
 	out = append(out, libraries.New())
 	out = append(out, metastores.New())
 	out = append(out, model_registry.New())
+	out = append(out, model_versions.New())
 	out = append(out, permissions.New())
 	out = append(out, pipelines.New())
 	out = append(out, policy_families.New())
 	out = append(out, providers.New())
 	out = append(out, queries.New())
 	out = append(out, query_history.New())
+	out = append(out, query_visualizations.New())
 	out = append(out, recipient_activation.New())
 	out = append(out, recipients.New())
+	out = append(out, registered_models.New())
 	out = append(out, repos.New())
 	out = append(out, schemas.New())
 	out = append(out, secrets.New())
 	out = append(out, service_principals.New())
 	out = append(out, serving_endpoints.New())
+	out = append(out, settings.New())
 	out = append(out, shares.New())
 	out = append(out, storage_credentials.New())
 	out = append(out, system_schemas.New())

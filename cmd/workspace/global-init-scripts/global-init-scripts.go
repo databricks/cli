@@ -68,15 +68,23 @@ func newCreate() *cobra.Command {
 	cmd.Short = `Create init script.`
 	cmd.Long = `Create init script.
   
-  Creates a new global init script in this workspace.`
+  Creates a new global init script in this workspace.
+
+  Arguments:
+    NAME: The name of the script
+    SCRIPT: The Base64-encoded content of the script.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'script' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -90,8 +98,11 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			createReq.Name = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			createReq.Script = args[1]
 		}
 
@@ -140,7 +151,10 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete init script.`
 	cmd.Long = `Delete init script.
   
-  Deletes a global init script.`
+  Deletes a global init script.
+
+  Arguments:
+    SCRIPT_ID: The ID of the global init script.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -213,7 +227,10 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get an init script.`
 	cmd.Long = `Get an init script.
   
-  Gets all the details of a script, including its Base64-encoded contents.`
+  Gets all the details of a script, including its Base64-encoded contents.
+
+  Arguments:
+    SCRIPT_ID: The ID of the global init script.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -330,22 +347,36 @@ func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var updateReq compute.GlobalInitScriptUpdateRequest
+	var updateJson flags.JsonFlag
 
 	// TODO: short flags
+	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&updateReq.Enabled, "enabled", updateReq.Enabled, `Specifies whether the script is enabled.`)
 	cmd.Flags().IntVar(&updateReq.Position, "position", updateReq.Position, `The position of a script, where 0 represents the first script to run, 1 is the second script to run, in ascending order.`)
 
-	cmd.Use = "update NAME SCRIPT SCRIPT_ID"
+	cmd.Use = "update SCRIPT_ID NAME SCRIPT"
 	cmd.Short = `Update init script.`
 	cmd.Long = `Update init script.
   
   Updates a global init script, specifying only the fields to change. All fields
-  are optional. Unspecified fields retain their current value.`
+  are optional. Unspecified fields retain their current value.
+
+  Arguments:
+    SCRIPT_ID: The ID of the global init script.
+    NAME: The name of the script
+    SCRIPT: The Base64-encoded content of the script.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := cobra.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, provide only SCRIPT_ID as positional arguments. Provide 'name', 'script' in your JSON input")
+			}
+			return nil
+		}
 		check := cobra.ExactArgs(3)
 		return check(cmd, args)
 	}
@@ -355,9 +386,19 @@ func newUpdate() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		updateReq.Name = args[0]
-		updateReq.Script = args[1]
-		updateReq.ScriptId = args[2]
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
+			if err != nil {
+				return err
+			}
+		}
+		updateReq.ScriptId = args[0]
+		if !cmd.Flags().Changed("json") {
+			updateReq.Name = args[1]
+		}
+		if !cmd.Flags().Changed("json") {
+			updateReq.Script = args[2]
+		}
 
 		err = w.GlobalInitScripts.Update(ctx, updateReq)
 		if err != nil {

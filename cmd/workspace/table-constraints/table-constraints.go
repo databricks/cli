@@ -149,7 +149,14 @@ func newDelete() *cobra.Command {
   schema, and be the owner of the table. - if __cascade__ argument is **true**,
   the user must have the following permissions on all of the child tables: the
   **USE_CATALOG** privilege on the table's catalog, the **USE_SCHEMA** privilege
-  on the table's schema, and be the owner of the table.`
+  on the table's schema, and be the owner of the table.
+
+  Arguments:
+    FULL_NAME: Full name of the table referenced by the constraint.
+    CONSTRAINT_NAME: The name of the constraint to delete.
+    CASCADE: If true, try deleting all child constraints of the current constraint. If
+      false, reject this operation if the current constraint has any child
+      constraints.`
 
 	cmd.Annotations = make(map[string]string)
 

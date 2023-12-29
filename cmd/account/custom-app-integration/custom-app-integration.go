@@ -22,11 +22,7 @@ func New() *cobra.Command {
 		Short: `These APIs enable administrators to manage custom oauth app integrations, which is required for adding/using Custom OAuth App Integration like Tableau Cloud for Databricks in AWS cloud.`,
 		Long: `These APIs enable administrators to manage custom oauth app integrations,
   which is required for adding/using Custom OAuth App Integration like Tableau
-  Cloud for Databricks in AWS cloud.
-  
-  **Note:** You can only add/use the OAuth custom application integrations when
-  OAuth enrollment status is enabled. For more details see
-  :method:OAuthEnrollment/create`,
+  Cloud for Databricks in AWS cloud.`,
 		GroupID: "oauth2",
 		Annotations: map[string]string{
 			"package": "oauth2",
@@ -60,6 +56,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&createReq.Confidential, "confidential", createReq.Confidential, `indicates if an oauth client-secret should be generated.`)
+	// TODO: array: scopes
 	// TODO: complex arg: token_access_policy
 
 	cmd.Use = "create"
@@ -133,7 +130,10 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete Custom OAuth App Integration.
   
   Delete an existing Custom OAuth App Integration. You can retrieve the custom
-  oauth app integration via :method:CustomAppIntegration/get.`
+  oauth app integration via :method:CustomAppIntegration/get.
+
+  Arguments:
+    INTEGRATION_ID: The oauth app integration ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -194,7 +194,10 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get OAuth Custom App Integration.`
 	cmd.Long = `Get OAuth Custom App Integration.
   
-  Gets the Custom OAuth App Integration for the given integration id.`
+  Gets the Custom OAuth App Integration for the given integration id.
+
+  Arguments:
+    INTEGRATION_ID: The oauth app integration ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -310,7 +313,10 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Updates Custom OAuth App Integration.
   
   Updates an existing custom OAuth App Integration. You can retrieve the custom
-  oauth app integration via :method:CustomAppIntegration/get.`
+  oauth app integration via :method:CustomAppIntegration/get.
+
+  Arguments:
+    INTEGRATION_ID: The oauth app integration ID.`
 
 	cmd.Annotations = make(map[string]string)
 

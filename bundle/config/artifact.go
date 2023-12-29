@@ -1,15 +1,22 @@
 package config
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"os/exec"
 	"path"
-	"strings"
 
+	"github.com/databricks/cli/bundle/config/paths"
+	"github.com/databricks/cli/libs/exec"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
+
+type Artifacts map[string]*Artifact
+
+func (artifacts Artifacts) SetConfigFilePath(path string) {
+	for _, artifact := range artifacts {
+		artifact.ConfigFilePath = path
+	}
+}
 
 type ArtifactType string
 
@@ -28,12 +35,14 @@ type Artifact struct {
 
 	// The local path to the directory with a root of artifact,
 	// for example, where setup.py is for Python projects
-	Path string `json:"path"`
+	Path string `json:"path,omitempty"`
 
 	// The relative or absolute path to the built artifact files
 	// (Python wheel, Java jar and etc) itself
-	Files        []ArtifactFile `json:"files"`
-	BuildCommand string         `json:"build"`
+	Files        []ArtifactFile `json:"files,omitempty"`
+	BuildCommand string         `json:"build,omitempty"`
+
+	paths.Paths
 }
 
 func (a *Artifact) Build(ctx context.Context) ([]byte, error) {
@@ -41,19 +50,11 @@ func (a *Artifact) Build(ctx context.Context) ([]byte, error) {
 		return nil, fmt.Errorf("no build property defined")
 	}
 
-	out := make([][]byte, 0)
-	commands := strings.Split(a.BuildCommand, " && ")
-	for _, command := range commands {
-		buildParts := strings.Split(command, " ")
-		cmd := exec.CommandContext(ctx, buildParts[0], buildParts[1:]...)
-		cmd.Dir = a.Path
-		res, err := cmd.CombinedOutput()
-		if err != nil {
-			return res, err
-		}
-		out = append(out, res)
+	e, err := exec.NewCommandExecutor(a.Path)
+	if err != nil {
+		return nil, err
 	}
-	return bytes.Join(out, []byte{}), nil
+	return e.Exec(ctx, a.BuildCommand)
 }
 
 func (a *Artifact) NormalisePaths() {
@@ -67,9 +68,13 @@ func (a *Artifact) NormalisePaths() {
 		remotePath := path.Join(wsfsBase, f.RemotePath)
 		for i := range f.Libraries {
 			lib := f.Libraries[i]
-			switch a.Type {
-			case ArtifactPythonWheel:
+			if lib.Whl != "" {
 				lib.Whl = remotePath
+				continue
+			}
+			if lib.Jar != "" {
+				lib.Jar = remotePath
+				continue
 			}
 		}
 

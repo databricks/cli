@@ -19,9 +19,15 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "model-registry",
-		Short: `MLflow Model Registry is a centralized model repository and a UI and set of APIs that enable you to manage the full lifecycle of MLflow Models.`,
-		Long: `MLflow Model Registry is a centralized model repository and a UI and set of
-  APIs that enable you to manage the full lifecycle of MLflow Models.`,
+		Short: `Note: This API reference documents APIs for the Workspace Model Registry.`,
+		Long: `Note: This API reference documents APIs for the Workspace Model Registry.
+  Databricks recommends using [Models in Unity
+  Catalog](/api/workspace/registeredmodels) instead. Models in Unity Catalog
+  provides centralized model governance, cross-workspace access, lineage, and
+  deployment. Workspace Model Registry will be deprecated in the future.
+  
+  The Workspace Model Registry is a centralized model repository and a UI and
+  set of APIs that enable you to manage the full lifecycle of MLflow Models.`,
 		GroupID: "ml",
 		Annotations: map[string]string{
 			"package": "ml",
@@ -60,15 +66,34 @@ func newApproveTransitionRequest() *cobra.Command {
 	cmd.Short = `Approve transition request.`
 	cmd.Long = `Approve transition request.
   
-  Approves a model version stage transition request.`
+  Approves a model version stage transition request.
+
+  Arguments:
+    NAME: Name of the model.
+    VERSION: Version of the model.
+    STAGE: Target stage of the transition. Valid values are:
+      
+      * None: The initial stage of a model version.
+      
+      * Staging: Staging or pre-production stage.
+      
+      * Production: Production stage.
+      
+      * Archived: Archived stage.
+    ARCHIVE_EXISTING_VERSIONS: Specifies whether to archive all current model versions in the target
+      stage.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(4)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'version', 'stage', 'archive_existing_versions' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(4)
 		return check(cmd, args)
 	}
 
@@ -82,13 +107,20 @@ func newApproveTransitionRequest() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			approveTransitionRequestReq.Name = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			approveTransitionRequestReq.Version = args[1]
+		}
+		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[2], &approveTransitionRequestReq.Stage)
 			if err != nil {
 				return fmt.Errorf("invalid STAGE: %s", args[2])
 			}
+		}
+		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[3], &approveTransitionRequestReq.ArchiveExistingVersions)
 			if err != nil {
 				return fmt.Errorf("invalid ARCHIVE_EXISTING_VERSIONS: %s", args[3])
@@ -144,15 +176,24 @@ func newCreateComment() *cobra.Command {
   
   Posts a comment on a model version. A comment can be submitted either by a
   user or programmatically to display relevant information about the model. For
-  example, test results or deployment errors.`
+  example, test results or deployment errors.
+
+  Arguments:
+    NAME: Name of the model.
+    VERSION: Version of the model.
+    COMMENT: User-provided comment on the action.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(3)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'version', 'comment' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(3)
 		return check(cmd, args)
 	}
 
@@ -166,9 +207,14 @@ func newCreateComment() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			createCommentReq.Name = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			createCommentReq.Version = args[1]
+		}
+		if !cmd.Flags().Changed("json") {
 			createCommentReq.Comment = args[2]
 		}
 
@@ -225,15 +271,22 @@ func newCreateModel() *cobra.Command {
   Creates a new registered model with the name specified in the request body.
   
   Throws RESOURCE_ALREADY_EXISTS if a registered model with the given name
-  exists.`
+  exists.
+
+  Arguments:
+    NAME: Register models under this name`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -247,7 +300,8 @@ func newCreateModel() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			createModelReq.Name = args[0]
 		}
 
@@ -303,15 +357,23 @@ func newCreateModelVersion() *cobra.Command {
 	cmd.Short = `Create a model version.`
 	cmd.Long = `Create a model version.
   
-  Creates a model version.`
+  Creates a model version.
+
+  Arguments:
+    NAME: Register model under this name
+    SOURCE: URI indicating the location of the model artifacts.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'source' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -325,8 +387,11 @@ func newCreateModelVersion() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			createModelVersionReq.Name = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			createModelVersionReq.Source = args[1]
 		}
 
@@ -379,15 +444,32 @@ func newCreateTransitionRequest() *cobra.Command {
 	cmd.Short = `Make a transition request.`
 	cmd.Long = `Make a transition request.
   
-  Creates a model version stage transition request.`
+  Creates a model version stage transition request.
+
+  Arguments:
+    NAME: Name of the model.
+    VERSION: Version of the model.
+    STAGE: Target stage of the transition. Valid values are:
+      
+      * None: The initial stage of a model version.
+      
+      * Staging: Staging or pre-production stage.
+      
+      * Production: Production stage.
+      
+      * Archived: Archived stage.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(3)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'version', 'stage' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(3)
 		return check(cmd, args)
 	}
 
@@ -401,9 +483,14 @@ func newCreateTransitionRequest() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			createTransitionRequestReq.Name = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			createTransitionRequestReq.Version = args[1]
+		}
+		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[2], &createTransitionRequestReq.Stage)
 			if err != nil {
 				return fmt.Errorf("invalid STAGE: %s", args[2])
@@ -457,7 +544,7 @@ func newCreateWebhook() *cobra.Command {
 	// TODO: complex arg: http_url_spec
 	// TODO: complex arg: job_spec
 	cmd.Flags().StringVar(&createWebhookReq.ModelName, "model-name", createWebhookReq.ModelName, `Name of the model whose events would trigger this webhook.`)
-	cmd.Flags().Var(&createWebhookReq.Status, "status", `This describes an enum.`)
+	cmd.Flags().Var(&createWebhookReq.Status, "status", `Enable or disable triggering the webhook, or put the webhook into test mode. Supported values: [ACTIVE, DISABLED, TEST_MODE]`)
 
 	cmd.Use = "create-webhook"
 	cmd.Short = `Create a webhook.`
@@ -589,7 +676,10 @@ func newDeleteModel() *cobra.Command {
 	cmd.Short = `Delete a model.`
 	cmd.Long = `Delete a model.
   
-  Deletes a registered model.`
+  Deletes a registered model.
+
+  Arguments:
+    NAME: Registered model unique name identifier.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -650,7 +740,12 @@ func newDeleteModelTag() *cobra.Command {
 	cmd.Short = `Delete a model tag.`
 	cmd.Long = `Delete a model tag.
   
-  Deletes the tag for a registered model.`
+  Deletes the tag for a registered model.
+
+  Arguments:
+    NAME: Name of the registered model that the tag was logged under.
+    KEY: Name of the tag. The name must be an exact match; wild-card deletion is
+      not supported. Maximum size is 250 bytes.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -712,7 +807,11 @@ func newDeleteModelVersion() *cobra.Command {
 	cmd.Short = `Delete a model version.`
 	cmd.Long = `Delete a model version.
   
-  Deletes a model version.`
+  Deletes a model version.
+
+  Arguments:
+    NAME: Name of the registered model
+    VERSION: Model version number`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -774,7 +873,13 @@ func newDeleteModelVersionTag() *cobra.Command {
 	cmd.Short = `Delete a model version tag.`
 	cmd.Long = `Delete a model version tag.
   
-  Deletes a model version tag.`
+  Deletes a model version tag.
+
+  Arguments:
+    NAME: Name of the registered model that the tag was logged under.
+    VERSION: Model version number that the tag was logged under.
+    KEY: Name of the tag. The name must be an exact match; wild-card deletion is
+      not supported. Maximum size is 250 bytes.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -839,7 +944,23 @@ func newDeleteTransitionRequest() *cobra.Command {
 	cmd.Short = `Delete a transition request.`
 	cmd.Long = `Delete a transition request.
   
-  Cancels a model version stage transition request.`
+  Cancels a model version stage transition request.
+
+  Arguments:
+    NAME: Name of the model.
+    VERSION: Version of the model.
+    STAGE: Target stage of the transition request. Valid values are:
+      
+      * None: The initial stage of a model version.
+      
+      * Staging: Staging or pre-production stage.
+      
+      * Production: Production stage.
+      
+      * Archived: Archived stage.
+    CREATOR: Username of the user who created this request. Of the transition requests
+      matching the specified details, only the one transition created by this
+      user will be deleted.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -899,10 +1020,8 @@ func newDeleteWebhook() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var deleteWebhookReq ml.DeleteWebhookRequest
-	var deleteWebhookJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&deleteWebhookJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&deleteWebhookReq.Id, "id", deleteWebhookReq.Id, `Webhook ID required to delete a registry webhook.`)
 
@@ -918,9 +1037,6 @@ func newDeleteWebhook() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -928,14 +1044,6 @@ func newDeleteWebhook() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			err = deleteWebhookJson.Unmarshal(&deleteWebhookReq)
-			if err != nil {
-				return err
-			}
-		} else {
-		}
 
 		err = w.ModelRegistry.DeleteWebhook(ctx, deleteWebhookReq)
 		if err != nil {
@@ -986,15 +1094,22 @@ func newGetLatestVersions() *cobra.Command {
 	cmd.Short = `Get the latest version.`
 	cmd.Long = `Get the latest version.
   
-  Gets the latest version of a registered model.`
+  Gets the latest version of a registered model.
+
+  Arguments:
+    NAME: Registered model unique name identifier.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -1008,7 +1123,8 @@ func newGetLatestVersions() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			getLatestVersionsReq.Name = args[0]
 		}
 
@@ -1061,7 +1177,10 @@ func newGetModel() *cobra.Command {
   [MLflow endpoint] that also returns the model's Databricks workspace ID and
   the permission level of the requesting user on the model.
   
-  [MLflow endpoint]: https://www.mlflow.org/docs/latest/rest-api.html#get-registeredmodel`
+  [MLflow endpoint]: https://www.mlflow.org/docs/latest/rest-api.html#get-registeredmodel
+
+  Arguments:
+    NAME: Registered model unique name identifier.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1122,7 +1241,11 @@ func newGetModelVersion() *cobra.Command {
 	cmd.Short = `Get a model version.`
 	cmd.Long = `Get a model version.
   
-  Get a model version.`
+  Get a model version.
+
+  Arguments:
+    NAME: Name of the registered model
+    VERSION: Model version number`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1184,7 +1307,11 @@ func newGetModelVersionDownloadUri() *cobra.Command {
 	cmd.Short = `Get a model version URI.`
 	cmd.Long = `Get a model version URI.
   
-  Gets a URI to download the model version.`
+  Gets a URI to download the model version.
+
+  Arguments:
+    NAME: Name of the registered model
+    VERSION: Model version number`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1226,6 +1353,135 @@ func init() {
 	})
 }
 
+// start get-permission-levels command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getPermissionLevelsOverrides []func(
+	*cobra.Command,
+	*ml.GetRegisteredModelPermissionLevelsRequest,
+)
+
+func newGetPermissionLevels() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getPermissionLevelsReq ml.GetRegisteredModelPermissionLevelsRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-permission-levels REGISTERED_MODEL_ID"
+	cmd.Short = `Get registered model permission levels.`
+	cmd.Long = `Get registered model permission levels.
+  
+  Gets the permission levels that a user can have on an object.
+
+  Arguments:
+    REGISTERED_MODEL_ID: The registered model for which to get or manage permissions.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		getPermissionLevelsReq.RegisteredModelId = args[0]
+
+		response, err := w.ModelRegistry.GetPermissionLevels(ctx, getPermissionLevelsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getPermissionLevelsOverrides {
+		fn(cmd, &getPermissionLevelsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetPermissionLevels())
+	})
+}
+
+// start get-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getPermissionsOverrides []func(
+	*cobra.Command,
+	*ml.GetRegisteredModelPermissionsRequest,
+)
+
+func newGetPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getPermissionsReq ml.GetRegisteredModelPermissionsRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-permissions REGISTERED_MODEL_ID"
+	cmd.Short = `Get registered model permissions.`
+	cmd.Long = `Get registered model permissions.
+  
+  Gets the permissions of a registered model. Registered models can inherit
+  permissions from their root object.
+
+  Arguments:
+    REGISTERED_MODEL_ID: The registered model for which to get or manage permissions.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		getPermissionsReq.RegisteredModelId = args[0]
+
+		response, err := w.ModelRegistry.GetPermissions(ctx, getPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getPermissionsOverrides {
+		fn(cmd, &getPermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetPermissions())
+	})
+}
+
 // start list-models command
 
 // Slice with functions to override default command behavior.
@@ -1239,10 +1495,8 @@ func newListModels() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listModelsReq ml.ListModelsRequest
-	var listModelsJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&listModelsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().IntVar(&listModelsReq.MaxResults, "max-results", listModelsReq.MaxResults, `Maximum number of registered models desired.`)
 	cmd.Flags().StringVar(&listModelsReq.PageToken, "page-token", listModelsReq.PageToken, `Pagination token to go to the next page based on a previous query.`)
@@ -1258,9 +1512,6 @@ func newListModels() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -1268,14 +1519,6 @@ func newListModels() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			err = listModelsJson.Unmarshal(&listModelsReq)
-			if err != nil {
-				return err
-			}
-		} else {
-		}
 
 		response, err := w.ModelRegistry.ListModelsAll(ctx, listModelsReq)
 		if err != nil {
@@ -1322,7 +1565,11 @@ func newListTransitionRequests() *cobra.Command {
 	cmd.Short = `List transition requests.`
 	cmd.Long = `List transition requests.
   
-  Gets a list of all open stage transition requests for the model version.`
+  Gets a list of all open stage transition requests for the model version.
+
+  Arguments:
+    NAME: Name of the model.
+    VERSION: Version of the model.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1377,10 +1624,8 @@ func newListWebhooks() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listWebhooksReq ml.ListWebhooksRequest
-	var listWebhooksJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&listWebhooksJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: events
 	cmd.Flags().StringVar(&listWebhooksReq.ModelName, "model-name", listWebhooksReq.ModelName, `If not specified, all webhooks associated with the specified events are listed, regardless of their associated model.`)
@@ -1398,9 +1643,6 @@ func newListWebhooks() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -1408,14 +1650,6 @@ func newListWebhooks() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			err = listWebhooksJson.Unmarshal(&listWebhooksReq)
-			if err != nil {
-				return err
-			}
-		} else {
-		}
 
 		response, err := w.ModelRegistry.ListWebhooksAll(ctx, listWebhooksReq)
 		if err != nil {
@@ -1466,15 +1700,32 @@ func newRejectTransitionRequest() *cobra.Command {
 	cmd.Short = `Reject a transition request.`
 	cmd.Long = `Reject a transition request.
   
-  Rejects a model version stage transition request.`
+  Rejects a model version stage transition request.
+
+  Arguments:
+    NAME: Name of the model.
+    VERSION: Version of the model.
+    STAGE: Target stage of the transition. Valid values are:
+      
+      * None: The initial stage of a model version.
+      
+      * Staging: Staging or pre-production stage.
+      
+      * Production: Production stage.
+      
+      * Archived: Archived stage.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(3)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'version', 'stage' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(3)
 		return check(cmd, args)
 	}
 
@@ -1488,9 +1739,14 @@ func newRejectTransitionRequest() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			rejectTransitionRequestReq.Name = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			rejectTransitionRequestReq.Version = args[1]
+		}
+		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[2], &rejectTransitionRequestReq.Stage)
 			if err != nil {
 				return fmt.Errorf("invalid STAGE: %s", args[2])
@@ -1546,15 +1802,22 @@ func newRenameModel() *cobra.Command {
 	cmd.Short = `Rename a model.`
 	cmd.Long = `Rename a model.
   
-  Renames a registered model.`
+  Renames a registered model.
+
+  Arguments:
+    NAME: Registered model unique name identifier.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -1568,7 +1831,8 @@ func newRenameModel() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			renameModelReq.Name = args[0]
 		}
 
@@ -1610,10 +1874,8 @@ func newSearchModelVersions() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var searchModelVersionsReq ml.SearchModelVersionsRequest
-	var searchModelVersionsJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&searchModelVersionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&searchModelVersionsReq.Filter, "filter", searchModelVersionsReq.Filter, `String filter condition, like "name='my-model-name'".`)
 	cmd.Flags().IntVar(&searchModelVersionsReq.MaxResults, "max-results", searchModelVersionsReq.MaxResults, `Maximum number of models desired.`)
@@ -1630,9 +1892,6 @@ func newSearchModelVersions() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -1640,14 +1899,6 @@ func newSearchModelVersions() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			err = searchModelVersionsJson.Unmarshal(&searchModelVersionsReq)
-			if err != nil {
-				return err
-			}
-		} else {
-		}
 
 		response, err := w.ModelRegistry.SearchModelVersionsAll(ctx, searchModelVersionsReq)
 		if err != nil {
@@ -1687,10 +1938,8 @@ func newSearchModels() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var searchModelsReq ml.SearchModelsRequest
-	var searchModelsJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&searchModelsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&searchModelsReq.Filter, "filter", searchModelsReq.Filter, `String filter condition, like "name LIKE 'my-model-name'".`)
 	cmd.Flags().IntVar(&searchModelsReq.MaxResults, "max-results", searchModelsReq.MaxResults, `Maximum number of models desired.`)
@@ -1707,9 +1956,6 @@ func newSearchModels() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -1717,14 +1963,6 @@ func newSearchModels() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			err = searchModelsJson.Unmarshal(&searchModelsReq)
-			if err != nil {
-				return err
-			}
-		} else {
-		}
 
 		response, err := w.ModelRegistry.SearchModelsAll(ctx, searchModelsReq)
 		if err != nil {
@@ -1773,15 +2011,29 @@ func newSetModelTag() *cobra.Command {
 	cmd.Short = `Set a tag.`
 	cmd.Long = `Set a tag.
   
-  Sets a tag on a registered model.`
+  Sets a tag on a registered model.
+
+  Arguments:
+    NAME: Unique name of the model.
+    KEY: Name of the tag. Maximum size depends on storage backend. If a tag with
+      this name already exists, its preexisting value will be replaced by the
+      specified value. All storage backends are guaranteed to support key
+      values up to 250 bytes in size.
+    VALUE: String value of the tag being logged. Maximum size depends on storage
+      backend. All storage backends are guaranteed to support key values up to
+      5000 bytes in size.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(3)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'key', 'value' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(3)
 		return check(cmd, args)
 	}
 
@@ -1795,9 +2047,14 @@ func newSetModelTag() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			setModelTagReq.Name = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			setModelTagReq.Key = args[1]
+		}
+		if !cmd.Flags().Changed("json") {
 			setModelTagReq.Value = args[2]
 		}
 
@@ -1848,15 +2105,30 @@ func newSetModelVersionTag() *cobra.Command {
 	cmd.Short = `Set a version tag.`
 	cmd.Long = `Set a version tag.
   
-  Sets a model version tag.`
+  Sets a model version tag.
+
+  Arguments:
+    NAME: Unique name of the model.
+    VERSION: Model version number.
+    KEY: Name of the tag. Maximum size depends on storage backend. If a tag with
+      this name already exists, its preexisting value will be replaced by the
+      specified value. All storage backends are guaranteed to support key
+      values up to 250 bytes in size.
+    VALUE: String value of the tag being logged. Maximum size depends on storage
+      backend. All storage backends are guaranteed to support key values up to
+      5000 bytes in size.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(4)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'version', 'key', 'value' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(4)
 		return check(cmd, args)
 	}
 
@@ -1870,10 +2142,17 @@ func newSetModelVersionTag() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			setModelVersionTagReq.Name = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			setModelVersionTagReq.Version = args[1]
+		}
+		if !cmd.Flags().Changed("json") {
 			setModelVersionTagReq.Key = args[2]
+		}
+		if !cmd.Flags().Changed("json") {
 			setModelVersionTagReq.Value = args[3]
 		}
 
@@ -1902,6 +2181,81 @@ func init() {
 	})
 }
 
+// start set-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var setPermissionsOverrides []func(
+	*cobra.Command,
+	*ml.RegisteredModelPermissionsRequest,
+)
+
+func newSetPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var setPermissionsReq ml.RegisteredModelPermissionsRequest
+	var setPermissionsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "set-permissions REGISTERED_MODEL_ID"
+	cmd.Short = `Set registered model permissions.`
+	cmd.Long = `Set registered model permissions.
+  
+  Sets permissions on a registered model. Registered models can inherit
+  permissions from their root object.
+
+  Arguments:
+    REGISTERED_MODEL_ID: The registered model for which to get or manage permissions.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = setPermissionsJson.Unmarshal(&setPermissionsReq)
+			if err != nil {
+				return err
+			}
+		}
+		setPermissionsReq.RegisteredModelId = args[0]
+
+		response, err := w.ModelRegistry.SetPermissions(ctx, setPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range setPermissionsOverrides {
+		fn(cmd, &setPermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newSetPermissions())
+	})
+}
+
 // start test-registry-webhook command
 
 // Slice with functions to override default command behavior.
@@ -1920,7 +2274,20 @@ func newTestRegistryWebhook() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&testRegistryWebhookJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().Var(&testRegistryWebhookReq.Event, "event", `If event is specified, the test trigger uses the specified event.`)
+	cmd.Flags().Var(&testRegistryWebhookReq.Event, "event", `If event is specified, the test trigger uses the specified event. Supported values: [
+  COMMENT_CREATED,
+  MODEL_VERSION_CREATED,
+  MODEL_VERSION_TAG_SET,
+  MODEL_VERSION_TRANSITIONED_STAGE,
+  MODEL_VERSION_TRANSITIONED_TO_ARCHIVED,
+  MODEL_VERSION_TRANSITIONED_TO_PRODUCTION,
+  MODEL_VERSION_TRANSITIONED_TO_STAGING,
+  REGISTERED_MODEL_CREATED,
+  TRANSITION_REQUEST_CREATED,
+  TRANSITION_REQUEST_TO_ARCHIVED_CREATED,
+  TRANSITION_REQUEST_TO_PRODUCTION_CREATED,
+  TRANSITION_REQUEST_TO_STAGING_CREATED,
+]`)
 
 	cmd.Use = "test-registry-webhook ID"
 	cmd.Short = `Test a webhook.`
@@ -1928,15 +2295,22 @@ func newTestRegistryWebhook() *cobra.Command {
   
   **NOTE:** This endpoint is in Public Preview.
   
-  Tests a registry webhook.`
+  Tests a registry webhook.
+
+  Arguments:
+    ID: Webhook ID`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'id' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -1950,7 +2324,8 @@ func newTestRegistryWebhook() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			testRegistryWebhookReq.Id = args[0]
 		}
 
@@ -2007,15 +2382,34 @@ func newTransitionStage() *cobra.Command {
   the [MLflow endpoint] that also accepts a comment associated with the
   transition to be recorded.",
   
-  [MLflow endpoint]: https://www.mlflow.org/docs/latest/rest-api.html#transition-modelversion-stage`
+  [MLflow endpoint]: https://www.mlflow.org/docs/latest/rest-api.html#transition-modelversion-stage
+
+  Arguments:
+    NAME: Name of the model.
+    VERSION: Version of the model.
+    STAGE: Target stage of the transition. Valid values are:
+      
+      * None: The initial stage of a model version.
+      
+      * Staging: Staging or pre-production stage.
+      
+      * Production: Production stage.
+      
+      * Archived: Archived stage.
+    ARCHIVE_EXISTING_VERSIONS: Specifies whether to archive all current model versions in the target
+      stage.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(4)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'version', 'stage', 'archive_existing_versions' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(4)
 		return check(cmd, args)
 	}
 
@@ -2029,13 +2423,20 @@ func newTransitionStage() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			transitionStageReq.Name = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			transitionStageReq.Version = args[1]
+		}
+		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[2], &transitionStageReq.Stage)
 			if err != nil {
 				return fmt.Errorf("invalid STAGE: %s", args[2])
 			}
+		}
+		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[3], &transitionStageReq.ArchiveExistingVersions)
 			if err != nil {
 				return fmt.Errorf("invalid ARCHIVE_EXISTING_VERSIONS: %s", args[3])
@@ -2089,15 +2490,23 @@ func newUpdateComment() *cobra.Command {
 	cmd.Short = `Update a comment.`
 	cmd.Long = `Update a comment.
   
-  Post an edit to a comment on a model version.`
+  Post an edit to a comment on a model version.
+
+  Arguments:
+    ID: Unique identifier of an activity
+    COMMENT: User-provided comment on the action.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'id', 'comment' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -2111,8 +2520,11 @@ func newUpdateComment() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			updateCommentReq.Id = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			updateCommentReq.Comment = args[1]
 		}
 
@@ -2165,15 +2577,22 @@ func newUpdateModel() *cobra.Command {
 	cmd.Short = `Update model.`
 	cmd.Long = `Update model.
   
-  Updates a registered model.`
+  Updates a registered model.
+
+  Arguments:
+    NAME: Registered model unique name identifier.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -2187,7 +2606,8 @@ func newUpdateModel() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			updateModelReq.Name = args[0]
 		}
 
@@ -2240,15 +2660,23 @@ func newUpdateModelVersion() *cobra.Command {
 	cmd.Short = `Update model version.`
 	cmd.Long = `Update model version.
   
-  Updates the model version.`
+  Updates the model version.
+
+  Arguments:
+    NAME: Name of the registered model
+    VERSION: Model version number`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'version' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -2262,8 +2690,11 @@ func newUpdateModelVersion() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			updateModelVersionReq.Name = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			updateModelVersionReq.Version = args[1]
 		}
 
@@ -2292,6 +2723,81 @@ func init() {
 	})
 }
 
+// start update-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updatePermissionsOverrides []func(
+	*cobra.Command,
+	*ml.RegisteredModelPermissionsRequest,
+)
+
+func newUpdatePermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updatePermissionsReq ml.RegisteredModelPermissionsRequest
+	var updatePermissionsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "update-permissions REGISTERED_MODEL_ID"
+	cmd.Short = `Update registered model permissions.`
+	cmd.Long = `Update registered model permissions.
+  
+  Updates the permissions on a registered model. Registered models can inherit
+  permissions from their root object.
+
+  Arguments:
+    REGISTERED_MODEL_ID: The registered model for which to get or manage permissions.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = updatePermissionsJson.Unmarshal(&updatePermissionsReq)
+			if err != nil {
+				return err
+			}
+		}
+		updatePermissionsReq.RegisteredModelId = args[0]
+
+		response, err := w.ModelRegistry.UpdatePermissions(ctx, updatePermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updatePermissionsOverrides {
+		fn(cmd, &updatePermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdatePermissions())
+	})
+}
+
 // start update-webhook command
 
 // Slice with functions to override default command behavior.
@@ -2314,7 +2820,7 @@ func newUpdateWebhook() *cobra.Command {
 	// TODO: array: events
 	// TODO: complex arg: http_url_spec
 	// TODO: complex arg: job_spec
-	cmd.Flags().Var(&updateWebhookReq.Status, "status", `This describes an enum.`)
+	cmd.Flags().Var(&updateWebhookReq.Status, "status", `Enable or disable triggering the webhook, or put the webhook into test mode. Supported values: [ACTIVE, DISABLED, TEST_MODE]`)
 
 	cmd.Use = "update-webhook ID"
 	cmd.Short = `Update a webhook.`
@@ -2322,15 +2828,22 @@ func newUpdateWebhook() *cobra.Command {
   
   **NOTE:** This endpoint is in Public Preview.
   
-  Updates a registry webhook.`
+  Updates a registry webhook.
+
+  Arguments:
+    ID: Webhook ID`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'id' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -2344,7 +2857,8 @@ func newUpdateWebhook() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			updateWebhookReq.Id = args[0]
 		}
 

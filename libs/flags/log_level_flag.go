@@ -2,12 +2,12 @@ package flags
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slog"
 )
 
 var levels = map[string]slog.Level{

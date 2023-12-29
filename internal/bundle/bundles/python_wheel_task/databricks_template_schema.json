@@ -1,0 +1,25 @@
+{
+    "properties": {
+        "project_name": {
+            "type": "string",
+            "default": "my_test_code",
+            "description": "Unique name for this project"
+        },
+        "spark_version": {
+            "type": "string",
+            "description": "Spark version used for job cluster"
+        },
+        "node_type_id": {
+            "type": "string",
+            "description": "Node type id for job cluster"
+        },
+        "unique_id": {
+            "type": "string",
+            "description": "Unique ID for job name"
+        },
+        "python_wheel_wrapper": {
+            "type": "boolean",
+            "description": "Whether or not to enable python wheel wrapper"
+        }
+    }
+}

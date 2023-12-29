@@ -29,8 +29,8 @@ func TestDeferredMutatorWhenAllMutatorsSucceed(t *testing.T) {
 	cleanup := &testMutator{}
 	deferredMutator := Defer(Seq(m1, m2, m3), cleanup)
 
-	bundle := &Bundle{}
-	err := Apply(context.Background(), bundle, deferredMutator)
+	b := &Bundle{}
+	err := Apply(context.Background(), b, deferredMutator)
 	assert.NoError(t, err)
 
 	assert.Equal(t, 1, m1.applyCalled)
@@ -46,8 +46,8 @@ func TestDeferredMutatorWhenFirstFails(t *testing.T) {
 	cleanup := &testMutator{}
 	deferredMutator := Defer(Seq(mErr, m1, m2), cleanup)
 
-	bundle := &Bundle{}
-	err := Apply(context.Background(), bundle, deferredMutator)
+	b := &Bundle{}
+	err := Apply(context.Background(), b, deferredMutator)
 	assert.ErrorContains(t, err, "mutator error occurred")
 
 	assert.Equal(t, 1, mErr.applyCalled)
@@ -63,8 +63,8 @@ func TestDeferredMutatorWhenMiddleOneFails(t *testing.T) {
 	cleanup := &testMutator{}
 	deferredMutator := Defer(Seq(m1, mErr, m2), cleanup)
 
-	bundle := &Bundle{}
-	err := Apply(context.Background(), bundle, deferredMutator)
+	b := &Bundle{}
+	err := Apply(context.Background(), b, deferredMutator)
 	assert.ErrorContains(t, err, "mutator error occurred")
 
 	assert.Equal(t, 1, m1.applyCalled)
@@ -80,8 +80,8 @@ func TestDeferredMutatorWhenLastOneFails(t *testing.T) {
 	cleanup := &testMutator{}
 	deferredMutator := Defer(Seq(m1, m2, mErr), cleanup)
 
-	bundle := &Bundle{}
-	err := Apply(context.Background(), bundle, deferredMutator)
+	b := &Bundle{}
+	err := Apply(context.Background(), b, deferredMutator)
 	assert.ErrorContains(t, err, "mutator error occurred")
 
 	assert.Equal(t, 1, m1.applyCalled)
@@ -97,8 +97,8 @@ func TestDeferredMutatorCombinesErrorMessages(t *testing.T) {
 	cleanupErr := &mutatorWithError{errorMsg: "cleanup error occurred"}
 	deferredMutator := Defer(Seq(m1, m2, mErr), cleanupErr)
 
-	bundle := &Bundle{}
-	err := Apply(context.Background(), bundle, deferredMutator)
+	b := &Bundle{}
+	err := Apply(context.Background(), b, deferredMutator)
 	assert.ErrorContains(t, err, "mutator error occurred\ncleanup error occurred")
 
 	assert.Equal(t, 1, m1.applyCalled)
