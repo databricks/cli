@@ -9,7 +9,6 @@ import (
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -199,8 +198,7 @@ func TestMustAccountClientWorksWithDatabricksCfg(t *testing.T) {
 		0755)
 	require.NoError(t, err)
 
-	ctx, _ := cmdio.SetupTest(context.Background())
-	cmd := New(ctx)
+	cmd := New(context.Background())
 
 	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
 	err = MustAccountClient(cmd, []string{})
@@ -210,10 +208,9 @@ func TestMustAccountClientWorksWithDatabricksCfg(t *testing.T) {
 func TestMustAccountClientWorksWithNoDatabricksCfgButEnvironmentVariables(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 
-	ctx := context.Background()
-	cmd := New(context.Background())
-	cmdIO := cmdio.NewIO(flags.OutputText, cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr(), "")
-	cmd.SetContext(cmdio.InContext(ctx, cmdIO))
+	ctx, tt := cmdio.SetupTest(context.Background())
+	t.Cleanup(tt.Done)
+	cmd := New(ctx)
 	t.Setenv("DATABRICKS_HOST", "https://accounts.azuredatabricks.net/")
 	t.Setenv("DATABRICKS_TOKEN", "foobar")
 	t.Setenv("DATABRICKS_ACCOUNT_ID", "1111")
@@ -225,11 +222,10 @@ func TestMustAccountClientWorksWithNoDatabricksCfgButEnvironmentVariables(t *tes
 func TestMustAccountClientErrorsWithNoDatabricksCfg(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 
-	ctx := context.Background()
-	cmd := New(context.Background())
-	cmdIO := cmdio.NewIO(flags.OutputText, cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr(), "")
-	cmd.SetContext(cmdio.InContext(ctx, cmdIO))
+	ctx, tt := cmdio.SetupTest(context.Background())
+	t.Cleanup(tt.Done)
+	cmd := New(ctx)
 
 	err := MustAccountClient(cmd, []string{})
-	require.ErrorContains(t, err, "invalid Databricks Account configuration")
+	require.ErrorContains(t, err, "no configuration file found at")
 }

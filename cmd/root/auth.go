@@ -77,6 +77,24 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 		cfg.Profile = profile
 	}
 
+	if cfg.Profile == "" {
+		// account-level CLI was not really done before, so here are the assumptions:
+		// 1. only admins will have account configured
+		// 2. 99% of admins will have access to just one account
+		// hence, we don't need to create a special "DEFAULT_ACCOUNT" profile yet
+		_, profiles, err := databrickscfg.LoadProfiles(cmd.Context(), databrickscfg.MatchAccountProfiles)
+		if err == nil && len(profiles) == 1 {
+			cfg.Profile = profiles[0].Name
+		}
+
+		if err != nil {
+			// if there is no config file, we don't want to fail and instead just skip it
+			if !errors.Is(err, databrickscfg.ErrNoConfiguration) {
+				return err
+			}
+		}
+	}
+
 	allowPrompt := !hasProfileFlag && !shouldSkipPrompt(cmd.Context())
 	a, err := accountClientOrPrompt(cmd.Context(), cfg, allowPrompt)
 	if err != nil {
