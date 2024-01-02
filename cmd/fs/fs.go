@@ -6,9 +6,10 @@ import (
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "fs",
-		Short: "Filesystem related commands",
-		Long:  `Commands to do DBFS operations.`,
+		Use:     "fs",
+		Short:   "Filesystem related commands",
+		Long:    `Commands to do DBFS operations.`,
+		GroupID: "workspace",
 	}
 
 	cmd.AddCommand(
