@@ -32,6 +32,7 @@ func (f *logFlags) makeLogHandler(opts slog.HandlerOptions) (slog.Handler, error
 	case flags.OutputJSON:
 		return slog.NewJSONHandler(f.file.Writer(), &opts), nil
 	case flags.OutputText:
+		w := f.file.Writer()
 		return handler.NewFriendlyHandler(w, &handler.Options{
 			Color:       cmdio.IsTTY(w),
 			Level:       opts.Level,
