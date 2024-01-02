@@ -87,11 +87,9 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 			cfg.Profile = profiles[0].Name
 		}
 
-		if err != nil {
-			// if there is no config file, we don't want to fail and instead just skip it
-			if !errors.Is(err, databrickscfg.ErrNoConfiguration) {
-				return err
-			}
+		// if there is no config file, we don't want to fail and instead just skip it
+		if err != nil && !errors.Is(err, databrickscfg.ErrNoConfiguration) {
+			return err
 		}
 	}
 
