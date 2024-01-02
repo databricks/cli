@@ -104,3 +104,15 @@ func TestVariablesWithoutDefinition(t *testing.T) {
 	assert.Equal(t, "foo", *b.Config.Variables["a"].Value)
 	assert.Equal(t, "bar", *b.Config.Variables["b"].Value)
 }
+
+func TestVariablesWithTargetLookupOverrides(t *testing.T) {
+	b := load(t, "./variables/env_overrides")
+	err := bundle.Apply(context.Background(), b, bundle.Seq(
+		mutator.SelectTarget("env-overrides-lookup"),
+		mutator.SetVariables(),
+		interpolation.Interpolate(
+			interpolation.IncludeLookupsInPath(variable.VariableReferencePrefix),
+		)))
+	require.NoError(t, err)
+	assert.Equal(t, "clusters: some-test-cluster", b.Config.Variables["d"].Lookup)
+}

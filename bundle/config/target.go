@@ -30,10 +30,10 @@ type Target struct {
 
 	Resources *Resources `json:"resources,omitempty"`
 
-	// Override default values for defined variables
+	// Override default values or lookup naem for defined variables
 	// Does not permit defining new variables or redefining existing ones
 	// in the scope of an target
-	Variables map[string]string `json:"variables,omitempty"`
+	Variables map[string]interface{} `json:"variables,omitempty"`
 
 	Git Git `json:"git,omitempty"`
 
