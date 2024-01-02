@@ -13,10 +13,12 @@ type ResourceMetastore struct {
 	ForceDestroy                                bool   `json:"force_destroy,omitempty"`
 	GlobalMetastoreId                           string `json:"global_metastore_id,omitempty"`
 	Id                                          string `json:"id,omitempty"`
+	MetastoreId                                 string `json:"metastore_id,omitempty"`
 	Name                                        string `json:"name"`
 	Owner                                       string `json:"owner,omitempty"`
 	Region                                      string `json:"region,omitempty"`
-	StorageRoot                                 string `json:"storage_root"`
+	StorageRoot                                 string `json:"storage_root,omitempty"`
+	StorageRootCredentialId                     string `json:"storage_root_credential_id,omitempty"`
 	UpdatedAt                                   int    `json:"updated_at,omitempty"`
 	UpdatedBy                                   string `json:"updated_by,omitempty"`
 }

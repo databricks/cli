@@ -19,29 +19,27 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "cluster-policies",
-		Short: `Cluster policy limits the ability to configure clusters based on a set of rules.`,
-		Long: `Cluster policy limits the ability to configure clusters based on a set of
-  rules. The policy rules limit the attributes or attribute values available for
-  cluster creation. Cluster policies have ACLs that limit their use to specific
-  users and groups.
+		Short: `You can use cluster policies to control users' ability to configure clusters based on a set of rules.`,
+		Long: `You can use cluster policies to control users' ability to configure clusters
+  based on a set of rules. These rules specify which attributes or attribute
+  values can be used during cluster creation. Cluster policies have ACLs that
+  limit their use to specific users and groups.
   
-  Cluster policies let you limit users to create clusters with prescribed
-  settings, simplify the user interface and enable more users to create their
-  own clusters (by fixing and hiding some values), control cost by limiting per
-  cluster maximum cost (by setting limits on attributes whose values contribute
-  to hourly price).
+  With cluster policies, you can: - Auto-install cluster libraries on the next
+  restart by listing them in the policy's "libraries" field. - Limit users to
+  creating clusters with the prescribed settings. - Simplify the user interface,
+  enabling more users to create clusters, by fixing and hiding some fields. -
+  Manage costs by setting limits on attributes that impact the hourly rate.
   
   Cluster policy permissions limit which policies a user can select in the
-  Policy drop-down when the user creates a cluster: - A user who has cluster
-  create permission can select the Unrestricted policy and create
-  fully-configurable clusters. - A user who has both cluster create permission
-  and access to cluster policies can select the Unrestricted policy and policies
-  they have access to. - A user that has access to only cluster policies, can
-  select the policies they have access to.
+  Policy drop-down when the user creates a cluster: - A user who has
+  unrestricted cluster create permission can select the Unrestricted policy and
+  create fully-configurable clusters. - A user who has both unrestricted cluster
+  create permission and access to cluster policies can select the Unrestricted
+  policy and policies they have access to. - A user that has access to only
+  cluster policies, can select the policies they have access to.
   
-  If no policies have been created in the workspace, the Policy drop-down does
-  not display.
-  
+  If no policies exist in the workspace, the Policy drop-down doesn't appear.
   Only admin users can create, edit, and delete policies. Admin users also have
   access to all policies.`,
 		GroupID: "compute",
@@ -76,25 +74,34 @@ func newCreate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Definition, "definition", createReq.Definition, `Policy definition document expressed in Databricks Cluster Policy Definition Language.`)
+	cmd.Flags().StringVar(&createReq.Definition, "definition", createReq.Definition, `Policy definition document expressed in [Databricks Cluster Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).`)
 	cmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `Additional human-readable description of the cluster policy.`)
+	// TODO: array: libraries
 	cmd.Flags().Int64Var(&createReq.MaxClustersPerUser, "max-clusters-per-user", createReq.MaxClustersPerUser, `Max number of clusters per user that can be active using this policy.`)
-	cmd.Flags().StringVar(&createReq.PolicyFamilyDefinitionOverrides, "policy-family-definition-overrides", createReq.PolicyFamilyDefinitionOverrides, `Policy definition JSON document expressed in Databricks Policy Definition Language.`)
+	cmd.Flags().StringVar(&createReq.PolicyFamilyDefinitionOverrides, "policy-family-definition-overrides", createReq.PolicyFamilyDefinitionOverrides, `Policy definition JSON document expressed in [Databricks Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).`)
 	cmd.Flags().StringVar(&createReq.PolicyFamilyId, "policy-family-id", createReq.PolicyFamilyId, `ID of the policy family.`)
 
 	cmd.Use = "create NAME"
 	cmd.Short = `Create a new policy.`
 	cmd.Long = `Create a new policy.
   
-  Creates a new policy with prescribed settings.`
+  Creates a new policy with prescribed settings.
+
+  Arguments:
+    NAME: Cluster Policy name requested by the user. This has to be unique. Length
+      must be between 1 and 100 characters.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -108,7 +115,8 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			createReq.Name = args[0]
 		}
 
@@ -160,7 +168,10 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete a cluster policy.
   
   Delete a policy for a cluster. Clusters governed by this policy can still run,
-  but cannot be edited.`
+  but cannot be edited.
+
+  Arguments:
+    POLICY_ID: The ID of the policy to delete.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -238,10 +249,11 @@ func newEdit() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&editJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&editReq.Definition, "definition", editReq.Definition, `Policy definition document expressed in Databricks Cluster Policy Definition Language.`)
+	cmd.Flags().StringVar(&editReq.Definition, "definition", editReq.Definition, `Policy definition document expressed in [Databricks Cluster Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).`)
 	cmd.Flags().StringVar(&editReq.Description, "description", editReq.Description, `Additional human-readable description of the cluster policy.`)
+	// TODO: array: libraries
 	cmd.Flags().Int64Var(&editReq.MaxClustersPerUser, "max-clusters-per-user", editReq.MaxClustersPerUser, `Max number of clusters per user that can be active using this policy.`)
-	cmd.Flags().StringVar(&editReq.PolicyFamilyDefinitionOverrides, "policy-family-definition-overrides", editReq.PolicyFamilyDefinitionOverrides, `Policy definition JSON document expressed in Databricks Policy Definition Language.`)
+	cmd.Flags().StringVar(&editReq.PolicyFamilyDefinitionOverrides, "policy-family-definition-overrides", editReq.PolicyFamilyDefinitionOverrides, `Policy definition JSON document expressed in [Databricks Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).`)
 	cmd.Flags().StringVar(&editReq.PolicyFamilyId, "policy-family-id", editReq.PolicyFamilyId, `ID of the policy family.`)
 
 	cmd.Use = "edit POLICY_ID NAME"
@@ -249,15 +261,24 @@ func newEdit() *cobra.Command {
 	cmd.Long = `Update a cluster policy.
   
   Update an existing policy for cluster. This operation may make some clusters
-  governed by the previous policy invalid.`
+  governed by the previous policy invalid.
+
+  Arguments:
+    POLICY_ID: The ID of the policy to update.
+    NAME: Cluster Policy name requested by the user. This has to be unique. Length
+      must be between 1 and 100 characters.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'policy_id', 'name' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -271,8 +292,11 @@ func newEdit() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			editReq.PolicyId = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			editReq.Name = args[1]
 		}
 
@@ -321,7 +345,10 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get a cluster policy.`
 	cmd.Long = `Get a cluster policy.
   
-  Get a cluster policy entity. Creation and editing is available to admins only.`
+  Get a cluster policy entity. Creation and editing is available to admins only.
+
+  Arguments:
+    POLICY_ID: Canonical unique identifier for the cluster policy.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -394,7 +421,10 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Short = `Get cluster policy permission levels.`
 	cmd.Long = `Get cluster policy permission levels.
   
-  Gets the permission levels that a user can have on an object.`
+  Gets the permission levels that a user can have on an object.
+
+  Arguments:
+    CLUSTER_POLICY_ID: The cluster policy for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -468,7 +498,10 @@ func newGetPermissions() *cobra.Command {
 	cmd.Long = `Get cluster policy permissions.
   
   Gets the permissions of a cluster policy. Cluster policies can inherit
-  permissions from their root object.`
+  permissions from their root object.
+
+  Arguments:
+    CLUSTER_POLICY_ID: The cluster policy for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -534,13 +567,11 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq compute.ListClusterPoliciesRequest
-	var listJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().Var(&listReq.SortColumn, "sort-column", `The cluster policy attribute to sort by.`)
-	cmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order in which the policies get listed.`)
+	cmd.Flags().Var(&listReq.SortColumn, "sort-column", `The cluster policy attribute to sort by. Supported values: [POLICY_CREATION_TIME, POLICY_NAME]`)
+	cmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order in which the policies get listed. Supported values: [ASC, DESC]`)
 
 	cmd.Use = "list"
 	cmd.Short = `List cluster policies.`
@@ -552,9 +583,6 @@ func newList() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -562,14 +590,6 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			err = listJson.Unmarshal(&listReq)
-			if err != nil {
-				return err
-			}
-		} else {
-		}
 
 		response, err := w.ClusterPolicies.ListAll(ctx, listReq)
 		if err != nil {
@@ -621,7 +641,10 @@ func newSetPermissions() *cobra.Command {
 	cmd.Long = `Set cluster policy permissions.
   
   Sets permissions on a cluster policy. Cluster policies can inherit permissions
-  from their root object.`
+  from their root object.
+
+  Arguments:
+    CLUSTER_POLICY_ID: The cluster policy for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -705,7 +728,10 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Long = `Update cluster policy permissions.
   
   Updates the permissions on a cluster policy. Cluster policies can inherit
-  permissions from their root object.`
+  permissions from their root object.
+
+  Arguments:
+    CLUSTER_POLICY_ID: The cluster policy for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 

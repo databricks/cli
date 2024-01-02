@@ -38,14 +38,14 @@ func newRunCommand() *cobra.Command {
 			terraform.Interpolate(),
 			terraform.Write(),
 			terraform.StatePull(),
-			terraform.Load(),
+			terraform.Load(terraform.ErrorOnEmptyState),
 		))
 		if err != nil {
 			return err
 		}
 
 		// If no arguments are specified, prompt the user to select something to run.
-		if len(args) == 0 && cmdio.IsInteractive(ctx) {
+		if len(args) == 0 && cmdio.IsPromptSupported(ctx) {
 			// Invert completions from KEY -> NAME, to NAME -> KEY.
 			inv := make(map[string]string)
 			for k, v := range run.ResourceCompletionMap(b) {

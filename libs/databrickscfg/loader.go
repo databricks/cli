@@ -103,10 +103,12 @@ func (l profileFromHostLoader) Configure(cfg *config.Config) error {
 		return fmt.Errorf("%s %s profile: %w", configFile.Path(), match.Name(), err)
 	}
 
+	cfg.Profile = match.Name()
 	return nil
 }
 
 func (l profileFromHostLoader) isAnyAuthConfigured(cfg *config.Config) bool {
+	// If any of the auth-specific attributes are set, we can skip profile resolution.
 	for _, a := range config.ConfigAttributes {
 		if a.Auth == "" {
 			continue
@@ -115,5 +117,7 @@ func (l profileFromHostLoader) isAnyAuthConfigured(cfg *config.Config) bool {
 			return true
 		}
 	}
-	return false
+	// If the auth type is set, we can skip profile resolution.
+	// For example, to force "azure-cli", only the host and the auth type will be set.
+	return cfg.AuthType != ""
 }

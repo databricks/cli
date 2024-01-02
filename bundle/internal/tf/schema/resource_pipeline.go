@@ -77,6 +77,10 @@ type ResourcePipelineClusterInitScriptsS3 struct {
 	Region           string `json:"region,omitempty"`
 }
 
+type ResourcePipelineClusterInitScriptsVolumes struct {
+	Destination string `json:"destination,omitempty"`
+}
+
 type ResourcePipelineClusterInitScriptsWorkspace struct {
 	Destination string `json:"destination,omitempty"`
 }
@@ -87,6 +91,7 @@ type ResourcePipelineClusterInitScripts struct {
 	File      *ResourcePipelineClusterInitScriptsFile      `json:"file,omitempty"`
 	Gcs       *ResourcePipelineClusterInitScriptsGcs       `json:"gcs,omitempty"`
 	S3        *ResourcePipelineClusterInitScriptsS3        `json:"s3,omitempty"`
+	Volumes   *ResourcePipelineClusterInitScriptsVolumes   `json:"volumes,omitempty"`
 	Workspace *ResourcePipelineClusterInitScriptsWorkspace `json:"workspace,omitempty"`
 }
 

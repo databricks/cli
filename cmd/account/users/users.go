@@ -67,11 +67,12 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `String that represents a concatenation of given and family names.`)
 	// TODO: array: emails
 	// TODO: array: entitlements
-	cmd.Flags().StringVar(&createReq.ExternalId, "external-id", createReq.ExternalId, ``)
+	cmd.Flags().StringVar(&createReq.ExternalId, "external-id", createReq.ExternalId, `External ID is not currently supported.`)
 	// TODO: array: groups
 	cmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Databricks user ID.`)
 	// TODO: complex arg: name
 	// TODO: array: roles
+	// TODO: array: schemas
 	cmd.Flags().StringVar(&createReq.UserName, "user-name", createReq.UserName, `Email address of the Databricks user.`)
 
 	cmd.Use = "create"
@@ -85,9 +86,6 @@ func newCreate() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -101,7 +99,6 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
 		}
 
 		response, err := a.Users.Create(ctx, createReq)
@@ -150,7 +147,10 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete a user.
   
   Deletes a user. Deleting a user from a Databricks account also removes objects
-  associated with the user.`
+  associated with the user.
+
+  Arguments:
+    ID: Unique ID for a user in the Databricks account.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -219,11 +219,22 @@ func newGet() *cobra.Command {
 
 	// TODO: short flags
 
+	cmd.Flags().StringVar(&getReq.Attributes, "attributes", getReq.Attributes, `Comma-separated list of attributes to return in response.`)
+	cmd.Flags().IntVar(&getReq.Count, "count", getReq.Count, `Desired number of results per page.`)
+	cmd.Flags().StringVar(&getReq.ExcludedAttributes, "excluded-attributes", getReq.ExcludedAttributes, `Comma-separated list of attributes to exclude in response.`)
+	cmd.Flags().StringVar(&getReq.Filter, "filter", getReq.Filter, `Query by which the results have to be filtered.`)
+	cmd.Flags().StringVar(&getReq.SortBy, "sort-by", getReq.SortBy, `Attribute to sort the results.`)
+	cmd.Flags().Var(&getReq.SortOrder, "sort-order", `The order to sort the results. Supported values: [ascending, descending]`)
+	cmd.Flags().IntVar(&getReq.StartIndex, "start-index", getReq.StartIndex, `Specifies the index of the first result.`)
+
 	cmd.Use = "get ID"
 	cmd.Short = `Get user details.`
 	cmd.Long = `Get user details.
   
-  Gets information for a specific user in Databricks account.`
+  Gets information for a specific user in Databricks account.
+
+  Arguments:
+    ID: Unique ID for a user in the Databricks account.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -289,18 +300,16 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq iam.ListAccountUsersRequest
-	var listJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&listReq.Attributes, "attributes", listReq.Attributes, `Comma-separated list of attributes to return in response.`)
-	cmd.Flags().IntVar(&listReq.Count, "count", listReq.Count, `Desired number of results per page.`)
+	cmd.Flags().Int64Var(&listReq.Count, "count", listReq.Count, `Desired number of results per page.`)
 	cmd.Flags().StringVar(&listReq.ExcludedAttributes, "excluded-attributes", listReq.ExcludedAttributes, `Comma-separated list of attributes to exclude in response.`)
 	cmd.Flags().StringVar(&listReq.Filter, "filter", listReq.Filter, `Query by which the results have to be filtered.`)
 	cmd.Flags().StringVar(&listReq.SortBy, "sort-by", listReq.SortBy, `Attribute to sort the results.`)
-	cmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order to sort the results.`)
-	cmd.Flags().IntVar(&listReq.StartIndex, "start-index", listReq.StartIndex, `Specifies the index of the first result.`)
+	cmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order to sort the results. Supported values: [ascending, descending]`)
+	cmd.Flags().Int64Var(&listReq.StartIndex, "start-index", listReq.StartIndex, `Specifies the index of the first result.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List users.`
@@ -312,9 +321,6 @@ func newList() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -322,14 +328,6 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			err = listJson.Unmarshal(&listReq)
-			if err != nil {
-				return err
-			}
-		} else {
-		}
 
 		response, err := a.Users.ListAll(ctx, listReq)
 		if err != nil {
@@ -382,7 +380,10 @@ func newPatch() *cobra.Command {
 	cmd.Long = `Update user details.
   
   Partially updates a user resource by applying the supplied operations on
-  specific user attributes.`
+  specific user attributes.
+
+  Arguments:
+    ID: Unique ID for a user in the Databricks account.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -463,18 +464,23 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `String that represents a concatenation of given and family names.`)
 	// TODO: array: emails
 	// TODO: array: entitlements
-	cmd.Flags().StringVar(&updateReq.ExternalId, "external-id", updateReq.ExternalId, ``)
+	cmd.Flags().StringVar(&updateReq.ExternalId, "external-id", updateReq.ExternalId, `External ID is not currently supported.`)
 	// TODO: array: groups
 	cmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `Databricks user ID.`)
 	// TODO: complex arg: name
 	// TODO: array: roles
+	// TODO: array: schemas
 	cmd.Flags().StringVar(&updateReq.UserName, "user-name", updateReq.UserName, `Email address of the Databricks user.`)
 
 	cmd.Use = "update ID"
 	cmd.Short = `Replace a user.`
 	cmd.Long = `Replace a user.
   
-  Replaces a user's information with the data supplied in request.`
+  Replaces a user's information with the data supplied in request.
+
+  Arguments:
+    ID: Databricks user ID. This is automatically set by Databricks. Any value
+      provided by the client will be ignored.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -488,26 +494,25 @@ func newUpdate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No ID argument specified. Loading names for Account Users drop-down."
-				names, err := a.Users.UserUserNameToIdMap(ctx, iam.ListAccountUsersRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Account Users drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Databricks user ID")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have databricks user id")
-			}
-			updateReq.Id = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No ID argument specified. Loading names for Account Users drop-down."
+			names, err := a.Users.UserUserNameToIdMap(ctx, iam.ListAccountUsersRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Account Users drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Databricks user ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have databricks user id")
+		}
+		updateReq.Id = args[0]
 
 		err = a.Users.Update(ctx, updateReq)
 		if err != nil {

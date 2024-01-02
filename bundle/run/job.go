@@ -2,6 +2,7 @@ package run
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
@@ -221,6 +222,11 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 
 	runId := new(int64)
 
+	err = r.convertPythonParams(opts)
+	if err != nil {
+		return nil, err
+	}
+
 	// construct request payload from cmd line flags args
 	req, err := opts.Job.toPayload(jobID)
 	if err != nil {
@@ -298,4 +304,43 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 	}
 
 	return nil, err
+}
+
+func (r *jobRunner) convertPythonParams(opts *Options) error {
+	if r.bundle.Config.Experimental != nil && !r.bundle.Config.Experimental.PythonWheelWrapper {
+		return nil
+	}
+
+	needConvert := false
+	for _, task := range r.job.Tasks {
+		if task.PythonWheelTask != nil {
+			needConvert = true
+			break
+		}
+	}
+
+	if !needConvert {
+		return nil
+	}
+
+	if len(opts.Job.pythonParams) == 0 {
+		return nil
+	}
+
+	if opts.Job.notebookParams == nil {
+		opts.Job.notebookParams = make(map[string]string)
+	}
+
+	if len(opts.Job.pythonParams) > 0 {
+		if _, ok := opts.Job.notebookParams["__python_params"]; ok {
+			return fmt.Errorf("can't use __python_params as notebook param, the name is reserved for internal use")
+		}
+		p, err := json.Marshal(opts.Job.pythonParams)
+		if err != nil {
+			return err
+		}
+		opts.Job.notebookParams["__python_params"] = string(p)
+	}
+
+	return nil
 }

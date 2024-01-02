@@ -76,14 +76,6 @@ func newCreate() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -292,7 +284,10 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Short = `Get pipeline permission levels.`
 	cmd.Long = `Get pipeline permission levels.
   
-  Gets the permission levels that a user can have on an object.`
+  Gets the permission levels that a user can have on an object.
+
+  Arguments:
+    PIPELINE_ID: The pipeline for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -366,7 +361,10 @@ func newGetPermissions() *cobra.Command {
 	cmd.Long = `Get pipeline permissions.
   
   Gets the permissions of a pipeline. Pipelines can inherit permissions from
-  their root object.`
+  their root object.
+
+  Arguments:
+    PIPELINE_ID: The pipeline for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -439,7 +437,11 @@ func newGetUpdate() *cobra.Command {
 	cmd.Short = `Get a pipeline update.`
 	cmd.Long = `Get a pipeline update.
   
-  Gets an update from an active pipeline.`
+  Gets an update from an active pipeline.
+
+  Arguments:
+    PIPELINE_ID: The ID of the pipeline.
+    UPDATE_ID: The ID of the update.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -494,10 +496,8 @@ func newListPipelineEvents() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listPipelineEventsReq pipelines.ListPipelineEventsRequest
-	var listPipelineEventsJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&listPipelineEventsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&listPipelineEventsReq.Filter, "filter", listPipelineEventsReq.Filter, `Criteria to select a subset of results, expressed using a SQL-like syntax.`)
 	cmd.Flags().IntVar(&listPipelineEventsReq.MaxResults, "max-results", listPipelineEventsReq.MaxResults, `Max number of entries to return in a single page.`)
@@ -517,12 +517,6 @@ func newListPipelineEvents() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if cmd.Flags().Changed("json") {
-			err = listPipelineEventsJson.Unmarshal(&listPipelineEventsReq)
-			if err != nil {
-				return err
-			}
-		}
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
@@ -580,10 +574,8 @@ func newListPipelines() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listPipelinesReq pipelines.ListPipelinesRequest
-	var listPipelinesJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&listPipelinesJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&listPipelinesReq.Filter, "filter", listPipelinesReq.Filter, `Select a subset of results based on the specified criteria.`)
 	cmd.Flags().IntVar(&listPipelinesReq.MaxResults, "max-results", listPipelinesReq.MaxResults, `The maximum number of entries to return in a single page.`)
@@ -600,9 +592,6 @@ func newListPipelines() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -610,14 +599,6 @@ func newListPipelines() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			err = listPipelinesJson.Unmarshal(&listPipelinesReq)
-			if err != nil {
-				return err
-			}
-		} else {
-		}
 
 		response, err := w.Pipelines.ListPipelinesAll(ctx, listPipelinesReq)
 		if err != nil {
@@ -668,7 +649,10 @@ func newListUpdates() *cobra.Command {
 	cmd.Short = `List pipeline updates.`
 	cmd.Long = `List pipeline updates.
   
-  List updates for an active pipeline.`
+  List updates for an active pipeline.
+
+  Arguments:
+    PIPELINE_ID: The pipeline to return updates for.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -836,7 +820,10 @@ func newSetPermissions() *cobra.Command {
 	cmd.Long = `Set pipeline permissions.
   
   Sets permissions on a pipeline. Pipelines can inherit permissions from their
-  root object.`
+  root object.
+
+  Arguments:
+    PIPELINE_ID: The pipeline for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -913,7 +900,14 @@ func newStartUpdate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&startUpdateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().Var(&startUpdateReq.Cause, "cause", ``)
+	cmd.Flags().Var(&startUpdateReq.Cause, "cause", `. Supported values: [
+  API_CALL,
+  JOB_TASK,
+  RETRY_ON_FAILURE,
+  SCHEMA_CHANGE,
+  SERVICE_UPGRADE,
+  USER_ACTION,
+]`)
 	cmd.Flags().BoolVar(&startUpdateReq.FullRefresh, "full-refresh", startUpdateReq.FullRefresh, `If true, this update will reset all tables before running.`)
 	// TODO: array: full_refresh_selection
 	// TODO: array: refresh_selection
@@ -1116,7 +1110,10 @@ func newUpdate() *cobra.Command {
 	cmd.Short = `Edit a pipeline.`
 	cmd.Long = `Edit a pipeline.
   
-  Updates a pipeline with the supplied configuration.`
+  Updates a pipeline with the supplied configuration.
+
+  Arguments:
+    PIPELINE_ID: Unique identifier for this pipeline.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1130,26 +1127,25 @@ func newUpdate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
-				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Unique identifier for this pipeline")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have unique identifier for this pipeline")
-			}
-			updateReq.PipelineId = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
+			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Unique identifier for this pipeline")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have unique identifier for this pipeline")
+		}
+		updateReq.PipelineId = args[0]
 
 		err = w.Pipelines.Update(ctx, updateReq)
 		if err != nil {
@@ -1201,7 +1197,10 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Long = `Update pipeline permissions.
   
   Updates the permissions on a pipeline. Pipelines can inherit permissions from
-  their root object.`
+  their root object.
+
+  Arguments:
+    PIPELINE_ID: The pipeline for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 

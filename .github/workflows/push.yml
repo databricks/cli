@@ -30,9 +30,6 @@ jobs:
       - name: Checkout repository and submodules
         uses: actions/checkout@v4
 
-      - name: Unshallow
-        run: git fetch --prune --unshallow
-
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
@@ -58,6 +55,9 @@ jobs:
       - name: Run tests
         run: make test
 
+      - name: Publish test coverage
+        uses: codecov/codecov-action@v1
+
   fmt:
     runs-on: ubuntu-latest
 
@@ -73,11 +73,13 @@ jobs:
           # No need to download cached dependencies when running gofmt.
           cache: false
 
-      - name: Run gofmt
+      - name: Install goimports
         run: |
-          # -l: list files that were reformatted
-          # -w: write back formatted files to disk
-          gofmt -l -w ./
+          go install golang.org/x/tools/cmd/goimports@latest
+
+      - name: Run make fmt
+        run: |
+          make fmt
 
       - name: Run go mod tidy
         run: |

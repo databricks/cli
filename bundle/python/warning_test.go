@@ -209,6 +209,9 @@ func TestIncompatibleWheelTasksWithJobClusterKey(t *testing.T) {
 	}
 
 	require.True(t, hasIncompatibleWheelTasks(context.Background(), b))
+
+	err := bundle.Apply(context.Background(), b, WrapperWarning())
+	require.ErrorContains(t, err, "python wheel tasks with local libraries require compute with DBR 13.1+.")
 }
 
 func TestIncompatibleWheelTasksWithExistingClusterId(t *testing.T) {
@@ -337,6 +340,49 @@ func TestNoIncompatibleWheelTasks(t *testing.T) {
 	require.False(t, hasIncompatibleWheelTasks(context.Background(), b))
 }
 
+func TestNoWarningWhenPythonWheelWrapperIsOn(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Experimental: &config.Experimental{
+				PythonWheelWrapper: true,
+			},
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job1": {
+						JobSettings: &jobs.JobSettings{
+							Tasks: []jobs.Task{
+								{
+									TaskKey:         "key1",
+									PythonWheelTask: &jobs.PythonWheelTask{},
+									NewCluster: &compute.ClusterSpec{
+										SparkVersion: "12.2.x-scala2.12",
+									},
+									Libraries: []compute.Library{
+										{Whl: "./dist/test.whl"},
+									},
+								},
+								{
+									TaskKey:         "key2",
+									PythonWheelTask: &jobs.PythonWheelTask{},
+									NewCluster: &compute.ClusterSpec{
+										SparkVersion: "13.1.x-scala2.12",
+									},
+									Libraries: []compute.Library{
+										{Whl: "./dist/test.whl"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	err := bundle.Apply(context.Background(), b, WrapperWarning())
+	require.NoError(t, err)
+}
+
 func TestSparkVersionLowerThanExpected(t *testing.T) {
 	testCases := map[string]bool{
 		"13.1.x-scala2.12":                false,
@@ -344,6 +390,8 @@ func TestSparkVersionLowerThanExpected(t *testing.T) {
 		"13.3.x-scala2.12":                false,
 		"14.0.x-scala2.12":                false,
 		"14.1.x-scala2.12":                false,
+		"13.x-snapshot-scala-2.12":        false,
+		"13.x-rc-scala-2.12":              false,
 		"10.4.x-aarch64-photon-scala2.12": true,
 		"10.4.x-scala2.12":                true,
 		"13.0.x-scala2.12":                true,

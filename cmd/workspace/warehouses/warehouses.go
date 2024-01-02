@@ -71,9 +71,9 @@ func newCreate() *cobra.Command {
 	cmd.Flags().IntVar(&createReq.MaxNumClusters, "max-num-clusters", createReq.MaxNumClusters, `Maximum number of clusters that the autoscaler will create to handle concurrent queries.`)
 	cmd.Flags().IntVar(&createReq.MinNumClusters, "min-num-clusters", createReq.MinNumClusters, `Minimum number of available clusters that will be maintained for this SQL warehouse.`)
 	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Logical name for the cluster.`)
-	cmd.Flags().Var(&createReq.SpotInstancePolicy, "spot-instance-policy", `Configurations whether the warehouse should use spot instances.`)
+	cmd.Flags().Var(&createReq.SpotInstancePolicy, "spot-instance-policy", `Configurations whether the warehouse should use spot instances. Supported values: [COST_OPTIMIZED, POLICY_UNSPECIFIED, RELIABILITY_OPTIMIZED]`)
 	// TODO: complex arg: tags
-	cmd.Flags().Var(&createReq.WarehouseType, "warehouse-type", `Warehouse type: PRO or CLASSIC.`)
+	cmd.Flags().Var(&createReq.WarehouseType, "warehouse-type", `Warehouse type: PRO or CLASSIC. Supported values: [CLASSIC, PRO, TYPE_UNSPECIFIED]`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create a warehouse.`
@@ -85,9 +85,6 @@ func newCreate() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -101,7 +98,6 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
 		}
 
 		wait, err := w.Warehouses.Create(ctx, createReq)
@@ -168,7 +164,10 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a warehouse.`
 	cmd.Long = `Delete a warehouse.
   
-  Deletes a SQL warehouse.`
+  Deletes a SQL warehouse.
+
+  Arguments:
+    ID: Required. Id of the SQL warehouse.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -254,15 +253,18 @@ func newEdit() *cobra.Command {
 	cmd.Flags().IntVar(&editReq.MaxNumClusters, "max-num-clusters", editReq.MaxNumClusters, `Maximum number of clusters that the autoscaler will create to handle concurrent queries.`)
 	cmd.Flags().IntVar(&editReq.MinNumClusters, "min-num-clusters", editReq.MinNumClusters, `Minimum number of available clusters that will be maintained for this SQL warehouse.`)
 	cmd.Flags().StringVar(&editReq.Name, "name", editReq.Name, `Logical name for the cluster.`)
-	cmd.Flags().Var(&editReq.SpotInstancePolicy, "spot-instance-policy", `Configurations whether the warehouse should use spot instances.`)
+	cmd.Flags().Var(&editReq.SpotInstancePolicy, "spot-instance-policy", `Configurations whether the warehouse should use spot instances. Supported values: [COST_OPTIMIZED, POLICY_UNSPECIFIED, RELIABILITY_OPTIMIZED]`)
 	// TODO: complex arg: tags
-	cmd.Flags().Var(&editReq.WarehouseType, "warehouse-type", `Warehouse type: PRO or CLASSIC.`)
+	cmd.Flags().Var(&editReq.WarehouseType, "warehouse-type", `Warehouse type: PRO or CLASSIC. Supported values: [CLASSIC, PRO, TYPE_UNSPECIFIED]`)
 
 	cmd.Use = "edit ID"
 	cmd.Short = `Update a warehouse.`
 	cmd.Long = `Update a warehouse.
   
-  Updates the configuration for a SQL warehouse.`
+  Updates the configuration for a SQL warehouse.
+
+  Arguments:
+    ID: Required. Id of the warehouse to configure.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -365,7 +367,10 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get warehouse info.`
 	cmd.Long = `Get warehouse info.
   
-  Gets the information for a single SQL warehouse.`
+  Gets the information for a single SQL warehouse.
+
+  Arguments:
+    ID: Required. Id of the SQL warehouse.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -438,7 +443,10 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Short = `Get SQL warehouse permission levels.`
 	cmd.Long = `Get SQL warehouse permission levels.
   
-  Gets the permission levels that a user can have on an object.`
+  Gets the permission levels that a user can have on an object.
+
+  Arguments:
+    WAREHOUSE_ID: The SQL warehouse for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -512,7 +520,10 @@ func newGetPermissions() *cobra.Command {
 	cmd.Long = `Get SQL warehouse permissions.
   
   Gets the permissions of a SQL warehouse. SQL warehouses can inherit
-  permissions from their root object.`
+  permissions from their root object.
+
+  Arguments:
+    WAREHOUSE_ID: The SQL warehouse for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -627,10 +638,8 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq sql.ListWarehousesRequest
-	var listJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().IntVar(&listReq.RunAsUserId, "run-as-user-id", listReq.RunAsUserId, `Service Principal which will be used to fetch the list of warehouses.`)
 
@@ -644,9 +653,6 @@ func newList() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -654,14 +660,6 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			err = listJson.Unmarshal(&listReq)
-			if err != nil {
-				return err
-			}
-		} else {
-		}
 
 		response, err := w.Warehouses.ListAll(ctx, listReq)
 		if err != nil {
@@ -713,7 +711,10 @@ func newSetPermissions() *cobra.Command {
 	cmd.Long = `Set SQL warehouse permissions.
   
   Sets permissions on a SQL warehouse. SQL warehouses can inherit permissions
-  from their root object.`
+  from their root object.
+
+  Arguments:
+    WAREHOUSE_ID: The SQL warehouse for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -797,7 +798,7 @@ func newSetWorkspaceWarehouseConfig() *cobra.Command {
 	// TODO: complex arg: global_param
 	cmd.Flags().StringVar(&setWorkspaceWarehouseConfigReq.GoogleServiceAccount, "google-service-account", setWorkspaceWarehouseConfigReq.GoogleServiceAccount, `GCP only: Google Service Account used to pass to cluster to access Google Cloud Storage.`)
 	cmd.Flags().StringVar(&setWorkspaceWarehouseConfigReq.InstanceProfileArn, "instance-profile-arn", setWorkspaceWarehouseConfigReq.InstanceProfileArn, `AWS Only: Instance profile used to pass IAM role to the cluster.`)
-	cmd.Flags().Var(&setWorkspaceWarehouseConfigReq.SecurityPolicy, "security-policy", `Security policy for warehouses.`)
+	cmd.Flags().Var(&setWorkspaceWarehouseConfigReq.SecurityPolicy, "security-policy", `Security policy for warehouses. Supported values: [DATA_ACCESS_CONTROL, NONE, PASSTHROUGH]`)
 	// TODO: complex arg: sql_configuration_parameters
 
 	cmd.Use = "set-workspace-warehouse-config"
@@ -811,9 +812,6 @@ func newSetWorkspaceWarehouseConfig() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -827,7 +825,6 @@ func newSetWorkspaceWarehouseConfig() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
 		}
 
 		err = w.Warehouses.SetWorkspaceWarehouseConfig(ctx, setWorkspaceWarehouseConfigReq)
@@ -880,7 +877,10 @@ func newStart() *cobra.Command {
 	cmd.Short = `Start a warehouse.`
 	cmd.Long = `Start a warehouse.
   
-  Starts a SQL warehouse.`
+  Starts a SQL warehouse.
+
+  Arguments:
+    ID: Required. Id of the SQL warehouse.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -977,7 +977,10 @@ func newStop() *cobra.Command {
 	cmd.Short = `Stop a warehouse.`
 	cmd.Long = `Stop a warehouse.
   
-  Stops a SQL warehouse.`
+  Stops a SQL warehouse.
+
+  Arguments:
+    ID: Required. Id of the SQL warehouse.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1074,7 +1077,10 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Long = `Update SQL warehouse permissions.
   
   Updates the permissions on a SQL warehouse. SQL warehouses can inherit
-  permissions from their root object.`
+  permissions from their root object.
+
+  Arguments:
+    WAREHOUSE_ID: The SQL warehouse for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 

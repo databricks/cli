@@ -3,6 +3,7 @@ package template
 import (
 	"context"
 	"embed"
+	"fmt"
 	"io/fs"
 	"os"
 	"path"
@@ -43,9 +44,19 @@ func Materialize(ctx context.Context, configFilePath, templateRoot, outputDir st
 	schemaPath := filepath.Join(templateRoot, schemaFileName)
 	helpers := loadHelpers(ctx)
 
+	if _, err := os.Stat(schemaPath); os.IsNotExist(err) {
+		return fmt.Errorf("not a bundle template: expected to find a template schema file at %s", schemaPath)
+	}
+
 	config, err := newConfig(ctx, schemaPath)
 	if err != nil {
 		return err
+	}
+
+	// Print welcome message
+	welcome := config.schema.WelcomeMessage
+	if welcome != "" {
+		cmdio.LogString(ctx, welcome)
 	}
 
 	// Read and assign config values from file
@@ -56,23 +67,23 @@ func Materialize(ctx context.Context, configFilePath, templateRoot, outputDir st
 		}
 	}
 
-	// Prompt user for any missing config values. Assign default values if
-	// terminal is not TTY
-	err = config.promptOrAssignDefaultValues()
+	r, err := newRenderer(ctx, config.values, helpers, templatePath, libraryPath, outputDir)
 	if err != nil {
 		return err
 	}
 
+	// Prompt user for any missing config values. Assign default values if
+	// terminal is not TTY
+	err = config.promptOrAssignDefaultValues(r)
+	if err != nil {
+		return err
+	}
 	err = config.validate()
 	if err != nil {
 		return err
 	}
 
 	// Walk and render the template, since input configuration is complete
-	r, err := newRenderer(ctx, config.values, helpers, templatePath, libraryPath, outputDir)
-	if err != nil {
-		return err
-	}
 	err = r.walk()
 	if err != nil {
 		return err
@@ -82,12 +93,28 @@ func Materialize(ctx context.Context, configFilePath, templateRoot, outputDir st
 	if err != nil {
 		return err
 	}
-	cmdio.LogString(ctx, "✨ Successfully initialized template")
+
+	success := config.schema.SuccessMessage
+	if success == "" {
+		cmdio.LogString(ctx, "✨ Successfully initialized template")
+	} else {
+		success, err = r.executeTemplate(success)
+		if err != nil {
+			return err
+		}
+		cmdio.LogString(ctx, success)
+	}
 	return nil
 }
 
 // If the given templateRoot matches
 func prepareBuiltinTemplates(templateRoot string, tempDir string) (string, error) {
+	// Check that `templateRoot` is a clean basename, i.e. `some_path` and not `./some_path` or "."
+	// Return early if that's not the case.
+	if templateRoot == "." || path.Base(templateRoot) != templateRoot {
+		return templateRoot, nil
+	}
+
 	_, err := fs.Stat(builtinTemplates, path.Join("templates", templateRoot))
 	if err != nil {
 		// The given path doesn't appear to be using out built-in templates

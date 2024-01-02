@@ -147,9 +147,6 @@ func newCreate() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -163,7 +160,6 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
 		}
 
 		response, err := a.LogDelivery.Create(ctx, createReq)
@@ -212,7 +208,10 @@ func newGet() *cobra.Command {
 	cmd.Long = `Get log delivery configuration.
   
   Gets a Databricks log delivery configuration object for an account, both
-  specified by ID.`
+  specified by ID.
+
+  Arguments:
+    LOG_DELIVERY_CONFIGURATION_ID: Databricks log delivery configuration ID`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -278,13 +277,11 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq billing.ListLogDeliveryRequest
-	var listJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&listReq.CredentialsId, "credentials-id", listReq.CredentialsId, `Filter by credential configuration ID.`)
-	cmd.Flags().Var(&listReq.Status, "status", `Filter by status ENABLED or DISABLED.`)
+	cmd.Flags().Var(&listReq.Status, "status", `Filter by status ENABLED or DISABLED. Supported values: [DISABLED, ENABLED]`)
 	cmd.Flags().StringVar(&listReq.StorageConfigurationId, "storage-configuration-id", listReq.StorageConfigurationId, `Filter by storage configuration ID.`)
 
 	cmd.Use = "list"
@@ -298,9 +295,6 @@ func newList() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -308,14 +302,6 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			err = listJson.Unmarshal(&listReq)
-			if err != nil {
-				return err
-			}
-		} else {
-		}
 
 		response, err := a.LogDelivery.ListAll(ctx, listReq)
 		if err != nil {
@@ -355,10 +341,12 @@ func newPatchStatus() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var patchStatusReq billing.UpdateLogDeliveryConfigurationStatusRequest
+	var patchStatusJson flags.JsonFlag
 
 	// TODO: short flags
+	cmd.Flags().Var(&patchStatusJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Use = "patch-status STATUS LOG_DELIVERY_CONFIGURATION_ID"
+	cmd.Use = "patch-status LOG_DELIVERY_CONFIGURATION_ID STATUS"
 	cmd.Short = `Enable or disable log delivery configuration.`
 	cmd.Long = `Enable or disable log delivery configuration.
   
@@ -366,11 +354,26 @@ func newPatchStatus() *cobra.Command {
   configurations is not supported, so disable log delivery configurations that
   are no longer needed. Note that you can't re-enable a delivery configuration
   if this would violate the delivery configuration limits described under
-  [Create log delivery](:method:LogDelivery/Create).`
+  [Create log delivery](:method:LogDelivery/Create).
+
+  Arguments:
+    LOG_DELIVERY_CONFIGURATION_ID: Databricks log delivery configuration ID
+    STATUS: Status of log delivery configuration. Set to ENABLED (enabled) or
+      DISABLED (disabled). Defaults to ENABLED. You can [enable or disable
+      the configuration](#operation/patch-log-delivery-config-status) later.
+      Deletion of a configuration is not supported, so disable a log delivery
+      configuration that is no longer needed.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := cobra.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, provide only LOG_DELIVERY_CONFIGURATION_ID as positional arguments. Provide 'status' in your JSON input")
+			}
+			return nil
+		}
 		check := cobra.ExactArgs(2)
 		return check(cmd, args)
 	}
@@ -380,11 +383,19 @@ func newPatchStatus() *cobra.Command {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
-		_, err = fmt.Sscan(args[0], &patchStatusReq.Status)
-		if err != nil {
-			return fmt.Errorf("invalid STATUS: %s", args[0])
+		if cmd.Flags().Changed("json") {
+			err = patchStatusJson.Unmarshal(&patchStatusReq)
+			if err != nil {
+				return err
+			}
 		}
-		patchStatusReq.LogDeliveryConfigurationId = args[1]
+		patchStatusReq.LogDeliveryConfigurationId = args[0]
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[1], &patchStatusReq.Status)
+			if err != nil {
+				return fmt.Errorf("invalid STATUS: %s", args[1])
+			}
+		}
 
 		err = a.LogDelivery.PatchStatus(ctx, patchStatusReq)
 		if err != nil {

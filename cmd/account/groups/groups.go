@@ -67,6 +67,7 @@ func newCreate() *cobra.Command {
 	// TODO: array: members
 	// TODO: complex arg: meta
 	// TODO: array: roles
+	// TODO: array: schemas
 
 	cmd.Use = "create"
 	cmd.Short = `Create a new group.`
@@ -79,9 +80,6 @@ func newCreate() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -95,7 +93,6 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
 		}
 
 		response, err := a.Groups.Create(ctx, createReq)
@@ -143,7 +140,10 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a group.`
 	cmd.Long = `Delete a group.
   
-  Deletes a group from the Databricks account.`
+  Deletes a group from the Databricks account.
+
+  Arguments:
+    ID: Unique ID for a group in the Databricks account.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -216,7 +216,10 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get group details.`
 	cmd.Long = `Get group details.
   
-  Gets the information for a specific group in the Databricks account.`
+  Gets the information for a specific group in the Databricks account.
+
+  Arguments:
+    ID: Unique ID for a group in the Databricks account.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -282,18 +285,16 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq iam.ListAccountGroupsRequest
-	var listJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&listReq.Attributes, "attributes", listReq.Attributes, `Comma-separated list of attributes to return in response.`)
-	cmd.Flags().IntVar(&listReq.Count, "count", listReq.Count, `Desired number of results per page.`)
+	cmd.Flags().Int64Var(&listReq.Count, "count", listReq.Count, `Desired number of results per page.`)
 	cmd.Flags().StringVar(&listReq.ExcludedAttributes, "excluded-attributes", listReq.ExcludedAttributes, `Comma-separated list of attributes to exclude in response.`)
 	cmd.Flags().StringVar(&listReq.Filter, "filter", listReq.Filter, `Query by which the results have to be filtered.`)
 	cmd.Flags().StringVar(&listReq.SortBy, "sort-by", listReq.SortBy, `Attribute to sort the results.`)
-	cmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order to sort the results.`)
-	cmd.Flags().IntVar(&listReq.StartIndex, "start-index", listReq.StartIndex, `Specifies the index of the first result.`)
+	cmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order to sort the results. Supported values: [ascending, descending]`)
+	cmd.Flags().Int64Var(&listReq.StartIndex, "start-index", listReq.StartIndex, `Specifies the index of the first result.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List group details.`
@@ -305,9 +306,6 @@ func newList() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -315,14 +313,6 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			err = listJson.Unmarshal(&listReq)
-			if err != nil {
-				return err
-			}
-		} else {
-		}
 
 		response, err := a.Groups.ListAll(ctx, listReq)
 		if err != nil {
@@ -374,7 +364,10 @@ func newPatch() *cobra.Command {
 	cmd.Short = `Update group details.`
 	cmd.Long = `Update group details.
   
-  Partially updates the details of a group.`
+  Partially updates the details of a group.
+
+  Arguments:
+    ID: Unique ID for a group in the Databricks account.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -459,12 +452,16 @@ func newUpdate() *cobra.Command {
 	// TODO: array: members
 	// TODO: complex arg: meta
 	// TODO: array: roles
+	// TODO: array: schemas
 
 	cmd.Use = "update ID"
 	cmd.Short = `Replace a group.`
 	cmd.Long = `Replace a group.
   
-  Updates the details of a group by replacing the entire group entity.`
+  Updates the details of a group by replacing the entire group entity.
+
+  Arguments:
+    ID: Databricks group ID`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -478,26 +475,25 @@ func newUpdate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No ID argument specified. Loading names for Account Groups drop-down."
-				names, err := a.Groups.GroupDisplayNameToIdMap(ctx, iam.ListAccountGroupsRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Account Groups drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Databricks group ID")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have databricks group id")
-			}
-			updateReq.Id = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No ID argument specified. Loading names for Account Groups drop-down."
+			names, err := a.Groups.GroupDisplayNameToIdMap(ctx, iam.ListAccountGroupsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Account Groups drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Databricks group ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have databricks group id")
+		}
+		updateReq.Id = args[0]
 
 		err = a.Groups.Update(ctx, updateReq)
 		if err != nil {

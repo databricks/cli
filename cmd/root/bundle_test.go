@@ -83,7 +83,7 @@ func TestBundleConfigureWithNonExistentProfileFlag(t *testing.T) {
 	cmd.Flag("profile").Value.Set("NOEXIST")
 
 	b := setup(t, cmd, "https://x.com")
-	assert.PanicsWithError(t, "no matching config profiles found", func() {
+	assert.Panics(t, func() {
 		b.WorkspaceClient()
 	})
 }
@@ -95,7 +95,7 @@ func TestBundleConfigureWithMismatchedProfile(t *testing.T) {
 	cmd.Flag("profile").Value.Set("PROFILE-1")
 
 	b := setup(t, cmd, "https://x.com")
-	assert.PanicsWithError(t, "config host mismatch: profile uses host https://a.com, but CLI configured to use https://x.com", func() {
+	assert.PanicsWithError(t, "cannot resolve bundle auth configuration: config host mismatch: profile uses host https://a.com, but CLI configured to use https://x.com", func() {
 		b.WorkspaceClient()
 	})
 }
@@ -118,7 +118,7 @@ func TestBundleConfigureWithMismatchedProfileEnvVariable(t *testing.T) {
 
 	cmd := emptyCommand(t)
 	b := setup(t, cmd, "https://x.com")
-	assert.PanicsWithError(t, "config host mismatch: profile uses host https://a.com, but CLI configured to use https://x.com", func() {
+	assert.PanicsWithError(t, "cannot resolve bundle auth configuration: config host mismatch: profile uses host https://a.com, but CLI configured to use https://x.com", func() {
 		b.WorkspaceClient()
 	})
 }

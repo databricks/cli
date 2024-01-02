@@ -85,6 +85,11 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 										Path: "/Repos/somerepo/test.ipynb",
 									},
 								},
+								{
+									Notebook: &pipelines.NotebookLibrary{
+										Path: "./non-existent.ipynb",
+									},
+								},
 							},
 						},
 					},
@@ -98,7 +103,7 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 	require.NoError(t, err)
 
 	libraries := b.Config.Resources.Pipelines["pipeline"].Libraries
-	require.Len(t, libraries, 10)
+	require.Len(t, libraries, 11)
 
 	// Making sure glob patterns are expanded correctly
 	require.True(t, containsNotebook(libraries, filepath.Join("test", "test2.ipynb")))
@@ -117,6 +122,7 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 	// Making sure other libraries are not replaced
 	require.True(t, containsJar(libraries, "./*.jar"))
 	require.True(t, containsMaven(libraries, "org.jsoup:jsoup:1.7.2"))
+	require.True(t, containsNotebook(libraries, "./non-existent.ipynb"))
 }
 
 func containsNotebook(libraries []pipelines.PipelineLibrary, path string) bool {

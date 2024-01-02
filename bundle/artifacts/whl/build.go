@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/python"
 )
 
@@ -32,7 +33,7 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return fmt.Errorf("artifact doesn't exist: %s", m.name)
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("artifacts.whl.Build(%s): Building...", m.name))
+	cmdio.LogString(ctx, fmt.Sprintf("Building %s...", m.name))
 
 	dir := artifact.Path
 
@@ -42,13 +43,13 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) error {
 
 	out, err := artifact.Build(ctx)
 	if err != nil {
-		return fmt.Errorf("artifacts.whl.Build(%s): Failed %w, output: %s", m.name, err, out)
+		return fmt.Errorf("build failed %s, error: %w, output: %s", m.name, err, out)
 	}
-	cmdio.LogString(ctx, fmt.Sprintf("artifacts.whl.Build(%s): Build succeeded", m.name))
+	log.Infof(ctx, "Build succeeded")
 
 	wheels := python.FindFilesWithSuffixInPath(distPath, ".whl")
 	if len(wheels) == 0 {
-		return fmt.Errorf("artifacts.whl.Build(%s): cannot find built wheel in %s", m.name, dir)
+		return fmt.Errorf("cannot find built wheel in %s for package %s", dir, m.name)
 	}
 	for _, wheel := range wheels {
 		artifact.Files = append(artifact.Files, config.ArtifactFile{

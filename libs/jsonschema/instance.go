@@ -39,14 +39,17 @@ func (s *Schema) LoadInstance(path string) (map[string]any, error) {
 	return instance, s.ValidateInstance(instance)
 }
 
+// Validate an instance against the schema
 func (s *Schema) ValidateInstance(instance map[string]any) error {
-	for _, fn := range []func(map[string]any) error{
+	validations := []func(map[string]any) error{
 		s.validateAdditionalProperties,
 		s.validateEnum,
 		s.validateRequired,
 		s.validateTypes,
 		s.validatePattern,
-	} {
+	}
+
+	for _, fn := range validations {
 		err := fn(instance)
 		if err != nil {
 			return err
@@ -119,7 +122,10 @@ func (s *Schema) validatePattern(instance map[string]any) error {
 		if !ok {
 			continue
 		}
-		return ValidatePatternMatch(k, v, fieldInfo)
+		err := validatePatternMatch(k, v, fieldInfo)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

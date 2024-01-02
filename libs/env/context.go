@@ -2,7 +2,9 @@ package env
 
 import (
 	"context"
+	"errors"
 	"os"
+	"runtime"
 	"strings"
 )
 
@@ -61,6 +63,28 @@ func Set(ctx context.Context, key, value string) context.Context {
 	m := copyMap(getMap(ctx))
 	m[key] = value
 	return setMap(ctx, m)
+}
+
+func homeEnvVar() string {
+	if runtime.GOOS == "windows" {
+		return "USERPROFILE"
+	}
+	return "HOME"
+}
+
+func WithUserHomeDir(ctx context.Context, value string) context.Context {
+	return Set(ctx, homeEnvVar(), value)
+}
+
+// ErrNoHomeEnv indicates the absence of $HOME env variable
+var ErrNoHomeEnv = errors.New("$HOME is not set")
+
+func UserHomeDir(ctx context.Context) (string, error) {
+	home := Get(ctx, homeEnvVar())
+	if home == "" {
+		return "", ErrNoHomeEnv
+	}
+	return home, nil
 }
 
 // All returns environment variables that are defined in both os.Environ

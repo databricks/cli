@@ -73,15 +73,22 @@ func newCreate() *cobra.Command {
   [AWS PrivateLink]: https://aws.amazon.com/privatelink
   [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html
   [VPC endpoint]: https://docs.aws.amazon.com/vpc/latest/privatelink/vpc-endpoints.html
-  [endpoint service]: https://docs.aws.amazon.com/vpc/latest/privatelink/privatelink-share-your-services.html`
+  [endpoint service]: https://docs.aws.amazon.com/vpc/latest/privatelink/privatelink-share-your-services.html
+
+  Arguments:
+    VPC_ENDPOINT_NAME: The human-readable name of the storage configuration.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'vpc_endpoint_name' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -95,7 +102,8 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			createReq.VpcEndpointName = args[0]
 		}
 
@@ -152,7 +160,10 @@ func newDelete() *cobra.Command {
   
   [AWS PrivateLink]: https://aws.amazon.com/privatelink
   [AWS VPC endpoint]: https://docs.aws.amazon.com/vpc/latest/privatelink/concepts.html
-  [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`
+  [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html
+
+  Arguments:
+    VPC_ENDPOINT_ID: Databricks VPC endpoint ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -229,7 +240,10 @@ func newGet() *cobra.Command {
   AWS used to communicate privately with Databricks over [AWS PrivateLink].
   
   [AWS PrivateLink]: https://aws.amazon.com/privatelink
-  [VPC endpoint]: https://docs.aws.amazon.com/vpc/latest/privatelink/concepts.html`
+  [VPC endpoint]: https://docs.aws.amazon.com/vpc/latest/privatelink/concepts.html
+
+  Arguments:
+    VPC_ENDPOINT_ID: Databricks VPC endpoint ID.`
 
 	cmd.Annotations = make(map[string]string)
 

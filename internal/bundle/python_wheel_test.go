@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func runPythonWheelTest(t *testing.T, pythonWheelWrapper bool) {
+func runPythonWheelTest(t *testing.T, sparkVersion string, pythonWheelWrapper bool) {
 	env := internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
 	t.Log(env)
 
@@ -24,7 +24,7 @@ func runPythonWheelTest(t *testing.T, pythonWheelWrapper bool) {
 	bundleRoot, err := initTestTemplate(t, "python_wheel_task", map[string]any{
 		"node_type_id":         nodeTypeId,
 		"unique_id":            uuid.New().String(),
-		"spark_version":        "13.2.x-snapshot-scala2.12",
+		"spark_version":        sparkVersion,
 		"python_wheel_wrapper": pythonWheelWrapper,
 	})
 	require.NoError(t, err)
@@ -41,12 +41,18 @@ func runPythonWheelTest(t *testing.T, pythonWheelWrapper bool) {
 	require.Contains(t, out, "Hello from my func")
 	require.Contains(t, out, "Got arguments:")
 	require.Contains(t, out, "['my_test_code', 'one', 'two']")
+
+	out, err = runResourceWithParams(t, bundleRoot, "some_other_job", "--python-params=param1,param2")
+	require.NoError(t, err)
+	require.Contains(t, out, "Hello from my func")
+	require.Contains(t, out, "Got arguments:")
+	require.Contains(t, out, "['my_test_code', 'param1', 'param2']")
 }
 
 func TestAccPythonWheelTaskDeployAndRunWithoutWrapper(t *testing.T) {
-	runPythonWheelTest(t, false)
+	runPythonWheelTest(t, "13.2.x-snapshot-scala2.12", false)
 }
 
 func TestAccPythonWheelTaskDeployAndRunWithWrapper(t *testing.T) {
-	runPythonWheelTest(t, true)
+	runPythonWheelTest(t, "12.2.x-scala2.12", true)
 }

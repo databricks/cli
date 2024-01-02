@@ -61,15 +61,23 @@ func newCreateOboToken() *cobra.Command {
 	cmd.Short = `Create on-behalf token.`
 	cmd.Long = `Create on-behalf token.
   
-  Creates a token on behalf of a service principal.`
+  Creates a token on behalf of a service principal.
+
+  Arguments:
+    APPLICATION_ID: Application ID of the service principal.
+    LIFETIME_SECONDS: The number of seconds before the token expires.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'application_id', 'lifetime_seconds' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -83,8 +91,11 @@ func newCreateOboToken() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			createOboTokenReq.ApplicationId = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[1], &createOboTokenReq.LifetimeSeconds)
 			if err != nil {
 				return fmt.Errorf("invalid LIFETIME_SECONDS: %s", args[1])
@@ -136,7 +147,10 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a token.`
 	cmd.Long = `Delete a token.
   
-  Deletes a token, specified by its ID.`
+  Deletes a token, specified by its ID.
+
+  Arguments:
+    TOKEN_ID: The ID of the token to get.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -209,7 +223,10 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get token info.`
 	cmd.Long = `Get token info.
   
-  Gets information about a token, specified by its ID.`
+  Gets information about a token, specified by its ID.
+
+  Arguments:
+    TOKEN_ID: The ID of the token to get.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -372,10 +389,8 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq settings.ListTokenManagementRequest
-	var listJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&listReq.CreatedById, "created-by-id", listReq.CreatedById, `User ID of the user that created the token.`)
 	cmd.Flags().StringVar(&listReq.CreatedByUsername, "created-by-username", listReq.CreatedByUsername, `Username of the user that created the token.`)
@@ -390,9 +405,6 @@ func newList() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -400,14 +412,6 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			err = listJson.Unmarshal(&listReq)
-			if err != nil {
-				return err
-			}
-		} else {
-		}
 
 		response, err := w.TokenManagement.ListAll(ctx, listReq)
 		if err != nil {
@@ -465,9 +469,6 @@ func newSetPermissions() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -481,7 +482,6 @@ func newSetPermissions() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
 		}
 
 		response, err := w.TokenManagement.SetPermissions(ctx, setPermissionsReq)
@@ -540,9 +540,6 @@ func newUpdatePermissions() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -556,7 +553,6 @@ func newUpdatePermissions() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
 		}
 
 		response, err := w.TokenManagement.UpdatePermissions(ctx, updatePermissionsReq)

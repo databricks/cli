@@ -113,18 +113,34 @@ func AskSelect(ctx context.Context, question string, choices []string) (string, 
 	return logger.AskSelect(question, choices)
 }
 
+func splitAtLastNewLine(s string) (string, string) {
+	// Split at the newline character
+	if i := strings.LastIndex(s, "\n"); i != -1 {
+		return s[:i+1], s[i+1:]
+	}
+	// Return the original string if no newline found
+	return "", s
+}
+
 func (l *Logger) AskSelect(question string, choices []string) (string, error) {
 	if l.Mode == flags.ModeJson {
 		return "", fmt.Errorf("question prompts are not supported in json mode")
 	}
 
+	// Promptui does not support multiline prompts. So we split the question.
+	first, last := splitAtLastNewLine(question)
+	_, err := l.Writer.Write([]byte(first))
+	if err != nil {
+		return "", err
+	}
+
 	prompt := promptui.Select{
-		Label:    question,
+		Label:    last,
 		Items:    choices,
 		HideHelp: true,
 		Templates: &promptui.SelectTemplates{
 			Label:    "{{.}}: ",
-			Selected: fmt.Sprintf("%s: {{.}}", question),
+			Selected: fmt.Sprintf("%s: {{.}}", last),
 		},
 	}
 

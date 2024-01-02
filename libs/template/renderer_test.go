@@ -86,6 +86,18 @@ func assertBuiltinTemplateValid(t *testing.T, settings map[string]any, target st
 	}
 }
 
+func TestPrepareBuiltInTemplatesWithRelativePaths(t *testing.T) {
+	// CWD should not be resolved as a built in template
+	dir, err := prepareBuiltinTemplates(".", t.TempDir())
+	assert.NoError(t, err)
+	assert.Equal(t, ".", dir)
+
+	// relative path should not be resolved as a built in template
+	dir, err = prepareBuiltinTemplates("./default-python", t.TempDir())
+	assert.NoError(t, err)
+	assert.Equal(t, "./default-python", dir)
+}
+
 func TestBuiltinTemplateValid(t *testing.T) {
 	// Test option combinations
 	options := []string{"yes", "no"}
@@ -516,7 +528,7 @@ func TestRendererErrorOnConflictingFile(t *testing.T) {
 		},
 	}
 	err = r.persistToDisk()
-	assert.EqualError(t, err, fmt.Sprintf("failed to persist to disk, conflict with existing file: %s", filepath.Join(tmpDir, "a")))
+	assert.EqualError(t, err, fmt.Sprintf("failed to initialize template, one or more files already exist: %s", filepath.Join(tmpDir, "a")))
 }
 
 func TestRendererNoErrorOnConflictingFileIfSkipped(t *testing.T) {

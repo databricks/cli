@@ -5,7 +5,6 @@ package workspace_conf
 import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/settings"
 	"github.com/spf13/cobra"
 )
@@ -107,10 +106,8 @@ func newSetStatus() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var setStatusReq settings.WorkspaceConf
-	var setStatusJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&setStatusJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "set-status"
 	cmd.Short = `Enable/disable features.`
@@ -123,9 +120,6 @@ func newSetStatus() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -133,14 +127,6 @@ func newSetStatus() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			err = setStatusJson.Unmarshal(&setStatusReq)
-			if err != nil {
-				return err
-			}
-		} else {
-		}
 
 		err = w.WorkspaceConf.SetStatus(ctx, setStatusReq)
 		if err != nil {

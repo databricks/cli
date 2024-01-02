@@ -1,3 +1,4 @@
+// Generated from Databricks Terraform provider schema. DO NOT EDIT.
 package schema
 
 type Providers struct {
@@ -24,7 +25,7 @@ func NewRoot() *Root {
 			"required_providers": map[string]interface{}{
 				"databricks": map[string]interface{}{
 					"source":  "databricks/databricks",
-					"version": "1.23.0",
+					"version": "{{ .ProviderVersion }}",
 				},
 			},
 		},

@@ -70,7 +70,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Description about the recipient.`)
-	// TODO: any: data_recipient_global_metastore_id
+	cmd.Flags().StringVar(&createReq.DataRecipientGlobalMetastoreId, "data-recipient-global-metastore-id", createReq.DataRecipientGlobalMetastoreId, `The global Unity Catalog metastore id provided by the data recipient.`)
 	// TODO: complex arg: ip_access_list
 	cmd.Flags().StringVar(&createReq.Owner, "owner", createReq.Owner, `Username of the recipient owner.`)
 	// TODO: complex arg: properties_kvpairs
@@ -82,15 +82,23 @@ func newCreate() *cobra.Command {
   
   Creates a new recipient with the delta sharing authentication type in the
   metastore. The caller must be a metastore admin or has the
-  **CREATE_RECIPIENT** privilege on the metastore.`
+  **CREATE_RECIPIENT** privilege on the metastore.
+
+  Arguments:
+    NAME: Name of Recipient.
+    AUTHENTICATION_TYPE: The delta sharing authentication type.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'authentication_type' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -104,8 +112,11 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			createReq.Name = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[1], &createReq.AuthenticationType)
 			if err != nil {
 				return fmt.Errorf("invalid AUTHENTICATION_TYPE: %s", args[1])
@@ -158,7 +169,10 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete a share recipient.
   
   Deletes the specified recipient from the metastore. The caller must be the
-  owner of the recipient.`
+  owner of the recipient.
+
+  Arguments:
+    NAME: Name of the recipient.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -233,7 +247,10 @@ func newGet() *cobra.Command {
   
   Gets a share recipient from the metastore if:
   
-  * the caller is the owner of the share recipient, or: * is a metastore admin`
+  * the caller is the owner of the share recipient, or: * is a metastore admin
+
+  Arguments:
+    NAME: Name of the recipient.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -299,10 +316,8 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq sharing.ListRecipientsRequest
-	var listJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&listReq.DataRecipientGlobalMetastoreId, "data-recipient-global-metastore-id", listReq.DataRecipientGlobalMetastoreId, `If not provided, all recipients will be returned.`)
 
@@ -319,9 +334,6 @@ func newList() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -329,14 +341,6 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			err = listJson.Unmarshal(&listReq)
-			if err != nil {
-				return err
-			}
-		} else {
-		}
 
 		response, err := w.Recipients.ListAll(ctx, listReq)
 		if err != nil {
@@ -376,19 +380,35 @@ func newRotateToken() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var rotateTokenReq sharing.RotateRecipientToken
+	var rotateTokenJson flags.JsonFlag
 
 	// TODO: short flags
+	cmd.Flags().Var(&rotateTokenJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Use = "rotate-token EXISTING_TOKEN_EXPIRE_IN_SECONDS NAME"
+	cmd.Use = "rotate-token NAME EXISTING_TOKEN_EXPIRE_IN_SECONDS"
 	cmd.Short = `Rotate a token.`
 	cmd.Long = `Rotate a token.
   
   Refreshes the specified recipient's delta sharing authentication token with
-  the provided token info. The caller must be the owner of the recipient.`
+  the provided token info. The caller must be the owner of the recipient.
+
+  Arguments:
+    NAME: The name of the recipient.
+    EXISTING_TOKEN_EXPIRE_IN_SECONDS: The expiration time of the bearer token in ISO 8601 format. This will set
+      the expiration_time of existing token only to a smaller timestamp, it
+      cannot extend the expiration_time. Use 0 to expire the existing token
+      immediately, negative number will return an error.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := cobra.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, provide only NAME as positional arguments. Provide 'existing_token_expire_in_seconds' in your JSON input")
+			}
+			return nil
+		}
 		check := cobra.ExactArgs(2)
 		return check(cmd, args)
 	}
@@ -398,11 +418,19 @@ func newRotateToken() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		_, err = fmt.Sscan(args[0], &rotateTokenReq.ExistingTokenExpireInSeconds)
-		if err != nil {
-			return fmt.Errorf("invalid EXISTING_TOKEN_EXPIRE_IN_SECONDS: %s", args[0])
+		if cmd.Flags().Changed("json") {
+			err = rotateTokenJson.Unmarshal(&rotateTokenReq)
+			if err != nil {
+				return err
+			}
 		}
-		rotateTokenReq.Name = args[1]
+		rotateTokenReq.Name = args[0]
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[1], &rotateTokenReq.ExistingTokenExpireInSeconds)
+			if err != nil {
+				return fmt.Errorf("invalid EXISTING_TOKEN_EXPIRE_IN_SECONDS: %s", args[1])
+			}
+		}
 
 		response, err := w.Recipients.RotateToken(ctx, rotateTokenReq)
 		if err != nil {
@@ -450,7 +478,10 @@ func newSharePermissions() *cobra.Command {
 	cmd.Long = `Get recipient share permissions.
   
   Gets the share permissions for the specified Recipient. The caller must be a
-  metastore admin or the owner of the Recipient.`
+  metastore admin or the owner of the Recipient.
+
+  Arguments:
+    NAME: The name of the Recipient.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -523,7 +554,7 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Description about the recipient.`)
 	// TODO: complex arg: ip_access_list
-	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of Recipient.`)
+	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the recipient.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of the recipient owner.`)
 	// TODO: complex arg: properties_kvpairs
 
@@ -533,7 +564,10 @@ func newUpdate() *cobra.Command {
   
   Updates an existing recipient in the metastore. The caller must be a metastore
   admin or the owner of the recipient. If the recipient name will be updated,
-  the user must be both a metastore admin and the owner of the recipient.`
+  the user must be both a metastore admin and the owner of the recipient.
+
+  Arguments:
+    NAME: Name of the recipient.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -547,26 +581,25 @@ func newUpdate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No NAME argument specified. Loading names for Recipients drop-down."
-				names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, sharing.ListRecipientsRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Recipients drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Name of Recipient")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have name of recipient")
-			}
-			updateReq.Name = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No NAME argument specified. Loading names for Recipients drop-down."
+			names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, sharing.ListRecipientsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Recipients drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Name of the recipient")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have name of the recipient")
+		}
+		updateReq.Name = args[0]
 
 		err = w.Recipients.Update(ctx, updateReq)
 		if err != nil {

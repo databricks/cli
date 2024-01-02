@@ -7,8 +7,10 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
+	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/libraries"
+	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/python"
 	"github.com/databricks/cli/bundle/scripts"
 )
@@ -26,15 +28,24 @@ func Deploy() bundle.Mutator {
 				artifacts.UploadAll(),
 				python.TransformWheelTask(),
 				files.Upload(),
+				permissions.ApplyWorkspaceRootPermissions(),
 				terraform.Interpolate(),
 				terraform.Write(),
 				terraform.StatePull(),
-				terraform.Apply(),
-				terraform.StatePush(),
+				bundle.Defer(
+					terraform.Apply(),
+					bundle.Seq(
+						terraform.StatePush(),
+						terraform.Load(),
+						metadata.Compute(),
+						metadata.Upload(),
+					),
+				),
 			),
 			lock.Release(lock.GoalDeploy),
 		),
 		scripts.Execute(config.ScriptPostDeploy),
+		bundle.LogString("Deployment complete!"),
 	)
 
 	return newPhase(

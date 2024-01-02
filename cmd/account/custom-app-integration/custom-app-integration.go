@@ -130,7 +130,10 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete Custom OAuth App Integration.
   
   Delete an existing Custom OAuth App Integration. You can retrieve the custom
-  oauth app integration via :method:CustomAppIntegration/get.`
+  oauth app integration via :method:CustomAppIntegration/get.
+
+  Arguments:
+    INTEGRATION_ID: The oauth app integration ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -191,7 +194,10 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get OAuth Custom App Integration.`
 	cmd.Long = `Get OAuth Custom App Integration.
   
-  Gets the Custom OAuth App Integration for the given integration id.`
+  Gets the Custom OAuth App Integration for the given integration id.
+
+  Arguments:
+    INTEGRATION_ID: The oauth app integration ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -307,7 +313,10 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Updates Custom OAuth App Integration.
   
   Updates an existing custom OAuth App Integration. You can retrieve the custom
-  oauth app integration via :method:CustomAppIntegration/get.`
+  oauth app integration via :method:CustomAppIntegration/get.
+
+  Arguments:
+    INTEGRATION_ID: The oauth app integration ID.`
 
 	cmd.Annotations = make(map[string]string)
 

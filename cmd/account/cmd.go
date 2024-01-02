@@ -16,8 +16,8 @@ import (
 	log_delivery "github.com/databricks/cli/cmd/account/log-delivery"
 	account_metastore_assignments "github.com/databricks/cli/cmd/account/metastore-assignments"
 	account_metastores "github.com/databricks/cli/cmd/account/metastores"
+	network_connectivity "github.com/databricks/cli/cmd/account/network-connectivity"
 	networks "github.com/databricks/cli/cmd/account/networks"
-	o_auth_enrollment "github.com/databricks/cli/cmd/account/o-auth-enrollment"
 	o_auth_published_apps "github.com/databricks/cli/cmd/account/o-auth-published-apps"
 	private_access "github.com/databricks/cli/cmd/account/private-access"
 	published_app_integration "github.com/databricks/cli/cmd/account/published-app-integration"
@@ -49,8 +49,8 @@ func New() *cobra.Command {
 	cmd.AddCommand(log_delivery.New())
 	cmd.AddCommand(account_metastore_assignments.New())
 	cmd.AddCommand(account_metastores.New())
+	cmd.AddCommand(network_connectivity.New())
 	cmd.AddCommand(networks.New())
-	cmd.AddCommand(o_auth_enrollment.New())
 	cmd.AddCommand(o_auth_published_apps.New())
 	cmd.AddCommand(private_access.New())
 	cmd.AddCommand(published_app_integration.New())

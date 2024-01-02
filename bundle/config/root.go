@@ -6,41 +6,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/ghodss/yaml"
 	"github.com/imdario/mergo"
 )
-
-type ConfigFileNames []string
-
-// FileNames contains allowed names of bundle configuration files.
-var FileNames = ConfigFileNames{"databricks.yml", "databricks.yaml", "bundle.yml", "bundle.yaml"}
-
-func (c ConfigFileNames) FindInPath(path string) (string, error) {
-	result := ""
-	var firstErr error
-
-	for _, file := range c {
-		filePath := filepath.Join(path, file)
-		_, err := os.Stat(filePath)
-		if err == nil {
-			if result != "" {
-				return "", fmt.Errorf("multiple bundle root configuration files found in %s", path)
-			}
-			result = filePath
-		} else {
-			if firstErr == nil {
-				firstErr = err
-			}
-		}
-	}
-
-	if result == "" {
-		return "", firstErr
-	}
-	return result, nil
-}
 
 type Root struct {
 	// Path contains the directory path to the root of the bundle.
@@ -77,7 +48,7 @@ type Root struct {
 	Targets map[string]*Target `json:"targets,omitempty"`
 
 	// DEPRECATED. Left for backward compatibility with Targets
-	Environments map[string]*Target `json:"environments,omitempty"`
+	Environments map[string]*Target `json:"environments,omitempty" bundle:"deprecated"`
 
 	// Sync section specifies options for files synchronization
 	Sync Sync `json:"sync,omitempty"`
@@ -86,29 +57,39 @@ type Root struct {
 	RunAs *jobs.JobRunAs `json:"run_as,omitempty"`
 
 	Experimental *Experimental `json:"experimental,omitempty"`
+
+	// Permissions section allows to define permissions which will be
+	// applied to all resources defined in bundle
+	Permissions []resources.Permission `json:"permissions,omitempty"`
 }
 
+// Load loads the bundle configuration file at the specified path.
 func Load(path string) (*Root, error) {
-	var r Root
-
-	stat, err := os.Stat(path)
+	raw, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	// If we were given a directory, assume this is the bundle root.
-	if stat.IsDir() {
-		path, err = FileNames.FindInPath(path)
-		if err != nil {
-			return nil, err
-		}
+	var r Root
+	err = yaml.Unmarshal(raw, &r)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load %s: %w", path, err)
 	}
 
-	if err := r.Load(path); err != nil {
-		return nil, err
+	if r.Environments != nil && r.Targets != nil {
+		return nil, fmt.Errorf("both 'environments' and 'targets' are specified, only 'targets' should be used: %s", path)
 	}
 
-	return &r, nil
+	if r.Environments != nil {
+		//TODO: add a command line notice that this is a deprecated option.
+		r.Targets = r.Environments
+	}
+
+	r.Path = filepath.Dir(path)
+	r.SetConfigFilePath(path)
+
+	_, err = r.Resources.VerifyUniqueResourceIdentifiers()
+	return &r, err
 }
 
 // SetConfigFilePath configures the path that its configuration
@@ -155,32 +136,6 @@ func (r *Root) InitializeVariables(vars []string) error {
 		}
 	}
 	return nil
-}
-
-func (r *Root) Load(path string) error {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	err = yaml.Unmarshal(raw, r)
-	if err != nil {
-		return fmt.Errorf("failed to load %s: %w", path, err)
-	}
-
-	if r.Environments != nil && r.Targets != nil {
-		return fmt.Errorf("both 'environments' and 'targets' are specified, only 'targets' should be used: %s", path)
-	}
-
-	if r.Environments != nil {
-		//TODO: add a command line notice that this is a deprecated option.
-		r.Targets = r.Environments
-	}
-
-	r.Path = filepath.Dir(path)
-	r.SetConfigFilePath(path)
-
-	_, err = r.Resources.VerifyUniqueResourceIdentifiers()
-	return err
 }
 
 func (r *Root) Merge(other *Root) error {
@@ -282,6 +237,13 @@ func (r *Root) MergeTargetOverrides(target *Target) error {
 
 	if target.Sync != nil {
 		err = mergo.Merge(&r.Sync, target.Sync, mergo.WithAppendSlice)
+		if err != nil {
+			return err
+		}
+	}
+
+	if target.Permissions != nil {
+		err = mergo.Merge(&r.Permissions, target.Permissions, mergo.WithAppendSlice)
 		if err != nil {
 			return err
 		}

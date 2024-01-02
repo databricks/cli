@@ -15,6 +15,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/env"
+	"github.com/databricks/cli/bundle/metadata"
 	"github.com/databricks/cli/folders"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/locker"
@@ -30,6 +31,14 @@ const internalFolder = ".internal"
 
 type Bundle struct {
 	Config config.Root
+
+	// Metadata about the bundle deployment. This is the interface Databricks services
+	// rely on to integrate with bundles when they need additional information about
+	// a bundle deployment.
+	//
+	// After deploy, a file containing the metadata (metadata.json) can be found
+	// in the WSFS location containing the bundle state.
+	Metadata metadata.Metadata
 
 	// Store a pointer to the workspace client.
 	// It can be initialized on demand after loading the configuration.
@@ -54,7 +63,7 @@ type Bundle struct {
 }
 
 func Load(ctx context.Context, path string) (*Bundle, error) {
-	bundle := &Bundle{}
+	b := &Bundle{}
 	stat, err := os.Stat(path)
 	if err != nil {
 		return nil, err
@@ -65,22 +74,23 @@ func Load(ctx context.Context, path string) (*Bundle, error) {
 		_, hasIncludesEnv := env.Includes(ctx)
 		if hasRootEnv && hasIncludesEnv && stat.IsDir() {
 			log.Debugf(ctx, "No bundle configuration; using bundle root: %s", path)
-			bundle.Config = config.Root{
+			b.Config = config.Root{
 				Path: path,
 				Bundle: config.Bundle{
 					Name: filepath.Base(path),
 				},
 			}
-			return bundle, nil
+			return b, nil
 		}
 		return nil, err
 	}
 	log.Debugf(ctx, "Loading bundle configuration from: %s", configFile)
-	err = bundle.Config.Load(configFile)
+	root, err := config.Load(configFile)
 	if err != nil {
 		return nil, err
 	}
-	return bundle, nil
+	b.Config = *root
+	return b, nil
 }
 
 // MustLoad returns a bundle configuration.
@@ -111,10 +121,18 @@ func TryLoad(ctx context.Context) (*Bundle, error) {
 	return Load(ctx, root)
 }
 
+func (b *Bundle) InitializeWorkspaceClient() (*databricks.WorkspaceClient, error) {
+	client, err := b.Config.Workspace.Client()
+	if err != nil {
+		return nil, fmt.Errorf("cannot resolve bundle auth configuration: %w", err)
+	}
+	return client, nil
+}
+
 func (b *Bundle) WorkspaceClient() *databricks.WorkspaceClient {
 	b.clientOnce.Do(func() {
 		var err error
-		b.client, err = b.Config.Workspace.Client()
+		b.client, err = b.InitializeWorkspaceClient()
 		if err != nil {
 			panic(err)
 		}

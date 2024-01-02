@@ -49,82 +49,82 @@ func TestTemplateToInteger(t *testing.T) {
 }
 
 func TestTemplateToString(t *testing.T) {
-	s, err := ToString(true, BooleanType)
+	s, err := toString(true, BooleanType)
 	assert.NoError(t, err)
 	assert.Equal(t, "true", s)
 
-	s, err = ToString("abc", StringType)
+	s, err = toString("abc", StringType)
 	assert.NoError(t, err)
 	assert.Equal(t, "abc", s)
 
-	s, err = ToString(1.1, NumberType)
+	s, err = toString(1.1, NumberType)
 	assert.NoError(t, err)
 	assert.Equal(t, "1.1", s)
 
-	s, err = ToString(2, IntegerType)
+	s, err = toString(2, IntegerType)
 	assert.NoError(t, err)
 	assert.Equal(t, "2", s)
 
-	_, err = ToString([]string{}, ArrayType)
+	_, err = toString([]string{}, ArrayType)
 	assert.EqualError(t, err, "cannot format object of type array as a string. Value of object: []string{}")
 
-	_, err = ToString("true", BooleanType)
+	_, err = toString("true", BooleanType)
 	assert.EqualError(t, err, "expected bool, got: \"true\"")
 
-	_, err = ToString(123, StringType)
+	_, err = toString(123, StringType)
 	assert.EqualError(t, err, "expected string, got: 123")
 
-	_, err = ToString(false, NumberType)
+	_, err = toString(false, NumberType)
 	assert.EqualError(t, err, "expected float, got: false")
 
-	_, err = ToString("abc", IntegerType)
+	_, err = toString("abc", IntegerType)
 	assert.EqualError(t, err, "cannot convert \"abc\" to an integer")
 
-	_, err = ToString("abc", "foobar")
+	_, err = toString("abc", "foobar")
 	assert.EqualError(t, err, "unknown json schema type: \"foobar\"")
 }
 
 func TestTemplateFromString(t *testing.T) {
-	v, err := FromString("true", BooleanType)
+	v, err := fromString("true", BooleanType)
 	assert.NoError(t, err)
 	assert.Equal(t, true, v)
 
-	v, err = FromString("abc", StringType)
+	v, err = fromString("abc", StringType)
 	assert.NoError(t, err)
 	assert.Equal(t, "abc", v)
 
-	v, err = FromString("1.1", NumberType)
+	v, err = fromString("1.1", NumberType)
 	assert.NoError(t, err)
 	// Floating point conversions are not perfect
 	assert.True(t, (v.(float64)-1.1) < 0.000001)
 
-	v, err = FromString("12345", IntegerType)
+	v, err = fromString("12345", IntegerType)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(12345), v)
 
-	v, err = FromString("123", NumberType)
+	v, err = fromString("123", NumberType)
 	assert.NoError(t, err)
 	assert.Equal(t, float64(123), v)
 
-	_, err = FromString("qrt", ArrayType)
+	_, err = fromString("qrt", ArrayType)
 	assert.EqualError(t, err, "cannot parse string as object of type array. Value of string: \"qrt\"")
 
-	_, err = FromString("abc", IntegerType)
-	assert.EqualError(t, err, "could not parse \"abc\" as a integer: strconv.ParseInt: parsing \"abc\": invalid syntax")
+	_, err = fromString("abc", IntegerType)
+	assert.EqualError(t, err, "\"abc\" is not a integer")
 
-	_, err = FromString("1.0", IntegerType)
-	assert.EqualError(t, err, "could not parse \"1.0\" as a integer: strconv.ParseInt: parsing \"1.0\": invalid syntax")
+	_, err = fromString("1.0", IntegerType)
+	assert.EqualError(t, err, "\"1.0\" is not a integer")
 
-	_, err = FromString("1.0", "foobar")
+	_, err = fromString("1.0", "foobar")
 	assert.EqualError(t, err, "unknown json schema type: \"foobar\"")
 }
 
 func TestTemplateToStringSlice(t *testing.T) {
-	s, err := ToStringSlice([]any{"a", "b", "c"}, StringType)
+	s, err := toStringSlice([]any{"a", "b", "c"}, StringType)
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"a", "b", "c"}, s)
 
-	s, err = ToStringSlice([]any{1.1, 2.2, 3.3}, NumberType)
+	s, err = toStringSlice([]any{1.1, 2.2, 3.3}, NumberType)
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"1.1", "2.2", "3.3"}, s)
 }
@@ -133,23 +133,23 @@ func TestValidatePropertyPatternMatch(t *testing.T) {
 	var err error
 
 	// Expect no error if no pattern is specified.
-	err = ValidatePatternMatch("foo", 1, &Schema{Type: "integer"})
+	err = validatePatternMatch("foo", 1, &Schema{Type: "integer"})
 	assert.NoError(t, err)
 
 	// Expect error because value is not a string.
-	err = ValidatePatternMatch("bar", 1, &Schema{Type: "integer", Pattern: "abc"})
+	err = validatePatternMatch("bar", 1, &Schema{Type: "integer", Pattern: "abc"})
 	assert.EqualError(t, err, "invalid value for bar: 1. Expected a value of type string")
 
 	// Expect error because the pattern is invalid.
-	err = ValidatePatternMatch("bar", "xyz", &Schema{Type: "string", Pattern: "(abc"})
+	err = validatePatternMatch("bar", "xyz", &Schema{Type: "string", Pattern: "(abc"})
 	assert.EqualError(t, err, "error parsing regexp: missing closing ): `(abc`")
 
 	// Expect no error because the pattern matches.
-	err = ValidatePatternMatch("bar", "axyzd", &Schema{Type: "string", Pattern: "(a*.d)"})
+	err = validatePatternMatch("bar", "axyzd", &Schema{Type: "string", Pattern: "(a*.d)"})
 	assert.NoError(t, err)
 
 	// Expect custom error message on match fail
-	err = ValidatePatternMatch("bar", "axyze", &Schema{
+	err = validatePatternMatch("bar", "axyze", &Schema{
 		Type:    "string",
 		Pattern: "(a*.d)",
 		Extension: Extension{
@@ -159,7 +159,7 @@ func TestValidatePropertyPatternMatch(t *testing.T) {
 	assert.EqualError(t, err, "invalid value for bar: \"axyze\". my custom msg")
 
 	// Expect generic message on match fail
-	err = ValidatePatternMatch("bar", "axyze", &Schema{
+	err = validatePatternMatch("bar", "axyze", &Schema{
 		Type:    "string",
 		Pattern: "(a*.d)",
 	})

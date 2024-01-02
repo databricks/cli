@@ -3,14 +3,14 @@ package root
 import (
 	"context"
 	"fmt"
-	"io"
 	"log/slog"
+	"os"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
-	"github.com/fatih/color"
+	"github.com/databricks/cli/libs/log/handler"
 	"github.com/spf13/cobra"
 )
 
@@ -20,58 +20,11 @@ const (
 	envLogFormat = "DATABRICKS_LOG_FORMAT"
 )
 
-type friendlyHandler struct {
-	slog.Handler
-	w io.Writer
-}
-
-var (
-	levelTrace = color.New(color.FgYellow).Sprint("TRACE")
-	levelDebug = color.New(color.FgYellow).Sprint("DEBUG")
-	levelInfo  = color.New(color.FgGreen).Sprintf("%5s", "INFO")
-	levelWarn  = color.New(color.FgMagenta).Sprintf("%5s", "WARN")
-	levelError = color.New(color.FgRed).Sprint("ERROR")
-)
-
-func (l *friendlyHandler) coloredLevel(rec slog.Record) string {
-	switch rec.Level {
-	case log.LevelTrace:
-		return levelTrace
-	case slog.LevelDebug:
-		return levelDebug
-	case slog.LevelInfo:
-		return levelInfo
-	case slog.LevelWarn:
-		return levelWarn
-	case log.LevelError:
-		return levelError
-	}
-	return ""
-}
-
-func (l *friendlyHandler) Handle(ctx context.Context, rec slog.Record) error {
-	t := fmt.Sprintf("%02d:%02d", rec.Time.Hour(), rec.Time.Minute())
-	attrs := ""
-	rec.Attrs(func(a slog.Attr) bool {
-		attrs += fmt.Sprintf(" %s%s%s",
-			color.CyanString(a.Key),
-			color.CyanString("="),
-			color.YellowString(a.Value.String()))
-		return true
-	})
-	msg := fmt.Sprintf("%s %s %s%s\n",
-		color.MagentaString(t),
-		l.coloredLevel(rec),
-		rec.Message,
-		attrs)
-	_, err := l.w.Write([]byte(msg))
-	return err
-}
-
 type logFlags struct {
 	file   flags.LogFileFlag
 	level  flags.LogLevelFlag
 	output flags.Output
+	debug  bool
 }
 
 func (f *logFlags) makeLogHandler(opts slog.HandlerOptions) (slog.Handler, error) {
@@ -81,10 +34,11 @@ func (f *logFlags) makeLogHandler(opts slog.HandlerOptions) (slog.Handler, error
 	case flags.OutputText:
 		w := f.file.Writer()
 		if cmdio.IsTTY(w) {
-			return &friendlyHandler{
-				Handler: slog.NewTextHandler(w, &opts),
-				w:       w,
-			}, nil
+			return handler.NewFriendlyHandler(w, &handler.Options{
+				Color:       true,
+				Level:       opts.Level,
+				ReplaceAttr: opts.ReplaceAttr,
+			}), nil
 		}
 		return slog.NewTextHandler(w, &opts), nil
 
@@ -94,6 +48,10 @@ func (f *logFlags) makeLogHandler(opts slog.HandlerOptions) (slog.Handler, error
 }
 
 func (f *logFlags) initializeContext(ctx context.Context) (context.Context, error) {
+	if f.debug {
+		f.level.Set("debug")
+	}
+
 	opts := slog.HandlerOptions{}
 	opts.Level = f.level.Level()
 	opts.AddSource = true
@@ -113,7 +71,7 @@ func (f *logFlags) initializeContext(ctx context.Context) (context.Context, erro
 		return nil, err
 	}
 
-	slog.SetDefault(slog.New(handler))
+	slog.SetDefault(slog.New(handler).With(slog.Int("pid", os.Getpid())))
 	return log.NewContext(ctx, slog.Default()), nil
 }
 
@@ -136,9 +94,17 @@ func initLogFlags(cmd *cobra.Command) *logFlags {
 		f.output.Set(v)
 	}
 
-	cmd.PersistentFlags().Var(&f.file, "log-file", "file to write logs to")
-	cmd.PersistentFlags().Var(&f.level, "log-level", "log level")
-	cmd.PersistentFlags().Var(&f.output, "log-format", "log output format (text or json)")
+	flags := cmd.PersistentFlags()
+	flags.BoolVar(&f.debug, "debug", false, "enable debug logging")
+	flags.Var(&f.file, "log-file", "file to write logs to")
+	flags.Var(&f.level, "log-level", "log level")
+	flags.Var(&f.output, "log-format", "log output format (text or json)")
+
+	// mark fine-grained flags hidden from global --help
+	flags.MarkHidden("log-file")
+	flags.MarkHidden("log-level")
+	flags.MarkHidden("log-format")
+
 	cmd.RegisterFlagCompletionFunc("log-file", f.file.Complete)
 	cmd.RegisterFlagCompletionFunc("log-level", f.level.Complete)
 	cmd.RegisterFlagCompletionFunc("log-format", f.output.Complete)

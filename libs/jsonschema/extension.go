@@ -12,7 +12,26 @@ type Extension struct {
 	// that do have an order defined.
 	Order *int `json:"order,omitempty"`
 
+	// Welcome message to print before prompting the user for input
+	WelcomeMessage string `json:"welcome_message,omitempty"`
+
+	// The message to print after the template is successfully initalized
+	SuccessMessage string `json:"success_message,omitempty"`
+
 	// PatternMatchFailureMessage is a user defined message that is displayed to the
 	// user if a JSON schema pattern match fails.
 	PatternMatchFailureMessage string `json:"pattern_match_failure_message,omitempty"`
+
+	// Set the minimum semver version of this CLI to validate when loading this schema.
+	// If the CLI version is less than this value, then validation for this
+	// schema will fail.
+	MinDatabricksCliVersion string `json:"min_databricks_cli_version,omitempty"`
+
+	// Skip prompting if this schema is satisfied by the configuration already present. In
+	// that case the default value of the property is used instead.
+	SkipPromptIf *Schema `json:"skip_prompt_if,omitempty"`
+
+	// Version of the schema. This is used to determine if the schema is
+	// compatible with the current CLI version.
+	Version *int `json:"version,omitempty"`
 }
