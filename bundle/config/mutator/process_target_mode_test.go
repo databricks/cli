@@ -205,7 +205,7 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	b := mockBundle(config.Production)
 
 	err := validateProductionMode(context.Background(), b, false)
-	require.ErrorContains(t, err, "state_path")
+	require.ErrorContains(t, err, "run_as")
 
 	b.Config.Workspace.StatePath = "/Shared/.bundle/x/y/state"
 	b.Config.Workspace.ArtifactPath = "/Shared/.bundle/x/y/artifacts"
