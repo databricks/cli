@@ -139,3 +139,28 @@ func (v Value) MarkAnchor() Value {
 func (v Value) IsAnchor() bool {
 	return v.anchor
 }
+
+// eq is an internal only method that compares two values.
+// It is used to determine if a value has changed during a visit.
+// We need a custom implementation because maps and slices
+// cannot be compared with the regular == operator.
+func (v Value) eq(w Value) bool {
+	if v.k != w.k || v.l != w.l {
+		return false
+	}
+
+	switch v.k {
+	case KindMap:
+		// Compare pointers to the underlying map.
+		// This is safe because we don't allow maps to be mutated.
+		return &v.v == &w.v
+	case KindSequence:
+		// Compare pointers to the underlying slice and slice length.
+		// This is safe because we don't allow slices to be mutated.
+		vs := v.v.([]Value)
+		ws := w.v.([]Value)
+		return &vs[0] == &ws[0] && len(vs) == len(ws)
+	default:
+		return v.v == w.v
+	}
+}

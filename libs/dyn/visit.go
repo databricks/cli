@@ -87,7 +87,7 @@ func visit(v Value, prefix, suffix Path, opts visitOptions) (Value, error) {
 		}
 
 		// Return the original value if the value hasn't changed.
-		if nv == ev {
+		if nv.eq(ev) {
 			return v, nil
 		}
 
@@ -120,7 +120,7 @@ func visit(v Value, prefix, suffix Path, opts visitOptions) (Value, error) {
 		}
 
 		// Return the original value if the value hasn't changed.
-		if nv == ev {
+		if nv.eq(ev) {
 			return v, nil
 		}
 
