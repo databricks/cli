@@ -7,6 +7,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestInvalidValue(t *testing.T) {
+	// Assert that the zero value of [dyn.Value] is the invalid value.
+	var zero dyn.Value
+	assert.Equal(t, zero, dyn.InvalidValue)
+}
+
 func TestValueIsAnchor(t *testing.T) {
 	var zero dyn.Value
 	assert.False(t, zero.IsAnchor())

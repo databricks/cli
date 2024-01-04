@@ -1,6 +1,9 @@
 package dyn
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type Kind int
 
@@ -9,12 +12,12 @@ const (
 	KindInvalid Kind = iota
 	KindMap
 	KindSequence
-	KindNil
 	KindString
 	KindBool
 	KindInt
 	KindFloat
 	KindTime
+	KindNil
 )
 
 func kindOf(v any) Kind {
@@ -23,8 +26,6 @@ func kindOf(v any) Kind {
 		return KindMap
 	case []Value:
 		return KindSequence
-	case nil:
-		return KindNil
 	case string:
 		return KindString
 	case bool:
@@ -35,6 +36,8 @@ func kindOf(v any) Kind {
 		return KindFloat
 	case time.Time:
 		return KindTime
+	case nil:
+		return KindNil
 	default:
 		panic("not handled")
 	}
@@ -42,12 +45,12 @@ func kindOf(v any) Kind {
 
 func (k Kind) String() string {
 	switch k {
+	case KindInvalid:
+		return "invalid"
 	case KindMap:
 		return "map"
 	case KindSequence:
 		return "sequence"
-	case KindNil:
-		return "nil"
 	case KindString:
 		return "string"
 	case KindBool:
@@ -58,7 +61,9 @@ func (k Kind) String() string {
 		return "float"
 	case KindTime:
 		return "time"
+	case KindNil:
+		return "nil"
 	default:
-		return "invalid"
+		panic(fmt.Sprintf("invalid kind value: %d", k))
 	}
 }
