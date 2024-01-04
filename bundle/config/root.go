@@ -210,13 +210,13 @@ func (r *Root) MergeTargetOverrides(target *Target) error {
 				// we  allow overrides of the default value for a variable
 				defaultVal := sv
 				rootVariable.Default = &defaultVal
-			} else if vv, ok := v.(map[string]interface{}); ok {
+			} else if vv, ok := v.(map[string]any); ok {
 				// we also allow overrides of the lookup value for a variable
 				lookup, ok := vv["lookup"]
 				if !ok {
 					return fmt.Errorf("variable %s is incorrectly defined lookup override, no 'lookup' key defined", k)
 				}
-				rootVariable.Lookup = variable.LookupFromMap(lookup.(map[string]interface{}))
+				rootVariable.Lookup = variable.LookupFromMap(lookup.(map[string]any))
 			} else {
 				return fmt.Errorf("variable %s is incorrectly defined in target override", k)
 			}

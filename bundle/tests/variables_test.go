@@ -114,5 +114,5 @@ func TestVariablesWithTargetLookupOverrides(t *testing.T) {
 			interpolation.IncludeLookupsInPath(variable.VariableReferencePrefix),
 		)))
 	require.NoError(t, err)
-	assert.Equal(t, "some-test-cluster", b.Config.Variables["d"].Lookup.Cluster)
+	assert.Equal(t, "cluster: some-test-cluster", b.Config.Variables["d"].Lookup.String())
 }

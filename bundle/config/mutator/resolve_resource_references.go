@@ -20,7 +20,7 @@ func (m *resolveResourceReferences) Apply(ctx context.Context, b *bundle.Bundle)
 
 	for k := range b.Config.Variables {
 		v := b.Config.Variables[k]
-		if v.Lookup == nil {
+		if v == nil || v.Lookup == nil {
 			continue
 		}
 
