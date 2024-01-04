@@ -322,6 +322,18 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		r.RunAs = nil
 	}
 
+	if git := target.Get("git"); git != dyn.NilValue {
+		bundle := r.value.Get("bundle")
+		if bundle == dyn.NilValue {
+			bundle = dyn.NewValue(map[string]dyn.Value{}, dyn.Location{})
+		}
+
+		bundle.MustMap()["git"] = git
+		r.value.MustMap()["bundle"] = bundle
+		r.value.SetByPath()
+
+	}
+
 	if err = mergeField("bundle"); err != nil {
 		return err
 	}
@@ -355,3 +367,91 @@ func (r *Root) MergeTargetOverrides(name string) error {
 	r.ConfigureConfigFilePath()
 	return nil
 }
+
+// // Target may be nil if it's empty.
+// if target == nil {
+// 	return nil
+// }
+
+// if target.Bundle != nil {
+// 	err = mergo.Merge(&r.Bundle, target.Bundle, mergo.WithOverride)
+// 	if err != nil {
+// 		return err
+// 	}
+// }
+
+// if target.Workspace != nil {
+// 	err = mergo.Merge(&r.Workspace, target.Workspace, mergo.WithOverride)
+// 	if err != nil {
+// 		return err
+// 	}
+// }
+
+// if target.Artifacts != nil {
+// 	err = mergo.Merge(&r.Artifacts, target.Artifacts, mergo.WithOverride, mergo.WithAppendSlice)
+// 	if err != nil {
+// 		return err
+// 	}
+// }
+
+// if target.Resources != nil {
+// 	err = mergo.Merge(&r.Resources, target.Resources, mergo.WithOverride, mergo.WithAppendSlice)
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	err = r.Resources.Merge()
+// 	if err != nil {
+// 		return err
+// 	}
+// }
+
+// if target.Variables != nil {
+// 	for k, v := range target.Variables {
+// 		variable, ok := r.Variables[k]
+// 		if !ok {
+// 			return fmt.Errorf("variable %s is not defined but is assigned a value", k)
+// 		}
+// 		// we only allow overrides of the default value for a variable
+// 		defaultVal := v
+// 		variable.Default = &defaultVal
+// 	}
+// }
+
+// if target.RunAs != nil {
+// 	r.RunAs = target.RunAs
+// }
+
+// if target.Mode != "" {
+// 	r.Bundle.Mode = target.Mode
+// }
+
+// if target.ComputeID != "" {
+// 	r.Bundle.ComputeID = target.ComputeID
+// }
+
+// git := &r.Bundle.Git
+// if target.Git.Branch != "" {
+// 	git.Branch = target.Git.Branch
+// 	git.Inferred = false
+// }
+// if target.Git.Commit != "" {
+// 	git.Commit = target.Git.Commit
+// }
+// if target.Git.OriginURL != "" {
+// 	git.OriginURL = target.Git.OriginURL
+// }
+
+// if target.Sync != nil {
+// 	err = mergo.Merge(&r.Sync, target.Sync, mergo.WithAppendSlice)
+// 	if err != nil {
+// 		return err
+// 	}
+// }
+
+// if target.Permissions != nil {
+// 	err = mergo.Merge(&r.Permissions, target.Permissions, mergo.WithAppendSlice)
+// 	if err != nil {
+// 		return err
+// 	}
+// }
