@@ -27,8 +27,13 @@ func MapByPath(v Value, p Path, fn MapFunc) (Value, error) {
 	})
 
 	// Check for success.
-	if err == nil || IsNoSuchKeyError(err) || IsIndexOutOfBoundsError(err) {
+	if err == nil {
 		return nv, nil
+	}
+
+	// Return original value if a key or index is missing.
+	if IsNoSuchKeyError(err) || IsIndexOutOfBoundsError(err) {
+		return v, nil
 	}
 
 	return nv, err
