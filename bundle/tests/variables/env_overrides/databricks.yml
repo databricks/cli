@@ -6,6 +6,11 @@ variables:
   b:
     description: required variable
 
+  d:
+    description: variable with lookup
+    lookup:
+      cluster: some-cluster
+
 bundle:
   name: test bundle
 
@@ -29,4 +34,11 @@ targets:
   env-using-an-undefined-variable:
     variables:
       c: prod-c
+      b: prod-b
+
+  env-overrides-lookup:
+    variables:
+      d:
+        lookup:
+          cluster: some-test-cluster
       b: prod-b
