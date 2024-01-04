@@ -48,7 +48,7 @@ func setVariable(ctx context.Context, v *variable.Variable, name string) error {
 
 	// case: Defined a variable for named lookup for a resource
 	// It will be resolved later in ResolveResourceReferences mutator
-	if v.Lookup != "" {
+	if v.Lookup != nil {
 		return nil
 	}
 

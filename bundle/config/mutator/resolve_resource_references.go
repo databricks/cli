@@ -3,24 +3,16 @@ package mutator
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/resolvers"
 	"github.com/databricks/cli/libs/log"
 	"golang.org/x/sync/errgroup"
 )
 
-const separator string = ":"
-
-type resolveResourceReferences struct {
-	resolvers map[string]resolvers.ResolverFunc
-}
+type resolveResourceReferences struct{}
 
 func ResolveResourceReferences() bundle.Mutator {
-	return &resolveResourceReferences{
-		resolvers: resolvers.Resolvers(),
-	}
+	return &resolveResourceReferences{}
 }
 
 func (m *resolveResourceReferences) Apply(ctx context.Context, b *bundle.Bundle) error {
@@ -28,7 +20,7 @@ func (m *resolveResourceReferences) Apply(ctx context.Context, b *bundle.Bundle)
 
 	for k := range b.Config.Variables {
 		v := b.Config.Variables[k]
-		if v.Lookup == "" {
+		if v.Lookup == nil {
 			continue
 		}
 
@@ -37,21 +29,10 @@ func (m *resolveResourceReferences) Apply(ctx context.Context, b *bundle.Bundle)
 			continue
 		}
 
-		lookup := v.Lookup
-		resource, name, ok := strings.Cut(lookup, separator)
-		if !ok {
-			return fmt.Errorf("unexpected format for lookup: %s. Expected lookup string to be of the form <resource_type>:<name>", lookup)
-		}
-
-		resolver, ok := m.resolvers[resource]
-		if !ok {
-			return fmt.Errorf("unable to resolve resource reference %s, no resolvers for %s", lookup, resource)
-		}
-
 		errs.Go(func() error {
-			id, err := resolver(errCtx, b, name)
+			id, err := v.Lookup.Resolve(errCtx, b.WorkspaceClient())
 			if err != nil {
-				return fmt.Errorf("failed to resolve %s reference %s, err: %w", resource, lookup, err)
+				return fmt.Errorf("failed to resolve %s, err: %w", v.Lookup, err)
 			}
 
 			v.Set(id)

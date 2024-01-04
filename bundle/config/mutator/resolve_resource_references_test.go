@@ -119,17 +119,21 @@ func (MockClusterService) UpdatePermissions(ctx context.Context, request compute
 }
 
 func TestResolveClusterReference(t *testing.T) {
-	clusterRef1 := "clusters:Some Custom Cluster"
-	clusterRef2 := "clusters:Some Other Name"
+	clusterRef1 := "Some Custom Cluster"
+	clusterRef2 := "Some Other Name"
 	justString := "random string"
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Variables: map[string]*variable.Variable{
 				"my-cluster-id-1": {
-					Lookup: clusterRef1,
+					Lookup: &variable.Lookup{
+						Cluster: clusterRef1,
+					},
 				},
 				"my-cluster-id-2": {
-					Lookup: clusterRef2,
+					Lookup: &variable.Lookup{
+						Cluster: clusterRef2,
+					},
 				},
 				"some-variable": {
 					Value: &justString,
@@ -147,13 +151,15 @@ func TestResolveClusterReference(t *testing.T) {
 }
 
 func TestResolveNonExistentClusterReference(t *testing.T) {
-	clusterRef := "clusters:Random"
+	clusterRef := "Random"
 	justString := "random string"
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Variables: map[string]*variable.Variable{
 				"my-cluster-id": {
-					Lookup: clusterRef,
+					Lookup: &variable.Lookup{
+						Cluster: clusterRef,
+					},
 				},
 				"some-variable": {
 					Value: &justString,
@@ -165,34 +171,18 @@ func TestResolveNonExistentClusterReference(t *testing.T) {
 	b.WorkspaceClient().Clusters.WithImpl(MockClusterService{})
 
 	err := bundle.Apply(context.Background(), b, ResolveResourceReferences())
-	require.ErrorContains(t, err, "failed to resolve clusters reference clusters:Random, err: ClusterDetails named 'Random' does not exist")
-}
-
-func TestResolveNonExistentResourceType(t *testing.T) {
-	clusterRef := "donotexist:Random"
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Variables: map[string]*variable.Variable{
-				"my-cluster-id": {
-					Lookup: clusterRef,
-				},
-			},
-		},
-	}
-
-	b.WorkspaceClient().Clusters.WithImpl(MockClusterService{})
-
-	err := bundle.Apply(context.Background(), b, ResolveResourceReferences())
-	require.ErrorContains(t, err, "unable to resolve resource reference donotexist:Random, no resolvers for donotexist")
+	require.ErrorContains(t, err, "failed to resolve cluster: Random, err: ClusterDetails named 'Random' does not exist")
 }
 
 func TestNoLookupIfVariableIsSet(t *testing.T) {
-	clusterRef := "donotexist:Random"
+	clusterRef := "donotexist"
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Variables: map[string]*variable.Variable{
 				"my-cluster-id": {
-					Lookup: clusterRef,
+					Lookup: &variable.Lookup{
+						Cluster: clusterRef,
+					},
 				},
 			},
 		},

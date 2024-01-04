@@ -216,7 +216,7 @@ func (r *Root) MergeTargetOverrides(target *Target) error {
 				if !ok {
 					return fmt.Errorf("variable %s is incorrectly defined lookup override, no 'lookup' key defined", k)
 				}
-				rootVariable.Lookup = lookup.(string)
+				rootVariable.Lookup = variable.LookupFromMap(lookup.(map[string]interface{}))
 			} else {
 				return fmt.Errorf("variable %s is incorrectly defined in target override", k)
 			}

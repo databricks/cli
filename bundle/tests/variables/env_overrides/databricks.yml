@@ -8,7 +8,8 @@ variables:
 
   d:
     description: variable with lookup
-    lookup: "clusters: some-cluster"
+    lookup:
+      cluster: some-cluster
 
 bundle:
   name: test bundle
@@ -38,5 +39,6 @@ targets:
   env-overrides-lookup:
     variables:
       d:
-        lookup: "clusters: some-test-cluster"
+        lookup:
+          cluster: some-test-cluster
       b: prod-b

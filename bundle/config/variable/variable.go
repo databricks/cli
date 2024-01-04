@@ -29,7 +29,7 @@ type Variable struct {
 	// Format: "<resource>:<name>"
 	// The value of this field will be used to lookup the resource by name
 	// And assign the value of the variable to ID of the resource found.
-	Lookup string `json:"lookup,omitempty"`
+	Lookup *Lookup `json:"lookup,omitempty"`
 }
 
 // True if the variable has been assigned a default value. Variables without a
