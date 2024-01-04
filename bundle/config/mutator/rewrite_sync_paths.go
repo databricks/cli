@@ -77,7 +77,7 @@ func (m *rewriteSyncPaths) fn(root string) func(c dyn.Value) (dyn.Value, error) 
 		}
 
 		// Then replace the sync object with the new one
-		return c.SetKey("sync", dyn.NewValue(out, sync.Location())), nil
+		return dyn.Set(c, "sync", dyn.NewValue(out, sync.Location()))
 	}
 }
 

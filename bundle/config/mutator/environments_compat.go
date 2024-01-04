@@ -41,7 +41,7 @@ func (m *environmentsToTargets) Apply(ctx context.Context, b *bundle.Bundle) err
 
 		// Rewrite "environments" to "targets".
 		if environments != dyn.NilValue && targets == dyn.NilValue {
-			return v.SetKey("targets", environments), nil
+			return dyn.Set(v, "targets", environments)
 		}
 
 		return v, nil

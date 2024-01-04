@@ -71,41 +71,14 @@ func (m *mergeJobClusters) mergeJobClusters(v dyn.Value) (dyn.Value, error) {
 	return dyn.NewValue(out, v.Location()), nil
 }
 
-func (m *mergeJobClusters) foreachJob(v dyn.Value) (dyn.Value, error) {
-	jobs, ok := v.AsMap()
-	if !ok {
-		return v, nil
-	}
-
-	out := make(map[string]dyn.Value)
-	for key, job := range jobs {
-		var err error
-		out[key], err = job.Transform("job_clusters", m.mergeJobClusters)
-		if err != nil {
-			return v, err
-		}
-	}
-
-	return dyn.NewValue(out, v.Location()), nil
-}
-
 func (m *mergeJobClusters) Apply(ctx context.Context, b *bundle.Bundle) error {
 	return b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		if v == dyn.NilValue {
 			return v, nil
 		}
 
-		nv, err := v.Transform("resources.jobs", m.foreachJob)
-
-		// It is not a problem if the pipelines key is not set.
-		if dyn.IsNoSuchKeyError(err) {
-			return v, nil
-		}
-
-		if err != nil {
-			return v, err
-		}
-
-		return nv, nil
+		return dyn.Map(v, "resources.jobs", dyn.Foreach(func(job dyn.Value) (dyn.Value, error) {
+			return dyn.Map(job, "job_clusters", m.mergeJobClusters)
+		}))
 	})
 }

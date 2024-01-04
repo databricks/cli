@@ -75,29 +75,11 @@ func (m *mergePipelineClusters) mergeClustersForPipeline(v dyn.Value) (dyn.Value
 	out := make([]dyn.Value, 0, len(labels))
 	for _, label := range labels {
 		// Overwrite the label with the normalized version.
-		nv, err := seen[label].Set("label", dyn.V(label))
+		nv, err := dyn.Set(seen[label], "label", dyn.V(label))
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
 		out = append(out, nv)
-	}
-
-	return dyn.NewValue(out, v.Location()), nil
-}
-
-func (m *mergePipelineClusters) foreachPipeline(v dyn.Value) (dyn.Value, error) {
-	pipelines, ok := v.AsMap()
-	if !ok {
-		return v, nil
-	}
-
-	out := make(map[string]dyn.Value)
-	for key, pipeline := range pipelines {
-		var err error
-		out[key], err = pipeline.Transform("clusters", m.mergeClustersForPipeline)
-		if err != nil {
-			return v, err
-		}
 	}
 
 	return dyn.NewValue(out, v.Location()), nil
@@ -109,17 +91,8 @@ func (m *mergePipelineClusters) Apply(ctx context.Context, b *bundle.Bundle) err
 			return v, nil
 		}
 
-		nv, err := v.Transform("resources.pipelines", m.foreachPipeline)
-
-		// It is not a problem if the pipelines key is not set.
-		if dyn.IsNoSuchKeyError(err) {
-			return v, nil
-		}
-
-		if err != nil {
-			return v, err
-		}
-
-		return nv, nil
+		return dyn.Map(v, "resources.pipelines", dyn.Foreach(func(pipeline dyn.Value) (dyn.Value, error) {
+			return dyn.Map(pipeline, "clusters", m.mergeClustersForPipeline)
+		}))
 	})
 }

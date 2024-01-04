@@ -62,29 +62,10 @@ func (m *mergeJobTasks) mergeJobTasks(v dyn.Value) (dyn.Value, error) {
 		seen[key] = nv
 	}
 
-	// Gather resulting clusters in natural order.
+	// Gather resulting tasks in natural order.
 	out := make([]dyn.Value, 0, len(keys))
 	for _, key := range keys {
 		out = append(out, seen[key])
-	}
-
-	return dyn.NewValue(out, v.Location()), nil
-
-}
-
-func (m *mergeJobTasks) foreachJob(v dyn.Value) (dyn.Value, error) {
-	jobs, ok := v.AsMap()
-	if !ok {
-		return v, nil
-	}
-
-	out := make(map[string]dyn.Value)
-	for key, job := range jobs {
-		var err error
-		out[key], err = job.Transform("tasks", m.mergeJobTasks)
-		if err != nil {
-			return v, err
-		}
 	}
 
 	return dyn.NewValue(out, v.Location()), nil
@@ -96,17 +77,8 @@ func (m *mergeJobTasks) Apply(ctx context.Context, b *bundle.Bundle) error {
 			return v, nil
 		}
 
-		nv, err := v.Transform("resources.jobs", m.foreachJob)
-
-		// It is not a problem if the pipelines key is not set.
-		if dyn.IsNoSuchKeyError(err) {
-			return v, nil
-		}
-
-		if err != nil {
-			return v, err
-		}
-
-		return nv, nil
+		return dyn.Map(v, "resources.jobs", dyn.Foreach(func(job dyn.Value) (dyn.Value, error) {
+			return dyn.Map(job, "tasks", m.mergeJobTasks)
+		}))
 	})
 }
