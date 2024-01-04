@@ -5,15 +5,6 @@ import (
 	"time"
 )
 
-// panicOnTypeMismatch is a helper function for the MustZZZ functions in this file.
-// We rather panic with a descriptive error message than a generic one.
-func panicOnTypeMismatch[T any](v Value, vv T, ok bool, k Kind) T {
-	if !ok || v.k != k {
-		panic(fmt.Sprintf("expected kind %s, got %s", k, v.k))
-	}
-	return vv
-}
-
 // AsMap returns the underlying map if this value is a map,
 // the zero value and false otherwise.
 func (v Value) AsMap() (map[string]Value, bool) {
@@ -25,7 +16,10 @@ func (v Value) AsMap() (map[string]Value, bool) {
 // panics otherwise.
 func (v Value) MustMap() map[string]Value {
 	vv, ok := v.AsMap()
-	return panicOnTypeMismatch(v, vv, ok, KindMap)
+	if !ok || v.k != KindMap {
+		panic(fmt.Sprintf("expected kind %s, got %s", KindMap, v.k))
+	}
+	return vv
 }
 
 // AsSequence returns the underlying sequence if this value is a sequence,
@@ -39,7 +33,10 @@ func (v Value) AsSequence() ([]Value, bool) {
 // panics otherwise.
 func (v Value) MustSequence() []Value {
 	vv, ok := v.AsSequence()
-	return panicOnTypeMismatch(v, vv, ok, KindSequence)
+	if !ok || v.k != KindSequence {
+		panic(fmt.Sprintf("expected kind %s, got %s", KindSequence, v.k))
+	}
+	return vv
 }
 
 // AsString returns the underlying string if this value is a string,
@@ -53,7 +50,10 @@ func (v Value) AsString() (string, bool) {
 // panics otherwise.
 func (v Value) MustString() string {
 	vv, ok := v.AsString()
-	return panicOnTypeMismatch(v, vv, ok, KindString)
+	if !ok || v.k != KindString {
+		panic(fmt.Sprintf("expected kind %s, got %s", KindString, v.k))
+	}
+	return vv
 }
 
 // AsBool returns the underlying bool if this value is a bool,
@@ -67,7 +67,10 @@ func (v Value) AsBool() (bool, bool) {
 // panics otherwise.
 func (v Value) MustBool() bool {
 	vv, ok := v.AsBool()
-	return panicOnTypeMismatch(v, vv, ok, KindBool)
+	if !ok || v.k != KindBool {
+		panic(fmt.Sprintf("expected kind %s, got %s", KindBool, v.k))
+	}
+	return vv
 }
 
 // AsInt returns the underlying int if this value is an int,
@@ -89,7 +92,10 @@ func (v Value) AsInt() (int64, bool) {
 // panics otherwise.
 func (v Value) MustInt() int64 {
 	vv, ok := v.AsInt()
-	return panicOnTypeMismatch(v, vv, ok, KindInt)
+	if !ok || v.k != KindInt {
+		panic(fmt.Sprintf("expected kind %s, got %s", KindInt, v.k))
+	}
+	return vv
 }
 
 // AsFloat returns the underlying float if this value is a float,
@@ -109,7 +115,10 @@ func (v Value) AsFloat() (float64, bool) {
 // panics otherwise.
 func (v Value) MustFloat() float64 {
 	vv, ok := v.AsFloat()
-	return panicOnTypeMismatch(v, vv, ok, KindFloat)
+	if !ok || v.k != KindFloat {
+		panic(fmt.Sprintf("expected kind %s, got %s", KindFloat, v.k))
+	}
+	return vv
 }
 
 // AsTime returns the underlying time if this value is a time,
@@ -123,5 +132,8 @@ func (v Value) AsTime() (time.Time, bool) {
 // panics otherwise.
 func (v Value) MustTime() time.Time {
 	vv, ok := v.AsTime()
-	return panicOnTypeMismatch(v, vv, ok, KindTime)
+	if !ok || v.k != KindTime {
+		panic(fmt.Sprintf("expected kind %s, got %s", KindTime, v.k))
+	}
+	return vv
 }
