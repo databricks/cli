@@ -2,8 +2,6 @@ package dyn
 
 import (
 	"fmt"
-	"maps"
-	"time"
 )
 
 type Value struct {
@@ -51,35 +49,6 @@ func (v Value) WithLocation(loc Location) Value {
 		k: v.k,
 		l: loc,
 	}
-}
-
-func (v Value) AsMap() (map[string]Value, bool) {
-	m, ok := v.v.(map[string]Value)
-	return m, ok
-}
-
-func (v Value) SetKey(key string, value Value) Value {
-	m, ok := v.AsMap()
-	if !ok {
-		m = make(map[string]Value)
-	} else {
-		m = maps.Clone(m)
-	}
-
-	m[key] = value
-
-	return Value{
-		v: m,
-		k: KindMap,
-		l: v.l,
-	}
-}
-
-func (v Value) AsSequence() ([]Value, bool) {
-	if v.k != KindSequence {
-		return nil, false
-	}
-	return v.v.([]Value), true
 }
 
 func (v Value) Kind() Kind {
@@ -169,48 +138,4 @@ func (v Value) MarkAnchor() Value {
 
 func (v Value) IsAnchor() bool {
 	return v.anchor
-}
-
-func (v Value) MustMap() map[string]Value {
-	return v.v.(map[string]Value)
-}
-
-func (v Value) MustSequence() []Value {
-	return v.v.([]Value)
-}
-
-func (v Value) MustString() string {
-	return v.v.(string)
-}
-
-func (v Value) MustBool() bool {
-	return v.v.(bool)
-}
-
-func (v Value) MustInt() int64 {
-	switch vv := v.v.(type) {
-	case int:
-		return int64(vv)
-	case int32:
-		return int64(vv)
-	case int64:
-		return int64(vv)
-	default:
-		panic("not an int")
-	}
-}
-
-func (v Value) MustFloat() float64 {
-	switch vv := v.v.(type) {
-	case float32:
-		return float64(vv)
-	case float64:
-		return float64(vv)
-	default:
-		panic("not a float")
-	}
-}
-
-func (v Value) MustTime() time.Time {
-	return v.v.(time.Time)
 }

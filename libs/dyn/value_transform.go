@@ -20,9 +20,9 @@ func IsNoSuchKeyError(err error) bool {
 	return errors.As(err, &target)
 }
 
-func (v Value) TransformByPath(p Path, value Value) (Value, error) {
-	return v.set(EmptyPath, p, value)
-}
+// func (v Value) TransformByPath(p Path, value Value) (Value, error) {
+// 	return v.transform(EmptyPath, p, value)
+// }
 
 func (v Value) Transform(path string, fn func(Value) (Value, error)) (Value, error) {
 	p, err := NewPathFromString(path)
@@ -51,15 +51,20 @@ func (v Value) transform(prefix, suffix Path, fn func(Value) (Value, error)) (Va
 
 		// Lookup current value in the map.
 		m := v.MustMap()
-		nv, ok := m[component.key]
+		ev, ok := m[component.key]
 		if !ok {
 			return InvalidValue, noSuchKeyError{prefix}
 		}
 
 		// Recursively transform the value.
-		nv, err := nv.transform(prefix, suffix, fn)
+		nv, err := ev.transform(prefix, suffix, fn)
 		if err != nil {
 			return InvalidValue, err
+		}
+
+		// Return the original value if the value hasn't changed.
+		if nv == ev {
+			return v, nil
 		}
 
 		// Return an updated map value.
@@ -84,9 +89,15 @@ func (v Value) transform(prefix, suffix Path, fn func(Value) (Value, error)) (Va
 		}
 
 		// Recursively transform the value.
-		nv, err := s[component.index].transform(prefix, suffix, fn)
+		ev := s[component.index]
+		nv, err := ev.transform(prefix, suffix, fn)
 		if err != nil {
 			return InvalidValue, err
+		}
+
+		// Return the original value if the value hasn't changed.
+		if nv == ev {
+			return v, nil
 		}
 
 		// Return an updated sequence value.
