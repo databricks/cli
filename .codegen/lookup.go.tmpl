@@ -13,6 +13,7 @@ package variable
 		"jobs"
 		"metastores"
 		"pipelines"
+		"service-principals"
 		"queries"
 		"warehouses"
 }}
@@ -27,7 +28,7 @@ import (
 type Lookup struct {
 	{{range .Services -}}
 	{{- if in $allowlist .KebabName -}}
-	{{.Singular.CamelName}} string
+	{{.Singular.PascalName}} string `json:"{{.Singular.SnakeName}},omitempty"`
 
 	{{end}}
 	{{- end}}
@@ -38,7 +39,7 @@ func LookupFromMap(m map[string]any) *Lookup {
 	{{range .Services -}}
 	{{- if in $allowlist .KebabName -}}
 	if v, ok := m["{{.Singular.KebabName}}"]; ok {
-		l.{{.Singular.CamelName}} = v.(string)
+		l.{{.Singular.PascalName}} = v.(string)
 	}
 	{{end -}}
 	{{- end}}
@@ -53,8 +54,8 @@ func (l *Lookup) Resolve(ctx context.Context, w *databricks.WorkspaceClient) (st
 	resolvers := resolvers()
 	{{range .Services -}}
 	{{- if in $allowlist .KebabName -}}
-	if l.{{.Singular.CamelName}} != "" {
-		return resolvers["{{.Singular.KebabName}}"](ctx, w, l.{{.Singular.CamelName}})
+	if l.{{.Singular.PascalName}} != "" {
+		return resolvers["{{.Singular.KebabName}}"](ctx, w, l.{{.Singular.PascalName}})
 	}
 	{{end -}}
 	{{- end}}
@@ -65,8 +66,8 @@ func (l *Lookup) Resolve(ctx context.Context, w *databricks.WorkspaceClient) (st
 func (l *Lookup) String() string {
 	{{range .Services -}}
 	{{- if in $allowlist .KebabName -}}
-	if l.{{.Singular.CamelName}} != "" {
-		return fmt.Sprintf("{{.Singular.KebabName}}: %s", l.{{.Singular.CamelName}})
+	if l.{{.Singular.PascalName}} != "" {
+		return fmt.Sprintf("{{.Singular.KebabName}}: %s", l.{{.Singular.PascalName}})
 	}
 	{{end -}}
 	{{- end}}
@@ -78,7 +79,7 @@ func (l *Lookup) validate() error {
 	count := 0
 	{{range .Services -}}
 	{{- if in $allowlist .KebabName -}}
-	if l.{{.Singular.CamelName}} != "" {
+	if l.{{.Singular.PascalName}} != "" {
 		count++
 	}
 	{{end -}}

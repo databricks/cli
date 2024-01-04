@@ -11,58 +11,63 @@ import (
 )
 
 type Lookup struct {
-	alert string
+	Alert string `json:"alert,omitempty"`
 
-	clusterPolicy string
+	ClusterPolicy string `json:"cluster_policy,omitempty"`
 
-	cluster string
+	Cluster string `json:"cluster,omitempty"`
 
-	dashboard string
+	Dashboard string `json:"dashboard,omitempty"`
 
-	instancePool string
+	InstancePool string `json:"instance_pool,omitempty"`
 
-	job string
+	Job string `json:"job,omitempty"`
 
-	metastore string
+	Metastore string `json:"metastore,omitempty"`
 
-	pipeline string
+	Pipeline string `json:"pipeline,omitempty"`
 
-	query string
+	Query string `json:"query,omitempty"`
 
-	warehouse string
+	ServicePrincipal string `json:"service_principal,omitempty"`
+
+	Warehouse string `json:"warehouse,omitempty"`
 }
 
 func LookupFromMap(m map[string]any) *Lookup {
 	l := &Lookup{}
 	if v, ok := m["alert"]; ok {
-		l.alert = v.(string)
+		l.Alert = v.(string)
 	}
 	if v, ok := m["cluster-policy"]; ok {
-		l.clusterPolicy = v.(string)
+		l.ClusterPolicy = v.(string)
 	}
 	if v, ok := m["cluster"]; ok {
-		l.cluster = v.(string)
+		l.Cluster = v.(string)
 	}
 	if v, ok := m["dashboard"]; ok {
-		l.dashboard = v.(string)
+		l.Dashboard = v.(string)
 	}
 	if v, ok := m["instance-pool"]; ok {
-		l.instancePool = v.(string)
+		l.InstancePool = v.(string)
 	}
 	if v, ok := m["job"]; ok {
-		l.job = v.(string)
+		l.Job = v.(string)
 	}
 	if v, ok := m["metastore"]; ok {
-		l.metastore = v.(string)
+		l.Metastore = v.(string)
 	}
 	if v, ok := m["pipeline"]; ok {
-		l.pipeline = v.(string)
+		l.Pipeline = v.(string)
 	}
 	if v, ok := m["query"]; ok {
-		l.query = v.(string)
+		l.Query = v.(string)
+	}
+	if v, ok := m["service-principal"]; ok {
+		l.ServicePrincipal = v.(string)
 	}
 	if v, ok := m["warehouse"]; ok {
-		l.warehouse = v.(string)
+		l.Warehouse = v.(string)
 	}
 
 	return l
@@ -74,70 +79,76 @@ func (l *Lookup) Resolve(ctx context.Context, w *databricks.WorkspaceClient) (st
 	}
 
 	resolvers := resolvers()
-	if l.alert != "" {
-		return resolvers["alert"](ctx, w, l.alert)
+	if l.Alert != "" {
+		return resolvers["alert"](ctx, w, l.Alert)
 	}
-	if l.clusterPolicy != "" {
-		return resolvers["cluster-policy"](ctx, w, l.clusterPolicy)
+	if l.ClusterPolicy != "" {
+		return resolvers["cluster-policy"](ctx, w, l.ClusterPolicy)
 	}
-	if l.cluster != "" {
-		return resolvers["cluster"](ctx, w, l.cluster)
+	if l.Cluster != "" {
+		return resolvers["cluster"](ctx, w, l.Cluster)
 	}
-	if l.dashboard != "" {
-		return resolvers["dashboard"](ctx, w, l.dashboard)
+	if l.Dashboard != "" {
+		return resolvers["dashboard"](ctx, w, l.Dashboard)
 	}
-	if l.instancePool != "" {
-		return resolvers["instance-pool"](ctx, w, l.instancePool)
+	if l.InstancePool != "" {
+		return resolvers["instance-pool"](ctx, w, l.InstancePool)
 	}
-	if l.job != "" {
-		return resolvers["job"](ctx, w, l.job)
+	if l.Job != "" {
+		return resolvers["job"](ctx, w, l.Job)
 	}
-	if l.metastore != "" {
-		return resolvers["metastore"](ctx, w, l.metastore)
+	if l.Metastore != "" {
+		return resolvers["metastore"](ctx, w, l.Metastore)
 	}
-	if l.pipeline != "" {
-		return resolvers["pipeline"](ctx, w, l.pipeline)
+	if l.Pipeline != "" {
+		return resolvers["pipeline"](ctx, w, l.Pipeline)
 	}
-	if l.query != "" {
-		return resolvers["query"](ctx, w, l.query)
+	if l.Query != "" {
+		return resolvers["query"](ctx, w, l.Query)
 	}
-	if l.warehouse != "" {
-		return resolvers["warehouse"](ctx, w, l.warehouse)
+	if l.ServicePrincipal != "" {
+		return resolvers["service-principal"](ctx, w, l.ServicePrincipal)
+	}
+	if l.Warehouse != "" {
+		return resolvers["warehouse"](ctx, w, l.Warehouse)
 	}
 
 	return "", fmt.Errorf("no valid lookup fields provided")
 }
 
 func (l *Lookup) String() string {
-	if l.alert != "" {
-		return fmt.Sprintf("alert: %s", l.alert)
+	if l.Alert != "" {
+		return fmt.Sprintf("alert: %s", l.Alert)
 	}
-	if l.clusterPolicy != "" {
-		return fmt.Sprintf("cluster-policy: %s", l.clusterPolicy)
+	if l.ClusterPolicy != "" {
+		return fmt.Sprintf("cluster-policy: %s", l.ClusterPolicy)
 	}
-	if l.cluster != "" {
-		return fmt.Sprintf("cluster: %s", l.cluster)
+	if l.Cluster != "" {
+		return fmt.Sprintf("cluster: %s", l.Cluster)
 	}
-	if l.dashboard != "" {
-		return fmt.Sprintf("dashboard: %s", l.dashboard)
+	if l.Dashboard != "" {
+		return fmt.Sprintf("dashboard: %s", l.Dashboard)
 	}
-	if l.instancePool != "" {
-		return fmt.Sprintf("instance-pool: %s", l.instancePool)
+	if l.InstancePool != "" {
+		return fmt.Sprintf("instance-pool: %s", l.InstancePool)
 	}
-	if l.job != "" {
-		return fmt.Sprintf("job: %s", l.job)
+	if l.Job != "" {
+		return fmt.Sprintf("job: %s", l.Job)
 	}
-	if l.metastore != "" {
-		return fmt.Sprintf("metastore: %s", l.metastore)
+	if l.Metastore != "" {
+		return fmt.Sprintf("metastore: %s", l.Metastore)
 	}
-	if l.pipeline != "" {
-		return fmt.Sprintf("pipeline: %s", l.pipeline)
+	if l.Pipeline != "" {
+		return fmt.Sprintf("pipeline: %s", l.Pipeline)
 	}
-	if l.query != "" {
-		return fmt.Sprintf("query: %s", l.query)
+	if l.Query != "" {
+		return fmt.Sprintf("query: %s", l.Query)
 	}
-	if l.warehouse != "" {
-		return fmt.Sprintf("warehouse: %s", l.warehouse)
+	if l.ServicePrincipal != "" {
+		return fmt.Sprintf("service-principal: %s", l.ServicePrincipal)
+	}
+	if l.Warehouse != "" {
+		return fmt.Sprintf("warehouse: %s", l.Warehouse)
 	}
 
 	return ""
@@ -146,34 +157,37 @@ func (l *Lookup) String() string {
 func (l *Lookup) validate() error {
 	// Validate that only one field is set
 	count := 0
-	if l.alert != "" {
+	if l.Alert != "" {
 		count++
 	}
-	if l.clusterPolicy != "" {
+	if l.ClusterPolicy != "" {
 		count++
 	}
-	if l.cluster != "" {
+	if l.Cluster != "" {
 		count++
 	}
-	if l.dashboard != "" {
+	if l.Dashboard != "" {
 		count++
 	}
-	if l.instancePool != "" {
+	if l.InstancePool != "" {
 		count++
 	}
-	if l.job != "" {
+	if l.Job != "" {
 		count++
 	}
-	if l.metastore != "" {
+	if l.Metastore != "" {
 		count++
 	}
-	if l.pipeline != "" {
+	if l.Pipeline != "" {
 		count++
 	}
-	if l.query != "" {
+	if l.Query != "" {
 		count++
 	}
-	if l.warehouse != "" {
+	if l.ServicePrincipal != "" {
+		count++
+	}
+	if l.Warehouse != "" {
 		count++
 	}
 
@@ -258,6 +272,14 @@ func resolvers() map[string](resolverFunc) {
 	}
 	resolvers["query"] = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
 		entity, err := w.Queries.GetByName(ctx, name)
+		if err != nil {
+			return "", err
+		}
+
+		return fmt.Sprint(entity.Id), nil
+	}
+	resolvers["service-principal"] = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
+		entity, err := w.ServicePrincipals.GetByDisplayName(ctx, name)
 		if err != nil {
 			return "", err
 		}
