@@ -7,6 +7,19 @@ import (
 	"strconv"
 )
 
+// This error indicates an failure to parse a string as a particular JSON schema type.
+type parseStringError struct {
+	// Expected JSON schema type for the value
+	ExpectedType Type
+
+	// The string value that failed to parse
+	Value string
+}
+
+func (e parseStringError) Error() string {
+	return fmt.Sprintf("%q is not a %s", e.Value, e.ExpectedType)
+}
+
 // function to check whether a float value represents an integer
 func isIntegerValue(v float64) bool {
 	return v == float64(int64(v))
@@ -108,9 +121,38 @@ func fromString(s string, T Type) (any, error) {
 
 	// Return more readable error incase of a syntax error
 	if errors.Is(err, strconv.ErrSyntax) {
-		return nil, fmt.Errorf("could not parse %q as a %s: %w", s, T, err)
+		return nil, parseStringError{
+			ExpectedType: T,
+			Value:        s,
+		}
 	}
 	return v, err
+}
+
+// Error indicates a value entered by the user failed to match the pattern specified
+// in the template schema.
+type patternMatchError struct {
+	// The name of the property that failed to match the pattern
+	PropertyName string
+
+	// The value of the property that failed to match the pattern
+	PropertyValue any
+
+	// The regex pattern that the property value failed to match
+	Pattern string
+
+	// Failure message to display to the user, if specified in the template
+	// schema
+	FailureMessage string
+}
+
+func (e patternMatchError) Error() string {
+	// If custom user error message is defined, return error with the custom message
+	msg := e.FailureMessage
+	if msg == "" {
+		msg = fmt.Sprintf("Expected to match regex pattern: %s", e.Pattern)
+	}
+	return fmt.Sprintf("invalid value for %s: %q. %s", e.PropertyName, e.PropertyValue, msg)
 }
 
 func validatePatternMatch(name string, value any, propertySchema *Schema) error {
@@ -134,10 +176,10 @@ func validatePatternMatch(name string, value any, propertySchema *Schema) error 
 		return nil
 	}
 
-	// If custom user error message is defined, return error with the custom message
-	msg := propertySchema.PatternMatchFailureMessage
-	if msg == "" {
-		msg = fmt.Sprintf("Expected to match regex pattern: %s", propertySchema.Pattern)
+	return patternMatchError{
+		PropertyName:   name,
+		PropertyValue:  value,
+		Pattern:        propertySchema.Pattern,
+		FailureMessage: propertySchema.PatternMatchFailureMessage,
 	}
-	return fmt.Errorf("invalid value for %s: %q. %s", name, value, msg)
 }

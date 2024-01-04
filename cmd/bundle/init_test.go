@@ -3,6 +3,7 @@ package bundle
 import (
 	"testing"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -27,11 +28,18 @@ func TestBundleInitRepoName(t *testing.T) {
 }
 
 func TestNativeTemplateOptions(t *testing.T) {
-	assert.Equal(t, []string{"default-python", "mlops-stacks"}, nativeTemplateOptions())
+	expected := []cmdio.Tuple{
+		{Name: "default-python", Id: "The default Python template for Notebooks / Delta Live Tables / Workflows"},
+		{Name: "mlops-stacks", Id: "The Databricks MLOps Stacks template (github.com/databricks/mlops-stacks)"},
+		{Name: "custom...", Id: "Bring your own template"},
+	}
+	assert.Equal(t, expected, nativeTemplateOptions())
 }
 
-func TestNativeTemplateDescriptions(t *testing.T) {
-	assert.Equal(t, "- default-python: The default Python template\n- mlops-stacks: The Databricks MLOps Stacks template (https://github.com/databricks/mlops-stacks)", nativeTemplateDescriptions())
+func TestNativeTemplateHelpDescriptions(t *testing.T) {
+	expected := `- default-python: The default Python template for Notebooks / Delta Live Tables / Workflows
+- mlops-stacks: The Databricks MLOps Stacks template (github.com/databricks/mlops-stacks)`
+	assert.Equal(t, expected, nativeTemplateHelpDescriptions())
 }
 
 func TestGetUrlForNativeTemplate(t *testing.T) {

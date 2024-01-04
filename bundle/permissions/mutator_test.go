@@ -7,10 +7,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/ml"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
-	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,24 +23,24 @@ func TestApplyBundlePermissions(t *testing.T) {
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
-					"job_1": {JobSettings: &jobs.JobSettings{}},
-					"job_2": {JobSettings: &jobs.JobSettings{}},
+					"job_1": {},
+					"job_2": {},
 				},
 				Pipelines: map[string]*resources.Pipeline{
-					"pipeline_1": {PipelineSpec: &pipelines.PipelineSpec{}},
-					"pipeline_2": {PipelineSpec: &pipelines.PipelineSpec{}},
+					"pipeline_1": {},
+					"pipeline_2": {},
 				},
 				Models: map[string]*resources.MlflowModel{
-					"model_1": {Model: &ml.Model{}},
-					"model_2": {Model: &ml.Model{}},
+					"model_1": {},
+					"model_2": {},
 				},
 				Experiments: map[string]*resources.MlflowExperiment{
-					"experiment_1": {Experiment: &ml.Experiment{}},
-					"experiment_2": {Experiment: &ml.Experiment{}},
+					"experiment_1": {},
+					"experiment_2": {},
 				},
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
-					"endpoint_1": {CreateServingEndpoint: &serving.CreateServingEndpoint{}},
-					"endpoint_2": {CreateServingEndpoint: &serving.CreateServingEndpoint{}},
+					"endpoint_1": {},
+					"endpoint_2": {},
 				},
 			},
 		},
@@ -116,13 +112,11 @@ func TestWarningOnOverlapPermission(t *testing.T) {
 						Permissions: []resources.Permission{
 							{Level: CAN_VIEW, UserName: "TestUser"},
 						},
-						JobSettings: &jobs.JobSettings{},
 					},
 					"job_2": {
 						Permissions: []resources.Permission{
 							{Level: CAN_VIEW, UserName: "TestUser2"},
 						},
-						JobSettings: &jobs.JobSettings{},
 					},
 				},
 			},

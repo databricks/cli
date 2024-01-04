@@ -181,3 +181,51 @@ func TestWorkspaceClientOrPrompt(t *testing.T) {
 		})
 	})
 }
+
+func TestMustAccountClientWorksWithDatabricksCfg(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	dir := t.TempDir()
+	configFile := filepath.Join(dir, ".databrickscfg")
+	err := os.WriteFile(
+		configFile,
+		[]byte(`
+			[account-1111]
+			host = https://accounts.azuredatabricks.net/
+			account_id = 1111
+			token = foobar
+			`),
+		0755)
+	require.NoError(t, err)
+
+	cmd := New(context.Background())
+
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	err = MustAccountClient(cmd, []string{})
+	require.NoError(t, err)
+}
+
+func TestMustAccountClientWorksWithNoDatabricksCfgButEnvironmentVariables(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	ctx, tt := cmdio.SetupTest(context.Background())
+	t.Cleanup(tt.Done)
+	cmd := New(ctx)
+	t.Setenv("DATABRICKS_HOST", "https://accounts.azuredatabricks.net/")
+	t.Setenv("DATABRICKS_TOKEN", "foobar")
+	t.Setenv("DATABRICKS_ACCOUNT_ID", "1111")
+
+	err := MustAccountClient(cmd, []string{})
+	require.NoError(t, err)
+}
+
+func TestMustAccountClientErrorsWithNoDatabricksCfg(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	ctx, tt := cmdio.SetupTest(context.Background())
+	t.Cleanup(tt.Done)
+	cmd := New(ctx)
+
+	err := MustAccountClient(cmd, []string{})
+	require.ErrorContains(t, err, "no configuration file found at")
+}

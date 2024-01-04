@@ -41,7 +41,7 @@ func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt 
 	}
 
 	prompt := false
-	if allowPrompt && err != nil && cmdio.IsInteractive(ctx) {
+	if allowPrompt && err != nil && cmdio.IsPromptSupported(ctx) {
 		// Prompt to select a profile if the current configuration is not an account client.
 		prompt = prompt || errors.Is(err, databricks.ErrNotAccountClient)
 		// Prompt to select a profile if the current configuration doesn't resolve to a credential provider.
@@ -83,11 +83,13 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 		// 2. 99% of admins will have access to just one account
 		// hence, we don't need to create a special "DEFAULT_ACCOUNT" profile yet
 		_, profiles, err := databrickscfg.LoadProfiles(cmd.Context(), databrickscfg.MatchAccountProfiles)
-		if err != nil {
-			return err
-		}
-		if len(profiles) == 1 {
+		if err == nil && len(profiles) == 1 {
 			cfg.Profile = profiles[0].Name
+		}
+
+		// if there is no config file, we don't want to fail and instead just skip it
+		if err != nil && !errors.Is(err, databrickscfg.ErrNoConfiguration) {
+			return err
 		}
 	}
 
@@ -109,7 +111,7 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 	}
 
 	prompt := false
-	if allowPrompt && err != nil && cmdio.IsInteractive(ctx) {
+	if allowPrompt && err != nil && cmdio.IsPromptSupported(ctx) {
 		// Prompt to select a profile if the current configuration is not a workspace client.
 		prompt = prompt || errors.Is(err, databricks.ErrNotWorkspaceClient)
 		// Prompt to select a profile if the current configuration doesn't resolve to a credential provider.

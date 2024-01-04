@@ -10,8 +10,8 @@ require (
 	github.com/google/uuid v1.5.0 // BSD-3-Clause
 	github.com/hashicorp/go-version v1.6.0 // MPL 2.0
 	github.com/hashicorp/hc-install v0.6.2 // MPL 2.0
-	github.com/hashicorp/terraform-exec v0.19.0 // MPL 2.0
-	github.com/hashicorp/terraform-json v0.18.0 // MPL 2.0
+	github.com/hashicorp/terraform-exec v0.20.0 // MPL 2.0
+	github.com/hashicorp/terraform-json v0.20.0 // MPL 2.0
 	github.com/imdario/mergo v0.3.15 // BSD-3-Clause
 	github.com/manifoldco/promptui v0.9.0 // BSD-3-Clause
 	github.com/mattn/go-isatty v0.0.20 // MIT
@@ -31,7 +31,7 @@ require (
 )
 
 require (
-	go.uber.org/mock v0.3.0
+	go.uber.org/mock v0.4.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -54,7 +54,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/zclconf/go-cty v1.14.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	golang.org/x/crypto v0.16.0 // indirect
+	golang.org/x/crypto v0.17.0 // indirect
 	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/time v0.5.0 // indirect

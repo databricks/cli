@@ -101,29 +101,25 @@ func transformDevelopmentMode(b *bundle.Bundle) error {
 }
 
 func validateDevelopmentMode(b *bundle.Bundle) error {
-	if path := findIncorrectPath(b, config.Development); path != "" {
+	if path := findNonUserPath(b); path != "" {
 		return fmt.Errorf("%s must start with '~/' or contain the current username when using 'mode: development'", path)
 	}
 	return nil
 }
 
-func findIncorrectPath(b *bundle.Bundle, mode config.Mode) string {
+func findNonUserPath(b *bundle.Bundle) string {
 	username := b.Config.Workspace.CurrentUser.UserName
-	containsExpected := true
-	if mode == config.Production {
-		containsExpected = false
-	}
 
-	if strings.Contains(b.Config.Workspace.RootPath, username) != containsExpected && b.Config.Workspace.RootPath != "" {
+	if b.Config.Workspace.RootPath != "" && !strings.Contains(b.Config.Workspace.RootPath, username) {
 		return "root_path"
 	}
-	if strings.Contains(b.Config.Workspace.StatePath, username) != containsExpected {
+	if b.Config.Workspace.StatePath != "" && !strings.Contains(b.Config.Workspace.StatePath, username) {
 		return "state_path"
 	}
-	if strings.Contains(b.Config.Workspace.FilePath, username) != containsExpected {
+	if b.Config.Workspace.FilePath != "" && !strings.Contains(b.Config.Workspace.FilePath, username) {
 		return "file_path"
 	}
-	if strings.Contains(b.Config.Workspace.ArtifactPath, username) != containsExpected {
+	if b.Config.Workspace.ArtifactPath != "" && !strings.Contains(b.Config.Workspace.ArtifactPath, username) {
 		return "artifact_path"
 	}
 	return ""
@@ -138,23 +134,12 @@ func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUs
 	r := b.Config.Resources
 	for i := range r.Pipelines {
 		if r.Pipelines[i].Development {
-			return fmt.Errorf("target with 'mode: production' cannot specify a pipeline with 'development: true'")
+			return fmt.Errorf("target with 'mode: production' cannot include a pipeline with 'development: true'")
 		}
 	}
 
-	if !isPrincipalUsed {
-		if path := findIncorrectPath(b, config.Production); path != "" {
-			message := "%s must not contain the current username when using 'mode: production'"
-			if path == "root_path" {
-				return fmt.Errorf(message+"\n  tip: set workspace.root_path to a shared path such as /Shared/.bundle/${bundle.name}/${bundle.target}", path)
-			} else {
-				return fmt.Errorf(message, path)
-			}
-		}
-
-		if !isRunAsSet(r) {
-			return fmt.Errorf("'run_as' must be set for all jobs when using 'mode: production'")
-		}
+	if !isPrincipalUsed && !isRunAsSet(r) {
+		return fmt.Errorf("'run_as' must be set for all jobs when using 'mode: production'")
 	}
 	return nil
 }
