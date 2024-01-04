@@ -1,6 +1,9 @@
 package dyn
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type Kind int
 
@@ -42,6 +45,8 @@ func kindOf(v any) Kind {
 
 func (k Kind) String() string {
 	switch k {
+	case KindInvalid:
+		return "invalid"
 	case KindMap:
 		return "map"
 	case KindSequence:
@@ -59,6 +64,6 @@ func (k Kind) String() string {
 	case KindNil:
 		return "nil"
 	default:
-		return "invalid"
+		panic(fmt.Sprintf("invalid kind value: %d", k))
 	}
 }

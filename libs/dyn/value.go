@@ -15,14 +15,14 @@ type Value struct {
 	anchor bool
 }
 
-// NilValue is equal to the zero-value of Value.
-var NilValue = Value{
-	k: KindNil,
-}
-
 // InvalidValue is equal to the zero-value of Value.
 var InvalidValue = Value{
 	k: KindInvalid,
+}
+
+// NilValue is a convenient constant for a nil value.
+var NilValue = Value{
+	k: KindNil,
 }
 
 // V constructs a new Value with the given value.
