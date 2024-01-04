@@ -330,8 +330,6 @@ func (r *Root) MergeTargetOverrides(name string) error {
 
 		bundle.MustMap()["git"] = git
 		r.value.MustMap()["bundle"] = bundle
-		r.value.SetByPath()
-
 	}
 
 	if err = mergeField("bundle"); err != nil {
