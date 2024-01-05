@@ -11,6 +11,9 @@ variables:
     lookup:
       cluster: some-cluster
 
+  e:
+    description: variable with lookup
+
 bundle:
   name: test bundle
 
@@ -41,4 +44,7 @@ targets:
       d:
         lookup:
           cluster: some-test-cluster
+      e:
+        lookup:
+          instance_pool: some-test-instance-pool
       b: prod-b

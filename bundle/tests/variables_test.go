@@ -115,4 +115,5 @@ func TestVariablesWithTargetLookupOverrides(t *testing.T) {
 		)))
 	require.NoError(t, err)
 	assert.Equal(t, "cluster: some-test-cluster", b.Config.Variables["d"].Lookup.String())
+	assert.Equal(t, "instance-pool: some-test-instance-pool", b.Config.Variables["e"].Lookup.String())
 }
