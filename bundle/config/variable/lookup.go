@@ -39,7 +39,7 @@ func LookupFromMap(m map[string]any) *Lookup {
 	if v, ok := m["alert"]; ok {
 		l.Alert = v.(string)
 	}
-	if v, ok := m["cluster-policy"]; ok {
+	if v, ok := m["cluster_policy"]; ok {
 		l.ClusterPolicy = v.(string)
 	}
 	if v, ok := m["cluster"]; ok {
@@ -48,7 +48,7 @@ func LookupFromMap(m map[string]any) *Lookup {
 	if v, ok := m["dashboard"]; ok {
 		l.Dashboard = v.(string)
 	}
-	if v, ok := m["instance-pool"]; ok {
+	if v, ok := m["instance_pool"]; ok {
 		l.InstancePool = v.(string)
 	}
 	if v, ok := m["job"]; ok {
@@ -63,7 +63,7 @@ func LookupFromMap(m map[string]any) *Lookup {
 	if v, ok := m["query"]; ok {
 		l.Query = v.(string)
 	}
-	if v, ok := m["service-principal"]; ok {
+	if v, ok := m["service_principal"]; ok {
 		l.ServicePrincipal = v.(string)
 	}
 	if v, ok := m["warehouse"]; ok {
@@ -78,39 +78,39 @@ func (l *Lookup) Resolve(ctx context.Context, w *databricks.WorkspaceClient) (st
 		return "", err
 	}
 
-	resolvers := resolvers()
+	r := allResolvers()
 	if l.Alert != "" {
-		return resolvers["alert"](ctx, w, l.Alert)
+		return r.Alert(ctx, w, l.Alert)
 	}
 	if l.ClusterPolicy != "" {
-		return resolvers["cluster-policy"](ctx, w, l.ClusterPolicy)
+		return r.ClusterPolicy(ctx, w, l.ClusterPolicy)
 	}
 	if l.Cluster != "" {
-		return resolvers["cluster"](ctx, w, l.Cluster)
+		return r.Cluster(ctx, w, l.Cluster)
 	}
 	if l.Dashboard != "" {
-		return resolvers["dashboard"](ctx, w, l.Dashboard)
+		return r.Dashboard(ctx, w, l.Dashboard)
 	}
 	if l.InstancePool != "" {
-		return resolvers["instance-pool"](ctx, w, l.InstancePool)
+		return r.InstancePool(ctx, w, l.InstancePool)
 	}
 	if l.Job != "" {
-		return resolvers["job"](ctx, w, l.Job)
+		return r.Job(ctx, w, l.Job)
 	}
 	if l.Metastore != "" {
-		return resolvers["metastore"](ctx, w, l.Metastore)
+		return r.Metastore(ctx, w, l.Metastore)
 	}
 	if l.Pipeline != "" {
-		return resolvers["pipeline"](ctx, w, l.Pipeline)
+		return r.Pipeline(ctx, w, l.Pipeline)
 	}
 	if l.Query != "" {
-		return resolvers["query"](ctx, w, l.Query)
+		return r.Query(ctx, w, l.Query)
 	}
 	if l.ServicePrincipal != "" {
-		return resolvers["service-principal"](ctx, w, l.ServicePrincipal)
+		return r.ServicePrincipal(ctx, w, l.ServicePrincipal)
 	}
 	if l.Warehouse != "" {
-		return resolvers["warehouse"](ctx, w, l.Warehouse)
+		return r.Warehouse(ctx, w, l.Warehouse)
 	}
 
 	return "", fmt.Errorf("no valid lookup fields provided")
@@ -203,10 +203,23 @@ func (l *Lookup) validate() error {
 }
 
 type resolverFunc func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error)
+type resolvers struct {
+	Alert            resolverFunc
+	ClusterPolicy    resolverFunc
+	Cluster          resolverFunc
+	Dashboard        resolverFunc
+	InstancePool     resolverFunc
+	Job              resolverFunc
+	Metastore        resolverFunc
+	Pipeline         resolverFunc
+	Query            resolverFunc
+	ServicePrincipal resolverFunc
+	Warehouse        resolverFunc
+}
 
-func resolvers() map[string](resolverFunc) {
-	resolvers := make(map[string](resolverFunc), 0)
-	resolvers["alert"] = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
+func allResolvers() *resolvers {
+	r := &resolvers{}
+	r.Alert = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
 		entity, err := w.Alerts.GetByName(ctx, name)
 		if err != nil {
 			return "", err
@@ -214,7 +227,7 @@ func resolvers() map[string](resolverFunc) {
 
 		return fmt.Sprint(entity.Id), nil
 	}
-	resolvers["cluster-policy"] = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
+	r.ClusterPolicy = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
 		entity, err := w.ClusterPolicies.GetByName(ctx, name)
 		if err != nil {
 			return "", err
@@ -222,7 +235,7 @@ func resolvers() map[string](resolverFunc) {
 
 		return fmt.Sprint(entity.PolicyId), nil
 	}
-	resolvers["cluster"] = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
+	r.Cluster = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
 		entity, err := w.Clusters.GetByClusterName(ctx, name)
 		if err != nil {
 			return "", err
@@ -230,7 +243,7 @@ func resolvers() map[string](resolverFunc) {
 
 		return fmt.Sprint(entity.ClusterId), nil
 	}
-	resolvers["dashboard"] = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
+	r.Dashboard = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
 		entity, err := w.Dashboards.GetByName(ctx, name)
 		if err != nil {
 			return "", err
@@ -238,7 +251,7 @@ func resolvers() map[string](resolverFunc) {
 
 		return fmt.Sprint(entity.Id), nil
 	}
-	resolvers["instance-pool"] = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
+	r.InstancePool = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
 		entity, err := w.InstancePools.GetByInstancePoolName(ctx, name)
 		if err != nil {
 			return "", err
@@ -246,7 +259,7 @@ func resolvers() map[string](resolverFunc) {
 
 		return fmt.Sprint(entity.InstancePoolId), nil
 	}
-	resolvers["job"] = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
+	r.Job = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
 		entity, err := w.Jobs.GetBySettingsName(ctx, name)
 		if err != nil {
 			return "", err
@@ -254,7 +267,7 @@ func resolvers() map[string](resolverFunc) {
 
 		return fmt.Sprint(entity.JobId), nil
 	}
-	resolvers["metastore"] = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
+	r.Metastore = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
 		entity, err := w.Metastores.GetByName(ctx, name)
 		if err != nil {
 			return "", err
@@ -262,7 +275,7 @@ func resolvers() map[string](resolverFunc) {
 
 		return fmt.Sprint(entity.MetastoreId), nil
 	}
-	resolvers["pipeline"] = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
+	r.Pipeline = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
 		entity, err := w.Pipelines.GetByName(ctx, name)
 		if err != nil {
 			return "", err
@@ -270,7 +283,7 @@ func resolvers() map[string](resolverFunc) {
 
 		return fmt.Sprint(entity.PipelineId), nil
 	}
-	resolvers["query"] = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
+	r.Query = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
 		entity, err := w.Queries.GetByName(ctx, name)
 		if err != nil {
 			return "", err
@@ -278,7 +291,7 @@ func resolvers() map[string](resolverFunc) {
 
 		return fmt.Sprint(entity.Id), nil
 	}
-	resolvers["service-principal"] = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
+	r.ServicePrincipal = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
 		entity, err := w.ServicePrincipals.GetByDisplayName(ctx, name)
 		if err != nil {
 			return "", err
@@ -286,7 +299,7 @@ func resolvers() map[string](resolverFunc) {
 
 		return fmt.Sprint(entity.Id), nil
 	}
-	resolvers["warehouse"] = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
+	r.Warehouse = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
 		entity, err := w.Warehouses.GetByName(ctx, name)
 		if err != nil {
 			return "", err
@@ -295,5 +308,5 @@ func resolvers() map[string](resolverFunc) {
 		return fmt.Sprint(entity.Id), nil
 	}
 
-	return resolvers
+	return r
 }
