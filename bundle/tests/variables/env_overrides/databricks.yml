@@ -13,6 +13,8 @@ variables:
 
   e:
     description: variable with lookup
+    lookup:
+      instance_pool: some-pool
 
 bundle:
   name: test bundle
