@@ -24,6 +24,10 @@ type Variable struct {
 	// 5. Throw error, since if no default value is defined, then the variable
 	//    is required
 	Value *string `json:"value,omitempty" bundle:"readonly"`
+
+	// The value of this field will be used to lookup the resource by name
+	// And assign the value of the variable to ID of the resource found.
+	Lookup *Lookup `json:"lookup,omitempty"`
 }
 
 // True if the variable has been assigned a default value. Variables without a

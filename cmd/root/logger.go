@@ -33,15 +33,11 @@ func (f *logFlags) makeLogHandler(opts slog.HandlerOptions) (slog.Handler, error
 		return slog.NewJSONHandler(f.file.Writer(), &opts), nil
 	case flags.OutputText:
 		w := f.file.Writer()
-		if cmdio.IsTTY(w) {
-			return handler.NewFriendlyHandler(w, &handler.Options{
-				Color:       true,
-				Level:       opts.Level,
-				ReplaceAttr: opts.ReplaceAttr,
-			}), nil
-		}
-		return slog.NewTextHandler(w, &opts), nil
-
+		return handler.NewFriendlyHandler(w, &handler.Options{
+			Color:       cmdio.IsTTY(w),
+			Level:       opts.Level,
+			ReplaceAttr: opts.ReplaceAttr,
+		}), nil
 	default:
 		return nil, fmt.Errorf("invalid log output mode: %s", f.output)
 	}

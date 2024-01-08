@@ -1,0 +1,130 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
+package variable
+
+{{ $allowlist :=
+	list
+		"alerts"
+		"clusters"
+		"cluster-policies"
+		"clusters"
+		"dashboards"
+		"instance-pools"
+		"jobs"
+		"metastores"
+		"pipelines"
+		"service-principals"
+		"queries"
+		"warehouses"
+}}
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/databricks/databricks-sdk-go"
+)
+
+type Lookup struct {
+	{{range .Services -}}
+	{{- if in $allowlist .KebabName -}}
+	{{.Singular.PascalName}} string `json:"{{.Singular.SnakeName}},omitempty"`
+
+	{{end}}
+	{{- end}}
+}
+
+func LookupFromMap(m map[string]any) *Lookup {
+	l := &Lookup{}
+	{{range .Services -}}
+	{{- if in $allowlist .KebabName -}}
+	if v, ok := m["{{.Singular.SnakeName}}"]; ok {
+		l.{{.Singular.PascalName}} = v.(string)
+	}
+	{{end -}}
+	{{- end}}
+	return l
+}
+
+func (l *Lookup) Resolve(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
+	if err := l.validate(); err != nil {
+		return "", err
+	}
+
+	r := allResolvers()
+	{{range .Services -}}
+	{{- if in $allowlist .KebabName -}}
+	if l.{{.Singular.PascalName}} != "" {
+		return r.{{.Singular.PascalName}}(ctx, w, l.{{.Singular.PascalName}})
+	}
+	{{end -}}
+	{{- end}}
+
+	return "", fmt.Errorf("no valid lookup fields provided")
+}
+
+func (l *Lookup) String() string {
+	{{range .Services -}}
+	{{- if in $allowlist .KebabName -}}
+	if l.{{.Singular.PascalName}} != "" {
+		return fmt.Sprintf("{{.Singular.KebabName}}: %s", l.{{.Singular.PascalName}})
+	}
+	{{end -}}
+	{{- end}}
+	return ""
+}
+
+func (l *Lookup) validate() error {
+	// Validate that only one field is set
+	count := 0
+	{{range .Services -}}
+	{{- if in $allowlist .KebabName -}}
+	if l.{{.Singular.PascalName}} != "" {
+		count++
+	}
+	{{end -}}
+	{{- end}}
+
+	if count != 1 {
+		return fmt.Errorf("exactly one lookup field must be provided")
+	}
+
+	if strings.Contains(l.String(), "${var") {
+		return fmt.Errorf("lookup fields cannot contain variable references")
+	}
+
+	return nil
+}
+
+
+type resolverFunc func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error)
+type resolvers struct {
+	{{range .Services -}}
+	{{- if in $allowlist .KebabName -}}
+	{{.Singular.PascalName}} resolverFunc
+	{{end -}}
+	{{- end}}
+}
+
+func allResolvers() *resolvers {
+	r := &resolvers{}
+	{{range .Services -}}
+	{{- if in $allowlist .KebabName -}}
+	r.{{.Singular.PascalName}} = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
+		entity, err := w.{{.PascalName}}.GetBy{{range .List.NamedIdMap.NamePath}}{{.PascalName}}{{end}}(ctx, name)
+		if err != nil {
+			return "", err
+		}
+
+		return fmt.Sprint(entity{{ template "field-path" .List.NamedIdMap.IdPath }}), nil
+	}
+	{{end -}}
+	{{- end}}
+
+	return r
+}
+
+
+{{- define "field-path" -}}
+	{{- range .}}.{{.PascalName}}{{end}}
+{{- end -}}
