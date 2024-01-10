@@ -222,7 +222,9 @@ func newList() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Flags().BoolVar(&listReq.IncludeDeltaMetadata, "include-delta-metadata", listReq.IncludeDeltaMetadata, `Whether delta metadata should be included in the response.`)
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of tables to return (page length).`)
+	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of tables to return.`)
+	cmd.Flags().BoolVar(&listReq.OmitColumns, "omit-columns", listReq.OmitColumns, `Whether to omit the columns of the table from the response or not.`)
+	cmd.Flags().BoolVar(&listReq.OmitProperties, "omit-properties", listReq.OmitProperties, `Whether to omit the properties of the table from the response or not.`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque token to send for the next page of results (pagination).`)
 
 	cmd.Use = "list CATALOG_NAME SCHEMA_NAME"
@@ -296,8 +298,8 @@ func newListSummaries() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Flags().IntVar(&listSummariesReq.MaxResults, "max-results", listSummariesReq.MaxResults, `Maximum number of tables to return (page length).`)
-	cmd.Flags().StringVar(&listSummariesReq.PageToken, "page-token", listSummariesReq.PageToken, `Opaque token to send for the next page of results (pagination).`)
+	cmd.Flags().IntVar(&listSummariesReq.MaxResults, "max-results", listSummariesReq.MaxResults, `Maximum number of summaries for tables to return.`)
+	cmd.Flags().StringVar(&listSummariesReq.PageToken, "page-token", listSummariesReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 	cmd.Flags().StringVar(&listSummariesReq.SchemaNamePattern, "schema-name-pattern", listSummariesReq.SchemaNamePattern, `A sql LIKE pattern (% and _) for schema names.`)
 	cmd.Flags().StringVar(&listSummariesReq.TableNamePattern, "table-name-pattern", listSummariesReq.TableNamePattern, `A sql LIKE pattern (% and _) for table names.`)
 
@@ -308,11 +310,11 @@ func newListSummaries() *cobra.Command {
   Gets an array of summaries for tables for a schema and catalog within the
   metastore. The table summaries returned are either:
   
-  * summaries for all tables (within the current metastore and parent catalog
-  and schema), when the user is a metastore admin, or: * summaries for all
-  tables and schemas (within the current metastore and parent catalog) for which
-  the user has ownership or the **SELECT** privilege on the table and ownership
-  or **USE_SCHEMA** privilege on the schema, provided that the user also has
+  * summaries for tables (within the current metastore and parent catalog and
+  schema), when the user is a metastore admin, or: * summaries for tables and
+  schemas (within the current metastore and parent catalog) for which the user
+  has ownership or the **SELECT** privilege on the table and ownership or
+  **USE_SCHEMA** privilege on the schema, provided that the user also has
   ownership or the **USE_CATALOG** privilege on the parent catalog.
   
   There is no guarantee of a specific ordering of the elements in the array.
