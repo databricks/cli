@@ -101,11 +101,13 @@ func Load(path string) (*Root, error) {
 	r.Path = filepath.Dir(path)
 	// r.SetConfigFilePath(path)
 
-	// _, err = r.Resources.VerifyUniqueResourceIdentifiers()
+	r.ConfigureConfigFilePath()
+
+	_, err = r.Resources.VerifyUniqueResourceIdentifiers()
 	return &r, err
 }
 
-func (r *Root) initializeValue() {
+func (r *Root) initializeDynamicValue() {
 	// Many test cases initialize a config as a Go struct literal.
 	// The value will be invalid and we need to populate it from the typed configuration.
 	if r.value.IsValid() {
@@ -145,7 +147,7 @@ func (r *Root) toTyped(v dyn.Value) error {
 }
 
 func (r *Root) Mutate(fn func(dyn.Value) (dyn.Value, error)) error {
-	r.initializeValue()
+	r.initializeDynamicValue()
 	nv, err := fn(r.value)
 	if err != nil {
 		return err
@@ -163,7 +165,7 @@ func (r *Root) Mutate(fn func(dyn.Value) (dyn.Value, error)) error {
 }
 
 func (r *Root) MarkMutatorEntry() {
-	r.initializeValue()
+	r.initializeDynamicValue()
 	r.depth++
 
 	// If we are entering a mutator at depth 1, we need to convert
@@ -255,106 +257,123 @@ func (r *Root) Merge(other *Root) error {
 	}
 
 	// Merge dynamic configuration values.
-	nv, err := merge.Merge(r.value, other.value)
+	return r.Mutate(func(root dyn.Value) (dyn.Value, error) {
+		return merge.Merge(root, other.value)
+	})
+}
+
+func mergeField(rv, ov dyn.Value, name string) (dyn.Value, error) {
+	path := dyn.NewPath(dyn.Key(name))
+	reference, _ := dyn.GetByPath(rv, path)
+	override, _ := dyn.GetByPath(ov, path)
+
+	// Merge the override into the reference.
+	var out dyn.Value
+	var err error
+	if reference.IsValid() && override.IsValid() {
+		out, err = merge.Merge(reference, override)
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+	} else if reference.IsValid() {
+		out = reference
+	} else if override.IsValid() {
+		out = override
+	} else {
+		return rv, nil
+	}
+
+	return dyn.SetByPath(rv, path, out)
+}
+
+func (r *Root) MergeTargetOverrides(name string) error {
+	// var tmp dyn.Value
+	var root = r.value
+	var err error
+
+	target, err := dyn.GetByPath(root, dyn.NewPath(dyn.Key("targets"), dyn.Key(name)))
 	if err != nil {
 		return err
 	}
 
-	r.value = nv
-
-	// Convert normalized configuration tree to typed configuration.
-	err = r.toTyped(r.value)
-	if err != nil {
-		panic(err)
+	// Merge fields that can be merged 1:1.
+	for _, f := range []string{
+		"bundle",
+		"workspace",
+		"artifacts",
+		"resources",
+		"sync",
+		"permissions",
+	} {
+		if root, err = mergeField(root, target, f); err != nil {
+			return err
+		}
 	}
 
-	r.ConfigureConfigFilePath()
+	// Merge variables.
+	// TODO(@pietern):
 
-	// TODO: define and test semantics for merging.
-	// return mergo.Merge(r, other, mergo.WithOverride)
-	return nil
-}
-
-func (r *Root) MergeTargetOverrides(name string) error {
-	var tmp dyn.Value
-	var err error
-
-	target := r.value.Get("targets").Get(name)
-	if target == dyn.NilValue {
-		return nil
+	// Merge `run_as`. This field must be overwritten if set, not merged.
+	if v := target.Get("run_as"); v != dyn.NilValue {
+		root, err = dyn.Set(root, "run_as", v)
+		if err != nil {
+			return err
+		}
 	}
 
-	mergeField := func(name string) error {
-		tmp, err = merge.Merge(r.value.Get(name), target.Get(name))
+	// Below, we're setting fields on the bundle key, so make sure it exists.
+	if root.Get("bundle") == dyn.NilValue {
+		root, err = dyn.Set(root, "bundle", dyn.NewValue(map[string]dyn.Value{}, dyn.Location{}))
+		if err != nil {
+			return err
+		}
+	}
+
+	// Merge `mode`. This field must be overwritten if set, not merged.
+	if v := target.Get("mode"); v != dyn.NilValue {
+		root, err = dyn.SetByPath(root, dyn.NewPath(dyn.Key("bundle"), dyn.Key("mode")), v)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Merge `compute_id`. This field must be overwritten if set, not merged.
+	if v := target.Get("compute_id"); v != dyn.NilValue {
+		root, err = dyn.SetByPath(root, dyn.NewPath(dyn.Key("bundle"), dyn.Key("compute_id")), v)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Merge `git`.
+	if v := target.Get("git"); v != dyn.NilValue {
+		ref, err := dyn.GetByPath(root, dyn.NewPath(dyn.Key("bundle"), dyn.Key("git")))
+		if err != nil {
+			ref = dyn.NewValue(map[string]dyn.Value{}, dyn.Location{})
+		}
+
+		// Merge the override into the reference.
+		out, err := merge.Merge(ref, v)
 		if err != nil {
 			return err
 		}
 
-		r.value.MustMap()[name] = tmp
-		return nil
-	}
-
-	if mode := target.Get("mode"); mode != dyn.NilValue {
-		bundle := r.value.Get("bundle")
-		if bundle == dyn.NilValue {
-			bundle = dyn.NewValue(map[string]dyn.Value{}, dyn.Location{})
-		}
-		bundle.MustMap()["mode"] = mode
-		r.value.MustMap()["bundle"] = bundle
-	}
-
-	// if target.Mode != "" {
-	// 	r.Bundle.Mode = target.Mode
-	// }
-
-	// if target.ComputeID != "" {
-	// 	r.Bundle.ComputeID = target.ComputeID
-	// }
-
-	// The "run_as" field must be overwritten if set, not merged.
-	// Otherwise we end up with a merged version where both the
-	// "user_name" and "service_principal_name" fields are set.
-	if runAs := target.Get("run_as"); runAs != dyn.NilValue {
-		r.value.MustMap()["run_as"] = runAs
-		// Clear existing field to convert.ToTyped() merging
-		// the new value with the existing value.
-		// TODO(@pietern): Address this structurally.
-		r.RunAs = nil
-	}
-
-	if git := target.Get("git"); git != dyn.NilValue {
-		bundle := r.value.Get("bundle")
-		if bundle == dyn.NilValue {
-			bundle = dyn.NewValue(map[string]dyn.Value{}, dyn.Location{})
+		// If the branch was overridden, we need to clear the inferred flag.
+		if branch := v.Get("branch"); branch != dyn.NilValue {
+			out, err = dyn.SetByPath(out, dyn.NewPath(dyn.Key("inferred")), dyn.NewValue(false, dyn.Location{}))
+			if err != nil {
+				return err
+			}
 		}
 
-		bundle.MustMap()["git"] = git
-		r.value.MustMap()["bundle"] = bundle
+		// Set the merged value.
+		root, err = dyn.SetByPath(root, dyn.NewPath(dyn.Key("bundle"), dyn.Key("git")), out)
+		if err != nil {
+			return err
+		}
 	}
 
-	if err = mergeField("bundle"); err != nil {
-		return err
-	}
-
-	if err = mergeField("workspace"); err != nil {
-		return err
-	}
-
-	if err = mergeField("artifacts"); err != nil {
-		return err
-	}
-
-	if err = mergeField("resources"); err != nil {
-		return err
-	}
-
-	if err = mergeField("sync"); err != nil {
-		return err
-	}
-
-	if err = mergeField("permissions"); err != nil {
-		return err
-	}
+	r.value = root
 
 	// Convert normalized configuration tree to typed configuration.
 	err = r.toTyped(r.value)
@@ -365,91 +384,3 @@ func (r *Root) MergeTargetOverrides(name string) error {
 	r.ConfigureConfigFilePath()
 	return nil
 }
-
-// // Target may be nil if it's empty.
-// if target == nil {
-// 	return nil
-// }
-
-// if target.Bundle != nil {
-// 	err = mergo.Merge(&r.Bundle, target.Bundle, mergo.WithOverride)
-// 	if err != nil {
-// 		return err
-// 	}
-// }
-
-// if target.Workspace != nil {
-// 	err = mergo.Merge(&r.Workspace, target.Workspace, mergo.WithOverride)
-// 	if err != nil {
-// 		return err
-// 	}
-// }
-
-// if target.Artifacts != nil {
-// 	err = mergo.Merge(&r.Artifacts, target.Artifacts, mergo.WithOverride, mergo.WithAppendSlice)
-// 	if err != nil {
-// 		return err
-// 	}
-// }
-
-// if target.Resources != nil {
-// 	err = mergo.Merge(&r.Resources, target.Resources, mergo.WithOverride, mergo.WithAppendSlice)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	err = r.Resources.Merge()
-// 	if err != nil {
-// 		return err
-// 	}
-// }
-
-// if target.Variables != nil {
-// 	for k, v := range target.Variables {
-// 		variable, ok := r.Variables[k]
-// 		if !ok {
-// 			return fmt.Errorf("variable %s is not defined but is assigned a value", k)
-// 		}
-// 		// we only allow overrides of the default value for a variable
-// 		defaultVal := v
-// 		variable.Default = &defaultVal
-// 	}
-// }
-
-// if target.RunAs != nil {
-// 	r.RunAs = target.RunAs
-// }
-
-// if target.Mode != "" {
-// 	r.Bundle.Mode = target.Mode
-// }
-
-// if target.ComputeID != "" {
-// 	r.Bundle.ComputeID = target.ComputeID
-// }
-
-// git := &r.Bundle.Git
-// if target.Git.Branch != "" {
-// 	git.Branch = target.Git.Branch
-// 	git.Inferred = false
-// }
-// if target.Git.Commit != "" {
-// 	git.Commit = target.Git.Commit
-// }
-// if target.Git.OriginURL != "" {
-// 	git.OriginURL = target.Git.OriginURL
-// }
-
-// if target.Sync != nil {
-// 	err = mergo.Merge(&r.Sync, target.Sync, mergo.WithAppendSlice)
-// 	if err != nil {
-// 		return err
-// 	}
-// }
-
-// if target.Permissions != nil {
-// 	err = mergo.Merge(&r.Permissions, target.Permissions, mergo.WithAppendSlice)
-// 	if err != nil {
-// 		return err
-// 	}
-// }

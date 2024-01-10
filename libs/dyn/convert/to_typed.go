@@ -53,6 +53,8 @@ func ToTyped(dst any, src dyn.Value) error {
 func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 	switch src.Kind() {
 	case dyn.KindMap:
+		dst.SetZero()
+
 		info := getStructInfo(dst.Type())
 		for k, v := range src.MustMap() {
 			index, ok := info.Fields[k]

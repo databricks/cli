@@ -13,12 +13,17 @@ import (
 
 func TestRunAsDefault(t *testing.T) {
 	b := load(t, "./run_as")
-	b.Config.Workspace.CurrentUser = &config.User{
-		User: &iam.User{
-			UserName: "jane@doe.com",
-		},
-	}
+
 	ctx := context.Background()
+	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) error {
+		b.Config.Workspace.CurrentUser = &config.User{
+			User: &iam.User{
+				UserName: "jane@doe.com",
+			},
+		}
+		return nil
+	})
+
 	err := bundle.Apply(ctx, b, mutator.SetRunAs())
 	assert.NoError(t, err)
 
@@ -48,12 +53,17 @@ func TestRunAsDefault(t *testing.T) {
 
 func TestRunAsDevelopment(t *testing.T) {
 	b := loadTarget(t, "./run_as", "development")
-	b.Config.Workspace.CurrentUser = &config.User{
-		User: &iam.User{
-			UserName: "jane@doe.com",
-		},
-	}
+
 	ctx := context.Background()
+	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) error {
+		b.Config.Workspace.CurrentUser = &config.User{
+			User: &iam.User{
+				UserName: "jane@doe.com",
+			},
+		}
+		return nil
+	})
+
 	err := bundle.Apply(ctx, b, mutator.SetRunAs())
 	assert.NoError(t, err)
 

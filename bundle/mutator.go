@@ -33,3 +33,20 @@ func Apply(ctx context.Context, b *Bundle, m Mutator) error {
 
 	return nil
 }
+
+type funcMutator struct {
+	fn func(context.Context, *Bundle) error
+}
+
+func (m funcMutator) Name() string {
+	return "<func>"
+}
+
+func (m funcMutator) Apply(ctx context.Context, b *Bundle) error {
+	return m.fn(ctx, b)
+}
+
+// ApplyFunc applies an inline-specified function mutator.
+func ApplyFunc(ctx context.Context, b *Bundle, fn func(context.Context, *Bundle) error) error {
+	return Apply(ctx, b, funcMutator{fn})
+}
