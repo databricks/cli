@@ -27,6 +27,7 @@ import (
 	instance_profiles "github.com/databricks/cli/cmd/workspace/instance-profiles"
 	ip_access_lists "github.com/databricks/cli/cmd/workspace/ip-access-lists"
 	jobs "github.com/databricks/cli/cmd/workspace/jobs"
+	lakeview "github.com/databricks/cli/cmd/workspace/lakeview"
 	libraries "github.com/databricks/cli/cmd/workspace/libraries"
 	metastores "github.com/databricks/cli/cmd/workspace/metastores"
 	model_registry "github.com/databricks/cli/cmd/workspace/model-registry"
@@ -55,6 +56,8 @@ import (
 	token_management "github.com/databricks/cli/cmd/workspace/token-management"
 	tokens "github.com/databricks/cli/cmd/workspace/tokens"
 	users "github.com/databricks/cli/cmd/workspace/users"
+	vector_search_endpoints "github.com/databricks/cli/cmd/workspace/vector-search-endpoints"
+	vector_search_indexes "github.com/databricks/cli/cmd/workspace/vector-search-indexes"
 	volumes "github.com/databricks/cli/cmd/workspace/volumes"
 	warehouses "github.com/databricks/cli/cmd/workspace/warehouses"
 	workspace "github.com/databricks/cli/cmd/workspace/workspace"
@@ -90,6 +93,7 @@ func All() []*cobra.Command {
 	out = append(out, instance_profiles.New())
 	out = append(out, ip_access_lists.New())
 	out = append(out, jobs.New())
+	out = append(out, lakeview.New())
 	out = append(out, libraries.New())
 	out = append(out, metastores.New())
 	out = append(out, model_registry.New())
@@ -118,6 +122,8 @@ func All() []*cobra.Command {
 	out = append(out, token_management.New())
 	out = append(out, tokens.New())
 	out = append(out, users.New())
+	out = append(out, vector_search_endpoints.New())
+	out = append(out, vector_search_indexes.New())
 	out = append(out, volumes.New())
 	out = append(out, warehouses.New())
 	out = append(out, workspace.New())

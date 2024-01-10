@@ -973,19 +973,28 @@ func newUpdateConfig() *cobra.Command {
 	cmd.Flags().Var(&updateConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: auto_capture_config
+	// TODO: array: served_entities
 	// TODO: array: served_models
 	// TODO: complex arg: traffic_config
 
-	cmd.Use = "update-config"
+	cmd.Use = "update-config NAME"
 	cmd.Short = `Update a serving endpoint with a new config.`
 	cmd.Long = `Update a serving endpoint with a new config.
   
   Updates any combination of the serving endpoint's served entities, the compute
   configuration of those served entities, and the endpoint's traffic config. An
   endpoint that already has an update in progress can not be updated until the
-  current update completes or fails.`
+  current update completes or fails.
+
+  Arguments:
+    NAME: The name of the serving endpoint to update. This field is required.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -997,9 +1006,8 @@ func newUpdateConfig() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
+		updateConfigReq.Name = args[0]
 
 		wait, err := w.ServingEndpoints.UpdateConfig(ctx, updateConfigReq)
 		if err != nil {
