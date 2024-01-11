@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/jsonschema"
+	"github.com/databricks/cli/libs/log"
 	"golang.org/x/exp/maps"
 )
 
@@ -247,6 +248,7 @@ func (c *config) promptOrAssignDefaultValues(r *renderer) error {
 	if cmdio.IsOutTTY(c.ctx) && cmdio.IsInTTY(c.ctx) && !cmdio.IsGitBash(c.ctx) {
 		return c.promptForValues(r)
 	}
+	log.Debugf(c.ctx, "Terminal is not TTY. Assigning default values to template input parameters")
 	return c.assignDefaultValues(r)
 }
 
