@@ -76,7 +76,11 @@ func testExecutorWithShell(t *testing.T, shell string) {
 	// Create temporary directory with only the shell executable in the PATH.
 	tmpDir := t.TempDir()
 	t.Setenv("PATH", tmpDir)
-	os.Symlink(p, fmt.Sprintf("%s/%s", tmpDir, shell))
+	if runtime.GOOS == "windows" {
+		os.Symlink(p, fmt.Sprintf("%s/%s.exe", tmpDir, shell))
+	} else {
+		os.Symlink(p, fmt.Sprintf("%s/%s", tmpDir, shell))
+	}
 
 	executor, err := NewCommandExecutor(".")
 	assert.NoError(t, err)
