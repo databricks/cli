@@ -60,7 +60,7 @@ func (c *copy) cpDirToDir(sourceDir, targetDir string) error {
 }
 
 func (c *copy) cpFileToDir(sourcePath, targetDir string) error {
-	fileName := path.Base(sourcePath)
+	fileName := filepath.Base(sourcePath)
 	targetPath := path.Join(targetDir, fileName)
 
 	return c.cpFileToFile(sourcePath, targetPath)
