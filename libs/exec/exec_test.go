@@ -87,7 +87,7 @@ func testExecutorWithShell(t *testing.T, shell string) {
 	out, err := executor.Exec(context.Background(), "echo 'Hello from shell'")
 	assert.NoError(t, err)
 	assert.NotNil(t, out)
-	assert.Contains(t, "Hello from shell", string(out))
+	assert.Contains(t, string(out), "Hello from shell")
 }
 
 func TestExecutorWithDifferentShells(t *testing.T) {
