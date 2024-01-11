@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -142,7 +142,7 @@ func TestAccFsCpFileToDir(t *testing.T) {
 }
 
 func TestAccFsCpFileToDirForWindowsPaths(t *testing.T) {
-	if os.GOOS != "windows" {
+	if runtime.GOOS != "windows" {
 		t.Skip("Skipping test on non-windows OS")
 	}
 
