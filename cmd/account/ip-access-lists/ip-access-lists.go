@@ -184,7 +184,10 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete access list.`
 	cmd.Long = `Delete access list.
   
-  Deletes an IP access list, specified by its list ID.`
+  Deletes an IP access list, specified by its list ID.
+
+  Arguments:
+    IP_ACCESS_LIST_ID: The ID for the corresponding IP access list`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -201,14 +204,14 @@ func newDelete() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Account Ip Access Lists drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "")
+			id, err := cmdio.Select(ctx, names, "The ID for the corresponding IP access list")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
+			return fmt.Errorf("expected to have the id for the corresponding ip access list")
 		}
 		deleteReq.IpAccessListId = args[0]
 
@@ -257,7 +260,10 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get IP access list.`
 	cmd.Long = `Get IP access list.
   
-  Gets an IP access list, specified by its list ID.`
+  Gets an IP access list, specified by its list ID.
+
+  Arguments:
+    IP_ACCESS_LIST_ID: The ID for the corresponding IP access list`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -274,14 +280,14 @@ func newGet() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Account Ip Access Lists drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "")
+			id, err := cmdio.Select(ctx, names, "The ID for the corresponding IP access list")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
+			return fmt.Errorf("expected to have the id for the corresponding ip access list")
 		}
 		getReq.IpAccessListId = args[0]
 
@@ -394,7 +400,7 @@ func newReplace() *cobra.Command {
   INVALID_STATE. It can take a few minutes for the changes to take effect.
 
   Arguments:
-    IP_ACCESS_LIST_ID: 
+    IP_ACCESS_LIST_ID: The ID for the corresponding IP access list
     LABEL: Label for the IP access list. This **cannot** be empty.
     LIST_TYPE: Type of IP access list. Valid values are as follows and are
       case-sensitive:
@@ -511,7 +517,10 @@ func newUpdate() *cobra.Command {
   * If the updated list would block the calling user's current IP, error 400 is
   returned with error_code value INVALID_STATE.
   
-  It can take a few minutes for the changes to take effect.`
+  It can take a few minutes for the changes to take effect.
+
+  Arguments:
+    IP_ACCESS_LIST_ID: The ID for the corresponding IP access list`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -534,14 +543,14 @@ func newUpdate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Account Ip Access Lists drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "")
+			id, err := cmdio.Select(ctx, names, "The ID for the corresponding IP access list")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
+			return fmt.Errorf("expected to have the id for the corresponding ip access list")
 		}
 		updateReq.IpAccessListId = args[0]
 

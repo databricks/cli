@@ -62,7 +62,10 @@ func newPublish() *cobra.Command {
 	cmd.Short = `Publish dashboard.`
 	cmd.Long = `Publish dashboard.
   
-  Publish the current draft dashboard.`
+  Publish the current draft dashboard.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard to be published.`
 
 	cmd.Annotations = make(map[string]string)
 
