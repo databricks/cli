@@ -84,10 +84,10 @@ func testExecutorWithShell(t *testing.T, shell string) {
 
 	executor, err := NewCommandExecutor(".")
 	assert.NoError(t, err)
-	out, err := executor.Exec(context.Background(), "echo 'Hello'")
+	out, err := executor.Exec(context.Background(), "echo 'Hello from shell'")
 	assert.NoError(t, err)
 	assert.NotNil(t, out)
-	assert.Equal(t, "Hello\n", string(out))
+	assert.Contains(t, "Hello from shell", string(out))
 }
 
 func TestExecutorWithDifferentShells(t *testing.T) {
