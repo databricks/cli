@@ -46,23 +46,23 @@ func (c *command) Stderr() io.ReadCloser {
 }
 
 type Executor struct {
-	interpreter interpreter
-	dir         string
+	shell shell
+	dir   string
 }
 
 func NewCommandExecutor(dir string) (*Executor, error) {
-	interpreter, err := findInterpreter()
+	shell, err := findShell()
 	if err != nil {
 		return nil, err
 	}
 	return &Executor{
-		interpreter: interpreter,
-		dir:         dir,
+		shell: shell,
+		dir:   dir,
 	}, nil
 }
 
 func (e *Executor) StartCommand(ctx context.Context, command string) (Command, error) {
-	ec, err := e.interpreter.prepare(command)
+	ec, err := e.shell.prepare(command)
 	if err != nil {
 		return nil, err
 	}
