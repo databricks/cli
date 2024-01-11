@@ -42,6 +42,7 @@ func TestPipelineOptionsFullRefresh(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, []string{"arg1", "arg2", "arg3"}, opts.FullRefresh)
 }
+
 func TestPipelineOptionsValidateSuccessWithSingleOption(t *testing.T) {
 	args := []string{
 		`--refresh-all`,
