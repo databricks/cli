@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/fatih/color"
+	"github.com/spf13/cobra"
 )
 
 // Default timeout for waiting for a job run to complete.
@@ -274,4 +275,12 @@ func (r *jobRunner) convertPythonParams(opts *Options) error {
 	}
 
 	return nil
+}
+
+func (r *jobRunner) ParseArgs(args []string, opts *Options) error {
+	return r.posArgsHandler().ParseArgs(args, opts)
+}
+
+func (r *jobRunner) CompleteArgs(args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return r.posArgsHandler().CompleteArgs(args, toComplete)
 }
