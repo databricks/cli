@@ -104,3 +104,28 @@ package config_tests
 // 	assert.Equal(t, "foo", *b.Config.Variables["a"].Value)
 // 	assert.Equal(t, "bar", *b.Config.Variables["b"].Value)
 // }
+
+// func TestVariablesWithoutDefinition(t *testing.T) {
+// 	t.Setenv("BUNDLE_VAR_a", "foo")
+// 	t.Setenv("BUNDLE_VAR_b", "bar")
+// 	b := load(t, "./variables/without_definition")
+// 	err := bundle.Apply(context.Background(), b, mutator.SetVariables())
+// 	require.NoError(t, err)
+// 	require.True(t, b.Config.Variables["a"].HasValue())
+// 	require.True(t, b.Config.Variables["b"].HasValue())
+// 	assert.Equal(t, "foo", *b.Config.Variables["a"].Value)
+// 	assert.Equal(t, "bar", *b.Config.Variables["b"].Value)
+// }
+
+// func TestVariablesWithTargetLookupOverrides(t *testing.T) {
+// 	b := load(t, "./variables/env_overrides")
+// 	err := bundle.Apply(context.Background(), b, bundle.Seq(
+// 		mutator.SelectTarget("env-overrides-lookup"),
+// 		mutator.SetVariables(),
+// 		interpolation.Interpolate(
+// 			interpolation.IncludeLookupsInPath(variable.VariableReferencePrefix),
+// 		)))
+// 	require.NoError(t, err)
+// 	assert.Equal(t, "cluster: some-test-cluster", b.Config.Variables["d"].Lookup.String())
+// 	assert.Equal(t, "instance-pool: some-test-instance-pool", b.Config.Variables["e"].Lookup.String())
+// }

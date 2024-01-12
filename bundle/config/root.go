@@ -310,8 +310,33 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		}
 	}
 
-	// Merge variables.
-	// TODO(@pietern):
+	// TODO(@pietern): Merge variables.
+	//
+	// Also see: https://github.com/databricks/cli/pull/872
+	//
+	// if target.Variables != nil {
+	// 	for k, v := range target.Variables {
+	// 		rootVariable, ok := r.Variables[k]
+	// 		if !ok {
+	// 			return fmt.Errorf("variable %s is not defined but is assigned a value", k)
+	// 		}
+
+	// 		if sv, ok := v.(string); ok {
+	// 			// we  allow overrides of the default value for a variable
+	// 			defaultVal := sv
+	// 			rootVariable.Default = &defaultVal
+	// 		} else if vv, ok := v.(map[string]any); ok {
+	// 			// we also allow overrides of the lookup value for a variable
+	// 			lookup, ok := vv["lookup"]
+	// 			if !ok {
+	// 				return fmt.Errorf("variable %s is incorrectly defined lookup override, no 'lookup' key defined", k)
+	// 			}
+	// 			rootVariable.Lookup = variable.LookupFromMap(lookup.(map[string]any))
+	// 		} else {
+	// 			return fmt.Errorf("variable %s is incorrectly defined in target override", k)
+	// 		}
+	// 	}
+	// }
 
 	// Merge `run_as`. This field must be overwritten if set, not merged.
 	if v := target.Get("run_as"); v != dyn.NilValue {

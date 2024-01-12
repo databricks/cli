@@ -1,5 +1,50 @@
 # Version changelog
 
+## 0.212.0
+
+CLI:
+ * Tweak command groups in CLI help ([#1092](https://github.com/databricks/cli/pull/1092)).
+ * Fixed storage-credentials list command in text output ([#1094](https://github.com/databricks/cli/pull/1094)).
+ * Allow account client auth with environment variables when no `.databrickscfg` file present ([#1097](https://github.com/databricks/cli/pull/1097)).
+ * Always log with text format by default ([#1096](https://github.com/databricks/cli/pull/1096)).
+
+Bundles:
+ * Added exec.NewCommandExecutor to execute commands with correct interpreter ([#1075](https://github.com/databricks/cli/pull/1075)).
+ * Use resource key as name in permissions code ([#1087](https://github.com/databricks/cli/pull/1087)).
+ * Add support for reprompts if user input does not match template schema ([#946](https://github.com/databricks/cli/pull/946)).
+ * Improve experience for multiple builtin templates ([#1052](https://github.com/databricks/cli/pull/1052)).
+ * Improve error when bundle root is not writable ([#1093](https://github.com/databricks/cli/pull/1093)).
+ * Change recommended production deployment path from `/Shared` to `/Users` ([#1091](https://github.com/databricks/cli/pull/1091)).
+ * Allow referencing bundle resources by name ([#872](https://github.com/databricks/cli/pull/872)).
+ * Make libs/exec fallback to `sh` if `bash` cannot be found ([#1114](https://github.com/databricks/cli/pull/1114)).
+
+Internal:
+ * Functionality to walk a `config.Value` tree ([#1081](https://github.com/databricks/cli/pull/1081)).
+ * Rename libs/config -> libs/dyn ([#1086](https://github.com/databricks/cli/pull/1086)).
+ * Added codecov integration on code push ([#1095](https://github.com/databricks/cli/pull/1095)).
+ * Consolidate functions to convert `dyn.Value` to native types ([#1100](https://github.com/databricks/cli/pull/1100)).
+ * Define constant for the invalid `dyn.Value` ([#1101](https://github.com/databricks/cli/pull/1101)).
+
+API Changes:
+ * Changed `databricks serving-endpoints update-config` command with new required argument order.
+ * Changed `databricks account ip-access-lists create` command with new required argument order.
+ * Changed `databricks account ip-access-lists replace` command with new required argument order.
+ * Changed `databricks account ip-access-lists update` command with new required argument order.
+ * Changed `databricks ip-access-lists create` command with new required argument order.
+ * Changed `databricks ip-access-lists replace` command with new required argument order.
+ * Changed `databricks ip-access-lists update` command with new required argument order.
+
+OpenAPI commit a7a9dc025bb80303e676bf3708942c6aa06689f1 (2024-01-04)
+
+Dependency updates:
+ * Bump github.com/hashicorp/terraform-exec from 0.19.0 to 0.20.0 ([#1088](https://github.com/databricks/cli/pull/1088)).
+ * Bump go.uber.org/mock from 0.3.0 to 0.4.0 ([#1089](https://github.com/databricks/cli/pull/1089)).
+ * Bump github.com/hashicorp/terraform-json from 0.18.0 to 0.20.0 ([#1090](https://github.com/databricks/cli/pull/1090)).
+ * Bump golang.org/x/term from 0.15.0 to 0.16.0 ([#1103](https://github.com/databricks/cli/pull/1103)).
+ * Bump github.com/cloudflare/circl from 1.3.3 to 1.3.7 ([#1105](https://github.com/databricks/cli/pull/1105)).
+ * Bump golang.org/x/sync from 0.5.0 to 0.6.0 ([#1104](https://github.com/databricks/cli/pull/1104)).
+ * Upgrade golang.org/x/crypto to v0.17.0 in internal module ([#1110](https://github.com/databricks/cli/pull/1110)).
+ * Upgrade Go SDK to v0.29.0 ([#1111](https://github.com/databricks/cli/pull/1111)).
 ## 0.211.0
 
 CLI:

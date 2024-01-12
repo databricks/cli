@@ -56,5 +56,13 @@ func Groups() []cobra.Group {
 			ID:    "development",
 			Title: "Developer Tools",
 		},
+		{
+			ID:    "vectorsearch",
+			Title: "Vector Search",
+		},
+		{
+			ID:    "dashboards",
+			Title: "Dashboards",
+		},
 	}
 }
