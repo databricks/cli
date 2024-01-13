@@ -2,21 +2,21 @@ resources:
   jobs:
     {{.project_name}}_job:
       name: {{.project_name}}_job
-      
+
       schedule:
         # Run every day at 9:27 AM
         quartz_cron_expression: 21 27 9 * * ?
         timezone_id: UTC
-      
+
       email_notifications:
         on_failure:
           - {{user_name}}
-      
+
       tasks:
         - task_key: dbt
           dbt_task:
-            project_directory: .. # use the root of this project
-            commands: 
+            project_directory: ../
+            commands:
             - dbt deps
             - dbt seed
             - dbt run

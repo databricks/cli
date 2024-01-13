@@ -24,7 +24,11 @@ targets:
       host: {{workspace_host}}
     variables:
       warehouse_id: {{index ((regexp "[^/]+$").FindStringSubmatch .http_path) 0}}
+      {{- if eq .catalog ""}}
+      catalog: "" # workspace default
+      {{- else}}
       catalog: {{.catalog}}
+      {{- end}}
       schema: {{.schema}} # tip: use ${workspace.current_user.short_name} if you want your own schema
 
   prod:
@@ -34,7 +38,11 @@ targets:
       root_path: /Shared/.bundle/prod/${bundle.name}
     variables:
       warehouse_id: {{index ((regexp "[^/]+$").FindStringSubmatch .http_path) 0}}
+      {{- if eq .catalog ""}}
+      catalog: "" # workspace default
+      {{- else}}
       catalog: {{.catalog}}
+      {{- end}}
       schema: {{.schema}}
     {{- if not is_service_principal}}
     run_as:
