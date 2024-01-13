@@ -14,4 +14,15 @@
         "**/__pycache__": true,
         ".pytest_cache": true,
     },
+    "sqltools.connections": [
+        {
+            "connectionMethod": "VS Code Extension (beta)",
+            "catalog": "hive_metastore",
+            "previewLimit": 50,
+            "driver": "Databricks",
+            "name": "databricks",
+            "path": "{{.http_path}}"
+        }
+    ],
+    "sqltools.autoConnectTo": "",
 }
