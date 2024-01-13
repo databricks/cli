@@ -1,8 +1,6 @@
 {
     "recommendations": [
-        "databricks.databricks",
-        "ms-python.vscode-pylance",
         "redhat.vscode-yaml",
-        "databricks.sqltools-databricks-driver",
+        "innoverio.vscode-dbt-power-user",
     ]
 }

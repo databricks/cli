@@ -33,5 +33,5 @@
             "order": 4
         }
     },
-    "success_message": "\n📊 Your new project has been created in the '{{.project_name}}' directory!\nPlease refer to the README.md file for \"getting started\" instructions."
+    "success_message": "\n📊 Your new project has been created in the '{{.project_name}}' directory!\nIf you already have dbt installed, just type 'dbt init' to get started.\nPlease refer to the README.md file for full \"getting started\" instructions.\n"
 }

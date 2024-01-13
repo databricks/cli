@@ -23,8 +23,11 @@
             "previewLimit": 50,
             "driver": "Databricks",
             "name": "databricks",
-            "path": "/sql/1.0/warehouses/ec7fa4bd0f0afc8f"
+            "path": "{{.http_path}}"
         }
     ],
     "sqltools.autoConnectTo": "",
+    "[jinja-sql]": {
+        "editor.defaultFormatter": "innoverio.vscode-dbt-power-user"
+    }
 }
