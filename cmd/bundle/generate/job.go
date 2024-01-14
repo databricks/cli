@@ -76,13 +76,11 @@ func NewGenerateJobCommand() *cobra.Command {
 			return err
 		}
 
-		err = os.MkdirAll(outputDir, 0755)
-		if err != nil {
-			return err
-		}
+		downloader := newNotebookDownloader(w, outputDir)
+		defer downloader.Close()
 
 		for _, task := range job.Settings.Tasks {
-			err := downloadNotebookAndReplaceTaskPath(ctx, &task, w, outputDir, force)
+			err := downloader.DownloadInMemory(ctx, &task)
 			if err != nil {
 				return err
 			}
@@ -100,6 +98,11 @@ func NewGenerateJobCommand() *cobra.Command {
 					jobName: v,
 				},
 			},
+		}
+
+		err = downloader.FlushToDisk(ctx, force)
+		if err != nil {
+			return err
 		}
 
 		err = saveConfigToFile(ctx, result, filepath.Join(outputDir, fmt.Sprintf("%s.yml", jobName)), force)

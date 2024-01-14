@@ -16,6 +16,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type notebookDownloader struct {
+	notebooks map[string]io.ReadCloser
+	w         *databricks.WorkspaceClient
+	outputDir string
+}
+
 func saveConfigToFile(ctx context.Context, data any, filename string, force bool) error {
 	// check that file exists
 	info, err := os.Stat(filename)
@@ -49,54 +55,84 @@ func encode(data any, w io.Writer) error {
 	return enc.Encode(data)
 }
 
-func downloadNotebookAndReplaceTaskPath(
-	ctx context.Context,
-	task *jobs.Task,
-	w *databricks.WorkspaceClient,
-	outputDir string,
-	force bool,
-) error {
+func (n *notebookDownloader) DownloadInMemory(ctx context.Context, task *jobs.Task) error {
 	if task.NotebookTask == nil {
 		return nil
 	}
 
-	info, err := w.Workspace.GetStatusByPath(ctx, task.NotebookTask.NotebookPath)
+	info, err := n.w.Workspace.GetStatusByPath(ctx, task.NotebookTask.NotebookPath)
 	if err != nil {
 		return err
 	}
 
 	ext := notebook.GetExtensionByLanguage(info)
 
-	reader, err := w.Workspace.Download(ctx, task.NotebookTask.NotebookPath)
-	if err != nil {
-		return err
-	}
-
 	filename := path.Base(task.NotebookTask.NotebookPath) + ext
-	targetPath := filepath.Join(outputDir, filename)
+	targetPath := filepath.Join(n.outputDir, filename)
 
-	fileInfo, err := os.Stat(filename)
-	if err == nil {
-		if fileInfo.IsDir() {
-			return fmt.Errorf("%s is a directory", filename)
+	// if not yet downloaded, download first
+	if _, ok := n.notebooks[targetPath]; !ok {
+		reader, err := n.w.Workspace.Download(ctx, task.NotebookTask.NotebookPath)
+		if err != nil {
+			return err
 		}
-		if !force {
-			return fmt.Errorf("%s already exists. Use --force to overwrite", filename)
-		}
-	}
-	f, err := os.Create(targetPath)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	_, err = io.Copy(f, reader)
-	if err != nil {
-		return err
+		n.notebooks[targetPath] = reader
 	}
 
 	task.NotebookTask.NotebookPath = strings.Join([]string{".", filename}, string(filepath.Separator))
-
-	cmdio.LogString(ctx, fmt.Sprintf("Notebook successfully saved to %s", targetPath))
 	return nil
+}
+
+func (n *notebookDownloader) FlushToDisk(ctx context.Context, force bool) error {
+	err := os.MkdirAll(n.outputDir, 0755)
+	if err != nil {
+		return err
+	}
+
+	// First check that all files can be written
+	for targetPath := range n.notebooks {
+		info, err := os.Stat(targetPath)
+		if err == nil {
+			if info.IsDir() {
+				return fmt.Errorf("%s is a directory", targetPath)
+			}
+			if !force {
+				return fmt.Errorf("%s already exists. Use --force to overwrite", targetPath)
+			}
+		}
+	}
+
+	for targetPath, reader := range n.notebooks {
+		file, err := os.Create(targetPath)
+		if err != nil {
+			return err
+		}
+
+		_, err = io.Copy(file, reader)
+		if err != nil {
+			return err
+		}
+
+		cmdio.LogString(ctx, fmt.Sprintf("Notebook successfully saved to %s", targetPath))
+	}
+
+	return nil
+}
+
+func (n *notebookDownloader) Close() error {
+	for _, reader := range n.notebooks {
+		err := reader.Close()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func newNotebookDownloader(w *databricks.WorkspaceClient, outputDir string) *notebookDownloader {
+	return &notebookDownloader{
+		notebooks: make(map[string]io.ReadCloser),
+		w:         w,
+		outputDir: outputDir,
+	}
 }

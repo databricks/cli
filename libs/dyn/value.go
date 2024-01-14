@@ -3,6 +3,7 @@ package dyn
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"time"
 
 	"golang.org/x/exp/maps"
@@ -231,6 +232,10 @@ func (v Value) MarshalYAML() (interface{}, error) {
 	case KindNil:
 		return &yaml.Node{Kind: yaml.ScalarNode, Value: "null"}, nil
 	case KindString:
+		// If the string is a scalar value (bool, int, float and etc.), we want to quote it.
+		if v.IsScalarValueInString() {
+			return &yaml.Node{Kind: yaml.ScalarNode, Value: v.MustString(), Style: yaml.DoubleQuotedStyle}, nil
+		}
 		return &yaml.Node{Kind: yaml.ScalarNode, Value: v.MustString()}, nil
 	case KindBool:
 		return &yaml.Node{Kind: yaml.ScalarNode, Value: fmt.Sprint(v.MustBool())}, nil
@@ -248,4 +253,31 @@ func (v Value) MarshalYAML() (interface{}, error) {
 
 func (v *Value) SetLocation(l Location) {
 	v.l = l
+}
+
+func (v Value) IsScalarValueInString() bool {
+	if v.Kind() != KindString {
+		return false
+	}
+
+	// Parse value of the string and check if it's a scalar value.
+	// If it's a scalar value, we want to quote it.
+	switch v.MustString() {
+	case "true", "false":
+		return true
+	default:
+		_, err := parseNumber(v.MustString())
+		return err == nil
+	}
+}
+
+func parseNumber(s string) (any, error) {
+	if i, err := strconv.ParseInt(s, 0, 64); err == nil {
+		return i, nil
+	}
+
+	if f, err := strconv.ParseFloat(s, 64); err == nil {
+		return f, nil
+	}
+	return nil, fmt.Errorf("invalid number: %s", s)
 }

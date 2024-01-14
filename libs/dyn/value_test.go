@@ -155,3 +155,83 @@ func TestMarshalYAMLNestedValues(t *testing.T) {
 	assert.Equal(t, "key2", v.(*yaml.Node).Content[1].Content[0].Value)
 	assert.Equal(t, "value", v.(*yaml.Node).Content[1].Content[1].Value)
 }
+
+func TestMarshalYAMLHexadecimalValueIsQuoted(t *testing.T) {
+	var hexValue = dyn.NewValue(0x123, dyn.Location{})
+	v, err := hexValue.MarshalYAML()
+	assert.NoError(t, err)
+	assert.Equal(t, "291", v.(*yaml.Node).Value)
+	assert.Equal(t, yaml.Style(0), v.(*yaml.Node).Style)
+	assert.Equal(t, yaml.ScalarNode, v.(*yaml.Node).Kind)
+
+	var stringValue = dyn.NewValue("0x123", dyn.Location{})
+	v, err = stringValue.MarshalYAML()
+	assert.NoError(t, err)
+	assert.Equal(t, "0x123", v.(*yaml.Node).Value)
+	assert.Equal(t, yaml.DoubleQuotedStyle, v.(*yaml.Node).Style)
+	assert.Equal(t, yaml.ScalarNode, v.(*yaml.Node).Kind)
+}
+
+func TestMarshalYAMLBinaryValueIsQuoted(t *testing.T) {
+	var binaryValue = dyn.NewValue(0b101, dyn.Location{})
+	v, err := binaryValue.MarshalYAML()
+	assert.NoError(t, err)
+	assert.Equal(t, "5", v.(*yaml.Node).Value)
+	assert.Equal(t, yaml.Style(0), v.(*yaml.Node).Style)
+	assert.Equal(t, yaml.ScalarNode, v.(*yaml.Node).Kind)
+
+	var stringValue = dyn.NewValue("0b101", dyn.Location{})
+	v, err = stringValue.MarshalYAML()
+	assert.NoError(t, err)
+	assert.Equal(t, "0b101", v.(*yaml.Node).Value)
+	assert.Equal(t, yaml.DoubleQuotedStyle, v.(*yaml.Node).Style)
+	assert.Equal(t, yaml.ScalarNode, v.(*yaml.Node).Kind)
+}
+
+func TestMarshalYAMLOctalValueIsQuoted(t *testing.T) {
+	var octalValue = dyn.NewValue(0123, dyn.Location{})
+	v, err := octalValue.MarshalYAML()
+	assert.NoError(t, err)
+	assert.Equal(t, "83", v.(*yaml.Node).Value)
+	assert.Equal(t, yaml.Style(0), v.(*yaml.Node).Style)
+	assert.Equal(t, yaml.ScalarNode, v.(*yaml.Node).Kind)
+
+	var stringValue = dyn.NewValue("0123", dyn.Location{})
+	v, err = stringValue.MarshalYAML()
+	assert.NoError(t, err)
+	assert.Equal(t, "0123", v.(*yaml.Node).Value)
+	assert.Equal(t, yaml.DoubleQuotedStyle, v.(*yaml.Node).Style)
+	assert.Equal(t, yaml.ScalarNode, v.(*yaml.Node).Kind)
+}
+
+func TestMarshalYAMLFloatValueIsQuoted(t *testing.T) {
+	var floatValue = dyn.NewValue(1.0, dyn.Location{})
+	v, err := floatValue.MarshalYAML()
+	assert.NoError(t, err)
+	assert.Equal(t, "1", v.(*yaml.Node).Value)
+	assert.Equal(t, yaml.Style(0), v.(*yaml.Node).Style)
+	assert.Equal(t, yaml.ScalarNode, v.(*yaml.Node).Kind)
+
+	var stringValue = dyn.NewValue("1.0", dyn.Location{})
+	v, err = stringValue.MarshalYAML()
+	assert.NoError(t, err)
+	assert.Equal(t, "1.0", v.(*yaml.Node).Value)
+	assert.Equal(t, yaml.DoubleQuotedStyle, v.(*yaml.Node).Style)
+	assert.Equal(t, yaml.ScalarNode, v.(*yaml.Node).Kind)
+}
+
+func TestMarshalYAMLBoolValueIsQuoted(t *testing.T) {
+	var boolValue = dyn.NewValue(true, dyn.Location{})
+	v, err := boolValue.MarshalYAML()
+	assert.NoError(t, err)
+	assert.Equal(t, "true", v.(*yaml.Node).Value)
+	assert.Equal(t, yaml.Style(0), v.(*yaml.Node).Style)
+	assert.Equal(t, yaml.ScalarNode, v.(*yaml.Node).Kind)
+
+	var stringValue = dyn.NewValue("true", dyn.Location{})
+	v, err = stringValue.MarshalYAML()
+	assert.NoError(t, err)
+	assert.Equal(t, "true", v.(*yaml.Node).Value)
+	assert.Equal(t, yaml.DoubleQuotedStyle, v.(*yaml.Node).Style)
+	assert.Equal(t, yaml.ScalarNode, v.(*yaml.Node).Kind)
+}
