@@ -22,5 +22,6 @@ func New() *cobra.Command {
 	cmd.AddCommand(newTestCommand())
 	cmd.AddCommand(newValidateCommand())
 	cmd.AddCommand(newInitCommand())
+	cmd.AddCommand(newRemoteStateCommand())
 	return cmd
 }

@@ -234,36 +234,54 @@ func TerraformToBundle(state *tfjson.State, config *config.Root) error {
 		case "databricks_job":
 			var tmp schema.ResourceJob
 			conv(resource.AttributeValues, &tmp)
+			if config.Resources.Jobs == nil {
+				config.Resources.Jobs = make(map[string]*resources.Job)
+			}
 			cur := config.Resources.Jobs[resource.Name]
 			conv(tmp, &cur)
 			config.Resources.Jobs[resource.Name] = cur
 		case "databricks_pipeline":
 			var tmp schema.ResourcePipeline
 			conv(resource.AttributeValues, &tmp)
+			if config.Resources.Pipelines == nil {
+				config.Resources.Pipelines = make(map[string]*resources.Pipeline)
+			}
 			cur := config.Resources.Pipelines[resource.Name]
 			conv(tmp, &cur)
 			config.Resources.Pipelines[resource.Name] = cur
 		case "databricks_mlflow_model":
 			var tmp schema.ResourceMlflowModel
 			conv(resource.AttributeValues, &tmp)
+			if config.Resources.Models == nil {
+				config.Resources.Models = make(map[string]*resources.MlflowModel)
+			}
 			cur := config.Resources.Models[resource.Name]
 			conv(tmp, &cur)
 			config.Resources.Models[resource.Name] = cur
 		case "databricks_mlflow_experiment":
 			var tmp schema.ResourceMlflowExperiment
 			conv(resource.AttributeValues, &tmp)
+			if config.Resources.Experiments == nil {
+				config.Resources.Experiments = make(map[string]*resources.MlflowExperiment)
+			}
 			cur := config.Resources.Experiments[resource.Name]
 			conv(tmp, &cur)
 			config.Resources.Experiments[resource.Name] = cur
 		case "databricks_model_serving":
 			var tmp schema.ResourceModelServing
 			conv(resource.AttributeValues, &tmp)
+			if config.Resources.ModelServingEndpoints == nil {
+				config.Resources.ModelServingEndpoints = make(map[string]*resources.ModelServingEndpoint)
+			}
 			cur := config.Resources.ModelServingEndpoints[resource.Name]
 			conv(tmp, &cur)
 			config.Resources.ModelServingEndpoints[resource.Name] = cur
 		case "databricks_registered_model":
 			var tmp schema.ResourceRegisteredModel
 			conv(resource.AttributeValues, &tmp)
+			if config.Resources.RegisteredModels == nil {
+				config.Resources.RegisteredModels = make(map[string]*resources.RegisteredModel)
+			}
 			cur := config.Resources.RegisteredModels[resource.Name]
 			conv(tmp, &cur)
 			config.Resources.RegisteredModels[resource.Name] = cur
