@@ -132,6 +132,7 @@ func new{{.PascalName}}() *cobra.Command {
 	{{- $wait := and .Wait (and (not .IsCrudRead) (not (eq .SnakeName "get_run"))) -}}
 	{{- $hasRequiredArgs :=  and (not $hasIdPrompt) $hasPosArgs -}}
 	{{- $hasSingleRequiredRequestBodyFieldWithPrompt := and (and $hasIdPrompt .Request) (eq 1 (len .Request.RequiredRequestBodyFields))  -}}
+	{{- $hasCustomArgHandler := and (not .MustUseJson) (or $hasRequiredArgs (and .CanUseJson .Request.HasRequiredRequestBodyFields)) -}}
 
 	{{- $atleastOneArgumentWithDescription := false -}}
 	{{- if $hasPosArgs -}}
@@ -163,7 +164,7 @@ func new{{.PascalName}}() *cobra.Command {
 	{{- end }}
 
 	cmd.Annotations = make(map[string]string)
-	{{if $hasRequiredArgs }}
+	{{ if $hasCustomArgHandler }}
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		{{- if and .CanUseJson .Request.HasRequiredRequestBodyFields }}
 		if cmd.Flags().Changed("json") {
@@ -178,10 +179,14 @@ func new{{.PascalName}}() *cobra.Command {
 			return nil
 		}
 		{{- end }}
+		{{- if $hasRequiredArgs }}
 		check := cobra.ExactArgs({{len .Request.RequiredFields}})
 		return check(cmd, args)
+		{{- else}}
+		return nil
+		{{- end }}
 	}
-	{{end}}
+	{{ end }}
 	cmd.PreRunE = root.Must{{if .Service.IsAccounts}}Account{{else}}Workspace{{end}}Client
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
