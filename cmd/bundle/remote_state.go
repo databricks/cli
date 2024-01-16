@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdio"
 
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/spf13/cobra"
@@ -51,11 +51,7 @@ func newRemoteStateCommand() *cobra.Command {
 			}
 		}
 
-		// After the initialization phase the local bundle configuration is no longer necessary.
-		// We want to populate the config with the remote state only.
-		b.Config.Resources = config.Resources{}
-
-		err = bundle.Apply(cmd.Context(), b, terraform.Load())
+		err = bundle.Apply(cmd.Context(), b, terraform.Load(terraform.ReplaceResources))
 		if err != nil {
 			return err
 		}
@@ -65,7 +61,7 @@ func newRemoteStateCommand() *cobra.Command {
 			return err
 		}
 
-		cmd.OutOrStdout().Write(buf)
+		cmdio.LogString(cmd.Context(), string(buf))
 		return nil
 	}
 
