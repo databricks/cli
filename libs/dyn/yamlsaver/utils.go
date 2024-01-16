@@ -1,36 +1,34 @@
 package yamlsaver
 
 import (
-	"reflect"
 	"slices"
 
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 )
 
-var skipFields = []string{"Format"}
+var skipFields = []string{"format"}
 
 // Converts a struct to map. Skips any nil fields.
 // It uses `skipFields` to skip unnecessary fields.
 // Uses `order` to define the order of keys in resulting outout
 func ConvertToMapValue(strct any, order *Order, dst map[string]dyn.Value) (dyn.Value, error) {
-	itemValue := reflect.ValueOf(strct)
-	if itemValue.Kind() == reflect.Pointer {
-		itemValue = itemValue.Elem()
+	ref := dyn.NilValue
+	mv, err := convert.FromTyped(strct, ref)
+	if err != nil {
+		return dyn.NilValue, err
 	}
-	for i := 0; i < itemValue.NumField(); i++ {
-		if itemValue.Field(i).IsZero() {
+
+	return skipAndOrder(mv, order, dst)
+}
+
+func skipAndOrder(mv dyn.Value, order *Order, dst map[string]dyn.Value) (dyn.Value, error) {
+	for k, v := range mv.MustMap() {
+		if v.Kind() == dyn.KindNil {
 			continue
 		}
 
-		f := itemValue.Type().Field(i)
-		if slices.Contains(skipFields, f.Name) {
-			continue
-		}
-
-		// If the field is not defined as json field, we're skipping it
-		k, isJson := ConfigKey(strct, f.Name)
-		if !isJson {
+		if slices.Contains(skipFields, k) {
 			continue
 		}
 
@@ -41,16 +39,7 @@ func ConvertToMapValue(strct any, order *Order, dst map[string]dyn.Value) (dyn.V
 			continue
 		}
 
-		ref := dyn.NilValue
-		nv, err := convert.FromTyped(itemValue.Field(i).Interface(), ref)
-		if err != nil {
-			return dyn.NilValue, err
-		}
-
-		if nv.Kind() != dyn.KindNil {
-			nv = dyn.NewValue(nv.Value(), dyn.Location{Line: order.Get(f.Name)})
-			dst[k] = nv
-		}
+		dst[k] = dyn.NewValue(v.Value(), dyn.Location{Line: order.Get(k)})
 	}
 
 	return dyn.V(dst), nil

@@ -6,14 +6,13 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
-var jobOrder = yamlsaver.NewOrder([]string{"Name", "Format", "NewCluster", "JobClusters", "ExistingClusterId", "Compute", "Tasks"})
-var taskOrder = yamlsaver.NewOrder([]string{"TaskKey", "DependsOn", "ExistingClusterId", "NewCluster", "JobClusterKey"})
+var jobOrder = yamlsaver.NewOrder([]string{"name", "new_cluster", "job_clusters", "existing_cluster_id", "compute", "tasks"})
+var taskOrder = yamlsaver.NewOrder([]string{"task_key", "depends_on", "existing_cluster_id", "new_cluster", "job_cluster_key"})
 
 func ConvertJobToValue(job *jobs.Job) (dyn.Value, error) {
 	value := make(map[string]dyn.Value)
 
 	if job.Settings.Tasks != nil {
-		k, _ := yamlsaver.ConfigKey(job.Settings, "Tasks")
 		tasks := make([]dyn.Value, 0)
 		for _, task := range job.Settings.Tasks {
 			v, err := convertTaskToValue(task, taskOrder)
@@ -23,7 +22,7 @@ func ConvertJobToValue(job *jobs.Job) (dyn.Value, error) {
 			tasks = append(tasks, v)
 		}
 		// We're using location lines to define the order of keys in exported YAML.
-		value[k] = dyn.NewValue(tasks, dyn.Location{Line: jobOrder.Get("Tasks")})
+		value["tasks"] = dyn.NewValue(tasks, dyn.Location{Line: jobOrder.Get("tasks")})
 	}
 
 	return yamlsaver.ConvertToMapValue(job.Settings, jobOrder, value)

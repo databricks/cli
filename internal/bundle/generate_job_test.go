@@ -36,7 +36,7 @@ func TestAccGenerateFromExistingJobAndDeploy(t *testing.T) {
 	})
 
 	t.Setenv("BUNDLE_ROOT", bundleRoot)
-	c := internal.NewCobraTestRunner(t, "bundle", "generate", "job", fmt.Sprint(jobId), "--output-dir", filepath.Join(bundleRoot, "resources"))
+	c := internal.NewCobraTestRunner(t, "bundle", "generate", "job", "--existing-job-id", fmt.Sprint(jobId), "--output-dir", filepath.Join(bundleRoot, "resources"))
 	_, _, err = c.Run()
 	require.NoError(t, err)
 

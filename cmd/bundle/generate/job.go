@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/generate"
@@ -19,14 +18,17 @@ import (
 
 func NewGenerateJobCommand() *cobra.Command {
 	var outputDir string
+	var jobId int64
 	var force bool
 
 	cmd := &cobra.Command{
-		Use:     "job JOB_ID",
+		Use:     "job",
 		Short:   "Generate bundle configuration for a job",
-		Args:    cobra.MaximumNArgs(1),
 		PreRunE: root.MustConfigureBundle,
 	}
+
+	cmd.Flags().Int64Var(&jobId, "existing-job-id", 0, `Job ID of the job to generate config for`)
+	cmd.MarkFlagRequired("existing-job-id")
 
 	cmd.Flags().StringVarP(&outputDir, "output-dir", "d", "", `Dir path where the output config and necessary files will be stored`)
 	cmd.Flags().BoolVarP(&force, "force", "f", false, `Force overwrite existing files in the output directory`)
@@ -35,23 +37,6 @@ func NewGenerateJobCommand() *cobra.Command {
 		ctx := cmd.Context()
 		b := bundle.Get(ctx)
 		w := b.WorkspaceClient()
-
-		// If no arguments are specified, prompt the user to select the job to generate.
-		if len(args) == 0 && cmdio.IsInteractive(ctx) {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
-			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-			close(promptSpinner)
-
-			if err != nil {
-				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "This field is required")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
 
 		if !cmd.Flag("output-dir").Changed {
 			wd, err := os.Getwd()
@@ -65,14 +50,7 @@ func NewGenerateJobCommand() *cobra.Command {
 			outputDir = input
 		}
 
-		var getReq jobs.GetJobRequest
-		id, err := strconv.ParseInt(args[0], 10, 64)
-		if err != nil {
-			return fmt.Errorf("invalid JOB_ID: %s", args[0])
-		}
-		getReq.JobId = id
-
-		job, err := w.Jobs.Get(ctx, getReq)
+		job, err := w.Jobs.Get(ctx, jobs.GetJobRequest{JobId: jobId})
 		if err != nil {
 			return err
 		}
