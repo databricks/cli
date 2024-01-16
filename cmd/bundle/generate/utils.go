@@ -13,49 +13,16 @@ import (
 	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"gopkg.in/yaml.v3"
+	"golang.org/x/sync/errgroup"
 )
 
 type notebookDownloader struct {
-	notebooks map[string]io.ReadCloser
+	notebooks map[string]string
 	w         *databricks.WorkspaceClient
 	outputDir string
 }
 
-func saveConfigToFile(ctx context.Context, data any, filename string, force bool) error {
-	// check that file exists
-	info, err := os.Stat(filename)
-	if err == nil {
-		if info.IsDir() {
-			return fmt.Errorf("%s is a directory", filename)
-		}
-		if !force {
-			return fmt.Errorf("%s already exists. Use --force to overwrite", filename)
-		}
-	}
-
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	err = encode(data, file)
-	if err != nil {
-		return err
-	}
-
-	cmdio.LogString(ctx, fmt.Sprintf("Job configuration successfully saved to %s", filename))
-	return nil
-}
-
-func encode(data any, w io.Writer) error {
-	enc := yaml.NewEncoder(w)
-	enc.SetIndent(2)
-	return enc.Encode(data)
-}
-
-func (n *notebookDownloader) DownloadInMemory(ctx context.Context, task *jobs.Task) error {
+func (n *notebookDownloader) MarkForDownload(ctx context.Context, task *jobs.Task) error {
 	if task.NotebookTask == nil {
 		return nil
 	}
@@ -70,14 +37,7 @@ func (n *notebookDownloader) DownloadInMemory(ctx context.Context, task *jobs.Ta
 	filename := path.Base(task.NotebookTask.NotebookPath) + ext
 	targetPath := filepath.Join(n.outputDir, filename)
 
-	// if not yet downloaded, download first
-	if _, ok := n.notebooks[targetPath]; !ok {
-		reader, err := n.w.Workspace.Download(ctx, task.NotebookTask.NotebookPath)
-		if err != nil {
-			return err
-		}
-		n.notebooks[targetPath] = reader
-	}
+	n.notebooks[targetPath] = task.NotebookTask.NotebookPath
 
 	task.NotebookTask.NotebookPath = strings.Join([]string{".", filename}, string(filepath.Separator))
 	return nil
@@ -102,36 +62,37 @@ func (n *notebookDownloader) FlushToDisk(ctx context.Context, force bool) error 
 		}
 	}
 
-	for targetPath, reader := range n.notebooks {
-		file, err := os.Create(targetPath)
-		if err != nil {
-			return err
-		}
+	errs, errCtx := errgroup.WithContext(ctx)
+	for k, v := range n.notebooks {
+		targetPath := k
+		notebookPath := v
+		errs.Go(func() error {
+			reader, err := n.w.Workspace.Download(ctx, notebookPath)
+			if err != nil {
+				return err
+			}
 
-		_, err = io.Copy(file, reader)
-		if err != nil {
-			return err
-		}
+			file, err := os.Create(targetPath)
+			if err != nil {
+				return err
+			}
 
-		cmdio.LogString(ctx, fmt.Sprintf("Notebook successfully saved to %s", targetPath))
+			_, err = io.Copy(file, reader)
+			if err != nil {
+				return err
+			}
+
+			cmdio.LogString(errCtx, fmt.Sprintf("Notebook successfully saved to %s", targetPath))
+			return reader.Close()
+		})
 	}
 
-	return nil
-}
-
-func (n *notebookDownloader) Close() error {
-	for _, reader := range n.notebooks {
-		err := reader.Close()
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return errs.Wait()
 }
 
 func newNotebookDownloader(w *databricks.WorkspaceClient, outputDir string) *notebookDownloader {
 	return &notebookDownloader{
-		notebooks: make(map[string]io.ReadCloser),
+		notebooks: make(map[string]string),
 		w:         w,
 		outputDir: outputDir,
 	}

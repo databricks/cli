@@ -1,4 +1,4 @@
-package dyn
+package yamlsaver
 
 import "slices"
 

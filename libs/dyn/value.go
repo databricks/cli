@@ -51,6 +51,10 @@ func (v Value) Kind() Kind {
 	return v.k
 }
 
+func (v Value) Value() any {
+	return v.v
+}
+
 func (v Value) Location() Location {
 	return v.l
 }
@@ -136,6 +140,22 @@ func (v Value) IsAnchor() bool {
 	return v.anchor
 }
 
+func (v Value) IsScalarValueInString() bool {
+	if v.Kind() != KindString {
+		return false
+	}
+
+	// Parse value of the string and check if it's a scalar value.
+	// If it's a scalar value, we want to quote it.
+	switch v.MustString() {
+	case "true", "false":
+		return true
+	default:
+		_, err := parseNumber(v.MustString())
+		return err == nil
+	}
+}
+
 func (v Value) MarshalYAML() (interface{}, error) {
 	switch v.Kind() {
 	case KindMap:
@@ -192,27 +212,7 @@ func (v Value) MarshalYAML() (interface{}, error) {
 		return &yaml.Node{Kind: yaml.ScalarNode, Value: v.MustTime().UTC().String()}, nil
 	default:
 		// Panic because we only want to deal with known types.
-		panic(fmt.Sprintf("invalid kind: %d", v.k))
-	}
-}
-
-func (v *Value) SetLocation(l Location) {
-	v.l = l
-}
-
-func (v Value) IsScalarValueInString() bool {
-	if v.Kind() != KindString {
-		return false
-	}
-
-	// Parse value of the string and check if it's a scalar value.
-	// If it's a scalar value, we want to quote it.
-	switch v.MustString() {
-	case "true", "false":
-		return true
-	default:
-		_, err := parseNumber(v.MustString())
-		return err == nil
+		panic(fmt.Sprintf("invalid kind: %d", v.Kind()))
 	}
 }
 

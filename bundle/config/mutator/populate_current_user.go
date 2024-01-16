@@ -6,8 +6,8 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/tags"
+	"github.com/databricks/cli/libs/textutil"
 )
 
 type populateCurrentUser struct{}
@@ -48,5 +48,5 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) error
 // including dots, which are not supported in e.g. experiment names.
 func getShortUserName(emailAddress string) string {
 	local, _, _ := strings.Cut(emailAddress, "@")
-	return convert.NormaliseString(local)
+	return textutil.NormaliseString(local)
 }

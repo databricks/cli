@@ -11,7 +11,8 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/cli/libs/dyn/yamlsaver"
+	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
 )
@@ -77,10 +78,8 @@ func NewGenerateJobCommand() *cobra.Command {
 		}
 
 		downloader := newNotebookDownloader(w, outputDir)
-		defer downloader.Close()
-
 		for _, task := range job.Settings.Tasks {
-			err := downloader.DownloadInMemory(ctx, &task)
+			err := downloader.MarkForDownload(ctx, &task)
 			if err != nil {
 				return err
 			}
@@ -91,7 +90,7 @@ func NewGenerateJobCommand() *cobra.Command {
 			return err
 		}
 
-		jobName := fmt.Sprintf("job_%s", convert.NormaliseString(job.Settings.Name))
+		jobName := fmt.Sprintf("job_%s", textutil.NormaliseString(job.Settings.Name))
 		result := map[string]any{
 			"resources": map[string]any{
 				"jobs": map[string]dyn.Value{
@@ -105,11 +104,13 @@ func NewGenerateJobCommand() *cobra.Command {
 			return err
 		}
 
-		err = saveConfigToFile(ctx, result, filepath.Join(outputDir, fmt.Sprintf("%s.yml", jobName)), force)
+		filename := filepath.Join(outputDir, fmt.Sprintf("%s.yml", jobName))
+		err = yamlsaver.SaveAsYAML(result, filename, force)
 		if err != nil {
 			return err
 		}
 
+		cmdio.LogString(ctx, fmt.Sprintf("Job configuration successfully saved to %s", filename))
 		return nil
 	}
 

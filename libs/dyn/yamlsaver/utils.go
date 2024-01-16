@@ -1,12 +1,11 @@
-package convert
+package yamlsaver
 
 import (
 	"reflect"
 	"slices"
-	"strings"
-	"unicode"
 
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/convert"
 )
 
 var skipFields = []string{"Format"}
@@ -14,7 +13,7 @@ var skipFields = []string{"Format"}
 // Converts a struct to map. Skips any nil fields.
 // It uses `skipFields` to skip unnecessary fields.
 // Uses `order` to define the order of keys in resulting outout
-func ConvertToMapValue(strct any, order *dyn.Order, dst map[string]dyn.Value) (dyn.Value, error) {
+func ConvertToMapValue(strct any, order *Order, dst map[string]dyn.Value) (dyn.Value, error) {
 	itemValue := reflect.ValueOf(strct)
 	if itemValue.Kind() == reflect.Pointer {
 		itemValue = itemValue.Elem()
@@ -30,7 +29,7 @@ func ConvertToMapValue(strct any, order *dyn.Order, dst map[string]dyn.Value) (d
 		}
 
 		// If the field is not defined as json field, we're skipping it
-		k, isJson := dyn.ConfigKey(strct, f.Name)
+		k, isJson := ConfigKey(strct, f.Name)
 		if !isJson {
 			continue
 		}
@@ -43,30 +42,16 @@ func ConvertToMapValue(strct any, order *dyn.Order, dst map[string]dyn.Value) (d
 		}
 
 		ref := dyn.NilValue
-		nv, err := FromTyped(itemValue.Field(i).Interface(), ref)
+		nv, err := convert.FromTyped(itemValue.Field(i).Interface(), ref)
 		if err != nil {
 			return dyn.NilValue, err
 		}
 
 		if nv.Kind() != dyn.KindNil {
-			nv.SetLocation(dyn.Location{Line: order.Get(f.Name)})
+			nv = dyn.NewValue(nv.Value(), dyn.Location{Line: order.Get(f.Name)})
 			dst[k] = nv
 		}
 	}
 
 	return dyn.V(dst), nil
-}
-
-func replaceNonAlphanumeric(r rune) rune {
-	if unicode.IsLetter(r) || unicode.IsDigit(r) {
-		return r
-	}
-	return '_'
-}
-
-// We leave the full range of unicode letters in tact, but remove all "special" characters,
-// including spaces and dots, which are not supported in e.g. experiment names or YAML keys.
-func NormaliseString(name string) string {
-	name = strings.ToLower(name)
-	return strings.Map(replaceNonAlphanumeric, name)
 }

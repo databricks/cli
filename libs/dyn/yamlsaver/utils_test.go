@@ -1,4 +1,4 @@
-package convert
+package yamlsaver
 
 import (
 	"testing"
@@ -15,19 +15,19 @@ func TestKeyReturnsNameFromJsonTag(T *testing.T) {
 	}
 
 	v := &test{}
-	k, ok := dyn.ConfigKey(v, "Name")
+	k, ok := ConfigKey(v, "Name")
 	assert.True(T, ok)
 	assert.Equal(T, "name", k)
 
-	k, ok = dyn.ConfigKey(v, "Description")
+	k, ok = ConfigKey(v, "Description")
 	assert.False(T, ok)
 	assert.Equal(T, "Description", k)
 
-	k, ok = dyn.ConfigKey(v, "Another")
+	k, ok = ConfigKey(v, "Another")
 	assert.False(T, ok)
 	assert.Equal(T, "Another", k)
 
-	k, ok = dyn.ConfigKey(v, "NotExists")
+	k, ok = ConfigKey(v, "NotExists")
 	assert.False(T, ok)
 	assert.Equal(T, "NotExists", k)
 }
@@ -51,7 +51,7 @@ func TestConvertToMapValue(t *testing.T) {
 			"Name",
 		},
 	}
-	result, err := ConvertToMapValue(v, dyn.NewOrder([]string{}), map[string]dyn.Value{})
+	result, err := ConvertToMapValue(v, NewOrder([]string{}), map[string]dyn.Value{})
 	assert.NoError(t, err)
 
 	assert.Equal(t, map[string]dyn.Value{
@@ -87,7 +87,7 @@ func TestConvertToMapValueWithOrder(t *testing.T) {
 			"Name",
 		},
 	}
-	result, err := ConvertToMapValue(v, dyn.NewOrder([]string{"List", "Name", "Map"}), map[string]dyn.Value{})
+	result, err := ConvertToMapValue(v, NewOrder([]string{"List", "Name", "Map"}), map[string]dyn.Value{})
 	assert.NoError(t, err)
 
 	assert.Equal(t, map[string]dyn.Value{
@@ -102,51 +102,4 @@ func TestConvertToMapValueWithOrder(t *testing.T) {
 			"key2": dyn.V("value2"),
 		}, dyn.Location{Line: -1}),
 	}, result.MustMap())
-}
-
-func TestNormaliseString(t *testing.T) {
-	cases := []struct {
-		input    string
-		expected string
-	}{
-		{
-			input:    "test",
-			expected: "test",
-		},
-		{
-			input:    "test test",
-			expected: "test_test",
-		},
-		{
-			input:    "test-test",
-			expected: "test_test",
-		},
-		{
-			input:    "test_test",
-			expected: "test_test",
-		},
-		{
-			input:    "test.test",
-			expected: "test_test",
-		},
-		{
-			input:    "test/test",
-			expected: "test_test",
-		},
-		{
-			input:    "test/test.test",
-			expected: "test_test_test",
-		},
-		{
-			input:    "TestTest",
-			expected: "testtest",
-		},
-		{
-			input:    "TestTestTest",
-			expected: "testtesttest",
-		}}
-
-	for _, c := range cases {
-		assert.Equal(t, c.expected, NormaliseString(c.input))
-	}
 }

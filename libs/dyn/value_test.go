@@ -51,14 +51,14 @@ func TestValueIsValid(t *testing.T) {
 	assert.True(t, intValue.IsValid())
 }
 
-func TestMarshalYAMLNilValue(t *testing.T) {
+func TestMarshalNilValue(t *testing.T) {
 	var nilValue = dyn.NilValue
 	v, err := nilValue.MarshalYAML()
 	assert.NoError(t, err)
 	assert.Equal(t, "null", v.(*yaml.Node).Value)
 }
 
-func TestMarshalYAMLIntValue(t *testing.T) {
+func TestMarshalIntValue(t *testing.T) {
 	var intValue = dyn.NewValue(1, dyn.Location{})
 	v, err := intValue.MarshalYAML()
 	assert.NoError(t, err)
@@ -66,7 +66,7 @@ func TestMarshalYAMLIntValue(t *testing.T) {
 	assert.Equal(t, yaml.ScalarNode, v.(*yaml.Node).Kind)
 }
 
-func TestMarshalYAMLFloatValue(t *testing.T) {
+func TestMarshalFloatValue(t *testing.T) {
 	var floatValue = dyn.NewValue(1.0, dyn.Location{})
 	v, err := floatValue.MarshalYAML()
 	assert.NoError(t, err)
@@ -74,7 +74,7 @@ func TestMarshalYAMLFloatValue(t *testing.T) {
 	assert.Equal(t, yaml.ScalarNode, v.(*yaml.Node).Kind)
 }
 
-func TestMarshalYAMLBoolValue(t *testing.T) {
+func TestMarshalBoolValue(t *testing.T) {
 	var boolValue = dyn.NewValue(true, dyn.Location{})
 	v, err := boolValue.MarshalYAML()
 	assert.NoError(t, err)
@@ -82,7 +82,7 @@ func TestMarshalYAMLBoolValue(t *testing.T) {
 	assert.Equal(t, yaml.ScalarNode, v.(*yaml.Node).Kind)
 }
 
-func TestMarshalYAMLTimeValue(t *testing.T) {
+func TestMarshalTimeValue(t *testing.T) {
 	var timeValue = dyn.NewValue(time.Unix(0, 0), dyn.Location{})
 	v, err := timeValue.MarshalYAML()
 	assert.NoError(t, err)
@@ -90,7 +90,7 @@ func TestMarshalYAMLTimeValue(t *testing.T) {
 	assert.Equal(t, yaml.ScalarNode, v.(*yaml.Node).Kind)
 }
 
-func TestMarshalYAMLSequenceValue(t *testing.T) {
+func TestMarshalSequenceValue(t *testing.T) {
 	var sequenceValue = dyn.NewValue(
 		[]dyn.Value{
 			dyn.NewValue("value1", dyn.Location{File: "file", Line: 1, Column: 2}),
@@ -105,7 +105,7 @@ func TestMarshalYAMLSequenceValue(t *testing.T) {
 	assert.Equal(t, "value2", v.(*yaml.Node).Content[1].Value)
 }
 
-func TestMarshalYAMLStringValue(t *testing.T) {
+func TestMarshalStringValue(t *testing.T) {
 	var stringValue = dyn.NewValue("value", dyn.Location{})
 	v, err := stringValue.MarshalYAML()
 	assert.NoError(t, err)
@@ -113,7 +113,7 @@ func TestMarshalYAMLStringValue(t *testing.T) {
 	assert.Equal(t, yaml.ScalarNode, v.(*yaml.Node).Kind)
 }
 
-func TestMarshalYAMLMapValue(t *testing.T) {
+func TestMarshalMapValue(t *testing.T) {
 	var mapValue = dyn.NewValue(
 		map[string]dyn.Value{
 			"key3": dyn.NewValue("value3", dyn.Location{File: "file", Line: 3, Column: 2}),
@@ -135,7 +135,7 @@ func TestMarshalYAMLMapValue(t *testing.T) {
 	assert.Equal(t, "value3", v.(*yaml.Node).Content[5].Value)
 }
 
-func TestMarshalYAMLNestedValues(t *testing.T) {
+func TestMarshalNestedValues(t *testing.T) {
 	var mapValue = dyn.NewValue(
 		map[string]dyn.Value{
 			"key1": dyn.NewValue(
@@ -156,7 +156,7 @@ func TestMarshalYAMLNestedValues(t *testing.T) {
 	assert.Equal(t, "value", v.(*yaml.Node).Content[1].Content[1].Value)
 }
 
-func TestMarshalYAMLHexadecimalValueIsQuoted(t *testing.T) {
+func TestMarshalHexadecimalValueIsQuoted(t *testing.T) {
 	var hexValue = dyn.NewValue(0x123, dyn.Location{})
 	v, err := hexValue.MarshalYAML()
 	assert.NoError(t, err)
@@ -172,7 +172,7 @@ func TestMarshalYAMLHexadecimalValueIsQuoted(t *testing.T) {
 	assert.Equal(t, yaml.ScalarNode, v.(*yaml.Node).Kind)
 }
 
-func TestMarshalYAMLBinaryValueIsQuoted(t *testing.T) {
+func TestMarshalBinaryValueIsQuoted(t *testing.T) {
 	var binaryValue = dyn.NewValue(0b101, dyn.Location{})
 	v, err := binaryValue.MarshalYAML()
 	assert.NoError(t, err)
@@ -188,7 +188,7 @@ func TestMarshalYAMLBinaryValueIsQuoted(t *testing.T) {
 	assert.Equal(t, yaml.ScalarNode, v.(*yaml.Node).Kind)
 }
 
-func TestMarshalYAMLOctalValueIsQuoted(t *testing.T) {
+func TestMarshalOctalValueIsQuoted(t *testing.T) {
 	var octalValue = dyn.NewValue(0123, dyn.Location{})
 	v, err := octalValue.MarshalYAML()
 	assert.NoError(t, err)
@@ -204,7 +204,7 @@ func TestMarshalYAMLOctalValueIsQuoted(t *testing.T) {
 	assert.Equal(t, yaml.ScalarNode, v.(*yaml.Node).Kind)
 }
 
-func TestMarshalYAMLFloatValueIsQuoted(t *testing.T) {
+func TestMarshalFloatValueIsQuoted(t *testing.T) {
 	var floatValue = dyn.NewValue(1.0, dyn.Location{})
 	v, err := floatValue.MarshalYAML()
 	assert.NoError(t, err)
@@ -220,7 +220,7 @@ func TestMarshalYAMLFloatValueIsQuoted(t *testing.T) {
 	assert.Equal(t, yaml.ScalarNode, v.(*yaml.Node).Kind)
 }
 
-func TestMarshalYAMLBoolValueIsQuoted(t *testing.T) {
+func TestMarshalBoolValueIsQuoted(t *testing.T) {
 	var boolValue = dyn.NewValue(true, dyn.Location{})
 	v, err := boolValue.MarshalYAML()
 	assert.NoError(t, err)
