@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNormaliseString(t *testing.T) {
+func TestNormalizeString(t *testing.T) {
 	cases := []struct {
 		input    string
 		expected string
@@ -49,6 +49,6 @@ func TestNormaliseString(t *testing.T) {
 		}}
 
 	for _, c := range cases {
-		assert.Equal(t, c.expected, NormaliseString(c.input))
+		assert.Equal(t, c.expected, NormalizeString(c.input))
 	}
 }

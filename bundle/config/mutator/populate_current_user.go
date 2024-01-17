@@ -48,5 +48,5 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) error
 // including dots, which are not supported in e.g. experiment names.
 func getShortUserName(emailAddress string) string {
 	local, _, _ := strings.Cut(emailAddress, "@")
-	return textutil.NormaliseString(local)
+	return textutil.NormalizeString(local)
 }

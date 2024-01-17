@@ -7,7 +7,7 @@ import (
 
 // We leave the full range of unicode letters in tact, but remove all "special" characters,
 // including spaces and dots, which are not supported in e.g. experiment names or YAML keys.
-func NormaliseString(name string) string {
+func NormalizeString(name string) string {
 	name = strings.ToLower(name)
 	return strings.Map(replaceNonAlphanumeric, name)
 }
