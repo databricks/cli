@@ -8,7 +8,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/terraform"
-	"github.com/databricks/cli/libs/cmdio"
 
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/spf13/cobra"
@@ -60,7 +59,7 @@ func newSummariseCommand() *cobra.Command {
 			return err
 		}
 
-		cmdio.LogString(cmd.Context(), string(buf))
+		cmd.OutOrStdout().Write(buf)
 		return nil
 	}
 
