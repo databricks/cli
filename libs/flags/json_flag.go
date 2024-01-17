@@ -1,9 +1,10 @@
 package flags
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
+
+	"github.com/databricks/databricks-sdk-go/marshal"
 )
 
 type JsonFlag struct {
@@ -33,7 +34,9 @@ func (j *JsonFlag) Unmarshal(v any) error {
 	if j.raw == nil {
 		return nil
 	}
-	return json.Unmarshal(j.raw, v)
+	return marshal.UnmarshalCustom(j.raw, v, marshal.UnmarshalOptions{
+		UnmarshalTopLevelIgnoredFields: true,
+	})
 }
 
 func (j *JsonFlag) Type() string {

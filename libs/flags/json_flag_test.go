@@ -70,3 +70,19 @@ func TestJsonFlagFile(t *testing.T) {
 
 	assert.Equal(t, "hello world", request)
 }
+
+func TestJsonFlagUnmarshal_UnmarshalIgnoredFields(t *testing.T) {
+	type Foo struct {
+		A string `json:"a"`
+		B string `json:"-"`
+	}
+
+	raw := `{"a": "foo", "b": "bar"}`
+	var body JsonFlag
+	body.Set(raw)
+
+	var request Foo
+	body.Unmarshal(&request)
+
+	assert.Equal(t, Foo{A: "foo", B: "bar"}, request)
+}
