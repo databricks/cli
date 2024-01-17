@@ -1,5 +1,20 @@
 # Version changelog
 
+## 0.212.1
+
+CLI:
+ * Fix windows style file paths in fs cp command ([#1118](https://github.com/databricks/cli/pull/1118)).
+ * Do not require positional arguments if they should be provided in JSON ([#1125](https://github.com/databricks/cli/pull/1125)).
+ * Always require path parameters as positional arguments ([#1129](https://github.com/databricks/cli/pull/1129)).
+
+Bundles:
+ * Add debug log line for when bundle init is run from non-TTY interface ([#1117](https://github.com/databricks/cli/pull/1117)).
+ * Added `databricks bundle generate job` command ([#1043](https://github.com/databricks/cli/pull/1043)).
+ * Support passing job parameters to bundle run ([#1115](https://github.com/databricks/cli/pull/1115)).
+
+Dependency updates:
+ * Bump golang.org/x/oauth2 from 0.15.0 to 0.16.0 ([#1124](https://github.com/databricks/cli/pull/1124)).
+
 ## 0.212.0
 
 CLI:
