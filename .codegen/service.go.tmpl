@@ -125,18 +125,20 @@ func new{{.PascalName}}() *cobra.Command {
 	{{- $fullCommandName := (print $serviceName " " .KebabName) -}}
 	{{- $noPrompt := or .IsCrudCreate (in $excludeFromPrompts $fullCommandName) }}
 
-	{{- $hasPosArgs := and (not .MustUseJson) (and .Request (or .Request.IsAllRequiredFieldsPrimitive (eq .PascalName "RunNow"))) -}}
+	{{- $hasPosArgs := .HasRequiredPositionalArguments -}}
 	{{- $hasSinglePosArg := and $hasPosArgs (eq 1 (len .Request.RequiredFields)) -}}
 	{{- $serviceHasNamedIdMap := and (and .Service.List .Service.List.NamedIdMap) (not (eq .PascalName "List")) -}}
 	{{- $hasIdPrompt := and (not $noPrompt) (and $hasSinglePosArg $serviceHasNamedIdMap) -}}
 	{{- $wait := and .Wait (and (not .IsCrudRead) (not (eq .SnakeName "get_run"))) -}}
 	{{- $hasRequiredArgs :=  and (not $hasIdPrompt) $hasPosArgs -}}
 	{{- $hasSingleRequiredRequestBodyFieldWithPrompt := and (and $hasIdPrompt .Request) (eq 1 (len .Request.RequiredRequestBodyFields))  -}}
-	{{- $hasCustomArgHandler := and (not .MustUseJson) (or $hasRequiredArgs (and .CanUseJson .Request.HasRequiredRequestBodyFields)) -}}
+	{{- $onlyPathArgsRequiredAsPositionalArguments := and .Request (eq (len .RequiredPositionalArguments) (len .Request.RequiredPathFields)) -}}
+	{{- $hasDifferentArgsWithJsonFlag := and (not $onlyPathArgsRequiredAsPositionalArguments) (and .CanUseJson .Request.HasRequiredRequestBodyFields) -}}
+	{{- $hasCustomArgHandler := or $hasRequiredArgs $hasDifferentArgsWithJsonFlag -}}
 
 	{{- $atleastOneArgumentWithDescription := false -}}
 	{{- if $hasPosArgs -}}
-		{{- range .Request.RequiredFields -}}
+		{{- range .RequiredPositionalArguments -}}
 			{{- if .HasComment -}}
 				{{- $atleastOneArgumentWithDescription = true -}}
 				{{- break -}}
@@ -144,14 +146,14 @@ func new{{.PascalName}}() *cobra.Command {
 		{{- end -}}
 	{{- end -}}
 
-	cmd.Use = "{{.KebabName}}{{if $hasPosArgs}}{{range .Request.RequiredFields}} {{.ConstantName}}{{end}}{{end}}"
+	cmd.Use = "{{.KebabName}}{{if $hasPosArgs}}{{range .RequiredPositionalArguments}} {{.ConstantName}}{{end}}{{end}}"
 	{{- if .Description }}
 	cmd.Short = `{{.Summary | without "`"}}`
 	cmd.Long = `{{.Comment  "  " 80 | without "`"}}
 	{{- if $atleastOneArgumentWithDescription }}
 
   Arguments:
-    {{- range .Request.RequiredFields }}
+    {{- range .RequiredPositionalArguments }}
     {{ .ConstantName }}: {{.Comment "      " 80 | without "`"}}
     {{- end -}}
     {{- end -}}
@@ -166,7 +168,7 @@ func new{{.PascalName}}() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 	{{ if $hasCustomArgHandler }}
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		{{- if and .CanUseJson .Request.HasRequiredRequestBodyFields }}
+		{{- if $hasDifferentArgsWithJsonFlag }}
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs({{len .Request.RequiredPathFields}})(cmd, args)
 			if err != nil {
@@ -180,7 +182,7 @@ func new{{.PascalName}}() *cobra.Command {
 		}
 		{{- end }}
 		{{- if $hasRequiredArgs }}
-		check := cobra.ExactArgs({{len .Request.RequiredFields}})
+		check := cobra.ExactArgs({{len .RequiredPositionalArguments}})
 		return check(cmd, args)
 		{{- else}}
 		return nil
@@ -201,7 +203,7 @@ func new{{.PascalName}}() *cobra.Command {
 			}{{end}}{{ if .MustUseJson }}else {
 				return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 			}{{- end}}
-			{{- if (not .MustUseJson) }}
+			{{- if $hasPosArgs }}
 			{{- if and .CanUseJson $hasSingleRequiredRequestBodyFieldWithPrompt }} else {
 			{{- end}}
 			{{- if $hasIdPrompt}}
@@ -225,23 +227,9 @@ func new{{.PascalName}}() *cobra.Command {
 			{{- end -}}
 
 			{{$method := .}}
-			{{- range $arg, $field := .Request.RequiredFields}}
-				{{- $optionalIfJsonIsUsed := and (not $hasIdPrompt) (and $field.IsRequestBodyField $method.CanUseJson) }}
-				{{- if $optionalIfJsonIsUsed  }}
-				if !cmd.Flags().Changed("json") {
-				{{- end }}
-				{{if not $field.Entity.IsString -}}
-				_, err = fmt.Sscan(args[{{$arg}}], &{{$method.CamelName}}Req.{{$field.PascalName}})
-				if err != nil {
-					return fmt.Errorf("invalid {{$field.ConstantName}}: %s", args[{{$arg}}])
-				}{{else -}}
-				{{$method.CamelName}}Req.{{$field.PascalName}} = args[{{$arg}}]
-				{{- end -}}
-				{{- if $optionalIfJsonIsUsed  }}
-				}
-				{{- end }}
+			{{- range $arg, $field := .RequiredPositionalArguments}}
+				{{- template "args-scan" (dict "Arg" $arg "Field" $field "Method" $method "HasIdPrompt" $hasIdPrompt)}}
 			{{- end -}}
-
 			{{- if and .CanUseJson $hasSingleRequiredRequestBodyFieldWithPrompt }}
 			}
 			{{- end}}
@@ -337,4 +325,25 @@ func init() {
 	{{- else if .Enum }}StringVar
 	{{- else}}/* NOT PRIMITIVE */
 	{{- end -}}
+{{- end -}}
+
+{{- define "args-scan" -}}
+	{{- $field := .Field -}}
+	{{- $method := .Method -}}
+	{{- $arg := .Arg -}}
+	{{- $hasIdPrompt := .HasIdPrompt -}}
+	{{- $optionalIfJsonIsUsed := and (not $hasIdPrompt) (and $field.IsRequestBodyField $method.CanUseJson) }}
+	{{- if $optionalIfJsonIsUsed  }}
+	if !cmd.Flags().Changed("json") {
+	{{- end }}
+	{{if not $field.Entity.IsString -}}
+	_, err = fmt.Sscan(args[{{$arg}}], &{{$method.CamelName}}Req.{{$field.PascalName}})
+	if err != nil {
+		return fmt.Errorf("invalid {{$field.ConstantName}}: %s", args[{{$arg}}])
+	}{{else -}}
+	{{$method.CamelName}}Req.{{$field.PascalName}} = args[{{$arg}}]
+	{{- end -}}
+	{{- if $optionalIfJsonIsUsed  }}
+	}
+	{{- end }}
 {{- end -}}

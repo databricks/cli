@@ -183,11 +183,19 @@ func newUpdate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Use = "update"
+	cmd.Use = "update ID"
 	cmd.Short = `Update existing widget.`
-	cmd.Long = `Update existing widget.`
+	cmd.Long = `Update existing widget.
+
+  Arguments:
+    ID: Widget ID returned by :method:dashboardwidgets/create`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -202,6 +210,7 @@ func newUpdate() *cobra.Command {
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
+		updateReq.Id = args[0]
 
 		response, err := w.DashboardWidgets.Update(ctx, updateReq)
 		if err != nil {

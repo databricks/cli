@@ -324,14 +324,22 @@ func newUpdate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Use = "update"
+	cmd.Use = "update BUDGET_ID"
 	cmd.Short = `Modify budget.`
 	cmd.Long = `Modify budget.
   
   Modifies a budget in this account. Budget properties are completely
-  overwritten.`
+  overwritten.
+
+  Arguments:
+    BUDGET_ID: Budget ID`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -346,6 +354,7 @@ func newUpdate() *cobra.Command {
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
+		updateReq.BudgetId = args[0]
 
 		err = a.Budgets.Update(ctx, updateReq)
 		if err != nil {

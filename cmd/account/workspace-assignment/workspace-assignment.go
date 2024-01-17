@@ -262,14 +262,23 @@ func newUpdate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Use = "update"
+	cmd.Use = "update WORKSPACE_ID PRINCIPAL_ID"
 	cmd.Short = `Create or update permissions assignment.`
 	cmd.Long = `Create or update permissions assignment.
   
   Creates or updates the workspace permissions assignment in a given account and
-  workspace for the specified principal.`
+  workspace for the specified principal.
+
+  Arguments:
+    WORKSPACE_ID: The workspace ID.
+    PRINCIPAL_ID: The ID of the user, service principal, or group.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -283,6 +292,14 @@ func newUpdate() *cobra.Command {
 			}
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+		}
+		_, err = fmt.Sscan(args[0], &updateReq.WorkspaceId)
+		if err != nil {
+			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+		}
+		_, err = fmt.Sscan(args[1], &updateReq.PrincipalId)
+		if err != nil {
+			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[1])
 		}
 
 		err = a.WorkspaceAssignment.Update(ctx, updateReq)

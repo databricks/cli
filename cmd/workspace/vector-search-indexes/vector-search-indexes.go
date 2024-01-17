@@ -163,13 +163,22 @@ func newDeleteDataVectorIndex() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&deleteDataVectorIndexJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Use = "delete-data-vector-index"
+	cmd.Use = "delete-data-vector-index NAME"
 	cmd.Short = `Delete data from index.`
 	cmd.Long = `Delete data from index.
   
-  Handles the deletion of data from a specified vector index.`
+  Handles the deletion of data from a specified vector index.
+
+  Arguments:
+    NAME: Name of the vector index where data is to be deleted. Must be a Direct
+      Vector Access Index.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -184,6 +193,7 @@ func newDeleteDataVectorIndex() *cobra.Command {
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
+		deleteDataVectorIndexReq.Name = args[0]
 
 		response, err := w.VectorSearchIndexes.DeleteDataVectorIndex(ctx, deleteDataVectorIndexReq)
 		if err != nil {
@@ -427,13 +437,21 @@ func newQueryIndex() *cobra.Command {
 	cmd.Flags().StringVar(&queryIndexReq.QueryText, "query-text", queryIndexReq.QueryText, `Query text.`)
 	// TODO: array: query_vector
 
-	cmd.Use = "query-index"
+	cmd.Use = "query-index INDEX_NAME"
 	cmd.Short = `Query an index.`
 	cmd.Long = `Query an index.
   
-  Query the specified vector index.`
+  Query the specified vector index.
+
+  Arguments:
+    INDEX_NAME: Name of the vector index to query.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -448,6 +466,7 @@ func newQueryIndex() *cobra.Command {
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
+		queryIndexReq.IndexName = args[0]
 
 		response, err := w.VectorSearchIndexes.QueryIndex(ctx, queryIndexReq)
 		if err != nil {
