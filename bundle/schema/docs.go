@@ -52,7 +52,7 @@ func UpdateBundleDescriptions(openapiSpecPath string) (*Docs, error) {
 	// Generate schema from the embedded descriptions, and convert it back to docs.
 	// This creates empty descriptions for any properties that were missing in the
 	// embedded descriptions.
-	schema, err := New(reflect.TypeOf(config.Root{}), embedded)
+	schema, err := New(reflect.TypeOf(config.Root{}), embedded, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func UpdateBundleDescriptions(openapiSpecPath string) (*Docs, error) {
 	if err != nil {
 		return nil, err
 	}
-	resourceSchema, err := New(reflect.TypeOf(config.Resources{}), resourcesDocs)
+	resourceSchema, err := New(reflect.TypeOf(config.Resources{}), resourcesDocs, nil)
 	if err != nil {
 		return nil, err
 	}

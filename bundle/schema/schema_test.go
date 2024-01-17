@@ -17,7 +17,7 @@ func TestIntSchema(t *testing.T) {
 			"type": "number"
 		}`
 
-	schema, err := New(reflect.TypeOf(elemInt), nil)
+	schema, err := New(reflect.TypeOf(elemInt), nil, nil)
 	require.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -36,7 +36,7 @@ func TestBooleanSchema(t *testing.T) {
 			"type": "boolean"
 		}`
 
-	schema, err := New(reflect.TypeOf(elem), nil)
+	schema, err := New(reflect.TypeOf(elem), nil, nil)
 	require.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -55,7 +55,7 @@ func TestStringSchema(t *testing.T) {
 			"type": "string"
 		}`
 
-	schema, err := New(reflect.TypeOf(elem), nil)
+	schema, err := New(reflect.TypeOf(elem), nil, nil)
 	require.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -90,7 +90,7 @@ func TestStructOfPrimitivesSchema(t *testing.T) {
 
 	elem := Foo{}
 
-	schema, err := New(reflect.TypeOf(elem), nil)
+	schema, err := New(reflect.TypeOf(elem), nil, nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -183,7 +183,7 @@ func TestStructOfStructsSchema(t *testing.T) {
 
 	elem := MyStruct{}
 
-	schema, err := New(reflect.TypeOf(elem), nil)
+	schema, err := New(reflect.TypeOf(elem), nil, nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -241,7 +241,7 @@ func TestStructOfMapsSchema(t *testing.T) {
 
 	elem := Foo{}
 
-	schema, err := New(reflect.TypeOf(elem), nil)
+	schema, err := New(reflect.TypeOf(elem), nil, nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -289,7 +289,7 @@ func TestStructOfSliceSchema(t *testing.T) {
 
 	elem := Foo{}
 
-	schema, err := New(reflect.TypeOf(elem), nil)
+	schema, err := New(reflect.TypeOf(elem), nil, nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -329,7 +329,7 @@ func TestStructOfSliceSchema(t *testing.T) {
 func TestMapOfPrimitivesSchema(t *testing.T) {
 	var elem map[string]int
 
-	schema, err := New(reflect.TypeOf(elem), nil)
+	schema, err := New(reflect.TypeOf(elem), nil, nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -355,7 +355,7 @@ func TestMapOfStructSchema(t *testing.T) {
 
 	var elem map[string]Foo
 
-	schema, err := New(reflect.TypeOf(elem), nil)
+	schema, err := New(reflect.TypeOf(elem), nil, nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -386,7 +386,7 @@ func TestMapOfStructSchema(t *testing.T) {
 func TestMapOfMapSchema(t *testing.T) {
 	var elem map[string]map[string]int
 
-	schema, err := New(reflect.TypeOf(elem), nil)
+	schema, err := New(reflect.TypeOf(elem), nil, nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -411,7 +411,7 @@ func TestMapOfMapSchema(t *testing.T) {
 func TestMapOfSliceSchema(t *testing.T) {
 	var elem map[string][]string
 
-	schema, err := New(reflect.TypeOf(elem), nil)
+	schema, err := New(reflect.TypeOf(elem), nil, nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -436,7 +436,7 @@ func TestMapOfSliceSchema(t *testing.T) {
 func TestSliceOfPrimitivesSchema(t *testing.T) {
 	var elem []float32
 
-	schema, err := New(reflect.TypeOf(elem), nil)
+	schema, err := New(reflect.TypeOf(elem), nil, nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -458,7 +458,7 @@ func TestSliceOfPrimitivesSchema(t *testing.T) {
 func TestSliceOfSliceSchema(t *testing.T) {
 	var elem [][]string
 
-	schema, err := New(reflect.TypeOf(elem), nil)
+	schema, err := New(reflect.TypeOf(elem), nil, nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -483,7 +483,7 @@ func TestSliceOfSliceSchema(t *testing.T) {
 func TestSliceOfMapSchema(t *testing.T) {
 	var elem []map[string]int
 
-	schema, err := New(reflect.TypeOf(elem), nil)
+	schema, err := New(reflect.TypeOf(elem), nil, nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -512,7 +512,7 @@ func TestSliceOfStructSchema(t *testing.T) {
 
 	var elem []Foo
 
-	schema, err := New(reflect.TypeOf(elem), nil)
+	schema, err := New(reflect.TypeOf(elem), nil, nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -564,7 +564,7 @@ func TestEmbeddedStructSchema(t *testing.T) {
 
 	elem := Story{}
 
-	schema, err := New(reflect.TypeOf(elem), nil)
+	schema, err := New(reflect.TypeOf(elem), nil, nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -683,7 +683,7 @@ func TestNonAnnotatedFieldsAreSkipped(t *testing.T) {
 
 	elem := MyStruct{}
 
-	schema, err := New(reflect.TypeOf(elem), nil)
+	schema, err := New(reflect.TypeOf(elem), nil, nil)
 	require.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -717,7 +717,7 @@ func TestDashFieldsAreSkipped(t *testing.T) {
 
 	elem := MyStruct{}
 
-	schema, err := New(reflect.TypeOf(elem), nil)
+	schema, err := New(reflect.TypeOf(elem), nil, nil)
 	require.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -759,7 +759,7 @@ func TestPointerInStructSchema(t *testing.T) {
 
 	elem := Foo{}
 
-	schema, err := New(reflect.TypeOf(elem), nil)
+	schema, err := New(reflect.TypeOf(elem), nil, nil)
 	require.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -846,7 +846,7 @@ func TestGenericSchema(t *testing.T) {
 
 	elem := Story{}
 
-	schema, err := New(reflect.TypeOf(elem), nil)
+	schema, err := New(reflect.TypeOf(elem), nil, nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -1017,7 +1017,7 @@ func TestFieldsWithoutOmitEmptyAreRequired(t *testing.T) {
 
 	elem := MyStruct{}
 
-	schema, err := New(reflect.TypeOf(elem), nil)
+	schema, err := New(reflect.TypeOf(elem), nil, nil)
 	require.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -1091,7 +1091,7 @@ func TestDocIngestionForObject(t *testing.T) {
 
 	elem := Root{}
 
-	schema, err := New(reflect.TypeOf(elem), docs)
+	schema, err := New(reflect.TypeOf(elem), docs, nil)
 	require.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -1167,7 +1167,7 @@ func TestDocIngestionForSlice(t *testing.T) {
 
 	elem := Root{}
 
-	schema, err := New(reflect.TypeOf(elem), docs)
+	schema, err := New(reflect.TypeOf(elem), docs, nil)
 	require.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -1250,7 +1250,7 @@ func TestDocIngestionForMap(t *testing.T) {
 
 	elem := Root{}
 
-	schema, err := New(reflect.TypeOf(elem), docs)
+	schema, err := New(reflect.TypeOf(elem), docs, nil)
 	require.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -1312,7 +1312,7 @@ func TestDocIngestionForTopLevelPrimitive(t *testing.T) {
 
 	elem := Root{}
 
-	schema, err := New(reflect.TypeOf(elem), docs)
+	schema, err := New(reflect.TypeOf(elem), docs, nil)
 	require.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -1345,7 +1345,7 @@ func TestErrorOnMapWithoutStringKey(t *testing.T) {
 		Bar map[int]string `json:"bar"`
 	}
 	elem := Foo{}
-	_, err := New(reflect.TypeOf(elem), nil)
+	_, err := New(reflect.TypeOf(elem), nil, nil)
 	assert.ErrorContains(t, err, "only strings map keys are valid. key type: int")
 }
 
@@ -1355,7 +1355,7 @@ func TestErrorIfStructRefersToItself(t *testing.T) {
 	}
 
 	elem := Foo{}
-	_, err := New(reflect.TypeOf(elem), nil)
+	_, err := New(reflect.TypeOf(elem), nil, nil)
 	assert.ErrorContains(t, err, "cycle detected. traversal trace: root -> my_foo")
 }
 
@@ -1372,7 +1372,7 @@ func TestErrorIfStructHasLoop(t *testing.T) {
 	}
 
 	elem := Apple{}
-	_, err := New(reflect.TypeOf(elem), nil)
+	_, err := New(reflect.TypeOf(elem), nil, nil)
 	assert.ErrorContains(t, err, "cycle detected. traversal trace: root -> my_mango -> my_guava -> my_papaya -> my_apple")
 }
 
@@ -1384,7 +1384,7 @@ func TestInterfaceGeneratesEmptySchema(t *testing.T) {
 
 	elem := Foo{}
 
-	schema, err := New(reflect.TypeOf(elem), nil)
+	schema, err := New(reflect.TypeOf(elem), nil, nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -1425,7 +1425,7 @@ func TestBundleReadOnlytag(t *testing.T) {
 
 	elem := Foo{}
 
-	schema, err := New(reflect.TypeOf(elem), nil)
+	schema, err := New(reflect.TypeOf(elem), nil, nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -1477,7 +1477,7 @@ func TestBundleInternalTag(t *testing.T) {
 
 	elem := Foo{}
 
-	schema, err := New(reflect.TypeOf(elem), nil)
+	schema, err := New(reflect.TypeOf(elem), nil, nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -1489,6 +1489,121 @@ func TestBundleInternalTag(t *testing.T) {
 			"properties": {
 				"apple": {
 					"type": "number"
+				},
+				"pokemon": {
+					"type": "object",
+					"properties": {
+						"raichu": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": [
+						"raichu"
+					]
+				}
+			},
+			"additionalProperties": false,
+			"required": [
+				"pokemon",
+				"apple"
+			]
+		}`
+
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expected)
+	assert.Equal(t, expected, string(jsonSchema))
+}
+
+func TestBundleSingleIncludeTag(t *testing.T) {
+	type Pokemon struct {
+		Pikachu string `json:"pikachu" bundle:"internal"`
+		Raichu  string `json:"raichu"`
+	}
+
+	type Foo struct {
+		Pokemon *Pokemon `json:"pokemon"`
+		Apple   int      `json:"apple"`
+		Banana  int      `json:"banana,omitempty" bundle:"readonly"`
+		Mango   string   `json:"mango" bundle:"internal"`
+	}
+
+	elem := Foo{}
+
+	schema, err := New(reflect.TypeOf(elem), nil, []string{"readonly"})
+	assert.NoError(t, err)
+
+	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
+	assert.NoError(t, err)
+
+	expected :=
+		`{
+			"type": "object",
+			"properties": {
+				"apple": {
+					"type": "number"
+				},
+				"banana": {
+					"type": "number"
+				},
+				"pokemon": {
+					"type": "object",
+					"properties": {
+						"raichu": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": [
+						"raichu"
+					]
+				}
+			},
+			"additionalProperties": false,
+			"required": [
+				"pokemon",
+				"apple"
+			]
+		}`
+
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expected)
+	assert.Equal(t, expected, string(jsonSchema))
+}
+
+func TestBundleMultipleIncludeTag(t *testing.T) {
+	type Pokemon struct {
+		Pikachu string `json:"pikachu" bundle:"deprecated"`
+		Raichu  string `json:"raichu"`
+	}
+
+	type Foo struct {
+		Pokemon *Pokemon `json:"pokemon"`
+		Apple   int      `json:"apple"`
+		Banana  int      `json:"banana,omitempty" bundle:"readonly"`
+		Mango   string   `json:"mango,omitempty" bundle:"internal"`
+	}
+
+	elem := Foo{}
+
+	schema, err := New(reflect.TypeOf(elem), nil, []string{"readonly", "internal"})
+	assert.NoError(t, err)
+
+	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
+	assert.NoError(t, err)
+
+	expected :=
+		`{
+			"type": "object",
+			"properties": {
+				"apple": {
+					"type": "number"
+				},
+				"banana": {
+					"type": "number"
+				},
+				"mango": {
+					"type": "string"
 				},
 				"pokemon": {
 					"type": "object",

@@ -14,6 +14,8 @@ func newSchemaCommand() *cobra.Command {
 		Use:   "schema",
 		Short: "Generate JSON Schema for bundle configuration",
 	}
+	var includeTags []string
+	cmd.Flags().StringSliceVar(&includeTags, "include-tags", []string{}, "Also include fields with these tags.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		// Load embedded schema descriptions.
@@ -23,7 +25,7 @@ func newSchemaCommand() *cobra.Command {
 		}
 
 		// Generate the JSON schema from the bundle configuration struct in Go.
-		schema, err := schema.New(reflect.TypeOf(config.Root{}), docs)
+		schema, err := schema.New(reflect.TypeOf(config.Root{}), docs, includeTags)
 		if err != nil {
 			return err
 		}

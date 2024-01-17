@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"fmt"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/jsonschema"
@@ -42,9 +43,9 @@ const deprecatedTag = "deprecated"
 //
 //   - []MyStruct               ->   {type: object, properties: {}, additionalProperties: false}
 //     for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#properties
-func New(golangType reflect.Type, docs *Docs) (*jsonschema.Schema, error) {
+func New(golangType reflect.Type, docs *Docs, includeTags []string) (*jsonschema.Schema, error) {
 	tracker := newTracker()
-	schema, err := safeToSchema(golangType, docs, "", tracker)
+	schema, err := safeToSchema(golangType, docs, "", tracker, includeTags)
 	if err != nil {
 		return nil, tracker.errWithTrace(err.Error(), "root")
 	}
@@ -91,7 +92,7 @@ func jsonSchemaType(golangType reflect.Type) (jsonschema.Type, error) {
 //     like array, map or no json tags
 //
 //   - tracker: Keeps track of types / traceIds seen during recursive traversal
-func safeToSchema(golangType reflect.Type, docs *Docs, traceId string, tracker *tracker) (*jsonschema.Schema, error) {
+func safeToSchema(golangType reflect.Type, docs *Docs, traceId string, tracker *tracker, includeTags []string) (*jsonschema.Schema, error) {
 	// WE ERROR OUT IF THERE ARE CYCLES IN THE JSON SCHEMA
 	// There are mechanisms to deal with cycles though recursive identifiers in json
 	// schema. However if we use them, we would need to make sure we are able to detect
@@ -104,7 +105,7 @@ func safeToSchema(golangType reflect.Type, docs *Docs, traceId string, tracker *
 	}
 
 	tracker.push(golangType, traceId)
-	props, err := toSchema(golangType, docs, tracker)
+	props, err := toSchema(golangType, docs, tracker, includeTags)
 	if err != nil {
 		return nil, err
 	}
@@ -144,10 +145,10 @@ func getStructFields(golangType reflect.Type) []reflect.StructField {
 	return fields
 }
 
-func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*jsonschema.Schema, error) {
+func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker, includeTags []string) (*jsonschema.Schema, error) {
 	// *Struct and Struct generate identical json schemas
 	if golangType.Kind() == reflect.Pointer {
-		return safeToSchema(golangType.Elem(), docs, "", tracker)
+		return safeToSchema(golangType.Elem(), docs, "", tracker, includeTags)
 	}
 	if golangType.Kind() == reflect.Interface {
 		return &jsonschema.Schema{}, nil
@@ -174,7 +175,7 @@ func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*jsonschem
 		if docs != nil {
 			childDocs = docs.Items
 		}
-		elemProps, err := safeToSchema(elemGolangType, childDocs, "", tracker)
+		elemProps, err := safeToSchema(elemGolangType, childDocs, "", tracker, includeTags)
 		if err != nil {
 			return nil, err
 		}
@@ -196,7 +197,7 @@ func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*jsonschem
 		if docs != nil {
 			childDocs = docs.AdditionalProperties
 		}
-		jsonSchema.AdditionalProperties, err = safeToSchema(golangType.Elem(), childDocs, "", tracker)
+		jsonSchema.AdditionalProperties, err = safeToSchema(golangType.Elem(), childDocs, "", tracker, includeTags)
 		if err != nil {
 			return nil, err
 		}
@@ -211,7 +212,7 @@ func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*jsonschem
 			bundleTag := child.Tag.Get("bundle")
 			// Fields marked as "readonly", "internal" or "deprecated" are skipped
 			// while generating the schema
-			if bundleTag == readonlyTag || bundleTag == internalTag || bundleTag == deprecatedTag {
+			if (bundleTag == readonlyTag || bundleTag == internalTag || bundleTag == deprecatedTag) && !slices.Contains(includeTags, bundleTag) {
 				continue
 			}
 
@@ -246,7 +247,7 @@ func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*jsonschem
 			}
 
 			// compute Schema.Properties for the child recursively
-			fieldProps, err := safeToSchema(child.Type, childDocs, childName, tracker)
+			fieldProps, err := safeToSchema(child.Type, childDocs, childName, tracker, includeTags)
 			if err != nil {
 				return nil, err
 			}
