@@ -7,7 +7,9 @@ import (
 )
 
 type MlflowExperiment struct {
-	Permissions []Permission `json:"permissions,omitempty"`
+	ID             string         `json:"id,omitempty" bundle:"readonly"`
+	Permissions    []Permission   `json:"permissions,omitempty"`
+	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"readonly"`
 
 	paths.Paths
 

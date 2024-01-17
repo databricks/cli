@@ -11,11 +11,12 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/serving"
+	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestConvertJob(t *testing.T) {
+func TestBundleToTerraformJob(t *testing.T) {
 	var src = resources.Job{
 		JobSettings: &jobs.JobSettings{
 			Name: "my job",
@@ -62,7 +63,7 @@ func TestConvertJob(t *testing.T) {
 	assert.Nil(t, out.Data)
 }
 
-func TestConvertJobPermissions(t *testing.T) {
+func TestBundleToTerraformJobPermissions(t *testing.T) {
 	var src = resources.Job{
 		Permissions: []resources.Permission{
 			{
@@ -89,7 +90,7 @@ func TestConvertJobPermissions(t *testing.T) {
 	assert.Equal(t, "CAN_VIEW", p.PermissionLevel)
 }
 
-func TestConvertJobTaskLibraries(t *testing.T) {
+func TestBundleToTerraformJobTaskLibraries(t *testing.T) {
 	var src = resources.Job{
 		JobSettings: &jobs.JobSettings{
 			Name: "my job",
@@ -123,7 +124,7 @@ func TestConvertJobTaskLibraries(t *testing.T) {
 	assert.Equal(t, "mlflow", out.Resource.Job["my_job"].Task[0].Library[0].Pypi.Package)
 }
 
-func TestConvertPipeline(t *testing.T) {
+func TestBundleToTerraformPipeline(t *testing.T) {
 	var src = resources.Pipeline{
 		PipelineSpec: &pipelines.PipelineSpec{
 			Name: "my pipeline",
@@ -182,7 +183,7 @@ func TestConvertPipeline(t *testing.T) {
 	assert.Nil(t, out.Data)
 }
 
-func TestConvertPipelinePermissions(t *testing.T) {
+func TestBundleToTerraformPipelinePermissions(t *testing.T) {
 	var src = resources.Pipeline{
 		Permissions: []resources.Permission{
 			{
@@ -209,7 +210,7 @@ func TestConvertPipelinePermissions(t *testing.T) {
 	assert.Equal(t, "CAN_VIEW", p.PermissionLevel)
 }
 
-func TestConvertModel(t *testing.T) {
+func TestBundleToTerraformModel(t *testing.T) {
 	var src = resources.MlflowModel{
 		Model: &ml.Model{
 			Name:        "name",
@@ -246,7 +247,7 @@ func TestConvertModel(t *testing.T) {
 	assert.Nil(t, out.Data)
 }
 
-func TestConvertModelPermissions(t *testing.T) {
+func TestBundleToTerraformModelPermissions(t *testing.T) {
 	var src = resources.MlflowModel{
 		Permissions: []resources.Permission{
 			{
@@ -273,7 +274,7 @@ func TestConvertModelPermissions(t *testing.T) {
 	assert.Equal(t, "CAN_READ", p.PermissionLevel)
 }
 
-func TestConvertExperiment(t *testing.T) {
+func TestBundleToTerraformExperiment(t *testing.T) {
 	var src = resources.MlflowExperiment{
 		Experiment: &ml.Experiment{
 			Name: "name",
@@ -293,7 +294,7 @@ func TestConvertExperiment(t *testing.T) {
 	assert.Nil(t, out.Data)
 }
 
-func TestConvertExperimentPermissions(t *testing.T) {
+func TestBundleToTerraformExperimentPermissions(t *testing.T) {
 	var src = resources.MlflowExperiment{
 		Permissions: []resources.Permission{
 			{
@@ -321,7 +322,7 @@ func TestConvertExperimentPermissions(t *testing.T) {
 
 }
 
-func TestConvertModelServing(t *testing.T) {
+func TestBundleToTerraformModelServing(t *testing.T) {
 	var src = resources.ModelServingEndpoint{
 		CreateServingEndpoint: &serving.CreateServingEndpoint{
 			Name: "name",
@@ -366,7 +367,7 @@ func TestConvertModelServing(t *testing.T) {
 	assert.Nil(t, out.Data)
 }
 
-func TestConvertModelServingPermissions(t *testing.T) {
+func TestBundleToTerraformModelServingPermissions(t *testing.T) {
 	var src = resources.ModelServingEndpoint{
 		Permissions: []resources.Permission{
 			{
@@ -394,7 +395,7 @@ func TestConvertModelServingPermissions(t *testing.T) {
 
 }
 
-func TestConvertRegisteredModel(t *testing.T) {
+func TestBundleToTerraformRegisteredModel(t *testing.T) {
 	var src = resources.RegisteredModel{
 		CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{
 			Name:        "name",
@@ -421,7 +422,7 @@ func TestConvertRegisteredModel(t *testing.T) {
 	assert.Nil(t, out.Data)
 }
 
-func TestConvertRegisteredModelGrants(t *testing.T) {
+func TestBundleToTerraformRegisteredModelGrants(t *testing.T) {
 	var src = resources.RegisteredModel{
 		Grants: []resources.Grant{
 			{
@@ -446,5 +447,81 @@ func TestConvertRegisteredModelGrants(t *testing.T) {
 	p := out.Resource.Grants["registered_model_my_registered_model"].Grant[0]
 	assert.Equal(t, "jane@doe.com", p.Principal)
 	assert.Equal(t, "EXECUTE", p.Privileges[0])
+}
 
+func TestTerraformToBundleEmptyJobs(t *testing.T) {
+	var config = config.Root{
+		Resources: config.Resources{},
+	}
+	var tfState = tfjson.State{
+		Values: &tfjson.StateValues{
+			RootModule: &tfjson.StateModule{
+				Resources: []*tfjson.StateResource{
+					{
+						Type: "databricks_job",
+						Mode: "managed",
+						Name: "test_job",
+						AttributeValues: map[string]interface{}{
+							"id": "1",
+						},
+					},
+				},
+			},
+		},
+	}
+	err := TerraformToBundle(&tfState, &config)
+	assert.NoError(t, err)
+	assert.Equal(t, "1", config.Resources.Jobs["test_job"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Jobs["test_job"].ModifiedStatus)
+}
+
+func TestTerrformToBundleModifiedJobs(t *testing.T) {
+	var config = config.Root{
+		Resources: config.Resources{
+			Jobs: map[string]*resources.Job{
+				"test_job": {
+					JobSettings: &jobs.JobSettings{
+						Name: "test_job",
+					},
+				},
+				"test_job3": {
+					JobSettings: &jobs.JobSettings{
+						Name: "test_job3",
+					},
+				},
+			},
+		},
+	}
+	var tfState = tfjson.State{
+		Values: &tfjson.StateValues{
+			RootModule: &tfjson.StateModule{
+				Resources: []*tfjson.StateResource{
+					{
+						Type: "databricks_job",
+						Mode: "managed",
+						Name: "test_job",
+						AttributeValues: map[string]interface{}{
+							"id": "1",
+						},
+					},
+					{
+						Type: "databricks_job",
+						Mode: "managed",
+						Name: "test_job2",
+						AttributeValues: map[string]interface{}{
+							"id": "2",
+						},
+					},
+				},
+			},
+		},
+	}
+	err := TerraformToBundle(&tfState, &config)
+	assert.NoError(t, err)
+	assert.Equal(t, "1", config.Resources.Jobs["test_job"].ID)
+	assert.Equal(t, "", config.Resources.Jobs["test_job"].ModifiedStatus)
+	assert.Equal(t, "2", config.Resources.Jobs["test_job2"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Jobs["test_job2"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.Jobs["test_job3"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Jobs["test_job3"].ModifiedStatus)
 }

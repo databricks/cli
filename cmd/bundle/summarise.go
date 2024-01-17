@@ -8,21 +8,20 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/terraform"
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/spf13/cobra"
 )
 
-func newRemoteStateCommand() *cobra.Command {
+func newSummariseCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "remote-state",
-		Short: "Pull and print deployed state of the bundle",
+		Use:   "summarise",
+		Short: "Describe the bundle resources and their deployment states",
 
-		PreRunE: root.MustWorkspaceClient,
+		PreRunE: ConfigureBundleWithVariables,
 
-		// This command is currently intended only for the Databricks VSCode extension
+		// This command is currently intended for the Databricks VSCode extension only
 		Hidden: true,
 	}
 
@@ -51,7 +50,7 @@ func newRemoteStateCommand() *cobra.Command {
 			}
 		}
 
-		err = bundle.Apply(cmd.Context(), b, terraform.Load(terraform.ReplaceResources))
+		err = bundle.Apply(cmd.Context(), b, terraform.Load())
 		if err != nil {
 			return err
 		}

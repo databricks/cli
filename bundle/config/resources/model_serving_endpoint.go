@@ -13,7 +13,7 @@ type ModelServingEndpoint struct {
 
 	// This represents the id (ie serving_endpoint_id) that can be used
 	// as a reference in other resources. This value is returned by terraform.
-	ID string
+	ID string `json:"id,omitempty" bundle:"readonly"`
 
 	// Path to config file where the resource is defined. All bundle resources
 	// include this for interpolation purposes.
@@ -22,6 +22,8 @@ type ModelServingEndpoint struct {
 	// This is a resource agnostic implementation of permissions for ACLs.
 	// Implementation could be different based on the resource type.
 	Permissions []Permission `json:"permissions,omitempty"`
+
+	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"readonly"`
 }
 
 func (s *ModelServingEndpoint) UnmarshalJSON(b []byte) error {

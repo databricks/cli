@@ -6,7 +6,6 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config"
 	"github.com/hashicorp/terraform-exec/tfexec"
 	tfjson "github.com/hashicorp/terraform-json"
 )
@@ -14,7 +13,6 @@ import (
 type loadMode int
 
 const ErrorOnEmptyState loadMode = 0
-const ReplaceResources loadMode = 1
 
 type load struct {
 	modes []loadMode
@@ -43,10 +41,6 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) error {
 	err = l.validateState(state)
 	if err != nil {
 		return err
-	}
-
-	if slices.Contains(l.modes, ReplaceResources) {
-		b.Config.Resources = config.Resources{}
 	}
 
 	// Merge state into configuration.
