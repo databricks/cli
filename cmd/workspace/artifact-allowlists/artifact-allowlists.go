@@ -123,15 +123,23 @@ func newUpdate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Use = "update"
+	cmd.Use = "update ARTIFACT_TYPE"
 	cmd.Short = `Set an artifact allowlist.`
 	cmd.Long = `Set an artifact allowlist.
   
   Set the artifact allowlist of a certain artifact type. The whole artifact
   allowlist is replaced with the new allowlist. The caller must be a metastore
-  admin or have the **MANAGE ALLOWLIST** privilege on the metastore.`
+  admin or have the **MANAGE ALLOWLIST** privilege on the metastore.
+
+  Arguments:
+    ARTIFACT_TYPE: The artifact type of the allowlist.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -145,6 +153,10 @@ func newUpdate() *cobra.Command {
 			}
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+		}
+		_, err = fmt.Sscan(args[0], &updateReq.ArtifactType)
+		if err != nil {
+			return fmt.Errorf("invalid ARTIFACT_TYPE: %s", args[0])
 		}
 
 		response, err := w.ArtifactAllowlists.Update(ctx, updateReq)

@@ -23,5 +23,6 @@ func New() *cobra.Command {
 	cmd.AddCommand(newValidateCommand())
 	cmd.AddCommand(newInitCommand())
 	cmd.AddCommand(newSummariseCommand())
+	cmd.AddCommand(newGenerateCommand())
 	return cmd
 }

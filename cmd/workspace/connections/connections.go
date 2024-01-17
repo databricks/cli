@@ -340,13 +340,21 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the connection.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of the connection.`)
 
-	cmd.Use = "update"
+	cmd.Use = "update NAME_ARG"
 	cmd.Short = `Update a connection.`
 	cmd.Long = `Update a connection.
   
-  Updates the connection that matches the supplied name.`
+  Updates the connection that matches the supplied name.
+
+  Arguments:
+    NAME_ARG: Name of the connection.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -361,6 +369,7 @@ func newUpdate() *cobra.Command {
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
+		updateReq.NameArg = args[0]
 
 		response, err := w.Connections.Update(ctx, updateReq)
 		if err != nil {
