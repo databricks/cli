@@ -7,7 +7,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/notebook"
@@ -19,7 +18,8 @@ import (
 type notebookDownloader struct {
 	notebooks map[string]string
 	w         *databricks.WorkspaceClient
-	outputDir string
+	sourceDir string
+	configDir string
 }
 
 func (n *notebookDownloader) MarkForDownload(ctx context.Context, task *jobs.Task) error {
@@ -35,16 +35,22 @@ func (n *notebookDownloader) MarkForDownload(ctx context.Context, task *jobs.Tas
 	ext := notebook.GetExtensionByLanguage(info)
 
 	filename := path.Base(task.NotebookTask.NotebookPath) + ext
-	targetPath := filepath.Join(n.outputDir, filename)
+	targetPath := filepath.Join(n.sourceDir, filename)
 
 	n.notebooks[targetPath] = task.NotebookTask.NotebookPath
 
-	task.NotebookTask.NotebookPath = strings.Join([]string{".", filename}, string(filepath.Separator))
+	// Update the notebook path to be relative to the config dir
+	rel, err := filepath.Rel(n.configDir, targetPath)
+	if err != nil {
+		return err
+	}
+
+	task.NotebookTask.NotebookPath = rel
 	return nil
 }
 
 func (n *notebookDownloader) FlushToDisk(ctx context.Context, force bool) error {
-	err := os.MkdirAll(n.outputDir, 0755)
+	err := os.MkdirAll(n.sourceDir, 0755)
 	if err != nil {
 		return err
 	}
@@ -67,7 +73,7 @@ func (n *notebookDownloader) FlushToDisk(ctx context.Context, force bool) error 
 		targetPath := k
 		notebookPath := v
 		errs.Go(func() error {
-			reader, err := n.w.Workspace.Download(ctx, notebookPath)
+			reader, err := n.w.Workspace.Download(errCtx, notebookPath)
 			if err != nil {
 				return err
 			}
@@ -76,6 +82,7 @@ func (n *notebookDownloader) FlushToDisk(ctx context.Context, force bool) error 
 			if err != nil {
 				return err
 			}
+			defer file.Close()
 
 			_, err = io.Copy(file, reader)
 			if err != nil {
@@ -90,10 +97,11 @@ func (n *notebookDownloader) FlushToDisk(ctx context.Context, force bool) error 
 	return errs.Wait()
 }
 
-func newNotebookDownloader(w *databricks.WorkspaceClient, outputDir string) *notebookDownloader {
+func newNotebookDownloader(w *databricks.WorkspaceClient, sourceDir string, configDir string) *notebookDownloader {
 	return &notebookDownloader{
 		notebooks: make(map[string]string),
 		w:         w,
-		outputDir: outputDir,
+		sourceDir: sourceDir,
+		configDir: configDir,
 	}
 }

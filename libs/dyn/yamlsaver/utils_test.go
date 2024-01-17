@@ -29,7 +29,7 @@ func TestConvertToMapValueWithOrder(t *testing.T) {
 		},
 		LongNameField: "long name goes here",
 	}
-	result, err := ConvertToMapValue(v, NewOrder([]string{"list", "name", "map"}), map[string]dyn.Value{})
+	result, err := ConvertToMapValue(v, NewOrder([]string{"list", "name", "map"}), []string{"format"}, map[string]dyn.Value{})
 	assert.NoError(t, err)
 
 	assert.Equal(t, map[string]dyn.Value{

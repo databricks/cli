@@ -6,7 +6,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
-var jobOrder = yamlsaver.NewOrder([]string{"name", "new_cluster", "job_clusters", "existing_cluster_id", "compute", "tasks"})
+var jobOrder = yamlsaver.NewOrder([]string{"name", "job_clusters", "compute", "tasks"})
 var taskOrder = yamlsaver.NewOrder([]string{"task_key", "depends_on", "existing_cluster_id", "new_cluster", "job_cluster_key"})
 
 func ConvertJobToValue(job *jobs.Job) (dyn.Value, error) {
@@ -25,10 +25,10 @@ func ConvertJobToValue(job *jobs.Job) (dyn.Value, error) {
 		value["tasks"] = dyn.NewValue(tasks, dyn.Location{Line: jobOrder.Get("tasks")})
 	}
 
-	return yamlsaver.ConvertToMapValue(job.Settings, jobOrder, value)
+	return yamlsaver.ConvertToMapValue(job.Settings, jobOrder, []string{"format", "new_cluster", "existing_cluster_id"}, value)
 }
 
 func convertTaskToValue(task jobs.Task, order *yamlsaver.Order) (dyn.Value, error) {
 	dst := make(map[string]dyn.Value)
-	return yamlsaver.ConvertToMapValue(task, order, dst)
+	return yamlsaver.ConvertToMapValue(task, order, []string{"format"}, dst)
 }

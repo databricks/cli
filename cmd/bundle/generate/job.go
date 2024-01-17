@@ -17,7 +17,8 @@ import (
 )
 
 func NewGenerateJobCommand() *cobra.Command {
-	var outputDir string
+	var configDir string
+	var sourceDir string
 	var jobId int64
 	var force bool
 
@@ -30,7 +31,8 @@ func NewGenerateJobCommand() *cobra.Command {
 	cmd.Flags().Int64Var(&jobId, "existing-job-id", 0, `Job ID of the job to generate config for`)
 	cmd.MarkFlagRequired("existing-job-id")
 
-	cmd.Flags().StringVarP(&outputDir, "output-dir", "d", "", `Dir path where the output config and necessary files will be stored`)
+	cmd.Flags().StringVarP(&configDir, "config-dir", "d", "", `Dir path where the output config will be stored`)
+	cmd.Flags().StringVarP(&sourceDir, "source-dir", "s", "", `Dir path where the downloaded files will be stored`)
 	cmd.Flags().BoolVarP(&force, "force", "f", false, `Force overwrite existing files in the output directory`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -38,16 +40,28 @@ func NewGenerateJobCommand() *cobra.Command {
 		b := bundle.Get(ctx)
 		w := b.WorkspaceClient()
 
-		if !cmd.Flag("output-dir").Changed {
+		if !cmd.Flag("config-dir").Changed {
 			wd, err := os.Getwd()
 			if err != nil {
 				return err
 			}
-			input, err := cmdio.Ask(ctx, "Output dir", filepath.Join(wd, "resources"))
+			input, err := cmdio.Ask(ctx, "Output config dir", filepath.Join(wd, "resources"))
 			if err != nil {
 				return err
 			}
-			outputDir = input
+			configDir = input
+		}
+
+		if !cmd.Flag("source-dir").Changed {
+			wd, err := os.Getwd()
+			if err != nil {
+				return err
+			}
+			input, err := cmdio.Ask(ctx, "Source code dir dir", filepath.Join(wd, "src"))
+			if err != nil {
+				return err
+			}
+			sourceDir = input
 		}
 
 		job, err := w.Jobs.Get(ctx, jobs.GetJobRequest{JobId: jobId})
@@ -55,7 +69,7 @@ func NewGenerateJobCommand() *cobra.Command {
 			return err
 		}
 
-		downloader := newNotebookDownloader(w, outputDir)
+		downloader := newNotebookDownloader(w, sourceDir, configDir)
 		for _, task := range job.Settings.Tasks {
 			err := downloader.MarkForDownload(ctx, &task)
 			if err != nil {
@@ -68,11 +82,11 @@ func NewGenerateJobCommand() *cobra.Command {
 			return err
 		}
 
-		jobName := fmt.Sprintf("job_%s", textutil.NormaliseString(job.Settings.Name))
+		jobKey := fmt.Sprintf("job_%s", textutil.NormaliseString(job.Settings.Name))
 		result := map[string]any{
 			"resources": map[string]any{
 				"jobs": map[string]dyn.Value{
-					jobName: v,
+					jobKey: v,
 				},
 			},
 		}
@@ -82,7 +96,7 @@ func NewGenerateJobCommand() *cobra.Command {
 			return err
 		}
 
-		filename := filepath.Join(outputDir, fmt.Sprintf("%s.yml", jobName))
+		filename := filepath.Join(configDir, fmt.Sprintf("%s.yml", jobKey))
 		err = yamlsaver.SaveAsYAML(result, filename, force)
 		if err != nil {
 			return err

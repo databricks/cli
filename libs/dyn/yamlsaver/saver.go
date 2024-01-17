@@ -4,11 +4,17 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 )
 
 func SaveAsYAML(data any, filename string, force bool) error {
+	err := os.MkdirAll(filepath.Dir(filename), 0755)
+	if err != nil {
+		return err
+	}
+
 	// check that file exists
 	info, err := os.Stat(filename)
 	if err == nil {

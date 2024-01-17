@@ -36,11 +36,14 @@ func TestAccGenerateFromExistingJobAndDeploy(t *testing.T) {
 	})
 
 	t.Setenv("BUNDLE_ROOT", bundleRoot)
-	c := internal.NewCobraTestRunner(t, "bundle", "generate", "job", "--existing-job-id", fmt.Sprint(jobId), "--output-dir", filepath.Join(bundleRoot, "resources"))
+	c := internal.NewCobraTestRunner(t, "bundle", "generate", "job",
+		"--existing-job-id", fmt.Sprint(jobId),
+		"--config-dir", filepath.Join(bundleRoot, "resources"),
+		"--source-dir", filepath.Join(bundleRoot, "src"))
 	_, _, err = c.Run()
 	require.NoError(t, err)
 
-	_, err = os.Stat(filepath.Join(bundleRoot, "resources", "test.py"))
+	_, err = os.Stat(filepath.Join(bundleRoot, "src", "test.py"))
 	require.NoError(t, err)
 
 	matches, err := filepath.Glob(filepath.Join(bundleRoot, "resources", "job_generated_job_*.yml"))
@@ -52,7 +55,7 @@ func TestAccGenerateFromExistingJobAndDeploy(t *testing.T) {
 	require.NoError(t, err)
 	generatedYaml := string(data)
 	require.Contains(t, generatedYaml, "notebook_task:")
-	require.Contains(t, generatedYaml, "notebook_path: ./test.py")
+	require.Contains(t, generatedYaml, "notebook_path: ../src/test.py")
 	require.Contains(t, generatedYaml, "task_key: test")
 	require.Contains(t, generatedYaml, "new_cluster:")
 	require.Contains(t, generatedYaml, "spark_version: 13.3.x-scala2.12")
