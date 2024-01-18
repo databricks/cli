@@ -1,6 +1,7 @@
 package terraform
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
@@ -449,7 +450,7 @@ func TestBundleToTerraformRegisteredModelGrants(t *testing.T) {
 	assert.Equal(t, "EXECUTE", p.Privileges[0])
 }
 
-func TestTerraformToBundleEmptyJobs(t *testing.T) {
+func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
 	var config = config.Root{
 		Resources: config.Resources{},
 	}
@@ -458,12 +459,40 @@ func TestTerraformToBundleEmptyJobs(t *testing.T) {
 			RootModule: &tfjson.StateModule{
 				Resources: []*tfjson.StateResource{
 					{
-						Type: "databricks_job",
-						Mode: "managed",
-						Name: "test_job",
-						AttributeValues: map[string]interface{}{
-							"id": "1",
-						},
+						Type:            "databricks_job",
+						Mode:            "managed",
+						Name:            "test_job",
+						AttributeValues: map[string]interface{}{"id": "1"},
+					},
+					{
+						Type:            "databricks_pipeline",
+						Mode:            "managed",
+						Name:            "test_pipeline",
+						AttributeValues: map[string]interface{}{"id": "1"},
+					},
+					{
+						Type:            "databricks_mlflow_model",
+						Mode:            "managed",
+						Name:            "test_mlflow_model",
+						AttributeValues: map[string]interface{}{"id": "1"},
+					},
+					{
+						Type:            "databricks_mlflow_experiment",
+						Mode:            "managed",
+						Name:            "test_mlflow_experiment",
+						AttributeValues: map[string]interface{}{"id": "1"},
+					},
+					{
+						Type:            "databricks_model_serving",
+						Mode:            "managed",
+						Name:            "test_model_serving",
+						AttributeValues: map[string]interface{}{"id": "1"},
+					},
+					{
+						Type:            "databricks_registered_model",
+						Mode:            "managed",
+						Name:            "test_registered_model",
+						AttributeValues: map[string]interface{}{"id": "1"},
 					},
 				},
 			},
@@ -471,11 +500,29 @@ func TestTerraformToBundleEmptyJobs(t *testing.T) {
 	}
 	err := TerraformToBundle(&tfState, &config)
 	assert.NoError(t, err)
+
 	assert.Equal(t, "1", config.Resources.Jobs["test_job"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Jobs["test_job"].ModifiedStatus)
+
+	assert.Equal(t, "1", config.Resources.Pipelines["test_pipeline"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Pipelines["test_pipeline"].ModifiedStatus)
+
+	assert.Equal(t, "1", config.Resources.Models["test_mlflow_model"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Models["test_mlflow_model"].ModifiedStatus)
+
+	assert.Equal(t, "1", config.Resources.Experiments["test_mlflow_experiment"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Experiments["test_mlflow_experiment"].ModifiedStatus)
+
+	assert.Equal(t, "1", config.Resources.ModelServingEndpoints["test_model_serving"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.ModelServingEndpoints["test_model_serving"].ModifiedStatus)
+
+	assert.Equal(t, "1", config.Resources.RegisteredModels["test_registered_model"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.RegisteredModels["test_registered_model"].ModifiedStatus)
+
+	AssertFullResourceCoverage(t, &config)
 }
 
-func TestTerrformToBundleModifiedJobs(t *testing.T) {
+func TestTerraformToBundleModifiedResources(t *testing.T) {
 	var config = config.Root{
 		Resources: config.Resources{
 			Jobs: map[string]*resources.Job{
@@ -484,9 +531,69 @@ func TestTerrformToBundleModifiedJobs(t *testing.T) {
 						Name: "test_job",
 					},
 				},
-				"test_job3": {
+				"test_job_new": {
 					JobSettings: &jobs.JobSettings{
-						Name: "test_job3",
+						Name: "test_job_new",
+					},
+				},
+			},
+			Pipelines: map[string]*resources.Pipeline{
+				"test_pipeline": {
+					PipelineSpec: &pipelines.PipelineSpec{
+						Name: "test_pipeline",
+					},
+				},
+				"test_pipeline_new": {
+					PipelineSpec: &pipelines.PipelineSpec{
+						Name: "test_pipeline_new",
+					},
+				},
+			},
+			Models: map[string]*resources.MlflowModel{
+				"test_mlflow_model": {
+					Model: &ml.Model{
+						Name: "test_mlflow_model",
+					},
+				},
+				"test_mlflow_model_new": {
+					Model: &ml.Model{
+						Name: "test_mlflow_model_new",
+					},
+				},
+			},
+			Experiments: map[string]*resources.MlflowExperiment{
+				"test_mlflow_experiment": {
+					Experiment: &ml.Experiment{
+						Name: "test_mlflow_experiment",
+					},
+				},
+				"test_mlflow_experiment_new": {
+					Experiment: &ml.Experiment{
+						Name: "test_mlflow_experiment_new",
+					},
+				},
+			},
+			ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
+				"test_model_serving": {
+					CreateServingEndpoint: &serving.CreateServingEndpoint{
+						Name: "test_model_serving",
+					},
+				},
+				"test_model_serving_new": {
+					CreateServingEndpoint: &serving.CreateServingEndpoint{
+						Name: "test_model_serving_new",
+					},
+				},
+			},
+			RegisteredModels: map[string]*resources.RegisteredModel{
+				"test_registered_model": {
+					CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{
+						Name: "test_registered_model",
+					},
+				},
+				"test_registered_model_new": {
+					CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{
+						Name: "test_registered_model_new",
 					},
 				},
 			},
@@ -497,20 +604,76 @@ func TestTerrformToBundleModifiedJobs(t *testing.T) {
 			RootModule: &tfjson.StateModule{
 				Resources: []*tfjson.StateResource{
 					{
-						Type: "databricks_job",
-						Mode: "managed",
-						Name: "test_job",
-						AttributeValues: map[string]interface{}{
-							"id": "1",
-						},
+						Type:            "databricks_job",
+						Mode:            "managed",
+						Name:            "test_job",
+						AttributeValues: map[string]interface{}{"id": "1"},
 					},
 					{
-						Type: "databricks_job",
-						Mode: "managed",
-						Name: "test_job2",
-						AttributeValues: map[string]interface{}{
-							"id": "2",
-						},
+						Type:            "databricks_job",
+						Mode:            "managed",
+						Name:            "test_job_old",
+						AttributeValues: map[string]interface{}{"id": "2"},
+					},
+					{
+						Type:            "databricks_pipeline",
+						Mode:            "managed",
+						Name:            "test_pipeline",
+						AttributeValues: map[string]interface{}{"id": "1"},
+					},
+					{
+						Type:            "databricks_pipeline",
+						Mode:            "managed",
+						Name:            "test_pipeline_old",
+						AttributeValues: map[string]interface{}{"id": "2"},
+					},
+					{
+						Type:            "databricks_mlflow_model",
+						Mode:            "managed",
+						Name:            "test_mlflow_model",
+						AttributeValues: map[string]interface{}{"id": "1"},
+					},
+					{
+						Type:            "databricks_mlflow_model",
+						Mode:            "managed",
+						Name:            "test_mlflow_model_old",
+						AttributeValues: map[string]interface{}{"id": "2"},
+					},
+					{
+						Type:            "databricks_mlflow_experiment",
+						Mode:            "managed",
+						Name:            "test_mlflow_experiment",
+						AttributeValues: map[string]interface{}{"id": "1"},
+					},
+					{
+						Type:            "databricks_mlflow_experiment",
+						Mode:            "managed",
+						Name:            "test_mlflow_experiment_old",
+						AttributeValues: map[string]interface{}{"id": "2"},
+					},
+					{
+						Type:            "databricks_model_serving",
+						Mode:            "managed",
+						Name:            "test_model_serving",
+						AttributeValues: map[string]interface{}{"id": "1"},
+					},
+					{
+						Type:            "databricks_model_serving",
+						Mode:            "managed",
+						Name:            "test_model_serving_old",
+						AttributeValues: map[string]interface{}{"id": "2"},
+					},
+					{
+						Type:            "databricks_registered_model",
+						Mode:            "managed",
+						Name:            "test_registered_model",
+						AttributeValues: map[string]interface{}{"id": "1"},
+					},
+					{
+						Type:            "databricks_registered_model",
+						Mode:            "managed",
+						Name:            "test_registered_model_old",
+						AttributeValues: map[string]interface{}{"id": "2"},
 					},
 				},
 			},
@@ -518,10 +681,63 @@ func TestTerrformToBundleModifiedJobs(t *testing.T) {
 	}
 	err := TerraformToBundle(&tfState, &config)
 	assert.NoError(t, err)
+
 	assert.Equal(t, "1", config.Resources.Jobs["test_job"].ID)
 	assert.Equal(t, "", config.Resources.Jobs["test_job"].ModifiedStatus)
-	assert.Equal(t, "2", config.Resources.Jobs["test_job2"].ID)
-	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Jobs["test_job2"].ModifiedStatus)
-	assert.Equal(t, "", config.Resources.Jobs["test_job3"].ID)
-	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Jobs["test_job3"].ModifiedStatus)
+	assert.Equal(t, "2", config.Resources.Jobs["test_job_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Jobs["test_job_old"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.Jobs["test_job_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Jobs["test_job_new"].ModifiedStatus)
+
+	assert.Equal(t, "1", config.Resources.Pipelines["test_pipeline"].ID)
+	assert.Equal(t, "", config.Resources.Pipelines["test_pipeline"].ModifiedStatus)
+	assert.Equal(t, "2", config.Resources.Pipelines["test_pipeline_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Pipelines["test_pipeline_old"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.Pipelines["test_pipeline_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Pipelines["test_pipeline_new"].ModifiedStatus)
+
+	assert.Equal(t, "1", config.Resources.Models["test_mlflow_model"].ID)
+	assert.Equal(t, "", config.Resources.Models["test_mlflow_model"].ModifiedStatus)
+	assert.Equal(t, "2", config.Resources.Models["test_mlflow_model_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Models["test_mlflow_model_old"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.Models["test_mlflow_model_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Models["test_mlflow_model_new"].ModifiedStatus)
+
+	assert.Equal(t, "1", config.Resources.RegisteredModels["test_registered_model"].ID)
+	assert.Equal(t, "", config.Resources.RegisteredModels["test_registered_model"].ModifiedStatus)
+	assert.Equal(t, "2", config.Resources.RegisteredModels["test_registered_model_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.RegisteredModels["test_registered_model_old"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.RegisteredModels["test_registered_model_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.RegisteredModels["test_registered_model_new"].ModifiedStatus)
+
+	assert.Equal(t, "1", config.Resources.Experiments["test_mlflow_experiment"].ID)
+	assert.Equal(t, "", config.Resources.Experiments["test_mlflow_experiment"].ModifiedStatus)
+	assert.Equal(t, "2", config.Resources.Experiments["test_mlflow_experiment_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Experiments["test_mlflow_experiment_old"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.Experiments["test_mlflow_experiment_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Experiments["test_mlflow_experiment_new"].ModifiedStatus)
+
+	assert.Equal(t, "1", config.Resources.ModelServingEndpoints["test_model_serving"].ID)
+	assert.Equal(t, "", config.Resources.ModelServingEndpoints["test_model_serving"].ModifiedStatus)
+	assert.Equal(t, "2", config.Resources.ModelServingEndpoints["test_model_serving_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.ModelServingEndpoints["test_model_serving_old"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.ModelServingEndpoints["test_model_serving_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.ModelServingEndpoints["test_model_serving_new"].ModifiedStatus)
+
+	AssertFullResourceCoverage(t, &config)
+}
+
+func AssertFullResourceCoverage(t *testing.T, config *config.Root) {
+	resources := reflect.ValueOf(config.Resources)
+	for i := 0; i < resources.NumField(); i++ {
+		field := resources.Field(i)
+		if field.Kind() == reflect.Map {
+			assert.True(
+				t,
+				!field.IsNil() && field.Len() > 0,
+				"TerraformToBundle should support '%s' (please add it to convert.go and extend the test suite)",
+				resources.Type().Field(i).Name,
+			)
+		}
+	}
 }
