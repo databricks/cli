@@ -13,9 +13,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newSummariseCommand() *cobra.Command {
+func newSummaryCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "summarise",
+		Use:   "summary",
 		Short: "Describe the bundle resources and their deployment states",
 
 		PreRunE: ConfigureBundleWithVariables,

@@ -24,7 +24,7 @@ type RegisteredModel struct {
 	// to a HCL representation for CRUD
 	*catalog.CreateRegisteredModelRequest
 
-	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"readonly"`
+	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
 }
 
 func (s *RegisteredModel) UnmarshalJSON(b []byte) error {

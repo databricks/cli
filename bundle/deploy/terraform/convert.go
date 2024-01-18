@@ -16,14 +16,13 @@ func conv(from any, to any) {
 	json.Unmarshal(buf, &to)
 }
 
-func convRemoteToLocal(remote any, local any) (resources.ModifiedStatus, error) {
+func convRemoteToLocal(remote any, local any) resources.ModifiedStatus {
 	var modifiedStatus resources.ModifiedStatus
 	if reflect.ValueOf(local).Elem().IsNil() {
 		modifiedStatus = resources.ModifiedStatusDeleted
 	}
-	buf, _ := json.Marshal(remote)
-	err := json.Unmarshal(buf, &local)
-	return modifiedStatus, err
+	conv(remote, local)
+	return modifiedStatus
 }
 
 func convPermissions(acl []resources.Permission) *schema.ResourcePermissions {
@@ -250,7 +249,7 @@ func TerraformToBundle(state *tfjson.State, config *config.Root) error {
 			}
 			cur := config.Resources.Jobs[resource.Name]
 			// TODO: make sure we can unmarshall tf state properly and don't swallow errors
-			modifiedStatus, _ := convRemoteToLocal(tmp, &cur)
+			modifiedStatus := convRemoteToLocal(tmp, &cur)
 			cur.ModifiedStatus = modifiedStatus
 			config.Resources.Jobs[resource.Name] = cur
 		case "databricks_pipeline":
@@ -260,7 +259,7 @@ func TerraformToBundle(state *tfjson.State, config *config.Root) error {
 				config.Resources.Pipelines = make(map[string]*resources.Pipeline)
 			}
 			cur := config.Resources.Pipelines[resource.Name]
-			modifiedStatus, _ := convRemoteToLocal(tmp, &cur)
+			modifiedStatus := convRemoteToLocal(tmp, &cur)
 			cur.ModifiedStatus = modifiedStatus
 			config.Resources.Pipelines[resource.Name] = cur
 		case "databricks_mlflow_model":
@@ -270,7 +269,7 @@ func TerraformToBundle(state *tfjson.State, config *config.Root) error {
 				config.Resources.Models = make(map[string]*resources.MlflowModel)
 			}
 			cur := config.Resources.Models[resource.Name]
-			modifiedStatus, _ := convRemoteToLocal(tmp, &cur)
+			modifiedStatus := convRemoteToLocal(tmp, &cur)
 			cur.ModifiedStatus = modifiedStatus
 			config.Resources.Models[resource.Name] = cur
 		case "databricks_mlflow_experiment":
@@ -280,7 +279,7 @@ func TerraformToBundle(state *tfjson.State, config *config.Root) error {
 				config.Resources.Experiments = make(map[string]*resources.MlflowExperiment)
 			}
 			cur := config.Resources.Experiments[resource.Name]
-			modifiedStatus, _ := convRemoteToLocal(tmp, &cur)
+			modifiedStatus := convRemoteToLocal(tmp, &cur)
 			cur.ModifiedStatus = modifiedStatus
 			config.Resources.Experiments[resource.Name] = cur
 		case "databricks_model_serving":
@@ -290,7 +289,7 @@ func TerraformToBundle(state *tfjson.State, config *config.Root) error {
 				config.Resources.ModelServingEndpoints = make(map[string]*resources.ModelServingEndpoint)
 			}
 			cur := config.Resources.ModelServingEndpoints[resource.Name]
-			modifiedStatus, _ := convRemoteToLocal(tmp, &cur)
+			modifiedStatus := convRemoteToLocal(tmp, &cur)
 			cur.ModifiedStatus = modifiedStatus
 			config.Resources.ModelServingEndpoints[resource.Name] = cur
 		case "databricks_registered_model":
@@ -300,7 +299,7 @@ func TerraformToBundle(state *tfjson.State, config *config.Root) error {
 				config.Resources.RegisteredModels = make(map[string]*resources.RegisteredModel)
 			}
 			cur := config.Resources.RegisteredModels[resource.Name]
-			modifiedStatus, _ := convRemoteToLocal(tmp, &cur)
+			modifiedStatus := convRemoteToLocal(tmp, &cur)
 			cur.ModifiedStatus = modifiedStatus
 			config.Resources.RegisteredModels[resource.Name] = cur
 		case "databricks_permissions":

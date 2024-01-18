@@ -23,7 +23,7 @@ type ModelServingEndpoint struct {
 	// Implementation could be different based on the resource type.
 	Permissions []Permission `json:"permissions,omitempty"`
 
-	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"readonly"`
+	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
 }
 
 func (s *ModelServingEndpoint) UnmarshalJSON(b []byte) error {
