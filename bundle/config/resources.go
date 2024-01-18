@@ -168,3 +168,18 @@ func (r *Resources) Merge() error {
 	}
 	return nil
 }
+
+func (r *Resources) FindResourceByConfigKey(key string) (string, error) {
+	for k := range r.Jobs {
+		if k == key {
+			return "databricks_job", nil
+		}
+	}
+	for k := range r.Pipelines {
+		if k == key {
+			return "databricks_pipeline", nil
+		}
+	}
+
+	return "", fmt.Errorf("no such resource: %s", key)
+}
