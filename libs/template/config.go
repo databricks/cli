@@ -143,10 +143,9 @@ func (c *config) skipPrompt(p jsonschema.Property, r *renderer) (bool, error) {
 		for _, properties := range p.Schema.SkipPromptIf.AnyOf {
 			match := true
 			for name, property := range properties.Properties {
-				if v, ok := c.values[name]; ok && v == property.Const {
-					continue
+				if v, ok := c.values[name]; !ok || v != property.Const {
+					match = false
 				}
-				match = false
 			}
 			if match {
 				allFalse = false
