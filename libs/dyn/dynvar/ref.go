@@ -1,0 +1,71 @@
+package dynvar
+
+import (
+	"regexp"
+
+	"github.com/databricks/cli/libs/dyn"
+)
+
+var re = regexp.MustCompile(`\$\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\}`)
+
+// ref represents a variable reference.
+// It is a string [dyn.Value] contained in a larger [dyn.Value].
+// Its path within the containing [dyn.Value] is also stored.
+type ref struct {
+	// Original value and path.
+	value dyn.Value
+	path  dyn.Path
+
+	// Key to index this ref by.
+	// It is equal to the string representation of the path.
+	key string
+
+	// String value in the original [dyn.Value].
+	str string
+
+	// Matches of the variable reference in the string.
+	matches [][]string
+}
+
+// newRef returns a new ref if the given [dyn.Value] contains a string
+// with one or more variable references. It returns false if the given
+// [dyn.Value] does not contain variable references.
+func newRef(v dyn.Value, p dyn.Path) (ref, bool) {
+	s, ok := v.AsString()
+	if !ok {
+		return ref{}, false
+	}
+
+	// Check if the string contains any variable references.
+	m := re.FindAllStringSubmatch(s, -1)
+	if len(m) == 0 {
+		return ref{}, false
+	}
+
+	return ref{
+		value:   v,
+		path:    p,
+		key:     p.String(),
+		str:     s,
+		matches: m,
+	}, true
+}
+
+// isPure returns true if the variable reference contains a single
+// variable reference and nothing more. We need this so we can
+// interpolate values of non-string types (i.e. it can be substituted).
+func (v ref) isPure() bool {
+	// Need single match, equal to the incoming string.
+	if len(v.matches) == 0 || len(v.matches[0]) == 0 {
+		panic("invalid variable reference; expect at least one match")
+	}
+	return v.matches[0][0] == v.str
+}
+
+func (v ref) references() []string {
+	var out []string
+	for _, m := range v.matches {
+		out = append(out, m[1])
+	}
+	return out
+}
