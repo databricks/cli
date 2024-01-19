@@ -140,6 +140,13 @@ func (b *Bundle) WorkspaceClient() *databricks.WorkspaceClient {
 	return b.client
 }
 
+// SetWorkpaceClient sets the workspace client for this bundle.
+// This is used to inject a mock client for testing.
+func (b *Bundle) SetWorkpaceClient(w *databricks.WorkspaceClient) {
+	b.clientOnce.Do(func() {})
+	b.client = w
+}
+
 // CacheDir returns directory to use for temporary files for this bundle.
 // Scoped to the bundle's target.
 func (b *Bundle) CacheDir(ctx context.Context, paths ...string) (string, error) {

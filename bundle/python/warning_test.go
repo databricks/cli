@@ -7,121 +7,12 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
-
-type MockClusterService struct{}
-
-// ChangeOwner implements compute.ClustersService.
-func (MockClusterService) ChangeOwner(ctx context.Context, request compute.ChangeClusterOwner) error {
-	panic("unimplemented")
-}
-
-// Create implements compute.ClustersService.
-func (MockClusterService) Create(ctx context.Context, request compute.CreateCluster) (*compute.CreateClusterResponse, error) {
-	panic("unimplemented")
-}
-
-// Delete implements compute.ClustersService.
-func (MockClusterService) Delete(ctx context.Context, request compute.DeleteCluster) error {
-	panic("unimplemented")
-}
-
-// Edit implements compute.ClustersService.
-func (MockClusterService) Edit(ctx context.Context, request compute.EditCluster) error {
-	panic("unimplemented")
-}
-
-// Events implements compute.ClustersService.
-func (MockClusterService) Events(ctx context.Context, request compute.GetEvents) (*compute.GetEventsResponse, error) {
-	panic("unimplemented")
-}
-
-// Get implements compute.ClustersService.
-func (MockClusterService) Get(ctx context.Context, request compute.GetClusterRequest) (*compute.ClusterDetails, error) {
-	clusterDetails := map[string]*compute.ClusterDetails{
-		"test-key-1": {
-			SparkVersion: "12.2.x-scala2.12",
-		},
-		"test-key-2": {
-			SparkVersion: "13.2.x-scala2.12",
-		},
-	}
-
-	return clusterDetails[request.ClusterId], nil
-}
-
-// GetPermissionLevels implements compute.ClustersService.
-func (MockClusterService) GetPermissionLevels(ctx context.Context, request compute.GetClusterPermissionLevelsRequest) (*compute.GetClusterPermissionLevelsResponse, error) {
-	panic("unimplemented")
-}
-
-// GetPermissions implements compute.ClustersService.
-func (MockClusterService) GetPermissions(ctx context.Context, request compute.GetClusterPermissionsRequest) (*compute.ClusterPermissions, error) {
-	panic("unimplemented")
-}
-
-// List implements compute.ClustersService.
-func (MockClusterService) List(ctx context.Context, request compute.ListClustersRequest) (*compute.ListClustersResponse, error) {
-	panic("unimplemented")
-}
-
-// ListNodeTypes implements compute.ClustersService.
-func (MockClusterService) ListNodeTypes(ctx context.Context) (*compute.ListNodeTypesResponse, error) {
-	panic("unimplemented")
-}
-
-// ListZones implements compute.ClustersService.
-func (MockClusterService) ListZones(ctx context.Context) (*compute.ListAvailableZonesResponse, error) {
-	panic("unimplemented")
-}
-
-// PermanentDelete implements compute.ClustersService.
-func (MockClusterService) PermanentDelete(ctx context.Context, request compute.PermanentDeleteCluster) error {
-	panic("unimplemented")
-}
-
-// Pin implements compute.ClustersService.
-func (MockClusterService) Pin(ctx context.Context, request compute.PinCluster) error {
-	panic("unimplemented")
-}
-
-// Resize implements compute.ClustersService.
-func (MockClusterService) Resize(ctx context.Context, request compute.ResizeCluster) error {
-	panic("unimplemented")
-}
-
-// Restart implements compute.ClustersService.
-func (MockClusterService) Restart(ctx context.Context, request compute.RestartCluster) error {
-	panic("unimplemented")
-}
-
-// SetPermissions implements compute.ClustersService.
-func (MockClusterService) SetPermissions(ctx context.Context, request compute.ClusterPermissionsRequest) (*compute.ClusterPermissions, error) {
-	panic("unimplemented")
-}
-
-// SparkVersions implements compute.ClustersService.
-func (MockClusterService) SparkVersions(ctx context.Context) (*compute.GetSparkVersionsResponse, error) {
-	panic("unimplemented")
-}
-
-// Start implements compute.ClustersService.
-func (MockClusterService) Start(ctx context.Context, request compute.StartCluster) error {
-	panic("unimplemented")
-}
-
-// Unpin implements compute.ClustersService.
-func (MockClusterService) Unpin(ctx context.Context, request compute.UnpinCluster) error {
-	panic("unimplemented")
-}
-
-// UpdatePermissions implements compute.ClustersService.
-func (MockClusterService) UpdatePermissions(ctx context.Context, request compute.ClusterPermissionsRequest) (*compute.ClusterPermissions, error) {
-	panic("unimplemented")
-}
 
 func TestIncompatibleWheelTasksWithNewCluster(t *testing.T) {
 	b := &bundle.Bundle{
@@ -246,7 +137,12 @@ func TestIncompatibleWheelTasksWithExistingClusterId(t *testing.T) {
 		},
 	}
 
-	b.WorkspaceClient().Clusters.WithImpl(MockClusterService{})
+	m := mocks.NewMockWorkspaceClient(t)
+	b.SetWorkpaceClient(m.WorkspaceClient)
+	clustersApi := m.GetMockClustersAPI()
+	clustersApi.EXPECT().GetByClusterId(mock.Anything, "test-key-1").Return(&compute.ClusterDetails{
+		SparkVersion: "12.2.x-scala2.12",
+	}, nil)
 
 	require.True(t, hasIncompatibleWheelTasks(context.Background(), b))
 }
@@ -335,7 +231,12 @@ func TestNoIncompatibleWheelTasks(t *testing.T) {
 		},
 	}
 
-	b.WorkspaceClient().Clusters.WithImpl(MockClusterService{})
+	m := mocks.NewMockWorkspaceClient(t)
+	b.SetWorkpaceClient(m.WorkspaceClient)
+	clustersApi := m.GetMockClustersAPI()
+	clustersApi.EXPECT().GetByClusterId(mock.Anything, "test-key-2").Return(&compute.ClusterDetails{
+		SparkVersion: "13.2.x-scala2.12",
+	}, nil)
 
 	require.False(t, hasIncompatibleWheelTasks(context.Background(), b))
 }
