@@ -55,7 +55,7 @@ func TestAccGenerateFromExistingJobAndDeploy(t *testing.T) {
 	require.NoError(t, err)
 	generatedYaml := string(data)
 	require.Contains(t, generatedYaml, "notebook_task:")
-	require.Contains(t, generatedYaml, "notebook_path: ../src/test.py")
+	require.Contains(t, generatedYaml, fmt.Sprintf("notebook_path: %s", filepath.Join("..", "src", "test.py")))
 	require.Contains(t, generatedYaml, "task_key: test")
 	require.Contains(t, generatedYaml, "new_cluster:")
 	require.Contains(t, generatedYaml, "spark_version: 13.3.x-scala2.12")
