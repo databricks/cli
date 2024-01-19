@@ -60,6 +60,9 @@ type Schema struct {
 
 	// Extension embeds our custom JSON schema extensions.
 	Extension
+
+	// Schema that must match any of the schemas in the array
+	AnyOf []*Schema `json:"anyOf,omitempty"`
 }
 
 // Default value defined in a JSON Schema, represented as a string.

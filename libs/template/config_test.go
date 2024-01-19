@@ -398,3 +398,89 @@ func TestPromptIsSkipped(t *testing.T) {
 	assert.True(t, skip)
 	assert.Equal(t, "hello-world", c.values["xyz"])
 }
+
+func TestPromptIsSkippedAnyOf(t *testing.T) {
+	c := config{
+		ctx:    context.Background(),
+		values: make(map[string]any),
+		schema: &jsonschema.Schema{
+			Properties: map[string]*jsonschema.Schema{
+				"abc": {
+					Type: "string",
+				},
+				"def": {
+					Type: "integer",
+				},
+				"xyz": {
+					Type:    "string",
+					Default: "hello-world",
+					Extension: jsonschema.Extension{
+						SkipPromptIf: &jsonschema.Schema{
+							AnyOf: []*jsonschema.Schema{
+								{
+									Properties: map[string]*jsonschema.Schema{
+										"abc": {
+											Const: "foobar",
+										},
+										"def": {
+											Const: 123,
+										},
+									},
+								},
+								{
+									Properties: map[string]*jsonschema.Schema{
+										"abc": {
+											Const: "barfoo",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// No skip condition defined. Prompt should not be skipped.
+	skip, err := c.skipPrompt(jsonschema.Property{
+		Name:   "abc",
+		Schema: c.schema.Properties["abc"],
+	}, testRenderer())
+	assert.NoError(t, err)
+	assert.False(t, skip)
+
+	// Values do not match skip condition. Prompt should not be skipped.
+	c.values["abc"] = "foobar"
+	c.values["def"] = 1234
+	skip, err = c.skipPrompt(jsonschema.Property{
+		Name:   "xyz",
+		Schema: c.schema.Properties["xyz"],
+	}, testRenderer())
+	assert.NoError(t, err)
+	assert.False(t, skip)
+	assert.NotContains(t, c.values, "xyz")
+
+	// Values match skip condition. Prompt should be skipped. Default value should
+	// be assigned to "xyz".
+	c.values["abc"] = "foobar"
+	c.values["def"] = 123
+	skip, err = c.skipPrompt(jsonschema.Property{
+		Name:   "xyz",
+		Schema: c.schema.Properties["xyz"],
+	}, testRenderer())
+	assert.NoError(t, err)
+	assert.True(t, skip)
+	assert.Equal(t, "hello-world", c.values["xyz"])
+
+	// Values match skip condition. Prompt should be skipped. Default value should
+	// be assigned to "xyz".
+	c.values["abc"] = "barfoo"
+	skip, err = c.skipPrompt(jsonschema.Property{
+		Name:   "xyz",
+		Schema: c.schema.Properties["xyz"],
+	}, testRenderer())
+	assert.NoError(t, err)
+	assert.True(t, skip)
+	assert.Equal(t, "hello-world", c.values["xyz"])
+}
