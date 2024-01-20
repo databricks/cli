@@ -10,7 +10,7 @@ prompts:
     hint: 'personal access token to use, dapiXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
     hide_input: true
   http_path:
-    hint 'HTTP path of SQL warehouse to use'
+    hint: 'HTTP path of SQL warehouse to use'
     default: {{.http_path}}
   {{- if eq .catalog ""}}
   _choose_unity_catalog:
