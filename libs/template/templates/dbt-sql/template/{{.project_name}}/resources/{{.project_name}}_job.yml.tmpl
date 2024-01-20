@@ -17,9 +17,9 @@ resources:
           dbt_task:
             project_directory: ../
             commands:
-            - dbt deps
-            - dbt seed
-            - dbt run
+            - 'dbt deps'
+            - 'dbt seed'
+            - 'dbt run --vars "{ "bundle_target": "${bundle.target}" }"'
             warehouse_id: ${var.warehouse_id}
             catalog: ${var.catalog}
             schema: ${var.schema}
