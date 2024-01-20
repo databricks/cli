@@ -222,3 +222,92 @@ func TestValidateInstanceForMultiplePatterns(t *testing.T) {
 	assert.EqualError(t, schema.validatePattern(invalidInstanceValue), "invalid value for bar: \"xyz\". Expected to match regex pattern: ^[d-f]+$")
 	assert.EqualError(t, schema.ValidateInstance(invalidInstanceValue), "invalid value for bar: \"xyz\". Expected to match regex pattern: ^[d-f]+$")
 }
+
+func TestValidateInstanceForConst(t *testing.T) {
+	schema, err := Load("./testdata/instance-validate/test-schema-const.json")
+	require.NoError(t, err)
+
+	// Valid values for both foo and bar
+	validInstance := map[string]any{
+		"foo": "abc",
+		"bar": "def",
+	}
+	assert.NoError(t, schema.validateConst(validInstance))
+	assert.NoError(t, schema.ValidateInstance(validInstance))
+
+	// Empty instance
+	emptyInstanceValue := map[string]any{}
+	assert.ErrorContains(t, schema.validateConst(emptyInstanceValue), "but no value was provided")
+	assert.ErrorContains(t, schema.ValidateInstance(emptyInstanceValue), "but no value was provided")
+
+	// Missing value for bar
+	missingInstanceValue := map[string]any{
+		"foo": "abc",
+	}
+	assert.EqualError(t, schema.validateConst(missingInstanceValue), "property bar has const set to def but no value was provided")
+	assert.EqualError(t, schema.ValidateInstance(missingInstanceValue), "property bar has const set to def but no value was provided")
+
+	// Valid value for bar, invalid value for foo
+	invalidInstanceValue := map[string]any{
+		"foo": "xyz",
+		"bar": "def",
+	}
+	assert.EqualError(t, schema.validateConst(invalidInstanceValue), "expected value of property foo to be abc. Found: xyz")
+	assert.EqualError(t, schema.ValidateInstance(invalidInstanceValue), "expected value of property foo to be abc. Found: xyz")
+
+	// Valid value for foo, invalid value for bar
+	invalidInstanceValue = map[string]any{
+		"foo": "abc",
+		"bar": "xyz",
+	}
+	assert.EqualError(t, schema.validateConst(invalidInstanceValue), "expected value of property bar to be def. Found: xyz")
+	assert.EqualError(t, schema.ValidateInstance(invalidInstanceValue), "expected value of property bar to be def. Found: xyz")
+}
+
+func TestValidateInstanceForAnyOf(t *testing.T) {
+	schema, err := Load("./testdata/instance-validate/test-schema-anyof.json")
+	require.NoError(t, err)
+
+	// Valid values for both foo and bar
+	validInstance := map[string]any{
+		"foo": "abc",
+		"bar": "abc",
+	}
+	assert.NoError(t, schema.validateAnyOf(validInstance))
+	assert.NoError(t, schema.ValidateInstance(validInstance))
+
+	// Valid values for bar
+	validInstance = map[string]any{
+		"foo": "abc",
+		"bar": "def",
+	}
+	assert.NoError(t, schema.validateAnyOf(validInstance))
+	assert.NoError(t, schema.ValidateInstance(validInstance))
+
+	// Empty instance
+	emptyInstanceValue := map[string]any{}
+	assert.EqualError(t, schema.validateAnyOf(emptyInstanceValue), "instance does not match any of the schemas in anyOf")
+	assert.EqualError(t, schema.ValidateInstance(emptyInstanceValue), "instance does not match any of the schemas in anyOf")
+
+	// Missing values for bar, invalid value for foo
+	missingInstanceValue := map[string]any{
+		"foo": "xyz",
+	}
+	assert.EqualError(t, schema.validateAnyOf(missingInstanceValue), "instance does not match any of the schemas in anyOf")
+	assert.EqualError(t, schema.ValidateInstance(missingInstanceValue), "instance does not match any of the schemas in anyOf")
+
+	// Valid value for bar, invalid value for foo
+	invalidInstanceValue := map[string]any{
+		"foo": "xyz",
+		"bar": "abc",
+	}
+	assert.EqualError(t, schema.validateAnyOf(invalidInstanceValue), "instance does not match any of the schemas in anyOf")
+	assert.EqualError(t, schema.ValidateInstance(invalidInstanceValue), "instance does not match any of the schemas in anyOf")
+
+	// Invalid value for both
+	invalidInstanceValue = map[string]any{
+		"bar": "xyz",
+	}
+	assert.EqualError(t, schema.validateAnyOf(invalidInstanceValue), "instance does not match any of the schemas in anyOf")
+	assert.EqualError(t, schema.ValidateInstance(invalidInstanceValue), "instance does not match any of the schemas in anyOf")
+}

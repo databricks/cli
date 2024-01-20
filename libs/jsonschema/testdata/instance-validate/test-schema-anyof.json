@@ -1,0 +1,24 @@
+{
+    "anyOf": [
+        {
+            "properties": {
+                "foo": {
+                    "type": "string",
+                    "const": "abc"
+                },
+                "bar": {
+                    "type": "string",
+                    "const": "abc"
+                }
+            }
+        },
+        {
+            "properties": {
+                "bar": {
+                    "type": "string",
+                    "const": "def"
+                }
+            }
+        }
+    ]
+}

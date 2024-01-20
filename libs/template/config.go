@@ -125,35 +125,9 @@ func (c *config) skipPrompt(p jsonschema.Property, r *renderer) (bool, error) {
 		return false, nil
 	}
 
-	// Check if conditions specified by template author for skipping the prompt
-	// are satisfied. If they are not, we have to prompt for a user input.
-	if p.Schema.SkipPromptIf.Properties != nil {
-		for name, property := range p.Schema.SkipPromptIf.Properties {
-			if v, ok := c.values[name]; ok && v == property.Const {
-				continue
-			}
-			return false, nil
-		}
-	}
-
-	// Check if AnyOf is set first. If so, then iterate over all property sets to find a match.
-	// If no match is found (allFalse stays true), we have to prompt for a user input.
-	if p.Schema.SkipPromptIf.AnyOf != nil {
-		allFalse := true
-		for _, properties := range p.Schema.SkipPromptIf.AnyOf {
-			match := true
-			for name, property := range properties.Properties {
-				if v, ok := c.values[name]; !ok || v != property.Const {
-					match = false
-				}
-			}
-			if match {
-				allFalse = false
-			}
-		}
-		if allFalse {
-			return false, nil
-		}
+	validationErr := p.Schema.SkipPromptIf.ValidateInstance(c.values)
+	if validationErr != nil {
+		return false, nil
 	}
 
 	if p.Schema.Default == nil {

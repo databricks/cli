@@ -47,6 +47,8 @@ func (s *Schema) ValidateInstance(instance map[string]any) error {
 		s.validateRequired,
 		s.validateTypes,
 		s.validatePattern,
+		s.validateConst,
+		s.validateAnyOf,
 	}
 
 	for _, fn := range validations {
@@ -128,4 +130,33 @@ func (s *Schema) validatePattern(instance map[string]any) error {
 		}
 	}
 	return nil
+}
+
+func (s *Schema) validateConst(instance map[string]any) error {
+	for name, property := range s.Properties {
+		if property.Const == nil {
+			continue
+		}
+		v, ok := instance[name]
+		if !ok {
+			return fmt.Errorf("property %s has const set to %v but no value was provided", name, property.Const)
+		}
+		if v != property.Const {
+			return fmt.Errorf("expected value of property %s to be %v. Found: %v", name, property.Const, v)
+		}
+	}
+	return nil
+}
+
+func (s *Schema) validateAnyOf(instance map[string]any) error {
+	if s.AnyOf == nil {
+		return nil
+	}
+	for _, anyOf := range s.AnyOf {
+		err := anyOf.validateConst(instance)
+		if err == nil {
+			return nil
+		}
+	}
+	return fmt.Errorf("instance does not match any of the schemas in anyOf")
 }
