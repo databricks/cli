@@ -2,20 +2,20 @@
 version: 2
 
 models:
-  - name: my_first_dbt_model
-    description: "A starter dbt model"
+  - name: orders_raw
+    description: "Raw ingested orders"
     columns:
-      - name: id
-        description: "The primary key for this table"
+      - name: customer_name
+        description: "The name of a customer"
         tests:
           - unique
           - not_null
 
-  - name: my_second_dbt_model
-    description: "A starter dbt model"
+  - name: orders_daily
+    description: "Number of orders by day"
     columns:
-      - name: id
-        description: "The primary key for this table"
+      - name: order_date
+        description: "The date on which orders took place"
         tests:
           - unique
           - not_null

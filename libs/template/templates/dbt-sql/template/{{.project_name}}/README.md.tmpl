@@ -22,7 +22,7 @@ that run dbt models.
    To install dbt, you need a recent version of Python. For the instructions below,
    we assume `python3` refers to the Python version you want to use. On some systems,
    you may need to refer to a different Python version, e.g. `python` or `/usr/bin/python`.
- 
+
    Run these instructions from the `{{.project_name}}` directory. We recommend making
    use of a Python virtual environment and installing dbt as follows:
 
@@ -39,7 +39,7 @@ that run dbt models.
    ```
    $ dbt init
    ```
-   
+
    Note that dbt authentication uses personal access tokens by default
    (see https://docs.databricks.com/dev-tools/auth/pat.html).
    You can use OAuth as an alternative, but this currently requires manual configuration.
@@ -98,7 +98,7 @@ You can find that job by opening your workpace and clicking on **Workflows**.
 
 To run the deployed job, use the "run" command:
 ```
-$ databricks bundle run --targed dev
+$ databricks bundle run --target dev
 ```
 
 To deploy a production copy, type:
@@ -106,6 +106,11 @@ To deploy a production copy, type:
 ```
 $ databricks bundle deploy --target prod
 ```
+
+Note that the job from the default template comes with a schedule that runs
+every day (defined in resources/{{.project_name}}_job.yml). The schedule
+is paused when deploying in development mode (see
+https://docs.databricks.com/dev-tools/bundles/deployment-modes.html).
 
 ## IDE support
 
