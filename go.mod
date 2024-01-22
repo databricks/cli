@@ -11,7 +11,7 @@ require (
 	github.com/hashicorp/go-version v1.6.0 // MPL 2.0
 	github.com/hashicorp/hc-install v0.6.2 // MPL 2.0
 	github.com/hashicorp/terraform-exec v0.20.0 // MPL 2.0
-	github.com/hashicorp/terraform-json v0.20.0 // MPL 2.0
+	github.com/hashicorp/terraform-json v0.21.0 // MPL 2.0
 	github.com/imdario/mergo v0.3.15 // BSD-3-Clause
 	github.com/manifoldco/promptui v0.9.0 // BSD-3-Clause
 	github.com/mattn/go-isatty v0.0.20 // MIT
