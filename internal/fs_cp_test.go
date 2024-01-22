@@ -6,6 +6,7 @@ import (
 	"io"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -138,6 +139,22 @@ func TestAccFsCpFileToDir(t *testing.T) {
 
 		assertTargetFile(t, ctx, targetFiler, "foo.txt")
 	}
+}
+
+func TestAccFsCpFileToDirForWindowsPaths(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Skipping test on non-windows OS")
+	}
+
+	ctx := context.Background()
+	sourceFiler, sourceDir := setupLocalFiler(t)
+	targetFiler, targetDir := setupDbfsFiler(t)
+	setupSourceFile(t, ctx, sourceFiler)
+
+	windowsPath := filepath.Join(filepath.FromSlash(sourceDir), "foo.txt")
+
+	RequireSuccessfulRun(t, "fs", "cp", windowsPath, targetDir)
+	assertTargetFile(t, ctx, targetFiler, "foo.txt")
 }
 
 func TestAccFsCpDirToDirFileNotOverwritten(t *testing.T) {

@@ -1,0 +1,8 @@
+{
+    "properties": {
+        "unique_id": {
+            "type": "string",
+            "description": "Unique ID for bundle"
+        }
+    }
+}

@@ -142,6 +142,17 @@ func newDelete() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'token_id' in your JSON input")
+			}
+			return nil
+		}
+		return nil
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -156,7 +167,7 @@ func newDelete() *cobra.Command {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
 				promptSpinner <- "No TOKEN_ID argument specified. Loading names for Tokens drop-down."
-				names, err := w.Tokens.TokenInfoCommentToTokenIdMap(ctx)
+				names, err := w.Tokens.PublicTokenInfoCommentToTokenIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
 					return fmt.Errorf("failed to load names for Tokens drop-down. Please manually specify required arguments. Original error: %w", err)

@@ -325,13 +325,18 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().IntVar(&updateReq.Rearm, "rearm", updateReq.Rearm, `Number of seconds after being triggered before the alert rearms itself and can be triggered again.`)
 
-	cmd.Use = "update"
+	cmd.Use = "update ALERT_ID"
 	cmd.Short = `Update an alert.`
 	cmd.Long = `Update an alert.
   
   Updates an alert.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -346,6 +351,7 @@ func newUpdate() *cobra.Command {
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
+		updateReq.AlertId = args[0]
 
 		err = w.Alerts.Update(ctx, updateReq)
 		if err != nil {
