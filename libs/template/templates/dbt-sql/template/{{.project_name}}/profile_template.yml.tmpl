@@ -12,9 +12,9 @@ prompts:
   http_path:
     hint: 'HTTP path of SQL warehouse to use'
     default: {{.http_path}}
-  {{- if eq .catalog ""}}
+  {{- if eq .default_catalog ""}}
   _choose_unity_catalog:
-    'use the workspace default catalog (or do not use Unity Catalog)':
+    'use the default workspace catalog (or do not use Unity Catalog)':
       _fixed_catalog: null
     'specify a default catalog':
       catalog:
@@ -22,12 +22,16 @@ prompts:
   {{- else}}
   catalog:
     hint: 'initial catalog'
-    default: {{.catalog}}
+    default: {{.default_catalog}}
   {{- end}}
   schema:
-    hint: 'default schema where dbt will build objects, e.g. {{.schema}} or {{short_name}}_dev'
-    default: {{.schema}}
+    {{- if (regexp "^yes").MatchString .personal_schemas}}
+    hint: 'personal schema where dbt will build objects during development (example: {{short_name}})'
+    {{- else}}
+    hint: 'default schema where dbt will build objects'
+    default: {{.shared_schema}}
+    {{- end}}
   threads:
-    hint: '1 or more'
+    hint: 'threads to use during development, 1 or more'
     type: 'int'
     default: 4

@@ -15,6 +15,18 @@ variables:
   schema:
     description: The schema to use
 
+{{- $catalog := .default_catalog}}
+{{- if eq .default_catalog ""}}
+{{- $catalog = "\"\" # workspace default"}}
+{{- end}}
+
+{{- $dev_schema := .shared_schema }}
+{{- $prod_schema := .shared_schema }}
+{{- if (regexp "^yes").MatchString .personal_schemas}}
+{{- $dev_schema = "${workspace.current_user.short_name}"}}
+{{- $prod_schema = .prod_schema}}
+{{- end}}
+
 # Deployment targets.
 targets:
   dev:
@@ -24,12 +36,8 @@ targets:
       host: {{workspace_host}}
     variables:
       warehouse_id: {{index ((regexp "[^/]+$").FindStringSubmatch .http_path) 0}}
-      {{- if eq .catalog ""}}
-      catalog: "" # workspace default
-      {{- else}}
-      catalog: {{.catalog}}
-      {{- end}}
-      schema: {{.schema}} # tip: use ${workspace.current_user.short_name} if you want your own schema
+      catalog: {{$catalog}}
+      schema: {{$dev_schema}}
 
   prod:
     mode: production
@@ -38,12 +46,8 @@ targets:
       root_path: /Users/{{user_name}}/.bundle/${bundle.name}/${bundle.target}
     variables:
       warehouse_id: {{index ((regexp "[^/]+$").FindStringSubmatch .http_path) 0}}
-      {{- if eq .catalog ""}}
-      catalog: "" # workspace default
-      {{- else}}
-      catalog: {{.catalog}}
-      {{- end}}
-      schema: {{.schema}}
+      catalog: {{$catalog}}
+      schema: {{$prod_schema}}
     {{- if not is_service_principal}}
     run_as:
       # This runs as {{user_name}} in production. We could also use a service principal here
