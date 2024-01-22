@@ -228,7 +228,6 @@ func (e *Entrypoint) validLogin(cmd *cobra.Command) (*config.Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("login config: %w", err)
 	}
-RESOLVE:
 	err = cfg.EnsureResolved()
 	if err != nil {
 		return nil, err
@@ -266,8 +265,11 @@ RESOLVE:
 		if err != nil {
 			return nil, fmt.Errorf("account: %w", err)
 		}
-		cfg = replaceCfg
-		goto RESOLVE
+		err = replaceCfg.EnsureResolved()
+		if err != nil {
+			return nil, fmt.Errorf("resolve: %w", err)
+		}
+		return replaceCfg, nil
 	} else if e.IsAccountLevel && !isACC {
 		return nil, databricks.ErrNotAccountClient
 	}
