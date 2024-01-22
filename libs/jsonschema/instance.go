@@ -138,20 +138,22 @@ func (s *Schema) validateConst(instance map[string]any) error {
 			continue
 		}
 		v, ok := instance[name]
-		if !ok {
-			return fmt.Errorf("property %s has const set to %v but no value was provided", name, property.Const)
-		}
-		if v != property.Const {
+		if ok && v != property.Const {
 			return fmt.Errorf("expected value of property %s to be %v. Found: %v", name, property.Const, v)
 		}
 	}
 	return nil
 }
 
+// Validates that the instance matches at least one of the schemas in anyOf
+// but will also succeed if the property values are omitted.
+// For more information, see https://json-schema.org/understanding-json-schema/reference/combining#anyof.
 func (s *Schema) validateAnyOf(instance map[string]any) error {
 	if s.AnyOf == nil {
 		return nil
 	}
+	// Currently, we only validate const for anyOf schemas since anyOf is
+	// only used by skip_prompt_if, which only supports const.
 	for _, anyOf := range s.AnyOf {
 		err := anyOf.validateConst(instance)
 		if err == nil {

@@ -461,6 +461,16 @@ func TestPromptIsSkippedAnyOf(t *testing.T) {
 	assert.False(t, skip)
 	assert.NotContains(t, c.values, "xyz")
 
+	// Missing values. Prompt should not be skipped.
+	c.values["abc"] = "foobar"
+	skip, err = c.skipPrompt(jsonschema.Property{
+		Name:   "xyz",
+		Schema: c.schema.Properties["xyz"],
+	}, testRenderer())
+	assert.NoError(t, err)
+	assert.False(t, skip)
+	assert.NotContains(t, c.values, "xyz")
+
 	// Values match skip condition. Prompt should be skipped. Default value should
 	// be assigned to "xyz".
 	c.values["abc"] = "foobar"

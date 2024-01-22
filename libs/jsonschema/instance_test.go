@@ -237,15 +237,15 @@ func TestValidateInstanceForConst(t *testing.T) {
 
 	// Empty instance
 	emptyInstanceValue := map[string]any{}
-	assert.ErrorContains(t, schema.validateConst(emptyInstanceValue), "but no value was provided")
-	assert.ErrorContains(t, schema.ValidateInstance(emptyInstanceValue), "but no value was provided")
+	assert.NoError(t, schema.validateConst(emptyInstanceValue))
+	assert.NoError(t, schema.ValidateInstance(emptyInstanceValue))
 
 	// Missing value for bar
 	missingInstanceValue := map[string]any{
 		"foo": "abc",
 	}
-	assert.EqualError(t, schema.validateConst(missingInstanceValue), "property bar has const set to def but no value was provided")
-	assert.EqualError(t, schema.ValidateInstance(missingInstanceValue), "property bar has const set to def but no value was provided")
+	assert.NoError(t, schema.validateConst(missingInstanceValue))
+	assert.NoError(t, schema.ValidateInstance(missingInstanceValue))
 
 	// Valid value for bar, invalid value for foo
 	invalidInstanceValue := map[string]any{
@@ -286,15 +286,15 @@ func TestValidateInstanceForAnyOf(t *testing.T) {
 
 	// Empty instance
 	emptyInstanceValue := map[string]any{}
-	assert.EqualError(t, schema.validateAnyOf(emptyInstanceValue), "instance does not match any of the schemas in anyOf")
-	assert.EqualError(t, schema.ValidateInstance(emptyInstanceValue), "instance does not match any of the schemas in anyOf")
+	assert.NoError(t, schema.validateAnyOf(emptyInstanceValue))
+	assert.NoError(t, schema.ValidateInstance(emptyInstanceValue))
 
 	// Missing values for bar, invalid value for foo
 	missingInstanceValue := map[string]any{
 		"foo": "xyz",
 	}
-	assert.EqualError(t, schema.validateAnyOf(missingInstanceValue), "instance does not match any of the schemas in anyOf")
-	assert.EqualError(t, schema.ValidateInstance(missingInstanceValue), "instance does not match any of the schemas in anyOf")
+	assert.NoError(t, schema.validateAnyOf(missingInstanceValue))
+	assert.NoError(t, schema.ValidateInstance(missingInstanceValue))
 
 	// Valid value for bar, invalid value for foo
 	invalidInstanceValue := map[string]any{
