@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -27,17 +28,28 @@ func (n *notebookDownloader) MarkForDownload(ctx context.Context, task *jobs.Tas
 		return nil
 	}
 
-	info, err := n.w.Workspace.GetStatusByPath(ctx, task.NotebookTask.NotebookPath)
+	return n.markNotebookForDownload(ctx, &task.NotebookTask.NotebookPath)
+}
+
+func (n *notebookDownloader) MarkLibraryForDownload(ctx context.Context, lib *pipelines.PipelineLibrary) error {
+	if lib.Notebook == nil {
+		return nil
+	}
+	return n.markNotebookForDownload(ctx, &lib.Notebook.Path)
+}
+
+func (n *notebookDownloader) markNotebookForDownload(ctx context.Context, notebookPath *string) error {
+	info, err := n.w.Workspace.GetStatusByPath(ctx, *notebookPath)
 	if err != nil {
 		return err
 	}
 
 	ext := notebook.GetExtensionByLanguage(info)
 
-	filename := path.Base(task.NotebookTask.NotebookPath) + ext
+	filename := path.Base(*notebookPath) + ext
 	targetPath := filepath.Join(n.sourceDir, filename)
 
-	n.notebooks[targetPath] = task.NotebookTask.NotebookPath
+	n.notebooks[targetPath] = *notebookPath
 
 	// Update the notebook path to be relative to the config dir
 	rel, err := filepath.Rel(n.configDir, targetPath)
@@ -45,7 +57,7 @@ func (n *notebookDownloader) MarkForDownload(ctx context.Context, task *jobs.Tas
 		return err
 	}
 
-	task.NotebookTask.NotebookPath = rel
+	*notebookPath = rel
 	return nil
 }
 
