@@ -3,13 +3,15 @@ package bundle
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/terraform"
-
 	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
 )
 
@@ -54,12 +56,19 @@ func newSummaryCommand() *cobra.Command {
 			return err
 		}
 
-		buf, err := json.MarshalIndent(b.Config, "", "  ")
-		if err != nil {
-			return err
+		switch root.OutputType(cmd) {
+		case flags.OutputText:
+			return fmt.Errorf("%w, only json output is supported", errors.ErrUnsupported)
+		case flags.OutputJSON:
+			buf, err := json.MarshalIndent(b.Config, "", "  ")
+			if err != nil {
+				return err
+			}
+			cmd.OutOrStdout().Write(buf)
+		default:
+			return fmt.Errorf("unknown output type %s", root.OutputType(cmd))
 		}
 
-		cmd.OutOrStdout().Write(buf)
 		return nil
 	}
 
