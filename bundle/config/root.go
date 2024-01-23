@@ -401,6 +401,11 @@ func (r *Root) MergeTargetOverrides(name string) error {
 func rewrite(v dyn.Value) (dyn.Value, error) {
 	// For each target, rewrite the variables block.
 	return dyn.Map(v, "targets", dyn.Foreach(func(target dyn.Value) (dyn.Value, error) {
+		// Confirm it has a variables block.
+		if target.Get("variables") == dyn.NilValue {
+			return target, nil
+		}
+
 		// For each variable, normalize its contents if it is a single string.
 		return dyn.Map(target, "variables", dyn.Foreach(func(variable dyn.Value) (dyn.Value, error) {
 			if variable.Kind() != dyn.KindString {
@@ -419,8 +424,8 @@ func rewrite(v dyn.Value) (dyn.Value, error) {
 // validateVariableOverrides checks that all variables specified
 // in the target override are also defined in the root.
 func validateVariableOverrides(root, target dyn.Value) (err error) {
-	rv := make(map[string]variable.Variable)
-	tv := make(map[string]variable.Variable)
+	var rv map[string]variable.Variable
+	var tv map[string]variable.Variable
 
 	// Collect variables from the root.
 	err = convert.ToTyped(&rv, root.Get("variables"))
