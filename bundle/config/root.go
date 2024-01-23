@@ -84,6 +84,12 @@ func Load(path string) (*Root, error) {
 		return nil, fmt.Errorf("failed to load %s: %w", path, err)
 	}
 
+	// Rewrite configuration tree where necessary.
+	v, err = rewrite(v)
+	if err != nil {
+		return nil, fmt.Errorf("failed to rewrite %s: %w", path, err)
+	}
+
 	// Normalize dynamic configuration tree according to configuration type.
 	v, diags := convert.Normalize(r, v)
 
@@ -296,6 +302,12 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		return err
 	}
 
+	// Confirm validity of variable overrides.
+	err = validateVariableOverrides(root, target)
+	if err != nil {
+		return err
+	}
+
 	// Merge fields that can be merged 1:1.
 	for _, f := range []string{
 		"bundle",
@@ -304,39 +316,12 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		"resources",
 		"sync",
 		"permissions",
+		"variables",
 	} {
 		if root, err = mergeField(root, target, f); err != nil {
 			return err
 		}
 	}
-
-	// TODO(@pietern): Merge variables.
-	//
-	// Also see: https://github.com/databricks/cli/pull/872
-	//
-	// if target.Variables != nil {
-	// 	for k, v := range target.Variables {
-	// 		rootVariable, ok := r.Variables[k]
-	// 		if !ok {
-	// 			return fmt.Errorf("variable %s is not defined but is assigned a value", k)
-	// 		}
-
-	// 		if sv, ok := v.(string); ok {
-	// 			// we  allow overrides of the default value for a variable
-	// 			defaultVal := sv
-	// 			rootVariable.Default = &defaultVal
-	// 		} else if vv, ok := v.(map[string]any); ok {
-	// 			// we also allow overrides of the lookup value for a variable
-	// 			lookup, ok := vv["lookup"]
-	// 			if !ok {
-	// 				return fmt.Errorf("variable %s is incorrectly defined lookup override, no 'lookup' key defined", k)
-	// 			}
-	// 			rootVariable.Lookup = variable.LookupFromMap(lookup.(map[string]any))
-	// 		} else {
-	// 			return fmt.Errorf("variable %s is incorrectly defined in target override", k)
-	// 		}
-	// 	}
-	// }
 
 	// Merge `run_as`. This field must be overwritten if set, not merged.
 	if v := target.Get("run_as"); v != dyn.NilValue {
@@ -407,5 +392,54 @@ func (r *Root) MergeTargetOverrides(name string) error {
 	}
 
 	r.ConfigureConfigFilePath()
+	return nil
+}
+
+// rewrite performs lightweight rewriting of the configuration
+// tree where we allow users to write a shorthand and must
+// rewrite to the full form.
+func rewrite(v dyn.Value) (dyn.Value, error) {
+	// For each target, rewrite the variables block.
+	return dyn.Map(v, "targets", dyn.Foreach(func(target dyn.Value) (dyn.Value, error) {
+		// For each variable, normalize its contents if it is a single string.
+		return dyn.Map(target, "variables", dyn.Foreach(func(variable dyn.Value) (dyn.Value, error) {
+			if variable.Kind() != dyn.KindString {
+				return variable, nil
+			}
+
+			// Rewrite the variable to a map with a single key called "default".
+			// This conforms to the variable type.
+			return dyn.NewValue(map[string]dyn.Value{
+				"default": variable,
+			}, variable.Location()), nil
+		}))
+	}))
+}
+
+// validateVariableOverrides checks that all variables specified
+// in the target override are also defined in the root.
+func validateVariableOverrides(root, target dyn.Value) (err error) {
+	rv := make(map[string]variable.Variable)
+	tv := make(map[string]variable.Variable)
+
+	// Collect variables from the root.
+	err = convert.ToTyped(&rv, root.Get("variables"))
+	if err != nil {
+		return fmt.Errorf("unable to collect variables from root: %w", err)
+	}
+
+	// Collect variables from the target.
+	err = convert.ToTyped(&tv, target.Get("variables"))
+	if err != nil {
+		return fmt.Errorf("unable to collect variables from target: %w", err)
+	}
+
+	// Check that all variables in the target exist in the root.
+	for k := range tv {
+		if _, ok := rv[k]; !ok {
+			return fmt.Errorf("variable %s is not defined but is assigned a value", k)
+		}
+	}
+
 	return nil
 }
