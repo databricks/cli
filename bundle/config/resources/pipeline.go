@@ -1,9 +1,11 @@
 package resources
 
 import (
+	"context"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/paths"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/imdario/mergo"
@@ -71,4 +73,15 @@ func (p *Pipeline) MergeClusters() error {
 	// Overwrite resulting slice.
 	p.Clusters = output
 	return nil
+}
+
+func (p *Pipeline) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) bool {
+	_, err := w.Pipelines.Get(ctx, pipelines.GetPipelineRequest{
+		PipelineId: id,
+	})
+	return err == nil
+}
+
+func (p *Pipeline) Type() string {
+	return "databricks_pipeline"
 }

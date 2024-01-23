@@ -1,37 +1,36 @@
-package bundle
+package deployment
 
 import (
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/spf13/cobra"
 )
 
-func newDeployCommand() *cobra.Command {
+func newUnbindCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "deploy",
-		Short:   "Deploy bundle",
+		Use:     "unbind KEY",
+		Short:   "Unbind bundle-defined resources from its managed remote resource",
+		Args:    cobra.ExactArgs(1),
 		PreRunE: utils.ConfigureBundleWithVariables,
 	}
 
-	var force bool
 	var forceLock bool
-	var computeID string
-	cmd.Flags().BoolVar(&force, "force", false, "Force-override Git branch validation.")
 	cmd.Flags().BoolVar(&forceLock, "force-lock", false, "Force acquisition of deployment lock.")
-	cmd.Flags().StringVarP(&computeID, "compute-id", "c", "", "Override compute in the deployment with the given compute ID.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		b := bundle.Get(cmd.Context())
+		r := b.Config.Resources
+		resource, err := r.FindResourceByConfigKey(args[0])
+		if err != nil {
+			return err
+		}
 
-		b.Config.Bundle.Force = force
 		b.Config.Bundle.Lock.Force = forceLock
-		b.Config.Bundle.ComputeID = computeID
-
 		return bundle.Apply(cmd.Context(), b, bundle.Seq(
 			phases.Initialize(),
-			phases.Build(),
-			phases.Deploy(),
+			terraform.Unbind(resource.Type(), args[0]),
 		))
 	}
 

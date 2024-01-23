@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"github.com/databricks/cli/cmd/bundle/deployment"
 	"github.com/spf13/cobra"
 )
 
@@ -23,6 +24,6 @@ func New() *cobra.Command {
 	cmd.AddCommand(newValidateCommand())
 	cmd.AddCommand(newInitCommand())
 	cmd.AddCommand(newGenerateCommand())
-	cmd.AddCommand(newBindCommand())
+	cmd.AddCommand(deployment.NewDeploymentCommand())
 	return cmd
 }

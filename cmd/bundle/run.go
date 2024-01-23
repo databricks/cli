@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/run"
+	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -20,7 +21,7 @@ func newRunCommand() *cobra.Command {
 		Short: "Run a resource (e.g. a job or a pipeline)",
 
 		Args:    cobra.MaximumNArgs(1),
-		PreRunE: ConfigureBundleWithVariables,
+		PreRunE: utils.ConfigureBundleWithVariables,
 	}
 
 	var runOptions run.Options

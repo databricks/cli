@@ -1,9 +1,11 @@
 package config
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/databricks-sdk-go"
 )
 
 // Resources defines Databricks resources associated with the bundle.
@@ -169,17 +171,22 @@ func (r *Resources) Merge() error {
 	return nil
 }
 
-func (r *Resources) FindResourceByConfigKey(key string) (string, error) {
+type ConfigResource interface {
+	Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) bool
+	Type() string
+}
+
+func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) {
 	for k := range r.Jobs {
 		if k == key {
-			return "databricks_job", nil
+			return r.Jobs[k], nil
 		}
 	}
 	for k := range r.Pipelines {
 		if k == key {
-			return "databricks_pipeline", nil
+			return r.Pipelines[k], nil
 		}
 	}
 
-	return "", fmt.Errorf("no such resource: %s", key)
+	return nil, fmt.Errorf("no such resource: %s", key)
 }
