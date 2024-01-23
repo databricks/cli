@@ -30,6 +30,11 @@ type ref struct {
 // newRef returns a new ref if the given [dyn.Value] contains a string
 // with one or more variable references. It returns false if the given
 // [dyn.Value] does not contain variable references.
+//
+// Examples of a valid variable references:
+//   - "${a.b}"
+//   - "${a.b.c}"
+//   - "${a} ${b} ${c}"
 func newRef(v dyn.Value, p dyn.Path) (ref, bool) {
 	s, ok := v.AsString()
 	if !ok {
