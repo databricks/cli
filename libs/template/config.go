@@ -125,6 +125,12 @@ func (c *config) skipPrompt(p jsonschema.Property, r *renderer) (bool, error) {
 		return false, nil
 	}
 
+	var keys []string
+	for k := range p.Schema.SkipPromptIf.Properties {
+		keys = append(keys, k)
+	}
+	p.Schema.SkipPromptIf.Required = append(keys, p.Schema.SkipPromptIf.Required...)
+
 	validationErr := p.Schema.SkipPromptIf.ValidateInstance(c.values)
 	if validationErr != nil {
 		return false, nil

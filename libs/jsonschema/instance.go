@@ -133,13 +133,16 @@ func (s *Schema) validatePattern(instance map[string]any) error {
 }
 
 func (s *Schema) validateConst(instance map[string]any) error {
-	for name, property := range s.Properties {
-		if property.Const == nil {
+	for k, v := range instance {
+		fieldInfo, ok := s.Properties[k]
+		if !ok {
 			continue
 		}
-		v, ok := instance[name]
-		if ok && v != property.Const {
-			return fmt.Errorf("expected value of property %s to be %v. Found: %v", name, property.Const, v)
+		if fieldInfo.Const == nil {
+			continue
+		}
+		if v != fieldInfo.Const {
+			return fmt.Errorf("expected value of property %s to be %v. Found: %v", k, fieldInfo.Const, v)
 		}
 	}
 	return nil
