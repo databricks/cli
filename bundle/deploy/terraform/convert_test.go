@@ -522,6 +522,80 @@ func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
 	AssertFullResourceCoverage(t, &config)
 }
 
+func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
+	var config = config.Root{
+		Resources: config.Resources{
+			Jobs: map[string]*resources.Job{
+				"test_job": {
+					JobSettings: &jobs.JobSettings{
+						Name: "test_job",
+					},
+				},
+			},
+			Pipelines: map[string]*resources.Pipeline{
+				"test_pipeline": {
+					PipelineSpec: &pipelines.PipelineSpec{
+						Name: "test_pipeline",
+					},
+				},
+			},
+			Models: map[string]*resources.MlflowModel{
+				"test_mlflow_model": {
+					Model: &ml.Model{
+						Name: "test_mlflow_model",
+					},
+				},
+			},
+			Experiments: map[string]*resources.MlflowExperiment{
+				"test_mlflow_experiment": {
+					Experiment: &ml.Experiment{
+						Name: "test_mlflow_experiment",
+					},
+				},
+			},
+			ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
+				"test_model_serving": {
+					CreateServingEndpoint: &serving.CreateServingEndpoint{
+						Name: "test_model_serving",
+					},
+				},
+			},
+			RegisteredModels: map[string]*resources.RegisteredModel{
+				"test_registered_model": {
+					CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{
+						Name: "test_registered_model",
+					},
+				},
+			},
+		},
+	}
+	var tfState = tfjson.State{
+		Values: nil,
+	}
+	err := TerraformToBundle(&tfState, &config)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "", config.Resources.Jobs["test_job"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Jobs["test_job"].ModifiedStatus)
+
+	assert.Equal(t, "", config.Resources.Pipelines["test_pipeline"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Pipelines["test_pipeline"].ModifiedStatus)
+
+	assert.Equal(t, "", config.Resources.Models["test_mlflow_model"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Models["test_mlflow_model"].ModifiedStatus)
+
+	assert.Equal(t, "", config.Resources.Experiments["test_mlflow_experiment"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Experiments["test_mlflow_experiment"].ModifiedStatus)
+
+	assert.Equal(t, "", config.Resources.ModelServingEndpoints["test_model_serving"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.ModelServingEndpoints["test_model_serving"].ModifiedStatus)
+
+	assert.Equal(t, "", config.Resources.RegisteredModels["test_registered_model"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.RegisteredModels["test_registered_model"].ModifiedStatus)
+
+	AssertFullResourceCoverage(t, &config)
+}
+
 func TestTerraformToBundleModifiedResources(t *testing.T) {
 	var config = config.Root{
 		Resources: config.Resources{
