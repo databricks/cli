@@ -50,9 +50,9 @@ func NewGeneratePipelineCommand() *cobra.Command {
 			return err
 		}
 
-		downloader := newNotebookDownloader(w, sourceDir, configDir)
+		downloader := newDownloader(w, sourceDir, configDir)
 		for _, lib := range pipeline.Spec.Libraries {
-			err := downloader.MarkLibraryForDownload(ctx, &lib)
+			err := downloader.MarkPipelineLibraryForDownload(ctx, &lib)
 			if err != nil {
 				return err
 			}

@@ -50,9 +50,9 @@ func NewGenerateJobCommand() *cobra.Command {
 			return err
 		}
 
-		downloader := newNotebookDownloader(w, sourceDir, configDir)
+		downloader := newDownloader(w, sourceDir, configDir)
 		for _, task := range job.Settings.Tasks {
-			err := downloader.MarkForDownload(ctx, &task)
+			err := downloader.MarkTaskForDownload(ctx, &task)
 			if err != nil {
 				return err
 			}
