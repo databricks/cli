@@ -140,7 +140,6 @@ func (s *Schema) validateConst(instance map[string]any) error {
 }
 
 // Validates that the instance matches at least one of the schemas in anyOf
-// but will also succeed if the property values are omitted.
 // For more information, see https://json-schema.org/understanding-json-schema/reference/combining#anyof.
 func (s *Schema) validateAnyOf(instance map[string]any) error {
 	if s.AnyOf == nil {

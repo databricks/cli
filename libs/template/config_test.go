@@ -477,7 +477,7 @@ func TestPromptIsSkippedAnyOf(t *testing.T) {
 	assert.False(t, skip)
 	assert.NotContains(t, c.values, "xyz")
 
-	// abc is missing value. Prompt should be skipped because def is optional
+	// abc is missing value. Prompt should be skipped because abc is optional
 	// in second condition.
 	c.values = map[string]any{
 		"def": 123,
