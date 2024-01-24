@@ -178,10 +178,6 @@ func (i *installer) login(ctx context.Context) (*databricks.WorkspaceClient, err
 	if err != nil {
 		return nil, fmt.Errorf("ask for workspace: %w", err)
 	}
-	err = lc.askAccountProfile(ctx, cfg)
-	if err != nil {
-		return nil, fmt.Errorf("ask for account: %w", err)
-	}
 	err = lc.save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("save: %w", err)

@@ -103,6 +103,7 @@ func (lc *loginConfig) askAccountProfile(ctx context.Context, cfg *config.Config
 		return ErrNotInTTY
 	}
 	lc.AccountProfile, err = root.AskForAccountProfile(ctx)
+	cfg.Profile = lc.AccountProfile
 	return
 }
 
