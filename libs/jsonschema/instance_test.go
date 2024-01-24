@@ -297,12 +297,13 @@ func TestValidateInstanceForAnyOf(t *testing.T) {
 	assert.NoError(t, schema.validateAnyOf(validInstance))
 	assert.NoError(t, schema.ValidateInstance(validInstance))
 
-	// Empty instance
+	// Empty instance. Invalid because "foo" is required.
 	emptyInstanceValue := map[string]any{}
-	assert.NoError(t, schema.validateAnyOf(emptyInstanceValue))
-	assert.NoError(t, schema.ValidateInstance(emptyInstanceValue))
+	assert.ErrorContains(t, schema.validateAnyOf(emptyInstanceValue), "instance does not match any of the schemas in anyOf")
+	assert.ErrorContains(t, schema.ValidateInstance(emptyInstanceValue), "instance does not match any of the schemas in anyOf")
 
-	// Missing values for bar, invalid value for foo
+	// Missing values for bar, invalid value for foo. Passes because only "foo"
+	// is required in second condition.
 	missingInstanceValue := map[string]any{
 		"foo": "xyz",
 	}

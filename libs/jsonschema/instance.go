@@ -164,7 +164,7 @@ func (s *Schema) validateAnyOf(instance map[string]any) error {
 	// Currently, we only validate const for anyOf schemas since anyOf is
 	// only used by skip_prompt_if, which only supports const.
 	for _, anyOf := range s.AnyOf {
-		err := anyOf.validateConst(instance)
+		err := anyOf.ValidateInstance(instance)
 		if err == nil {
 			return nil
 		}
