@@ -47,6 +47,6 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) error
 // We leave the full range of unicode letters in tact, but remove all "special" characters,
 // including dots, which are not supported in e.g. experiment names.
 func GetShortUserName(userName string) string {
-	local, _, _ := strings.Cut(emailAddress, "@")
+	local, _, _ := strings.Cut(userName, "@")
 	return textutil.NormalizeString(local)
 }
