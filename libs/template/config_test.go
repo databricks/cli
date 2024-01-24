@@ -3,6 +3,7 @@ package template
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"text/template"
 
@@ -355,14 +356,14 @@ func TestPromptIsSkipped(t *testing.T) {
 	assert.NoError(t, err)
 	assert.False(t, skip)
 
-	// No values assigned to config. Prompt should not be skipped.
+	// No values assigned to config. Expect error because required values are
+	// missing
 	skip, err = c.skipPrompt(jsonschema.Property{
 		Name:   "xyz",
 		Schema: c.schema.Properties["xyz"],
 	}, testRenderer())
-	assert.NoError(t, err)
-	assert.False(t, skip)
-	assert.NotContains(t, c.values, "xyz")
+	assert.True(t, strings.Contains(err.Error(), "property abc is used in skip_prompt_if but has no value assigned") ||
+		strings.Contains(err.Error(), "property def is used in skip_prompt_if but has no value assigned"))
 
 	// Values do not match skip condition. Prompt should not be skipped.
 	c.values["abc"] = "foo"
