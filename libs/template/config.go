@@ -125,6 +125,8 @@ func (c *config) skipPrompt(p jsonschema.Property, r *renderer) (bool, error) {
 		return false, nil
 	}
 
+	// All fields referred to in a SkipPromptIf condition are implicitly made required and
+	// we diverge from strictly following the JSON schema because it makes the author UX better.
 	var keys []string
 	for k := range p.Schema.SkipPromptIf.Properties {
 		keys = append(keys, k)

@@ -24,10 +24,7 @@ func (s *Schema) LoadInstance(path string) (map[string]any, error) {
 	// We convert integer properties from float64 to int64 here.
 	for name, v := range instance {
 		propertySchema, ok := s.Properties[name]
-		if !ok {
-			continue
-		}
-		if propertySchema.Type != IntegerType {
+		if !ok || propertySchema.Type != IntegerType {
 			continue
 		}
 		integerValue, err := toInteger(v)
@@ -105,10 +102,7 @@ func (s *Schema) validateTypes(instance map[string]any) error {
 func (s *Schema) validateEnum(instance map[string]any) error {
 	for k, v := range instance {
 		fieldInfo, ok := s.Properties[k]
-		if !ok {
-			continue
-		}
-		if fieldInfo.Enum == nil {
+		if !ok || fieldInfo.Enum == nil {
 			continue
 		}
 		if !slices.Contains(fieldInfo.Enum, v) {
@@ -135,10 +129,7 @@ func (s *Schema) validatePattern(instance map[string]any) error {
 func (s *Schema) validateConst(instance map[string]any) error {
 	for k, v := range instance {
 		fieldInfo, ok := s.Properties[k]
-		if !ok {
-			continue
-		}
-		if fieldInfo.Const == nil {
+		if !ok || fieldInfo.Const == nil {
 			continue
 		}
 		if v != fieldInfo.Const {
