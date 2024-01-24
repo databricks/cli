@@ -22,7 +22,6 @@ func Initialize() bundle.Mutator {
 		[]bundle.Mutator{
 			mutator.InitializeWorkspaceClient(),
 			mutator.PopulateCurrentUser(),
-			mutator.SetRunAs(),
 			mutator.DefineDefaultWorkspaceRoot(),
 			mutator.ExpandWorkspaceRoot(),
 			mutator.DefineDefaultWorkspacePaths(),
@@ -33,6 +32,7 @@ func Initialize() bundle.Mutator {
 				interpolation.IncludeLookupsInPath("workspace"),
 				interpolation.IncludeLookupsInPath(variable.VariableReferencePrefix),
 			),
+			mutator.SetRunAs(),
 			mutator.OverrideCompute(),
 			mutator.ProcessTargetMode(),
 			mutator.ExpandPipelineGlobPaths(),
