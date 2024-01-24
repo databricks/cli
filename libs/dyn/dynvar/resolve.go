@@ -11,6 +11,29 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+// Resolve resolves variable references in the given input value using the provided lookup function.
+// It returns the resolved output value and any error encountered during the resolution process.
+//
+// For example, given the input value:
+//
+//	{
+//	    "a": "a",
+//	    "b": "${a}",
+//	    "c": "${b}${b}",
+//	}
+//
+// The output value will be:
+//
+//	{
+//	    "a": "a",
+//	    "b": "a",
+//	    "c": "aa",
+//	}
+//
+// If the input value contains a variable reference that cannot be resolved, an error is returned.
+// If a cycle is detected in the variable references, an error is returned.
+// If for some path the resolution function returns [ErrSkipResolution], the variable reference is left in place.
+// This is useful when some variable references are not yet ready to be interpolated.
 func Resolve(in dyn.Value, fn Lookup) (out dyn.Value, err error) {
 	return resolver{in: in, fn: fn}.run()
 }
@@ -47,13 +70,13 @@ func (r *resolver) collectVariableReferences() (err error) {
 
 	// First walk the input to gather all values with a variable reference.
 	_, err = dyn.Walk(r.in, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-		ref, ok := newRef(v, p)
+		ref, ok := newRef(v)
 		if !ok {
 			// Skip values without variable references.
 			return v, nil
 		}
 
-		r.refs[ref.key] = ref
+		r.refs[p.String()] = ref
 		return v, nil
 	})
 
@@ -168,13 +191,13 @@ func (r *resolver) resolve(key string, seen []string) (dyn.Value, error) {
 func (r *resolver) replaceVariableReferences() (dyn.Value, error) {
 	// Walk the input and replace all variable references.
 	return dyn.Walk(r.in, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-		ref, ok := r.refs[p.String()]
+		nv, ok := r.resolved[p.String()]
 		if !ok {
 			// No variable reference; return the original value.
 			return v, nil
 		}
 
 		// We have a variable reference; return the resolved value.
-		return r.resolved[ref.key], nil
+		return nv, nil
 	})
 }

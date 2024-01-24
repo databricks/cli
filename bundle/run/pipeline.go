@@ -3,7 +3,6 @@ package run
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle"
@@ -13,7 +12,6 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
-	flag "github.com/spf13/pflag"
 )
 
 func filterEventsByUpdateId(events []pipelines.PipelineEvent, updateId string) []pipelines.PipelineEvent {
@@ -71,64 +69,6 @@ func (r *pipelineRunner) logErrorEvent(ctx context.Context, pipelineId string, u
 	return nil
 }
 
-// PipelineOptions defines options for running a pipeline update.
-type PipelineOptions struct {
-	// Perform a full graph update.
-	RefreshAll bool
-
-	// List of tables to update.
-	Refresh []string
-
-	// Perform a full graph reset and recompute.
-	FullRefreshAll bool
-
-	// List of tables to reset and recompute.
-	FullRefresh []string
-}
-
-func (o *PipelineOptions) Define(fs *flag.FlagSet) {
-	fs.BoolVar(&o.RefreshAll, "refresh-all", false, "Perform a full graph update.")
-	fs.StringSliceVar(&o.Refresh, "refresh", nil, "List of tables to update.")
-	fs.BoolVar(&o.FullRefreshAll, "full-refresh-all", false, "Perform a full graph reset and recompute.")
-	fs.StringSliceVar(&o.FullRefresh, "full-refresh", nil, "List of tables to reset and recompute.")
-}
-
-// Validate returns if the combination of options is valid.
-func (o *PipelineOptions) Validate() error {
-	set := []string{}
-	if o.RefreshAll {
-		set = append(set, "--refresh-all")
-	}
-	if len(o.Refresh) > 0 {
-		set = append(set, "--refresh")
-	}
-	if o.FullRefreshAll {
-		set = append(set, "--full-refresh-all")
-	}
-	if len(o.FullRefresh) > 0 {
-		set = append(set, "--full-refresh")
-	}
-	if len(set) > 1 {
-		return fmt.Errorf("pipeline run arguments are mutually exclusive (got %s)", strings.Join(set, ", "))
-	}
-	return nil
-}
-
-func (o *PipelineOptions) toPayload(pipelineID string) (*pipelines.StartUpdate, error) {
-	if err := o.Validate(); err != nil {
-		return nil, err
-	}
-	payload := &pipelines.StartUpdate{
-		PipelineId: pipelineID,
-
-		// Note: `RefreshAll` is implied if the fields below are not set.
-		RefreshSelection:     o.Refresh,
-		FullRefresh:          o.FullRefreshAll,
-		FullRefreshSelection: o.FullRefresh,
-	}
-	return payload, nil
-}
-
 type pipelineRunner struct {
 	key
 
@@ -155,7 +95,7 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 		return nil, err
 	}
 
-	req, err := opts.Pipeline.toPayload(pipelineID)
+	req, err := opts.Pipeline.toPayload(r.pipeline, pipelineID)
 	if err != nil {
 		return nil, err
 	}

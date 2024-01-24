@@ -55,6 +55,10 @@ func (v Value) Kind() Kind {
 	return v.k
 }
 
+func (v Value) Value() any {
+	return v.v
+}
+
 func (v Value) Location() Location {
 	return v.l
 }
