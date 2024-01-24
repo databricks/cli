@@ -274,7 +274,7 @@ func TestValidateInstanceForEmptySchema(t *testing.T) {
 		"bar": "abc",
 	}
 	assert.ErrorContains(t, schema.validateAnyOf(validInstance), "anyOf must contain at least one schema")
-	assert.NoError(t, schema.ValidateInstance(validInstance), "anyOf must contain at least one schema")
+	assert.ErrorContains(t, schema.ValidateInstance(validInstance), "anyOf must contain at least one schema")
 }
 
 func TestValidateInstanceForAnyOf(t *testing.T) {
