@@ -89,6 +89,9 @@ func (r *resolver) resolveVariableReferences() (err error) {
 	r.resolved = make(map[string]dyn.Value)
 
 	// Resolve each variable reference (in order).
+	// We sort the keys here to ensure that we always resolve the same variable reference first.
+	// This is done such that the cycle detection error is deterministic. If we did not do this,
+	// we could enter the cycle at any point in the cycle and return varying errors.
 	keys := maps.Keys(r.refs)
 	sort.Strings(keys)
 	for _, key := range keys {
