@@ -241,6 +241,7 @@ func (schema *Schema) validate() error {
 		schema.validateSchemaPattern,
 		schema.validateSchemaMinimumCliVersion("v" + build.GetInfo().Version),
 		schema.validateSchemaSkippedPropertiesHaveDefaults,
+
 	} {
 		err := fn()
 		if err != nil {

@@ -264,6 +264,19 @@ func TestValidateInstanceForConst(t *testing.T) {
 	assert.EqualError(t, schema.ValidateInstance(invalidInstanceValue), "expected value of property bar to be def. Found: xyz")
 }
 
+func TestValidateInstanceForEmptySchema(t *testing.T) {
+	schema, err := Load("./testdata/instance-validate/test-empty-anyOf.json")
+	require.NoError(t, err)
+
+	// Valid values for both foo and bar
+	validInstance := map[string]any{
+		"foo": "abc",
+		"bar": "abc",
+	}
+	assert.ErrorContains(t, schema.validateAnyOf(validInstance), "anyOf must contain at least one schema")
+	assert.NoError(t, schema.ValidateInstance(validInstance), "anyOf must contain at least one schema")
+}
+
 func TestValidateInstanceForAnyOf(t *testing.T) {
 	schema, err := Load("./testdata/instance-validate/test-schema-anyof.json")
 	require.NoError(t, err)

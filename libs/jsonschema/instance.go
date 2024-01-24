@@ -154,6 +154,13 @@ func (s *Schema) validateAnyOf(instance map[string]any) error {
 	if s.AnyOf == nil {
 		return nil
 	}
+
+	// According to the JSON schema RFC, anyOf must contain at least one schema.
+	// https://json-schema.org/draft/2020-12/json-schema-core
+	if len(s.AnyOf) == 0 {
+		return fmt.Errorf("anyOf must contain at least one schema")
+	}
+
 	// Currently, we only validate const for anyOf schemas since anyOf is
 	// only used by skip_prompt_if, which only supports const.
 	for _, anyOf := range s.AnyOf {
