@@ -451,8 +451,10 @@ func TestPromptIsSkippedAnyOf(t *testing.T) {
 	assert.False(t, skip)
 
 	// Values do not match skip condition. Prompt should not be skipped.
-	c.values["abc"] = "foobar"
-	c.values["def"] = 1234
+	c.values = map[string]any{
+		"abc": "foobar",
+		"def": 1234,
+	}
 	skip, err = c.skipPrompt(jsonschema.Property{
 		Name:   "xyz",
 		Schema: c.schema.Properties["xyz"],
@@ -462,19 +464,21 @@ func TestPromptIsSkippedAnyOf(t *testing.T) {
 	assert.NotContains(t, c.values, "xyz")
 
 	// Missing values. Prompt should not be skipped.
-	c.values["abc"] = "foobar"
-	skip, err = c.skipPrompt(jsonschema.Property{
+	c.values = map[string]any{
+		"abc": "foobar",
+	}
+	_, err = c.skipPrompt(jsonschema.Property{
 		Name:   "xyz",
 		Schema: c.schema.Properties["xyz"],
 	}, testRenderer())
-	assert.NoError(t, err)
-	assert.False(t, skip)
-	assert.NotContains(t, c.values, "xyz")
+	assert.ErrorContains(t, err, "property def is used in skip_prompt_if but has no value assigned")
 
 	// Values match skip condition. Prompt should be skipped. Default value should
 	// be assigned to "xyz".
-	c.values["abc"] = "foobar"
-	c.values["def"] = 123
+	c.values = map[string]any{
+		"abc": "foobar",
+		"def": 123,
+	}
 	skip, err = c.skipPrompt(jsonschema.Property{
 		Name:   "xyz",
 		Schema: c.schema.Properties["xyz"],
@@ -485,7 +489,10 @@ func TestPromptIsSkippedAnyOf(t *testing.T) {
 
 	// Values match skip condition. Prompt should be skipped. Default value should
 	// be assigned to "xyz".
-	c.values["abc"] = "barfoo"
+	c.values = map[string]any{
+		"abc": "barfoo",
+		"def": 0,
+	}
 	skip, err = c.skipPrompt(jsonschema.Property{
 		Name:   "xyz",
 		Schema: c.schema.Properties["xyz"],

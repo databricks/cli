@@ -73,12 +73,20 @@ func (s *Schema) validateAdditionalProperties(instance map[string]any) error {
 	return nil
 }
 
+type RequiredPropertyMissingError struct {
+	Name string
+}
+
+func (err RequiredPropertyMissingError) Error() string {
+	return fmt.Sprintf("no value provided for required property %s", err.Name)
+}
+
 // This function validates that all require properties in the schema have values
 // in the instance.
 func (s *Schema) validateRequired(instance map[string]any) error {
 	for _, name := range s.Required {
 		if _, ok := instance[name]; !ok {
-			return fmt.Errorf("no value provided for required property %s", name)
+			return RequiredPropertyMissingError{Name: name}
 		}
 	}
 	return nil
