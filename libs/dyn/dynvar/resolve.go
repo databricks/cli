@@ -11,6 +11,29 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+// Resolve resolves variable references in the given input value using the provided lookup function.
+// It returns the resolved output value and any error encountered during the resolution process.
+//
+// For example, given the input value:
+//
+//	{
+//	    "a": "a",
+//	    "b": "${a}",
+//	    "c": "${b}${b}",
+//	}
+//
+// The output value will be:
+//
+//	{
+//	    "a": "a",
+//	    "b": "a",
+//	    "c": "aa",
+//	}
+//
+// If the input value contains a variable reference that cannot be resolved, an error is returned.
+// If a cycle is detected in the variable references, an error is returned.
+// If for some path the resolution function returns [ErrSkipResolution], the variable reference is left in place.
+// This is useful when some variable references are not yet ready to be interpolated.
 func Resolve(in dyn.Value, fn Lookup) (out dyn.Value, err error) {
 	return resolver{in: in, fn: fn}.run()
 }
