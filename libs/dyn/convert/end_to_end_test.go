@@ -28,6 +28,7 @@ func TestAdditional(t *testing.T) {
 		SliceOfPointer []*string          `json:"slice_of_pointer"`
 		NestedStruct   StructType         `json:"nested_struct"`
 		MapOfString    map[string]string  `json:"map_of_string"`
+		MapOfBool      map[string]bool    `json:"map_of_bool"`
 	}
 
 	t.Run("nil", func(t *testing.T) {
@@ -72,6 +73,15 @@ func TestAdditional(t *testing.T) {
 		assertFromTypedToTypedEqual(t, Tmp{
 			MapOfString: map[string]string{
 				"key": "",
+			},
+		})
+	})
+
+	// Without the changes in this PR, this test case would fail
+	t.Run("map with empty val", func(t *testing.T) {
+		assertFromTypedToTypedEqual(t, Tmp{
+			MapOfBool: map[string]bool{
+				"key": false,
 			},
 		})
 	})
