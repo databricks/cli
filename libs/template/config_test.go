@@ -358,7 +358,7 @@ func TestPromptIsSkipped(t *testing.T) {
 
 	// No values assigned to config. Expect error because required values are
 	// missing
-	skip, err = c.skipPrompt(jsonschema.Property{
+	_, err = c.skipPrompt(jsonschema.Property{
 		Name:   "xyz",
 		Schema: c.schema.Properties["xyz"],
 	}, testRenderer())
