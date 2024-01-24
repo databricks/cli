@@ -142,11 +142,6 @@ func fromTypedString(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 
 		return dyn.V(value), nil
 	case dyn.KindNil:
-		// This field is not set in the reference, so we only include it if it has a non-zero value.
-		// Otherwise, we would always include all zero valued fields.
-		if src.IsZero() {
-			return dyn.NilValue, nil
-		}
 		return dyn.V(src.String()), nil
 	}
 

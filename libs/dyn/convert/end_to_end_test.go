@@ -27,6 +27,7 @@ func TestAdditional(t *testing.T) {
 		MapToPointer   map[string]*string `json:"map_to_pointer"`
 		SliceOfPointer []*string          `json:"slice_of_pointer"`
 		NestedStruct   StructType         `json:"nested_struct"`
+		MapOfString    map[string]string  `json:"map_of_string"`
 	}
 
 	t.Run("nil", func(t *testing.T) {
@@ -56,6 +57,22 @@ func TestAdditional(t *testing.T) {
 	t.Run("slice with nil value", func(t *testing.T) {
 		assertFromTypedToTypedEqual(t, Tmp{
 			SliceOfPointer: []*string{nil},
+		})
+	})
+
+	t.Run("map with one value", func(t *testing.T) {
+		assertFromTypedToTypedEqual(t, Tmp{
+			MapOfString: map[string]string{
+				"key": "value",
+			},
+		})
+	})
+
+	t.Run("map with empty val", func(t *testing.T) {
+		assertFromTypedToTypedEqual(t, Tmp{
+			MapOfString: map[string]string{
+				"key": "",
+			},
 		})
 	})
 }
