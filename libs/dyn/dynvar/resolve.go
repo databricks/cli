@@ -70,13 +70,13 @@ func (r *resolver) collectVariableReferences() (err error) {
 
 	// First walk the input to gather all values with a variable reference.
 	_, err = dyn.Walk(r.in, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-		ref, ok := newRef(v, p)
+		ref, ok := newRef(v)
 		if !ok {
 			// Skip values without variable references.
 			return v, nil
 		}
 
-		r.refs[ref.key] = ref
+		r.refs[p.String()] = ref
 		return v, nil
 	})
 
@@ -191,13 +191,13 @@ func (r *resolver) resolve(key string, seen []string) (dyn.Value, error) {
 func (r *resolver) replaceVariableReferences() (dyn.Value, error) {
 	// Walk the input and replace all variable references.
 	return dyn.Walk(r.in, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-		ref, ok := r.refs[p.String()]
+		nv, ok := r.resolved[p.String()]
 		if !ok {
 			// No variable reference; return the original value.
 			return v, nil
 		}
 
 		// We have a variable reference; return the resolved value.
-		return r.resolved[ref.key], nil
+		return nv, nil
 	})
 }

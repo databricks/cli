@@ -12,13 +12,8 @@ var re = regexp.MustCompile(`\$\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\.[a-zA-Z]+([-_]
 // It is a string [dyn.Value] contained in a larger [dyn.Value].
 // Its path within the containing [dyn.Value] is also stored.
 type ref struct {
-	// Original value and path.
+	// Original value.
 	value dyn.Value
-	path  dyn.Path
-
-	// Key to index this ref by.
-	// It is equal to the string representation of the path.
-	key string
 
 	// String value in the original [dyn.Value].
 	str string
@@ -35,7 +30,7 @@ type ref struct {
 //   - "${a.b}"
 //   - "${a.b.c}"
 //   - "${a} ${b} ${c}"
-func newRef(v dyn.Value, p dyn.Path) (ref, bool) {
+func newRef(v dyn.Value) (ref, bool) {
 	s, ok := v.AsString()
 	if !ok {
 		return ref{}, false
@@ -49,8 +44,6 @@ func newRef(v dyn.Value, p dyn.Path) (ref, bool) {
 
 	return ref{
 		value:   v,
-		path:    p,
-		key:     p.String(),
 		str:     s,
 		matches: m,
 	}, true

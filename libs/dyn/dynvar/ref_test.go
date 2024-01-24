@@ -9,7 +9,7 @@ import (
 )
 
 func TestNewRefNoString(t *testing.T) {
-	_, ok := newRef(dyn.V(1), dyn.Path{})
+	_, ok := newRef(dyn.V(1))
 	require.False(t, ok, "should not match non-string")
 }
 
@@ -19,7 +19,7 @@ func TestNewRefValidPattern(t *testing.T) {
 		"${helloworld.world-world}":  {"helloworld.world-world"},
 		"${hello-world.world-world}": {"hello-world.world-world"},
 	} {
-		ref, ok := newRef(dyn.V(in), dyn.Path{})
+		ref, ok := newRef(dyn.V(in))
 		require.True(t, ok, "should match valid pattern: %s", in)
 		assert.Equal(t, refs, ref.references())
 	}
@@ -40,7 +40,7 @@ func TestNewRefInvalidPattern(t *testing.T) {
 		"${a-a.a--a-a.id}",              // fails because of -- in the second segment
 	}
 	for _, v := range invalid {
-		_, ok := newRef(dyn.V(v), dyn.Path{})
+		_, ok := newRef(dyn.V(v))
 		require.False(t, ok, "should not match invalid pattern: %s", v)
 	}
 }
