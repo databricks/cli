@@ -251,9 +251,6 @@ func (r *Root) Merge(other *Root) error {
 	// // Merge diagnostics.
 	// r.diags = append(r.diags, other.diags...)
 
-	// // TODO: when hooking into merge semantics, disallow setting path on the target instance.
-	// other.Path = ""
-
 	// Check for safe merge, protecting against duplicate resource identifiers
 	err := r.Resources.VerifySafeMerge(&other.Resources)
 	if err != nil {
@@ -397,6 +394,10 @@ func (r *Root) MergeTargetOverrides(name string) error {
 // tree where we allow users to write a shorthand and must
 // rewrite to the full form.
 func rewrite(v dyn.Value) (dyn.Value, error) {
+	if v.Kind() != dyn.KindMap {
+		return v, nil
+	}
+
 	// For each target, rewrite the variables block.
 	return dyn.Map(v, "targets", dyn.Foreach(func(target dyn.Value) (dyn.Value, error) {
 		// Confirm it has a variables block.

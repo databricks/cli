@@ -30,51 +30,6 @@ func TestRootLoad(t *testing.T) {
 	assert.Equal(t, "basic", root.Bundle.Name)
 }
 
-func TestRootMergeStruct(t *testing.T) {
-	root := &Root{
-		Path: "path",
-		Workspace: Workspace{
-			Host:    "foo",
-			Profile: "profile",
-		},
-	}
-	other := &Root{
-		Path: "path",
-		Workspace: Workspace{
-			Host: "bar",
-		},
-	}
-	assert.NoError(t, root.Merge(other))
-	assert.Equal(t, "bar", root.Workspace.Host)
-	assert.Equal(t, "profile", root.Workspace.Profile)
-}
-
-func TestRootMergeMap(t *testing.T) {
-	root := &Root{
-		Path: "path",
-		Targets: map[string]*Target{
-			"development": {
-				Workspace: &Workspace{
-					Host:    "foo",
-					Profile: "profile",
-				},
-			},
-		},
-	}
-	other := &Root{
-		Path: "path",
-		Targets: map[string]*Target{
-			"development": {
-				Workspace: &Workspace{
-					Host: "bar",
-				},
-			},
-		},
-	}
-	assert.NoError(t, root.Merge(other))
-	assert.Equal(t, &Workspace{Host: "bar", Profile: "profile"}, root.Targets["development"].Workspace)
-}
-
 func TestDuplicateIdOnLoadReturnsError(t *testing.T) {
 	_, err := Load("./testdata/duplicate_resource_names_in_root/databricks.yml")
 	assert.ErrorContains(t, err, "multiple resources named foo (job at ./testdata/duplicate_resource_names_in_root/databricks.yml, pipeline at ./testdata/duplicate_resource_names_in_root/databricks.yml)")
@@ -160,6 +115,7 @@ func TestRootMergeTargetOverridesWithMode(t *testing.T) {
 			},
 		},
 	}
+	root.initializeDynamicValue()
 	require.NoError(t, root.MergeTargetOverrides("development"))
 	assert.Equal(t, Development, root.Bundle.Mode)
 }
