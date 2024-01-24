@@ -3,7 +3,6 @@ package template
 import (
 	"context"
 	"fmt"
-	"strings"
 	"testing"
 	"text/template"
 
@@ -341,6 +340,7 @@ func TestPromptIsSkipped(t *testing.T) {
 									Const: 123,
 								},
 							},
+							Required: []string{"abc", "def"},
 						},
 					},
 				},
@@ -362,8 +362,8 @@ func TestPromptIsSkipped(t *testing.T) {
 		Name:   "xyz",
 		Schema: c.schema.Properties["xyz"],
 	}, testRenderer())
-	assert.True(t, strings.Contains(err.Error(), "property abc is used in skip_prompt_if but has no value assigned") ||
-		strings.Contains(err.Error(), "property def is used in skip_prompt_if but has no value assigned"))
+	assert.NoError(t, err)
+	assert.False(t, skip)
 
 	// Values do not match skip condition. Prompt should not be skipped.
 	c.values["abc"] = "foo"
@@ -427,6 +427,7 @@ func TestPromptIsSkippedAnyOf(t *testing.T) {
 											Const: 123,
 										},
 									},
+									Required: []string{"abc", "def"},
 								},
 								{
 									Properties: map[string]*jsonschema.Schema{
@@ -472,7 +473,9 @@ func TestPromptIsSkippedAnyOf(t *testing.T) {
 		Name:   "xyz",
 		Schema: c.schema.Properties["xyz"],
 	}, testRenderer())
-	assert.ErrorContains(t, err, "property def is used in skip_prompt_if but has no value assigned")
+	assert.NoError(t, err)
+	assert.False(t, skip)
+	assert.NotContains(t, c.values, "xyz")
 
 	// Values match skip condition. Prompt should be skipped. Default value should
 	// be assigned to "xyz".
@@ -492,7 +495,6 @@ func TestPromptIsSkippedAnyOf(t *testing.T) {
 	// be assigned to "xyz".
 	c.values = map[string]any{
 		"abc": "barfoo",
-		"def": 0,
 	}
 	skip, err = c.skipPrompt(jsonschema.Property{
 		Name:   "xyz",
