@@ -127,13 +127,27 @@ func (c *config) skipPrompt(p jsonschema.Property, r *renderer) (bool, error) {
 
 	// All fields referred to in a SkipPromptIf condition are implicitly made required and
 	// we diverge from strictly following the JSON schema because it makes the author UX better.
-	var keys []string
-	for k := range p.Schema.SkipPromptIf.Properties {
-		keys = append(keys, k)
+	required := make(map[string]struct{})
+	for _, k := range p.Schema.SkipPromptIf.Required {
+		required[k] = struct{}{}
 	}
-	p.Schema.SkipPromptIf.Required = append(keys, p.Schema.SkipPromptIf.Required...)
+	for k := range p.Schema.SkipPromptIf.Properties {
+		required[k] = struct{}{}
+	}
+	for _, schema := range p.Schema.SkipPromptIf.AnyOf {
+		for k := range schema.Properties {
+			required[k] = struct{}{}
+		}
+	}
+	p.Schema.SkipPromptIf.Required = maps.Keys(required)
 
+	// Validate the partial config against skip_prompt_if schema
 	validationErr := p.Schema.SkipPromptIf.ValidateInstance(c.values)
+
+	target := jsonschema.RequiredPropertyMissingError{}
+	if errors.As(validationErr, &target) {
+		return false, fmt.Errorf("property %s is used in skip_prompt_if but has no value assigned", target.Name)
+	}
 	if validationErr != nil {
 		return false, nil
 	}
