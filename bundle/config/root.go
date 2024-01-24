@@ -228,8 +228,6 @@ func (r *Root) ConfigureConfigFilePath() {
 // Input has to be a string of the form `foo=bar`. In this case the variable with
 // name `foo` is assigned the value `bar`
 func (r *Root) InitializeVariables(vars []string) error {
-	panic("nope")
-
 	for _, variable := range vars {
 		parsedVariable := strings.SplitN(variable, "=", 2)
 		if len(parsedVariable) != 2 {
