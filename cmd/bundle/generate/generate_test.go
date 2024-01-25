@@ -3,6 +3,7 @@ package generate
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -76,16 +77,16 @@ func TestGeneratePipelineCommand(t *testing.T) {
 
 	data, err := os.ReadFile(filepath.Join(configDir, "pipeline_test_pipeline.yml"))
 	require.NoError(t, err)
-	require.Equal(t, `resources:
+	require.Equal(t, fmt.Sprintf(`resources:
   pipelines:
     pipeline_test_pipeline:
       name: test-pipeline
       libraries:
         - notebook:
-            path: ../src/notebook.py
+            path: %s
         - file:
-            path: ../src/file.py
-`, string(data))
+            path: %s
+`, filepath.Join("..", "src", "notebook.py"), filepath.Join("..", "src", "file.py")), string(data))
 
 	data, err = os.ReadFile(filepath.Join(srcDir, "notebook.py"))
 	require.NoError(t, err)
