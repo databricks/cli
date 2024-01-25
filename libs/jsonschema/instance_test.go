@@ -265,7 +265,7 @@ func TestValidateInstanceForConst(t *testing.T) {
 }
 
 func TestValidateInstanceForEmptySchema(t *testing.T) {
-	schema, err := Load("./testdata/instance-validate/test-empty-anyOf.json")
+	schema, err := Load("./testdata/instance-validate/test-empty-anyof.json")
 	require.NoError(t, err)
 
 	// Valid values for both foo and bar
