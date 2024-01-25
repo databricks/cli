@@ -123,7 +123,7 @@ jobs:
     runs-on: windows-latest
     environment: release
     steps:
-      - uses: vedantmgoyal2009/winget-releaser@v2
+      - uses: vedantmgoyal2009/winget-releaser@93fd8b606a1672ec3e5c6c3bb19426be68d1a8b0 # https://github.com/vedantmgoyal2009/winget-releaser/releases/tag/v2
         with:
           identifier: Databricks.DatabricksCLI
           installers-regex: 'windows_.*\.zip$' # Only windows releases
