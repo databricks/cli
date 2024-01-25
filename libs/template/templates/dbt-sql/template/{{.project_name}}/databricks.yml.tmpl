@@ -31,6 +31,8 @@ variables:
 targets:
   dev:
     default: true
+    # We use 'mode: development' to indicate this is a personal development copy.
+    # Any job schedules and triggers are paused by default.
     mode: development
     workspace:
       host: {{workspace_host}}
