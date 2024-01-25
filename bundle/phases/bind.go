@@ -17,7 +17,6 @@ func Bind(opts *terraform.BindOptions) bundle.Mutator {
 					terraform.Write(),
 					terraform.StatePull(),
 					terraform.Import(opts),
-					terraform.StatePush(),
 				),
 				lock.Release(lock.GoalBind),
 			),

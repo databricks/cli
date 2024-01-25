@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
@@ -39,6 +40,7 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) error {
 	if err != nil {
 		return fmt.Errorf("write imports file: %w", err)
 	}
+	log.Debugf(ctx, "imports.tf file written to %s", importsFilePath)
 
 	buf := bytes.NewBuffer(nil)
 	tf.SetStdout(buf)
@@ -60,6 +62,7 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) error {
 		}
 	}
 
+	log.Debugf(ctx, "resource imports approved")
 	return nil
 }
 
