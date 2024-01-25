@@ -55,6 +55,9 @@ jobs:
       - name: Run tests
         run: make test
 
+      - name: Publish test coverage
+        uses: codecov/codecov-action@v1
+
   fmt:
     runs-on: ubuntu-latest
 

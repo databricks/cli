@@ -121,7 +121,10 @@ func newDelete() *cobra.Command {
 
 	cmd.Use = "delete ID"
 	cmd.Short = `Remove visualization.`
-	cmd.Long = `Remove visualization.`
+	cmd.Long = `Remove visualization.
+
+  Arguments:
+    ID: Widget ID returned by :method:queryvizualisations/create`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -180,11 +183,19 @@ func newUpdate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Use = "update"
+	cmd.Use = "update ID"
 	cmd.Short = `Edit existing visualization.`
-	cmd.Long = `Edit existing visualization.`
+	cmd.Long = `Edit existing visualization.
+
+  Arguments:
+    ID: The UUID for this visualization.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -199,6 +210,7 @@ func newUpdate() *cobra.Command {
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
+		updateReq.Id = args[0]
 
 		response, err := w.QueryVisualizations.Update(ctx, updateReq)
 		if err != nil {

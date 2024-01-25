@@ -5,7 +5,8 @@
     },
     "batch": {
         ".codegen/cmds-workspace.go.tmpl": "cmd/workspace/cmd.go",
-        ".codegen/cmds-account.go.tmpl": "cmd/account/cmd.go"
+        ".codegen/cmds-account.go.tmpl": "cmd/account/cmd.go",
+        ".codegen/lookup.go.tmpl": "bundle/config/variable/lookup.go"
     },
     "toolchain": {
         "required": ["go"],

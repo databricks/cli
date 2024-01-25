@@ -292,6 +292,9 @@ func newList() *cobra.Command {
 
 	// TODO: short flags
 
+	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of functions to return.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+
 	cmd.Use = "list CATALOG_NAME SCHEMA_NAME"
 	cmd.Short = `List functions.`
 	cmd.Long = `List functions.
@@ -301,8 +304,9 @@ func newList() *cobra.Command {
   the user must have the **USE_CATALOG** privilege on the catalog and the
   **USE_SCHEMA** privilege on the schema, and the output list contains only
   functions for which either the user has the **EXECUTE** privilege or the user
-  is the owner. There is no guarantee of a specific ordering of the elements in
-  the array.
+  is the owner. For unpaginated request, there is no guarantee of a specific
+  ordering of the elements in the array. For paginated request, elements are
+  ordered by their name.
 
   Arguments:
     CATALOG_NAME: Name of parent catalog for functions of interest.

@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
 )
@@ -47,20 +48,7 @@ func (opts exportDirOptions) callback(ctx context.Context, workspaceFiler filer.
 			return err
 		}
 		objectInfo := info.Sys().(workspace.ObjectInfo)
-		if objectInfo.ObjectType == workspace.ObjectTypeNotebook {
-			switch objectInfo.Language {
-			case workspace.LanguagePython:
-				targetPath += ".py"
-			case workspace.LanguageR:
-				targetPath += ".r"
-			case workspace.LanguageScala:
-				targetPath += ".scala"
-			case workspace.LanguageSql:
-				targetPath += ".sql"
-			default:
-				// Do not add any extension to the file name
-			}
-		}
+		targetPath += notebook.GetExtensionByLanguage(&objectInfo)
 
 		// Skip file if a file already exists in path.
 		// os.Stat returns a fs.ErrNotExist if a file does not exist at path.

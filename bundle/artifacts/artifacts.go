@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/log"
 )
 
 type mutatorFactory = func(name string) bundle.Mutator
@@ -67,7 +68,7 @@ func (m *basicBuild) Apply(ctx context.Context, b *bundle.Bundle) error {
 	if err != nil {
 		return fmt.Errorf("build for %s failed, error: %w, output: %s", m.name, err, out)
 	}
-	cmdio.LogString(ctx, "Build succeeded")
+	log.Infof(ctx, "Build succeeded")
 
 	return nil
 }
@@ -124,7 +125,7 @@ func uploadArtifact(ctx context.Context, a *config.Artifact, uploadPath string, 
 			if err != nil {
 				return err
 			}
-			cmdio.LogString(ctx, "Upload succeeded")
+			log.Infof(ctx, "Upload succeeded")
 			f.RemotePath = path.Join(uploadPath, filepath.Base(f.Source))
 		}
 	}

@@ -2,15 +2,25 @@ package template
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/jsonschema"
+	"github.com/databricks/cli/libs/log"
 	"golang.org/x/exp/maps"
 )
 
 // The latest template schema version supported by the CLI
 const latestSchemaVersion = 1
+
+type retriableError struct {
+	err error
+}
+
+func (e retriableError) Error() string {
+	return e.err.Error()
+}
 
 type config struct {
 	ctx    context.Context
@@ -143,6 +153,45 @@ func (c *config) skipPrompt(p jsonschema.Property, r *renderer) (bool, error) {
 	return true, nil
 }
 
+func (c *config) promptOnce(property *jsonschema.Schema, name, defaultVal, description string) error {
+	var userInput string
+	if property.Enum != nil {
+		// List options for the user to select from
+		options, err := property.EnumStringSlice()
+		if err != nil {
+			return err
+		}
+		userInput, err = cmdio.AskSelect(c.ctx, description, options)
+		if err != nil {
+			return err
+		}
+	} else {
+		var err error
+		userInput, err = cmdio.Ask(c.ctx, description, defaultVal)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Convert user input string back to a Go value
+	var err error
+	c.values[name], err = property.ParseString(userInput)
+	if err != nil {
+		// Show error and retry if validation fails
+		cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %s", err.Error()))
+		return retriableError{err: err}
+	}
+
+	// Validate the partial config which includes the new value
+	err = c.schema.ValidateInstance(c.values)
+	if err != nil {
+		// Show error and retry if validation fails
+		cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %s", err.Error()))
+		return retriableError{err: err}
+	}
+	return nil
+}
+
 // Prompts user for values for properties that do not have a value set yet
 func (c *config) promptForValues(r *renderer) error {
 	for _, p := range c.schema.OrderedProperties() {
@@ -171,39 +220,22 @@ func (c *config) promptForValues(r *renderer) error {
 			}
 		}
 
+		// Compute description for the prompt
 		description, err := r.executeTemplate(property.Description)
 		if err != nil {
 			return err
 		}
 
-		// Get user input by running the prompt
-		var userInput string
-		if property.Enum != nil {
-			// convert list of enums to string slice
-			enums, err := property.EnumStringSlice()
-			if err != nil {
+		// We wrap this function in a retry loop to allow retries when the user
+		// entered value is invalid.
+		for {
+			err = c.promptOnce(property, name, defaultVal, description)
+			if err == nil {
+				break
+			}
+			if !errors.As(err, &retriableError{}) {
 				return err
 			}
-			userInput, err = cmdio.AskSelect(c.ctx, description, enums)
-			if err != nil {
-				return err
-			}
-		} else {
-			userInput, err = cmdio.Ask(c.ctx, description, defaultVal)
-			if err != nil {
-				return err
-			}
-		}
-
-		// Convert user input string back to a value
-		c.values[name], err = property.ParseString(userInput)
-		if err != nil {
-			return err
-		}
-
-		// Validate the partial config based on this update
-		if err := c.schema.ValidateInstance(c.values); err != nil {
-			return err
 		}
 	}
 	return nil
@@ -212,9 +244,11 @@ func (c *config) promptForValues(r *renderer) error {
 // Prompt user for any missing config values. Assign default values if
 // terminal is not TTY
 func (c *config) promptOrAssignDefaultValues(r *renderer) error {
-	if cmdio.IsPromptSupported(c.ctx) {
+	// TODO: replace with IsPromptSupported call (requires fixing TestAccBundleInitErrorOnUnknownFields test)
+	if cmdio.IsOutTTY(c.ctx) && cmdio.IsInTTY(c.ctx) && !cmdio.IsGitBash(c.ctx) {
 		return c.promptForValues(r)
 	}
+	log.Debugf(c.ctx, "Terminal is not TTY. Assigning default values to template input parameters")
 	return c.assignDefaultValues(r)
 }
 

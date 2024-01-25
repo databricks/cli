@@ -283,10 +283,18 @@ func init() {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
+	*catalog.ListExternalLocationsRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+
+	var listReq catalog.ListExternalLocationsRequest
+
+	// TODO: short flags
+
+	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of external locations to return.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List external locations.`
@@ -294,16 +302,24 @@ func newList() *cobra.Command {
   
   Gets an array of external locations (__ExternalLocationInfo__ objects) from
   the metastore. The caller must be a metastore admin, the owner of the external
-  location, or a user that has some privilege on the external location. There is
-  no guarantee of a specific ordering of the elements in the array.`
+  location, or a user that has some privilege on the external location. For
+  unpaginated request, there is no guarantee of a specific ordering of the
+  elements in the array. For paginated request, elements are ordered by their
+  name.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		response, err := w.ExternalLocations.ListAll(ctx)
+
+		response, err := w.ExternalLocations.ListAll(ctx, listReq)
 		if err != nil {
 			return err
 		}
@@ -316,7 +332,7 @@ func newList() *cobra.Command {
 
 	// Apply optional overrides to this command.
 	for _, fn := range listOverrides {
-		fn(cmd)
+		fn(cmd, &listReq)
 	}
 
 	return cmd

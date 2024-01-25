@@ -18,7 +18,7 @@ func Groups() []cobra.Group {
 		},
 		{
 			ID:    "jobs",
-			Title: "Jobs",
+			Title: "Workflows",
 		},
 		{
 			ID:    "pipelines",
@@ -51,6 +51,18 @@ func Groups() []cobra.Group {
 		{
 			ID:    "settings",
 			Title: "Settings",
+		},
+		{
+			ID:    "development",
+			Title: "Developer Tools",
+		},
+		{
+			ID:    "vectorsearch",
+			Title: "Vector Search",
+		},
+		{
+			ID:    "dashboards",
+			Title: "Dashboards",
 		},
 	}
 }

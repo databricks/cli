@@ -175,7 +175,7 @@ func newDelete() *cobra.Command {
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No NAME argument specified. Loading names for Storage Credentials drop-down."
-			names, err := w.StorageCredentials.StorageCredentialInfoNameToIdMap(ctx)
+			names, err := w.StorageCredentials.StorageCredentialInfoNameToIdMap(ctx, catalog.ListStorageCredentialsRequest{})
 			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Storage Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -253,7 +253,7 @@ func newGet() *cobra.Command {
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No NAME argument specified. Loading names for Storage Credentials drop-down."
-			names, err := w.StorageCredentials.StorageCredentialInfoNameToIdMap(ctx)
+			names, err := w.StorageCredentials.StorageCredentialInfoNameToIdMap(ctx, catalog.ListStorageCredentialsRequest{})
 			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Storage Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -300,10 +300,18 @@ func init() {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
+	*catalog.ListStorageCredentialsRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+
+	var listReq catalog.ListStorageCredentialsRequest
+
+	// TODO: short flags
+
+	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of storage credentials to return.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List credentials.`
@@ -311,17 +319,24 @@ func newList() *cobra.Command {
   
   Gets an array of storage credentials (as __StorageCredentialInfo__ objects).
   The array is limited to only those storage credentials the caller has
-  permission to access. If the caller is a metastore admin, all storage
-  credentials will be retrieved. There is no guarantee of a specific ordering of
-  the elements in the array.`
+  permission to access. If the caller is a metastore admin, retrieval of
+  credentials is unrestricted. For unpaginated request, there is no guarantee of
+  a specific ordering of the elements in the array. For paginated request,
+  elements are ordered by their name.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		response, err := w.StorageCredentials.ListAll(ctx)
+
+		response, err := w.StorageCredentials.ListAll(ctx, listReq)
 		if err != nil {
 			return err
 		}
@@ -334,7 +349,7 @@ func newList() *cobra.Command {
 
 	// Apply optional overrides to this command.
 	for _, fn := range listOverrides {
-		fn(cmd)
+		fn(cmd, &listReq)
 	}
 
 	return cmd
@@ -401,7 +416,7 @@ func newUpdate() *cobra.Command {
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No NAME argument specified. Loading names for Storage Credentials drop-down."
-			names, err := w.StorageCredentials.StorageCredentialInfoNameToIdMap(ctx)
+			names, err := w.StorageCredentials.StorageCredentialInfoNameToIdMap(ctx, catalog.ListStorageCredentialsRequest{})
 			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Storage Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
