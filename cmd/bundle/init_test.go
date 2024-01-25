@@ -30,6 +30,7 @@ func TestBundleInitRepoName(t *testing.T) {
 func TestNativeTemplateOptions(t *testing.T) {
 	expected := []cmdio.Tuple{
 		{Name: "default-python", Id: "The default Python template for Notebooks / Delta Live Tables / Workflows"},
+		{Name: "default-sql", Id: "The default SQL template for .sql files that run with Databricks SQL"},
 		{Name: "mlops-stacks", Id: "The Databricks MLOps Stacks template (github.com/databricks/mlops-stacks)"},
 		{Name: "custom...", Id: "Bring your own template"},
 	}
@@ -38,6 +39,7 @@ func TestNativeTemplateOptions(t *testing.T) {
 
 func TestNativeTemplateHelpDescriptions(t *testing.T) {
 	expected := `- default-python: The default Python template for Notebooks / Delta Live Tables / Workflows
+- default-sql: The default SQL template for .sql files that run with Databricks SQL
 - mlops-stacks: The Databricks MLOps Stacks template (github.com/databricks/mlops-stacks)`
 	assert.Equal(t, expected, nativeTemplateHelpDescriptions())
 }
