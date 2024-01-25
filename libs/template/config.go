@@ -125,12 +125,9 @@ func (c *config) skipPrompt(p jsonschema.Property, r *renderer) (bool, error) {
 		return false, nil
 	}
 
-	// Check if conditions specified by template author for skipping the prompt
-	// are satisfied. If they are not, we have to prompt for a user input.
-	for name, property := range p.Schema.SkipPromptIf.Properties {
-		if v, ok := c.values[name]; ok && v == property.Const {
-			continue
-		}
+	// Validate the partial config against skip_prompt_if schema
+	validationErr := p.Schema.SkipPromptIf.ValidateInstance(c.values)
+	if validationErr != nil {
 		return false, nil
 	}
 
