@@ -24,7 +24,7 @@ variables:
 {{- $prod_schema := .shared_schema }}
 {{- if (regexp "^yes").MatchString .personal_schemas}}
 {{- $dev_schema = "${workspace.current_user.short_name}"}}
-{{- $prod_schema = .prod_schema}}
+{{- $prod_schema = "default"}}
 {{- end}}
 
 # Deployment targets.
