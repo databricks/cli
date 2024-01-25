@@ -34,7 +34,7 @@ func TestAccBundleInitOnMlopsStacks(t *testing.T) {
 
 	// Run bundle init
 	assert.NoFileExists(t, filepath.Join(tmpDir2, "foobar", "README.md"))
-	RequireSuccessfulRun(t, "bundle", "init", "/Users/shreyas.goenka/mlops-stack", "--output-dir", tmpDir2, "--config-file", filepath.Join(tmpDir1, "config.json"))
+	RequireSuccessfulRun(t, "bundle", "init", "mlops-stacks", "--output-dir", tmpDir2, "--config-file", filepath.Join(tmpDir1, "config.json"))
 
 	// Assert that the README.md file was created
 	assert.FileExists(t, filepath.Join(tmpDir2, "foobar", "README.md"))
