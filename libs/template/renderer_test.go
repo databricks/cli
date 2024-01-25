@@ -50,6 +50,9 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 
 	// Prepare helpers
 	cachedUser = &iam.User{UserName: "user@domain.com"}
+	if isServicePrincipal {
+		cachedUser.UserName = "1d410060-a513-496f-a197-23cc82e5f46d"
+	}
 	cachedIsServicePrincipal = &isServicePrincipal
 	ctx = root.SetWorkspaceClient(ctx, w)
 	helpers := loadHelpers(ctx)
@@ -141,14 +144,21 @@ func TestBuiltinPythonTemplateValid(t *testing.T) {
 }
 
 func TestBuiltinSQLTemplateValid(t *testing.T) {
-	// Test prod mode + build
-	config := map[string]any{
-		"project_name": "my_project",
-		"http_path":    "/sql/warehouses/123",
+	for _, personal_schemas := range []string{"yes", "no"} {
+		for _, target := range []string{"dev", "prod"} {
+			for _, isServicePrincipal := range []bool{true, false} {
+				config := map[string]any{
+					"project_name":     "my_project",
+					"http_path":        "/sql/1.0/warehouses/123",
+					"default_catalog":  "users",
+					"shared_schema":    "lennart",
+					"personal_schemas": personal_schemas,
+				}
+				build := false
+				assertBuiltinTemplateValid(t, "default-sql", config, target, isServicePrincipal, build, t.TempDir())
+			}
+		}
 	}
-	build := false
-	assertBuiltinTemplateValid(t, "default-sql", config, "dev", true, build, t.TempDir())
-	assertBuiltinTemplateValid(t, "default-sql", config, "prod", false, build, t.TempDir())
 }
 
 func TestRendererWithAssociatedTemplateInLibrary(t *testing.T) {

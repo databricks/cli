@@ -71,6 +71,6 @@ func TestGetShortUserName(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		assert.Equal(t, tt.expected, getShortUserName(tt.email))
+		assert.Equal(t, tt.expected, GetShortUserName(tt.email))
 	}
 }

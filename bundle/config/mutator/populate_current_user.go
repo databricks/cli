@@ -33,7 +33,7 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) error
 	}
 
 	b.Config.Workspace.CurrentUser = &config.User{
-		ShortName: getShortUserName(me.UserName),
+		ShortName: GetShortUserName(me.UserName),
 		User:      me,
 	}
 
@@ -46,7 +46,7 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) error
 // Get a short-form username, based on the user's primary email address.
 // We leave the full range of unicode letters in tact, but remove all "special" characters,
 // including dots, which are not supported in e.g. experiment names.
-func getShortUserName(emailAddress string) string {
-	local, _, _ := strings.Cut(emailAddress, "@")
+func GetShortUserName(userName string) string {
+	local, _, _ := strings.Cut(userName, "@")
 	return textutil.NormalizeString(local)
 }
