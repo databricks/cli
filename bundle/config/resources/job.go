@@ -105,6 +105,6 @@ func (j *Job) Exists(ctx context.Context, w *databricks.WorkspaceClient, id stri
 	return err == nil
 }
 
-func (j *Job) Type() string {
+func (j *Job) TerraformResourceName() string {
 	return "databricks_job"
 }

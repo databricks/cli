@@ -7,7 +7,6 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
 )
 
@@ -35,24 +34,15 @@ func newBindCommand() *cobra.Command {
 		w := b.WorkspaceClient()
 		ctx := cmd.Context()
 		if !resource.Exists(ctx, w, args[1]) {
-			return fmt.Errorf("%s with an id '%s' is not found", resource.Type(), args[1])
-		}
-
-		if !autoApprove {
-			answer, err := cmdio.AskYesOrNo(ctx, "Binding to existing resource means that the resource will be managed by the bundle which can lead to changes in the resource. Do you want to continue?")
-			if err != nil {
-				return err
-			}
-			if !answer {
-				return nil
-			}
+			return fmt.Errorf("%s with an id '%s' is not found", resource.TerraformResourceName(), args[1])
 		}
 
 		b.Config.Bundle.Lock.Force = forceLock
 		return bundle.Apply(cmd.Context(), b, bundle.Seq(
 			phases.Initialize(),
 			phases.Bind(&terraform.BindOptions{
-				ResourceType: resource.Type(),
+				AutoApprove:  autoApprove,
+				ResourceType: resource.TerraformResourceName(),
 				ResourceKey:  args[0],
 				ResourceId:   args[1],
 			}),

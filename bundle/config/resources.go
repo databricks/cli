@@ -173,7 +173,7 @@ func (r *Resources) Merge() error {
 
 type ConfigResource interface {
 	Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) bool
-	Type() string
+	TerraformResourceName() string
 }
 
 func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) {

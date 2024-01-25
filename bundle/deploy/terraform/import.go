@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/cmdio"
@@ -33,9 +35,9 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return fmt.Errorf("terraform init: %w", err)
 	}
 
-	err = tf.Import(ctx, fmt.Sprintf("%s.%s", m.opts.ResourceType, m.opts.ResourceKey), m.opts.ResourceId)
+	importsFilePath, err := m.writeImportsFile(ctx, b)
 	if err != nil {
-		return fmt.Errorf("terraform import: %w", err)
+		return fmt.Errorf("write imports file: %w", err)
 	}
 
 	buf := bytes.NewBuffer(nil)
@@ -52,15 +54,34 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) error {
 			return err
 		}
 		if !ans {
-			err = tf.StateRm(ctx, fmt.Sprintf("%s.%s", m.opts.ResourceType, m.opts.ResourceKey))
-			if err != nil {
-				return err
-			}
+			// remove imports.tf file
+			_ = os.Remove(importsFilePath)
 			return fmt.Errorf("import aborted")
 		}
 	}
 
 	return nil
+}
+
+func (m *importResource) writeImportsFile(ctx context.Context, b *bundle.Bundle) (string, error) {
+	// Write imports.tf file to the terraform root directory
+	dir, err := Dir(ctx, b)
+	if err != nil {
+		return "", err
+	}
+
+	importsFilePath := filepath.Join(dir, "imports.tf")
+	f, err := os.Create(importsFilePath)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	_, err = f.WriteString(fmt.Sprintf(`import {
+	to = %s.%s
+	id = "%s"
+}`, m.opts.ResourceType, m.opts.ResourceKey, m.opts.ResourceId))
+
+	return importsFilePath, err
 }
 
 // Name implements bundle.Mutator.

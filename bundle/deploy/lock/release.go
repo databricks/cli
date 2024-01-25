@@ -13,6 +13,7 @@ type Goal string
 
 const (
 	GoalBind    = Goal("bind")
+	GoalUnbind  = Goal("unbind")
 	GoalDeploy  = Goal("deploy")
 	GoalDestroy = Goal("destroy")
 )
@@ -47,7 +48,7 @@ func (m *release) Apply(ctx context.Context, b *bundle.Bundle) error {
 	switch m.goal {
 	case GoalDeploy:
 		return b.Locker.Unlock(ctx)
-	case GoalBind:
+	case GoalBind, GoalUnbind:
 		return b.Locker.Unlock(ctx)
 	case GoalDestroy:
 		return b.Locker.Unlock(ctx, locker.AllowLockFileNotExist)

@@ -38,7 +38,7 @@ func Unbind(resourceType string, resourceKey string) bundle.Mutator {
 					terraform.Unbind(resourceType, resourceKey),
 					terraform.StatePush(),
 				),
-				lock.Release(lock.GoalBind),
+				lock.Release(lock.GoalUnbind),
 			),
 		},
 	)

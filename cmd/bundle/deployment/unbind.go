@@ -30,7 +30,7 @@ func newUnbindCommand() *cobra.Command {
 		b.Config.Bundle.Lock.Force = forceLock
 		return bundle.Apply(cmd.Context(), b, bundle.Seq(
 			phases.Initialize(),
-			terraform.Unbind(resource.Type(), args[0]),
+			terraform.Unbind(resource.TerraformResourceName(), args[0]),
 		))
 	}
 

@@ -82,6 +82,6 @@ func (p *Pipeline) Exists(ctx context.Context, w *databricks.WorkspaceClient, id
 	return err == nil
 }
 
-func (p *Pipeline) Type() string {
+func (p *Pipeline) TerraformResourceName() string {
 	return "databricks_pipeline"
 }
