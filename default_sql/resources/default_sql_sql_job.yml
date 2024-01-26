@@ -1,0 +1,37 @@
+# A job running SQL queries on a SQL warehouse
+resources:
+  jobs:
+    default_sql_sql_job:
+      name: default_sql_sql_job
+
+      schedule:
+        # Run every day at 7:17 AM
+        quartz_cron_expression: '44 17 7 * * ?'
+        timezone_id: Europe/Amsterdam
+
+      email_notifications:
+        on_failure:
+          - lennart.kats@databricks.com
+
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+        - name: target
+          default: ${bundle.target}
+
+      tasks:
+        - task_key: orders_raw
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: ../src/orders_raw.sql
+
+        - task_key: orders
+          depends_on:
+            - task_key: orders_raw
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: ../src/orders.sql
