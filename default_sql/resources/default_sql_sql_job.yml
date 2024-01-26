@@ -18,7 +18,7 @@ resources:
           default: ${var.catalog}
         - name: schema
           default: ${var.schema}
-        - name: target
+        - name: bundle_target
           default: ${bundle.target}
 
       tasks:
