@@ -11,7 +11,7 @@ select order_date, count(*) AS number_of_orders
 from {{"{{"}} ref('orders_raw') {{"}}"}}
 
 -- During development, only process a smaller range of data
-{% if var('bundle_target', 'default') != 'prod' %}
+{% if target.name != 'prod' %}
 where order_date >= '2019-08-01' and order_date < '2019-09-01'
 {% endif %}
 

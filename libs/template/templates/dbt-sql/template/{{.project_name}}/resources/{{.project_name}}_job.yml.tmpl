@@ -12,17 +12,27 @@ resources:
         on_failure:
           - {{user_name}}
 
+{{- $dev_schema := .shared_schema }}
+{{- if (regexp "^yes").MatchString .personal_schemas}}
+{{- $dev_schema = "${workspace.current_user.short_name}"}}
+{{- end}}
+
       tasks:
         - task_key: dbt
+
           dbt_task:
             project_directory: ../
+            # The default schema, catalog, etc. are defined in ../dbt_profiles/profiles.yml
+            profiles_directory: dbt_profiles/
             commands:
-            - 'dbt deps'
-            - 'dbt seed'
-            - 'dbt run --vars "{ "bundle_target": "${bundle.target}" }"'
-            warehouse_id: ${var.warehouse_id}
-            catalog: ${var.catalog}
-            schema: ${var.schema}
+            - 'dbt deps --target=${bundle.target}'
+            - 'dbt seed --target=${bundle.target} --vars "{ dev_schema: {{$dev_schema}} }"'
+            - 'dbt run --target=${bundle.target} --vars "{ dev_schema: {{$dev_schema}} }"'
+
+          libraries:
+          - pypi:
+              package: dbt-databricks>=1.0.0,<2.0.0
+
           new_cluster:
             spark_version: {{template "latest_lts_dbr_version"}}
             node_type_id: {{smallest_node_type}}
@@ -33,6 +43,3 @@ resources:
                 spark.databricks.cluster.profile: singleNode
             custom_tags:
               ResourceClass: SingleNode
-          libraries:
-          - pypi:
-              package: dbt-databricks>=1.0.0,<2.0.0
