@@ -34,10 +34,10 @@ resources:
             file:
               path: ../src/orders_raw.sql
 
-        - task_key: orders
+        - task_key: orders_daily
           depends_on:
             - task_key: orders_raw
           sql_task:
             warehouse_id: ${var.warehouse_id}
             file:
-              path: ../src/orders.sql
+              path: ../src/orders_daily.sql

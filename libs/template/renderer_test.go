@@ -105,6 +105,8 @@ func TestBuiltinPythonTemplateValid(t *testing.T) {
 	// Test option combinations
 	options := []string{"yes", "no"}
 	isServicePrincipal := false
+	catalog := "hive_metastore"
+	cachedCatalog = &catalog
 	build := false
 	for _, includeNotebook := range options {
 		for _, includeDlt := range options {

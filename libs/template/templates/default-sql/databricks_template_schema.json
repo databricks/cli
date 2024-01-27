@@ -3,7 +3,7 @@
     "properties": {
         "project_name": {
             "type": "string",
-            "default": "my_sql_project",
+            "default": "sql_project",
             "description": "\nPlease provide a unique name for this project.\nproject_name",
             "order": 1,
             "pattern": "^[A-Za-z0-9_]+$",
@@ -18,26 +18,26 @@
         },
         "default_catalog": {
             "type": "string",
-            "default": "",
+            "default": "{{if eq (default_catalog) \"\"}}hive_metastore{{else}}{{default_catalog}}{{end}}",
             "pattern": "^\\w*$",
             "pattern_match_failure_message": "Invalid catalog name.",
-            "description": "\nPlease provide an initial catalog (leave blank to use the workspace's default catalog).\ndefault_catalog",
-            "order": 4
+            "description": "\nPlease provide an initial catalog{{if eq (default_catalog) \"\"}} or metastore{{end}}.\ndefault_catalog",
+            "order": 3
         },
         "personal_schemas": {
             "type": "string",
             "description": "\nWould you like to use a personal schema for each user working on this project? (e.g., 'catalog.{{short_name}}')\npersonal_schemas",
             "enum": [
-                "yes, use a personal schema for each user during development",
-                "no, use a shared schema during development"
+                "yes, automatically use a schema based on the current user name during development",
+                "no, seluect a single schema for all users during development"
             ],
-            "order": 3
+            "order": 4
         },
         "shared_schema": {
             "skip_prompt_if": {
                 "properties": {
                     "personal_schemas": {
-                        "const": "yes, use a personal schema for each user during development"
+                        "const": "yes, automatically use a schema based on the current user name during development"
                     }
                 }
             },
@@ -49,5 +49,5 @@
             "order": 5
         }
     },
-    "success_message": "✨ Your new project has been created in the '{{.project_name}}' directory!\n\nPlease refer to the README.md file for \"getting started\" instructions.\nSee also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html."
+    "success_message": "\n✨ Your new project has been created in the '{{.project_name}}' directory!\n\nPlease refer to the README.md file for \"getting started\" instructions.\nSee also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html."
 }
