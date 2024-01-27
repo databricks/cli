@@ -1,10 +1,16 @@
+{{- if eq (default_catalog) ""}}
+{{- /* This workspace might not have Unity Catalog, */}}
+{{- /* so let's not show both materialized views and streaming tables. */}}
+{{- /* They're not supported without Unity Catalog! */}}
+-- This model file defines a table called 'orders_daily'
+{{"{{"}} config(materialized = 'table') {{"}}"}}
+{{- else}}
 -- This model file defines a materialized view called 'orders_daily'
--- in the catalog/schema selected in resources/{{.project_name}}_job.yml or
--- in the current dbt profile during development.
 --
 -- Read more about materialized at https://docs.getdbt.com/reference/resource-configs/databricks-configs#materialized-views-and-streaming-tables
 -- Current limitation: a "full refresh" is needed in case the definition below is changed; see https://github.com/databricks/dbt-databricks/issues/561.
 {{"{{"}} config(materialized = 'materialized_view') {{"}}"}}
+{{- end}}
 
 select order_date, count(*) AS number_of_orders
 

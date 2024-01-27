@@ -5,7 +5,7 @@
             "type": "string",
             "pattern": "^[A-Za-z_][A-Za-z0-9_]+$",
             "pattern_match_failure_message": "Name must consist of letters, numbers, and underscores.",
-            "default": "my_dbt_project",
+            "default": "dbt_project",
             "description": "\nPlease provide a unique name for this project.\nproject_name",
             "order": 1
         },
@@ -18,26 +18,26 @@
         },
         "default_catalog": {
             "type": "string",
-            "default": "",
+            "default": "{{default_catalog}}",
             "pattern": "^\\w*$",
             "pattern_match_failure_message": "Invalid catalog name.",
-            "description": "\nPlease provide an initial catalog (leave blank to use the workspace's default catalog).\ndefault_catalog",
-            "order": 4
+            "description": "\nPlease provide an initial catalog{{if eq (default_catalog) \"\"}} (leave blank when not using Unity Catalog){{end}}.\ndefault_catalog",
+            "order": 3
         },
         "personal_schemas": {
             "type": "string",
             "description": "\nWould you like to use a personal schema for each user working on this project? (e.g., 'catalog.{{short_name}}')\npersonal_schemas",
             "enum": [
-                "yes, use a personal schema for each user during development",
+                "yes, use a schema based on the current user name during development",
                 "no, use a shared schema during development"
             ],
-            "order": 3
+            "order": 4
         },
         "shared_schema": {
             "skip_prompt_if": {
                 "properties": {
                     "personal_schemas": {
-                        "const": "yes, use a personal schema for each user during development"
+                        "const": "yes, use a schema based on the current user name during development"
                     }
                 }
             },
@@ -49,5 +49,5 @@
             "order": 5
         }
     },
-    "success_message": "\n📊 Your new project has been created in the '{{.project_name}}' directory!\nPlease navigate to that directory and type 'dbt init' to get started.\nRefer to the README.md file for full \"getting started\" guide and production setup instructions.\n"
+    "success_message": "\n📊 Your new project has been created in the '{{.project_name}}' directory!\nIf you already have dbt installed, just type 'cd {{.project_name}}; dbt init' to get started.\nRefer to the README.md file for full \"getting started\" guide and production setup instructions.\n"
 }
