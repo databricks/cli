@@ -10,6 +10,14 @@ type pathComponent struct {
 	index int
 }
 
+func (c pathComponent) isKey() bool {
+	return c.key != ""
+}
+
+func (c pathComponent) isIndex() bool {
+	return c.key == ""
+}
+
 // Path represents a path to a value in a [Value] configuration tree.
 type Path []pathComponent
 
