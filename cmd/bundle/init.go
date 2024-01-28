@@ -34,10 +34,11 @@ var nativeTemplates = []nativeTemplate{
 		name:        "default-python",
 		description: "The default Python template for Notebooks / Delta Live Tables / Workflows",
 	},
-	{
-		name:        "dbt-sql",
-		description: "The dbt SQL template (https://www.databricks.com/blog/delivering-cost-effective-data-real-time-dbt-and-databricks)",
-	},
+	// Coming soon, see https://github.com/databricks/cli/pull/1059
+	// {
+	// 	name:        "dbt-sql",
+	// 	description: "The dbt SQL template (https://www.databricks.com/blog/delivering-cost-effective-data-real-time-dbt-and-databricks)",
+	// },
 	{
 		name:        "mlops-stacks",
 		gitUrl:      "https://github.com/databricks/mlops-stacks",
