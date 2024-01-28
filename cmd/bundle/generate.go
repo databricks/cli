@@ -14,5 +14,6 @@ func newGenerateCommand() *cobra.Command {
 	}
 
 	cmd.AddCommand(generate.NewGenerateJobCommand())
+	cmd.AddCommand(generate.NewGeneratePipelineCommand())
 	return cmd
 }

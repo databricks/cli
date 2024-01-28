@@ -1,5 +1,28 @@
 # Version changelog
 
+## 0.212.2
+
+CLI:
+ * Prompt for account profile only for account-level command execution instead of during `databricks labs install` flow ([#1128](https://github.com/databricks/cli/pull/1128)).
+ * Bring back `--json` flag for workspace-conf set-status command ([#1151](https://github.com/databricks/cli/pull/1151)).
+
+Bundles:
+ * Set `run_as` permissions after variable interpolation ([#1141](https://github.com/databricks/cli/pull/1141)).
+ * Add functionality to visit values in `dyn.Value` tree ([#1142](https://github.com/databricks/cli/pull/1142)).
+ * Add `dynvar` package for variable resolution with a `dyn.Value` tree ([#1143](https://github.com/databricks/cli/pull/1143)).
+ * Add support for `anyOf` to `skip_prompt_if` ([#1133](https://github.com/databricks/cli/pull/1133)).
+ * Added `bundle generate pipeline` command ([#1139](https://github.com/databricks/cli/pull/1139)).
+
+Internal:
+ * Use MockWorkspaceClient from SDK instead of WithImpl mocking ([#1134](https://github.com/databricks/cli/pull/1134)).
+
+Dependency updates:
+ * Bump github.com/databricks/databricks-sdk-go from 0.29.0 to 0.29.1 ([#1137](https://github.com/databricks/cli/pull/1137)).
+ * Bump github.com/hashicorp/terraform-json from 0.20.0 to 0.21.0 ([#1138](https://github.com/databricks/cli/pull/1138)).
+ * Update actions/setup-go to v5 ([#1148](https://github.com/databricks/cli/pull/1148)).
+ * Update codecov/codecov-action to v3 ([#1149](https://github.com/databricks/cli/pull/1149)).
+ * Use latest patch release of Go toolchain ([#1152](https://github.com/databricks/cli/pull/1152)).
+
 ## 0.212.1
 
 CLI:
