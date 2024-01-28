@@ -34,10 +34,11 @@ var nativeTemplates = []nativeTemplate{
 		name:        "default-python",
 		description: "The default Python template for Notebooks / Delta Live Tables / Workflows",
 	},
-	{
-		name:        "default-sql",
-		description: "The default SQL template for .sql files that run with Databricks SQL",
-	},
+	// Coming soon, see https://github.com/databricks/cli/pull/1051
+	// {
+	// 	name:        "default-sql",
+	// 	description: "The default SQL template for .sql files that run with Databricks SQL",
+	// },
 	{
 		name:        "mlops-stacks",
 		gitUrl:      "https://github.com/databricks/mlops-stacks",
