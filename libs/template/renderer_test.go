@@ -151,7 +151,7 @@ func TestBuiltinSQLTemplateValid(t *testing.T) {
 			for _, isServicePrincipal := range []bool{true, false} {
 				config := map[string]any{
 					"project_name":     "my_project",
-					"http_path":        "/sql/1.0/warehouses/123",
+					"http_path":        "/sql/1.0/warehouses/123abc",
 					"default_catalog":  "users",
 					"shared_schema":    "lennart",
 					"personal_schemas": personal_schemas,
