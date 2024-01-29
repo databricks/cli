@@ -1,5 +1,5 @@
 {
-    "welcome_message": "\nWelcome to the default SQL template for Databricks Asset Bundles!",
+    "welcome_message": "\nWelcome to the (EXPERIMENTAL) default SQL template for Databricks Asset Bundles!",
     "properties": {
         "project_name": {
             "type": "string",
