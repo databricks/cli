@@ -63,8 +63,8 @@ type FilesClient struct {
 	root WorkspaceRootPath
 }
 
-func filesNotImplementedError(fn string) error {
-	return fmt.Errorf("filer.%s is not implemented for the Files API", fn)
+func listAPINotAvailableError(fn string) error {
+	return fmt.Errorf("list API is not yet available for UC Volumes")
 }
 
 func NewFilesClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
@@ -192,7 +192,7 @@ func (w *FilesClient) Delete(ctx context.Context, name string, mode ...DeleteMod
 }
 
 func (w *FilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, error) {
-	return nil, filesNotImplementedError("ReadDir")
+	return nil, listAPINotAvailableError("ReadDir")
 }
 
 func (w *FilesClient) Mkdir(ctx context.Context, name string) error {
