@@ -63,7 +63,13 @@ func NewGenerateJobCommand() *cobra.Command {
 			return err
 		}
 
-		jobKey := fmt.Sprintf("job_%s", textutil.NormalizeString(job.Settings.Name))
+		var jobKey string
+		if cmd.Flag("key").Changed {
+			jobKey = cmd.Flag("key").Value.String()
+		} else {
+			jobKey = textutil.NormalizeString(job.Settings.Name)
+		}
+
 		result := map[string]dyn.Value{
 			"resources": dyn.V(map[string]dyn.Value{
 				"jobs": dyn.V(map[string]dyn.Value{
