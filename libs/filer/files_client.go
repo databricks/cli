@@ -63,10 +63,6 @@ type FilesClient struct {
 	root WorkspaceRootPath
 }
 
-func listAPINotAvailableError(fn string) error {
-	return fmt.Errorf("list API is not yet available for UC Volumes")
-}
-
 func NewFilesClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
 	apiClient, err := client.New(w.Config)
 	if err != nil {
@@ -192,7 +188,7 @@ func (w *FilesClient) Delete(ctx context.Context, name string, mode ...DeleteMod
 }
 
 func (w *FilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, error) {
-	return nil, listAPINotAvailableError("ReadDir")
+	return nil, fmt.Errorf("list API is not yet available for UC Volumes")
 }
 
 func (w *FilesClient) Mkdir(ctx context.Context, name string) error {
