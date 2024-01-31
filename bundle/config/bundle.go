@@ -43,4 +43,8 @@ type Bundle struct {
 
 	// Overrides the compute used for jobs and other supported assets.
 	ComputeID string `json:"compute_id,omitempty"`
+
+	// FailIfRunning specifies whether to fail the deployment if there are
+	// running jobs or pipelines in the workspace. Defaults to false.
+	FailIfRunning bool `json:"fail_if_running,omitempty"`
 }

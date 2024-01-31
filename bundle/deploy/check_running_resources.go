@@ -30,6 +30,9 @@ func (l *checkRunningResources) Name() string {
 }
 
 func (l *checkRunningResources) Apply(ctx context.Context, b *bundle.Bundle) error {
+	if !b.Config.Bundle.FailIfRunning {
+		return nil
+	}
 
 	tf := b.Terraform
 	if tf == nil {
