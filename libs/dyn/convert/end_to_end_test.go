@@ -39,7 +39,7 @@ func TestAdditional(t *testing.T) {
 		})
 	})
 
-	t.Run("map with zero value", func(t *testing.T) {
+	t.Run("map with empty string value", func(t *testing.T) {
 		s := ""
 		assertFromTypedToTypedEqual(t, Tmp{
 			MapToPointer: map[string]*string{

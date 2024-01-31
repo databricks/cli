@@ -158,12 +158,12 @@ func fromTypedString(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 
 		return dyn.V(value), nil
 	case dyn.KindNil:
+		if src.IsZero() && !slices.Contains(options, includeZeroValues) {
+			return dyn.NilValue, nil
+		}
 		// This field is not set in the reference, so we only include it if it
 		// has a non-zero value or the includeZeroValues option is set.
-		if !src.IsZero() || slices.Contains(options, includeZeroValues) {
-			return dyn.V(src.String()), nil
-		}
-		return dyn.NilValue, nil
+		return dyn.V(src.String()), nil
 	}
 	return dyn.Value{}, fmt.Errorf("unhandled type: %s", ref.Kind())
 }
@@ -177,14 +177,13 @@ func fromTypedBool(src reflect.Value, ref dyn.Value, options ...fromTypedOptions
 		}
 		return dyn.V(value), nil
 	case dyn.KindNil:
+		if src.IsZero() && !slices.Contains(options, includeZeroValues) {
+			return dyn.NilValue, nil
+		}
 		// This field is not set in the reference, so we only include it if it
 		// has a non-zero value or the includeZeroValues option is set.
-		if !src.IsZero() || slices.Contains(options, includeZeroValues) {
-			return dyn.V(src.Bool()), nil
-		}
-		return dyn.NilValue, nil
+		return dyn.V(src.Bool()), nil
 	}
-
 	return dyn.Value{}, fmt.Errorf("unhandled type: %s", ref.Kind())
 }
 
@@ -197,12 +196,12 @@ func fromTypedInt(src reflect.Value, ref dyn.Value, options ...fromTypedOptions)
 		}
 		return dyn.V(value), nil
 	case dyn.KindNil:
+		if src.IsZero() && !slices.Contains(options, includeZeroValues) {
+			return dyn.NilValue, nil
+		}
 		// This field is not set in the reference, so we only include it if it
 		// has a non-zero value or the includeZeroValues option is set.
-		if !src.IsZero() || slices.Contains(options, includeZeroValues) {
-			return dyn.V(src.Int()), nil
-		}
-		return dyn.NilValue, nil
+		return dyn.V(src.Int()), nil
 	}
 
 	return dyn.Value{}, fmt.Errorf("unhandled type: %s", ref.Kind())
@@ -217,12 +216,12 @@ func fromTypedFloat(src reflect.Value, ref dyn.Value, options ...fromTypedOption
 		}
 		return dyn.V(value), nil
 	case dyn.KindNil:
+		if src.IsZero() && !slices.Contains(options, includeZeroValues) {
+			return dyn.NilValue, nil
+		}
 		// This field is not set in the reference, so we only include it if it
 		// has a non-zero value or the includeZeroValues option is set.
-		if !src.IsZero() || slices.Contains(options, includeZeroValues) {
-			return dyn.V(src.Float()), nil
-		}
-		return dyn.NilValue, nil
+		return dyn.V(src.Float()), nil
 	}
 
 	return dyn.Value{}, fmt.Errorf("unhandled type: %s", ref.Kind())
