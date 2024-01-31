@@ -25,7 +25,13 @@ const (
 
 // FromTyped converts changes made in the typed structure w.r.t. the configuration value
 // back to the configuration value, retaining existing location information where possible.
-func FromTyped(src any, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, error) {
+func FromTyped(src any, ref dyn.Value) (dyn.Value, error) {
+	return fromTyped(src, ref)
+}
+
+// Private implementation of FromTyped that allows for additional options not exposed
+// in the public API.
+func fromTyped(src any, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, error) {
 	srcv := reflect.ValueOf(src)
 
 	// Dereference pointer if necessary
@@ -68,7 +74,7 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 	info := getStructInfo(src.Type())
 	for k, v := range info.FieldValues(src) {
 		// Convert the field taking into account the reference value (may be equal to config.NilValue).
-		nv, err := FromTyped(v.Interface(), ref.Get(k))
+		nv, err := fromTyped(v.Interface(), ref.Get(k))
 		if err != nil {
 			return dyn.Value{}, err
 		}
@@ -106,7 +112,7 @@ func fromTypedMap(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 		v := iter.Value()
 
 		// Convert entry taking into account the reference value (may be equal to dyn.NilValue).
-		nv, err := FromTyped(v.Interface(), ref.Get(k), includeZeroValues)
+		nv, err := fromTyped(v.Interface(), ref.Get(k), includeZeroValues)
 		if err != nil {
 			return dyn.Value{}, err
 		}
@@ -137,7 +143,7 @@ func fromTypedSlice(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 		v := src.Index(i)
 
 		// Convert entry taking into account the reference value (may be equal to dyn.NilValue).
-		nv, err := FromTyped(v.Interface(), ref.Index(i), includeZeroValues)
+		nv, err := fromTyped(v.Interface(), ref.Index(i), includeZeroValues)
 		if err != nil {
 			return dyn.Value{}, err
 		}
