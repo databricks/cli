@@ -12,24 +12,24 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/textutil"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 )
 
-func NewGenerateJobCommand() *cobra.Command {
+func NewGeneratePipelineCommand() *cobra.Command {
 	var configDir string
 	var sourceDir string
-	var jobId int64
+	var pipelineId string
 	var force bool
 
 	cmd := &cobra.Command{
-		Use:     "job",
-		Short:   "Generate bundle configuration for a job",
+		Use:     "pipeline",
+		Short:   "Generate bundle configuration for a pipeline",
 		PreRunE: root.MustConfigureBundle,
 	}
 
-	cmd.Flags().Int64Var(&jobId, "existing-job-id", 0, `Job ID of the job to generate config for`)
-	cmd.MarkFlagRequired("existing-job-id")
+	cmd.Flags().StringVar(&pipelineId, "existing-pipeline-id", "", `ID of the pipeline to generate config for`)
+	cmd.MarkFlagRequired("existing-pipeline-id")
 
 	wd, err := os.Getwd()
 	if err != nil {
@@ -45,33 +45,33 @@ func NewGenerateJobCommand() *cobra.Command {
 		b := bundle.Get(ctx)
 		w := b.WorkspaceClient()
 
-		job, err := w.Jobs.Get(ctx, jobs.GetJobRequest{JobId: jobId})
+		pipeline, err := w.Pipelines.Get(ctx, pipelines.GetPipelineRequest{PipelineId: pipelineId})
 		if err != nil {
 			return err
 		}
 
 		downloader := newDownloader(w, sourceDir, configDir)
-		for _, task := range job.Settings.Tasks {
-			err := downloader.MarkTaskForDownload(ctx, &task)
+		for _, lib := range pipeline.Spec.Libraries {
+			err := downloader.MarkPipelineLibraryForDownload(ctx, &lib)
 			if err != nil {
 				return err
 			}
 		}
 
-		v, err := generate.ConvertJobToValue(job)
+		v, err := generate.ConvertPipelineToValue(pipeline.Spec)
 		if err != nil {
 			return err
 		}
 
-		jobKey := cmd.Flag("key").Value.String()
-		if jobKey == "" {
-			jobKey = textutil.NormalizeString(job.Settings.Name)
+		pipelineKey := cmd.Flag("key").Value.String()
+		if pipelineKey == "" {
+			pipelineKey = textutil.NormalizeString(pipeline.Name)
 		}
 
 		result := map[string]dyn.Value{
 			"resources": dyn.V(map[string]dyn.Value{
-				"jobs": dyn.V(map[string]dyn.Value{
-					jobKey: v,
+				"pipelines": dyn.V(map[string]dyn.Value{
+					pipelineKey: v,
 				}),
 			}),
 		}
@@ -81,13 +81,13 @@ func NewGenerateJobCommand() *cobra.Command {
 			return err
 		}
 
-		filename := filepath.Join(configDir, fmt.Sprintf("%s.yml", jobKey))
+		filename := filepath.Join(configDir, fmt.Sprintf("%s.yml", pipelineKey))
 		err = yamlsaver.SaveAsYAML(result, filename, force)
 		if err != nil {
 			return err
 		}
 
-		cmdio.LogString(ctx, fmt.Sprintf("Job configuration successfully saved to %s", filename))
+		cmdio.LogString(ctx, fmt.Sprintf("Pipeline configuration successfully saved to %s", filename))
 		return nil
 	}
 

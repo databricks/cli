@@ -1,0 +1,12 @@
+{
+    "properties": {
+        "foo": {
+            "type": "string",
+            "const": "abc"
+        },
+        "bar": {
+            "type": "string",
+            "const": "def"
+        }
+    }
+}

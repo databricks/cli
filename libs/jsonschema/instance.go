@@ -24,10 +24,7 @@ func (s *Schema) LoadInstance(path string) (map[string]any, error) {
 	// We convert integer properties from float64 to int64 here.
 	for name, v := range instance {
 		propertySchema, ok := s.Properties[name]
-		if !ok {
-			continue
-		}
-		if propertySchema.Type != IntegerType {
+		if !ok || propertySchema.Type != IntegerType {
 			continue
 		}
 		integerValue, err := toInteger(v)
@@ -47,6 +44,8 @@ func (s *Schema) ValidateInstance(instance map[string]any) error {
 		s.validateRequired,
 		s.validateTypes,
 		s.validatePattern,
+		s.validateConst,
+		s.validateAnyOf,
 	}
 
 	for _, fn := range validations {
@@ -103,10 +102,7 @@ func (s *Schema) validateTypes(instance map[string]any) error {
 func (s *Schema) validateEnum(instance map[string]any) error {
 	for k, v := range instance {
 		fieldInfo, ok := s.Properties[k]
-		if !ok {
-			continue
-		}
-		if fieldInfo.Enum == nil {
+		if !ok || fieldInfo.Enum == nil {
 			continue
 		}
 		if !slices.Contains(fieldInfo.Enum, v) {
@@ -128,4 +124,39 @@ func (s *Schema) validatePattern(instance map[string]any) error {
 		}
 	}
 	return nil
+}
+
+func (s *Schema) validateConst(instance map[string]any) error {
+	for k, v := range instance {
+		fieldInfo, ok := s.Properties[k]
+		if !ok || fieldInfo.Const == nil {
+			continue
+		}
+		if v != fieldInfo.Const {
+			return fmt.Errorf("expected value of property %s to be %v. Found: %v", k, fieldInfo.Const, v)
+		}
+	}
+	return nil
+}
+
+// Validates that the instance matches at least one of the schemas in anyOf
+// For more information, see https://json-schema.org/understanding-json-schema/reference/combining#anyof.
+func (s *Schema) validateAnyOf(instance map[string]any) error {
+	if s.AnyOf == nil {
+		return nil
+	}
+
+	// According to the JSON schema RFC, anyOf must contain at least one schema.
+	// https://json-schema.org/draft/2020-12/json-schema-core
+	if len(s.AnyOf) == 0 {
+		return fmt.Errorf("anyOf must contain at least one schema")
+	}
+
+	for _, anyOf := range s.AnyOf {
+		err := anyOf.ValidateInstance(instance)
+		if err == nil {
+			return nil
+		}
+	}
+	return fmt.Errorf("instance does not match any of the schemas in anyOf")
 }
