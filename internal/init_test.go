@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	"github.com/databricks/cli/libs/auth"
@@ -21,13 +22,24 @@ func TestAccBundleInitErrorOnUnknownFields(t *testing.T) {
 }
 
 func TestAccBundleInitHelpers(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	env := GetEnvOrSkipTest(t, "CLOUD_ENV")
+	t.Log(env)
 
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{})
 	require.NoError(t, err)
 
 	me, err := w.CurrentUser.Me(context.Background())
 	require.NoError(t, err)
+
+	var smallestNode string
+	switch env {
+	case "azure":
+		smallestNode = "Standard_D3_v2"
+	case "gcp":
+		smallestNode = "n1-standard-4"
+	default:
+		smallestNode = "i3.xlarge"
+	}
 
 	tests := []struct {
 		funcName string
@@ -44,6 +56,14 @@ func TestAccBundleInitHelpers(t *testing.T) {
 		{
 			funcName: "{{workspace_host}}",
 			expected: w.Config.Host,
+		},
+		{
+			funcName: "{{is_service_principal}}",
+			expected: strconv.FormatBool(auth.IsServicePrincipal(me.Id)),
+		},
+		{
+			funcName: "{{smallest_node_type}}",
+			expected: smallestNode,
 		},
 	}
 
