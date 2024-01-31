@@ -191,7 +191,7 @@ func fromTypedBool(src reflect.Value, ref dyn.Value, options ...fromTypedOptions
 		}
 		return dyn.V(src.Bool()), nil
 	}
-	
+
 	return dyn.Value{}, fmt.Errorf("unhandled type: %s", ref.Kind())
 }
 
