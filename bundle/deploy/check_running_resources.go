@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -50,19 +49,8 @@ func (l *checkRunningResources) Apply(ctx context.Context, b *bundle.Bundle) err
 	}
 
 	isRunning := isAnyResourceRunning(ctx, b.WorkspaceClient(), state)
-	if !isRunning {
-		return nil
-	}
-
-	ans, err := cmdio.AskYesOrNo(ctx, `Some of the bundle resources are still running.
-Deploying the bundle can disrupt any jobs or pipelines in progress.
-Do you want to continue?`)
-
-	if err != nil {
-		return err
-	}
-	if !ans {
-		return errors.New("deployment aborted")
+	if isRunning {
+		return errors.New("some of the bundle resources are still running, deployment aborted")
 	}
 
 	return nil
