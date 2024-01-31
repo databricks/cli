@@ -63,10 +63,8 @@ func NewGenerateJobCommand() *cobra.Command {
 			return err
 		}
 
-		var jobKey string
-		if cmd.Flag("key").Changed {
-			jobKey = cmd.Flag("key").Value.String()
-		} else {
+		jobKey := cmd.Flag("key").Value.String()
+		if jobKey == "" {
 			jobKey = textutil.NormalizeString(job.Settings.Name)
 		}
 

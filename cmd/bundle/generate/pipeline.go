@@ -63,10 +63,8 @@ func NewGeneratePipelineCommand() *cobra.Command {
 			return err
 		}
 
-		var pipelineKey string
-		if cmd.Flag("key").Changed {
-			pipelineKey = cmd.Flag("key").Value.String()
-		} else {
+		pipelineKey := cmd.Flag("key").Value.String()
+		if pipelineKey == "" {
 			pipelineKey = textutil.NormalizeString(pipeline.Name)
 		}
 
