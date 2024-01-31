@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -19,47 +20,49 @@ func TestAccBundleInitErrorOnUnknownFields(t *testing.T) {
 	assert.EqualError(t, err, "failed to compute file content for bar.tmpl. variable \"does_not_exist\" not defined")
 }
 
-func TestAccBundleInitShortNameHelper(t *testing.T) {
+func TestAccBundleInitHelpers(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
-	tmpDir := t.TempDir()
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{})
 	require.NoError(t, err)
-
-	RequireSuccessfulRun(t, "bundle", "init", "./testdata/init/helper-short-name", "--output-dir", tmpDir)
 
 	me, err := w.CurrentUser.Me(context.Background())
 	require.NoError(t, err)
 
-	// Assert that short name was correctly computed.
-	assertLocalFileContents(t, filepath.Join(tmpDir, "foo.txt"), auth.GetShortUserName(me.UserName))
-}
+	tests := []struct {
+		funcName string
+		expected string
+	}{
+		{
+			funcName: "{{short_name}}",
+			expected: auth.GetShortUserName(me.UserName),
+		},
+		{
+			funcName: "{{user_name}}",
+			expected: me.UserName,
+		},
+		{
+			funcName: "{{workspace_host}}",
+			expected: w.Config.Host,
+		},
+	}
 
-func TestAccBundleInitUserNameHelper(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	for _, test := range tests {
+		// Setup template to test the helper function.
+		tmpDir := t.TempDir()
+		tmpDir2 := t.TempDir()
 
-	tmpDir := t.TempDir()
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{})
-	require.NoError(t, err)
+		err := os.Mkdir(filepath.Join(tmpDir, "template"), 0755)
+		require.NoError(t, err)
+		err = os.WriteFile(filepath.Join(tmpDir, "template", "foo.txt.tmpl"), []byte(test.funcName), 0644)
+		require.NoError(t, err)
+		err = os.WriteFile(filepath.Join(tmpDir, "databricks_template_schema.json"), []byte("{}"), 0644)
+		require.NoError(t, err)
 
-	RequireSuccessfulRun(t, "bundle", "init", "./testdata/init/helper-user-name", "--output-dir", tmpDir)
+		// Run bundle init.
+		RequireSuccessfulRun(t, "bundle", "init", tmpDir, "--output-dir", tmpDir2)
 
-	me, err := w.CurrentUser.Me(context.Background())
-	require.NoError(t, err)
-
-	// Assert that user name was correctly computed.
-	assertLocalFileContents(t, filepath.Join(tmpDir, "foo.txt"), me.UserName)
-}
-
-func TestAccBundleInitWorkspaceHostHelper(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "DATABRICKS_HOST"))
-
-	tmpDir := t.TempDir()
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{})
-	require.NoError(t, err)
-
-	RequireSuccessfulRun(t, "bundle", "init", "./testdata/init/helper-workspace-host", "--output-dir", tmpDir)
-
-	// Assert that workspace host was correctly computed.
-	assertLocalFileContents(t, filepath.Join(tmpDir, "foo.txt"), w.Config.Host)
+		// Assert that the helper function was correctly computed.
+		assertLocalFileContents(t, filepath.Join(tmpDir2, "foo.txt"), test.expected)
+	}
 }

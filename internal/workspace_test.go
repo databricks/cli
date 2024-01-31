@@ -81,7 +81,6 @@ func setupWorkspaceImportExportTest(t *testing.T) (context.Context, filer.Filer,
 	return ctx, f, tmpdir
 }
 
-// TODO: add tests for the progress event output logs: https://github.com/databricks/cli/issues/447
 func assertLocalFileContents(t *testing.T, path string, content string) {
 	require.FileExists(t, path)
 	b, err := os.ReadFile(path)
