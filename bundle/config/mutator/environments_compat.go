@@ -33,8 +33,7 @@ func (m *environmentsToTargets) Apply(ctx context.Context, b *bundle.Bundle) err
 		// Return an error if both "environments" and "targets" are set.
 		if environments != dyn.NilValue && targets != dyn.NilValue {
 			return dyn.NilValue, fmt.Errorf(
-				"both 'environments' and 'targets' are specified; only 'targets' should be used. "+
-					"Instance of 'environments' found at %s.",
+				"both 'environments' and 'targets' are specified; only 'targets' should be used: %s",
 				environments.Location().String(),
 			)
 		}
