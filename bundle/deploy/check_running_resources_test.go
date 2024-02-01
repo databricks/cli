@@ -47,7 +47,7 @@ func TestIsAnyResourceRunningWithJob(t *testing.T) {
 	}, nil).Once()
 
 	err := checkAnyResourceRunning(context.Background(), m.WorkspaceClient, state)
-	require.Error(t, err)
+	require.ErrorContains(t, err, "job 123 is running")
 
 	jobsApi.EXPECT().ListRunsAll(mock.Anything, jobs.ListRunsRequest{
 		JobId:      123,
@@ -85,7 +85,7 @@ func TestIsAnyResourceRunningWithPipeline(t *testing.T) {
 	}, nil).Once()
 
 	err := checkAnyResourceRunning(context.Background(), m.WorkspaceClient, state)
-	require.Error(t, err)
+	require.ErrorContains(t, err, "pipeline 123 is running")
 
 	pipelineApi.EXPECT().Get(mock.Anything, pipelines.GetPipelineRequest{
 		PipelineId: "123",
