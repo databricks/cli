@@ -26,15 +26,15 @@ func TestAccBundleInitErrorOnUnknownFields(t *testing.T) {
 // This test tests the MLOps Stacks DAB e2e and thus there's a couple of special
 // considerations to take note of:
 //
-// 1. Upstream changes to the MLOps Stacks DAB can cause this test to fail.
-//    In which case we should do one of:
-//    (a) Update this test to reflect the changes
-//    (b) Update the MLOps Stacks DAB to not break this test. Skip this test
-//        temporarily until the MLOps Stacks DAB is updated
+//  1. Upstream changes to the MLOps Stacks DAB can cause this test to fail.
+//     In which case we should do one of:
+//     (a) Update this test to reflect the changes
+//     (b) Update the MLOps Stacks DAB to not break this test. Skip this test
+//     temporarily until the MLOps Stacks DAB is updated
 //
-// 2. While rare and to be avoided if possible, the CLI reserves the right to
-//    make changes that can break the MLOps Stacks DAB. In which case we should
-//    skip this test until the MLOps Stacks DAB is updated to work again.
+//  2. While rare and to be avoided if possible, the CLI reserves the right to
+//     make changes that can break the MLOps Stacks DAB. In which case we should
+//     skip this test until the MLOps Stacks DAB is updated to work again.
 func TestAccBundleInitOnMlopsStacks(t *testing.T) {
 	env := GetEnvOrSkipTest(t, "CLOUD_ENV")
 	if env == "gcp" {
