@@ -47,7 +47,7 @@ func TestAccGenerateFromExistingPipelineAndDeploy(t *testing.T) {
 	_, err = os.Stat(filepath.Join(bundleRoot, "src", "test.py"))
 	require.NoError(t, err)
 
-	matches, err := filepath.Glob(filepath.Join(bundleRoot, "resources", "generated_pipeline_*.yml"))
+	matches, err := filepath.Glob(filepath.Join(bundleRoot, "resources", "pipeline_generated_pipeline_*.yml"))
 	require.NoError(t, err)
 	require.Len(t, matches, 1)
 

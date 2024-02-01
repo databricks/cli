@@ -63,15 +63,11 @@ func NewGeneratePipelineCommand() *cobra.Command {
 			return err
 		}
 
-		pipelineKey := cmd.Flag("key").Value.String()
-		if pipelineKey == "" {
-			pipelineKey = textutil.NormalizeString(pipeline.Name)
-		}
-
+		jobKey := fmt.Sprintf("pipeline_%s", textutil.NormalizeString(pipeline.Name))
 		result := map[string]dyn.Value{
 			"resources": dyn.V(map[string]dyn.Value{
 				"pipelines": dyn.V(map[string]dyn.Value{
-					pipelineKey: v,
+					jobKey: v,
 				}),
 			}),
 		}
@@ -81,7 +77,7 @@ func NewGeneratePipelineCommand() *cobra.Command {
 			return err
 		}
 
-		filename := filepath.Join(configDir, fmt.Sprintf("%s.yml", pipelineKey))
+		filename := filepath.Join(configDir, fmt.Sprintf("%s.yml", jobKey))
 		err = yamlsaver.SaveAsYAML(result, filename, force)
 		if err != nil {
 			return err

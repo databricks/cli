@@ -72,18 +72,14 @@ func TestGeneratePipelineCommand(t *testing.T) {
 
 	srcDir := filepath.Join(root, "src")
 	cmd.Flag("source-dir").Value.Set(srcDir)
-
-	var key string
-	cmd.Flags().StringVar(&key, "key", "test_pipeline", "")
-
 	err := cmd.RunE(cmd, []string{})
 	require.NoError(t, err)
 
-	data, err := os.ReadFile(filepath.Join(configDir, "test_pipeline.yml"))
+	data, err := os.ReadFile(filepath.Join(configDir, "pipeline_test_pipeline.yml"))
 	require.NoError(t, err)
 	require.Equal(t, fmt.Sprintf(`resources:
   pipelines:
-    test_pipeline:
+    pipeline_test_pipeline:
       name: test-pipeline
       libraries:
         - notebook:
