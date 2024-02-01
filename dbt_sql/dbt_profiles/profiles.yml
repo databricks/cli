@@ -1,0 +1,33 @@
+
+# This file defines dbt profiles for deployed dbt jobs.
+# Note that for local development you should create your own, local profile.
+# (see README.md).
+my_dbt_project:
+   target: dev # default target
+   outputs:
+
+     dev:
+      type: databricks
+      method: http
+      catalog: main
+      schema: "{{ var('dev_schema') }}"
+
+      http_path: /sql/1.0/warehouses/abcdef1234567890
+
+      # The workspace host / token are provided by Databricks
+      # see databricks.yml for the host used for 'dev'
+      host: "{{ env_var('DBT_HOST') }}"
+      token: "{{ env_var('DBT_ACCESS_TOKEN') }}"
+
+     prod:
+      type: databricks
+      method: http
+      catalog: main
+      schema: default
+
+      http_path: /sql/1.0/warehouses/abcdef1234567890
+
+      # The workspace host / token are provided by Databricks
+      # see databricks.yml for the host used for 'dev'
+      host: "{{ env_var('DBT_HOST') }}"
+      token: "{{ env_var('DBT_ACCESS_TOKEN') }}"

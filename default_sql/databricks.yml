@@ -35,7 +35,7 @@ targets:
   #
   # staging:
   #   workspace:
-  #     host: https://e2-dogfood.staging.cloud.databricks.com
+  #     host: https://myworkspace.databricks.com
 
   # The 'prod' target, used for production deployment.
   prod:
@@ -43,7 +43,7 @@ targets:
     # Doing so enables strict verification of the settings below.
     mode: production
     workspace:
-      host: https://company.databricks.com
+      host: https://myworkspace.databricks.com
       # We always use /Users/{{user_name}} for all resources to make sure we only have a single copy.
       # If this path results in an error, please make sure you have a recent version of the CLI installed.
       root_path: /Users/user@domain.co/.bundle/${bundle.name}/${bundle.target}
