@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-
 func TestRootFromEnv(t *testing.T) {
 	ctx := context.Background()
 	dir := t.TempDir()
