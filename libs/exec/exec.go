@@ -16,8 +16,8 @@ const CmdExecutable ExecutableType = `cmd`
 
 var finders map[ExecutableType](func() (shell, error)) = map[ExecutableType](func() (shell, error)){
 	BashExecutable: newBashShell,
-	ShExecutable:   newBashShell,
-	CmdExecutable:  newBashShell,
+	ShExecutable:   newShShell,
+	CmdExecutable:  newCmdShell,
 }
 
 type Command interface {
