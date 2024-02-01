@@ -1,18 +1,5 @@
 # Version changelog
 
-## 0.212.3
-
-CLI:
- * Release Windows packages to winget-pkgs ([#1144](https://github.com/databricks/cli/pull/1144)).
-
-Bundles:
- * Add `--key` flag for generate commands to specify resource key ([#1165](https://github.com/databricks/cli/pull/1165)).
-
-
-Dependency updates:
- * Bump github.com/google/uuid from 1.5.0 to 1.6.0 ([#1160](https://github.com/databricks/cli/pull/1160)).
- * Update Go SDK to v0.30.1 ([#1162](https://github.com/databricks/cli/pull/1162)).
-
 ## 0.212.2
 
 CLI:
