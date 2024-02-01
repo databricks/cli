@@ -42,6 +42,8 @@ type Artifact struct {
 	Files        []ArtifactFile `json:"files,omitempty"`
 	BuildCommand string         `json:"build,omitempty"`
 
+	Executable exec.ExecutableType `json:"executable,omitempty"`
+
 	paths.Paths
 }
 
@@ -50,7 +52,14 @@ func (a *Artifact) Build(ctx context.Context) ([]byte, error) {
 		return nil, fmt.Errorf("no build property defined")
 	}
 
-	e, err := exec.NewCommandExecutor(a.Path)
+	var e *exec.Executor
+	var err error
+	if a.Executable != "" {
+		e, err = exec.NewCommandExecutorWithExecutable(a.Path, a.Executable)
+	} else {
+		e, err = exec.NewCommandExecutor(a.Path)
+		a.Executable = e.ShellType()
+	}
 	if err != nil {
 		return nil, err
 	}
