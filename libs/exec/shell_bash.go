@@ -3,6 +3,7 @@ package exec
 import (
 	"errors"
 	osexec "os/exec"
+	"strings"
 )
 
 type bashShell struct {
@@ -33,5 +34,14 @@ func newBashShell() (shell, error) {
 		return nil, nil
 	}
 
+	// Skipping WSL bash if found one
+	if strings.Contains(out, `\Windows\System32\bash.exe`) || strings.Contains(out, `\Microsoft\WindowsApps\bash.exe`) {
+		return nil, nil
+	}
+
 	return &bashShell{executable: out}, nil
+}
+
+func (s bashShell) getType() ExecutableType {
+	return BashExecutable
 }
