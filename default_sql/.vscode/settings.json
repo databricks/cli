@@ -17,7 +17,7 @@
     "sqltools.connections": [
         {
             "connectionMethod": "VS Code Extension (beta)",
-            "catalog": "hive_metastore",
+            "catalog": "main",
             "previewLimit": 50,
             "driver": "Databricks",
             "name": "databricks",

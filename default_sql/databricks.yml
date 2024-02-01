@@ -27,7 +27,7 @@ targets:
       host: https://myworkspace.databricks.com
     variables:
       warehouse_id: abcdef1234567890
-      catalog: "" # workspace default
+      catalog: main
       schema: ${workspace.current_user.short_name}
 
   ## Optionally, there could be a 'staging' target here.
@@ -49,7 +49,7 @@ targets:
       root_path: /Users/user@domain.co/.bundle/${bundle.name}/${bundle.target}
     variables:
       warehouse_id: abcdef1234567890
-      catalog: "" # workspace default
+      catalog: main
       schema: default
     run_as:
       # This runs as user@domain.com in production. We could also use a service principal here
