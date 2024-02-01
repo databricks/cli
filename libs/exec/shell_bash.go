@@ -3,6 +3,7 @@ package exec
 import (
 	"errors"
 	osexec "os/exec"
+	"strings"
 )
 
 type bashShell struct {
@@ -30,6 +31,11 @@ func newBashShell() (shell, error) {
 
 	// `bash` is not found, return early.
 	if out == "" {
+		return nil, nil
+	}
+
+	// Skipping WSL bash if found one
+	if strings.Contains(out, `\Windows\System32\bash.exe`) || strings.Contains(out, `\Microsoft\WindowsApps\bash.exe`) {
 		return nil, nil
 	}
 
