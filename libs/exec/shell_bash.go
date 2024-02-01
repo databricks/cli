@@ -41,3 +41,7 @@ func newBashShell() (shell, error) {
 
 	return &bashShell{executable: out}, nil
 }
+
+func (s bashShell) getType() ExecutableType {
+	return BashExecutable
+}

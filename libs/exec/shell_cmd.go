@@ -36,3 +36,7 @@ func newCmdShell() (shell, error) {
 
 	return &cmdShell{executable: out}, nil
 }
+
+func (s cmdShell) getType() ExecutableType {
+	return CmdExecutable
+}

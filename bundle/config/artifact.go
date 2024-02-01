@@ -58,6 +58,7 @@ func (a *Artifact) Build(ctx context.Context) ([]byte, error) {
 		e, err = exec.NewCommandExecutorWithExecutable(a.Path, a.Executable)
 	} else {
 		e, err = exec.NewCommandExecutor(a.Path)
+		a.Executable = e.ShellType()
 	}
 	if err != nil {
 		return nil, err

@@ -128,3 +128,7 @@ func (e *Executor) Exec(ctx context.Context, command string) ([]byte, error) {
 
 	return res, cmd.Wait()
 }
+
+func (e *Executor) ShellType() ExecutableType {
+	return e.shell.getType()
+}
