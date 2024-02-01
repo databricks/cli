@@ -77,7 +77,7 @@ func NewCommandExecutor(dir string) (*Executor, error) {
 func NewCommandExecutorWithExecutable(dir string, execType ExecutableType) (*Executor, error) {
 	f, ok := finders[execType]
 	if !ok {
-		return nil, fmt.Errorf("%s is not supported as an artifact executable", execType)
+		return nil, fmt.Errorf("%s is not supported as an artifact executable, options are: %s, %s or %s", execType, BashExecutable, ShExecutable, CmdExecutable)
 	}
 	shell, err := f()
 	if err != nil {
