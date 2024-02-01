@@ -2,10 +2,23 @@ package exec
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	osexec "os/exec"
 )
+
+type ExecutableType string
+
+const BashExecutable ExecutableType = `bash`
+const ShExecutable ExecutableType = `sh`
+const CmdExecutable ExecutableType = `cmd`
+
+var finders map[ExecutableType](func() (shell, error)) = map[ExecutableType](func() (shell, error)){
+	BashExecutable: newBashShell,
+	ShExecutable:   newBashShell,
+	CmdExecutable:  newBashShell,
+}
 
 type Command interface {
 	// Wait for command to terminate. It must have been previously started.
@@ -55,6 +68,22 @@ func NewCommandExecutor(dir string) (*Executor, error) {
 	if err != nil {
 		return nil, err
 	}
+	return &Executor{
+		shell: shell,
+		dir:   dir,
+	}, nil
+}
+
+func NewCommandExecutorWithExecutable(dir string, execType ExecutableType) (*Executor, error) {
+	f, ok := finders[execType]
+	if !ok {
+		return nil, fmt.Errorf("%s is not supported as an artifact executable", execType)
+	}
+	shell, err := f()
+	if err != nil {
+		return nil, err
+	}
+
 	return &Executor{
 		shell: shell,
 		dir:   dir,

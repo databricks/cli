@@ -4,7 +4,6 @@ import (
 	"errors"
 	"io"
 	"os"
-	"runtime"
 )
 
 type shell interface {
@@ -18,21 +17,11 @@ type execContext struct {
 }
 
 func findShell() (shell, error) {
-	finders := []func() (shell, error){
+	for _, fn := range []func() (shell, error){
 		newBashShell,
 		newShShell,
-	}
-
-	// If on Windows, first try to find and use CMD as a shell
-	if runtime.GOOS == "windows" {
-		finders = []func() (shell, error){
-			newCmdShell,
-			newBashShell,
-			newShShell,
-		}
-	}
-
-	for _, fn := range finders {
+		newCmdShell,
+	} {
 		shell, err := fn()
 		if err != nil {
 			return nil, err
