@@ -2,7 +2,6 @@ package deploy
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strconv"
 
@@ -15,10 +14,13 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type ErrResourceIsRunning struct{}
+type ErrResourceIsRunning struct {
+	resourceType string
+	resourceId   string
+}
 
-func (ErrResourceIsRunning) Error() string {
-	return "resource is running"
+func (e ErrResourceIsRunning) Error() string {
+	return fmt.Sprintf("%s %s is running", e.resourceType, e.resourceId)
 }
 
 type checkRunningResources struct {
@@ -48,9 +50,9 @@ func (l *checkRunningResources) Apply(ctx context.Context, b *bundle.Bundle) err
 		return err
 	}
 
-	isRunning := isAnyResourceRunning(ctx, b.WorkspaceClient(), state)
-	if isRunning {
-		return errors.New("some of the bundle resources are still running, deployment aborted")
+	err = checkAnyResourceRunning(ctx, b.WorkspaceClient(), state)
+	if err != nil {
+		return fmt.Errorf("deployment aborted, err: %w", err)
 	}
 
 	return nil
@@ -60,9 +62,9 @@ func CheckRunningResource() *checkRunningResources {
 	return &checkRunningResources{}
 }
 
-func isAnyResourceRunning(ctx context.Context, w *databricks.WorkspaceClient, state *tfjson.State) bool {
+func checkAnyResourceRunning(ctx context.Context, w *databricks.WorkspaceClient, state *tfjson.State) error {
 	if state.Values == nil || state.Values.RootModule == nil {
-		return false
+		return nil
 	}
 
 	errs, errCtx := errgroup.WithContext(ctx)
@@ -91,7 +93,7 @@ func isAnyResourceRunning(ctx context.Context, w *databricks.WorkspaceClient, st
 					return err
 				}
 				if isRunning {
-					return &ErrResourceIsRunning{}
+					return &ErrResourceIsRunning{resourceType: "job", resourceId: id}
 				}
 				return nil
 			})
@@ -103,15 +105,14 @@ func isAnyResourceRunning(ctx context.Context, w *databricks.WorkspaceClient, st
 					return nil
 				}
 				if isRunning {
-					return &ErrResourceIsRunning{}
+					return &ErrResourceIsRunning{resourceType: "pipeline", resourceId: id}
 				}
 				return nil
 			})
 		}
 	}
 
-	err := errs.Wait()
-	return err != nil
+	return errs.Wait()
 }
 
 func IsJobRunning(ctx context.Context, w *databricks.WorkspaceClient, jobId string) (bool, error) {
