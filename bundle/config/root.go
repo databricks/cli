@@ -149,6 +149,8 @@ func (r *Root) toTyped(v dyn.Value) error {
 		return err
 	}
 
+	// Assign config file paths after converting to typed configuration.
+	r.ConfigureConfigFilePath()
 	return nil
 }
 
@@ -163,10 +165,6 @@ func (r *Root) Mutate(fn func(dyn.Value) (dyn.Value, error)) error {
 		return err
 	}
 	r.value = nv
-
-	// Assign config file paths after mutating the configuration.
-	r.ConfigureConfigFilePath()
-
 	return nil
 }
 
@@ -184,8 +182,6 @@ func (r *Root) MarkMutatorEntry() {
 			panic(err)
 		}
 
-		r.ConfigureConfigFilePath()
-
 	} else {
 		nv, err := convert.FromTyped(r, r.value)
 		if err != nil {
@@ -193,6 +189,12 @@ func (r *Root) MarkMutatorEntry() {
 		}
 
 		r.value = nv
+
+		// Re-run ToTyped to ensure that no state is piggybacked
+		err = r.toTyped(r.value)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -208,6 +210,12 @@ func (r *Root) MarkMutatorExit() {
 		}
 
 		r.value = nv
+
+		// Re-run ToTyped to ensure that no state is piggybacked
+		err = r.toTyped(r.value)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -386,7 +394,6 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		panic(err)
 	}
 
-	r.ConfigureConfigFilePath()
 	return nil
 }
 
