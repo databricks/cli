@@ -1,0 +1,46 @@
+{
+    "name": "name",
+    "email_notifications": {
+        "on_start": [
+            "name@domain.test"
+        ],
+        "on_success": [
+            "name@domain.test"
+        ],
+        "on_failure": [
+            "name@domain.test"
+        ]
+    },
+    "tasks": {
+        "task_key": "key",
+        "max_retries": 0,
+        "min_retry_interval_millis": 0,
+        "retry_on_timeout": true,
+        "timeout_seconds": 3600,
+        "email_notifications": {},
+        "libraries": [],
+        "notebook_task": {
+            "notebook_path": "/some/path/to/notebook"
+        },
+        "new_cluster": {
+            "spark_version": "14.3.x-scala2.12",
+            "spark_conf": {
+                "spark.driver.extraJavaOptions": "-Dlog4j2.formatMsgNoLookups=true",
+                "spark.executor.extraJavaOptions": "-Dlog4j2.formatMsgNoLookups=true",
+                "spark.shuffle.service.enabled": true
+            },
+            "aws_attributes": {
+                "availability": "SPOT_WITH_FALLBACK",
+                "spot_bid_price_percent": 100,
+                "ebs_volume_count": 0
+            },
+            "node_type_id": "i3en.large",
+            "driver_node_type_id": "i3en.large",
+            "spark_env_vars": {
+                "PYSPARK_PYTHON": "/databricks/python3/bin/python3"
+            },
+            "enable_elastic_disk": false,
+            "num_workers": 1
+        }
+    }
+}
