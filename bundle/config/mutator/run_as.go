@@ -23,6 +23,23 @@ func (m *setRunAs) Name() string {
 	return "SetRunAs"
 }
 
+// Resources that specify one of the following conditions:
+//  1. Allow to set run_as for the resources to a different user from the current
+//     deployment user. For example, jobs.
+//  2. Does not make sense for these resources to run_as a different user. We do not
+//     have plans to add platform side support for `run_as` for these resources.
+//     For example, experiments or model serving endpoints.
+var allowSetAsOther = []string{"jobs"}
+
+// Resources that do not allow setting a run_as identity to a different user but
+// have plans to add platform side support for `run_as` for these resources at
+// some point in the future. For example, pipelines or lakeview dashboards.
+var denySetAsOther = []string{"pipelines"}
+
+func isAllowToRunAsOther(b *bundle.Bundle) {
+	
+}
+
 func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) error {
 	runAs := b.Config.RunAs
 	if runAs == nil {
