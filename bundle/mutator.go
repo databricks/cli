@@ -25,7 +25,6 @@ func Apply(ctx context.Context, b *Bundle, m Mutator) error {
 	defer b.Config.MarkMutatorExit()
 
 	err := m.Apply(ctx, b)
-
 	if err != nil {
 		log.Errorf(ctx, "Error: %s", err)
 		return err
