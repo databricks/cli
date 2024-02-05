@@ -2,6 +2,7 @@ package libraries
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -76,12 +77,12 @@ func TestMapFilesToTaskLibrariesNoGlob(t *testing.T) {
 		&b.Config.Resources.Jobs["job1"].JobSettings.Tasks[0].Libraries[0],
 		&b.Config.Resources.Jobs["job1"].JobSettings.Tasks[1].Libraries[0],
 		&b.Config.Resources.Jobs["job2"].JobSettings.Tasks[0].Libraries[0],
-	}, out["testdata/library1"])
+	}, out[filepath.Clean("testdata/library1")])
 
 	// Pointer equality for "library2"
 	assert.Equal(t, []*compute.Library{
 		&b.Config.Resources.Jobs["job1"].JobSettings.Tasks[0].Libraries[1],
 		&b.Config.Resources.Jobs["job1"].JobSettings.Tasks[1].Libraries[1],
 		&b.Config.Resources.Jobs["job2"].JobSettings.Tasks[0].Libraries[1],
-	}, out["testdata/library2"])
+	}, out[filepath.Clean("testdata/library2")])
 }
