@@ -2,9 +2,7 @@ package mutator
 
 import (
 	"context"
-	"maps"
 	"path/filepath"
-	"slices"
 
 	"github.com/databricks/cli/bundle"
 
@@ -21,66 +19,40 @@ func (m *rewriteSyncPaths) Name() string {
 	return "RewriteSyncPaths"
 }
 
-func (m *rewriteSyncPaths) makeRelativeTo(root string, seq dyn.Value) (dyn.Value, error) {
-	if seq == dyn.NilValue || seq.Kind() != dyn.KindSequence {
-		return dyn.NilValue, nil
-	}
-
-	out, ok := seq.AsSequence()
-	if !ok {
-		return seq, nil
-	}
-
-	out = slices.Clone(out)
-	for i, v := range out {
-		if v.Kind() != dyn.KindString {
-			continue
-		}
-
+// makeRelativeTo returns a dyn.MapFunc that joins the relative path
+// of the file it was defined in w.r.t. the bundle root path, with
+// the contents of the string node.
+//
+// For example:
+//   - The bundle root is /foo
+//   - The configuration file that defines the string node is at /foo/bar/baz.yml
+//   - The string node contains "somefile.*"
+//
+// Then the resulting value will be "bar/somefile.*".
+func (m *rewriteSyncPaths) makeRelativeTo(root string) dyn.MapFunc {
+	return func(v dyn.Value) (dyn.Value, error) {
 		dir := filepath.Dir(v.Location().File)
 		rel, err := filepath.Rel(root, dir)
 		if err != nil {
 			return dyn.NilValue, err
 		}
 
-		out[i] = dyn.NewValue(filepath.Join(rel, v.MustString()), v.Location())
-	}
-
-	return dyn.NewValue(out, seq.Location()), nil
-}
-
-func (m *rewriteSyncPaths) fn(root string) func(c dyn.Value) (dyn.Value, error) {
-	return func(c dyn.Value) (dyn.Value, error) {
-		var err error
-
-		// First build a new sync object
-		sync := c.Get("sync")
-		if sync == dyn.NilValue {
-			return c, nil
-		}
-
-		out, ok := sync.AsMap()
-		if !ok {
-			return c, nil
-		}
-
-		out = maps.Clone(out)
-
-		out["include"], err = m.makeRelativeTo(root, out["include"])
-		if err != nil {
-			return c, err
-		}
-
-		out["exclude"], err = m.makeRelativeTo(root, out["exclude"])
-		if err != nil {
-			return c, err
-		}
-
-		// Then replace the sync object with the new one
-		return dyn.Set(c, "sync", dyn.NewValue(out, sync.Location()))
+		return dyn.NewValue(filepath.Join(rel, v.MustString()), v.Location()), nil
 	}
 }
 
 func (m *rewriteSyncPaths) Apply(ctx context.Context, b *bundle.Bundle) error {
-	return b.Config.Mutate(m.fn(b.Config.Path))
+	return b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		return dyn.Map(v, "sync", func(v dyn.Value) (nv dyn.Value, err error) {
+			nv, err = dyn.Map(v, "include", dyn.Foreach(m.makeRelativeTo(b.Config.Path)))
+			if err != nil {
+				return dyn.NilValue, err
+			}
+			nv, err = dyn.Map(nv, "exclude", dyn.Foreach(m.makeRelativeTo(b.Config.Path)))
+			if err != nil {
+				return dyn.NilValue, err
+			}
+			return nv, nil
+		})
+	})
 }
