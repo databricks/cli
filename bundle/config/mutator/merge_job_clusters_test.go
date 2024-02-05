@@ -19,7 +19,6 @@ func TestMergeJobClusters(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"foo": {
-
 						JobSettings: &jobs.JobSettings{
 							JobClusters: []jobs.JobCluster{
 								{
@@ -69,4 +68,38 @@ func TestMergeJobClusters(t *testing.T) {
 	// This job cluster was left untouched.
 	jc1 := j.JobClusters[1].NewCluster
 	assert.Equal(t, "10.4.x-scala2.12", jc1.SparkVersion)
+}
+
+func TestMergeJobClustersWithNilKey(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"foo": {
+						JobSettings: &jobs.JobSettings{
+							JobClusters: []jobs.JobCluster{
+								{
+									NewCluster: &compute.ClusterSpec{
+										SparkVersion: "13.3.x-scala2.12",
+										NodeTypeId:   "i3.xlarge",
+										NumWorkers:   2,
+									},
+								},
+								{
+									NewCluster: &compute.ClusterSpec{
+										NodeTypeId: "i3.2xlarge",
+										NumWorkers: 4,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	err := bundle.Apply(context.Background(), b, mutator.MergeJobClusters())
+	assert.NoError(t, err)
+	assert.Len(t, b.Config.Resources.Jobs["foo"].JobClusters, 1)
 }

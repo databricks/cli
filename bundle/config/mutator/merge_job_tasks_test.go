@@ -81,3 +81,37 @@ func TestMergeJobTasks(t *testing.T) {
 	task1 := j.Tasks[1].NewCluster
 	assert.Equal(t, "10.4.x-scala2.12", task1.SparkVersion)
 }
+
+func TestMergeJobTasksWithNilKey(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"foo": {
+						JobSettings: &jobs.JobSettings{
+							Tasks: []jobs.Task{
+								{
+									NewCluster: &compute.ClusterSpec{
+										SparkVersion: "13.3.x-scala2.12",
+										NodeTypeId:   "i3.xlarge",
+										NumWorkers:   2,
+									},
+								},
+								{
+									NewCluster: &compute.ClusterSpec{
+										NodeTypeId: "i3.2xlarge",
+										NumWorkers: 4,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	err := bundle.Apply(context.Background(), b, mutator.MergeJobTasks())
+	assert.NoError(t, err)
+	assert.Len(t, b.Config.Resources.Jobs["foo"].Tasks, 1)
+}

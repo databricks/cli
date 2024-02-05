@@ -18,57 +18,15 @@ func (m *mergeJobClusters) Name() string {
 	return "MergeJobClusters"
 }
 
-// mergeJobClusters merges job clusters with the same key.
-// The job clusters field is a slice, and as such, overrides are appended to it.
-// We can identify a job cluster by its key, however, so we can use this key
-// to figure out which definitions are actually overrides and merge them.
-func (m *mergeJobClusters) mergeJobClusters(v dyn.Value) (dyn.Value, error) {
-	// We know the type of this value is a sequence.
-	// For additional defence, return self if it is not.
-	clusters, ok := v.AsSequence()
-	if !ok {
-		return v, nil
+func (m *mergeJobClusters) jobClusterKey(v dyn.Value) string {
+	switch v.Kind() {
+	case dyn.KindNil:
+		return ""
+	case dyn.KindString:
+		return v.MustString()
+	default:
+		panic("job cluster key must be a string")
 	}
-
-	seen := make(map[string]dyn.Value, len(clusters))
-	keys := make([]string, 0, len(clusters))
-
-	// Target overrides are always appended, so we can iterate in natural order to
-	// first find the base definition, and merge instances we encounter later.
-	for i := range clusters {
-		var key string
-
-		// Get task key if present.
-		kv := clusters[i].Get("job_cluster_key")
-		if kv.Kind() == dyn.KindString {
-			key = kv.MustString()
-		}
-
-		// Register task with key if not yet seen before.
-		ref, ok := seen[key]
-		if !ok {
-			keys = append(keys, key)
-			seen[key] = clusters[i]
-			continue
-		}
-
-		// Merge this instance into the reference.
-		nv, err := merge.Merge(ref, clusters[i])
-		if err != nil {
-			return v, err
-		}
-
-		// Overwrite reference.
-		seen[key] = nv
-	}
-
-	// Gather resulting clusters in natural order.
-	out := make([]dyn.Value, 0, len(keys))
-	for _, key := range keys {
-		out = append(out, seen[key])
-	}
-
-	return dyn.NewValue(out, v.Location()), nil
 }
 
 func (m *mergeJobClusters) Apply(ctx context.Context, b *bundle.Bundle) error {
@@ -78,7 +36,7 @@ func (m *mergeJobClusters) Apply(ctx context.Context, b *bundle.Bundle) error {
 		}
 
 		return dyn.Map(v, "resources.jobs", dyn.Foreach(func(job dyn.Value) (dyn.Value, error) {
-			return dyn.Map(job, "job_clusters", m.mergeJobClusters)
+			return dyn.Map(job, "job_clusters", merge.ElementsByKey("job_cluster_key", m.jobClusterKey))
 		}))
 	})
 }
