@@ -16,7 +16,7 @@ func TestJobWithSparkConf(t *testing.T) {
 	assert.Equal(t, "test_cluster", job.JobClusters[0].JobClusterKey)
 
 	// This test exists because of https://github.com/databricks/cli/issues/992.
-	// It is solved as of **TODO**.
+	// It is solved for bundles as of https://github.com/databricks/cli/pull/1098.
 	require.Len(t, job.JobClusters, 1)
 	cluster := job.JobClusters[0]
 	assert.Equal(t, "14.2.x-scala2.12", cluster.NewCluster.SparkVersion)
