@@ -7,10 +7,10 @@ the default_python project.
 """
 from setuptools import setup, find_packages
 
-import datetime
 import sys
 sys.path.append('./src')
 
+import datetime
 import default_python
 
 setup(
