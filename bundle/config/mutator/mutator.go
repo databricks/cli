@@ -10,7 +10,6 @@ func DefaultMutators() []bundle.Mutator {
 	return []bundle.Mutator{
 		scripts.Execute(config.ScriptPreInit),
 		ProcessRootIncludes(),
-		RewriteSyncPaths(),
 		EnvironmentsToTargets(),
 		InitializeVariables(),
 		DefineDefaultTarget(),
@@ -22,6 +21,7 @@ func DefaultMutatorsForTarget(env string) []bundle.Mutator {
 	return append(
 		DefaultMutators(),
 		SelectTarget(env),
+		RewriteSyncPaths(),
 		MergeJobClusters(),
 		MergeJobTasks(),
 		MergePipelineClusters(),
