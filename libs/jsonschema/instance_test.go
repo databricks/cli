@@ -222,3 +222,106 @@ func TestValidateInstanceForMultiplePatterns(t *testing.T) {
 	assert.EqualError(t, schema.validatePattern(invalidInstanceValue), "invalid value for bar: \"xyz\". Expected to match regex pattern: ^[d-f]+$")
 	assert.EqualError(t, schema.ValidateInstance(invalidInstanceValue), "invalid value for bar: \"xyz\". Expected to match regex pattern: ^[d-f]+$")
 }
+
+func TestValidateInstanceForConst(t *testing.T) {
+	schema, err := Load("./testdata/instance-validate/test-schema-const.json")
+	require.NoError(t, err)
+
+	// Valid values for both foo and bar
+	validInstance := map[string]any{
+		"foo": "abc",
+		"bar": "def",
+	}
+	assert.NoError(t, schema.validateConst(validInstance))
+	assert.NoError(t, schema.ValidateInstance(validInstance))
+
+	// Empty instance
+	emptyInstanceValue := map[string]any{}
+	assert.NoError(t, schema.validateConst(emptyInstanceValue))
+	assert.NoError(t, schema.ValidateInstance(emptyInstanceValue))
+
+	// Missing value for bar
+	missingInstanceValue := map[string]any{
+		"foo": "abc",
+	}
+	assert.NoError(t, schema.validateConst(missingInstanceValue))
+	assert.NoError(t, schema.ValidateInstance(missingInstanceValue))
+
+	// Valid value for bar, invalid value for foo
+	invalidInstanceValue := map[string]any{
+		"foo": "xyz",
+		"bar": "def",
+	}
+	assert.EqualError(t, schema.validateConst(invalidInstanceValue), "expected value of property foo to be abc. Found: xyz")
+	assert.EqualError(t, schema.ValidateInstance(invalidInstanceValue), "expected value of property foo to be abc. Found: xyz")
+
+	// Valid value for foo, invalid value for bar
+	invalidInstanceValue = map[string]any{
+		"foo": "abc",
+		"bar": "xyz",
+	}
+	assert.EqualError(t, schema.validateConst(invalidInstanceValue), "expected value of property bar to be def. Found: xyz")
+	assert.EqualError(t, schema.ValidateInstance(invalidInstanceValue), "expected value of property bar to be def. Found: xyz")
+}
+
+func TestValidateInstanceForEmptySchema(t *testing.T) {
+	schema, err := Load("./testdata/instance-validate/test-empty-anyof.json")
+	require.NoError(t, err)
+
+	// Valid values for both foo and bar
+	validInstance := map[string]any{
+		"foo": "abc",
+		"bar": "abc",
+	}
+	assert.ErrorContains(t, schema.validateAnyOf(validInstance), "anyOf must contain at least one schema")
+	assert.ErrorContains(t, schema.ValidateInstance(validInstance), "anyOf must contain at least one schema")
+}
+
+func TestValidateInstanceForAnyOf(t *testing.T) {
+	schema, err := Load("./testdata/instance-validate/test-schema-anyof.json")
+	require.NoError(t, err)
+
+	// Valid values for both foo and bar
+	validInstance := map[string]any{
+		"foo": "abc",
+		"bar": "abc",
+	}
+	assert.NoError(t, schema.validateAnyOf(validInstance))
+	assert.NoError(t, schema.ValidateInstance(validInstance))
+
+	// Valid values for bar
+	validInstance = map[string]any{
+		"foo": "abc",
+		"bar": "def",
+	}
+	assert.NoError(t, schema.validateAnyOf(validInstance))
+	assert.NoError(t, schema.ValidateInstance(validInstance))
+
+	// Empty instance. Invalid because "foo" is required.
+	emptyInstanceValue := map[string]any{}
+	assert.ErrorContains(t, schema.validateAnyOf(emptyInstanceValue), "instance does not match any of the schemas in anyOf")
+	assert.ErrorContains(t, schema.ValidateInstance(emptyInstanceValue), "instance does not match any of the schemas in anyOf")
+
+	// Missing values for bar, invalid value for foo. Passes because only "foo"
+	// is required in second condition.
+	missingInstanceValue := map[string]any{
+		"foo": "xyz",
+	}
+	assert.NoError(t, schema.validateAnyOf(missingInstanceValue))
+	assert.NoError(t, schema.ValidateInstance(missingInstanceValue))
+
+	// Valid value for bar, invalid value for foo
+	invalidInstanceValue := map[string]any{
+		"foo": "xyz",
+		"bar": "abc",
+	}
+	assert.EqualError(t, schema.validateAnyOf(invalidInstanceValue), "instance does not match any of the schemas in anyOf")
+	assert.EqualError(t, schema.ValidateInstance(invalidInstanceValue), "instance does not match any of the schemas in anyOf")
+
+	// Invalid value for both
+	invalidInstanceValue = map[string]any{
+		"bar": "xyz",
+	}
+	assert.EqualError(t, schema.validateAnyOf(invalidInstanceValue), "instance does not match any of the schemas in anyOf")
+	assert.EqualError(t, schema.ValidateInstance(invalidInstanceValue), "instance does not match any of the schemas in anyOf")
+}

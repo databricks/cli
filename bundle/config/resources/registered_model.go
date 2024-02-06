@@ -14,7 +14,7 @@ type RegisteredModel struct {
 	// This represents the id which is the full name of the model
 	// (catalog_name.schema_name.model_name) that can be used
 	// as a reference in other resources. This value is returned by terraform.
-	ID string
+	ID string `json:"id,omitempty" bundle:"readonly"`
 
 	// Path to config file where the resource is defined. All bundle resources
 	// include this for interpolation purposes.
@@ -23,6 +23,8 @@ type RegisteredModel struct {
 	// This represents the input args for terraform, and will get converted
 	// to a HCL representation for CRUD
 	*catalog.CreateRegisteredModelRequest
+
+	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
 }
 
 func (s *RegisteredModel) UnmarshalJSON(b []byte) error {

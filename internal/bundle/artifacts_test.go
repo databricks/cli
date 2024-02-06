@@ -1,7 +1,6 @@
 package bundle
 
 import (
-	"context"
 	"os"
 	"path"
 	"path/filepath"
@@ -11,9 +10,11 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/internal"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
 )
 
@@ -26,8 +27,8 @@ func touchEmptyFile(t *testing.T, path string) {
 }
 
 func TestAccUploadArtifactFileToCorrectRemotePath(t *testing.T) {
-	t.Log(internal.GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
+	ctx, wt := acc.WorkspaceTest(t)
+	w := wt.W
 	dir := t.TempDir()
 	whlPath := filepath.Join(dir, "dist", "test.whl")
 	touchEmptyFile(t, whlPath)
@@ -37,14 +38,10 @@ func TestAccUploadArtifactFileToCorrectRemotePath(t *testing.T) {
 		Files: []config.ArtifactFile{
 			{
 				Source: whlPath,
-				Libraries: []*compute.Library{
-					{Whl: "dist\\test.whl"},
-				},
 			},
 		},
 	}
 
-	w := databricks.Must(databricks.NewWorkspaceClient())
 	wsDir := internal.TemporaryWorkspaceDir(t, w)
 
 	b := &bundle.Bundle{
@@ -59,11 +56,33 @@ func TestAccUploadArtifactFileToCorrectRemotePath(t *testing.T) {
 			Artifacts: config.Artifacts{
 				"test": artifact,
 			},
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"test": {
+						JobSettings: &jobs.JobSettings{
+							Tasks: []jobs.Task{
+								{
+									Libraries: []compute.Library{
+										{
+											Whl: "dist/test.whl",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 
-	err := bundle.Apply(context.Background(), b, artifacts.BasicUpload("test"))
+	err := bundle.Apply(ctx, b, artifacts.BasicUpload("test"))
 	require.NoError(t, err)
+
+	// The remote path attribute on the artifact file should have been set.
 	require.Regexp(t, regexp.MustCompile(path.Join(regexp.QuoteMeta(wsDir), `.internal/test\.whl`)), artifact.Files[0].RemotePath)
-	require.Regexp(t, regexp.MustCompile(path.Join("/Workspace", regexp.QuoteMeta(wsDir), `.internal/test\.whl`)), artifact.Files[0].Libraries[0].Whl)
+
+	// The task library path should have been updated to the remote path.
+	lib := b.Config.Resources.Jobs["test"].JobSettings.Tasks[0].Libraries[0]
+	require.Regexp(t, regexp.MustCompile(path.Join("/Workspace", regexp.QuoteMeta(wsDir), `.internal/test\.whl`)), lib.Whl)
 }

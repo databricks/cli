@@ -50,9 +50,9 @@ func NewGenerateJobCommand() *cobra.Command {
 			return err
 		}
 
-		downloader := newNotebookDownloader(w, sourceDir, configDir)
+		downloader := newDownloader(w, sourceDir, configDir)
 		for _, task := range job.Settings.Tasks {
-			err := downloader.MarkForDownload(ctx, &task)
+			err := downloader.MarkTaskForDownload(ctx, &task)
 			if err != nil {
 				return err
 			}
@@ -63,7 +63,11 @@ func NewGenerateJobCommand() *cobra.Command {
 			return err
 		}
 
-		jobKey := fmt.Sprintf("job_%s", textutil.NormalizeString(job.Settings.Name))
+		jobKey := cmd.Flag("key").Value.String()
+		if jobKey == "" {
+			jobKey = textutil.NormalizeString(job.Settings.Name)
+		}
+
 		result := map[string]dyn.Value{
 			"resources": dyn.V(map[string]dyn.Value{
 				"jobs": dyn.V(map[string]dyn.Value{

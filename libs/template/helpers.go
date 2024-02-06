@@ -98,6 +98,16 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			}
 			return result, nil
 		},
+		"short_name": func() (string, error) {
+			if cachedUser == nil {
+				var err error
+				cachedUser, err = w.CurrentUser.Me(ctx)
+				if err != nil {
+					return "", err
+				}
+			}
+			return auth.GetShortUserName(cachedUser.UserName), nil
+		},
 		"is_service_principal": func() (bool, error) {
 			if cachedIsServicePrincipal != nil {
 				return *cachedIsServicePrincipal, nil
