@@ -89,7 +89,7 @@ func testFixture(userName string) *bundle.Bundle {
 func TestFilterCurrentUser(t *testing.T) {
 	b := testFixture("alice@databricks.com")
 
-	err := FilterCurrentUser().Apply(context.Background(), b)
+	err := bundle.Apply(context.Background(), b, FilterCurrentUser())
 	assert.NoError(t, err)
 
 	// Assert current user is filtered out.
@@ -124,7 +124,7 @@ func TestFilterCurrentUser(t *testing.T) {
 func TestFilterCurrentServicePrincipal(t *testing.T) {
 	b := testFixture("i-Robot")
 
-	err := FilterCurrentUser().Apply(context.Background(), b)
+	err := bundle.Apply(context.Background(), b, FilterCurrentUser())
 	assert.NoError(t, err)
 
 	// Assert current user is filtered out.

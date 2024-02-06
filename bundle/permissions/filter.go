@@ -21,13 +21,19 @@ func (m *filterCurrentUser) Name() string {
 	return "FilterCurrentUserFromPermissions"
 }
 
-func filter(currentUser string) func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+func filter(currentUser string) dyn.WalkValueFunc {
 	return func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 		// Permissions are defined at top level of a resource. We can skip walking
 		// after a depth of 4.
 		// [resource_type].[resource_name].[permissions].[array_index]
 		// Example: pipelines.foo.permissions.0
 		if len(p) > 4 {
+			return v, dyn.ErrSkip
+		}
+
+		// We can skip walking at a depth of 3 if the key is not "permissions".
+		// Example: pipelines.foo.libraries
+		if len(p) == 3 && p[2] != dyn.Key("permissions") {
 			return v, dyn.ErrSkip
 		}
 
