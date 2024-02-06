@@ -11,7 +11,7 @@ import (
 )
 
 func TestRelativePathsWithIncludes(t *testing.T) {
-	b := load(t, "./relative_path_with_includes")
+	b := loadTarget(t, "./relative_path_with_includes", "default")
 
 	m := mutator.TranslatePaths()
 	err := bundle.Apply(context.Background(), b, m)
