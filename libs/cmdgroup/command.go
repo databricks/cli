@@ -43,12 +43,21 @@ func (c *CommandWithGroupFlag) AddFlagGroup(name string) *FlagGroup {
 }
 
 type FlagGroup struct {
-	name    string
-	flagSet *pflag.FlagSet
+	name        string
+	description string
+	flagSet     *pflag.FlagSet
 }
 
 func (c *FlagGroup) Name() string {
 	return c.name
+}
+
+func (c *FlagGroup) Description() string {
+	return c.description
+}
+
+func (c *FlagGroup) SetDescription(description string) {
+	c.description = description
 }
 
 func (c *FlagGroup) FlagSet() *pflag.FlagSet {
