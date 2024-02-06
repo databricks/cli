@@ -1,7 +1,8 @@
 package run
 
 import (
-	flag "github.com/spf13/pflag"
+	"github.com/databricks/cli/libs/cmdgroup"
+	"github.com/spf13/cobra"
 )
 
 type Options struct {
@@ -10,7 +11,11 @@ type Options struct {
 	NoWait   bool
 }
 
-func (o *Options) Define(fs *flag.FlagSet) {
-	o.Job.Define(fs)
-	o.Pipeline.Define(fs)
+func (o *Options) Define(cmd *cobra.Command) {
+	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)
+	jobGroup := wrappedCmd.AddFlagGroup("Job")
+	o.Job.Define(jobGroup.FlagSet())
+
+	pipelineGroup := wrappedCmd.AddFlagGroup("Pipeline")
+	o.Pipeline.Define(pipelineGroup.FlagSet())
 }
