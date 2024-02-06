@@ -3,7 +3,7 @@ package cmdgroup
 const usageTemplate = `Usage:{{if .Command.Runnable}}
   {{.Command.UseLine}}{{end}}
 {{range .FlagGroups}}
-{{.Name}} Flags: {{if not (eq .Description "")}}
+{{.Name}} Flags:{{if not (eq .Description "")}}
   {{.Description}}{{end}}
 {{.FlagSet.FlagUsages | trimTrailingWhitespaces}}
 {{end}}
