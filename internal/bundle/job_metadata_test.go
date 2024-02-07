@@ -12,23 +12,21 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/metadata"
 	"github.com/databricks/cli/internal"
+	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/filer"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestAccJobsMetadataFile(t *testing.T) {
-	env := internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
-	t.Log(env)
+	ctx, wt := acc.WorkspaceTest(t)
+	w := wt.W
 
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
-
-	nodeTypeId := internal.GetNodeTypeId(env)
+	nodeTypeId := internal.GetNodeTypeId(env.Get(ctx, "CLOUD_ENV"))
 	uniqueId := uuid.New().String()
-	bundleRoot, err := initTestTemplate(t, "job_metadata", map[string]any{
+	bundleRoot, err := initTestTemplate(t, ctx, "job_metadata", map[string]any{
 		"unique_id":     uniqueId,
 		"node_type_id":  nodeTypeId,
 		"spark_version": "13.2.x-snapshot-scala2.12",
@@ -36,12 +34,12 @@ func TestAccJobsMetadataFile(t *testing.T) {
 	require.NoError(t, err)
 
 	// deploy bundle
-	err = deployBundle(t, bundleRoot)
+	err = deployBundle(t, ctx, bundleRoot)
 	require.NoError(t, err)
 
 	// Cleanup the deployed bundle
 	t.Cleanup(func() {
-		err = destroyBundle(t, bundleRoot)
+		err = destroyBundle(t, ctx, bundleRoot)
 		require.NoError(t, err)
 	})
 

@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/internal"
+	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -18,23 +19,22 @@ import (
 )
 
 func TestAccGenerateFromExistingPipelineAndDeploy(t *testing.T) {
-	env := internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
-	t.Log(env)
+	ctx, wt := acc.WorkspaceTest(t)
+	gt := &generatePipelineTest{T: t, w: wt.W}
 
 	uniqueId := uuid.New().String()
-	bundleRoot, err := initTestTemplate(t, "with_includes", map[string]any{
+	bundleRoot, err := initTestTemplate(t, ctx, "with_includes", map[string]any{
 		"unique_id": uniqueId,
 	})
 	require.NoError(t, err)
 
-	pipelineId := createTestPipeline(t)
+	pipelineId := gt.createTestPipeline(ctx)
 	t.Cleanup(func() {
-		destroyPipeline(t, pipelineId)
-		require.NoError(t, err)
+		gt.destroyPipeline(ctx, pipelineId)
 	})
 
 	t.Setenv("BUNDLE_ROOT", bundleRoot)
-	c := internal.NewCobraTestRunner(t, "bundle", "generate", "pipeline",
+	c := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "generate", "pipeline",
 		"--existing-pipeline-id", fmt.Sprint(pipelineId),
 		"--config-dir", filepath.Join(bundleRoot, "resources"),
 		"--source-dir", filepath.Join(bundleRoot, "src"))
@@ -61,18 +61,22 @@ func TestAccGenerateFromExistingPipelineAndDeploy(t *testing.T) {
 	require.Contains(t, generatedYaml, "- file:")
 	require.Contains(t, generatedYaml, fmt.Sprintf("path: %s", filepath.Join("..", "src", "test.py")))
 
-	err = deployBundle(t, bundleRoot)
+	err = deployBundle(t, ctx, bundleRoot)
 	require.NoError(t, err)
 
-	err = destroyBundle(t, bundleRoot)
+	err = destroyBundle(t, ctx, bundleRoot)
 	require.NoError(t, err)
 }
 
-func createTestPipeline(t *testing.T) string {
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
+type generatePipelineTest struct {
+	T *testing.T
+	w *databricks.WorkspaceClient
+}
 
-	ctx := context.Background()
+func (gt *generatePipelineTest) createTestPipeline(ctx context.Context) string {
+	t := gt.T
+	w := gt.w
+
 	tmpdir := internal.TemporaryWorkspaceDir(t, w)
 	f, err := filer.NewWorkspaceFilesClient(w, tmpdir)
 	require.NoError(t, err)
@@ -103,13 +107,9 @@ func createTestPipeline(t *testing.T) string {
 	return resp.PipelineId
 }
 
-func destroyPipeline(t *testing.T, pipelineId string) {
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
-
-	ctx := context.Background()
-	err = w.Pipelines.Delete(ctx, pipelines.DeletePipelineRequest{
+func (gt *generatePipelineTest) destroyPipeline(ctx context.Context, pipelineId string) {
+	err := gt.w.Pipelines.Delete(ctx, pipelines.DeletePipelineRequest{
 		PipelineId: pipelineId,
 	})
-	require.NoError(t, err)
+	require.NoError(gt.T, err)
 }
