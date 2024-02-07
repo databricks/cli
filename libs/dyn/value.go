@@ -150,11 +150,22 @@ func (v Value) eq(w Value) bool {
 		// This is safe because we don't allow maps to be mutated.
 		return &v.v == &w.v
 	case KindSequence:
-		// Compare pointers to the underlying slice and slice length.
-		// This is safe because we don't allow slices to be mutated.
 		vs := v.v.([]Value)
 		ws := w.v.([]Value)
-		return &vs[0] == &ws[0] && len(vs) == len(ws)
+		lv := len(vs)
+		lw := len(ws)
+		// If both slices are empty, they are equal.
+		if lv == 0 && lw == 0 {
+			return true
+		}
+		// If they have different lengths, they are not equal.
+		if lv != lw {
+			return false
+		}
+		// They are both non-empty and have the same length.
+		// Compare pointers to the underlying slice.
+		// This is safe because we don't allow slices to be mutated.
+		return &vs[0] == &ws[0]
 	default:
 		return v.v == w.v
 	}

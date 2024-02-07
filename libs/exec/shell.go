@@ -8,6 +8,7 @@ import (
 
 type shell interface {
 	prepare(string) (*execContext, error)
+	getType() ExecutableType
 }
 
 type execContext struct {

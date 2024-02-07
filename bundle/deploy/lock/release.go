@@ -32,7 +32,7 @@ func (m *release) Name() string {
 
 func (m *release) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// Return early if locking is disabled.
-	if !b.Config.Bundle.Lock.IsEnabled() {
+	if !b.Config.Bundle.Deployment.Lock.IsEnabled() {
 		log.Infof(ctx, "Skipping; locking is disabled")
 		return nil
 	}

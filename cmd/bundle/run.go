@@ -25,7 +25,7 @@ func newRunCommand() *cobra.Command {
 	}
 
 	var runOptions run.Options
-	runOptions.Define(cmd.Flags())
+	runOptions.Define(cmd)
 
 	var noWait bool
 	cmd.Flags().BoolVar(&noWait, "no-wait", false, "Don't wait for the run to complete.")

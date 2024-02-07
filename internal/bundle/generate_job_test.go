@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/internal"
+	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
@@ -20,23 +21,22 @@ import (
 )
 
 func TestAccGenerateFromExistingJobAndDeploy(t *testing.T) {
-	env := internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
-	t.Log(env)
+	ctx, wt := acc.WorkspaceTest(t)
+	gt := &generateJobTest{T: t, w: wt.W}
 
 	uniqueId := uuid.New().String()
-	bundleRoot, err := initTestTemplate(t, "with_includes", map[string]any{
+	bundleRoot, err := initTestTemplate(t, ctx, "with_includes", map[string]any{
 		"unique_id": uniqueId,
 	})
 	require.NoError(t, err)
 
-	jobId := createTestJob(t)
+	jobId := gt.createTestJob(ctx)
 	t.Cleanup(func() {
-		destroyJob(t, jobId)
-		require.NoError(t, err)
+		gt.destroyJob(ctx, jobId)
 	})
 
 	t.Setenv("BUNDLE_ROOT", bundleRoot)
-	c := internal.NewCobraTestRunner(t, "bundle", "generate", "job",
+	c := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "generate", "job",
 		"--existing-job-id", fmt.Sprint(jobId),
 		"--config-dir", filepath.Join(bundleRoot, "resources"),
 		"--source-dir", filepath.Join(bundleRoot, "src"))
@@ -46,7 +46,7 @@ func TestAccGenerateFromExistingJobAndDeploy(t *testing.T) {
 	_, err = os.Stat(filepath.Join(bundleRoot, "src", "test.py"))
 	require.NoError(t, err)
 
-	matches, err := filepath.Glob(filepath.Join(bundleRoot, "resources", "job_generated_job_*.yml"))
+	matches, err := filepath.Glob(filepath.Join(bundleRoot, "resources", "generated_job_*.yml"))
 	require.NoError(t, err)
 	require.Len(t, matches, 1)
 
@@ -61,15 +61,22 @@ func TestAccGenerateFromExistingJobAndDeploy(t *testing.T) {
 	require.Contains(t, generatedYaml, "spark_version: 13.3.x-scala2.12")
 	require.Contains(t, generatedYaml, "num_workers: 1")
 
-	err = deployBundle(t, bundleRoot)
+	err = deployBundle(t, ctx, bundleRoot)
 	require.NoError(t, err)
 
-	err = destroyBundle(t, bundleRoot)
+	err = destroyBundle(t, ctx, bundleRoot)
 	require.NoError(t, err)
-
 }
 
-func createTestJob(t *testing.T) int64 {
+type generateJobTest struct {
+	T *testing.T
+	w *databricks.WorkspaceClient
+}
+
+func (gt *generateJobTest) createTestJob(ctx context.Context) int64 {
+	t := gt.T
+	w := gt.w
+
 	var nodeTypeId string
 	switch testutil.GetCloud(t) {
 	case testutil.AWS:
@@ -80,10 +87,6 @@ func createTestJob(t *testing.T) int64 {
 		nodeTypeId = "n1-standard-4"
 	}
 
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
-
-	ctx := context.Background()
 	tmpdir := internal.TemporaryWorkspaceDir(t, w)
 	f, err := filer.NewWorkspaceFilesClient(w, tmpdir)
 	require.NoError(t, err)
@@ -112,13 +115,9 @@ func createTestJob(t *testing.T) int64 {
 	return resp.JobId
 }
 
-func destroyJob(t *testing.T, jobId int64) {
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
-
-	ctx := context.Background()
-	err = w.Jobs.Delete(ctx, jobs.DeleteJob{
+func (gt *generateJobTest) destroyJob(ctx context.Context, jobId int64) {
+	err := gt.w.Jobs.Delete(ctx, jobs.DeleteJob{
 		JobId: jobId,
 	})
-	require.NoError(t, err)
+	require.NoError(gt.T, err)
 }
