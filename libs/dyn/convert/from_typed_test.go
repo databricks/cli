@@ -22,6 +22,25 @@ func TestFromTypedStructZeroFields(t *testing.T) {
 	assert.Equal(t, dyn.V(map[string]dyn.Value{}), nv)
 }
 
+func TestFromTypedStructPointerZeroFields(t *testing.T) {
+	type Tmp struct {
+		Foo string `json:"foo"`
+		Bar string `json:"bar"`
+	}
+
+	// For an initialized pointer we expect an empty map.
+	src := &Tmp{}
+	nv, err := FromTyped(src, dyn.NilValue)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.V(map[string]dyn.Value{}), nv)
+
+	// For a nil pointer we expect nil.
+	src = nil
+	nv, err = FromTyped(src, dyn.NilValue)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.NilValue, nv)
+}
+
 func TestFromTypedStructSetFields(t *testing.T) {
 	type Tmp struct {
 		Foo string `json:"foo"`
