@@ -7,8 +7,8 @@ const usageTemplate = `Usage:{{if .Command.Runnable}}
   {{.Description}}{{end}}
 {{.FlagSet.FlagUsages | trimTrailingWhitespaces}}
 {{end}}
-{{if .Command.HasAvailableLocalFlags}}Flags:
-{{.Command.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .Command.HasAvailableInheritedFlags}}
+{{if .HasNonGroupedFlags}}Flags:
+{{.NonGroupedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .Command.HasAvailableInheritedFlags}}
 
 Global Flags:
 {{.Command.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}`

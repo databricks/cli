@@ -37,7 +37,6 @@ func Initialize() bundle.Mutator {
 			mutator.TranslatePaths(),
 			python.WrapperWarning(),
 			permissions.ApplyBundlePermissions(),
-			permissions.FilterCurrentUser(),
 			metadata.AnnotateJobs(),
 			terraform.Initialize(),
 			scripts.Execute(config.ScriptPostInit),
