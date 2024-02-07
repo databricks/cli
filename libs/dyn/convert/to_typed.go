@@ -53,8 +53,8 @@ func ToTyped(dst any, src dyn.Value) error {
 func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 	switch src.Kind() {
 	case dyn.KindMap:
-		// Clear the destination struct.
-		// This is necessary because we don't know which fields are settable.
+		// Zero the destination struct such that fields
+		// that aren't present in [src] are cleared.
 		dst.SetZero()
 
 		info := getStructInfo(dst.Type())
