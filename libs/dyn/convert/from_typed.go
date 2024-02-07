@@ -84,11 +84,6 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 		}
 	}
 
-	// If the struct was equal to its zero value, emit a nil.
-	if len(out) == 0 {
-		return dyn.NilValue, nil
-	}
-
 	return dyn.NewValue(out, ref.Location()), nil
 }
 

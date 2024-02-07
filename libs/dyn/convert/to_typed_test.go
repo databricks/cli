@@ -59,6 +59,27 @@ func TestToTypedStructOverwrite(t *testing.T) {
 	assert.Equal(t, "baz", out.Bar)
 }
 
+func TestToTypedStructClearFields(t *testing.T) {
+	type Tmp struct {
+		Foo string `json:"foo"`
+		Bar string `json:"bar,omitempty"`
+	}
+
+	// Struct value with non-empty fields.
+	var out = Tmp{
+		Foo: "baz",
+		Bar: "qux",
+	}
+
+	// Value is an empty map.
+	v := dyn.V(map[string]dyn.Value{})
+
+	// The previously set fields should be cleared.
+	err := ToTyped(&out, v)
+	require.NoError(t, err)
+	assert.Equal(t, Tmp{}, out)
+}
+
 func TestToTypedStructAnonymousByValue(t *testing.T) {
 	type Bar struct {
 		Bar string `json:"bar"`
