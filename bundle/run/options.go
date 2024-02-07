@@ -12,17 +12,19 @@ type Options struct {
 }
 
 func (o *Options) Define(cmd *cobra.Command) {
-	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)
-	jobGroup := wrappedCmd.AddFlagGroup("Job")
+	jobGroup := cmdgroup.NewFlagGroup("Job")
 	o.Job.DefineJobOptions(jobGroup.FlagSet())
 
-	jobTaskGroup := wrappedCmd.AddFlagGroup("Job Task")
+	jobTaskGroup := cmdgroup.NewFlagGroup("Job Task")
 	jobTaskGroup.SetDescription(`Note: please prefer use of job-level parameters (--param) over task-level parameters.
   For more information, see https://docs.databricks.com/en/workflows/jobs/create-run-jobs.html#pass-parameters-to-a-databricks-job-task`)
 	o.Job.DefineTaskOptions(jobTaskGroup.FlagSet())
 
-	pipelineGroup := wrappedCmd.AddFlagGroup("Pipeline")
+	pipelineGroup := cmdgroup.NewFlagGroup("Pipeline")
 	o.Pipeline.Define(pipelineGroup.FlagSet())
 
-	wrappedCmd.RefreshFlags()
+	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)
+	wrappedCmd.AddFlagGroup(jobGroup)
+	wrappedCmd.AddFlagGroup(jobTaskGroup)
+	wrappedCmd.AddFlagGroup(pipelineGroup)
 }

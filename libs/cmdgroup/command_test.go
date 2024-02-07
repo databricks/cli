@@ -18,18 +18,19 @@ func TestCommandFlagGrouping(t *testing.T) {
 	}
 
 	wrappedCmd := NewCommandWithGroupFlag(cmd)
-	jobGroup := wrappedCmd.AddFlagGroup("Job")
+	jobGroup := NewFlagGroup("Job")
 	fs := jobGroup.FlagSet()
 	fs.String("job-name", "", "Name of the job")
 	fs.String("job-type", "", "Type of the job")
+	wrappedCmd.AddFlagGroup(jobGroup)
 
-	pipelineGroup := wrappedCmd.AddFlagGroup("Pipeline")
+	pipelineGroup := NewFlagGroup("Pipeline")
 	fs = pipelineGroup.FlagSet()
 	fs.String("pipeline-name", "", "Name of the pipeline")
 	fs.String("pipeline-type", "", "Type of the pipeline")
+	wrappedCmd.AddFlagGroup(pipelineGroup)
 
 	cmd.Flags().BoolP("bool", "b", false, "Bool flag")
-	wrappedCmd.RefreshFlags()
 
 	buf := bytes.NewBuffer(nil)
 	cmd.SetOutput(buf)
