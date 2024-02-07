@@ -29,6 +29,7 @@ func TestCommandFlagGrouping(t *testing.T) {
 	fs.String("pipeline-type", "", "Type of the pipeline")
 
 	cmd.Flags().BoolP("bool", "b", false, "Bool flag")
+	wrappedCmd.RefreshFlags()
 
 	buf := bytes.NewBuffer(nil)
 	cmd.SetOutput(buf)
@@ -48,4 +49,10 @@ Pipeline Flags:
 Flags:
   -b, --bool   Bool flag`
 	require.Equal(t, expected, buf.String())
+
+	require.NotNil(t, cmd.Flags().Lookup("job-name"))
+	require.NotNil(t, cmd.Flags().Lookup("job-type"))
+	require.NotNil(t, cmd.Flags().Lookup("pipeline-name"))
+	require.NotNil(t, cmd.Flags().Lookup("pipeline-type"))
+	require.NotNil(t, cmd.Flags().Lookup("bool"))
 }

@@ -15,12 +15,36 @@ type CommandWithGroupFlag struct {
 	flagGroups []*FlagGroup
 }
 
+func (c *CommandWithGroupFlag) RefreshFlags() {
+	for _, fg := range c.flagGroups {
+		c.cmd.Flags().AddFlagSet(fg.flagSet)
+	}
+}
+
 func (c *CommandWithGroupFlag) Command() *cobra.Command {
 	return c.cmd
 }
 
 func (c *CommandWithGroupFlag) FlagGroups() []*FlagGroup {
 	return c.flagGroups
+}
+
+func (c *CommandWithGroupFlag) NonGroupedFlags() *pflag.FlagSet {
+	nonGrouped := pflag.NewFlagSet("non-grouped", pflag.ContinueOnError)
+	c.cmd.LocalFlags().VisitAll(func(f *pflag.Flag) {
+		for _, fg := range c.flagGroups {
+			if fg.Has(f) {
+				return
+			}
+		}
+		nonGrouped.AddFlag(f)
+	})
+
+	return nonGrouped
+}
+
+func (c *CommandWithGroupFlag) HasNonGroupedFlags() bool {
+	return c.NonGroupedFlags().HasFlags()
 }
 
 func NewCommandWithGroupFlag(cmd *cobra.Command) *CommandWithGroupFlag {
@@ -62,6 +86,10 @@ func (c *FlagGroup) SetDescription(description string) {
 
 func (c *FlagGroup) FlagSet() *pflag.FlagSet {
 	return c.flagSet
+}
+
+func (c *FlagGroup) Has(f *pflag.Flag) bool {
+	return c.flagSet.Lookup(f.Name) != nil
 }
 
 var templateFuncs = template.FuncMap{
