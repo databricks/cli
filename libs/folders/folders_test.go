@@ -13,7 +13,7 @@ func TestFindDirWithLeaf(t *testing.T) {
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 
-	root := filepath.Join(wd, "..")
+	root := filepath.Join(wd, "..", "..")
 
 	// Find from working directory should work.
 	{
