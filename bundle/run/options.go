@@ -23,4 +23,6 @@ func (o *Options) Define(cmd *cobra.Command) {
 
 	pipelineGroup := wrappedCmd.AddFlagGroup("Pipeline")
 	o.Pipeline.Define(pipelineGroup.FlagSet())
+
+	wrappedCmd.RefreshFlags()
 }
