@@ -23,6 +23,24 @@ func (c *CommandWithGroupFlag) FlagGroups() []*FlagGroup {
 	return c.flagGroups
 }
 
+func (c *CommandWithGroupFlag) NonGroupedFlags() *pflag.FlagSet {
+	nonGrouped := pflag.NewFlagSet("non-grouped", pflag.ContinueOnError)
+	c.cmd.LocalFlags().VisitAll(func(f *pflag.Flag) {
+		for _, fg := range c.flagGroups {
+			if fg.Has(f) {
+				return
+			}
+		}
+		nonGrouped.AddFlag(f)
+	})
+
+	return nonGrouped
+}
+
+func (c *CommandWithGroupFlag) HasNonGroupedFlags() bool {
+	return c.NonGroupedFlags().HasFlags()
+}
+
 func NewCommandWithGroupFlag(cmd *cobra.Command) *CommandWithGroupFlag {
 	cmdWithFlagGroups := &CommandWithGroupFlag{cmd: cmd, flagGroups: make([]*FlagGroup, 0)}
 	cmd.SetUsageFunc(func(c *cobra.Command) error {
@@ -36,16 +54,19 @@ func NewCommandWithGroupFlag(cmd *cobra.Command) *CommandWithGroupFlag {
 	return cmdWithFlagGroups
 }
 
-func (c *CommandWithGroupFlag) AddFlagGroup(name string) *FlagGroup {
-	fg := &FlagGroup{name: name, flagSet: pflag.NewFlagSet(name, pflag.ContinueOnError)}
+func (c *CommandWithGroupFlag) AddFlagGroup(fg *FlagGroup) {
 	c.flagGroups = append(c.flagGroups, fg)
-	return fg
+	c.cmd.Flags().AddFlagSet(fg.FlagSet())
 }
 
 type FlagGroup struct {
 	name        string
 	description string
 	flagSet     *pflag.FlagSet
+}
+
+func NewFlagGroup(name string) *FlagGroup {
+	return &FlagGroup{name: name, flagSet: pflag.NewFlagSet(name, pflag.ContinueOnError)}
 }
 
 func (c *FlagGroup) Name() string {
@@ -62,6 +83,10 @@ func (c *FlagGroup) SetDescription(description string) {
 
 func (c *FlagGroup) FlagSet() *pflag.FlagSet {
 	return c.flagSet
+}
+
+func (c *FlagGroup) Has(f *pflag.Flag) bool {
+	return c.flagSet.Lookup(f.Name) != nil
 }
 
 var templateFuncs = template.FuncMap{
