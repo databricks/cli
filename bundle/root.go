@@ -7,7 +7,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/env"
-	"github.com/databricks/cli/folders"
+	"github.com/databricks/cli/libs/folders"
 )
 
 // getRootEnv returns the value of the bundle root environment variable
