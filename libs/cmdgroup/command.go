@@ -15,12 +15,6 @@ type CommandWithGroupFlag struct {
 	flagGroups []*FlagGroup
 }
 
-func (c *CommandWithGroupFlag) RefreshFlags() {
-	for _, fg := range c.flagGroups {
-		c.cmd.Flags().AddFlagSet(fg.flagSet)
-	}
-}
-
 func (c *CommandWithGroupFlag) Command() *cobra.Command {
 	return c.cmd
 }
@@ -60,16 +54,19 @@ func NewCommandWithGroupFlag(cmd *cobra.Command) *CommandWithGroupFlag {
 	return cmdWithFlagGroups
 }
 
-func (c *CommandWithGroupFlag) AddFlagGroup(name string) *FlagGroup {
-	fg := &FlagGroup{name: name, flagSet: pflag.NewFlagSet(name, pflag.ContinueOnError)}
+func (c *CommandWithGroupFlag) AddFlagGroup(fg *FlagGroup) {
 	c.flagGroups = append(c.flagGroups, fg)
-	return fg
+	c.cmd.Flags().AddFlagSet(fg.FlagSet())
 }
 
 type FlagGroup struct {
 	name        string
 	description string
 	flagSet     *pflag.FlagSet
+}
+
+func NewFlagGroup(name string) *FlagGroup {
+	return &FlagGroup{name: name, flagSet: pflag.NewFlagSet(name, pflag.ContinueOnError)}
 }
 
 func (c *FlagGroup) Name() string {
