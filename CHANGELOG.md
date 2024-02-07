@@ -1,5 +1,24 @@
 # Version changelog
 
+## 0.212.4
+
+Bundles:
+ * Allow specifying executable in artifact section and skip bash from WSL ([#1169](https://github.com/databricks/cli/pull/1169)).
+ * Added warning when trying to deploy bundle with `--fail-if-running` and running resources ([#1163](https://github.com/databricks/cli/pull/1163)).
+ * Group bundle run flags by job and pipeline types ([#1174](https://github.com/databricks/cli/pull/1174)).
+ * Make sure grouped flags are added to the command flag set ([#1180](https://github.com/databricks/cli/pull/1180)).
+ * Add short_name helper function to bundle init templates ([#1167](https://github.com/databricks/cli/pull/1167)).
+
+Internal:
+ * Fix dynamic representation of zero values in maps and slices ([#1154](https://github.com/databricks/cli/pull/1154)).
+ * Refactor library to artifact matching to not use pointers ([#1172](https://github.com/databricks/cli/pull/1172)).
+ * Harden `dyn.Value` equality check ([#1173](https://github.com/databricks/cli/pull/1173)).
+ * Ensure every variable reference is passed to lookup function ([#1176](https://github.com/databricks/cli/pull/1176)).
+ * Empty struct should yield empty map in `convert.FromTyped` ([#1177](https://github.com/databricks/cli/pull/1177)).
+ * Zero destination struct in `convert.ToTyped` ([#1178](https://github.com/databricks/cli/pull/1178)).
+ * Fix integration test with invalid configuration ([#1182](https://github.com/databricks/cli/pull/1182)).
+ * Use `acc.WorkspaceTest` helper from bundle integration tests ([#1181](https://github.com/databricks/cli/pull/1181)).
+
 ## 0.212.3
 
 CLI:
