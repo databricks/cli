@@ -26,21 +26,35 @@ type importResource struct {
 
 // Apply implements bundle.Mutator.
 func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) error {
+	dir, err := Dir(ctx, b)
+	if err != nil {
+		return err
+	}
+
+	// If the bundle.tf.json file does not exist, write it.
+	// This is necessary because the import operation requires the resource to be defined in the Terraform configuration.
+	_, err = os.Stat(filepath.Join(dir, "bundle.tf.json"))
+	if err != nil {
+		err = bundle.Apply(ctx, b, Write())
+		if err != nil {
+			return fmt.Errorf("terraform write: %w", err)
+		}
+	}
+
 	tf := b.Terraform
 	if tf == nil {
 		return fmt.Errorf("terraform not initialized")
 	}
 
-	err := tf.Init(ctx, tfexec.Upgrade(true))
+	err = tf.Init(ctx, tfexec.Upgrade(true))
 	if err != nil {
 		return fmt.Errorf("terraform init: %w", err)
 	}
 
-	importsFilePath, err := m.writeImportsFile(ctx, b)
+	err = tf.Import(ctx, fmt.Sprintf("%s.%s", m.opts.ResourceType, m.opts.ResourceKey), m.opts.ResourceId)
 	if err != nil {
-		return fmt.Errorf("write imports file: %w", err)
+		return fmt.Errorf("terraform import: %w", err)
 	}
-	log.Debugf(ctx, "imports.tf file written to %s", importsFilePath)
 
 	buf := bytes.NewBuffer(nil)
 	tf.SetStdout(buf)
@@ -51,40 +65,21 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) error {
 
 	if changed && !m.opts.AutoApprove {
 		cmdio.LogString(ctx, buf.String())
-		ans, err := cmdio.AskYesOrNo(ctx, "Confirm import changes? Changes will be remotely only after running 'bundle deploy'.")
+		ans, err := cmdio.AskYesOrNo(ctx, "Confirm import changes? Changes will be remotely applied only after running 'bundle deploy'.")
 		if err != nil {
 			return err
 		}
 		if !ans {
-			// remove imports.tf file
-			_ = os.Remove(importsFilePath)
+			err = tf.StateRm(ctx, fmt.Sprintf("%s.%s", m.opts.ResourceType, m.opts.ResourceKey))
+			if err != nil {
+				return err
+			}
 			return fmt.Errorf("import aborted")
 		}
 	}
 
 	log.Debugf(ctx, "resource imports approved")
 	return nil
-}
-
-func (m *importResource) writeImportsFile(ctx context.Context, b *bundle.Bundle) (string, error) {
-	// Write imports.tf file to the terraform root directory
-	dir, err := Dir(ctx, b)
-	if err != nil {
-		return "", err
-	}
-
-	importsFilePath := filepath.Join(dir, "imports.tf")
-	f, err := os.Create(importsFilePath)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-	_, err = f.WriteString(fmt.Sprintf(`import {
-	to = %s.%s
-	id = "%s"
-}`, m.opts.ResourceType, m.opts.ResourceKey, m.opts.ResourceId))
-
-	return importsFilePath, err
 }
 
 // Name implements bundle.Mutator.
@@ -94,36 +89,4 @@ func (*importResource) Name() string {
 
 func Import(opts *BindOptions) bundle.Mutator {
 	return &importResource{opts: opts}
-}
-
-type unbind struct {
-	resourceType string
-	resourceKey  string
-}
-
-func (m *unbind) Apply(ctx context.Context, b *bundle.Bundle) error {
-	tf := b.Terraform
-	if tf == nil {
-		return fmt.Errorf("terraform not initialized")
-	}
-
-	err := tf.Init(ctx, tfexec.Upgrade(true))
-	if err != nil {
-		return fmt.Errorf("terraform init: %w", err)
-	}
-
-	err = tf.StateRm(ctx, fmt.Sprintf("%s.%s", m.resourceType, m.resourceKey))
-	if err != nil {
-		return fmt.Errorf("terraform state rm: %w", err)
-	}
-
-	return nil
-}
-
-func (*unbind) Name() string {
-	return "terraform.Unbind"
-}
-
-func Unbind(resourceType string, resourceKey string) bundle.Mutator {
-	return &unbind{resourceType: resourceType, resourceKey: resourceKey}
 }

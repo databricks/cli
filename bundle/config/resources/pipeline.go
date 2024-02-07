@@ -76,11 +76,11 @@ func (p *Pipeline) MergeClusters() error {
 	return nil
 }
 
-func (p *Pipeline) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) bool {
+func (p *Pipeline) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
 	_, err := w.Pipelines.Get(ctx, pipelines.GetPipelineRequest{
 		PipelineId: id,
 	})
-	return err == nil
+	return err == nil, err
 }
 
 func (p *Pipeline) TerraformResourceName() string {

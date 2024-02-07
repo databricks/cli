@@ -95,15 +95,15 @@ func (j *Job) MergeTasks() error {
 	return nil
 }
 
-func (j *Job) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) bool {
+func (j *Job) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
 	jobId, err := strconv.Atoi(id)
 	if err != nil {
-		return false
+		return false, err
 	}
 	_, err = w.Jobs.Get(ctx, jobs.GetJobRequest{
 		JobId: int64(jobId),
 	})
-	return err == nil
+	return err == nil, err
 }
 
 func (j *Job) TerraformResourceName() string {

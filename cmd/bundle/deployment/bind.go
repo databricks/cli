@@ -33,7 +33,12 @@ func newBindCommand() *cobra.Command {
 
 		w := b.WorkspaceClient()
 		ctx := cmd.Context()
-		if !resource.Exists(ctx, w, args[1]) {
+		exists, err := resource.Exists(ctx, w, args[1])
+		if err != nil {
+			return fmt.Errorf("failed to fetch the resource, err: %w", err)
+		}
+
+		if !exists {
 			return fmt.Errorf("%s with an id '%s' is not found", resource.TerraformResourceName(), args[1])
 		}
 

@@ -172,7 +172,7 @@ func (r *Resources) Merge() error {
 }
 
 type ConfigResource interface {
-	Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) bool
+	Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error)
 	TerraformResourceName() string
 }
 

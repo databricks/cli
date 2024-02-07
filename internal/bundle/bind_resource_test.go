@@ -3,6 +3,8 @@ package bundle
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/internal"
@@ -36,6 +38,10 @@ func TestAccBindJobToExistingJob(t *testing.T) {
 	_, _, err = c.Run()
 	require.NoError(t, err)
 
+	// Remove .databricks directory to simulate a fresh deployment
+	err = os.RemoveAll(filepath.Join(bundleRoot, ".databricks"))
+	require.NoError(t, err)
+
 	err = deployBundle(t, bundleRoot)
 	require.NoError(t, err)
 
@@ -53,6 +59,10 @@ func TestAccBindJobToExistingJob(t *testing.T) {
 
 	c = internal.NewCobraTestRunner(t, "bundle", "deployment", "unbind", "foo")
 	_, _, err = c.Run()
+	require.NoError(t, err)
+
+	// Remove .databricks directory to simulate a fresh deployment
+	err = os.RemoveAll(filepath.Join(bundleRoot, ".databricks"))
 	require.NoError(t, err)
 
 	err = destroyBundle(t, bundleRoot)
