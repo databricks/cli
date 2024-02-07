@@ -42,7 +42,7 @@ func newBindCommand() *cobra.Command {
 			return fmt.Errorf("%s with an id '%s' is not found", resource.TerraformResourceName(), args[1])
 		}
 
-		b.Config.Bundle.Lock.Force = forceLock
+		b.Config.Bundle.Deployment.Lock.Force = forceLock
 		return bundle.Apply(cmd.Context(), b, bundle.Seq(
 			phases.Initialize(),
 			phases.Bind(&terraform.BindOptions{
