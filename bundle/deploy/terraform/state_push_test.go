@@ -8,25 +8,23 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	mock "github.com/databricks/cli/internal/mocks/libs/filer"
+	mockfiler "github.com/databricks/cli/internal/mocks/libs/filer"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/mock/gomock"
+	"github.com/stretchr/testify/mock"
 )
 
 func mockStateFilerForPush(t *testing.T, fn func(body io.Reader)) filer.Filer {
-	ctrl := gomock.NewController(t)
-	mock := mock.NewMockFiler(ctrl)
-	mock.
+	f := mockfiler.NewMockFiler(t)
+	f.
 		EXPECT().
-		Write(gomock.Any(), gomock.Any(), gomock.Any(), filer.CreateParentDirectories, filer.OverwriteIfExists).
-		Do(func(ctx context.Context, path string, reader io.Reader, mode ...filer.WriteMode) error {
+		Write(mock.Anything, mock.Anything, mock.Anything, filer.CreateParentDirectories, filer.OverwriteIfExists).
+		Run(func(ctx context.Context, path string, reader io.Reader, mode ...filer.WriteMode) {
 			fn(reader)
-			return nil
 		}).
 		Return(nil).
 		Times(1)
-	return mock
+	return f
 }
 
 func statePushTestBundle(t *testing.T) *bundle.Bundle {

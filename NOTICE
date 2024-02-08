@@ -16,16 +16,12 @@ go-ini/ini - https://github.com/go-ini/ini
 Copyright ini authors
 License - https://github.com/go-ini/ini/blob/main/LICENSE
 
-uber-go/mock - https://go.uber.org/mock
-Copyright Google Inc.
-License - https://github.com/uber-go/mock/blob/main/LICENSE
-
 —--
 
 This software contains code from the following open source projects, licensed under the MPL 2.0 license:
 
 hashicopr/go-version - https://github.com/hashicorp/go-version
-Copyright 2014 HashiCorp, Inc. 
+Copyright 2014 HashiCorp, Inc.
 License - https://github.com/hashicorp/go-version/blob/main/LICENSE
 
 hashicorp/hc-install - https://github.com/hashicorp/hc-install
@@ -81,7 +77,7 @@ License - https://github.com/fatih/color/blob/main/LICENSE.md
 ghodss/yaml - https://github.com/ghodss/yaml
 Copyright (c) 2014 Sam Ghods
 License - https://github.com/ghodss/yaml/blob/master/LICENSE
- 
+
 mattn/go-isatty - https://github.com/mattn/go-isatty
 Copyright (c) Yasuhiro MATSUMOTO <mattn.jp@gmail.com>
 https://github.com/mattn/go-isatty/blob/master/LICENSE
