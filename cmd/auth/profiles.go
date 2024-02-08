@@ -31,8 +31,10 @@ func (c *profileMetadata) IsEmpty() bool {
 }
 
 func (c *profileMetadata) Load(ctx context.Context, skipValidate bool) {
-	// TODO: disable config loaders other than configfile
-	cfg := &config.Config{Profile: c.Name}
+	cfg := &config.Config{
+		Loaders: []config.Loader{config.ConfigFile},
+		Profile: c.Name,
+	}
 	_ = cfg.EnsureResolved()
 	if cfg.IsAws() {
 		c.Cloud = "aws"
@@ -49,6 +51,7 @@ func (c *profileMetadata) Load(ctx context.Context, skipValidate bool) {
 		if err != nil {
 			return
 		}
+		c.Host = cfg.Host
 		c.AuthType = cfg.AuthType
 		return
 	}
@@ -59,6 +62,7 @@ func (c *profileMetadata) Load(ctx context.Context, skipValidate bool) {
 			return
 		}
 		_, err = a.Workspaces.List(ctx)
+		c.Host = cfg.Host
 		c.AuthType = cfg.AuthType
 		if err != nil {
 			return
@@ -70,14 +74,13 @@ func (c *profileMetadata) Load(ctx context.Context, skipValidate bool) {
 			return
 		}
 		_, err = w.CurrentUser.Me(ctx)
+		c.Host = cfg.Host
 		c.AuthType = cfg.AuthType
 		if err != nil {
 			return
 		}
 		c.Valid = true
 	}
-	// set host again, this time normalized
-	c.Host = cfg.Host
 }
 
 func newProfilesCommand() *cobra.Command {
