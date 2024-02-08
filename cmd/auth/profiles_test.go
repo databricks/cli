@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/databricks/cli/libs/databrickscfg"
@@ -28,6 +29,9 @@ func TestProfiles(t *testing.T) {
 	// Let the environment think we're using another profile
 	t.Setenv("DATABRICKS_HOST", "https://def.cloud.databricks.com")
 	t.Setenv("HOME", dir)
+	if runtime.GOOS == "windows" {
+		t.Setenv("USERPROFILE", dir)
+	}
 
 	// Load the profile
 	profile := &profileMetadata{Name: "profile1"}
