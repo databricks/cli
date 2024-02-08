@@ -61,11 +61,6 @@ google/uuid - https://github.com/google/uuid
 Copyright (c) 2009,2014 Google Inc. All rights reserved.
 License - https://github.com/google/uuid/blob/master/LICENSE
 
-imdario/mergo - https://github.com/imdario/mergo
-Copyright (c) 2013 Dario Castañé. All rights reserved.
-Copyright (c) 2012 The Go Authors. All rights reserved.
-License - https://github.com/imdario/mergo/blob/master/LICENSE
-
 manifoldco/promptui - https://github.com/manifoldco/promptui
 Copyright (c) 2017, Arigato Machine Inc. All rights reserved.
 License - https://github.com/manifoldco/promptui/blob/master/LICENSE.md
