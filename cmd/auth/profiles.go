@@ -6,9 +6,11 @@ import (
 	"net/http"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
@@ -117,8 +119,10 @@ func newProfilesCommand() *cobra.Command {
 			}
 			wg.Add(1)
 			go func() {
-				// load more information about profile
-				profile.Load(cmd.Context(), skipValidate)
+				ctx := cmd.Context()
+				t := time.Now()
+				profile.Load(ctx, skipValidate)
+				log.Debugf(ctx, "Profile %q took %s to load", profile.Name, time.Since(t))
 				wg.Done()
 			}()
 			profiles = append(profiles, profile)
