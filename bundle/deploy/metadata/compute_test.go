@@ -30,6 +30,7 @@ func TestComputeMetadataMutator(t *testing.T) {
 					OriginURL:      "www.host.com",
 					Commit:         "abcd",
 					BundleRootPath: "a/b/c/d",
+					Inferred:       true,
 				},
 			},
 			Resources: config.Resources{
@@ -70,6 +71,9 @@ func TestComputeMetadataMutator(t *testing.T) {
 					OriginURL:      "www.host.com",
 					Commit:         "abcd",
 					BundleRootPath: "a/b/c/d",
+
+					// Test that this field doesn't carry over into the metadata.
+					Inferred: false,
 				},
 			},
 			Resources: metadata.Resources{
