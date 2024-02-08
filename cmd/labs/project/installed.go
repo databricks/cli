@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/databricks/cli/folders"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/folders"
 	"github.com/databricks/cli/libs/log"
 )
 
