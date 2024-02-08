@@ -12,14 +12,12 @@ import (
 )
 
 func TestProfiles(t *testing.T) {
-	var err error
-
 	ctx := context.Background()
 	dir := t.TempDir()
 	configFile := filepath.Join(dir, ".databrickscfg")
 
 	// Create a config file with a profile
-	err = databrickscfg.SaveToProfile(ctx, &config.Config{
+	err := databrickscfg.SaveToProfile(ctx, &config.Config{
 		ConfigFile: configFile,
 		Profile:    "profile1",
 		Host:       "https://abc.cloud.databricks.com",
