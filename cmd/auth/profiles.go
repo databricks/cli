@@ -42,9 +42,6 @@ func (c *profileMetadata) Load(ctx context.Context, skipValidate bool) {
 		c.Cloud = "gcp"
 	}
 
-	// set host again, this time normalized
-	c.Host = cfg.Host
-
 	if skipValidate {
 		err := cfg.Authenticate(&http.Request{
 			Header: make(http.Header),
@@ -52,6 +49,7 @@ func (c *profileMetadata) Load(ctx context.Context, skipValidate bool) {
 		if err != nil {
 			return
 		}
+		c.Host = cfg.Host
 		c.AuthType = cfg.AuthType
 		return
 	}
@@ -62,6 +60,7 @@ func (c *profileMetadata) Load(ctx context.Context, skipValidate bool) {
 			return
 		}
 		_, err = a.Workspaces.List(ctx)
+		c.Host = cfg.Host
 		c.AuthType = cfg.AuthType
 		if err != nil {
 			return
@@ -73,6 +72,7 @@ func (c *profileMetadata) Load(ctx context.Context, skipValidate bool) {
 			return
 		}
 		_, err = w.CurrentUser.Me(ctx)
+		c.Host = cfg.Host
 		c.AuthType = cfg.AuthType
 		if err != nil {
 			return
