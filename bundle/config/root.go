@@ -78,7 +78,11 @@ func Load(path string) (*Root, error) {
 		return nil, err
 	}
 
-	var r Root
+	r := Root{
+		Path: filepath.Dir(path),
+	}
+
+	// Load configuration tree from YAML.
 	v, err := yamlloader.LoadYAML(path, bytes.NewBuffer(raw))
 	if err != nil {
 		return nil, fmt.Errorf("failed to load %s: %w", path, err)
@@ -93,21 +97,16 @@ func Load(path string) (*Root, error) {
 	// Normalize dynamic configuration tree according to configuration type.
 	v, diags := convert.Normalize(r, v)
 
+	// Keep track of diagnostics (warnings and errors in the schema).
+	// We delay acting on diagnostics until we have loaded all
+	// configuration files and merged them together.
+	r.diags = diags
+
 	// Convert normalized configuration tree to typed configuration.
-	err = convert.ToTyped(&r, v)
+	err = r.updateWithDynamicValue(v)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load %s: %w", path, err)
 	}
-
-	r.diags = diags
-
-	// Store dynamic configuration for later reference (e.g. location information on all nodes).
-	r.value = v
-
-	r.Path = filepath.Dir(path)
-	// r.SetConfigFilePath(path)
-
-	r.ConfigureConfigFilePath()
 
 	_, err = r.Resources.VerifyUniqueResourceIdentifiers()
 	return &r, err
@@ -128,26 +127,27 @@ func (r *Root) initializeDynamicValue() {
 	r.value = nv
 }
 
-func (r *Root) toTyped(v dyn.Value) error {
+func (r *Root) updateWithDynamicValue(nv dyn.Value) error {
 	// Hack: restore state; it may be cleared by [ToTyped] if
 	// the configuration equals nil (happens in tests).
-	value := r.value
 	diags := r.diags
 	depth := r.depth
 	path := r.Path
 
 	defer func() {
-		r.value = value
 		r.diags = diags
 		r.depth = depth
 		r.Path = path
 	}()
 
 	// Convert normalized configuration tree to typed configuration.
-	err := convert.ToTyped(r, v)
+	err := convert.ToTyped(r, nv)
 	if err != nil {
 		return err
 	}
+
+	// Assign the normalized configuration tree.
+	r.value = nv
 
 	// Assign config file paths after converting to typed configuration.
 	r.ConfigureConfigFilePath()
@@ -160,11 +160,10 @@ func (r *Root) Mutate(fn func(dyn.Value) (dyn.Value, error)) error {
 	if err != nil {
 		return err
 	}
-	err = r.toTyped(nv)
+	err = r.updateWithDynamicValue(nv)
 	if err != nil {
 		return err
 	}
-	r.value = nv
 	return nil
 }
 
@@ -177,7 +176,7 @@ func (r *Root) MarkMutatorEntry() {
 	if r.depth == 1 {
 		// Always run ToTyped upon entering a mutator.
 		// Convert normalized configuration tree to typed configuration.
-		err := r.toTyped(r.value)
+		err := r.updateWithDynamicValue(r.value)
 		if err != nil {
 			panic(err)
 		}
@@ -188,10 +187,8 @@ func (r *Root) MarkMutatorEntry() {
 			panic(err)
 		}
 
-		r.value = nv
-
 		// Re-run ToTyped to ensure that no state is piggybacked
-		err = r.toTyped(r.value)
+		err = r.updateWithDynamicValue(nv)
 		if err != nil {
 			panic(err)
 		}
@@ -209,10 +206,8 @@ func (r *Root) MarkMutatorExit() {
 			panic(err)
 		}
 
-		r.value = nv
-
 		// Re-run ToTyped to ensure that no state is piggybacked
-		err = r.toTyped(r.value)
+		err = r.updateWithDynamicValue(nv)
 		if err != nil {
 			panic(err)
 		}
@@ -256,8 +251,8 @@ func (r *Root) InitializeVariables(vars []string) error {
 }
 
 func (r *Root) Merge(other *Root) error {
-	// // Merge diagnostics.
-	// r.diags = append(r.diags, other.diags...)
+	// Merge diagnostics.
+	r.diags = append(r.diags, other.diags...)
 
 	// Check for safe merge, protecting against duplicate resource identifiers
 	err := r.Resources.VerifySafeMerge(&other.Resources)
@@ -296,10 +291,7 @@ func mergeField(rv, ov dyn.Value, name string) (dyn.Value, error) {
 }
 
 func (r *Root) MergeTargetOverrides(name string) error {
-	// var tmp dyn.Value
-	var root = r.value
-	var err error
-
+	root := r.value
 	target, err := dyn.GetByPath(root, dyn.NewPath(dyn.Key("targets"), dyn.Key(name)))
 	if err != nil {
 		return err
@@ -386,10 +378,8 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		}
 	}
 
-	r.value = root
-
 	// Convert normalized configuration tree to typed configuration.
-	err = r.toTyped(r.value)
+	err = r.updateWithDynamicValue(root)
 	if err != nil {
 		panic(err)
 	}
