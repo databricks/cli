@@ -194,17 +194,15 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 
 		// start the spinner
 		promptSpinner := cmdio.Spinner(ctx)
-		promptSpinner <- "Downloading the template"
+		promptSpinner <- "Downloading the template\n"
 
 		// TODO: Add automated test that the downloaded git repo is cleaned up.
 		// Clone the repository in the temporary directory
 		err = git.Clone(ctx, templatePath, ref, repoDir)
+		close(promptSpinner)
 		if err != nil {
 			return err
 		}
-
-		// stop the spinner
-		close(promptSpinner)
 
 		// Clean up downloaded repository once the template is materialized.
 		defer os.RemoveAll(repoDir)
