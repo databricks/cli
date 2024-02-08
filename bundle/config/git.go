@@ -9,8 +9,8 @@ type Git struct {
 	BundleRootPath string `json:"bundle_root_path,omitempty" bundle:"readonly"`
 
 	// Inferred is set to true if the Git details were inferred and weren't set explicitly
-	Inferred bool `json:"inferred" bundle:"readonly"`
+	Inferred bool `json:"inferred,omitempty" bundle:"readonly"`
 
 	// The actual branch according to Git (may be different from the configured branch)
-	ActualBranch string `json:"actual_branch" bundle:"readonly"`
+	ActualBranch string `json:"actual_branch,omitempty" bundle:"readonly"`
 }
