@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -14,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
@@ -112,19 +114,20 @@ func Load(path string) (*Root, error) {
 	return &r, err
 }
 
-func (r *Root) initializeDynamicValue() {
+func (r *Root) initializeDynamicValue() error {
 	// Many test cases initialize a config as a Go struct literal.
 	// The value will be invalid and we need to populate it from the typed configuration.
 	if r.value.IsValid() {
-		return
+		return nil
 	}
 
 	nv, err := convert.FromTyped(r, dyn.NilValue)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	r.value = nv
+	return nil
 }
 
 func (r *Root) updateWithDynamicValue(nv dyn.Value) error {
@@ -155,7 +158,10 @@ func (r *Root) updateWithDynamicValue(nv dyn.Value) error {
 }
 
 func (r *Root) Mutate(fn func(dyn.Value) (dyn.Value, error)) error {
-	r.initializeDynamicValue()
+	err := r.initializeDynamicValue()
+	if err != nil {
+		return err
+	}
 	nv, err := fn(r.value)
 	if err != nil {
 		return err
@@ -167,8 +173,12 @@ func (r *Root) Mutate(fn func(dyn.Value) (dyn.Value, error)) error {
 	return nil
 }
 
-func (r *Root) MarkMutatorEntry() {
-	r.initializeDynamicValue()
+func (r *Root) MarkMutatorEntry(ctx context.Context) error {
+	err := r.initializeDynamicValue()
+	if err != nil {
+		return err
+	}
+
 	r.depth++
 
 	// If we are entering a mutator at depth 1, we need to convert
@@ -178,24 +188,29 @@ func (r *Root) MarkMutatorEntry() {
 		// Convert normalized configuration tree to typed configuration.
 		err := r.updateWithDynamicValue(r.value)
 		if err != nil {
-			panic(err)
+			log.Warnf(ctx, "unable to convert dynamic configuration to typed configuration: %v", err)
+			return err
 		}
 
 	} else {
 		nv, err := convert.FromTyped(r, r.value)
 		if err != nil {
-			panic(err)
+			log.Warnf(ctx, "unable to convert typed configuration to dynamic configuration: %v", err)
+			return err
 		}
 
 		// Re-run ToTyped to ensure that no state is piggybacked
 		err = r.updateWithDynamicValue(nv)
 		if err != nil {
-			panic(err)
+			log.Warnf(ctx, "unable to convert dynamic configuration to typed configuration: %v", err)
+			return err
 		}
 	}
+
+	return nil
 }
 
-func (r *Root) MarkMutatorExit() {
+func (r *Root) MarkMutatorExit(ctx context.Context) error {
 	r.depth--
 
 	// If we are exiting a mutator at depth 0, we need to convert
@@ -203,15 +218,19 @@ func (r *Root) MarkMutatorExit() {
 	if r.depth == 0 {
 		nv, err := convert.FromTyped(r, r.value)
 		if err != nil {
-			panic(err)
+			log.Warnf(ctx, "unable to convert typed configuration to dynamic configuration: %v", err)
+			return err
 		}
 
 		// Re-run ToTyped to ensure that no state is piggybacked
 		err = r.updateWithDynamicValue(nv)
 		if err != nil {
-			panic(err)
+			log.Warnf(ctx, "unable to convert dynamic configuration to typed configuration: %v", err)
+			return err
 		}
 	}
+
+	return nil
 }
 
 func (r *Root) Diagnostics() diag.Diagnostics {
@@ -379,12 +398,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 	}
 
 	// Convert normalized configuration tree to typed configuration.
-	err = r.updateWithDynamicValue(root)
-	if err != nil {
-		panic(err)
-	}
-
-	return nil
+	return r.updateWithDynamicValue(root)
 }
 
 // rewrite performs lightweight rewriting of the configuration

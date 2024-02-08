@@ -21,10 +21,20 @@ func Apply(ctx context.Context, b *Bundle, m Mutator) error {
 
 	log.Debugf(ctx, "Apply")
 
-	b.Config.MarkMutatorEntry()
-	defer b.Config.MarkMutatorExit()
+	err := b.Config.MarkMutatorEntry(ctx)
+	if err != nil {
+		log.Errorf(ctx, "entry error: %s", err)
+		return err
+	}
 
-	err := m.Apply(ctx, b)
+	defer func() {
+		err := b.Config.MarkMutatorExit(ctx)
+		if err != nil {
+			log.Errorf(ctx, "exit error: %s", err)
+		}
+	}()
+
+	err = m.Apply(ctx, b)
 	if err != nil {
 		log.Errorf(ctx, "Error: %s", err)
 		return err
