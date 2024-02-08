@@ -29,8 +29,10 @@ func (c *profileMetadata) IsEmpty() bool {
 }
 
 func (c *profileMetadata) Load(ctx context.Context, skipValidate bool) {
-	// TODO: disable config loaders other than configfile
-	cfg := &config.Config{Profile: c.Name}
+	cfg := &config.Config{
+		Loaders: []config.Loader{config.ConfigFile},
+		Profile: c.Name,
+	}
 	_ = cfg.EnsureResolved()
 	if cfg.IsAws() {
 		c.Cloud = "aws"
@@ -39,6 +41,9 @@ func (c *profileMetadata) Load(ctx context.Context, skipValidate bool) {
 	} else if cfg.IsGcp() {
 		c.Cloud = "gcp"
 	}
+
+	// set host again, this time normalized
+	c.Host = cfg.Host
 
 	if skipValidate {
 		err := cfg.Authenticate(&http.Request{
@@ -74,8 +79,6 @@ func (c *profileMetadata) Load(ctx context.Context, skipValidate bool) {
 		}
 		c.Valid = true
 	}
-	// set host again, this time normalized
-	c.Host = cfg.Host
 }
 
 func newProfilesCommand() *cobra.Command {
