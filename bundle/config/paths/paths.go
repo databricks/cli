@@ -14,7 +14,7 @@ type Paths struct {
 
 	// DynamicValue stores the [dyn.Value] of the containing struct.
 	// This assumes that this struct is always embedded.
-	DynamicValue dyn.Value
+	DynamicValue dyn.Value `json:"-"`
 }
 
 func (p *Paths) ConfigureConfigFilePath() {
