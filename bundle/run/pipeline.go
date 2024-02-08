@@ -177,6 +177,7 @@ func (r *pipelineRunner) Cancel(ctx context.Context) error {
 		return err
 	}
 
+	// Waits for the Idle state of the pipeline
 	_, err = wait.GetWithTimeout(jobRunTimeout)
 	return err
 }

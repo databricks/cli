@@ -71,12 +71,13 @@ func newRunCommand() *cobra.Command {
 
 		runOptions.NoWait = noWait
 		if restart {
-			cmdio.LogString(ctx, "Cancelling the run...")
+			s := cmdio.Spinner(ctx)
+			s <- "Cancelling all runs"
 			err := runner.Cancel(ctx)
+			close(s)
 			if err != nil {
 				return err
 			}
-			cmdio.LogString(ctx, "All runs have been cancelled, starting a new run")
 		}
 		output, err := runner.Run(ctx, &runOptions)
 		if err != nil {

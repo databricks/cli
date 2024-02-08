@@ -307,6 +307,7 @@ func (r *jobRunner) Cancel(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
+			// Waits for the Terminated or Skipped state
 			_, err = wait.GetWithTimeout(jobRunTimeout)
 			return err
 		})
