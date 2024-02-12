@@ -125,17 +125,17 @@ var testCases = []testCase{
 	},
 	{
 		name:           "Big Workspace Iterator with template",
-		v:              makeIterator(200),
+		v:              makeIterator(234),
 		outputFormat:   flags.OutputText,
 		headerTemplate: "id\tname",
 		template:       "{{range .}}{{.WorkspaceId}}\t{{.WorkspaceName}}\n{{end}}",
-		expected:       "id   name\n" + makeBigOutput(200),
+		expected:       "id   name\n" + makeBigOutput(234),
 	},
 	{
 		name:         "Big Workspace Iterator with no template",
-		v:            makeIterator(200),
+		v:            makeIterator(234),
 		outputFormat: flags.OutputText,
-		expected:     string(must(json.MarshalIndent(makeWorkspaces(200), "", "  "))) + "\n",
+		expected:     string(must(json.MarshalIndent(makeWorkspaces(234), "", "  "))) + "\n",
 	},
 	{
 		name:         "io.Reader",

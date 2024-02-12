@@ -136,20 +136,29 @@ func (ir iteratorRenderer) renderJson(ctx context.Context, w writeFlusher) error
 }
 
 func (ir iteratorRenderer) renderTemplate(ctx context.Context, t *template.Template, w writeFlusher) error {
+	buf := make([]any, 0, ir.getBufferSize())
 	for i := 0; ir.t.HasNext(ctx); i++ {
 		n, err := ir.t.Next(ctx)
 		if err != nil {
 			return err
 		}
-		err = t.Execute(w, []any{n})
-		if err != nil {
-			return err
-		}
-		if (i+1)%ir.getBufferSize() == 0 {
+		buf = append(buf, n)
+		if len(buf) == cap(buf) {
+			err = t.Execute(w, buf)
+			if err != nil {
+				return err
+			}
 			err = w.Flush()
 			if err != nil {
 				return err
 			}
+			buf = make([]any, 0, ir.getBufferSize())
+		}
+	}
+	if len(buf) > 0 {
+		err := t.Execute(w, buf)
+		if err != nil {
+			return err
 		}
 	}
 	return w.Flush()
