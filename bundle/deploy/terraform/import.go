@@ -60,6 +60,8 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) error {
 
 	buf := bytes.NewBuffer(nil)
 	tf.SetStdout(buf)
+
+	//lint:ignore SA1019 We use legacy -state flag for now to plan the import changes based on temporary state file
 	changed, err := tf.Plan(ctx, tfexec.State(tmpState))
 	if err != nil {
 		return fmt.Errorf("terraform plan: %w", err)
