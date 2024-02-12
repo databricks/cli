@@ -417,7 +417,6 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `The comment attached to the volume.`)
-	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The name of the volume.`)
 	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the volume.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `The identifier of the user who owns the volume.`)
 
