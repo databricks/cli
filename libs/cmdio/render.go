@@ -5,9 +5,9 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
-	"reflect"
 	"strings"
 	"text/tabwriter"
 	"text/template"
@@ -50,137 +50,184 @@ func Heredoc(tmpl string) (trimmed string) {
 	return strings.TrimSpace(trimmed)
 }
 
-type renderer struct {
-	renderTemplate func(context.Context, *template.Template, io.Writer) error
-	renderText     func(context.Context, io.Writer) error
-	renderJson     func(context.Context, io.Writer) error
+type writeFlusher interface {
+	io.Writer
+	Flush() error
 }
 
-type reflectIterator struct {
-	hasNext reflect.Value
-	next    reflect.Value
+type jsonRenderer interface {
+	renderJson(context.Context, writeFlusher) error
 }
 
-func newReflectIterator(v any) (reflectIterator, bool) {
-	rv := reflect.ValueOf(v)
-	rt := rv.Type()
-	_, hasHasNext := rt.MethodByName("HasNext")
-	_, hasNext := rt.MethodByName("Next")
-	if hasNext && hasHasNext {
-		return reflectIterator{
-			hasNext: rv.MethodByName("HasNext"),
-			next:    rv.MethodByName("Next"),
-		}, true
+type textRenderer interface {
+	renderText(context.Context, writeFlusher) error
+}
+
+type templateRenderer interface {
+	renderTemplate(context.Context, *template.Template, writeFlusher) error
+}
+
+type readerRenderer struct {
+	reader io.Reader
+}
+
+func (r readerRenderer) renderText(_ context.Context, w writeFlusher) error {
+	_, err := io.Copy(w, r.reader)
+	if err != nil {
+		return err
 	}
-	return reflectIterator{}, false
+	return w.Flush()
 }
 
-func (r reflectIterator) HasNext(ctx context.Context) bool {
-	res := r.hasNext.Call([]reflect.Value{reflect.ValueOf(ctx)})
-	return res[0].Bool()
+type iteratorRenderer struct {
+	t          reflectIterator
+	bufferSize int
 }
 
-func (r reflectIterator) Next(ctx context.Context) (any, error) {
-	res := r.next.Call([]reflect.Value{reflect.ValueOf(ctx)})
-	item := res[0].Interface()
-	if res[1].IsNil() {
-		return item, nil
+func (ir iteratorRenderer) getBufferSize() int {
+	if ir.bufferSize == 0 {
+		return 100
 	}
-	return item, res[1].Interface().(error)
+	return ir.bufferSize
 }
 
-func New(it any) *renderer {
+func (ir iteratorRenderer) renderJson(ctx context.Context, w writeFlusher) error {
+	// Iterators are always rendered as a list of resources in JSON.
+	_, err := w.Write([]byte("[\n  "))
+	if err != nil {
+		return err
+	}
+	for i := 0; ir.t.HasNext(ctx); i++ {
+		n, err := ir.t.Next(ctx)
+		if err != nil {
+			return err
+		}
+		res, err := json.MarshalIndent(n, "  ", "  ")
+		if err != nil {
+			return err
+		}
+		_, err = w.Write(res)
+		if err != nil {
+			return err
+		}
+		_, err = w.Write([]byte(",\n  "))
+		if err != nil {
+			return err
+		}
+		if (i+1)%ir.getBufferSize() == 0 {
+			err = w.Flush()
+			if err != nil {
+				return err
+			}
+		}
+	}
+	_, err = w.Write([]byte("]\n"))
+	if err != nil {
+		return err
+	}
+	return w.Flush()
+}
+
+func (ir iteratorRenderer) renderTemplate(ctx context.Context, t *template.Template, w writeFlusher) error {
+	for i := 0; ir.t.HasNext(ctx); i++ {
+		n, err := ir.t.Next(ctx)
+		if err != nil {
+			return err
+		}
+		err = t.Execute(w, []any{n})
+		if err != nil {
+			return err
+		}
+		if (i+1)%ir.getBufferSize() == 0 {
+			err = w.Flush()
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return w.Flush()
+}
+
+type defaultRenderer struct {
+	it any
+}
+
+func (d defaultRenderer) renderJson(_ context.Context, w writeFlusher) error {
+	pretty, err := fancyJSON(d.it)
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(pretty)
+	if err != nil {
+		return err
+	}
+	_, err = w.Write([]byte("\n"))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d defaultRenderer) renderTemplate(_ context.Context, t *template.Template, w writeFlusher) error {
+	return t.Execute(w, d.it)
+}
+
+// Returns something implementing one of the following interfaces:
+//   - jsonRenderer
+//   - textRenderer
+//   - templateRenderer
+func newRenderer(it any) any {
 	if r, ok := any(it).(io.Reader); ok {
-		return &renderer{
-			renderJson: func(_ context.Context, w io.Writer) error {
-				return fmt.Errorf("json output not supported")
-			},
-			renderText: func(_ context.Context, w io.Writer) error {
-				_, err := io.Copy(w, r)
-				return err
-			},
-		}
+		return readerRenderer{reader: r}
 	}
-
 	if iterator, ok := newReflectIterator(it); ok {
-		return &renderer{
-			renderJson: func(ctx context.Context, w io.Writer) error {
-				// Iterators are always rendered as a list of resources in JSON.
-				_, err := w.Write([]byte("[\n"))
-				if err != nil {
-					return err
-				}
-				for iterator.HasNext(ctx) {
-					n, err := iterator.Next(ctx)
-					if err != nil {
-						return err
-					}
-					res, err := json.MarshalIndent(n, "  ", "  ")
-					if err != nil {
-						return err
-					}
-					_, err = w.Write(res)
-					if err != nil {
-						return err
-					}
-				}
-				_, err = w.Write([]byte("]\n"))
-				if err != nil {
-					return err
-				}
-				return nil
-			},
-			renderTemplate: func(ctx context.Context, t *template.Template, w io.Writer) error {
-				for iterator.HasNext(ctx) {
-					n, err := iterator.Next(ctx)
-					if err != nil {
-						return err
-					}
-					err = t.Execute(w, []any{n})
-					if err != nil {
-						return err
-					}
-				}
-				return nil
-			},
-		}
+		return iteratorRenderer{t: iterator}
 	}
-	return &renderer{
-		renderJson: func(_ context.Context, w io.Writer) error {
-			pretty, err := fancyJSON(it)
-			if err != nil {
-				return err
-			}
-			_, err = w.Write(pretty)
-			if err != nil {
-				return err
-			}
-			_, err = w.Write([]byte("\n"))
-			if err != nil {
-				return err
-			}
-			return nil
-		},
-		renderTemplate: func(_ context.Context, t *template.Template, w io.Writer) error {
-			return t.Execute(w, it)
-		},
-	}
+	return defaultRenderer{it: it}
 }
 
-func (r *renderer) renderWithTemplate(ctx context.Context, template string) error {
+type bufferedFlusher struct {
+	w io.Writer
+	b bytes.Buffer
+}
+
+func (b bufferedFlusher) Write(bs []byte) (int, error) {
+	return b.w.Write(bs)
+}
+
+func (b bufferedFlusher) Flush() error {
+	_, err := b.Write(b.b.Bytes())
+	if err != nil {
+		return err
+	}
+	b.b.Reset()
+	return nil
+}
+
+func newBufferedFlusher(w io.Writer) writeFlusher {
+	return bufferedFlusher{w: w}
+}
+
+func renderWithTemplate(r any, ctx context.Context, template string) error {
 	// TODO: add terminal width & white/dark theme detection
 	c := fromContext(ctx)
 	switch c.outputFormat {
 	case flags.OutputJSON:
-		return r.renderJson(ctx, c.out)
+		if jr, ok := r.(jsonRenderer); ok {
+			return jr.renderJson(ctx, newBufferedFlusher(c.out))
+		}
+		return errors.New("json output not supported")
 	case flags.OutputText:
-		if r.renderTemplate != nil && template != "" {
-			return r.renderUsingTemplate(ctx, c.out, template)
+		if tr, ok := r.(templateRenderer); ok && template != "" {
+			return renderUsingTemplate(ctx, tr, c.out, template)
 		}
-		if r.renderText != nil {
-			return r.renderText(ctx, c.out)
+		if tr, ok := r.(textRenderer); ok {
+			return tr.renderText(ctx, newBufferedFlusher(c.out))
 		}
-		return r.renderJson(ctx, c.out)
+		if jr, ok := r.(jsonRenderer); ok {
+			return jr.renderJson(ctx, newBufferedFlusher(c.out))
+		}
+		return errors.New("no renderer defined")
 	default:
 		return fmt.Errorf("invalid output format: %s", c.outputFormat)
 	}
@@ -192,19 +239,26 @@ func Render(ctx context.Context, v any) error {
 }
 
 func RenderWithTemplate(ctx context.Context, v any, template string) error {
-	return New(v).renderWithTemplate(ctx, template)
+	return renderWithTemplate(newRenderer(v), ctx, template)
 }
 
 func RenderJson(ctx context.Context, v any) error {
 	c := fromContext(ctx)
-	return New(v).renderJson(ctx, c.out)
+	if jr, ok := newRenderer(v).(jsonRenderer); ok {
+		jr.renderJson(ctx, newBufferedFlusher(c.out))
+	}
+	return errors.New("json output not supported")
 }
 
 func RenderReader(ctx context.Context, r io.Reader) error {
-	return New(r).renderWithTemplate(ctx, "")
+	c := fromContext(ctx)
+	if jr, ok := newRenderer(r).(textRenderer); ok {
+		jr.renderText(ctx, newBufferedFlusher(c.out))
+	}
+	return errors.New("rendering io.Reader not supported")
 }
 
-func (r *renderer) renderUsingTemplate(ctx context.Context, w io.Writer, tmpl string) error {
+func renderUsingTemplate(ctx context.Context, r templateRenderer, w io.Writer, tmpl string) error {
 	tw := tabwriter.NewWriter(w, 0, 4, 2, ' ', 0)
 	t, err := template.New("command").Funcs(template.FuncMap{
 		// we render colored output if stdout is TTY, otherwise we render text.
