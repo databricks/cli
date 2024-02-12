@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/log"
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
@@ -35,7 +35,7 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// This is necessary because the import operation requires the resource to be defined in the Terraform configuration.
 	_, err = os.Stat(filepath.Join(dir, "bundle.tf.json"))
 	if err != nil {
-		err = bundle.Apply(ctx, b, Write())
+		err = bundle.Apply(ctx, b, bundle.Seq(Interpolate(), Write()))
 		if err != nil {
 			return fmt.Errorf("terraform write: %w", err)
 		}
@@ -51,17 +51,21 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return fmt.Errorf("terraform init: %w", err)
 	}
 
-	err = tf.Import(ctx, fmt.Sprintf("%s.%s", m.opts.ResourceType, m.opts.ResourceKey), m.opts.ResourceId)
+	tmpState := filepath.Join(os.TempDir(), TerraformStateFileName)
+
+	err = tf.Import(ctx, fmt.Sprintf("%s.%s", m.opts.ResourceType, m.opts.ResourceKey), m.opts.ResourceId, tfexec.StateOut(tmpState))
 	if err != nil {
 		return fmt.Errorf("terraform import: %w", err)
 	}
 
 	buf := bytes.NewBuffer(nil)
 	tf.SetStdout(buf)
-	changed, err := tf.Plan(ctx)
+	changed, err := tf.Plan(ctx, tfexec.State(tmpState))
 	if err != nil {
 		return fmt.Errorf("terraform plan: %w", err)
 	}
+
+	defer os.Remove(tmpState)
 
 	if changed && !m.opts.AutoApprove {
 		cmdio.LogString(ctx, buf.String())
@@ -70,15 +74,28 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) error {
 			return err
 		}
 		if !ans {
-			err = tf.StateRm(ctx, fmt.Sprintf("%s.%s", m.opts.ResourceType, m.opts.ResourceKey))
-			if err != nil {
-				return err
-			}
 			return fmt.Errorf("import aborted")
 		}
 	}
 
-	log.Debugf(ctx, "resource imports approved")
+	// If user confirmed changes, move the state file from temp dir to state location
+	f, err := os.Create(filepath.Join(dir, TerraformStateFileName))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	tmpF, err := os.Open(tmpState)
+	if err != nil {
+		return err
+	}
+	defer tmpF.Close()
+
+	_, err = io.Copy(f, tmpF)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

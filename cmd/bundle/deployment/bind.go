@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
 )
 
@@ -43,7 +44,7 @@ func newBindCommand() *cobra.Command {
 		}
 
 		b.Config.Bundle.Deployment.Lock.Force = forceLock
-		return bundle.Apply(cmd.Context(), b, bundle.Seq(
+		err = bundle.Apply(cmd.Context(), b, bundle.Seq(
 			phases.Initialize(),
 			phases.Bind(&terraform.BindOptions{
 				AutoApprove:  autoApprove,
@@ -52,6 +53,12 @@ func newBindCommand() *cobra.Command {
 				ResourceId:   args[1],
 			}),
 		))
+		if err != nil {
+			return fmt.Errorf("failed to bind the resource, err: %w", err)
+		}
+
+		cmdio.LogString(ctx, fmt.Sprintf("Successfully bound %s with an id '%s'. Run 'bundle deploy' to deploy changes to your workspace", resource.TerraformResourceName(), args[1]))
+		return nil
 	}
 
 	return cmd

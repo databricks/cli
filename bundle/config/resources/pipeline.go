@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/paths"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -80,7 +81,11 @@ func (p *Pipeline) Exists(ctx context.Context, w *databricks.WorkspaceClient, id
 	_, err := w.Pipelines.Get(ctx, pipelines.GetPipelineRequest{
 		PipelineId: id,
 	})
-	return err == nil, err
+	if err != nil {
+		log.Debugf(ctx, "pipeline %s does not exist", id)
+		return false, err
+	}
+	return true, nil
 }
 
 func (p *Pipeline) TerraformResourceName() string {

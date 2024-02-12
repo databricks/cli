@@ -177,16 +177,29 @@ type ConfigResource interface {
 }
 
 func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) {
+	found := make([]ConfigResource, 0)
 	for k := range r.Jobs {
 		if k == key {
-			return r.Jobs[k], nil
+			found = append(found, r.Jobs[k])
 		}
 	}
 	for k := range r.Pipelines {
 		if k == key {
-			return r.Pipelines[k], nil
+			found = append(found, r.Pipelines[k])
 		}
 	}
 
-	return nil, fmt.Errorf("no such resource: %s", key)
+	if len(found) == 0 {
+		return nil, fmt.Errorf("no such resource: %s", key)
+	}
+
+	if len(found) > 1 {
+		keys := make([]string, 0, len(found))
+		for _, r := range found {
+			keys = append(keys, fmt.Sprintf("%s:%s", r.TerraformResourceName(), key))
+		}
+		return nil, fmt.Errorf("ambiguous: %s (can resolve to all of %s)", key, keys)
+	}
+
+	return found[0], nil
 }

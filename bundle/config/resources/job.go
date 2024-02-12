@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/bundle/config/paths"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -103,7 +104,11 @@ func (j *Job) Exists(ctx context.Context, w *databricks.WorkspaceClient, id stri
 	_, err = w.Jobs.Get(ctx, jobs.GetJobRequest{
 		JobId: int64(jobId),
 	})
-	return err == nil, err
+	if err != nil {
+		log.Debugf(ctx, "job %s does not exist", id)
+		return false, err
+	}
+	return true, nil
 }
 
 func (j *Job) TerraformResourceName() string {
