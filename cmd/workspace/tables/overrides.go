@@ -7,8 +7,9 @@ import (
 )
 
 func listOverride(listCmd *cobra.Command, listReq *catalog.ListTablesRequest) {
+	listCmd.Annotations["headerTemplate"] = cmdio.Heredoc(`
+	{{header "Full Name"}}	{{header "Table Type"}}`)
 	listCmd.Annotations["template"] = cmdio.Heredoc(`
-	{{header "Full Name"}}	{{header "Table Type"}}
 	{{range .}}{{.FullName|green}}	{{blue "%s" .TableType}}
 	{{end}}`)
 }

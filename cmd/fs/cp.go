@@ -107,7 +107,7 @@ func (c *copy) emitFileSkippedEvent(sourcePath, targetPath string) error {
 	event := newFileSkippedEvent(fullSourcePath, fullTargetPath)
 	template := "{{.SourcePath}} -> {{.TargetPath}} (skipped; already exists)\n"
 
-	return cmdio.RenderWithTemplate(c.ctx, event, template)
+	return cmdio.RenderWithTemplate(c.ctx, event, "", template)
 }
 
 func (c *copy) emitFileCopiedEvent(sourcePath, targetPath string) error {
@@ -123,7 +123,7 @@ func (c *copy) emitFileCopiedEvent(sourcePath, targetPath string) error {
 	event := newFileCopiedEvent(fullSourcePath, fullTargetPath)
 	template := "{{.SourcePath}} -> {{.TargetPath}}\n"
 
-	return cmdio.RenderWithTemplate(c.ctx, event, template)
+	return cmdio.RenderWithTemplate(c.ctx, event, "", template)
 }
 
 func newCpCommand() *cobra.Command {

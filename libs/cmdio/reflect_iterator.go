@@ -3,8 +3,16 @@ package cmdio
 import (
 	"context"
 	"reflect"
+
+	"github.com/databricks/databricks-sdk-go/listing"
 )
 
+// Reflectively call Next and HasNext on listing.Iterator[*] values.
+//
+// Because listing.Iterator[T] has a type parameter, it isn't possible to
+// use a normal switch statement to inspect whether a value implements this
+// interface for some T. Instead, we resort to checking whether the provided
+// object has HasNext() and Next() methods.
 type reflectIterator struct {
 	hasNext reflect.Value
 	next    reflect.Value
@@ -37,3 +45,5 @@ func (r reflectIterator) Next(ctx context.Context) (any, error) {
 	}
 	return item, res[1].Interface().(error)
 }
+
+var _ listing.Iterator[any] = reflectIterator{}

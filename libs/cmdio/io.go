@@ -22,27 +22,29 @@ import (
 type cmdIO struct {
 	// states if we are in the interactive mode
 	// e.g. if stdout is a terminal
-	interactive  bool
-	outputFormat flags.Output
-	template     string
-	in           io.Reader
-	out          io.Writer
-	err          io.Writer
+	interactive    bool
+	outputFormat   flags.Output
+	headerTemplate string
+	template       string
+	in             io.Reader
+	out            io.Writer
+	err            io.Writer
 }
 
-func NewIO(outputFormat flags.Output, in io.Reader, out io.Writer, err io.Writer, template string) *cmdIO {
+func NewIO(outputFormat flags.Output, in io.Reader, out io.Writer, err io.Writer, headerTemplate, template string) *cmdIO {
 	// The check below is similar to color.NoColor but uses the specified err writer.
 	dumb := os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb"
 	if f, ok := err.(*os.File); ok && !dumb {
 		dumb = !isatty.IsTerminal(f.Fd()) && !isatty.IsCygwinTerminal(f.Fd())
 	}
 	return &cmdIO{
-		interactive:  !dumb,
-		outputFormat: outputFormat,
-		template:     template,
-		in:           in,
-		out:          out,
-		err:          err,
+		interactive:    !dumb,
+		outputFormat:   outputFormat,
+		headerTemplate: headerTemplate,
+		template:       template,
+		in:             in,
+		out:            out,
+		err:            err,
 	}
 }
 

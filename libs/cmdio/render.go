@@ -50,20 +50,25 @@ func Heredoc(tmpl string) (trimmed string) {
 	return strings.TrimSpace(trimmed)
 }
 
+// writeFlusher represents a buffered writer that can be flushed. This is useful when
+// buffering writing a large number of resources (such as during a list API).
 type writeFlusher interface {
 	io.Writer
 	Flush() error
 }
 
 type jsonRenderer interface {
+	// Render an object as JSON to the provided writeFlusher.
 	renderJson(context.Context, writeFlusher) error
 }
 
 type textRenderer interface {
+	// Render an object as text to the provided writeFlusher.
 	renderText(context.Context, writeFlusher) error
 }
 
 type templateRenderer interface {
+	// Render an object using the provided template and write to the provided writeFlusher.
 	renderTemplate(context.Context, *template.Template, writeFlusher) error
 }
 
@@ -98,6 +103,12 @@ func (ir iteratorRenderer) renderJson(ctx context.Context, w writeFlusher) error
 		return err
 	}
 	for i := 0; ir.t.HasNext(ctx); i++ {
+		if i != 0 {
+			_, err = w.Write([]byte(",\n  "))
+			if err != nil {
+				return err
+			}
+		}
 		n, err := ir.t.Next(ctx)
 		if err != nil {
 			return err
@@ -110,10 +121,6 @@ func (ir iteratorRenderer) renderJson(ctx context.Context, w writeFlusher) error
 		if err != nil {
 			return err
 		}
-		_, err = w.Write([]byte(",\n  "))
-		if err != nil {
-			return err
-		}
 		if (i+1)%ir.getBufferSize() == 0 {
 			err = w.Flush()
 			if err != nil {
@@ -121,7 +128,7 @@ func (ir iteratorRenderer) renderJson(ctx context.Context, w writeFlusher) error
 			}
 		}
 	}
-	_, err = w.Write([]byte("]\n"))
+	_, err = w.Write([]byte("\n]\n"))
 	if err != nil {
 		return err
 	}
@@ -208,7 +215,7 @@ func newBufferedFlusher(w io.Writer) writeFlusher {
 	return bufferedFlusher{w: w}
 }
 
-func renderWithTemplate(r any, ctx context.Context, template string) error {
+func renderWithTemplate(r any, ctx context.Context, headerTemplate, template string) error {
 	// TODO: add terminal width & white/dark theme detection
 	c := fromContext(ctx)
 	switch c.outputFormat {
@@ -219,7 +226,7 @@ func renderWithTemplate(r any, ctx context.Context, template string) error {
 		return errors.New("json output not supported")
 	case flags.OutputText:
 		if tr, ok := r.(templateRenderer); ok && template != "" {
-			return renderUsingTemplate(ctx, tr, c.out, template)
+			return renderUsingTemplate(ctx, tr, c.out, headerTemplate, template)
 		}
 		if tr, ok := r.(textRenderer); ok {
 			return tr.renderText(ctx, newBufferedFlusher(c.out))
@@ -235,11 +242,11 @@ func renderWithTemplate(r any, ctx context.Context, template string) error {
 
 func Render(ctx context.Context, v any) error {
 	c := fromContext(ctx)
-	return RenderWithTemplate(ctx, v, c.template)
+	return renderWithTemplate(newRenderer(v), ctx, c.headerTemplate, c.template)
 }
 
-func RenderWithTemplate(ctx context.Context, v any, template string) error {
-	return renderWithTemplate(newRenderer(v), ctx, template)
+func RenderWithTemplate(ctx context.Context, v any, headerTemplate, template string) error {
+	return renderWithTemplate(newRenderer(v), ctx, headerTemplate, template)
 }
 
 func RenderJson(ctx context.Context, v any) error {
@@ -258,9 +265,9 @@ func RenderReader(ctx context.Context, r io.Reader) error {
 	return errors.New("rendering io.Reader not supported")
 }
 
-func renderUsingTemplate(ctx context.Context, r templateRenderer, w io.Writer, tmpl string) error {
+func renderUsingTemplate(ctx context.Context, r templateRenderer, w io.Writer, headerTmpl, tmpl string) error {
 	tw := tabwriter.NewWriter(w, 0, 4, 2, ' ', 0)
-	t, err := template.New("command").Funcs(template.FuncMap{
+	base := template.New("command").Funcs(template.FuncMap{
 		// we render colored output if stdout is TTY, otherwise we render text.
 		// in the future we'll check if we can explicitly check for stderr being
 		// a TTY
@@ -315,7 +322,20 @@ func renderUsingTemplate(ctx context.Context, r templateRenderer, w io.Writer, t
 			}
 			return string(out), nil
 		},
-	}).Parse(tmpl)
+	})
+	if headerTmpl != "" {
+		headerT, err := base.Parse(headerTmpl)
+		if err != nil {
+			return err
+		}
+		err = headerT.Execute(tw, nil)
+		if err != nil {
+			return err
+		}
+		tw.Write([]byte("\n"))
+		// Do not flush here. Instead, allow the first 100 resources to determine the initial spacing of the header columns.
+	}
+	t, err := base.Parse(tmpl)
 	if err != nil {
 		return err
 	}

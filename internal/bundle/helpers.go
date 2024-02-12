@@ -25,7 +25,7 @@ func initTestTemplate(t *testing.T, ctx context.Context, templateName string, co
 	}
 
 	ctx = root.SetWorkspaceClient(ctx, nil)
-	cmd := cmdio.NewIO(flags.OutputJSON, strings.NewReader(""), os.Stdout, os.Stderr, "bundles")
+	cmd := cmdio.NewIO(flags.OutputJSON, strings.NewReader(""), os.Stdout, os.Stderr, "", "bundles")
 	ctx = cmdio.InContext(ctx, cmd)
 
 	err = template.Materialize(ctx, configFilePath, templateRoot, bundleRoot)
