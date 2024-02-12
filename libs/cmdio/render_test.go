@@ -3,6 +3,8 @@ package cmdio
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -32,10 +34,40 @@ var dummyWorkspace2 = provisioning.Workspace{
 	WorkspaceName: "def",
 }
 
-func makeIterator() listing.Iterator[any] {
-	return &dummyIterator{
-		items: []any{dummyWorkspace1, dummyWorkspace2},
+func makeWorkspaces(count int) []provisioning.Workspace {
+	res := make([]provisioning.Workspace, 0, count)
+	next := []provisioning.Workspace{dummyWorkspace1, dummyWorkspace2}
+	for i := 0; i < count; i++ {
+		n := next[0]
+		next = append(next[1:], n)
+		res = append(res, n)
 	}
+	return res
+}
+
+func makeIterator(count int) listing.Iterator[any] {
+	items := make([]any, 0, count)
+	for _, ws := range makeWorkspaces(count) {
+		items = append(items, any(ws))
+	}
+	return &dummyIterator{
+		items: items,
+	}
+}
+
+func makeBigOutput(count int) string {
+	res := bytes.Buffer{}
+	for _, ws := range makeWorkspaces(count) {
+		res.Write([]byte(fmt.Sprintf("%d  %s\n", ws.WorkspaceId, ws.WorkspaceName)))
+	}
+	return res.String()
+}
+
+func must[T any](a T, e error) T {
+	if e != nil {
+		panic(e)
+	}
+	return a
 }
 
 var testCases = []testCase{
@@ -67,7 +99,7 @@ var testCases = []testCase{
 	},
 	{
 		name:           "Workspace Iterator with header and template",
-		v:              makeIterator(),
+		v:              makeIterator(2),
 		outputFormat:   flags.OutputText,
 		headerTemplate: "id\tname",
 		template:       "{{range .}}{{.WorkspaceId}}\t{{.WorkspaceName}}\n{{end}}",
@@ -78,7 +110,7 @@ var testCases = []testCase{
 	},
 	{
 		name:         "Workspace Iterator with no header and template",
-		v:            makeIterator(),
+		v:            makeIterator(2),
 		outputFormat: flags.OutputText,
 		template:     "{{range .}}{{.WorkspaceId}}\t{{.WorkspaceName}}\n{{end}}",
 		expected: `123  abc
@@ -87,19 +119,23 @@ var testCases = []testCase{
 	},
 	{
 		name:         "Workspace Iterator with no header and no template",
-		v:            makeIterator(),
+		v:            makeIterator(2),
 		outputFormat: flags.OutputText,
-		expected: `[
-  {
-    "workspace_id": 123,
-    "workspace_name": "abc"
-  },
-  {
-    "workspace_id": 456,
-    "workspace_name": "def"
-  }
-]
-`,
+		expected:     string(must(json.MarshalIndent(makeWorkspaces(2), "", "  "))) + "\n",
+	},
+	{
+		name:           "Big Workspace Iterator with template",
+		v:              makeIterator(200),
+		outputFormat:   flags.OutputText,
+		headerTemplate: "id\tname",
+		template:       "{{range .}}{{.WorkspaceId}}\t{{.WorkspaceName}}\n{{end}}",
+		expected:       "id   name\n" + makeBigOutput(200),
+	},
+	{
+		name:         "Big Workspace Iterator with no template",
+		v:            makeIterator(200),
+		outputFormat: flags.OutputText,
+		expected:     string(must(json.MarshalIndent(makeWorkspaces(200), "", "  "))) + "\n",
 	},
 	{
 		name:         "io.Reader",
