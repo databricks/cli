@@ -308,10 +308,8 @@ func newListEndpoints() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.VectorSearchEndpoints.ListEndpointsAll(ctx, listEndpointsReq)
-		if err != nil {
-			return err
-		}
+		response := w.VectorSearchEndpoints.ListEndpoints(ctx, listEndpointsReq)
+
 		return cmdio.Render(ctx, response)
 	}
 

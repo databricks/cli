@@ -138,10 +138,8 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.PolicyFamilies.ListAll(ctx, listReq)
-		if err != nil {
-			return err
-		}
+		response := w.PolicyFamilies.List(ctx, listReq)
+
 		return cmdio.Render(ctx, response)
 	}
 

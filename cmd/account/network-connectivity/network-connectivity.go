@@ -546,10 +546,8 @@ func newListNetworkConnectivityConfigurations() *cobra.Command {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
-		response, err := a.NetworkConnectivity.ListNetworkConnectivityConfigurationsAll(ctx, listNetworkConnectivityConfigurationsReq)
-		if err != nil {
-			return err
-		}
+		response := a.NetworkConnectivity.ListNetworkConnectivityConfigurations(ctx, listNetworkConnectivityConfigurationsReq)
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -612,10 +610,8 @@ func newListPrivateEndpointRules() *cobra.Command {
 
 		listPrivateEndpointRulesReq.NetworkConnectivityConfigId = args[0]
 
-		response, err := a.NetworkConnectivity.ListPrivateEndpointRulesAll(ctx, listPrivateEndpointRulesReq)
-		if err != nil {
-			return err
-		}
+		response := a.NetworkConnectivity.ListPrivateEndpointRules(ctx, listPrivateEndpointRulesReq)
+
 		return cmdio.Render(ctx, response)
 	}
 

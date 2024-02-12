@@ -319,10 +319,8 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.ExternalLocations.ListAll(ctx, listReq)
-		if err != nil {
-			return err
-		}
+		response := w.ExternalLocations.List(ctx, listReq)
+
 		return cmdio.Render(ctx, response)
 	}
 

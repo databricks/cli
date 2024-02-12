@@ -536,10 +536,8 @@ func newListPipelineEvents() *cobra.Command {
 		}
 		listPipelineEventsReq.PipelineId = args[0]
 
-		response, err := w.Pipelines.ListPipelineEventsAll(ctx, listPipelineEventsReq)
-		if err != nil {
-			return err
-		}
+		response := w.Pipelines.ListPipelineEvents(ctx, listPipelineEventsReq)
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -600,10 +598,8 @@ func newListPipelines() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.Pipelines.ListPipelinesAll(ctx, listPipelinesReq)
-		if err != nil {
-			return err
-		}
+		response := w.Pipelines.ListPipelines(ctx, listPipelinesReq)
+
 		return cmdio.Render(ctx, response)
 	}
 

@@ -300,10 +300,8 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.Queries.ListAll(ctx, listReq)
-		if err != nil {
-			return err
-		}
+		response := w.Queries.List(ctx, listReq)
+
 		return cmdio.Render(ctx, response)
 	}
 

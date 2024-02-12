@@ -292,10 +292,8 @@ func newList() *cobra.Command {
 		listReq.CatalogName = args[0]
 		listReq.SchemaName = args[1]
 
-		response, err := w.Volumes.ListAll(ctx, listReq)
-		if err != nil {
-			return err
-		}
+		response := w.Volumes.List(ctx, listReq)
+
 		return cmdio.Render(ctx, response)
 	}
 

@@ -1042,10 +1042,8 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.Jobs.ListAll(ctx, listReq)
-		if err != nil {
-			return err
-		}
+		response := w.Jobs.List(ctx, listReq)
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1112,10 +1110,8 @@ func newListRuns() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.Jobs.ListRunsAll(ctx, listRunsReq)
-		if err != nil {
-			return err
-		}
+		response := w.Jobs.ListRuns(ctx, listRunsReq)
+
 		return cmdio.Render(ctx, response)
 	}
 

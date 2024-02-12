@@ -336,10 +336,8 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.StorageCredentials.ListAll(ctx, listReq)
-		if err != nil {
-			return err
-		}
+		response := w.StorageCredentials.List(ctx, listReq)
+
 		return cmdio.Render(ctx, response)
 	}
 

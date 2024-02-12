@@ -303,10 +303,8 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
-		response, err := a.LogDelivery.ListAll(ctx, listReq)
-		if err != nil {
-			return err
-		}
+		response := a.LogDelivery.List(ctx, listReq)
+
 		return cmdio.Render(ctx, response)
 	}
 

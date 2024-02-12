@@ -216,10 +216,8 @@ func newList() *cobra.Command {
 
 		listReq.MetastoreId = args[0]
 
-		response, err := w.SystemSchemas.ListAll(ctx, listReq)
-		if err != nil {
-			return err
-		}
+		response := w.SystemSchemas.List(ctx, listReq)
+
 		return cmdio.Render(ctx, response)
 	}
 

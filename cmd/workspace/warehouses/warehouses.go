@@ -661,10 +661,8 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.Warehouses.ListAll(ctx, listReq)
-		if err != nil {
-			return err
-		}
+		response := w.Warehouses.List(ctx, listReq)
+
 		return cmdio.Render(ctx, response)
 	}
 

@@ -257,10 +257,8 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		response, err := a.Metastores.ListAll(ctx)
-		if err != nil {
-			return err
-		}
+		response := a.Metastores.List(ctx)
+
 		return cmdio.Render(ctx, response)
 	}
 

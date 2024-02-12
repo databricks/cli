@@ -313,10 +313,8 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.ServicePrincipals.ListAll(ctx, listReq)
-		if err != nil {
-			return err
-		}
+		response := w.ServicePrincipals.List(ctx, listReq)
+
 		return cmdio.Render(ctx, response)
 	}
 

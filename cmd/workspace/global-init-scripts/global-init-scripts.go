@@ -309,10 +309,8 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		response, err := w.GlobalInitScripts.ListAll(ctx)
-		if err != nil {
-			return err
-		}
+		response := w.GlobalInitScripts.List(ctx)
+
 		return cmdio.Render(ctx, response)
 	}
 

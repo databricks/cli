@@ -226,10 +226,8 @@ func newList() *cobra.Command {
 			return fmt.Errorf("invalid SERVICE_PRINCIPAL_ID: %s", args[0])
 		}
 
-		response, err := a.ServicePrincipalSecrets.ListAll(ctx, listReq)
-		if err != nil {
-			return err
-		}
+		response := a.ServicePrincipalSecrets.List(ctx, listReq)
+
 		return cmdio.Render(ctx, response)
 	}
 

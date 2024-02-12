@@ -590,10 +590,8 @@ func newListAcls() *cobra.Command {
 
 		listAclsReq.Scope = args[0]
 
-		response, err := w.Secrets.ListAclsAll(ctx, listAclsReq)
-		if err != nil {
-			return err
-		}
+		response := w.Secrets.ListAcls(ctx, listAclsReq)
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -641,10 +639,8 @@ func newListScopes() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		response, err := w.Secrets.ListScopesAll(ctx)
-		if err != nil {
-			return err
-		}
+		response := w.Secrets.ListScopes(ctx)
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -712,10 +708,8 @@ func newListSecrets() *cobra.Command {
 
 		listSecretsReq.Scope = args[0]
 
-		response, err := w.Secrets.ListSecretsAll(ctx, listSecretsReq)
-		if err != nil {
-			return err
-		}
+		response := w.Secrets.ListSecrets(ctx, listSecretsReq)
+
 		return cmdio.Render(ctx, response)
 	}
 

@@ -652,10 +652,8 @@ func newEvents() *cobra.Command {
 			eventsReq.ClusterId = args[0]
 		}
 
-		response, err := w.Clusters.EventsAll(ctx, eventsReq)
-		if err != nil {
-			return err
-		}
+		response := w.Clusters.Events(ctx, eventsReq)
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -956,10 +954,8 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.Clusters.ListAll(ctx, listReq)
-		if err != nil {
-			return err
-		}
+		response := w.Clusters.List(ctx, listReq)
+
 		return cmdio.Render(ctx, response)
 	}
 

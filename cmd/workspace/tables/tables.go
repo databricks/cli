@@ -257,10 +257,8 @@ func newList() *cobra.Command {
 		listReq.CatalogName = args[0]
 		listReq.SchemaName = args[1]
 
-		response, err := w.Tables.ListAll(ctx, listReq)
-		if err != nil {
-			return err
-		}
+		response := w.Tables.List(ctx, listReq)
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -348,10 +346,8 @@ func newListSummaries() *cobra.Command {
 		}
 		listSummariesReq.CatalogName = args[0]
 
-		response, err := w.Tables.ListSummariesAll(ctx, listSummariesReq)
-		if err != nil {
-			return err
-		}
+		response := w.Tables.ListSummaries(ctx, listSummariesReq)
+
 		return cmdio.Render(ctx, response)
 	}
 

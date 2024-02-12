@@ -450,10 +450,8 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.RegisteredModels.ListAll(ctx, listReq)
-		if err != nil {
-			return err
-		}
+		response := w.RegisteredModels.List(ctx, listReq)
+
 		return cmdio.Render(ctx, response)
 	}
 

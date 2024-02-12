@@ -219,10 +219,8 @@ func newList() *cobra.Command {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
 
-		response, err := a.WorkspaceAssignment.ListAll(ctx, listReq)
-		if err != nil {
-			return err
-		}
+		response := a.WorkspaceAssignment.List(ctx, listReq)
+
 		return cmdio.Render(ctx, response)
 	}
 

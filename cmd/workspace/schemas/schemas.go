@@ -333,10 +333,8 @@ func newList() *cobra.Command {
 
 		listReq.CatalogName = args[0]
 
-		response, err := w.Schemas.ListAll(ctx, listReq)
-		if err != nil {
-			return err
-		}
+		response := w.Schemas.List(ctx, listReq)
+
 		return cmdio.Render(ctx, response)
 	}
 

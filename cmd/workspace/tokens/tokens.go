@@ -232,10 +232,8 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		response, err := w.Tokens.ListAll(ctx)
-		if err != nil {
-			return err
-		}
+		response := w.Tokens.List(ctx)
+
 		return cmdio.Render(ctx, response)
 	}
 

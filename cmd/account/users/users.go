@@ -329,10 +329,8 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
-		response, err := a.Users.ListAll(ctx, listReq)
-		if err != nil {
-			return err
-		}
+		response := a.Users.List(ctx, listReq)
+
 		return cmdio.Render(ctx, response)
 	}
 

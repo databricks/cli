@@ -323,10 +323,8 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.Providers.ListAll(ctx, listReq)
-		if err != nil {
-			return err
-		}
+		response := w.Providers.List(ctx, listReq)
+
 		return cmdio.Render(ctx, response)
 	}
 
@@ -401,10 +399,8 @@ func newListShares() *cobra.Command {
 		}
 		listSharesReq.Name = args[0]
 
-		response, err := w.Providers.ListSharesAll(ctx, listSharesReq)
-		if err != nil {
-			return err
-		}
+		response := w.Providers.ListShares(ctx, listSharesReq)
+
 		return cmdio.Render(ctx, response)
 	}
 
