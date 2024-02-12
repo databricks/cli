@@ -4,12 +4,12 @@ go 1.21
 
 require (
 	github.com/briandowns/spinner v1.23.0 // Apache 2.0
-	github.com/databricks/databricks-sdk-go v0.29.1 // Apache 2.0
+	github.com/databricks/databricks-sdk-go v0.30.1 // Apache 2.0
 	github.com/fatih/color v1.16.0 // MIT
 	github.com/ghodss/yaml v1.0.0 // MIT + NOTICE
-	github.com/google/uuid v1.5.0 // BSD-3-Clause
+	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/hashicorp/go-version v1.6.0 // MPL 2.0
-	github.com/hashicorp/hc-install v0.6.2 // MPL 2.0
+	github.com/hashicorp/hc-install v0.6.3 // MPL 2.0
 	github.com/hashicorp/terraform-exec v0.20.0 // MPL 2.0
 	github.com/hashicorp/terraform-json v0.21.0 // MPL 2.0
 	github.com/imdario/mergo v0.3.15 // BSD-3-Clause
@@ -22,23 +22,20 @@ require (
 	github.com/spf13/pflag v1.0.5 // BSD-3-Clause
 	github.com/stretchr/testify v1.8.4 // MIT
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
-	golang.org/x/mod v0.14.0
-	golang.org/x/oauth2 v0.16.0
+	golang.org/x/mod v0.15.0
+	golang.org/x/oauth2 v0.17.0
 	golang.org/x/sync v0.6.0
-	golang.org/x/term v0.16.0
+	golang.org/x/term v0.17.0
 	golang.org/x/text v0.14.0
 	gopkg.in/ini.v1 v1.67.0 // Apache 2.0
 )
 
-require (
-	go.uber.org/mock v0.4.0
-	gopkg.in/yaml.v3 v3.0.1
-)
+require gopkg.in/yaml.v3 v3.0.1
 
 require (
 	cloud.google.com/go/compute v1.23.3 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
-	github.com/ProtonMail/go-crypto v0.0.0-20230828082145-3c4c8a2d2371 // indirect
+	github.com/ProtonMail/go-crypto v1.1.0-alpha.0 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect
 	github.com/cloudflare/circl v1.3.7 // indirect
@@ -62,9 +59,9 @@ require (
 	go.opentelemetry.io/otel v1.21.0 // indirect
 	go.opentelemetry.io/otel/metric v1.21.0 // indirect
 	go.opentelemetry.io/otel/trace v1.21.0 // indirect
-	golang.org/x/crypto v0.18.0 // indirect
-	golang.org/x/net v0.20.0 // indirect
-	golang.org/x/sys v0.16.0 // indirect
+	golang.org/x/crypto v0.19.0 // indirect
+	golang.org/x/net v0.21.0 // indirect
+	golang.org/x/sys v0.17.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/api v0.154.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect

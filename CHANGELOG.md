@@ -1,5 +1,60 @@
 # Version changelog
 
+## 0.212.4
+
+Bundles:
+ * Allow specifying executable in artifact section and skip bash from WSL ([#1169](https://github.com/databricks/cli/pull/1169)).
+ * Added warning when trying to deploy bundle with `--fail-if-running` and running resources ([#1163](https://github.com/databricks/cli/pull/1163)).
+ * Group bundle run flags by job and pipeline types ([#1174](https://github.com/databricks/cli/pull/1174)).
+ * Make sure grouped flags are added to the command flag set ([#1180](https://github.com/databricks/cli/pull/1180)).
+ * Add short_name helper function to bundle init templates ([#1167](https://github.com/databricks/cli/pull/1167)).
+
+Internal:
+ * Fix dynamic representation of zero values in maps and slices ([#1154](https://github.com/databricks/cli/pull/1154)).
+ * Refactor library to artifact matching to not use pointers ([#1172](https://github.com/databricks/cli/pull/1172)).
+ * Harden `dyn.Value` equality check ([#1173](https://github.com/databricks/cli/pull/1173)).
+ * Ensure every variable reference is passed to lookup function ([#1176](https://github.com/databricks/cli/pull/1176)).
+ * Empty struct should yield empty map in `convert.FromTyped` ([#1177](https://github.com/databricks/cli/pull/1177)).
+ * Zero destination struct in `convert.ToTyped` ([#1178](https://github.com/databricks/cli/pull/1178)).
+ * Fix integration test with invalid configuration ([#1182](https://github.com/databricks/cli/pull/1182)).
+ * Use `acc.WorkspaceTest` helper from bundle integration tests ([#1181](https://github.com/databricks/cli/pull/1181)).
+
+## 0.212.3
+
+CLI:
+ * Release Windows packages to winget-pkgs ([#1144](https://github.com/databricks/cli/pull/1144)).
+
+Bundles:
+ * Add `--key` flag for generate commands to specify resource key ([#1165](https://github.com/databricks/cli/pull/1165)).
+
+
+Dependency updates:
+ * Bump github.com/google/uuid from 1.5.0 to 1.6.0 ([#1160](https://github.com/databricks/cli/pull/1160)).
+ * Update Go SDK to v0.30.1 ([#1162](https://github.com/databricks/cli/pull/1162)).
+
+## 0.212.2
+
+CLI:
+ * Prompt for account profile only for account-level command execution instead of during `databricks labs install` flow ([#1128](https://github.com/databricks/cli/pull/1128)).
+ * Bring back `--json` flag for workspace-conf set-status command ([#1151](https://github.com/databricks/cli/pull/1151)).
+
+Bundles:
+ * Set `run_as` permissions after variable interpolation ([#1141](https://github.com/databricks/cli/pull/1141)).
+ * Add functionality to visit values in `dyn.Value` tree ([#1142](https://github.com/databricks/cli/pull/1142)).
+ * Add `dynvar` package for variable resolution with a `dyn.Value` tree ([#1143](https://github.com/databricks/cli/pull/1143)).
+ * Add support for `anyOf` to `skip_prompt_if` ([#1133](https://github.com/databricks/cli/pull/1133)).
+ * Added `bundle generate pipeline` command ([#1139](https://github.com/databricks/cli/pull/1139)).
+
+Internal:
+ * Use MockWorkspaceClient from SDK instead of WithImpl mocking ([#1134](https://github.com/databricks/cli/pull/1134)).
+
+Dependency updates:
+ * Bump github.com/databricks/databricks-sdk-go from 0.29.0 to 0.29.1 ([#1137](https://github.com/databricks/cli/pull/1137)).
+ * Bump github.com/hashicorp/terraform-json from 0.20.0 to 0.21.0 ([#1138](https://github.com/databricks/cli/pull/1138)).
+ * Update actions/setup-go to v5 ([#1148](https://github.com/databricks/cli/pull/1148)).
+ * Update codecov/codecov-action to v3 ([#1149](https://github.com/databricks/cli/pull/1149)).
+ * Use latest patch release of Go toolchain ([#1152](https://github.com/databricks/cli/pull/1152)).
+
 ## 0.212.1
 
 CLI:

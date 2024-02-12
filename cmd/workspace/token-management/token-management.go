@@ -60,7 +60,7 @@ func newCreateOboToken() *cobra.Command {
 	cmd.Use = "create-obo-token APPLICATION_ID LIFETIME_SECONDS"
 	cmd.Short = `Create on-behalf token.`
 	cmd.Long = `Create on-behalf token.
-  
+
   Creates a token on behalf of a service principal.
 
   Arguments:
@@ -146,7 +146,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete TOKEN_ID"
 	cmd.Short = `Delete a token.`
 	cmd.Long = `Delete a token.
-  
+
   Deletes a token, specified by its ID.
 
   Arguments:
@@ -222,7 +222,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get TOKEN_ID"
 	cmd.Short = `Get token info.`
 	cmd.Long = `Get token info.
-  
+
   Gets information about a token, specified by its ID.
 
   Arguments:
@@ -293,7 +293,7 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Use = "get-permission-levels"
 	cmd.Short = `Get token permission levels.`
 	cmd.Long = `Get token permission levels.
-  
+
   Gets the permission levels that a user can have on an object.`
 
 	cmd.Annotations = make(map[string]string)
@@ -341,7 +341,7 @@ func newGetPermissions() *cobra.Command {
 	cmd.Use = "get-permissions"
 	cmd.Short = `Get token permissions.`
 	cmd.Long = `Get token permissions.
-  
+
   Gets the permissions of all tokens. Tokens can inherit permissions from their
   root object.`
 
@@ -392,13 +392,13 @@ func newList() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Flags().StringVar(&listReq.CreatedById, "created-by-id", listReq.CreatedById, `User ID of the user that created the token.`)
+	cmd.Flags().Int64Var(&listReq.CreatedById, "created-by-id", listReq.CreatedById, `User ID of the user that created the token.`)
 	cmd.Flags().StringVar(&listReq.CreatedByUsername, "created-by-username", listReq.CreatedByUsername, `Username of the user that created the token.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List all tokens.`
 	cmd.Long = `List all tokens.
-  
+
   Lists all tokens associated with the specified workspace or user.`
 
 	cmd.Annotations = make(map[string]string)
@@ -459,7 +459,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.Use = "set-permissions"
 	cmd.Short = `Set token permissions.`
 	cmd.Long = `Set token permissions.
-  
+
   Sets permissions on all tokens. Tokens can inherit permissions from their root
   object.`
 
@@ -530,7 +530,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Use = "update-permissions"
 	cmd.Short = `Update token permissions.`
 	cmd.Long = `Update token permissions.
-  
+
   Updates the permissions on all tokens. Tokens can inherit permissions from
   their root object.`
 

@@ -5,7 +5,8 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/internal"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/google/uuid"
@@ -14,11 +15,8 @@ import (
 )
 
 func TestAccLocalStateStaleness(t *testing.T) {
-	env := internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
-	t.Log(env)
-
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
+	ctx, wt := acc.WorkspaceTest(t)
+	w := wt.W
 
 	// The approach for this test is as follows:
 	// 1) First deploy of bundle instance A
@@ -27,10 +25,10 @@ func TestAccLocalStateStaleness(t *testing.T) {
 	// Because of deploy (2), the locally cached state of bundle instance A should be stale.
 	// Then for deploy (3), it must use the remote state over the stale local state.
 
-	nodeTypeId := internal.GetNodeTypeId(env)
+	nodeTypeId := internal.GetNodeTypeId(env.Get(ctx, "CLOUD_ENV"))
 	uniqueId := uuid.New().String()
 	initialize := func() string {
-		root, err := initTestTemplate(t, "basic", map[string]any{
+		root, err := initTestTemplate(t, ctx, "basic", map[string]any{
 			"unique_id":     uniqueId,
 			"node_type_id":  nodeTypeId,
 			"spark_version": "13.2.x-snapshot-scala2.12",
@@ -38,26 +36,28 @@ func TestAccLocalStateStaleness(t *testing.T) {
 		require.NoError(t, err)
 
 		t.Cleanup(func() {
-			err = destroyBundle(t, root)
+			err = destroyBundle(t, ctx, root)
 			require.NoError(t, err)
 		})
 
 		return root
 	}
 
+	var err error
+
 	bundleA := initialize()
 	bundleB := initialize()
 
 	// 1) Deploy bundle A
-	err = deployBundle(t, bundleA)
+	err = deployBundle(t, ctx, bundleA)
 	require.NoError(t, err)
 
 	// 2) Deploy bundle B
-	err = deployBundle(t, bundleB)
+	err = deployBundle(t, ctx, bundleB)
 	require.NoError(t, err)
 
 	// 3) Deploy bundle A again
-	err = deployBundle(t, bundleA)
+	err = deployBundle(t, ctx, bundleA)
 	require.NoError(t, err)
 
 	// Assert that there is only a single job in the workspace corresponding to this bundle.

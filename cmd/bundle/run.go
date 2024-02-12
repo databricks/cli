@@ -24,10 +24,12 @@ func newRunCommand() *cobra.Command {
 	}
 
 	var runOptions run.Options
-	runOptions.Define(cmd.Flags())
+	runOptions.Define(cmd)
 
 	var noWait bool
+	var restart bool
 	cmd.Flags().BoolVar(&noWait, "no-wait", false, "Don't wait for the run to complete.")
+	cmd.Flags().BoolVar(&restart, "restart", false, "Restart the run if it is already running.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -68,6 +70,15 @@ func newRunCommand() *cobra.Command {
 		}
 
 		runOptions.NoWait = noWait
+		if restart {
+			s := cmdio.Spinner(ctx)
+			s <- "Cancelling all runs"
+			err := runner.Cancel(ctx)
+			close(s)
+			if err != nil {
+				return err
+			}
+		}
 		output, err := runner.Run(ctx, &runOptions)
 		if err != nil {
 			return err

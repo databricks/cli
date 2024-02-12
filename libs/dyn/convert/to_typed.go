@@ -53,6 +53,10 @@ func ToTyped(dst any, src dyn.Value) error {
 func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 	switch src.Kind() {
 	case dyn.KindMap:
+		// Zero the destination struct such that fields
+		// that aren't present in [src] are cleared.
+		dst.SetZero()
+
 		info := getStructInfo(dst.Type())
 		for k, v := range src.MustMap() {
 			index, ok := info.Fields[k]
