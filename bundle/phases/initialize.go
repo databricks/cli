@@ -18,6 +18,10 @@ func Initialize() bundle.Mutator {
 	return newPhase(
 		"initialize",
 		[]bundle.Mutator{
+			mutator.RewriteSyncPaths(),
+			mutator.MergeJobClusters(),
+			mutator.MergeJobTasks(),
+			mutator.MergePipelineClusters(),
 			mutator.InitializeWorkspaceClient(),
 			mutator.PopulateCurrentUser(),
 			mutator.DefineDefaultWorkspaceRoot(),

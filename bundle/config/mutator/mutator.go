@@ -21,9 +21,5 @@ func DefaultMutatorsForTarget(target string) []bundle.Mutator {
 	return append(
 		DefaultMutators(),
 		SelectTarget(target),
-		RewriteSyncPaths(),
-		MergeJobClusters(),
-		MergeJobTasks(),
-		MergePipelineClusters(),
 	)
 }
