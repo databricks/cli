@@ -578,7 +578,6 @@ func newList() *cobra.Command {
 		listReq.Path = args[0]
 
 		response := w.Workspace.List(ctx, listReq)
-
 		return cmdio.Render(ctx, response)
 	}
 

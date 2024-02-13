@@ -122,7 +122,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete DASHBOARD_ID"
 	cmd.Short = `Remove a dashboard.`
 	cmd.Long = `Remove a dashboard.
-
+  
   Moves a dashboard to the trash. Trashed dashboards do not appear in list views
   or searches, and cannot be shared.`
 
@@ -196,7 +196,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get DASHBOARD_ID"
 	cmd.Short = `Retrieve a definition.`
 	cmd.Long = `Retrieve a definition.
-
+  
   Returns a JSON representation of a dashboard object, including its
   visualization and query objects.`
 
@@ -275,7 +275,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `Get dashboard objects.`
 	cmd.Long = `Get dashboard objects.
-
+  
   Fetch a paginated list of dashboard objects.`
 
 	cmd.Annotations = make(map[string]string)
@@ -291,7 +291,6 @@ func newList() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		response := w.Dashboards.List(ctx, listReq)
-
 		return cmdio.Render(ctx, response)
 	}
 
@@ -332,7 +331,7 @@ func newRestore() *cobra.Command {
 	cmd.Use = "restore DASHBOARD_ID"
 	cmd.Short = `Restore a dashboard.`
 	cmd.Long = `Restore a dashboard.
-
+  
   A restored dashboard appears in list views and searches and can be shared.`
 
 	cmd.Annotations = make(map[string]string)
@@ -383,6 +382,93 @@ func newRestore() *cobra.Command {
 func init() {
 	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
 		cmd.AddCommand(newRestore())
+	})
+}
+
+// start update command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateOverrides []func(
+	*cobra.Command,
+	*sql.DashboardEditContent,
+)
+
+func newUpdate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateReq sql.DashboardEditContent
+	var updateJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The title of this dashboard that appears in list views and at the top of the dashboard page.`)
+	cmd.Flags().Var(&updateReq.RunAsRole, "run-as-role", `Sets the **Run as** role for the object. Supported values: [owner, viewer]`)
+
+	cmd.Use = "update DASHBOARD_ID"
+	cmd.Short = `Change a dashboard definition.`
+	cmd.Long = `Change a dashboard definition.
+  
+  Modify this dashboard definition. This operation only affects attributes of
+  the dashboard object. It does not add, modify, or remove widgets.
+  
+  **Note**: You cannot undo this operation.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
+			if err != nil {
+				return err
+			}
+		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No DASHBOARD_ID argument specified. Loading names for Dashboards drop-down."
+			names, err := w.Dashboards.DashboardNameToIdMap(ctx, sql.ListDashboardsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Dashboards drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have ")
+		}
+		updateReq.DashboardId = args[0]
+
+		response, err := w.Dashboards.Update(ctx, updateReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateOverrides {
+		fn(cmd, &updateReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdate())
 	})
 }
 

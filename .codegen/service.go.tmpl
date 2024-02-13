@@ -305,7 +305,7 @@ func init() {
 		{{- else -}}
 		  err =
 		{{- end}} {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{(.Service.TrimPrefix "account").PascalName}}.{{.PascalName}}(ctx{{if .Request}}, {{.CamelName}}Req{{end}})
-		{{if not (and .Response .Pagination) -}}
+		{{- if not (and .Response .Pagination) }}
 		if err != nil {
 			return err
 		}

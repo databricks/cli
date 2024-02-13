@@ -591,7 +591,6 @@ func newListAcls() *cobra.Command {
 		listAclsReq.Scope = args[0]
 
 		response := w.Secrets.ListAcls(ctx, listAclsReq)
-
 		return cmdio.Render(ctx, response)
 	}
 
@@ -640,7 +639,6 @@ func newListScopes() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 		response := w.Secrets.ListScopes(ctx)
-
 		return cmdio.Render(ctx, response)
 	}
 
@@ -709,7 +707,6 @@ func newListSecrets() *cobra.Command {
 		listSecretsReq.Scope = args[0]
 
 		response := w.Secrets.ListSecrets(ctx, listSecretsReq)
-
 		return cmdio.Render(ctx, response)
 	}
 

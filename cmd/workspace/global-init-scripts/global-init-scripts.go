@@ -301,7 +301,7 @@ func newList() *cobra.Command {
   Get a list of all global init scripts for this workspace. This returns all
   properties for each script but **not** the script contents. To retrieve the
   contents of a script, use the [get a global init
-  script](#operation/get-script) operation.`
+  script](:method:globalinitscripts/get) operation.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -310,7 +310,6 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 		response := w.GlobalInitScripts.List(ctx)
-
 		return cmdio.Render(ctx, response)
 	}
 

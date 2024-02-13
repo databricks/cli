@@ -537,7 +537,6 @@ func newListPipelineEvents() *cobra.Command {
 		listPipelineEventsReq.PipelineId = args[0]
 
 		response := w.Pipelines.ListPipelineEvents(ctx, listPipelineEventsReq)
-
 		return cmdio.Render(ctx, response)
 	}
 
@@ -599,7 +598,6 @@ func newListPipelines() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		response := w.Pipelines.ListPipelines(ctx, listPipelinesReq)
-
 		return cmdio.Render(ctx, response)
 	}
 
@@ -907,6 +905,7 @@ func newStartUpdate() *cobra.Command {
 	cmd.Flags().BoolVar(&startUpdateReq.FullRefresh, "full-refresh", startUpdateReq.FullRefresh, `If true, this update will reset all tables before running.`)
 	// TODO: array: full_refresh_selection
 	// TODO: array: refresh_selection
+	cmd.Flags().BoolVar(&startUpdateReq.ValidateOnly, "validate-only", startUpdateReq.ValidateOnly, `If true, this update only validates the correctness of pipeline source code but does not materialize or publish any datasets.`)
 
 	cmd.Use = "start-update PIPELINE_ID"
 	cmd.Short = `Start a pipeline.`

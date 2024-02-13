@@ -294,7 +294,6 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 		response := w.Connections.List(ctx)
-
 		return cmdio.Render(ctx, response)
 	}
 

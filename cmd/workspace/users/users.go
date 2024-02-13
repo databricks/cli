@@ -427,7 +427,6 @@ func newList() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		response := w.Users.List(ctx, listReq)
-
 		return cmdio.Render(ctx, response)
 	}
 

@@ -451,7 +451,6 @@ func newList() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		response := w.RegisteredModels.List(ctx, listReq)
-
 		return cmdio.Render(ctx, response)
 	}
 

@@ -263,7 +263,6 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 		response := a.CustomAppIntegration.List(ctx)
-
 		return cmdio.Render(ctx, response)
 	}
 

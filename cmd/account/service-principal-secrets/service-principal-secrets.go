@@ -227,7 +227,6 @@ func newList() *cobra.Command {
 		}
 
 		response := a.ServicePrincipalSecrets.List(ctx, listReq)
-
 		return cmdio.Render(ctx, response)
 	}
 

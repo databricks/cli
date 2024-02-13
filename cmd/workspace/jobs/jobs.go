@@ -1043,7 +1043,6 @@ func newList() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		response := w.Jobs.List(ctx, listReq)
-
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1111,7 +1110,6 @@ func newListRuns() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		response := w.Jobs.ListRuns(ctx, listRunsReq)
-
 		return cmdio.Render(ctx, response)
 	}
 

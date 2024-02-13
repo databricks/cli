@@ -139,7 +139,6 @@ func newList() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		response := w.PolicyFamilies.List(ctx, listReq)
-
 		return cmdio.Render(ctx, response)
 	}
 

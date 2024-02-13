@@ -324,7 +324,6 @@ func newList() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		response := w.Providers.List(ctx, listReq)
-
 		return cmdio.Render(ctx, response)
 	}
 
@@ -400,7 +399,6 @@ func newListShares() *cobra.Command {
 		listSharesReq.Name = args[0]
 
 		response := w.Providers.ListShares(ctx, listSharesReq)
-
 		return cmdio.Render(ctx, response)
 	}
 

@@ -3,8 +3,6 @@ package cmdio
 import (
 	"context"
 	"reflect"
-
-	"github.com/databricks/databricks-sdk-go/listing"
 )
 
 // Reflectively call Next and HasNext on listing.Iterator[*] values.
@@ -45,5 +43,3 @@ func (r reflectIterator) Next(ctx context.Context) (any, error) {
 	}
 	return item, res[1].Interface().(error)
 }
-
-var _ listing.Iterator[any] = reflectIterator{}

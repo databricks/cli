@@ -1129,7 +1129,6 @@ func newGetLatestVersions() *cobra.Command {
 		}
 
 		response := w.ModelRegistry.GetLatestVersions(ctx, getLatestVersionsReq)
-
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1519,7 +1518,6 @@ func newListModels() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		response := w.ModelRegistry.ListModels(ctx, listModelsReq)
-
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1583,7 +1581,6 @@ func newListTransitionRequests() *cobra.Command {
 		listTransitionRequestsReq.Version = args[1]
 
 		response := w.ModelRegistry.ListTransitionRequests(ctx, listTransitionRequestsReq)
-
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1646,7 +1643,6 @@ func newListWebhooks() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		response := w.ModelRegistry.ListWebhooks(ctx, listWebhooksReq)
-
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1893,7 +1889,6 @@ func newSearchModelVersions() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		response := w.ModelRegistry.SearchModelVersions(ctx, searchModelVersionsReq)
-
 		return cmdio.Render(ctx, response)
 	}
 
@@ -1955,7 +1950,6 @@ func newSearchModels() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		response := w.ModelRegistry.SearchModels(ctx, searchModelsReq)
-
 		return cmdio.Render(ctx, response)
 	}
 

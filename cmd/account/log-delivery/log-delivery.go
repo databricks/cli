@@ -304,7 +304,6 @@ func newList() *cobra.Command {
 		a := root.AccountClient(ctx)
 
 		response := a.LogDelivery.List(ctx, listReq)
-
 		return cmdio.Render(ctx, response)
 	}
 

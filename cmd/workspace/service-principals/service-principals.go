@@ -314,7 +314,6 @@ func newList() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		response := w.ServicePrincipals.List(ctx, listReq)
-
 		return cmdio.Render(ctx, response)
 	}
 

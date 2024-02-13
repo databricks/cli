@@ -158,7 +158,6 @@ func newClusterStatus() *cobra.Command {
 		clusterStatusReq.ClusterId = args[0]
 
 		response := w.Libraries.ClusterStatus(ctx, clusterStatusReq)
-
 		return cmdio.Render(ctx, response)
 	}
 

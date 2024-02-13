@@ -316,7 +316,6 @@ func newList() *cobra.Command {
 		listReq.FullName = args[0]
 
 		response := w.ModelVersions.List(ctx, listReq)
-
 		return cmdio.Render(ctx, response)
 	}
 

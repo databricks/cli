@@ -315,7 +315,6 @@ func newList() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		response := w.Groups.List(ctx, listReq)
-
 		return cmdio.Render(ctx, response)
 	}
 

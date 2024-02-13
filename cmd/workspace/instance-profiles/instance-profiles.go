@@ -252,7 +252,6 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 		response := w.InstanceProfiles.List(ctx)
-
 		return cmdio.Render(ctx, response)
 	}
 

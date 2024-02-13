@@ -312,7 +312,6 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 		response := w.GitCredentials.List(ctx)
-
 		return cmdio.Render(ctx, response)
 	}
 

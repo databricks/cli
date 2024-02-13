@@ -74,7 +74,6 @@ func newList() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		response := w.QueryHistory.List(ctx, listReq)
-
 		return cmdio.Render(ctx, response)
 	}
 

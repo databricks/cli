@@ -220,7 +220,6 @@ func newList() *cobra.Command {
 		}
 
 		response := a.WorkspaceAssignment.List(ctx, listReq)
-
 		return cmdio.Render(ctx, response)
 	}
 

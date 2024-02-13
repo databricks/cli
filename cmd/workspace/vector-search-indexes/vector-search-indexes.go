@@ -390,7 +390,6 @@ func newListIndexes() *cobra.Command {
 		listIndexesReq.EndpointName = args[0]
 
 		response := w.VectorSearchIndexes.ListIndexes(ctx, listIndexesReq)
-
 		return cmdio.Render(ctx, response)
 	}
 

@@ -73,7 +73,6 @@ func newList() *cobra.Command {
 		a := root.AccountClient(ctx)
 
 		response := a.OAuthPublishedApps.List(ctx, listReq)
-
 		return cmdio.Render(ctx, response)
 	}
 

@@ -282,7 +282,6 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 		response := a.Budgets.List(ctx)
-
 		return cmdio.Render(ctx, response)
 	}
 

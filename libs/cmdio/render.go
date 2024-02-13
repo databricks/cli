@@ -193,7 +193,7 @@ func (d defaultRenderer) renderTemplate(_ context.Context, t *template.Template,
 //   - textRenderer
 //   - templateRenderer
 func newRenderer(it any) any {
-	if r, ok := any(it).(io.Reader); ok {
+	if r, ok := it.(io.Reader); ok {
 		return readerRenderer{reader: r}
 	}
 	if iterator, ok := newReflectIterator(it); ok {
@@ -208,7 +208,7 @@ type bufferedFlusher struct {
 }
 
 func (b bufferedFlusher) Write(bs []byte) (int, error) {
-	return b.w.Write(bs)
+	return b.b.Write(bs)
 }
 
 func (b bufferedFlusher) Flush() error {
@@ -261,7 +261,7 @@ func RenderWithTemplate(ctx context.Context, v any, headerTemplate, template str
 func RenderJson(ctx context.Context, v any) error {
 	c := fromContext(ctx)
 	if jr, ok := newRenderer(v).(jsonRenderer); ok {
-		jr.renderJson(ctx, newBufferedFlusher(c.out))
+		return jr.renderJson(ctx, newBufferedFlusher(c.out))
 	}
 	return errors.New("json output not supported")
 }
@@ -269,7 +269,7 @@ func RenderJson(ctx context.Context, v any) error {
 func RenderReader(ctx context.Context, r io.Reader) error {
 	c := fromContext(ctx)
 	if jr, ok := newRenderer(r).(textRenderer); ok {
-		jr.renderText(ctx, newBufferedFlusher(c.out))
+		return jr.renderText(ctx, newBufferedFlusher(c.out))
 	}
 	return errors.New("rendering io.Reader not supported")
 }

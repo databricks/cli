@@ -486,7 +486,6 @@ func newList() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		response := w.Repos.List(ctx, listReq)
-
 		return cmdio.Render(ctx, response)
 	}
 
