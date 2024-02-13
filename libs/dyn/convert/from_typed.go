@@ -59,7 +59,7 @@ func fromTyped(src any, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, 
 		return fromTypedFloat(srcv, ref, options...)
 	}
 
-	return dyn.NilValue, fmt.Errorf("unsupported type: %s", srcv.Kind())
+	return dyn.InvalidValue, fmt.Errorf("unsupported type: %s", srcv.Kind())
 }
 
 func fromTypedStruct(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
@@ -67,7 +67,7 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 	switch ref.Kind() {
 	case dyn.KindMap, dyn.KindNil:
 	default:
-		return dyn.Value{}, fmt.Errorf("unhandled type: %s", ref.Kind())
+		return dyn.InvalidValue, fmt.Errorf("unhandled type: %s", ref.Kind())
 	}
 
 	out := make(map[string]dyn.Value)
@@ -76,7 +76,7 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 		// Convert the field taking into account the reference value (may be equal to config.NilValue).
 		nv, err := fromTyped(v.Interface(), ref.Get(k))
 		if err != nil {
-			return dyn.Value{}, err
+			return dyn.InvalidValue, err
 		}
 
 		if nv != dyn.NilValue {
@@ -92,7 +92,7 @@ func fromTypedMap(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 	switch ref.Kind() {
 	case dyn.KindMap, dyn.KindNil:
 	default:
-		return dyn.Value{}, fmt.Errorf("unhandled type: %s", ref.Kind())
+		return dyn.InvalidValue, fmt.Errorf("unhandled type: %s", ref.Kind())
 	}
 
 	// Return nil if the map is nil.
@@ -109,7 +109,7 @@ func fromTypedMap(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 		// Convert entry taking into account the reference value (may be equal to dyn.NilValue).
 		nv, err := fromTyped(v.Interface(), ref.Get(k), includeZeroValues)
 		if err != nil {
-			return dyn.Value{}, err
+			return dyn.InvalidValue, err
 		}
 
 		// Every entry is represented, even if it is a nil.
@@ -125,7 +125,7 @@ func fromTypedSlice(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 	switch ref.Kind() {
 	case dyn.KindSequence, dyn.KindNil:
 	default:
-		return dyn.Value{}, fmt.Errorf("unhandled type: %s", ref.Kind())
+		return dyn.InvalidValue, fmt.Errorf("unhandled type: %s", ref.Kind())
 	}
 
 	// Return nil if the slice is nil.
@@ -140,7 +140,7 @@ func fromTypedSlice(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 		// Convert entry taking into account the reference value (may be equal to dyn.NilValue).
 		nv, err := fromTyped(v.Interface(), ref.Index(i), includeZeroValues)
 		if err != nil {
-			return dyn.Value{}, err
+			return dyn.InvalidValue, err
 		}
 
 		out[i] = nv
@@ -167,7 +167,7 @@ func fromTypedString(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 		return dyn.V(src.String()), nil
 	}
 
-	return dyn.Value{}, fmt.Errorf("unhandled type: %s", ref.Kind())
+	return dyn.InvalidValue, fmt.Errorf("unhandled type: %s", ref.Kind())
 }
 
 func fromTypedBool(src reflect.Value, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, error) {
@@ -187,7 +187,7 @@ func fromTypedBool(src reflect.Value, ref dyn.Value, options ...fromTypedOptions
 		return dyn.V(src.Bool()), nil
 	}
 
-	return dyn.Value{}, fmt.Errorf("unhandled type: %s", ref.Kind())
+	return dyn.InvalidValue, fmt.Errorf("unhandled type: %s", ref.Kind())
 }
 
 func fromTypedInt(src reflect.Value, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, error) {
@@ -207,7 +207,7 @@ func fromTypedInt(src reflect.Value, ref dyn.Value, options ...fromTypedOptions)
 		return dyn.V(src.Int()), nil
 	}
 
-	return dyn.Value{}, fmt.Errorf("unhandled type: %s", ref.Kind())
+	return dyn.InvalidValue, fmt.Errorf("unhandled type: %s", ref.Kind())
 }
 
 func fromTypedFloat(src reflect.Value, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, error) {
@@ -227,5 +227,5 @@ func fromTypedFloat(src reflect.Value, ref dyn.Value, options ...fromTypedOption
 		return dyn.V(src.Float()), nil
 	}
 
-	return dyn.Value{}, fmt.Errorf("unhandled type: %s", ref.Kind())
+	return dyn.InvalidValue, fmt.Errorf("unhandled type: %s", ref.Kind())
 }
