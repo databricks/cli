@@ -104,6 +104,44 @@ func TestNormalizeStructError(t *testing.T) {
 	}, err[0])
 }
 
+func TestNormalizeStructNestedError(t *testing.T) {
+	type Nested struct {
+		F1 int `json:"f1"`
+		F2 int `json:"f2"`
+	}
+	type Tmp struct {
+		Foo Nested `json:"foo"`
+		Bar Nested `json:"bar"`
+	}
+
+	var typ Tmp
+	vin := dyn.V(map[string]dyn.Value{
+		"foo": dyn.V(map[string]dyn.Value{
+			"f1": dyn.V("error"),
+			"f2": dyn.V(1),
+		}),
+		"bar": dyn.V(map[string]dyn.Value{
+			"f1": dyn.V(1),
+			"f2": dyn.V("error"),
+		}),
+	})
+	vout, err := Normalize(typ, vin)
+	assert.Len(t, err, 2)
+
+	// Verify that valid fields are retained.
+	assert.Equal(t,
+		dyn.V(map[string]dyn.Value{
+			"foo": dyn.V(map[string]dyn.Value{
+				"f2": dyn.V(int64(1)),
+			}),
+			"bar": dyn.V(map[string]dyn.Value{
+				"f1": dyn.V(int64(1)),
+			}),
+		}),
+		vout,
+	)
+}
+
 func TestNormalizeMap(t *testing.T) {
 	var typ map[string]string
 	vin := dyn.V(map[string]dyn.Value{
@@ -157,6 +195,40 @@ func TestNormalizeMapError(t *testing.T) {
 	}, err[0])
 }
 
+func TestNormalizeMapNestedError(t *testing.T) {
+	type Nested struct {
+		F1 int `json:"f1"`
+		F2 int `json:"f2"`
+	}
+
+	var typ map[string]Nested
+	vin := dyn.V(map[string]dyn.Value{
+		"foo": dyn.V(map[string]dyn.Value{
+			"f1": dyn.V("error"),
+			"f2": dyn.V(1),
+		}),
+		"bar": dyn.V(map[string]dyn.Value{
+			"f1": dyn.V(1),
+			"f2": dyn.V("error"),
+		}),
+	})
+	vout, err := Normalize(typ, vin)
+	assert.Len(t, err, 2)
+
+	// Verify that valid fields are retained.
+	assert.Equal(t,
+		dyn.V(map[string]dyn.Value{
+			"foo": dyn.V(map[string]dyn.Value{
+				"f2": dyn.V(int64(1)),
+			}),
+			"bar": dyn.V(map[string]dyn.Value{
+				"f1": dyn.V(int64(1)),
+			}),
+		}),
+		vout,
+	)
+}
+
 func TestNormalizeSlice(t *testing.T) {
 	var typ []string
 	vin := dyn.V([]dyn.Value{
@@ -207,6 +279,40 @@ func TestNormalizeSliceError(t *testing.T) {
 		Summary:  `expected sequence, found string`,
 		Location: vin.Location(),
 	}, err[0])
+}
+
+func TestNormalizeSliceNestedError(t *testing.T) {
+	type Nested struct {
+		F1 int `json:"f1"`
+		F2 int `json:"f2"`
+	}
+
+	var typ []Nested
+	vin := dyn.V([]dyn.Value{
+		dyn.V(map[string]dyn.Value{
+			"f1": dyn.V("error"),
+			"f2": dyn.V(1),
+		}),
+		dyn.V(map[string]dyn.Value{
+			"f1": dyn.V(1),
+			"f2": dyn.V("error"),
+		}),
+	})
+	vout, err := Normalize(typ, vin)
+	assert.Len(t, err, 2)
+
+	// Verify that valid fields are retained.
+	assert.Equal(t,
+		dyn.V([]dyn.Value{
+			dyn.V(map[string]dyn.Value{
+				"f2": dyn.V(int64(1)),
+			}),
+			dyn.V(map[string]dyn.Value{
+				"f1": dyn.V(int64(1)),
+			}),
+		}),
+		vout,
+	)
 }
 
 func TestNormalizeString(t *testing.T) {
