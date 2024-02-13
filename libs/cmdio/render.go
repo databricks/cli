@@ -68,8 +68,8 @@ type textRenderer interface {
 }
 
 type templateRenderer interface {
-	// Render an object using the provided template and write to the provided writeFlusher.
-	renderTemplate(context.Context, *template.Template, writeFlusher) error
+	// Render an object using the provided template and write to the provided tabwriter.Writer.
+	renderTemplate(context.Context, *template.Template, *tabwriter.Writer) error
 }
 
 type readerRenderer struct {
@@ -135,7 +135,7 @@ func (ir iteratorRenderer) renderJson(ctx context.Context, w writeFlusher) error
 	return w.Flush()
 }
 
-func (ir iteratorRenderer) renderTemplate(ctx context.Context, t *template.Template, w writeFlusher) error {
+func (ir iteratorRenderer) renderTemplate(ctx context.Context, t *template.Template, w *tabwriter.Writer) error {
 	buf := make([]any, 0, ir.getBufferSize())
 	for i := 0; ir.t.HasNext(ctx); i++ {
 		n, err := ir.t.Next(ctx)
@@ -184,7 +184,7 @@ func (d defaultRenderer) renderJson(_ context.Context, w writeFlusher) error {
 	return nil
 }
 
-func (d defaultRenderer) renderTemplate(_ context.Context, t *template.Template, w writeFlusher) error {
+func (d defaultRenderer) renderTemplate(_ context.Context, t *template.Template, w *tabwriter.Writer) error {
 	return t.Execute(w, d.it)
 }
 
@@ -224,54 +224,43 @@ func newBufferedFlusher(w io.Writer) writeFlusher {
 	return bufferedFlusher{w: w}
 }
 
-func renderWithTemplate(r any, ctx context.Context, headerTemplate, template string) error {
+func renderWithTemplate(r any, ctx context.Context, outputFormat flags.Output, w io.Writer, headerTemplate, template string) error {
 	// TODO: add terminal width & white/dark theme detection
-	c := fromContext(ctx)
-	switch c.outputFormat {
+	switch outputFormat {
 	case flags.OutputJSON:
 		if jr, ok := r.(jsonRenderer); ok {
-			return jr.renderJson(ctx, newBufferedFlusher(c.out))
+			return jr.renderJson(ctx, newBufferedFlusher(w))
 		}
 		return errors.New("json output not supported")
 	case flags.OutputText:
 		if tr, ok := r.(templateRenderer); ok && template != "" {
-			return renderUsingTemplate(ctx, tr, c.out, headerTemplate, template)
+			return renderUsingTemplate(ctx, tr, w, headerTemplate, template)
 		}
 		if tr, ok := r.(textRenderer); ok {
-			return tr.renderText(ctx, newBufferedFlusher(c.out))
+			return tr.renderText(ctx, newBufferedFlusher(w))
 		}
 		if jr, ok := r.(jsonRenderer); ok {
-			return jr.renderJson(ctx, newBufferedFlusher(c.out))
+			return jr.renderJson(ctx, newBufferedFlusher(w))
 		}
 		return errors.New("no renderer defined")
 	default:
-		return fmt.Errorf("invalid output format: %s", c.outputFormat)
+		return fmt.Errorf("invalid output format: %s", outputFormat)
 	}
 }
 
 func Render(ctx context.Context, v any) error {
 	c := fromContext(ctx)
-	return renderWithTemplate(newRenderer(v), ctx, c.headerTemplate, c.template)
+	return renderWithTemplate(newRenderer(v), ctx, c.outputFormat, c.out, c.headerTemplate, c.template)
 }
 
 func RenderWithTemplate(ctx context.Context, v any, headerTemplate, template string) error {
-	return renderWithTemplate(newRenderer(v), ctx, headerTemplate, template)
+	c := fromContext(ctx)
+	return renderWithTemplate(newRenderer(v), ctx, c.outputFormat, c.out, headerTemplate, template)
 }
 
 func RenderJson(ctx context.Context, v any) error {
 	c := fromContext(ctx)
-	if jr, ok := newRenderer(v).(jsonRenderer); ok {
-		return jr.renderJson(ctx, newBufferedFlusher(c.out))
-	}
-	return errors.New("json output not supported")
-}
-
-func RenderReader(ctx context.Context, r io.Reader) error {
-	c := fromContext(ctx)
-	if jr, ok := newRenderer(r).(textRenderer); ok {
-		return jr.renderText(ctx, newBufferedFlusher(c.out))
-	}
-	return errors.New("rendering io.Reader not supported")
+	return renderWithTemplate(newRenderer(v), ctx, flags.OutputJSON, c.out, c.headerTemplate, c.template)
 }
 
 func renderUsingTemplate(ctx context.Context, r templateRenderer, w io.Writer, headerTmpl, tmpl string) error {

@@ -27,7 +27,7 @@ func newCatCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.RenderReader(ctx, r)
+		return cmdio.Render(ctx, r)
 	}
 
 	return cmd
