@@ -35,7 +35,7 @@ func normalizeType(typ reflect.Type, src dyn.Value) (dyn.Value, diag.Diagnostics
 		return normalizeFloat(typ, src)
 	}
 
-	return dyn.NilValue, diag.Errorf("unsupported type: %s", typ.Kind())
+	return dyn.InvalidValue, diag.Errorf("unsupported type: %s", typ.Kind())
 }
 
 func typeMismatch(expected dyn.Kind, src dyn.Value) diag.Diagnostic {
@@ -69,7 +69,7 @@ func normalizeStruct(typ reflect.Type, src dyn.Value) (dyn.Value, diag.Diagnosti
 			if err != nil {
 				diags = diags.Extend(err)
 				// Skip the element if it cannot be normalized.
-				if err.HasError() {
+				if !v.IsValid() {
 					continue
 				}
 			}
@@ -82,7 +82,7 @@ func normalizeStruct(typ reflect.Type, src dyn.Value) (dyn.Value, diag.Diagnosti
 		return src, diags
 	}
 
-	return dyn.NilValue, diags.Append(typeMismatch(dyn.KindMap, src))
+	return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindMap, src))
 }
 
 func normalizeMap(typ reflect.Type, src dyn.Value) (dyn.Value, diag.Diagnostics) {
@@ -97,7 +97,7 @@ func normalizeMap(typ reflect.Type, src dyn.Value) (dyn.Value, diag.Diagnostics)
 			if err != nil {
 				diags = diags.Extend(err)
 				// Skip the element if it cannot be normalized.
-				if err.HasError() {
+				if !v.IsValid() {
 					continue
 				}
 			}
@@ -110,7 +110,7 @@ func normalizeMap(typ reflect.Type, src dyn.Value) (dyn.Value, diag.Diagnostics)
 		return src, diags
 	}
 
-	return dyn.NilValue, diags.Append(typeMismatch(dyn.KindMap, src))
+	return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindMap, src))
 }
 
 func normalizeSlice(typ reflect.Type, src dyn.Value) (dyn.Value, diag.Diagnostics) {
@@ -125,7 +125,7 @@ func normalizeSlice(typ reflect.Type, src dyn.Value) (dyn.Value, diag.Diagnostic
 			if err != nil {
 				diags = diags.Extend(err)
 				// Skip the element if it cannot be normalized.
-				if err.HasError() {
+				if !v.IsValid() {
 					continue
 				}
 			}
@@ -138,7 +138,7 @@ func normalizeSlice(typ reflect.Type, src dyn.Value) (dyn.Value, diag.Diagnostic
 		return src, diags
 	}
 
-	return dyn.NilValue, diags.Append(typeMismatch(dyn.KindSequence, src))
+	return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindSequence, src))
 }
 
 func normalizeString(typ reflect.Type, src dyn.Value) (dyn.Value, diag.Diagnostics) {
@@ -155,7 +155,7 @@ func normalizeString(typ reflect.Type, src dyn.Value) (dyn.Value, diag.Diagnosti
 	case dyn.KindFloat:
 		out = strconv.FormatFloat(src.MustFloat(), 'f', -1, 64)
 	default:
-		return dyn.NilValue, diags.Append(typeMismatch(dyn.KindString, src))
+		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindString, src))
 	}
 
 	return dyn.NewValue(out, src.Location()), diags
@@ -177,10 +177,10 @@ func normalizeBool(typ reflect.Type, src dyn.Value) (dyn.Value, diag.Diagnostics
 			out = false
 		default:
 			// Cannot interpret as a boolean.
-			return dyn.NilValue, diags.Append(typeMismatch(dyn.KindBool, src))
+			return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindBool, src))
 		}
 	default:
-		return dyn.NilValue, diags.Append(typeMismatch(dyn.KindBool, src))
+		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindBool, src))
 	}
 
 	return dyn.NewValue(out, src.Location()), diags
@@ -197,14 +197,14 @@ func normalizeInt(typ reflect.Type, src dyn.Value) (dyn.Value, diag.Diagnostics)
 		var err error
 		out, err = strconv.ParseInt(src.MustString(), 10, 64)
 		if err != nil {
-			return dyn.NilValue, diags.Append(diag.Diagnostic{
+			return dyn.InvalidValue, diags.Append(diag.Diagnostic{
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("cannot parse %q as an integer", src.MustString()),
 				Location: src.Location(),
 			})
 		}
 	default:
-		return dyn.NilValue, diags.Append(typeMismatch(dyn.KindInt, src))
+		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindInt, src))
 	}
 
 	return dyn.NewValue(out, src.Location()), diags
@@ -221,14 +221,14 @@ func normalizeFloat(typ reflect.Type, src dyn.Value) (dyn.Value, diag.Diagnostic
 		var err error
 		out, err = strconv.ParseFloat(src.MustString(), 64)
 		if err != nil {
-			return dyn.NilValue, diags.Append(diag.Diagnostic{
+			return dyn.InvalidValue, diags.Append(diag.Diagnostic{
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("cannot parse %q as a floating point number", src.MustString()),
 				Location: src.Location(),
 			})
 		}
 	default:
-		return dyn.NilValue, diags.Append(typeMismatch(dyn.KindFloat, src))
+		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindFloat, src))
 	}
 
 	return dyn.NewValue(out, src.Location()), diags
