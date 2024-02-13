@@ -9,6 +9,9 @@
           "build": {
             "description": ""
           },
+          "executable": {
+            "description": ""
+          },
           "files": {
             "description": "",
             "items": {
@@ -34,6 +37,14 @@
       "properties": {
         "compute_id": {
           "description": ""
+        },
+        "deployment": {
+          "description": "",
+          "properties": {
+            "fail_on_active_runs": {
+              "description": ""
+            }
+          }
         },
         "git": {
           "description": "",
@@ -803,7 +814,7 @@
                       }
                     },
                     "existing_cluster_id": {
-                      "description": "If existing_cluster_id, the ID of an existing cluster that is used for all runs of this task. When running tasks on an existing cluster, you may need to manually restart the cluster if it stops responding. We suggest running jobs on new clusters for greater reliability."
+                      "description": "If existing_cluster_id, the ID of an existing cluster that is used for all runs of this task. Only all-purpose clusters are supported. When running tasks on an existing cluster, you may need to manually restart the cluster if it stops responding. We suggest running jobs on new clusters for greater reliability."
                     },
                     "health": {
                       "description": "",
@@ -1210,7 +1221,7 @@
                           "description": "The path of the notebook to be run in the Databricks workspace or remote repository.\nFor notebooks stored in the Databricks workspace, the path must be absolute and begin with a slash.\nFor notebooks stored in a remote repository, the path must be relative. This field is required.\n"
                         },
                         "source": {
-                          "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
+                          "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
                         }
                       }
                     },
@@ -1312,7 +1323,7 @@
                           "description": "The Python file to be executed. Cloud file URIs (such as dbfs:/, s3:/, adls:/, gcs:/) and workspace paths are supported. For python files stored in the Databricks workspace, the path must be absolute and begin with `/`. For files stored in a remote repository, the path must be relative. This field is required."
                         },
                         "source": {
-                          "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
+                          "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
                         }
                       }
                     },
@@ -2093,6 +2104,72 @@
                         }
                       }
                     },
+                    "init_scripts": {
+                      "description": "The configuration for storing init scripts. Any number of destinations can be specified. The scripts are executed sequentially in the order provided. If `cluster_log_conf` is specified, init script logs are sent to `\u003cdestination\u003e/\u003ccluster-ID\u003e/init_scripts`.",
+                      "items": {
+                        "description": "",
+                        "properties": {
+                          "dbfs": {
+                            "description": "destination needs to be provided. e.g.\n`{ \"dbfs\" : { \"destination\" : \"dbfs:/home/cluster_log\" } }`",
+                            "properties": {
+                              "destination": {
+                                "description": "dbfs destination, e.g. `dbfs:/my/path`"
+                              }
+                            }
+                          },
+                          "file": {
+                            "description": "destination needs to be provided. e.g.\n`{ \"file\" : { \"destination\" : \"file:/my/local/file.sh\" } }`",
+                            "properties": {
+                              "destination": {
+                                "description": "local file destination, e.g. `file:/my/local/file.sh`"
+                              }
+                            }
+                          },
+                          "s3": {
+                            "description": "destination and either the region or endpoint need to be provided. e.g.\n`{ \"s3\": { \"destination\" : \"s3://cluster_log_bucket/prefix\", \"region\" : \"us-west-2\" } }`\nCluster iam role is used to access s3, please make sure the cluster iam role in\n`instance_profile_arn` has permission to write data to the s3 destination.",
+                            "properties": {
+                              "canned_acl": {
+                                "description": "(Optional) Set canned access control list for the logs, e.g. `bucket-owner-full-control`.\nIf `canned_cal` is set, please make sure the cluster iam role has `s3:PutObjectAcl` permission on\nthe destination bucket and prefix. The full list of possible canned acl can be found at\nhttp://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl.\nPlease also note that by default only the object owner gets full controls. If you are using cross account\nrole for writing data, you may want to set `bucket-owner-full-control` to make bucket owner able to\nread the logs."
+                              },
+                              "destination": {
+                                "description": "S3 destination, e.g. `s3://my-bucket/some-prefix` Note that logs will be delivered using\ncluster iam role, please make sure you set cluster iam role and the role has write access to the\ndestination. Please also note that you cannot use AWS keys to deliver logs."
+                              },
+                              "enable_encryption": {
+                                "description": "(Optional) Flag to enable server side encryption, `false` by default."
+                              },
+                              "encryption_type": {
+                                "description": "(Optional) The encryption type, it could be `sse-s3` or `sse-kms`. It will be used only when\nencryption is enabled and the default type is `sse-s3`."
+                              },
+                              "endpoint": {
+                                "description": "S3 endpoint, e.g. `https://s3-us-west-2.amazonaws.com`. Either region or endpoint needs to be set.\nIf both are set, endpoint will be used."
+                              },
+                              "kms_key": {
+                                "description": "(Optional) Kms key which will be used if encryption is enabled and encryption type is set to `sse-kms`."
+                              },
+                              "region": {
+                                "description": "S3 region, e.g. `us-west-2`. Either region or endpoint needs to be set. If both are set,\nendpoint will be used."
+                              }
+                            }
+                          },
+                          "volumes": {
+                            "description": "destination needs to be provided. e.g.\n`{ \"volumes\" : { \"destination\" : \"/Volumes/my-init.sh\" } }`",
+                            "properties": {
+                              "destination": {
+                                "description": "Unity Catalog Volumes file destination, e.g. `/Volumes/my-init.sh`"
+                              }
+                            }
+                          },
+                          "workspace": {
+                            "description": "destination needs to be provided. e.g.\n`{ \"workspace\" : { \"destination\" : \"/Users/user1@databricks.com/my-init.sh\" } }`",
+                            "properties": {
+                              "destination": {
+                                "description": "workspace files destination, e.g. `/Users/user1@databricks.com/my-init.sh`"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
                     "instance_pool_id": {
                       "description": "The optional ID of the instance pool to which the cluster belongs."
                     },
@@ -2368,6 +2445,9 @@
                 "build": {
                   "description": ""
                 },
+                "executable": {
+                  "description": ""
+                },
                 "files": {
                   "description": "",
                   "items": {
@@ -2393,6 +2473,14 @@
             "properties": {
               "compute_id": {
                 "description": ""
+              },
+              "deployment": {
+                "description": "",
+                "properties": {
+                  "fail_on_active_runs": {
+                    "description": ""
+                  }
+                }
               },
               "git": {
                 "description": "",
@@ -3162,7 +3250,7 @@
                             }
                           },
                           "existing_cluster_id": {
-                            "description": "If existing_cluster_id, the ID of an existing cluster that is used for all runs of this task. When running tasks on an existing cluster, you may need to manually restart the cluster if it stops responding. We suggest running jobs on new clusters for greater reliability."
+                            "description": "If existing_cluster_id, the ID of an existing cluster that is used for all runs of this task. Only all-purpose clusters are supported. When running tasks on an existing cluster, you may need to manually restart the cluster if it stops responding. We suggest running jobs on new clusters for greater reliability."
                           },
                           "health": {
                             "description": "",
@@ -3569,7 +3657,7 @@
                                 "description": "The path of the notebook to be run in the Databricks workspace or remote repository.\nFor notebooks stored in the Databricks workspace, the path must be absolute and begin with a slash.\nFor notebooks stored in a remote repository, the path must be relative. This field is required.\n"
                               },
                               "source": {
-                                "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
+                                "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
                               }
                             }
                           },
@@ -3671,7 +3759,7 @@
                                 "description": "The Python file to be executed. Cloud file URIs (such as dbfs:/, s3:/, adls:/, gcs:/) and workspace paths are supported. For python files stored in the Databricks workspace, the path must be absolute and begin with `/`. For files stored in a remote repository, the path must be relative. This field is required."
                               },
                               "source": {
-                                "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
+                                "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
                               }
                             }
                           },
@@ -4449,6 +4537,72 @@
                               },
                               "local_ssd_count": {
                                 "description": "If provided, each node (workers and driver) in the cluster will have this number of local SSDs attached. Each local SSD is 375GB in size. Refer to [GCP documentation](https://cloud.google.com/compute/docs/disks/local-ssd#choose_number_local_ssds) for the supported number of local SSDs for each instance type."
+                              }
+                            }
+                          },
+                          "init_scripts": {
+                            "description": "The configuration for storing init scripts. Any number of destinations can be specified. The scripts are executed sequentially in the order provided. If `cluster_log_conf` is specified, init script logs are sent to `\u003cdestination\u003e/\u003ccluster-ID\u003e/init_scripts`.",
+                            "items": {
+                              "description": "",
+                              "properties": {
+                                "dbfs": {
+                                  "description": "destination needs to be provided. e.g.\n`{ \"dbfs\" : { \"destination\" : \"dbfs:/home/cluster_log\" } }`",
+                                  "properties": {
+                                    "destination": {
+                                      "description": "dbfs destination, e.g. `dbfs:/my/path`"
+                                    }
+                                  }
+                                },
+                                "file": {
+                                  "description": "destination needs to be provided. e.g.\n`{ \"file\" : { \"destination\" : \"file:/my/local/file.sh\" } }`",
+                                  "properties": {
+                                    "destination": {
+                                      "description": "local file destination, e.g. `file:/my/local/file.sh`"
+                                    }
+                                  }
+                                },
+                                "s3": {
+                                  "description": "destination and either the region or endpoint need to be provided. e.g.\n`{ \"s3\": { \"destination\" : \"s3://cluster_log_bucket/prefix\", \"region\" : \"us-west-2\" } }`\nCluster iam role is used to access s3, please make sure the cluster iam role in\n`instance_profile_arn` has permission to write data to the s3 destination.",
+                                  "properties": {
+                                    "canned_acl": {
+                                      "description": "(Optional) Set canned access control list for the logs, e.g. `bucket-owner-full-control`.\nIf `canned_cal` is set, please make sure the cluster iam role has `s3:PutObjectAcl` permission on\nthe destination bucket and prefix. The full list of possible canned acl can be found at\nhttp://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl.\nPlease also note that by default only the object owner gets full controls. If you are using cross account\nrole for writing data, you may want to set `bucket-owner-full-control` to make bucket owner able to\nread the logs."
+                                    },
+                                    "destination": {
+                                      "description": "S3 destination, e.g. `s3://my-bucket/some-prefix` Note that logs will be delivered using\ncluster iam role, please make sure you set cluster iam role and the role has write access to the\ndestination. Please also note that you cannot use AWS keys to deliver logs."
+                                    },
+                                    "enable_encryption": {
+                                      "description": "(Optional) Flag to enable server side encryption, `false` by default."
+                                    },
+                                    "encryption_type": {
+                                      "description": "(Optional) The encryption type, it could be `sse-s3` or `sse-kms`. It will be used only when\nencryption is enabled and the default type is `sse-s3`."
+                                    },
+                                    "endpoint": {
+                                      "description": "S3 endpoint, e.g. `https://s3-us-west-2.amazonaws.com`. Either region or endpoint needs to be set.\nIf both are set, endpoint will be used."
+                                    },
+                                    "kms_key": {
+                                      "description": "(Optional) Kms key which will be used if encryption is enabled and encryption type is set to `sse-kms`."
+                                    },
+                                    "region": {
+                                      "description": "S3 region, e.g. `us-west-2`. Either region or endpoint needs to be set. If both are set,\nendpoint will be used."
+                                    }
+                                  }
+                                },
+                                "volumes": {
+                                  "description": "destination needs to be provided. e.g.\n`{ \"volumes\" : { \"destination\" : \"/Volumes/my-init.sh\" } }`",
+                                  "properties": {
+                                    "destination": {
+                                      "description": "Unity Catalog Volumes file destination, e.g. `/Volumes/my-init.sh`"
+                                    }
+                                  }
+                                },
+                                "workspace": {
+                                  "description": "destination needs to be provided. e.g.\n`{ \"workspace\" : { \"destination\" : \"/Users/user1@databricks.com/my-init.sh\" } }`",
+                                  "properties": {
+                                    "destination": {
+                                      "description": "workspace files destination, e.g. `/Users/user1@databricks.com/my-init.sh`"
+                                    }
+                                  }
+                                }
                               }
                             }
                           },
