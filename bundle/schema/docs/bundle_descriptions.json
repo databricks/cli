@@ -193,7 +193,7 @@
                 "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.",
                 "properties": {
                   "pause_status": {
-                    "description": "Indicate whether this schedule is paused or not."
+                    "description": "Whether this trigger is paused or not."
                   }
                 }
               },
@@ -703,7 +703,7 @@
                 "description": "An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                 "properties": {
                   "pause_status": {
-                    "description": "Indicate whether this schedule is paused or not."
+                    "description": "Whether this trigger is paused or not."
                   },
                   "quartz_cron_expression": {
                     "description": "A Cron expression using Quartz syntax that describes the schedule for a job.\nSee [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html)\nfor details. This field is required.\"\n"
@@ -814,7 +814,7 @@
                       }
                     },
                     "existing_cluster_id": {
-                      "description": "If existing_cluster_id, the ID of an existing cluster that is used for all runs of this task. Only all-purpose clusters are supported. When running tasks on an existing cluster, you may need to manually restart the cluster if it stops responding. We suggest running jobs on new clusters for greater reliability."
+                      "description": "If existing_cluster_id, the ID of an existing cluster that is used for all runs of this task. When running tasks on an existing cluster, you may need to manually restart the cluster if it stops responding. We suggest running jobs on new clusters for greater reliability."
                     },
                     "health": {
                       "description": "",
@@ -1428,7 +1428,7 @@
                       "description": "An optional timeout applied to each run of this job task. A value of `0` means no timeout."
                     },
                     "webhook_notifications": {
-                      "description": "A collection of system notification IDs to notify when runs of this task begin or complete. The default behavior is to not send any system notifications.",
+                      "description": "A collection of system notification IDs to notify when runs of this job begin or complete.",
                       "properties": {
                         "on_duration_warning_threshold_exceeded": {
                           "description": "An optional list of system notification IDs to call when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. A maximum of 3 destinations can be specified for the `on_duration_warning_threshold_exceeded` property.",
@@ -1500,12 +1500,12 @@
                     }
                   },
                   "pause_status": {
-                    "description": "Indicate whether this schedule is paused or not."
+                    "description": "Whether this trigger is paused or not."
                   }
                 }
               },
               "webhook_notifications": {
-                "description": "A collection of system notification IDs to notify when runs of this task begin or complete. The default behavior is to not send any system notifications.",
+                "description": "A collection of system notification IDs to notify when runs of this job begin or complete.",
                 "properties": {
                   "on_duration_warning_threshold_exceeded": {
                     "description": "An optional list of system notification IDs to call when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. A maximum of 3 destinations can be specified for the `on_duration_warning_threshold_exceeded` property.",
@@ -2105,65 +2105,65 @@
                       }
                     },
                     "init_scripts": {
-                      "description": "The configuration for storing init scripts. Any number of destinations can be specified. The scripts are executed sequentially in the order provided. If `cluster_log_conf` is specified, init script logs are sent to `\u003cdestination\u003e/\u003ccluster-ID\u003e/init_scripts`.",
+                      "description": "",
                       "items": {
                         "description": "",
                         "properties": {
                           "dbfs": {
-                            "description": "destination needs to be provided. e.g.\n`{ \"dbfs\" : { \"destination\" : \"dbfs:/home/cluster_log\" } }`",
+                            "description": "",
                             "properties": {
                               "destination": {
-                                "description": "dbfs destination, e.g. `dbfs:/my/path`"
+                                "description": ""
                               }
                             }
                           },
                           "file": {
-                            "description": "destination needs to be provided. e.g.\n`{ \"file\" : { \"destination\" : \"file:/my/local/file.sh\" } }`",
+                            "description": "",
                             "properties": {
                               "destination": {
-                                "description": "local file destination, e.g. `file:/my/local/file.sh`"
+                                "description": ""
                               }
                             }
                           },
                           "s3": {
-                            "description": "destination and either the region or endpoint need to be provided. e.g.\n`{ \"s3\": { \"destination\" : \"s3://cluster_log_bucket/prefix\", \"region\" : \"us-west-2\" } }`\nCluster iam role is used to access s3, please make sure the cluster iam role in\n`instance_profile_arn` has permission to write data to the s3 destination.",
+                            "description": "",
                             "properties": {
                               "canned_acl": {
-                                "description": "(Optional) Set canned access control list for the logs, e.g. `bucket-owner-full-control`.\nIf `canned_cal` is set, please make sure the cluster iam role has `s3:PutObjectAcl` permission on\nthe destination bucket and prefix. The full list of possible canned acl can be found at\nhttp://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl.\nPlease also note that by default only the object owner gets full controls. If you are using cross account\nrole for writing data, you may want to set `bucket-owner-full-control` to make bucket owner able to\nread the logs."
+                                "description": ""
                               },
                               "destination": {
-                                "description": "S3 destination, e.g. `s3://my-bucket/some-prefix` Note that logs will be delivered using\ncluster iam role, please make sure you set cluster iam role and the role has write access to the\ndestination. Please also note that you cannot use AWS keys to deliver logs."
+                                "description": ""
                               },
                               "enable_encryption": {
-                                "description": "(Optional) Flag to enable server side encryption, `false` by default."
+                                "description": ""
                               },
                               "encryption_type": {
-                                "description": "(Optional) The encryption type, it could be `sse-s3` or `sse-kms`. It will be used only when\nencryption is enabled and the default type is `sse-s3`."
+                                "description": ""
                               },
                               "endpoint": {
-                                "description": "S3 endpoint, e.g. `https://s3-us-west-2.amazonaws.com`. Either region or endpoint needs to be set.\nIf both are set, endpoint will be used."
+                                "description": ""
                               },
                               "kms_key": {
-                                "description": "(Optional) Kms key which will be used if encryption is enabled and encryption type is set to `sse-kms`."
+                                "description": ""
                               },
                               "region": {
-                                "description": "S3 region, e.g. `us-west-2`. Either region or endpoint needs to be set. If both are set,\nendpoint will be used."
+                                "description": ""
                               }
                             }
                           },
                           "volumes": {
-                            "description": "destination needs to be provided. e.g.\n`{ \"volumes\" : { \"destination\" : \"/Volumes/my-init.sh\" } }`",
+                            "description": "",
                             "properties": {
                               "destination": {
-                                "description": "Unity Catalog Volumes file destination, e.g. `/Volumes/my-init.sh`"
+                                "description": ""
                               }
                             }
                           },
                           "workspace": {
-                            "description": "destination needs to be provided. e.g.\n`{ \"workspace\" : { \"destination\" : \"/Users/user1@databricks.com/my-init.sh\" } }`",
+                            "description": "",
                             "properties": {
                               "destination": {
-                                "description": "workspace files destination, e.g. `/Users/user1@databricks.com/my-init.sh`"
+                                "description": ""
                               }
                             }
                           }
@@ -2629,7 +2629,7 @@
                       "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.",
                       "properties": {
                         "pause_status": {
-                          "description": "Indicate whether this schedule is paused or not."
+                          "description": "Whether this trigger is paused or not."
                         }
                       }
                     },
@@ -3139,7 +3139,7 @@
                       "description": "An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                       "properties": {
                         "pause_status": {
-                          "description": "Indicate whether this schedule is paused or not."
+                          "description": "Whether this trigger is paused or not."
                         },
                         "quartz_cron_expression": {
                           "description": "A Cron expression using Quartz syntax that describes the schedule for a job.\nSee [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html)\nfor details. This field is required.\"\n"
@@ -3250,7 +3250,7 @@
                             }
                           },
                           "existing_cluster_id": {
-                            "description": "If existing_cluster_id, the ID of an existing cluster that is used for all runs of this task. Only all-purpose clusters are supported. When running tasks on an existing cluster, you may need to manually restart the cluster if it stops responding. We suggest running jobs on new clusters for greater reliability."
+                            "description": "If existing_cluster_id, the ID of an existing cluster that is used for all runs of this task. When running tasks on an existing cluster, you may need to manually restart the cluster if it stops responding. We suggest running jobs on new clusters for greater reliability."
                           },
                           "health": {
                             "description": "",
@@ -3864,7 +3864,7 @@
                             "description": "An optional timeout applied to each run of this job task. A value of `0` means no timeout."
                           },
                           "webhook_notifications": {
-                            "description": "A collection of system notification IDs to notify when runs of this task begin or complete. The default behavior is to not send any system notifications.",
+                            "description": "A collection of system notification IDs to notify when runs of this job begin or complete.",
                             "properties": {
                               "on_duration_warning_threshold_exceeded": {
                                 "description": "An optional list of system notification IDs to call when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. A maximum of 3 destinations can be specified for the `on_duration_warning_threshold_exceeded` property.",
@@ -3936,12 +3936,12 @@
                           }
                         },
                         "pause_status": {
-                          "description": "Indicate whether this schedule is paused or not."
+                          "description": "Whether this trigger is paused or not."
                         }
                       }
                     },
                     "webhook_notifications": {
-                      "description": "A collection of system notification IDs to notify when runs of this task begin or complete. The default behavior is to not send any system notifications.",
+                      "description": "A collection of system notification IDs to notify when runs of this job begin or complete.",
                       "properties": {
                         "on_duration_warning_threshold_exceeded": {
                           "description": "An optional list of system notification IDs to call when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. A maximum of 3 destinations can be specified for the `on_duration_warning_threshold_exceeded` property.",
@@ -4541,65 +4541,65 @@
                             }
                           },
                           "init_scripts": {
-                            "description": "The configuration for storing init scripts. Any number of destinations can be specified. The scripts are executed sequentially in the order provided. If `cluster_log_conf` is specified, init script logs are sent to `\u003cdestination\u003e/\u003ccluster-ID\u003e/init_scripts`.",
+                            "description": "",
                             "items": {
                               "description": "",
                               "properties": {
                                 "dbfs": {
-                                  "description": "destination needs to be provided. e.g.\n`{ \"dbfs\" : { \"destination\" : \"dbfs:/home/cluster_log\" } }`",
+                                  "description": "",
                                   "properties": {
                                     "destination": {
-                                      "description": "dbfs destination, e.g. `dbfs:/my/path`"
+                                      "description": ""
                                     }
                                   }
                                 },
                                 "file": {
-                                  "description": "destination needs to be provided. e.g.\n`{ \"file\" : { \"destination\" : \"file:/my/local/file.sh\" } }`",
+                                  "description": "",
                                   "properties": {
                                     "destination": {
-                                      "description": "local file destination, e.g. `file:/my/local/file.sh`"
+                                      "description": ""
                                     }
                                   }
                                 },
                                 "s3": {
-                                  "description": "destination and either the region or endpoint need to be provided. e.g.\n`{ \"s3\": { \"destination\" : \"s3://cluster_log_bucket/prefix\", \"region\" : \"us-west-2\" } }`\nCluster iam role is used to access s3, please make sure the cluster iam role in\n`instance_profile_arn` has permission to write data to the s3 destination.",
+                                  "description": "",
                                   "properties": {
                                     "canned_acl": {
-                                      "description": "(Optional) Set canned access control list for the logs, e.g. `bucket-owner-full-control`.\nIf `canned_cal` is set, please make sure the cluster iam role has `s3:PutObjectAcl` permission on\nthe destination bucket and prefix. The full list of possible canned acl can be found at\nhttp://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl.\nPlease also note that by default only the object owner gets full controls. If you are using cross account\nrole for writing data, you may want to set `bucket-owner-full-control` to make bucket owner able to\nread the logs."
+                                      "description": ""
                                     },
                                     "destination": {
-                                      "description": "S3 destination, e.g. `s3://my-bucket/some-prefix` Note that logs will be delivered using\ncluster iam role, please make sure you set cluster iam role and the role has write access to the\ndestination. Please also note that you cannot use AWS keys to deliver logs."
+                                      "description": ""
                                     },
                                     "enable_encryption": {
-                                      "description": "(Optional) Flag to enable server side encryption, `false` by default."
+                                      "description": ""
                                     },
                                     "encryption_type": {
-                                      "description": "(Optional) The encryption type, it could be `sse-s3` or `sse-kms`. It will be used only when\nencryption is enabled and the default type is `sse-s3`."
+                                      "description": ""
                                     },
                                     "endpoint": {
-                                      "description": "S3 endpoint, e.g. `https://s3-us-west-2.amazonaws.com`. Either region or endpoint needs to be set.\nIf both are set, endpoint will be used."
+                                      "description": ""
                                     },
                                     "kms_key": {
-                                      "description": "(Optional) Kms key which will be used if encryption is enabled and encryption type is set to `sse-kms`."
+                                      "description": ""
                                     },
                                     "region": {
-                                      "description": "S3 region, e.g. `us-west-2`. Either region or endpoint needs to be set. If both are set,\nendpoint will be used."
+                                      "description": ""
                                     }
                                   }
                                 },
                                 "volumes": {
-                                  "description": "destination needs to be provided. e.g.\n`{ \"volumes\" : { \"destination\" : \"/Volumes/my-init.sh\" } }`",
+                                  "description": "",
                                   "properties": {
                                     "destination": {
-                                      "description": "Unity Catalog Volumes file destination, e.g. `/Volumes/my-init.sh`"
+                                      "description": ""
                                     }
                                   }
                                 },
                                 "workspace": {
-                                  "description": "destination needs to be provided. e.g.\n`{ \"workspace\" : { \"destination\" : \"/Users/user1@databricks.com/my-init.sh\" } }`",
+                                  "description": "",
                                   "properties": {
                                     "destination": {
-                                      "description": "workspace files destination, e.g. `/Users/user1@databricks.com/my-init.sh`"
+                                      "description": ""
                                     }
                                   }
                                 }

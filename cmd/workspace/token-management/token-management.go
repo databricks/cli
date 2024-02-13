@@ -56,16 +56,16 @@ func newCreateOboToken() *cobra.Command {
 	cmd.Flags().Var(&createOboTokenJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createOboTokenReq.Comment, "comment", createOboTokenReq.Comment, `Comment that describes the purpose of the token.`)
-	cmd.Flags().Int64Var(&createOboTokenReq.LifetimeSeconds, "lifetime-seconds", createOboTokenReq.LifetimeSeconds, `The number of seconds before the token expires.`)
 
-	cmd.Use = "create-obo-token APPLICATION_ID"
+	cmd.Use = "create-obo-token APPLICATION_ID LIFETIME_SECONDS"
 	cmd.Short = `Create on-behalf token.`
 	cmd.Long = `Create on-behalf token.
-  
+
   Creates a token on behalf of a service principal.
 
   Arguments:
-    APPLICATION_ID: Application ID of the service principal.`
+    APPLICATION_ID: Application ID of the service principal.
+    LIFETIME_SECONDS: The number of seconds before the token expires.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -73,11 +73,12 @@ func newCreateOboToken() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'application_id' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'application_id', 'lifetime_seconds' in your JSON input")
 			}
 			return nil
 		}
-		return nil
+		check := cobra.ExactArgs(2)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -90,25 +91,15 @@ func newCreateOboToken() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No APPLICATION_ID argument specified. Loading names for Token Management drop-down."
-				names, err := w.TokenManagement.TokenInfoCommentToTokenIdMap(ctx, settings.ListTokenManagementRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Token Management drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Application ID of the service principal")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have application id of the service principal")
-			}
+		}
+		if !cmd.Flags().Changed("json") {
 			createOboTokenReq.ApplicationId = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[1], &createOboTokenReq.LifetimeSeconds)
+			if err != nil {
+				return fmt.Errorf("invalid LIFETIME_SECONDS: %s", args[1])
+			}
 		}
 
 		response, err := w.TokenManagement.CreateOboToken(ctx, createOboTokenReq)
@@ -155,7 +146,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete TOKEN_ID"
 	cmd.Short = `Delete a token.`
 	cmd.Long = `Delete a token.
-  
+
   Deletes a token, specified by its ID.
 
   Arguments:
@@ -231,7 +222,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get TOKEN_ID"
 	cmd.Short = `Get token info.`
 	cmd.Long = `Get token info.
-  
+
   Gets information about a token, specified by its ID.
 
   Arguments:
@@ -302,7 +293,7 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Use = "get-permission-levels"
 	cmd.Short = `Get token permission levels.`
 	cmd.Long = `Get token permission levels.
-  
+
   Gets the permission levels that a user can have on an object.`
 
 	cmd.Annotations = make(map[string]string)
@@ -350,7 +341,7 @@ func newGetPermissions() *cobra.Command {
 	cmd.Use = "get-permissions"
 	cmd.Short = `Get token permissions.`
 	cmd.Long = `Get token permissions.
-  
+
   Gets the permissions of all tokens. Tokens can inherit permissions from their
   root object.`
 
@@ -407,7 +398,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List all tokens.`
 	cmd.Long = `List all tokens.
-  
+
   Lists all tokens associated with the specified workspace or user.`
 
 	cmd.Annotations = make(map[string]string)
@@ -467,7 +458,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.Use = "set-permissions"
 	cmd.Short = `Set token permissions.`
 	cmd.Long = `Set token permissions.
-  
+
   Sets permissions on all tokens. Tokens can inherit permissions from their root
   object.`
 
@@ -538,7 +529,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Use = "update-permissions"
 	cmd.Short = `Update token permissions.`
 	cmd.Long = `Update token permissions.
-  
+
   Updates the permissions on all tokens. Tokens can inherit permissions from
   their root object.`
 
