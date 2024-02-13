@@ -40,7 +40,22 @@ func (m *environmentsToTargets) Apply(ctx context.Context, b *bundle.Bundle) err
 
 		// Rewrite "environments" to "targets".
 		if environments != dyn.NilValue && targets == dyn.NilValue {
-			return dyn.Set(v, "targets", environments)
+			nv, err := dyn.Set(v, "targets", environments)
+			if err != nil {
+				return dyn.NilValue, err
+			}
+			// Drop the "environments" key.
+			return dyn.Walk(nv, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+				switch len(p) {
+				case 0:
+					return v, nil
+				case 1:
+					if p[0] == dyn.Key("environments") {
+						return v, dyn.ErrDrop
+					}
+				}
+				return v, dyn.ErrSkip
+			})
 		}
 
 		return v, nil
