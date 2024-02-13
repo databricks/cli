@@ -93,7 +93,7 @@ func jsonSchemaType(golangType reflect.Type) (jsonschema.Type, error) {
 //   - tracker: Keeps track of types / traceIds seen during recursive traversal
 func safeToSchema(golangType reflect.Type, docs *Docs, traceId string, tracker *tracker) (*jsonschema.Schema, error) {
 	// HACK to unblock CLI release (13th Feb 2024). This is temporary until proper
-	// support for recursive types is added to the schema generator.
+	// support for recursive types is added to the schema generator. PR: https://github.com/databricks/cli/pull/1204
 	if traceId == "for_each_task" {
 		return nil, nil
 	}

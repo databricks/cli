@@ -73,7 +73,7 @@ func (reader *OpenapiReader) safeResolveRefs(root *jsonschema.Schema, tracker *t
 	key := *root.Reference
 
 	// HACK to unblock CLI release (13th Feb 2024). This is temporary until proper
-	// support for recursive types is added to the docs generator.
+	// support for recursive types is added to the docs generator. PR: https://github.com/databricks/cli/pull/1204
 	if strings.Contains(key, "ForEachTask") {
 		return root, nil
 	}
