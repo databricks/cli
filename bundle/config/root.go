@@ -91,7 +91,7 @@ func Load(path string) (*Root, error) {
 	}
 
 	// Rewrite configuration tree where necessary.
-	v, err = rewriteShorthandVariableDefaults(v)
+	v, err = rewriteShorthands(v)
 	if err != nil {
 		return nil, fmt.Errorf("failed to rewrite %s: %w", path, err)
 	}
@@ -401,9 +401,9 @@ func (r *Root) MergeTargetOverrides(name string) error {
 	return r.updateWithDynamicValue(root)
 }
 
-// rewriteShorthandVariableDefaults performs lightweight rewriting of the configuration
+// rewriteShorthands performs lightweight rewriting of the configuration
 // tree where we allow users to write a shorthand and must rewrite to the full form.
-func rewriteShorthandVariableDefaults(v dyn.Value) (dyn.Value, error) {
+func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 	if v.Kind() != dyn.KindMap {
 		return v, nil
 	}
