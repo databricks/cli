@@ -32,6 +32,15 @@ func TestExecutorWithComplexInput(t *testing.T) {
 	assert.Equal(t, "Hello\nWorld\n", string(out))
 }
 
+func TestExecutorWithStderr(t *testing.T) {
+	executor, err := NewCommandExecutor(".")
+	assert.NoError(t, err)
+	out, err := executor.Exec(context.Background(), "echo 'Hello' && >&2 echo 'Error'")
+	assert.NoError(t, err)
+	assert.NotNil(t, out)
+	assert.Equal(t, "Hello\nError\n", string(out))
+}
+
 func TestExecutorWithInvalidCommand(t *testing.T) {
 	executor, err := NewCommandExecutor(".")
 	assert.NoError(t, err)
@@ -108,16 +117,16 @@ func TestExecutorCleanupsTempFiles(t *testing.T) {
 	executor, err := NewCommandExecutor(".")
 	assert.NoError(t, err)
 
-	ec, err := executor.shell.prepare("echo 'Hello'")
+	cmd, ec, err := executor.prepareCommand(context.Background(), "echo 'Hello'")
 	assert.NoError(t, err)
 
-	cmd, err := executor.start(context.Background(), ec)
+	command, err := executor.start(context.Background(), cmd, ec)
 	assert.NoError(t, err)
 
 	fileName := ec.args[1]
 	assert.FileExists(t, fileName)
 
-	err = cmd.Wait()
+	err = command.Wait()
 	assert.NoError(t, err)
 	assert.NoFileExists(t, fileName)
 }

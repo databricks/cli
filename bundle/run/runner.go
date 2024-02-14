@@ -26,6 +26,9 @@ type Runner interface {
 
 	// Run the underlying worklow.
 	Run(ctx context.Context, opts *Options) (output.RunOutput, error)
+
+	// Cancel the underlying workflow.
+	Cancel(ctx context.Context) error
 }
 
 // Find locates a runner matching the specified argument.

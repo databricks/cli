@@ -123,6 +123,89 @@ func init() {
 	})
 }
 
+// start exists command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var existsOverrides []func(
+	*cobra.Command,
+	*catalog.ExistsRequest,
+)
+
+func newExists() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var existsReq catalog.ExistsRequest
+
+	// TODO: short flags
+
+	cmd.Use = "exists FULL_NAME"
+	cmd.Short = `Get boolean reflecting if table exists.`
+	cmd.Long = `Get boolean reflecting if table exists.
+  
+  Gets if a table exists in the metastore for a specific catalog and schema. The
+  caller must satisfy one of the following requirements: * Be a metastore admin
+  * Be the owner of the parent catalog * Be the owner of the parent schema and
+  have the USE_CATALOG privilege on the parent catalog * Have the
+  **USE_CATALOG** privilege on the parent catalog and the **USE_SCHEMA**
+  privilege on the parent schema, and either be the table owner or have the
+  SELECT privilege on the table. * Have BROWSE privilege on the parent catalog *
+  Have BROWSE privilege on the parent schema.
+
+  Arguments:
+    FULL_NAME: Full name of the table.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No FULL_NAME argument specified. Loading names for Tables drop-down."
+			names, err := w.Tables.TableInfoNameToTableIdMap(ctx, catalog.ListTablesRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Tables drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Full name of the table")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have full name of the table")
+		}
+		existsReq.FullName = args[0]
+
+		response, err := w.Tables.Exists(ctx, existsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range existsOverrides {
+		fn(cmd, &existsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newExists())
+	})
+}
+
 // start get command
 
 // Slice with functions to override default command behavior.
@@ -146,10 +229,12 @@ func newGet() *cobra.Command {
 	cmd.Long = `Get a table.
   
   Gets a table from the metastore for a specific catalog and schema. The caller
-  must be a metastore admin, be the owner of the table and have the
-  **USE_CATALOG** privilege on the parent catalog and the **USE_SCHEMA**
-  privilege on the parent schema, or be the owner of the table and have the
-  **SELECT** privilege on it as well.
+  must satisfy one of the following requirements: * Be a metastore admin * Be
+  the owner of the parent catalog * Be the owner of the parent schema and have
+  the USE_CATALOG privilege on the parent catalog * Have the **USE_CATALOG**
+  privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent
+  schema, and either be the table owner or have the SELECT privilege on the
+  table.
 
   Arguments:
     FULL_NAME: Full name of the table.`
