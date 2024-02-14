@@ -79,3 +79,48 @@ func TestAccBindJobToExistingJob(t *testing.T) {
 	require.Contains(t, job.Settings.Tasks[0].SparkPythonTask.PythonFile, "hello_world.py")
 
 }
+
+func TestAccAbortBind(t *testing.T) {
+	env := internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
+	t.Log(env)
+
+	ctx, wt := acc.WorkspaceTest(t)
+	gt := &generateJobTest{T: t, w: wt.W}
+
+	nodeTypeId := internal.GetNodeTypeId(env)
+	uniqueId := uuid.New().String()
+	bundleRoot, err := initTestTemplate(t, ctx, "basic", map[string]any{
+		"unique_id":     uniqueId,
+		"spark_version": "13.3.x-scala2.12",
+		"node_type_id":  nodeTypeId,
+	})
+	require.NoError(t, err)
+
+	jobId := gt.createTestJob(ctx)
+	t.Cleanup(func() {
+		gt.destroyJob(ctx, jobId)
+		destroyBundle(t, ctx, bundleRoot)
+	})
+
+	t.Setenv("BUNDLE_ROOT", bundleRoot)
+	c := internal.NewCobraTestRunner(t, "bundle", "deployment", "bind", "foo", fmt.Sprint(jobId))
+
+	// Simulate user aborting the bind. This is done by not providing any input to the prompt in non-interactive mode.
+	_, _, err = c.Run()
+	require.ErrorContains(t, err, "failed to bind the resource")
+
+	err = deployBundle(t, ctx, bundleRoot)
+	require.NoError(t, err)
+
+	w, err := databricks.NewWorkspaceClient()
+	require.NoError(t, err)
+
+	// Check that job is not bound and not updated with config from bundle
+	job, err := w.Jobs.Get(ctx, jobs.GetJobRequest{
+		JobId: jobId,
+	})
+	require.NoError(t, err)
+
+	require.NotEqual(t, job.Settings.Name, fmt.Sprintf("test-job-basic-%s", uniqueId))
+	require.Contains(t, job.Settings.Tasks[0].NotebookTask.NotebookPath, "test")
+}
