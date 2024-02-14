@@ -31,16 +31,6 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 
-	// If the bundle.tf.json file does not exist, write it.
-	// This is necessary because the import operation requires the resource to be defined in the Terraform configuration.
-	_, err = os.Stat(filepath.Join(dir, "bundle.tf.json"))
-	if err != nil {
-		err = bundle.Apply(ctx, b, bundle.Seq(Interpolate(), Write()))
-		if err != nil {
-			return fmt.Errorf("terraform write: %w", err)
-		}
-	}
-
 	tf := b.Terraform
 	if tf == nil {
 		return fmt.Errorf("terraform not initialized")

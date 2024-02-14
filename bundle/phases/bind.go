@@ -14,6 +14,8 @@ func Bind(opts *terraform.BindOptions) bundle.Mutator {
 			bundle.Defer(
 				bundle.Seq(
 					terraform.StatePull(),
+					terraform.Interpolate(),
+					terraform.Write(),
 					terraform.Import(opts),
 					terraform.StatePush(),
 				),
@@ -31,6 +33,8 @@ func Unbind(resourceType string, resourceKey string) bundle.Mutator {
 			bundle.Defer(
 				bundle.Seq(
 					terraform.StatePull(),
+					terraform.Interpolate(),
+					terraform.Write(),
 					terraform.Unbind(resourceType, resourceKey),
 					terraform.StatePush(),
 				),
