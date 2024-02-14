@@ -50,8 +50,11 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) error {
 	if err != nil {
 		return fmt.Errorf("terraform init: %w", err)
 	}
-
-	tmpState := filepath.Join(os.TempDir(), TerraformStateFileName)
+	tmpDir, err := os.MkdirTemp("", "state-*")
+	if err != nil {
+		return fmt.Errorf("terraform init: %w", err)
+	}
+	tmpState := filepath.Join(tmpDir, TerraformStateFileName)
 
 	importAddress := fmt.Sprintf("%s.%s", m.opts.ResourceType, m.opts.ResourceKey)
 	err = tf.Import(ctx, importAddress, m.opts.ResourceId, tfexec.StateOut(tmpState))
@@ -68,7 +71,7 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return fmt.Errorf("terraform plan: %w", err)
 	}
 
-	defer os.Remove(tmpState)
+	defer os.RemoveAll(tmpDir)
 
 	if changed && !m.opts.AutoApprove {
 		output := buf.String()
