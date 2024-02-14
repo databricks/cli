@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
@@ -20,7 +21,7 @@ func newSummaryCommand() *cobra.Command {
 		Use:   "summary",
 		Short: "Describe the bundle resources and their deployment states",
 
-		PreRunE: ConfigureBundleWithVariables,
+		PreRunE: utils.ConfigureBundleWithVariables,
 
 		// This command is currently intended for the Databricks VSCode extension only
 		Hidden: true,

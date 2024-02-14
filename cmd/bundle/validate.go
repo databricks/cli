@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -13,7 +14,7 @@ func newValidateCommand() *cobra.Command {
 		Use:   "validate",
 		Short: "Validate configuration",
 
-		PreRunE: ConfigureBundleWithVariables,
+		PreRunE: utils.ConfigureBundleWithVariables,
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {

@@ -1,7 +1,12 @@
 package resources
 
 import (
+	"context"
+	"strconv"
+
 	"github.com/databricks/cli/bundle/config/paths"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/imdario/mergo"
@@ -89,4 +94,23 @@ func (j *Job) MergeTasks() error {
 	// Overwrite resulting slice.
 	j.Tasks = tasks
 	return nil
+}
+
+func (j *Job) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
+	jobId, err := strconv.Atoi(id)
+	if err != nil {
+		return false, err
+	}
+	_, err = w.Jobs.Get(ctx, jobs.GetJobRequest{
+		JobId: int64(jobId),
+	})
+	if err != nil {
+		log.Debugf(ctx, "job %s does not exist", id)
+		return false, err
+	}
+	return true, nil
+}
+
+func (j *Job) TerraformResourceName() string {
+	return "databricks_job"
 }
