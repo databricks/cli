@@ -53,7 +53,8 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) error {
 
 	tmpState := filepath.Join(os.TempDir(), TerraformStateFileName)
 
-	err = tf.Import(ctx, fmt.Sprintf("%s.%s", m.opts.ResourceType, m.opts.ResourceKey), m.opts.ResourceId, tfexec.StateOut(tmpState))
+	importAddress := fmt.Sprintf("%s.%s", m.opts.ResourceType, m.opts.ResourceKey)
+	err = tf.Import(ctx, importAddress, m.opts.ResourceId, tfexec.StateOut(tmpState))
 	if err != nil {
 		return fmt.Errorf("terraform import: %w", err)
 	}
@@ -62,7 +63,7 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) error {
 	tf.SetStdout(buf)
 
 	//lint:ignore SA1019 We use legacy -state flag for now to plan the import changes based on temporary state file
-	changed, err := tf.Plan(ctx, tfexec.State(tmpState))
+	changed, err := tf.Plan(ctx, tfexec.State(tmpState), tfexec.Target(importAddress))
 	if err != nil {
 		return fmt.Errorf("terraform plan: %w", err)
 	}
@@ -70,7 +71,10 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) error {
 	defer os.Remove(tmpState)
 
 	if changed && !m.opts.AutoApprove {
-		cmdio.LogString(ctx, buf.String())
+		output := buf.String()
+		// Remove output starting from Warning until end of output
+		output = output[:bytes.Index([]byte(output), []byte("Warning:"))]
+		cmdio.LogString(ctx, output)
 		ans, err := cmdio.AskYesOrNo(ctx, "Confirm import changes? Changes will be remotely applied only after running 'bundle deploy'.")
 		if err != nil {
 			return err
