@@ -177,7 +177,7 @@ func TestAccGenerateAndBind(t *testing.T) {
 	err = destroyBundle(t, ctx, bundleRoot)
 	require.NoError(t, err)
 
-	// Check that job is unbound and exists after bundle is destroyed
+	// Check that job is bound and does not extsts after bundle is destroyed
 	_, err = w.Jobs.Get(ctx, jobs.GetJobRequest{
 		JobId: jobId,
 	})
