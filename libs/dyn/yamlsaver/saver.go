@@ -18,9 +18,7 @@ type saver struct {
 }
 
 func NewSaver() *saver {
-	return &saver{
-		nodesWithStyle: make(map[string]yaml.Style),
-	}
+	return &saver{}
 }
 
 func NewSaverWithStyle(nodesWithStyle map[string]yaml.Style) *saver {

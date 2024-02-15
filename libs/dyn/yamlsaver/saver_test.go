@@ -9,9 +9,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var s *saver = NewSaver()
-
 func TestMarshalNilValue(t *testing.T) {
+	s := NewSaver()
 	var nilValue = dyn.NilValue
 	v, err := s.toYamlNode(nilValue)
 	assert.NoError(t, err)
@@ -19,6 +18,7 @@ func TestMarshalNilValue(t *testing.T) {
 }
 
 func TestMarshalIntValue(t *testing.T) {
+	s := NewSaver()
 	var intValue = dyn.NewValue(1, dyn.Location{})
 	v, err := s.toYamlNode(intValue)
 	assert.NoError(t, err)
@@ -27,6 +27,7 @@ func TestMarshalIntValue(t *testing.T) {
 }
 
 func TestMarshalFloatValue(t *testing.T) {
+	s := NewSaver()
 	var floatValue = dyn.NewValue(1.0, dyn.Location{})
 	v, err := s.toYamlNode(floatValue)
 	assert.NoError(t, err)
@@ -35,6 +36,7 @@ func TestMarshalFloatValue(t *testing.T) {
 }
 
 func TestMarshalBoolValue(t *testing.T) {
+	s := NewSaver()
 	var boolValue = dyn.NewValue(true, dyn.Location{})
 	v, err := s.toYamlNode(boolValue)
 	assert.NoError(t, err)
@@ -43,6 +45,7 @@ func TestMarshalBoolValue(t *testing.T) {
 }
 
 func TestMarshalTimeValue(t *testing.T) {
+	s := NewSaver()
 	var timeValue = dyn.NewValue(time.Unix(0, 0), dyn.Location{})
 	v, err := s.toYamlNode(timeValue)
 	assert.NoError(t, err)
@@ -51,6 +54,7 @@ func TestMarshalTimeValue(t *testing.T) {
 }
 
 func TestMarshalSequenceValue(t *testing.T) {
+	s := NewSaver()
 	var sequenceValue = dyn.NewValue(
 		[]dyn.Value{
 			dyn.NewValue("value1", dyn.Location{File: "file", Line: 1, Column: 2}),
@@ -66,6 +70,7 @@ func TestMarshalSequenceValue(t *testing.T) {
 }
 
 func TestMarshalStringValue(t *testing.T) {
+	s := NewSaver()
 	var stringValue = dyn.NewValue("value", dyn.Location{})
 	v, err := s.toYamlNode(stringValue)
 	assert.NoError(t, err)
@@ -74,6 +79,7 @@ func TestMarshalStringValue(t *testing.T) {
 }
 
 func TestMarshalMapValue(t *testing.T) {
+	s := NewSaver()
 	var mapValue = dyn.NewValue(
 		map[string]dyn.Value{
 			"key3": dyn.NewValue("value3", dyn.Location{File: "file", Line: 3, Column: 2}),
@@ -96,6 +102,7 @@ func TestMarshalMapValue(t *testing.T) {
 }
 
 func TestMarshalNestedValues(t *testing.T) {
+	s := NewSaver()
 	var mapValue = dyn.NewValue(
 		map[string]dyn.Value{
 			"key1": dyn.NewValue(
@@ -117,6 +124,7 @@ func TestMarshalNestedValues(t *testing.T) {
 }
 
 func TestMarshalHexadecimalValueIsQuoted(t *testing.T) {
+	s := NewSaver()
 	var hexValue = dyn.NewValue(0x123, dyn.Location{})
 	v, err := s.toYamlNode(hexValue)
 	assert.NoError(t, err)
@@ -133,6 +141,7 @@ func TestMarshalHexadecimalValueIsQuoted(t *testing.T) {
 }
 
 func TestMarshalBinaryValueIsQuoted(t *testing.T) {
+	s := NewSaver()
 	var binaryValue = dyn.NewValue(0b101, dyn.Location{})
 	v, err := s.toYamlNode(binaryValue)
 	assert.NoError(t, err)
@@ -149,6 +158,7 @@ func TestMarshalBinaryValueIsQuoted(t *testing.T) {
 }
 
 func TestMarshalOctalValueIsQuoted(t *testing.T) {
+	s := NewSaver()
 	var octalValue = dyn.NewValue(0123, dyn.Location{})
 	v, err := s.toYamlNode(octalValue)
 	assert.NoError(t, err)
@@ -165,6 +175,7 @@ func TestMarshalOctalValueIsQuoted(t *testing.T) {
 }
 
 func TestMarshalFloatValueIsQuoted(t *testing.T) {
+	s := NewSaver()
 	var floatValue = dyn.NewValue(1.0, dyn.Location{})
 	v, err := s.toYamlNode(floatValue)
 	assert.NoError(t, err)
@@ -181,6 +192,7 @@ func TestMarshalFloatValueIsQuoted(t *testing.T) {
 }
 
 func TestMarshalBoolValueIsQuoted(t *testing.T) {
+	s := NewSaver()
 	var boolValue = dyn.NewValue(true, dyn.Location{})
 	v, err := s.toYamlNode(boolValue)
 	assert.NoError(t, err)
