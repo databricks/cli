@@ -525,9 +525,8 @@ func GetNodeTypeId(env string) string {
 	return "Standard_DS4_v2"
 }
 
-// TODO: uncomment the skip test conditions
 func setupLocalFiler(t *testing.T) (filer.Filer, string) {
-	// t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	tmp := t.TempDir()
 	f, err := filer.NewLocalClient(tmp)
@@ -537,7 +536,7 @@ func setupLocalFiler(t *testing.T) (filer.Filer, string) {
 }
 
 func setupWsfsFiler(t *testing.T) (context.Context, filer.Filer) {
-	// t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
 	w := databricks.Must(databricks.NewWorkspaceClient())
@@ -556,7 +555,7 @@ func setupWsfsFiler(t *testing.T) (context.Context, filer.Filer) {
 }
 
 func setupDbfsFiler(t *testing.T) (filer.Filer, string) {
-	// t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
@@ -569,11 +568,11 @@ func setupDbfsFiler(t *testing.T) (filer.Filer, string) {
 }
 
 func setupUcVolumesFiler(t *testing.T) (filer.Filer, string) {
-	// t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
-	// if os.Getenv("TEST_METASTORE_ID") == "" {
-	// 	t.Skip("Skipping UC test when metastore id is not set.")
-	// }
+	if os.Getenv("TEST_METASTORE_ID") == "" {
+		t.Skip("Skipping UC test when metastore id is not set.")
+	}
 
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
