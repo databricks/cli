@@ -196,8 +196,6 @@ func (w *FilesClient) Delete(ctx context.Context, name string, mode ...DeleteMod
 		return CannotDeleteRootError{}
 	}
 
-	// TODO: Add test that rm does not fail when the underlying file / directory
-	// does not exist
 	info, err := w.Stat(ctx, absPath)
 	if err != nil {
 		return err
@@ -224,8 +222,7 @@ func (w *FilesClient) Delete(ctx context.Context, name string, mode ...DeleteMod
 	return err
 }
 
-// TODO: Add tests for the file methods themselves. I suspect they will not work for subdirectories
-// today (since list does not respect absolute paths)
+// TODO: Add tests for the filer methods themselves
 func (w *FilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, error) {
 	absPath, err := w.root.Join(name)
 	if err != nil {
