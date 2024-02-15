@@ -286,7 +286,10 @@ func newList() *cobra.Command {
 	cmd.Long = `Get a list of queries.
   
   Gets a list of queries. Optionally, this list can be filtered by a search
-  term.`
+  term.
+  
+  ### **Warning: Calling this API concurrently 10 or more times could result in
+  throttling, service degradation, or a temporary ban.**`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -422,6 +425,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The title of this query that appears in list views, widget headings, and on the query page.`)
 	// TODO: any: options
 	cmd.Flags().StringVar(&updateReq.Query, "query", updateReq.Query, `The text of the query to be run.`)
+	cmd.Flags().Var(&updateReq.RunAsRole, "run-as-role", `Sets the **Run as** role for the object. Supported values: [owner, viewer]`)
 
 	cmd.Use = "update QUERY_ID"
 	cmd.Short = `Change a query definition.`

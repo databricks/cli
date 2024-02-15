@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
@@ -17,7 +18,7 @@ func newDestroyCommand() *cobra.Command {
 		Use:   "destroy",
 		Short: "Destroy deployed bundle resources",
 
-		PreRunE: ConfigureBundleWithVariables,
+		PreRunE: utils.ConfigureBundleWithVariables,
 	}
 
 	var autoApprove bool

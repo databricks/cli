@@ -28,7 +28,7 @@ func TestAccGenerateFromExistingPipelineAndDeploy(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	pipelineId := gt.createTestPipeline(ctx)
+	pipelineId, name := gt.createTestPipeline(ctx)
 	t.Cleanup(func() {
 		gt.destroyPipeline(ctx, pipelineId)
 	})
@@ -52,9 +52,16 @@ func TestAccGenerateFromExistingPipelineAndDeploy(t *testing.T) {
 	require.Len(t, matches, 1)
 
 	// check the content of generated yaml
-	data, err := os.ReadFile(matches[0])
+	fileName := matches[0]
+	data, err := os.ReadFile(fileName)
 	require.NoError(t, err)
 	generatedYaml := string(data)
+
+	// Replace pipeline name
+	generatedYaml = strings.ReplaceAll(generatedYaml, name, internal.RandomName("copy-generated-pipeline-"))
+	err = os.WriteFile(fileName, []byte(generatedYaml), 0644)
+	require.NoError(t, err)
+
 	require.Contains(t, generatedYaml, "libraries:")
 	require.Contains(t, generatedYaml, "- notebook:")
 	require.Contains(t, generatedYaml, fmt.Sprintf("path: %s", filepath.Join("..", "src", "notebook.py")))
@@ -73,7 +80,7 @@ type generatePipelineTest struct {
 	w *databricks.WorkspaceClient
 }
 
-func (gt *generatePipelineTest) createTestPipeline(ctx context.Context) string {
+func (gt *generatePipelineTest) createTestPipeline(ctx context.Context) (string, string) {
 	t := gt.T
 	w := gt.w
 
@@ -87,8 +94,9 @@ func (gt *generatePipelineTest) createTestPipeline(ctx context.Context) string {
 	err = f.Write(ctx, "test.py", strings.NewReader("print('Hello!')"))
 	require.NoError(t, err)
 
+	name := internal.RandomName("generated-pipeline-")
 	resp, err := w.Pipelines.Create(ctx, pipelines.CreatePipeline{
-		Name: internal.RandomName("generated-pipeline-"),
+		Name: name,
 		Libraries: []pipelines.PipelineLibrary{
 			{
 				Notebook: &pipelines.NotebookLibrary{
@@ -104,7 +112,7 @@ func (gt *generatePipelineTest) createTestPipeline(ctx context.Context) string {
 	})
 	require.NoError(t, err)
 
-	return resp.PipelineId
+	return resp.PipelineId, name
 }
 
 func (gt *generatePipelineTest) destroyPipeline(ctx context.Context, pipelineId string) {
