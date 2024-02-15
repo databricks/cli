@@ -125,12 +125,14 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value) (dyn.
 				v, _ = n.normalizeType(ftyp, dyn.V(""))
 			case reflect.Bool:
 				v, _ = n.normalizeType(ftyp, dyn.V(false))
-			case reflect.Int, reflect.Int32, reflect.Int64:
+			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 				v, _ = n.normalizeType(ftyp, dyn.V(int64(0)))
 			case reflect.Float32, reflect.Float64:
 				v, _ = n.normalizeType(ftyp, dyn.V(float64(0)))
 			default:
-				panic(fmt.Sprintf("unsupported type: %s", ftyp.Kind()))
+				// Skip fields for which we do not have a natural [dyn.Value] equivalent.
+				// For example, we don't handle reflect.Complex* and reflect.Uint* types.
+				continue
 			}
 			if v.IsValid() {
 				out[k] = v
