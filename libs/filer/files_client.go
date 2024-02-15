@@ -223,7 +223,6 @@ func (w *FilesClient) Delete(ctx context.Context, name string, mode ...DeleteMod
 	return err
 }
 
-// TODO: Add tests for the filer methods themselves
 // TODO: Check that all filer methods are calling APIs using absPath and not name.
 func (w *FilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, error) {
 	absPath, err := w.root.Join(name)
@@ -267,8 +266,6 @@ func (w *FilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, 
 	return entries, nil
 }
 
-// TODO: Add tests for the filer client.
-// TODO: Update fs documentation to also refer to UC Volumes.
 func (w *FilesClient) Mkdir(ctx context.Context, name string) error {
 	absPath, err := w.root.Join(name)
 	if err != nil {

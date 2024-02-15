@@ -129,8 +129,8 @@ func (c *copy) emitFileCopiedEvent(sourcePath, targetPath string) error {
 func newCpCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "cp SOURCE_PATH TARGET_PATH",
-		Short: "Copy files and directories to and from DBFS.",
-		Long: `Copy files to and from DBFS.
+		Short: "Copy files and directories.",
+		Long: `Copy files and directories to and from any paths on DBFS, UC Volumes or your local filesystem.
 
 	  For paths in DBFS it is required that you specify the "dbfs" scheme.
 	  For example: dbfs:/foo/bar.

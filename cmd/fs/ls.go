@@ -40,8 +40,8 @@ func toJsonDirEntry(f fs.DirEntry, baseDir string, isAbsolute bool) (*jsonDirEnt
 func newLsCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "ls DIR_PATH",
-		Short:   "Lists files",
-		Long:    `Lists files`,
+		Short:   "Lists files in DBFS and UC Volumes.",
+		Long:    `Lists files in DBFS and UC Volumes.`,
 		Args:    cobra.ExactArgs(1),
 		PreRunE: root.MustWorkspaceClient,
 	}

@@ -9,14 +9,14 @@ import (
 func newRmCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "rm PATH",
-		Short:   "Remove files and directories from dbfs.",
-		Long:    `Remove files and directories from dbfs.`,
+		Short:   "Remove files and directories from DBFS and UC Volumes.",
+		Long:    `Remove files and directories from DBFS and UC Volumes.`,
 		Args:    cobra.ExactArgs(1),
 		PreRunE: root.MustWorkspaceClient,
 	}
 
 	var recursive bool
-	cmd.Flags().BoolVarP(&recursive, "recursive", "r", false, "Recursively delete a non-empty directory.")
+	cmd.Flags().BoolVarP(&recursive, "recursive", "r", false, "Recursively delete a non-empty directory. This is not supported for paths in a UC Volume.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
