@@ -193,7 +193,7 @@
                 "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.",
                 "properties": {
                   "pause_status": {
-                    "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
+                    "description": "Whether this trigger is paused or not."
                   }
                 }
               },
@@ -500,6 +500,12 @@
                             },
                             "local_ssd_count": {
                               "description": "If provided, each node (workers and driver) in the cluster will have this number of local SSDs attached. Each local SSD is 375GB in size. Refer to [GCP documentation](https://cloud.google.com/compute/docs/disks/local-ssd#choose_number_local_ssds) for the supported number of local SSDs for each instance type."
+                            },
+                            "use_preemptible_executors": {
+                              "description": "This field determines whether the spark executors will be scheduled to run on preemptible VMs (when set to true) versus standard compute engine VMs (when set to false; default).\nNote: Soon to be deprecated, use the availability field instead."
+                            },
+                            "zone_id": {
+                              "description": "Identifier for the availability zone in which the cluster resides.\nThis can be one of the following:\n- \"HA\" =\u003e High availability, spread nodes across availability zones for a Databricks deployment region [default]\n- \"AUTO\" =\u003e Databricks picks an availability zone to schedule the cluster on.\n- A GCP availability zone =\u003e Pick One of the available zones for (machine type + region) from https://cloud.google.com/compute/docs/regions-zones."
                             }
                           }
                         },
@@ -508,6 +514,14 @@
                           "items": {
                             "description": "",
                             "properties": {
+                              "abfss": {
+                                "description": "destination needs to be provided. e.g.\n`{ \"abfss\" : { \"destination\" : \"abfss://\u003ccontainer-name\u003e@\u003cstorage-account-name\u003e.dfs.core.windows.net/\u003cdirectory-name\u003e\" } }",
+                                "properties": {
+                                  "destination": {
+                                    "description": "abfss destination, e.g. `abfss://\u003ccontainer-name\u003e@\u003cstorage-account-name\u003e.dfs.core.windows.net/\u003cdirectory-name\u003e`."
+                                  }
+                                }
+                              },
                               "dbfs": {
                                 "description": "destination needs to be provided. e.g.\n`{ \"dbfs\" : { \"destination\" : \"dbfs:/home/cluster_log\" } }`",
                                 "properties": {
@@ -521,6 +535,14 @@
                                 "properties": {
                                   "destination": {
                                     "description": "local file destination, e.g. `file:/my/local/file.sh`"
+                                  }
+                                }
+                              },
+                              "gcs": {
+                                "description": "destination needs to be provided. e.g.\n`{ \"gcs\": { \"destination\": \"gs://my-bucket/file.sh\" } }`",
+                                "properties": {
+                                  "destination": {
+                                    "description": "GCS destination/URI, e.g. `gs://my-bucket/some-prefix`"
                                   }
                                 }
                               },
@@ -703,7 +725,7 @@
                 "description": "An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                 "properties": {
                   "pause_status": {
-                    "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
+                    "description": "Whether this trigger is paused or not."
                   },
                   "quartz_cron_expression": {
                     "description": "A Cron expression using Quartz syntax that describes the schedule for a job.\nSee [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html)\nfor details. This field is required.\"\n"
@@ -757,10 +779,13 @@
                           "description": "Optional (relative) path to the profiles directory. Can only be specified if no warehouse_id is specified. If no warehouse_id is specified and this folder is unset, the root directory is used."
                         },
                         "project_directory": {
-                          "description": "Optional (relative) path to the project directory, if no value is provided, the root of the git repository is used."
+                          "description": "Path to the project directory. Optional for Git sourced tasks, in which case if no value is provided, the root of the Git repository is used."
                         },
                         "schema": {
                           "description": "Optional schema to write to. This parameter is only used when a warehouse_id is also provided. If not provided, the `default` schema is used."
+                        },
+                        "source": {
+                          "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
                         },
                         "warehouse_id": {
                           "description": "ID of the SQL warehouse to connect to. If provided, we automatically generate and provide the profile and connection details to dbt. It can be overridden on a per-command basis by using the `--profiles-dir` command line argument."
@@ -816,6 +841,7 @@
                     "existing_cluster_id": {
                       "description": "If existing_cluster_id, the ID of an existing cluster that is used for all runs of this task. Only all-purpose clusters are supported. When running tasks on an existing cluster, you may need to manually restart the cluster if it stops responding. We suggest running jobs on new clusters for greater reliability."
                     },
+                    "for_each_task": null,
                     "health": {
                       "description": "",
                       "properties": {
@@ -1082,6 +1108,12 @@
                             },
                             "local_ssd_count": {
                               "description": "If provided, each node (workers and driver) in the cluster will have this number of local SSDs attached. Each local SSD is 375GB in size. Refer to [GCP documentation](https://cloud.google.com/compute/docs/disks/local-ssd#choose_number_local_ssds) for the supported number of local SSDs for each instance type."
+                            },
+                            "use_preemptible_executors": {
+                              "description": "This field determines whether the spark executors will be scheduled to run on preemptible VMs (when set to true) versus standard compute engine VMs (when set to false; default).\nNote: Soon to be deprecated, use the availability field instead."
+                            },
+                            "zone_id": {
+                              "description": "Identifier for the availability zone in which the cluster resides.\nThis can be one of the following:\n- \"HA\" =\u003e High availability, spread nodes across availability zones for a Databricks deployment region [default]\n- \"AUTO\" =\u003e Databricks picks an availability zone to schedule the cluster on.\n- A GCP availability zone =\u003e Pick One of the available zones for (machine type + region) from https://cloud.google.com/compute/docs/regions-zones."
                             }
                           }
                         },
@@ -1090,6 +1122,14 @@
                           "items": {
                             "description": "",
                             "properties": {
+                              "abfss": {
+                                "description": "destination needs to be provided. e.g.\n`{ \"abfss\" : { \"destination\" : \"abfss://\u003ccontainer-name\u003e@\u003cstorage-account-name\u003e.dfs.core.windows.net/\u003cdirectory-name\u003e\" } }",
+                                "properties": {
+                                  "destination": {
+                                    "description": "abfss destination, e.g. `abfss://\u003ccontainer-name\u003e@\u003cstorage-account-name\u003e.dfs.core.windows.net/\u003cdirectory-name\u003e`."
+                                  }
+                                }
+                              },
                               "dbfs": {
                                 "description": "destination needs to be provided. e.g.\n`{ \"dbfs\" : { \"destination\" : \"dbfs:/home/cluster_log\" } }`",
                                 "properties": {
@@ -1103,6 +1143,14 @@
                                 "properties": {
                                   "destination": {
                                     "description": "local file destination, e.g. `file:/my/local/file.sh`"
+                                  }
+                                }
+                              },
+                              "gcs": {
+                                "description": "destination needs to be provided. e.g.\n`{ \"gcs\": { \"destination\": \"gs://my-bucket/file.sh\" } }`",
+                                "properties": {
+                                  "destination": {
+                                    "description": "GCS destination/URI, e.g. `gs://my-bucket/some-prefix`"
                                   }
                                 }
                               },
@@ -1212,7 +1260,7 @@
                       "description": "If notebook_task, indicates that this task must run a notebook. This field may not be specified in conjunction with spark_jar_task.",
                       "properties": {
                         "base_parameters": {
-                          "description": "Base parameters to be used for each run of this job. If the run is initiated by a call to\n:method:jobs/runNow with parameters specified, the two parameters maps are merged. If the same key is specified in\n`base_parameters` and in `run-now`, the value from `run-now` is used.\n\nUse [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.\n\nIf the notebook takes a parameter that is not specified in the job’s `base_parameters` or the `run-now` override parameters,\nthe default value from the notebook is used.\n\nRetrieve these parameters in a notebook using [dbutils.widgets.get](https://docs.databricks.com/dev-tools/databricks-utils.html#dbutils-widgets).\n\nThe JSON representation of this field cannot exceed 1MB.\n",
+                          "description": "Base parameters to be used for each run of this job. If the run is initiated by a call to\n:method:jobs/runNow with parameters specified, the two parameters maps are merged. If the same key is specified in\n`base_parameters` and in `run-now`, the value from `run-now` is used.\n\nUse [task parameter variables](https://docs.databricks.com/workflows/jobs/parameter-value-references.html) such as `{{job.id}}` to pass context about job runs.\n\nIf the notebook takes a parameter that is not specified in the job’s `base_parameters` or the `run-now` override parameters,\nthe default value from the notebook is used.\n\nRetrieve these parameters in a notebook using [dbutils.widgets.get](https://docs.databricks.com/dev-tools/databricks-utils.html#dbutils-widgets).\n\nThe JSON representation of this field cannot exceed 1MB.\n",
                           "additionalproperties": {
                             "description": ""
                           }
@@ -1303,7 +1351,7 @@
                           "description": "The full name of the class containing the main method to be executed. This class must be contained in a JAR provided as a library.\n\nThe code must use `SparkContext.getOrCreate` to obtain a Spark context; otherwise, runs of the job fail."
                         },
                         "parameters": {
-                          "description": "Parameters passed to the main method.\n\nUse [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.\n",
+                          "description": "Parameters passed to the main method.\n\nUse [task parameter variables](https://docs.databricks.com/workflows/jobs/parameter-value-references.html) such as `{{job.id}}` to pass context about job runs.\n",
                           "items": {
                             "description": ""
                           }
@@ -1314,7 +1362,7 @@
                       "description": "If spark_python_task, indicates that this task must run a Python file.",
                       "properties": {
                         "parameters": {
-                          "description": "Command line parameters passed to the Python file.\n\nUse [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.\n",
+                          "description": "Command line parameters passed to the Python file.\n\nUse [task parameter variables](https://docs.databricks.com/workflows/jobs/parameter-value-references.html) such as `{{job.id}}` to pass context about job runs.\n",
                           "items": {
                             "description": ""
                           }
@@ -1331,7 +1379,7 @@
                       "description": "If `spark_submit_task`, indicates that this task must be launched by the spark submit script. This task can run only on new clusters.\n\nIn the `new_cluster` specification, `libraries` and `spark_conf` are not supported. Instead, use `--jars` and `--py-files` to add Java and Python libraries and `--conf` to set the Spark configurations. \n\n`master`, `deploy-mode`, and `executor-cores` are automatically configured by Databricks; you _cannot_ specify them in parameters.\n\nBy default, the Spark submit job uses all available memory (excluding reserved memory for Databricks services). You can set `--driver-memory`, and `--executor-memory` to a smaller value to leave some room for off-heap usage.\n\nThe `--jars`, `--py-files`, `--files` arguments support DBFS and S3 paths.\n",
                       "properties": {
                         "parameters": {
-                          "description": "Command-line parameters passed to spark submit.\n\nUse [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.\n",
+                          "description": "Command-line parameters passed to spark submit.\n\nUse [task parameter variables](https://docs.databricks.com/workflows/jobs/parameter-value-references.html) such as `{{job.id}}` to pass context about job runs.\n",
                           "items": {
                             "description": ""
                           }
@@ -1398,7 +1446,10 @@
                           "description": "If file, indicates that this job runs a SQL file in a remote Git repository. Only one SQL statement is supported in a file. Multiple SQL statements separated by semicolons (;) are not permitted.",
                           "properties": {
                             "path": {
-                              "description": "Relative path of the SQL file in the remote Git repository."
+                              "description": "Path of the SQL file. Must be relative if the source is a remote Git repository and absolute for workspace paths."
+                            },
+                            "source": {
+                              "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
                             }
                           }
                         },
@@ -1483,7 +1534,7 @@
                 "description": "An optional timeout applied to each run of this job. A value of `0` means no timeout."
               },
               "trigger": {
-                "description": "Trigger settings for the job. Can be used to trigger a run when new files arrive in an external location. The default behavior is that the job runs only when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
+                "description": "A configuration to trigger a run when certain conditions are met. The default behavior is that the job runs only when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                 "properties": {
                   "file_arrival": {
                     "description": "File arrival trigger settings.",
@@ -1492,7 +1543,7 @@
                         "description": "If set, the trigger starts a run only after the specified amount of time passed since\nthe last time the trigger fired. The minimum allowed value is 60 seconds\n"
                       },
                       "url": {
-                        "description": "URL to be monitored for file arrivals. The path must point to the root or a subpath of the external location."
+                        "description": "The storage location to monitor for file arrivals. The value must point to the root or a subpath of an external location URL or the root or subpath of a Unity Catalog volume."
                       },
                       "wait_after_last_change_seconds": {
                         "description": "If set, the trigger starts a run only after no file activity has occurred for the specified amount of time.\nThis makes it possible to wait for a batch of incoming files to arrive before triggering a run. The\nminimum allowed value is 60 seconds.\n"
@@ -1500,7 +1551,27 @@
                     }
                   },
                   "pause_status": {
-                    "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
+                    "description": "Whether this trigger is paused or not."
+                  },
+                  "table": {
+                    "description": "Table trigger settings.",
+                    "properties": {
+                      "condition": {
+                        "description": "The table(s) condition based on which to trigger a job run."
+                      },
+                      "min_time_between_triggers_seconds": {
+                        "description": "If set, the trigger starts a run only after the specified amount of time has passed since\nthe last time the trigger fired. The minimum allowed value is 60 seconds.\n"
+                      },
+                      "table_names": {
+                        "description": "A list of Delta tables to monitor for changes. The table name must be in the format `catalog_name.schema_name.table_name`.",
+                        "items": {
+                          "description": ""
+                        }
+                      },
+                      "wait_after_last_change_seconds": {
+                        "description": "If set, the trigger starts a run only after no table updates have occurred for the specified time\nand can be used to wait for a series of table updates before triggering a run. The\nminimum allowed value is 60 seconds.\n"
+                      }
+                    }
                   }
                 }
               },
@@ -1969,10 +2040,13 @@
                       "description": "Parameters needed in order to automatically scale clusters up and down based on load.\nNote: autoscaling works best with DB runtime versions 3.0 or later.",
                       "properties": {
                         "max_workers": {
-                          "description": "The maximum number of workers to which the cluster can scale up when overloaded.\nNote that `max_workers` must be strictly greater than `min_workers`."
+                          "description": "The maximum number of workers to which the cluster can scale up when overloaded. `max_workers` must be strictly greater than `min_workers`."
                         },
                         "min_workers": {
-                          "description": "The minimum number of workers to which the cluster can scale down when underutilized.\nIt is also the initial number of workers the cluster will have after creation."
+                          "description": "The minimum number of workers the cluster can scale down to when underutilized.\nIt is also the initial number of workers the cluster will have after creation."
+                        },
+                        "mode": {
+                          "description": "Databricks Enhanced Autoscaling optimizes cluster utilization by automatically\nallocating cluster resources based on workload volume, with minimal impact to\nthe data processing latency of your pipelines. Enhanced Autoscaling is available\nfor `updates` clusters only. The legacy autoscaling feature is used for `maintenance`\nclusters.\n"
                         }
                       }
                     },
@@ -2101,6 +2175,12 @@
                         },
                         "local_ssd_count": {
                           "description": "If provided, each node (workers and driver) in the cluster will have this number of local SSDs attached. Each local SSD is 375GB in size. Refer to [GCP documentation](https://cloud.google.com/compute/docs/disks/local-ssd#choose_number_local_ssds) for the supported number of local SSDs for each instance type."
+                        },
+                        "use_preemptible_executors": {
+                          "description": "This field determines whether the spark executors will be scheduled to run on preemptible VMs (when set to true) versus standard compute engine VMs (when set to false; default).\nNote: Soon to be deprecated, use the availability field instead."
+                        },
+                        "zone_id": {
+                          "description": "Identifier for the availability zone in which the cluster resides.\nThis can be one of the following:\n- \"HA\" =\u003e High availability, spread nodes across availability zones for a Databricks deployment region [default]\n- \"AUTO\" =\u003e Databricks picks an availability zone to schedule the cluster on.\n- A GCP availability zone =\u003e Pick One of the available zones for (machine type + region) from https://cloud.google.com/compute/docs/regions-zones."
                         }
                       }
                     },
@@ -2109,6 +2189,14 @@
                       "items": {
                         "description": "",
                         "properties": {
+                          "abfss": {
+                            "description": "destination needs to be provided. e.g.\n`{ \"abfss\" : { \"destination\" : \"abfss://\u003ccontainer-name\u003e@\u003cstorage-account-name\u003e.dfs.core.windows.net/\u003cdirectory-name\u003e\" } }",
+                            "properties": {
+                              "destination": {
+                                "description": "abfss destination, e.g. `abfss://\u003ccontainer-name\u003e@\u003cstorage-account-name\u003e.dfs.core.windows.net/\u003cdirectory-name\u003e`."
+                              }
+                            }
+                          },
                           "dbfs": {
                             "description": "destination needs to be provided. e.g.\n`{ \"dbfs\" : { \"destination\" : \"dbfs:/home/cluster_log\" } }`",
                             "properties": {
@@ -2122,6 +2210,14 @@
                             "properties": {
                               "destination": {
                                 "description": "local file destination, e.g. `file:/my/local/file.sh`"
+                              }
+                            }
+                          },
+                          "gcs": {
+                            "description": "destination needs to be provided. e.g.\n`{ \"gcs\": { \"destination\": \"gs://my-bucket/file.sh\" } }`",
+                            "properties": {
+                              "destination": {
+                                "description": "GCS destination/URI, e.g. `gs://my-bucket/some-prefix`"
                               }
                             }
                           },
@@ -2629,7 +2725,7 @@
                       "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.",
                       "properties": {
                         "pause_status": {
-                          "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
+                          "description": "Whether this trigger is paused or not."
                         }
                       }
                     },
@@ -2936,6 +3032,12 @@
                                   },
                                   "local_ssd_count": {
                                     "description": "If provided, each node (workers and driver) in the cluster will have this number of local SSDs attached. Each local SSD is 375GB in size. Refer to [GCP documentation](https://cloud.google.com/compute/docs/disks/local-ssd#choose_number_local_ssds) for the supported number of local SSDs for each instance type."
+                                  },
+                                  "use_preemptible_executors": {
+                                    "description": "This field determines whether the spark executors will be scheduled to run on preemptible VMs (when set to true) versus standard compute engine VMs (when set to false; default).\nNote: Soon to be deprecated, use the availability field instead."
+                                  },
+                                  "zone_id": {
+                                    "description": "Identifier for the availability zone in which the cluster resides.\nThis can be one of the following:\n- \"HA\" =\u003e High availability, spread nodes across availability zones for a Databricks deployment region [default]\n- \"AUTO\" =\u003e Databricks picks an availability zone to schedule the cluster on.\n- A GCP availability zone =\u003e Pick One of the available zones for (machine type + region) from https://cloud.google.com/compute/docs/regions-zones."
                                   }
                                 }
                               },
@@ -2944,6 +3046,14 @@
                                 "items": {
                                   "description": "",
                                   "properties": {
+                                    "abfss": {
+                                      "description": "destination needs to be provided. e.g.\n`{ \"abfss\" : { \"destination\" : \"abfss://\u003ccontainer-name\u003e@\u003cstorage-account-name\u003e.dfs.core.windows.net/\u003cdirectory-name\u003e\" } }",
+                                      "properties": {
+                                        "destination": {
+                                          "description": "abfss destination, e.g. `abfss://\u003ccontainer-name\u003e@\u003cstorage-account-name\u003e.dfs.core.windows.net/\u003cdirectory-name\u003e`."
+                                        }
+                                      }
+                                    },
                                     "dbfs": {
                                       "description": "destination needs to be provided. e.g.\n`{ \"dbfs\" : { \"destination\" : \"dbfs:/home/cluster_log\" } }`",
                                       "properties": {
@@ -2957,6 +3067,14 @@
                                       "properties": {
                                         "destination": {
                                           "description": "local file destination, e.g. `file:/my/local/file.sh`"
+                                        }
+                                      }
+                                    },
+                                    "gcs": {
+                                      "description": "destination needs to be provided. e.g.\n`{ \"gcs\": { \"destination\": \"gs://my-bucket/file.sh\" } }`",
+                                      "properties": {
+                                        "destination": {
+                                          "description": "GCS destination/URI, e.g. `gs://my-bucket/some-prefix`"
                                         }
                                       }
                                     },
@@ -3139,7 +3257,7 @@
                       "description": "An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                       "properties": {
                         "pause_status": {
-                          "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
+                          "description": "Whether this trigger is paused or not."
                         },
                         "quartz_cron_expression": {
                           "description": "A Cron expression using Quartz syntax that describes the schedule for a job.\nSee [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html)\nfor details. This field is required.\"\n"
@@ -3193,10 +3311,13 @@
                                 "description": "Optional (relative) path to the profiles directory. Can only be specified if no warehouse_id is specified. If no warehouse_id is specified and this folder is unset, the root directory is used."
                               },
                               "project_directory": {
-                                "description": "Optional (relative) path to the project directory, if no value is provided, the root of the git repository is used."
+                                "description": "Path to the project directory. Optional for Git sourced tasks, in which case if no value is provided, the root of the Git repository is used."
                               },
                               "schema": {
                                 "description": "Optional schema to write to. This parameter is only used when a warehouse_id is also provided. If not provided, the `default` schema is used."
+                              },
+                              "source": {
+                                "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
                               },
                               "warehouse_id": {
                                 "description": "ID of the SQL warehouse to connect to. If provided, we automatically generate and provide the profile and connection details to dbt. It can be overridden on a per-command basis by using the `--profiles-dir` command line argument."
@@ -3252,6 +3373,7 @@
                           "existing_cluster_id": {
                             "description": "If existing_cluster_id, the ID of an existing cluster that is used for all runs of this task. Only all-purpose clusters are supported. When running tasks on an existing cluster, you may need to manually restart the cluster if it stops responding. We suggest running jobs on new clusters for greater reliability."
                           },
+                          "for_each_task": null,
                           "health": {
                             "description": "",
                             "properties": {
@@ -3518,6 +3640,12 @@
                                   },
                                   "local_ssd_count": {
                                     "description": "If provided, each node (workers and driver) in the cluster will have this number of local SSDs attached. Each local SSD is 375GB in size. Refer to [GCP documentation](https://cloud.google.com/compute/docs/disks/local-ssd#choose_number_local_ssds) for the supported number of local SSDs for each instance type."
+                                  },
+                                  "use_preemptible_executors": {
+                                    "description": "This field determines whether the spark executors will be scheduled to run on preemptible VMs (when set to true) versus standard compute engine VMs (when set to false; default).\nNote: Soon to be deprecated, use the availability field instead."
+                                  },
+                                  "zone_id": {
+                                    "description": "Identifier for the availability zone in which the cluster resides.\nThis can be one of the following:\n- \"HA\" =\u003e High availability, spread nodes across availability zones for a Databricks deployment region [default]\n- \"AUTO\" =\u003e Databricks picks an availability zone to schedule the cluster on.\n- A GCP availability zone =\u003e Pick One of the available zones for (machine type + region) from https://cloud.google.com/compute/docs/regions-zones."
                                   }
                                 }
                               },
@@ -3526,6 +3654,14 @@
                                 "items": {
                                   "description": "",
                                   "properties": {
+                                    "abfss": {
+                                      "description": "destination needs to be provided. e.g.\n`{ \"abfss\" : { \"destination\" : \"abfss://\u003ccontainer-name\u003e@\u003cstorage-account-name\u003e.dfs.core.windows.net/\u003cdirectory-name\u003e\" } }",
+                                      "properties": {
+                                        "destination": {
+                                          "description": "abfss destination, e.g. `abfss://\u003ccontainer-name\u003e@\u003cstorage-account-name\u003e.dfs.core.windows.net/\u003cdirectory-name\u003e`."
+                                        }
+                                      }
+                                    },
                                     "dbfs": {
                                       "description": "destination needs to be provided. e.g.\n`{ \"dbfs\" : { \"destination\" : \"dbfs:/home/cluster_log\" } }`",
                                       "properties": {
@@ -3539,6 +3675,14 @@
                                       "properties": {
                                         "destination": {
                                           "description": "local file destination, e.g. `file:/my/local/file.sh`"
+                                        }
+                                      }
+                                    },
+                                    "gcs": {
+                                      "description": "destination needs to be provided. e.g.\n`{ \"gcs\": { \"destination\": \"gs://my-bucket/file.sh\" } }`",
+                                      "properties": {
+                                        "destination": {
+                                          "description": "GCS destination/URI, e.g. `gs://my-bucket/some-prefix`"
                                         }
                                       }
                                     },
@@ -3648,7 +3792,7 @@
                             "description": "If notebook_task, indicates that this task must run a notebook. This field may not be specified in conjunction with spark_jar_task.",
                             "properties": {
                               "base_parameters": {
-                                "description": "Base parameters to be used for each run of this job. If the run is initiated by a call to\n:method:jobs/runNow with parameters specified, the two parameters maps are merged. If the same key is specified in\n`base_parameters` and in `run-now`, the value from `run-now` is used.\n\nUse [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.\n\nIf the notebook takes a parameter that is not specified in the job’s `base_parameters` or the `run-now` override parameters,\nthe default value from the notebook is used.\n\nRetrieve these parameters in a notebook using [dbutils.widgets.get](https://docs.databricks.com/dev-tools/databricks-utils.html#dbutils-widgets).\n\nThe JSON representation of this field cannot exceed 1MB.\n",
+                                "description": "Base parameters to be used for each run of this job. If the run is initiated by a call to\n:method:jobs/runNow with parameters specified, the two parameters maps are merged. If the same key is specified in\n`base_parameters` and in `run-now`, the value from `run-now` is used.\n\nUse [task parameter variables](https://docs.databricks.com/workflows/jobs/parameter-value-references.html) such as `{{job.id}}` to pass context about job runs.\n\nIf the notebook takes a parameter that is not specified in the job’s `base_parameters` or the `run-now` override parameters,\nthe default value from the notebook is used.\n\nRetrieve these parameters in a notebook using [dbutils.widgets.get](https://docs.databricks.com/dev-tools/databricks-utils.html#dbutils-widgets).\n\nThe JSON representation of this field cannot exceed 1MB.\n",
                                 "additionalproperties": {
                                   "description": ""
                                 }
@@ -3739,7 +3883,7 @@
                                 "description": "The full name of the class containing the main method to be executed. This class must be contained in a JAR provided as a library.\n\nThe code must use `SparkContext.getOrCreate` to obtain a Spark context; otherwise, runs of the job fail."
                               },
                               "parameters": {
-                                "description": "Parameters passed to the main method.\n\nUse [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.\n",
+                                "description": "Parameters passed to the main method.\n\nUse [task parameter variables](https://docs.databricks.com/workflows/jobs/parameter-value-references.html) such as `{{job.id}}` to pass context about job runs.\n",
                                 "items": {
                                   "description": ""
                                 }
@@ -3750,7 +3894,7 @@
                             "description": "If spark_python_task, indicates that this task must run a Python file.",
                             "properties": {
                               "parameters": {
-                                "description": "Command line parameters passed to the Python file.\n\nUse [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.\n",
+                                "description": "Command line parameters passed to the Python file.\n\nUse [task parameter variables](https://docs.databricks.com/workflows/jobs/parameter-value-references.html) such as `{{job.id}}` to pass context about job runs.\n",
                                 "items": {
                                   "description": ""
                                 }
@@ -3767,7 +3911,7 @@
                             "description": "If `spark_submit_task`, indicates that this task must be launched by the spark submit script. This task can run only on new clusters.\n\nIn the `new_cluster` specification, `libraries` and `spark_conf` are not supported. Instead, use `--jars` and `--py-files` to add Java and Python libraries and `--conf` to set the Spark configurations. \n\n`master`, `deploy-mode`, and `executor-cores` are automatically configured by Databricks; you _cannot_ specify them in parameters.\n\nBy default, the Spark submit job uses all available memory (excluding reserved memory for Databricks services). You can set `--driver-memory`, and `--executor-memory` to a smaller value to leave some room for off-heap usage.\n\nThe `--jars`, `--py-files`, `--files` arguments support DBFS and S3 paths.\n",
                             "properties": {
                               "parameters": {
-                                "description": "Command-line parameters passed to spark submit.\n\nUse [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.\n",
+                                "description": "Command-line parameters passed to spark submit.\n\nUse [task parameter variables](https://docs.databricks.com/workflows/jobs/parameter-value-references.html) such as `{{job.id}}` to pass context about job runs.\n",
                                 "items": {
                                   "description": ""
                                 }
@@ -3834,7 +3978,10 @@
                                 "description": "If file, indicates that this job runs a SQL file in a remote Git repository. Only one SQL statement is supported in a file. Multiple SQL statements separated by semicolons (;) are not permitted.",
                                 "properties": {
                                   "path": {
-                                    "description": "Relative path of the SQL file in the remote Git repository."
+                                    "description": "Path of the SQL file. Must be relative if the source is a remote Git repository and absolute for workspace paths."
+                                  },
+                                  "source": {
+                                    "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
                                   }
                                 }
                               },
@@ -3919,7 +4066,7 @@
                       "description": "An optional timeout applied to each run of this job. A value of `0` means no timeout."
                     },
                     "trigger": {
-                      "description": "Trigger settings for the job. Can be used to trigger a run when new files arrive in an external location. The default behavior is that the job runs only when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
+                      "description": "A configuration to trigger a run when certain conditions are met. The default behavior is that the job runs only when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                       "properties": {
                         "file_arrival": {
                           "description": "File arrival trigger settings.",
@@ -3928,7 +4075,7 @@
                               "description": "If set, the trigger starts a run only after the specified amount of time passed since\nthe last time the trigger fired. The minimum allowed value is 60 seconds\n"
                             },
                             "url": {
-                              "description": "URL to be monitored for file arrivals. The path must point to the root or a subpath of the external location."
+                              "description": "The storage location to monitor for file arrivals. The value must point to the root or a subpath of an external location URL or the root or subpath of a Unity Catalog volume."
                             },
                             "wait_after_last_change_seconds": {
                               "description": "If set, the trigger starts a run only after no file activity has occurred for the specified amount of time.\nThis makes it possible to wait for a batch of incoming files to arrive before triggering a run. The\nminimum allowed value is 60 seconds.\n"
@@ -3936,7 +4083,27 @@
                           }
                         },
                         "pause_status": {
-                          "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
+                          "description": "Whether this trigger is paused or not."
+                        },
+                        "table": {
+                          "description": "Table trigger settings.",
+                          "properties": {
+                            "condition": {
+                              "description": "The table(s) condition based on which to trigger a job run."
+                            },
+                            "min_time_between_triggers_seconds": {
+                              "description": "If set, the trigger starts a run only after the specified amount of time has passed since\nthe last time the trigger fired. The minimum allowed value is 60 seconds.\n"
+                            },
+                            "table_names": {
+                              "description": "A list of Delta tables to monitor for changes. The table name must be in the format `catalog_name.schema_name.table_name`.",
+                              "items": {
+                                "description": ""
+                              }
+                            },
+                            "wait_after_last_change_seconds": {
+                              "description": "If set, the trigger starts a run only after no table updates have occurred for the specified time\nand can be used to wait for a series of table updates before triggering a run. The\nminimum allowed value is 60 seconds.\n"
+                            }
+                          }
                         }
                       }
                     },
@@ -4405,10 +4572,13 @@
                             "description": "Parameters needed in order to automatically scale clusters up and down based on load.\nNote: autoscaling works best with DB runtime versions 3.0 or later.",
                             "properties": {
                               "max_workers": {
-                                "description": "The maximum number of workers to which the cluster can scale up when overloaded.\nNote that `max_workers` must be strictly greater than `min_workers`."
+                                "description": "The maximum number of workers to which the cluster can scale up when overloaded. `max_workers` must be strictly greater than `min_workers`."
                               },
                               "min_workers": {
-                                "description": "The minimum number of workers to which the cluster can scale down when underutilized.\nIt is also the initial number of workers the cluster will have after creation."
+                                "description": "The minimum number of workers the cluster can scale down to when underutilized.\nIt is also the initial number of workers the cluster will have after creation."
+                              },
+                              "mode": {
+                                "description": "Databricks Enhanced Autoscaling optimizes cluster utilization by automatically\nallocating cluster resources based on workload volume, with minimal impact to\nthe data processing latency of your pipelines. Enhanced Autoscaling is available\nfor `updates` clusters only. The legacy autoscaling feature is used for `maintenance`\nclusters.\n"
                               }
                             }
                           },
@@ -4537,6 +4707,12 @@
                               },
                               "local_ssd_count": {
                                 "description": "If provided, each node (workers and driver) in the cluster will have this number of local SSDs attached. Each local SSD is 375GB in size. Refer to [GCP documentation](https://cloud.google.com/compute/docs/disks/local-ssd#choose_number_local_ssds) for the supported number of local SSDs for each instance type."
+                              },
+                              "use_preemptible_executors": {
+                                "description": "This field determines whether the spark executors will be scheduled to run on preemptible VMs (when set to true) versus standard compute engine VMs (when set to false; default).\nNote: Soon to be deprecated, use the availability field instead."
+                              },
+                              "zone_id": {
+                                "description": "Identifier for the availability zone in which the cluster resides.\nThis can be one of the following:\n- \"HA\" =\u003e High availability, spread nodes across availability zones for a Databricks deployment region [default]\n- \"AUTO\" =\u003e Databricks picks an availability zone to schedule the cluster on.\n- A GCP availability zone =\u003e Pick One of the available zones for (machine type + region) from https://cloud.google.com/compute/docs/regions-zones."
                               }
                             }
                           },
@@ -4545,6 +4721,14 @@
                             "items": {
                               "description": "",
                               "properties": {
+                                "abfss": {
+                                  "description": "destination needs to be provided. e.g.\n`{ \"abfss\" : { \"destination\" : \"abfss://\u003ccontainer-name\u003e@\u003cstorage-account-name\u003e.dfs.core.windows.net/\u003cdirectory-name\u003e\" } }",
+                                  "properties": {
+                                    "destination": {
+                                      "description": "abfss destination, e.g. `abfss://\u003ccontainer-name\u003e@\u003cstorage-account-name\u003e.dfs.core.windows.net/\u003cdirectory-name\u003e`."
+                                    }
+                                  }
+                                },
                                 "dbfs": {
                                   "description": "destination needs to be provided. e.g.\n`{ \"dbfs\" : { \"destination\" : \"dbfs:/home/cluster_log\" } }`",
                                   "properties": {
@@ -4558,6 +4742,14 @@
                                   "properties": {
                                     "destination": {
                                       "description": "local file destination, e.g. `file:/my/local/file.sh`"
+                                    }
+                                  }
+                                },
+                                "gcs": {
+                                  "description": "destination needs to be provided. e.g.\n`{ \"gcs\": { \"destination\": \"gs://my-bucket/file.sh\" } }`",
+                                  "properties": {
+                                    "destination": {
+                                      "description": "GCS destination/URI, e.g. `gs://my-bucket/some-prefix`"
                                     }
                                   }
                                 },

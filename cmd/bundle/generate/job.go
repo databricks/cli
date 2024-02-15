@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
 func NewGenerateJobCommand() *cobra.Command {
@@ -82,7 +83,13 @@ func NewGenerateJobCommand() *cobra.Command {
 		}
 
 		filename := filepath.Join(configDir, fmt.Sprintf("%s.yml", jobKey))
-		err = yamlsaver.SaveAsYAML(result, filename, force)
+		saver := yamlsaver.NewSaverWithStyle(map[string]yaml.Style{
+			// Including all JobSettings and nested fields which are map[string]string type
+			"spark_conf":  yaml.DoubleQuotedStyle,
+			"custom_tags": yaml.DoubleQuotedStyle,
+			"tags":        yaml.DoubleQuotedStyle,
+		})
+		err = saver.SaveAsYAML(result, filename, force)
 		if err != nil {
 			return err
 		}
