@@ -351,7 +351,7 @@ func TestAccFsCpErrorsWhenSourceIsDirWithoutRecursiveFlag(t *testing.T) {
 	})
 
 	t.Run("uc-volumes", func(t *testing.T) {
-		tmpDir := TemporaryUcVolume(t, w)
+		_, tmpDir := setupUcVolumesFiler(t)
 
 		_, _, err = RequireErrorRun(t, "fs", "cp", path.Join("dbfs:"+tmpDir), path.Join("dbfs:"+tmpDir, "foobar"))
 		assert.Equal(t, fmt.Sprintf("source path %s is a directory. Please specify the --recursive flag", tmpDir), err.Error())

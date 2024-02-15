@@ -458,14 +458,10 @@ func TemporaryDbfsDir(t *testing.T, w *databricks.WorkspaceClient) string {
 }
 
 // Create a new UC volume in a catalog called "main" in the workspace.
-func TemporaryUcVolume(t *testing.T, w *databricks.WorkspaceClient) string {
+func temporaryUcVolume(t *testing.T, w *databricks.WorkspaceClient) string {
 	ctx := context.Background()
 
-	// if os.Getenv("TEST_METASTORE_ID") == "" {
-	// 	t.Skip("Skipping tests that require a UC Volume when metastore id is not set.")
-	// }
-
-	// Crate a schema
+	// Create a schema
 	schema, err := w.Schemas.Create(ctx, catalog.CreateSchema{
 		CatalogName: "main",
 		Name:        RandomName("test-schema-"),
@@ -487,7 +483,7 @@ func TemporaryUcVolume(t *testing.T, w *databricks.WorkspaceClient) string {
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		w.Volumes.Delete(ctx, catalog.DeleteVolumeRequest{
-			FullNameArg: volume.FullName,
+			Name: volume.FullName,
 		})
 	})
 
@@ -579,13 +575,13 @@ func setupUcVolumesFiler(t *testing.T) (filer.Filer, string) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	if os.Getenv("TEST_METASTORE_ID") == "" {
-		t.Skip("Skipping UC test when metastore id is not set.")
+		t.Skip("Skipping tests that require a UC Volume when metastore id is not set.")
 	}
 
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
-	tmpDir := TemporaryUcVolume(t, w)
+	tmpDir := temporaryUcVolume(t, w)
 	f, err := filer.NewFilesClient(w, tmpDir)
 	require.NoError(t, err)
 
