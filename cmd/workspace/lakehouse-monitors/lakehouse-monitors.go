@@ -42,6 +42,84 @@ func New() *cobra.Command {
 	return cmd
 }
 
+// start cancel-refresh command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var cancelRefreshOverrides []func(
+	*cobra.Command,
+	*catalog.CancelRefreshRequest,
+)
+
+func newCancelRefresh() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var cancelRefreshReq catalog.CancelRefreshRequest
+
+	// TODO: short flags
+
+	cmd.Use = "cancel-refresh FULL_NAME REFRESH_ID"
+	cmd.Short = `Cancel refresh.`
+	cmd.Long = `Cancel refresh.
+  
+  Cancel an active monitor refresh for the given refresh ID.
+  
+  The caller must either: 1. be an owner of the table's parent catalog 2. have
+  **USE_CATALOG** on the table's parent catalog and be an owner of the table's
+  parent schema 3. have the following permissions: - **USE_CATALOG** on the
+  table's parent catalog - **USE_SCHEMA** on the table's parent schema - be an
+  owner of the table
+  
+  Additionally, the call must be made from the workspace where the monitor was
+  created.
+
+  Arguments:
+    FULL_NAME: Full name of the table.
+    REFRESH_ID: ID of the refresh.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		cancelRefreshReq.FullName = args[0]
+		cancelRefreshReq.RefreshId = args[1]
+
+		err = w.LakehouseMonitors.CancelRefresh(ctx, cancelRefreshReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range cancelRefreshOverrides {
+		fn(cmd, &cancelRefreshReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newCancelRefresh())
+	})
+}
+
 // start create command
 
 // Slice with functions to override default command behavior.
@@ -299,6 +377,229 @@ func newGet() *cobra.Command {
 func init() {
 	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
 		cmd.AddCommand(newGet())
+	})
+}
+
+// start get-refresh command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getRefreshOverrides []func(
+	*cobra.Command,
+	*catalog.GetRefreshRequest,
+)
+
+func newGetRefresh() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getRefreshReq catalog.GetRefreshRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-refresh FULL_NAME REFRESH_ID"
+	cmd.Short = `Get refresh.`
+	cmd.Long = `Get refresh.
+  
+  Gets info about a specific monitor refresh using the given refresh ID.
+  
+  The caller must either: 1. be an owner of the table's parent catalog 2. have
+  **USE_CATALOG** on the table's parent catalog and be an owner of the table's
+  parent schema 3. have the following permissions: - **USE_CATALOG** on the
+  table's parent catalog - **USE_SCHEMA** on the table's parent schema -
+  **SELECT** privilege on the table.
+  
+  Additionally, the call must be made from the workspace where the monitor was
+  created.
+
+  Arguments:
+    FULL_NAME: Full name of the table.
+    REFRESH_ID: ID of the refresh.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		getRefreshReq.FullName = args[0]
+		getRefreshReq.RefreshId = args[1]
+
+		response, err := w.LakehouseMonitors.GetRefresh(ctx, getRefreshReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getRefreshOverrides {
+		fn(cmd, &getRefreshReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetRefresh())
+	})
+}
+
+// start list-refreshes command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listRefreshesOverrides []func(
+	*cobra.Command,
+	*catalog.ListRefreshesRequest,
+)
+
+func newListRefreshes() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listRefreshesReq catalog.ListRefreshesRequest
+
+	// TODO: short flags
+
+	cmd.Use = "list-refreshes FULL_NAME"
+	cmd.Short = `List refreshes.`
+	cmd.Long = `List refreshes.
+  
+  Gets an array containing the history of the most recent refreshes (up to 25)
+  for this table.
+  
+  The caller must either: 1. be an owner of the table's parent catalog 2. have
+  **USE_CATALOG** on the table's parent catalog and be an owner of the table's
+  parent schema 3. have the following permissions: - **USE_CATALOG** on the
+  table's parent catalog - **USE_SCHEMA** on the table's parent schema -
+  **SELECT** privilege on the table.
+  
+  Additionally, the call must be made from the workspace where the monitor was
+  created.
+
+  Arguments:
+    FULL_NAME: Full name of the table.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		listRefreshesReq.FullName = args[0]
+
+		response, err := w.LakehouseMonitors.ListRefreshes(ctx, listRefreshesReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listRefreshesOverrides {
+		fn(cmd, &listRefreshesReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newListRefreshes())
+	})
+}
+
+// start run-refresh command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var runRefreshOverrides []func(
+	*cobra.Command,
+	*catalog.RunRefreshRequest,
+)
+
+func newRunRefresh() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var runRefreshReq catalog.RunRefreshRequest
+
+	// TODO: short flags
+
+	cmd.Use = "run-refresh FULL_NAME"
+	cmd.Short = `Queue a metric refresh for a monitor.`
+	cmd.Long = `Queue a metric refresh for a monitor.
+  
+  Queues a metric refresh on the monitor for the specified table. The refresh
+  will execute in the background.
+  
+  The caller must either: 1. be an owner of the table's parent catalog 2. have
+  **USE_CATALOG** on the table's parent catalog and be an owner of the table's
+  parent schema 3. have the following permissions: - **USE_CATALOG** on the
+  table's parent catalog - **USE_SCHEMA** on the table's parent schema - be an
+  owner of the table
+  
+  Additionally, the call must be made from the workspace where the monitor was
+  created.
+
+  Arguments:
+    FULL_NAME: Full name of the table.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		runRefreshReq.FullName = args[0]
+
+		response, err := w.LakehouseMonitors.RunRefresh(ctx, runRefreshReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range runRefreshOverrides {
+		fn(cmd, &runRefreshReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newRunRefresh())
 	})
 }
 
