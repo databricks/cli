@@ -197,7 +197,7 @@ func (w *FilesClient) Delete(ctx context.Context, name string, mode ...DeleteMod
 		return CannotDeleteRootError{}
 	}
 
-	info, err := w.Stat(ctx, absPath)
+	info, err := w.Stat(ctx, name)
 	if err != nil {
 		return err
 	}

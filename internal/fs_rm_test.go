@@ -42,8 +42,6 @@ func TestAccFsRmFile(t *testing.T) {
 	}
 }
 
-// TODO: Check-in with the files team whether the integration testing should
-// be limited to a single schema / volume.
 func TestAccFsRmEmptyDir(t *testing.T) {
 	t.Parallel()
 
