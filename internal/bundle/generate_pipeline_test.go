@@ -94,6 +94,9 @@ func (gt *generatePipelineTest) createTestPipeline(ctx context.Context) (string,
 	err = f.Write(ctx, "test.py", strings.NewReader("print('Hello!')"))
 	require.NoError(t, err)
 
+	env := internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
+	nodeTypeId := internal.GetNodeTypeId(env)
+
 	name := internal.RandomName("generated-pipeline-")
 	resp, err := w.Pipelines.Create(ctx, pipelines.CreatePipeline{
 		Name: name,
@@ -106,6 +109,22 @@ func (gt *generatePipelineTest) createTestPipeline(ctx context.Context) (string,
 			{
 				File: &pipelines.FileLibrary{
 					Path: path.Join(tmpdir, "test.py"),
+				},
+			},
+		},
+		Clusters: []pipelines.PipelineCluster{
+			{
+				CustomTags: map[string]string{
+					"Tag1": "Yes",
+					"Tag2": "24X7",
+					"Tag3": "APP-1234",
+				},
+				NodeTypeId: nodeTypeId,
+				NumWorkers: 2,
+				SparkConf: map[string]string{
+					"spark.databricks.enableWsfs":                         "true",
+					"spark.databricks.hive.metastore.glueCatalog.enabled": "true",
+					"spark.databricks.pip.ignoreSSL":                      "true",
 				},
 			},
 		},

@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
 func NewGeneratePipelineCommand() *cobra.Command {
@@ -82,7 +83,15 @@ func NewGeneratePipelineCommand() *cobra.Command {
 		}
 
 		filename := filepath.Join(configDir, fmt.Sprintf("%s.yml", pipelineKey))
-		err = yamlsaver.SaveAsYAML(result, filename, force)
+		saver := yamlsaver.NewSaverWithStyle(
+			// Including all PipelineSpec and nested fields which are map[string]string type
+			map[string]yaml.Style{
+				"spark_conf":    yaml.DoubleQuotedStyle,
+				"custom_tags":   yaml.DoubleQuotedStyle,
+				"configuration": yaml.DoubleQuotedStyle,
+			},
+		)
+		err = saver.SaveAsYAML(result, filename, force)
 		if err != nil {
 			return err
 		}
