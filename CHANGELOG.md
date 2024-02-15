@@ -4,7 +4,7 @@
 
 CLI:
  * Ignore environment variables for `auth profiles` ([#1189](https://github.com/databricks/cli/pull/1189)).
- * Update LICENSE ([#1013](https://github.com/databricks/cli/pull/1013)).
+ * Update LICENSE file to match Databricks license language ([#1013](https://github.com/databricks/cli/pull/1013)).
 
 Bundles:
  * Added `bundle deployment bind` and `unbind` command ([#1131](https://github.com/databricks/cli/pull/1131)).
@@ -22,13 +22,7 @@ Internal:
  * Avoid race-conditions while executing sub-commands ([#1201](https://github.com/databricks/cli/pull/1201)).
 
 API Changes:
- * Changed `databricks connections delete` command with new required argument order.
- * Changed `databricks connections get` command with new required argument order.
- * Changed `databricks connections update` command with new required argument order.
  * Added `databricks tables exists` command.
- * Changed `databricks volumes delete` command with new required argument order.
- * Changed `databricks volumes read` command with new required argument order.
- * Changed `databricks volumes update` command with new required argument order.
  * Added `databricks lakehouse-monitors` command group.
  * Removed `databricks files get-status` command.
  * Added `databricks files create-directory` command.
@@ -52,9 +46,6 @@ API Changes:
  * Added `databricks settings update-restrict-workspace-admins-setting` command.
  * Changed `databricks token-management create-obo-token` command with new required argument order.
  * Changed `databricks token-management get` command to return .
- * Changed `databricks clean-rooms delete` command with new required argument order.
- * Changed `databricks clean-rooms get` command with new required argument order.
- * Changed `databricks clean-rooms update` command with new required argument order.
  * Changed `databricks dashboards create` command . New request type is .
  * Added `databricks dashboards update` command.
 
