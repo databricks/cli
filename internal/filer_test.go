@@ -4,16 +4,14 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
-	"net/http"
 	"regexp"
 	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/filer"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -40,13 +38,9 @@ func (f filerTest) assertContents(ctx context.Context, name string, contents str
 	assert.Equal(f, contents, body.String())
 }
 
-func runFilerReadWriteTest(t *testing.T, ctx context.Context, f filer.Filer) {
+// Common tests we run across all filers to ensure consistent behavior.
+func commonFilerReadWriteTests(t *testing.T, ctx context.Context, f filer.Filer) {
 	var err error
-
-	// Write should fail because the root path doesn't yet exist.
-	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello world`))
-	assert.True(t, errors.As(err, &filer.NoSuchDirectoryError{}))
-	assert.True(t, errors.Is(err, fs.ErrNotExist))
 
 	// Read should fail because the root path doesn't yet exist.
 	_, err = f.Read(ctx, "/foo/bar")
@@ -113,10 +107,6 @@ func runFilerReadWriteTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	assert.True(t, errors.As(err, &filer.DirectoryNotEmptyError{}))
 	assert.True(t, errors.Is(err, fs.ErrInvalid))
 
-	// Delete should succeed for a non-empty directory if the DeleteRecursively flag is set.
-	err = f.Delete(ctx, "/foo", filer.DeleteRecursively)
-	assert.NoError(t, err)
-
 	// Delete of the filer root should ALWAYS fail, otherwise subsequent writes would fail.
 	// It is not in the filer's purview to delete its root directory.
 	err = f.Delete(ctx, "/")
@@ -124,7 +114,101 @@ func runFilerReadWriteTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	assert.True(t, errors.Is(err, fs.ErrInvalid))
 }
 
-func runFilerReadDirTest(t *testing.T, ctx context.Context, f filer.Filer) {
+// Write should fail because the intermediate directory doesn't exist.
+func writeDoesNotCreateIntermediateDirs(t *testing.T, ctx context.Context, f filer.Filer) {
+	err := f.Write(ctx, "/this-does-not-exist/bar", strings.NewReader(`hello world`))
+	assert.True(t, errors.As(err, &filer.NoSuchDirectoryError{}))
+	assert.True(t, errors.Is(err, fs.ErrNotExist))
+}
+
+// Write should succeed even if the intermediate directory doesn't exist.
+func writeCreatesIntermediateDirs(t *testing.T, ctx context.Context, f filer.Filer) {
+	err := f.Write(ctx, "/this-does-not-exist/bar", strings.NewReader(`hello world`), filer.CreateParentDirectories)
+	assert.NoError(t, err)
+	filerTest{t, f}.assertContents(ctx, "/this-does-not-exist/bar", `hello world`)
+}
+
+// Delete should succeed for a directory with files in it if the DeleteRecursively flag is set.
+func recursiveDeleteSupported(t *testing.T, ctx context.Context, f filer.Filer) {
+	err := f.Mkdir(ctx, "/dir-to-delete")
+	require.NoError(t, err)
+
+	err = f.Write(ctx, "/dir-to-delete/file1", strings.NewReader(`hello world`))
+	require.NoError(t, err)
+
+	err = f.Delete(ctx, "/dir-to-delete", filer.DeleteRecursively)
+	assert.NoError(t, err)
+}
+
+// Delete should fail if the DeleteRecursively flag is set.
+func recursiveDeleteNotSupported(t *testing.T, ctx context.Context, f filer.Filer) {
+	err := f.Mkdir(ctx, "/dir-to-delete")
+	require.NoError(t, err)
+
+	err = f.Write(ctx, "/dir-to-delete/file1", strings.NewReader(`hello world`))
+	require.NoError(t, err)
+
+	err = f.Delete(ctx, "/dir-to-delete", filer.DeleteRecursively)
+	assert.ErrorContains(t, err, "files API does not support recursive delete")
+}
+
+func TestAccFilerReadWrite(t *testing.T) {
+	t.Parallel()
+
+	t.Run("local", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+		f, _ := setupLocalFiler(t)
+
+		// Tests specific to the Local API.
+		writeDoesNotCreateIntermediateDirs(t, ctx, f)
+		recursiveDeleteSupported(t, ctx, f)
+
+		// Common tests we run across all filers to ensure consistent behavior.
+		commonFilerReadWriteTests(t, ctx, f)
+	})
+
+	t.Run("workspace files", func(t *testing.T) {
+		t.Parallel()
+		ctx, f := setupWsfsFiler(t)
+
+		// Tests specific to the Workspace Files API.
+		writeDoesNotCreateIntermediateDirs(t, ctx, f)
+		recursiveDeleteSupported(t, ctx, f)
+
+		// Common tests we run across all filers to ensure consistent behavior.
+		commonFilerReadWriteTests(t, ctx, f)
+	})
+
+	t.Run("dbfs", func(t *testing.T) {
+		t.Parallel()
+		f, _ := setupDbfsFiler(t)
+		ctx := context.Background()
+
+		// Tests specific to the DBFS API.
+		writeDoesNotCreateIntermediateDirs(t, ctx, f)
+		recursiveDeleteSupported(t, ctx, f)
+
+		// Common tests we run across all filers to ensure consistent behavior.
+		commonFilerReadWriteTests(t, ctx, f)
+	})
+
+	t.Run("files", func(t *testing.T) {
+		t.Parallel()
+		f, _ := setupUcVolumesFiler(t)
+		ctx := context.Background()
+
+		// Tests specific to the Files API.
+		writeCreatesIntermediateDirs(t, ctx, f)
+		recursiveDeleteNotSupported(t, ctx, f)
+
+		// Common tests we run across all filers to ensure consistent behavior.
+		commonFilerReadWriteTests(t, ctx, f)
+	})
+}
+
+// Common tests we run across all filers to ensure consistent behavior.
+func commonFilerReadDirTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	var err error
 	var info fs.FileInfo
 
@@ -206,54 +290,41 @@ func runFilerReadDirTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	assert.False(t, entries[0].IsDir())
 }
 
-func setupWorkspaceFilesTest(t *testing.T) (context.Context, filer.Filer) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+func TestAccFilerReadDir(t *testing.T) {
+	t.Parallel()
 
-	ctx := context.Background()
-	w := databricks.Must(databricks.NewWorkspaceClient())
-	tmpdir := TemporaryWorkspaceDir(t, w)
-	f, err := filer.NewWorkspaceFilesClient(w, tmpdir)
-	require.NoError(t, err)
+	t.Run("local", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+		f, _ := setupLocalFiler(t)
 
-	// Check if we can use this API here, skip test if we cannot.
-	_, err = f.Read(ctx, "we_use_this_call_to_test_if_this_api_is_enabled")
-	var aerr *apierr.APIError
-	if errors.As(err, &aerr) && aerr.StatusCode == http.StatusBadRequest {
-		t.Skip(aerr.Message)
-	}
+		commonFilerReadDirTest(t, ctx, f)
+	})
 
-	return ctx, f
-}
+	t.Run("workspace files", func(t *testing.T) {
+		t.Parallel()
+		ctx, f := setupWsfsFiler(t)
 
-func TestAccFilerWorkspaceFilesReadWrite(t *testing.T) {
-	ctx, f := setupWorkspaceFilesTest(t)
-	runFilerReadWriteTest(t, ctx, f)
-}
+		commonFilerReadDirTest(t, ctx, f)
+	})
 
-func TestAccFilerWorkspaceFilesReadDir(t *testing.T) {
-	ctx, f := setupWorkspaceFilesTest(t)
-	runFilerReadDirTest(t, ctx, f)
-}
+	t.Run("dbfs", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+		f, _ := setupDbfsFiler(t)
 
-func setupFilerDbfsTest(t *testing.T) (context.Context, filer.Filer) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+		commonFilerReadDirTest(t, ctx, f)
+	})
 
-	ctx := context.Background()
-	w := databricks.Must(databricks.NewWorkspaceClient())
-	tmpdir := TemporaryDbfsDir(t, w)
-	f, err := filer.NewDbfsClient(w, tmpdir)
-	require.NoError(t, err)
-	return ctx, f
-}
+	t.Run("files", func(t *testing.T) {
+		t.Parallel()
+		ctx := context.Background()
+		f, tmpdir := setupUcVolumesFiler(t)
 
-func TestAccFilerDbfsReadWrite(t *testing.T) {
-	ctx, f := setupFilerDbfsTest(t)
-	runFilerReadWriteTest(t, ctx, f)
-}
+		fmt.Println(tmpdir)
 
-func TestAccFilerDbfsReadDir(t *testing.T) {
-	ctx, f := setupFilerDbfsTest(t)
-	runFilerReadDirTest(t, ctx, f)
+		commonFilerReadDirTest(t, ctx, f)
+	})
 }
 
 var jupyterNotebookContent1 = `
@@ -305,7 +376,7 @@ var jupyterNotebookContent2 = `
 `
 
 func TestAccFilerWorkspaceNotebookConflict(t *testing.T) {
-	ctx, f := setupWorkspaceFilesTest(t)
+	ctx, f := setupWsfsFiler(t)
 	var err error
 
 	// Upload the notebooks
@@ -350,7 +421,7 @@ func TestAccFilerWorkspaceNotebookConflict(t *testing.T) {
 }
 
 func TestAccFilerWorkspaceNotebookWithOverwriteFlag(t *testing.T) {
-	ctx, f := setupWorkspaceFilesTest(t)
+	ctx, f := setupWsfsFiler(t)
 	var err error
 
 	// Upload notebooks
@@ -390,141 +461,4 @@ func TestAccFilerWorkspaceNotebookWithOverwriteFlag(t *testing.T) {
 	filerTest{t, f}.assertContents(ctx, "sqlNb", "-- Databricks notebook source\n SELECT \"second upload\"")
 	filerTest{t, f}.assertContents(ctx, "scalaNb", "// Databricks notebook source\n println(\"second upload\"))")
 	filerTest{t, f}.assertContents(ctx, "jupyterNb", "# Databricks notebook source\nprint(\"Jupyter Notebook Version 2\")")
-}
-
-func setupFilerLocalTest(t *testing.T) (context.Context, filer.Filer) {
-	ctx := context.Background()
-	f, err := filer.NewLocalClient(t.TempDir())
-	require.NoError(t, err)
-	return ctx, f
-}
-
-func TestAccFilerLocalReadWrite(t *testing.T) {
-	ctx, f := setupFilerLocalTest(t)
-	runFilerReadWriteTest(t, ctx, f)
-}
-
-func TestAccFilerLocalReadDir(t *testing.T) {
-	ctx, f := setupFilerLocalTest(t)
-	runFilerReadDirTest(t, ctx, f)
-}
-
-func temporaryVolumeDir(t *testing.T, w *databricks.WorkspaceClient) string {
-	// Assume this test is run against the internal testing workspace.
-	path := RandomName("/Volumes/bogdanghita/default/v3_shared/cli-testing/integration-test-filer-")
-
-	// The Files API doesn't include support for creating and removing directories yet.
-	// Directories are created implicitly by writing a file to a path that doesn't exist.
-	// We therefore assume we can use the specified path without creating it first.
-	t.Logf("using dbfs:%s", path)
-
-	return path
-}
-
-func setupFilerFilesApiTest(t *testing.T) (context.Context, filer.Filer) {
-	t.SkipNow() // until available on prod
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
-	ctx := context.Background()
-	w := databricks.Must(databricks.NewWorkspaceClient())
-	tmpdir := temporaryVolumeDir(t, w)
-	f, err := filer.NewFilesClient(w, tmpdir)
-	require.NoError(t, err)
-	return ctx, f
-}
-
-func TestAccFilerFilesApiReadWrite(t *testing.T) {
-	ctx, f := setupFilerFilesApiTest(t)
-
-	// The Files API doesn't know about directories yet.
-	// Below is a copy of [runFilerReadWriteTest] with
-	// assertions that don't work commented out.
-
-	var err error
-
-	// Write should fail because the root path doesn't yet exist.
-	// err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello world`))
-	// assert.True(t, errors.As(err, &filer.NoSuchDirectoryError{}))
-	// assert.True(t, errors.Is(err, fs.ErrNotExist))
-
-	// Read should fail because the root path doesn't yet exist.
-	_, err = f.Read(ctx, "/foo/bar")
-	assert.True(t, errors.As(err, &filer.FileDoesNotExistError{}))
-	assert.True(t, errors.Is(err, fs.ErrNotExist))
-
-	// Read should fail because the path points to a directory
-	// err = f.Mkdir(ctx, "/dir")
-	// require.NoError(t, err)
-	// _, err = f.Read(ctx, "/dir")
-	// assert.ErrorIs(t, err, fs.ErrInvalid)
-
-	// Write with CreateParentDirectories flag should succeed.
-	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello world`), filer.CreateParentDirectories)
-	assert.NoError(t, err)
-	filerTest{t, f}.assertContents(ctx, "/foo/bar", `hello world`)
-
-	// Write should fail because there is an existing file at the specified path.
-	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello universe`))
-	assert.True(t, errors.As(err, &filer.FileAlreadyExistsError{}))
-	assert.True(t, errors.Is(err, fs.ErrExist))
-
-	// Write with OverwriteIfExists should succeed.
-	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello universe`), filer.OverwriteIfExists)
-	assert.NoError(t, err)
-	filerTest{t, f}.assertContents(ctx, "/foo/bar", `hello universe`)
-
-	// Write should succeed if there is no existing file at the specified path.
-	err = f.Write(ctx, "/foo/qux", strings.NewReader(`hello universe`))
-	assert.NoError(t, err)
-
-	// Stat on a directory should succeed.
-	// Note: size and modification time behave differently between backends.
-	info, err := f.Stat(ctx, "/foo")
-	require.NoError(t, err)
-	assert.Equal(t, "foo", info.Name())
-	assert.True(t, info.Mode().IsDir())
-	assert.Equal(t, true, info.IsDir())
-
-	// Stat on a file should succeed.
-	// Note: size and modification time behave differently between backends.
-	info, err = f.Stat(ctx, "/foo/bar")
-	require.NoError(t, err)
-	assert.Equal(t, "bar", info.Name())
-	assert.True(t, info.Mode().IsRegular())
-	assert.Equal(t, false, info.IsDir())
-
-	// Delete should fail if the file doesn't exist.
-	err = f.Delete(ctx, "/doesnt_exist")
-	assert.True(t, errors.As(err, &filer.FileDoesNotExistError{}))
-	assert.True(t, errors.Is(err, fs.ErrNotExist))
-
-	// Stat should fail if the file doesn't exist.
-	_, err = f.Stat(ctx, "/doesnt_exist")
-	assert.True(t, errors.As(err, &filer.FileDoesNotExistError{}))
-	assert.True(t, errors.Is(err, fs.ErrNotExist))
-
-	// Delete should succeed for file that does exist.
-	err = f.Delete(ctx, "/foo/bar")
-	assert.NoError(t, err)
-
-	// Delete should fail for a non-empty directory.
-	err = f.Delete(ctx, "/foo")
-	assert.True(t, errors.As(err, &filer.DirectoryNotEmptyError{}))
-	assert.True(t, errors.Is(err, fs.ErrInvalid))
-
-	// Delete should succeed for a non-empty directory if the DeleteRecursively flag is set.
-	// err = f.Delete(ctx, "/foo", filer.DeleteRecursively)
-	// assert.NoError(t, err)
-
-	// Delete of the filer root should ALWAYS fail, otherwise subsequent writes would fail.
-	// It is not in the filer's purview to delete its root directory.
-	err = f.Delete(ctx, "/")
-	assert.True(t, errors.As(err, &filer.CannotDeleteRootError{}))
-	assert.True(t, errors.Is(err, fs.ErrInvalid))
-}
-
-func TestAccFilerFilesApiReadDir(t *testing.T) {
-	t.Skipf("no support for ReadDir yet")
-	ctx, f := setupFilerFilesApiTest(t)
-	runFilerReadDirTest(t, ctx, f)
 }

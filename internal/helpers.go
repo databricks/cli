@@ -5,9 +5,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math/rand"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -523,6 +525,7 @@ func GetNodeTypeId(env string) string {
 	return "Standard_DS4_v2"
 }
 
+// TODO: uncomment the skip test conditions
 func setupLocalFiler(t *testing.T) (filer.Filer, string) {
 	// t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
@@ -531,6 +534,25 @@ func setupLocalFiler(t *testing.T) (filer.Filer, string) {
 	require.NoError(t, err)
 
 	return f, path.Join(filepath.ToSlash(tmp))
+}
+
+func setupWsfsFiler(t *testing.T) (context.Context, filer.Filer) {
+	// t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	ctx := context.Background()
+	w := databricks.Must(databricks.NewWorkspaceClient())
+	tmpdir := TemporaryWorkspaceDir(t, w)
+	f, err := filer.NewWorkspaceFilesClient(w, tmpdir)
+	require.NoError(t, err)
+
+	// Check if we can use this API here, skip test if we cannot.
+	_, err = f.Read(ctx, "we_use_this_call_to_test_if_this_api_is_enabled")
+	var aerr *apierr.APIError
+	if errors.As(err, &aerr) && aerr.StatusCode == http.StatusBadRequest {
+		t.Skip(aerr.Message)
+	}
+
+	return ctx, f
 }
 
 func setupDbfsFiler(t *testing.T) (filer.Filer, string) {

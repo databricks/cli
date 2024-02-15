@@ -172,6 +172,6 @@ func TestAccFsRmDirRecursively(t *testing.T) {
 
 		// Run rm command
 		_, _, err = RequireErrorRun(t, "fs", "rm", path.Join(tmpDir, "a"), "--recursive")
-		assert.ErrorContains(t, err, "uc volumes do not support recursive deletion")
+		assert.ErrorContains(t, err, "files API does not support recursive delete")
 	})
 }

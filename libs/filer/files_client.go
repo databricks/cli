@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"path"
 	"slices"
+	"sort"
 	"strings"
 	"time"
 
@@ -183,7 +184,7 @@ func (w *FilesClient) Read(ctx context.Context, name string) (io.ReadCloser, err
 
 func (w *FilesClient) Delete(ctx context.Context, name string, mode ...DeleteMode) error {
 	if slices.Contains(mode, DeleteRecursively) {
-		return fmt.Errorf("uc volumes do not support recursive deletion")
+		return fmt.Errorf("files API does not support recursive delete")
 	}
 
 	absPath, err := w.root.Join(name)
@@ -196,7 +197,7 @@ func (w *FilesClient) Delete(ctx context.Context, name string, mode ...DeleteMod
 		return CannotDeleteRootError{}
 	}
 
-	info, err := w.Stat(ctx, absPath)
+	info, err := w.Stat(ctx, name)
 	if err != nil {
 		return err
 	}
@@ -223,6 +224,7 @@ func (w *FilesClient) Delete(ctx context.Context, name string, mode ...DeleteMod
 }
 
 // TODO: Add tests for the filer methods themselves
+// TODO: Check that all filer methods are calling APIs using absPath and not name.
 func (w *FilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, error) {
 	absPath, err := w.root.Join(name)
 	if err != nil {
@@ -230,7 +232,7 @@ func (w *FilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, 
 	}
 
 	iter := w.workspaceClient.Files.ListDirectoryContents(ctx, files.ListDirectoryContentsRequest{
-		DirectoryPath: name,
+		DirectoryPath: absPath,
 	})
 
 	files, err := listing.ToSlice(ctx, iter)
@@ -242,7 +244,7 @@ func (w *FilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, 
 	}
 	// This API returns 409 if the underlying path is a file.
 	if errors.As(err, &apierr) && apierr.StatusCode == http.StatusConflict {
-		return nil, NotADirectory{name}
+		return nil, NotADirectory{absPath}
 	}
 	if err != nil {
 		return nil, err
@@ -260,6 +262,8 @@ func (w *FilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, 
 		}
 	}
 
+	// Sort by name for parity with os.ReadDir.
+	sort.Slice(entries, func(i, j int) bool { return entries[i].Name() < entries[j].Name() })
 	return entries, nil
 }
 
