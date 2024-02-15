@@ -39,7 +39,7 @@ func TestGeneratePipelineCommand(t *testing.T) {
 			Clusters: []pipelines.PipelineCluster{
 				{
 					CustomTags: map[string]string{
-						"Tag1": "24X7",
+						"Tag1": "24X7-1234",
 					},
 				},
 				{
