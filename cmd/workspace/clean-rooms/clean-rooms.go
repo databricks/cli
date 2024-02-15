@@ -127,7 +127,7 @@ func newDelete() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Use = "delete NAME_ARG"
+	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a clean room.`
 	cmd.Long = `Delete a clean room.
   
@@ -135,7 +135,7 @@ func newDelete() *cobra.Command {
   owner of the clean room.
 
   Arguments:
-    NAME_ARG: The name of the clean room.`
+    NAME: The name of the clean room.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -149,7 +149,7 @@ func newDelete() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		deleteReq.NameArg = args[0]
+		deleteReq.Name = args[0]
 
 		err = w.CleanRooms.Delete(ctx, deleteReq)
 		if err != nil {
@@ -194,7 +194,7 @@ func newGet() *cobra.Command {
 
 	cmd.Flags().BoolVar(&getReq.IncludeRemoteDetails, "include-remote-details", getReq.IncludeRemoteDetails, `Whether to include remote details (central) on the clean room.`)
 
-	cmd.Use = "get NAME_ARG"
+	cmd.Use = "get NAME"
 	cmd.Short = `Get a clean room.`
 	cmd.Long = `Get a clean room.
   
@@ -202,7 +202,7 @@ func newGet() *cobra.Command {
   metastore admin or the owner of the clean room.
 
   Arguments:
-    NAME_ARG: The name of the clean room.`
+    NAME: The name of the clean room.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -216,7 +216,7 @@ func newGet() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		getReq.NameArg = args[0]
+		getReq.Name = args[0]
 
 		response, err := w.CleanRooms.Get(ctx, getReq)
 		if err != nil {
@@ -329,7 +329,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of clean room.`)
 
-	cmd.Use = "update NAME_ARG"
+	cmd.Use = "update NAME"
 	cmd.Short = `Update a clean room.`
 	cmd.Long = `Update a clean room.
   
@@ -349,7 +349,7 @@ func newUpdate() *cobra.Command {
   Table removals through **update** do not require additional privileges.
 
   Arguments:
-    NAME_ARG: The name of the clean room.`
+    NAME: The name of the clean room.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -369,7 +369,7 @@ func newUpdate() *cobra.Command {
 				return err
 			}
 		}
-		updateReq.NameArg = args[0]
+		updateReq.Name = args[0]
 
 		response, err := w.CleanRooms.Update(ctx, updateReq)
 		if err != nil {
