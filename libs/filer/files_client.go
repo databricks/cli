@@ -197,7 +197,7 @@ func (w *FilesClient) Delete(ctx context.Context, name string, mode ...DeleteMod
 		return CannotDeleteRootError{}
 	}
 
-	info, err := w.Stat(ctx, name)
+	info, err := w.Stat(ctx, absPath)
 	if err != nil {
 		return err
 	}
@@ -223,7 +223,6 @@ func (w *FilesClient) Delete(ctx context.Context, name string, mode ...DeleteMod
 	return err
 }
 
-// TODO: Check that all filer methods are calling APIs using absPath and not name.
 func (w *FilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, error) {
 	absPath, err := w.root.Join(name)
 	if err != nil {
