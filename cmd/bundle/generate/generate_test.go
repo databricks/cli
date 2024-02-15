@@ -40,8 +40,6 @@ func TestGeneratePipelineCommand(t *testing.T) {
 				{
 					CustomTags: map[string]string{
 						"Tag1": "24X7",
-						"Tag2": "Yes",
-						"Tag3": "APP-1234",
 					},
 				},
 				{
@@ -101,9 +99,7 @@ func TestGeneratePipelineCommand(t *testing.T) {
       name: test-pipeline
       clusters:
         - custom_tags:
-            "Tag1": "24X7"
-            "Tag2": "Yes"
-            "Tag3": "APP-1234"
+            "Tag1": "24X7-1234"
         - spark_conf:
             "spark.databricks.delta.preview.enabled": "true"
       libraries:
