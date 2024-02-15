@@ -61,7 +61,7 @@ func newCreateIndex() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createIndexJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: complex arg: delta_sync_index_spec
+	// TODO: complex arg: delta_sync_vector_index_spec
 	// TODO: complex arg: direct_access_index_spec
 	cmd.Flags().StringVar(&createIndexReq.EndpointName, "endpoint-name", createIndexReq.EndpointName, `Name of the endpoint to be used for serving the index.`)
 
