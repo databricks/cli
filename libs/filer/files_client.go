@@ -275,11 +275,6 @@ func (w *FilesClient) Mkdir(ctx context.Context, name string) error {
 		DirectoryPath: absPath,
 	})
 
-	// Return early on success.
-	if err == nil {
-		return nil
-	}
-
 	// Special handling of this error only if it is an API error.
 	var aerr *apierr.APIError
 	if errors.As(err, &aerr) && aerr.StatusCode == http.StatusConflict {
