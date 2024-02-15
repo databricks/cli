@@ -193,7 +193,7 @@
                 "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.",
                 "properties": {
                   "pause_status": {
-                    "description": "Whether this trigger is paused or not."
+                    "description": "Indicate whether this schedule is paused or not."
                   }
                 }
               },
@@ -322,7 +322,7 @@
                       "description": "A unique name for the job cluster. This field is required and must be unique within the job.\n`JobTaskSettings` may refer to this field to determine which cluster to launch for the task execution."
                     },
                     "new_cluster": {
-                      "description": "If new_cluster, a description of a cluster that is created for each task.",
+                      "description": "If new_cluster, a description of a cluster that is created for only for this task.",
                       "properties": {
                         "apply_policy_default_values": {
                           "description": ""
@@ -725,7 +725,7 @@
                 "description": "An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                 "properties": {
                   "pause_status": {
-                    "description": "Whether this trigger is paused or not."
+                    "description": "Indicate whether this schedule is paused or not."
                   },
                   "quartz_cron_expression": {
                     "description": "A Cron expression using Quartz syntax that describes the schedule for a job.\nSee [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html)\nfor details. This field is required.\"\n"
@@ -930,7 +930,7 @@
                       "description": "An optional minimal interval in milliseconds between the start of the failed run and the subsequent retry run. The default behavior is that unsuccessful runs are immediately retried."
                     },
                     "new_cluster": {
-                      "description": "If new_cluster, a description of a cluster that is created for each task.",
+                      "description": "If new_cluster, a description of a cluster that is created for only for this task.",
                       "properties": {
                         "apply_policy_default_values": {
                           "description": ""
@@ -1551,7 +1551,7 @@
                     }
                   },
                   "pause_status": {
-                    "description": "Whether this trigger is paused or not."
+                    "description": "Indicate whether this schedule is paused or not."
                   }
                 }
               },
@@ -2705,7 +2705,7 @@
                       "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.",
                       "properties": {
                         "pause_status": {
-                          "description": "Whether this trigger is paused or not."
+                          "description": "Indicate whether this schedule is paused or not."
                         }
                       }
                     },
@@ -2834,7 +2834,7 @@
                             "description": "A unique name for the job cluster. This field is required and must be unique within the job.\n`JobTaskSettings` may refer to this field to determine which cluster to launch for the task execution."
                           },
                           "new_cluster": {
-                            "description": "If new_cluster, a description of a cluster that is created for each task.",
+                            "description": "If new_cluster, a description of a cluster that is created for only for this task.",
                             "properties": {
                               "apply_policy_default_values": {
                                 "description": ""
@@ -3237,7 +3237,7 @@
                       "description": "An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                       "properties": {
                         "pause_status": {
-                          "description": "Whether this trigger is paused or not."
+                          "description": "Indicate whether this schedule is paused or not."
                         },
                         "quartz_cron_expression": {
                           "description": "A Cron expression using Quartz syntax that describes the schedule for a job.\nSee [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html)\nfor details. This field is required.\"\n"
@@ -3442,7 +3442,7 @@
                             "description": "An optional minimal interval in milliseconds between the start of the failed run and the subsequent retry run. The default behavior is that unsuccessful runs are immediately retried."
                           },
                           "new_cluster": {
-                            "description": "If new_cluster, a description of a cluster that is created for each task.",
+                            "description": "If new_cluster, a description of a cluster that is created for only for this task.",
                             "properties": {
                               "apply_policy_default_values": {
                                 "description": ""
@@ -4063,7 +4063,7 @@
                           }
                         },
                         "pause_status": {
-                          "description": "Whether this trigger is paused or not."
+                          "description": "Indicate whether this schedule is paused or not."
                         }
                       }
                     },
