@@ -142,6 +142,53 @@ func TestNormalizeStructNestedError(t *testing.T) {
 	)
 }
 
+func TestNormalizeStructIncludeMissingFields(t *testing.T) {
+	type Nested struct {
+		String string `json:"string"`
+	}
+
+	type Tmp struct {
+		// Verify that fields that are already set in the dynamic value are not overridden.
+		Existing string `json:"existing"`
+
+		// Verify that structs are recursively normalized if not set.
+		Nested Nested  `json:"nested"`
+		Ptr    *Nested `json:"ptr"`
+
+		// Verify that containers are also zero-initialized if not set.
+		Map   map[string]string `json:"map"`
+		Slice []string          `json:"slice"`
+
+		// Verify that primitive types are zero-initialized if not set.
+		String string  `json:"string"`
+		Bool   bool    `json:"bool"`
+		Int    int     `json:"int"`
+		Float  float64 `json:"float"`
+	}
+
+	var typ Tmp
+	vin := dyn.V(map[string]dyn.Value{
+		"existing": dyn.V("already set"),
+	})
+	vout, err := Normalize(typ, vin, IncludeMissingFields)
+	assert.Empty(t, err)
+	assert.Equal(t, dyn.V(map[string]dyn.Value{
+		"existing": dyn.V("already set"),
+		"nested": dyn.V(map[string]dyn.Value{
+			"string": dyn.V(""),
+		}),
+		"ptr": dyn.V(map[string]dyn.Value{
+			"string": dyn.V(""),
+		}),
+		"map":    dyn.V(map[string]dyn.Value{}),
+		"slice":  dyn.V([]dyn.Value{}),
+		"string": dyn.V(""),
+		"bool":   dyn.V(false),
+		"int":    dyn.V(int64(0)),
+		"float":  dyn.V(float64(0)),
+	}), vout)
+}
+
 func TestNormalizeMap(t *testing.T) {
 	var typ map[string]string
 	vin := dyn.V(map[string]dyn.Value{
