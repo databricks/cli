@@ -60,84 +60,124 @@ func assertTargetDir(t *testing.T, ctx context.Context, f filer.Filer) {
 	assertFileContent(t, ctx, f, "a/b/c/hello.txt", "hello, world\n")
 }
 
-func setupLocalFiler(t *testing.T) (filer.Filer, string) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
-	tmp := t.TempDir()
-	f, err := filer.NewLocalClient(tmp)
-	require.NoError(t, err)
-
-	return f, path.Join(filepath.ToSlash(tmp))
-}
-
-func setupDbfsFiler(t *testing.T) (filer.Filer, string) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
-
-	tmpDir := TemporaryDbfsDir(t, w)
-	f, err := filer.NewDbfsClient(w, tmpDir)
-	require.NoError(t, err)
-
-	return f, path.Join("dbfs:/", tmpDir)
-}
-
 type cpTest struct {
+	name        string
 	setupSource func(*testing.T) (filer.Filer, string)
 	setupTarget func(*testing.T) (filer.Filer, string)
 }
 
-func setupTable() []cpTest {
+func copyTests() []cpTest {
 	return []cpTest{
-		{setupSource: setupLocalFiler, setupTarget: setupLocalFiler},
-		{setupSource: setupLocalFiler, setupTarget: setupDbfsFiler},
-		{setupSource: setupDbfsFiler, setupTarget: setupLocalFiler},
-		{setupSource: setupDbfsFiler, setupTarget: setupDbfsFiler},
+		// source: local file system
+		{
+			name:        "local to local",
+			setupSource: setupLocalFiler,
+			setupTarget: setupLocalFiler,
+		},
+		{
+			name:        "local to dbfs",
+			setupSource: setupLocalFiler,
+			setupTarget: setupDbfsFiler,
+		},
+		{
+			name:        "local to uc-volumes",
+			setupSource: setupLocalFiler,
+			setupTarget: setupUcVolumesFiler,
+		},
+
+		// source: dbfs
+		{
+			name:        "dbfs to local",
+			setupSource: setupDbfsFiler,
+			setupTarget: setupLocalFiler,
+		},
+		{
+			name:        "dbfs to dbfs",
+			setupSource: setupDbfsFiler,
+			setupTarget: setupDbfsFiler,
+		},
+		{
+			name:        "dbfs to uc-volumes",
+			setupSource: setupDbfsFiler,
+			setupTarget: setupUcVolumesFiler,
+		},
+
+		// source: uc-volumes
+		{
+			name:        "uc-volumes to local",
+			setupSource: setupUcVolumesFiler,
+			setupTarget: setupLocalFiler,
+		},
+		{
+			name:        "uc-volumes to dbfs",
+			setupSource: setupUcVolumesFiler,
+			setupTarget: setupDbfsFiler,
+		},
+		{
+			name:        "uc-volumes to uc-volumes",
+			setupSource: setupUcVolumesFiler,
+			setupTarget: setupUcVolumesFiler,
+		},
 	}
 }
 
 func TestAccFsCpDir(t *testing.T) {
-	ctx := context.Background()
-	table := setupTable()
+	t.Parallel()
 
-	for _, row := range table {
-		sourceFiler, sourceDir := row.setupSource(t)
-		targetFiler, targetDir := row.setupTarget(t)
-		setupSourceDir(t, ctx, sourceFiler)
+	for _, testCase := range copyTests() {
+		tc := testCase
 
-		RequireSuccessfulRun(t, "fs", "cp", "-r", sourceDir, targetDir)
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-		assertTargetDir(t, ctx, targetFiler)
+			sourceFiler, sourceDir := tc.setupSource(t)
+			targetFiler, targetDir := tc.setupTarget(t)
+			setupSourceDir(t, context.Background(), sourceFiler)
+
+			RequireSuccessfulRun(t, "fs", "cp", sourceDir, targetDir, "--recursive")
+
+			assertTargetDir(t, context.Background(), targetFiler)
+		})
 	}
 }
 
 func TestAccFsCpFileToFile(t *testing.T) {
-	ctx := context.Background()
-	table := setupTable()
+	t.Parallel()
 
-	for _, row := range table {
-		sourceFiler, sourceDir := row.setupSource(t)
-		targetFiler, targetDir := row.setupTarget(t)
-		setupSourceFile(t, ctx, sourceFiler)
+	for _, testCase := range copyTests() {
+		tc := testCase
 
-		RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "foo.txt"), path.Join(targetDir, "bar.txt"))
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-		assertTargetFile(t, ctx, targetFiler, "bar.txt")
+			sourceFiler, sourceDir := tc.setupSource(t)
+			targetFiler, targetDir := tc.setupTarget(t)
+			setupSourceFile(t, context.Background(), sourceFiler)
+
+			RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "foo.txt"), path.Join(targetDir, "bar.txt"))
+
+			assertTargetFile(t, context.Background(), targetFiler, "bar.txt")
+		})
 	}
 }
 
 func TestAccFsCpFileToDir(t *testing.T) {
-	ctx := context.Background()
-	table := setupTable()
-	for _, row := range table {
-		sourceFiler, sourceDir := row.setupSource(t)
-		targetFiler, targetDir := row.setupTarget(t)
-		setupSourceFile(t, ctx, sourceFiler)
+	t.Parallel()
 
-		RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "foo.txt"), targetDir)
+	for _, testCase := range copyTests() {
+		tc := testCase
 
-		assertTargetFile(t, ctx, targetFiler, "foo.txt")
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			sourceFiler, sourceDir := tc.setupSource(t)
+			targetFiler, targetDir := tc.setupTarget(t)
+			setupSourceFile(t, context.Background(), sourceFiler)
+
+			RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "foo.txt"), targetDir)
+
+			assertTargetFile(t, context.Background(), targetFiler, "foo.txt")
+		})
 	}
 }
 
@@ -158,125 +198,164 @@ func TestAccFsCpFileToDirForWindowsPaths(t *testing.T) {
 }
 
 func TestAccFsCpDirToDirFileNotOverwritten(t *testing.T) {
-	ctx := context.Background()
-	table := setupTable()
+	t.Parallel()
 
-	for _, row := range table {
-		sourceFiler, sourceDir := row.setupSource(t)
-		targetFiler, targetDir := row.setupTarget(t)
-		setupSourceDir(t, ctx, sourceFiler)
+	for _, testCase := range copyTests() {
+		tc := testCase
 
-		// Write a conflicting file to target
-		err := targetFiler.Write(ctx, "a/b/c/hello.txt", strings.NewReader("this should not be overwritten"), filer.CreateParentDirectories)
-		require.NoError(t, err)
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-		RequireSuccessfulRun(t, "fs", "cp", sourceDir, targetDir, "--recursive")
-		assertFileContent(t, ctx, targetFiler, "a/b/c/hello.txt", "this should not be overwritten")
-		assertFileContent(t, ctx, targetFiler, "query.sql", "SELECT 1")
-		assertFileContent(t, ctx, targetFiler, "pyNb.py", "# Databricks notebook source\nprint(123)")
+			sourceFiler, sourceDir := tc.setupSource(t)
+			targetFiler, targetDir := tc.setupTarget(t)
+			setupSourceDir(t, context.Background(), sourceFiler)
+
+			// Write a conflicting file to target
+			err := targetFiler.Write(context.Background(), "a/b/c/hello.txt", strings.NewReader("this should not be overwritten"), filer.CreateParentDirectories)
+			require.NoError(t, err)
+
+			RequireSuccessfulRun(t, "fs", "cp", sourceDir, targetDir, "--recursive")
+			assertFileContent(t, context.Background(), targetFiler, "a/b/c/hello.txt", "this should not be overwritten")
+			assertFileContent(t, context.Background(), targetFiler, "query.sql", "SELECT 1")
+			assertFileContent(t, context.Background(), targetFiler, "pyNb.py", "# Databricks notebook source\nprint(123)")
+		})
 	}
 }
 
 func TestAccFsCpFileToDirFileNotOverwritten(t *testing.T) {
-	ctx := context.Background()
-	table := setupTable()
+	t.Parallel()
 
-	for _, row := range table {
-		sourceFiler, sourceDir := row.setupSource(t)
-		targetFiler, targetDir := row.setupTarget(t)
-		setupSourceDir(t, ctx, sourceFiler)
+	for _, testCase := range copyTests() {
+		tc := testCase
 
-		// Write a conflicting file to target
-		err := targetFiler.Write(ctx, "a/b/c/hello.txt", strings.NewReader("this should not be overwritten"), filer.CreateParentDirectories)
-		require.NoError(t, err)
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-		RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "a/b/c/hello.txt"), path.Join(targetDir, "a/b/c"))
-		assertFileContent(t, ctx, targetFiler, "a/b/c/hello.txt", "this should not be overwritten")
+			sourceFiler, sourceDir := tc.setupSource(t)
+			targetFiler, targetDir := tc.setupTarget(t)
+			setupSourceDir(t, context.Background(), sourceFiler)
+
+			// Write a conflicting file to target
+			err := targetFiler.Write(context.Background(), "a/b/c/hello.txt", strings.NewReader("this should not be overwritten"), filer.CreateParentDirectories)
+			require.NoError(t, err)
+
+			RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "a/b/c/hello.txt"), path.Join(targetDir, "a/b/c"))
+			assertFileContent(t, context.Background(), targetFiler, "a/b/c/hello.txt", "this should not be overwritten")
+		})
 	}
 }
 
 func TestAccFsCpFileToFileFileNotOverwritten(t *testing.T) {
-	ctx := context.Background()
-	table := setupTable()
+	t.Parallel()
 
-	for _, row := range table {
-		sourceFiler, sourceDir := row.setupSource(t)
-		targetFiler, targetDir := row.setupTarget(t)
-		setupSourceDir(t, ctx, sourceFiler)
+	for _, testCase := range copyTests() {
+		tc := testCase
 
-		// Write a conflicting file to target
-		err := targetFiler.Write(ctx, "a/b/c/hola.txt", strings.NewReader("this should not be overwritten"), filer.CreateParentDirectories)
-		require.NoError(t, err)
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-		RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "a/b/c/hello.txt"), path.Join(targetDir, "a/b/c/hola.txt"), "--recursive")
-		assertFileContent(t, ctx, targetFiler, "a/b/c/hola.txt", "this should not be overwritten")
+			sourceFiler, sourceDir := tc.setupSource(t)
+			targetFiler, targetDir := tc.setupTarget(t)
+			setupSourceDir(t, context.Background(), sourceFiler)
+
+			// Write a conflicting file to target
+			err := targetFiler.Write(context.Background(), "a/b/c/dontoverwrite.txt", strings.NewReader("this should not be overwritten"), filer.CreateParentDirectories)
+			require.NoError(t, err)
+
+			RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "a/b/c/hello.txt"), path.Join(targetDir, "a/b/c/dontoverwrite.txt"))
+			assertFileContent(t, context.Background(), targetFiler, "a/b/c/dontoverwrite.txt", "this should not be overwritten")
+		})
 	}
 }
 
 func TestAccFsCpDirToDirWithOverwriteFlag(t *testing.T) {
-	ctx := context.Background()
-	table := setupTable()
+	t.Parallel()
 
-	for _, row := range table {
-		sourceFiler, sourceDir := row.setupSource(t)
-		targetFiler, targetDir := row.setupTarget(t)
-		setupSourceDir(t, ctx, sourceFiler)
+	for _, testCase := range copyTests() {
+		tc := testCase
 
-		// Write a conflicting file to target
-		err := targetFiler.Write(ctx, "a/b/c/hello.txt", strings.NewReader("this will be overwritten"), filer.CreateParentDirectories)
-		require.NoError(t, err)
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-		RequireSuccessfulRun(t, "fs", "cp", sourceDir, targetDir, "--recursive", "--overwrite")
-		assertTargetDir(t, ctx, targetFiler)
+			sourceFiler, sourceDir := tc.setupSource(t)
+			targetFiler, targetDir := tc.setupTarget(t)
+			setupSourceDir(t, context.Background(), sourceFiler)
+
+			// Write a conflicting file to target
+			err := targetFiler.Write(context.Background(), "a/b/c/hello.txt", strings.NewReader("this should be overwritten"), filer.CreateParentDirectories)
+			require.NoError(t, err)
+
+			RequireSuccessfulRun(t, "fs", "cp", sourceDir, targetDir, "--recursive", "--overwrite")
+			assertTargetDir(t, context.Background(), targetFiler)
+		})
 	}
 }
 
 func TestAccFsCpFileToFileWithOverwriteFlag(t *testing.T) {
-	ctx := context.Background()
-	table := setupTable()
+	t.Parallel()
 
-	for _, row := range table {
-		sourceFiler, sourceDir := row.setupSource(t)
-		targetFiler, targetDir := row.setupTarget(t)
-		setupSourceDir(t, ctx, sourceFiler)
+	for _, testCase := range copyTests() {
+		tc := testCase
 
-		// Write a conflicting file to target
-		err := targetFiler.Write(ctx, "a/b/c/hola.txt", strings.NewReader("this will be overwritten. Such is life."), filer.CreateParentDirectories)
-		require.NoError(t, err)
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-		RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "a/b/c/hello.txt"), path.Join(targetDir, "a/b/c/hola.txt"), "--overwrite")
-		assertFileContent(t, ctx, targetFiler, "a/b/c/hola.txt", "hello, world\n")
+			sourceFiler, sourceDir := tc.setupSource(t)
+			targetFiler, targetDir := tc.setupTarget(t)
+			setupSourceDir(t, context.Background(), sourceFiler)
+
+			// Write a conflicting file to target
+			err := targetFiler.Write(context.Background(), "a/b/c/overwritten.txt", strings.NewReader("this should be overwritten"), filer.CreateParentDirectories)
+			require.NoError(t, err)
+
+			RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "a/b/c/hello.txt"), path.Join(targetDir, "a/b/c/overwritten.txt"), "--overwrite")
+			assertFileContent(t, context.Background(), targetFiler, "a/b/c/overwritten.txt", "hello, world\n")
+		})
 	}
 }
 
 func TestAccFsCpFileToDirWithOverwriteFlag(t *testing.T) {
-	ctx := context.Background()
-	table := setupTable()
+	t.Parallel()
 
-	for _, row := range table {
-		sourceFiler, sourceDir := row.setupSource(t)
-		targetFiler, targetDir := row.setupTarget(t)
-		setupSourceDir(t, ctx, sourceFiler)
+	for _, testCase := range copyTests() {
+		tc := testCase
 
-		// Write a conflicting file to target
-		err := targetFiler.Write(ctx, "a/b/c/hello.txt", strings.NewReader("this will be overwritten :') "), filer.CreateParentDirectories)
-		require.NoError(t, err)
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-		RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "a/b/c/hello.txt"), path.Join(targetDir, "a/b/c"), "--recursive", "--overwrite")
-		assertFileContent(t, ctx, targetFiler, "a/b/c/hello.txt", "hello, world\n")
+			sourceFiler, sourceDir := tc.setupSource(t)
+			targetFiler, targetDir := tc.setupTarget(t)
+			setupSourceDir(t, context.Background(), sourceFiler)
+
+			// Write a conflicting file to target
+			err := targetFiler.Write(context.Background(), "a/b/c/hello.txt", strings.NewReader("this should be overwritten"), filer.CreateParentDirectories)
+			require.NoError(t, err)
+
+			RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "a/b/c/hello.txt"), path.Join(targetDir, "a/b/c"), "--overwrite")
+			assertFileContent(t, context.Background(), targetFiler, "a/b/c/hello.txt", "hello, world\n")
+		})
 	}
 }
 
 func TestAccFsCpErrorsWhenSourceIsDirWithoutRecursiveFlag(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	// t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
-	tmpDir := TemporaryDbfsDir(t, w)
+	t.Run("dbfs", func(t *testing.T) {
+		tmpDir := TemporaryDbfsDir(t, w)
 
-	_, _, err = RequireErrorRun(t, "fs", "cp", "dbfs:"+tmpDir, "dbfs:/tmp")
-	assert.Equal(t, fmt.Sprintf("source path %s is a directory. Please specify the --recursive flag", tmpDir), err.Error())
+		_, _, err = RequireErrorRun(t, "fs", "cp", path.Join("dbfs:"+tmpDir), path.Join("dbfs:"+tmpDir, "foobar"))
+		assert.Equal(t, fmt.Sprintf("source path %s is a directory. Please specify the --recursive flag", tmpDir), err.Error())
+	})
+
+	t.Run("uc-volumes", func(t *testing.T) {
+		tmpDir := TemporaryUcVolume(t, w)
+
+		_, _, err = RequireErrorRun(t, "fs", "cp", path.Join("dbfs:"+tmpDir), path.Join("dbfs:"+tmpDir, "foobar"))
+		assert.Equal(t, fmt.Sprintf("source path %s is a directory. Please specify the --recursive flag", tmpDir), err.Error())
+	})
 }
 
 func TestAccFsCpErrorsOnInvalidScheme(t *testing.T) {
@@ -287,20 +366,24 @@ func TestAccFsCpErrorsOnInvalidScheme(t *testing.T) {
 }
 
 func TestAccFsCpSourceIsDirectoryButTargetIsFile(t *testing.T) {
-	ctx := context.Background()
-	table := setupTable()
+	t.Parallel()
 
-	for _, row := range table {
-		sourceFiler, sourceDir := row.setupSource(t)
-		targetFiler, targetDir := row.setupTarget(t)
-		setupSourceDir(t, ctx, sourceFiler)
+	for _, testCase := range copyTests() {
+		tc := testCase
 
-		// Write a conflicting file to target
-		err := targetFiler.Write(ctx, "my_target", strings.NewReader("I'll block any attempts to recursively copy"), filer.CreateParentDirectories)
-		require.NoError(t, err)
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-		_, _, err = RequireErrorRun(t, "fs", "cp", sourceDir, path.Join(targetDir, "my_target"), "--recursive", "--overwrite")
-		assert.Error(t, err)
+			sourceFiler, sourceDir := tc.setupSource(t)
+			targetFiler, targetDir := tc.setupTarget(t)
+			setupSourceDir(t, context.Background(), sourceFiler)
+
+			// Write a conflicting file to target
+			err := targetFiler.Write(context.Background(), "my_target", strings.NewReader("I'll block any attempts to recursively copy"), filer.CreateParentDirectories)
+			require.NoError(t, err)
+
+			_, _, err = RequireErrorRun(t, "fs", "cp", sourceDir, path.Join(targetDir, "my_target"), "--recursive")
+			assert.Error(t, err)
+		})
 	}
-
 }

@@ -8,139 +8,170 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/filer"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestAccFsRmForFile(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+func TestAccFsRmFile(t *testing.T) {
+	t.Parallel()
 
-	ctx := context.Background()
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
+	for _, testCase := range fsTests {
+		tc := testCase
 
-	tmpDir := TemporaryDbfsDir(t, w)
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-	f, err := filer.NewDbfsClient(w, tmpDir)
-	require.NoError(t, err)
+			// Create a file
+			f, tmpDir := tc.setupFiler(t)
+			err := f.Write(context.Background(), "hello.txt", strings.NewReader("abcd"), filer.CreateParentDirectories)
+			require.NoError(t, err)
 
-	// create file to delete
-	err = f.Write(ctx, "hello.txt", strings.NewReader("abc"))
-	require.NoError(t, err)
+			// Check file was created
+			_, err = f.Stat(context.Background(), "hello.txt")
+			assert.NoError(t, err)
 
-	// check file was created
-	info, err := f.Stat(ctx, "hello.txt")
-	require.NoError(t, err)
-	require.Equal(t, "hello.txt", info.Name())
-	require.Equal(t, info.IsDir(), false)
+			// Run rm command
+			stdout, stderr := RequireSuccessfulRun(t, "fs", "rm", path.Join(tmpDir, "hello.txt"))
+			assert.Equal(t, "", stderr.String())
+			assert.Equal(t, "", stdout.String())
 
-	// Run rm command
-	stdout, stderr := RequireSuccessfulRun(t, "fs", "rm", "dbfs:"+path.Join(tmpDir, "hello.txt"))
-	assert.Equal(t, "", stderr.String())
-	assert.Equal(t, "", stdout.String())
-
-	// assert file was deleted
-	_, err = f.Stat(ctx, "hello.txt")
-	assert.ErrorIs(t, err, fs.ErrNotExist)
+			// Assert file was deleted
+			_, err = f.Stat(context.Background(), "hello.txt")
+			assert.ErrorIs(t, err, fs.ErrNotExist)
+		})
+	}
 }
 
-func TestAccFsRmForEmptyDirectory(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+// TODO: Check-in with the files team whether the integration testing should
+// be limited to a single schema / volume.
+func TestAccFsRmEmptyDir(t *testing.T) {
+	t.Parallel()
 
-	ctx := context.Background()
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
+	for _, testCase := range fsTests {
+		tc := testCase
 
-	tmpDir := TemporaryDbfsDir(t, w)
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-	f, err := filer.NewDbfsClient(w, tmpDir)
-	require.NoError(t, err)
+			// Create a directory
+			f, tmpDir := tc.setupFiler(t)
+			err := f.Mkdir(context.Background(), "a")
+			require.NoError(t, err)
 
-	// create directory to delete
-	err = f.Mkdir(ctx, "avacado")
-	require.NoError(t, err)
+			// Check directory was created
+			_, err = f.Stat(context.Background(), "a")
+			assert.NoError(t, err)
 
-	// check directory was created
-	info, err := f.Stat(ctx, "avacado")
-	require.NoError(t, err)
-	require.Equal(t, "avacado", info.Name())
-	require.Equal(t, info.IsDir(), true)
+			// Run rm command
+			stdout, stderr := RequireSuccessfulRun(t, "fs", "rm", path.Join(tmpDir, "a"))
+			assert.Equal(t, "", stderr.String())
+			assert.Equal(t, "", stdout.String())
 
-	// Run rm command
-	stdout, stderr := RequireSuccessfulRun(t, "fs", "rm", "dbfs:"+path.Join(tmpDir, "avacado"))
-	assert.Equal(t, "", stderr.String())
-	assert.Equal(t, "", stdout.String())
-
-	// assert directory was deleted
-	_, err = f.Stat(ctx, "avacado")
-	assert.ErrorIs(t, err, fs.ErrNotExist)
+			// Assert directory was deleted
+			_, err = f.Stat(context.Background(), "a")
+			assert.ErrorIs(t, err, fs.ErrNotExist)
+		})
+	}
 }
 
-func TestAccFsRmForNonEmptyDirectory(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+func TestAccFsRmNonEmptyDirectory(t *testing.T) {
+	t.Parallel()
 
-	ctx := context.Background()
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
+	for _, testCase := range fsTests {
+		tc := testCase
 
-	tmpDir := TemporaryDbfsDir(t, w)
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-	f, err := filer.NewDbfsClient(w, tmpDir)
-	require.NoError(t, err)
+			// Create a directory
+			f, tmpDir := tc.setupFiler(t)
+			err := f.Mkdir(context.Background(), "a")
+			require.NoError(t, err)
 
-	// create file in dir
-	err = f.Write(ctx, "avacado/guacamole", strings.NewReader("abc"), filer.CreateParentDirectories)
-	require.NoError(t, err)
+			// Create a file in the directory
+			err = f.Write(context.Background(), "a/hello.txt", strings.NewReader("abcd"), filer.CreateParentDirectories)
+			require.NoError(t, err)
 
-	// check file was created
-	info, err := f.Stat(ctx, "avacado/guacamole")
-	require.NoError(t, err)
-	require.Equal(t, "guacamole", info.Name())
-	require.Equal(t, info.IsDir(), false)
+			// Check file was created
+			_, err = f.Stat(context.Background(), "a/hello.txt")
+			assert.NoError(t, err)
 
-	// Run rm command
-	_, _, err = RequireErrorRun(t, "fs", "rm", "dbfs:"+path.Join(tmpDir, "avacado"))
-	assert.ErrorIs(t, err, fs.ErrInvalid)
-	assert.ErrorContains(t, err, "directory not empty")
+			// Run rm command
+			_, _, err = RequireErrorRun(t, "fs", "rm", path.Join(tmpDir, "a"))
+			assert.ErrorIs(t, err, fs.ErrInvalid)
+			assert.ErrorAs(t, err, &filer.DirectoryNotEmptyError{})
+		})
+	}
 }
 
 func TestAccFsRmForNonExistentFile(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Parallel()
 
-	// Expect error if file does not exist
-	_, _, err := RequireErrorRun(t, "fs", "rm", "dbfs:/does-not-exist")
-	assert.ErrorIs(t, err, fs.ErrNotExist)
+	for _, testCase := range fsTests {
+		tc := testCase
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, tmpDir := tc.setupFiler(t)
+
+			// Expect error if file does not exist
+			_, _, err := RequireErrorRun(t, "fs", "rm", path.Join(tmpDir, "does-not-exist"))
+			assert.ErrorIs(t, err, fs.ErrNotExist)
+		})
+	}
+
 }
 
-func TestAccFsRmForNonEmptyDirectoryWithRecursiveFlag(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+func TestAccFsRmDirRecursively(t *testing.T) {
+	t.Parallel()
 
-	ctx := context.Background()
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
+	t.Run("dbfs", func(t *testing.T) {
+		t.Parallel()
 
-	tmpDir := TemporaryDbfsDir(t, w)
+		f, tmpDir := setupDbfsFiler(t)
 
-	f, err := filer.NewDbfsClient(w, tmpDir)
-	require.NoError(t, err)
+		// Create a directory
+		err := f.Mkdir(context.Background(), "a")
+		require.NoError(t, err)
 
-	// create file in dir
-	err = f.Write(ctx, "avacado/guacamole", strings.NewReader("abc"), filer.CreateParentDirectories)
-	require.NoError(t, err)
+		// Create a file in the directory
+		err = f.Write(context.Background(), "a/hello.txt", strings.NewReader("abcd"), filer.CreateParentDirectories)
+		require.NoError(t, err)
 
-	// check file was created
-	info, err := f.Stat(ctx, "avacado/guacamole")
-	require.NoError(t, err)
-	require.Equal(t, "guacamole", info.Name())
-	require.Equal(t, info.IsDir(), false)
+		// Check file was created
+		_, err = f.Stat(context.Background(), "a/hello.txt")
+		assert.NoError(t, err)
 
-	// Run rm command
-	stdout, stderr := RequireSuccessfulRun(t, "fs", "rm", "dbfs:"+path.Join(tmpDir, "avacado"), "--recursive")
-	assert.Equal(t, "", stderr.String())
-	assert.Equal(t, "", stdout.String())
+		// Run rm command
+		stdout, stderr := RequireSuccessfulRun(t, "fs", "rm", path.Join(tmpDir, "a"), "--recursive")
+		assert.Equal(t, "", stderr.String())
+		assert.Equal(t, "", stdout.String())
 
-	// assert directory was deleted
-	_, err = f.Stat(ctx, "avacado")
-	assert.ErrorIs(t, err, fs.ErrNotExist)
+		// Assert directory was deleted
+		_, err = f.Stat(context.Background(), "a")
+		assert.ErrorIs(t, err, fs.ErrNotExist)
+	})
+
+	t.Run("uc-volumes", func(t *testing.T) {
+		t.Parallel()
+
+		f, tmpDir := setupUcVolumesFiler(t)
+
+		// Create a directory
+		err := f.Mkdir(context.Background(), "a")
+		require.NoError(t, err)
+
+		// Create a file in the directory
+		err = f.Write(context.Background(), "a/hello.txt", strings.NewReader("abcd"), filer.CreateParentDirectories)
+		require.NoError(t, err)
+
+		// Check file was created
+		_, err = f.Stat(context.Background(), "a/hello.txt")
+		assert.NoError(t, err)
+
+		// Run rm command
+		_, _, err = RequireErrorRun(t, "fs", "rm", path.Join(tmpDir, "a"), "--recursive")
+		assert.ErrorContains(t, err, "uc volumes do not support recursive deletion")
+	})
 }

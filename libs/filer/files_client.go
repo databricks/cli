@@ -17,12 +17,17 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/databricks-sdk-go/listing"
+	"github.com/databricks/databricks-sdk-go/service/files"
 )
 
 // Type that implements fs.FileInfo for the Files API.
+// This is required for the filer.Stat() method.
 type filesApiFileInfo struct {
-	absPath string
-	isDir   bool
+	absPath      string
+	isDir        bool
+	fileSize     int64
+	lastModified int64
 }
 
 func (info filesApiFileInfo) Name() string {
@@ -30,8 +35,7 @@ func (info filesApiFileInfo) Name() string {
 }
 
 func (info filesApiFileInfo) Size() int64 {
-	// No way to get the file size in the Files API.
-	return 0
+	return info.fileSize
 }
 
 func (info filesApiFileInfo) Mode() fs.FileMode {
@@ -43,7 +47,7 @@ func (info filesApiFileInfo) Mode() fs.FileMode {
 }
 
 func (info filesApiFileInfo) ModTime() time.Time {
-	return time.Time{}
+	return time.UnixMilli(info.lastModified)
 }
 
 func (info filesApiFileInfo) IsDir() bool {
@@ -54,6 +58,28 @@ func (info filesApiFileInfo) Sys() any {
 	return nil
 }
 
+// Type that implements fs.DirEntry for the Files API.
+// This is required for the filer.ReadDir() method.
+type filesApiDirEntry struct {
+	i filesApiFileInfo
+}
+
+func (e filesApiDirEntry) Name() string {
+	return e.i.Name()
+}
+
+func (e filesApiDirEntry) IsDir() bool {
+	return e.i.IsDir()
+}
+
+func (e filesApiDirEntry) Type() fs.FileMode {
+	return e.i.Mode()
+}
+
+func (e filesApiDirEntry) Info() (fs.FileInfo, error) {
+	return e.i, nil
+}
+
 // FilesClient implements the [Filer] interface for the Files API backend.
 type FilesClient struct {
 	workspaceClient *databricks.WorkspaceClient
@@ -61,10 +87,6 @@ type FilesClient struct {
 
 	// File operations will be relative to this path.
 	root WorkspaceRootPath
-}
-
-func filesNotImplementedError(fn string) error {
-	return fmt.Errorf("filer.%s is not implemented for the Files API", fn)
 }
 
 func NewFilesClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
@@ -151,11 +173,20 @@ func (w *FilesClient) Read(ctx context.Context, name string) (io.ReadCloser, err
 		return nil, FileDoesNotExistError{absPath}
 	}
 
+	// This API returns a 409 if the underlying path is a directory.
+	if aerr.StatusCode == http.StatusConflict {
+		return nil, NotAFile{absPath}
+	}
+
 	return nil, err
 }
 
 func (w *FilesClient) Delete(ctx context.Context, name string, mode ...DeleteMode) error {
-	absPath, urlPath, err := w.urlPath(name)
+	if slices.Contains(mode, DeleteRecursively) {
+		return fmt.Errorf("uc volumes do not support recursive deletion")
+	}
+
+	absPath, err := w.root.Join(name)
 	if err != nil {
 		return err
 	}
@@ -165,7 +196,87 @@ func (w *FilesClient) Delete(ctx context.Context, name string, mode ...DeleteMod
 		return CannotDeleteRootError{}
 	}
 
-	err = w.apiClient.Do(ctx, http.MethodDelete, urlPath, nil, nil, nil)
+	// TODO: Add test that rm does not fail when the underlying file / directory
+	// does not exist
+	info, err := w.Stat(ctx, absPath)
+	if err != nil {
+		return err
+	}
+
+	if info.IsDir() {
+		err = w.workspaceClient.Files.DeleteDirectoryByDirectoryPath(ctx, absPath)
+
+		// This API returns a 400 if the directory is not empty
+		var aerr *apierr.APIError
+		if errors.As(err, &aerr) && aerr.StatusCode == http.StatusBadRequest {
+			return DirectoryNotEmptyError{absPath}
+		}
+		return err
+	}
+
+	err = w.workspaceClient.Files.DeleteByFilePath(ctx, absPath)
+
+	// This API returns a 404 if the specified path does not exist.
+	var aerr *apierr.APIError
+	if errors.As(err, &aerr) && aerr.StatusCode == http.StatusNotFound {
+		return FileDoesNotExistError{absPath}
+	}
+	return err
+}
+
+// TODO: Add tests for the file methods themselves. I suspect they will not work for subdirectories
+// today (since list does not respect absolute paths)
+func (w *FilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, error) {
+	absPath, err := w.root.Join(name)
+	if err != nil {
+		return nil, err
+	}
+
+	iter := w.workspaceClient.Files.ListDirectoryContents(ctx, files.ListDirectoryContentsRequest{
+		DirectoryPath: name,
+	})
+
+	files, err := listing.ToSlice(ctx, iter)
+	var apierr *apierr.APIError
+
+	// This API returns a 404 if the specified path does not exist.
+	if errors.As(err, &apierr) && apierr.StatusCode == http.StatusNotFound {
+		return nil, NoSuchDirectoryError{absPath}
+	}
+	// This API returns 409 if the underlying path is a file.
+	if errors.As(err, &apierr) && apierr.StatusCode == http.StatusConflict {
+		return nil, NotADirectory{name}
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	entries := make([]fs.DirEntry, len(files))
+	for i, file := range files {
+		entries[i] = filesApiDirEntry{
+			i: filesApiFileInfo{
+				absPath:      file.Path,
+				isDir:        file.IsDirectory,
+				fileSize:     file.FileSize,
+				lastModified: file.LastModified,
+			},
+		}
+	}
+
+	return entries, nil
+}
+
+// TODO: Add tests for the filer client.
+// TODO: Update fs documentation to also refer to UC Volumes.
+func (w *FilesClient) Mkdir(ctx context.Context, name string) error {
+	absPath, err := w.root.Join(name)
+	if err != nil {
+		return err
+	}
+
+	err = w.workspaceClient.Files.CreateDirectory(ctx, files.CreateDirectoryRequest{
+		DirectoryPath: absPath,
+	})
 
 	// Return early on success.
 	if err == nil {
@@ -174,31 +285,11 @@ func (w *FilesClient) Delete(ctx context.Context, name string, mode ...DeleteMod
 
 	// Special handling of this error only if it is an API error.
 	var aerr *apierr.APIError
-	if !errors.As(err, &aerr) {
-		return err
-	}
-
-	// This API returns a 404 if the specified path does not exist.
-	if aerr.StatusCode == http.StatusNotFound {
-		return FileDoesNotExistError{absPath}
-	}
-
-	// This API returns 409 if the underlying path is a directory.
-	if aerr.StatusCode == http.StatusConflict {
-		return DirectoryNotEmptyError{absPath}
+	if errors.As(err, &aerr) && aerr.StatusCode == http.StatusConflict {
+		return FileAlreadyExistsError{absPath}
 	}
 
 	return err
-}
-
-func (w *FilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, error) {
-	return nil, filesNotImplementedError("ReadDir")
-}
-
-func (w *FilesClient) Mkdir(ctx context.Context, name string) error {
-	// Directories are created implicitly.
-	// No need to do anything.
-	return nil
 }
 
 func (w *FilesClient) Stat(ctx context.Context, name string) (fs.FileInfo, error) {

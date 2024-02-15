@@ -9,6 +9,7 @@ import (
 	"io"
 	"math/rand"
 	"os"
+	"path"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -19,8 +20,10 @@ import (
 	"github.com/databricks/cli/cmd"
 	_ "github.com/databricks/cli/cmd/version"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/files"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -444,6 +447,44 @@ func TemporaryDbfsDir(t *testing.T, w *databricks.WorkspaceClient) string {
 	return path
 }
 
+// Create a new UC volume in a catalog called "main" in the workspace.
+func TemporaryUcVolume(t *testing.T, w *databricks.WorkspaceClient) string {
+	ctx := context.Background()
+
+	// if os.Getenv("TEST_METASTORE_ID") == "" {
+	// 	t.Skip("Skipping tests that require a UC Volume when metastore id is not set.")
+	// }
+
+	// Crate a schema
+	schema, err := w.Schemas.Create(ctx, catalog.CreateSchema{
+		CatalogName: "main",
+		Name:        RandomName("test-schema-"),
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		w.Schemas.Delete(ctx, catalog.DeleteSchemaRequest{
+			FullName: schema.FullName,
+		})
+	})
+
+	// Create a volume
+	volume, err := w.Volumes.Create(ctx, catalog.CreateVolumeRequestContent{
+		CatalogName: "main",
+		SchemaName:  schema.Name,
+		Name:        "my-volume",
+		VolumeType:  catalog.VolumeTypeManaged,
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		w.Volumes.Delete(ctx, catalog.DeleteVolumeRequest{
+			FullNameArg: volume.FullName,
+		})
+	})
+
+	return path.Join("/Volumes", "main", schema.Name, volume.Name)
+
+}
+
 func TemporaryRepo(t *testing.T, w *databricks.WorkspaceClient) string {
 	ctx := context.Background()
 	me, err := w.CurrentUser.Me(ctx)
@@ -480,4 +521,44 @@ func GetNodeTypeId(env string) string {
 		return "i3.xlarge"
 	}
 	return "Standard_DS4_v2"
+}
+
+func setupLocalFiler(t *testing.T) (filer.Filer, string) {
+	// t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	tmp := t.TempDir()
+	f, err := filer.NewLocalClient(tmp)
+	require.NoError(t, err)
+
+	return f, path.Join(filepath.ToSlash(tmp))
+}
+
+func setupDbfsFiler(t *testing.T) (filer.Filer, string) {
+	// t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	w, err := databricks.NewWorkspaceClient()
+	require.NoError(t, err)
+
+	tmpDir := TemporaryDbfsDir(t, w)
+	f, err := filer.NewDbfsClient(w, tmpDir)
+	require.NoError(t, err)
+
+	return f, path.Join("dbfs:/", tmpDir)
+}
+
+func setupUcVolumesFiler(t *testing.T) (filer.Filer, string) {
+	// t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	// if os.Getenv("TEST_METASTORE_ID") == "" {
+	// 	t.Skip("Skipping UC test when metastore id is not set.")
+	// }
+
+	w, err := databricks.NewWorkspaceClient()
+	require.NoError(t, err)
+
+	tmpDir := TemporaryUcVolume(t, w)
+	f, err := filer.NewFilesClient(w, tmpDir)
+	require.NoError(t, err)
+
+	return f, path.Join("dbfs:/", tmpDir)
 }
