@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 )
 
@@ -35,7 +36,26 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 	varPath := dyn.NewPath(dyn.Key("var"))
 
 	return b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
-		lookup := dynvar.DefaultLookup(root)
+		// Synthesize a copy of the root that has all fields that are present in the type
+		// but not set in the dynamic value set to their corresponding empty value.
+		// This enables users to interpolate variable references to fields that haven't
+		// been explicitly set in the dynamic value.
+		//
+		// For example: ${bundle.git.origin_url} should resolve to an empty string
+		// if a bundle isn't located in a Git repository (yet).
+		//
+		// This is consistent with the behavior prior to using the dynamic value system.
+		//
+		// We can ignore the diagnostics return valuebecause we know that the dynamic value
+		// has already been normalized when it was first loaded from the configuration file.
+		//
+		normalized, _ := convert.Normalize(b.Config, root, convert.IncludeMissingFields)
+		lookup := func(path dyn.Path) (dyn.Value, error) {
+			// Future opportunity: if we lookup this path in both the given root
+			// and the synthesized root, we know if it was explicitly set or implied to be empty.
+			// Then we can emit a warning if it was not explicitly set.
+			return dyn.GetByPath(normalized, path)
+		}
 
 		// Resolve variable references in all values.
 		return dynvar.Resolve(root, func(path dyn.Path) (dyn.Value, error) {
