@@ -10,7 +10,7 @@ Bundles:
  * Added `bundle deployment bind` and `unbind` command ([#1131](https://github.com/databricks/cli/pull/1131)).
  * Use allowlist for Git-related fields to include in metadata ([#1187](https://github.com/databricks/cli/pull/1187)).
  * Added `--restart` flag for `bundle run` command ([#1191](https://github.com/databricks/cli/pull/1191)).
- * Generate correct YAML if custom_tags or spark_conf is used for pipeline or job cluster configuration ([#1210](https://github.com/databricks/cli/pull/1210)).
+ * Generate correct YAML if `custom_tags` or `spark_conf` is used for pipeline or job cluster configuration ([#1210](https://github.com/databricks/cli/pull/1210)).
 
 Internal:
  * Move folders package into libs ([#1184](https://github.com/databricks/cli/pull/1184)).
