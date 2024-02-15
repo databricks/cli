@@ -36,6 +36,20 @@ func TestGeneratePipelineCommand(t *testing.T) {
 		Name:       "test-pipeline",
 		Spec: &pipelines.PipelineSpec{
 			Name: "test-pipeline",
+			Clusters: []pipelines.PipelineCluster{
+				{
+					CustomTags: map[string]string{
+						"Tag1": "24X7",
+						"Tag2": "Yes",
+						"Tag3": "APP-1234",
+					},
+				},
+				{
+					SparkConf: map[string]string{
+						"spark.databricks.delta.preview.enabled": "true",
+					},
+				},
+			},
 			Libraries: []pipelines.PipelineLibrary{
 				{Notebook: &pipelines.NotebookLibrary{
 					Path: "/test/notebook",
@@ -85,6 +99,13 @@ func TestGeneratePipelineCommand(t *testing.T) {
   pipelines:
     test_pipeline:
       name: test-pipeline
+      clusters:
+        - custom_tags:
+            "Tag1": "24X7"
+            "Tag2": "Yes"
+            "Tag3": "APP-1234"
+        - spark_conf:
+            "spark.databricks.delta.preview.enabled": "true"
       libraries:
         - notebook:
             path: %s
