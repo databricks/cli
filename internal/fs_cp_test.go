@@ -2,16 +2,15 @@ package internal
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"path"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/filer"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -338,24 +337,21 @@ func TestAccFsCpFileToDirWithOverwriteFlag(t *testing.T) {
 }
 
 func TestAccFsCpErrorsWhenSourceIsDirWithoutRecursiveFlag(t *testing.T) {
-	// t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Parallel()
 
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
+	for _, testCase := range fsTests {
+		tc := testCase
 
-	t.Run("dbfs", func(t *testing.T) {
-		tmpDir := TemporaryDbfsDir(t, w)
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-		_, _, err = RequireErrorRun(t, "fs", "cp", path.Join("dbfs:"+tmpDir), path.Join("dbfs:"+tmpDir, "foobar"))
-		assert.Equal(t, fmt.Sprintf("source path %s is a directory. Please specify the --recursive flag", tmpDir), err.Error())
-	})
+			_, tmpDir := tc.setupFiler(t)
 
-	t.Run("uc-volumes", func(t *testing.T) {
-		_, tmpDir := setupUcVolumesFiler(t)
-
-		_, _, err = RequireErrorRun(t, "fs", "cp", path.Join("dbfs:"+tmpDir), path.Join("dbfs:"+tmpDir, "foobar"))
-		assert.Equal(t, fmt.Sprintf("source path %s is a directory. Please specify the --recursive flag", tmpDir), err.Error())
-	})
+			_, _, err := RequireErrorRun(t, "fs", "cp", path.Join(tmpDir), path.Join(tmpDir, "foobar"))
+			r := regexp.MustCompile("source path .* is a directory. Please specify the --recursive flag")
+			assert.Regexp(t, r, err.Error())
+		})
+	}
 }
 
 func TestAccFsCpErrorsOnInvalidScheme(t *testing.T) {
