@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -30,6 +31,23 @@ func TestInterpolate(t *testing.T) {
 								"other_model_serving":    "${resources.model_serving_endpoints.other_model_serving.id}",
 								"other_registered_model": "${resources.registered_models.other_registered_model.id}",
 							},
+							Tasks: []jobs.Task{
+								{
+									TaskKey: "my_task",
+									NotebookTask: &jobs.NotebookTask{
+										BaseParameters: map[string]string{
+											"model_name": "${resources.models.my_model.name}",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Models: map[string]*resources.MlflowModel{
+					"my_model": {
+						Model: &ml.Model{
+							Name: "my_model",
 						},
 					},
 				},
@@ -47,6 +65,9 @@ func TestInterpolate(t *testing.T) {
 	assert.Equal(t, "${databricks_mlflow_experiment.other_experiment.id}", j.Tags["other_experiment"])
 	assert.Equal(t, "${databricks_model_serving.other_model_serving.id}", j.Tags["other_model_serving"])
 	assert.Equal(t, "${databricks_registered_model.other_registered_model.id}", j.Tags["other_registered_model"])
+
+	m := b.Config.Resources.Models["my_model"]
+	assert.Equal(t, "my_model", m.Model.Name)
 }
 
 func TestInterpolateUnknownResourceType(t *testing.T) {
