@@ -2,6 +2,13 @@
 
 package schema
 
+type ResourceModelServingConfigAutoCaptureConfig struct {
+	CatalogName     string `json:"catalog_name,omitempty"`
+	Enabled         bool   `json:"enabled,omitempty"`
+	SchemaName      string `json:"schema_name,omitempty"`
+	TableNamePrefix string `json:"table_name_prefix,omitempty"`
+}
+
 type ResourceModelServingConfigServedModels struct {
 	EnvironmentVars    map[string]string `json:"environment_vars,omitempty"`
 	InstanceProfileArn string            `json:"instance_profile_arn,omitempty"`
@@ -23,8 +30,15 @@ type ResourceModelServingConfigTrafficConfig struct {
 }
 
 type ResourceModelServingConfig struct {
-	ServedModels  []ResourceModelServingConfigServedModels `json:"served_models,omitempty"`
-	TrafficConfig *ResourceModelServingConfigTrafficConfig `json:"traffic_config,omitempty"`
+	AutoCaptureConfig *ResourceModelServingConfigAutoCaptureConfig `json:"auto_capture_config,omitempty"`
+	ServedModels      []ResourceModelServingConfigServedModels     `json:"served_models,omitempty"`
+	TrafficConfig     *ResourceModelServingConfigTrafficConfig     `json:"traffic_config,omitempty"`
+}
+
+type ResourceModelServingRateLimits struct {
+	Calls         int    `json:"calls"`
+	Key           string `json:"key,omitempty"`
+	RenewalPeriod string `json:"renewal_period"`
 }
 
 type ResourceModelServingTags struct {
@@ -33,9 +47,10 @@ type ResourceModelServingTags struct {
 }
 
 type ResourceModelServing struct {
-	Id                string                      `json:"id,omitempty"`
-	Name              string                      `json:"name"`
-	ServingEndpointId string                      `json:"serving_endpoint_id,omitempty"`
-	Config            *ResourceModelServingConfig `json:"config,omitempty"`
-	Tags              []ResourceModelServingTags  `json:"tags,omitempty"`
+	Id                string                           `json:"id,omitempty"`
+	Name              string                           `json:"name"`
+	ServingEndpointId string                           `json:"serving_endpoint_id,omitempty"`
+	Config            *ResourceModelServingConfig      `json:"config,omitempty"`
+	RateLimits        []ResourceModelServingRateLimits `json:"rate_limits,omitempty"`
+	Tags              []ResourceModelServingTags       `json:"tags,omitempty"`
 }

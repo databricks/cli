@@ -134,7 +134,7 @@ type ResourceJobJobClusterNewClusterGcpAttributes struct {
 }
 
 type ResourceJobJobClusterNewClusterInitScriptsAbfss struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type ResourceJobJobClusterNewClusterInitScriptsDbfs struct {
@@ -142,11 +142,11 @@ type ResourceJobJobClusterNewClusterInitScriptsDbfs struct {
 }
 
 type ResourceJobJobClusterNewClusterInitScriptsFile struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type ResourceJobJobClusterNewClusterInitScriptsGcs struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type ResourceJobJobClusterNewClusterInitScriptsS3 struct {
@@ -164,7 +164,7 @@ type ResourceJobJobClusterNewClusterInitScriptsVolumes struct {
 }
 
 type ResourceJobJobClusterNewClusterInitScriptsWorkspace struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type ResourceJobJobClusterNewClusterInitScripts struct {
@@ -321,7 +321,7 @@ type ResourceJobNewClusterGcpAttributes struct {
 }
 
 type ResourceJobNewClusterInitScriptsAbfss struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type ResourceJobNewClusterInitScriptsDbfs struct {
@@ -329,11 +329,11 @@ type ResourceJobNewClusterInitScriptsDbfs struct {
 }
 
 type ResourceJobNewClusterInitScriptsFile struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type ResourceJobNewClusterInitScriptsGcs struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type ResourceJobNewClusterInitScriptsS3 struct {
@@ -351,7 +351,7 @@ type ResourceJobNewClusterInitScriptsVolumes struct {
 }
 
 type ResourceJobNewClusterInitScriptsWorkspace struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type ResourceJobNewClusterInitScripts struct {
@@ -418,8 +418,8 @@ type ResourceJobNotificationSettings struct {
 }
 
 type ResourceJobParameter struct {
-	Default string `json:"default,omitempty"`
-	Name    string `json:"name,omitempty"`
+	Default string `json:"default"`
+	Name    string `json:"name"`
 }
 
 type ResourceJobPipelineTask struct {
@@ -604,7 +604,7 @@ type ResourceJobTaskNewClusterGcpAttributes struct {
 }
 
 type ResourceJobTaskNewClusterInitScriptsAbfss struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type ResourceJobTaskNewClusterInitScriptsDbfs struct {
@@ -612,11 +612,11 @@ type ResourceJobTaskNewClusterInitScriptsDbfs struct {
 }
 
 type ResourceJobTaskNewClusterInitScriptsFile struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type ResourceJobTaskNewClusterInitScriptsGcs struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type ResourceJobTaskNewClusterInitScriptsS3 struct {
@@ -634,7 +634,7 @@ type ResourceJobTaskNewClusterInitScriptsVolumes struct {
 }
 
 type ResourceJobTaskNewClusterInitScriptsWorkspace struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type ResourceJobTaskNewClusterInitScripts struct {

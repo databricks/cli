@@ -134,7 +134,7 @@ type DataSourceJobJobSettingsSettingsJobClusterNewClusterGcpAttributes struct {
 }
 
 type DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsAbfss struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsDbfs struct {
@@ -142,11 +142,11 @@ type DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsDbfs struct 
 }
 
 type DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsFile struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsGcs struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsS3 struct {
@@ -164,7 +164,7 @@ type DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsVolumes stru
 }
 
 type DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsWorkspace struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScripts struct {
@@ -321,7 +321,7 @@ type DataSourceJobJobSettingsSettingsNewClusterGcpAttributes struct {
 }
 
 type DataSourceJobJobSettingsSettingsNewClusterInitScriptsAbfss struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type DataSourceJobJobSettingsSettingsNewClusterInitScriptsDbfs struct {
@@ -329,11 +329,11 @@ type DataSourceJobJobSettingsSettingsNewClusterInitScriptsDbfs struct {
 }
 
 type DataSourceJobJobSettingsSettingsNewClusterInitScriptsFile struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type DataSourceJobJobSettingsSettingsNewClusterInitScriptsGcs struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type DataSourceJobJobSettingsSettingsNewClusterInitScriptsS3 struct {
@@ -351,7 +351,7 @@ type DataSourceJobJobSettingsSettingsNewClusterInitScriptsVolumes struct {
 }
 
 type DataSourceJobJobSettingsSettingsNewClusterInitScriptsWorkspace struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type DataSourceJobJobSettingsSettingsNewClusterInitScripts struct {
@@ -418,8 +418,8 @@ type DataSourceJobJobSettingsSettingsNotificationSettings struct {
 }
 
 type DataSourceJobJobSettingsSettingsParameter struct {
-	Default string `json:"default,omitempty"`
-	Name    string `json:"name,omitempty"`
+	Default string `json:"default"`
+	Name    string `json:"name"`
 }
 
 type DataSourceJobJobSettingsSettingsPipelineTask struct {
@@ -604,7 +604,7 @@ type DataSourceJobJobSettingsSettingsTaskNewClusterGcpAttributes struct {
 }
 
 type DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsAbfss struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsDbfs struct {
@@ -612,11 +612,11 @@ type DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsDbfs struct {
 }
 
 type DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsFile struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsGcs struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsS3 struct {
@@ -634,7 +634,7 @@ type DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsVolumes struct {
 }
 
 type DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsWorkspace struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskNewClusterInitScripts struct {

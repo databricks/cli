@@ -52,7 +52,7 @@ type ResourcePipelineClusterGcpAttributes struct {
 }
 
 type ResourcePipelineClusterInitScriptsAbfss struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type ResourcePipelineClusterInitScriptsDbfs struct {
@@ -60,11 +60,11 @@ type ResourcePipelineClusterInitScriptsDbfs struct {
 }
 
 type ResourcePipelineClusterInitScriptsFile struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type ResourcePipelineClusterInitScriptsGcs struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type ResourcePipelineClusterInitScriptsS3 struct {
@@ -82,7 +82,7 @@ type ResourcePipelineClusterInitScriptsVolumes struct {
 }
 
 type ResourcePipelineClusterInitScriptsWorkspace struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type ResourcePipelineClusterInitScripts struct {
