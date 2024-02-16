@@ -40,6 +40,22 @@ func TestConvertJob(t *testing.T) {
 					Default: "default2",
 				},
 			},
+			Tasks: []jobs.Task{
+				{
+					TaskKey:       "task_key",
+					JobClusterKey: "job_cluster_key",
+					Libraries: []compute.Library{
+						{
+							Pypi: &compute.PythonPyPiLibrary{
+								Package: "package",
+							},
+						},
+						{
+							Whl: "/path/to/my.whl",
+						},
+					},
+				},
+			},
 		},
 		Permissions: []resources.Permission{
 			{
@@ -80,6 +96,22 @@ func TestConvertJob(t *testing.T) {
 			map[string]any{
 				"name":    "param2",
 				"default": "default2",
+			},
+		},
+		"task": []any{
+			map[string]any{
+				"task_key":        "task_key",
+				"job_cluster_key": "job_cluster_key",
+				"library": []any{
+					map[string]any{
+						"pypi": map[string]any{
+							"package": "package",
+						},
+					},
+					map[string]any{
+						"whl": "/path/to/my.whl",
+					},
+				},
 			},
 		},
 	}, out.Job["my_job"])

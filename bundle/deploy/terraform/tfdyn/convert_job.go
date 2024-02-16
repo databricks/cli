@@ -39,6 +39,19 @@ func convertJobResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 			"git_url":      "url",
 		})
 	})
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
+
+	// Modify keys in the "task" blocks
+	vout, err = dyn.Map(vout, "task", dyn.Foreach(func(v dyn.Value) (dyn.Value, error) {
+		return renameKeys(v, map[string]string{
+			"libraries": "library",
+		})
+	}))
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
 
 	// Normalize the output value to the target schema.
 	vout, diags = convert.Normalize(schema.ResourceJob{}, vout)
