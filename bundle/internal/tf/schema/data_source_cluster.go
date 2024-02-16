@@ -96,7 +96,7 @@ type DataSourceClusterClusterInfoGcpAttributes struct {
 }
 
 type DataSourceClusterClusterInfoInitScriptsAbfss struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type DataSourceClusterClusterInfoInitScriptsDbfs struct {
@@ -104,11 +104,11 @@ type DataSourceClusterClusterInfoInitScriptsDbfs struct {
 }
 
 type DataSourceClusterClusterInfoInitScriptsFile struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type DataSourceClusterClusterInfoInitScriptsGcs struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type DataSourceClusterClusterInfoInitScriptsS3 struct {
@@ -126,7 +126,7 @@ type DataSourceClusterClusterInfoInitScriptsVolumes struct {
 }
 
 type DataSourceClusterClusterInfoInitScriptsWorkspace struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type DataSourceClusterClusterInfoInitScripts struct {
