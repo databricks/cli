@@ -355,7 +355,7 @@ func TestToTypedBoolFromString(t *testing.T) {
 	}
 
 	// Other
-	err := ToTyped(&out, dyn.V("${var.foo}"))
+	err := ToTyped(&out, dyn.V("some other string"))
 	require.Error(t, err)
 }
 
