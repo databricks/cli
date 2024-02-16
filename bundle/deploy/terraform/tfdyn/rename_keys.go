@@ -20,7 +20,7 @@ func renameKeys(v dyn.Value, rename map[string]string) (dyn.Value, error) {
 
 		// Check if this key should be renamed.
 		for oldKey, newKey := range rename {
-			if p[0] != dyn.Key(oldKey) {
+			if p[0].Key() != oldKey {
 				continue
 			}
 
