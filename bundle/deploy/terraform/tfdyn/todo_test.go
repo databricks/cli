@@ -1,16 +1,18 @@
-package terraform
+package tfdyn
 
 import (
 	"context"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/tf/schema"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestConvertFromDyn(t *testing.T) {
+func TestConvertJobResource(t *testing.T) {
 	v := dyn.V(map[string]dyn.Value{
 		"name": dyn.V("job_name"),
 		"continuous": dyn.V(map[string]dyn.Value{
@@ -60,22 +62,67 @@ func TestConvertFromDyn(t *testing.T) {
 		"foobar": dyn.V("baz"),
 	})
 
-	// // Confirm that this example matches the schema of the job resource.
-	// {
-	// 	var job resources.Job
-	// 	_, diags := convert.Normalize(&job, v)
-	// 	require.Empty(t, diags)
-	// }
+	// Confirm that this example matches the schema of the job resource.
+	{
+		var job resources.Job
+		_, diags := convert.Normalize(&job, v)
+		assert.Len(t, diags, 1)
+		assert.Contains(t, diags[0].Summary, "unknown field: foobar")
+	}
 
-	// Convert the dyn.Valuealue to a Terraform job resource.
+	// Convert the dyn.Value to a Terraform job resource.
 	nv, err := convertJobResource(context.Background(), v)
 	require.NoError(t, err)
 
 	// Confirm that the conversion matches the schema of the Terraform resource.
 	{
 		var job schema.ResourceJob
-		_, diags := convert.Normalize(&job, nv)
-		require.Empty(t, diags)
+		err := convert.ToTyped(&job, nv)
+		require.NoError(t, err)
+		assert.Equal(t, schema.ResourceJob{
+			Name:              "job_name",
+			Continuous:        &schema.ResourceJobContinuous{PauseStatus: "UNPAUSED"},
+			MaxConcurrentRuns: 0,
+			EmailNotifications: &schema.ResourceJobEmailNotifications{
+				NoAlertForSkippedRuns: false,
+				OnFailure:             []string{"jane@doe.com"},
+				OnStart:               []string{"jane@doe.com"},
+				OnSuccess:             []string{"jane@doe.com"},
+			},
+			GitSource: &schema.ResourceJobGitSource{
+				Branch:   "branch",
+				Commit:   "commit",
+				Provider: "provider",
+				Tag:      "tag",
+				Url:      "url",
+			},
+			Tags: map[string]string{
+				"tag1":  "value1",
+				"tag2":  "value2",
+				"empty": "",
+			},
+			JobCluster: []schema.ResourceJobJobCluster{
+				{
+					JobClusterKey: "job_cluster_key",
+					NewCluster: &schema.ResourceJobJobClusterNewCluster{
+						NumWorkers:   0,
+						SparkVersion: "14.3.x-scala2.12",
+					},
+				},
+			},
+			Task: []schema.ResourceJobTask{
+				{
+					TaskKey:       "task_key",
+					JobClusterKey: "job_cluster_key",
+					NotebookTask: &schema.ResourceJobTaskNotebookTask{
+						BaseParameters: map[string]string{
+							"param1": "value1",
+							"param2": "value2",
+						},
+						NotebookPath: "path",
+					},
+				},
+			},
+		}, job)
 	}
-
 }

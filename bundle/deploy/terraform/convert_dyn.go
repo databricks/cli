@@ -2,106 +2,61 @@ package terraform
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/databricks/cli/bundle/deploy/terraform/tfdyn"
 	"github.com/databricks/cli/bundle/internal/tf/schema"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
-	"github.com/databricks/cli/libs/dyn/merge"
-	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
-func renameKeys(v dyn.Value, rename map[string]string) (dyn.Value, error) {
-	var err error
-	var acc = dyn.V(map[string]dyn.Value{})
+func BundleToTerraformDyn(ctx context.Context, root dyn.Value) (*schema.Root, error) {
+	tfroot := schema.NewRoot()
+	tfroot.Provider = schema.NewProviders()
+	tfroot.Resource = schema.NewResources()
+	numResources := 0
 
-	nv, err := dyn.Walk(v, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-		if len(p) == 0 {
+	// Convert each resource in the bundle to the equivalent Terraform representation.
+	resources, err := dyn.Get(root, "resources")
+	if err != nil {
+		// TODO check if key not exists, same condition as no resources.
+		return nil, err
+	}
+
+	_, err = dyn.Walk(resources, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		if len(p) < 2 {
 			return v, nil
 		}
 
-		// Check if this key should be renamed.
-		for oldKey, newKey := range rename {
-			if p[0] != dyn.Key(oldKey) {
-				continue
-			}
+		typ := p[0].Key()
+		key := p[1].Key()
 
-			// Add the new key to the accumulator.
-			p[0] = dyn.Key(newKey)
-			acc, err = dyn.SetByPath(acc, p, v)
-			if err != nil {
-				return dyn.NilValue, err
-			}
-			return dyn.InvalidValue, dyn.ErrDrop
+		// Lookup the converter based on the resource type.
+		c, ok := tfdyn.GetConverter(typ)
+		if !ok {
+			return dyn.InvalidValue, fmt.Errorf("no converter for resource type %s", typ)
 		}
 
-		// Pass through all other values.
+		// Convert resource to Terraform representation.
+		err := c.Convert(ctx, key, v, tfroot.Resource)
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+
+		numResources++
+
+		// Skip traversal of the resource itself.
 		return v, dyn.ErrSkip
 	})
-
 	if err != nil {
-		return dyn.InvalidValue, err
+		return nil, err
 	}
 
-	// Merge the accumulator with the original value.
-	return merge.Merge(nv, acc)
-}
-
-func convertJobResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
-	// Normalize the input value to the underlying job schema.
-	// This removes superfluous keys and adapts the input to the expected schema.
-	vin, diags := convert.Normalize(jobs.JobSettings{}, vin)
-	for _, diag := range diags {
-		log.Debugf(ctx, "job normalization diagnostic: %s", diag.Summary)
+	// We explicitly set "resource" to nil to omit it from a JSON encoding.
+	// This is required because the terraform CLI requires >= 1 resources defined
+	// if the "resource" property is used in a .tf.json file.
+	if numResources == 0 {
+		tfroot.Resource = nil
 	}
 
-	// Modify top-level keys.
-	vout, err := renameKeys(vin, map[string]string{
-		"tasks":        "task",
-		"job_clusters": "job_cluster",
-		"parameters":   "parameter",
-	})
-	if err != nil {
-		return dyn.InvalidValue, err
-	}
-
-	// Modify keys in the "git_source" block
-	vout, err = dyn.Map(vout, "git_source", func(v dyn.Value) (dyn.Value, error) {
-		return renameKeys(v, map[string]string{
-			"git_branch":   "branch",
-			"git_commit":   "commit",
-			"git_provider": "provider",
-			"git_tag":      "tag",
-			"git_url":      "url",
-		})
-	})
-
-	// Normalize the output value to the target schema.
-	vout, diags = convert.Normalize(schema.ResourceJob{}, vout)
-	for _, diag := range diags {
-		log.Debugf(ctx, "job normalization diagnostic: %s", diag.Summary)
-	}
-
-	return vout, err
-}
-
-func convertPipelineResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
-	// Modify top-level keys.
-	return renameKeys(vin, map[string]string{
-		"libraries":     "library",
-		"clusters":      "cluster",
-		"notifications": "notification",
-	})
-}
-
-func convertModelResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
-	return vin, nil
-}
-
-func convertModelServingEndpointResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
-	return vin, nil
-}
-
-func convertRegisteredModelResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
-	return vin, nil
+	return tfroot, nil
 }
