@@ -189,6 +189,37 @@ func TestNormalizeStructIncludeMissingFields(t *testing.T) {
 	}), vout)
 }
 
+func TestNormalizeStructIncludeMissingFieldsOnRecursiveType(t *testing.T) {
+	type Tmp struct {
+		// Verify that structs are recursively normalized if not set.
+		Ptr *Tmp `json:"ptr"`
+
+		// Verify that primitive types are zero-initialized if not set.
+		String string `json:"string"`
+	}
+
+	var typ Tmp
+	vin := dyn.V(map[string]dyn.Value{
+		"ptr": dyn.V(map[string]dyn.Value{
+			"ptr": dyn.V(map[string]dyn.Value{
+				"string": dyn.V("already set"),
+			}),
+		}),
+	})
+	vout, err := Normalize(typ, vin, IncludeMissingFields)
+	assert.Empty(t, err)
+	assert.Equal(t, dyn.V(map[string]dyn.Value{
+		"ptr": dyn.V(map[string]dyn.Value{
+			"ptr": dyn.V(map[string]dyn.Value{
+				// Note: the ptr field is not zero-initialized because that would recurse.
+				"string": dyn.V("already set"),
+			}),
+			"string": dyn.V(""),
+		}),
+		"string": dyn.V(""),
+	}), vout)
+}
+
 func TestNormalizeMap(t *testing.T) {
 	var typ map[string]string
 	vin := dyn.V(map[string]dyn.Value{
