@@ -128,3 +128,4 @@ jobs:
           identifier: Databricks.DatabricksCLI
           installers-regex: 'windows_.*\.zip$' # Only windows releases
           token: ${{ secrets.ENG_DEV_ECOSYSTEM_BOT_TOKEN }}
+          fork-user: eng-dev-ecosystem-bot

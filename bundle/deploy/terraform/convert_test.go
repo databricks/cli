@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/internal/tf/schema"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -55,12 +56,14 @@ func TestBundleToTerraformJob(t *testing.T) {
 	}
 
 	out := BundleToTerraform(&config)
-	assert.Equal(t, "my job", out.Resource.Job["my_job"].Name)
-	assert.Len(t, out.Resource.Job["my_job"].JobCluster, 1)
-	assert.Equal(t, "https://github.com/foo/bar", out.Resource.Job["my_job"].GitSource.Url)
-	assert.Len(t, out.Resource.Job["my_job"].Parameter, 2)
-	assert.Equal(t, "param1", out.Resource.Job["my_job"].Parameter[0].Name)
-	assert.Equal(t, "param2", out.Resource.Job["my_job"].Parameter[1].Name)
+	resource := out.Resource.Job["my_job"].(*schema.ResourceJob)
+
+	assert.Equal(t, "my job", resource.Name)
+	assert.Len(t, resource.JobCluster, 1)
+	assert.Equal(t, "https://github.com/foo/bar", resource.GitSource.Url)
+	assert.Len(t, resource.Parameter, 2)
+	assert.Equal(t, "param1", resource.Parameter[0].Name)
+	assert.Equal(t, "param2", resource.Parameter[1].Name)
 	assert.Nil(t, out.Data)
 }
 
@@ -83,12 +86,12 @@ func TestBundleToTerraformJobPermissions(t *testing.T) {
 	}
 
 	out := BundleToTerraform(&config)
-	assert.NotEmpty(t, out.Resource.Permissions["job_my_job"].JobId)
-	assert.Len(t, out.Resource.Permissions["job_my_job"].AccessControl, 1)
+	resource := out.Resource.Permissions["job_my_job"].(*schema.ResourcePermissions)
 
-	p := out.Resource.Permissions["job_my_job"].AccessControl[0]
-	assert.Equal(t, "jane@doe.com", p.UserName)
-	assert.Equal(t, "CAN_VIEW", p.PermissionLevel)
+	assert.NotEmpty(t, resource.JobId)
+	assert.Len(t, resource.AccessControl, 1)
+	assert.Equal(t, "jane@doe.com", resource.AccessControl[0].UserName)
+	assert.Equal(t, "CAN_VIEW", resource.AccessControl[0].PermissionLevel)
 }
 
 func TestBundleToTerraformJobTaskLibraries(t *testing.T) {
@@ -119,10 +122,12 @@ func TestBundleToTerraformJobTaskLibraries(t *testing.T) {
 	}
 
 	out := BundleToTerraform(&config)
-	assert.Equal(t, "my job", out.Resource.Job["my_job"].Name)
-	require.Len(t, out.Resource.Job["my_job"].Task, 1)
-	require.Len(t, out.Resource.Job["my_job"].Task[0].Library, 1)
-	assert.Equal(t, "mlflow", out.Resource.Job["my_job"].Task[0].Library[0].Pypi.Package)
+	resource := out.Resource.Job["my_job"].(*schema.ResourceJob)
+
+	assert.Equal(t, "my job", resource.Name)
+	require.Len(t, resource.Task, 1)
+	require.Len(t, resource.Task[0].Library, 1)
+	assert.Equal(t, "mlflow", resource.Task[0].Library[0].Pypi.Package)
 }
 
 func TestBundleToTerraformPipeline(t *testing.T) {
@@ -173,14 +178,15 @@ func TestBundleToTerraformPipeline(t *testing.T) {
 	}
 
 	out := BundleToTerraform(&config)
-	assert.Equal(t, "my pipeline", out.Resource.Pipeline["my_pipeline"].Name)
-	assert.Len(t, out.Resource.Pipeline["my_pipeline"].Library, 2)
-	notifs := out.Resource.Pipeline["my_pipeline"].Notification
-	assert.Len(t, notifs, 2)
-	assert.Equal(t, notifs[0].Alerts, []string{"on-update-fatal-failure"})
-	assert.Equal(t, notifs[0].EmailRecipients, []string{"jane@doe.com"})
-	assert.Equal(t, notifs[1].Alerts, []string{"on-update-failure", "on-flow-failure"})
-	assert.Equal(t, notifs[1].EmailRecipients, []string{"jane@doe.com", "john@doe.com"})
+	resource := out.Resource.Pipeline["my_pipeline"].(*schema.ResourcePipeline)
+
+	assert.Equal(t, "my pipeline", resource.Name)
+	assert.Len(t, resource.Library, 2)
+	assert.Len(t, resource.Notification, 2)
+	assert.Equal(t, resource.Notification[0].Alerts, []string{"on-update-fatal-failure"})
+	assert.Equal(t, resource.Notification[0].EmailRecipients, []string{"jane@doe.com"})
+	assert.Equal(t, resource.Notification[1].Alerts, []string{"on-update-failure", "on-flow-failure"})
+	assert.Equal(t, resource.Notification[1].EmailRecipients, []string{"jane@doe.com", "john@doe.com"})
 	assert.Nil(t, out.Data)
 }
 
@@ -203,12 +209,12 @@ func TestBundleToTerraformPipelinePermissions(t *testing.T) {
 	}
 
 	out := BundleToTerraform(&config)
-	assert.NotEmpty(t, out.Resource.Permissions["pipeline_my_pipeline"].PipelineId)
-	assert.Len(t, out.Resource.Permissions["pipeline_my_pipeline"].AccessControl, 1)
+	resource := out.Resource.Permissions["pipeline_my_pipeline"].(*schema.ResourcePermissions)
 
-	p := out.Resource.Permissions["pipeline_my_pipeline"].AccessControl[0]
-	assert.Equal(t, "jane@doe.com", p.UserName)
-	assert.Equal(t, "CAN_VIEW", p.PermissionLevel)
+	assert.NotEmpty(t, resource.PipelineId)
+	assert.Len(t, resource.AccessControl, 1)
+	assert.Equal(t, "jane@doe.com", resource.AccessControl[0].UserName)
+	assert.Equal(t, "CAN_VIEW", resource.AccessControl[0].PermissionLevel)
 }
 
 func TestBundleToTerraformModel(t *testing.T) {
@@ -238,13 +244,15 @@ func TestBundleToTerraformModel(t *testing.T) {
 	}
 
 	out := BundleToTerraform(&config)
-	assert.Equal(t, "name", out.Resource.MlflowModel["my_model"].Name)
-	assert.Equal(t, "description", out.Resource.MlflowModel["my_model"].Description)
-	assert.Len(t, out.Resource.MlflowModel["my_model"].Tags, 2)
-	assert.Equal(t, "k1", out.Resource.MlflowModel["my_model"].Tags[0].Key)
-	assert.Equal(t, "v1", out.Resource.MlflowModel["my_model"].Tags[0].Value)
-	assert.Equal(t, "k2", out.Resource.MlflowModel["my_model"].Tags[1].Key)
-	assert.Equal(t, "v2", out.Resource.MlflowModel["my_model"].Tags[1].Value)
+	resource := out.Resource.MlflowModel["my_model"].(*schema.ResourceMlflowModel)
+
+	assert.Equal(t, "name", resource.Name)
+	assert.Equal(t, "description", resource.Description)
+	assert.Len(t, resource.Tags, 2)
+	assert.Equal(t, "k1", resource.Tags[0].Key)
+	assert.Equal(t, "v1", resource.Tags[0].Value)
+	assert.Equal(t, "k2", resource.Tags[1].Key)
+	assert.Equal(t, "v2", resource.Tags[1].Value)
 	assert.Nil(t, out.Data)
 }
 
@@ -267,12 +275,12 @@ func TestBundleToTerraformModelPermissions(t *testing.T) {
 	}
 
 	out := BundleToTerraform(&config)
-	assert.NotEmpty(t, out.Resource.Permissions["mlflow_model_my_model"].RegisteredModelId)
-	assert.Len(t, out.Resource.Permissions["mlflow_model_my_model"].AccessControl, 1)
+	resource := out.Resource.Permissions["mlflow_model_my_model"].(*schema.ResourcePermissions)
 
-	p := out.Resource.Permissions["mlflow_model_my_model"].AccessControl[0]
-	assert.Equal(t, "jane@doe.com", p.UserName)
-	assert.Equal(t, "CAN_READ", p.PermissionLevel)
+	assert.NotEmpty(t, resource.RegisteredModelId)
+	assert.Len(t, resource.AccessControl, 1)
+	assert.Equal(t, "jane@doe.com", resource.AccessControl[0].UserName)
+	assert.Equal(t, "CAN_READ", resource.AccessControl[0].PermissionLevel)
 }
 
 func TestBundleToTerraformExperiment(t *testing.T) {
@@ -291,7 +299,9 @@ func TestBundleToTerraformExperiment(t *testing.T) {
 	}
 
 	out := BundleToTerraform(&config)
-	assert.Equal(t, "name", out.Resource.MlflowExperiment["my_experiment"].Name)
+	resource := out.Resource.MlflowExperiment["my_experiment"].(*schema.ResourceMlflowExperiment)
+
+	assert.Equal(t, "name", resource.Name)
 	assert.Nil(t, out.Data)
 }
 
@@ -314,12 +324,12 @@ func TestBundleToTerraformExperimentPermissions(t *testing.T) {
 	}
 
 	out := BundleToTerraform(&config)
-	assert.NotEmpty(t, out.Resource.Permissions["mlflow_experiment_my_experiment"].ExperimentId)
-	assert.Len(t, out.Resource.Permissions["mlflow_experiment_my_experiment"].AccessControl, 1)
+	resource := out.Resource.Permissions["mlflow_experiment_my_experiment"].(*schema.ResourcePermissions)
 
-	p := out.Resource.Permissions["mlflow_experiment_my_experiment"].AccessControl[0]
-	assert.Equal(t, "jane@doe.com", p.UserName)
-	assert.Equal(t, "CAN_READ", p.PermissionLevel)
+	assert.NotEmpty(t, resource.ExperimentId)
+	assert.Len(t, resource.AccessControl, 1)
+	assert.Equal(t, "jane@doe.com", resource.AccessControl[0].UserName)
+	assert.Equal(t, "CAN_READ", resource.AccessControl[0].PermissionLevel)
 
 }
 
@@ -357,7 +367,8 @@ func TestBundleToTerraformModelServing(t *testing.T) {
 	}
 
 	out := BundleToTerraform(&config)
-	resource := out.Resource.ModelServing["my_model_serving_endpoint"]
+	resource := out.Resource.ModelServing["my_model_serving_endpoint"].(*schema.ResourceModelServing)
+
 	assert.Equal(t, "name", resource.Name)
 	assert.Equal(t, "model_name", resource.Config.ServedModels[0].ModelName)
 	assert.Equal(t, "1", resource.Config.ServedModels[0].ModelVersion)
@@ -387,12 +398,12 @@ func TestBundleToTerraformModelServingPermissions(t *testing.T) {
 	}
 
 	out := BundleToTerraform(&config)
-	assert.NotEmpty(t, out.Resource.Permissions["model_serving_my_model_serving_endpoint"].ServingEndpointId)
-	assert.Len(t, out.Resource.Permissions["model_serving_my_model_serving_endpoint"].AccessControl, 1)
+	resource := out.Resource.Permissions["model_serving_my_model_serving_endpoint"].(*schema.ResourcePermissions)
 
-	p := out.Resource.Permissions["model_serving_my_model_serving_endpoint"].AccessControl[0]
-	assert.Equal(t, "jane@doe.com", p.UserName)
-	assert.Equal(t, "CAN_VIEW", p.PermissionLevel)
+	assert.NotEmpty(t, resource.ServingEndpointId)
+	assert.Len(t, resource.AccessControl, 1)
+	assert.Equal(t, "jane@doe.com", resource.AccessControl[0].UserName)
+	assert.Equal(t, "CAN_VIEW", resource.AccessControl[0].PermissionLevel)
 
 }
 
@@ -415,7 +426,8 @@ func TestBundleToTerraformRegisteredModel(t *testing.T) {
 	}
 
 	out := BundleToTerraform(&config)
-	resource := out.Resource.RegisteredModel["my_registered_model"]
+	resource := out.Resource.RegisteredModel["my_registered_model"].(*schema.ResourceRegisteredModel)
+
 	assert.Equal(t, "name", resource.Name)
 	assert.Equal(t, "catalog", resource.CatalogName)
 	assert.Equal(t, "schema", resource.SchemaName)
@@ -442,12 +454,12 @@ func TestBundleToTerraformRegisteredModelGrants(t *testing.T) {
 	}
 
 	out := BundleToTerraform(&config)
-	assert.NotEmpty(t, out.Resource.Grants["registered_model_my_registered_model"].Function)
-	assert.Len(t, out.Resource.Grants["registered_model_my_registered_model"].Grant, 1)
+	resource := out.Resource.Grants["registered_model_my_registered_model"].(*schema.ResourceGrants)
 
-	p := out.Resource.Grants["registered_model_my_registered_model"].Grant[0]
-	assert.Equal(t, "jane@doe.com", p.Principal)
-	assert.Equal(t, "EXECUTE", p.Privileges[0])
+	assert.NotEmpty(t, resource.Function)
+	assert.Len(t, resource.Grant, 1)
+	assert.Equal(t, "jane@doe.com", resource.Grant[0].Principal)
+	assert.Equal(t, "EXECUTE", resource.Grant[0].Privileges[0])
 }
 
 func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
