@@ -5,16 +5,16 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/interpolation"
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestInterpolation(t *testing.T) {
 	b := load(t, "./interpolation")
-	err := bundle.Apply(context.Background(), b, interpolation.Interpolate(
-		interpolation.IncludeLookupsInPath("bundle"),
-		interpolation.IncludeLookupsInPath("workspace"),
+	err := bundle.Apply(context.Background(), b, mutator.ResolveVariableReferences(
+		"bundle",
+		"workspace",
 	))
 	require.NoError(t, err)
 	assert.Equal(t, "foo bar", b.Config.Bundle.Name)
@@ -23,9 +23,9 @@ func TestInterpolation(t *testing.T) {
 
 func TestInterpolationWithTarget(t *testing.T) {
 	b := loadTarget(t, "./interpolation_target", "development")
-	err := bundle.Apply(context.Background(), b, interpolation.Interpolate(
-		interpolation.IncludeLookupsInPath("bundle"),
-		interpolation.IncludeLookupsInPath("workspace"),
+	err := bundle.Apply(context.Background(), b, mutator.ResolveVariableReferences(
+		"bundle",
+		"workspace",
 	))
 	require.NoError(t, err)
 	assert.Equal(t, "foo bar", b.Config.Bundle.Name)

@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -30,11 +31,15 @@ func newDestroyCommand() *cobra.Command {
 		ctx := cmd.Context()
 		b := bundle.Get(ctx)
 
-		// If `--force-lock` is specified, force acquisition of the deployment lock.
-		b.Config.Bundle.Deployment.Lock.Force = forceDestroy
+		bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) error {
+			// If `--force-lock` is specified, force acquisition of the deployment lock.
+			b.Config.Bundle.Deployment.Lock.Force = forceDestroy
 
-		// If `--auto-approve`` is specified, we skip confirmation checks
-		b.AutoApprove = autoApprove
+			// If `--auto-approve`` is specified, we skip confirmation checks
+			b.AutoApprove = autoApprove
+
+			return nil
+		})
 
 		// we require auto-approve for non tty terminals since interactive consent
 		// is not possible

@@ -10,9 +10,9 @@ import (
 
 type Artifacts map[string]*Artifact
 
-func (artifacts Artifacts) SetConfigFilePath(path string) {
+func (artifacts Artifacts) ConfigureConfigFilePath() {
 	for _, artifact := range artifacts {
-		artifact.ConfigFilePath = path
+		artifact.ConfigureConfigFilePath()
 	}
 }
 

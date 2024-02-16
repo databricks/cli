@@ -5,30 +5,34 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/phases"
-	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestExpandPipelineGlobPathsWithNonExistent(t *testing.T) {
 	ctx := context.Background()
-	ctx = root.SetWorkspaceClient(ctx, nil)
-
 	b, err := bundle.Load(ctx, "./pipeline_glob_paths")
 	require.NoError(t, err)
 
-	err = bundle.Apply(ctx, b, bundle.Seq(mutator.DefaultMutators()...))
+	err = bundle.Apply(ctx, b, bundle.Seq(mutator.DefaultMutatorsForTarget("default")...))
 	require.NoError(t, err)
-	b.Config.Bundle.Target = "default"
 
-	b.Config.Workspace.CurrentUser = &config.User{User: &iam.User{UserName: "user@domain.com"}}
-	b.WorkspaceClient()
+	// Configure mock workspace client
+	m := mocks.NewMockWorkspaceClient(t)
+	m.WorkspaceClient.Config = &config.Config{
+		Host: "https://mock.databricks.workspace.com",
+	}
+	m.GetMockCurrentUserAPI().EXPECT().Me(mock.Anything).Return(&iam.User{
+		UserName: "user@domain.com",
+	}, nil)
+	b.SetWorkpaceClient(m.WorkspaceClient)
 
-	m := phases.Initialize()
-	err = bundle.Apply(ctx, b, m)
+	err = bundle.Apply(ctx, b, phases.Initialize())
 	require.Error(t, err)
 	require.ErrorContains(t, err, "notebook ./non-existent not found")
 

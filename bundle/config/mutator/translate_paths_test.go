@@ -9,8 +9,8 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
-	"github.com/databricks/cli/bundle/config/paths"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -44,10 +44,6 @@ func TestTranslatePathsSkippedWithGitSource(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-
-						Paths: paths.Paths{
-							ConfigFilePath: filepath.Join(dir, "resource.yml"),
-						},
 						JobSettings: &jobs.JobSettings{
 							GitSource: &jobs.GitSource{
 								GitBranch:   "somebranch",
@@ -79,6 +75,8 @@ func TestTranslatePathsSkippedWithGitSource(t *testing.T) {
 			},
 		},
 	}
+
+	bundletest.SetLocation(b, ".", filepath.Join(dir, "resource.yml"))
 
 	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	require.NoError(t, err)
@@ -116,9 +114,6 @@ func TestTranslatePaths(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						Paths: paths.Paths{
-							ConfigFilePath: filepath.Join(dir, "resource.yml"),
-						},
 						JobSettings: &jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
@@ -171,9 +166,6 @@ func TestTranslatePaths(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						Paths: paths.Paths{
-							ConfigFilePath: filepath.Join(dir, "resource.yml"),
-						},
 						PipelineSpec: &pipelines.PipelineSpec{
 							Libraries: []pipelines.PipelineLibrary{
 								{
@@ -206,6 +198,8 @@ func TestTranslatePaths(t *testing.T) {
 			},
 		},
 	}
+
+	bundletest.SetLocation(b, ".", filepath.Join(dir, "resource.yml"))
 
 	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	require.NoError(t, err)
@@ -287,9 +281,6 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						Paths: paths.Paths{
-							ConfigFilePath: filepath.Join(dir, "job/resource.yml"),
-						},
 						JobSettings: &jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
@@ -323,10 +314,6 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						Paths: paths.Paths{
-							ConfigFilePath: filepath.Join(dir, "pipeline/resource.yml"),
-						},
-
 						PipelineSpec: &pipelines.PipelineSpec{
 							Libraries: []pipelines.PipelineLibrary{
 								{
@@ -341,6 +328,9 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 			},
 		},
 	}
+
+	bundletest.SetLocation(b, "resources.jobs", filepath.Join(dir, "job/resource.yml"))
+	bundletest.SetLocation(b, "resources.pipelines", filepath.Join(dir, "pipeline/resource.yml"))
 
 	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	require.NoError(t, err)
@@ -385,9 +375,6 @@ func TestTranslatePathsOutsideBundleRoot(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						Paths: paths.Paths{
-							ConfigFilePath: filepath.Join(dir, "../resource.yml"),
-						},
 						JobSettings: &jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
@@ -403,6 +390,8 @@ func TestTranslatePathsOutsideBundleRoot(t *testing.T) {
 		},
 	}
 
+	bundletest.SetLocation(b, ".", filepath.Join(dir, "../resource.yml"))
+
 	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.ErrorContains(t, err, "is not contained in bundle root")
 }
@@ -416,9 +405,6 @@ func TestJobNotebookDoesNotExistError(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						Paths: paths.Paths{
-							ConfigFilePath: filepath.Join(dir, "fake.yml"),
-						},
 						JobSettings: &jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
@@ -434,6 +420,8 @@ func TestJobNotebookDoesNotExistError(t *testing.T) {
 		},
 	}
 
+	bundletest.SetLocation(b, ".", filepath.Join(dir, "fake.yml"))
+
 	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.EqualError(t, err, "notebook ./doesnt_exist.py not found")
 }
@@ -447,9 +435,6 @@ func TestJobFileDoesNotExistError(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						Paths: paths.Paths{
-							ConfigFilePath: filepath.Join(dir, "fake.yml"),
-						},
 						JobSettings: &jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
@@ -465,6 +450,8 @@ func TestJobFileDoesNotExistError(t *testing.T) {
 		},
 	}
 
+	bundletest.SetLocation(b, ".", filepath.Join(dir, "fake.yml"))
+
 	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.EqualError(t, err, "file ./doesnt_exist.py not found")
 }
@@ -478,9 +465,6 @@ func TestPipelineNotebookDoesNotExistError(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						Paths: paths.Paths{
-							ConfigFilePath: filepath.Join(dir, "fake.yml"),
-						},
 						PipelineSpec: &pipelines.PipelineSpec{
 							Libraries: []pipelines.PipelineLibrary{
 								{
@@ -496,6 +480,8 @@ func TestPipelineNotebookDoesNotExistError(t *testing.T) {
 		},
 	}
 
+	bundletest.SetLocation(b, ".", filepath.Join(dir, "fake.yml"))
+
 	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.EqualError(t, err, "notebook ./doesnt_exist.py not found")
 }
@@ -509,9 +495,6 @@ func TestPipelineFileDoesNotExistError(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						Paths: paths.Paths{
-							ConfigFilePath: filepath.Join(dir, "fake.yml"),
-						},
 						PipelineSpec: &pipelines.PipelineSpec{
 							Libraries: []pipelines.PipelineLibrary{
 								{
@@ -526,6 +509,8 @@ func TestPipelineFileDoesNotExistError(t *testing.T) {
 			},
 		},
 	}
+
+	bundletest.SetLocation(b, ".", filepath.Join(dir, "fake.yml"))
 
 	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.EqualError(t, err, "file ./doesnt_exist.py not found")
@@ -544,9 +529,6 @@ func TestJobSparkPythonTaskWithNotebookSourceError(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						Paths: paths.Paths{
-							ConfigFilePath: filepath.Join(dir, "resource.yml"),
-						},
 						JobSettings: &jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
@@ -561,6 +543,8 @@ func TestJobSparkPythonTaskWithNotebookSourceError(t *testing.T) {
 			},
 		},
 	}
+
+	bundletest.SetLocation(b, ".", filepath.Join(dir, "resource.yml"))
 
 	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.ErrorContains(t, err, `expected a file for "tasks.spark_python_task.python_file" but got a notebook`)
@@ -579,9 +563,6 @@ func TestJobNotebookTaskWithFileSourceError(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						Paths: paths.Paths{
-							ConfigFilePath: filepath.Join(dir, "resource.yml"),
-						},
 						JobSettings: &jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{
@@ -596,6 +577,8 @@ func TestJobNotebookTaskWithFileSourceError(t *testing.T) {
 			},
 		},
 	}
+
+	bundletest.SetLocation(b, ".", filepath.Join(dir, "resource.yml"))
 
 	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.ErrorContains(t, err, `expected a notebook for "tasks.notebook_task.notebook_path" but got a file`)
@@ -614,9 +597,6 @@ func TestPipelineNotebookLibraryWithFileSourceError(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						Paths: paths.Paths{
-							ConfigFilePath: filepath.Join(dir, "resource.yml"),
-						},
 						PipelineSpec: &pipelines.PipelineSpec{
 							Libraries: []pipelines.PipelineLibrary{
 								{
@@ -631,6 +611,8 @@ func TestPipelineNotebookLibraryWithFileSourceError(t *testing.T) {
 			},
 		},
 	}
+
+	bundletest.SetLocation(b, ".", filepath.Join(dir, "resource.yml"))
 
 	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.ErrorContains(t, err, `expected a notebook for "libraries.notebook.path" but got a file`)
@@ -649,9 +631,6 @@ func TestPipelineFileLibraryWithNotebookSourceError(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						Paths: paths.Paths{
-							ConfigFilePath: filepath.Join(dir, "resource.yml"),
-						},
 						PipelineSpec: &pipelines.PipelineSpec{
 							Libraries: []pipelines.PipelineLibrary{
 								{
@@ -666,6 +645,8 @@ func TestPipelineFileLibraryWithNotebookSourceError(t *testing.T) {
 			},
 		},
 	}
+
+	bundletest.SetLocation(b, ".", filepath.Join(dir, "resource.yml"))
 
 	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.ErrorContains(t, err, `expected a file for "libraries.file.path" but got a notebook`)

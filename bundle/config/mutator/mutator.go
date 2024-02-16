@@ -10,12 +10,16 @@ func DefaultMutators() []bundle.Mutator {
 	return []bundle.Mutator{
 		scripts.Execute(config.ScriptPreInit),
 		ProcessRootIncludes(),
+		EnvironmentsToTargets(),
 		InitializeVariables(),
 		DefineDefaultTarget(),
 		LoadGitDetails(),
 	}
 }
 
-func DefaultMutatorsForTarget(env string) []bundle.Mutator {
-	return append(DefaultMutators(), SelectTarget(env))
+func DefaultMutatorsForTarget(target string) []bundle.Mutator {
+	return append(
+		DefaultMutators(),
+		SelectTarget(target),
+	)
 }
