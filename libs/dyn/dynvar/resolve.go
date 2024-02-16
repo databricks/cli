@@ -208,9 +208,8 @@ func (r *resolver) resolveKey(key string, seen []string) (dyn.Value, error) {
 		return dyn.InvalidValue, err
 	}
 
-	// If the returned value is a valid variable reference, resolve it.
-	ref, ok := newRef(v)
-	if ok {
+	// If the returned value is a ref we already know about, resolve it.
+	if ref, ok := r.refs[key]; ok {
 		v, err = r.resolveRef(key, ref, seen)
 	}
 
