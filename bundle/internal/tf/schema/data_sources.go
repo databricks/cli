@@ -6,11 +6,13 @@ type DataSources struct {
 	AwsAssumeRolePolicy   map[string]*DataSourceAwsAssumeRolePolicy   `json:"databricks_aws_assume_role_policy,omitempty"`
 	AwsBucketPolicy       map[string]*DataSourceAwsBucketPolicy       `json:"databricks_aws_bucket_policy,omitempty"`
 	AwsCrossaccountPolicy map[string]*DataSourceAwsCrossaccountPolicy `json:"databricks_aws_crossaccount_policy,omitempty"`
+	AwsUnityCatalogPolicy map[string]*DataSourceAwsUnityCatalogPolicy `json:"databricks_aws_unity_catalog_policy,omitempty"`
 	Catalogs              map[string]*DataSourceCatalogs              `json:"databricks_catalogs,omitempty"`
 	Cluster               map[string]*DataSourceCluster               `json:"databricks_cluster,omitempty"`
 	ClusterPolicy         map[string]*DataSourceClusterPolicy         `json:"databricks_cluster_policy,omitempty"`
 	Clusters              map[string]*DataSourceClusters              `json:"databricks_clusters,omitempty"`
 	CurrentConfig         map[string]*DataSourceCurrentConfig         `json:"databricks_current_config,omitempty"`
+	CurrentMetastore      map[string]*DataSourceCurrentMetastore      `json:"databricks_current_metastore,omitempty"`
 	CurrentUser           map[string]*DataSourceCurrentUser           `json:"databricks_current_user,omitempty"`
 	DbfsFile              map[string]*DataSourceDbfsFile              `json:"databricks_dbfs_file,omitempty"`
 	DbfsFilePaths         map[string]*DataSourceDbfsFilePaths         `json:"databricks_dbfs_file_paths,omitempty"`
@@ -40,6 +42,7 @@ type DataSources struct {
 	Tables                map[string]*DataSourceTables                `json:"databricks_tables,omitempty"`
 	User                  map[string]*DataSourceUser                  `json:"databricks_user,omitempty"`
 	Views                 map[string]*DataSourceViews                 `json:"databricks_views,omitempty"`
+	Volumes               map[string]*DataSourceVolumes               `json:"databricks_volumes,omitempty"`
 	Zones                 map[string]*DataSourceZones                 `json:"databricks_zones,omitempty"`
 }
 
@@ -48,11 +51,13 @@ func NewDataSources() *DataSources {
 		AwsAssumeRolePolicy:   make(map[string]*DataSourceAwsAssumeRolePolicy),
 		AwsBucketPolicy:       make(map[string]*DataSourceAwsBucketPolicy),
 		AwsCrossaccountPolicy: make(map[string]*DataSourceAwsCrossaccountPolicy),
+		AwsUnityCatalogPolicy: make(map[string]*DataSourceAwsUnityCatalogPolicy),
 		Catalogs:              make(map[string]*DataSourceCatalogs),
 		Cluster:               make(map[string]*DataSourceCluster),
 		ClusterPolicy:         make(map[string]*DataSourceClusterPolicy),
 		Clusters:              make(map[string]*DataSourceClusters),
 		CurrentConfig:         make(map[string]*DataSourceCurrentConfig),
+		CurrentMetastore:      make(map[string]*DataSourceCurrentMetastore),
 		CurrentUser:           make(map[string]*DataSourceCurrentUser),
 		DbfsFile:              make(map[string]*DataSourceDbfsFile),
 		DbfsFilePaths:         make(map[string]*DataSourceDbfsFilePaths),
@@ -82,6 +87,7 @@ func NewDataSources() *DataSources {
 		Tables:                make(map[string]*DataSourceTables),
 		User:                  make(map[string]*DataSourceUser),
 		Views:                 make(map[string]*DataSourceViews),
+		Volumes:               make(map[string]*DataSourceVolumes),
 		Zones:                 make(map[string]*DataSourceZones),
 	}
 }

@@ -21,6 +21,7 @@ type Resources struct {
 	ExternalLocation         map[string]*ResourceExternalLocation         `json:"databricks_external_location,omitempty"`
 	GitCredential            map[string]*ResourceGitCredential            `json:"databricks_git_credential,omitempty"`
 	GlobalInitScript         map[string]*ResourceGlobalInitScript         `json:"databricks_global_init_script,omitempty"`
+	Grant                    map[string]*ResourceGrant                    `json:"databricks_grant,omitempty"`
 	Grants                   map[string]*ResourceGrants                   `json:"databricks_grants,omitempty"`
 	Group                    map[string]*ResourceGroup                    `json:"databricks_group,omitempty"`
 	GroupInstanceProfile     map[string]*ResourceGroupInstanceProfile     `json:"databricks_group_instance_profile,omitempty"`
@@ -106,6 +107,7 @@ func NewResources() *Resources {
 		ExternalLocation:         make(map[string]*ResourceExternalLocation),
 		GitCredential:            make(map[string]*ResourceGitCredential),
 		GlobalInitScript:         make(map[string]*ResourceGlobalInitScript),
+		Grant:                    make(map[string]*ResourceGrant),
 		Grants:                   make(map[string]*ResourceGrants),
 		Group:                    make(map[string]*ResourceGroup),
 		GroupInstanceProfile:     make(map[string]*ResourceGroupInstanceProfile),
