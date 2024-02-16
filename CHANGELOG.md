@@ -1,5 +1,61 @@
 # Version changelog
 
+## 0.213.0
+
+CLI:
+ * Ignore environment variables for `auth profiles` ([#1189](https://github.com/databricks/cli/pull/1189)).
+ * Update LICENSE file to match Databricks license language ([#1013](https://github.com/databricks/cli/pull/1013)).
+
+Bundles:
+ * Added `bundle deployment bind` and `unbind` command ([#1131](https://github.com/databricks/cli/pull/1131)).
+ * Use allowlist for Git-related fields to include in metadata ([#1187](https://github.com/databricks/cli/pull/1187)).
+ * Added `--restart` flag for `bundle run` command ([#1191](https://github.com/databricks/cli/pull/1191)).
+ * Generate correct YAML if `custom_tags` or `spark_conf` is used for pipeline or job cluster configuration ([#1210](https://github.com/databricks/cli/pull/1210)).
+
+Internal:
+ * Move folders package into libs ([#1184](https://github.com/databricks/cli/pull/1184)).
+ * Log time it takes for profile to load ([#1186](https://github.com/databricks/cli/pull/1186)).
+ * Use mockery to generate mocks compatible with testify/mock ([#1190](https://github.com/databricks/cli/pull/1190)).
+ * Retain partially valid structs in `convert.Normalize` ([#1203](https://github.com/databricks/cli/pull/1203)).
+ * Skip `for_each_task` when generating the bundle schema ([#1204](https://github.com/databricks/cli/pull/1204)).
+ * Regenerate the CLI using the same OpenAPI spec as the SDK ([#1205](https://github.com/databricks/cli/pull/1205)).
+ * Avoid race-conditions while executing sub-commands ([#1201](https://github.com/databricks/cli/pull/1201)).
+
+API Changes:
+ * Added `databricks tables exists` command.
+ * Added `databricks lakehouse-monitors` command group.
+ * Removed `databricks files get-status` command.
+ * Added `databricks files create-directory` command.
+ * Added `databricks files delete-directory` command.
+ * Added `databricks files get-directory-metadata` command.
+ * Added `databricks files get-metadata` command.
+ * Added `databricks files list-directory-contents` command.
+ * Removed `databricks pipelines reset` command.
+ * Changed `databricks account settings delete-personal-compute-setting` command with new required argument order.
+ * Removed `databricks account settings read-personal-compute-setting` command.
+ * Changed `databricks account settings update-personal-compute-setting` command with new required argument order.
+ * Added `databricks account settings get-personal-compute-setting` command.
+ * Removed `databricks settings delete-default-workspace-namespace` command.
+ * Removed `databricks settings read-default-workspace-namespace` command.
+ * Removed `databricks settings update-default-workspace-namespace` command.
+ * Added `databricks settings delete-default-namespace-setting` command.
+ * Added `databricks settings delete-restrict-workspace-admins-setting` command.
+ * Added `databricks settings get-default-namespace-setting` command.
+ * Added `databricks settings get-restrict-workspace-admins-setting` command.
+ * Added `databricks settings update-default-namespace-setting` command.
+ * Added `databricks settings update-restrict-workspace-admins-setting` command.
+ * Changed `databricks token-management create-obo-token` command with new required argument order.
+ * Changed `databricks token-management get` command to return .
+ * Changed `databricks dashboards create` command . New request type is .
+ * Added `databricks dashboards update` command.
+
+OpenAPI commit c40670f5a2055c92cf0a6aac92a5bccebfb80866 (2024-02-14)
+Dependency updates:
+ * Bump github.com/hashicorp/hc-install from 0.6.2 to 0.6.3 ([#1200](https://github.com/databricks/cli/pull/1200)).
+ * Bump golang.org/x/term from 0.16.0 to 0.17.0 ([#1197](https://github.com/databricks/cli/pull/1197)).
+ * Bump golang.org/x/oauth2 from 0.16.0 to 0.17.0 ([#1198](https://github.com/databricks/cli/pull/1198)).
+ * Bump github.com/databricks/databricks-sdk-go from 0.30.1 to 0.32.0 ([#1199](https://github.com/databricks/cli/pull/1199)).
+
 ## 0.212.4
 
 Bundles:

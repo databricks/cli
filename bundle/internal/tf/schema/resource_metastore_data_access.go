@@ -34,12 +34,14 @@ type ResourceMetastoreDataAccessGcpServiceAccountKey struct {
 type ResourceMetastoreDataAccess struct {
 	Comment                     string                                                  `json:"comment,omitempty"`
 	ForceDestroy                bool                                                    `json:"force_destroy,omitempty"`
+	ForceUpdate                 bool                                                    `json:"force_update,omitempty"`
 	Id                          string                                                  `json:"id,omitempty"`
 	IsDefault                   bool                                                    `json:"is_default,omitempty"`
 	MetastoreId                 string                                                  `json:"metastore_id,omitempty"`
 	Name                        string                                                  `json:"name"`
 	Owner                       string                                                  `json:"owner,omitempty"`
 	ReadOnly                    bool                                                    `json:"read_only,omitempty"`
+	SkipValidation              bool                                                    `json:"skip_validation,omitempty"`
 	AwsIamRole                  *ResourceMetastoreDataAccessAwsIamRole                  `json:"aws_iam_role,omitempty"`
 	AzureManagedIdentity        *ResourceMetastoreDataAccessAzureManagedIdentity        `json:"azure_managed_identity,omitempty"`
 	AzureServicePrincipal       *ResourceMetastoreDataAccessAzureServicePrincipal       `json:"azure_service_principal,omitempty"`
