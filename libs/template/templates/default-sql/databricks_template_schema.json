@@ -12,8 +12,8 @@
         "http_path": {
             "type": "string",
             "pattern": "^/sql/.\\../warehouses/[a-z0-9]+$",
-            "pattern_match_failure_message": "Path must be of the form /sql/1.0/warehouses/abcdef1234567890",
-            "description": "\nPlease provide the HTTP Path of the SQL warehouse you would like to use with dbt during development.\nYou can find this path by clicking on \"Connection Details\" for your SQL warehouse.\nhttp_path [example: /sql/1.0/warehouses/abcdef1234567890]",
+            "pattern_match_failure_message": "Path must be of the form /sql/1.0/warehouses/<warehouse id>",
+            "description": "\nPlease provide the HTTP Path of the SQL warehouse you would like to use with dbt during development.\nYou can find this path by clicking on \"Connection details\" for your SQL warehouse.\nhttp_path [example: /sql/1.0/warehouses/abcdef1234567890]",
             "order": 2
         },
         "default_catalog": {
@@ -29,7 +29,7 @@
             "description": "\nWould you like to use a personal schema for each user working on this project? (e.g., 'catalog.{{short_name}}')\npersonal_schemas",
             "enum": [
                 "yes, automatically use a schema based on the current user name during development",
-                "no, seluect a single schema for all users during development"
+                "no, use a single schema for all users during development"
             ],
             "order": 4
         },
@@ -45,7 +45,7 @@
             "default": "default",
             "pattern": "^\\w+$",
             "pattern_match_failure_message": "Invalid schema name.",
-            "description": "\nPlease provide a initial schema during development.\ndefault_schema",
+            "description": "\nPlease provide an initial schema during development.\ndefault_schema",
             "order": 5
         }
     },
