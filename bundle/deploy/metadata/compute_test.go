@@ -6,8 +6,8 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/paths"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/bundle/metadata"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
@@ -30,23 +30,18 @@ func TestComputeMetadataMutator(t *testing.T) {
 					OriginURL:      "www.host.com",
 					Commit:         "abcd",
 					BundleRootPath: "a/b/c/d",
+					Inferred:       true,
 				},
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"my-job-1": {
-						Paths: paths.Paths{
-							ConfigFilePath: "a/b/c",
-						},
 						ID: "1111",
 						JobSettings: &jobs.JobSettings{
 							Name: "My Job One",
 						},
 					},
 					"my-job-2": {
-						Paths: paths.Paths{
-							ConfigFilePath: "d/e/f",
-						},
 						ID: "2222",
 						JobSettings: &jobs.JobSettings{
 							Name: "My Job Two",
@@ -54,15 +49,15 @@ func TestComputeMetadataMutator(t *testing.T) {
 					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
-					"my-pipeline": {
-						Paths: paths.Paths{
-							ConfigFilePath: "abc",
-						},
-					},
+					"my-pipeline": {},
 				},
 			},
 		},
 	}
+
+	bundletest.SetLocation(b, "resources.jobs.my-job-1", "a/b/c")
+	bundletest.SetLocation(b, "resources.jobs.my-job-2", "d/e/f")
+	bundletest.SetLocation(b, "resources.pipelines.my-pipeline", "abc")
 
 	expectedMetadata := metadata.Metadata{
 		Version: metadata.Version,
@@ -76,6 +71,9 @@ func TestComputeMetadataMutator(t *testing.T) {
 					OriginURL:      "www.host.com",
 					Commit:         "abcd",
 					BundleRootPath: "a/b/c/d",
+
+					// Test that this field doesn't carry over into the metadata.
+					Inferred: false,
 				},
 			},
 			Resources: metadata.Resources{

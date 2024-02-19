@@ -74,6 +74,29 @@ func TestMapFuncOnMap(t *testing.T) {
 	assert.ErrorIs(t, err, ref)
 }
 
+func TestMapFuncOnMapWithEmptySequence(t *testing.T) {
+	variants := []dyn.Value{
+		// empty sequence
+		dyn.V([]dyn.Value{}),
+		// non-empty sequence
+		dyn.V([]dyn.Value{dyn.V(42)}),
+	}
+
+	for i := 0; i < len(variants); i++ {
+		vin := dyn.V(map[string]dyn.Value{
+			"key": variants[i],
+		})
+
+		for j := 0; j < len(variants); j++ {
+			vout, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Key("key")), func(v dyn.Value) (dyn.Value, error) {
+				return variants[j], nil
+			})
+			assert.NoError(t, err)
+			assert.Equal(t, variants[j], vout.Get("key"))
+		}
+	}
+}
+
 func TestMapFuncOnSequence(t *testing.T) {
 	vin := dyn.V([]dyn.Value{
 		dyn.V(42),
@@ -113,6 +136,29 @@ func TestMapFuncOnSequence(t *testing.T) {
 	})
 	assert.Equal(t, dyn.InvalidValue, verr)
 	assert.ErrorIs(t, err, ref)
+}
+
+func TestMapFuncOnSequenceWithEmptySequence(t *testing.T) {
+	variants := []dyn.Value{
+		// empty sequence
+		dyn.V([]dyn.Value{}),
+		// non-empty sequence
+		dyn.V([]dyn.Value{dyn.V(42)}),
+	}
+
+	for i := 0; i < len(variants); i++ {
+		vin := dyn.V([]dyn.Value{
+			variants[i],
+		})
+
+		for j := 0; j < len(variants); j++ {
+			vout, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Index(0)), func(v dyn.Value) (dyn.Value, error) {
+				return variants[j], nil
+			})
+			assert.NoError(t, err)
+			assert.Equal(t, variants[j], vout.Index(0))
+		}
+	}
 }
 
 func TestMapForeachOnMap(t *testing.T) {

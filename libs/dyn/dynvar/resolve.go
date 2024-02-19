@@ -38,12 +38,20 @@ func Resolve(in dyn.Value, fn Lookup) (out dyn.Value, err error) {
 	return resolver{in: in, fn: fn}.run()
 }
 
+type lookupResult struct {
+	v   dyn.Value
+	err error
+}
+
 type resolver struct {
 	in dyn.Value
 	fn Lookup
 
 	refs     map[string]ref
 	resolved map[string]dyn.Value
+
+	// Memoization for lookups.
+	lookups map[string]lookupResult
 }
 
 func (r resolver) run() (out dyn.Value, err error) {
@@ -84,8 +92,10 @@ func (r *resolver) collectVariableReferences() (err error) {
 }
 
 func (r *resolver) resolveVariableReferences() (err error) {
-	// Initialize map for resolved variables.
-	// We use this for memoization.
+	// Initialize cache for lookups.
+	r.lookups = make(map[string]lookupResult)
+
+	// Initialize cache for resolved variable references.
 	r.resolved = make(map[string]dyn.Value)
 
 	// Resolve each variable reference (in order).
@@ -95,38 +105,17 @@ func (r *resolver) resolveVariableReferences() (err error) {
 	keys := maps.Keys(r.refs)
 	sort.Strings(keys)
 	for _, key := range keys {
-		_, err := r.resolve(key, []string{key})
+		v, err := r.resolveRef(r.refs[key], []string{key})
 		if err != nil {
 			return err
 		}
+		r.resolved[key] = v
 	}
 
 	return nil
 }
 
-func (r *resolver) resolve(key string, seen []string) (dyn.Value, error) {
-	// Check if we have already resolved this variable reference.
-	if v, ok := r.resolved[key]; ok {
-		return v, nil
-	}
-
-	ref, ok := r.refs[key]
-	if !ok {
-		// Perform lookup in the input.
-		p, err := dyn.NewPathFromString(key)
-		if err != nil {
-			return dyn.InvalidValue, err
-		}
-		v, err := r.fn(p)
-		if err != nil && dyn.IsNoSuchKeyError(err) {
-			return dyn.InvalidValue, fmt.Errorf(
-				"reference does not exist: ${%s}",
-				key,
-			)
-		}
-		return v, err
-	}
-
+func (r *resolver) resolveRef(ref ref, seen []string) (dyn.Value, error) {
 	// This is an unresolved variable reference.
 	deps := ref.references()
 
@@ -143,7 +132,7 @@ func (r *resolver) resolve(key string, seen []string) (dyn.Value, error) {
 			)
 		}
 
-		v, err := r.resolve(dep, append(seen, dep))
+		v, err := r.resolveKey(dep, append(seen, dep))
 
 		// If we should skip resolution of this key, index j will hold an invalid [dyn.Value].
 		if errors.Is(err, ErrSkipResolution) {
@@ -161,7 +150,6 @@ func (r *resolver) resolve(key string, seen []string) (dyn.Value, error) {
 	if ref.isPure() && complete {
 		// If the variable reference is pure, we can substitute it.
 		// This is useful for interpolating values of non-string types.
-		r.resolved[key] = resolved[0]
 		return resolved[0], nil
 	}
 
@@ -185,10 +173,42 @@ func (r *resolver) resolve(key string, seen []string) (dyn.Value, error) {
 		ref.str = strings.Replace(ref.str, ref.matches[j][0], s, 1)
 	}
 
-	// Store the interpolated value.
-	v := dyn.NewValue(ref.str, ref.value.Location())
-	r.resolved[key] = v
-	return v, nil
+	return dyn.NewValue(ref.str, ref.value.Location()), nil
+}
+
+func (r *resolver) resolveKey(key string, seen []string) (dyn.Value, error) {
+	// Check if we have already looked up this key.
+	if v, ok := r.lookups[key]; ok {
+		return v.v, v.err
+	}
+
+	// Parse the key into a path.
+	p, err := dyn.NewPathFromString(key)
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
+
+	// Look up the value for the given key.
+	v, err := r.fn(p)
+	if err != nil {
+		if dyn.IsNoSuchKeyError(err) {
+			err = fmt.Errorf("reference does not exist: ${%s}", key)
+		}
+
+		// Cache the return value and return to the caller.
+		r.lookups[key] = lookupResult{v: dyn.InvalidValue, err: err}
+		return dyn.InvalidValue, err
+	}
+
+	// If the returned value is a valid variable reference, resolve it.
+	ref, ok := newRef(v)
+	if ok {
+		v, err = r.resolveRef(ref, seen)
+	}
+
+	// Cache the return value and return to the caller.
+	r.lookups[key] = lookupResult{v: v, err: err}
+	return v, err
 }
 
 func (r *resolver) replaceVariableReferences() (dyn.Value, error) {

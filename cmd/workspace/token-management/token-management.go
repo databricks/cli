@@ -56,16 +56,16 @@ func newCreateOboToken() *cobra.Command {
 	cmd.Flags().Var(&createOboTokenJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createOboTokenReq.Comment, "comment", createOboTokenReq.Comment, `Comment that describes the purpose of the token.`)
+	cmd.Flags().Int64Var(&createOboTokenReq.LifetimeSeconds, "lifetime-seconds", createOboTokenReq.LifetimeSeconds, `The number of seconds before the token expires.`)
 
-	cmd.Use = "create-obo-token APPLICATION_ID LIFETIME_SECONDS"
+	cmd.Use = "create-obo-token APPLICATION_ID"
 	cmd.Short = `Create on-behalf token.`
 	cmd.Long = `Create on-behalf token.
   
   Creates a token on behalf of a service principal.
 
   Arguments:
-    APPLICATION_ID: Application ID of the service principal.
-    LIFETIME_SECONDS: The number of seconds before the token expires.`
+    APPLICATION_ID: Application ID of the service principal.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -73,12 +73,11 @@ func newCreateOboToken() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'application_id', 'lifetime_seconds' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'application_id' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(2)
-		return check(cmd, args)
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -91,15 +90,25 @@ func newCreateOboToken() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		}
-		if !cmd.Flags().Changed("json") {
-			createOboTokenReq.ApplicationId = args[0]
-		}
-		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &createOboTokenReq.LifetimeSeconds)
-			if err != nil {
-				return fmt.Errorf("invalid LIFETIME_SECONDS: %s", args[1])
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No APPLICATION_ID argument specified. Loading names for Token Management drop-down."
+				names, err := w.TokenManagement.TokenInfoCommentToTokenIdMap(ctx, settings.ListTokenManagementRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Token Management drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Application ID of the service principal")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have application id of the service principal")
+			}
+			createOboTokenReq.ApplicationId = args[0]
 		}
 
 		response, err := w.TokenManagement.CreateOboToken(ctx, createOboTokenReq)
@@ -392,7 +401,7 @@ func newList() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Flags().StringVar(&listReq.CreatedById, "created-by-id", listReq.CreatedById, `User ID of the user that created the token.`)
+	cmd.Flags().Int64Var(&listReq.CreatedById, "created-by-id", listReq.CreatedById, `User ID of the user that created the token.`)
 	cmd.Flags().StringVar(&listReq.CreatedByUsername, "created-by-username", listReq.CreatedByUsername, `Username of the user that created the token.`)
 
 	cmd.Use = "list"

@@ -35,7 +35,7 @@ func (m *acquire) init(b *bundle.Bundle) error {
 
 func (m *acquire) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// Return early if locking is disabled.
-	if !b.Config.Bundle.Lock.IsEnabled() {
+	if !b.Config.Bundle.Deployment.Lock.IsEnabled() {
 		log.Infof(ctx, "Skipping; locking is disabled")
 		return nil
 	}
@@ -45,7 +45,7 @@ func (m *acquire) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 
-	force := b.Config.Bundle.Lock.Force
+	force := b.Config.Bundle.Deployment.Lock.Force
 	log.Infof(ctx, "Acquiring deployment lock (force: %v)", force)
 	err = b.Locker.Lock(ctx, force)
 	if err != nil {

@@ -2,10 +2,23 @@ package exec
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	osexec "os/exec"
 )
+
+type ExecutableType string
+
+const BashExecutable ExecutableType = `bash`
+const ShExecutable ExecutableType = `sh`
+const CmdExecutable ExecutableType = `cmd`
+
+var finders map[ExecutableType](func() (shell, error)) = map[ExecutableType](func() (shell, error)){
+	BashExecutable: newBashShell,
+	ShExecutable:   newShShell,
+	CmdExecutable:  newCmdShell,
+}
 
 type Command interface {
 	// Wait for command to terminate. It must have been previously started.
@@ -61,18 +74,41 @@ func NewCommandExecutor(dir string) (*Executor, error) {
 	}, nil
 }
 
-func (e *Executor) StartCommand(ctx context.Context, command string) (Command, error) {
-	ec, err := e.shell.prepare(command)
+func NewCommandExecutorWithExecutable(dir string, execType ExecutableType) (*Executor, error) {
+	f, ok := finders[execType]
+	if !ok {
+		return nil, fmt.Errorf("%s is not supported as an artifact executable, options are: %s, %s or %s", execType, BashExecutable, ShExecutable, CmdExecutable)
+	}
+	shell, err := f()
 	if err != nil {
 		return nil, err
 	}
-	return e.start(ctx, ec)
+
+	return &Executor{
+		shell: shell,
+		dir:   dir,
+	}, nil
 }
 
-func (e *Executor) start(ctx context.Context, ec *execContext) (Command, error) {
+func (e *Executor) prepareCommand(ctx context.Context, command string) (*osexec.Cmd, *execContext, error) {
+	ec, err := e.shell.prepare(command)
+	if err != nil {
+		return nil, nil, err
+	}
 	cmd := osexec.CommandContext(ctx, ec.executable, ec.args...)
 	cmd.Dir = e.dir
+	return cmd, ec, nil
+}
 
+func (e *Executor) StartCommand(ctx context.Context, command string) (Command, error) {
+	cmd, ec, err := e.prepareCommand(ctx, command)
+	if err != nil {
+		return nil, err
+	}
+	return e.start(ctx, cmd, ec)
+}
+
+func (e *Executor) start(ctx context.Context, cmd *osexec.Cmd, ec *execContext) (Command, error) {
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, err
@@ -87,15 +123,14 @@ func (e *Executor) start(ctx context.Context, ec *execContext) (Command, error) 
 }
 
 func (e *Executor) Exec(ctx context.Context, command string) ([]byte, error) {
-	cmd, err := e.StartCommand(ctx, command)
+	cmd, ec, err := e.prepareCommand(ctx, command)
 	if err != nil {
 		return nil, err
 	}
+	defer os.Remove(ec.scriptFile)
+	return cmd.CombinedOutput()
+}
 
-	res, err := io.ReadAll(io.MultiReader(cmd.Stdout(), cmd.Stderr()))
-	if err != nil {
-		return nil, err
-	}
-
-	return res, cmd.Wait()
+func (e *Executor) ShellType() ExecutableType {
+	return e.shell.getType()
 }

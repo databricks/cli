@@ -28,7 +28,9 @@ func TestOverrideDevelopment(t *testing.T) {
 						Name: "job1",
 						Tasks: []jobs.Task{
 							{
-								NewCluster: &compute.ClusterSpec{},
+								NewCluster: &compute.ClusterSpec{
+									SparkVersion: "14.2.x-scala2.12",
+								},
 							},
 							{
 								ExistingClusterId: "cluster2",

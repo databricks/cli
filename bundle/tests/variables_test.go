@@ -5,9 +5,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/interpolation"
 	"github.com/databricks/cli/bundle/config/mutator"
-	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -17,9 +15,10 @@ func TestVariables(t *testing.T) {
 	b := load(t, "./variables/vanilla")
 	err := bundle.Apply(context.Background(), b, bundle.Seq(
 		mutator.SetVariables(),
-		interpolation.Interpolate(
-			interpolation.IncludeLookupsInPath(variable.VariableReferencePrefix),
-		)))
+		mutator.ResolveVariableReferences(
+			"variables",
+		),
+	))
 	require.NoError(t, err)
 	assert.Equal(t, "abc def", b.Config.Bundle.Name)
 }
@@ -28,9 +27,10 @@ func TestVariablesLoadingFailsWhenRequiredVariableIsNotSpecified(t *testing.T) {
 	b := load(t, "./variables/vanilla")
 	err := bundle.Apply(context.Background(), b, bundle.Seq(
 		mutator.SetVariables(),
-		interpolation.Interpolate(
-			interpolation.IncludeLookupsInPath(variable.VariableReferencePrefix),
-		)))
+		mutator.ResolveVariableReferences(
+			"variables",
+		),
+	))
 	assert.ErrorContains(t, err, "no value assigned to required variable b. Assignment can be done through the \"--var\" flag or by setting the BUNDLE_VAR_b environment variable")
 }
 
@@ -39,9 +39,10 @@ func TestVariablesTargetsBlockOverride(t *testing.T) {
 	err := bundle.Apply(context.Background(), b, bundle.Seq(
 		mutator.SelectTarget("env-with-single-variable-override"),
 		mutator.SetVariables(),
-		interpolation.Interpolate(
-			interpolation.IncludeLookupsInPath(variable.VariableReferencePrefix),
-		)))
+		mutator.ResolveVariableReferences(
+			"variables",
+		),
+	))
 	require.NoError(t, err)
 	assert.Equal(t, "default-a dev-b", b.Config.Workspace.Profile)
 }
@@ -51,9 +52,10 @@ func TestVariablesTargetsBlockOverrideForMultipleVariables(t *testing.T) {
 	err := bundle.Apply(context.Background(), b, bundle.Seq(
 		mutator.SelectTarget("env-with-two-variable-overrides"),
 		mutator.SetVariables(),
-		interpolation.Interpolate(
-			interpolation.IncludeLookupsInPath(variable.VariableReferencePrefix),
-		)))
+		mutator.ResolveVariableReferences(
+			"variables",
+		),
+	))
 	require.NoError(t, err)
 	assert.Equal(t, "prod-a prod-b", b.Config.Workspace.Profile)
 }
@@ -64,9 +66,10 @@ func TestVariablesTargetsBlockOverrideWithProcessEnvVars(t *testing.T) {
 	err := bundle.Apply(context.Background(), b, bundle.Seq(
 		mutator.SelectTarget("env-with-two-variable-overrides"),
 		mutator.SetVariables(),
-		interpolation.Interpolate(
-			interpolation.IncludeLookupsInPath(variable.VariableReferencePrefix),
-		)))
+		mutator.ResolveVariableReferences(
+			"variables",
+		),
+	))
 	require.NoError(t, err)
 	assert.Equal(t, "prod-a env-var-b", b.Config.Workspace.Profile)
 }
@@ -76,9 +79,10 @@ func TestVariablesTargetsBlockOverrideWithMissingVariables(t *testing.T) {
 	err := bundle.Apply(context.Background(), b, bundle.Seq(
 		mutator.SelectTarget("env-missing-a-required-variable-assignment"),
 		mutator.SetVariables(),
-		interpolation.Interpolate(
-			interpolation.IncludeLookupsInPath(variable.VariableReferencePrefix),
-		)))
+		mutator.ResolveVariableReferences(
+			"variables",
+		),
+	))
 	assert.ErrorContains(t, err, "no value assigned to required variable b. Assignment can be done through the \"--var\" flag or by setting the BUNDLE_VAR_b environment variable")
 }
 
@@ -87,9 +91,10 @@ func TestVariablesTargetsBlockOverrideWithUndefinedVariables(t *testing.T) {
 	err := bundle.Apply(context.Background(), b, bundle.Seq(
 		mutator.SelectTarget("env-using-an-undefined-variable"),
 		mutator.SetVariables(),
-		interpolation.Interpolate(
-			interpolation.IncludeLookupsInPath(variable.VariableReferencePrefix),
-		)))
+		mutator.ResolveVariableReferences(
+			"variables",
+		),
+	))
 	assert.ErrorContains(t, err, "variable c is not defined but is assigned a value")
 }
 
@@ -110,9 +115,7 @@ func TestVariablesWithTargetLookupOverrides(t *testing.T) {
 	err := bundle.Apply(context.Background(), b, bundle.Seq(
 		mutator.SelectTarget("env-overrides-lookup"),
 		mutator.SetVariables(),
-		interpolation.Interpolate(
-			interpolation.IncludeLookupsInPath(variable.VariableReferencePrefix),
-		)))
+	))
 	require.NoError(t, err)
 	assert.Equal(t, "cluster: some-test-cluster", b.Config.Variables["d"].Lookup.String())
 	assert.Equal(t, "instance-pool: some-test-instance-pool", b.Config.Variables["e"].Lookup.String())

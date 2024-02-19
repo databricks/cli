@@ -1,0 +1,45 @@
+package mutator
+
+import (
+	"context"
+	"strings"
+
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/merge"
+)
+
+type mergePipelineClusters struct{}
+
+func MergePipelineClusters() bundle.Mutator {
+	return &mergePipelineClusters{}
+}
+
+func (m *mergePipelineClusters) Name() string {
+	return "MergePipelineClusters"
+}
+
+func (m *mergePipelineClusters) clusterLabel(v dyn.Value) string {
+	switch v.Kind() {
+	case dyn.KindNil:
+		// Note: the cluster label is optional and defaults to 'default'.
+		// We therefore ALSO merge all clusters without a label.
+		return "default"
+	case dyn.KindString:
+		return strings.ToLower(v.MustString())
+	default:
+		panic("task key must be a string")
+	}
+}
+
+func (m *mergePipelineClusters) Apply(ctx context.Context, b *bundle.Bundle) error {
+	return b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		if v == dyn.NilValue {
+			return v, nil
+		}
+
+		return dyn.Map(v, "resources.pipelines", dyn.Foreach(func(pipeline dyn.Value) (dyn.Value, error) {
+			return dyn.Map(pipeline, "clusters", merge.ElementsByKey("label", m.clusterLabel))
+		}))
+	})
+}

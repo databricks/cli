@@ -25,9 +25,6 @@ type Bundle struct {
 	// For example, where to find the binary, which version to use, etc.
 	Terraform *Terraform `json:"terraform,omitempty" bundle:"readonly"`
 
-	// Lock configures locking behavior on deployment.
-	Lock Lock `json:"lock" bundle:"readonly"`
-
 	// Force-override Git branch validation.
 	Force bool `json:"force,omitempty" bundle:"readonly"`
 
@@ -43,4 +40,7 @@ type Bundle struct {
 
 	// Overrides the compute used for jobs and other supported assets.
 	ComputeID string `json:"compute_id,omitempty"`
+
+	// Deployment section specifies deployment related configuration for bundle
+	Deployment Deployment `json:"deployment"`
 }

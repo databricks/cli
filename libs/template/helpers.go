@@ -9,7 +9,6 @@ import (
 	"regexp"
 	"text/template"
 
-	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -109,11 +108,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 					return "", err
 				}
 			}
-			result := mutator.GetShortUserName(cachedUser.UserName)
-			if result == "" {
-				result = cachedUser.Id
-			}
-			return result, nil
+			return auth.GetShortUserName(cachedUser.UserName), nil
 		},
 		// Get the default workspace catalog. If there is no default, or if
 		// Unity Catalog is not enabled, return an empty string.
