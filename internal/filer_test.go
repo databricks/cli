@@ -117,7 +117,7 @@ func commonFilerReadWriteTests(t *testing.T, ctx context.Context, f filer.Filer)
 	assert.True(t, errors.As(err, &filer.NoSuchDirectoryError{}))
 	assert.True(t, errors.Is(err, fs.ErrNotExist))
 
-	// Read should fail because intermediate directory doesn't yet exist.
+	// Read should fail because the intermediate directory doesn't yet exist.
 	_, err = f.Read(ctx, "/foo/bar")
 	assert.True(t, errors.As(err, &filer.FileDoesNotExistError{}))
 	assert.True(t, errors.Is(err, fs.ErrNotExist))
