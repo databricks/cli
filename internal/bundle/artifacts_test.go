@@ -33,15 +33,6 @@ func TestAccUploadArtifactFileToCorrectRemotePath(t *testing.T) {
 	whlPath := filepath.Join(dir, "dist", "test.whl")
 	touchEmptyFile(t, whlPath)
 
-	artifact := &config.Artifact{
-		Type: "whl",
-		Files: []config.ArtifactFile{
-			{
-				Source: whlPath,
-			},
-		},
-	}
-
 	wsDir := internal.TemporaryWorkspaceDir(t, w)
 
 	b := &bundle.Bundle{
@@ -54,7 +45,14 @@ func TestAccUploadArtifactFileToCorrectRemotePath(t *testing.T) {
 				ArtifactPath: wsDir,
 			},
 			Artifacts: config.Artifacts{
-				"test": artifact,
+				"test": &config.Artifact{
+					Type: "whl",
+					Files: []config.ArtifactFile{
+						{
+							Source: whlPath,
+						},
+					},
+				},
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -80,9 +78,14 @@ func TestAccUploadArtifactFileToCorrectRemotePath(t *testing.T) {
 	require.NoError(t, err)
 
 	// The remote path attribute on the artifact file should have been set.
-	require.Regexp(t, regexp.MustCompile(path.Join(regexp.QuoteMeta(wsDir), `.internal/test\.whl`)), artifact.Files[0].RemotePath)
+	require.Regexp(t,
+		regexp.MustCompile(path.Join(regexp.QuoteMeta(wsDir), `.internal/test\.whl`)),
+		b.Config.Artifacts["test"].Files[0].RemotePath,
+	)
 
 	// The task library path should have been updated to the remote path.
-	lib := b.Config.Resources.Jobs["test"].JobSettings.Tasks[0].Libraries[0]
-	require.Regexp(t, regexp.MustCompile(path.Join("/Workspace", regexp.QuoteMeta(wsDir), `.internal/test\.whl`)), lib.Whl)
+	require.Regexp(t,
+		regexp.MustCompile(path.Join("/Workspace", regexp.QuoteMeta(wsDir), `.internal/test\.whl`)),
+		b.Config.Resources.Jobs["test"].JobSettings.Tasks[0].Libraries[0].Whl,
+	)
 }

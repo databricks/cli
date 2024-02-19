@@ -44,3 +44,10 @@ func TestNewRefInvalidPattern(t *testing.T) {
 		require.False(t, ok, "should not match invalid pattern: %s", v)
 	}
 }
+
+func TestIsPureVariableReference(t *testing.T) {
+	assert.False(t, IsPureVariableReference(""))
+	assert.False(t, IsPureVariableReference("${foo.bar} suffix"))
+	assert.False(t, IsPureVariableReference("prefix ${foo.bar}"))
+	assert.True(t, IsPureVariableReference("${foo.bar}"))
+}

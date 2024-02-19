@@ -42,6 +42,15 @@ func NewValue(v any, loc Location) Value {
 	}
 }
 
+// WithLocation returns a new Value with its location set to the given value.
+func (v Value) WithLocation(loc Location) Value {
+	return Value{
+		v: v.v,
+		k: v.k,
+		l: loc,
+	}
+}
+
 func (v Value) Kind() Kind {
 	return v.k
 }

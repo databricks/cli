@@ -103,6 +103,11 @@ func (gt *generateJobTest) createTestJob(ctx context.Context) int64 {
 					SparkVersion: "13.3.x-scala2.12",
 					NumWorkers:   1,
 					NodeTypeId:   nodeTypeId,
+					SparkConf: map[string]string{
+						"spark.databricks.enableWsfs":                         "true",
+						"spark.databricks.hive.metastore.glueCatalog.enabled": "true",
+						"spark.databricks.pip.ignoreSSL":                      "true",
+					},
 				},
 				NotebookTask: &jobs.NotebookTask{
 					NotebookPath: path.Join(tmpdir, "test"),

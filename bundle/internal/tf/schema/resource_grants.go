@@ -13,14 +13,12 @@ type ResourceGrants struct {
 	ForeignConnection string                `json:"foreign_connection,omitempty"`
 	Function          string                `json:"function,omitempty"`
 	Id                string                `json:"id,omitempty"`
-	MaterializedView  string                `json:"materialized_view,omitempty"`
 	Metastore         string                `json:"metastore,omitempty"`
 	Model             string                `json:"model,omitempty"`
 	Schema            string                `json:"schema,omitempty"`
 	Share             string                `json:"share,omitempty"`
 	StorageCredential string                `json:"storage_credential,omitempty"`
 	Table             string                `json:"table,omitempty"`
-	View              string                `json:"view,omitempty"`
 	Volume            string                `json:"volume,omitempty"`
 	Grant             []ResourceGrantsGrant `json:"grant,omitempty"`
 }

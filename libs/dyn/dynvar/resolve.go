@@ -105,21 +105,17 @@ func (r *resolver) resolveVariableReferences() (err error) {
 	keys := maps.Keys(r.refs)
 	sort.Strings(keys)
 	for _, key := range keys {
-		_, err := r.resolveRef(key, r.refs[key], []string{key})
+		v, err := r.resolveRef(r.refs[key], []string{key})
 		if err != nil {
 			return err
 		}
+		r.resolved[key] = v
 	}
 
 	return nil
 }
 
-func (r *resolver) resolveRef(key string, ref ref, seen []string) (dyn.Value, error) {
-	// Check if we have already resolved this variable reference.
-	if v, ok := r.resolved[key]; ok {
-		return v, nil
-	}
-
+func (r *resolver) resolveRef(ref ref, seen []string) (dyn.Value, error) {
 	// This is an unresolved variable reference.
 	deps := ref.references()
 
@@ -154,7 +150,6 @@ func (r *resolver) resolveRef(key string, ref ref, seen []string) (dyn.Value, er
 	if ref.isPure() && complete {
 		// If the variable reference is pure, we can substitute it.
 		// This is useful for interpolating values of non-string types.
-		r.resolved[key] = resolved[0]
 		return resolved[0], nil
 	}
 
@@ -178,10 +173,7 @@ func (r *resolver) resolveRef(key string, ref ref, seen []string) (dyn.Value, er
 		ref.str = strings.Replace(ref.str, ref.matches[j][0], s, 1)
 	}
 
-	// Store the interpolated value.
-	v := dyn.NewValue(ref.str, ref.value.Location())
-	r.resolved[key] = v
-	return v, nil
+	return dyn.NewValue(ref.str, ref.value.Location()), nil
 }
 
 func (r *resolver) resolveKey(key string, seen []string) (dyn.Value, error) {
@@ -211,7 +203,7 @@ func (r *resolver) resolveKey(key string, seen []string) (dyn.Value, error) {
 	// If the returned value is a valid variable reference, resolve it.
 	ref, ok := newRef(v)
 	if ok {
-		v, err = r.resolveRef(key, ref, seen)
+		v, err = r.resolveRef(ref, seen)
 	}
 
 	// Cache the return value and return to the caller.

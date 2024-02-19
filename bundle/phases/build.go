@@ -4,7 +4,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/interpolation"
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/scripts"
 )
 
@@ -18,8 +18,8 @@ func Build() bundle.Mutator {
 			artifacts.InferMissingProperties(),
 			artifacts.BuildAll(),
 			scripts.Execute(config.ScriptPostBuild),
-			interpolation.Interpolate(
-				interpolation.IncludeLookupsInPath("artifacts"),
+			mutator.ResolveVariableReferences(
+				"artifacts",
 			),
 		},
 	)

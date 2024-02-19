@@ -126,49 +126,28 @@ func (r *Resources) VerifyUniqueResourceIdentifiers() (*UniqueResourceIdTracker,
 	return tracker, nil
 }
 
-// SetConfigFilePath sets the specified path for all resources contained in this instance.
+// ConfigureConfigFilePath sets the specified path for all resources contained in this instance.
 // This property is used to correctly resolve paths relative to the path
 // of the configuration file they were defined in.
-func (r *Resources) SetConfigFilePath(path string) {
+func (r *Resources) ConfigureConfigFilePath() {
 	for _, e := range r.Jobs {
-		e.ConfigFilePath = path
+		e.ConfigureConfigFilePath()
 	}
 	for _, e := range r.Pipelines {
-		e.ConfigFilePath = path
+		e.ConfigureConfigFilePath()
 	}
 	for _, e := range r.Models {
-		e.ConfigFilePath = path
+		e.ConfigureConfigFilePath()
 	}
 	for _, e := range r.Experiments {
-		e.ConfigFilePath = path
+		e.ConfigureConfigFilePath()
 	}
 	for _, e := range r.ModelServingEndpoints {
-		e.ConfigFilePath = path
+		e.ConfigureConfigFilePath()
 	}
 	for _, e := range r.RegisteredModels {
-		e.ConfigFilePath = path
+		e.ConfigureConfigFilePath()
 	}
-}
-
-// Merge iterates over all resources and merges chunks of the
-// resource configuration that can be merged. For example, for
-// jobs, this merges job cluster definitions and tasks that
-// use the same `job_cluster_key`, or `task_key`, respectively.
-func (r *Resources) Merge() error {
-	for _, job := range r.Jobs {
-		if err := job.MergeJobClusters(); err != nil {
-			return err
-		}
-		if err := job.MergeTasks(); err != nil {
-			return err
-		}
-	}
-	for _, pipeline := range r.Pipelines {
-		if err := pipeline.MergeClusters(); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 type ConfigResource interface {
