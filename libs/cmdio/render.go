@@ -64,7 +64,7 @@ type jsonRenderer interface {
 
 type textRenderer interface {
 	// Render an object as text to the provided writeFlusher.
-	renderText(context.Context, writeFlusher) error
+	renderText(context.Context, io.Writer) error
 }
 
 type templateRenderer interface {
@@ -76,12 +76,9 @@ type readerRenderer struct {
 	reader io.Reader
 }
 
-func (r readerRenderer) renderText(_ context.Context, w writeFlusher) error {
+func (r readerRenderer) renderText(_ context.Context, w io.Writer) error {
 	_, err := io.Copy(w, r.reader)
-	if err != nil {
-		return err
-	}
-	return w.Flush()
+	return err
 }
 
 type iteratorRenderer struct {
@@ -152,7 +149,7 @@ func (ir iteratorRenderer) renderTemplate(ctx context.Context, t *template.Templ
 			if err != nil {
 				return err
 			}
-			buf = make([]any, 0, ir.getBufferSize())
+			buf = buf[:0]
 		}
 	}
 	if len(buf) > 0 {
@@ -165,11 +162,11 @@ func (ir iteratorRenderer) renderTemplate(ctx context.Context, t *template.Templ
 }
 
 type defaultRenderer struct {
-	it any
+	t any
 }
 
 func (d defaultRenderer) renderJson(_ context.Context, w writeFlusher) error {
-	pretty, err := fancyJSON(d.it)
+	pretty, err := fancyJSON(d.t)
 	if err != nil {
 		return err
 	}
@@ -185,21 +182,21 @@ func (d defaultRenderer) renderJson(_ context.Context, w writeFlusher) error {
 }
 
 func (d defaultRenderer) renderTemplate(_ context.Context, t *template.Template, w *tabwriter.Writer) error {
-	return t.Execute(w, d.it)
+	return t.Execute(w, d.t)
 }
 
 // Returns something implementing one of the following interfaces:
 //   - jsonRenderer
 //   - textRenderer
 //   - templateRenderer
-func newRenderer(it any) any {
-	if r, ok := it.(io.Reader); ok {
+func newRenderer(t any) any {
+	if r, ok := t.(io.Reader); ok {
 		return readerRenderer{reader: r}
 	}
-	if iterator, ok := newReflectIterator(it); ok {
+	if iterator, ok := newReflectIterator(t); ok {
 		return iteratorRenderer{t: iterator}
 	}
-	return defaultRenderer{it: it}
+	return defaultRenderer{t: t}
 }
 
 type bufferedFlusher struct {
@@ -237,7 +234,7 @@ func renderWithTemplate(r any, ctx context.Context, outputFormat flags.Output, w
 			return renderUsingTemplate(ctx, tr, w, headerTemplate, template)
 		}
 		if tr, ok := r.(textRenderer); ok {
-			return tr.renderText(ctx, newBufferedFlusher(w))
+			return tr.renderText(ctx, w)
 		}
 		if jr, ok := r.(jsonRenderer); ok {
 			return jr.renderJson(ctx, newBufferedFlusher(w))
