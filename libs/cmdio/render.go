@@ -88,7 +88,7 @@ type iteratorRenderer struct {
 
 func (ir iteratorRenderer) getBufferSize() int {
 	if ir.bufferSize == 0 {
-		return 100
+		return 20
 	}
 	return ir.bufferSize
 }
