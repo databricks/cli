@@ -1,44 +1,64 @@
 package terraform
 
 import (
+	"context"
 	"fmt"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/interpolation"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 )
 
-// Rewrite variable references to resources into Terraform compatible format.
-func interpolateTerraformResourceIdentifiers(path string, lookup map[string]string) (string, error) {
-	parts := strings.Split(path, interpolation.Delimiter)
-	if parts[0] == "resources" {
-		switch parts[1] {
-		case "pipelines":
-			path = strings.Join(append([]string{"databricks_pipeline"}, parts[2:]...), interpolation.Delimiter)
-			return fmt.Sprintf("${%s}", path), nil
-		case "jobs":
-			path = strings.Join(append([]string{"databricks_job"}, parts[2:]...), interpolation.Delimiter)
-			return fmt.Sprintf("${%s}", path), nil
-		case "models":
-			path = strings.Join(append([]string{"databricks_mlflow_model"}, parts[2:]...), interpolation.Delimiter)
-			return fmt.Sprintf("${%s}", path), nil
-		case "experiments":
-			path = strings.Join(append([]string{"databricks_mlflow_experiment"}, parts[2:]...), interpolation.Delimiter)
-			return fmt.Sprintf("${%s}", path), nil
-		case "model_serving_endpoints":
-			path = strings.Join(append([]string{"databricks_model_serving"}, parts[2:]...), interpolation.Delimiter)
-			return fmt.Sprintf("${%s}", path), nil
-		case "registered_models":
-			path = strings.Join(append([]string{"databricks_registered_model"}, parts[2:]...), interpolation.Delimiter)
-			return fmt.Sprintf("${%s}", path), nil
-		default:
-			panic("TODO: " + parts[1])
-		}
-	}
-
-	return interpolation.DefaultLookup(path, lookup)
+type interpolateMutator struct {
 }
 
 func Interpolate() bundle.Mutator {
-	return interpolation.Interpolate(interpolateTerraformResourceIdentifiers)
+	return &interpolateMutator{}
+}
+
+func (m *interpolateMutator) Name() string {
+	return "terraform.Interpolate"
+}
+
+func (m *interpolateMutator) Apply(ctx context.Context, b *bundle.Bundle) error {
+	return b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
+		prefix := dyn.MustPathFromString("resources")
+
+		// Resolve variable references in all values.
+		return dynvar.Resolve(root, func(path dyn.Path) (dyn.Value, error) {
+			// Expect paths of the form:
+			//   - resources.<resource_type>.<resource_name>.<field>...
+			if !path.HasPrefix(prefix) || len(path) < 4 {
+				return dyn.InvalidValue, dynvar.ErrSkipResolution
+			}
+
+			// Rewrite the bundle configuration path:
+			//
+			//   ${resources.pipelines.my_pipeline.id}
+			//
+			// into the Terraform-compatible resource identifier:
+			//
+			//   ${databricks_pipeline.my_pipeline.id}
+			//
+			switch path[1] {
+			case dyn.Key("pipelines"):
+				path = dyn.NewPath(dyn.Key("databricks_pipeline")).Append(path[2:]...)
+			case dyn.Key("jobs"):
+				path = dyn.NewPath(dyn.Key("databricks_job")).Append(path[2:]...)
+			case dyn.Key("models"):
+				path = dyn.NewPath(dyn.Key("databricks_mlflow_model")).Append(path[2:]...)
+			case dyn.Key("experiments"):
+				path = dyn.NewPath(dyn.Key("databricks_mlflow_experiment")).Append(path[2:]...)
+			case dyn.Key("model_serving_endpoints"):
+				path = dyn.NewPath(dyn.Key("databricks_model_serving")).Append(path[2:]...)
+			case dyn.Key("registered_models"):
+				path = dyn.NewPath(dyn.Key("databricks_registered_model")).Append(path[2:]...)
+			default:
+				// Trigger "key not found" for unknown resource types.
+				return dyn.GetByPath(root, path)
+			}
+
+			return dyn.V(fmt.Sprintf("${%s}", path.String())), nil
+		})
+	})
 }

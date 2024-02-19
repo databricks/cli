@@ -64,7 +64,13 @@ func loadBundle(cmd *cobra.Command, args []string, load func(ctx context.Context
 
 	profile := getProfile(cmd)
 	if profile != "" {
-		b.Config.Workspace.Profile = profile
+		err = bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) error {
+			b.Config.Workspace.Profile = profile
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	err = bundle.Apply(ctx, b, bundle.Seq(mutator.DefaultMutators()...))

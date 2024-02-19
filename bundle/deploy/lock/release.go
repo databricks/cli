@@ -12,6 +12,8 @@ import (
 type Goal string
 
 const (
+	GoalBind    = Goal("bind")
+	GoalUnbind  = Goal("unbind")
 	GoalDeploy  = Goal("deploy")
 	GoalDestroy = Goal("destroy")
 )
@@ -30,7 +32,7 @@ func (m *release) Name() string {
 
 func (m *release) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// Return early if locking is disabled.
-	if !b.Config.Bundle.Lock.IsEnabled() {
+	if !b.Config.Bundle.Deployment.Lock.IsEnabled() {
 		log.Infof(ctx, "Skipping; locking is disabled")
 		return nil
 	}
@@ -45,6 +47,8 @@ func (m *release) Apply(ctx context.Context, b *bundle.Bundle) error {
 	log.Infof(ctx, "Releasing deployment lock")
 	switch m.goal {
 	case GoalDeploy:
+		return b.Locker.Unlock(ctx)
+	case GoalBind, GoalUnbind:
 		return b.Locker.Unlock(ctx)
 	case GoalDestroy:
 		return b.Locker.Unlock(ctx, locker.AllowLockFileNotExist)

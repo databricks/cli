@@ -35,3 +35,7 @@ func newShShell() (shell, error) {
 
 	return &shShell{executable: out}, nil
 }
+
+func (s shShell) getType() ExecutableType {
+	return ShExecutable
+}

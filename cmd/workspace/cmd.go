@@ -27,6 +27,7 @@ import (
 	instance_profiles "github.com/databricks/cli/cmd/workspace/instance-profiles"
 	ip_access_lists "github.com/databricks/cli/cmd/workspace/ip-access-lists"
 	jobs "github.com/databricks/cli/cmd/workspace/jobs"
+	lakehouse_monitors "github.com/databricks/cli/cmd/workspace/lakehouse-monitors"
 	lakeview "github.com/databricks/cli/cmd/workspace/lakeview"
 	libraries "github.com/databricks/cli/cmd/workspace/libraries"
 	metastores "github.com/databricks/cli/cmd/workspace/metastores"
@@ -93,6 +94,7 @@ func All() []*cobra.Command {
 	out = append(out, instance_profiles.New())
 	out = append(out, ip_access_lists.New())
 	out = append(out, jobs.New())
+	out = append(out, lakehouse_monitors.New())
 	out = append(out, lakeview.New())
 	out = append(out, libraries.New())
 	out = append(out, metastores.New())

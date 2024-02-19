@@ -13,30 +13,42 @@ targets:
 resources:
   pipelines:
     nyc_taxi_pipeline:
+      name: "nyc taxi loader"
+
       permissions:
         - level: CAN_VIEW
           service_principal_name: my_service_principal
         - level: CAN_VIEW
           user_name: my_user_name
-      name: "nyc taxi loader"
+
       libraries:
         - notebook:
             path: ./dlt/nyc_taxi_loader
+
   jobs:
     job_one:
       name: Job One
+
       tasks:
-        - task:
+        - task_key: "task_one"
+          notebook_task:
             notebook_path: "./test.py"
+
     job_two:
       name: Job Two
+
       tasks:
-        - task:
+        - task_key: "task_two"
+          notebook_task:
             notebook_path: "./test.py"
+
     job_three:
       name: Job Three
+
       run_as:
         service_principal_name: "my_service_principal_for_job"
+
       tasks:
-        - task:
+        - task_key: "task_three"
+          notebook_task:
             notebook_path: "./test.py"

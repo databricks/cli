@@ -104,6 +104,122 @@ func TestNormalizeStructError(t *testing.T) {
 	}, err[0])
 }
 
+func TestNormalizeStructNestedError(t *testing.T) {
+	type Nested struct {
+		F1 int `json:"f1"`
+		F2 int `json:"f2"`
+	}
+	type Tmp struct {
+		Foo Nested `json:"foo"`
+		Bar Nested `json:"bar"`
+	}
+
+	var typ Tmp
+	vin := dyn.V(map[string]dyn.Value{
+		"foo": dyn.V(map[string]dyn.Value{
+			"f1": dyn.V("error"),
+			"f2": dyn.V(1),
+		}),
+		"bar": dyn.V(map[string]dyn.Value{
+			"f1": dyn.V(1),
+			"f2": dyn.V("error"),
+		}),
+	})
+	vout, err := Normalize(typ, vin)
+	assert.Len(t, err, 2)
+
+	// Verify that valid fields are retained.
+	assert.Equal(t,
+		dyn.V(map[string]dyn.Value{
+			"foo": dyn.V(map[string]dyn.Value{
+				"f2": dyn.V(int64(1)),
+			}),
+			"bar": dyn.V(map[string]dyn.Value{
+				"f1": dyn.V(int64(1)),
+			}),
+		}),
+		vout,
+	)
+}
+
+func TestNormalizeStructIncludeMissingFields(t *testing.T) {
+	type Nested struct {
+		String string `json:"string"`
+	}
+
+	type Tmp struct {
+		// Verify that fields that are already set in the dynamic value are not overridden.
+		Existing string `json:"existing"`
+
+		// Verify that structs are recursively normalized if not set.
+		Nested Nested  `json:"nested"`
+		Ptr    *Nested `json:"ptr"`
+
+		// Verify that containers are also zero-initialized if not set.
+		Map   map[string]string `json:"map"`
+		Slice []string          `json:"slice"`
+
+		// Verify that primitive types are zero-initialized if not set.
+		String string  `json:"string"`
+		Bool   bool    `json:"bool"`
+		Int    int     `json:"int"`
+		Float  float64 `json:"float"`
+	}
+
+	var typ Tmp
+	vin := dyn.V(map[string]dyn.Value{
+		"existing": dyn.V("already set"),
+	})
+	vout, err := Normalize(typ, vin, IncludeMissingFields)
+	assert.Empty(t, err)
+	assert.Equal(t, dyn.V(map[string]dyn.Value{
+		"existing": dyn.V("already set"),
+		"nested": dyn.V(map[string]dyn.Value{
+			"string": dyn.V(""),
+		}),
+		"ptr": dyn.V(map[string]dyn.Value{
+			"string": dyn.V(""),
+		}),
+		"map":    dyn.V(map[string]dyn.Value{}),
+		"slice":  dyn.V([]dyn.Value{}),
+		"string": dyn.V(""),
+		"bool":   dyn.V(false),
+		"int":    dyn.V(int64(0)),
+		"float":  dyn.V(float64(0)),
+	}), vout)
+}
+
+func TestNormalizeStructIncludeMissingFieldsOnRecursiveType(t *testing.T) {
+	type Tmp struct {
+		// Verify that structs are recursively normalized if not set.
+		Ptr *Tmp `json:"ptr"`
+
+		// Verify that primitive types are zero-initialized if not set.
+		String string `json:"string"`
+	}
+
+	var typ Tmp
+	vin := dyn.V(map[string]dyn.Value{
+		"ptr": dyn.V(map[string]dyn.Value{
+			"ptr": dyn.V(map[string]dyn.Value{
+				"string": dyn.V("already set"),
+			}),
+		}),
+	})
+	vout, err := Normalize(typ, vin, IncludeMissingFields)
+	assert.Empty(t, err)
+	assert.Equal(t, dyn.V(map[string]dyn.Value{
+		"ptr": dyn.V(map[string]dyn.Value{
+			"ptr": dyn.V(map[string]dyn.Value{
+				// Note: the ptr field is not zero-initialized because that would recurse.
+				"string": dyn.V("already set"),
+			}),
+			"string": dyn.V(""),
+		}),
+		"string": dyn.V(""),
+	}), vout)
+}
+
 func TestNormalizeMap(t *testing.T) {
 	var typ map[string]string
 	vin := dyn.V(map[string]dyn.Value{
@@ -157,6 +273,40 @@ func TestNormalizeMapError(t *testing.T) {
 	}, err[0])
 }
 
+func TestNormalizeMapNestedError(t *testing.T) {
+	type Nested struct {
+		F1 int `json:"f1"`
+		F2 int `json:"f2"`
+	}
+
+	var typ map[string]Nested
+	vin := dyn.V(map[string]dyn.Value{
+		"foo": dyn.V(map[string]dyn.Value{
+			"f1": dyn.V("error"),
+			"f2": dyn.V(1),
+		}),
+		"bar": dyn.V(map[string]dyn.Value{
+			"f1": dyn.V(1),
+			"f2": dyn.V("error"),
+		}),
+	})
+	vout, err := Normalize(typ, vin)
+	assert.Len(t, err, 2)
+
+	// Verify that valid fields are retained.
+	assert.Equal(t,
+		dyn.V(map[string]dyn.Value{
+			"foo": dyn.V(map[string]dyn.Value{
+				"f2": dyn.V(int64(1)),
+			}),
+			"bar": dyn.V(map[string]dyn.Value{
+				"f1": dyn.V(int64(1)),
+			}),
+		}),
+		vout,
+	)
+}
+
 func TestNormalizeSlice(t *testing.T) {
 	var typ []string
 	vin := dyn.V([]dyn.Value{
@@ -207,6 +357,40 @@ func TestNormalizeSliceError(t *testing.T) {
 		Summary:  `expected sequence, found string`,
 		Location: vin.Location(),
 	}, err[0])
+}
+
+func TestNormalizeSliceNestedError(t *testing.T) {
+	type Nested struct {
+		F1 int `json:"f1"`
+		F2 int `json:"f2"`
+	}
+
+	var typ []Nested
+	vin := dyn.V([]dyn.Value{
+		dyn.V(map[string]dyn.Value{
+			"f1": dyn.V("error"),
+			"f2": dyn.V(1),
+		}),
+		dyn.V(map[string]dyn.Value{
+			"f1": dyn.V(1),
+			"f2": dyn.V("error"),
+		}),
+	})
+	vout, err := Normalize(typ, vin)
+	assert.Len(t, err, 2)
+
+	// Verify that valid fields are retained.
+	assert.Equal(t,
+		dyn.V([]dyn.Value{
+			dyn.V(map[string]dyn.Value{
+				"f2": dyn.V(int64(1)),
+			}),
+			dyn.V(map[string]dyn.Value{
+				"f1": dyn.V(int64(1)),
+			}),
+		}),
+		vout,
+	)
 }
 
 func TestNormalizeString(t *testing.T) {
