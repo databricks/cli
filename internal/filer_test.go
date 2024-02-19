@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"io/fs"
 	"regexp"
@@ -38,11 +37,87 @@ func (f filerTest) assertContents(ctx context.Context, name string, contents str
 	assert.Equal(f, contents, body.String())
 }
 
+func commonFilerRecursiveDeleteTest(t *testing.T, ctx context.Context, f filer.Filer) {
+	var err error
+
+	err = f.Write(ctx, "dir/file1", strings.NewReader("content1"), filer.CreateParentDirectories)
+	require.NoError(t, err)
+	filerTest{t, f}.assertContents(ctx, "dir/file1", `content1`)
+
+	err = f.Write(ctx, "dir/file2", strings.NewReader("content2"), filer.CreateParentDirectories)
+	require.NoError(t, err)
+	filerTest{t, f}.assertContents(ctx, "dir/file2", `content2`)
+
+	err = f.Write(ctx, "dir/subdir1/file3", strings.NewReader("content3"), filer.CreateParentDirectories)
+	require.NoError(t, err)
+	filerTest{t, f}.assertContents(ctx, "dir/subdir1/file3", `content3`)
+
+	err = f.Write(ctx, "dir/subdir1/file4", strings.NewReader("content4"), filer.CreateParentDirectories)
+	require.NoError(t, err)
+	filerTest{t, f}.assertContents(ctx, "dir/subdir1/file4", `content4`)
+
+	err = f.Write(ctx, "dir/subdir2/file5", strings.NewReader("content5"), filer.CreateParentDirectories)
+	require.NoError(t, err)
+	filerTest{t, f}.assertContents(ctx, "dir/subdir2/file5", `content5`)
+
+	err = f.Write(ctx, "dir/subdir2/file6", strings.NewReader("content6"), filer.CreateParentDirectories)
+	require.NoError(t, err)
+	filerTest{t, f}.assertContents(ctx, "dir/subdir2/file6", `content6`)
+
+	entriesBeforeDelete, err := f.ReadDir(ctx, "dir")
+	require.NoError(t, err)
+	assert.Len(t, entriesBeforeDelete, 4)
+
+	names := []string{}
+	for _, e := range entriesBeforeDelete {
+		names = append(names, e.Name())
+	}
+	assert.Equal(t, names, []string{"file1", "file2", "subdir1", "subdir2"})
+
+	err = f.Delete(ctx, "dir")
+	assert.ErrorAs(t, err, &filer.DirectoryNotEmptyError{})
+
+	err = f.Delete(ctx, "dir", filer.DeleteRecursively)
+	assert.NoError(t, err)
+	_, err = f.ReadDir(ctx, "dir")
+	assert.ErrorAs(t, err, &filer.NoSuchDirectoryError{})
+}
+
+func TestAccFilerRecursiveDelete(t *testing.T) {
+	t.Parallel()
+
+	for _, testCase := range []struct {
+		name string
+		f    func(t *testing.T) (filer.Filer, string)
+	}{
+		{"local", setupLocalFiler},
+		{"workspace files", setupWsfsFiler},
+		{"dbfs", setupDbfsFiler},
+		{"files", setupUcVolumesFiler},
+	} {
+		tc := testCase
+
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			f, _ := tc.f(t)
+			ctx := context.Background()
+
+			// Common tests we run across all filers to ensure consistent behavior.
+			commonFilerRecursiveDeleteTest(t, ctx, f)
+		})
+	}
+}
+
 // Common tests we run across all filers to ensure consistent behavior.
 func commonFilerReadWriteTests(t *testing.T, ctx context.Context, f filer.Filer) {
 	var err error
 
-	// Read should fail because the root path doesn't yet exist.
+	// Write should fail because the intermediate directory doesn't exist.
+	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello world`))
+	assert.True(t, errors.As(err, &filer.NoSuchDirectoryError{}))
+	assert.True(t, errors.Is(err, fs.ErrNotExist))
+
+	// Read should fail because intermediate directory doesn't yet exist.
 	_, err = f.Read(ctx, "/foo/bar")
 	assert.True(t, errors.As(err, &filer.FileDoesNotExistError{}))
 	assert.True(t, errors.Is(err, fs.ErrNotExist))
@@ -107,6 +182,10 @@ func commonFilerReadWriteTests(t *testing.T, ctx context.Context, f filer.Filer)
 	assert.True(t, errors.As(err, &filer.DirectoryNotEmptyError{}))
 	assert.True(t, errors.Is(err, fs.ErrInvalid))
 
+	// Delete should succeed for a non-empty directory if the DeleteRecursively flag is set.
+	err = f.Delete(ctx, "/foo", filer.DeleteRecursively)
+	assert.NoError(t, err)
+
 	// Delete of the filer root should ALWAYS fail, otherwise subsequent writes would fail.
 	// It is not in the filer's purview to delete its root directory.
 	err = f.Delete(ctx, "/")
@@ -114,97 +193,29 @@ func commonFilerReadWriteTests(t *testing.T, ctx context.Context, f filer.Filer)
 	assert.True(t, errors.Is(err, fs.ErrInvalid))
 }
 
-// Write should fail because the intermediate directory doesn't exist.
-func writeDoesNotCreateIntermediateDirs(t *testing.T, ctx context.Context, f filer.Filer) {
-	err := f.Write(ctx, "/this-does-not-exist/bar", strings.NewReader(`hello world`))
-	assert.True(t, errors.As(err, &filer.NoSuchDirectoryError{}))
-	assert.True(t, errors.Is(err, fs.ErrNotExist))
-}
-
-// Write should succeed even if the intermediate directory doesn't exist.
-func writeCreatesIntermediateDirs(t *testing.T, ctx context.Context, f filer.Filer) {
-	err := f.Write(ctx, "/this-does-not-exist/bar", strings.NewReader(`hello world`), filer.CreateParentDirectories)
-	assert.NoError(t, err)
-	filerTest{t, f}.assertContents(ctx, "/this-does-not-exist/bar", `hello world`)
-}
-
-// Delete should succeed for a directory with files in it if the DeleteRecursively flag is set.
-func recursiveDeleteSupported(t *testing.T, ctx context.Context, f filer.Filer) {
-	err := f.Mkdir(ctx, "/dir-to-delete")
-	require.NoError(t, err)
-
-	err = f.Write(ctx, "/dir-to-delete/file1", strings.NewReader(`hello world`))
-	require.NoError(t, err)
-
-	err = f.Delete(ctx, "/dir-to-delete", filer.DeleteRecursively)
-	assert.NoError(t, err)
-}
-
-// Delete should fail if the DeleteRecursively flag is set.
-func recursiveDeleteNotSupported(t *testing.T, ctx context.Context, f filer.Filer) {
-	err := f.Mkdir(ctx, "/dir-to-delete")
-	require.NoError(t, err)
-
-	err = f.Write(ctx, "/dir-to-delete/file1", strings.NewReader(`hello world`))
-	require.NoError(t, err)
-
-	err = f.Delete(ctx, "/dir-to-delete", filer.DeleteRecursively)
-	assert.ErrorContains(t, err, "files API does not support recursive delete")
-}
-
 func TestAccFilerReadWrite(t *testing.T) {
 	t.Parallel()
 
-	t.Run("local", func(t *testing.T) {
-		t.Parallel()
-		ctx := context.Background()
-		f, _ := setupLocalFiler(t)
+	for _, testCase := range []struct {
+		name string
+		f    func(t *testing.T) (filer.Filer, string)
+	}{
+		{"local", setupLocalFiler},
+		{"workspace files", setupWsfsFiler},
+		{"dbfs", setupDbfsFiler},
+		{"files", setupUcVolumesFiler},
+	} {
+		tc := testCase
 
-		// Tests specific to the Local API.
-		writeDoesNotCreateIntermediateDirs(t, ctx, f)
-		recursiveDeleteSupported(t, ctx, f)
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			f, _ := tc.f(t)
+			ctx := context.Background()
 
-		// Common tests we run across all filers to ensure consistent behavior.
-		commonFilerReadWriteTests(t, ctx, f)
-	})
-
-	t.Run("workspace files", func(t *testing.T) {
-		t.Parallel()
-		ctx, f := setupWsfsFiler(t)
-
-		// Tests specific to the Workspace Files API.
-		writeDoesNotCreateIntermediateDirs(t, ctx, f)
-		recursiveDeleteSupported(t, ctx, f)
-
-		// Common tests we run across all filers to ensure consistent behavior.
-		commonFilerReadWriteTests(t, ctx, f)
-	})
-
-	t.Run("dbfs", func(t *testing.T) {
-		t.Parallel()
-		f, _ := setupDbfsFiler(t)
-		ctx := context.Background()
-
-		// Tests specific to the DBFS API.
-		writeDoesNotCreateIntermediateDirs(t, ctx, f)
-		recursiveDeleteSupported(t, ctx, f)
-
-		// Common tests we run across all filers to ensure consistent behavior.
-		commonFilerReadWriteTests(t, ctx, f)
-	})
-
-	t.Run("files", func(t *testing.T) {
-		t.Parallel()
-		f, _ := setupUcVolumesFiler(t)
-		ctx := context.Background()
-
-		// Tests specific to the Files API.
-		writeCreatesIntermediateDirs(t, ctx, f)
-		recursiveDeleteNotSupported(t, ctx, f)
-
-		// Common tests we run across all filers to ensure consistent behavior.
-		commonFilerReadWriteTests(t, ctx, f)
-	})
+			// Common tests we run across all filers to ensure consistent behavior.
+			commonFilerReadWriteTests(t, ctx, f)
+		})
+	}
 }
 
 // Common tests we run across all filers to ensure consistent behavior.
@@ -293,38 +304,25 @@ func commonFilerReadDirTest(t *testing.T, ctx context.Context, f filer.Filer) {
 func TestAccFilerReadDir(t *testing.T) {
 	t.Parallel()
 
-	t.Run("local", func(t *testing.T) {
-		t.Parallel()
-		ctx := context.Background()
-		f, _ := setupLocalFiler(t)
+	for _, testCase := range []struct {
+		name string
+		f    func(t *testing.T) (filer.Filer, string)
+	}{
+		{"local", setupLocalFiler},
+		{"workspace files", setupWsfsFiler},
+		{"dbfs", setupDbfsFiler},
+		{"files", setupUcVolumesFiler},
+	} {
+		tc := testCase
 
-		commonFilerReadDirTest(t, ctx, f)
-	})
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			f, _ := tc.f(t)
+			ctx := context.Background()
 
-	t.Run("workspace files", func(t *testing.T) {
-		t.Parallel()
-		ctx, f := setupWsfsFiler(t)
-
-		commonFilerReadDirTest(t, ctx, f)
-	})
-
-	t.Run("dbfs", func(t *testing.T) {
-		t.Parallel()
-		ctx := context.Background()
-		f, _ := setupDbfsFiler(t)
-
-		commonFilerReadDirTest(t, ctx, f)
-	})
-
-	t.Run("files", func(t *testing.T) {
-		t.Parallel()
-		ctx := context.Background()
-		f, tmpdir := setupUcVolumesFiler(t)
-
-		fmt.Println(tmpdir)
-
-		commonFilerReadDirTest(t, ctx, f)
-	})
+			commonFilerReadDirTest(t, ctx, f)
+		})
+	}
 }
 
 var jupyterNotebookContent1 = `
@@ -376,7 +374,8 @@ var jupyterNotebookContent2 = `
 `
 
 func TestAccFilerWorkspaceNotebookConflict(t *testing.T) {
-	ctx, f := setupWsfsFiler(t)
+	f, _ := setupWsfsFiler(t)
+	ctx := context.Background()
 	var err error
 
 	// Upload the notebooks
@@ -421,7 +420,8 @@ func TestAccFilerWorkspaceNotebookConflict(t *testing.T) {
 }
 
 func TestAccFilerWorkspaceNotebookWithOverwriteFlag(t *testing.T) {
-	ctx, f := setupWsfsFiler(t)
+	f, _ := setupWsfsFiler(t)
+	ctx := context.Background()
 	var err error
 
 	// Upload notebooks

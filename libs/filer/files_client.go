@@ -125,6 +125,24 @@ func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, 
 		return err
 	}
 
+	// Issue info call before write because the files API automatically creates parent directories.
+	if !slices.Contains(mode, CreateParentDirectories) {
+		err := w.workspaceClient.Files.GetDirectoryMetadataByDirectoryPath(ctx, path.Dir(absPath))
+		if err != nil {
+			var aerr *apierr.APIError
+			if !errors.As(err, &aerr) {
+				return err
+			}
+
+			// This API returns a 404 if the file doesn't exist.
+			if aerr.StatusCode == http.StatusNotFound {
+				return NoSuchDirectoryError{path.Dir(absPath)}
+			}
+
+			return err
+		}
+	}
+
 	overwrite := slices.Contains(mode, OverwriteIfExists)
 	urlPath = fmt.Sprintf("%s?overwrite=%t", urlPath, overwrite)
 	headers := map[string]string{"Content-Type": "application/octet-stream"}
@@ -182,11 +200,8 @@ func (w *FilesClient) Read(ctx context.Context, name string) (io.ReadCloser, err
 	return nil, err
 }
 
-func (w *FilesClient) Delete(ctx context.Context, name string, mode ...DeleteMode) error {
-	if slices.Contains(mode, DeleteRecursively) {
-		return fmt.Errorf("files API does not support recursive delete")
-	}
-
+// Delete the file or directory at the specified path.
+func (w *FilesClient) delete(ctx context.Context, name string) error {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return err
@@ -197,15 +212,17 @@ func (w *FilesClient) Delete(ctx context.Context, name string, mode ...DeleteMod
 		return CannotDeleteRootError{}
 	}
 
+	// Issue a stat call to determine if the path is a file or directory.
 	info, err := w.Stat(ctx, name)
 	if err != nil {
 		return err
 	}
 
+	// Issue the delete call for a directory
 	if info.IsDir() {
 		err = w.workspaceClient.Files.DeleteDirectoryByDirectoryPath(ctx, absPath)
 
-		// This API returns a 400 if the directory is not empty
+		// The directory delete API returns a 400 if the directory is not empty
 		var aerr *apierr.APIError
 		if errors.As(err, &aerr) && aerr.StatusCode == http.StatusBadRequest {
 			return DirectoryNotEmptyError{absPath}
@@ -213,14 +230,59 @@ func (w *FilesClient) Delete(ctx context.Context, name string, mode ...DeleteMod
 		return err
 	}
 
+	// Issue the delete call for a file
 	err = w.workspaceClient.Files.DeleteByFilePath(ctx, absPath)
 
-	// This API returns a 404 if the specified path does not exist.
+	// This files delete API returns a 404 if the specified path does not exist.
 	var aerr *apierr.APIError
 	if errors.As(err, &aerr) && aerr.StatusCode == http.StatusNotFound {
 		return FileDoesNotExistError{absPath}
 	}
 	return err
+}
+
+func (w *FilesClient) recursiveDelete(ctx context.Context, name string) error {
+	filerFS := NewFS(ctx, w)
+	dirsToDelete := make([]string, 0)
+	callback := func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Files API does not allowing deleting non-empty directories. We instead
+		// collect the directories to delete and delete them once all the files have
+		// been deleted.
+		if d.IsDir() {
+			dirsToDelete = append(dirsToDelete, path)
+			return nil
+		}
+
+		return w.delete(ctx, path)
+	}
+
+	// Walk the directory and delete all the files.
+	err := fs.WalkDir(filerFS, name, callback)
+	if err != nil {
+		return err
+	}
+
+	// Delete the directories in reverse order to ensure that the parent
+	// directories are deleted after the children. This is possible because
+	// fs.WalkDir walks the directories in lexicographical order.
+	for i := len(dirsToDelete) - 1; i >= 0; i-- {
+		err := w.delete(ctx, dirsToDelete[i])
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (w *FilesClient) Delete(ctx context.Context, name string, mode ...DeleteMode) error {
+	if slices.Contains(mode, DeleteRecursively) {
+		return w.recursiveDelete(ctx, name)
+	}
+	return w.delete(ctx, name)
 }
 
 func (w *FilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, error) {

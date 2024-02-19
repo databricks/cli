@@ -124,52 +124,34 @@ func TestAccFsRmForNonExistentFile(t *testing.T) {
 func TestAccFsRmDirRecursively(t *testing.T) {
 	t.Parallel()
 
-	t.Run("dbfs", func(t *testing.T) {
-		t.Parallel()
+	for _, testCase := range fsTests {
+		tc := testCase
 
-		f, tmpDir := setupDbfsFiler(t)
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-		// Create a directory
-		err := f.Mkdir(context.Background(), "a")
-		require.NoError(t, err)
+			f, tmpDir := tc.setupFiler(t)
 
-		// Create a file in the directory
-		err = f.Write(context.Background(), "a/hello.txt", strings.NewReader("abcd"), filer.CreateParentDirectories)
-		require.NoError(t, err)
+			// Create a directory
+			err := f.Mkdir(context.Background(), "a")
+			require.NoError(t, err)
 
-		// Check file was created
-		_, err = f.Stat(context.Background(), "a/hello.txt")
-		assert.NoError(t, err)
+			// Create a file in the directory
+			err = f.Write(context.Background(), "a/hello.txt", strings.NewReader("abcd"), filer.CreateParentDirectories)
+			require.NoError(t, err)
 
-		// Run rm command
-		stdout, stderr := RequireSuccessfulRun(t, "fs", "rm", path.Join(tmpDir, "a"), "--recursive")
-		assert.Equal(t, "", stderr.String())
-		assert.Equal(t, "", stdout.String())
+			// Check file was created
+			_, err = f.Stat(context.Background(), "a/hello.txt")
+			assert.NoError(t, err)
 
-		// Assert directory was deleted
-		_, err = f.Stat(context.Background(), "a")
-		assert.ErrorIs(t, err, fs.ErrNotExist)
-	})
+			// Run rm command
+			stdout, stderr := RequireSuccessfulRun(t, "fs", "rm", path.Join(tmpDir, "a"), "--recursive")
+			assert.Equal(t, "", stderr.String())
+			assert.Equal(t, "", stdout.String())
 
-	t.Run("uc-volumes", func(t *testing.T) {
-		t.Parallel()
-
-		f, tmpDir := setupUcVolumesFiler(t)
-
-		// Create a directory
-		err := f.Mkdir(context.Background(), "a")
-		require.NoError(t, err)
-
-		// Create a file in the directory
-		err = f.Write(context.Background(), "a/hello.txt", strings.NewReader("abcd"), filer.CreateParentDirectories)
-		require.NoError(t, err)
-
-		// Check file was created
-		_, err = f.Stat(context.Background(), "a/hello.txt")
-		assert.NoError(t, err)
-
-		// Run rm command
-		_, _, err = RequireErrorRun(t, "fs", "rm", path.Join(tmpDir, "a"), "--recursive")
-		assert.ErrorContains(t, err, "files API does not support recursive delete")
-	})
+			// Assert directory was deleted
+			_, err = f.Stat(context.Background(), "a")
+			assert.ErrorIs(t, err, fs.ErrNotExist)
+		})
+	}
 }
