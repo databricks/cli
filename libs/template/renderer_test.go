@@ -112,6 +112,8 @@ func TestBuiltinPythonTemplateValid(t *testing.T) {
 	catalog := "hive_metastore"
 	cachedCatalog = &catalog
 	build := false
+	catalog := "hive_metastore"
+	cachedCatalog = &catalog
 	for _, includeNotebook := range options {
 		for _, includeDlt := range options {
 			for _, includePython := range options {
@@ -162,6 +164,24 @@ func TestBuiltinSQLTemplateValid(t *testing.T) {
 				}
 				build := false
 				assertBuiltinTemplateValid(t, "default-sql", config, target, isServicePrincipal, build, t.TempDir())
+			}
+		}
+	}
+}
+
+func TestBuiltinDbtTemplateValid(t *testing.T) {
+	for _, personal_schemas := range []string{"yes", "no"} {
+		for _, target := range []string{"dev", "prod"} {
+			for _, isServicePrincipal := range []bool{true, false} {
+				config := map[string]any{
+					"project_name":     "my_project",
+					"http_path":        "/sql/1.0/warehouses/123",
+					"default_catalog":  "hive_metastore",
+					"personal_schemas": personal_schemas,
+					"shared_schema":    "lennart",
+				}
+				build := false
+				assertBuiltinTemplateValid(t, "dbt-sql", config, target, isServicePrincipal, build, t.TempDir())
 			}
 		}
 	}
