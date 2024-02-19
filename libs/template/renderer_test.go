@@ -112,8 +112,6 @@ func TestBuiltinPythonTemplateValid(t *testing.T) {
 	catalog := "hive_metastore"
 	cachedCatalog = &catalog
 	build := false
-	catalog := "hive_metastore"
-	cachedCatalog = &catalog
 	for _, includeNotebook := range options {
 		for _, includeDlt := range options {
 			for _, includePython := range options {

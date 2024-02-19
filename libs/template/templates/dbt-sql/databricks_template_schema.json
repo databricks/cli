@@ -3,8 +3,8 @@
     "properties": {
         "project_name": {
             "type": "string",
-            "pattern": "^[A-Za-z_][A-Za-z0-9_]+$",
-            "pattern_match_failure_message": "Name must consist of letters, numbers, and underscores.",
+            "pattern": "^[A-Za-z_][A-Za-z0-9-_]+$",
+            "pattern_match_failure_message": "Name must consist of letters, numbers, dashes, and underscores.",
             "default": "dbt_project",
             "description": "\nPlease provide a unique name for this project.\nproject_name",
             "order": 1
