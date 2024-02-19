@@ -25,6 +25,7 @@ type nativeTemplate struct {
 	gitUrl      string
 	description string
 	aliases     []string
+	hidden      bool
 }
 
 const customTemplate = "custom..."
@@ -33,6 +34,11 @@ var nativeTemplates = []nativeTemplate{
 	{
 		name:        "default-python",
 		description: "The default Python template for Notebooks / Delta Live Tables / Workflows",
+	},
+	{
+		name:        "dbt-sql",
+		description: "The dbt SQL template (https://www.databricks.com/blog/delivering-cost-effective-data-real-time-dbt-and-databricks)",
+		hidden:      true,
 	},
 	{
 		name:        "mlops-stacks",
@@ -50,7 +56,7 @@ var nativeTemplates = []nativeTemplate{
 func nativeTemplateHelpDescriptions() string {
 	var lines []string
 	for _, template := range nativeTemplates {
-		if template.name != customTemplate {
+		if template.name != customTemplate && !template.hidden {
 			lines = append(lines, fmt.Sprintf("- %s: %s", template.name, template.description))
 		}
 	}
@@ -61,6 +67,9 @@ func nativeTemplateHelpDescriptions() string {
 func nativeTemplateOptions() []cmdio.Tuple {
 	names := make([]cmdio.Tuple, 0, len(nativeTemplates))
 	for _, template := range nativeTemplates {
+		if template.hidden {
+			continue
+		}
 		tuple := cmdio.Tuple{
 			Name: template.name,
 			Id:   template.description,
