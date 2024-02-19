@@ -109,9 +109,9 @@ func TestBuiltinPythonTemplateValid(t *testing.T) {
 	// Test option combinations
 	options := []string{"yes", "no"}
 	isServicePrincipal := false
-	build := false
 	catalog := "hive_metastore"
 	cachedCatalog = &catalog
+	build := false
 	for _, includeNotebook := range options {
 		for _, includeDlt := range options {
 			for _, includePython := range options {
@@ -147,6 +147,24 @@ func TestBuiltinPythonTemplateValid(t *testing.T) {
 
 	assertBuiltinTemplateValid(t, "default-python", config, "prod", isServicePrincipal, build, tempDir)
 	defer os.RemoveAll(tempDir)
+}
+
+func TestBuiltinSQLTemplateValid(t *testing.T) {
+	for _, personal_schemas := range []string{"yes", "no"} {
+		for _, target := range []string{"dev", "prod"} {
+			for _, isServicePrincipal := range []bool{true, false} {
+				config := map[string]any{
+					"project_name":     "my_project",
+					"http_path":        "/sql/1.0/warehouses/123abc",
+					"default_catalog":  "users",
+					"shared_schema":    "lennart",
+					"personal_schemas": personal_schemas,
+				}
+				build := false
+				assertBuiltinTemplateValid(t, "default-sql", config, target, isServicePrincipal, build, t.TempDir())
+			}
+		}
+	}
 }
 
 func TestBuiltinDbtTemplateValid(t *testing.T) {
