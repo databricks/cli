@@ -13,7 +13,21 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func SaveAsYAML(data any, filename string, force bool) error {
+type saver struct {
+	nodesWithStyle map[string]yaml.Style
+}
+
+func NewSaver() *saver {
+	return &saver{}
+}
+
+func NewSaverWithStyle(nodesWithStyle map[string]yaml.Style) *saver {
+	return &saver{
+		nodesWithStyle: nodesWithStyle,
+	}
+}
+
+func (s *saver) SaveAsYAML(data any, filename string, force bool) error {
 	err := os.MkdirAll(filepath.Dir(filename), 0755)
 	if err != nil {
 		return err
@@ -36,15 +50,15 @@ func SaveAsYAML(data any, filename string, force bool) error {
 	}
 	defer file.Close()
 
-	err = encode(data, file)
+	err = s.encode(data, file)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func encode(data any, w io.Writer) error {
-	yamlNode, err := ToYamlNode(dyn.V(data))
+func (s *saver) encode(data any, w io.Writer) error {
+	yamlNode, err := s.toYamlNode(dyn.V(data))
 	if err != nil {
 		return err
 	}
@@ -53,7 +67,11 @@ func encode(data any, w io.Writer) error {
 	return enc.Encode(yamlNode)
 }
 
-func ToYamlNode(v dyn.Value) (*yaml.Node, error) {
+func (s *saver) toYamlNode(v dyn.Value) (*yaml.Node, error) {
+	return s.toYamlNodeWithStyle(v, yaml.Style(0))
+}
+
+func (s *saver) toYamlNodeWithStyle(v dyn.Value, style yaml.Style) (*yaml.Node, error) {
 	switch v.Kind() {
 	case dyn.KindMap:
 		m, _ := v.AsMap()
@@ -68,8 +86,14 @@ func ToYamlNode(v dyn.Value) (*yaml.Node, error) {
 		content := make([]*yaml.Node, 0)
 		for _, k := range keys {
 			item := m[k]
-			node := yaml.Node{Kind: yaml.ScalarNode, Value: k}
-			c, err := ToYamlNode(item)
+			node := yaml.Node{Kind: yaml.ScalarNode, Value: k, Style: style}
+			var nestedNodeStyle yaml.Style
+			if customStyle, ok := s.hasStyle(k); ok {
+				nestedNodeStyle = customStyle
+			} else {
+				nestedNodeStyle = style
+			}
+			c, err := s.toYamlNodeWithStyle(item, nestedNodeStyle)
 			if err != nil {
 				return nil, err
 			}
@@ -77,38 +101,43 @@ func ToYamlNode(v dyn.Value) (*yaml.Node, error) {
 			content = append(content, c)
 		}
 
-		return &yaml.Node{Kind: yaml.MappingNode, Content: content}, nil
+		return &yaml.Node{Kind: yaml.MappingNode, Content: content, Style: style}, nil
 	case dyn.KindSequence:
-		s, _ := v.AsSequence()
+		seq, _ := v.AsSequence()
 		content := make([]*yaml.Node, 0)
-		for _, item := range s {
-			node, err := ToYamlNode(item)
+		for _, item := range seq {
+			node, err := s.toYamlNodeWithStyle(item, style)
 			if err != nil {
 				return nil, err
 			}
 			content = append(content, node)
 		}
-		return &yaml.Node{Kind: yaml.SequenceNode, Content: content}, nil
+		return &yaml.Node{Kind: yaml.SequenceNode, Content: content, Style: style}, nil
 	case dyn.KindNil:
-		return &yaml.Node{Kind: yaml.ScalarNode, Value: "null"}, nil
+		return &yaml.Node{Kind: yaml.ScalarNode, Value: "null", Style: style}, nil
 	case dyn.KindString:
 		// If the string is a scalar value (bool, int, float and etc.), we want to quote it.
 		if isScalarValueInString(v) {
 			return &yaml.Node{Kind: yaml.ScalarNode, Value: v.MustString(), Style: yaml.DoubleQuotedStyle}, nil
 		}
-		return &yaml.Node{Kind: yaml.ScalarNode, Value: v.MustString()}, nil
+		return &yaml.Node{Kind: yaml.ScalarNode, Value: v.MustString(), Style: style}, nil
 	case dyn.KindBool:
-		return &yaml.Node{Kind: yaml.ScalarNode, Value: fmt.Sprint(v.MustBool())}, nil
+		return &yaml.Node{Kind: yaml.ScalarNode, Value: fmt.Sprint(v.MustBool()), Style: style}, nil
 	case dyn.KindInt:
-		return &yaml.Node{Kind: yaml.ScalarNode, Value: fmt.Sprint(v.MustInt())}, nil
+		return &yaml.Node{Kind: yaml.ScalarNode, Value: fmt.Sprint(v.MustInt()), Style: style}, nil
 	case dyn.KindFloat:
-		return &yaml.Node{Kind: yaml.ScalarNode, Value: fmt.Sprint(v.MustFloat())}, nil
+		return &yaml.Node{Kind: yaml.ScalarNode, Value: fmt.Sprint(v.MustFloat()), Style: style}, nil
 	case dyn.KindTime:
-		return &yaml.Node{Kind: yaml.ScalarNode, Value: v.MustTime().UTC().String()}, nil
+		return &yaml.Node{Kind: yaml.ScalarNode, Value: v.MustTime().UTC().String(), Style: style}, nil
 	default:
 		// Panic because we only want to deal with known types.
 		panic(fmt.Sprintf("invalid kind: %d", v.Kind()))
 	}
+}
+
+func (s *saver) hasStyle(key string) (yaml.Style, bool) {
+	style, ok := s.nodesWithStyle[key]
+	return style, ok
 }
 
 func isScalarValueInString(v dyn.Value) bool {

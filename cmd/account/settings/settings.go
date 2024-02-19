@@ -3,6 +3,8 @@
 package settings
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -60,25 +62,18 @@ func newDeletePersonalComputeSetting() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Use = "delete-personal-compute-setting ETAG"
+	cmd.Flags().StringVar(&deletePersonalComputeSettingReq.Etag, "etag", deletePersonalComputeSettingReq.Etag, `etag used for versioning.`)
+
+	cmd.Use = "delete-personal-compute-setting"
 	cmd.Short = `Delete Personal Compute setting.`
 	cmd.Long = `Delete Personal Compute setting.
   
-  Reverts back the Personal Compute setting value to default (ON)
-
-  Arguments:
-    ETAG: etag used for versioning. The response is at least as fresh as the eTag
-      provided. This is used for optimistic concurrency control as a way to help
-      prevent simultaneous writes of a setting overwriting each other. It is
-      strongly suggested that systems make use of the etag in the read -> delete
-      pattern to perform setting deletions in order to avoid race conditions.
-      That is, get an etag from a GET request, and pass it with the DELETE
-      request to identify the rule set version you are deleting.`
+  Reverts back the Personal Compute setting value to default (ON)`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := cobra.ExactArgs(0)
 		return check(cmd, args)
 	}
 
@@ -86,8 +81,6 @@ func newDeletePersonalComputeSetting() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-
-		deletePersonalComputeSettingReq.Etag = args[0]
 
 		response, err := a.Settings.DeletePersonalComputeSetting(ctx, deletePersonalComputeSettingReq)
 		if err != nil {
@@ -114,41 +107,34 @@ func init() {
 	})
 }
 
-// start read-personal-compute-setting command
+// start get-personal-compute-setting command
 
 // Slice with functions to override default command behavior.
 // Functions can be added from the `init()` function in manually curated files in this directory.
-var readPersonalComputeSettingOverrides []func(
+var getPersonalComputeSettingOverrides []func(
 	*cobra.Command,
-	*settings.ReadPersonalComputeSettingRequest,
+	*settings.GetPersonalComputeSettingRequest,
 )
 
-func newReadPersonalComputeSetting() *cobra.Command {
+func newGetPersonalComputeSetting() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var readPersonalComputeSettingReq settings.ReadPersonalComputeSettingRequest
+	var getPersonalComputeSettingReq settings.GetPersonalComputeSettingRequest
 
 	// TODO: short flags
 
-	cmd.Use = "read-personal-compute-setting ETAG"
+	cmd.Flags().StringVar(&getPersonalComputeSettingReq.Etag, "etag", getPersonalComputeSettingReq.Etag, `etag used for versioning.`)
+
+	cmd.Use = "get-personal-compute-setting"
 	cmd.Short = `Get Personal Compute setting.`
 	cmd.Long = `Get Personal Compute setting.
   
-  Gets the value of the Personal Compute setting.
-
-  Arguments:
-    ETAG: etag used for versioning. The response is at least as fresh as the eTag
-      provided. This is used for optimistic concurrency control as a way to help
-      prevent simultaneous writes of a setting overwriting each other. It is
-      strongly suggested that systems make use of the etag in the read -> delete
-      pattern to perform setting deletions in order to avoid race conditions.
-      That is, get an etag from a GET request, and pass it with the DELETE
-      request to identify the rule set version you are deleting.`
+  Gets the value of the Personal Compute setting.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := cobra.ExactArgs(0)
 		return check(cmd, args)
 	}
 
@@ -157,9 +143,7 @@ func newReadPersonalComputeSetting() *cobra.Command {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
-		readPersonalComputeSettingReq.Etag = args[0]
-
-		response, err := a.Settings.ReadPersonalComputeSetting(ctx, readPersonalComputeSettingReq)
+		response, err := a.Settings.GetPersonalComputeSetting(ctx, getPersonalComputeSettingReq)
 		if err != nil {
 			return err
 		}
@@ -171,8 +155,8 @@ func newReadPersonalComputeSetting() *cobra.Command {
 	cmd.ValidArgsFunction = cobra.NoFileCompletions
 
 	// Apply optional overrides to this command.
-	for _, fn := range readPersonalComputeSettingOverrides {
-		fn(cmd, &readPersonalComputeSettingReq)
+	for _, fn := range getPersonalComputeSettingOverrides {
+		fn(cmd, &getPersonalComputeSettingReq)
 	}
 
 	return cmd
@@ -180,7 +164,7 @@ func newReadPersonalComputeSetting() *cobra.Command {
 
 func init() {
 	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newReadPersonalComputeSetting())
+		cmd.AddCommand(newGetPersonalComputeSetting())
 	})
 }
 
@@ -202,9 +186,6 @@ func newUpdatePersonalComputeSetting() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updatePersonalComputeSettingJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&updatePersonalComputeSettingReq.AllowMissing, "allow-missing", updatePersonalComputeSettingReq.AllowMissing, `This should always be set to true for Settings RPCs.`)
-	// TODO: complex arg: setting
-
 	cmd.Use = "update-personal-compute-setting"
 	cmd.Short = `Update Personal Compute setting.`
 	cmd.Long = `Update Personal Compute setting.
@@ -212,11 +193,6 @@ func newUpdatePersonalComputeSetting() *cobra.Command {
   Updates the value of the Personal Compute setting.`
 
 	cmd.Annotations = make(map[string]string)
-
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(0)
-		return check(cmd, args)
-	}
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -228,6 +204,8 @@ func newUpdatePersonalComputeSetting() *cobra.Command {
 			if err != nil {
 				return err
 			}
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := a.Settings.UpdatePersonalComputeSetting(ctx, updatePersonalComputeSettingReq)

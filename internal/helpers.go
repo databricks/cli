@@ -131,6 +131,14 @@ func (t *cobraTestRunner) WaitForTextPrinted(text string, timeout time.Duration)
 	}, timeout, 50*time.Millisecond)
 }
 
+func (t *cobraTestRunner) WaitForOutput(text string, timeout time.Duration) {
+	require.Eventually(t.T, func() bool {
+		currentStdout := t.stdout.String()
+		currentErrout := t.stderr.String()
+		return strings.Contains(currentStdout, text) || strings.Contains(currentErrout, text)
+	}, timeout, 50*time.Millisecond)
+}
+
 func (t *cobraTestRunner) WithStdin() {
 	reader, writer := io.Pipe()
 	t.stdinR = reader

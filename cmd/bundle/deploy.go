@@ -1,8 +1,11 @@
 package bundle
 
 import (
+	"context"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -10,7 +13,7 @@ func newDeployCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "deploy",
 		Short:   "Deploy bundle",
-		PreRunE: ConfigureBundleWithVariables,
+		PreRunE: utils.ConfigureBundleWithVariables,
 	}
 
 	var force bool
@@ -23,17 +26,22 @@ func newDeployCommand() *cobra.Command {
 	cmd.Flags().StringVarP(&computeID, "compute-id", "c", "", "Override compute in the deployment with the given compute ID.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		b := bundle.Get(cmd.Context())
+		ctx := cmd.Context()
+		b := bundle.Get(ctx)
 
-		b.Config.Bundle.Force = force
-		b.Config.Bundle.Deployment.Lock.Force = forceLock
-		b.Config.Bundle.ComputeID = computeID
+		bundle.ApplyFunc(ctx, b, func(context.Context, *bundle.Bundle) error {
+			b.Config.Bundle.Force = force
+			b.Config.Bundle.Deployment.Lock.Force = forceLock
+			b.Config.Bundle.ComputeID = computeID
 
-		if cmd.Flag("fail-on-active-runs").Changed {
-			b.Config.Bundle.Deployment.FailOnActiveRuns = failOnActiveRuns
-		}
+			if cmd.Flag("fail-on-active-runs").Changed {
+				b.Config.Bundle.Deployment.FailOnActiveRuns = failOnActiveRuns
+			}
 
-		return bundle.Apply(cmd.Context(), b, bundle.Seq(
+			return nil
+		})
+
+		return bundle.Apply(ctx, b, bundle.Seq(
 			phases.Initialize(),
 			phases.Build(),
 			phases.Deploy(),

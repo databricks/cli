@@ -274,12 +274,12 @@ func TestAllResourcesMocked(t *testing.T) {
 // Make sure that we at least rename all resources
 func TestAllResourcesRenamed(t *testing.T) {
 	b := mockBundle(config.Development)
-	resources := reflect.ValueOf(b.Config.Resources)
 
 	m := ProcessTargetMode()
 	err := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, err)
 
+	resources := reflect.ValueOf(b.Config.Resources)
 	for i := 0; i < resources.NumField(); i++ {
 		field := resources.Field(i)
 

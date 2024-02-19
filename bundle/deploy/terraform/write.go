@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/internal/tf/schema"
+	"github.com/databricks/cli/libs/dyn"
 )
 
 type write struct{}
@@ -21,7 +23,15 @@ func (w *write) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 
-	root := BundleToTerraform(&b.Config)
+	var root *schema.Root
+	err = b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		root, err = BundleToTerraformWithDynValue(ctx, v)
+		return v, err
+	})
+	if err != nil {
+		return err
+	}
+
 	f, err := os.Create(filepath.Join(dir, "bundle.tf.json"))
 	if err != nil {
 		return err

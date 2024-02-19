@@ -66,7 +66,11 @@ func assertBuiltinTemplateValid(t *testing.T, settings map[string]any, target st
 	require.NoError(t, err)
 
 	// Apply initialize / validation mutators
-	b.Config.Workspace.CurrentUser = &bundleConfig.User{User: cachedUser}
+	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) error {
+		b.Config.Workspace.CurrentUser = &bundleConfig.User{User: cachedUser}
+		return nil
+	})
+
 	b.Tagging = tags.ForCloud(w.Config)
 	b.WorkspaceClient()
 	b.Config.Bundle.Terraform = &bundleConfig.Terraform{
