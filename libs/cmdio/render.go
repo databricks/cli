@@ -178,7 +178,7 @@ func (d defaultRenderer) renderJson(_ context.Context, w writeFlusher) error {
 	if err != nil {
 		return err
 	}
-	return nil
+	return w.Flush()
 }
 
 func (d defaultRenderer) renderTemplate(_ context.Context, t *template.Template, w *tabwriter.Writer) error {
@@ -201,7 +201,7 @@ func newRenderer(t any) any {
 
 type bufferedFlusher struct {
 	w io.Writer
-	b bytes.Buffer
+	b *bytes.Buffer
 }
 
 func (b bufferedFlusher) Write(bs []byte) (int, error) {
@@ -209,7 +209,7 @@ func (b bufferedFlusher) Write(bs []byte) (int, error) {
 }
 
 func (b bufferedFlusher) Flush() error {
-	_, err := b.Write(b.b.Bytes())
+	_, err := b.w.Write(b.b.Bytes())
 	if err != nil {
 		return err
 	}
@@ -218,7 +218,10 @@ func (b bufferedFlusher) Flush() error {
 }
 
 func newBufferedFlusher(w io.Writer) writeFlusher {
-	return bufferedFlusher{w: w}
+	return bufferedFlusher{
+		w: w,
+		b: &bytes.Buffer{},
+	}
 }
 
 func renderWithTemplate(r any, ctx context.Context, outputFormat flags.Output, w io.Writer, headerTemplate, template string) error {
