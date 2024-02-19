@@ -16,7 +16,7 @@ func newRmCommand() *cobra.Command {
 	}
 
 	var recursive bool
-	cmd.Flags().BoolVarP(&recursive, "recursive", "r", false, "Recursively delete a non-empty directory. This is not supported for paths in a UC Volume.")
+	cmd.Flags().BoolVarP(&recursive, "recursive", "r", false, "Recursively delete a non-empty directory.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
