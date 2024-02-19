@@ -539,7 +539,7 @@ func setupLocalFiler(t *testing.T) (filer.Filer, string) {
 	return f, path.Join(filepath.ToSlash(tmp))
 }
 
-func setupWsfsFiler(t *testing.T) (context.Context, filer.Filer) {
+func setupWsfsFiler(t *testing.T) (filer.Filer, string) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
@@ -555,7 +555,7 @@ func setupWsfsFiler(t *testing.T) (context.Context, filer.Filer) {
 		t.Skip(aerr.Message)
 	}
 
-	return ctx, f
+	return f, tmpdir
 }
 
 func setupDbfsFiler(t *testing.T) (filer.Filer, string) {
