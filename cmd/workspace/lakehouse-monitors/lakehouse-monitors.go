@@ -631,7 +631,7 @@ func newUpdate() *cobra.Command {
 	// TODO: output-only field
 	// TODO: complex arg: time_series
 
-	cmd.Use = "update FULL_NAME ASSETS_DIR OUTPUT_SCHEMA_NAME"
+	cmd.Use = "update FULL_NAME OUTPUT_SCHEMA_NAME"
 	cmd.Short = `Update a table monitor.`
 	cmd.Long = `Update a table monitor.
   
@@ -651,7 +651,6 @@ func newUpdate() *cobra.Command {
 
   Arguments:
     FULL_NAME: Full name of the table.
-    ASSETS_DIR: The directory to store monitoring assets (e.g. dashboard, metric tables).
     OUTPUT_SCHEMA_NAME: Schema where output metric tables are created.`
 
 	cmd.Annotations = make(map[string]string)
@@ -660,11 +659,11 @@ func newUpdate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only FULL_NAME as positional arguments. Provide 'assets_dir', 'output_schema_name' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, provide only FULL_NAME as positional arguments. Provide 'output_schema_name' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(3)
+		check := cobra.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -681,10 +680,7 @@ func newUpdate() *cobra.Command {
 		}
 		updateReq.FullName = args[0]
 		if !cmd.Flags().Changed("json") {
-			updateReq.AssetsDir = args[1]
-		}
-		if !cmd.Flags().Changed("json") {
-			updateReq.OutputSchemaName = args[2]
+			updateReq.OutputSchemaName = args[1]
 		}
 
 		response, err := w.LakehouseMonitors.Update(ctx, updateReq)

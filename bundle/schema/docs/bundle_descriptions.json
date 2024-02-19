@@ -322,7 +322,7 @@
                       "description": "A unique name for the job cluster. This field is required and must be unique within the job.\n`JobTaskSettings` may refer to this field to determine which cluster to launch for the task execution."
                     },
                     "new_cluster": {
-                      "description": "If new_cluster, a description of a cluster that is created for only for this task.",
+                      "description": "If new_cluster, a description of a cluster that is created for each task.",
                       "properties": {
                         "apply_policy_default_values": {
                           "description": ""
@@ -785,7 +785,7 @@
                           "description": "Optional schema to write to. This parameter is only used when a warehouse_id is also provided. If not provided, the `default` schema is used."
                         },
                         "source": {
-                          "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                          "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in \u003cDatabricks\u003e workspace.\n* `GIT`: SQL file is located in cloud Git provider.\n"
                         },
                         "warehouse_id": {
                           "description": "ID of the SQL warehouse to connect to. If provided, we automatically generate and provide the profile and connection details to dbt. It can be overridden on a per-command basis by using the `--profiles-dir` command line argument."
@@ -930,7 +930,7 @@
                       "description": "An optional minimal interval in milliseconds between the start of the failed run and the subsequent retry run. The default behavior is that unsuccessful runs are immediately retried."
                     },
                     "new_cluster": {
-                      "description": "If new_cluster, a description of a cluster that is created for only for this task.",
+                      "description": "If new_cluster, a description of a cluster that is created for each task.",
                       "properties": {
                         "apply_policy_default_values": {
                           "description": ""
@@ -1269,7 +1269,7 @@
                           "description": "The path of the notebook to be run in the Databricks workspace or remote repository.\nFor notebooks stored in the Databricks workspace, the path must be absolute and begin with a slash.\nFor notebooks stored in a remote repository, the path must be relative. This field is required.\n"
                         },
                         "source": {
-                          "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                          "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in \u003cDatabricks\u003e workspace.\n* `GIT`: SQL file is located in cloud Git provider.\n"
                         }
                       }
                     },
@@ -1371,7 +1371,7 @@
                           "description": "The Python file to be executed. Cloud file URIs (such as dbfs:/, s3:/, adls:/, gcs:/) and workspace paths are supported. For python files stored in the Databricks workspace, the path must be absolute and begin with `/`. For files stored in a remote repository, the path must be relative. This field is required."
                         },
                         "source": {
-                          "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                          "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in \u003cDatabricks\u003e workspace.\n* `GIT`: SQL file is located in cloud Git provider.\n"
                         }
                       }
                     },
@@ -1449,7 +1449,7 @@
                               "description": "Path of the SQL file. Must be relative if the source is a remote Git repository and absolute for workspace paths."
                             },
                             "source": {
-                              "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                              "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in \u003cDatabricks\u003e workspace.\n* `GIT`: SQL file is located in cloud Git provider.\n"
                             }
                           }
                         },
@@ -1672,96 +1672,91 @@
                         "external_model": {
                           "description": "The external model to be served. NOTE: Only one of external_model and (entity_name, entity_version, workload_size, workload_type, and scale_to_zero_enabled)\ncan be specified with the latter set being used for custom model serving for a Databricks registered model. When an external_model is present, the served\nentities list can only have one served_entity object. For an existing endpoint with external_model, it can not be updated to an endpoint without external_model.\nIf the endpoint is created without external_model, users cannot update it to add external_model later.\n",
                           "properties": {
-                            "config": {
-                              "description": "The config for the external model, which must match the provider.",
+                            "ai21labs_config": {
+                              "description": "AI21Labs Config. Only required if the provider is 'ai21labs'.",
                               "properties": {
-                                "ai21labs_config": {
-                                  "description": "AI21Labs Config",
-                                  "properties": {
-                                    "ai21labs_api_key": {
-                                      "description": "The Databricks secret key reference for an AI21Labs API key."
-                                    }
-                                  }
+                                "ai21labs_api_key": {
+                                  "description": "The Databricks secret key reference for an AI21Labs API key."
+                                }
+                              }
+                            },
+                            "anthropic_config": {
+                              "description": "Anthropic Config. Only required if the provider is 'anthropic'.",
+                              "properties": {
+                                "anthropic_api_key": {
+                                  "description": "The Databricks secret key reference for an Anthropic API key."
+                                }
+                              }
+                            },
+                            "aws_bedrock_config": {
+                              "description": "AWS Bedrock Config. Only required if the provider is 'aws-bedrock'.",
+                              "properties": {
+                                "aws_access_key_id": {
+                                  "description": "The Databricks secret key reference for an AWS Access Key ID with permissions to interact with Bedrock services."
                                 },
-                                "anthropic_config": {
-                                  "description": "Anthropic Config",
-                                  "properties": {
-                                    "anthropic_api_key": {
-                                      "description": "The Databricks secret key reference for an Anthropic API key."
-                                    }
-                                  }
+                                "aws_region": {
+                                  "description": "The AWS region to use. Bedrock has to be enabled there."
                                 },
-                                "aws_bedrock_config": {
-                                  "description": "AWS Bedrock Config",
-                                  "properties": {
-                                    "aws_access_key_id": {
-                                      "description": "The Databricks secret key reference for an AWS Access Key ID with permissions to interact with Bedrock services."
-                                    },
-                                    "aws_region": {
-                                      "description": "The AWS region to use. Bedrock has to be enabled there."
-                                    },
-                                    "aws_secret_access_key": {
-                                      "description": "The Databricks secret key reference for an AWS Secret Access Key paired with the access key ID, with permissions to interact with Bedrock services."
-                                    },
-                                    "bedrock_provider": {
-                                      "description": "The underlying provider in AWS Bedrock. Supported values (case insensitive) include: Anthropic, Cohere, AI21Labs, Amazon."
-                                    }
-                                  }
+                                "aws_secret_access_key": {
+                                  "description": "The Databricks secret key reference for an AWS Secret Access Key paired with the access key ID, with permissions to interact with Bedrock services."
                                 },
-                                "cohere_config": {
-                                  "description": "Cohere Config",
-                                  "properties": {
-                                    "cohere_api_key": {
-                                      "description": "The Databricks secret key reference for a Cohere API key."
-                                    }
-                                  }
+                                "bedrock_provider": {
+                                  "description": "The underlying provider in AWS Bedrock. Supported values (case insensitive) include: Anthropic, Cohere, AI21Labs, Amazon."
+                                }
+                              }
+                            },
+                            "cohere_config": {
+                              "description": "Cohere Config. Only required if the provider is 'cohere'.",
+                              "properties": {
+                                "cohere_api_key": {
+                                  "description": "The Databricks secret key reference for a Cohere API key."
+                                }
+                              }
+                            },
+                            "databricks_model_serving_config": {
+                              "description": "Databricks Model Serving Config. Only required if the provider is 'databricks-model-serving'.",
+                              "properties": {
+                                "databricks_api_token": {
+                                  "description": "The Databricks secret key reference for a Databricks API token that corresponds to a user or service\nprincipal with Can Query access to the model serving endpoint pointed to by this external model.\n"
                                 },
-                                "databricks_model_serving_config": {
-                                  "description": "Databricks Model Serving Config",
-                                  "properties": {
-                                    "databricks_api_token": {
-                                      "description": "The Databricks secret key reference for a Databricks API token that corresponds to a user or service\nprincipal with Can Query access to the model serving endpoint pointed to by this external model.\n"
-                                    },
-                                    "databricks_workspace_url": {
-                                      "description": "The URL of the Databricks workspace containing the model serving endpoint pointed to by this external model.\n"
-                                    }
-                                  }
-                                },
-                                "openai_config": {
-                                  "description": "OpenAI Config",
-                                  "properties": {
-                                    "openai_api_base": {
-                                      "description": "This is the base URL for the OpenAI API (default: \"https://api.openai.com/v1\").\nFor Azure OpenAI, this field is required, and is the base URL for the Azure OpenAI API service\nprovided by Azure.\n"
-                                    },
-                                    "openai_api_key": {
-                                      "description": "The Databricks secret key reference for an OpenAI or Azure OpenAI API key."
-                                    },
-                                    "openai_api_type": {
-                                      "description": "This is an optional field to specify the type of OpenAI API to use.\nFor Azure OpenAI, this field is required, and adjust this parameter to represent the preferred security\naccess validation protocol. For access token validation, use azure. For authentication using Azure Active\nDirectory (Azure AD) use, azuread.\n"
-                                    },
-                                    "openai_api_version": {
-                                      "description": "This is an optional field to specify the OpenAI API version.\nFor Azure OpenAI, this field is required, and is the version of the Azure OpenAI service to\nutilize, specified by a date.\n"
-                                    },
-                                    "openai_deployment_name": {
-                                      "description": "This field is only required for Azure OpenAI and is the name of the deployment resource for the\nAzure OpenAI service.\n"
-                                    },
-                                    "openai_organization": {
-                                      "description": "This is an optional field to specify the organization in OpenAI or Azure OpenAI.\n"
-                                    }
-                                  }
-                                },
-                                "palm_config": {
-                                  "description": "PaLM Config",
-                                  "properties": {
-                                    "palm_api_key": {
-                                      "description": "The Databricks secret key reference for a PaLM API key."
-                                    }
-                                  }
+                                "databricks_workspace_url": {
+                                  "description": "The URL of the Databricks workspace containing the model serving endpoint pointed to by this external model.\n"
                                 }
                               }
                             },
                             "name": {
                               "description": "The name of the external model."
+                            },
+                            "openai_config": {
+                              "description": "OpenAI Config. Only required if the provider is 'openai'.",
+                              "properties": {
+                                "openai_api_base": {
+                                  "description": "This is the base URL for the OpenAI API (default: \"https://api.openai.com/v1\").\nFor Azure OpenAI, this field is required, and is the base URL for the Azure OpenAI API service\nprovided by Azure.\n"
+                                },
+                                "openai_api_key": {
+                                  "description": "The Databricks secret key reference for an OpenAI or Azure OpenAI API key."
+                                },
+                                "openai_api_type": {
+                                  "description": "This is an optional field to specify the type of OpenAI API to use.\nFor Azure OpenAI, this field is required, and adjust this parameter to represent the preferred security\naccess validation protocol. For access token validation, use azure. For authentication using Azure Active\nDirectory (Azure AD) use, azuread.\n"
+                                },
+                                "openai_api_version": {
+                                  "description": "This is an optional field to specify the OpenAI API version.\nFor Azure OpenAI, this field is required, and is the version of the Azure OpenAI service to\nutilize, specified by a date.\n"
+                                },
+                                "openai_deployment_name": {
+                                  "description": "This field is only required for Azure OpenAI and is the name of the deployment resource for the\nAzure OpenAI service.\n"
+                                },
+                                "openai_organization": {
+                                  "description": "This is an optional field to specify the organization in OpenAI or Azure OpenAI.\n"
+                                }
+                              }
+                            },
+                            "palm_config": {
+                              "description": "PaLM Config. Only required if the provider is 'palm'.",
+                              "properties": {
+                                "palm_api_key": {
+                                  "description": "The Databricks secret key reference for a PaLM API key."
+                                }
+                              }
                             },
                             "provider": {
                               "description": "The name of the provider for the external model. Currently, the supported providers are 'ai21labs', 'anthropic',\n'aws-bedrock', 'cohere', 'databricks-model-serving', 'openai', and 'palm'.\",\n"
@@ -1773,6 +1768,12 @@
                         },
                         "instance_profile_arn": {
                           "description": "ARN of the instance profile that the served entity uses to access AWS resources."
+                        },
+                        "max_provisioned_throughput": {
+                          "description": "The maximum tokens per second that the endpoint can scale up to."
+                        },
+                        "min_provisioned_throughput": {
+                          "description": "The minimum tokens per second that the endpoint can scale down to."
                         },
                         "name": {
                           "description": "The name of a served entity. It must be unique across an endpoint. A served entity name can consist of alphanumeric characters, dashes, and underscores.\nIf not specified for an external model, this field defaults to external_model.name, with '.' and ':' replaced with '-', and if not specified for other\nentities, it defaults to \u003centity-name\u003e-\u003centity-version\u003e.\n"
@@ -2854,7 +2855,7 @@
                             "description": "A unique name for the job cluster. This field is required and must be unique within the job.\n`JobTaskSettings` may refer to this field to determine which cluster to launch for the task execution."
                           },
                           "new_cluster": {
-                            "description": "If new_cluster, a description of a cluster that is created for only for this task.",
+                            "description": "If new_cluster, a description of a cluster that is created for each task.",
                             "properties": {
                               "apply_policy_default_values": {
                                 "description": ""
@@ -3317,7 +3318,7 @@
                                 "description": "Optional schema to write to. This parameter is only used when a warehouse_id is also provided. If not provided, the `default` schema is used."
                               },
                               "source": {
-                                "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                                "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in \u003cDatabricks\u003e workspace.\n* `GIT`: SQL file is located in cloud Git provider.\n"
                               },
                               "warehouse_id": {
                                 "description": "ID of the SQL warehouse to connect to. If provided, we automatically generate and provide the profile and connection details to dbt. It can be overridden on a per-command basis by using the `--profiles-dir` command line argument."
@@ -3462,7 +3463,7 @@
                             "description": "An optional minimal interval in milliseconds between the start of the failed run and the subsequent retry run. The default behavior is that unsuccessful runs are immediately retried."
                           },
                           "new_cluster": {
-                            "description": "If new_cluster, a description of a cluster that is created for only for this task.",
+                            "description": "If new_cluster, a description of a cluster that is created for each task.",
                             "properties": {
                               "apply_policy_default_values": {
                                 "description": ""
@@ -3801,7 +3802,7 @@
                                 "description": "The path of the notebook to be run in the Databricks workspace or remote repository.\nFor notebooks stored in the Databricks workspace, the path must be absolute and begin with a slash.\nFor notebooks stored in a remote repository, the path must be relative. This field is required.\n"
                               },
                               "source": {
-                                "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                                "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in \u003cDatabricks\u003e workspace.\n* `GIT`: SQL file is located in cloud Git provider.\n"
                               }
                             }
                           },
@@ -3903,7 +3904,7 @@
                                 "description": "The Python file to be executed. Cloud file URIs (such as dbfs:/, s3:/, adls:/, gcs:/) and workspace paths are supported. For python files stored in the Databricks workspace, the path must be absolute and begin with `/`. For files stored in a remote repository, the path must be relative. This field is required."
                               },
                               "source": {
-                                "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                                "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in \u003cDatabricks\u003e workspace.\n* `GIT`: SQL file is located in cloud Git provider.\n"
                               }
                             }
                           },
@@ -3981,7 +3982,7 @@
                                     "description": "Path of the SQL file. Must be relative if the source is a remote Git repository and absolute for workspace paths."
                                   },
                                   "source": {
-                                    "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                                    "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in \u003cDatabricks\u003e workspace.\n* `GIT`: SQL file is located in cloud Git provider.\n"
                                   }
                                 }
                               },
@@ -4204,96 +4205,91 @@
                               "external_model": {
                                 "description": "The external model to be served. NOTE: Only one of external_model and (entity_name, entity_version, workload_size, workload_type, and scale_to_zero_enabled)\ncan be specified with the latter set being used for custom model serving for a Databricks registered model. When an external_model is present, the served\nentities list can only have one served_entity object. For an existing endpoint with external_model, it can not be updated to an endpoint without external_model.\nIf the endpoint is created without external_model, users cannot update it to add external_model later.\n",
                                 "properties": {
-                                  "config": {
-                                    "description": "The config for the external model, which must match the provider.",
+                                  "ai21labs_config": {
+                                    "description": "AI21Labs Config. Only required if the provider is 'ai21labs'.",
                                     "properties": {
-                                      "ai21labs_config": {
-                                        "description": "AI21Labs Config",
-                                        "properties": {
-                                          "ai21labs_api_key": {
-                                            "description": "The Databricks secret key reference for an AI21Labs API key."
-                                          }
-                                        }
+                                      "ai21labs_api_key": {
+                                        "description": "The Databricks secret key reference for an AI21Labs API key."
+                                      }
+                                    }
+                                  },
+                                  "anthropic_config": {
+                                    "description": "Anthropic Config. Only required if the provider is 'anthropic'.",
+                                    "properties": {
+                                      "anthropic_api_key": {
+                                        "description": "The Databricks secret key reference for an Anthropic API key."
+                                      }
+                                    }
+                                  },
+                                  "aws_bedrock_config": {
+                                    "description": "AWS Bedrock Config. Only required if the provider is 'aws-bedrock'.",
+                                    "properties": {
+                                      "aws_access_key_id": {
+                                        "description": "The Databricks secret key reference for an AWS Access Key ID with permissions to interact with Bedrock services."
                                       },
-                                      "anthropic_config": {
-                                        "description": "Anthropic Config",
-                                        "properties": {
-                                          "anthropic_api_key": {
-                                            "description": "The Databricks secret key reference for an Anthropic API key."
-                                          }
-                                        }
+                                      "aws_region": {
+                                        "description": "The AWS region to use. Bedrock has to be enabled there."
                                       },
-                                      "aws_bedrock_config": {
-                                        "description": "AWS Bedrock Config",
-                                        "properties": {
-                                          "aws_access_key_id": {
-                                            "description": "The Databricks secret key reference for an AWS Access Key ID with permissions to interact with Bedrock services."
-                                          },
-                                          "aws_region": {
-                                            "description": "The AWS region to use. Bedrock has to be enabled there."
-                                          },
-                                          "aws_secret_access_key": {
-                                            "description": "The Databricks secret key reference for an AWS Secret Access Key paired with the access key ID, with permissions to interact with Bedrock services."
-                                          },
-                                          "bedrock_provider": {
-                                            "description": "The underlying provider in AWS Bedrock. Supported values (case insensitive) include: Anthropic, Cohere, AI21Labs, Amazon."
-                                          }
-                                        }
+                                      "aws_secret_access_key": {
+                                        "description": "The Databricks secret key reference for an AWS Secret Access Key paired with the access key ID, with permissions to interact with Bedrock services."
                                       },
-                                      "cohere_config": {
-                                        "description": "Cohere Config",
-                                        "properties": {
-                                          "cohere_api_key": {
-                                            "description": "The Databricks secret key reference for a Cohere API key."
-                                          }
-                                        }
+                                      "bedrock_provider": {
+                                        "description": "The underlying provider in AWS Bedrock. Supported values (case insensitive) include: Anthropic, Cohere, AI21Labs, Amazon."
+                                      }
+                                    }
+                                  },
+                                  "cohere_config": {
+                                    "description": "Cohere Config. Only required if the provider is 'cohere'.",
+                                    "properties": {
+                                      "cohere_api_key": {
+                                        "description": "The Databricks secret key reference for a Cohere API key."
+                                      }
+                                    }
+                                  },
+                                  "databricks_model_serving_config": {
+                                    "description": "Databricks Model Serving Config. Only required if the provider is 'databricks-model-serving'.",
+                                    "properties": {
+                                      "databricks_api_token": {
+                                        "description": "The Databricks secret key reference for a Databricks API token that corresponds to a user or service\nprincipal with Can Query access to the model serving endpoint pointed to by this external model.\n"
                                       },
-                                      "databricks_model_serving_config": {
-                                        "description": "Databricks Model Serving Config",
-                                        "properties": {
-                                          "databricks_api_token": {
-                                            "description": "The Databricks secret key reference for a Databricks API token that corresponds to a user or service\nprincipal with Can Query access to the model serving endpoint pointed to by this external model.\n"
-                                          },
-                                          "databricks_workspace_url": {
-                                            "description": "The URL of the Databricks workspace containing the model serving endpoint pointed to by this external model.\n"
-                                          }
-                                        }
-                                      },
-                                      "openai_config": {
-                                        "description": "OpenAI Config",
-                                        "properties": {
-                                          "openai_api_base": {
-                                            "description": "This is the base URL for the OpenAI API (default: \"https://api.openai.com/v1\").\nFor Azure OpenAI, this field is required, and is the base URL for the Azure OpenAI API service\nprovided by Azure.\n"
-                                          },
-                                          "openai_api_key": {
-                                            "description": "The Databricks secret key reference for an OpenAI or Azure OpenAI API key."
-                                          },
-                                          "openai_api_type": {
-                                            "description": "This is an optional field to specify the type of OpenAI API to use.\nFor Azure OpenAI, this field is required, and adjust this parameter to represent the preferred security\naccess validation protocol. For access token validation, use azure. For authentication using Azure Active\nDirectory (Azure AD) use, azuread.\n"
-                                          },
-                                          "openai_api_version": {
-                                            "description": "This is an optional field to specify the OpenAI API version.\nFor Azure OpenAI, this field is required, and is the version of the Azure OpenAI service to\nutilize, specified by a date.\n"
-                                          },
-                                          "openai_deployment_name": {
-                                            "description": "This field is only required for Azure OpenAI and is the name of the deployment resource for the\nAzure OpenAI service.\n"
-                                          },
-                                          "openai_organization": {
-                                            "description": "This is an optional field to specify the organization in OpenAI or Azure OpenAI.\n"
-                                          }
-                                        }
-                                      },
-                                      "palm_config": {
-                                        "description": "PaLM Config",
-                                        "properties": {
-                                          "palm_api_key": {
-                                            "description": "The Databricks secret key reference for a PaLM API key."
-                                          }
-                                        }
+                                      "databricks_workspace_url": {
+                                        "description": "The URL of the Databricks workspace containing the model serving endpoint pointed to by this external model.\n"
                                       }
                                     }
                                   },
                                   "name": {
                                     "description": "The name of the external model."
+                                  },
+                                  "openai_config": {
+                                    "description": "OpenAI Config. Only required if the provider is 'openai'.",
+                                    "properties": {
+                                      "openai_api_base": {
+                                        "description": "This is the base URL for the OpenAI API (default: \"https://api.openai.com/v1\").\nFor Azure OpenAI, this field is required, and is the base URL for the Azure OpenAI API service\nprovided by Azure.\n"
+                                      },
+                                      "openai_api_key": {
+                                        "description": "The Databricks secret key reference for an OpenAI or Azure OpenAI API key."
+                                      },
+                                      "openai_api_type": {
+                                        "description": "This is an optional field to specify the type of OpenAI API to use.\nFor Azure OpenAI, this field is required, and adjust this parameter to represent the preferred security\naccess validation protocol. For access token validation, use azure. For authentication using Azure Active\nDirectory (Azure AD) use, azuread.\n"
+                                      },
+                                      "openai_api_version": {
+                                        "description": "This is an optional field to specify the OpenAI API version.\nFor Azure OpenAI, this field is required, and is the version of the Azure OpenAI service to\nutilize, specified by a date.\n"
+                                      },
+                                      "openai_deployment_name": {
+                                        "description": "This field is only required for Azure OpenAI and is the name of the deployment resource for the\nAzure OpenAI service.\n"
+                                      },
+                                      "openai_organization": {
+                                        "description": "This is an optional field to specify the organization in OpenAI or Azure OpenAI.\n"
+                                      }
+                                    }
+                                  },
+                                  "palm_config": {
+                                    "description": "PaLM Config. Only required if the provider is 'palm'.",
+                                    "properties": {
+                                      "palm_api_key": {
+                                        "description": "The Databricks secret key reference for a PaLM API key."
+                                      }
+                                    }
                                   },
                                   "provider": {
                                     "description": "The name of the provider for the external model. Currently, the supported providers are 'ai21labs', 'anthropic',\n'aws-bedrock', 'cohere', 'databricks-model-serving', 'openai', and 'palm'.\",\n"
@@ -4305,6 +4301,12 @@
                               },
                               "instance_profile_arn": {
                                 "description": "ARN of the instance profile that the served entity uses to access AWS resources."
+                              },
+                              "max_provisioned_throughput": {
+                                "description": "The maximum tokens per second that the endpoint can scale up to."
+                              },
+                              "min_provisioned_throughput": {
+                                "description": "The minimum tokens per second that the endpoint can scale down to."
                               },
                               "name": {
                                 "description": "The name of a served entity. It must be unique across an endpoint. A served entity name can consist of alphanumeric characters, dashes, and underscores.\nIf not specified for an external model, this field defaults to external_model.name, with '.' and ':' replaced with '-', and if not specified for other\nentities, it defaults to \u003centity-name\u003e-\u003centity-version\u003e.\n"
@@ -5063,7 +5065,53 @@
           "variables": {
             "description": "",
             "additionalproperties": {
-              "description": ""
+              "description": "",
+              "properties": {
+                "default": {
+                  "description": ""
+                },
+                "description": {
+                  "description": ""
+                },
+                "lookup": {
+                  "description": "",
+                  "properties": {
+                    "alert": {
+                      "description": ""
+                    },
+                    "cluster": {
+                      "description": ""
+                    },
+                    "cluster_policy": {
+                      "description": ""
+                    },
+                    "dashboard": {
+                      "description": ""
+                    },
+                    "instance_pool": {
+                      "description": ""
+                    },
+                    "job": {
+                      "description": ""
+                    },
+                    "metastore": {
+                      "description": ""
+                    },
+                    "pipeline": {
+                      "description": ""
+                    },
+                    "query": {
+                      "description": ""
+                    },
+                    "service_principal": {
+                      "description": ""
+                    },
+                    "warehouse": {
+                      "description": ""
+                    }
+                  }
+                }
+              }
             }
           },
           "workspace": {

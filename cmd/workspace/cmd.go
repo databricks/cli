@@ -33,6 +33,7 @@ import (
 	metastores "github.com/databricks/cli/cmd/workspace/metastores"
 	model_registry "github.com/databricks/cli/cmd/workspace/model-registry"
 	model_versions "github.com/databricks/cli/cmd/workspace/model-versions"
+	online_tables "github.com/databricks/cli/cmd/workspace/online-tables"
 	permissions "github.com/databricks/cli/cmd/workspace/permissions"
 	pipelines "github.com/databricks/cli/cmd/workspace/pipelines"
 	policy_families "github.com/databricks/cli/cmd/workspace/policy-families"
@@ -100,6 +101,7 @@ func All() []*cobra.Command {
 	out = append(out, metastores.New())
 	out = append(out, model_registry.New())
 	out = append(out, model_versions.New())
+	out = append(out, online_tables.New())
 	out = append(out, permissions.New())
 	out = append(out, pipelines.New())
 	out = append(out, policy_families.New())
