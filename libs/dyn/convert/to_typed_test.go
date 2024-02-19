@@ -355,8 +355,15 @@ func TestToTypedBoolFromString(t *testing.T) {
 	}
 
 	// Other
-	err := ToTyped(&out, dyn.V("${var.foo}"))
+	err := ToTyped(&out, dyn.V("some other string"))
 	require.Error(t, err)
+}
+
+func TestToTypedBoolFromStringVariableReference(t *testing.T) {
+	var out bool = true
+	err := ToTyped(&out, dyn.V("${var.foo}"))
+	require.NoError(t, err)
+	assert.Equal(t, false, out)
 }
 
 func TestToTypedInt(t *testing.T) {
@@ -414,6 +421,13 @@ func TestToTypedIntFromStringInt(t *testing.T) {
 	assert.Equal(t, int(123), out)
 }
 
+func TestToTypedIntFromStringVariableReference(t *testing.T) {
+	var out int = 123
+	err := ToTyped(&out, dyn.V("${var.foo}"))
+	require.NoError(t, err)
+	assert.Equal(t, int(0), out)
+}
+
 func TestToTypedFloat32(t *testing.T) {
 	var out float32
 	err := ToTyped(&out, dyn.V(float32(1.0)))
@@ -466,4 +480,18 @@ func TestToTypedFloat64FromString(t *testing.T) {
 	err := ToTyped(&out, dyn.V("1.2"))
 	require.NoError(t, err)
 	assert.Equal(t, float64(1.2), out)
+}
+
+func TestToTypedFloat32FromStringVariableReference(t *testing.T) {
+	var out float32 = 1.0
+	err := ToTyped(&out, dyn.V("${var.foo}"))
+	require.NoError(t, err)
+	assert.Equal(t, float32(0.0), out)
+}
+
+func TestToTypedFloat64FromStringVariableReference(t *testing.T) {
+	var out float64 = 1.0
+	err := ToTyped(&out, dyn.V("${var.foo}"))
+	require.NoError(t, err)
+	assert.Equal(t, float64(0.0), out)
 }

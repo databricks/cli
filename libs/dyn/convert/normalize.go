@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 )
 
 // NormalizeOption is the type for options that can be passed to Normalize.
@@ -245,6 +246,11 @@ func (n normalizeOptions) normalizeBool(typ reflect.Type, src dyn.Value) (dyn.Va
 		case "false", "n", "N", "no", "No", "NO", "off", "Off", "OFF":
 			out = false
 		default:
+			// Return verbatim if it's a pure variable reference.
+			if dynvar.IsPureVariableReference(src.MustString()) {
+				return src, nil
+			}
+
 			// Cannot interpret as a boolean.
 			return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindBool, src))
 		}
@@ -266,6 +272,11 @@ func (n normalizeOptions) normalizeInt(typ reflect.Type, src dyn.Value) (dyn.Val
 		var err error
 		out, err = strconv.ParseInt(src.MustString(), 10, 64)
 		if err != nil {
+			// Return verbatim if it's a pure variable reference.
+			if dynvar.IsPureVariableReference(src.MustString()) {
+				return src, nil
+			}
+
 			return dyn.InvalidValue, diags.Append(diag.Diagnostic{
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("cannot parse %q as an integer", src.MustString()),
@@ -290,6 +301,11 @@ func (n normalizeOptions) normalizeFloat(typ reflect.Type, src dyn.Value) (dyn.V
 		var err error
 		out, err = strconv.ParseFloat(src.MustString(), 64)
 		if err != nil {
+			// Return verbatim if it's a pure variable reference.
+			if dynvar.IsPureVariableReference(src.MustString()) {
+				return src, nil
+			}
+
 			return dyn.InvalidValue, diags.Append(diag.Diagnostic{
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("cannot parse %q as a floating point number", src.MustString()),

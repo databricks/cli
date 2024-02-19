@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/cli/libs/log"
 )
 
 type resolveVariableReferences struct {
@@ -58,7 +59,7 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 		}
 
 		// Resolve variable references in all values.
-		return dynvar.Resolve(root, func(path dyn.Path) (dyn.Value, error) {
+		root, err := dynvar.Resolve(root, func(path dyn.Path) (dyn.Value, error) {
 			// Rewrite the shorthand path ${var.foo} into ${variables.foo.value}.
 			if path.HasPrefix(varPath) && len(path) == 2 {
 				path = dyn.NewPath(
@@ -77,5 +78,18 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 
 			return dyn.InvalidValue, dynvar.ErrSkipResolution
 		})
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+
+		// Normalize the result because variable resolution may have been applied to non-string fields.
+		// For example, a variable reference may have been resolved to a integer.
+		root, diags := convert.Normalize(b.Config, root)
+		for _, diag := range diags {
+			// This occurs when a variable's resolved value is incompatible with the field's type.
+			// Log a warning until we have a better way to surface these diagnostics to the user.
+			log.Warnf(ctx, "normalization diagnostic: %s", diag.Summary)
+		}
+		return root, nil
 	})
 }

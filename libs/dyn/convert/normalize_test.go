@@ -490,6 +490,14 @@ func TestNormalizeBoolFromString(t *testing.T) {
 	}
 }
 
+func TestNormalizeBoolFromStringVariableReference(t *testing.T) {
+	var typ bool
+	vin := dyn.V("${var.foo}")
+	vout, err := Normalize(&typ, vin)
+	assert.Empty(t, err)
+	assert.Equal(t, vin, vout)
+}
+
 func TestNormalizeBoolFromStringError(t *testing.T) {
 	var typ bool
 	vin := dyn.V("abc")
@@ -542,6 +550,14 @@ func TestNormalizeIntFromString(t *testing.T) {
 	assert.Equal(t, dyn.V(int64(123)), vout)
 }
 
+func TestNormalizeIntFromStringVariableReference(t *testing.T) {
+	var typ int
+	vin := dyn.V("${var.foo}")
+	vout, err := Normalize(&typ, vin)
+	assert.Empty(t, err)
+	assert.Equal(t, vin, vout)
+}
+
 func TestNormalizeIntFromStringError(t *testing.T) {
 	var typ int
 	vin := dyn.V("abc")
@@ -592,6 +608,14 @@ func TestNormalizeFloatFromString(t *testing.T) {
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
 	assert.Equal(t, dyn.V(1.2), vout)
+}
+
+func TestNormalizeFloatFromStringVariableReference(t *testing.T) {
+	var typ float64
+	vin := dyn.V("${var.foo}")
+	vout, err := Normalize(&typ, vin)
+	assert.Empty(t, err)
+	assert.Equal(t, vin, vout)
 }
 
 func TestNormalizeFloatFromStringError(t *testing.T) {
