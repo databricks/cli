@@ -25,6 +25,7 @@ type nativeTemplate struct {
 	gitUrl      string
 	description string
 	aliases     []string
+	hidden      bool
 }
 
 const customTemplate = "custom..."
@@ -34,11 +35,11 @@ var nativeTemplates = []nativeTemplate{
 		name:        "default-python",
 		description: "The default Python template for Notebooks / Delta Live Tables / Workflows",
 	},
-	// Coming soon, see https://github.com/databricks/cli/pull/1051
-	// {
-	// 	name:        "default-sql",
-	// 	description: "The default SQL template for .sql files that run with Databricks SQL",
-	// },
+	{
+		name:        "default-sql",
+		description: "The default SQL template for .sql files that run with Databricks SQL",
+		hidden:      true,
+	},
 	{
 		name:        "mlops-stacks",
 		gitUrl:      "https://github.com/databricks/mlops-stacks",
@@ -55,7 +56,7 @@ var nativeTemplates = []nativeTemplate{
 func nativeTemplateHelpDescriptions() string {
 	var lines []string
 	for _, template := range nativeTemplates {
-		if template.name != customTemplate {
+		if template.name != customTemplate && !template.hidden {
 			lines = append(lines, fmt.Sprintf("- %s: %s", template.name, template.description))
 		}
 	}
@@ -66,6 +67,9 @@ func nativeTemplateHelpDescriptions() string {
 func nativeTemplateOptions() []cmdio.Tuple {
 	names := make([]cmdio.Tuple, 0, len(nativeTemplates))
 	for _, template := range nativeTemplates {
+		if template.hidden {
+			continue
+		}
 		tuple := cmdio.Tuple{
 			Name: template.name,
 			Id:   template.description,
