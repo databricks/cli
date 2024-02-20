@@ -1,5 +1,32 @@
 # Version changelog
 
+## 0.214.0
+
+CLI:
+ * Add support for UC Volumes to the `databricks fs` commands ([#1209](https://github.com/databricks/cli/pull/1209)).
+
+Bundles:
+ * Use dynamic configuration model in bundles ([#1098](https://github.com/databricks/cli/pull/1098)).
+ * Allow use of variables references in primitive non-string fields ([#1219](https://github.com/databricks/cli/pull/1219)).
+ * Add an experimental default-sql template ([#1051](https://github.com/databricks/cli/pull/1051)).
+ * Add an experimental dbt-sql template ([#1059](https://github.com/databricks/cli/pull/1059)).
+
+Internal:
+ * Add fork-user to winget release workflow ([#1214](https://github.com/databricks/cli/pull/1214)).
+ * Use `any` as type for data sources and resources in `tf/schema` ([#1216](https://github.com/databricks/cli/pull/1216)).
+ * Avoid infinite recursion when normalizing a recursive type ([#1213](https://github.com/databricks/cli/pull/1213)).
+ * Fix issue where interpolating a new ref would rewrite unrelated fields ([#1217](https://github.com/databricks/cli/pull/1217)).
+ * Use `dyn.Value` as input to generating Terraform JSON ([#1218](https://github.com/databricks/cli/pull/1218)).
+
+API Changes:
+ * Changed `databricks lakehouse-monitors update` command with new required argument order.
+ * Added `databricks online-tables` command group.
+
+OpenAPI commit cdd76a98a4fca7008572b3a94427566dd286c63b (2024-02-19)
+Dependency updates:
+ * Bump Terraform provider to v1.36.2 ([#1215](https://github.com/databricks/cli/pull/1215)).
+ * Bump github.com/databricks/databricks-sdk-go from 0.32.0 to 0.33.0 ([#1222](https://github.com/databricks/cli/pull/1222)).
+
 ## 0.213.0
 
 CLI:
