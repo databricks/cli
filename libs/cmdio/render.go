@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/fatih/color"
 	"github.com/nwidger/jsoncolor"
 )
@@ -81,19 +82,19 @@ func (r readerRenderer) renderText(_ context.Context, w io.Writer) error {
 	return err
 }
 
-type iteratorRenderer struct {
-	t          reflectIterator
+type iteratorRenderer[T any] struct {
+	t          listing.Iterator[T]
 	bufferSize int
 }
 
-func (ir iteratorRenderer) getBufferSize() int {
+func (ir iteratorRenderer[T]) getBufferSize() int {
 	if ir.bufferSize == 0 {
 		return 20
 	}
 	return ir.bufferSize
 }
 
-func (ir iteratorRenderer) renderJson(ctx context.Context, w writeFlusher) error {
+func (ir iteratorRenderer[T]) renderJson(ctx context.Context, w writeFlusher) error {
 	// Iterators are always rendered as a list of resources in JSON.
 	_, err := w.Write([]byte("[\n  "))
 	if err != nil {
@@ -132,7 +133,7 @@ func (ir iteratorRenderer) renderJson(ctx context.Context, w writeFlusher) error
 	return w.Flush()
 }
 
-func (ir iteratorRenderer) renderTemplate(ctx context.Context, t *template.Template, w *tabwriter.Writer) error {
+func (ir iteratorRenderer[T]) renderTemplate(ctx context.Context, t *template.Template, w *tabwriter.Writer) error {
 	buf := make([]any, 0, ir.getBufferSize())
 	for i := 0; ir.t.HasNext(ctx); i++ {
 		n, err := ir.t.Next(ctx)
@@ -193,10 +194,11 @@ func newRenderer(t any) any {
 	if r, ok := t.(io.Reader); ok {
 		return readerRenderer{reader: r}
 	}
-	if iterator, ok := newReflectIterator(t); ok {
-		return iteratorRenderer{t: iterator}
-	}
 	return defaultRenderer{t: t}
+}
+
+func newIteratorRenderer[T any](i listing.Iterator[T]) iteratorRenderer[T] {
+	return iteratorRenderer[T]{t: i}
 }
 
 type bufferedFlusher struct {
@@ -248,19 +250,47 @@ func renderWithTemplate(r any, ctx context.Context, outputFormat flags.Output, w
 	}
 }
 
+type listingInterface interface {
+	HasNext(context.Context) bool
+}
+
 func Render(ctx context.Context, v any) error {
 	c := fromContext(ctx)
+	if _, ok := v.(listingInterface); ok {
+		panic("use RenderIterator instead")
+	}
 	return renderWithTemplate(newRenderer(v), ctx, c.outputFormat, c.out, c.headerTemplate, c.template)
+}
+
+func RenderIterator[T any](ctx context.Context, i listing.Iterator[T]) error {
+	c := fromContext(ctx)
+	return renderWithTemplate(newIteratorRenderer(i), ctx, c.outputFormat, c.out, c.headerTemplate, c.template)
 }
 
 func RenderWithTemplate(ctx context.Context, v any, headerTemplate, template string) error {
 	c := fromContext(ctx)
+	if _, ok := v.(listingInterface); ok {
+		panic("use RenderIteratorWithTemplate instead")
+	}
 	return renderWithTemplate(newRenderer(v), ctx, c.outputFormat, c.out, headerTemplate, template)
+}
+
+func RenderIteratorWithTemplate[T any](ctx context.Context, i listing.Iterator[T], headerTemplate, template string) error {
+	c := fromContext(ctx)
+	return renderWithTemplate(newIteratorRenderer(i), ctx, c.outputFormat, c.out, headerTemplate, template)
 }
 
 func RenderJson(ctx context.Context, v any) error {
 	c := fromContext(ctx)
+	if _, ok := v.(listingInterface); ok {
+		panic("use RenderIteratorJson instead")
+	}
 	return renderWithTemplate(newRenderer(v), ctx, flags.OutputJSON, c.out, c.headerTemplate, c.template)
+}
+
+func RenderIteratorJson[T any](ctx context.Context, i listing.Iterator[T]) error {
+	c := fromContext(ctx)
+	return renderWithTemplate(newIteratorRenderer(i), ctx, c.outputFormat, c.out, c.headerTemplate, c.template)
 }
 
 func renderUsingTemplate(ctx context.Context, r templateRenderer, w io.Writer, headerTmpl, tmpl string) error {

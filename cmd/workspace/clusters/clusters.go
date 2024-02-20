@@ -654,7 +654,7 @@ func newEvents() *cobra.Command {
 		}
 
 		response := w.Clusters.Events(ctx, eventsReq)
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -955,7 +955,7 @@ func newList() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		response := w.Clusters.List(ctx, listReq)
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

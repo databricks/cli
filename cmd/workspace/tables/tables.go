@@ -343,7 +343,7 @@ func newList() *cobra.Command {
 		listReq.SchemaName = args[1]
 
 		response := w.Tables.List(ctx, listReq)
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -431,7 +431,7 @@ func newListSummaries() *cobra.Command {
 		listSummariesReq.CatalogName = args[0]
 
 		response := w.Tables.ListSummaries(ctx, listSummariesReq)
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

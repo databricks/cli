@@ -309,7 +309,7 @@ func newListEndpoints() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		response := w.VectorSearchEndpoints.ListEndpoints(ctx, listEndpointsReq)
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

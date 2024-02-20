@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -34,9 +35,26 @@ var dummyWorkspace2 = provisioning.Workspace{
 	WorkspaceName: "def",
 }
 
-func makeWorkspaces(count int) []provisioning.Workspace {
-	res := make([]provisioning.Workspace, 0, count)
-	next := []provisioning.Workspace{dummyWorkspace1, dummyWorkspace2}
+type dummyIterator struct {
+	items []*provisioning.Workspace
+}
+
+func (d *dummyIterator) HasNext(_ context.Context) bool {
+	return len(d.items) > 0
+}
+
+func (d *dummyIterator) Next(ctx context.Context) (*provisioning.Workspace, error) {
+	if !d.HasNext(ctx) {
+		return nil, errors.New("no more items")
+	}
+	item := d.items[0]
+	d.items = d.items[1:]
+	return item, nil
+}
+
+func makeWorkspaces(count int) []*provisioning.Workspace {
+	res := make([]*provisioning.Workspace, 0, count)
+	next := []*provisioning.Workspace{&dummyWorkspace1, &dummyWorkspace2}
 	for i := 0; i < count; i++ {
 		n := next[0]
 		next = append(next[1:], n)
@@ -45,11 +63,9 @@ func makeWorkspaces(count int) []provisioning.Workspace {
 	return res
 }
 
-func makeIterator(count int) listing.Iterator[any] {
-	items := make([]any, 0, count)
-	for _, ws := range makeWorkspaces(count) {
-		items = append(items, any(ws))
-	}
+func makeIterator(count int) listing.Iterator[*provisioning.Workspace] {
+	items := make([]*provisioning.Workspace, 0, count)
+	items = append(items, makeWorkspaces(count)...)
 	return &dummyIterator{
 		items: items,
 	}
@@ -157,7 +173,12 @@ func TestRender(t *testing.T) {
 			output := &bytes.Buffer{}
 			cmdIO := NewIO(c.outputFormat, nil, output, output, c.headerTemplate, c.template)
 			ctx := InContext(context.Background(), cmdIO)
-			err := Render(ctx, c.v)
+			var err error
+			if vv, ok := c.v.(listing.Iterator[*provisioning.Workspace]); ok {
+				err = RenderIterator(ctx, vv)
+			} else {
+				err = Render(ctx, c.v)
+			}
 			if c.errMessage != "" {
 				assert.ErrorContains(t, err, c.errMessage)
 			} else {

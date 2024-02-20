@@ -217,7 +217,7 @@ func newList() *cobra.Command {
 		listReq.MetastoreId = args[0]
 
 		response := w.SystemSchemas.List(ctx, listReq)
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

@@ -293,7 +293,7 @@ func newList() *cobra.Command {
 		listReq.SchemaName = args[1]
 
 		response := w.Volumes.List(ctx, listReq)
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

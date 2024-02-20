@@ -313,9 +313,9 @@ func init() {
 		{{ if .Response -}}
 			{{- if .IsResponseByteStream -}}
 			defer response.{{.ResponseBodyField.PascalName}}.Close()
-			return cmdio.Render(ctx, response.{{.ResponseBodyField.PascalName}})
+			return cmdio.Render{{ if .Pagination}}Iterator{{end}}(ctx, response.{{.ResponseBodyField.PascalName}})
 			{{- else -}}
-			return cmdio.Render(ctx, response)
+			return cmdio.Render{{ if .Pagination}}Iterator{{end}}(ctx, response)
 			{{- end -}}
 		{{ else -}}
 		return nil

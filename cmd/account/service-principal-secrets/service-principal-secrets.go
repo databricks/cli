@@ -227,7 +227,7 @@ func newList() *cobra.Command {
 		}
 
 		response := a.ServicePrincipalSecrets.List(ctx, listReq)
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
