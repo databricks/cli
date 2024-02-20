@@ -165,12 +165,12 @@ func commonFilerReadWriteTests(t *testing.T, ctx context.Context, f filer.Filer)
 
 	// Delete should fail if the file doesn't exist.
 	err = f.Delete(ctx, "/doesnt_exist")
-	assert.True(t, errors.As(err, &filer.FileDoesNotExistError{}))
+	assert.ErrorAs(t, err, &filer.FileDoesNotExistError{})
 	assert.True(t, errors.Is(err, fs.ErrNotExist))
 
 	// Stat should fail if the file doesn't exist.
 	_, err = f.Stat(ctx, "/doesnt_exist")
-	assert.True(t, errors.As(err, &filer.FileDoesNotExistError{}))
+	assert.ErrorAs(t, err, &filer.FileDoesNotExistError{})
 	assert.True(t, errors.Is(err, fs.ErrNotExist))
 
 	// Delete should succeed for file that does exist.
@@ -179,7 +179,7 @@ func commonFilerReadWriteTests(t *testing.T, ctx context.Context, f filer.Filer)
 
 	// Delete should fail for a non-empty directory.
 	err = f.Delete(ctx, "/foo")
-	assert.True(t, errors.As(err, &filer.DirectoryNotEmptyError{}))
+	assert.ErrorAs(t, err, &filer.DirectoryNotEmptyError{})
 	assert.True(t, errors.Is(err, fs.ErrInvalid))
 
 	// Delete should succeed for a non-empty directory if the DeleteRecursively flag is set.
