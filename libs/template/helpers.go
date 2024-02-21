@@ -11,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
@@ -29,6 +30,7 @@ type pair struct {
 
 var cachedUser *iam.User
 var cachedIsServicePrincipal *bool
+var cachedCatalog *string
 
 func loadHelpers(ctx context.Context) template.FuncMap {
 	w := root.WorkspaceClient(ctx)
@@ -107,6 +109,25 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 				}
 			}
 			return auth.GetShortUserName(cachedUser.UserName), nil
+		},
+		// Get the default workspace catalog. If there is no default, or if
+		// Unity Catalog is not enabled, return an empty string.
+		"default_catalog": func() (string, error) {
+			if cachedCatalog == nil {
+				metastore, err := w.Metastores.Current(ctx)
+				if err != nil {
+					var aerr *apierr.APIError
+					if errors.As(err, &aerr) && aerr.ErrorCode == "METASTORE_DOES_NOT_EXIST" {
+						// Workspace doesn't have a metastore assigned, ignore error
+						empty_default := ""
+						cachedCatalog = &empty_default
+						return "", nil
+					}
+					return "", err
+				}
+				cachedCatalog = &metastore.DefaultCatalogName
+			}
+			return *cachedCatalog, nil
 		},
 		"is_service_principal": func() (bool, error) {
 			if cachedIsServicePrincipal != nil {

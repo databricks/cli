@@ -37,10 +37,10 @@ func assertFilePermissions(t *testing.T, path string, perm fs.FileMode) {
 	assert.Equal(t, perm, info.Mode().Perm())
 }
 
-func assertBuiltinTemplateValid(t *testing.T, settings map[string]any, target string, isServicePrincipal bool, build bool, tempDir string) {
+func assertBuiltinTemplateValid(t *testing.T, template string, settings map[string]any, target string, isServicePrincipal bool, build bool, tempDir string) {
 	ctx := context.Background()
 
-	templatePath, err := prepareBuiltinTemplates("default-python", tempDir)
+	templatePath, err := prepareBuiltinTemplates(template, tempDir)
 	require.NoError(t, err)
 	libraryPath := filepath.Join(templatePath, "library")
 
@@ -50,6 +50,9 @@ func assertBuiltinTemplateValid(t *testing.T, settings map[string]any, target st
 
 	// Prepare helpers
 	cachedUser = &iam.User{UserName: "user@domain.com"}
+	if isServicePrincipal {
+		cachedUser.UserName = "1d410060-a513-496f-a197-23cc82e5f46d"
+	}
 	cachedIsServicePrincipal = &isServicePrincipal
 	ctx = root.SetWorkspaceClient(ctx, w)
 	helpers := loadHelpers(ctx)
@@ -102,10 +105,12 @@ func TestPrepareBuiltInTemplatesWithRelativePaths(t *testing.T) {
 	assert.Equal(t, "./default-python", dir)
 }
 
-func TestBuiltinTemplateValid(t *testing.T) {
+func TestBuiltinPythonTemplateValid(t *testing.T) {
 	// Test option combinations
 	options := []string{"yes", "no"}
 	isServicePrincipal := false
+	catalog := "hive_metastore"
+	cachedCatalog = &catalog
 	build := false
 	for _, includeNotebook := range options {
 		for _, includeDlt := range options {
@@ -118,7 +123,7 @@ func TestBuiltinTemplateValid(t *testing.T) {
 						"include_python":   includePython,
 					}
 					tempDir := t.TempDir()
-					assertBuiltinTemplateValid(t, config, "dev", isServicePrincipal, build, tempDir)
+					assertBuiltinTemplateValid(t, "default-python", config, "dev", isServicePrincipal, build, tempDir)
 				}
 			}
 		}
@@ -140,8 +145,44 @@ func TestBuiltinTemplateValid(t *testing.T) {
 	require.NoError(t, err)
 	defer os.RemoveAll(tempDir)
 
-	assertBuiltinTemplateValid(t, config, "prod", isServicePrincipal, build, tempDir)
+	assertBuiltinTemplateValid(t, "default-python", config, "prod", isServicePrincipal, build, tempDir)
 	defer os.RemoveAll(tempDir)
+}
+
+func TestBuiltinSQLTemplateValid(t *testing.T) {
+	for _, personal_schemas := range []string{"yes", "no"} {
+		for _, target := range []string{"dev", "prod"} {
+			for _, isServicePrincipal := range []bool{true, false} {
+				config := map[string]any{
+					"project_name":     "my_project",
+					"http_path":        "/sql/1.0/warehouses/123abc",
+					"default_catalog":  "users",
+					"shared_schema":    "lennart",
+					"personal_schemas": personal_schemas,
+				}
+				build := false
+				assertBuiltinTemplateValid(t, "default-sql", config, target, isServicePrincipal, build, t.TempDir())
+			}
+		}
+	}
+}
+
+func TestBuiltinDbtTemplateValid(t *testing.T) {
+	for _, personal_schemas := range []string{"yes", "no"} {
+		for _, target := range []string{"dev", "prod"} {
+			for _, isServicePrincipal := range []bool{true, false} {
+				config := map[string]any{
+					"project_name":     "my_project",
+					"http_path":        "/sql/1.0/warehouses/123",
+					"default_catalog":  "hive_metastore",
+					"personal_schemas": personal_schemas,
+					"shared_schema":    "lennart",
+				}
+				build := false
+				assertBuiltinTemplateValid(t, "dbt-sql", config, target, isServicePrincipal, build, t.TempDir())
+			}
+		}
+	}
 }
 
 func TestRendererWithAssociatedTemplateInLibrary(t *testing.T) {

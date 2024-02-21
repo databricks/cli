@@ -6,6 +6,7 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 )
 
 type fromTypedOptions int
@@ -185,6 +186,11 @@ func fromTypedBool(src reflect.Value, ref dyn.Value, options ...fromTypedOptions
 			return dyn.NilValue, nil
 		}
 		return dyn.V(src.Bool()), nil
+	case dyn.KindString:
+		// Ignore pure variable references (e.g. ${var.foo}).
+		if dynvar.IsPureVariableReference(ref.MustString()) {
+			return ref, nil
+		}
 	}
 
 	return dyn.InvalidValue, fmt.Errorf("unhandled type: %s", ref.Kind())
@@ -205,6 +211,11 @@ func fromTypedInt(src reflect.Value, ref dyn.Value, options ...fromTypedOptions)
 			return dyn.NilValue, nil
 		}
 		return dyn.V(src.Int()), nil
+	case dyn.KindString:
+		// Ignore pure variable references (e.g. ${var.foo}).
+		if dynvar.IsPureVariableReference(ref.MustString()) {
+			return ref, nil
+		}
 	}
 
 	return dyn.InvalidValue, fmt.Errorf("unhandled type: %s", ref.Kind())
@@ -225,6 +236,11 @@ func fromTypedFloat(src reflect.Value, ref dyn.Value, options ...fromTypedOption
 			return dyn.NilValue, nil
 		}
 		return dyn.V(src.Float()), nil
+	case dyn.KindString:
+		// Ignore pure variable references (e.g. ${var.foo}).
+		if dynvar.IsPureVariableReference(ref.MustString()) {
+			return ref, nil
+		}
 	}
 
 	return dyn.InvalidValue, fmt.Errorf("unhandled type: %s", ref.Kind())

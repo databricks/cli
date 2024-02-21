@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 )
 
 func ToTyped(dst any, src dyn.Value) error {
@@ -195,6 +196,11 @@ func toTypedBool(dst reflect.Value, src dyn.Value) error {
 			dst.SetBool(false)
 			return nil
 		}
+		// Ignore pure variable references (e.g. ${var.foo}).
+		if dynvar.IsPureVariableReference(src.MustString()) {
+			dst.SetZero()
+			return nil
+		}
 	}
 
 	return TypeError{
@@ -213,6 +219,11 @@ func toTypedInt(dst reflect.Value, src dyn.Value) error {
 			dst.SetInt(i64)
 			return nil
 		}
+		// Ignore pure variable references (e.g. ${var.foo}).
+		if dynvar.IsPureVariableReference(src.MustString()) {
+			dst.SetZero()
+			return nil
+		}
 	}
 
 	return TypeError{
@@ -229,6 +240,11 @@ func toTypedFloat(dst reflect.Value, src dyn.Value) error {
 	case dyn.KindString:
 		if f64, err := strconv.ParseFloat(src.MustString(), 64); err == nil {
 			dst.SetFloat(f64)
+			return nil
+		}
+		// Ignore pure variable references (e.g. ${var.foo}).
+		if dynvar.IsPureVariableReference(src.MustString()) {
+			dst.SetZero()
 			return nil
 		}
 	}
