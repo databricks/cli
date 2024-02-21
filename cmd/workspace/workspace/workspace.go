@@ -577,11 +577,8 @@ func newList() *cobra.Command {
 
 		listReq.Path = args[0]
 
-		response, err := w.Workspace.ListAll(ctx, listReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Workspace.List(ctx, listReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

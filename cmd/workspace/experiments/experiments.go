@@ -733,11 +733,8 @@ func newGetHistory() *cobra.Command {
 
 		getHistoryReq.MetricKey = args[0]
 
-		response, err := w.Experiments.GetHistoryAll(ctx, getHistoryReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Experiments.GetHistory(ctx, getHistoryReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -998,11 +995,8 @@ func newListArtifacts() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.Experiments.ListArtifactsAll(ctx, listArtifactsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Experiments.ListArtifacts(ctx, listArtifactsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1061,11 +1055,8 @@ func newListExperiments() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.Experiments.ListExperimentsAll(ctx, listExperimentsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Experiments.ListExperiments(ctx, listExperimentsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1842,11 +1833,8 @@ func newSearchExperiments() *cobra.Command {
 			}
 		}
 
-		response, err := w.Experiments.SearchExperimentsAll(ctx, searchExperimentsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Experiments.SearchExperiments(ctx, searchExperimentsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1919,11 +1907,8 @@ func newSearchRuns() *cobra.Command {
 			}
 		}
 
-		response, err := w.Experiments.SearchRunsAll(ctx, searchRunsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Experiments.SearchRuns(ctx, searchRunsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

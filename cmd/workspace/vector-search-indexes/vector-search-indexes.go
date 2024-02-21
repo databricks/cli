@@ -389,11 +389,8 @@ func newListIndexes() *cobra.Command {
 
 		listIndexesReq.EndpointName = args[0]
 
-		response, err := w.VectorSearchIndexes.ListIndexesAll(ctx, listIndexesReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.VectorSearchIndexes.ListIndexes(ctx, listIndexesReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

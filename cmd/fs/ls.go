@@ -78,12 +78,12 @@ func newLsCommand() *cobra.Command {
 
 		// Use template for long mode if the flag is set
 		if long {
-			return cmdio.RenderWithTemplate(ctx, jsonDirEntries, cmdio.Heredoc(`
+			return cmdio.RenderWithTemplate(ctx, jsonDirEntries, "", cmdio.Heredoc(`
 			{{range .}}{{if .IsDir}}DIRECTORY {{else}}FILE      {{end}}{{.Size}} {{.ModTime|pretty_date}} {{.Name}}
 			{{end}}
 			`))
 		}
-		return cmdio.RenderWithTemplate(ctx, jsonDirEntries, cmdio.Heredoc(`
+		return cmdio.RenderWithTemplate(ctx, jsonDirEntries, "", cmdio.Heredoc(`
 		{{range .}}{{.Name}}
 		{{end}}
 		`))

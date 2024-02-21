@@ -590,11 +590,8 @@ func newListAcls() *cobra.Command {
 
 		listAclsReq.Scope = args[0]
 
-		response, err := w.Secrets.ListAclsAll(ctx, listAclsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Secrets.ListAcls(ctx, listAclsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -641,11 +638,8 @@ func newListScopes() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		response, err := w.Secrets.ListScopesAll(ctx)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Secrets.ListScopes(ctx)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -712,11 +706,8 @@ func newListSecrets() *cobra.Command {
 
 		listSecretsReq.Scope = args[0]
 
-		response, err := w.Secrets.ListSecretsAll(ctx, listSecretsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Secrets.ListSecrets(ctx, listSecretsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

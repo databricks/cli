@@ -157,11 +157,8 @@ func newClusterStatus() *cobra.Command {
 
 		clusterStatusReq.ClusterId = args[0]
 
-		response, err := w.Libraries.ClusterStatusAll(ctx, clusterStatusReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Libraries.ClusterStatus(ctx, clusterStatusReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
