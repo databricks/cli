@@ -484,9 +484,8 @@ func TemporaryRepo(t *testing.T, w *databricks.WorkspaceClient) string {
 func GetNodeTypeId(env string) string {
 	if env == "gcp" {
 		return "n1-standard-4"
-	}
-	// aws-prod-ucws has CLOUD_ENV set to "ucws"
-	else if env == "aws" || env == "ucws" {
+	} else if env == "aws" || env == "ucws" {
+		// aws-prod-ucws has CLOUD_ENV set to "ucws"
 		return "i3.xlarge"
 	}
 	return "Standard_DS4_v2"
