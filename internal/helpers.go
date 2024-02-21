@@ -484,9 +484,10 @@ func TemporaryRepo(t *testing.T, w *databricks.WorkspaceClient) string {
 func GetNodeTypeId(env string) string {
 	if env == "gcp" {
 		return "n1-standard-4"
-	} else if env == "azure" {
-		return "Standard_DS4_v2"
 	}
-	// We default to AWS because our "aws-prod-ucws" test environment has CLOUD_ENV set to "ucws"
-	return "i3.xlarge"
+	// aws-prod-ucws has CLOUD_ENV set to "ucws"
+	else if env == "aws" || env == "ucws" {
+		return "i3.xlarge"
+	}
+	return "Standard_DS4_v2"
 }
