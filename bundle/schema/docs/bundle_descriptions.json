@@ -1,8 +1,8 @@
 {
-  "description": "Root of the bundle config",
+  "description": "",
   "properties": {
     "artifacts": {
-      "description": "A description of all code artifacts in this bundle.",
+      "description": "",
       "additionalproperties": {
         "description": "",
         "properties": {
@@ -33,7 +33,7 @@
       }
     },
     "bundle": {
-      "description": "The details for this bundle.",
+      "description": "",
       "properties": {
         "compute_id": {
           "description": ""
@@ -58,7 +58,7 @@
           }
         },
         "name": {
-          "description": "The name of the bundle."
+          "description": ""
         }
       }
     },
@@ -77,7 +77,7 @@
       }
     },
     "include": {
-      "description": "A list of glob patterns of files to load and merge into the this configuration. Defaults to no files being included.",
+      "description": "",
       "items": {
         "description": ""
       }
@@ -322,7 +322,7 @@
                       "description": "A unique name for the job cluster. This field is required and must be unique within the job.\n`JobTaskSettings` may refer to this field to determine which cluster to launch for the task execution."
                     },
                     "new_cluster": {
-                      "description": "If new_cluster, a description of a cluster that is created for each task.",
+                      "description": "If new_cluster, a description of a cluster that is created for only for this task.",
                       "properties": {
                         "apply_policy_default_values": {
                           "description": ""
@@ -785,11 +785,7 @@
                           "description": "Optional schema to write to. This parameter is only used when a warehouse_id is also provided. If not provided, the `default` schema is used."
                         },
                         "source": {
-<<<<<<< HEAD
-                          "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
-=======
-                          "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in \u003cDatabricks\u003e workspace.\n* `GIT`: SQL file is located in cloud Git provider.\n"
->>>>>>> main
+                          "description": "Optional location type of the project directory. When set to `WORKSPACE`, the project will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the project will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Project is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Project is located in cloud Git provider.\n"
                         },
                         "warehouse_id": {
                           "description": "ID of the SQL warehouse to connect to. If provided, we automatically generate and provide the profile and connection details to dbt. It can be overridden on a per-command basis by using the `--profiles-dir` command line argument."
@@ -934,7 +930,7 @@
                       "description": "An optional minimal interval in milliseconds between the start of the failed run and the subsequent retry run. The default behavior is that unsuccessful runs are immediately retried."
                     },
                     "new_cluster": {
-                      "description": "If new_cluster, a description of a cluster that is created for each task.",
+                      "description": "If new_cluster, a description of a cluster that is created for only for this task.",
                       "properties": {
                         "apply_policy_default_values": {
                           "description": ""
@@ -1273,11 +1269,7 @@
                           "description": "The path of the notebook to be run in the Databricks workspace or remote repository.\nFor notebooks stored in the Databricks workspace, the path must be absolute and begin with a slash.\nFor notebooks stored in a remote repository, the path must be relative. This field is required.\n"
                         },
                         "source": {
-<<<<<<< HEAD
-                          "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
-=======
-                          "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in \u003cDatabricks\u003e workspace.\n* `GIT`: SQL file is located in cloud Git provider.\n"
->>>>>>> main
+                          "description": "Optional location type of the project directory. When set to `WORKSPACE`, the project will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the project will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Project is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Project is located in cloud Git provider.\n"
                         }
                       }
                     },
@@ -1379,11 +1371,7 @@
                           "description": "The Python file to be executed. Cloud file URIs (such as dbfs:/, s3:/, adls:/, gcs:/) and workspace paths are supported. For python files stored in the Databricks workspace, the path must be absolute and begin with `/`. For files stored in a remote repository, the path must be relative. This field is required."
                         },
                         "source": {
-<<<<<<< HEAD
-                          "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
-=======
-                          "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in \u003cDatabricks\u003e workspace.\n* `GIT`: SQL file is located in cloud Git provider.\n"
->>>>>>> main
+                          "description": "Optional location type of the project directory. When set to `WORKSPACE`, the project will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the project will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Project is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Project is located in cloud Git provider.\n"
                         }
                       }
                     },
@@ -1461,11 +1449,7 @@
                               "description": "Path of the SQL file. Must be relative if the source is a remote Git repository and absolute for workspace paths."
                             },
                             "source": {
-<<<<<<< HEAD
-                              "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
-=======
-                              "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in \u003cDatabricks\u003e workspace.\n* `GIT`: SQL file is located in cloud Git provider.\n"
->>>>>>> main
+                              "description": "Optional location type of the project directory. When set to `WORKSPACE`, the project will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the project will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Project is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Project is located in cloud Git provider.\n"
                             }
                           }
                         },
@@ -2551,7 +2535,7 @@
         "description": "",
         "properties": {
           "artifacts": {
-            "description": "A description of all code artifacts in this bundle.",
+            "description": "",
             "additionalproperties": {
               "description": "",
               "properties": {
@@ -2582,7 +2566,7 @@
             }
           },
           "bundle": {
-            "description": "The details for this bundle.",
+            "description": "",
             "properties": {
               "compute_id": {
                 "description": ""
@@ -2607,7 +2591,7 @@
                 }
               },
               "name": {
-                "description": "The name of the bundle."
+                "description": ""
               }
             }
           },
@@ -2871,7 +2855,7 @@
                             "description": "A unique name for the job cluster. This field is required and must be unique within the job.\n`JobTaskSettings` may refer to this field to determine which cluster to launch for the task execution."
                           },
                           "new_cluster": {
-                            "description": "If new_cluster, a description of a cluster that is created for each task.",
+                            "description": "If new_cluster, a description of a cluster that is created for only for this task.",
                             "properties": {
                               "apply_policy_default_values": {
                                 "description": ""
@@ -3334,11 +3318,7 @@
                                 "description": "Optional schema to write to. This parameter is only used when a warehouse_id is also provided. If not provided, the `default` schema is used."
                               },
                               "source": {
-<<<<<<< HEAD
-                                "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
-=======
-                                "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in \u003cDatabricks\u003e workspace.\n* `GIT`: SQL file is located in cloud Git provider.\n"
->>>>>>> main
+                                "description": "Optional location type of the project directory. When set to `WORKSPACE`, the project will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the project will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Project is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Project is located in cloud Git provider.\n"
                               },
                               "warehouse_id": {
                                 "description": "ID of the SQL warehouse to connect to. If provided, we automatically generate and provide the profile and connection details to dbt. It can be overridden on a per-command basis by using the `--profiles-dir` command line argument."
@@ -3483,7 +3463,7 @@
                             "description": "An optional minimal interval in milliseconds between the start of the failed run and the subsequent retry run. The default behavior is that unsuccessful runs are immediately retried."
                           },
                           "new_cluster": {
-                            "description": "If new_cluster, a description of a cluster that is created for each task.",
+                            "description": "If new_cluster, a description of a cluster that is created for only for this task.",
                             "properties": {
                               "apply_policy_default_values": {
                                 "description": ""
@@ -3822,11 +3802,7 @@
                                 "description": "The path of the notebook to be run in the Databricks workspace or remote repository.\nFor notebooks stored in the Databricks workspace, the path must be absolute and begin with a slash.\nFor notebooks stored in a remote repository, the path must be relative. This field is required.\n"
                               },
                               "source": {
-<<<<<<< HEAD
-                                "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
-=======
-                                "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in \u003cDatabricks\u003e workspace.\n* `GIT`: SQL file is located in cloud Git provider.\n"
->>>>>>> main
+                                "description": "Optional location type of the project directory. When set to `WORKSPACE`, the project will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the project will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Project is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Project is located in cloud Git provider.\n"
                               }
                             }
                           },
@@ -3928,11 +3904,7 @@
                                 "description": "The Python file to be executed. Cloud file URIs (such as dbfs:/, s3:/, adls:/, gcs:/) and workspace paths are supported. For python files stored in the Databricks workspace, the path must be absolute and begin with `/`. For files stored in a remote repository, the path must be relative. This field is required."
                               },
                               "source": {
-<<<<<<< HEAD
-                                "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
-=======
-                                "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in \u003cDatabricks\u003e workspace.\n* `GIT`: SQL file is located in cloud Git provider.\n"
->>>>>>> main
+                                "description": "Optional location type of the project directory. When set to `WORKSPACE`, the project will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the project will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Project is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Project is located in cloud Git provider.\n"
                               }
                             }
                           },
@@ -4010,11 +3982,7 @@
                                     "description": "Path of the SQL file. Must be relative if the source is a remote Git repository and absolute for workspace paths."
                                   },
                                   "source": {
-<<<<<<< HEAD
-                                    "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
-=======
-                                    "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in \u003cDatabricks\u003e workspace.\n* `GIT`: SQL file is located in cloud Git provider.\n"
->>>>>>> main
+                                    "description": "Optional location type of the project directory. When set to `WORKSPACE`, the project will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the project will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Project is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Project is located in cloud Git provider.\n"
                                   }
                                 }
                               },
@@ -5147,10 +5115,10 @@
             }
           },
           "workspace": {
-            "description": "Configures which workspace to connect to and locations for files, state, and similar locations within the workspace file tree.",
+            "description": "",
             "properties": {
               "artifact_path": {
-                "description": "The remote path to synchronize build artifacts to. This defaults to `${workspace.root}/artifacts`"
+                "description": ""
               },
               "auth_type": {
                 "description": ""
@@ -5159,10 +5127,10 @@
                 "description": ""
               },
               "azure_environment": {
-                "description": "Azure environment, one of (Public, UsGov, China, Germany)."
+                "description": ""
               },
               "azure_login_app_id": {
-                "description": "Azure Login Application ID."
+                "description": ""
               },
               "azure_tenant_id": {
                 "description": ""
@@ -5171,28 +5139,28 @@
                 "description": ""
               },
               "azure_workspace_resource_id": {
-                "description": "Azure Resource Manager ID for Azure Databricks workspace."
+                "description": ""
               },
               "client_id": {
                 "description": ""
               },
               "file_path": {
-                "description": "The remote path to synchronize local files artifacts to. This defaults to `${workspace.root}/files`"
+                "description": ""
               },
               "google_service_account": {
                 "description": ""
               },
               "host": {
-                "description": "Host url of the workspace."
+                "description": ""
               },
               "profile": {
-                "description": "Connection profile to use. By default profiles are specified in ~/.databrickscfg."
+                "description": ""
               },
               "root_path": {
-                "description": "The base location for synchronizing files, artifacts and state. Defaults to `/Users/jane@doe.com/.bundle/${bundle.name}/${bundle.target}`"
+                "description": ""
               },
               "state_path": {
-                "description": "The remote path to synchronize bundle state to. This defaults to `${workspace.root}/state`"
+                "description": ""
               }
             }
           }
@@ -5252,10 +5220,10 @@
       }
     },
     "workspace": {
-      "description": "Configures which workspace to connect to and locations for files, state, and similar locations within the workspace file tree.",
+      "description": "",
       "properties": {
         "artifact_path": {
-          "description": "The remote path to synchronize build artifacts to. This defaults to `${workspace.root}/artifacts`"
+          "description": ""
         },
         "auth_type": {
           "description": ""
@@ -5264,10 +5232,10 @@
           "description": ""
         },
         "azure_environment": {
-          "description": "Azure environment, one of (Public, UsGov, China, Germany)."
+          "description": ""
         },
         "azure_login_app_id": {
-          "description": "Azure Login Application ID."
+          "description": ""
         },
         "azure_tenant_id": {
           "description": ""
@@ -5276,28 +5244,28 @@
           "description": ""
         },
         "azure_workspace_resource_id": {
-          "description": "Azure Resource Manager ID for Azure Databricks workspace."
+          "description": ""
         },
         "client_id": {
           "description": ""
         },
         "file_path": {
-          "description": "The remote path to synchronize local files artifacts to. This defaults to `${workspace.root}/files`"
+          "description": ""
         },
         "google_service_account": {
           "description": ""
         },
         "host": {
-          "description": "Host url of the workspace."
+          "description": ""
         },
         "profile": {
-          "description": "Connection profile to use. By default profiles are specified in ~/.databrickscfg."
+          "description": ""
         },
         "root_path": {
-          "description": "The base location for synchronizing files, artifacts and state. Defaults to `/Users/jane@doe.com/.bundle/${bundle.name}/${bundle.target}`"
+          "description": ""
         },
         "state_path": {
-          "description": "The remote path to synchronize bundle state to. This defaults to `${workspace.root}/state`"
+          "description": ""
         }
       }
     }
