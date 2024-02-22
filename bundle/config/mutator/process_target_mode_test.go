@@ -138,6 +138,7 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Model 1
 	assert.Equal(t, "[dev lennart] model1", b.Config.Resources.Models["model1"].Name)
+	assert.Contains(t, b.Config.Resources.Models["model1"].Tags, ml.ModelTag{Key: "dev", Value: "lennart"})
 
 	// Model serving endpoint 1
 	assert.Equal(t, "dev_lennart_servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
