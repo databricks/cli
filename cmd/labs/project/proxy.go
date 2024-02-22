@@ -87,7 +87,7 @@ func (cp *proxy) renderJsonAsTable(cmd *cobra.Command, args []string, envs map[s
 	}
 	// IntelliJ eagerly replaces tabs with spaces, even though we're not asking for it
 	fixedTemplate := strings.ReplaceAll(cp.TableTemplate, "\\t", "\t")
-	return cmdio.RenderWithTemplate(ctx, anyVal, fixedTemplate)
+	return cmdio.RenderWithTemplate(ctx, anyVal, "", fixedTemplate)
 }
 
 func (cp *proxy) commandInput(cmd *cobra.Command) ([]string, error) {

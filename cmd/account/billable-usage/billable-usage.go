@@ -92,7 +92,7 @@ func newDownload() *cobra.Command {
 			return err
 		}
 		defer response.Contents.Close()
-		return cmdio.RenderReader(ctx, response.Contents)
+		return cmdio.Render(ctx, response.Contents)
 	}
 
 	// Disable completions since they are not applicable.

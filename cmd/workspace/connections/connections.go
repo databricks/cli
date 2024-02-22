@@ -134,14 +134,14 @@ func newDelete() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Use = "delete NAME_ARG"
+	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a connection.`
 	cmd.Long = `Delete a connection.
   
   Deletes the connection that matches the supplied name.
 
   Arguments:
-    NAME_ARG: The name of the connection to be deleted.`
+    NAME: The name of the connection to be deleted.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -152,7 +152,7 @@ func newDelete() *cobra.Command {
 
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No NAME_ARG argument specified. Loading names for Connections drop-down."
+			promptSpinner <- "No NAME argument specified. Loading names for Connections drop-down."
 			names, err := w.Connections.ConnectionInfoNameToFullNameMap(ctx)
 			close(promptSpinner)
 			if err != nil {
@@ -167,7 +167,7 @@ func newDelete() *cobra.Command {
 		if len(args) != 1 {
 			return fmt.Errorf("expected to have the name of the connection to be deleted")
 		}
-		deleteReq.NameArg = args[0]
+		deleteReq.Name = args[0]
 
 		err = w.Connections.Delete(ctx, deleteReq)
 		if err != nil {
@@ -210,14 +210,14 @@ func newGet() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Use = "get NAME_ARG"
+	cmd.Use = "get NAME"
 	cmd.Short = `Get a connection.`
 	cmd.Long = `Get a connection.
   
   Gets a connection from it's name.
 
   Arguments:
-    NAME_ARG: Name of the connection.`
+    NAME: Name of the connection.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -228,7 +228,7 @@ func newGet() *cobra.Command {
 
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No NAME_ARG argument specified. Loading names for Connections drop-down."
+			promptSpinner <- "No NAME argument specified. Loading names for Connections drop-down."
 			names, err := w.Connections.ConnectionInfoNameToFullNameMap(ctx)
 			close(promptSpinner)
 			if err != nil {
@@ -243,7 +243,7 @@ func newGet() *cobra.Command {
 		if len(args) != 1 {
 			return fmt.Errorf("expected to have name of the connection")
 		}
-		getReq.NameArg = args[0]
+		getReq.Name = args[0]
 
 		response, err := w.Connections.Get(ctx, getReq)
 		if err != nil {
@@ -293,11 +293,8 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		response, err := w.Connections.ListAll(ctx)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Connections.List(ctx)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -336,18 +333,17 @@ func newUpdate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of the connection.`)
 	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the connection.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of the connection.`)
 
-	cmd.Use = "update NAME_ARG"
+	cmd.Use = "update NAME"
 	cmd.Short = `Update a connection.`
 	cmd.Long = `Update a connection.
   
   Updates the connection that matches the supplied name.
 
   Arguments:
-    NAME_ARG: Name of the connection.`
+    NAME: Name of the connection.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -369,7 +365,7 @@ func newUpdate() *cobra.Command {
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
-		updateReq.NameArg = args[0]
+		updateReq.Name = args[0]
 
 		response, err := w.Connections.Update(ctx, updateReq)
 		if err != nil {

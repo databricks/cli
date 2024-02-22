@@ -25,6 +25,7 @@ type nativeTemplate struct {
 	gitUrl      string
 	description string
 	aliases     []string
+	hidden      bool
 }
 
 const customTemplate = "custom..."
@@ -33,6 +34,16 @@ var nativeTemplates = []nativeTemplate{
 	{
 		name:        "default-python",
 		description: "The default Python template for Notebooks / Delta Live Tables / Workflows",
+	},
+	{
+		name:        "default-sql",
+		description: "The default SQL template for .sql files that run with Databricks SQL",
+		hidden:      true,
+	},
+	{
+		name:        "dbt-sql",
+		description: "The dbt SQL template (https://www.databricks.com/blog/delivering-cost-effective-data-real-time-dbt-and-databricks)",
+		hidden:      true,
 	},
 	{
 		name:        "mlops-stacks",
@@ -50,7 +61,7 @@ var nativeTemplates = []nativeTemplate{
 func nativeTemplateHelpDescriptions() string {
 	var lines []string
 	for _, template := range nativeTemplates {
-		if template.name != customTemplate {
+		if template.name != customTemplate && !template.hidden {
 			lines = append(lines, fmt.Sprintf("- %s: %s", template.name, template.description))
 		}
 	}
@@ -61,6 +72,9 @@ func nativeTemplateHelpDescriptions() string {
 func nativeTemplateOptions() []cmdio.Tuple {
 	names := make([]cmdio.Tuple, 0, len(nativeTemplates))
 	for _, template := range nativeTemplates {
+		if template.hidden {
+			continue
+		}
 		tuple := cmdio.Tuple{
 			Name: template.name,
 			Id:   template.description,
@@ -191,12 +205,19 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 		if err != nil {
 			return err
 		}
+
+		// start the spinner
+		promptSpinner := cmdio.Spinner(ctx)
+		promptSpinner <- "Downloading the template\n"
+
 		// TODO: Add automated test that the downloaded git repo is cleaned up.
 		// Clone the repository in the temporary directory
 		err = git.Clone(ctx, templatePath, ref, repoDir)
+		close(promptSpinner)
 		if err != nil {
 			return err
 		}
+
 		// Clean up downloaded repository once the template is materialized.
 		defer os.RemoveAll(repoDir)
 		return template.Materialize(ctx, configFile, filepath.Join(repoDir, templateDir), outputDir)

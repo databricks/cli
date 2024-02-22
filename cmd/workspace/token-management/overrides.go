@@ -7,8 +7,9 @@ import (
 )
 
 func listOverride(listCmd *cobra.Command, listReq *settings.ListTokenManagementRequest) {
+	listCmd.Annotations["headerTemplate"] = cmdio.Heredoc(`
+	{{header "ID"}}	{{header "Created By"}}	{{header "Comment"}}`)
 	listCmd.Annotations["template"] = cmdio.Heredoc(`
-	{{header "ID"}}	{{header "Created By"}}	{{header "Comment"}}
 	{{range .}}{{.TokenId|green}}	{{.CreatedByUsername|cyan}}	{{.Comment|cyan}}
 	{{end}}`)
 }

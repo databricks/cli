@@ -315,11 +315,8 @@ func newList() *cobra.Command {
 
 		listReq.FullName = args[0]
 
-		response, err := w.ModelVersions.ListAll(ctx, listReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.ModelVersions.List(ctx, listReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

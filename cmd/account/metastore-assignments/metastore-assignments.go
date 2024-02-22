@@ -294,11 +294,8 @@ func newList() *cobra.Command {
 
 		listReq.MetastoreId = args[0]
 
-		response, err := a.MetastoreAssignments.ListAll(ctx, listReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := a.MetastoreAssignments.List(ctx, listReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

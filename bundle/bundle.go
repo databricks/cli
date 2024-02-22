@@ -16,7 +16,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
-	"github.com/databricks/cli/folders"
+	"github.com/databricks/cli/libs/folders"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"

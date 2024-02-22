@@ -397,7 +397,9 @@ func newDeleteRuns() *cobra.Command {
 	cmd.Long = `Delete runs by creation time.
   
   Bulk delete runs in an experiment that were created prior to or at the
-  specified timestamp. Deletes at most max_runs per request.
+  specified timestamp. Deletes at most max_runs per request. To call this API
+  from a Databricks Notebook in Python, you can use the client code snippet on
+  https://learn.microsoft.com/en-us/azure/databricks/mlflow/runs#bulk-delete.
 
   Arguments:
     EXPERIMENT_ID: The ID of the experiment containing the runs to delete.
@@ -731,11 +733,8 @@ func newGetHistory() *cobra.Command {
 
 		getHistoryReq.MetricKey = args[0]
 
-		response, err := w.Experiments.GetHistoryAll(ctx, getHistoryReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Experiments.GetHistory(ctx, getHistoryReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -996,11 +995,8 @@ func newListArtifacts() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.Experiments.ListArtifactsAll(ctx, listArtifactsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Experiments.ListArtifacts(ctx, listArtifactsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1059,11 +1055,8 @@ func newListExperiments() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.Experiments.ListExperimentsAll(ctx, listExperimentsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Experiments.ListExperiments(ctx, listExperimentsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1721,7 +1714,9 @@ func newRestoreRuns() *cobra.Command {
 	cmd.Long = `Restore runs by deletion time.
   
   Bulk restore runs in an experiment that were deleted no earlier than the
-  specified timestamp. Restores at most max_runs per request.
+  specified timestamp. Restores at most max_runs per request. To call this API
+  from a Databricks Notebook in Python, you can use the client code snippet on
+  https://learn.microsoft.com/en-us/azure/databricks/mlflow/runs#bulk-restore.
 
   Arguments:
     EXPERIMENT_ID: The ID of the experiment containing the runs to restore.
@@ -1838,11 +1833,8 @@ func newSearchExperiments() *cobra.Command {
 			}
 		}
 
-		response, err := w.Experiments.SearchExperimentsAll(ctx, searchExperimentsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Experiments.SearchExperiments(ctx, searchExperimentsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1915,11 +1907,8 @@ func newSearchRuns() *cobra.Command {
 			}
 		}
 
-		response, err := w.Experiments.SearchRunsAll(ctx, searchRunsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Experiments.SearchRuns(ctx, searchRunsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

@@ -1,0 +1,32 @@
+# This file defines the structure of this project and how it is deployed
+# to production using Databricks Asset Bundles.
+# See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
+bundle:
+  name: {{.project_name}}
+
+include:
+  - resources/*.yml
+
+# Deployment targets.
+# The default schema, catalog, etc. for dbt are defined in dbt_profiles/profiles.yml
+targets:
+  dev:
+    default: true
+    # We use 'mode: development' to indicate this is a personal development copy.
+    # Any job schedules and triggers are paused by default.
+    mode: development
+    workspace:
+      host: {{workspace_host}}
+
+  prod:
+    mode: production
+    workspace:
+      host: {{workspace_host}}
+      # We always use /Users/{{user_name}} for all resources to make sure we only have a single copy.
+      root_path: /Users/{{user_name}}/.bundle/${bundle.name}/${bundle.target}
+    {{- if not is_service_principal}}
+    run_as:
+      # This runs as {{user_name}} in production. We could also use a service principal here
+      # using service_principal_name (see the Databricks documentation).
+      user_name: {{user_name}}
+    {{- end}}

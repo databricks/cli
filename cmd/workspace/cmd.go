@@ -27,11 +27,13 @@ import (
 	instance_profiles "github.com/databricks/cli/cmd/workspace/instance-profiles"
 	ip_access_lists "github.com/databricks/cli/cmd/workspace/ip-access-lists"
 	jobs "github.com/databricks/cli/cmd/workspace/jobs"
+	lakehouse_monitors "github.com/databricks/cli/cmd/workspace/lakehouse-monitors"
 	lakeview "github.com/databricks/cli/cmd/workspace/lakeview"
 	libraries "github.com/databricks/cli/cmd/workspace/libraries"
 	metastores "github.com/databricks/cli/cmd/workspace/metastores"
 	model_registry "github.com/databricks/cli/cmd/workspace/model-registry"
 	model_versions "github.com/databricks/cli/cmd/workspace/model-versions"
+	online_tables "github.com/databricks/cli/cmd/workspace/online-tables"
 	permissions "github.com/databricks/cli/cmd/workspace/permissions"
 	pipelines "github.com/databricks/cli/cmd/workspace/pipelines"
 	policy_families "github.com/databricks/cli/cmd/workspace/policy-families"
@@ -93,11 +95,13 @@ func All() []*cobra.Command {
 	out = append(out, instance_profiles.New())
 	out = append(out, ip_access_lists.New())
 	out = append(out, jobs.New())
+	out = append(out, lakehouse_monitors.New())
 	out = append(out, lakeview.New())
 	out = append(out, libraries.New())
 	out = append(out, metastores.New())
 	out = append(out, model_registry.New())
 	out = append(out, model_versions.New())
+	out = append(out, online_tables.New())
 	out = append(out, permissions.New())
 	out = append(out, pipelines.New())
 	out = append(out, policy_families.New())

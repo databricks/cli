@@ -107,7 +107,7 @@ func (c *copy) emitFileSkippedEvent(sourcePath, targetPath string) error {
 	event := newFileSkippedEvent(fullSourcePath, fullTargetPath)
 	template := "{{.SourcePath}} -> {{.TargetPath}} (skipped; already exists)\n"
 
-	return cmdio.RenderWithTemplate(c.ctx, event, template)
+	return cmdio.RenderWithTemplate(c.ctx, event, "", template)
 }
 
 func (c *copy) emitFileCopiedEvent(sourcePath, targetPath string) error {
@@ -123,16 +123,16 @@ func (c *copy) emitFileCopiedEvent(sourcePath, targetPath string) error {
 	event := newFileCopiedEvent(fullSourcePath, fullTargetPath)
 	template := "{{.SourcePath}} -> {{.TargetPath}}\n"
 
-	return cmdio.RenderWithTemplate(c.ctx, event, template)
+	return cmdio.RenderWithTemplate(c.ctx, event, "", template)
 }
 
 func newCpCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "cp SOURCE_PATH TARGET_PATH",
-		Short: "Copy files and directories to and from DBFS.",
-		Long: `Copy files to and from DBFS.
+		Short: "Copy files and directories.",
+		Long: `Copy files and directories to and from any paths on DBFS, UC Volumes or your local filesystem.
 
-	  For paths in DBFS it is required that you specify the "dbfs" scheme.
+	  For paths in DBFS and UC Volumes, it is required that you specify the "dbfs" scheme.
 	  For example: dbfs:/foo/bar.
 
 	  Recursively copying a directory will copy all files inside directory
@@ -151,9 +151,6 @@ func newCpCommand() *cobra.Command {
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-
-		// TODO: Error if a user uses '\' as path separator on windows when "file"
-		// scheme is specified (https://github.com/databricks/cli/issues/485)
 
 		// Get source filer and source path without scheme
 		fullSourcePath := args[0]

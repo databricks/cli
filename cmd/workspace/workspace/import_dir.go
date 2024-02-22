@@ -93,14 +93,14 @@ func (opts importDirOptions) callback(ctx context.Context, workspaceFiler filer.
 				// Emit file skipped event with the appropriate template
 				fileSkippedEvent := newFileSkippedEvent(localName, path.Join(targetDir, remoteName))
 				template := "{{.SourcePath}} -> {{.TargetPath}} (skipped; already exists)\n"
-				return cmdio.RenderWithTemplate(ctx, fileSkippedEvent, template)
+				return cmdio.RenderWithTemplate(ctx, fileSkippedEvent, "", template)
 			}
 			if err != nil {
 				return err
 			}
 		}
 		fileImportedEvent := newFileImportedEvent(localName, path.Join(targetDir, remoteName))
-		return cmdio.RenderWithTemplate(ctx, fileImportedEvent, "{{.SourcePath}} -> {{.TargetPath}}\n")
+		return cmdio.RenderWithTemplate(ctx, fileImportedEvent, "", "{{.SourcePath}} -> {{.TargetPath}}\n")
 	}
 }
 

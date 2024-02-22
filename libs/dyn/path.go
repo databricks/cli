@@ -10,6 +10,14 @@ type pathComponent struct {
 	index int
 }
 
+func (c pathComponent) Key() string {
+	return c.key
+}
+
+func (c pathComponent) Index() int {
+	return c.index
+}
+
 func (c pathComponent) isKey() bool {
 	return c.key != ""
 }

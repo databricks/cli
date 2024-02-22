@@ -9,8 +9,8 @@ import (
 func newCatCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "cat FILE_PATH",
-		Short:   "Show file content",
-		Long:    `Show the contents of a file.`,
+		Short:   "Show file content.",
+		Long:    `Show the contents of a file in DBFS or a UC Volume.`,
 		Args:    cobra.ExactArgs(1),
 		PreRunE: root.MustWorkspaceClient,
 	}
@@ -27,7 +27,7 @@ func newCatCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.RenderReader(ctx, r)
+		return cmdio.Render(ctx, r)
 	}
 
 	return cmd

@@ -536,11 +536,8 @@ func newListPipelineEvents() *cobra.Command {
 		}
 		listPipelineEventsReq.PipelineId = args[0]
 
-		response, err := w.Pipelines.ListPipelineEventsAll(ctx, listPipelineEventsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Pipelines.ListPipelineEvents(ctx, listPipelineEventsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -600,11 +597,8 @@ func newListPipelines() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.Pipelines.ListPipelinesAll(ctx, listPipelinesReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Pipelines.ListPipelines(ctx, listPipelinesReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -702,96 +696,6 @@ func newListUpdates() *cobra.Command {
 func init() {
 	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
 		cmd.AddCommand(newListUpdates())
-	})
-}
-
-// start reset command
-
-// Slice with functions to override default command behavior.
-// Functions can be added from the `init()` function in manually curated files in this directory.
-var resetOverrides []func(
-	*cobra.Command,
-	*pipelines.ResetRequest,
-)
-
-func newReset() *cobra.Command {
-	cmd := &cobra.Command{}
-
-	var resetReq pipelines.ResetRequest
-
-	var resetSkipWait bool
-	var resetTimeout time.Duration
-
-	cmd.Flags().BoolVar(&resetSkipWait, "no-wait", resetSkipWait, `do not wait to reach RUNNING state`)
-	cmd.Flags().DurationVar(&resetTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
-	// TODO: short flags
-
-	cmd.Use = "reset PIPELINE_ID"
-	cmd.Short = `Reset a pipeline.`
-	cmd.Long = `Reset a pipeline.
-  
-  Resets a pipeline.`
-
-	cmd.Annotations = make(map[string]string)
-
-	cmd.PreRunE = root.MustWorkspaceClient
-	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
-		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
-
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
-			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
-		}
-		resetReq.PipelineId = args[0]
-
-		wait, err := w.Pipelines.Reset(ctx, resetReq)
-		if err != nil {
-			return err
-		}
-		if resetSkipWait {
-			return nil
-		}
-		spinner := cmdio.Spinner(ctx)
-		info, err := wait.OnProgress(func(i *pipelines.GetPipelineResponse) {
-			statusMessage := i.Cause
-			spinner <- statusMessage
-		}).GetWithTimeout(resetTimeout)
-		close(spinner)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, info)
-	}
-
-	// Disable completions since they are not applicable.
-	// Can be overridden by manual implementation in `override.go`.
-	cmd.ValidArgsFunction = cobra.NoFileCompletions
-
-	// Apply optional overrides to this command.
-	for _, fn := range resetOverrides {
-		fn(cmd, &resetReq)
-	}
-
-	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newReset())
 	})
 }
 
@@ -911,6 +815,7 @@ func newStartUpdate() *cobra.Command {
 	cmd.Flags().BoolVar(&startUpdateReq.FullRefresh, "full-refresh", startUpdateReq.FullRefresh, `If true, this update will reset all tables before running.`)
 	// TODO: array: full_refresh_selection
 	// TODO: array: refresh_selection
+	cmd.Flags().BoolVar(&startUpdateReq.ValidateOnly, "validate-only", startUpdateReq.ValidateOnly, `If true, this update only validates the correctness of pipeline source code but does not materialize or publish any datasets.`)
 
 	cmd.Use = "start-update PIPELINE_ID"
 	cmd.Short = `Start a pipeline.`

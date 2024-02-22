@@ -300,16 +300,22 @@ func init() {
 // end service {{.Name}}{{end}}
 
 {{- define "method-call" -}}
-		{{if .Response}}response, err :={{else}}err ={{end}} {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{(.Service.TrimPrefix "account").PascalName}}.{{.PascalName}}{{if .Pagination}}All{{end}}(ctx{{if .Request}}, {{.CamelName}}Req{{end}})
+		{{if .Response -}}
+		  response{{ if not .Pagination}}, err{{end}} :=
+		{{- else -}}
+		  err =
+		{{- end}} {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{(.Service.TrimPrefix "account").PascalName}}.{{.PascalName}}(ctx{{if .Request}}, {{.CamelName}}Req{{end}})
+		{{- if not (and .Response .Pagination) }}
 		if err != nil {
 			return err
 		}
+		{{- end}}
 		{{ if .Response -}}
 			{{- if .IsResponseByteStream -}}
 			defer response.{{.ResponseBodyField.PascalName}}.Close()
-			return cmdio.RenderReader(ctx, response.{{.ResponseBodyField.PascalName}})
+			return cmdio.Render{{ if .Pagination}}Iterator{{end}}(ctx, response.{{.ResponseBodyField.PascalName}})
 			{{- else -}}
-			return cmdio.Render(ctx, response)
+			return cmdio.Render{{ if .Pagination}}Iterator{{end}}(ctx, response)
 			{{- end -}}
 		{{ else -}}
 		return nil

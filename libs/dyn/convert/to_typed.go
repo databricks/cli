@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 )
 
 func ToTyped(dst any, src dyn.Value) error {
@@ -53,6 +54,10 @@ func ToTyped(dst any, src dyn.Value) error {
 func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 	switch src.Kind() {
 	case dyn.KindMap:
+		// Zero the destination struct such that fields
+		// that aren't present in [src] are cleared.
+		dst.SetZero()
+
 		info := getStructInfo(dst.Type())
 		for k, v := range src.MustMap() {
 			index, ok := info.Fields[k]
@@ -110,12 +115,13 @@ func toTypedMap(dst reflect.Value, src dyn.Value) error {
 		dst.Set(reflect.MakeMapWithSize(dst.Type(), len(m)))
 		for k, v := range m {
 			kv := reflect.ValueOf(k)
+			kt := dst.Type().Key()
 			vv := reflect.New(dst.Type().Elem())
 			err := ToTyped(vv.Interface(), v)
 			if err != nil {
 				return err
 			}
-			dst.SetMapIndex(kv, vv.Elem())
+			dst.SetMapIndex(kv.Convert(kt), vv.Elem())
 		}
 		return nil
 	case dyn.KindNil:
@@ -191,6 +197,11 @@ func toTypedBool(dst reflect.Value, src dyn.Value) error {
 			dst.SetBool(false)
 			return nil
 		}
+		// Ignore pure variable references (e.g. ${var.foo}).
+		if dynvar.IsPureVariableReference(src.MustString()) {
+			dst.SetZero()
+			return nil
+		}
 	}
 
 	return TypeError{
@@ -209,6 +220,11 @@ func toTypedInt(dst reflect.Value, src dyn.Value) error {
 			dst.SetInt(i64)
 			return nil
 		}
+		// Ignore pure variable references (e.g. ${var.foo}).
+		if dynvar.IsPureVariableReference(src.MustString()) {
+			dst.SetZero()
+			return nil
+		}
 	}
 
 	return TypeError{
@@ -225,6 +241,11 @@ func toTypedFloat(dst reflect.Value, src dyn.Value) error {
 	case dyn.KindString:
 		if f64, err := strconv.ParseFloat(src.MustString(), 64); err == nil {
 			dst.SetFloat(f64)
+			return nil
+		}
+		// Ignore pure variable references (e.g. ${var.foo}).
+		if dynvar.IsPureVariableReference(src.MustString()) {
+			dst.SetZero()
 			return nil
 		}
 	}

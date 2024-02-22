@@ -5,6 +5,7 @@ import (
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/metadata"
@@ -22,6 +23,8 @@ func Deploy() bundle.Mutator {
 		lock.Acquire(),
 		bundle.Defer(
 			bundle.Seq(
+				terraform.StatePull(),
+				deploy.CheckRunningResource(),
 				mutator.ValidateGitDetails(),
 				libraries.MatchWithArtifacts(),
 				artifacts.CleanUp(),
@@ -31,7 +34,6 @@ func Deploy() bundle.Mutator {
 				permissions.ApplyWorkspaceRootPermissions(),
 				terraform.Interpolate(),
 				terraform.Write(),
-				terraform.StatePull(),
 				bundle.Defer(
 					terraform.Apply(),
 					bundle.Seq(

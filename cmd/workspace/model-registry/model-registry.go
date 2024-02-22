@@ -1128,11 +1128,8 @@ func newGetLatestVersions() *cobra.Command {
 			getLatestVersionsReq.Name = args[0]
 		}
 
-		response, err := w.ModelRegistry.GetLatestVersionsAll(ctx, getLatestVersionsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.ModelRegistry.GetLatestVersions(ctx, getLatestVersionsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1520,11 +1517,8 @@ func newListModels() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.ModelRegistry.ListModelsAll(ctx, listModelsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.ModelRegistry.ListModels(ctx, listModelsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1586,11 +1580,8 @@ func newListTransitionRequests() *cobra.Command {
 		listTransitionRequestsReq.Name = args[0]
 		listTransitionRequestsReq.Version = args[1]
 
-		response, err := w.ModelRegistry.ListTransitionRequestsAll(ctx, listTransitionRequestsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.ModelRegistry.ListTransitionRequests(ctx, listTransitionRequestsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1651,11 +1642,8 @@ func newListWebhooks() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.ModelRegistry.ListWebhooksAll(ctx, listWebhooksReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.ModelRegistry.ListWebhooks(ctx, listWebhooksReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1900,11 +1888,8 @@ func newSearchModelVersions() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.ModelRegistry.SearchModelVersionsAll(ctx, searchModelVersionsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.ModelRegistry.SearchModelVersions(ctx, searchModelVersionsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1964,11 +1949,8 @@ func newSearchModels() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.ModelRegistry.SearchModelsAll(ctx, searchModelsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.ModelRegistry.SearchModels(ctx, searchModelsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

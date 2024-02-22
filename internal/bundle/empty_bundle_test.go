@@ -6,14 +6,13 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/databricks/cli/internal"
+	"github.com/databricks/cli/internal/acc"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
 func TestAccEmptyBundleDeploy(t *testing.T) {
-	env := internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
-	t.Log(env)
+	ctx, _ := acc.WorkspaceTest(t)
 
 	// create empty bundle
 	tmpDir := t.TempDir()
@@ -27,11 +26,11 @@ func TestAccEmptyBundleDeploy(t *testing.T) {
 	f.Close()
 
 	// deploy empty bundle
-	err = deployBundle(t, tmpDir)
+	err = deployBundle(t, ctx, tmpDir)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		err = destroyBundle(t, tmpDir)
+		err = destroyBundle(t, ctx, tmpDir)
 		require.NoError(t, err)
 	})
 }

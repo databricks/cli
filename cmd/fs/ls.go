@@ -40,8 +40,8 @@ func toJsonDirEntry(f fs.DirEntry, baseDir string, isAbsolute bool) (*jsonDirEnt
 func newLsCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "ls DIR_PATH",
-		Short:   "Lists files",
-		Long:    `Lists files`,
+		Short:   "Lists files.",
+		Long:    `Lists files in DBFS and UC Volumes.`,
 		Args:    cobra.ExactArgs(1),
 		PreRunE: root.MustWorkspaceClient,
 	}
@@ -78,12 +78,12 @@ func newLsCommand() *cobra.Command {
 
 		// Use template for long mode if the flag is set
 		if long {
-			return cmdio.RenderWithTemplate(ctx, jsonDirEntries, cmdio.Heredoc(`
+			return cmdio.RenderWithTemplate(ctx, jsonDirEntries, "", cmdio.Heredoc(`
 			{{range .}}{{if .IsDir}}DIRECTORY {{else}}FILE      {{end}}{{.Size}} {{.ModTime|pretty_date}} {{.Name}}
 			{{end}}
 			`))
 		}
-		return cmdio.RenderWithTemplate(ctx, jsonDirEntries, cmdio.Heredoc(`
+		return cmdio.RenderWithTemplate(ctx, jsonDirEntries, "", cmdio.Heredoc(`
 		{{range .}}{{.Name}}
 		{{end}}
 		`))

@@ -84,8 +84,9 @@ func newChangeOwner() *cobra.Command {
 	cmd.Short = `Change cluster owner.`
 	cmd.Long = `Change cluster owner.
   
-  Change the owner of the cluster. You must be an admin to perform this
-  operation.
+  Change the owner of the cluster. You must be an admin and the cluster must be
+  terminated to perform this operation. The service principal application ID can
+  be supplied as an argument to owner_username.
 
   Arguments:
     CLUSTER_ID: <needs content added>
@@ -652,11 +653,8 @@ func newEvents() *cobra.Command {
 			eventsReq.ClusterId = args[0]
 		}
 
-		response, err := w.Clusters.EventsAll(ctx, eventsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Clusters.Events(ctx, eventsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -956,11 +954,8 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.Clusters.ListAll(ctx, listReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Clusters.List(ctx, listReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
