@@ -115,12 +115,13 @@ func toTypedMap(dst reflect.Value, src dyn.Value) error {
 		dst.Set(reflect.MakeMapWithSize(dst.Type(), len(m)))
 		for k, v := range m {
 			kv := reflect.ValueOf(k)
+			kt := dst.Type().Key()
 			vv := reflect.New(dst.Type().Elem())
 			err := ToTyped(vv.Interface(), v)
 			if err != nil {
 				return err
 			}
-			dst.SetMapIndex(kv, vv.Elem())
+			dst.SetMapIndex(kv.Convert(kt), vv.Elem())
 		}
 		return nil
 	case dyn.KindNil:

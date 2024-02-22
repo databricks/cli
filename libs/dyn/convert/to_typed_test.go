@@ -495,3 +495,19 @@ func TestToTypedFloat64FromStringVariableReference(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, float64(0.0), out)
 }
+
+func TestToTypedWithAliasKeyType(t *testing.T) {
+	type custom string
+
+	var out map[custom]string
+	v := dyn.V(map[string]dyn.Value{
+		"foo": dyn.V("bar"),
+		"bar": dyn.V("baz"),
+	})
+
+	err := ToTyped(&out, v)
+	require.NoError(t, err)
+	assert.Len(t, out, 2)
+	assert.Equal(t, "bar", out["foo"])
+	assert.Equal(t, "baz", out["bar"])
+}
