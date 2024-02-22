@@ -32,7 +32,9 @@ func newDeployCommand() *cobra.Command {
 		bundle.ApplyFunc(ctx, b, func(context.Context, *bundle.Bundle) error {
 			b.Config.Bundle.Force = force
 			b.Config.Bundle.Deployment.Lock.Force = forceLock
-			b.Config.Bundle.ComputeID = computeID
+			if cmd.Flag("compute-id").Changed {
+				b.Config.Bundle.ComputeID = computeID
+			}
 
 			if cmd.Flag("fail-on-active-runs").Changed {
 				b.Config.Bundle.Deployment.FailOnActiveRuns = failOnActiveRuns
