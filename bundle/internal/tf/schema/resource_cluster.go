@@ -90,7 +90,7 @@ type ResourceClusterInitScriptsDbfs struct {
 }
 
 type ResourceClusterInitScriptsFile struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type ResourceClusterInitScriptsGcs struct {

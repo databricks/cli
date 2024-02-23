@@ -78,7 +78,7 @@ type ResourcePipelineClusterInitScriptsS3 struct {
 }
 
 type ResourcePipelineClusterInitScriptsVolumes struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type ResourcePipelineClusterInitScriptsWorkspace struct {
