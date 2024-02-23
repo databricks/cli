@@ -19,6 +19,7 @@ type Resources struct {
 	Directory                map[string]any `json:"databricks_directory,omitempty"`
 	Entitlements             map[string]any `json:"databricks_entitlements,omitempty"`
 	ExternalLocation         map[string]any `json:"databricks_external_location,omitempty"`
+	File                     map[string]any `json:"databricks_file,omitempty"`
 	GitCredential            map[string]any `json:"databricks_git_credential,omitempty"`
 	GlobalInitScript         map[string]any `json:"databricks_global_init_script,omitempty"`
 	Grant                    map[string]any `json:"databricks_grant,omitempty"`
@@ -82,6 +83,7 @@ type Resources struct {
 	User                     map[string]any `json:"databricks_user,omitempty"`
 	UserInstanceProfile      map[string]any `json:"databricks_user_instance_profile,omitempty"`
 	UserRole                 map[string]any `json:"databricks_user_role,omitempty"`
+	VectorSearchEndpoint     map[string]any `json:"databricks_vector_search_endpoint,omitempty"`
 	Volume                   map[string]any `json:"databricks_volume,omitempty"`
 	WorkspaceConf            map[string]any `json:"databricks_workspace_conf,omitempty"`
 	WorkspaceFile            map[string]any `json:"databricks_workspace_file,omitempty"`
@@ -105,6 +107,7 @@ func NewResources() *Resources {
 		Directory:                make(map[string]any),
 		Entitlements:             make(map[string]any),
 		ExternalLocation:         make(map[string]any),
+		File:                     make(map[string]any),
 		GitCredential:            make(map[string]any),
 		GlobalInitScript:         make(map[string]any),
 		Grant:                    make(map[string]any),
@@ -168,6 +171,7 @@ func NewResources() *Resources {
 		User:                     make(map[string]any),
 		UserInstanceProfile:      make(map[string]any),
 		UserRole:                 make(map[string]any),
+		VectorSearchEndpoint:     make(map[string]any),
 		Volume:                   make(map[string]any),
 		WorkspaceConf:            make(map[string]any),
 		WorkspaceFile:            make(map[string]any),
