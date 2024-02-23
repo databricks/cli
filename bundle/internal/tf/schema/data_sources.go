@@ -39,6 +39,8 @@ type DataSources struct {
 	SparkVersion          map[string]any `json:"databricks_spark_version,omitempty"`
 	SqlWarehouse          map[string]any `json:"databricks_sql_warehouse,omitempty"`
 	SqlWarehouses         map[string]any `json:"databricks_sql_warehouses,omitempty"`
+	StorageCredential     map[string]any `json:"databricks_storage_credential,omitempty"`
+	StorageCredentials    map[string]any `json:"databricks_storage_credentials,omitempty"`
 	Tables                map[string]any `json:"databricks_tables,omitempty"`
 	User                  map[string]any `json:"databricks_user,omitempty"`
 	Views                 map[string]any `json:"databricks_views,omitempty"`
@@ -84,6 +86,8 @@ func NewDataSources() *DataSources {
 		SparkVersion:          make(map[string]any),
 		SqlWarehouse:          make(map[string]any),
 		SqlWarehouses:         make(map[string]any),
+		StorageCredential:     make(map[string]any),
+		StorageCredentials:    make(map[string]any),
 		Tables:                make(map[string]any),
 		User:                  make(map[string]any),
 		Views:                 make(map[string]any),

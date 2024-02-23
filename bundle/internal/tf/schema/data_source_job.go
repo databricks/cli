@@ -21,6 +21,7 @@ type DataSourceJobJobSettingsSettingsDbtTask struct {
 	ProfilesDirectory string   `json:"profiles_directory,omitempty"`
 	ProjectDirectory  string   `json:"project_directory,omitempty"`
 	Schema            string   `json:"schema,omitempty"`
+	Source            string   `json:"source,omitempty"`
 	WarehouseId       string   `json:"warehouse_id,omitempty"`
 }
 
@@ -160,7 +161,7 @@ type DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsS3 struct {
 }
 
 type DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsVolumes struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsWorkspace struct {
@@ -347,7 +348,7 @@ type DataSourceJobJobSettingsSettingsNewClusterInitScriptsS3 struct {
 }
 
 type DataSourceJobJobSettingsSettingsNewClusterInitScriptsVolumes struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type DataSourceJobJobSettingsSettingsNewClusterInitScriptsWorkspace struct {
@@ -482,6 +483,7 @@ type DataSourceJobJobSettingsSettingsTaskDbtTask struct {
 	ProfilesDirectory string   `json:"profiles_directory,omitempty"`
 	ProjectDirectory  string   `json:"project_directory,omitempty"`
 	Schema            string   `json:"schema,omitempty"`
+	Source            string   `json:"source,omitempty"`
 	WarehouseId       string   `json:"warehouse_id,omitempty"`
 }
 
@@ -495,6 +497,371 @@ type DataSourceJobJobSettingsSettingsTaskEmailNotifications struct {
 	OnFailure                          []string `json:"on_failure,omitempty"`
 	OnStart                            []string `json:"on_start,omitempty"`
 	OnSuccess                          []string `json:"on_success,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskConditionTask struct {
+	Left  string `json:"left,omitempty"`
+	Op    string `json:"op,omitempty"`
+	Right string `json:"right,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskDbtTask struct {
+	Catalog           string   `json:"catalog,omitempty"`
+	Commands          []string `json:"commands"`
+	ProfilesDirectory string   `json:"profiles_directory,omitempty"`
+	ProjectDirectory  string   `json:"project_directory,omitempty"`
+	Schema            string   `json:"schema,omitempty"`
+	Source            string   `json:"source,omitempty"`
+	WarehouseId       string   `json:"warehouse_id,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskDependsOn struct {
+	Outcome string `json:"outcome,omitempty"`
+	TaskKey string `json:"task_key"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskEmailNotifications struct {
+	OnDurationWarningThresholdExceeded []string `json:"on_duration_warning_threshold_exceeded,omitempty"`
+	OnFailure                          []string `json:"on_failure,omitempty"`
+	OnStart                            []string `json:"on_start,omitempty"`
+	OnSuccess                          []string `json:"on_success,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskHealthRules struct {
+	Metric string `json:"metric,omitempty"`
+	Op     string `json:"op,omitempty"`
+	Value  int    `json:"value,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskHealth struct {
+	Rules []DataSourceJobJobSettingsSettingsTaskForEachTaskTaskHealthRules `json:"rules,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryCran struct {
+	Package string `json:"package"`
+	Repo    string `json:"repo,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryMaven struct {
+	Coordinates string   `json:"coordinates"`
+	Exclusions  []string `json:"exclusions,omitempty"`
+	Repo        string   `json:"repo,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryPypi struct {
+	Package string `json:"package"`
+	Repo    string `json:"repo,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibrary struct {
+	Egg   string                                                           `json:"egg,omitempty"`
+	Jar   string                                                           `json:"jar,omitempty"`
+	Whl   string                                                           `json:"whl,omitempty"`
+	Cran  *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryCran  `json:"cran,omitempty"`
+	Maven *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryMaven `json:"maven,omitempty"`
+	Pypi  *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryPypi  `json:"pypi,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterAutoscale struct {
+	MaxWorkers int `json:"max_workers,omitempty"`
+	MinWorkers int `json:"min_workers,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterAwsAttributes struct {
+	Availability        string `json:"availability,omitempty"`
+	EbsVolumeCount      int    `json:"ebs_volume_count,omitempty"`
+	EbsVolumeSize       int    `json:"ebs_volume_size,omitempty"`
+	EbsVolumeType       string `json:"ebs_volume_type,omitempty"`
+	FirstOnDemand       int    `json:"first_on_demand,omitempty"`
+	InstanceProfileArn  string `json:"instance_profile_arn,omitempty"`
+	SpotBidPricePercent int    `json:"spot_bid_price_percent,omitempty"`
+	ZoneId              string `json:"zone_id,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterAzureAttributes struct {
+	Availability    string `json:"availability,omitempty"`
+	FirstOnDemand   int    `json:"first_on_demand,omitempty"`
+	SpotBidMaxPrice int    `json:"spot_bid_max_price,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterClusterLogConfDbfs struct {
+	Destination string `json:"destination"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterClusterLogConfS3 struct {
+	CannedAcl        string `json:"canned_acl,omitempty"`
+	Destination      string `json:"destination"`
+	EnableEncryption bool   `json:"enable_encryption,omitempty"`
+	EncryptionType   string `json:"encryption_type,omitempty"`
+	Endpoint         string `json:"endpoint,omitempty"`
+	KmsKey           string `json:"kms_key,omitempty"`
+	Region           string `json:"region,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterClusterLogConf struct {
+	Dbfs *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterClusterLogConfDbfs `json:"dbfs,omitempty"`
+	S3   *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterClusterLogConfS3   `json:"s3,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterClusterMountInfoNetworkFilesystemInfo struct {
+	MountOptions  string `json:"mount_options,omitempty"`
+	ServerAddress string `json:"server_address"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterClusterMountInfo struct {
+	LocalMountDirPath     string                                                                                              `json:"local_mount_dir_path"`
+	RemoteMountDirPath    string                                                                                              `json:"remote_mount_dir_path,omitempty"`
+	NetworkFilesystemInfo *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterClusterMountInfoNetworkFilesystemInfo `json:"network_filesystem_info,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterDockerImageBasicAuth struct {
+	Password string `json:"password"`
+	Username string `json:"username"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterDockerImage struct {
+	Url       string                                                                             `json:"url"`
+	BasicAuth *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterDockerImageBasicAuth `json:"basic_auth,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterGcpAttributes struct {
+	Availability            string `json:"availability,omitempty"`
+	BootDiskSize            int    `json:"boot_disk_size,omitempty"`
+	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
+	LocalSsdCount           int    `json:"local_ssd_count,omitempty"`
+	UsePreemptibleExecutors bool   `json:"use_preemptible_executors,omitempty"`
+	ZoneId                  string `json:"zone_id,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterInitScriptsAbfss struct {
+	Destination string `json:"destination"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterInitScriptsDbfs struct {
+	Destination string `json:"destination"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterInitScriptsFile struct {
+	Destination string `json:"destination"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterInitScriptsGcs struct {
+	Destination string `json:"destination"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterInitScriptsS3 struct {
+	CannedAcl        string `json:"canned_acl,omitempty"`
+	Destination      string `json:"destination"`
+	EnableEncryption bool   `json:"enable_encryption,omitempty"`
+	EncryptionType   string `json:"encryption_type,omitempty"`
+	Endpoint         string `json:"endpoint,omitempty"`
+	KmsKey           string `json:"kms_key,omitempty"`
+	Region           string `json:"region,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterInitScriptsVolumes struct {
+	Destination string `json:"destination"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterInitScriptsWorkspace struct {
+	Destination string `json:"destination"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterInitScripts struct {
+	Abfss     *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterInitScriptsAbfss     `json:"abfss,omitempty"`
+	Dbfs      *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterInitScriptsDbfs      `json:"dbfs,omitempty"`
+	File      *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterInitScriptsFile      `json:"file,omitempty"`
+	Gcs       *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterInitScriptsGcs       `json:"gcs,omitempty"`
+	S3        *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterInitScriptsS3        `json:"s3,omitempty"`
+	Volumes   *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterInitScriptsVolumes   `json:"volumes,omitempty"`
+	Workspace *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterInitScriptsWorkspace `json:"workspace,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterWorkloadTypeClients struct {
+	Jobs      bool `json:"jobs,omitempty"`
+	Notebooks bool `json:"notebooks,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterWorkloadType struct {
+	Clients *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterWorkloadTypeClients `json:"clients,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewCluster struct {
+	ApplyPolicyDefaultValues  bool                                                                            `json:"apply_policy_default_values,omitempty"`
+	AutoterminationMinutes    int                                                                             `json:"autotermination_minutes,omitempty"`
+	ClusterId                 string                                                                          `json:"cluster_id,omitempty"`
+	ClusterName               string                                                                          `json:"cluster_name,omitempty"`
+	CustomTags                map[string]string                                                               `json:"custom_tags,omitempty"`
+	DataSecurityMode          string                                                                          `json:"data_security_mode,omitempty"`
+	DriverInstancePoolId      string                                                                          `json:"driver_instance_pool_id,omitempty"`
+	DriverNodeTypeId          string                                                                          `json:"driver_node_type_id,omitempty"`
+	EnableElasticDisk         bool                                                                            `json:"enable_elastic_disk,omitempty"`
+	EnableLocalDiskEncryption bool                                                                            `json:"enable_local_disk_encryption,omitempty"`
+	IdempotencyToken          string                                                                          `json:"idempotency_token,omitempty"`
+	InstancePoolId            string                                                                          `json:"instance_pool_id,omitempty"`
+	NodeTypeId                string                                                                          `json:"node_type_id,omitempty"`
+	NumWorkers                int                                                                             `json:"num_workers"`
+	PolicyId                  string                                                                          `json:"policy_id,omitempty"`
+	RuntimeEngine             string                                                                          `json:"runtime_engine,omitempty"`
+	SingleUserName            string                                                                          `json:"single_user_name,omitempty"`
+	SparkConf                 map[string]string                                                               `json:"spark_conf,omitempty"`
+	SparkEnvVars              map[string]string                                                               `json:"spark_env_vars,omitempty"`
+	SparkVersion              string                                                                          `json:"spark_version"`
+	SshPublicKeys             []string                                                                        `json:"ssh_public_keys,omitempty"`
+	Autoscale                 *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterAutoscale         `json:"autoscale,omitempty"`
+	AwsAttributes             *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterAwsAttributes     `json:"aws_attributes,omitempty"`
+	AzureAttributes           *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterAzureAttributes   `json:"azure_attributes,omitempty"`
+	ClusterLogConf            *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterClusterLogConf    `json:"cluster_log_conf,omitempty"`
+	ClusterMountInfo          []DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterClusterMountInfo `json:"cluster_mount_info,omitempty"`
+	DockerImage               *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterDockerImage       `json:"docker_image,omitempty"`
+	GcpAttributes             *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterGcpAttributes     `json:"gcp_attributes,omitempty"`
+	InitScripts               []DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterInitScripts      `json:"init_scripts,omitempty"`
+	WorkloadType              *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterWorkloadType      `json:"workload_type,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNotebookTask struct {
+	BaseParameters map[string]string `json:"base_parameters,omitempty"`
+	NotebookPath   string            `json:"notebook_path"`
+	Source         string            `json:"source,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNotificationSettings struct {
+	AlertOnLastAttempt     bool `json:"alert_on_last_attempt,omitempty"`
+	NoAlertForCanceledRuns bool `json:"no_alert_for_canceled_runs,omitempty"`
+	NoAlertForSkippedRuns  bool `json:"no_alert_for_skipped_runs,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskPipelineTask struct {
+	FullRefresh bool   `json:"full_refresh,omitempty"`
+	PipelineId  string `json:"pipeline_id"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskPythonWheelTask struct {
+	EntryPoint      string            `json:"entry_point,omitempty"`
+	NamedParameters map[string]string `json:"named_parameters,omitempty"`
+	PackageName     string            `json:"package_name,omitempty"`
+	Parameters      []string          `json:"parameters,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskRunJobTask struct {
+	JobId         int               `json:"job_id"`
+	JobParameters map[string]string `json:"job_parameters,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSparkJarTask struct {
+	JarUri        string   `json:"jar_uri,omitempty"`
+	MainClassName string   `json:"main_class_name,omitempty"`
+	Parameters    []string `json:"parameters,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSparkPythonTask struct {
+	Parameters []string `json:"parameters,omitempty"`
+	PythonFile string   `json:"python_file"`
+	Source     string   `json:"source,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSparkSubmitTask struct {
+	Parameters []string `json:"parameters,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSqlTaskAlertSubscriptions struct {
+	DestinationId string `json:"destination_id,omitempty"`
+	UserName      string `json:"user_name,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSqlTaskAlert struct {
+	AlertId            string                                                                         `json:"alert_id"`
+	PauseSubscriptions bool                                                                           `json:"pause_subscriptions,omitempty"`
+	Subscriptions      []DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSqlTaskAlertSubscriptions `json:"subscriptions,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSqlTaskDashboardSubscriptions struct {
+	DestinationId string `json:"destination_id,omitempty"`
+	UserName      string `json:"user_name,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSqlTaskDashboard struct {
+	CustomSubject      string                                                                             `json:"custom_subject,omitempty"`
+	DashboardId        string                                                                             `json:"dashboard_id"`
+	PauseSubscriptions bool                                                                               `json:"pause_subscriptions,omitempty"`
+	Subscriptions      []DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSqlTaskDashboardSubscriptions `json:"subscriptions,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSqlTaskFile struct {
+	Path   string `json:"path"`
+	Source string `json:"source,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSqlTaskQuery struct {
+	QueryId string `json:"query_id"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSqlTask struct {
+	Parameters  map[string]string                                                    `json:"parameters,omitempty"`
+	WarehouseId string                                                               `json:"warehouse_id,omitempty"`
+	Alert       *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSqlTaskAlert     `json:"alert,omitempty"`
+	Dashboard   *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSqlTaskDashboard `json:"dashboard,omitempty"`
+	File        *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSqlTaskFile      `json:"file,omitempty"`
+	Query       *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSqlTaskQuery     `json:"query,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskWebhookNotificationsOnDurationWarningThresholdExceeded struct {
+	Id string `json:"id,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskWebhookNotificationsOnFailure struct {
+	Id string `json:"id,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskWebhookNotificationsOnStart struct {
+	Id string `json:"id,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskWebhookNotificationsOnSuccess struct {
+	Id string `json:"id,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskWebhookNotifications struct {
+	OnDurationWarningThresholdExceeded []DataSourceJobJobSettingsSettingsTaskForEachTaskTaskWebhookNotificationsOnDurationWarningThresholdExceeded `json:"on_duration_warning_threshold_exceeded,omitempty"`
+	OnFailure                          []DataSourceJobJobSettingsSettingsTaskForEachTaskTaskWebhookNotificationsOnFailure                          `json:"on_failure,omitempty"`
+	OnStart                            []DataSourceJobJobSettingsSettingsTaskForEachTaskTaskWebhookNotificationsOnStart                            `json:"on_start,omitempty"`
+	OnSuccess                          []DataSourceJobJobSettingsSettingsTaskForEachTaskTaskWebhookNotificationsOnSuccess                          `json:"on_success,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTask struct {
+	ComputeKey             string                                                                   `json:"compute_key,omitempty"`
+	Description            string                                                                   `json:"description,omitempty"`
+	ExistingClusterId      string                                                                   `json:"existing_cluster_id,omitempty"`
+	JobClusterKey          string                                                                   `json:"job_cluster_key,omitempty"`
+	MaxRetries             int                                                                      `json:"max_retries,omitempty"`
+	MinRetryIntervalMillis int                                                                      `json:"min_retry_interval_millis,omitempty"`
+	RetryOnTimeout         bool                                                                     `json:"retry_on_timeout,omitempty"`
+	RunIf                  string                                                                   `json:"run_if,omitempty"`
+	TaskKey                string                                                                   `json:"task_key,omitempty"`
+	TimeoutSeconds         int                                                                      `json:"timeout_seconds,omitempty"`
+	ConditionTask          *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskConditionTask        `json:"condition_task,omitempty"`
+	DbtTask                *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskDbtTask              `json:"dbt_task,omitempty"`
+	DependsOn              []DataSourceJobJobSettingsSettingsTaskForEachTaskTaskDependsOn           `json:"depends_on,omitempty"`
+	EmailNotifications     *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskEmailNotifications   `json:"email_notifications,omitempty"`
+	Health                 *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskHealth               `json:"health,omitempty"`
+	Library                []DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibrary             `json:"library,omitempty"`
+	NewCluster             *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewCluster           `json:"new_cluster,omitempty"`
+	NotebookTask           *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNotebookTask         `json:"notebook_task,omitempty"`
+	NotificationSettings   *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNotificationSettings `json:"notification_settings,omitempty"`
+	PipelineTask           *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskPipelineTask         `json:"pipeline_task,omitempty"`
+	PythonWheelTask        *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskPythonWheelTask      `json:"python_wheel_task,omitempty"`
+	RunJobTask             *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskRunJobTask           `json:"run_job_task,omitempty"`
+	SparkJarTask           *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSparkJarTask         `json:"spark_jar_task,omitempty"`
+	SparkPythonTask        *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSparkPythonTask      `json:"spark_python_task,omitempty"`
+	SparkSubmitTask        *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSparkSubmitTask      `json:"spark_submit_task,omitempty"`
+	SqlTask                *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSqlTask              `json:"sql_task,omitempty"`
+	WebhookNotifications   *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskWebhookNotifications `json:"webhook_notifications,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskForEachTask struct {
+	Concurrency int                                                  `json:"concurrency,omitempty"`
+	Inputs      string                                               `json:"inputs"`
+	Task        *DataSourceJobJobSettingsSettingsTaskForEachTaskTask `json:"task,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskHealthRules struct {
@@ -630,7 +997,7 @@ type DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsS3 struct {
 }
 
 type DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsVolumes struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsWorkspace struct {
@@ -758,7 +1125,8 @@ type DataSourceJobJobSettingsSettingsTaskSqlTaskDashboard struct {
 }
 
 type DataSourceJobJobSettingsSettingsTaskSqlTaskFile struct {
-	Path string `json:"path"`
+	Path   string `json:"path"`
+	Source string `json:"source,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskSqlTaskQuery struct {
@@ -812,6 +1180,7 @@ type DataSourceJobJobSettingsSettingsTask struct {
 	DbtTask                *DataSourceJobJobSettingsSettingsTaskDbtTask              `json:"dbt_task,omitempty"`
 	DependsOn              []DataSourceJobJobSettingsSettingsTaskDependsOn           `json:"depends_on,omitempty"`
 	EmailNotifications     *DataSourceJobJobSettingsSettingsTaskEmailNotifications   `json:"email_notifications,omitempty"`
+	ForEachTask            *DataSourceJobJobSettingsSettingsTaskForEachTask          `json:"for_each_task,omitempty"`
 	Health                 *DataSourceJobJobSettingsSettingsTaskHealth               `json:"health,omitempty"`
 	Library                []DataSourceJobJobSettingsSettingsTaskLibrary             `json:"library,omitempty"`
 	NewCluster             *DataSourceJobJobSettingsSettingsTaskNewCluster           `json:"new_cluster,omitempty"`

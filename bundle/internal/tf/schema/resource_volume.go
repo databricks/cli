@@ -10,5 +10,6 @@ type ResourceVolume struct {
 	Owner           string `json:"owner,omitempty"`
 	SchemaName      string `json:"schema_name"`
 	StorageLocation string `json:"storage_location,omitempty"`
+	VolumePath      string `json:"volume_path,omitempty"`
 	VolumeType      string `json:"volume_type"`
 }

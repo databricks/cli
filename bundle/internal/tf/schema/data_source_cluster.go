@@ -122,7 +122,7 @@ type DataSourceClusterClusterInfoInitScriptsS3 struct {
 }
 
 type DataSourceClusterClusterInfoInitScriptsVolumes struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type DataSourceClusterClusterInfoInitScriptsWorkspace struct {
