@@ -1,5 +1,22 @@
 # Version changelog
 
+## 0.214.1
+
+CLI:
+ * Improved error message when no .databrickscfg ([#1223](https://github.com/databricks/cli/pull/1223)).
+ * Use Go SDK Iterators when listing resources with the CLI ([#1202](https://github.com/databricks/cli/pull/1202)).
+
+Bundles:
+ * Only set ComputeID value when `--compute-id` flag provided ([#1229](https://github.com/databricks/cli/pull/1229)).
+ * Add correct tag value for models in dev mode ([#1230](https://github.com/databricks/cli/pull/1230)).
+ * Upgrade Terraform provider to 1.37.0 ([#1235](https://github.com/databricks/cli/pull/1235)).
+
+Internal:
+ * Fix CLI nightlies on our UC workspaces ([#1225](https://github.com/databricks/cli/pull/1225)).
+ * Handle alias types for map keys in toTyped conversion ([#1232](https://github.com/databricks/cli/pull/1232)).
+
+
+
 ## 0.214.0
 
 CLI:
