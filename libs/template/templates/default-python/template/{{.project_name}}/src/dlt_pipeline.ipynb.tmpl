@@ -63,7 +63,7 @@
     {{- if (eq .include_python "yes") }}
     "@dlt.view\n",
     "def taxi_raw():\n",
-    "  return main.get_taxis()\n",
+    "  return main.get_taxis(spark)\n",
     {{else}}
     "\n",
     "@dlt.view\n",
