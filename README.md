@@ -1,6 +1,7 @@
 # Databricks CLI
 
 [![build](https://github.com/databricks/cli/workflows/build/badge.svg?branch=main)](https://github.com/databricks/cli/actions?query=workflow%3Abuild+branch%3Amain)
+[![lines of code](https://tokei.rs/b1/github/databricks/cli)]([https://codecov.io/github/databricks/cli](https://github.com/databricks/cli))
 
 This project is in Public Preview.
 
