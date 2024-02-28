@@ -34,3 +34,18 @@ func TestExecutesHook(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "Hello", strings.TrimSpace(line))
 }
+
+func TestExecuteMutator(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Experimental: &config.Experimental{
+				Scripts: map[config.ScriptHook]config.Command{
+					config.ScriptPreBuild: "echo 'Hello'",
+				},
+			},
+		},
+	}
+
+	err := bundle.Apply(context.Background(), b, Execute(config.ScriptPreInit))
+	require.NoError(t, err)
+}
