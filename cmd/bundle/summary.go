@@ -43,8 +43,8 @@ func newSummaryCommand() *cobra.Command {
 			return err
 		}
 		_, stateFileErr := os.Stat(filepath.Join(cacheDir, terraform.TerraformStateFileName))
-		_, bundleFileErr := os.Stat(filepath.Join(cacheDir, terraform.TerraformBundleFileName))
-		noCache := errors.Is(stateFileErr, os.ErrNotExist) || errors.Is(bundleFileErr, os.ErrNotExist)
+		_, configFileErr := os.Stat(filepath.Join(cacheDir, terraform.TerraformConfigFileName))
+		noCache := errors.Is(stateFileErr, os.ErrNotExist) || errors.Is(configFileErr, os.ErrNotExist)
 
 		if forcePull || noCache {
 			err = bundle.Apply(cmd.Context(), b, bundle.Seq(
