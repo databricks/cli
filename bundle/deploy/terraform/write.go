@@ -32,7 +32,7 @@ func (w *write) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 
-	f, err := os.Create(filepath.Join(dir, "bundle.tf.json"))
+	f, err := os.Create(filepath.Join(dir, TerraformBundleFileName))
 	if err != nil {
 		return err
 	}

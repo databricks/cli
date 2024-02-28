@@ -42,11 +42,16 @@ func newSummaryCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		_, err = os.Stat(filepath.Join(cacheDir, terraform.TerraformStateFileName))
-		noCache := errors.Is(err, os.ErrNotExist)
+		_, stateFileErr := os.Stat(filepath.Join(cacheDir, terraform.TerraformStateFileName))
+		_, bundleFileErr := os.Stat(filepath.Join(cacheDir, terraform.TerraformBundleFileName))
+		noCache := errors.Is(stateFileErr, os.ErrNotExist) || errors.Is(bundleFileErr, os.ErrNotExist)
 
 		if forcePull || noCache {
-			err = bundle.Apply(cmd.Context(), b, terraform.StatePull())
+			err = bundle.Apply(cmd.Context(), b, bundle.Seq(
+				terraform.StatePull(),
+				terraform.Interpolate(),
+				terraform.Write(),
+			))
 			if err != nil {
 				return err
 			}
