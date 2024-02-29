@@ -18,6 +18,7 @@ import (
 // Placeholders to use as unique keys in context.Context.
 var workspaceClient int
 var accountClient int
+var configUsed int
 
 func initProfileFlag(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringP("profile", "p", "", "~/.databrickscfg profile")
@@ -147,6 +148,10 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		cfg.Profile = profile
 	}
 
+	ctx := cmd.Context()
+	ctx = context.WithValue(ctx, &configUsed, cfg)
+	cmd.SetContext(ctx)
+
 	// Try to load a bundle configuration if we're allowed to by the caller (see `./auth_options.go`).
 	if !shouldSkipLoadBundle(cmd.Context()) {
 		err := TryConfigureBundle(cmd, args)
@@ -154,6 +159,8 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		if b := bundle.GetOrNil(cmd.Context()); b != nil {
+			ctx = context.WithValue(ctx, &configUsed, b.Config.Workspace.Config())
+			cmd.SetContext(ctx)
 			client, err := b.InitializeWorkspaceClient()
 			if err != nil {
 				return err
@@ -168,7 +175,6 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	ctx := cmd.Context()
 	ctx = context.WithValue(ctx, &workspaceClient, w)
 	cmd.SetContext(ctx)
 	return nil
@@ -176,6 +182,10 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 
 func SetWorkspaceClient(ctx context.Context, w *databricks.WorkspaceClient) context.Context {
 	return context.WithValue(ctx, &workspaceClient, w)
+}
+
+func SetAccountClient(ctx context.Context, a *databricks.AccountClient) context.Context {
+	return context.WithValue(ctx, &accountClient, a)
 }
 
 func AskForWorkspaceProfile(ctx context.Context) (string, error) {
@@ -269,4 +279,12 @@ func AccountClient(ctx context.Context) *databricks.AccountClient {
 		panic("cannot get *databricks.AccountClient. Please report it as a bug")
 	}
 	return a
+}
+
+func ConfigUsed(ctx context.Context) *config.Config {
+	cfg, ok := ctx.Value(&configUsed).(*config.Config)
+	if !ok {
+		panic("cannot get *config.Config. Please report it as a bug")
+	}
+	return cfg
 }

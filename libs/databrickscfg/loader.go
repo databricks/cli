@@ -98,7 +98,10 @@ func (l profileFromHostLoader) Configure(cfg *config.Config) error {
 	}
 
 	log.Debugf(ctx, "Loading profile %s because of host match", match.Name())
-	err = config.ConfigAttributes.ResolveFromStringMap(cfg, match.KeysHash())
+	err = config.ConfigAttributes.ResolveFromStringMapWithSource(cfg, match.KeysHash(), &config.Source{
+		Type: config.SourceFile,
+		Name: configFile.Path(),
+	})
 	if err != nil {
 		return fmt.Errorf("%s %s profile: %w", configFile.Path(), match.Name(), err)
 	}
@@ -110,7 +113,7 @@ func (l profileFromHostLoader) Configure(cfg *config.Config) error {
 func (l profileFromHostLoader) isAnyAuthConfigured(cfg *config.Config) bool {
 	// If any of the auth-specific attributes are set, we can skip profile resolution.
 	for _, a := range config.ConfigAttributes {
-		if a.Auth == "" {
+		if !a.IsAuthAttribute() {
 			continue
 		}
 		if !a.IsZero(cfg) {

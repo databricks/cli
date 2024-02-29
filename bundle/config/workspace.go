@@ -78,8 +78,8 @@ func (s User) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
-func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {
-	cfg := config.Config{
+func (w *Workspace) Config() *config.Config {
+	cfg := &config.Config{
 		// Generic
 		Host:               w.Host,
 		Profile:            w.Profile,
@@ -100,6 +100,19 @@ func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {
 		AzureEnvironment: w.AzureEnvironment,
 		AzureLoginAppID:  w.AzureLoginAppID,
 	}
+
+	for k := range config.ConfigAttributes {
+		attr := &config.ConfigAttributes[k]
+		if !attr.IsZero(cfg) {
+			attr.SetSource(&config.Source{Type: config.SourceType("bundle")})
+		}
+	}
+
+	return cfg
+}
+
+func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {
+	cfg := w.Config()
 
 	// If only the host is configured, we try and unambiguously match it to
 	// a profile in the user's databrickscfg file. Override the default loaders.
@@ -124,13 +137,13 @@ func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {
 	// Now that the configuration is resolved, we can verify that the host in the bundle configuration
 	// is identical to the host associated with the selected profile.
 	if w.Host != "" && w.Profile != "" {
-		err := databrickscfg.ValidateConfigAndProfileHost(&cfg, w.Profile)
+		err := databrickscfg.ValidateConfigAndProfileHost(cfg, w.Profile)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return databricks.NewWorkspaceClient((*databricks.Config)(&cfg))
+	return databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 }
 
 func init() {

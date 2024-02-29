@@ -306,6 +306,12 @@ func renderUsingTemplate(ctx context.Context, r templateRenderer, w io.Writer, h
 		"yellow":  color.YellowString,
 		"magenta": color.MagentaString,
 		"cyan":    color.CyanString,
+		"bold": func(format string, a ...interface{}) string {
+			return color.New(color.Bold).Sprintf(format, a...)
+		},
+		"italic": func(format string, a ...interface{}) string {
+			return color.New(color.Italic).Sprintf(format, a...)
+		},
 		"replace": strings.ReplaceAll,
 		"join":    strings.Join,
 		"bool": func(v bool) string {
