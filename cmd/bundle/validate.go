@@ -12,9 +12,9 @@ import (
 
 func newValidateCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "validate",
-		Short: "Validate configuration",
-
+		Use:     "validate",
+		Short:   "Validate configuration",
+		Args:    cobra.NoArgs,
 		PreRunE: utils.ConfigureBundleWithVariables,
 	}
 
