@@ -13,6 +13,7 @@ func newSchemaCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "schema",
 		Short: "Generate JSON Schema for bundle configuration",
+		Args:  cobra.NoArgs,
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {

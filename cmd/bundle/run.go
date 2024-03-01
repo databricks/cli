@@ -17,9 +17,8 @@ import (
 
 func newRunCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "run [flags] KEY",
-		Short: "Run a resource (e.g. a job or a pipeline)",
-
+		Use:     "run [flags] KEY",
+		Short:   "Run a resource (e.g. a job or a pipeline)",
 		Args:    cobra.MaximumNArgs(1),
 		PreRunE: utils.ConfigureBundleWithVariables,
 	}

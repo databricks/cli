@@ -13,6 +13,7 @@ func newDeployCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "deploy",
 		Short:   "Deploy bundle",
+		Args:    cobra.NoArgs,
 		PreRunE: utils.ConfigureBundleWithVariables,
 	}
 

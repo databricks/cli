@@ -18,9 +18,9 @@ import (
 
 func newSummaryCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "summary",
-		Short: "Describe the bundle resources and their deployment states",
-
+		Use:     "summary",
+		Short:   "Describe the bundle resources and their deployment states",
+		Args:    cobra.NoArgs,
 		PreRunE: utils.ConfigureBundleWithVariables,
 
 		// This command is currently intended for the Databricks VSCode extension only
