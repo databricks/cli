@@ -27,8 +27,11 @@ func TestExpandGlobFilesSource(t *testing.T) {
 	err := os.Mkdir(filepath.Join(rootPath, "test"), 0755)
 	require.NoError(t, err)
 
-	testfile.CreateFile(t, filepath.Join(rootPath, "test", "myjar1.jar"))
-	testfile.CreateFile(t, filepath.Join(rootPath, "test", "myjar2.jar"))
+	t1 := testfile.CreateFile(t, filepath.Join(rootPath, "test", "myjar1.jar"))
+	t1.Close(t)
+
+	t2 := testfile.CreateFile(t, filepath.Join(rootPath, "test", "myjar2.jar"))
+	t2.Close(t)
 
 	b := &bundle.Bundle{
 		Config: config.Root{
