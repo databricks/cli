@@ -81,6 +81,7 @@ func TestTransformWithExperimentalSettingSetToTrue(t *testing.T) {
 									},
 									Libraries: []compute.Library{
 										{Whl: "/Workspace/Users/test@test.com/bundle/dist/test.whl"},
+										{Jar: "/Workspace/Users/test@test.com/bundle/dist/test.jar"},
 									},
 								},
 							},
@@ -110,5 +111,6 @@ func TestTransformWithExperimentalSettingSetToTrue(t *testing.T) {
 
 	require.Equal(t, path.Join(filepath.ToSlash(internalDirRel), "notebook_job1_key1"), task.NotebookTask.NotebookPath)
 
-	require.Empty(t, task.Libraries)
+	require.Len(t, task.Libraries, 1)
+	require.Equal(t, "/Workspace/Users/test@test.com/bundle/dist/test.jar", task.Libraries[0].Jar)
 }

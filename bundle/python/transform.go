@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/libraries"
+	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
@@ -79,7 +80,14 @@ type pythonTrampoline struct{}
 
 func (t *pythonTrampoline) CleanUp(task *jobs.Task) error {
 	task.PythonWheelTask = nil
-	task.Libraries = nil
+
+	nonWheelLibraries := make([]compute.Library, 0)
+	for _, l := range task.Libraries {
+		if l.Whl == "" {
+			nonWheelLibraries = append(nonWheelLibraries, l)
+		}
+	}
+	task.Libraries = nonWheelLibraries
 
 	return nil
 }
@@ -115,12 +123,19 @@ func needsTrampoline(task *jobs.Task) bool {
 
 func (t *pythonTrampoline) GetTemplateData(task *jobs.Task) (map[string]any, error) {
 	params, err := t.generateParameters(task.PythonWheelTask)
+	whlLibraries := make([]compute.Library, 0)
+	for _, l := range task.Libraries {
+		if l.Whl != "" {
+			whlLibraries = append(whlLibraries, l)
+		}
+	}
+
 	if err != nil {
 		return nil, err
 	}
 
 	data := map[string]any{
-		"Libraries": task.Libraries,
+		"Libraries": whlLibraries,
 		"Params":    params,
 		"Task":      task.PythonWheelTask,
 	}
