@@ -22,6 +22,9 @@ type PipelineOptions struct {
 
 	// List of tables to reset and recompute.
 	FullRefresh []string
+
+	// Perform an update to validate graph correctness.
+	ValidateOnly bool
 }
 
 func (o *PipelineOptions) Define(fs *flag.FlagSet) {
@@ -29,6 +32,7 @@ func (o *PipelineOptions) Define(fs *flag.FlagSet) {
 	fs.StringSliceVar(&o.Refresh, "refresh", nil, "List of tables to update.")
 	fs.BoolVar(&o.FullRefreshAll, "full-refresh-all", false, "Perform a full graph reset and recompute.")
 	fs.StringSliceVar(&o.FullRefresh, "full-refresh", nil, "List of tables to reset and recompute.")
+	fs.BoolVar(&o.ValidateOnly, "validate-only", false, "Perform an update to validate graph correctness.")
 }
 
 // Validate returns if the combination of options is valid.
@@ -45,6 +49,9 @@ func (o *PipelineOptions) Validate(pipeline *resources.Pipeline) error {
 	}
 	if len(o.FullRefresh) > 0 {
 		set = append(set, "--full-refresh")
+	}
+	if o.ValidateOnly {
+		set = append(set, "--validate-only")
 	}
 	if len(set) > 1 {
 		return fmt.Errorf("pipeline run arguments are mutually exclusive (got %s)", strings.Join(set, ", "))
@@ -63,6 +70,7 @@ func (o *PipelineOptions) toPayload(pipeline *resources.Pipeline, pipelineID str
 		RefreshSelection:     o.Refresh,
 		FullRefresh:          o.FullRefreshAll,
 		FullRefreshSelection: o.FullRefresh,
+		ValidateOnly:         o.ValidateOnly,
 	}
 	return payload, nil
 }
