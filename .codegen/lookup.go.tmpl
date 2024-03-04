@@ -31,8 +31,6 @@ import (
 )
 
 type Lookup struct {
-	Field string `json:"field,omitempty"`
-
 	{{range .Services -}}
 	{{- if in $allowlist .KebabName -}}
 	{{.Singular.PascalName}} string `json:"{{.Singular.SnakeName}},omitempty"`
@@ -62,11 +60,7 @@ func (l *Lookup) Resolve(ctx context.Context, w *databricks.WorkspaceClient) (st
 	{{range .Services -}}
 	{{- if in $allowlist .KebabName -}}
 	if l.{{.Singular.PascalName}} != "" {
-		fieldString := "{{ getOrDefault $customField .KebabName ((index .List.NamedIdMap.IdPath 0).PascalName) }}"
-		if l.Field != "" {
-			fieldString = l.Field
-		}
-		return r.{{.Singular.PascalName}}(ctx, w, l.{{.Singular.PascalName}}, fieldString)
+		return r.{{.Singular.PascalName}}(ctx, w, l.{{.Singular.PascalName}})
 	}
 	{{end -}}
 	{{- end}}
@@ -108,7 +102,7 @@ func (l *Lookup) validate() error {
 }
 
 
-type resolverFunc func(ctx context.Context, w *databricks.WorkspaceClient, name string, field string) (string, error)
+type resolverFunc func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error)
 type resolvers struct {
 	{{range .Services -}}
 	{{- if in $allowlist .KebabName -}}
@@ -121,18 +115,13 @@ func allResolvers() *resolvers {
 	r := &resolvers{}
 	{{range .Services -}}
 	{{- if in $allowlist .KebabName -}}
-	r.{{.Singular.PascalName}} = func(ctx context.Context, w *databricks.WorkspaceClient, name string, field string) (string, error) {
+	r.{{.Singular.PascalName}} = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
 		entity, err := w.{{.PascalName}}.GetBy{{range .List.NamedIdMap.NamePath}}{{.PascalName}}{{end}}(ctx, name)
 		if err != nil {
 			return "", err
 		}
 
-		s := reflect.ValueOf(entity)
-		v := s.Elem().FieldByName(field)
-		if !v.IsValid() {
-			return "", fmt.Errorf("field %s does not exist", field)
-		}
-		return fmt.Sprint(v.Interface()), nil
+		return fmt.Sprint(entity.{{ getOrDefault $customField .KebabName ((index .List.NamedIdMap.IdPath 0).PascalName) }}), nil
 	}
 	{{end -}}
 	{{- end}}

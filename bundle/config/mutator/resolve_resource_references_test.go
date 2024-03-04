@@ -107,61 +107,6 @@ func TestNoLookupIfVariableIsSet(t *testing.T) {
 	require.Equal(t, "random value", *b.Config.Variables["my-cluster-id"].Value)
 }
 
-func TestResolveClusterWithCustomField(t *testing.T) {
-	clusterRef := "Some Custom Cluster"
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Variables: map[string]*variable.Variable{
-				"my-cluster-driver-node-type": {
-					Lookup: &variable.Lookup{
-						Cluster: clusterRef,
-						Field:   "DriverNodeTypeId",
-					},
-				},
-			},
-		},
-	}
-
-	m := mocks.NewMockWorkspaceClient(t)
-	b.SetWorkpaceClient(m.WorkspaceClient)
-	clusterApi := m.GetMockClustersAPI()
-	clusterApi.EXPECT().GetByClusterName(mock.Anything, clusterRef).Return(&compute.ClusterDetails{
-		ClusterId:        "1234-5678-abcd",
-		DriverNodeTypeId: "driver-node-type",
-	}, nil)
-
-	err := bundle.Apply(context.Background(), b, ResolveResourceReferences())
-	require.NoError(t, err)
-	require.Equal(t, "driver-node-type", *b.Config.Variables["my-cluster-driver-node-type"].Value)
-}
-
-func TestResolveClusterWithCustomNonExistingField(t *testing.T) {
-	clusterRef := "Some Custom Cluster"
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Variables: map[string]*variable.Variable{
-				"my-cluster-driver-node-type": {
-					Lookup: &variable.Lookup{
-						Cluster: clusterRef,
-						Field:   "DriverNodeTypeId2",
-					},
-				},
-			},
-		},
-	}
-
-	m := mocks.NewMockWorkspaceClient(t)
-	b.SetWorkpaceClient(m.WorkspaceClient)
-	clusterApi := m.GetMockClustersAPI()
-	clusterApi.EXPECT().GetByClusterName(mock.Anything, clusterRef).Return(&compute.ClusterDetails{
-		ClusterId:        "1234-5678-abcd",
-		DriverNodeTypeId: "driver-node-type",
-	}, nil)
-
-	err := bundle.Apply(context.Background(), b, ResolveResourceReferences())
-	require.ErrorContains(t, err, "failed to resolve cluster: Some Custom Cluster, err: field DriverNodeTypeId2 does not exist")
-}
-
 func TestResolveServicePrincipal(t *testing.T) {
 	spName := "Some SP name"
 	b := &bundle.Bundle{

@@ -5,15 +5,12 @@ package variable
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go"
 )
 
 type Lookup struct {
-	Field string `json:"field,omitempty"`
-
 	Alert string `json:"alert,omitempty"`
 
 	ClusterPolicy string `json:"cluster_policy,omitempty"`
@@ -83,81 +80,37 @@ func (l *Lookup) Resolve(ctx context.Context, w *databricks.WorkspaceClient) (st
 
 	r := allResolvers()
 	if l.Alert != "" {
-		fieldString := "Id"
-		if l.Field != "" {
-			fieldString = l.Field
-		}
-		return r.Alert(ctx, w, l.Alert, fieldString)
+		return r.Alert(ctx, w, l.Alert)
 	}
 	if l.ClusterPolicy != "" {
-		fieldString := "PolicyId"
-		if l.Field != "" {
-			fieldString = l.Field
-		}
-		return r.ClusterPolicy(ctx, w, l.ClusterPolicy, fieldString)
+		return r.ClusterPolicy(ctx, w, l.ClusterPolicy)
 	}
 	if l.Cluster != "" {
-		fieldString := "ClusterId"
-		if l.Field != "" {
-			fieldString = l.Field
-		}
-		return r.Cluster(ctx, w, l.Cluster, fieldString)
+		return r.Cluster(ctx, w, l.Cluster)
 	}
 	if l.Dashboard != "" {
-		fieldString := "Id"
-		if l.Field != "" {
-			fieldString = l.Field
-		}
-		return r.Dashboard(ctx, w, l.Dashboard, fieldString)
+		return r.Dashboard(ctx, w, l.Dashboard)
 	}
 	if l.InstancePool != "" {
-		fieldString := "InstancePoolId"
-		if l.Field != "" {
-			fieldString = l.Field
-		}
-		return r.InstancePool(ctx, w, l.InstancePool, fieldString)
+		return r.InstancePool(ctx, w, l.InstancePool)
 	}
 	if l.Job != "" {
-		fieldString := "JobId"
-		if l.Field != "" {
-			fieldString = l.Field
-		}
-		return r.Job(ctx, w, l.Job, fieldString)
+		return r.Job(ctx, w, l.Job)
 	}
 	if l.Metastore != "" {
-		fieldString := "MetastoreId"
-		if l.Field != "" {
-			fieldString = l.Field
-		}
-		return r.Metastore(ctx, w, l.Metastore, fieldString)
+		return r.Metastore(ctx, w, l.Metastore)
 	}
 	if l.Pipeline != "" {
-		fieldString := "PipelineId"
-		if l.Field != "" {
-			fieldString = l.Field
-		}
-		return r.Pipeline(ctx, w, l.Pipeline, fieldString)
+		return r.Pipeline(ctx, w, l.Pipeline)
 	}
 	if l.Query != "" {
-		fieldString := "Id"
-		if l.Field != "" {
-			fieldString = l.Field
-		}
-		return r.Query(ctx, w, l.Query, fieldString)
+		return r.Query(ctx, w, l.Query)
 	}
 	if l.ServicePrincipal != "" {
-		fieldString := "ApplicationId"
-		if l.Field != "" {
-			fieldString = l.Field
-		}
-		return r.ServicePrincipal(ctx, w, l.ServicePrincipal, fieldString)
+		return r.ServicePrincipal(ctx, w, l.ServicePrincipal)
 	}
 	if l.Warehouse != "" {
-		fieldString := "Id"
-		if l.Field != "" {
-			fieldString = l.Field
-		}
-		return r.Warehouse(ctx, w, l.Warehouse, fieldString)
+		return r.Warehouse(ctx, w, l.Warehouse)
 	}
 
 	return "", fmt.Errorf("no valid lookup fields provided")
@@ -249,7 +202,7 @@ func (l *Lookup) validate() error {
 	return nil
 }
 
-type resolverFunc func(ctx context.Context, w *databricks.WorkspaceClient, name string, field string) (string, error)
+type resolverFunc func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error)
 type resolvers struct {
 	Alert            resolverFunc
 	ClusterPolicy    resolverFunc
@@ -266,148 +219,93 @@ type resolvers struct {
 
 func allResolvers() *resolvers {
 	r := &resolvers{}
-	r.Alert = func(ctx context.Context, w *databricks.WorkspaceClient, name string, field string) (string, error) {
+	r.Alert = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
 		entity, err := w.Alerts.GetByName(ctx, name)
 		if err != nil {
 			return "", err
 		}
 
-		s := reflect.ValueOf(entity)
-		v := s.Elem().FieldByName(field)
-		if !v.IsValid() {
-			return "", fmt.Errorf("field %s does not exist", field)
-		}
-		return fmt.Sprint(v.Interface()), nil
+		return fmt.Sprint(entity.Id), nil
 	}
-	r.ClusterPolicy = func(ctx context.Context, w *databricks.WorkspaceClient, name string, field string) (string, error) {
+	r.ClusterPolicy = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
 		entity, err := w.ClusterPolicies.GetByName(ctx, name)
 		if err != nil {
 			return "", err
 		}
 
-		s := reflect.ValueOf(entity)
-		v := s.Elem().FieldByName(field)
-		if !v.IsValid() {
-			return "", fmt.Errorf("field %s does not exist", field)
-		}
-		return fmt.Sprint(v.Interface()), nil
+		return fmt.Sprint(entity.PolicyId), nil
 	}
-	r.Cluster = func(ctx context.Context, w *databricks.WorkspaceClient, name string, field string) (string, error) {
+	r.Cluster = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
 		entity, err := w.Clusters.GetByClusterName(ctx, name)
 		if err != nil {
 			return "", err
 		}
 
-		s := reflect.ValueOf(entity)
-		v := s.Elem().FieldByName(field)
-		if !v.IsValid() {
-			return "", fmt.Errorf("field %s does not exist", field)
-		}
-		return fmt.Sprint(v.Interface()), nil
+		return fmt.Sprint(entity.ClusterId), nil
 	}
-	r.Dashboard = func(ctx context.Context, w *databricks.WorkspaceClient, name string, field string) (string, error) {
+	r.Dashboard = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
 		entity, err := w.Dashboards.GetByName(ctx, name)
 		if err != nil {
 			return "", err
 		}
 
-		s := reflect.ValueOf(entity)
-		v := s.Elem().FieldByName(field)
-		if !v.IsValid() {
-			return "", fmt.Errorf("field %s does not exist", field)
-		}
-		return fmt.Sprint(v.Interface()), nil
+		return fmt.Sprint(entity.Id), nil
 	}
-	r.InstancePool = func(ctx context.Context, w *databricks.WorkspaceClient, name string, field string) (string, error) {
+	r.InstancePool = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
 		entity, err := w.InstancePools.GetByInstancePoolName(ctx, name)
 		if err != nil {
 			return "", err
 		}
 
-		s := reflect.ValueOf(entity)
-		v := s.Elem().FieldByName(field)
-		if !v.IsValid() {
-			return "", fmt.Errorf("field %s does not exist", field)
-		}
-		return fmt.Sprint(v.Interface()), nil
+		return fmt.Sprint(entity.InstancePoolId), nil
 	}
-	r.Job = func(ctx context.Context, w *databricks.WorkspaceClient, name string, field string) (string, error) {
+	r.Job = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
 		entity, err := w.Jobs.GetBySettingsName(ctx, name)
 		if err != nil {
 			return "", err
 		}
 
-		s := reflect.ValueOf(entity)
-		v := s.Elem().FieldByName(field)
-		if !v.IsValid() {
-			return "", fmt.Errorf("field %s does not exist", field)
-		}
-		return fmt.Sprint(v.Interface()), nil
+		return fmt.Sprint(entity.JobId), nil
 	}
-	r.Metastore = func(ctx context.Context, w *databricks.WorkspaceClient, name string, field string) (string, error) {
+	r.Metastore = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
 		entity, err := w.Metastores.GetByName(ctx, name)
 		if err != nil {
 			return "", err
 		}
 
-		s := reflect.ValueOf(entity)
-		v := s.Elem().FieldByName(field)
-		if !v.IsValid() {
-			return "", fmt.Errorf("field %s does not exist", field)
-		}
-		return fmt.Sprint(v.Interface()), nil
+		return fmt.Sprint(entity.MetastoreId), nil
 	}
-	r.Pipeline = func(ctx context.Context, w *databricks.WorkspaceClient, name string, field string) (string, error) {
+	r.Pipeline = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
 		entity, err := w.Pipelines.GetByName(ctx, name)
 		if err != nil {
 			return "", err
 		}
 
-		s := reflect.ValueOf(entity)
-		v := s.Elem().FieldByName(field)
-		if !v.IsValid() {
-			return "", fmt.Errorf("field %s does not exist", field)
-		}
-		return fmt.Sprint(v.Interface()), nil
+		return fmt.Sprint(entity.PipelineId), nil
 	}
-	r.Query = func(ctx context.Context, w *databricks.WorkspaceClient, name string, field string) (string, error) {
+	r.Query = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
 		entity, err := w.Queries.GetByName(ctx, name)
 		if err != nil {
 			return "", err
 		}
 
-		s := reflect.ValueOf(entity)
-		v := s.Elem().FieldByName(field)
-		if !v.IsValid() {
-			return "", fmt.Errorf("field %s does not exist", field)
-		}
-		return fmt.Sprint(v.Interface()), nil
+		return fmt.Sprint(entity.Id), nil
 	}
-	r.ServicePrincipal = func(ctx context.Context, w *databricks.WorkspaceClient, name string, field string) (string, error) {
+	r.ServicePrincipal = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
 		entity, err := w.ServicePrincipals.GetByDisplayName(ctx, name)
 		if err != nil {
 			return "", err
 		}
 
-		s := reflect.ValueOf(entity)
-		v := s.Elem().FieldByName(field)
-		if !v.IsValid() {
-			return "", fmt.Errorf("field %s does not exist", field)
-		}
-		return fmt.Sprint(v.Interface()), nil
+		return fmt.Sprint(entity.ApplicationId), nil
 	}
-	r.Warehouse = func(ctx context.Context, w *databricks.WorkspaceClient, name string, field string) (string, error) {
+	r.Warehouse = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
 		entity, err := w.Warehouses.GetByName(ctx, name)
 		if err != nil {
 			return "", err
 		}
 
-		s := reflect.ValueOf(entity)
-		v := s.Elem().FieldByName(field)
-		if !v.IsValid() {
-			return "", fmt.Errorf("field %s does not exist", field)
-		}
-		return fmt.Sprint(v.Interface()), nil
+		return fmt.Sprint(entity.Id), nil
 	}
 
 	return r
