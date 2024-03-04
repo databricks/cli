@@ -1,11 +1,11 @@
-from databricks.connect import DatabricksSession as SparkSession
+from pyspark.sql import SparkSession
 from pytest import fixture
-from {{.project_name}} import main
+from {{.project_name}} import main, get_spark
 
 
 @fixture(scope="session")
 def spark():
-    spark = SparkSession.builder.getOrCreate()
+    spark = get_spark()
     yield spark
     spark.stop()
 
