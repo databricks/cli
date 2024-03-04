@@ -18,6 +18,11 @@ package variable
 		"warehouses"
 }}
 
+{{	$customField :=
+		dict
+			"service-principals" "ApplicationId"
+}}
+
 import (
 	"context"
 	"fmt"
@@ -116,15 +121,10 @@ func allResolvers() *resolvers {
 			return "", err
 		}
 
-		return fmt.Sprint(entity{{ template "field-path" .List.NamedIdMap.IdPath }}), nil
+		return fmt.Sprint(entity.{{ getOrDefault $customField .KebabName ((index .List.NamedIdMap.IdPath 0).PascalName) }}), nil
 	}
 	{{end -}}
 	{{- end}}
 
 	return r
 }
-
-
-{{- define "field-path" -}}
-	{{- range .}}.{{.PascalName}}{{end}}
-{{- end -}}
