@@ -19,7 +19,7 @@ require (
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06 // MIT
 	github.com/spf13/cobra v1.8.0 // Apache 2.0
 	github.com/spf13/pflag v1.0.5 // BSD-3-Clause
-	github.com/stretchr/testify v1.8.4 // MIT
+	github.com/stretchr/testify v1.9.0 // MIT
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	golang.org/x/mod v0.15.0
 	golang.org/x/oauth2 v0.17.0
@@ -51,7 +51,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/stretchr/objx v0.5.0 // indirect
+	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/zclconf/go-cty v1.14.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.47.0 // indirect
