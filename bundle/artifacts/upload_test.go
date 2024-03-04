@@ -78,22 +78,21 @@ func TestExpandGlobFilesSourceWithNoMatches(t *testing.T) {
 					Type: "custom",
 					Files: []config.ArtifactFile{
 						{
-							Source: filepath.Join(".", "test", "myjar.jar"),
+							Source: filepath.Join("..", "test", "myjar.jar"),
 						},
 					},
 				},
 			},
 		},
 	}
+
+	bundletest.SetLocation(b, ".", filepath.Join(rootPath, "resources", "artifacts.yml"))
+
 	u := &upload{"test"}
 	uploadMutators[config.ArtifactType("custom")] = func(name string) bundle.Mutator {
 		return &noop{}
 	}
 
 	err = bundle.Apply(context.Background(), b, u)
-	require.NoError(t, err)
-
-	// We expect to have the same path as it was provided in the source
-	require.Equal(t, 1, len(b.Config.Artifacts["test"].Files))
-	require.Equal(t, filepath.Join(rootPath, "test", "myjar.jar"), b.Config.Artifacts["test"].Files[0].Source)
+	require.ErrorContains(t, err, "no files found for")
 }
