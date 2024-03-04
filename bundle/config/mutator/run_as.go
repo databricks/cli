@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
@@ -33,11 +34,20 @@ var allowSetAsOther = []string{"jobs"}
 
 // Resources that do not allow setting a run_as identity to a different user but
 // have plans to add platform side support for `run_as` for these resources at
-// some point in the future. For example, pipelines or lakeview dashboards.
+// some point in the future. For example, pipelines, model serving endpoints or lakeview dashboards.
 var denySetAsOther = []string{"pipelines"}
 
-func isAllowToRunAsOther(b *bundle.Bundle) {
-	
+func setRunAsForJobs(b *bundle.Bundle, runAs *jobs.JobRunAs) {
+	for i := range b.Config.Resources.Jobs {
+		job := b.Config.Resources.Jobs[i]
+		if job.RunAs != nil {
+			continue
+		}
+		job.RunAs = &jobs.JobRunAs{
+			ServicePrincipalName: runAs.ServicePrincipalName,
+			UserName:             runAs.UserName,
+		}
+	}
 }
 
 func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) error {
