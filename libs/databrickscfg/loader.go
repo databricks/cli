@@ -113,7 +113,7 @@ func (l profileFromHostLoader) Configure(cfg *config.Config) error {
 func (l profileFromHostLoader) isAnyAuthConfigured(cfg *config.Config) bool {
 	// If any of the auth-specific attributes are set, we can skip profile resolution.
 	for _, a := range config.ConfigAttributes {
-		if !a.IsAuthAttribute() {
+		if !a.HasAuthAttribute() {
 			continue
 		}
 		if !a.IsZero(cfg) {

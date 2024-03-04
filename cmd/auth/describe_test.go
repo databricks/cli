@@ -39,6 +39,7 @@ func TestGetWorkspaceAuthStatus(t *testing.T) {
 	}
 	m.WorkspaceClient.Config = cfg
 	t.Setenv("DATABRICKS_AUTH_TYPE", "azure-cli")
+	config.ConfigAttributes.Configure(cfg)
 
 	status, err := getWorkspaceAuthStatus(cmd, []string{}, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, error) {
 		config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
@@ -88,6 +89,7 @@ func TestGetWorkspaceAuthStatusError(t *testing.T) {
 	}
 	m.WorkspaceClient.Config = cfg
 	t.Setenv("DATABRICKS_AUTH_TYPE", "azure-cli")
+	config.ConfigAttributes.Configure(cfg)
 
 	status, err := getWorkspaceAuthStatus(cmd, []string{}, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, error) {
 		config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
@@ -134,6 +136,7 @@ func TestGetWorkspaceAuthStatusSensitive(t *testing.T) {
 	}
 	m.WorkspaceClient.Config = cfg
 	t.Setenv("DATABRICKS_AUTH_TYPE", "azure-cli")
+	config.ConfigAttributes.Configure(cfg)
 
 	status, err := getWorkspaceAuthStatus(cmd, []string{}, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, error) {
 		config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
@@ -176,6 +179,7 @@ func TestGetAccountAuthStatus(t *testing.T) {
 	}
 	m.AccountClient.Config = cfg
 	t.Setenv("DATABRICKS_AUTH_TYPE", "azure-cli")
+	config.ConfigAttributes.Configure(cfg)
 
 	status, err := getAccountAuthStatus(cmd, []string{}, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, error) {
 		config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{

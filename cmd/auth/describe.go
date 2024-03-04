@@ -4,11 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"slices"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
@@ -88,7 +86,7 @@ func getWorkspaceAuthStatus(cmd *cobra.Command, args []string, showSensitive boo
 		return &authStatus{
 			Status:  "error",
 			Error:   err,
-			Details: getAuthDetails(ctx, cmd, cfg, showSensitive),
+			Details: getAuthDetails(cmd, cfg, showSensitive),
 		}, nil
 	}
 
@@ -100,7 +98,7 @@ func getWorkspaceAuthStatus(cmd *cobra.Command, args []string, showSensitive boo
 
 	status := authStatus{
 		Status:  "success",
-		Details: getAuthDetails(ctx, cmd, w.Config, showSensitive),
+		Details: getAuthDetails(cmd, w.Config, showSensitive),
 	}
 	status.Details.Username = me.UserName
 
@@ -114,14 +112,14 @@ func getAccountAuthStatus(cmd *cobra.Command, args []string, showSensitive bool,
 		return &authStatus{
 			Status:  "error",
 			Error:   err,
-			Details: getAuthDetails(ctx, cmd, cfg, showSensitive),
+			Details: getAuthDetails(cmd, cfg, showSensitive),
 		}, nil
 	}
 
 	a := root.AccountClient(ctx)
 	status := authStatus{
 		Status:  "success",
-		Details: getAuthDetails(ctx, cmd, a.Config, showSensitive),
+		Details: getAuthDetails(cmd, a.Config, showSensitive),
 	}
 
 	status.Details.AccountID = a.Config.AccountID
@@ -147,83 +145,22 @@ func render(ctx context.Context, cmd *cobra.Command, status *authStatus, templat
 }
 
 type authStatus struct {
-	Status  string      `json:"status"`
-	Error   error       `json:"error,omitempty"`
-	Details authDetails `json:"details"`
+	Status  string             `json:"status"`
+	Error   error              `json:"error,omitempty"`
+	Details config.AuthDetails `json:"details"`
 }
 
-type authDetails struct {
-	AuthType      string                `json:"auth_type"`
-	Username      string                `json:"username,omitempty"`
-	Host          string                `json:"host,omitempty"`
-	AccountID     string                `json:"account_id,omitempty"`
-	Configuration map[string]attrConfig `json:"configuration"`
-}
-
-type attrConfig struct {
-	Value            string         `json:"value"`
-	Source           *config.Source `json:"source"`
-	AuthTypeMismatch bool           `json:"auth_type_mismatch"`
-}
-
-func getAuthDetails(ctx context.Context, cmd *cobra.Command, cfg *config.Config, showSensitive bool) authDetails {
-	attrSet := make(map[string]attrConfig, 0)
-	for _, a := range config.ConfigAttributes {
-		if a.IsZero(cfg) {
-			continue
+func getAuthDetails(cmd *cobra.Command, cfg *config.Config, showSensitive bool) config.AuthDetails {
+	details := cfg.GetAuthDetails(showSensitive)
+	for k, v := range details.Configuration {
+		if k == "profile" && cmd.Flag("profile").Changed {
+			v.Source = &config.Source{Type: config.SourceType("flag"), Name: "--profile"}
 		}
 
-		attrSet[a.Name] = attrConfig{
-			Value:            getValue(cfg, a, showSensitive),
-			Source:           getSource(ctx, cmd, cfg, &a),
-			AuthTypeMismatch: a.IsAuthAttribute() && !slices.Contains(a.Auth, cfg.AuthType),
+		if k == "host" && cmd.Flag("host").Changed {
+			v.Source = &config.Source{Type: config.SourceType("flag"), Name: "--host"}
 		}
 	}
 
-	return authDetails{
-		AuthType:      cfg.AuthType,
-		Host:          cfg.Host,
-		Configuration: attrSet,
-	}
-}
-
-func getValue(cfg *config.Config, a config.ConfigAttribute, showSensitive bool) string {
-	if !showSensitive && a.Sensitive {
-		return "********"
-	}
-
-	return a.GetString(cfg)
-}
-
-func getSource(ctx context.Context, cmd *cobra.Command, cfg *config.Config, a *config.ConfigAttribute) *config.Source {
-	v := a.GetString(cfg)
-
-	// Check if the value is from an environment variable
-	for _, envVar := range a.EnvVars {
-		if v == env.Get(ctx, envVar) {
-			return &config.Source{
-				Type: config.SourceEnv,
-				Name: envVar,
-			}
-		}
-	}
-
-	// Check if the value is from command flags
-	// Only profile and host can be set like this
-	// The rest of the values are set from the config file
-	if a.Name == "profile" && cmd.Flag("profile").Changed {
-		return &config.Source{
-			Type: config.SourceType("flag"),
-			Name: "--profile",
-		}
-	}
-
-	if a.Name == "host" && cmd.Flag("host").Changed {
-		return &config.Source{
-			Type: config.SourceType("flag"),
-			Name: "--host",
-		}
-	}
-
-	return a.Source
+	return details
 }
