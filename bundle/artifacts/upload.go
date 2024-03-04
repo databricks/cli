@@ -47,7 +47,8 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) error {
 	for k := range artifact.Files {
 		f := &artifact.Files[k]
 		if !filepath.IsAbs(f.Source) {
-			f.Source = filepath.Join(b.Config.Path, f.Source)
+			dirPath := filepath.Dir(artifact.ConfigFilePath)
+			f.Source = filepath.Join(dirPath, f.Source)
 		}
 	}
 
@@ -55,10 +56,12 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) error {
 	files := make([]config.ArtifactFile, 0, len(artifact.Files))
 	for _, f := range artifact.Files {
 		matches, err := filepath.Glob(f.Source)
-		// If the source is not a glob pattern or no matches, just add it to the list
-		if err != nil || len(matches) == 0 {
-			files = append(files, f)
-			continue
+		if err != nil {
+			return fmt.Errorf("unable to find files for %s: %w", f.Source, err)
+		}
+
+		if len(matches) == 0 {
+			return fmt.Errorf("no files found for %s", f.Source)
 		}
 
 		for _, match := range matches {

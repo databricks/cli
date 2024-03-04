@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/testfile"
 	"github.com/stretchr/testify/require"
 )
@@ -41,13 +42,16 @@ func TestExpandGlobFilesSource(t *testing.T) {
 					Type: "custom",
 					Files: []config.ArtifactFile{
 						{
-							Source: filepath.Join(".", "test", "*.jar"),
+							Source: filepath.Join("..", "test", "*.jar"),
 						},
 					},
 				},
 			},
 		},
 	}
+
+	bundletest.SetLocation(b, ".", filepath.Join(rootPath, "resources", "artifacts.yml"))
+
 	u := &upload{"test"}
 	uploadMutators[config.ArtifactType("custom")] = func(name string) bundle.Mutator {
 		return &noop{}
