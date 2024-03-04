@@ -1,15 +1,6 @@
-from pyspark.sql import SparkSession
-from pytest import fixture
-from {{.project_name}}.main import get_taxis, get_spark
+from databricks.sdk.runtime import spark
+from {{.project_name}}.main import get_taxis
 
-
-@fixture(scope="session")
-def spark() -> SparkSession:
-    spark = get_spark()
-    yield spark
-    spark.stop()
-
-
-def test_main(spark: SparkSession):
+def test_main():
     taxis = get_taxis(spark)
     assert taxis.count() > 5
