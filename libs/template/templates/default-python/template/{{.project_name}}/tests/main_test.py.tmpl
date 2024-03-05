@@ -1,15 +1,6 @@
-from pyspark.sql import SparkSession
-from pytest import fixture
 from {{.project_name}}.main import get_taxis, get_spark
 
 
-@fixture(scope="session")
-def spark() -> SparkSession:
-    spark = get_spark()
-    yield spark
-    spark.stop()
-
-
-def test_main(spark: SparkSession):
-    taxis = get_taxis(spark)
+def test_main():
+    taxis = get_taxis(get_spark())
     assert taxis.count() > 5
