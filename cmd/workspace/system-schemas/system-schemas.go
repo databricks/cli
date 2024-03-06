@@ -28,6 +28,11 @@ func New() *cobra.Command {
 		},
 	}
 
+	// Add methods
+	cmd.AddCommand(newDisable())
+	cmd.AddCommand(newEnable())
+	cmd.AddCommand(newList())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -100,12 +105,6 @@ func newDisable() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDisable())
-	})
-}
-
 // start enable command
 
 // Slice with functions to override default command behavior.
@@ -170,12 +169,6 @@ func newEnable() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newEnable())
-	})
-}
-
 // start list command
 
 // Slice with functions to override default command behavior.
@@ -230,12 +223,6 @@ func newList() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newList())
-	})
 }
 
 // end service SystemSchemas

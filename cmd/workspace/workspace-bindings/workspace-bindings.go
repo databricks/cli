@@ -42,6 +42,12 @@ func New() *cobra.Command {
 		},
 	}
 
+	// Add methods
+	cmd.AddCommand(newGet())
+	cmd.AddCommand(newGetBindings())
+	cmd.AddCommand(newUpdate())
+	cmd.AddCommand(newUpdateBindings())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -109,12 +115,6 @@ func newGet() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGet())
-	})
-}
-
 // start get-bindings command
 
 // Slice with functions to override default command behavior.
@@ -174,12 +174,6 @@ func newGetBindings() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetBindings())
-	})
 }
 
 // start update command
@@ -252,12 +246,6 @@ func newUpdate() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdate())
-	})
-}
-
 // start update-bindings command
 
 // Slice with functions to override default command behavior.
@@ -328,12 +316,6 @@ func newUpdateBindings() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdateBindings())
-	})
 }
 
 // end service WorkspaceBindings

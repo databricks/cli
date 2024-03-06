@@ -39,6 +39,18 @@ func New() *cobra.Command {
 		},
 	}
 
+	// Add methods
+	cmd.AddCommand(newAssign())
+	cmd.AddCommand(newCreate())
+	cmd.AddCommand(newCurrent())
+	cmd.AddCommand(newDelete())
+	cmd.AddCommand(newGet())
+	cmd.AddCommand(newList())
+	cmd.AddCommand(newSummary())
+	cmd.AddCommand(newUnassign())
+	cmd.AddCommand(newUpdate())
+	cmd.AddCommand(newUpdateAssignment())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -133,12 +145,6 @@ func newAssign() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newAssign())
-	})
-}
-
 // start create command
 
 // Slice with functions to override default command behavior.
@@ -221,12 +227,6 @@ func newCreate() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newCreate())
-	})
-}
-
 // start current command
 
 // Slice with functions to override default command behavior.
@@ -267,12 +267,6 @@ func newCurrent() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newCurrent())
-	})
 }
 
 // start delete command
@@ -347,12 +341,6 @@ func newDelete() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDelete())
-	})
-}
-
 // start get command
 
 // Slice with functions to override default command behavior.
@@ -424,12 +412,6 @@ func newGet() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGet())
-	})
-}
-
 // start list command
 
 // Slice with functions to override default command behavior.
@@ -469,12 +451,6 @@ func newList() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newList())
-	})
 }
 
 // start summary command
@@ -518,12 +494,6 @@ func newSummary() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newSummary())
-	})
 }
 
 // start unassign command
@@ -587,12 +557,6 @@ func newUnassign() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUnassign())
-	})
 }
 
 // start update command
@@ -683,12 +647,6 @@ func newUpdate() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdate())
-	})
-}
-
 // start update-assignment command
 
 // Slice with functions to override default command behavior.
@@ -774,12 +732,6 @@ func newUpdateAssignment() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdateAssignment())
-	})
 }
 
 // end service Metastores

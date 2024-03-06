@@ -14,14 +14,14 @@ package workspace
 
 import (
 	"github.com/databricks/cli/cmd/root"
-    {{range .Services}}{{if not .IsAccounts}}{{if not (in $excludes .KebabName) }}
+    {{range .Services}}{{if and (not .IsAccounts) (not .HasParent)}}{{if not (in $excludes .KebabName) }}
 	{{.SnakeName}} "github.com/databricks/cli/cmd/workspace/{{.KebabName}}"{{end}}{{end}}{{end}}
 )
 
 func All() []*cobra.Command {
 	var out []*cobra.Command
 
-	{{range .Services}}{{if not .IsAccounts}}{{if not (in $excludes .KebabName) -}}
+	{{range .Services}}{{if and (not .IsAccounts) (not .HasParent)}}{{if not (in $excludes .KebabName) -}}
 	out = append(out, {{.SnakeName}}.New())
 	{{end}}{{end}}{{end}}
 

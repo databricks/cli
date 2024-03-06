@@ -41,6 +41,22 @@ func New() *cobra.Command {
 		},
 	}
 
+	// Add methods
+	cmd.AddCommand(newCreate())
+	cmd.AddCommand(newDelete())
+	cmd.AddCommand(newGet())
+	cmd.AddCommand(newGetPermissionLevels())
+	cmd.AddCommand(newGetPermissions())
+	cmd.AddCommand(newGetUpdate())
+	cmd.AddCommand(newListPipelineEvents())
+	cmd.AddCommand(newListPipelines())
+	cmd.AddCommand(newListUpdates())
+	cmd.AddCommand(newSetPermissions())
+	cmd.AddCommand(newStartUpdate())
+	cmd.AddCommand(newStop())
+	cmd.AddCommand(newUpdate())
+	cmd.AddCommand(newUpdatePermissions())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -109,12 +125,6 @@ func newCreate() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newCreate())
-	})
-}
-
 // start delete command
 
 // Slice with functions to override default command behavior.
@@ -180,12 +190,6 @@ func newDelete() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDelete())
-	})
 }
 
 // start get command
@@ -258,12 +262,6 @@ func newGet() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGet())
-	})
-}
-
 // start get-permission-levels command
 
 // Slice with functions to override default command behavior.
@@ -332,12 +330,6 @@ func newGetPermissionLevels() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetPermissionLevels())
-	})
 }
 
 // start get-permissions command
@@ -411,12 +403,6 @@ func newGetPermissions() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetPermissions())
-	})
-}
-
 // start get-update command
 
 // Slice with functions to override default command behavior.
@@ -475,12 +461,6 @@ func newGetUpdate() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetUpdate())
-	})
 }
 
 // start list-pipeline-events command
@@ -552,12 +532,6 @@ func newListPipelineEvents() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newListPipelineEvents())
-	})
-}
-
 // start list-pipelines command
 
 // Slice with functions to override default command behavior.
@@ -611,12 +585,6 @@ func newListPipelines() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newListPipelines())
-	})
 }
 
 // start list-updates command
@@ -691,12 +659,6 @@ func newListUpdates() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newListUpdates())
-	})
 }
 
 // start set-permissions command
@@ -778,12 +740,6 @@ func newSetPermissions() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newSetPermissions())
-	})
 }
 
 // start start-update command
@@ -875,12 +831,6 @@ func newStartUpdate() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newStartUpdate())
-	})
-}
-
 // start stop command
 
 // Slice with functions to override default command behavior.
@@ -964,12 +914,6 @@ func newStop() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newStop())
-	})
 }
 
 // start update command
@@ -1071,12 +1015,6 @@ func newUpdate() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdate())
-	})
-}
-
 // start update-permissions command
 
 // Slice with functions to override default command behavior.
@@ -1156,12 +1094,6 @@ func newUpdatePermissions() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdatePermissions())
-	})
 }
 
 // end service Pipelines

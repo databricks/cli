@@ -26,6 +26,9 @@ func New() *cobra.Command {
 		},
 	}
 
+	// Add methods
+	cmd.AddCommand(newPublish())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -101,12 +104,6 @@ func newPublish() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newPublish())
-	})
 }
 
 // end service Lakeview

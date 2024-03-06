@@ -30,6 +30,21 @@ func New() *cobra.Command {
 		},
 	}
 
+	// Add methods
+	cmd.AddCommand(newCreate())
+	cmd.AddCommand(newDelete())
+	cmd.AddCommand(newEdit())
+	cmd.AddCommand(newGet())
+	cmd.AddCommand(newGetPermissionLevels())
+	cmd.AddCommand(newGetPermissions())
+	cmd.AddCommand(newGetWorkspaceWarehouseConfig())
+	cmd.AddCommand(newList())
+	cmd.AddCommand(newSetPermissions())
+	cmd.AddCommand(newSetWorkspaceWarehouseConfig())
+	cmd.AddCommand(newStart())
+	cmd.AddCommand(newStop())
+	cmd.AddCommand(newUpdatePermissions())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -138,12 +153,6 @@ func newCreate() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newCreate())
-	})
-}
-
 // start delete command
 
 // Slice with functions to override default command behavior.
@@ -212,12 +221,6 @@ func newDelete() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDelete())
-	})
 }
 
 // start edit command
@@ -336,12 +339,6 @@ func newEdit() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newEdit())
-	})
-}
-
 // start get command
 
 // Slice with functions to override default command behavior.
@@ -417,12 +414,6 @@ func newGet() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGet())
-	})
-}
-
 // start get-permission-levels command
 
 // Slice with functions to override default command behavior.
@@ -491,12 +482,6 @@ func newGetPermissionLevels() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetPermissionLevels())
-	})
 }
 
 // start get-permissions command
@@ -570,12 +555,6 @@ func newGetPermissions() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetPermissions())
-	})
-}
-
 // start get-workspace-warehouse-config command
 
 // Slice with functions to override default command behavior.
@@ -617,12 +596,6 @@ func newGetWorkspaceWarehouseConfig() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetWorkspaceWarehouseConfig())
-	})
 }
 
 // start list command
@@ -675,12 +648,6 @@ func newList() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newList())
-	})
 }
 
 // start set-permissions command
@@ -764,12 +731,6 @@ func newSetPermissions() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newSetPermissions())
-	})
-}
-
 // start set-workspace-warehouse-config command
 
 // Slice with functions to override default command behavior.
@@ -841,12 +802,6 @@ func newSetWorkspaceWarehouseConfig() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newSetWorkspaceWarehouseConfig())
-	})
 }
 
 // start start command
@@ -943,12 +898,6 @@ func newStart() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newStart())
-	})
-}
-
 // start stop command
 
 // Slice with functions to override default command behavior.
@@ -1043,12 +992,6 @@ func newStop() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newStop())
-	})
-}
-
 // start update-permissions command
 
 // Slice with functions to override default command behavior.
@@ -1128,12 +1071,6 @@ func newUpdatePermissions() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdatePermissions())
-	})
 }
 
 // end service Warehouses

@@ -31,6 +31,9 @@ func New() *cobra.Command {
 		Hidden: true,
 	}
 
+	// Add methods
+	cmd.AddCommand(newExchangeToken())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -97,12 +100,6 @@ func newExchangeToken() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newExchangeToken())
-	})
 }
 
 // end service CredentialsManager

@@ -8,6 +8,10 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/databricks-sdk-go/service/{{.Package.Name}}"
 	"github.com/spf13/cobra"
+
+	{{range .Subservices -}}
+	{{.SnakeName}} "github.com/databricks/cli/cmd/{{ if .ParentService.IsAccounts }}account{{ else }}workspace{{ end }}/{{.KebabName}}"
+	{{end}}
 )
 
 {{ $excludes :=
@@ -34,6 +38,8 @@ import (
 ]{{end}}{{end}}
 
 {{define "service"}}
+{{- $excludeMethods := list "put-secret" -}}
+
 // Slice with functions to override default command behavior.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
@@ -45,16 +51,35 @@ func New() *cobra.Command {
 		Short: `{{.Summary | without "`"}}`,
 		Long: `{{.Comment  "  " 80 | without "`"}}`,
 		{{- end }}
+		{{- if not .HasParent }}
 		GroupID: "{{ .Package.Name }}",
 		Annotations: map[string]string{
 			"package": "{{ .Package.Name }}",
 		},
+		{{- end }}
 		{{- if .IsPrivatePreview }}
 
 		// This service is being previewed; hide from help output.
 		Hidden: true,
 		{{- end }}
 	}
+
+	{{ if gt (len .Methods) 0 -}}
+	// Add methods
+	{{- range .Methods}}
+		{{- if in $excludeMethods .KebabName }}
+			{{- continue}}
+		{{- end}}
+		cmd.AddCommand(new{{.PascalName}}())
+	{{- end}}
+	{{- end}}
+
+	{{ if .HasSubservices }}
+	// Add subservices
+	{{- range .Subservices}}
+	cmd.AddCommand({{.SnakeName}}.New())
+	{{- end}}
+	{{- end}}
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -67,8 +92,7 @@ func New() *cobra.Command {
 {{- $serviceName := .KebabName -}}
 {{range .Methods}}
 
-{{- $excludes := list "put-secret" -}}
-{{if in $excludes .KebabName }}
+{{if in $excludeMethods .KebabName }}
 	{{continue}}
 {{end}}
 // start {{.KebabName}} command
@@ -242,7 +266,7 @@ func new{{.PascalName}}() *cobra.Command {
 			return err
 		}
 		if {{.CamelName}}SkipWait {
-			{{if .Response -}}
+			{{if not .Response.IsEmpty -}}
 			return cmdio.Render(ctx, wait.Response)
 			{{- else -}}
 			return nil
@@ -291,26 +315,29 @@ func new{{.PascalName}}() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(new{{.PascalName}}())
-	})
-}
 {{end}}
 // end service {{.Name}}{{end}}
 
 {{- define "method-call" -}}
-		{{if .Response -}}
+		{{if not .Response.IsEmpty -}}
 		  response{{ if not .Pagination}}, err{{end}} :=
 		{{- else -}}
 		  err =
-		{{- end}} {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{(.Service.TrimPrefix "account").PascalName}}.{{.PascalName}}(ctx{{if .Request}}, {{.CamelName}}Req{{end}})
+		{{- end}}
+		{{- if .Service.IsAccounts}}a{{else}}w{{end}}.
+		{{- if .Service.HasParent }}
+			{{- (.Service.ParentService.TrimPrefix "account").PascalName }}.
+			{{- (.Service.TrimPrefix "account").PascalName}}().
+		{{- else}}
+			{{- (.Service.TrimPrefix "account").PascalName}}.
+		{{- end}}
+		{{- .PascalName}}(ctx{{if .Request}}, {{.CamelName}}Req{{end}})
 		{{- if not (and .Response .Pagination) }}
 		if err != nil {
 			return err
 		}
 		{{- end}}
-		{{ if .Response -}}
+		{{ if not .Response.IsEmpty -}}
 			{{- if .IsResponseByteStream -}}
 			defer response.{{.ResponseBodyField.PascalName}}.Close()
 			return cmdio.Render{{ if .Pagination}}Iterator{{end}}(ctx, response.{{.ResponseBodyField.PascalName}})
