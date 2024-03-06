@@ -84,11 +84,11 @@ func newDelete() *cobra.Command {
 			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[1])
 		}
 
-		response, err := a.WorkspaceAssignment.Delete(ctx, deleteReq)
+		err = a.WorkspaceAssignment.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -299,11 +299,11 @@ func newUpdate() *cobra.Command {
 			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[1])
 		}
 
-		response, err := a.WorkspaceAssignment.Update(ctx, updateReq)
+		err = a.WorkspaceAssignment.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

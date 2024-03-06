@@ -174,11 +174,11 @@ func newDelete() *cobra.Command {
 
 		deleteReq.CustomerManagedKeyId = args[0]
 
-		response, err := a.EncryptionKeys.Delete(ctx, deleteReq)
+		err = a.EncryptionKeys.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

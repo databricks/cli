@@ -197,11 +197,11 @@ func newDelete() *cobra.Command {
 		}
 		deleteReq.PrivateAccessSettingsId = args[0]
 
-		response, err := a.PrivateAccess.Delete(ctx, deleteReq)
+		err = a.PrivateAccess.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -441,11 +441,11 @@ func newReplace() *cobra.Command {
 			replaceReq.Region = args[2]
 		}
 
-		response, err := a.PrivateAccess.Replace(ctx, replaceReq)
+		err = a.PrivateAccess.Replace(ctx, replaceReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

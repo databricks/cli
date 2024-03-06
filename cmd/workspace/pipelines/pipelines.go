@@ -163,11 +163,11 @@ func newDelete() *cobra.Command {
 		}
 		deleteReq.PipelineId = args[0]
 
-		response, err := w.Pipelines.Delete(ctx, deleteReq)
+		err = w.Pipelines.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -940,7 +940,7 @@ func newStop() *cobra.Command {
 			return err
 		}
 		if stopSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *pipelines.GetPipelineResponse) {
@@ -1052,11 +1052,11 @@ func newUpdate() *cobra.Command {
 		}
 		updateReq.PipelineId = args[0]
 
-		response, err := w.Pipelines.Update(ctx, updateReq)
+		err = w.Pipelines.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

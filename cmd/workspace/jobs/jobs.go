@@ -100,11 +100,11 @@ func newCancelAllRuns() *cobra.Command {
 			}
 		}
 
-		response, err := w.Jobs.CancelAllRuns(ctx, cancelAllRunsReq)
+		err = w.Jobs.CancelAllRuns(ctx, cancelAllRunsReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -210,7 +210,7 @@ func newCancelRun() *cobra.Command {
 			return err
 		}
 		if cancelRunSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *jobs.Run) {
@@ -388,11 +388,11 @@ func newDelete() *cobra.Command {
 			}
 		}
 
-		response, err := w.Jobs.Delete(ctx, deleteReq)
+		err = w.Jobs.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -487,11 +487,11 @@ func newDeleteRun() *cobra.Command {
 			}
 		}
 
-		response, err := w.Jobs.DeleteRun(ctx, deleteRunReq)
+		err = w.Jobs.DeleteRun(ctx, deleteRunReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -1311,11 +1311,11 @@ func newReset() *cobra.Command {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.Jobs.Reset(ctx, resetReq)
+		err = w.Jobs.Reset(ctx, resetReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -1743,11 +1743,11 @@ func newUpdate() *cobra.Command {
 			}
 		}
 
-		response, err := w.Jobs.Update(ctx, updateReq)
+		err = w.Jobs.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

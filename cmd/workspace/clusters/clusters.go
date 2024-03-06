@@ -124,11 +124,11 @@ func newChangeOwner() *cobra.Command {
 			changeOwnerReq.OwnerUsername = args[1]
 		}
 
-		response, err := w.Clusters.ChangeOwner(ctx, changeOwnerReq)
+		err = w.Clusters.ChangeOwner(ctx, changeOwnerReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -383,7 +383,7 @@ func newDelete() *cobra.Command {
 			return err
 		}
 		if deleteSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *compute.ClusterDetails) {
@@ -541,7 +541,7 @@ func newEdit() *cobra.Command {
 			return err
 		}
 		if editSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *compute.ClusterDetails) {
@@ -1150,11 +1150,11 @@ func newPermanentDelete() *cobra.Command {
 			permanentDeleteReq.ClusterId = args[0]
 		}
 
-		response, err := w.Clusters.PermanentDelete(ctx, permanentDeleteReq)
+		err = w.Clusters.PermanentDelete(ctx, permanentDeleteReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -1248,11 +1248,11 @@ func newPin() *cobra.Command {
 			pinReq.ClusterId = args[0]
 		}
 
-		response, err := w.Clusters.Pin(ctx, pinReq)
+		err = w.Clusters.Pin(ctx, pinReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -1358,7 +1358,7 @@ func newResize() *cobra.Command {
 			return err
 		}
 		if resizeSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *compute.ClusterDetails) {
@@ -1474,7 +1474,7 @@ func newRestart() *cobra.Command {
 			return err
 		}
 		if restartSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *compute.ClusterDetails) {
@@ -1730,7 +1730,7 @@ func newStart() *cobra.Command {
 			return err
 		}
 		if startSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *compute.ClusterDetails) {
@@ -1835,11 +1835,11 @@ func newUnpin() *cobra.Command {
 			unpinReq.ClusterId = args[0]
 		}
 
-		response, err := w.Clusters.Unpin(ctx, unpinReq)
+		err = w.Clusters.Unpin(ctx, unpinReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

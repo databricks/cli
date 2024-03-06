@@ -233,11 +233,11 @@ func newDelete() *cobra.Command {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
 
-		response, err := a.Workspaces.Delete(ctx, deleteReq)
+		err = a.Workspaces.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -600,7 +600,7 @@ func newUpdate() *cobra.Command {
 			return err
 		}
 		if updateSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *provisioning.Workspace) {

@@ -145,11 +145,11 @@ func newDelete() *cobra.Command {
 
 		deleteReq.MetastoreId = args[0]
 
-		response, err := a.Metastores.Delete(ctx, deleteReq)
+		err = a.Metastores.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

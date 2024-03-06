@@ -119,11 +119,11 @@ func newDelete() *cobra.Command {
 			deleteReq.Path = args[0]
 		}
 
-		response, err := w.Workspace.Delete(ctx, deleteReq)
+		err = w.Workspace.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -509,11 +509,11 @@ func newImport() *cobra.Command {
 			importReq.Path = args[0]
 		}
 
-		response, err := w.Workspace.Import(ctx, importReq)
+		err = w.Workspace.Import(ctx, importReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -677,11 +677,11 @@ func newMkdirs() *cobra.Command {
 			mkdirsReq.Path = args[0]
 		}
 
-		response, err := w.Workspace.Mkdirs(ctx, mkdirsReq)
+		err = w.Workspace.Mkdirs(ctx, mkdirsReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

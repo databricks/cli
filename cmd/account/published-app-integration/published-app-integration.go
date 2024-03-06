@@ -149,11 +149,11 @@ func newDelete() *cobra.Command {
 
 		deleteReq.IntegrationId = args[0]
 
-		response, err := a.PublishedAppIntegration.Delete(ctx, deleteReq)
+		err = a.PublishedAppIntegration.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -334,11 +334,11 @@ func newUpdate() *cobra.Command {
 		}
 		updateReq.IntegrationId = args[0]
 
-		response, err := a.PublishedAppIntegration.Update(ctx, updateReq)
+		err = a.PublishedAppIntegration.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

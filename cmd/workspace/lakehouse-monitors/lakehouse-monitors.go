@@ -95,11 +95,11 @@ func newCancelRefresh() *cobra.Command {
 		cancelRefreshReq.FullName = args[0]
 		cancelRefreshReq.RefreshId = args[1]
 
-		response, err := w.LakehouseMonitors.CancelRefresh(ctx, cancelRefreshReq)
+		err = w.LakehouseMonitors.CancelRefresh(ctx, cancelRefreshReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -146,7 +146,7 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: schedule
 	cmd.Flags().BoolVar(&createReq.SkipBuiltinDashboard, "skip-builtin-dashboard", createReq.SkipBuiltinDashboard, `Whether to skip creating a default dashboard summarizing data quality metrics.`)
 	// TODO: array: slicing_exprs
-	// TODO: output-only field
+	// TODO: complex arg: snapshot
 	// TODO: complex arg: time_series
 	cmd.Flags().StringVar(&createReq.WarehouseId, "warehouse-id", createReq.WarehouseId, `Optional argument to specify the warehouse for dashboard creation.`)
 
@@ -280,11 +280,11 @@ func newDelete() *cobra.Command {
 
 		deleteReq.FullName = args[0]
 
-		response, err := w.LakehouseMonitors.Delete(ctx, deleteReq)
+		err = w.LakehouseMonitors.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -628,7 +628,7 @@ func newUpdate() *cobra.Command {
 	// TODO: array: notifications
 	// TODO: complex arg: schedule
 	// TODO: array: slicing_exprs
-	// TODO: output-only field
+	// TODO: complex arg: snapshot
 	// TODO: complex arg: time_series
 
 	cmd.Use = "update FULL_NAME OUTPUT_SCHEMA_NAME"

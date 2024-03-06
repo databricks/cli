@@ -182,11 +182,11 @@ func newDelete() *cobra.Command {
 		}
 		deleteReq.FullName = args[0]
 
-		response, err := w.Schemas.Delete(ctx, deleteReq)
+		err = w.Schemas.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

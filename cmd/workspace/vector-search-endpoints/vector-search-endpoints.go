@@ -185,11 +185,11 @@ func newDeleteEndpoint() *cobra.Command {
 
 		deleteEndpointReq.EndpointName = args[0]
 
-		response, err := w.VectorSearchEndpoints.DeleteEndpoint(ctx, deleteEndpointReq)
+		err = w.VectorSearchEndpoints.DeleteEndpoint(ctx, deleteEndpointReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

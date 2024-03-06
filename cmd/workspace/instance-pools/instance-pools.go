@@ -226,11 +226,11 @@ func newDelete() *cobra.Command {
 			deleteReq.InstancePoolId = args[0]
 		}
 
-		response, err := w.InstancePools.Delete(ctx, deleteReq)
+		err = w.InstancePools.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -325,11 +325,11 @@ func newEdit() *cobra.Command {
 			editReq.NodeTypeId = args[2]
 		}
 
-		response, err := w.InstancePools.Edit(ctx, editReq)
+		err = w.InstancePools.Edit(ctx, editReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

@@ -80,11 +80,11 @@ func newGetActivationUrlInfo() *cobra.Command {
 
 		getActivationUrlInfoReq.ActivationUrl = args[0]
 
-		response, err := w.RecipientActivation.GetActivationUrlInfo(ctx, getActivationUrlInfoReq)
+		err = w.RecipientActivation.GetActivationUrlInfo(ctx, getActivationUrlInfoReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

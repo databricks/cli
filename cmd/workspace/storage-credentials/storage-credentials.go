@@ -70,7 +70,7 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: azure_service_principal
 	// TODO: complex arg: cloudflare_api_token
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Comment associated with the credential.`)
-	// TODO: output-only field
+	// TODO: complex arg: databricks_gcp_service_account
 	cmd.Flags().BoolVar(&createReq.ReadOnly, "read-only", createReq.ReadOnly, `Whether the storage credential is only usable for read operations.`)
 	cmd.Flags().BoolVar(&createReq.SkipValidation, "skip-validation", createReq.SkipValidation, `Supplying true to this argument skips validation of the created credential.`)
 
@@ -191,11 +191,11 @@ func newDelete() *cobra.Command {
 		}
 		deleteReq.Name = args[0]
 
-		response, err := w.StorageCredentials.Delete(ctx, deleteReq)
+		err = w.StorageCredentials.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -381,7 +381,7 @@ func newUpdate() *cobra.Command {
 	// TODO: complex arg: azure_service_principal
 	// TODO: complex arg: cloudflare_api_token
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Comment associated with the credential.`)
-	// TODO: output-only field
+	// TODO: complex arg: databricks_gcp_service_account
 	cmd.Flags().BoolVar(&updateReq.Force, "force", updateReq.Force, `Force update even if there are dependent external locations or external tables.`)
 	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the storage credential.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of credential.`)
@@ -476,7 +476,7 @@ func newValidate() *cobra.Command {
 	// TODO: complex arg: azure_managed_identity
 	// TODO: complex arg: azure_service_principal
 	// TODO: complex arg: cloudflare_api_token
-	// TODO: output-only field
+	// TODO: complex arg: databricks_gcp_service_account
 	cmd.Flags().StringVar(&validateReq.ExternalLocationName, "external-location-name", validateReq.ExternalLocationName, `The name of an existing external location to validate.`)
 	cmd.Flags().BoolVar(&validateReq.ReadOnly, "read-only", validateReq.ReadOnly, `Whether the storage credential is only usable for read operations.`)
 	cmd.Flags().StringVar(&validateReq.StorageCredentialName, "storage-credential-name", validateReq.StorageCredentialName, `The name of the storage credential to validate.`)

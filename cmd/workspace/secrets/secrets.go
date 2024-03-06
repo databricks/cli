@@ -108,11 +108,11 @@ func newCreateScope() *cobra.Command {
 			createScopeReq.Scope = args[0]
 		}
 
-		response, err := w.Secrets.CreateScope(ctx, createScopeReq)
+		err = w.Secrets.CreateScope(ctx, createScopeReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -198,11 +198,11 @@ func newDeleteAcl() *cobra.Command {
 			deleteAclReq.Principal = args[1]
 		}
 
-		response, err := w.Secrets.DeleteAcl(ctx, deleteAclReq)
+		err = w.Secrets.DeleteAcl(ctx, deleteAclReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -283,11 +283,11 @@ func newDeleteScope() *cobra.Command {
 			deleteScopeReq.Scope = args[0]
 		}
 
-		response, err := w.Secrets.DeleteScope(ctx, deleteScopeReq)
+		err = w.Secrets.DeleteScope(ctx, deleteScopeReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -373,11 +373,11 @@ func newDeleteSecret() *cobra.Command {
 			deleteSecretReq.Key = args[1]
 		}
 
-		response, err := w.Secrets.DeleteSecret(ctx, deleteSecretReq)
+		err = w.Secrets.DeleteSecret(ctx, deleteSecretReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -820,11 +820,11 @@ func newPutAcl() *cobra.Command {
 			}
 		}
 
-		response, err := w.Secrets.PutAcl(ctx, putAclReq)
+		err = w.Secrets.PutAcl(ctx, putAclReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

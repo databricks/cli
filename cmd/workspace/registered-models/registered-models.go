@@ -223,11 +223,11 @@ func newDelete() *cobra.Command {
 		}
 		deleteReq.FullName = args[0]
 
-		response, err := w.RegisteredModels.Delete(ctx, deleteReq)
+		err = w.RegisteredModels.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -294,11 +294,11 @@ func newDeleteAlias() *cobra.Command {
 		deleteAliasReq.FullName = args[0]
 		deleteAliasReq.Alias = args[1]
 
-		response, err := w.RegisteredModels.DeleteAlias(ctx, deleteAliasReq)
+		err = w.RegisteredModels.DeleteAlias(ctx, deleteAliasReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

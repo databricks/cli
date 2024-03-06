@@ -262,11 +262,11 @@ func newDeleteIndex() *cobra.Command {
 
 		deleteIndexReq.IndexName = args[0]
 
-		response, err := w.VectorSearchIndexes.DeleteIndex(ctx, deleteIndexReq)
+		err = w.VectorSearchIndexes.DeleteIndex(ctx, deleteIndexReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -532,11 +532,11 @@ func newSyncIndex() *cobra.Command {
 
 		syncIndexReq.IndexName = args[0]
 
-		response, err := w.VectorSearchIndexes.SyncIndex(ctx, syncIndexReq)
+		err = w.VectorSearchIndexes.SyncIndex(ctx, syncIndexReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

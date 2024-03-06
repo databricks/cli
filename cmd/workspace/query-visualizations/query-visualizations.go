@@ -140,11 +140,11 @@ func newDelete() *cobra.Command {
 
 		deleteReq.Id = args[0]
 
-		response, err := w.QueryVisualizations.Delete(ctx, deleteReq)
+		err = w.QueryVisualizations.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

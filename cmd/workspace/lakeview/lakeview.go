@@ -4,7 +4,6 @@ package lakeview
 
 import (
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/spf13/cobra"
@@ -85,11 +84,11 @@ func newPublish() *cobra.Command {
 		}
 		publishReq.DashboardId = args[0]
 
-		response, err := w.Lakeview.Publish(ctx, publishReq)
+		err = w.Lakeview.Publish(ctx, publishReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

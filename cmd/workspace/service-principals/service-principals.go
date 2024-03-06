@@ -169,11 +169,11 @@ func newDelete() *cobra.Command {
 		}
 		deleteReq.Id = args[0]
 
-		response, err := w.ServicePrincipals.Delete(ctx, deleteReq)
+		err = w.ServicePrincipals.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -398,11 +398,11 @@ func newPatch() *cobra.Command {
 		}
 		patchReq.Id = args[0]
 
-		response, err := w.ServicePrincipals.Patch(ctx, patchReq)
+		err = w.ServicePrincipals.Patch(ctx, patchReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -494,11 +494,11 @@ func newUpdate() *cobra.Command {
 		}
 		updateReq.Id = args[0]
 
-		response, err := w.ServicePrincipals.Update(ctx, updateReq)
+		err = w.ServicePrincipals.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

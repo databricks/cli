@@ -102,11 +102,11 @@ func newAdd() *cobra.Command {
 			addReq.InstanceProfileArn = args[0]
 		}
 
-		response, err := w.InstanceProfiles.Add(ctx, addReq)
+		err = w.InstanceProfiles.Add(ctx, addReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -201,11 +201,11 @@ func newEdit() *cobra.Command {
 			editReq.InstanceProfileArn = args[0]
 		}
 
-		response, err := w.InstanceProfiles.Edit(ctx, editReq)
+		err = w.InstanceProfiles.Edit(ctx, editReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -332,11 +332,11 @@ func newRemove() *cobra.Command {
 			removeReq.InstanceProfileArn = args[0]
 		}
 
-		response, err := w.InstanceProfiles.Remove(ctx, removeReq)
+		err = w.InstanceProfiles.Remove(ctx, removeReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

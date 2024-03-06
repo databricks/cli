@@ -242,7 +242,7 @@ func new{{.PascalName}}() *cobra.Command {
 			return err
 		}
 		if {{.CamelName}}SkipWait {
-			{{if .Response -}}
+			{{if not .Response.IsEmpty -}}
 			return cmdio.Render(ctx, wait.Response)
 			{{- else -}}
 			return nil
@@ -300,7 +300,7 @@ func init() {
 // end service {{.Name}}{{end}}
 
 {{- define "method-call" -}}
-		{{if .Response -}}
+		{{if not .Response.IsEmpty -}}
 		  response{{ if not .Pagination}}, err{{end}} :=
 		{{- else -}}
 		  err =
@@ -310,7 +310,7 @@ func init() {
 			return err
 		}
 		{{- end}}
-		{{ if .Response -}}
+		{{ if not .Response.IsEmpty -}}
 			{{- if .IsResponseByteStream -}}
 			defer response.{{.ResponseBodyField.PascalName}}.Close()
 			return cmdio.Render{{ if .Pagination}}Iterator{{end}}(ctx, response.{{.ResponseBodyField.PascalName}})

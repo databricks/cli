@@ -224,11 +224,11 @@ func newInstall() *cobra.Command {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.Libraries.Install(ctx, installReq)
+		err = w.Libraries.Install(ctx, installReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -291,11 +291,11 @@ func newUninstall() *cobra.Command {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.Libraries.Uninstall(ctx, uninstallReq)
+		err = w.Libraries.Uninstall(ctx, uninstallReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

@@ -9,10 +9,8 @@ import (
 	billable_usage "github.com/databricks/cli/cmd/account/billable-usage"
 	budgets "github.com/databricks/cli/cmd/account/budgets"
 	credentials "github.com/databricks/cli/cmd/account/credentials"
-	csp_enablement_account "github.com/databricks/cli/cmd/account/csp-enablement-account"
 	custom_app_integration "github.com/databricks/cli/cmd/account/custom-app-integration"
 	encryption_keys "github.com/databricks/cli/cmd/account/encryption-keys"
-	esm_enablement_account "github.com/databricks/cli/cmd/account/esm-enablement-account"
 	account_groups "github.com/databricks/cli/cmd/account/groups"
 	account_ip_access_lists "github.com/databricks/cli/cmd/account/ip-access-lists"
 	log_delivery "github.com/databricks/cli/cmd/account/log-delivery"
@@ -21,7 +19,6 @@ import (
 	network_connectivity "github.com/databricks/cli/cmd/account/network-connectivity"
 	networks "github.com/databricks/cli/cmd/account/networks"
 	o_auth_published_apps "github.com/databricks/cli/cmd/account/o-auth-published-apps"
-	personal_compute "github.com/databricks/cli/cmd/account/personal-compute"
 	private_access "github.com/databricks/cli/cmd/account/private-access"
 	published_app_integration "github.com/databricks/cli/cmd/account/published-app-integration"
 	service_principal_secrets "github.com/databricks/cli/cmd/account/service-principal-secrets"
@@ -44,10 +41,8 @@ func New() *cobra.Command {
 	cmd.AddCommand(account_access_control.New())
 	cmd.AddCommand(billable_usage.New())
 	cmd.AddCommand(budgets.New())
-	cmd.AddCommand(csp_enablement_account.New())
 	cmd.AddCommand(credentials.New())
 	cmd.AddCommand(custom_app_integration.New())
-	cmd.AddCommand(esm_enablement_account.New())
 	cmd.AddCommand(encryption_keys.New())
 	cmd.AddCommand(account_groups.New())
 	cmd.AddCommand(account_ip_access_lists.New())
@@ -57,7 +52,6 @@ func New() *cobra.Command {
 	cmd.AddCommand(network_connectivity.New())
 	cmd.AddCommand(networks.New())
 	cmd.AddCommand(o_auth_published_apps.New())
-	cmd.AddCommand(personal_compute.New())
 	cmd.AddCommand(private_access.New())
 	cmd.AddCommand(published_app_integration.New())
 	cmd.AddCommand(service_principal_secrets.New())

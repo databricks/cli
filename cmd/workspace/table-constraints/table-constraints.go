@@ -177,11 +177,11 @@ func newDelete() *cobra.Command {
 			return fmt.Errorf("invalid CASCADE: %s", args[2])
 		}
 
-		response, err := w.TableConstraints.Delete(ctx, deleteReq)
+		err = w.TableConstraints.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

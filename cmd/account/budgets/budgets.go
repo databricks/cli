@@ -155,11 +155,11 @@ func newDelete() *cobra.Command {
 		}
 		deleteReq.BudgetId = args[0]
 
-		response, err := a.Budgets.Delete(ctx, deleteReq)
+		err = a.Budgets.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -353,11 +353,11 @@ func newUpdate() *cobra.Command {
 		}
 		updateReq.BudgetId = args[0]
 
-		response, err := a.Budgets.Update(ctx, updateReq)
+		err = a.Budgets.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
