@@ -1,5 +1,36 @@
 # Version changelog
 
+## 0.215.0
+
+CLI:
+* The SDK update fixes `fs cp` calls timing out when copying large files.
+
+Bundles:
+* Fix summary command when internal Terraform config doesn't exist ([#1242](https://github.com/databricks/cli/pull/1242)).
+* Configure cobra.NoArgs for bundle commands where applicable ([#1250](https://github.com/databricks/cli/pull/1250)).
+* Fixed building Python artifacts on Windows with WSL ([#1249](https://github.com/databricks/cli/pull/1249)).
+* Add `--validate-only` flag to run validate-only pipeline update ([#1251](https://github.com/databricks/cli/pull/1251)).
+* Only transform wheel libraries when using trampoline ([#1248](https://github.com/databricks/cli/pull/1248)).
+* Return `application_id` for service principal lookups ([#1245](https://github.com/databricks/cli/pull/1245)).
+* Support relative paths in artifact files source section and always upload all artifact files ([#1247](https://github.com/databricks/cli/pull/1247)).
+* Fix DBConnect support in VS Code ([#1253](https://github.com/databricks/cli/pull/1253)).
+
+Internal:
+* Added test to verify scripts.Execute mutator works correctly ([#1237](https://github.com/databricks/cli/pull/1237)).
+
+API Changes:
+* Added `databricks permission-migration` command group.
+* Updated nesting of the `databricks settings` and `databricks account settings commands`
+* Changed `databricks vector-search-endpoints delete-endpoint` command with new required argument order.
+* Changed `databricks vector-search-indexes create-index` command with new required argument order.
+* Changed `databricks vector-search-indexes delete-data-vector-index` command with new required argument order.
+* Changed `databricks vector-search-indexes upsert-data-vector-index` command with new required argument order.
+
+OpenAPI commit d855b30f25a06fe84f25214efa20e7f1fffcdf9e (2024-03-04)
+
+Dependency updates:
+* Bump github.com/stretchr/testify from 1.8.4 to 1.9.0 ([#1252](https://github.com/databricks/cli/pull/1252)).
+* Update Go SDK to v0.34.0 ([#1256](https://github.com/databricks/cli/pull/1256)).
 ## 0.214.1
 
 CLI:
