@@ -35,6 +35,16 @@ func New() *cobra.Command {
 		},
 	}
 
+	// Add methods
+	cmd.AddCommand(newCreateIndex())
+	cmd.AddCommand(newDeleteDataVectorIndex())
+	cmd.AddCommand(newDeleteIndex())
+	cmd.AddCommand(newGetIndex())
+	cmd.AddCommand(newListIndexes())
+	cmd.AddCommand(newQueryIndex())
+	cmd.AddCommand(newSyncIndex())
+	cmd.AddCommand(newUpsertDataVectorIndex())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -142,12 +152,6 @@ func newCreateIndex() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newCreateIndex())
-	})
-}
-
 // start delete-data-vector-index command
 
 // Slice with functions to override default command behavior.
@@ -217,12 +221,6 @@ func newDeleteDataVectorIndex() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDeleteDataVectorIndex())
-	})
-}
-
 // start delete-index command
 
 // Slice with functions to override default command behavior.
@@ -279,12 +277,6 @@ func newDeleteIndex() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDeleteIndex())
-	})
 }
 
 // start get-index command
@@ -345,12 +337,6 @@ func newGetIndex() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetIndex())
-	})
-}
-
 // start list-indexes command
 
 // Slice with functions to override default command behavior.
@@ -406,12 +392,6 @@ func newListIndexes() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newListIndexes())
-	})
 }
 
 // start query-index command
@@ -487,12 +467,6 @@ func newQueryIndex() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newQueryIndex())
-	})
-}
-
 // start sync-index command
 
 // Slice with functions to override default command behavior.
@@ -549,12 +523,6 @@ func newSyncIndex() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newSyncIndex())
-	})
 }
 
 // start upsert-data-vector-index command
@@ -633,12 +601,6 @@ func newUpsertDataVectorIndex() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpsertDataVectorIndex())
-	})
 }
 
 // end service VectorSearchIndexes

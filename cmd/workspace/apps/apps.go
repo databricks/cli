@@ -32,6 +32,14 @@ func New() *cobra.Command {
 		Hidden: true,
 	}
 
+	// Add methods
+	cmd.AddCommand(newCreate())
+	cmd.AddCommand(newDeleteApp())
+	cmd.AddCommand(newGetApp())
+	cmd.AddCommand(newGetAppDeploymentStatus())
+	cmd.AddCommand(newGetApps())
+	cmd.AddCommand(newGetEvents())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -101,12 +109,6 @@ func newCreate() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newCreate())
-	})
-}
-
 // start delete-app command
 
 // Slice with functions to override default command behavior.
@@ -165,12 +167,6 @@ func newDeleteApp() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDeleteApp())
-	})
-}
-
 // start get-app command
 
 // Slice with functions to override default command behavior.
@@ -227,12 +223,6 @@ func newGetApp() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetApp())
-	})
 }
 
 // start get-app-deployment-status command
@@ -295,12 +285,6 @@ func newGetAppDeploymentStatus() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetAppDeploymentStatus())
-	})
-}
-
 // start get-apps command
 
 // Slice with functions to override default command behavior.
@@ -341,12 +325,6 @@ func newGetApps() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetApps())
-	})
 }
 
 // start get-events command
@@ -405,12 +383,6 @@ func newGetEvents() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetEvents())
-	})
 }
 
 // end service Apps

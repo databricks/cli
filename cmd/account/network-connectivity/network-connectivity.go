@@ -28,6 +28,16 @@ func New() *cobra.Command {
 		},
 	}
 
+	// Add methods
+	cmd.AddCommand(newCreateNetworkConnectivityConfiguration())
+	cmd.AddCommand(newCreatePrivateEndpointRule())
+	cmd.AddCommand(newDeleteNetworkConnectivityConfiguration())
+	cmd.AddCommand(newDeletePrivateEndpointRule())
+	cmd.AddCommand(newGetNetworkConnectivityConfiguration())
+	cmd.AddCommand(newGetPrivateEndpointRule())
+	cmd.AddCommand(newListNetworkConnectivityConfigurations())
+	cmd.AddCommand(newListPrivateEndpointRules())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -115,12 +125,6 @@ func newCreateNetworkConnectivityConfiguration() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newCreateNetworkConnectivityConfiguration())
-	})
 }
 
 // start create-private-endpoint-rule command
@@ -218,12 +222,6 @@ func newCreatePrivateEndpointRule() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newCreatePrivateEndpointRule())
-	})
-}
-
 // start delete-network-connectivity-configuration command
 
 // Slice with functions to override default command behavior.
@@ -280,12 +278,6 @@ func newDeleteNetworkConnectivityConfiguration() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDeleteNetworkConnectivityConfiguration())
-	})
 }
 
 // start delete-private-endpoint-rule command
@@ -352,12 +344,6 @@ func newDeletePrivateEndpointRule() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDeletePrivateEndpointRule())
-	})
-}
-
 // start get-network-connectivity-configuration command
 
 // Slice with functions to override default command behavior.
@@ -414,12 +400,6 @@ func newGetNetworkConnectivityConfiguration() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetNetworkConnectivityConfiguration())
-	})
 }
 
 // start get-private-endpoint-rule command
@@ -482,12 +462,6 @@ func newGetPrivateEndpointRule() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetPrivateEndpointRule())
-	})
-}
-
 // start list-network-connectivity-configurations command
 
 // Slice with functions to override default command behavior.
@@ -538,12 +512,6 @@ func newListNetworkConnectivityConfigurations() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newListNetworkConnectivityConfigurations())
-	})
 }
 
 // start list-private-endpoint-rules command
@@ -601,12 +569,6 @@ func newListPrivateEndpointRules() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newListPrivateEndpointRules())
-	})
 }
 
 // end service NetworkConnectivity

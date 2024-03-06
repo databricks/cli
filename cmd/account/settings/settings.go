@@ -4,6 +4,10 @@ package settings
 
 import (
 	"github.com/spf13/cobra"
+
+	csp_enablement_account "github.com/databricks/cli/cmd/account/csp-enablement-account"
+	esm_enablement_account "github.com/databricks/cli/cmd/account/esm-enablement-account"
+	personal_compute "github.com/databricks/cli/cmd/account/personal-compute"
 )
 
 // Slice with functions to override default command behavior.
@@ -23,6 +27,11 @@ func New() *cobra.Command {
 		// This service is being previewed; hide from help output.
 		Hidden: true,
 	}
+
+	// Add subservices
+	cmd.AddCommand(csp_enablement_account.New())
+	cmd.AddCommand(esm_enablement_account.New())
+	cmd.AddCommand(personal_compute.New())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {

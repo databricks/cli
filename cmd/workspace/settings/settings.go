@@ -4,6 +4,12 @@ package settings
 
 import (
 	"github.com/spf13/cobra"
+
+	automatic_cluster_update "github.com/databricks/cli/cmd/workspace/automatic-cluster-update"
+	csp_enablement "github.com/databricks/cli/cmd/workspace/csp-enablement"
+	default_namespace "github.com/databricks/cli/cmd/workspace/default-namespace"
+	esm_enablement "github.com/databricks/cli/cmd/workspace/esm-enablement"
+	restrict_workspace_admins "github.com/databricks/cli/cmd/workspace/restrict-workspace-admins"
 )
 
 // Slice with functions to override default command behavior.
@@ -23,6 +29,13 @@ func New() *cobra.Command {
 		// This service is being previewed; hide from help output.
 		Hidden: true,
 	}
+
+	// Add subservices
+	cmd.AddCommand(automatic_cluster_update.New())
+	cmd.AddCommand(csp_enablement.New())
+	cmd.AddCommand(default_namespace.New())
+	cmd.AddCommand(esm_enablement.New())
+	cmd.AddCommand(restrict_workspace_admins.New())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {

@@ -31,6 +31,9 @@ func New() *cobra.Command {
 		Hidden: true,
 	}
 
+	// Add methods
+	cmd.AddCommand(newMigratePermissions())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -128,12 +131,6 @@ func newMigratePermissions() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newMigratePermissions())
-	})
 }
 
 // end service PermissionMigration

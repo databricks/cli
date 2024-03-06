@@ -28,6 +28,12 @@ func New() *cobra.Command {
 		},
 	}
 
+	// Add methods
+	cmd.AddCommand(newCreateEndpoint())
+	cmd.AddCommand(newDeleteEndpoint())
+	cmd.AddCommand(newGetEndpoint())
+	cmd.AddCommand(newListEndpoints())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -142,12 +148,6 @@ func newCreateEndpoint() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newCreateEndpoint())
-	})
-}
-
 // start delete-endpoint command
 
 // Slice with functions to override default command behavior.
@@ -202,12 +202,6 @@ func newDeleteEndpoint() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDeleteEndpoint())
-	})
 }
 
 // start get-endpoint command
@@ -266,12 +260,6 @@ func newGetEndpoint() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetEndpoint())
-	})
-}
-
 // start list-endpoints command
 
 // Slice with functions to override default command behavior.
@@ -320,12 +308,6 @@ func newListEndpoints() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newListEndpoints())
-	})
 }
 
 // end service VectorSearchEndpoints

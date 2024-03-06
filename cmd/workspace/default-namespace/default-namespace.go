@@ -38,6 +38,11 @@ func New() *cobra.Command {
 		},
 	}
 
+	// Add methods
+	cmd.AddCommand(newDelete())
+	cmd.AddCommand(newGet())
+	cmd.AddCommand(newUpdate())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -86,7 +91,7 @@ func newDelete() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.DefaultNamespace.Delete(ctx, deleteReq)
+		response, err := w.Settings.DefaultNamespace().Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
@@ -103,12 +108,6 @@ func newDelete() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDelete())
-	})
 }
 
 // start get command
@@ -147,7 +146,7 @@ func newGet() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.DefaultNamespace.Get(ctx, getReq)
+		response, err := w.Settings.DefaultNamespace().Get(ctx, getReq)
 		if err != nil {
 			return err
 		}
@@ -164,12 +163,6 @@ func newGet() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGet())
-	})
 }
 
 // start update command
@@ -218,7 +211,7 @@ func newUpdate() *cobra.Command {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.DefaultNamespace.Update(ctx, updateReq)
+		response, err := w.Settings.DefaultNamespace().Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
@@ -235,12 +228,6 @@ func newUpdate() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdate())
-	})
 }
 
 // end service DefaultNamespace
