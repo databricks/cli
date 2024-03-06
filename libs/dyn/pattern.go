@@ -33,6 +33,11 @@ func NewPatternFromPath(p Path) Pattern {
 	return cs
 }
 
+// Append appends the given components to the pattern.
+func (p Pattern) Append(cs ...patternComponent) Pattern {
+	return append(p, cs...)
+}
+
 type anyKeyComponent struct{}
 
 // AnyKey returns a pattern component that matches any key.

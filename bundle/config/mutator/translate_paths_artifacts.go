@@ -4,39 +4,46 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/dyn"
 )
 
-func transformArtifactPath(resource any, dir string) *transformer {
-	artifact, ok := resource.(*config.Artifact)
-	if !ok {
-		return nil
-	}
-
-	return &transformer{
-		dir,
-		&artifact.Path,
-		"artifacts.path",
-		translateNoOp,
-	}
-}
-
-func applyArtifactTransformers(m *translatePaths, b *bundle.Bundle) error {
-	artifactTransformers := []transformFunc{
-		transformArtifactPath,
-	}
+func (m *translatePaths) applyArtifactTranslations(b *bundle.Bundle, v dyn.Value) (dyn.Value, error) {
+	var fallback = make(map[string]string)
+	var err error
 
 	for key, artifact := range b.Config.Artifacts {
 		dir, err := artifact.ConfigFileDirectory()
 		if err != nil {
-			return fmt.Errorf("unable to determine directory for artifact %s: %w", key, err)
+			return dyn.InvalidValue, fmt.Errorf("unable to determine directory for artifact %s: %w", key, err)
 		}
 
-		err = m.applyTransformers(artifactTransformers, b, artifact, dir)
+		// If we cannot resolve the relative path using the [dyn.Value] location itself,
+		// use the job's location as fallback. This is necessary for backwards compatibility.
+		fallback[key] = dir
+	}
+
+	// Base pattern to match all tasks in all jobs.
+	base := dyn.NewPattern(
+		dyn.Key("artifacts"),
+		dyn.AnyKey(),
+	)
+
+	for _, t := range []struct {
+		pattern dyn.Pattern
+		fn      rewriteFunc
+	}{
+		{
+			base.Append(dyn.Key("path")),
+			translateNoOp,
+		},
+	} {
+		v, err = dyn.MapByPattern(v, t.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			return m.rewriteValue(b, p, v, t.fn)
+		})
 		if err != nil {
-			return err
+			return dyn.InvalidValue, err
 		}
 	}
 
-	return nil
+	return v, nil
 }
