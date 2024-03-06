@@ -51,10 +51,12 @@ func New() *cobra.Command {
 		Short: `{{.Summary | without "`"}}`,
 		Long: `{{.Comment  "  " 80 | without "`"}}`,
 		{{- end }}
+		{{- if not .HasParent }}
 		GroupID: "{{ .Package.Name }}",
 		Annotations: map[string]string{
 			"package": "{{ .Package.Name }}",
 		},
+		{{- end }}
 		{{- if .IsPrivatePreview }}
 
 		// This service is being previewed; hide from help output.

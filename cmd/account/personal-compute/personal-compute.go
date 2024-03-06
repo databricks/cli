@@ -29,10 +29,6 @@ func New() *cobra.Command {
   a default value, this setting is present on all accounts even though it's
   never set on a given account. Deletion reverts the value of the setting back
   to the default value.`,
-		GroupID: "settings",
-		Annotations: map[string]string{
-			"package": "settings",
-		},
 
 		// This service is being previewed; hide from help output.
 		Hidden: true,

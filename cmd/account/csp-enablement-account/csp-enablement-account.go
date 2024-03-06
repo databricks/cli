@@ -27,10 +27,6 @@ func New() *cobra.Command {
   
   This settings can be disabled so that new workspaces do not have compliance
   security profile enabled by default.`,
-		GroupID: "settings",
-		Annotations: map[string]string{
-			"package": "settings",
-		},
 	}
 
 	// Add methods

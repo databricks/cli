@@ -25,10 +25,6 @@ func New() *cobra.Command {
   off.
   
   This settings can NOT be disabled once it is enabled.`,
-		GroupID: "settings",
-		Annotations: map[string]string{
-			"package": "settings",
-		},
 	}
 
 	// Add methods

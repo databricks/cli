@@ -22,10 +22,6 @@ func New() *cobra.Command {
 		Short: `Controls whether automatic cluster update is enabled for the current workspace.`,
 		Long: `Controls whether automatic cluster update is enabled for the current
   workspace. By default, it is turned off.`,
-		GroupID: "settings",
-		Annotations: map[string]string{
-			"package": "settings",
-		},
 	}
 
 	// Add methods

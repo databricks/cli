@@ -32,10 +32,6 @@ func New() *cobra.Command {
   User role on. They can also only change a job owner to themselves. And they
   can change the job run_as setting to themselves or to a service principal on
   which they have the Service Principal User role.`,
-		GroupID: "settings",
-		Annotations: map[string]string{
-			"package": "settings",
-		},
 	}
 
 	// Add methods
