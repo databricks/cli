@@ -191,11 +191,11 @@ func newDelete() *cobra.Command {
 		}
 		deleteReq.VpcEndpointId = args[0]
 
-		err = a.VpcEndpoints.Delete(ctx, deleteReq)
+		response, err := a.VpcEndpoints.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

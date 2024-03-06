@@ -63,9 +63,8 @@ func newCreateIndex() *cobra.Command {
 
 	// TODO: complex arg: delta_sync_index_spec
 	// TODO: complex arg: direct_access_index_spec
-	cmd.Flags().StringVar(&createIndexReq.EndpointName, "endpoint-name", createIndexReq.EndpointName, `Name of the endpoint to be used for serving the index.`)
 
-	cmd.Use = "create-index NAME PRIMARY_KEY INDEX_TYPE"
+	cmd.Use = "create-index NAME ENDPOINT_NAME PRIMARY_KEY INDEX_TYPE"
 	cmd.Short = `Create an index.`
 	cmd.Long = `Create an index.
   
@@ -73,6 +72,7 @@ func newCreateIndex() *cobra.Command {
 
   Arguments:
     NAME: Name of the index
+    ENDPOINT_NAME: Name of the endpoint to be used for serving the index
     PRIMARY_KEY: Primary key of the index
     INDEX_TYPE: There are 2 types of Vector Search indexes:
       
@@ -88,11 +88,11 @@ func newCreateIndex() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'primary_key', 'index_type' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'endpoint_name', 'primary_key', 'index_type' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(3)
+		check := cobra.ExactArgs(4)
 		return check(cmd, args)
 	}
 
@@ -111,12 +111,15 @@ func newCreateIndex() *cobra.Command {
 			createIndexReq.Name = args[0]
 		}
 		if !cmd.Flags().Changed("json") {
-			createIndexReq.PrimaryKey = args[1]
+			createIndexReq.EndpointName = args[1]
 		}
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &createIndexReq.IndexType)
+			createIndexReq.PrimaryKey = args[2]
+		}
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[3], &createIndexReq.IndexType)
 			if err != nil {
-				return fmt.Errorf("invalid INDEX_TYPE: %s", args[2])
+				return fmt.Errorf("invalid INDEX_TYPE: %s", args[3])
 			}
 		}
 
@@ -163,14 +166,14 @@ func newDeleteDataVectorIndex() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&deleteDataVectorIndexJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Use = "delete-data-vector-index NAME"
+	cmd.Use = "delete-data-vector-index INDEX_NAME"
 	cmd.Short = `Delete data from index.`
 	cmd.Long = `Delete data from index.
   
   Handles the deletion of data from a specified vector index.
 
   Arguments:
-    NAME: Name of the vector index where data is to be deleted. Must be a Direct
+    INDEX_NAME: Name of the vector index where data is to be deleted. Must be a Direct
       Vector Access Index.`
 
 	cmd.Annotations = make(map[string]string)
@@ -193,7 +196,7 @@ func newDeleteDataVectorIndex() *cobra.Command {
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
-		deleteDataVectorIndexReq.Name = args[0]
+		deleteDataVectorIndexReq.IndexName = args[0]
 
 		response, err := w.VectorSearchIndexes.DeleteDataVectorIndex(ctx, deleteDataVectorIndexReq)
 		if err != nil {
@@ -259,11 +262,11 @@ func newDeleteIndex() *cobra.Command {
 
 		deleteIndexReq.IndexName = args[0]
 
-		err = w.VectorSearchIndexes.DeleteIndex(ctx, deleteIndexReq)
+		response, err := w.VectorSearchIndexes.DeleteIndex(ctx, deleteIndexReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -529,11 +532,11 @@ func newSyncIndex() *cobra.Command {
 
 		syncIndexReq.IndexName = args[0]
 
-		err = w.VectorSearchIndexes.SyncIndex(ctx, syncIndexReq)
+		response, err := w.VectorSearchIndexes.SyncIndex(ctx, syncIndexReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -572,14 +575,14 @@ func newUpsertDataVectorIndex() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&upsertDataVectorIndexJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Use = "upsert-data-vector-index NAME INPUTS_JSON"
+	cmd.Use = "upsert-data-vector-index INDEX_NAME INPUTS_JSON"
 	cmd.Short = `Upsert data into an index.`
 	cmd.Long = `Upsert data into an index.
   
   Handles the upserting of data into a specified vector index.
 
   Arguments:
-    NAME: Name of the vector index where data is to be upserted. Must be a Direct
+    INDEX_NAME: Name of the vector index where data is to be upserted. Must be a Direct
       Vector Access Index.
     INPUTS_JSON: JSON string representing the data to be upserted.`
 
@@ -589,7 +592,7 @@ func newUpsertDataVectorIndex() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only NAME as positional arguments. Provide 'inputs_json' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, provide only INDEX_NAME as positional arguments. Provide 'inputs_json' in your JSON input")
 			}
 			return nil
 		}
@@ -608,7 +611,7 @@ func newUpsertDataVectorIndex() *cobra.Command {
 				return err
 			}
 		}
-		upsertDataVectorIndexReq.Name = args[0]
+		upsertDataVectorIndexReq.IndexName = args[0]
 		if !cmd.Flags().Changed("json") {
 			upsertDataVectorIndexReq.InputsJson = args[1]
 		}

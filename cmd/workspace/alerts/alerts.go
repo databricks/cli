@@ -159,11 +159,11 @@ func newDelete() *cobra.Command {
 		}
 		deleteReq.AlertId = args[0]
 
-		err = w.Alerts.Delete(ctx, deleteReq)
+		response, err := w.Alerts.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -353,11 +353,11 @@ func newUpdate() *cobra.Command {
 		}
 		updateReq.AlertId = args[0]
 
-		err = w.Alerts.Update(ctx, updateReq)
+		response, err := w.Alerts.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

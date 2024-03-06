@@ -183,11 +183,11 @@ func newDelete() *cobra.Command {
 			return fmt.Errorf("invalid CREDENTIAL_ID: %s", args[0])
 		}
 
-		err = w.GitCredentials.Delete(ctx, deleteReq)
+		response, err := w.GitCredentials.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -399,11 +399,11 @@ func newUpdate() *cobra.Command {
 			return fmt.Errorf("invalid CREDENTIAL_ID: %s", args[0])
 		}
 
-		err = w.GitCredentials.Update(ctx, updateReq)
+		response, err := w.GitCredentials.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

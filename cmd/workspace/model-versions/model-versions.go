@@ -91,11 +91,11 @@ func newDelete() *cobra.Command {
 			return fmt.Errorf("invalid VERSION: %s", args[1])
 		}
 
-		err = w.ModelVersions.Delete(ctx, deleteReq)
+		response, err := w.ModelVersions.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

@@ -181,11 +181,11 @@ func newDelete() *cobra.Command {
 		}
 		deleteReq.NetworkId = args[0]
 
-		err = a.Networks.Delete(ctx, deleteReq)
+		response, err := a.Networks.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

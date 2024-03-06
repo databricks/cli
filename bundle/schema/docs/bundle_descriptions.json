@@ -193,7 +193,7 @@
                 "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.",
                 "properties": {
                   "pause_status": {
-                    "description": "Indicate whether this schedule is paused or not."
+                    "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
                   }
                 }
               },
@@ -322,7 +322,7 @@
                       "description": "A unique name for the job cluster. This field is required and must be unique within the job.\n`JobTaskSettings` may refer to this field to determine which cluster to launch for the task execution."
                     },
                     "new_cluster": {
-                      "description": "If new_cluster, a description of a cluster that is created for only for this task.",
+                      "description": "If new_cluster, a description of a cluster that is created for each task.",
                       "properties": {
                         "apply_policy_default_values": {
                           "description": ""
@@ -351,13 +351,13 @@
                               "description": "The number of volumes launched for each instance. Users can choose up to 10 volumes.\nThis feature is only enabled for supported node types. Legacy node types cannot specify\ncustom EBS volumes.\nFor node types with no instance store, at least one EBS volume needs to be specified;\notherwise, cluster creation will fail.\n\nThese EBS volumes will be mounted at `/ebs0`, `/ebs1`, and etc.\nInstance store volumes will be mounted at `/local_disk0`, `/local_disk1`, and etc.\n\nIf EBS volumes are attached, Databricks will configure Spark to use only the EBS volumes for\nscratch storage because heterogenously sized scratch devices can lead to inefficient disk\nutilization. If no EBS volumes are attached, Databricks will configure Spark to use instance\nstore volumes.\n\nPlease note that if EBS volumes are specified, then the Spark configuration `spark.local.dir`\nwill be overridden."
                             },
                             "ebs_volume_iops": {
-                              "description": "\u003cneeds content added\u003e"
+                              "description": "If using gp3 volumes, what IOPS to use for the disk. If this is not set, the maximum performance of a gp2 volume with the same volume size will be used."
                             },
                             "ebs_volume_size": {
                               "description": "The size of each EBS volume (in GiB) launched for each instance. For general purpose\nSSD, this value must be within the range 100 - 4096. For throughput optimized HDD,\nthis value must be within the range 500 - 4096."
                             },
                             "ebs_volume_throughput": {
-                              "description": "\u003cneeds content added\u003e"
+                              "description": "If using gp3 volumes, what throughput to use for the disk. If this is not set, the maximum performance of a gp2 volume with the same volume size will be used."
                             },
                             "ebs_volume_type": {
                               "description": ""
@@ -725,7 +725,7 @@
                 "description": "An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                 "properties": {
                   "pause_status": {
-                    "description": "Indicate whether this schedule is paused or not."
+                    "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
                   },
                   "quartz_cron_expression": {
                     "description": "A Cron expression using Quartz syntax that describes the schedule for a job.\nSee [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html)\nfor details. This field is required.\"\n"
@@ -785,7 +785,7 @@
                           "description": "Optional schema to write to. This parameter is only used when a warehouse_id is also provided. If not provided, the `default` schema is used."
                         },
                         "source": {
-                          "description": "Optional location type of the project directory. When set to `WORKSPACE`, the project will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the project will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Project is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Project is located in cloud Git provider.\n"
+                          "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in \u003cDatabricks\u003e workspace.\n* `GIT`: SQL file is located in cloud Git provider.\n"
                         },
                         "warehouse_id": {
                           "description": "ID of the SQL warehouse to connect to. If provided, we automatically generate and provide the profile and connection details to dbt. It can be overridden on a per-command basis by using the `--profiles-dir` command line argument."
@@ -930,7 +930,7 @@
                       "description": "An optional minimal interval in milliseconds between the start of the failed run and the subsequent retry run. The default behavior is that unsuccessful runs are immediately retried."
                     },
                     "new_cluster": {
-                      "description": "If new_cluster, a description of a cluster that is created for only for this task.",
+                      "description": "If new_cluster, a description of a cluster that is created for each task.",
                       "properties": {
                         "apply_policy_default_values": {
                           "description": ""
@@ -959,13 +959,13 @@
                               "description": "The number of volumes launched for each instance. Users can choose up to 10 volumes.\nThis feature is only enabled for supported node types. Legacy node types cannot specify\ncustom EBS volumes.\nFor node types with no instance store, at least one EBS volume needs to be specified;\notherwise, cluster creation will fail.\n\nThese EBS volumes will be mounted at `/ebs0`, `/ebs1`, and etc.\nInstance store volumes will be mounted at `/local_disk0`, `/local_disk1`, and etc.\n\nIf EBS volumes are attached, Databricks will configure Spark to use only the EBS volumes for\nscratch storage because heterogenously sized scratch devices can lead to inefficient disk\nutilization. If no EBS volumes are attached, Databricks will configure Spark to use instance\nstore volumes.\n\nPlease note that if EBS volumes are specified, then the Spark configuration `spark.local.dir`\nwill be overridden."
                             },
                             "ebs_volume_iops": {
-                              "description": "\u003cneeds content added\u003e"
+                              "description": "If using gp3 volumes, what IOPS to use for the disk. If this is not set, the maximum performance of a gp2 volume with the same volume size will be used."
                             },
                             "ebs_volume_size": {
                               "description": "The size of each EBS volume (in GiB) launched for each instance. For general purpose\nSSD, this value must be within the range 100 - 4096. For throughput optimized HDD,\nthis value must be within the range 500 - 4096."
                             },
                             "ebs_volume_throughput": {
-                              "description": "\u003cneeds content added\u003e"
+                              "description": "If using gp3 volumes, what throughput to use for the disk. If this is not set, the maximum performance of a gp2 volume with the same volume size will be used."
                             },
                             "ebs_volume_type": {
                               "description": ""
@@ -1269,7 +1269,7 @@
                           "description": "The path of the notebook to be run in the Databricks workspace or remote repository.\nFor notebooks stored in the Databricks workspace, the path must be absolute and begin with a slash.\nFor notebooks stored in a remote repository, the path must be relative. This field is required.\n"
                         },
                         "source": {
-                          "description": "Optional location type of the project directory. When set to `WORKSPACE`, the project will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the project will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Project is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Project is located in cloud Git provider.\n"
+                          "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in \u003cDatabricks\u003e workspace.\n* `GIT`: SQL file is located in cloud Git provider.\n"
                         }
                       }
                     },
@@ -1371,7 +1371,7 @@
                           "description": "The Python file to be executed. Cloud file URIs (such as dbfs:/, s3:/, adls:/, gcs:/) and workspace paths are supported. For python files stored in the Databricks workspace, the path must be absolute and begin with `/`. For files stored in a remote repository, the path must be relative. This field is required."
                         },
                         "source": {
-                          "description": "Optional location type of the project directory. When set to `WORKSPACE`, the project will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the project will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Project is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Project is located in cloud Git provider.\n"
+                          "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in \u003cDatabricks\u003e workspace.\n* `GIT`: SQL file is located in cloud Git provider.\n"
                         }
                       }
                     },
@@ -1449,7 +1449,7 @@
                               "description": "Path of the SQL file. Must be relative if the source is a remote Git repository and absolute for workspace paths."
                             },
                             "source": {
-                              "description": "Optional location type of the project directory. When set to `WORKSPACE`, the project will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the project will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Project is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Project is located in cloud Git provider.\n"
+                              "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in \u003cDatabricks\u003e workspace.\n* `GIT`: SQL file is located in cloud Git provider.\n"
                             }
                           }
                         },
@@ -1551,7 +1551,7 @@
                     }
                   },
                   "pause_status": {
-                    "description": "Indicate whether this schedule is paused or not."
+                    "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
                   },
                   "table": {
                     "description": "Table trigger settings.",
@@ -2061,13 +2061,13 @@
                           "description": "The number of volumes launched for each instance. Users can choose up to 10 volumes.\nThis feature is only enabled for supported node types. Legacy node types cannot specify\ncustom EBS volumes.\nFor node types with no instance store, at least one EBS volume needs to be specified;\notherwise, cluster creation will fail.\n\nThese EBS volumes will be mounted at `/ebs0`, `/ebs1`, and etc.\nInstance store volumes will be mounted at `/local_disk0`, `/local_disk1`, and etc.\n\nIf EBS volumes are attached, Databricks will configure Spark to use only the EBS volumes for\nscratch storage because heterogenously sized scratch devices can lead to inefficient disk\nutilization. If no EBS volumes are attached, Databricks will configure Spark to use instance\nstore volumes.\n\nPlease note that if EBS volumes are specified, then the Spark configuration `spark.local.dir`\nwill be overridden."
                         },
                         "ebs_volume_iops": {
-                          "description": "\u003cneeds content added\u003e"
+                          "description": "If using gp3 volumes, what IOPS to use for the disk. If this is not set, the maximum performance of a gp2 volume with the same volume size will be used."
                         },
                         "ebs_volume_size": {
                           "description": "The size of each EBS volume (in GiB) launched for each instance. For general purpose\nSSD, this value must be within the range 100 - 4096. For throughput optimized HDD,\nthis value must be within the range 500 - 4096."
                         },
                         "ebs_volume_throughput": {
-                          "description": "\u003cneeds content added\u003e"
+                          "description": "If using gp3 volumes, what throughput to use for the disk. If this is not set, the maximum performance of a gp2 volume with the same volume size will be used."
                         },
                         "ebs_volume_type": {
                           "description": ""
@@ -2726,7 +2726,7 @@
                       "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.",
                       "properties": {
                         "pause_status": {
-                          "description": "Indicate whether this schedule is paused or not."
+                          "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
                         }
                       }
                     },
@@ -2855,7 +2855,7 @@
                             "description": "A unique name for the job cluster. This field is required and must be unique within the job.\n`JobTaskSettings` may refer to this field to determine which cluster to launch for the task execution."
                           },
                           "new_cluster": {
-                            "description": "If new_cluster, a description of a cluster that is created for only for this task.",
+                            "description": "If new_cluster, a description of a cluster that is created for each task.",
                             "properties": {
                               "apply_policy_default_values": {
                                 "description": ""
@@ -2884,13 +2884,13 @@
                                     "description": "The number of volumes launched for each instance. Users can choose up to 10 volumes.\nThis feature is only enabled for supported node types. Legacy node types cannot specify\ncustom EBS volumes.\nFor node types with no instance store, at least one EBS volume needs to be specified;\notherwise, cluster creation will fail.\n\nThese EBS volumes will be mounted at `/ebs0`, `/ebs1`, and etc.\nInstance store volumes will be mounted at `/local_disk0`, `/local_disk1`, and etc.\n\nIf EBS volumes are attached, Databricks will configure Spark to use only the EBS volumes for\nscratch storage because heterogenously sized scratch devices can lead to inefficient disk\nutilization. If no EBS volumes are attached, Databricks will configure Spark to use instance\nstore volumes.\n\nPlease note that if EBS volumes are specified, then the Spark configuration `spark.local.dir`\nwill be overridden."
                                   },
                                   "ebs_volume_iops": {
-                                    "description": "\u003cneeds content added\u003e"
+                                    "description": "If using gp3 volumes, what IOPS to use for the disk. If this is not set, the maximum performance of a gp2 volume with the same volume size will be used."
                                   },
                                   "ebs_volume_size": {
                                     "description": "The size of each EBS volume (in GiB) launched for each instance. For general purpose\nSSD, this value must be within the range 100 - 4096. For throughput optimized HDD,\nthis value must be within the range 500 - 4096."
                                   },
                                   "ebs_volume_throughput": {
-                                    "description": "\u003cneeds content added\u003e"
+                                    "description": "If using gp3 volumes, what throughput to use for the disk. If this is not set, the maximum performance of a gp2 volume with the same volume size will be used."
                                   },
                                   "ebs_volume_type": {
                                     "description": ""
@@ -3258,7 +3258,7 @@
                       "description": "An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                       "properties": {
                         "pause_status": {
-                          "description": "Indicate whether this schedule is paused or not."
+                          "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
                         },
                         "quartz_cron_expression": {
                           "description": "A Cron expression using Quartz syntax that describes the schedule for a job.\nSee [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html)\nfor details. This field is required.\"\n"
@@ -3318,7 +3318,7 @@
                                 "description": "Optional schema to write to. This parameter is only used when a warehouse_id is also provided. If not provided, the `default` schema is used."
                               },
                               "source": {
-                                "description": "Optional location type of the project directory. When set to `WORKSPACE`, the project will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the project will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Project is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Project is located in cloud Git provider.\n"
+                                "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in \u003cDatabricks\u003e workspace.\n* `GIT`: SQL file is located in cloud Git provider.\n"
                               },
                               "warehouse_id": {
                                 "description": "ID of the SQL warehouse to connect to. If provided, we automatically generate and provide the profile and connection details to dbt. It can be overridden on a per-command basis by using the `--profiles-dir` command line argument."
@@ -3463,7 +3463,7 @@
                             "description": "An optional minimal interval in milliseconds between the start of the failed run and the subsequent retry run. The default behavior is that unsuccessful runs are immediately retried."
                           },
                           "new_cluster": {
-                            "description": "If new_cluster, a description of a cluster that is created for only for this task.",
+                            "description": "If new_cluster, a description of a cluster that is created for each task.",
                             "properties": {
                               "apply_policy_default_values": {
                                 "description": ""
@@ -3492,13 +3492,13 @@
                                     "description": "The number of volumes launched for each instance. Users can choose up to 10 volumes.\nThis feature is only enabled for supported node types. Legacy node types cannot specify\ncustom EBS volumes.\nFor node types with no instance store, at least one EBS volume needs to be specified;\notherwise, cluster creation will fail.\n\nThese EBS volumes will be mounted at `/ebs0`, `/ebs1`, and etc.\nInstance store volumes will be mounted at `/local_disk0`, `/local_disk1`, and etc.\n\nIf EBS volumes are attached, Databricks will configure Spark to use only the EBS volumes for\nscratch storage because heterogenously sized scratch devices can lead to inefficient disk\nutilization. If no EBS volumes are attached, Databricks will configure Spark to use instance\nstore volumes.\n\nPlease note that if EBS volumes are specified, then the Spark configuration `spark.local.dir`\nwill be overridden."
                                   },
                                   "ebs_volume_iops": {
-                                    "description": "\u003cneeds content added\u003e"
+                                    "description": "If using gp3 volumes, what IOPS to use for the disk. If this is not set, the maximum performance of a gp2 volume with the same volume size will be used."
                                   },
                                   "ebs_volume_size": {
                                     "description": "The size of each EBS volume (in GiB) launched for each instance. For general purpose\nSSD, this value must be within the range 100 - 4096. For throughput optimized HDD,\nthis value must be within the range 500 - 4096."
                                   },
                                   "ebs_volume_throughput": {
-                                    "description": "\u003cneeds content added\u003e"
+                                    "description": "If using gp3 volumes, what throughput to use for the disk. If this is not set, the maximum performance of a gp2 volume with the same volume size will be used."
                                   },
                                   "ebs_volume_type": {
                                     "description": ""
@@ -3802,7 +3802,7 @@
                                 "description": "The path of the notebook to be run in the Databricks workspace or remote repository.\nFor notebooks stored in the Databricks workspace, the path must be absolute and begin with a slash.\nFor notebooks stored in a remote repository, the path must be relative. This field is required.\n"
                               },
                               "source": {
-                                "description": "Optional location type of the project directory. When set to `WORKSPACE`, the project will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the project will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Project is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Project is located in cloud Git provider.\n"
+                                "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in \u003cDatabricks\u003e workspace.\n* `GIT`: SQL file is located in cloud Git provider.\n"
                               }
                             }
                           },
@@ -3904,7 +3904,7 @@
                                 "description": "The Python file to be executed. Cloud file URIs (such as dbfs:/, s3:/, adls:/, gcs:/) and workspace paths are supported. For python files stored in the Databricks workspace, the path must be absolute and begin with `/`. For files stored in a remote repository, the path must be relative. This field is required."
                               },
                               "source": {
-                                "description": "Optional location type of the project directory. When set to `WORKSPACE`, the project will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the project will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Project is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Project is located in cloud Git provider.\n"
+                                "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in \u003cDatabricks\u003e workspace.\n* `GIT`: SQL file is located in cloud Git provider.\n"
                               }
                             }
                           },
@@ -3982,7 +3982,7 @@
                                     "description": "Path of the SQL file. Must be relative if the source is a remote Git repository and absolute for workspace paths."
                                   },
                                   "source": {
-                                    "description": "Optional location type of the project directory. When set to `WORKSPACE`, the project will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the project will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Project is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Project is located in cloud Git provider.\n"
+                                    "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in \u003cDatabricks\u003e workspace.\n* `GIT`: SQL file is located in cloud Git provider.\n"
                                   }
                                 }
                               },
@@ -4084,7 +4084,7 @@
                           }
                         },
                         "pause_status": {
-                          "description": "Indicate whether this schedule is paused or not."
+                          "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
                         },
                         "table": {
                           "description": "Table trigger settings.",
@@ -4594,13 +4594,13 @@
                                 "description": "The number of volumes launched for each instance. Users can choose up to 10 volumes.\nThis feature is only enabled for supported node types. Legacy node types cannot specify\ncustom EBS volumes.\nFor node types with no instance store, at least one EBS volume needs to be specified;\notherwise, cluster creation will fail.\n\nThese EBS volumes will be mounted at `/ebs0`, `/ebs1`, and etc.\nInstance store volumes will be mounted at `/local_disk0`, `/local_disk1`, and etc.\n\nIf EBS volumes are attached, Databricks will configure Spark to use only the EBS volumes for\nscratch storage because heterogenously sized scratch devices can lead to inefficient disk\nutilization. If no EBS volumes are attached, Databricks will configure Spark to use instance\nstore volumes.\n\nPlease note that if EBS volumes are specified, then the Spark configuration `spark.local.dir`\nwill be overridden."
                               },
                               "ebs_volume_iops": {
-                                "description": "\u003cneeds content added\u003e"
+                                "description": "If using gp3 volumes, what IOPS to use for the disk. If this is not set, the maximum performance of a gp2 volume with the same volume size will be used."
                               },
                               "ebs_volume_size": {
                                 "description": "The size of each EBS volume (in GiB) launched for each instance. For general purpose\nSSD, this value must be within the range 100 - 4096. For throughput optimized HDD,\nthis value must be within the range 500 - 4096."
                               },
                               "ebs_volume_throughput": {
-                                "description": "\u003cneeds content added\u003e"
+                                "description": "If using gp3 volumes, what throughput to use for the disk. If this is not set, the maximum performance of a gp2 volume with the same volume size will be used."
                               },
                               "ebs_volume_type": {
                                 "description": ""

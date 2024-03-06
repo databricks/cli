@@ -182,11 +182,11 @@ func newDelete() *cobra.Command {
 		}
 		deleteReq.ScriptId = args[0]
 
-		err = w.GlobalInitScripts.Delete(ctx, deleteReq)
+		response, err := w.GlobalInitScripts.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -397,11 +397,11 @@ func newUpdate() *cobra.Command {
 			updateReq.Script = args[2]
 		}
 
-		err = w.GlobalInitScripts.Update(ctx, updateReq)
+		response, err := w.GlobalInitScripts.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

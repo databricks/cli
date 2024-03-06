@@ -58,7 +58,7 @@ func newCreate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: output-only field
+	// TODO: any: resources
 
 	cmd.Use = "create"
 	cmd.Short = `Create and deploy an application.`

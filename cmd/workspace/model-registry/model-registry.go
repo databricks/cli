@@ -631,11 +631,11 @@ func newDeleteComment() *cobra.Command {
 
 		deleteCommentReq.Id = args[0]
 
-		err = w.ModelRegistry.DeleteComment(ctx, deleteCommentReq)
+		response, err := w.ModelRegistry.DeleteComment(ctx, deleteCommentReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -695,11 +695,11 @@ func newDeleteModel() *cobra.Command {
 
 		deleteModelReq.Name = args[0]
 
-		err = w.ModelRegistry.DeleteModel(ctx, deleteModelReq)
+		response, err := w.ModelRegistry.DeleteModel(ctx, deleteModelReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -762,11 +762,11 @@ func newDeleteModelTag() *cobra.Command {
 		deleteModelTagReq.Name = args[0]
 		deleteModelTagReq.Key = args[1]
 
-		err = w.ModelRegistry.DeleteModelTag(ctx, deleteModelTagReq)
+		response, err := w.ModelRegistry.DeleteModelTag(ctx, deleteModelTagReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -828,11 +828,11 @@ func newDeleteModelVersion() *cobra.Command {
 		deleteModelVersionReq.Name = args[0]
 		deleteModelVersionReq.Version = args[1]
 
-		err = w.ModelRegistry.DeleteModelVersion(ctx, deleteModelVersionReq)
+		response, err := w.ModelRegistry.DeleteModelVersion(ctx, deleteModelVersionReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -897,11 +897,11 @@ func newDeleteModelVersionTag() *cobra.Command {
 		deleteModelVersionTagReq.Version = args[1]
 		deleteModelVersionTagReq.Key = args[2]
 
-		err = w.ModelRegistry.DeleteModelVersionTag(ctx, deleteModelVersionTagReq)
+		response, err := w.ModelRegistry.DeleteModelVersionTag(ctx, deleteModelVersionTagReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -982,11 +982,11 @@ func newDeleteTransitionRequest() *cobra.Command {
 		}
 		deleteTransitionRequestReq.Creator = args[3]
 
-		err = w.ModelRegistry.DeleteTransitionRequest(ctx, deleteTransitionRequestReq)
+		response, err := w.ModelRegistry.DeleteTransitionRequest(ctx, deleteTransitionRequestReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1045,11 +1045,11 @@ func newDeleteWebhook() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		err = w.ModelRegistry.DeleteWebhook(ctx, deleteWebhookReq)
+		response, err := w.ModelRegistry.DeleteWebhook(ctx, deleteWebhookReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2040,11 +2040,11 @@ func newSetModelTag() *cobra.Command {
 			setModelTagReq.Value = args[2]
 		}
 
-		err = w.ModelRegistry.SetModelTag(ctx, setModelTagReq)
+		response, err := w.ModelRegistry.SetModelTag(ctx, setModelTagReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2138,11 +2138,11 @@ func newSetModelVersionTag() *cobra.Command {
 			setModelVersionTagReq.Value = args[3]
 		}
 
-		err = w.ModelRegistry.SetModelVersionTag(ctx, setModelVersionTagReq)
+		response, err := w.ModelRegistry.SetModelVersionTag(ctx, setModelVersionTagReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2593,11 +2593,11 @@ func newUpdateModel() *cobra.Command {
 			updateModelReq.Name = args[0]
 		}
 
-		err = w.ModelRegistry.UpdateModel(ctx, updateModelReq)
+		response, err := w.ModelRegistry.UpdateModel(ctx, updateModelReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2680,11 +2680,11 @@ func newUpdateModelVersion() *cobra.Command {
 			updateModelVersionReq.Version = args[1]
 		}
 
-		err = w.ModelRegistry.UpdateModelVersion(ctx, updateModelVersionReq)
+		response, err := w.ModelRegistry.UpdateModelVersion(ctx, updateModelVersionReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2844,11 +2844,11 @@ func newUpdateWebhook() *cobra.Command {
 			updateWebhookReq.Id = args[0]
 		}
 
-		err = w.ModelRegistry.UpdateWebhook(ctx, updateWebhookReq)
+		response, err := w.ModelRegistry.UpdateWebhook(ctx, updateWebhookReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

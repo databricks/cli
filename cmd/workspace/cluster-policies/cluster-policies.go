@@ -218,11 +218,11 @@ func newDelete() *cobra.Command {
 			deleteReq.PolicyId = args[0]
 		}
 
-		err = w.ClusterPolicies.Delete(ctx, deleteReq)
+		response, err := w.ClusterPolicies.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -312,11 +312,11 @@ func newEdit() *cobra.Command {
 			editReq.Name = args[1]
 		}
 
-		err = w.ClusterPolicies.Edit(ctx, editReq)
+		response, err := w.ClusterPolicies.Edit(ctx, editReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

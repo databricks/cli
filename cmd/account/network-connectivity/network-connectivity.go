@@ -21,14 +21,7 @@ func New() *cobra.Command {
 		Use:   "network-connectivity",
 		Short: `These APIs provide configurations for the network connectivity of your workspaces for serverless compute resources.`,
 		Long: `These APIs provide configurations for the network connectivity of your
-  workspaces for serverless compute resources. This API provides stable subnets
-  for your workspace so that you can configure your firewalls on your Azure
-  Storage accounts to allow access from Databricks. You can also use the API to
-  provision private endpoints for Databricks to privately connect serverless
-  compute resources to your Azure resources using Azure Private Link. See
-  [configure serverless secure connectivity].
-  
-  [configure serverless secure connectivity]: https://learn.microsoft.com/azure/databricks/security/network/serverless-network-security`,
+  workspaces for serverless compute resources.`,
 		GroupID: "settings",
 		Annotations: map[string]string{
 			"package": "settings",
@@ -64,29 +57,14 @@ func newCreateNetworkConnectivityConfiguration() *cobra.Command {
 	cmd.Use = "create-network-connectivity-configuration NAME REGION"
 	cmd.Short = `Create a network connectivity configuration.`
 	cmd.Long = `Create a network connectivity configuration.
-  
-  Creates a network connectivity configuration (NCC), which provides stable
-  Azure service subnets when accessing your Azure Storage accounts. You can also
-  use a network connectivity configuration to create Databricks-managed private
-  endpoints so that Databricks serverless compute resources privately access
-  your resources.
-  
-  **IMPORTANT**: After you create the network connectivity configuration, you
-  must assign one or more workspaces to the new network connectivity
-  configuration. You can share one network connectivity configuration with
-  multiple workspaces from the same Azure region within the same Databricks
-  account. See [configure serverless secure connectivity].
-  
-  [configure serverless secure connectivity]: https://learn.microsoft.com/azure/databricks/security/network/serverless-network-security
 
   Arguments:
     NAME: The name of the network connectivity configuration. The name can contain
       alphanumeric characters, hyphens, and underscores. The length must be
       between 3 and 30 characters. The name must match the regular expression
       ^[0-9a-zA-Z-_]{3,30}$.
-    REGION: The Azure region for this network connectivity configuration. Only
-      workspaces in the same Azure region can be attached to this network
-      connectivity configuration.`
+    REGION: The region for the network connectivity configuration. Only workspaces in
+      the same region can be attached to the network connectivity configuration.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -285,11 +263,11 @@ func newDeleteNetworkConnectivityConfiguration() *cobra.Command {
 
 		deleteNetworkConnectivityConfigurationReq.NetworkConnectivityConfigId = args[0]
 
-		err = a.NetworkConnectivity.DeleteNetworkConnectivityConfiguration(ctx, deleteNetworkConnectivityConfigurationReq)
+		response, err := a.NetworkConnectivity.DeleteNetworkConnectivityConfiguration(ctx, deleteNetworkConnectivityConfigurationReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

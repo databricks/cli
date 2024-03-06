@@ -186,11 +186,11 @@ func newDelete() *cobra.Command {
 
 		deleteReq.Name = args[0]
 
-		err = w.ExternalLocations.Delete(ctx, deleteReq)
+		response, err := w.ExternalLocations.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

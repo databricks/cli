@@ -157,11 +157,11 @@ func newDelete() *cobra.Command {
 		}
 		deleteReq.SecretId = args[1]
 
-		err = a.ServicePrincipalSecrets.Delete(ctx, deleteReq)
+		response, err := a.ServicePrincipalSecrets.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

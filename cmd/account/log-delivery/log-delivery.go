@@ -394,11 +394,11 @@ func newPatchStatus() *cobra.Command {
 			}
 		}
 
-		err = a.LogDelivery.PatchStatus(ctx, patchStatusReq)
+		response, err := a.LogDelivery.PatchStatus(ctx, patchStatusReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

@@ -266,11 +266,11 @@ func newDeleteExperiment() *cobra.Command {
 			deleteExperimentReq.ExperimentId = args[0]
 		}
 
-		err = w.Experiments.DeleteExperiment(ctx, deleteExperimentReq)
+		response, err := w.Experiments.DeleteExperiment(ctx, deleteExperimentReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -347,11 +347,11 @@ func newDeleteRun() *cobra.Command {
 			deleteRunReq.RunId = args[0]
 		}
 
-		err = w.Experiments.DeleteRun(ctx, deleteRunReq)
+		response, err := w.Experiments.DeleteRun(ctx, deleteRunReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -528,11 +528,11 @@ func newDeleteTag() *cobra.Command {
 			deleteTagReq.Key = args[1]
 		}
 
-		err = w.Experiments.DeleteTag(ctx, deleteTagReq)
+		response, err := w.Experiments.DeleteTag(ctx, deleteTagReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1161,11 +1161,11 @@ func newLogBatch() *cobra.Command {
 			}
 		}
 
-		err = w.Experiments.LogBatch(ctx, logBatchReq)
+		response, err := w.Experiments.LogBatch(ctx, logBatchReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1233,11 +1233,11 @@ func newLogInputs() *cobra.Command {
 			}
 		}
 
-		err = w.Experiments.LogInputs(ctx, logInputsReq)
+		response, err := w.Experiments.LogInputs(ctx, logInputsReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1334,11 +1334,11 @@ func newLogMetric() *cobra.Command {
 			}
 		}
 
-		err = w.Experiments.LogMetric(ctx, logMetricReq)
+		response, err := w.Experiments.LogMetric(ctx, logMetricReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1406,11 +1406,11 @@ func newLogModel() *cobra.Command {
 			}
 		}
 
-		err = w.Experiments.LogModel(ctx, logModelReq)
+		response, err := w.Experiments.LogModel(ctx, logModelReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1497,11 +1497,11 @@ func newLogParam() *cobra.Command {
 			logParamReq.Value = args[1]
 		}
 
-		err = w.Experiments.LogParam(ctx, logParamReq)
+		response, err := w.Experiments.LogParam(ctx, logParamReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1583,11 +1583,11 @@ func newRestoreExperiment() *cobra.Command {
 			restoreExperimentReq.ExperimentId = args[0]
 		}
 
-		err = w.Experiments.RestoreExperiment(ctx, restoreExperimentReq)
+		response, err := w.Experiments.RestoreExperiment(ctx, restoreExperimentReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1664,11 +1664,11 @@ func newRestoreRun() *cobra.Command {
 			restoreRunReq.RunId = args[0]
 		}
 
-		err = w.Experiments.RestoreRun(ctx, restoreRunReq)
+		response, err := w.Experiments.RestoreRun(ctx, restoreRunReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1996,11 +1996,11 @@ func newSetExperimentTag() *cobra.Command {
 			setExperimentTagReq.Value = args[2]
 		}
 
-		err = w.Experiments.SetExperimentTag(ctx, setExperimentTagReq)
+		response, err := w.Experiments.SetExperimentTag(ctx, setExperimentTagReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2163,11 +2163,11 @@ func newSetTag() *cobra.Command {
 			setTagReq.Value = args[1]
 		}
 
-		err = w.Experiments.SetTag(ctx, setTagReq)
+		response, err := w.Experiments.SetTag(ctx, setTagReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -2246,11 +2246,11 @@ func newUpdateExperiment() *cobra.Command {
 			updateExperimentReq.ExperimentId = args[0]
 		}
 
-		err = w.Experiments.UpdateExperiment(ctx, updateExperimentReq)
+		response, err := w.Experiments.UpdateExperiment(ctx, updateExperimentReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

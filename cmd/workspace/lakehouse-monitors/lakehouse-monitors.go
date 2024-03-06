@@ -95,11 +95,11 @@ func newCancelRefresh() *cobra.Command {
 		cancelRefreshReq.FullName = args[0]
 		cancelRefreshReq.RefreshId = args[1]
 
-		err = w.LakehouseMonitors.CancelRefresh(ctx, cancelRefreshReq)
+		response, err := w.LakehouseMonitors.CancelRefresh(ctx, cancelRefreshReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -280,11 +280,11 @@ func newDelete() *cobra.Command {
 
 		deleteReq.FullName = args[0]
 
-		err = w.LakehouseMonitors.Delete(ctx, deleteReq)
+		response, err := w.LakehouseMonitors.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

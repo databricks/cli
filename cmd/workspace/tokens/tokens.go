@@ -184,11 +184,11 @@ func newDelete() *cobra.Command {
 			deleteReq.TokenId = args[0]
 		}
 
-		err = w.Tokens.Delete(ctx, deleteReq)
+		response, err := w.Tokens.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

@@ -195,11 +195,11 @@ func newDelete() *cobra.Command {
 		}
 		deleteReq.Id = args[0]
 
-		err = w.Warehouses.Delete(ctx, deleteReq)
+		response, err := w.Warehouses.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -303,7 +303,7 @@ func newEdit() *cobra.Command {
 			return err
 		}
 		if editSkipWait {
-			return nil
+			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *sql.GetWarehouseResponse) {
@@ -824,11 +824,11 @@ func newSetWorkspaceWarehouseConfig() *cobra.Command {
 			}
 		}
 
-		err = w.Warehouses.SetWorkspaceWarehouseConfig(ctx, setWorkspaceWarehouseConfigReq)
+		response, err := w.Warehouses.SetWorkspaceWarehouseConfig(ctx, setWorkspaceWarehouseConfigReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -910,7 +910,7 @@ func newStart() *cobra.Command {
 			return err
 		}
 		if startSkipWait {
-			return nil
+			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *sql.GetWarehouseResponse) {
@@ -1010,7 +1010,7 @@ func newStop() *cobra.Command {
 			return err
 		}
 		if stopSkipWait {
-			return nil
+			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *sql.GetWarehouseResponse) {

@@ -161,11 +161,11 @@ func newDelete() *cobra.Command {
 		}
 		deleteReq.QueryId = args[0]
 
-		err = w.Queries.Delete(ctx, deleteReq)
+		response, err := w.Queries.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -374,11 +374,11 @@ func newRestore() *cobra.Command {
 		}
 		restoreReq.QueryId = args[0]
 
-		err = w.Queries.Restore(ctx, restoreReq)
+		response, err := w.Queries.Restore(ctx, restoreReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

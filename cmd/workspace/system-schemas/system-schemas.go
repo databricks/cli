@@ -81,11 +81,11 @@ func newDisable() *cobra.Command {
 			return fmt.Errorf("invalid SCHEMA_NAME: %s", args[1])
 		}
 
-		err = w.SystemSchemas.Disable(ctx, disableReq)
+		response, err := w.SystemSchemas.Disable(ctx, disableReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -151,11 +151,11 @@ func newEnable() *cobra.Command {
 			return fmt.Errorf("invalid SCHEMA_NAME: %s", args[1])
 		}
 
-		err = w.SystemSchemas.Enable(ctx, enableReq)
+		response, err := w.SystemSchemas.Enable(ctx, enableReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

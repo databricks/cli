@@ -170,11 +170,11 @@ func newDelete() *cobra.Command {
 		}
 		deleteReq.CredentialsId = args[0]
 
-		err = a.Credentials.Delete(ctx, deleteReq)
+		response, err := a.Credentials.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

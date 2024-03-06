@@ -216,11 +216,11 @@ func newDelete() *cobra.Command {
 		}
 		deleteReq.IpAccessListId = args[0]
 
-		err = w.IpAccessLists.Delete(ctx, deleteReq)
+		response, err := w.IpAccessLists.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -452,11 +452,11 @@ func newReplace() *cobra.Command {
 			}
 		}
 
-		err = w.IpAccessLists.Replace(ctx, replaceReq)
+		response, err := w.IpAccessLists.Replace(ctx, replaceReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -556,11 +556,11 @@ func newUpdate() *cobra.Command {
 		}
 		updateReq.IpAccessListId = args[0]
 
-		err = w.IpAccessLists.Update(ctx, updateReq)
+		response, err := w.IpAccessLists.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

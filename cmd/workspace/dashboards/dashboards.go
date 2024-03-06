@@ -152,11 +152,11 @@ func newDelete() *cobra.Command {
 		}
 		deleteReq.DashboardId = args[0]
 
-		err = w.Dashboards.Delete(ctx, deleteReq)
+		response, err := w.Dashboards.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -363,11 +363,11 @@ func newRestore() *cobra.Command {
 		}
 		restoreReq.DashboardId = args[0]
 
-		err = w.Dashboards.Restore(ctx, restoreReq)
+		response, err := w.Dashboards.Restore(ctx, restoreReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

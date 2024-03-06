@@ -178,11 +178,11 @@ func newDelete() *cobra.Command {
 		}
 		deleteReq.Id = args[0]
 
-		err = a.Users.Delete(ctx, deleteReq)
+		response, err := a.Users.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -414,11 +414,11 @@ func newPatch() *cobra.Command {
 		}
 		patchReq.Id = args[0]
 
-		err = a.Users.Patch(ctx, patchReq)
+		response, err := a.Users.Patch(ctx, patchReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -511,11 +511,11 @@ func newUpdate() *cobra.Command {
 		}
 		updateReq.Id = args[0]
 
-		err = a.Users.Update(ctx, updateReq)
+		response, err := a.Users.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

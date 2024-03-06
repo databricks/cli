@@ -6,16 +6,20 @@ import (
 	alerts "github.com/databricks/cli/cmd/workspace/alerts"
 	apps "github.com/databricks/cli/cmd/workspace/apps"
 	artifact_allowlists "github.com/databricks/cli/cmd/workspace/artifact-allowlists"
+	automatic_cluster_update "github.com/databricks/cli/cmd/workspace/automatic-cluster-update"
 	catalogs "github.com/databricks/cli/cmd/workspace/catalogs"
 	clean_rooms "github.com/databricks/cli/cmd/workspace/clean-rooms"
 	cluster_policies "github.com/databricks/cli/cmd/workspace/cluster-policies"
 	clusters "github.com/databricks/cli/cmd/workspace/clusters"
 	connections "github.com/databricks/cli/cmd/workspace/connections"
 	credentials_manager "github.com/databricks/cli/cmd/workspace/credentials-manager"
+	csp_enablement "github.com/databricks/cli/cmd/workspace/csp-enablement"
 	current_user "github.com/databricks/cli/cmd/workspace/current-user"
 	dashboard_widgets "github.com/databricks/cli/cmd/workspace/dashboard-widgets"
 	dashboards "github.com/databricks/cli/cmd/workspace/dashboards"
 	data_sources "github.com/databricks/cli/cmd/workspace/data-sources"
+	default_namespace "github.com/databricks/cli/cmd/workspace/default-namespace"
+	esm_enablement "github.com/databricks/cli/cmd/workspace/esm-enablement"
 	experiments "github.com/databricks/cli/cmd/workspace/experiments"
 	external_locations "github.com/databricks/cli/cmd/workspace/external-locations"
 	functions "github.com/databricks/cli/cmd/workspace/functions"
@@ -34,6 +38,7 @@ import (
 	model_registry "github.com/databricks/cli/cmd/workspace/model-registry"
 	model_versions "github.com/databricks/cli/cmd/workspace/model-versions"
 	online_tables "github.com/databricks/cli/cmd/workspace/online-tables"
+	permission_migration "github.com/databricks/cli/cmd/workspace/permission-migration"
 	permissions "github.com/databricks/cli/cmd/workspace/permissions"
 	pipelines "github.com/databricks/cli/cmd/workspace/pipelines"
 	policy_families "github.com/databricks/cli/cmd/workspace/policy-families"
@@ -45,6 +50,7 @@ import (
 	recipients "github.com/databricks/cli/cmd/workspace/recipients"
 	registered_models "github.com/databricks/cli/cmd/workspace/registered-models"
 	repos "github.com/databricks/cli/cmd/workspace/repos"
+	restrict_workspace_admins "github.com/databricks/cli/cmd/workspace/restrict-workspace-admins"
 	schemas "github.com/databricks/cli/cmd/workspace/schemas"
 	secrets "github.com/databricks/cli/cmd/workspace/secrets"
 	service_principals "github.com/databricks/cli/cmd/workspace/service-principals"
@@ -74,6 +80,8 @@ func All() []*cobra.Command {
 	out = append(out, alerts.New())
 	out = append(out, apps.New())
 	out = append(out, artifact_allowlists.New())
+	out = append(out, automatic_cluster_update.New())
+	out = append(out, csp_enablement.New())
 	out = append(out, catalogs.New())
 	out = append(out, clean_rooms.New())
 	out = append(out, cluster_policies.New())
@@ -84,6 +92,8 @@ func All() []*cobra.Command {
 	out = append(out, dashboard_widgets.New())
 	out = append(out, dashboards.New())
 	out = append(out, data_sources.New())
+	out = append(out, default_namespace.New())
+	out = append(out, esm_enablement.New())
 	out = append(out, experiments.New())
 	out = append(out, external_locations.New())
 	out = append(out, functions.New())
@@ -102,6 +112,7 @@ func All() []*cobra.Command {
 	out = append(out, model_registry.New())
 	out = append(out, model_versions.New())
 	out = append(out, online_tables.New())
+	out = append(out, permission_migration.New())
 	out = append(out, permissions.New())
 	out = append(out, pipelines.New())
 	out = append(out, policy_families.New())
@@ -113,6 +124,7 @@ func All() []*cobra.Command {
 	out = append(out, recipients.New())
 	out = append(out, registered_models.New())
 	out = append(out, repos.New())
+	out = append(out, restrict_workspace_admins.New())
 	out = append(out, schemas.New())
 	out = append(out, secrets.New())
 	out = append(out, service_principals.New())

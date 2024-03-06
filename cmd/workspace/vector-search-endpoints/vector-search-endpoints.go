@@ -164,18 +164,17 @@ func newDeleteEndpoint() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Use = "delete-endpoint ENDPOINT_NAME NAME"
+	cmd.Use = "delete-endpoint ENDPOINT_NAME"
 	cmd.Short = `Delete an endpoint.`
 	cmd.Long = `Delete an endpoint.
 
   Arguments:
-    ENDPOINT_NAME: Name of the endpoint
-    NAME: Name of the endpoint to delete`
+    ENDPOINT_NAME: Name of the endpoint`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
+		check := cobra.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -185,13 +184,12 @@ func newDeleteEndpoint() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		deleteEndpointReq.EndpointName = args[0]
-		deleteEndpointReq.Name = args[1]
 
-		err = w.VectorSearchEndpoints.DeleteEndpoint(ctx, deleteEndpointReq)
+		response, err := w.VectorSearchEndpoints.DeleteEndpoint(ctx, deleteEndpointReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

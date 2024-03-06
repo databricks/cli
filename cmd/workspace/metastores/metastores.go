@@ -114,11 +114,11 @@ func newAssign() *cobra.Command {
 			assignReq.DefaultCatalogName = args[2]
 		}
 
-		err = w.Metastores.Assign(ctx, assignReq)
+		response, err := w.Metastores.Assign(ctx, assignReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -328,11 +328,11 @@ func newDelete() *cobra.Command {
 		}
 		deleteReq.Id = args[0]
 
-		err = w.Metastores.Delete(ctx, deleteReq)
+		response, err := w.Metastores.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -570,11 +570,11 @@ func newUnassign() *cobra.Command {
 		}
 		unassignReq.MetastoreId = args[1]
 
-		err = w.Metastores.Unassign(ctx, unassignReq)
+		response, err := w.Metastores.Unassign(ctx, unassignReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -757,11 +757,11 @@ func newUpdateAssignment() *cobra.Command {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
 
-		err = w.Metastores.UpdateAssignment(ctx, updateAssignmentReq)
+		response, err := w.Metastores.UpdateAssignment(ctx, updateAssignmentReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

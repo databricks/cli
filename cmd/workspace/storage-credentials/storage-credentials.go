@@ -191,11 +191,11 @@ func newDelete() *cobra.Command {
 		}
 		deleteReq.Name = args[0]
 
-		err = w.StorageCredentials.Delete(ctx, deleteReq)
+		response, err := w.StorageCredentials.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -479,7 +479,7 @@ func newValidate() *cobra.Command {
 	// TODO: output-only field
 	cmd.Flags().StringVar(&validateReq.ExternalLocationName, "external-location-name", validateReq.ExternalLocationName, `The name of an existing external location to validate.`)
 	cmd.Flags().BoolVar(&validateReq.ReadOnly, "read-only", validateReq.ReadOnly, `Whether the storage credential is only usable for read operations.`)
-	// TODO: any: storage_credential_name
+	cmd.Flags().StringVar(&validateReq.StorageCredentialName, "storage-credential-name", validateReq.StorageCredentialName, `The name of the storage credential to validate.`)
 	cmd.Flags().StringVar(&validateReq.Url, "url", validateReq.Url, `The external location url to validate.`)
 
 	cmd.Use = "validate"

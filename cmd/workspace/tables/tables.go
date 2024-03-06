@@ -98,11 +98,11 @@ func newDelete() *cobra.Command {
 		}
 		deleteReq.FullName = args[0]
 
-		err = w.Tables.Delete(ctx, deleteReq)
+		response, err := w.Tables.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -520,11 +520,11 @@ func newUpdate() *cobra.Command {
 		}
 		updateReq.FullName = args[0]
 
-		err = w.Tables.Update(ctx, updateReq)
+		response, err := w.Tables.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

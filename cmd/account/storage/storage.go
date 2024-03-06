@@ -166,11 +166,11 @@ func newDelete() *cobra.Command {
 		}
 		deleteReq.StorageConfigurationId = args[0]
 
-		err = a.Storage.Delete(ctx, deleteReq)
+		response, err := a.Storage.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

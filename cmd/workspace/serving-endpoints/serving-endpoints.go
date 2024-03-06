@@ -238,11 +238,11 @@ func newDelete() *cobra.Command {
 
 		deleteReq.Name = args[0]
 
-		err = w.ServingEndpoints.Delete(ctx, deleteReq)
+		response, err := w.ServingEndpoints.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -304,11 +304,11 @@ func newExportMetrics() *cobra.Command {
 
 		exportMetricsReq.Name = args[0]
 
-		err = w.ServingEndpoints.ExportMetrics(ctx, exportMetricsReq)
+		response, err := w.ServingEndpoints.ExportMetrics(ctx, exportMetricsReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

@@ -190,11 +190,11 @@ func newDelete() *cobra.Command {
 			return fmt.Errorf("invalid REPO_ID: %s", args[0])
 		}
 
-		err = w.Repos.Delete(ctx, deleteReq)
+		response, err := w.Repos.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -661,11 +661,11 @@ func newUpdate() *cobra.Command {
 			return fmt.Errorf("invalid REPO_ID: %s", args[0])
 		}
 
-		err = w.Repos.Update(ctx, updateReq)
+		response, err := w.Repos.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

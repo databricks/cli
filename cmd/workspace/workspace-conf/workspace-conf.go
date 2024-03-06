@@ -137,11 +137,11 @@ func newSetStatus() *cobra.Command {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		err = w.WorkspaceConf.SetStatus(ctx, setStatusReq)
+		response, err := w.WorkspaceConf.SetStatus(ctx, setStatusReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

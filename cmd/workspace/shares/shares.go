@@ -164,11 +164,11 @@ func newDelete() *cobra.Command {
 
 		deleteReq.Name = args[0]
 
-		err = w.Shares.Delete(ctx, deleteReq)
+		response, err := w.Shares.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -511,11 +511,11 @@ func newUpdatePermissions() *cobra.Command {
 		}
 		updatePermissionsReq.Name = args[0]
 
-		err = w.Shares.UpdatePermissions(ctx, updatePermissionsReq)
+		response, err := w.Shares.UpdatePermissions(ctx, updatePermissionsReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
