@@ -42,5 +42,5 @@ func TestAllResourceTypesAreClassifiedForRunAs(t *testing.T) {
 	// Assert the total list of resource supported, as a sanity check that using
 	// the dyn library gives us the correct list of all resources supported. Please
 	// also update this check when adding a new resource
-	assert.Equal(t, resourceTypes, []string{"jobs", "pipelines", "models", "experiments", "model_serving_endpoints", "registered_models"})
+	assert.Equal(t, []string{"experiments", "jobs", "model_serving_endpoints", "models", "pipelines", "registered_models"}, resourceTypes)
 }
