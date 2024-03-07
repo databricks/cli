@@ -45,10 +45,6 @@ type visitOptions struct {
 	// If this function returns an error, the original visit function call
 	// returns this error and the value is left unmodified.
 	fn func(Path, Value) (Value, error)
-
-	// If set, tolerate the absence of the last component in the path.
-	// This option is needed to set a key in a map that is not yet present.
-	allowMissingKeyInMap bool
 }
 
 func visit(v Value, prefix, suffix Path, opts visitOptions) (Value, error) {
@@ -76,7 +72,7 @@ func visit(v Value, prefix, suffix Path, opts visitOptions) (Value, error) {
 
 		// Lookup current value in the map.
 		ev, ok := m[component.key]
-		if !ok && !opts.allowMissingKeyInMap {
+		if !ok {
 			return InvalidValue, noSuchKeyError{prefix}
 		}
 
