@@ -1,0 +1,17 @@
+bundle:
+  name: "run_as"
+
+# This is not allowed because both service_principal_name and user_name are set
+run_as:
+  service_principal_name: "my_service_principal"
+  user_name: "my_user_name"
+
+resources:
+  jobs:
+    job_one:
+      name: Job One
+
+      tasks:
+        - task_key: "task_one"
+          notebook_task:
+            notebook_path: "./test.py"

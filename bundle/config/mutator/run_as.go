@@ -16,8 +16,9 @@ type setRunAs struct {
 
 // This mutator does two things:
 //  1. It sets the run_as field for jobs to the value of the run_as field in the bundle.
-//  2. Validates only supported resource types are defined in the bundle when the run_as
-//     identity is different from the current deployment user.
+//  2. Validates the types of resources used in the bundle. Not all Databricks resource
+//     types are supported when the current deployment identity is different from
+//     the bundle's run_as identity.
 func SetRunAs() bundle.Mutator {
 	return &setRunAs{}
 }
@@ -25,12 +26,6 @@ func SetRunAs() bundle.Mutator {
 func (m *setRunAs) Name() string {
 	return "SetRunAs"
 }
-
-// TODO: Make sure the error message includes line numbers and file path for
-// where the faulty resource is located.
-
-// TODO: Add a test that does not allow adding a new resource type without being deliberate
-// about whether it belongs to allow list or deny list.
 
 // Resources that satisfy one of the following conditions:
 //  1. Allow to set run_as for the resources to a different user from the current
@@ -44,8 +39,8 @@ var allowListForRunAsOther = []string{"jobs", "models", "registered_models", "ex
 // have plans to add platform side support for `run_as` for these resources at
 // some point in the future. For example, pipelines, model serving endpoints or lakeview dashboards.
 //
-// We expect the allow list and the deny list to form a closure of all resource types
-// supported by DABs.
+// We expect the allow list and the deny list to form mutually exclusive and exhaustive
+// sets of all resource types that are supported by DABs.
 var denyListForRunAsOther = []string{"pipelines", "model_serving_endpoints"}
 
 type errorUnsupportedResourceTypeForRunAs struct {
@@ -57,9 +52,10 @@ type errorUnsupportedResourceTypeForRunAs struct {
 
 // TODO(6 March 2024): This error message is big. We should split this once
 // diag.Diagnostics is ready.
-// TODO: Does this required any updates to the default template? Probably no.
+// TODO(6 March 2024): Link the docs page describing run_as semantics here once
+// the page is ready.
 func (e errorUnsupportedResourceTypeForRunAs) Error() string {
-	return fmt.Sprintf("%s are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. List of supported resources: [%s]. Location of unsupported resource: %s. Current identity: %s. Run as identity: %s", e.resourceType, strings.Join(allowListForRunAsOther, ", "), e.resourceValue.Location(), e.currentUser, e.runAsUser)
+	return fmt.Sprintf("%s are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. List of supported resources: [%s]. Location of the unsupported resource: %s. Current identity: %s. Run as identity: %s", e.resourceType, strings.Join(allowListForRunAsOther, ", "), e.resourceValue.Location(), e.currentUser, e.runAsUser)
 }
 
 func getRunAsIdentity(runAs dyn.Value) (string, error) {
@@ -73,14 +69,16 @@ func getRunAsIdentity(runAs dyn.Value) (string, error) {
 		return "", err
 	}
 
+	sp, spIsDefined := runAsSp.AsString()
+	user, userIsDefined := runAsUser.AsString()
+
 	switch {
-	case runAsSp != dyn.InvalidValue && runAsUser != dyn.InvalidValue:
-		// TODO: test this case.
-		return "", fmt.Errorf("run_as section must specify exactly one identity. Both service_principal_name (%s) and user_name are defined (%s)", runAsSp.Location(), runAsUser.Location())
-	case runAsSp != dyn.InvalidValue:
-		return runAsSp.MustString(), nil
-	case runAsUser != dyn.InvalidValue:
-		return runAsUser.MustString(), nil
+	case spIsDefined && userIsDefined:
+		return "", fmt.Errorf("run_as section must specify exactly one identity. A service_principal_name %q is specified at %s. A user_name %s is defined at %s", sp, runAsSp.Location(), user, runAsUser.Location())
+	case spIsDefined:
+		return sp, nil
+	case userIsDefined:
+		return user, nil
 	default:
 		return "", nil
 	}
@@ -95,7 +93,7 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) error {
 
 	currentUser := b.Config.Workspace.CurrentUser.UserName
 
-	// Assert the run_as configuration is valid
+	// Assert the run_as configuration is valid in the context of the bundle
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		// Get run_as from the bundle
 		runAs, err := dyn.Get(v, "run_as")
@@ -126,6 +124,7 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) error {
 
 		r := rv.MustMap()
 		for k, v := range r {
+			// If the resource type is not in the allow list, return an error
 			if !slices.Contains(allowListForRunAsOther, k) {
 				return dyn.InvalidValue, errorUnsupportedResourceTypeForRunAs{
 					resourceType:  k,

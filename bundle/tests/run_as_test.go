@@ -107,7 +107,7 @@ func TestRunAsErrorForPipelines(t *testing.T) {
 	})
 
 	err := bundle.Apply(ctx, b, mutator.SetRunAs())
-	assert.EqualError(t, err, "pipelines are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. List of supported resources: [jobs, models, registered_models, experiments]. Location of unsupported resource: run_as/not_allowed/pipelines/databricks.yml:14:5. Current identity: jane@doe.com. Run as identity: my_service_principal")
+	assert.EqualError(t, err, "pipelines are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. List of supported resources: [jobs, models, registered_models, experiments]. Location of the unsupported resource: run_as/not_allowed/pipelines/databricks.yml:14:5. Current identity: jane@doe.com. Run as identity: my_service_principal")
 }
 
 func TestRunAsNoErrorForPipelines(t *testing.T) {
@@ -143,7 +143,7 @@ func TestRunAsErrorForModelServing(t *testing.T) {
 	})
 
 	err := bundle.Apply(ctx, b, mutator.SetRunAs())
-	assert.EqualError(t, err, "model_serving_endpoints are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. List of supported resources: [jobs, models, registered_models, experiments]. Location of unsupported resource: run_as/not_allowed/model_serving/databricks.yml:14:5. Current identity: jane@doe.com. Run as identity: my_service_principal")
+	assert.EqualError(t, err, "model_serving_endpoints are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. List of supported resources: [jobs, models, registered_models, experiments]. Location of the unsupported resource: run_as/not_allowed/model_serving/databricks.yml:14:5. Current identity: jane@doe.com. Run as identity: my_service_principal")
 }
 
 func TestRunAsNoErrorForModelServingEndpoints(t *testing.T) {
@@ -163,4 +163,21 @@ func TestRunAsNoErrorForModelServingEndpoints(t *testing.T) {
 
 	err := bundle.Apply(ctx, b, mutator.SetRunAs())
 	assert.NoError(t, err)
+}
+
+func TestRunAsErrorWhenBothUserAndSpSpecified(t *testing.T) {
+	b := load(t, "./run_as/not_allowed/both_sp_and_user")
+
+	ctx := context.Background()
+	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) error {
+		b.Config.Workspace.CurrentUser = &config.User{
+			User: &iam.User{
+				UserName: "my_service_principal",
+			},
+		}
+		return nil
+	})
+
+	err := bundle.Apply(ctx, b, mutator.SetRunAs())
+	assert.EqualError(t, err, "run_as section must specify exactly one identity. A service_principal_name \"my_service_principal\" is specified at run_as/not_allowed/both_sp_and_user/databricks.yml:6:27. A user_name my_user_name is defined at run_as/not_allowed/both_sp_and_user/databricks.yml:7:14")
 }
