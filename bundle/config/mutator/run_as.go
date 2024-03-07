@@ -32,7 +32,7 @@ func (m *setRunAs) Name() string {
 //     deployment user. For example, jobs.
 //  2. Does not make sense for these resources to run_as a different user. We do not
 //     have plans to add platform side support for `run_as` for these resources.
-//     For example, experiments or model serving endpoints.
+//     For example, experiments or registered models.
 var allowListForRunAsOther = []string{"jobs", "models", "registered_models", "experiments"}
 
 // Resources that do not allow setting a run_as identity to a different user but
@@ -52,8 +52,8 @@ type errorUnsupportedResourceTypeForRunAs struct {
 
 // TODO(6 March 2024): This error message is big. We should split this once
 // diag.Diagnostics is ready.
-// TODO(6 March 2024): Link the docs page describing run_as semantics here once
-// the page is ready.
+// TODO(6 March 2024): Link the docs page describing run_as semantics in the error below
+// once the page is ready.
 func (e errorUnsupportedResourceTypeForRunAs) Error() string {
 	return fmt.Sprintf("%s are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. List of supported resources: [%s]. Location of the unsupported resource: %s. Current identity: %s. Run as identity: %s", e.resourceType, strings.Join(allowListForRunAsOther, ", "), e.resourceValue.Location(), e.currentUser, e.runAsUser)
 }
@@ -74,7 +74,7 @@ func getRunAsIdentity(runAs dyn.Value) (string, error) {
 
 	switch {
 	case spIsDefined && userIsDefined:
-		return "", fmt.Errorf("run_as section must specify exactly one identity. A service_principal_name %q is specified at %s. A user_name %s is defined at %s", sp, runAsSp.Location(), user, runAsUser.Location())
+		return "", fmt.Errorf("run_as section must specify exactly one identity. A service_principal_name %q is specified at %s. A user_name %q is defined at %s", sp, runAsSp.Location(), user, runAsUser.Location())
 	case spIsDefined:
 		return sp, nil
 	case userIsDefined:

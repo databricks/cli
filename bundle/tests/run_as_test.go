@@ -179,5 +179,5 @@ func TestRunAsErrorWhenBothUserAndSpSpecified(t *testing.T) {
 	})
 
 	err := bundle.Apply(ctx, b, mutator.SetRunAs())
-	assert.EqualError(t, err, "run_as section must specify exactly one identity. A service_principal_name \"my_service_principal\" is specified at run_as/not_allowed/both_sp_and_user/databricks.yml:6:27. A user_name my_user_name is defined at run_as/not_allowed/both_sp_and_user/databricks.yml:7:14")
+	assert.EqualError(t, err, "run_as section must specify exactly one identity. A service_principal_name \"my_service_principal\" is specified at run_as/not_allowed/both_sp_and_user/databricks.yml:6:27. A user_name \"my_user_name\" is defined at run_as/not_allowed/both_sp_and_user/databricks.yml:7:14")
 }
