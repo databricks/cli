@@ -7,12 +7,14 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRunAsDefault(t *testing.T) {
-	b := load(t, "./run_as")
+func TestRunAsForAllowed(t *testing.T) {
+	b := load(t, "./run_as/allowed")
 
 	ctx := context.Background()
 	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) error {
@@ -30,6 +32,7 @@ func TestRunAsDefault(t *testing.T) {
 	assert.Len(t, b.Config.Resources.Jobs, 3)
 	jobs := b.Config.Resources.Jobs
 
+	// job_one and job_two should have the same run_as identity as the bundle.
 	assert.NotNil(t, jobs["job_one"].RunAs)
 	assert.Equal(t, "my_service_principal", jobs["job_one"].RunAs.ServicePrincipalName)
 	assert.Equal(t, "", jobs["job_one"].RunAs.UserName)
@@ -38,21 +41,19 @@ func TestRunAsDefault(t *testing.T) {
 	assert.Equal(t, "my_service_principal", jobs["job_two"].RunAs.ServicePrincipalName)
 	assert.Equal(t, "", jobs["job_two"].RunAs.UserName)
 
+	// job_three should retain the job level run_as identity.
 	assert.NotNil(t, jobs["job_three"].RunAs)
 	assert.Equal(t, "my_service_principal_for_job", jobs["job_three"].RunAs.ServicePrincipalName)
 	assert.Equal(t, "", jobs["job_three"].RunAs.UserName)
 
-	pipelines := b.Config.Resources.Pipelines
-	assert.Len(t, pipelines["nyc_taxi_pipeline"].Permissions, 2)
-	assert.Equal(t, "CAN_VIEW", pipelines["nyc_taxi_pipeline"].Permissions[0].Level)
-	assert.Equal(t, "my_user_name", pipelines["nyc_taxi_pipeline"].Permissions[0].UserName)
-
-	assert.Equal(t, "IS_OWNER", pipelines["nyc_taxi_pipeline"].Permissions[1].Level)
-	assert.Equal(t, "my_service_principal", pipelines["nyc_taxi_pipeline"].Permissions[1].ServicePrincipalName)
+	// Assert other resources are not affected.
+	assert.Equal(t, ml.Model{Name: "skynet"}, *b.Config.Resources.Models["model_one"].Model)
+	assert.Equal(t, catalog.CreateRegisteredModelRequest{Name: "skynet (in UC)"}, *b.Config.Resources.RegisteredModels["model_two"].CreateRegisteredModelRequest)
+	assert.Equal(t, ml.Experiment{Name: "experiment_one"}, *b.Config.Resources.Experiments["experiment_one"].Experiment)
 }
 
-func TestRunAsDevelopment(t *testing.T) {
-	b := loadTarget(t, "./run_as", "development")
+func TestRunAsForAllowedWithTargetOverride(t *testing.T) {
+	b := loadTarget(t, "./run_as/allowed", "development")
 
 	ctx := context.Background()
 	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) error {
@@ -70,6 +71,8 @@ func TestRunAsDevelopment(t *testing.T) {
 	assert.Len(t, b.Config.Resources.Jobs, 3)
 	jobs := b.Config.Resources.Jobs
 
+	// job_one and job_two should have the same run_as identity as the bundle's
+	// development target.
 	assert.NotNil(t, jobs["job_one"].RunAs)
 	assert.Equal(t, "", jobs["job_one"].RunAs.ServicePrincipalName)
 	assert.Equal(t, "my_user_name", jobs["job_one"].RunAs.UserName)
@@ -78,15 +81,86 @@ func TestRunAsDevelopment(t *testing.T) {
 	assert.Equal(t, "", jobs["job_two"].RunAs.ServicePrincipalName)
 	assert.Equal(t, "my_user_name", jobs["job_two"].RunAs.UserName)
 
+	// job_three should retain the job level run_as identity.
 	assert.NotNil(t, jobs["job_three"].RunAs)
 	assert.Equal(t, "my_service_principal_for_job", jobs["job_three"].RunAs.ServicePrincipalName)
 	assert.Equal(t, "", jobs["job_three"].RunAs.UserName)
 
-	pipelines := b.Config.Resources.Pipelines
-	assert.Len(t, pipelines["nyc_taxi_pipeline"].Permissions, 2)
-	assert.Equal(t, "CAN_VIEW", pipelines["nyc_taxi_pipeline"].Permissions[0].Level)
-	assert.Equal(t, "my_service_principal", pipelines["nyc_taxi_pipeline"].Permissions[0].ServicePrincipalName)
+	// Assert other resources are not affected.
+	assert.Equal(t, ml.Model{Name: "skynet"}, *b.Config.Resources.Models["model_one"].Model)
+	assert.Equal(t, catalog.CreateRegisteredModelRequest{Name: "skynet (in UC)"}, *b.Config.Resources.RegisteredModels["model_two"].CreateRegisteredModelRequest)
+	assert.Equal(t, ml.Experiment{Name: "experiment_one"}, *b.Config.Resources.Experiments["experiment_one"].Experiment)
 
-	assert.Equal(t, "IS_OWNER", pipelines["nyc_taxi_pipeline"].Permissions[1].Level)
-	assert.Equal(t, "my_user_name", pipelines["nyc_taxi_pipeline"].Permissions[1].UserName)
+}
+
+func TestRunAsErrorForPipelines(t *testing.T) {
+	b := load(t, "./run_as/not_allowed/pipelines")
+
+	ctx := context.Background()
+	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) error {
+		b.Config.Workspace.CurrentUser = &config.User{
+			User: &iam.User{
+				UserName: "jane@doe.com",
+			},
+		}
+		return nil
+	})
+
+	err := bundle.Apply(ctx, b, mutator.SetRunAs())
+	assert.EqualError(t, err, "pipelines are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. List of supported resources: [jobs, models, registered_models, experiments]. Location of unsupported resource: run_as/not_allowed/pipelines/databricks.yml:14:5. Current identity: jane@doe.com. Run as identity: my_service_principal")
+}
+
+func TestRunAsNoErrorForPipelines(t *testing.T) {
+	b := load(t, "./run_as/not_allowed/pipelines")
+
+	// We should not error because the pipeline is being deployed with the same
+	// identity as the bundle run_as identity.
+	ctx := context.Background()
+	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) error {
+		b.Config.Workspace.CurrentUser = &config.User{
+			User: &iam.User{
+				UserName: "my_service_principal",
+			},
+		}
+		return nil
+	})
+
+	err := bundle.Apply(ctx, b, mutator.SetRunAs())
+	assert.NoError(t, err)
+}
+
+func TestRunAsErrorForModelServing(t *testing.T) {
+	b := load(t, "./run_as/not_allowed/model_serving")
+
+	ctx := context.Background()
+	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) error {
+		b.Config.Workspace.CurrentUser = &config.User{
+			User: &iam.User{
+				UserName: "jane@doe.com",
+			},
+		}
+		return nil
+	})
+
+	err := bundle.Apply(ctx, b, mutator.SetRunAs())
+	assert.EqualError(t, err, "model_serving_endpoints are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. List of supported resources: [jobs, models, registered_models, experiments]. Location of unsupported resource: run_as/not_allowed/model_serving/databricks.yml:14:5. Current identity: jane@doe.com. Run as identity: my_service_principal")
+}
+
+func TestRunAsNoErrorForModelServingEndpoints(t *testing.T) {
+	b := load(t, "./run_as/not_allowed/model_serving")
+
+	// We should not error because the model serving endpoint is being deployed
+	// with the same identity as the bundle run_as identity.
+	ctx := context.Background()
+	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) error {
+		b.Config.Workspace.CurrentUser = &config.User{
+			User: &iam.User{
+				UserName: "my_service_principal",
+			},
+		}
+		return nil
+	})
+
+	err := bundle.Apply(ctx, b, mutator.SetRunAs())
+	assert.NoError(t, err)
 }
