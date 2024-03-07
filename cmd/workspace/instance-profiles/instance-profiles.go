@@ -32,6 +32,12 @@ func New() *cobra.Command {
 		},
 	}
 
+	// Add methods
+	cmd.AddCommand(newAdd())
+	cmd.AddCommand(newEdit())
+	cmd.AddCommand(newList())
+	cmd.AddCommand(newRemove())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -119,12 +125,6 @@ func newAdd() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newAdd())
-	})
 }
 
 // start edit command
@@ -220,12 +220,6 @@ func newEdit() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newEdit())
-	})
-}
-
 // start list command
 
 // Slice with functions to override default command behavior.
@@ -265,12 +259,6 @@ func newList() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newList())
-	})
 }
 
 // start remove command
@@ -349,12 +337,6 @@ func newRemove() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newRemove())
-	})
 }
 
 // end service InstanceProfiles

@@ -16,9 +16,9 @@ import (
 
 func newDestroyCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "destroy",
-		Short: "Destroy deployed bundle resources",
-
+		Use:     "destroy",
+		Short:   "Destroy deployed bundle resources",
+		Args:    cobra.NoArgs,
 		PreRunE: utils.ConfigureBundleWithVariables,
 	}
 

@@ -34,6 +34,16 @@ func New() *cobra.Command {
 		},
 	}
 
+	// Add methods
+	cmd.AddCommand(newCancelRefresh())
+	cmd.AddCommand(newCreate())
+	cmd.AddCommand(newDelete())
+	cmd.AddCommand(newGet())
+	cmd.AddCommand(newGetRefresh())
+	cmd.AddCommand(newListRefreshes())
+	cmd.AddCommand(newRunRefresh())
+	cmd.AddCommand(newUpdate())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -114,12 +124,6 @@ func newCancelRefresh() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newCancelRefresh())
-	})
-}
-
 // start create command
 
 // Slice with functions to override default command behavior.
@@ -146,7 +150,7 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: schedule
 	cmd.Flags().BoolVar(&createReq.SkipBuiltinDashboard, "skip-builtin-dashboard", createReq.SkipBuiltinDashboard, `Whether to skip creating a default dashboard summarizing data quality metrics.`)
 	// TODO: array: slicing_exprs
-	// TODO: output-only field
+	// TODO: complex arg: snapshot
 	// TODO: complex arg: time_series
 	cmd.Flags().StringVar(&createReq.WarehouseId, "warehouse-id", createReq.WarehouseId, `Optional argument to specify the warehouse for dashboard creation.`)
 
@@ -223,12 +227,6 @@ func newCreate() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newCreate())
-	})
-}
-
 // start delete command
 
 // Slice with functions to override default command behavior.
@@ -297,12 +295,6 @@ func newDelete() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDelete())
-	})
 }
 
 // start get command
@@ -374,12 +366,6 @@ func newGet() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGet())
-	})
-}
-
 // start get-refresh command
 
 // Slice with functions to override default command behavior.
@@ -447,12 +433,6 @@ func newGetRefresh() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetRefresh())
-	})
 }
 
 // start list-refreshes command
@@ -523,12 +503,6 @@ func newListRefreshes() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newListRefreshes())
-	})
-}
-
 // start run-refresh command
 
 // Slice with functions to override default command behavior.
@@ -597,12 +571,6 @@ func newRunRefresh() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newRunRefresh())
-	})
-}
-
 // start update command
 
 // Slice with functions to override default command behavior.
@@ -628,7 +596,7 @@ func newUpdate() *cobra.Command {
 	// TODO: array: notifications
 	// TODO: complex arg: schedule
 	// TODO: array: slicing_exprs
-	// TODO: output-only field
+	// TODO: complex arg: snapshot
 	// TODO: complex arg: time_series
 
 	cmd.Use = "update FULL_NAME OUTPUT_SCHEMA_NAME"
@@ -700,12 +668,6 @@ func newUpdate() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdate())
-	})
 }
 
 // end service LakehouseMonitors

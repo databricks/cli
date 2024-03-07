@@ -13,6 +13,7 @@ import (
 
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 func TestResolveClusterReference(t *testing.T) {
@@ -104,4 +105,31 @@ func TestNoLookupIfVariableIsSet(t *testing.T) {
 	err := bundle.Apply(context.Background(), b, ResolveResourceReferences())
 	require.NoError(t, err)
 	require.Equal(t, "random value", *b.Config.Variables["my-cluster-id"].Value)
+}
+
+func TestResolveServicePrincipal(t *testing.T) {
+	spName := "Some SP name"
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Variables: map[string]*variable.Variable{
+				"my-sp": {
+					Lookup: &variable.Lookup{
+						ServicePrincipal: spName,
+					},
+				},
+			},
+		},
+	}
+
+	m := mocks.NewMockWorkspaceClient(t)
+	b.SetWorkpaceClient(m.WorkspaceClient)
+	spApi := m.GetMockServicePrincipalsAPI()
+	spApi.EXPECT().GetByDisplayName(mock.Anything, spName).Return(&iam.ServicePrincipal{
+		Id:            "1234",
+		ApplicationId: "app-1234",
+	}, nil)
+
+	err := bundle.Apply(context.Background(), b, ResolveResourceReferences())
+	require.NoError(t, err)
+	require.Equal(t, "app-1234", *b.Config.Variables["my-sp"].Value)
 }

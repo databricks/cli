@@ -34,8 +34,12 @@ func newBashShell() (shell, error) {
 		return nil, nil
 	}
 
+	// Convert to lowercase for case-insensitive comparison
+	// Some systems may return some parts of the path in uppercase.
+	outLower := strings.ToLower(out)
 	// Skipping WSL bash if found one
-	if strings.Contains(out, `\Windows\System32\bash.exe`) || strings.Contains(out, `\Microsoft\WindowsApps\bash.exe`) {
+	if strings.Contains(outLower, `\windows\system32\bash.exe`) ||
+		strings.Contains(outLower, `\microsoft\windowsapps\bash.exe`) {
 		return nil, nil
 	}
 

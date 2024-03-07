@@ -35,6 +35,38 @@ func New() *cobra.Command {
 		},
 	}
 
+	// Add methods
+	cmd.AddCommand(newCreateExperiment())
+	cmd.AddCommand(newCreateRun())
+	cmd.AddCommand(newDeleteExperiment())
+	cmd.AddCommand(newDeleteRun())
+	cmd.AddCommand(newDeleteRuns())
+	cmd.AddCommand(newDeleteTag())
+	cmd.AddCommand(newGetByName())
+	cmd.AddCommand(newGetExperiment())
+	cmd.AddCommand(newGetHistory())
+	cmd.AddCommand(newGetPermissionLevels())
+	cmd.AddCommand(newGetPermissions())
+	cmd.AddCommand(newGetRun())
+	cmd.AddCommand(newListArtifacts())
+	cmd.AddCommand(newListExperiments())
+	cmd.AddCommand(newLogBatch())
+	cmd.AddCommand(newLogInputs())
+	cmd.AddCommand(newLogMetric())
+	cmd.AddCommand(newLogModel())
+	cmd.AddCommand(newLogParam())
+	cmd.AddCommand(newRestoreExperiment())
+	cmd.AddCommand(newRestoreRun())
+	cmd.AddCommand(newRestoreRuns())
+	cmd.AddCommand(newSearchExperiments())
+	cmd.AddCommand(newSearchRuns())
+	cmd.AddCommand(newSetExperimentTag())
+	cmd.AddCommand(newSetPermissions())
+	cmd.AddCommand(newSetTag())
+	cmd.AddCommand(newUpdateExperiment())
+	cmd.AddCommand(newUpdatePermissions())
+	cmd.AddCommand(newUpdateRun())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -126,12 +158,6 @@ func newCreateExperiment() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newCreateExperiment())
-	})
-}
-
 // start create-run command
 
 // Slice with functions to override default command behavior.
@@ -200,12 +226,6 @@ func newCreateRun() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newCreateRun())
-	})
 }
 
 // start delete-experiment command
@@ -285,12 +305,6 @@ func newDeleteExperiment() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDeleteExperiment())
-	})
-}
-
 // start delete-run command
 
 // Slice with functions to override default command behavior.
@@ -364,12 +378,6 @@ func newDeleteRun() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDeleteRun())
-	})
 }
 
 // start delete-runs command
@@ -461,12 +469,6 @@ func newDeleteRuns() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDeleteRuns())
-	})
-}
-
 // start delete-tag command
 
 // Slice with functions to override default command behavior.
@@ -547,12 +549,6 @@ func newDeleteTag() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDeleteTag())
-	})
-}
-
 // start get-by-name command
 
 // Slice with functions to override default command behavior.
@@ -619,12 +615,6 @@ func newGetByName() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetByName())
-	})
-}
-
 // start get-experiment command
 
 // Slice with functions to override default command behavior.
@@ -681,12 +671,6 @@ func newGetExperiment() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetExperiment())
-	})
 }
 
 // start get-history command
@@ -749,12 +733,6 @@ func newGetHistory() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetHistory())
-	})
-}
-
 // start get-permission-levels command
 
 // Slice with functions to override default command behavior.
@@ -811,12 +789,6 @@ func newGetPermissionLevels() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetPermissionLevels())
-	})
 }
 
 // start get-permissions command
@@ -876,12 +848,6 @@ func newGetPermissions() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetPermissions())
-	})
 }
 
 // start get-run command
@@ -949,12 +915,6 @@ func newGetRun() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetRun())
-	})
-}
-
 // start list-artifacts command
 
 // Slice with functions to override default command behavior.
@@ -1011,12 +971,6 @@ func newListArtifacts() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newListArtifacts())
-	})
-}
-
 // start list-experiments command
 
 // Slice with functions to override default command behavior.
@@ -1069,12 +1023,6 @@ func newListExperiments() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newListExperiments())
-	})
 }
 
 // start log-batch command
@@ -1180,12 +1128,6 @@ func newLogBatch() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newLogBatch())
-	})
-}
-
 // start log-inputs command
 
 // Slice with functions to override default command behavior.
@@ -1250,12 +1192,6 @@ func newLogInputs() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newLogInputs())
-	})
 }
 
 // start log-metric command
@@ -1353,12 +1289,6 @@ func newLogMetric() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newLogMetric())
-	})
-}
-
 // start log-model command
 
 // Slice with functions to override default command behavior.
@@ -1423,12 +1353,6 @@ func newLogModel() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newLogModel())
-	})
 }
 
 // start log-param command
@@ -1516,12 +1440,6 @@ func newLogParam() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newLogParam())
-	})
-}
-
 // start restore-experiment command
 
 // Slice with functions to override default command behavior.
@@ -1602,12 +1520,6 @@ func newRestoreExperiment() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newRestoreExperiment())
-	})
-}
-
 // start restore-run command
 
 // Slice with functions to override default command behavior.
@@ -1681,12 +1593,6 @@ func newRestoreRun() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newRestoreRun())
-	})
 }
 
 // start restore-runs command
@@ -1778,12 +1684,6 @@ func newRestoreRuns() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newRestoreRuns())
-	})
-}
-
 // start search-experiments command
 
 // Slice with functions to override default command behavior.
@@ -1847,12 +1747,6 @@ func newSearchExperiments() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newSearchExperiments())
-	})
 }
 
 // start search-runs command
@@ -1921,12 +1815,6 @@ func newSearchRuns() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newSearchRuns())
-	})
 }
 
 // start set-experiment-tag command
@@ -2015,12 +1903,6 @@ func newSetExperimentTag() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newSetExperimentTag())
-	})
-}
-
 // start set-permissions command
 
 // Slice with functions to override default command behavior.
@@ -2088,12 +1970,6 @@ func newSetPermissions() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newSetPermissions())
-	})
 }
 
 // start set-tag command
@@ -2182,12 +2058,6 @@ func newSetTag() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newSetTag())
-	})
-}
-
 // start update-experiment command
 
 // Slice with functions to override default command behavior.
@@ -2265,12 +2135,6 @@ func newUpdateExperiment() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdateExperiment())
-	})
-}
-
 // start update-permissions command
 
 // Slice with functions to override default command behavior.
@@ -2340,12 +2204,6 @@ func newUpdatePermissions() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdatePermissions())
-	})
-}
-
 // start update-run command
 
 // Slice with functions to override default command behavior.
@@ -2411,12 +2269,6 @@ func newUpdateRun() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdateRun())
-	})
 }
 
 // end service Experiments

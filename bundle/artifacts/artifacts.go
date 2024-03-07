@@ -121,13 +121,6 @@ func uploadArtifact(ctx context.Context, b *bundle.Bundle, a *config.Artifact, u
 	for i := range a.Files {
 		f := &a.Files[i]
 
-		// Lookup all tasks that reference this file.
-		libs, ok := filesToLibraries[f.Source]
-		if !ok {
-			log.Debugf(ctx, "No tasks reference %s. Skipping upload.", f.Source)
-			continue
-		}
-
 		filename := filepath.Base(f.Source)
 		cmdio.LogString(ctx, fmt.Sprintf("Uploading %s...", filename))
 
@@ -138,6 +131,13 @@ func uploadArtifact(ctx context.Context, b *bundle.Bundle, a *config.Artifact, u
 
 		log.Infof(ctx, "Upload succeeded")
 		f.RemotePath = path.Join(uploadPath, filepath.Base(f.Source))
+
+		// Lookup all tasks that reference this file.
+		libs, ok := filesToLibraries[f.Source]
+		if !ok {
+			log.Debugf(ctx, "No tasks reference %s", f.Source)
+			continue
+		}
 
 		// Update all tasks that reference this file.
 		for _, lib := range libs {

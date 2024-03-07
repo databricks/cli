@@ -297,7 +297,7 @@ func allResolvers() *resolvers {
 			return "", err
 		}
 
-		return fmt.Sprint(entity.Id), nil
+		return fmt.Sprint(entity.ApplicationId), nil
 	}
 	r.Warehouse = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
 		entity, err := w.Warehouses.GetByName(ctx, name)
