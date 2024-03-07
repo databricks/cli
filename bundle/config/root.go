@@ -409,14 +409,14 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 	}
 
 	// For each target, rewrite the variables block.
-	return dyn.Map(v, "targets", dyn.Foreach(func(target dyn.Value) (dyn.Value, error) {
+	return dyn.Map(v, "targets", dyn.Foreach(func(_ dyn.Path, target dyn.Value) (dyn.Value, error) {
 		// Confirm it has a variables block.
 		if target.Get("variables") == dyn.NilValue {
 			return target, nil
 		}
 
 		// For each variable, normalize its contents if it is a single string.
-		return dyn.Map(target, "variables", dyn.Foreach(func(variable dyn.Value) (dyn.Value, error) {
+		return dyn.Map(target, "variables", dyn.Foreach(func(_ dyn.Path, variable dyn.Value) (dyn.Value, error) {
 			if variable.Kind() != dyn.KindString {
 				return variable, nil
 			}

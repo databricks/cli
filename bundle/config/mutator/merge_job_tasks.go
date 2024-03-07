@@ -35,7 +35,7 @@ func (m *mergeJobTasks) Apply(ctx context.Context, b *bundle.Bundle) error {
 			return v, nil
 		}
 
-		return dyn.Map(v, "resources.jobs", dyn.Foreach(func(job dyn.Value) (dyn.Value, error) {
+		return dyn.Map(v, "resources.jobs", dyn.Foreach(func(_ dyn.Path, job dyn.Value) (dyn.Value, error) {
 			return dyn.Map(job, "tasks", merge.ElementsByKey("task_key", m.taskKeyString))
 		}))
 	})

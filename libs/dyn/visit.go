@@ -44,7 +44,7 @@ type visitOptions struct {
 	//
 	// If this function returns an error, the original visit function call
 	// returns this error and the value is left unmodified.
-	fn func(Value) (Value, error)
+	fn func(Path, Value) (Value, error)
 
 	// If set, tolerate the absence of the last component in the path.
 	// This option is needed to set a key in a map that is not yet present.
@@ -53,7 +53,7 @@ type visitOptions struct {
 
 func visit(v Value, prefix, suffix Path, opts visitOptions) (Value, error) {
 	if len(suffix) == 0 {
-		return opts.fn(v)
+		return opts.fn(prefix, v)
 	}
 
 	// Initialize prefix if it is empty.

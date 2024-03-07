@@ -15,7 +15,7 @@ func Get(v Value, path string) (Value, error) {
 func GetByPath(v Value, p Path) (Value, error) {
 	out := InvalidValue
 	_, err := visit(v, EmptyPath, p, visitOptions{
-		fn: func(ev Value) (Value, error) {
+		fn: func(_ Path, ev Value) (Value, error) {
 			// Capture the value argument to return it.
 			out = ev
 			return ev, nil

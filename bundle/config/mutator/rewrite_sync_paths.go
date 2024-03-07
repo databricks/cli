@@ -30,7 +30,7 @@ func (m *rewriteSyncPaths) Name() string {
 //
 // Then the resulting value will be "bar/somefile.*".
 func (m *rewriteSyncPaths) makeRelativeTo(root string) dyn.MapFunc {
-	return func(v dyn.Value) (dyn.Value, error) {
+	return func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 		dir := filepath.Dir(v.Location().File)
 		rel, err := filepath.Rel(root, dir)
 		if err != nil {
@@ -43,7 +43,7 @@ func (m *rewriteSyncPaths) makeRelativeTo(root string) dyn.MapFunc {
 
 func (m *rewriteSyncPaths) Apply(ctx context.Context, b *bundle.Bundle) error {
 	return b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		return dyn.Map(v, "sync", func(v dyn.Value) (nv dyn.Value, err error) {
+		return dyn.Map(v, "sync", func(_ dyn.Path, v dyn.Value) (nv dyn.Value, err error) {
 			v, err = dyn.Map(v, "include", dyn.Foreach(m.makeRelativeTo(b.Config.Path)))
 			if err != nil {
 				return dyn.NilValue, err

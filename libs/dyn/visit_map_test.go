@@ -12,7 +12,7 @@ import (
 func TestMapWithEmptyPath(t *testing.T) {
 	// An empty path means to return the value itself.
 	vin := dyn.V(42)
-	vout, err := dyn.MapByPath(dyn.InvalidValue, dyn.EmptyPath, func(v dyn.Value) (dyn.Value, error) {
+	vout, err := dyn.MapByPath(dyn.InvalidValue, dyn.EmptyPath, func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 		return vin, nil
 	})
 	assert.NoError(t, err)
@@ -45,7 +45,7 @@ func TestMapFuncOnMap(t *testing.T) {
 
 	// Note: in the test cases below we implicitly test that the original
 	// value is not modified as we repeatedly set values on it.
-	vfoo, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Key("foo")), func(v dyn.Value) (dyn.Value, error) {
+	vfoo, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Key("foo")), func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 		assert.Equal(t, dyn.V(42), v)
 		return dyn.V(44), nil
 	})
@@ -55,7 +55,7 @@ func TestMapFuncOnMap(t *testing.T) {
 		"bar": 43,
 	}, vfoo.AsAny())
 
-	vbar, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Key("bar")), func(v dyn.Value) (dyn.Value, error) {
+	vbar, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Key("bar")), func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 		assert.Equal(t, dyn.V(43), v)
 		return dyn.V(45), nil
 	})
@@ -67,7 +67,7 @@ func TestMapFuncOnMap(t *testing.T) {
 
 	// Return error from map function.
 	var ref = fmt.Errorf("error")
-	verr, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Key("foo")), func(v dyn.Value) (dyn.Value, error) {
+	verr, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Key("foo")), func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 		return dyn.InvalidValue, ref
 	})
 	assert.Equal(t, dyn.InvalidValue, verr)
@@ -88,7 +88,7 @@ func TestMapFuncOnMapWithEmptySequence(t *testing.T) {
 		})
 
 		for j := 0; j < len(variants); j++ {
-			vout, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Key("key")), func(v dyn.Value) (dyn.Value, error) {
+			vout, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Key("key")), func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 				return variants[j], nil
 			})
 			assert.NoError(t, err)
@@ -115,14 +115,14 @@ func TestMapFuncOnSequence(t *testing.T) {
 
 	// Note: in the test cases below we implicitly test that the original
 	// value is not modified as we repeatedly set values on it.
-	v0, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Index(0)), func(v dyn.Value) (dyn.Value, error) {
+	v0, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Index(0)), func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 		assert.Equal(t, dyn.V(42), v)
 		return dyn.V(44), nil
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, []any{44, 43}, v0.AsAny())
 
-	v1, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Index(1)), func(v dyn.Value) (dyn.Value, error) {
+	v1, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Index(1)), func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 		assert.Equal(t, dyn.V(43), v)
 		return dyn.V(45), nil
 	})
@@ -131,7 +131,7 @@ func TestMapFuncOnSequence(t *testing.T) {
 
 	// Return error from map function.
 	var ref = fmt.Errorf("error")
-	verr, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Index(0)), func(v dyn.Value) (dyn.Value, error) {
+	verr, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Index(0)), func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 		return dyn.InvalidValue, ref
 	})
 	assert.Equal(t, dyn.InvalidValue, verr)
@@ -152,7 +152,7 @@ func TestMapFuncOnSequenceWithEmptySequence(t *testing.T) {
 		})
 
 		for j := 0; j < len(variants); j++ {
-			vout, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Index(0)), func(v dyn.Value) (dyn.Value, error) {
+			vout, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Index(0)), func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 				return variants[j], nil
 			})
 			assert.NoError(t, err)
@@ -170,10 +170,19 @@ func TestMapForeachOnMap(t *testing.T) {
 	var err error
 
 	// Run foreach, adding 1 to each of the elements.
-	vout, err := dyn.Map(vin, ".", dyn.Foreach(func(v dyn.Value) (dyn.Value, error) {
+	vout, err := dyn.Map(vin, ".", dyn.Foreach(func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 		i, ok := v.AsInt()
 		require.True(t, ok, "expected an integer")
-		return dyn.V(int(i) + 1), nil
+		switch p[0].Key() {
+		case "foo":
+			assert.EqualValues(t, 42, i)
+			return dyn.V(43), nil
+		case "bar":
+			assert.EqualValues(t, 43, i)
+			return dyn.V(44), nil
+		default:
+			return dyn.InvalidValue, fmt.Errorf("unexpected key %q", p[0].Key())
+		}
 	}))
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]any{
@@ -196,7 +205,7 @@ func TestMapForeachOnMapError(t *testing.T) {
 
 	// Check that an error from the map function propagates.
 	var ref = fmt.Errorf("error")
-	_, err := dyn.Map(vin, ".", dyn.Foreach(func(v dyn.Value) (dyn.Value, error) {
+	_, err := dyn.Map(vin, ".", dyn.Foreach(func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 		return dyn.InvalidValue, ref
 	}))
 	assert.ErrorIs(t, err, ref)
@@ -211,10 +220,19 @@ func TestMapForeachOnSequence(t *testing.T) {
 	var err error
 
 	// Run foreach, adding 1 to each of the elements.
-	vout, err := dyn.Map(vin, ".", dyn.Foreach(func(v dyn.Value) (dyn.Value, error) {
+	vout, err := dyn.Map(vin, ".", dyn.Foreach(func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 		i, ok := v.AsInt()
 		require.True(t, ok, "expected an integer")
-		return dyn.V(int(i) + 1), nil
+		switch p[0].Index() {
+		case 0:
+			assert.EqualValues(t, 42, i)
+			return dyn.V(43), nil
+		case 1:
+			assert.EqualValues(t, 43, i)
+			return dyn.V(44), nil
+		default:
+			return dyn.InvalidValue, fmt.Errorf("unexpected index %d", p[0].Index())
+		}
 	}))
 	assert.NoError(t, err)
 	assert.Equal(t, []any{43, 44}, vout.AsAny())
@@ -231,7 +249,7 @@ func TestMapForeachOnSequenceError(t *testing.T) {
 
 	// Check that an error from the map function propagates.
 	var ref = fmt.Errorf("error")
-	_, err := dyn.Map(vin, ".", dyn.Foreach(func(v dyn.Value) (dyn.Value, error) {
+	_, err := dyn.Map(vin, ".", dyn.Foreach(func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 		return dyn.InvalidValue, ref
 	}))
 	assert.ErrorIs(t, err, ref)
@@ -241,7 +259,7 @@ func TestMapForeachOnOtherError(t *testing.T) {
 	vin := dyn.V(42)
 
 	// Check that if foreach is applied to something other than a map or a sequence, it returns an error.
-	_, err := dyn.Map(vin, ".", dyn.Foreach(func(v dyn.Value) (dyn.Value, error) {
+	_, err := dyn.Map(vin, ".", dyn.Foreach(func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 		return dyn.InvalidValue, nil
 	}))
 	assert.ErrorContains(t, err, "expected a map or sequence, found int")
