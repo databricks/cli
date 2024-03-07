@@ -64,11 +64,6 @@ func (m *filterCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) error {
 
 	return b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		rv, err := dyn.Get(v, "resources")
-
-		// return early if there are no resources defined in the bundle
-		if dyn.IsNoSuchKeyError(err) {
-			return v, nil
-		}
 		if err != nil {
 			return dyn.InvalidValue, err
 		}

@@ -155,3 +155,20 @@ func TestFilterCurrentServicePrincipal(t *testing.T) {
 	// Assert there's no change to the grant.
 	assert.Equal(t, 1, len(b.Config.Resources.RegisteredModels["registered_model1"].Grants))
 }
+
+func TestFilterCurrentUserDoesNotErrorWhenNoResources(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Workspace: config.Workspace{
+				CurrentUser: &config.User{
+					User: &iam.User{
+						UserName: "abc",
+					},
+				},
+			},
+		},
+	}
+
+	err := bundle.Apply(context.Background(), b, FilterCurrentUser())
+	assert.NoError(t, err)
+}
