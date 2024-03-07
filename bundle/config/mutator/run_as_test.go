@@ -21,6 +21,7 @@ func TestAllResourceTypesAreClassifiedForRunAs(t *testing.T) {
 	require.NoError(t, err)
 	normalized, _ := convert.Normalize(r, rv, convert.IncludeMissingFields)
 	resourceTypes := maps.Keys(normalized.MustMap())
+	slices.Sort(resourceTypes)
 
 	// Assert that all resource types are classified in either the allow list or the deny list.
 	for _, resourceType := range resourceTypes {
