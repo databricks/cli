@@ -15,7 +15,7 @@ func Set(v Value, path string, nv Value) (Value, error) {
 // If the path doesn't exist, it returns InvalidValue and an error.
 func SetByPath(v Value, p Path, nv Value) (Value, error) {
 	return visit(v, EmptyPath, p, visitOptions{
-		fn: func(_ Value) (Value, error) {
+		fn: func(_ Path, _ Value) (Value, error) {
 			// Return the incoming value to set it.
 			return nv, nil
 		},

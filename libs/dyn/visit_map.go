@@ -7,18 +7,18 @@ import (
 )
 
 // MapFunc is a function that maps a value to another value.
-type MapFunc func(Value) (Value, error)
+type MapFunc func(Path, Value) (Value, error)
 
 // Foreach returns a [MapFunc] that applies the specified [MapFunc] to each
 // value in a map or sequence and returns the new map or sequence.
 func Foreach(fn MapFunc) MapFunc {
-	return func(v Value) (Value, error) {
+	return func(p Path, v Value) (Value, error) {
 		switch v.Kind() {
 		case KindMap:
 			m := maps.Clone(v.MustMap())
 			for key, value := range m {
 				var err error
-				m[key], err = fn(value)
+				m[key], err = fn(p.Append(Key(key)), value)
 				if err != nil {
 					return InvalidValue, err
 				}
@@ -28,7 +28,7 @@ func Foreach(fn MapFunc) MapFunc {
 			s := slices.Clone(v.MustSequence())
 			for i, value := range s {
 				var err error
-				s[i], err = fn(value)
+				s[i], err = fn(p.Append(Index(i)), value)
 				if err != nil {
 					return InvalidValue, err
 				}

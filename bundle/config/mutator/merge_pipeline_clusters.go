@@ -38,7 +38,7 @@ func (m *mergePipelineClusters) Apply(ctx context.Context, b *bundle.Bundle) err
 			return v, nil
 		}
 
-		return dyn.Map(v, "resources.pipelines", dyn.Foreach(func(pipeline dyn.Value) (dyn.Value, error) {
+		return dyn.Map(v, "resources.pipelines", dyn.Foreach(func(_ dyn.Path, pipeline dyn.Value) (dyn.Value, error) {
 			return dyn.Map(pipeline, "clusters", merge.ElementsByKey("label", m.clusterLabel))
 		}))
 	})

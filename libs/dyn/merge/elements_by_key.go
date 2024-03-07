@@ -7,7 +7,7 @@ type elementsByKey struct {
 	keyFunc func(dyn.Value) string
 }
 
-func (e elementsByKey) Map(v dyn.Value) (dyn.Value, error) {
+func (e elementsByKey) Map(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 	// We know the type of this value is a sequence.
 	// For additional defence, return self if it is not.
 	elements, ok := v.AsSequence()
