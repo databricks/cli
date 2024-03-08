@@ -7,7 +7,8 @@ import (
 
 type File struct {
 	fs.DirEntry
-	Absolute, Relative string
+	Absolute string `json:"absolute"`
+	Relative string `json:"relative"`
 }
 
 func (f File) Modified() (ts time.Time) {

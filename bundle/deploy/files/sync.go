@@ -8,7 +8,7 @@ import (
 	"github.com/databricks/cli/libs/sync"
 )
 
-func getSync(ctx context.Context, b *bundle.Bundle) (*sync.Sync, error) {
+func GetSync(ctx context.Context, b *bundle.Bundle) (*sync.Sync, error) {
 	cacheDir, err := b.CacheDir(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get bundle cache directory: %w", err)

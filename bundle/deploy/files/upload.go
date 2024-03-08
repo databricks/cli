@@ -17,7 +17,7 @@ func (m *upload) Name() string {
 
 func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) error {
 	cmdio.LogString(ctx, fmt.Sprintf("Uploading bundle files to %s...", b.Config.Workspace.FilePath))
-	sync, err := getSync(ctx, b)
+	sync, err := GetSync(ctx, b)
 	if err != nil {
 		return err
 	}

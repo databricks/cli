@@ -2,6 +2,7 @@ package sync
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -50,8 +51,12 @@ func NewSnapshotState(localFiles []fileset.File) (*SnapshotState, error) {
 		// Compute the remote name the file will have in WSFS
 		remoteName := filepath.ToSlash(f.Relative)
 		isNotebook, _, err := notebook.Detect(f.Absolute)
-		if err != nil {
-			// Ignore this file if we're unable to determine the notebook type.
+
+		// If the error is not a file not found error, skip the file.
+		// If the file is not found, it might have been removed from the local FS.
+		// We still want to sync the removal to the remote FS.
+		if err != nil && !os.IsNotExist(err) {
+			// Otherwise, ignore this file if we're unable to determine the notebook type.
 			// Trying to upload such a file to the workspace would fail anyway.
 			continue
 		}

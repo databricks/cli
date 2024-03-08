@@ -3,6 +3,7 @@ package bundle
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,6 +14,8 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/template"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/stretchr/testify/require"
 )
 
 func initTestTemplate(t *testing.T, ctx context.Context, templateName string, config map[string]any) (string, error) {
@@ -77,4 +80,12 @@ func destroyBundle(t *testing.T, ctx context.Context, path string) error {
 	c := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "destroy", "--auto-approve")
 	_, _, err := c.Run()
 	return err
+}
+
+func getBundleRemoteRootPath(w *databricks.WorkspaceClient, t *testing.T, uniqueId string) string {
+	// Compute root path for the bundle deployment
+	me, err := w.CurrentUser.Me(context.Background())
+	require.NoError(t, err)
+	root := fmt.Sprintf("/Users/%s/.bundle/%s", me.UserName, uniqueId)
+	return root
 }

@@ -151,7 +151,7 @@ func (s *Sync) notifyComplete(ctx context.Context, d diff) {
 }
 
 func (s *Sync) RunOnce(ctx context.Context) error {
-	files, err := getFileList(ctx, s)
+	files, err := s.GetFileList(ctx)
 	if err != nil {
 		return err
 	}
@@ -182,7 +182,7 @@ func (s *Sync) RunOnce(ctx context.Context) error {
 	return nil
 }
 
-func getFileList(ctx context.Context, s *Sync) ([]fileset.File, error) {
+func (s *Sync) GetFileList(ctx context.Context) ([]fileset.File, error) {
 	// tradeoff: doing portable monitoring only due to macOS max descriptor manual ulimit setting requirement
 	// https://github.com/gorakhargosh/watchdog/blob/master/src/watchdog/observers/kqueue.py#L394-L418
 	all := set.NewSetF(func(f fileset.File) string {
