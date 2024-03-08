@@ -104,7 +104,7 @@ func (w *Workspace) Config() *config.Config {
 	for k := range config.ConfigAttributes {
 		attr := &config.ConfigAttributes[k]
 		if !attr.IsZero(cfg) {
-			cfg.SetAttrSource(attr, &config.Source{Type: config.SourceType("bundle")})
+			cfg.SetAttrSource(attr, config.Source{Type: config.SourceType("bundle")})
 		}
 	}
 

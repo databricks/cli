@@ -98,7 +98,7 @@ func (l profileFromHostLoader) Configure(cfg *config.Config) error {
 	}
 
 	log.Debugf(ctx, "Loading profile %s because of host match", match.Name())
-	err = config.ConfigAttributes.ResolveFromStringMapWithSource(cfg, match.KeysHash(), &config.Source{
+	err = config.ConfigAttributes.ResolveFromStringMapWithSource(cfg, match.KeysHash(), config.Source{
 		Type: config.SourceFile,
 		Name: configFile.Path(),
 	})

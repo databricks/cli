@@ -13,9 +13,9 @@ import (
 )
 
 var authTemplate = fmt.Sprintf(`{{"Workspace:" | bold}} {{.Details.Host}}.
-{{if .Details.Username }}{{"User:" | bold}} {{.Details.Username}}.{{end}}
+{{if .Username }}{{"User:" | bold}} {{.Username}}.{{end}}
 {{"Authenticated with:" | bold}} {{.Details.AuthType}}
-{{if .Details.AccountID }}{{"Account ID:" | bold}} {{.Details.AccountID}}.{{end}}
+{{if .AccountID }}{{"Account ID:" | bold}} {{.AccountID}}.{{end}}
 -----
 %s
 `, configurationTemplate)
@@ -97,10 +97,10 @@ func getWorkspaceAuthStatus(cmd *cobra.Command, args []string, showSensitive boo
 	}
 
 	status := authStatus{
-		Status:  "success",
-		Details: getAuthDetails(cmd, w.Config, showSensitive),
+		Status:   "success",
+		Details:  getAuthDetails(cmd, w.Config, showSensitive),
+		Username: me.UserName,
 	}
-	status.Details.Username = me.UserName
 
 	return &status, nil
 }
@@ -118,12 +118,12 @@ func getAccountAuthStatus(cmd *cobra.Command, args []string, showSensitive bool,
 
 	a := root.AccountClient(ctx)
 	status := authStatus{
-		Status:  "success",
-		Details: getAuthDetails(cmd, a.Config, showSensitive),
+		Status:    "success",
+		Details:   getAuthDetails(cmd, a.Config, showSensitive),
+		AccountID: a.Config.AccountID,
+		Username:  a.Config.Username,
 	}
 
-	status.Details.AccountID = a.Config.AccountID
-	status.Details.Username = a.Config.Username
 	return &status, nil
 }
 
@@ -145,20 +145,27 @@ func render(ctx context.Context, cmd *cobra.Command, status *authStatus, templat
 }
 
 type authStatus struct {
-	Status  string             `json:"status"`
-	Error   error              `json:"error,omitempty"`
-	Details config.AuthDetails `json:"details"`
+	Status    string             `json:"status"`
+	Error     error              `json:"error,omitempty"`
+	Username  string             `json:"username,omitempty"`
+	AccountID string             `json:"account_id,omitempty"`
+	Details   config.AuthDetails `json:"details"`
 }
 
 func getAuthDetails(cmd *cobra.Command, cfg *config.Config, showSensitive bool) config.AuthDetails {
-	details := cfg.GetAuthDetails(showSensitive)
+	var opts []config.AuthDetailsOptions
+	if showSensitive {
+		opts = append(opts, config.ShowSensitive)
+	}
+	details := cfg.GetAuthDetails(opts...)
+
 	for k, v := range details.Configuration {
 		if k == "profile" && cmd.Flag("profile").Changed {
-			v.Source = &config.Source{Type: config.SourceType("flag"), Name: "--profile"}
+			v.Source = config.Source{Type: config.SourceType("flag"), Name: "--profile"}
 		}
 
 		if k == "host" && cmd.Flag("host").Changed {
-			v.Source = &config.Source{Type: config.SourceType("flag"), Name: "--host"}
+			v.Source = config.Source{Type: config.SourceType("flag"), Name: "--host"}
 		}
 	}
 
