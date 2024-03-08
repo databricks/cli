@@ -45,7 +45,8 @@ func TestMapFuncOnMap(t *testing.T) {
 
 	// Note: in the test cases below we implicitly test that the original
 	// value is not modified as we repeatedly set values on it.
-	vfoo, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Key("foo")), func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
+	vfoo, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Key("foo")), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		assert.Equal(t, dyn.NewPath(dyn.Key("foo")), p)
 		assert.Equal(t, dyn.V(42), v)
 		return dyn.V(44), nil
 	})
@@ -55,7 +56,8 @@ func TestMapFuncOnMap(t *testing.T) {
 		"bar": 43,
 	}, vfoo.AsAny())
 
-	vbar, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Key("bar")), func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
+	vbar, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Key("bar")), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		assert.Equal(t, dyn.NewPath(dyn.Key("bar")), p)
 		assert.Equal(t, dyn.V(43), v)
 		return dyn.V(45), nil
 	})
@@ -115,14 +117,16 @@ func TestMapFuncOnSequence(t *testing.T) {
 
 	// Note: in the test cases below we implicitly test that the original
 	// value is not modified as we repeatedly set values on it.
-	v0, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Index(0)), func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
+	v0, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Index(0)), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		assert.Equal(t, dyn.NewPath(dyn.Index(0)), p)
 		assert.Equal(t, dyn.V(42), v)
 		return dyn.V(44), nil
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, []any{44, 43}, v0.AsAny())
 
-	v1, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Index(1)), func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
+	v1, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Index(1)), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		assert.Equal(t, dyn.NewPath(dyn.Index(1)), p)
 		assert.Equal(t, dyn.V(43), v)
 		return dyn.V(45), nil
 	})
