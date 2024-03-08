@@ -52,7 +52,7 @@ func TestGetWorkspaceAuthStatus(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, status)
 	require.Equal(t, "success", status.Status)
-	require.Equal(t, "test-user", status.Details.Username)
+	require.Equal(t, "test-user", status.Username)
 	require.Equal(t, "https://test.com", status.Details.Host)
 	require.Equal(t, "azure-cli", status.Details.AuthType)
 
@@ -195,10 +195,10 @@ func TestGetAccountAuthStatus(t *testing.T) {
 	require.NotNil(t, status)
 	require.Equal(t, "success", status.Status)
 
-	require.Equal(t, "test-user", status.Details.Username)
+	require.Equal(t, "test-user", status.Username)
 	require.Equal(t, "https://test.com", status.Details.Host)
 	require.Equal(t, "azure-cli", status.Details.AuthType)
-	require.Equal(t, "test-account-id", status.Details.AccountID)
+	require.Equal(t, "test-account-id", status.AccountID)
 
 	require.Equal(t, "azure-cli", status.Details.Configuration["auth_type"].Value)
 	require.Equal(t, "DATABRICKS_AUTH_TYPE environment variable", status.Details.Configuration["auth_type"].Source.String())
