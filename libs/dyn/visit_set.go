@@ -25,10 +25,10 @@ func SetByPath(v Value, p Path, nv Value) (Value, error) {
 		return nv, nil
 	}
 
-	parent := p[:lp-1]
 	component := p[lp-1]
+	p = p[:lp-1]
 
-	return visit(v, EmptyPath, parent, visitOptions{
+	return visit(v, EmptyPath, NewPatternFromPath(p), visitOptions{
 		fn: func(prefix Path, v Value) (Value, error) {
 			path := prefix.Append(component)
 

@@ -47,7 +47,7 @@ type visitOptions struct {
 	fn func(Path, Value) (Value, error)
 }
 
-func visit(v Value, prefix, suffix Path, opts visitOptions) (Value, error) {
+func visit(v Value, prefix Path, suffix Pattern, opts visitOptions) (Value, error) {
 	if len(suffix) == 0 {
 		return opts.fn(prefix, v)
 	}
@@ -59,25 +59,31 @@ func visit(v Value, prefix, suffix Path, opts visitOptions) (Value, error) {
 	}
 
 	component := suffix[0]
-	prefix = prefix.Append(component)
 	suffix = suffix[1:]
+
+	// Visit the value with the current component.
+	return component.visit(v, prefix, suffix, opts)
+}
+
+func (component pathComponent) visit(v Value, prefix Path, suffix Pattern, opts visitOptions) (Value, error) {
+	path := prefix.Append(component)
 
 	switch {
 	case component.isKey():
 		// Expect a map to be set if this is a key.
 		m, ok := v.AsMap()
 		if !ok {
-			return InvalidValue, fmt.Errorf("expected a map to index %q, found %s", prefix, v.Kind())
+			return InvalidValue, fmt.Errorf("expected a map to index %q, found %s", path, v.Kind())
 		}
 
 		// Lookup current value in the map.
 		ev, ok := m[component.key]
 		if !ok {
-			return InvalidValue, noSuchKeyError{prefix}
+			return InvalidValue, noSuchKeyError{path}
 		}
 
 		// Recursively transform the value.
-		nv, err := visit(ev, prefix, suffix, opts)
+		nv, err := visit(ev, path, suffix, opts)
 		if err != nil {
 			return InvalidValue, err
 		}
@@ -100,17 +106,17 @@ func visit(v Value, prefix, suffix Path, opts visitOptions) (Value, error) {
 		// Expect a sequence to be set if this is an index.
 		s, ok := v.AsSequence()
 		if !ok {
-			return InvalidValue, fmt.Errorf("expected a sequence to index %q, found %s", prefix, v.Kind())
+			return InvalidValue, fmt.Errorf("expected a sequence to index %q, found %s", path, v.Kind())
 		}
 
 		// Lookup current value in the sequence.
 		if component.index < 0 || component.index >= len(s) {
-			return InvalidValue, indexOutOfBoundsError{prefix}
+			return InvalidValue, indexOutOfBoundsError{path}
 		}
 
 		// Recursively transform the value.
 		ev := s[component.index]
-		nv, err := visit(ev, prefix, suffix, opts)
+		nv, err := visit(ev, path, suffix, opts)
 		if err != nil {
 			return InvalidValue, err
 		}

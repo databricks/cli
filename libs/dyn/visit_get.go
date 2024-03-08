@@ -14,7 +14,7 @@ func Get(v Value, path string) (Value, error) {
 // If the path doesn't exist, it returns InvalidValue and an error.
 func GetByPath(v Value, p Path) (Value, error) {
 	out := InvalidValue
-	_, err := visit(v, EmptyPath, p, visitOptions{
+	_, err := visit(v, EmptyPath, NewPatternFromPath(p), visitOptions{
 		fn: func(_ Path, ev Value) (Value, error) {
 			// Capture the value argument to return it.
 			out = ev
