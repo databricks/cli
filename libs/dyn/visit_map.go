@@ -40,7 +40,7 @@ func Foreach(fn MapFunc) MapFunc {
 	}
 }
 
-// Map applies the given function to the value at the specified path in the specified value.
+// Map applies a function to the value at the given path in the given value.
 // It is identical to [MapByPath], except that it takes a string path instead of a [Path].
 func Map(v Value, path string, fn MapFunc) (Value, error) {
 	p, err := NewPathFromString(path)
@@ -50,15 +50,21 @@ func Map(v Value, path string, fn MapFunc) (Value, error) {
 	return MapByPath(v, p, fn)
 }
 
-// Map applies the given function to the value at the specified path in the specified value.
+// MapByPath applies a function to the value at the given path in the given value.
+// It is identical to [MapByPattern], except that it takes a [Path] instead of a [Pattern].
+// This means it only matches a single value, not a pattern of values.
+func MapByPath(v Value, p Path, fn MapFunc) (Value, error) {
+	return MapByPattern(v, NewPatternFromPath(p), fn)
+}
+
+// MapByPattern applies a function to the values whose paths match the given pattern in the given value.
 // If successful, it returns the new value with all intermediate values copied and updated.
 //
-// If the path contains a key that doesn't exist, or an index that is out of bounds,
-// it returns the original value and no error. This is because setting a value at a path
-// that doesn't exist is a no-op.
+// If the pattern contains a key that doesn't exist, or an index that is out of bounds,
+// it returns the original value and no error.
 //
-// If the path is invalid for the given value, it returns InvalidValue and an error.
-func MapByPath(v Value, p Path, fn MapFunc) (Value, error) {
+// If the pattern is invalid for the given value, it returns InvalidValue and an error.
+func MapByPattern(v Value, p Pattern, fn MapFunc) (Value, error) {
 	nv, err := visit(v, EmptyPath, p, visitOptions{
 		fn: fn,
 	})

@@ -268,3 +268,107 @@ func TestMapForeachOnOtherError(t *testing.T) {
 	}))
 	assert.ErrorContains(t, err, "expected a map or sequence, found int")
 }
+
+func TestMapByPatternOnNilValue(t *testing.T) {
+	var err error
+	_, err = dyn.MapByPattern(dyn.NilValue, dyn.NewPattern(dyn.AnyKey()), nil)
+	assert.ErrorContains(t, err, `expected a map at "", found nil`)
+	_, err = dyn.MapByPattern(dyn.NilValue, dyn.NewPattern(dyn.AnyIndex()), nil)
+	assert.ErrorContains(t, err, `expected a sequence at "", found nil`)
+}
+
+func TestMapByPatternOnMap(t *testing.T) {
+	vin := dyn.V(map[string]dyn.Value{
+		"a": dyn.V(map[string]dyn.Value{
+			"b": dyn.V(42),
+		}),
+		"b": dyn.V(map[string]dyn.Value{
+			"c": dyn.V(43),
+		}),
+	})
+
+	var err error
+
+	// Expect an error if the pattern structure doesn't match the value structure.
+	_, err = dyn.MapByPattern(vin, dyn.NewPattern(dyn.AnyKey(), dyn.Index(0)), nil)
+	assert.ErrorContains(t, err, `expected a sequence to index`)
+
+	// Apply function to pattern "*.b".
+	vout, err := dyn.MapByPattern(vin, dyn.NewPattern(dyn.AnyKey(), dyn.Key("b")), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		assert.Equal(t, dyn.NewPath(dyn.Key("a"), dyn.Key("b")), p)
+		assert.Equal(t, dyn.V(42), v)
+		return dyn.V(44), nil
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]any{
+		"a": map[string]any{
+			"b": 44,
+		},
+		"b": map[string]any{
+			"c": 43,
+		},
+	}, vout.AsAny())
+}
+
+func TestMapByPatternOnMapWithoutMatch(t *testing.T) {
+	vin := dyn.V(map[string]dyn.Value{
+		"a": dyn.V(map[string]dyn.Value{
+			"b": dyn.V(42),
+		}),
+		"b": dyn.V(map[string]dyn.Value{
+			"c": dyn.V(43),
+		}),
+	})
+
+	// Apply function to pattern "*.zzz".
+	vout, err := dyn.MapByPattern(vin, dyn.NewPattern(dyn.AnyKey(), dyn.Key("zzz")), nil)
+	assert.NoError(t, err)
+	assert.Equal(t, vin, vout)
+}
+
+func TestMapByPatternOnSequence(t *testing.T) {
+	vin := dyn.V([]dyn.Value{
+		dyn.V([]dyn.Value{
+			dyn.V(42),
+		}),
+		dyn.V([]dyn.Value{
+			dyn.V(43),
+			dyn.V(44),
+		}),
+	})
+
+	var err error
+
+	// Expect an error if the pattern structure doesn't match the value structure.
+	_, err = dyn.MapByPattern(vin, dyn.NewPattern(dyn.AnyIndex(), dyn.Key("a")), nil)
+	assert.ErrorContains(t, err, `expected a map to index`)
+
+	// Apply function to pattern "*.c".
+	vout, err := dyn.MapByPattern(vin, dyn.NewPattern(dyn.AnyIndex(), dyn.Index(1)), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		assert.Equal(t, dyn.NewPath(dyn.Index(1), dyn.Index(1)), p)
+		assert.Equal(t, dyn.V(44), v)
+		return dyn.V(45), nil
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, []any{
+		[]any{42},
+		[]any{43, 45},
+	}, vout.AsAny())
+}
+
+func TestMapByPatternOnSequenceWithoutMatch(t *testing.T) {
+	vin := dyn.V([]dyn.Value{
+		dyn.V([]dyn.Value{
+			dyn.V(42),
+		}),
+		dyn.V([]dyn.Value{
+			dyn.V(43),
+			dyn.V(44),
+		}),
+	})
+
+	// Apply function to pattern "*.zzz".
+	vout, err := dyn.MapByPattern(vin, dyn.NewPattern(dyn.AnyIndex(), dyn.Index(42)), nil)
+	assert.NoError(t, err)
+	assert.Equal(t, vin, vout)
+}
