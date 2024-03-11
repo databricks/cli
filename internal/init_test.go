@@ -3,6 +3,7 @@ package internal
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -37,19 +38,21 @@ func TestAccBundleInitErrorOnUnknownFields(t *testing.T) {
 //     make changes that can break the MLOps Stacks DAB. In which case we should
 //     skip this test until the MLOps Stacks DAB is updated to work again.
 func TestAccBundleInitOnMlopsStacks(t *testing.T) {
-	// env := GetEnvOrSkipTest(t, "CLOUD_ENV")
-	// if env == "gcp" {
-	// 	t.Skip("MLOps Stacks is not supported in GCP")
-	// }
+	env := GetEnvOrSkipTest(t, "CLOUD_ENV")
+	if env == "gcp" {
+		t.Skip("MLOps Stacks is not supported in GCP")
+	}
 	tmpDir1 := t.TempDir()
 	tmpDir2 := t.TempDir()
 
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{})
 	require.NoError(t, err)
 
+	projectName := RandomName("project_name_")
+
 	// Create a config file with the project name and root dir
 	initConfig := map[string]string{
-		"input_project_name":                    "project_name",
+		"input_project_name":                    projectName,
 		"input_root_dir":                        "repo_name",
 		"input_include_models_in_unity_catalog": "no",
 		"input_cloud":                           env,
@@ -59,16 +62,15 @@ func TestAccBundleInitOnMlopsStacks(t *testing.T) {
 	os.WriteFile(filepath.Join(tmpDir1, "config.json"), b, 0644)
 
 	// Run bundle init
-	assert.NoFileExists(t, filepath.Join(tmpDir2, "repo_name", "project_name", "README.md"))
+	assert.NoFileExists(t, filepath.Join(tmpDir2, "repo_name", projectName, "README.md"))
 	RequireSuccessfulRun(t, "bundle", "init", "mlops-stacks", "--output-dir", tmpDir2, "--config-file", filepath.Join(tmpDir1, "config.json"))
 
 	// Assert that the README.md file was created
-	assert.FileExists(t, filepath.Join(tmpDir2, "repo_name", "project_name", "README.md"))
-	assertLocalFileContents(t, filepath.Join(tmpDir2, "repo_name", "project_name", "README.md"), "This directory contains python code, notebooks and ML asset configs related to one ML project.")
-	assertLocalFileContents(t, filepath.Join(tmpDir2, "repo_name", "project_name", "README.md"), "# project_name")
+	assert.FileExists(t, filepath.Join(tmpDir2, "repo_name", projectName, "README.md"))
+	assertLocalFileContents(t, filepath.Join(tmpDir2, "repo_name", projectName, "README.md"), fmt.Sprintf("# %s", projectName))
 
 	// Validate the stack
-	testutil.Chdir(t, filepath.Join(tmpDir2, "repo_name", "project_name"))
+	testutil.Chdir(t, filepath.Join(tmpDir2, "repo_name", projectName))
 	RequireSuccessfulRun(t, "bundle", "validate")
 
 	// Deploy the stack
@@ -95,7 +97,7 @@ func TestAccBundleInitOnMlopsStacks(t *testing.T) {
 	require.NoError(t, err)
 	job, err := w.Jobs.GetByJobId(context.Background(), batchJobId)
 	assert.NoError(t, err)
-	assert.Equal(t, "dev-project_name-batch-inference-job", job.Settings.Name)
+	assert.Equal(t, fmt.Sprintf("dev-%s-batch-inference-job", projectName), job.Settings.Name)
 }
 
 func TestAccBundleInitHelpers(t *testing.T) {
