@@ -60,10 +60,10 @@ func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			profileName = profile
+			persistentAuth.Profile = profile
 		}
 
-		err := setHost(ctx, profileName, persistentAuth, args)
+		err := setHost(ctx, persistentAuth, args)
 		if err != nil {
 			return err
 		}
@@ -127,10 +127,10 @@ func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 	return cmd
 }
 
-func setHost(ctx context.Context, profileName string, persistentAuth *auth.PersistentAuth, args []string) error {
+func setHost(ctx context.Context, persistentAuth *auth.PersistentAuth, args []string) error {
 	// If the chosen profile has a hostname and the user hasn't specified a host, infer the host from the profile.
 	_, profiles, err := databrickscfg.LoadProfiles(ctx, func(p databrickscfg.Profile) bool {
-		return p.Name == profileName
+		return p.Name == persistentAuth.Profile
 	})
 	// Tolerate ErrNoConfiguration here, as we will write out a configuration as part of the login flow.
 	if err != nil && !errors.Is(err, databrickscfg.ErrNoConfiguration) {

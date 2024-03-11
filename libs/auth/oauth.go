@@ -16,6 +16,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/auth/cache"
+	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/pkg/browser"
 	"golang.org/x/oauth2"
@@ -42,6 +44,7 @@ var ( // Databricks SDK API: `databricks OAuth is not` will be checked for prese
 type PersistentAuth struct {
 	Host      string
 	AccountID string
+	Profile   string
 
 	http    httpGet
 	cache   tokenCache
@@ -82,6 +85,7 @@ func (a *PersistentAuth) Load(ctx context.Context) (*oauth2.Token, error) {
 		return nil, err
 	}
 	// eagerly refresh token
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, a.http)
 	refreshed, err := cfg.TokenSource(ctx, t).Token()
 	if err != nil {
 		return nil, fmt.Errorf("token refresh: %w", err)
@@ -96,7 +100,9 @@ func (a *PersistentAuth) Load(ctx context.Context) (*oauth2.Token, error) {
 }
 
 func (a *PersistentAuth) ProfileName() string {
-	// TODO: get profile name from interactive input
+	if a.Profile != "" {
+		return a.Profile
+	}
 	if a.AccountID != "" {
 		return fmt.Sprintf("ACCOUNT-%s", a.AccountID)
 	}
@@ -138,7 +144,25 @@ func (a *PersistentAuth) init(ctx context.Context) error {
 		return ErrFetchCredentials
 	}
 	if a.http == nil {
-		a.http = http.DefaultClient
+		c := &config.Config{
+			Profile:   a.Profile,
+			Host:      a.Host,
+			AccountID: a.AccountID,
+		}
+		c.EnsureResolved()
+		clientConfig := httpclient.ClientConfig{
+			DebugHeaders:       c.DebugHeaders,
+			DebugTruncateBytes: c.DebugTruncateBytes,
+			InsecureSkipVerify: c.InsecureSkipVerify,
+			CABundle:           c.CABundle,
+			RetryTimeout:       time.Duration(c.RetryTimeoutSeconds) * time.Second,
+			HTTPTimeout:        time.Duration(c.HTTPTimeoutSeconds) * time.Second,
+		}
+		httpClient, err := httpclient.NewHttpClient(clientConfig)
+		if err != nil {
+			return err
+		}
+		a.http = httpClient
 	}
 	if a.cache == nil {
 		a.cache = &cache.TokenCache{}

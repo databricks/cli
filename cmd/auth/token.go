@@ -26,14 +26,14 @@ func newTokenCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 		var profileName string
 		profileFlag := cmd.Flag("profile")
 		if profileFlag != nil {
-			profileName = profileFlag.Value.String()
+			persistentAuth.Profile = profileFlag.Value.String()
 			// If a profile is provided we read the host from the .databrickscfg file
 			if profileName != "" && len(args) > 0 {
-				return errors.New("providing both a profile and a host parameters is not supported")
+				return errors.New("providing both a profile and a hostname is not supported")
 			}
 		}
 
-		err := setHost(ctx, profileName, persistentAuth, args)
+		err := setHost(ctx, persistentAuth, args)
 		if err != nil {
 			return err
 		}
