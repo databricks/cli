@@ -35,10 +35,10 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 	touchEmptyFile(t, filepath.Join(dir, "test1.py"))
 	touchEmptyFile(t, filepath.Join(dir, "test/test2.py"))
 	touchEmptyFile(t, filepath.Join(dir, "test/test3.py"))
-	touchEmptyFile(t, filepath.Join(dir, "relative/test2.py"))
-	touchEmptyFile(t, filepath.Join(dir, "relative/test3.py"))
-	touchEmptyFile(t, filepath.Join(dir, "skip/test2.py"))
-	touchEmptyFile(t, filepath.Join(dir, "skip/test3.py"))
+	touchEmptyFile(t, filepath.Join(dir, "relative/test4.py"))
+	touchEmptyFile(t, filepath.Join(dir, "relative/test5.py"))
+	touchEmptyFile(t, filepath.Join(dir, "skip/test6.py"))
+	touchEmptyFile(t, filepath.Join(dir, "skip/test7.py"))
 
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -122,8 +122,8 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 	require.True(t, containsFile(libraries, filepath.Join("test", "test3.py")))
 
 	// These patterns are defined relative to "./relative"
-	require.True(t, containsFile(libraries, "test2.py"))
-	require.True(t, containsFile(libraries, "test3.py"))
+	require.True(t, containsFile(libraries, "test4.py"))
+	require.True(t, containsFile(libraries, "test5.py"))
 
 	// Making sure exact file references work as well
 	require.True(t, containsNotebook(libraries, "test1.ipynb"))
