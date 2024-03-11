@@ -154,7 +154,7 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: schedule
 	cmd.Flags().BoolVar(&createReq.SkipBuiltinDashboard, "skip-builtin-dashboard", createReq.SkipBuiltinDashboard, `Whether to skip creating a default dashboard summarizing data quality metrics.`)
 	// TODO: array: slicing_exprs
-	// TODO: complex arg: snapshot
+	// TODO: output-only field
 	// TODO: complex arg: time_series
 	cmd.Flags().StringVar(&createReq.WarehouseId, "warehouse-id", createReq.WarehouseId, `Optional argument to specify the warehouse for dashboard creation.`)
 
@@ -624,7 +624,7 @@ func newUpdate() *cobra.Command {
 	// TODO: array: notifications
 	// TODO: complex arg: schedule
 	// TODO: array: slicing_exprs
-	// TODO: complex arg: snapshot
+	// TODO: output-only field
 	// TODO: complex arg: time_series
 
 	cmd.Use = "update FULL_NAME OUTPUT_SCHEMA_NAME"

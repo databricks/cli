@@ -178,17 +178,12 @@ func newDeleteEndpoint() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-<<<<<<< HEAD
 		check := cobra.ExactArgs(1)
-		return check(cmd, args)
-=======
-		check := cobra.ExactArgs(2)
 		err := check(cmd, args)
 		if err != nil {
 			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
 		}
 		return nil
->>>>>>> b0523371 (Add usage string when command fails with incorrect arguments)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient

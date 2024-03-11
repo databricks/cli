@@ -102,17 +102,12 @@ func newCreateIndex() *cobra.Command {
 			}
 			return nil
 		}
-<<<<<<< HEAD
 		check := cobra.ExactArgs(4)
-		return check(cmd, args)
-=======
-		check := cobra.ExactArgs(3)
 		err := check(cmd, args)
 		if err != nil {
 			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
 		}
 		return nil
->>>>>>> b0523371 (Add usage string when command fails with incorrect arguments)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
