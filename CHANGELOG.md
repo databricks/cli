@@ -135,7 +135,7 @@ Dependency updates:
 
 Bundles:
  * Allow specifying executable in artifact section and skip bash from WSL ([#1169](https://github.com/databricks/cli/pull/1169)).
- * Added warning when trying to deploy bundle with `--fail-if-running` and running resources ([#1163](https://github.com/databricks/cli/pull/1163)).
+ * Added warning when trying to deploy bundle with `--fail-on-active-runs` and running resources ([#1163](https://github.com/databricks/cli/pull/1163)).
  * Group bundle run flags by job and pipeline types ([#1174](https://github.com/databricks/cli/pull/1174)).
  * Make sure grouped flags are added to the command flag set ([#1180](https://github.com/databricks/cli/pull/1180)).
  * Add short_name helper function to bundle init templates ([#1167](https://github.com/databricks/cli/pull/1167)).

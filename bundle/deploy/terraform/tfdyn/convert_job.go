@@ -30,7 +30,7 @@ func convertJobResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	}
 
 	// Modify keys in the "git_source" block
-	vout, err = dyn.Map(vout, "git_source", func(v dyn.Value) (dyn.Value, error) {
+	vout, err = dyn.Map(vout, "git_source", func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 		return renameKeys(v, map[string]string{
 			"git_branch":   "branch",
 			"git_commit":   "commit",
@@ -44,7 +44,7 @@ func convertJobResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	}
 
 	// Modify keys in the "task" blocks
-	vout, err = dyn.Map(vout, "task", dyn.Foreach(func(v dyn.Value) (dyn.Value, error) {
+	vout, err = dyn.Map(vout, "task", dyn.Foreach(func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 		return renameKeys(v, map[string]string{
 			"libraries": "library",
 		})
