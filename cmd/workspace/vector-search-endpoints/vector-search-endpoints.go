@@ -86,7 +86,11 @@ func newCreateEndpoint() *cobra.Command {
 			return nil
 		}
 		check := cobra.ExactArgs(2)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -174,8 +178,17 @@ func newDeleteEndpoint() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
+<<<<<<< HEAD
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
+=======
+		check := cobra.ExactArgs(2)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
+>>>>>>> b0523371 (Add usage string when command fails with incorrect arguments)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -231,7 +244,11 @@ func newGetEndpoint() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -286,7 +303,11 @@ func newListEndpoints() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient

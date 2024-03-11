@@ -102,8 +102,17 @@ func newCreateIndex() *cobra.Command {
 			}
 			return nil
 		}
+<<<<<<< HEAD
 		check := cobra.ExactArgs(4)
 		return check(cmd, args)
+=======
+		check := cobra.ExactArgs(3)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
+>>>>>>> b0523371 (Add usage string when command fails with incorrect arguments)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -184,7 +193,11 @@ func newDeleteDataVectorIndex() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -250,7 +263,11 @@ func newDeleteIndex() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -308,7 +325,11 @@ func newGetIndex() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -368,7 +389,11 @@ func newListIndexes() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -430,7 +455,11 @@ func newQueryIndex() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -496,7 +525,11 @@ func newSyncIndex() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -565,7 +598,11 @@ func newUpsertDataVectorIndex() *cobra.Command {
 			return nil
 		}
 		check := cobra.ExactArgs(2)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient

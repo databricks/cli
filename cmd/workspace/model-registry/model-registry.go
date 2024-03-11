@@ -132,7 +132,11 @@ func newApproveTransitionRequest() *cobra.Command {
 			return nil
 		}
 		check := cobra.ExactArgs(4)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -226,7 +230,11 @@ func newCreateComment() *cobra.Command {
 			return nil
 		}
 		check := cobra.ExactArgs(3)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -313,7 +321,11 @@ func newCreateModel() *cobra.Command {
 			return nil
 		}
 		check := cobra.ExactArgs(1)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -394,7 +406,11 @@ func newCreateModelVersion() *cobra.Command {
 			return nil
 		}
 		check := cobra.ExactArgs(2)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -484,7 +500,11 @@ func newCreateTransitionRequest() *cobra.Command {
 			return nil
 		}
 		check := cobra.ExactArgs(3)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -623,7 +643,11 @@ func newDeleteComment() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -681,7 +705,11 @@ func newDeleteModel() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -741,7 +769,11 @@ func newDeleteModelTag() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -801,7 +833,11 @@ func newDeleteModelVersion() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -863,7 +899,11 @@ func newDeleteModelVersionTag() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -938,7 +978,11 @@ func newDeleteTransitionRequest() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(4)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1003,7 +1047,11 @@ func newDeleteWebhook() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1070,7 +1118,11 @@ func newGetLatestVersions() *cobra.Command {
 			return nil
 		}
 		check := cobra.ExactArgs(1)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1137,7 +1189,11 @@ func newGetModel() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1196,7 +1252,11 @@ func newGetModelVersion() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1256,7 +1316,11 @@ func newGetModelVersionDownloadUri() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1315,7 +1379,11 @@ func newGetPermissionLevels() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1374,7 +1442,11 @@ func newGetPermissions() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1433,7 +1505,11 @@ func newListModels() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1487,7 +1563,11 @@ func newListTransitionRequests() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1546,7 +1626,11 @@ func newListWebhooks() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1620,7 +1704,11 @@ func newRejectTransitionRequest() *cobra.Command {
 			return nil
 		}
 		check := cobra.ExactArgs(3)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1706,7 +1794,11 @@ func newRenameModel() *cobra.Command {
 			return nil
 		}
 		check := cobra.ExactArgs(1)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1774,7 +1866,11 @@ func newSearchModelVersions() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1829,7 +1925,11 @@ func newSearchModels() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1898,7 +1998,11 @@ func newSetModelTag() *cobra.Command {
 			return nil
 		}
 		check := cobra.ExactArgs(3)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1987,7 +2091,11 @@ func newSetModelVersionTag() *cobra.Command {
 			return nil
 		}
 		check := cobra.ExactArgs(4)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -2067,7 +2175,11 @@ func newSetPermissions() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -2157,7 +2269,11 @@ func newTestRegistryWebhook() *cobra.Command {
 			return nil
 		}
 		check := cobra.ExactArgs(1)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -2250,7 +2366,11 @@ func newTransitionStage() *cobra.Command {
 			return nil
 		}
 		check := cobra.ExactArgs(4)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -2341,7 +2461,11 @@ func newUpdateComment() *cobra.Command {
 			return nil
 		}
 		check := cobra.ExactArgs(2)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -2421,7 +2545,11 @@ func newUpdateModel() *cobra.Command {
 			return nil
 		}
 		check := cobra.ExactArgs(1)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -2499,7 +2627,11 @@ func newUpdateModelVersion() *cobra.Command {
 			return nil
 		}
 		check := cobra.ExactArgs(2)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -2573,7 +2705,11 @@ func newUpdatePermissions() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -2654,7 +2790,11 @@ func newUpdateWebhook() *cobra.Command {
 			return nil
 		}
 		check := cobra.ExactArgs(1)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient

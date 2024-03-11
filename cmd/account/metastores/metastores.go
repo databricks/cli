@@ -3,6 +3,8 @@
 package metastores
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -71,7 +73,11 @@ func newCreate() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustAccountClient
@@ -136,7 +142,11 @@ func newDelete() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustAccountClient
@@ -194,7 +204,11 @@ func newGet() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustAccountClient
@@ -295,7 +309,11 @@ func newUpdate() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustAccountClient

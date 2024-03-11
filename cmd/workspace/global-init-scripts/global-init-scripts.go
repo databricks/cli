@@ -92,7 +92,11 @@ func newCreate() *cobra.Command {
 			return nil
 		}
 		check := cobra.ExactArgs(2)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -358,7 +362,11 @@ func newUpdate() *cobra.Command {
 			return nil
 		}
 		check := cobra.ExactArgs(3)
-		return check(cmd, args)
+		err := check(cmd, args)
+		if err != nil {
+			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
+		}
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
