@@ -38,6 +38,7 @@ func TestAccBundleInitErrorOnUnknownFields(t *testing.T) {
 //     make changes that can break the MLOps Stacks DAB. In which case we should
 //     skip this test until the MLOps Stacks DAB is updated to work again.
 func TestAccBundleInitOnMlopsStacks(t *testing.T) {
+	t.Parallel()
 	env := GetEnvOrSkipTest(t, "CLOUD_ENV")
 	if env == "gcp" {
 		t.Skip("MLOps Stacks is not supported in GCP")
