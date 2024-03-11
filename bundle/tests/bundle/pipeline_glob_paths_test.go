@@ -38,7 +38,7 @@ func TestExpandPipelineGlobPathsWithNonExistent(t *testing.T) {
 
 	require.Equal(
 		t,
-		b.Config.Resources.Pipelines["nyc_taxi_pipeline"].Libraries[0].Notebook.Path,
 		"/Users/user@domain.com/.bundle/pipeline_glob_paths/default/files/dlt/nyc_taxi_loader",
+		b.Config.Resources.Pipelines["nyc_taxi_pipeline"].Libraries[0].Notebook.Path,
 	)
 }
