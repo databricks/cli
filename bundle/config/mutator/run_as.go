@@ -33,7 +33,7 @@ func (m *setRunAs) Name() string {
 //  2. Does not make sense for these resources to run_as a different user. We do not
 //     have plans to add platform side support for `run_as` for these resources.
 //     For example, experiments or registered models.
-var allowListForRunAsOther = []string{"jobs", "models", "registered_models", "experiments"}
+var allowListForRunAs = []string{"jobs", "models", "registered_models", "experiments"}
 
 // Resources that do not allow setting a run_as identity to a different user but
 // have plans to add platform side support for `run_as` for these resources at
@@ -41,7 +41,7 @@ var allowListForRunAsOther = []string{"jobs", "models", "registered_models", "ex
 //
 // We expect the allow list and the deny list to form mutually exclusive and exhaustive
 // sets of all resource types that are supported by DABs.
-var denyListForRunAsOther = []string{"pipelines", "model_serving_endpoints"}
+var denyListForRunAs = []string{"pipelines", "model_serving_endpoints"}
 
 type errorUnsupportedResourceTypeForRunAs struct {
 	resourceType  string
@@ -55,7 +55,7 @@ type errorUnsupportedResourceTypeForRunAs struct {
 // TODO(6 March 2024): Link the docs page describing run_as semantics in the error below
 // once the page is ready.
 func (e errorUnsupportedResourceTypeForRunAs) Error() string {
-	return fmt.Sprintf("%s are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. List of supported resources: [%s]. Location of the unsupported resource: %s. Current identity: %s. Run as identity: %s", e.resourceType, strings.Join(allowListForRunAsOther, ", "), e.resourceValue.Location(), e.currentUser, e.runAsUser)
+	return fmt.Sprintf("%s are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. List of supported resources: [%s]. Location of the unsupported resource: %s. Current identity: %s. Run as identity: %s", e.resourceType, strings.Join(allowListForRunAs, ", "), e.resourceValue.Location(), e.currentUser, e.runAsUser)
 }
 
 func getRunAsIdentity(runAs dyn.Value) (string, error) {
@@ -125,7 +125,7 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) error {
 		r := rv.MustMap()
 		for k, v := range r {
 			// If the resource type is not in the allow list, return an error
-			if !slices.Contains(allowListForRunAsOther, k) {
+			if !slices.Contains(allowListForRunAs, k) {
 				return dyn.InvalidValue, errorUnsupportedResourceTypeForRunAs{
 					resourceType:  k,
 					resourceValue: v,

@@ -25,16 +25,16 @@ func TestAllResourceTypesAreClassifiedForRunAs(t *testing.T) {
 
 	// Assert that all resource types are classified in either the allow list or the deny list.
 	for _, resourceType := range resourceTypes {
-		if slices.Contains(allowListForRunAsOther, resourceType) && !slices.Contains(denyListForRunAsOther, resourceType) {
+		if slices.Contains(allowListForRunAs, resourceType) && !slices.Contains(denyListForRunAs, resourceType) {
 			continue
 		}
-		if !slices.Contains(allowListForRunAsOther, resourceType) && slices.Contains(denyListForRunAsOther, resourceType) {
+		if !slices.Contains(allowListForRunAs, resourceType) && slices.Contains(denyListForRunAs, resourceType) {
 			continue
 		}
-		if slices.Contains(allowListForRunAsOther, resourceType) && slices.Contains(denyListForRunAsOther, resourceType) {
+		if slices.Contains(allowListForRunAs, resourceType) && slices.Contains(denyListForRunAs, resourceType) {
 			t.Errorf("Resource type %s is classified in both allow list and deny list for run_as other support", resourceType)
 		}
-		if !slices.Contains(allowListForRunAsOther, resourceType) && !slices.Contains(denyListForRunAsOther, resourceType) {
+		if !slices.Contains(allowListForRunAs, resourceType) && !slices.Contains(denyListForRunAs, resourceType) {
 			t.Errorf("Resource type %s is not classified in either allow list or deny list for run_as other support", resourceType)
 		}
 	}
