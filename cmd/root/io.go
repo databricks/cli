@@ -38,13 +38,14 @@ func OutputType(cmd *cobra.Command) flags.Output {
 }
 
 func (f *outputFlag) initializeIO(cmd *cobra.Command) error {
-	var template string
+	var headerTemplate, template string
 	if cmd.Annotations != nil {
 		// rely on zeroval being an empty string
 		template = cmd.Annotations["template"]
+		headerTemplate = cmd.Annotations["headerTemplate"]
 	}
 
-	cmdIO := cmdio.NewIO(f.output, cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr(), template)
+	cmdIO := cmdio.NewIO(f.output, cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr(), headerTemplate, template)
 	ctx := cmdio.InContext(cmd.Context(), cmdIO)
 	cmd.SetContext(ctx)
 	return nil

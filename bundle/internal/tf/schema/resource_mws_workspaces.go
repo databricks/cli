@@ -40,6 +40,7 @@ type ResourceMwsWorkspaces struct {
 	Cloud                               string                                        `json:"cloud,omitempty"`
 	CreationTime                        int                                           `json:"creation_time,omitempty"`
 	CredentialsId                       string                                        `json:"credentials_id,omitempty"`
+	CustomTags                          map[string]string                             `json:"custom_tags,omitempty"`
 	CustomerManagedKeyId                string                                        `json:"customer_managed_key_id,omitempty"`
 	DeploymentName                      string                                        `json:"deployment_name,omitempty"`
 	Id                                  string                                        `json:"id,omitempty"`

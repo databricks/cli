@@ -10,7 +10,9 @@ type ResourceClusterAutoscale struct {
 type ResourceClusterAwsAttributes struct {
 	Availability        string `json:"availability,omitempty"`
 	EbsVolumeCount      int    `json:"ebs_volume_count,omitempty"`
+	EbsVolumeIops       int    `json:"ebs_volume_iops,omitempty"`
 	EbsVolumeSize       int    `json:"ebs_volume_size,omitempty"`
+	EbsVolumeThroughput int    `json:"ebs_volume_throughput,omitempty"`
 	EbsVolumeType       string `json:"ebs_volume_type,omitempty"`
 	FirstOnDemand       int    `json:"first_on_demand,omitempty"`
 	InstanceProfileArn  string `json:"instance_profile_arn,omitempty"`
@@ -18,10 +20,16 @@ type ResourceClusterAwsAttributes struct {
 	ZoneId              string `json:"zone_id,omitempty"`
 }
 
+type ResourceClusterAzureAttributesLogAnalyticsInfo struct {
+	LogAnalyticsPrimaryKey  string `json:"log_analytics_primary_key,omitempty"`
+	LogAnalyticsWorkspaceId string `json:"log_analytics_workspace_id,omitempty"`
+}
+
 type ResourceClusterAzureAttributes struct {
-	Availability    string `json:"availability,omitempty"`
-	FirstOnDemand   int    `json:"first_on_demand,omitempty"`
-	SpotBidMaxPrice int    `json:"spot_bid_max_price,omitempty"`
+	Availability     string                                          `json:"availability,omitempty"`
+	FirstOnDemand    int                                             `json:"first_on_demand,omitempty"`
+	SpotBidMaxPrice  int                                             `json:"spot_bid_max_price,omitempty"`
+	LogAnalyticsInfo *ResourceClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
 }
 
 type ResourceClusterClusterLogConfDbfs struct {
@@ -74,7 +82,7 @@ type ResourceClusterGcpAttributes struct {
 }
 
 type ResourceClusterInitScriptsAbfss struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type ResourceClusterInitScriptsDbfs struct {
@@ -82,11 +90,11 @@ type ResourceClusterInitScriptsDbfs struct {
 }
 
 type ResourceClusterInitScriptsFile struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type ResourceClusterInitScriptsGcs struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type ResourceClusterInitScriptsS3 struct {
@@ -100,11 +108,11 @@ type ResourceClusterInitScriptsS3 struct {
 }
 
 type ResourceClusterInitScriptsVolumes struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type ResourceClusterInitScriptsWorkspace struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type ResourceClusterInitScripts struct {
@@ -156,6 +164,7 @@ type ResourceCluster struct {
 	AutoterminationMinutes    int                               `json:"autotermination_minutes,omitempty"`
 	ClusterId                 string                            `json:"cluster_id,omitempty"`
 	ClusterName               string                            `json:"cluster_name,omitempty"`
+	ClusterSource             string                            `json:"cluster_source,omitempty"`
 	CustomTags                map[string]string                 `json:"custom_tags,omitempty"`
 	DataSecurityMode          string                            `json:"data_security_mode,omitempty"`
 	DefaultTags               map[string]string                 `json:"default_tags,omitempty"`

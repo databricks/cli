@@ -24,10 +24,10 @@ func New() *cobra.Command {
 		Annotations: map[string]string{
 			"package": "dashboards",
 		},
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
 	}
+
+	// Add methods
+	cmd.AddCommand(newPublish())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -104,12 +104,6 @@ func newPublish() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newPublish())
-	})
 }
 
 // end service Lakeview

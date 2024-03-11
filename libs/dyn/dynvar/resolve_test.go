@@ -182,3 +182,68 @@ func TestResolveWithSkip(t *testing.T) {
 	assert.Equal(t, "a ${b}", getByPath(t, out, "e").MustString())
 	assert.Equal(t, "${b} a a ${b}", getByPath(t, out, "f").MustString())
 }
+
+func TestResolveWithSkipEverything(t *testing.T) {
+	in := dyn.V(map[string]dyn.Value{
+		"a": dyn.V("a"),
+		"b": dyn.V("b"),
+		"c": dyn.V("${a}"),
+		"d": dyn.V("${b}"),
+		"e": dyn.V("${a} ${b}"),
+		"f": dyn.V("${b} ${a} ${a} ${b}"),
+		"g": dyn.V("${d} ${c} ${c} ${d}"),
+	})
+
+	// The call must not replace anything if the lookup function returns ErrSkipResolution.
+	out, err := dynvar.Resolve(in, func(path dyn.Path) (dyn.Value, error) {
+		return dyn.InvalidValue, dynvar.ErrSkipResolution
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "a", getByPath(t, out, "a").MustString())
+	assert.Equal(t, "b", getByPath(t, out, "b").MustString())
+	assert.Equal(t, "${a}", getByPath(t, out, "c").MustString())
+	assert.Equal(t, "${b}", getByPath(t, out, "d").MustString())
+	assert.Equal(t, "${a} ${b}", getByPath(t, out, "e").MustString())
+	assert.Equal(t, "${b} ${a} ${a} ${b}", getByPath(t, out, "f").MustString())
+	assert.Equal(t, "${d} ${c} ${c} ${d}", getByPath(t, out, "g").MustString())
+}
+
+func TestResolveWithInterpolateNewRef(t *testing.T) {
+	in := dyn.V(map[string]dyn.Value{
+		"a": dyn.V("a"),
+		"b": dyn.V("${a}"),
+	})
+
+	// The call replaces ${a} with ${foobar} and skips everything else.
+	out, err := dynvar.Resolve(in, func(path dyn.Path) (dyn.Value, error) {
+		if path.String() == "a" {
+			return dyn.V("${foobar}"), nil
+		}
+		return dyn.InvalidValue, dynvar.ErrSkipResolution
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, "a", getByPath(t, out, "a").MustString())
+	assert.Equal(t, "${foobar}", getByPath(t, out, "b").MustString())
+}
+
+func TestResolveWithInterpolateAliasedRef(t *testing.T) {
+	in := dyn.V(map[string]dyn.Value{
+		"a": dyn.V("a"),
+		"b": dyn.V("${a}"),
+		"c": dyn.V("${x}"),
+	})
+
+	// The call replaces ${x} with ${b} and skips everything else.
+	out, err := dynvar.Resolve(in, func(path dyn.Path) (dyn.Value, error) {
+		if path.String() == "x" {
+			return dyn.V("${b}"), nil
+		}
+		return dyn.GetByPath(in, path)
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, "a", getByPath(t, out, "a").MustString())
+	assert.Equal(t, "a", getByPath(t, out, "b").MustString())
+	assert.Equal(t, "a", getByPath(t, out, "c").MustString())
+}

@@ -6,8 +6,9 @@ import (
 )
 
 func listOverride(listCmd *cobra.Command) {
+	listCmd.Annotations["headerTemplate"] = cmdio.Heredoc(`
+	{{header "Name"}}	{{header "Type"}}	{{header "Comment"}}`)
 	listCmd.Annotations["template"] = cmdio.Heredoc(`
-	{{header "Name"}}	{{header "Type"}}	{{header "Comment"}}
 	{{range .}}{{.Name|green}}	{{blue "%s" .CatalogType}}	{{.Comment}}
 	{{end}}`)
 }

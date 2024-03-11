@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
@@ -17,10 +18,10 @@ import (
 
 func newSummaryCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "summary",
-		Short: "Describe the bundle resources and their deployment states",
-
-		PreRunE: ConfigureBundleWithVariables,
+		Use:     "summary",
+		Short:   "Describe the bundle resources and their deployment states",
+		Args:    cobra.NoArgs,
+		PreRunE: utils.ConfigureBundleWithVariables,
 
 		// This command is currently intended for the Databricks VSCode extension only
 		Hidden: true,
@@ -41,11 +42,16 @@ func newSummaryCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		_, err = os.Stat(filepath.Join(cacheDir, terraform.TerraformStateFileName))
-		noCache := errors.Is(err, os.ErrNotExist)
+		_, stateFileErr := os.Stat(filepath.Join(cacheDir, terraform.TerraformStateFileName))
+		_, configFileErr := os.Stat(filepath.Join(cacheDir, terraform.TerraformConfigFileName))
+		noCache := errors.Is(stateFileErr, os.ErrNotExist) || errors.Is(configFileErr, os.ErrNotExist)
 
 		if forcePull || noCache {
-			err = bundle.Apply(cmd.Context(), b, terraform.StatePull())
+			err = bundle.Apply(cmd.Context(), b, bundle.Seq(
+				terraform.StatePull(),
+				terraform.Interpolate(),
+				terraform.Write(),
+			))
 			if err != nil {
 				return err
 			}

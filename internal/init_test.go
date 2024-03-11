@@ -10,6 +10,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -36,10 +37,10 @@ func TestAccBundleInitErrorOnUnknownFields(t *testing.T) {
 //     make changes that can break the MLOps Stacks DAB. In which case we should
 //     skip this test until the MLOps Stacks DAB is updated to work again.
 func TestAccBundleInitOnMlopsStacks(t *testing.T) {
-	env := GetEnvOrSkipTest(t, "CLOUD_ENV")
-	if env == "gcp" {
-		t.Skip("MLOps Stacks is not supported in GCP")
-	}
+	// env := GetEnvOrSkipTest(t, "CLOUD_ENV")
+	// if env == "gcp" {
+	// 	t.Skip("MLOps Stacks is not supported in GCP")
+	// }
 	tmpDir1 := t.TempDir()
 	tmpDir2 := t.TempDir()
 
@@ -95,4 +96,70 @@ func TestAccBundleInitOnMlopsStacks(t *testing.T) {
 	job, err := w.Jobs.GetByJobId(context.Background(), batchJobId)
 	assert.NoError(t, err)
 	assert.Equal(t, "dev-project_name-batch-inference-job", job.Settings.Name)
+}
+
+func TestAccBundleInitHelpers(t *testing.T) {
+	env := GetEnvOrSkipTest(t, "CLOUD_ENV")
+	t.Log(env)
+
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{})
+	require.NoError(t, err)
+
+	me, err := w.CurrentUser.Me(context.Background())
+	require.NoError(t, err)
+
+	var smallestNode string
+	switch env {
+	case "azure":
+		smallestNode = "Standard_D3_v2"
+	case "gcp":
+		smallestNode = "n1-standard-4"
+	default:
+		smallestNode = "i3.xlarge"
+	}
+
+	tests := []struct {
+		funcName string
+		expected string
+	}{
+		{
+			funcName: "{{short_name}}",
+			expected: auth.GetShortUserName(me.UserName),
+		},
+		{
+			funcName: "{{user_name}}",
+			expected: me.UserName,
+		},
+		{
+			funcName: "{{workspace_host}}",
+			expected: w.Config.Host,
+		},
+		{
+			funcName: "{{is_service_principal}}",
+			expected: strconv.FormatBool(auth.IsServicePrincipal(me.Id)),
+		},
+		{
+			funcName: "{{smallest_node_type}}",
+			expected: smallestNode,
+		},
+	}
+
+	for _, test := range tests {
+		// Setup template to test the helper function.
+		tmpDir := t.TempDir()
+		tmpDir2 := t.TempDir()
+
+		err := os.Mkdir(filepath.Join(tmpDir, "template"), 0755)
+		require.NoError(t, err)
+		err = os.WriteFile(filepath.Join(tmpDir, "template", "foo.txt.tmpl"), []byte(test.funcName), 0644)
+		require.NoError(t, err)
+		err = os.WriteFile(filepath.Join(tmpDir, "databricks_template_schema.json"), []byte("{}"), 0644)
+		require.NoError(t, err)
+
+		// Run bundle init.
+		RequireSuccessfulRun(t, "bundle", "init", tmpDir, "--output-dir", tmpDir2)
+
+		// Assert that the helper function was correctly computed.
+		assertLocalFileContents(t, filepath.Join(tmpDir2, "foo.txt"), test.expected)
+	}
 }

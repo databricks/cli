@@ -38,6 +38,18 @@ func New() *cobra.Command {
 		},
 	}
 
+	// Add methods
+	cmd.AddCommand(newCreateScope())
+	cmd.AddCommand(newDeleteAcl())
+	cmd.AddCommand(newDeleteScope())
+	cmd.AddCommand(newDeleteSecret())
+	cmd.AddCommand(newGetAcl())
+	cmd.AddCommand(newGetSecret())
+	cmd.AddCommand(newListAcls())
+	cmd.AddCommand(newListScopes())
+	cmd.AddCommand(newListSecrets())
+	cmd.AddCommand(newPutAcl())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -127,12 +139,6 @@ func newCreateScope() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newCreateScope())
-	})
-}
-
 // start delete-acl command
 
 // Slice with functions to override default command behavior.
@@ -217,12 +223,6 @@ func newDeleteAcl() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDeleteAcl())
-	})
-}
-
 // start delete-scope command
 
 // Slice with functions to override default command behavior.
@@ -300,12 +300,6 @@ func newDeleteScope() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDeleteScope())
-	})
 }
 
 // start delete-secret command
@@ -392,12 +386,6 @@ func newDeleteSecret() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDeleteSecret())
-	})
-}
-
 // start get-acl command
 
 // Slice with functions to override default command behavior.
@@ -461,12 +449,6 @@ func newGetAcl() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetAcl())
-	})
 }
 
 // start get-secret command
@@ -540,12 +522,6 @@ func newGetSecret() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetSecret())
-	})
-}
-
 // start list-acls command
 
 // Slice with functions to override default command behavior.
@@ -590,11 +566,8 @@ func newListAcls() *cobra.Command {
 
 		listAclsReq.Scope = args[0]
 
-		response, err := w.Secrets.ListAclsAll(ctx, listAclsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Secrets.ListAcls(ctx, listAclsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -607,12 +580,6 @@ func newListAcls() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newListAcls())
-	})
 }
 
 // start list-scopes command
@@ -641,11 +608,8 @@ func newListScopes() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		response, err := w.Secrets.ListScopesAll(ctx)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Secrets.ListScopes(ctx)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -658,12 +622,6 @@ func newListScopes() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newListScopes())
-	})
 }
 
 // start list-secrets command
@@ -712,11 +670,8 @@ func newListSecrets() *cobra.Command {
 
 		listSecretsReq.Scope = args[0]
 
-		response, err := w.Secrets.ListSecretsAll(ctx, listSecretsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Secrets.ListSecrets(ctx, listSecretsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -729,12 +684,6 @@ func newListSecrets() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newListSecrets())
-	})
 }
 
 // start put-acl command
@@ -846,12 +795,6 @@ func newPutAcl() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newPutAcl())
-	})
 }
 
 // end service Secrets

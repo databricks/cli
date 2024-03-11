@@ -95,7 +95,7 @@ func Get(ctx context.Context) (*config.File, error) {
 	configFile, err := config.LoadFile(path)
 	if errors.Is(err, fs.ErrNotExist) {
 		// downstreams depend on ErrNoConfiguration. TODO: expose this error through SDK
-		return nil, fmt.Errorf("%w at %s; please create one first", ErrNoConfiguration, path)
+		return nil, fmt.Errorf("%w at %s; please create one by running 'databricks configure'", ErrNoConfiguration, path)
 	} else if err != nil {
 		return nil, err
 	}

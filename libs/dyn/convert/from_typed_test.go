@@ -19,6 +19,25 @@ func TestFromTypedStructZeroFields(t *testing.T) {
 
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
+	assert.Equal(t, dyn.V(map[string]dyn.Value{}), nv)
+}
+
+func TestFromTypedStructPointerZeroFields(t *testing.T) {
+	type Tmp struct {
+		Foo string `json:"foo"`
+		Bar string `json:"bar"`
+	}
+
+	// For an initialized pointer we expect an empty map.
+	src := &Tmp{}
+	nv, err := FromTyped(src, dyn.NilValue)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.V(map[string]dyn.Value{}), nv)
+
+	// For a nil pointer we expect nil.
+	src = nil
+	nv, err = FromTyped(src, dyn.NilValue)
+	require.NoError(t, err)
 	assert.Equal(t, dyn.NilValue, nv)
 }
 
@@ -476,6 +495,14 @@ func TestFromTypedBoolRetainsLocationsIfUnchanged(t *testing.T) {
 	assert.Equal(t, dyn.NewValue(true, dyn.Location{File: "foo"}), nv)
 }
 
+func TestFromTypedBoolVariableReference(t *testing.T) {
+	var src bool = true
+	var ref = dyn.V("${var.foo}")
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.V("${var.foo}"), nv)
+}
+
 func TestFromTypedBoolTypeError(t *testing.T) {
 	var src bool = true
 	var ref = dyn.V("string")
@@ -523,6 +550,14 @@ func TestFromTypedIntRetainsLocationsIfUnchanged(t *testing.T) {
 	assert.Equal(t, dyn.NewValue(1234, dyn.Location{File: "foo"}), nv)
 }
 
+func TestFromTypedIntVariableReference(t *testing.T) {
+	var src int = 1234
+	var ref = dyn.V("${var.foo}")
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.V("${var.foo}"), nv)
+}
+
 func TestFromTypedIntTypeError(t *testing.T) {
 	var src int = 1234
 	var ref = dyn.V("string")
@@ -568,6 +603,14 @@ func TestFromTypedFloatRetainsLocationsIfUnchanged(t *testing.T) {
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
 	assert.Equal(t, dyn.NewValue(1.23, dyn.Location{File: "foo"}), nv)
+}
+
+func TestFromTypedFloatVariableReference(t *testing.T) {
+	var src float64 = 1.23
+	var ref = dyn.V("${var.foo}")
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.V("${var.foo}"), nv)
 }
 
 func TestFromTypedFloatTypeError(t *testing.T) {

@@ -34,6 +34,44 @@ func New() *cobra.Command {
 		},
 	}
 
+	// Add methods
+	cmd.AddCommand(newApproveTransitionRequest())
+	cmd.AddCommand(newCreateComment())
+	cmd.AddCommand(newCreateModel())
+	cmd.AddCommand(newCreateModelVersion())
+	cmd.AddCommand(newCreateTransitionRequest())
+	cmd.AddCommand(newCreateWebhook())
+	cmd.AddCommand(newDeleteComment())
+	cmd.AddCommand(newDeleteModel())
+	cmd.AddCommand(newDeleteModelTag())
+	cmd.AddCommand(newDeleteModelVersion())
+	cmd.AddCommand(newDeleteModelVersionTag())
+	cmd.AddCommand(newDeleteTransitionRequest())
+	cmd.AddCommand(newDeleteWebhook())
+	cmd.AddCommand(newGetLatestVersions())
+	cmd.AddCommand(newGetModel())
+	cmd.AddCommand(newGetModelVersion())
+	cmd.AddCommand(newGetModelVersionDownloadUri())
+	cmd.AddCommand(newGetPermissionLevels())
+	cmd.AddCommand(newGetPermissions())
+	cmd.AddCommand(newListModels())
+	cmd.AddCommand(newListTransitionRequests())
+	cmd.AddCommand(newListWebhooks())
+	cmd.AddCommand(newRejectTransitionRequest())
+	cmd.AddCommand(newRenameModel())
+	cmd.AddCommand(newSearchModelVersions())
+	cmd.AddCommand(newSearchModels())
+	cmd.AddCommand(newSetModelTag())
+	cmd.AddCommand(newSetModelVersionTag())
+	cmd.AddCommand(newSetPermissions())
+	cmd.AddCommand(newTestRegistryWebhook())
+	cmd.AddCommand(newTransitionStage())
+	cmd.AddCommand(newUpdateComment())
+	cmd.AddCommand(newUpdateModel())
+	cmd.AddCommand(newUpdateModelVersion())
+	cmd.AddCommand(newUpdatePermissions())
+	cmd.AddCommand(newUpdateWebhook())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -146,12 +184,6 @@ func newApproveTransitionRequest() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newApproveTransitionRequest())
-	})
-}
-
 // start create-comment command
 
 // Slice with functions to override default command behavior.
@@ -237,12 +269,6 @@ func newCreateComment() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newCreateComment())
-	})
-}
-
 // start create-model command
 
 // Slice with functions to override default command behavior.
@@ -322,12 +348,6 @@ func newCreateModel() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newCreateModel())
-	})
 }
 
 // start create-model-version command
@@ -412,12 +432,6 @@ func newCreateModelVersion() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newCreateModelVersion())
-	})
 }
 
 // start create-transition-request command
@@ -516,12 +530,6 @@ func newCreateTransitionRequest() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newCreateTransitionRequest())
-	})
-}
-
 // start create-webhook command
 
 // Slice with functions to override default command behavior.
@@ -589,12 +597,6 @@ func newCreateWebhook() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newCreateWebhook())
-	})
-}
-
 // start delete-comment command
 
 // Slice with functions to override default command behavior.
@@ -648,12 +650,6 @@ func newDeleteComment() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDeleteComment())
-	})
 }
 
 // start delete-model command
@@ -712,12 +708,6 @@ func newDeleteModel() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDeleteModel())
-	})
 }
 
 // start delete-model-tag command
@@ -781,12 +771,6 @@ func newDeleteModelTag() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDeleteModelTag())
-	})
-}
-
 // start delete-model-version command
 
 // Slice with functions to override default command behavior.
@@ -845,12 +829,6 @@ func newDeleteModelVersion() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDeleteModelVersion())
-	})
 }
 
 // start delete-model-version-tag command
@@ -914,12 +892,6 @@ func newDeleteModelVersionTag() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDeleteModelVersionTag())
-	})
 }
 
 // start delete-transition-request command
@@ -1001,12 +973,6 @@ func newDeleteTransitionRequest() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDeleteTransitionRequest())
-	})
-}
-
 // start delete-webhook command
 
 // Slice with functions to override default command behavior.
@@ -1062,12 +1028,6 @@ func newDeleteWebhook() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDeleteWebhook())
-	})
 }
 
 // start get-latest-versions command
@@ -1128,11 +1088,8 @@ func newGetLatestVersions() *cobra.Command {
 			getLatestVersionsReq.Name = args[0]
 		}
 
-		response, err := w.ModelRegistry.GetLatestVersionsAll(ctx, getLatestVersionsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.ModelRegistry.GetLatestVersions(ctx, getLatestVersionsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1145,12 +1102,6 @@ func newGetLatestVersions() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetLatestVersions())
-	})
 }
 
 // start get-model command
@@ -1215,12 +1166,6 @@ func newGetModel() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetModel())
-	})
-}
-
 // start get-model-version command
 
 // Slice with functions to override default command behavior.
@@ -1279,12 +1224,6 @@ func newGetModelVersion() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetModelVersion())
-	})
 }
 
 // start get-model-version-download-uri command
@@ -1347,12 +1286,6 @@ func newGetModelVersionDownloadUri() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetModelVersionDownloadUri())
-	})
-}
-
 // start get-permission-levels command
 
 // Slice with functions to override default command behavior.
@@ -1409,12 +1342,6 @@ func newGetPermissionLevels() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetPermissionLevels())
-	})
 }
 
 // start get-permissions command
@@ -1476,12 +1403,6 @@ func newGetPermissions() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetPermissions())
-	})
-}
-
 // start list-models command
 
 // Slice with functions to override default command behavior.
@@ -1520,11 +1441,8 @@ func newListModels() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.ModelRegistry.ListModelsAll(ctx, listModelsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.ModelRegistry.ListModels(ctx, listModelsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1537,12 +1455,6 @@ func newListModels() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newListModels())
-	})
 }
 
 // start list-transition-requests command
@@ -1586,11 +1498,8 @@ func newListTransitionRequests() *cobra.Command {
 		listTransitionRequestsReq.Name = args[0]
 		listTransitionRequestsReq.Version = args[1]
 
-		response, err := w.ModelRegistry.ListTransitionRequestsAll(ctx, listTransitionRequestsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.ModelRegistry.ListTransitionRequests(ctx, listTransitionRequestsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1603,12 +1512,6 @@ func newListTransitionRequests() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newListTransitionRequests())
-	})
 }
 
 // start list-webhooks command
@@ -1651,11 +1554,8 @@ func newListWebhooks() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.ModelRegistry.ListWebhooksAll(ctx, listWebhooksReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.ModelRegistry.ListWebhooks(ctx, listWebhooksReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1668,12 +1568,6 @@ func newListWebhooks() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newListWebhooks())
-	})
 }
 
 // start reject-transition-request command
@@ -1772,12 +1666,6 @@ func newRejectTransitionRequest() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newRejectTransitionRequest())
-	})
-}
-
 // start rename-model command
 
 // Slice with functions to override default command behavior.
@@ -1855,12 +1743,6 @@ func newRenameModel() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newRenameModel())
-	})
-}
-
 // start search-model-versions command
 
 // Slice with functions to override default command behavior.
@@ -1900,11 +1782,8 @@ func newSearchModelVersions() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.ModelRegistry.SearchModelVersionsAll(ctx, searchModelVersionsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.ModelRegistry.SearchModelVersions(ctx, searchModelVersionsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1917,12 +1796,6 @@ func newSearchModelVersions() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newSearchModelVersions())
-	})
 }
 
 // start search-models command
@@ -1964,11 +1837,8 @@ func newSearchModels() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.ModelRegistry.SearchModelsAll(ctx, searchModelsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.ModelRegistry.SearchModels(ctx, searchModelsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1981,12 +1851,6 @@ func newSearchModels() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newSearchModels())
-	})
 }
 
 // start set-model-tag command
@@ -2075,12 +1939,6 @@ func newSetModelTag() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newSetModelTag())
-	})
 }
 
 // start set-model-version-tag command
@@ -2175,12 +2033,6 @@ func newSetModelVersionTag() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newSetModelVersionTag())
-	})
-}
-
 // start set-permissions command
 
 // Slice with functions to override default command behavior.
@@ -2248,12 +2100,6 @@ func newSetPermissions() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newSetPermissions())
-	})
 }
 
 // start test-registry-webhook command
@@ -2346,12 +2192,6 @@ func newTestRegistryWebhook() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newTestRegistryWebhook())
-	})
 }
 
 // start transition-stage command
@@ -2462,12 +2302,6 @@ func newTransitionStage() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newTransitionStage())
-	})
-}
-
 // start update-comment command
 
 // Slice with functions to override default command behavior.
@@ -2547,12 +2381,6 @@ func newUpdateComment() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdateComment())
-	})
-}
-
 // start update-model command
 
 // Slice with functions to override default command behavior.
@@ -2628,12 +2456,6 @@ func newUpdateModel() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdateModel())
-	})
 }
 
 // start update-model-version command
@@ -2717,12 +2539,6 @@ func newUpdateModelVersion() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdateModelVersion())
-	})
-}
-
 // start update-permissions command
 
 // Slice with functions to override default command behavior.
@@ -2790,12 +2606,6 @@ func newUpdatePermissions() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdatePermissions())
-	})
 }
 
 // start update-webhook command
@@ -2879,12 +2689,6 @@ func newUpdateWebhook() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdateWebhook())
-	})
 }
 
 // end service ModelRegistry

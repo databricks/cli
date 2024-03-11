@@ -19,8 +19,17 @@ func load(t *testing.T, path string) *bundle.Bundle {
 }
 
 func loadTarget(t *testing.T, path, env string) *bundle.Bundle {
-	b := load(t, path)
-	err := bundle.Apply(context.Background(), b, mutator.SelectTarget(env))
+	ctx := context.Background()
+	b, err := bundle.Load(ctx, path)
+	require.NoError(t, err)
+	err = bundle.Apply(ctx, b, bundle.Seq(mutator.DefaultMutatorsForTarget(env)...))
+	require.NoError(t, err)
+	err = bundle.Apply(ctx, b, bundle.Seq(
+		mutator.RewriteSyncPaths(),
+		mutator.MergeJobClusters(),
+		mutator.MergeJobTasks(),
+		mutator.MergePipelineClusters(),
+	))
 	require.NoError(t, err)
 	return b
 }
