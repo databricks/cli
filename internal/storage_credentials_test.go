@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestStorageCredentialsListRendersResponse(t *testing.T) {
+func TestAccStorageCredentialsListRendersResponse(t *testing.T) {
 	_, _ = acc.WorkspaceTest(t)
 	stdout, stderr := RequireSuccessfulRun(t, "storage-credentials", "list")
 	assert.NotEmpty(t, stdout)

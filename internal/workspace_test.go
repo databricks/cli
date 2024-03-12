@@ -42,7 +42,7 @@ func TestWorkpaceGetStatusErrorWhenNoArguments(t *testing.T) {
 	assert.Equal(t, "accepts 1 arg(s), received 0", err.Error())
 }
 
-func TestWorkpaceExportPrintsContents(t *testing.T) {
+func TestAccWorkpaceExportPrintsContents(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
