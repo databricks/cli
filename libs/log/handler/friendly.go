@@ -185,7 +185,7 @@ func (s *handleState) appendAttr(a slog.Attr) {
 // Handle implements slog.Handler.
 func (h *friendlyHandler) Handle(ctx context.Context, r slog.Record) error {
 	state := h.handleState()
-	state.append(h.sprintf(ttyColorTime, "%02d:%02d:%02d ", r.Time.Hour(), r.Time.Minute(), r.Time.Second()))
+	state.append(h.sprintf(ttyColorTime, "%s", r.Time.Format(time.RFC3339)))
 	state.appendf("%s ", h.coloredLevel(r))
 	state.append(h.sprint(ttyColorMessage, r.Message))
 
