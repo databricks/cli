@@ -151,8 +151,7 @@ func translateNoOp(literal, localFullPath, localRelPath, remotePath string) (str
 	return localRelPath, nil
 }
 
-func (m *translatePaths) rewriteValue(b *bundle.Bundle, p dyn.Path, v dyn.Value, fn rewriteFunc) (dyn.Value, error) {
-	dir := path.Dir(v.Location().File)
+func (m *translatePaths) rewriteValue(b *bundle.Bundle, p dyn.Path, v dyn.Value, fn rewriteFunc, dir string) (dyn.Value, error) {
 	out := v.MustString()
 	err := m.rewritePath(dir, b, &out, fn)
 	if err != nil {
@@ -166,6 +165,25 @@ func (m *translatePaths) rewriteValue(b *bundle.Bundle, p dyn.Path, v dyn.Value,
 	}
 
 	return dyn.NewValue(out, v.Location()), nil
+}
+
+func (m *translatePaths) rewriteRelativeTo(b *bundle.Bundle, p dyn.Path, v dyn.Value, fn rewriteFunc, dirs []string) (dyn.Value, error) {
+	var err error
+
+	for _, dir := range dirs {
+		nv, nerr := m.rewriteValue(b, p, v, fn, dir)
+		if nerr != nil {
+			// If we haven't seen an error yet, store the first one.
+			if err == nil {
+				err = nerr
+			}
+			continue
+		}
+
+		return nv, nil
+	}
+
+	return dyn.InvalidValue, err
 }
 
 func (m *translatePaths) Apply(_ context.Context, b *bundle.Bundle) error {

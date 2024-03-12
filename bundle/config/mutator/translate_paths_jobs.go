@@ -75,7 +75,15 @@ func (m *translatePaths) applyJobTranslations(b *bundle.Bundle, v dyn.Value) (dy
 				return v, nil
 			}
 
-			return m.rewriteValue(b, p, v, t.fn)
+			dir, err := v.Location().Directory()
+			if err != nil {
+				return dyn.InvalidValue, fmt.Errorf("unable to determine directory for job %s: %w", key, err)
+			}
+
+			return m.rewriteRelativeTo(b, p, v, t.fn, []string{
+				dir,
+				fallback[key],
+			})
 		})
 		if err != nil {
 			return dyn.InvalidValue, err

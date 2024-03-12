@@ -45,7 +45,16 @@ func (m *translatePaths) applyPipelineTranslations(b *bundle.Bundle, v dyn.Value
 		},
 	} {
 		v, err = dyn.MapByPattern(v, t.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			return m.rewriteValue(b, p, v, t.fn)
+			key := p[2].Key()
+			dir, err := v.Location().Directory()
+			if err != nil {
+				return dyn.InvalidValue, fmt.Errorf("unable to determine directory for pipeline %s: %w", key, err)
+			}
+
+			return m.rewriteRelativeTo(b, p, v, t.fn, []string{
+				dir,
+				fallback[key],
+			})
 		})
 		if err != nil {
 			return dyn.InvalidValue, err
