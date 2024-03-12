@@ -13,7 +13,7 @@ func newMkdirCommand() *cobra.Command {
 		Aliases: []string{"mkdirs"},
 		Short:   "Make directories.",
 		Long:    `Make directories in DBFS and UC Volumes. Mkdir will create directories along the path to the argument directory.`,
-		Args:    cobra.ExactArgs(1),
+		Args:    root.ExactArgs(1),
 		PreRunE: root.MustWorkspaceClient,
 	}
 

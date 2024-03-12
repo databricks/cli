@@ -432,12 +432,8 @@ func newGetUpdate() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(2)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -566,12 +562,8 @@ func newListPipelines() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(0)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(0)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient

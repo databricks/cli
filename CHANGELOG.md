@@ -7,7 +7,7 @@ CLI:
 
 Bundles:
 * Fix summary command when internal Terraform config doesn't exist ([#1242](https://github.com/databricks/cli/pull/1242)).
-* Configure cobra.NoArgs for bundle commands where applicable ([#1250](https://github.com/databricks/cli/pull/1250)).
+* Configure root.NoArgs for bundle commands where applicable ([#1250](https://github.com/databricks/cli/pull/1250)).
 * Fixed building Python artifacts on Windows with WSL ([#1249](https://github.com/databricks/cli/pull/1249)).
 * Add `--validate-only` flag to run validate-only pipeline update ([#1251](https://github.com/databricks/cli/pull/1251)).
 * Only transform wheel libraries when using trampoline ([#1248](https://github.com/databricks/cli/pull/1248)).

@@ -95,18 +95,14 @@ func newCreateScope() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'scope' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(1)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -180,18 +176,14 @@ func newDeleteAcl() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'scope', 'principal' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(2)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(2)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -266,18 +258,14 @@ func newDeleteScope() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'scope' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(1)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -351,18 +339,14 @@ func newDeleteSecret() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'scope', 'key' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(2)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(2)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -436,12 +420,8 @@ func newGetAcl() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(2)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -511,12 +491,8 @@ func newGetSecret() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(2)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -579,12 +555,8 @@ func newListAcls() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -687,12 +659,8 @@ func newListSecrets() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -776,18 +744,14 @@ func newPutAcl() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'scope', 'principal', 'permission' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(3)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(3)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient

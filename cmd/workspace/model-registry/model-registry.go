@@ -125,18 +125,14 @@ func newApproveTransitionRequest() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'version', 'stage', 'archive_existing_versions' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(4)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(4)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -223,18 +219,14 @@ func newCreateComment() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'version', 'comment' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(3)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(3)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -314,18 +306,14 @@ func newCreateModel() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(1)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -399,18 +387,14 @@ func newCreateModelVersion() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'source' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(2)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(2)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -493,18 +477,14 @@ func newCreateTransitionRequest() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'version', 'stage' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(3)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(3)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -642,12 +622,8 @@ func newDeleteComment() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -704,12 +680,8 @@ func newDeleteModel() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -768,12 +740,8 @@ func newDeleteModelTag() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(2)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -832,12 +800,8 @@ func newDeleteModelVersion() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(2)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -898,12 +862,8 @@ func newDeleteModelVersionTag() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(3)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(3)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -977,12 +937,8 @@ func newDeleteTransitionRequest() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(4)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(4)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1046,12 +1002,8 @@ func newDeleteWebhook() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(0)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(0)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1111,18 +1063,14 @@ func newGetLatestVersions() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(1)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1188,12 +1136,8 @@ func newGetModel() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1251,12 +1195,8 @@ func newGetModelVersion() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(2)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1315,12 +1255,8 @@ func newGetModelVersionDownloadUri() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(2)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1378,12 +1314,8 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1441,12 +1373,8 @@ func newGetPermissions() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1504,12 +1432,8 @@ func newListModels() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(0)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(0)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1562,12 +1486,8 @@ func newListTransitionRequests() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(2)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1625,12 +1545,8 @@ func newListWebhooks() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(0)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(0)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1697,18 +1613,14 @@ func newRejectTransitionRequest() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'version', 'stage' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(3)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(3)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1787,18 +1699,14 @@ func newRenameModel() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(1)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1865,12 +1773,8 @@ func newSearchModelVersions() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(0)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(0)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1924,12 +1828,8 @@ func newSearchModels() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(0)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(0)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -1991,18 +1891,14 @@ func newSetModelTag() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'key', 'value' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(3)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(3)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -2084,18 +1980,14 @@ func newSetModelVersionTag() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'version', 'key', 'value' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(4)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(4)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -2174,12 +2066,8 @@ func newSetPermissions() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -2262,18 +2150,14 @@ func newTestRegistryWebhook() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'id' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(1)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -2359,18 +2243,14 @@ func newTransitionStage() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'version', 'stage', 'archive_existing_versions' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(4)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(4)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -2454,18 +2334,14 @@ func newUpdateComment() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'id', 'comment' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(2)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(2)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -2538,18 +2414,14 @@ func newUpdateModel() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(1)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -2620,18 +2492,14 @@ func newUpdateModelVersion() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'version' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(2)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(2)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -2704,12 +2572,8 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -2783,18 +2647,14 @@ func newUpdateWebhook() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'id' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(1)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient

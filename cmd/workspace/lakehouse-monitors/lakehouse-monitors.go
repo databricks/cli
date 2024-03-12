@@ -93,12 +93,8 @@ func newCancelRefresh() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(2)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -183,18 +179,14 @@ func newCreate() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(1)(cmd, args)
+			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, provide only FULL_NAME as positional arguments. Provide 'assets_dir', 'output_schema_name' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(3)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(3)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -275,12 +267,8 @@ func newDelete() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -348,12 +336,8 @@ func newGet() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -420,12 +404,8 @@ func newGetRefresh() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(2)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -493,12 +473,8 @@ func newListRefreshes() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -565,12 +541,8 @@ func newRunRefresh() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -653,18 +625,14 @@ func newUpdate() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(1)(cmd, args)
+			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, provide only FULL_NAME as positional arguments. Provide 'output_schema_name' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(2)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(2)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient

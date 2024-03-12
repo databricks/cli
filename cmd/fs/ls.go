@@ -42,7 +42,7 @@ func newLsCommand() *cobra.Command {
 		Use:     "ls DIR_PATH",
 		Short:   "Lists files.",
 		Long:    `Lists files in DBFS and UC Volumes.`,
-		Args:    cobra.ExactArgs(1),
+		Args:    root.ExactArgs(1),
 		PreRunE: root.MustWorkspaceClient,
 	}
 

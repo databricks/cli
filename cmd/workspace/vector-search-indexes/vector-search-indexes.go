@@ -96,18 +96,14 @@ func newCreateIndex() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'endpoint_name', 'primary_key', 'index_type' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(4)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(4)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -187,12 +183,8 @@ func newDeleteDataVectorIndex() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -257,12 +249,8 @@ func newDeleteIndex() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -319,12 +307,8 @@ func newGetIndex() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -383,12 +367,8 @@ func newListIndexes() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -449,12 +429,8 @@ func newQueryIndex() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -519,12 +495,8 @@ func newSyncIndex() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(1)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -586,18 +558,14 @@ func newUpsertDataVectorIndex() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(1)(cmd, args)
+			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, provide only INDEX_NAME as positional arguments. Provide 'inputs_json' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(2)
-		err := check(cmd, args)
-		if err != nil {
-			return fmt.Errorf("%w\n\n%s", err, cmd.UsageString())
-		}
-		return nil
+		check := root.ExactArgs(2)
+		return check(cmd, args)
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient

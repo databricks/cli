@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/spf13/cobra"
@@ -47,7 +48,7 @@ func newSyncCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "sync [flags]",
 		Short: "Synchronize bundle tree to the workspace",
-		Args:  cobra.NoArgs,
+		Args:  root.NoArgs,
 
 		PreRunE: utils.ConfigureBundleWithVariables,
 	}

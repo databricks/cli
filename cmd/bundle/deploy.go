@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
 )
 
@@ -13,7 +14,7 @@ func newDeployCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "deploy",
 		Short:   "Deploy bundle",
-		Args:    cobra.NoArgs,
+		Args:    root.NoArgs,
 		PreRunE: utils.ConfigureBundleWithVariables,
 	}
 

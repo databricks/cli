@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
 )
@@ -16,7 +17,7 @@ func newBindCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "bind KEY RESOURCE_ID",
 		Short:   "Bind bundle-defined resources to existing resources",
-		Args:    cobra.ExactArgs(2),
+		Args:    root.ExactArgs(2),
 		PreRunE: utils.ConfigureBundleWithVariables,
 	}
 
