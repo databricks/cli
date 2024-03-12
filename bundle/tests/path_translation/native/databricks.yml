@@ -1,0 +1,55 @@
+bundle:
+  name: path_translation_fallback
+
+include:
+  - "resources/*.yml"
+
+targets:
+  development:
+    default: true
+
+    resources:
+      jobs:
+        my_job:
+          # Note: paths below are relative to the directory they are defined in (this directory).
+          #
+          # This behavior is present since https://github.com/databricks/cli/pull/1273.
+          # It is what's least surprising to users and what's most consistent with how paths
+          # are resolved in other contexts (e.g. in Python, in the shell, etc).
+          #
+          # Prior to this change, the code would use a single path per resource to resolve
+          # all paths in the resource. This would lead to confusing behavior when the resource
+          # was defined across multiple files in different directories.
+          #
+          tasks:
+            - task_key: notebook_example
+              notebook_task:
+                notebook_path: ./src/notebook.py
+
+            - task_key: spark_python_example
+              spark_python_task:
+                python_file: ./src/file.py
+
+            - task_key: dbt_example
+              dbt_task:
+                project_directory: ./src/dbt_project
+                commands:
+                  - "dbt run"
+
+            - task_key: sql_example
+              sql_task:
+                file:
+                  path: ./src/sql.sql
+                warehouse_id: cafef00d
+
+            - task_key: python_wheel_example
+              python_wheel_task:
+                package_name: my_package
+              libraries:
+                - whl: ./dist/some.whl
+
+            - task_key: spark_jar_example
+              spark_jar_task:
+                main_class_name: com.example.Main
+              libraries:
+                - jar: ./target/some.jar

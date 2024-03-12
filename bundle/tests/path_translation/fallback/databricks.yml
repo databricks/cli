@@ -1,0 +1,60 @@
+bundle:
+  name: path_translation_fallback
+
+include:
+  - "resources/*.yml"
+
+targets:
+  development:
+    default: true
+
+    resources:
+      jobs:
+        my_job:
+          # Note: paths below are relative to the FIRST location where this job is defined.
+          #
+          # This behavior is present since v0.214.0 when we introduced the dynamic configuration
+          # loading to bundles. When merging configuration trees (e.g. when loading configuration
+          # from multiple files, or when applying target overrides), the FIRST location where a
+          # node in the tree was defined persist.
+          #
+          # This means that target overrides defined in a file in a different directory than
+          # the directory containing the original definition need to use paths relative to the
+          # directory containing the original definition.
+          #
+          # While counter-intuitive, we need to continue supporting to avoid breaking
+          # existing configurations. We will emit a warning and eventually deprecate
+          # this behavior in favor of resolving every path relative to where it was defined.
+          #
+          tasks:
+            - task_key: notebook_example
+              notebook_task:
+                notebook_path: ../src/notebook.py
+
+            - task_key: spark_python_example
+              spark_python_task:
+                python_file: ../src/file.py
+
+            - task_key: dbt_example
+              dbt_task:
+                project_directory: ../src/dbt_project
+                commands:
+                  - "dbt run"
+
+            - task_key: sql_example
+              sql_task:
+                file:
+                  path: ../src/sql.sql
+                warehouse_id: cafef00d
+
+            - task_key: python_wheel_example
+              python_wheel_task:
+                package_name: my_package
+              libraries:
+                - whl: ../dist/some.whl
+
+            - task_key: spark_jar_example
+              spark_jar_task:
+                main_class_name: com.example.Main
+              libraries:
+                - jar: ../target/some.jar
