@@ -432,7 +432,7 @@ func newGetUpdate() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -562,7 +562,7 @@ func newListPipelines() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(0)
+		check := root.ExactArgs(0)
 		return check(cmd, args)
 	}
 

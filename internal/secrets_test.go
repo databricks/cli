@@ -14,7 +14,7 @@ import (
 
 func TestSecretsCreateScopeErrWhenNoArguments(t *testing.T) {
 	_, _, err := RequireErrorRun(t, "secrets", "create-scope")
-	assert.Equal(t, "accepts 1 arg(s), received 0", err.Error())
+	assert.Contains(t, err.Error(), "accepts 1 arg(s), received 0")
 }
 
 func temporarySecretScope(ctx context.Context, t *acc.WorkspaceT) string {
