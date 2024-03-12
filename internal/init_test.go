@@ -40,9 +40,6 @@ func TestAccBundleInitErrorOnUnknownFields(t *testing.T) {
 func TestAccBundleInitOnMlopsStacks(t *testing.T) {
 	t.Parallel()
 	env := GetEnvOrSkipTest(t, "CLOUD_ENV")
-	if env == "gcp" {
-		t.Skip("MLOps Stacks is not supported in GCP")
-	}
 	tmpDir1 := t.TempDir()
 	tmpDir2 := t.TempDir()
 
