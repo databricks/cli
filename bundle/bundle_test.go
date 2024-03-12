@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/env"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -86,7 +87,7 @@ func TestBundleMustLoadFailureWithEnv(t *testing.T) {
 }
 
 func TestBundleMustLoadFailureIfNotFound(t *testing.T) {
-	chdir(t, t.TempDir())
+	testutil.Chdir(t, t.TempDir())
 	_, err := MustLoad(context.Background())
 	require.Error(t, err, "unable to find bundle root")
 }
@@ -105,7 +106,7 @@ func TestBundleTryLoadFailureWithEnv(t *testing.T) {
 }
 
 func TestBundleTryLoadOkIfNotFound(t *testing.T) {
-	chdir(t, t.TempDir())
+	testutil.Chdir(t, t.TempDir())
 	b, err := TryLoad(context.Background())
 	assert.NoError(t, err)
 	assert.Nil(t, b)
