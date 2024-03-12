@@ -12,7 +12,7 @@ func newLaunchCommand() *cobra.Command {
 		Use:   "launch",
 		Short: "Launches a notebook on development cluster",
 		Long:  `Reads a file and executes it on dev cluster`,
-		Args:  cobra.ExactArgs(1),
+		Args:  root.ExactArgs(1),
 
 		// We're not ready to expose this command until we specify its semantics.
 		Hidden: true,

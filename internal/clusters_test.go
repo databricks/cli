@@ -36,5 +36,5 @@ func TestAccClustersGet(t *testing.T) {
 
 func TestClusterCreateErrorWhenNoArguments(t *testing.T) {
 	_, _, err := RequireErrorRun(t, "clusters", "create")
-	assert.Equal(t, "accepts 1 arg(s), received 0", err.Error())
+	assert.Contains(t, err.Error(), "accepts 1 arg(s), received 0")
 }

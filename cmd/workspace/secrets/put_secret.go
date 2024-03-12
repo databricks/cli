@@ -50,9 +50,9 @@ func newPutSecret() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
+		check := root.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			check = root.ExactArgs(0)
 		}
 		return check(cmd, args)
 	}

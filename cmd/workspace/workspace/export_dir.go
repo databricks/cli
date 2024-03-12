@@ -94,7 +94,7 @@ func newExportDir() *cobra.Command {
 	`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Args = cobra.ExactArgs(2)
+	cmd.Args = root.ExactArgs(2)
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
