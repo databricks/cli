@@ -54,6 +54,11 @@ func (e errBothSpAndUserSpecified) Error() string {
 func validateRunAs(b *bundle.Bundle) error {
 	runAs := b.Config.RunAs
 
+	// Error if neither service_principal_name nor user_name are specified
+	if runAs.ServicePrincipalName == "" && runAs.UserName == "" {
+		return fmt.Errorf("run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at %s", b.Config.TryLocation("run_as"))
+	}
+
 	// Error if both service_principal_name and user_name are specified
 	if runAs.UserName != "" && runAs.ServicePrincipalName != "" {
 		return errBothSpAndUserSpecified{
@@ -102,10 +107,6 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) error {
 	runAs := b.Config.RunAs
 	if runAs == nil {
 		return nil
-	}
-
-	if runAs.ServicePrincipalName == "" && runAs.UserName == "" {
-		return fmt.Errorf("run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at %s", b.Config.TryLocation("run_as"))
 	}
 
 	// Assert the run_as configuration is valid in the context of the bundle
