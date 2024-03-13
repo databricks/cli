@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
@@ -39,7 +40,8 @@ func TestAccBundleInitErrorOnUnknownFields(t *testing.T) {
 //     skip this test until the MLOps Stacks DAB is updated to work again.
 func TestAccBundleInitOnMlopsStacks(t *testing.T) {
 	t.Parallel()
-	env := GetEnvOrSkipTest(t, "CLOUD_ENV")
+	env := testutil.GetCloud(t).String()
+
 	tmpDir1 := t.TempDir()
 	tmpDir2 := t.TempDir()
 
@@ -53,7 +55,7 @@ func TestAccBundleInitOnMlopsStacks(t *testing.T) {
 		"input_project_name":                    projectName,
 		"input_root_dir":                        "repo_name",
 		"input_include_models_in_unity_catalog": "no",
-		"input_cloud":                           env,
+		"input_cloud":                           strings.ToLower(env),
 	}
 	b, err := json.Marshal(initConfig)
 	require.NoError(t, err)
