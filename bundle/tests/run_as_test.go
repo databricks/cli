@@ -219,7 +219,6 @@ func TestRunAsErrorNeitherUserOrSpSpecified(t *testing.T) {
 	}
 }
 
-
 func TestRunAsErrorNeitherUserOrSpSpecifiedAtTargetOverride(t *testing.T) {
 	b := loadTarget(t, "./run_as/not_allowed/neither_sp_nor_user_override", "development")
 
