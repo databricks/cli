@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/files"
@@ -25,8 +26,11 @@ func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 
-	// Increment the state version.
-	state.Version = state.Version + 1
+	// Increment the state sequence.
+	state.Seq = state.Seq + 1
+
+	// Update timestamp.
+	state.Timestamp = time.Now().UTC()
 
 	// Get the current file list.
 	sync, err := files.GetSync(ctx, b)
@@ -47,15 +51,12 @@ func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 	// Write the state back to the file.
-	f, err := os.OpenFile(statePath, os.O_CREATE|os.O_RDWR, 0600)
+	f, err := os.OpenFile(statePath, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0600)
 	if err != nil {
 		log.Infof(ctx, "Unable to open deployment state file: %s", err)
 		return err
 	}
 	defer f.Close()
-
-	f.Truncate(0)
-	f.Seek(0, 0)
 
 	data, err := json.Marshal(state)
 	if err != nil {
@@ -83,13 +84,14 @@ func load(ctx context.Context, b *bundle.Bundle) (*DeploymentState, error) {
 	if _, err := os.Stat(statePath); os.IsNotExist(err) {
 		log.Infof(ctx, "No deployment state file found")
 		return &DeploymentState{
-			Version: 0,
+			Version: "v1",
+			Seq:     0,
 		}, nil
 	}
 
 	log.Infof(ctx, "Loading deployment state from %s", statePath)
 	// Otherwise, load the DeploymentState from the file.
-	f, err := os.OpenFile(statePath, os.O_RDWR, 0600)
+	f, err := os.Open(statePath)
 	if err != nil {
 		return nil, err
 	}

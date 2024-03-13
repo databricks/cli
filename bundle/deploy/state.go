@@ -8,25 +8,32 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/fileset"
 )
 
-const DeploymentStateFileName = "deployment-state.json"
+const DeploymentStateFileName = "deployment.json"
 
 type File struct {
-	Absolute string `json:"absolute"`
-	Relative string `json:"relative"`
+	Path string `json:"path"`
 }
 
 type Filelist []File
 
 type DeploymentState struct {
-	Version int64    `json:"version"`
-	Files   Filelist `json:"files"`
+	Version   string    `json:"version"`
+	Seq       int64     `json:"seq"`
+	Timestamp time.Time `json:"timestamp"`
+	Files     Filelist  `json:"files"`
 }
 
+// We use this entry type as a proxy to fs.DirEntry.
+// When we construct sync snapshot from deployment state,
+// we use a fileset.File which embeds we use fs.DirEntry as the DirEntry field.
+// Because we can't marshal/unmarshal fs.DirEntry directly, instead when we unmarshal
+// the deployment state, we use this entry type to represent the fs.DirEntry in fileset.File instance.
 type entry struct {
 	path string
 	info fs.FileInfo
@@ -72,20 +79,20 @@ func FromSlice(files []fileset.File) Filelist {
 	var f Filelist
 	for _, file := range files {
 		f = append(f, File{
-			Absolute: file.Absolute,
-			Relative: file.Relative,
+			Path: file.Relative,
 		})
 	}
 	return f
 }
 
-func (f Filelist) ToSlice() []fileset.File {
+func (f Filelist) ToSlice(basePath string) []fileset.File {
 	var files []fileset.File
 	for _, file := range f {
+		absPath := filepath.Join(basePath, file.Path)
 		files = append(files, fileset.File{
-			DirEntry: newEntry(file.Absolute),
-			Absolute: file.Absolute,
-			Relative: file.Relative,
+			DirEntry: newEntry(absPath),
+			Absolute: absPath,
+			Relative: file.Path,
 		})
 	}
 	return files
@@ -102,7 +109,7 @@ func isLocalStateStale(local io.Reader, remote io.Reader) bool {
 		return false
 	}
 
-	return localState.Version < remoteState.Version
+	return localState.Seq < remoteState.Seq
 }
 
 func loadState(r io.Reader) (*DeploymentState, error) {

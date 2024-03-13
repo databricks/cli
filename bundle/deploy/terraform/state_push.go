@@ -6,13 +6,14 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 )
 
 type statePush struct {
-	filerFunc
+	deploy.FilerFactory
 }
 
 func (l *statePush) Name() string {
@@ -20,7 +21,7 @@ func (l *statePush) Name() string {
 }
 
 func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) error {
-	f, err := l.filerFunc(b)
+	f, err := l.FilerFactory(b)
 	if err != nil {
 		return err
 	}
@@ -49,5 +50,5 @@ func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) error {
 }
 
 func StatePush() bundle.Mutator {
-	return &statePush{stateFiler}
+	return &statePush{deploy.StateFiler}
 }

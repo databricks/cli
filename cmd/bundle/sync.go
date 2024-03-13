@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/libs/log"
@@ -19,28 +20,14 @@ type syncFlags struct {
 }
 
 func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) (*sync.SyncOptions, error) {
-	cacheDir, err := b.CacheDir(cmd.Context())
+	opts, err := files.GetSyncOptions(cmd.Context(), b)
 	if err != nil {
-		return nil, fmt.Errorf("cannot get bundle cache directory: %w", err)
+		return nil, fmt.Errorf("cannot get sync options: %w", err)
 	}
 
-	includes, err := b.GetSyncIncludePatterns(cmd.Context())
-	if err != nil {
-		return nil, fmt.Errorf("cannot get list of sync includes: %w", err)
-	}
-
-	opts := sync.SyncOptions{
-		LocalPath:    b.Config.Path,
-		RemotePath:   b.Config.Workspace.FilePath,
-		Include:      includes,
-		Exclude:      b.Config.Sync.Exclude,
-		Full:         f.full,
-		PollInterval: f.interval,
-
-		SnapshotBasePath: cacheDir,
-		WorkspaceClient:  b.WorkspaceClient(),
-	}
-	return &opts, nil
+	opts.Full = f.full
+	opts.PollInterval = f.interval
+	return opts, nil
 }
 
 func newSyncCommand() *cobra.Command {

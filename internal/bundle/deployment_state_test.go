@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
 	"github.com/google/uuid"
@@ -47,8 +48,8 @@ func TestAccFilesAreSyncedCorrectlyWhenNoSnapshot(t *testing.T) {
 	_, err = w.Workspace.GetStatusByPath(ctx, path.Join(remoteRoot, "files", "test.py"))
 	require.NoError(t, err)
 
-	// Check that deployment-state.json is synced correctly
-	_, err = w.Workspace.GetStatusByPath(ctx, path.Join(remoteRoot, "state", "deployment-state.json"))
+	// Check that deployment.json is synced correctly
+	_, err = w.Workspace.GetStatusByPath(ctx, path.Join(remoteRoot, "state", deploy.DeploymentStateFileName))
 	require.NoError(t, err)
 
 	// Remove .databricks directory to simulate a fresh deployment like in CI/CD environment

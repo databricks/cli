@@ -31,12 +31,7 @@ func TestFromSlice(t *testing.T) {
 	require.Len(t, f, 3)
 
 	for _, file := range f {
-		require.Contains(t, []string{"test1.py", "test2.py", "test3.py"}, file.Relative)
-		require.Contains(t, []string{
-			filepath.Join(tmpDir, "test1.py"),
-			filepath.Join(tmpDir, "test2.py"),
-			filepath.Join(tmpDir, "test3.py"),
-		}, file.Absolute)
+		require.Contains(t, []string{"test1.py", "test2.py", "test3.py"}, file.Path)
 	}
 }
 
@@ -53,7 +48,7 @@ func TestToSlice(t *testing.T) {
 	f := FromSlice(files)
 	require.Len(t, f, 3)
 
-	s := f.ToSlice()
+	s := f.ToSlice(tmpDir)
 	require.Len(t, s, 3)
 
 	for _, file := range s {
@@ -74,12 +69,12 @@ func TestToSlice(t *testing.T) {
 
 func TestIsLocalStateStale(t *testing.T) {
 	oldState, err := json.Marshal(DeploymentState{
-		Version: 1,
+		Seq: 1,
 	})
 	require.NoError(t, err)
 
 	newState, err := json.Marshal(DeploymentState{
-		Version: 2,
+		Seq: 2,
 	})
 	require.NoError(t, err)
 

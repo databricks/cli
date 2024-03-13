@@ -19,7 +19,7 @@ func TestStatePush(t *testing.T) {
 	s := &statePush{func(b *bundle.Bundle) (filer.Filer, error) {
 		f := mockfiler.NewMockFiler(t)
 
-		f.EXPECT().Write(mock.Anything, "deployment-state.json", mock.MatchedBy(func(r *os.File) bool {
+		f.EXPECT().Write(mock.Anything, DeploymentStateFileName, mock.MatchedBy(func(r *os.File) bool {
 			bytes, err := io.ReadAll(r)
 			if err != nil {
 				return false
@@ -31,7 +31,7 @@ func TestStatePush(t *testing.T) {
 				return false
 			}
 
-			if state.Version != 1 {
+			if state.Seq != 1 {
 				return false
 			}
 
@@ -62,11 +62,11 @@ func TestStatePush(t *testing.T) {
 	require.NoError(t, err)
 
 	state := DeploymentState{
-		Version: 1,
+		Version: "v1",
+		Seq:     1,
 		Files: []File{
 			{
-				Absolute: "/foo/bar/t1.py",
-				Relative: "bar/t1.py",
+				Path: "bar/t1.py",
 			},
 		},
 	}

@@ -10,7 +10,7 @@ import (
 )
 
 type statePush struct {
-	filerFactory
+	FilerFactory
 }
 
 func (s *statePush) Name() string {
@@ -18,7 +18,7 @@ func (s *statePush) Name() string {
 }
 
 func (s *statePush) Apply(ctx context.Context, b *bundle.Bundle) error {
-	f, err := s.filerFactory(b)
+	f, err := s.FilerFactory(b)
 	if err != nil {
 		return err
 	}
@@ -44,5 +44,5 @@ func (s *statePush) Apply(ctx context.Context, b *bundle.Bundle) error {
 }
 
 func StatePush() bundle.Mutator {
-	return &statePush{stateFiler}
+	return &statePush{StateFiler}
 }

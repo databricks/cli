@@ -5,23 +5,23 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"io/fs"
 	"os"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sync"
 )
 
 type statePull struct {
-	filerFactory
+	FilerFactory
 }
 
 func (s *statePull) Apply(ctx context.Context, b *bundle.Bundle) error {
-	f, err := s.filerFactory(b)
+	f, err := s.FilerFactory(b)
 	if err != nil {
 		return err
 	}
@@ -66,26 +66,14 @@ func (s *statePull) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 
-	cacheDir, err := b.CacheDir(ctx)
+	opts, err := files.GetSyncOptions(ctx, b)
 	if err != nil {
-		return fmt.Errorf("cannot get bundle cache directory: %w", err)
-	}
-
-	opts := &sync.SyncOptions{
-		LocalPath:        b.Config.Path,
-		RemotePath:       b.Config.Workspace.FilePath,
-		SnapshotBasePath: cacheDir,
-		Host:             b.WorkspaceClient().Config.Host,
+		return err
 	}
 
 	snapshotPath, err := sync.SnapshotPath(opts)
 	if err != nil {
 		return err
-	}
-
-	if _, err := os.Stat(snapshotPath); err == nil {
-		log.Infof(ctx, "Snapshot already exists, skipping creation")
-		return nil
 	}
 
 	var state DeploymentState
@@ -96,7 +84,7 @@ func (s *statePull) Apply(ctx context.Context, b *bundle.Bundle) error {
 
 	// Create a new snapshot based on the deployment state file.
 	log.Infof(ctx, "Creating new snapshot")
-	snapshotState, err := sync.NewSnapshotState(state.Files.ToSlice())
+	snapshotState, err := sync.NewSnapshotState(state.Files.ToSlice(b.Config.Path))
 	if err != nil {
 		return err
 	}
@@ -142,5 +130,5 @@ func (s *statePull) Name() string {
 }
 
 func StatePull() bundle.Mutator {
-	return &statePull{stateFiler}
+	return &statePull{StateFiler}
 }

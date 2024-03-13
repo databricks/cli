@@ -60,7 +60,17 @@ func TestStateUpdate(t *testing.T) {
 	state, err := load(ctx, b)
 	require.NoError(t, err)
 
-	require.Equal(t, int64(1), state.Version)
+	require.Equal(t, int64(1), state.Seq)
+	require.Len(t, state.Files, 3)
+
+	err = bundle.Apply(ctx, b, s)
+	require.NoError(t, err)
+
+	// Check that the state file was updated again.
+	state, err = load(ctx, b)
+	require.NoError(t, err)
+
+	require.Equal(t, int64(2), state.Seq)
 	require.Len(t, state.Files, 3)
 }
 
@@ -106,11 +116,11 @@ func TestStateUpdateWithExistingState(t *testing.T) {
 	require.NoError(t, err)
 
 	state := &DeploymentState{
-		Version: 10,
+		Version: "v1",
+		Seq:     10,
 		Files: []File{
 			{
-				Absolute: "/foo/bar/t1.py",
-				Relative: "bar/t1.py",
+				Path: "bar/t1.py",
 			},
 		},
 	}
@@ -128,6 +138,6 @@ func TestStateUpdateWithExistingState(t *testing.T) {
 	state, err = load(ctx, b)
 	require.NoError(t, err)
 
-	require.Equal(t, int64(11), state.Version)
+	require.Equal(t, int64(11), state.Seq)
 	require.Len(t, state.Files, 3)
 }
