@@ -13,6 +13,7 @@ type setRunAs struct {
 }
 
 // This mutator does two things:
+//
 //  1. Sets the run_as field for jobs to the value of the run_as field in the bundle.
 //
 //  2. Validates the bundle run_as configuration is valid in the context of the bundle.
@@ -68,6 +69,11 @@ func validateRunAs(b *bundle.Bundle) error {
 	identity := runAs.ServicePrincipalName
 	if identity == "" {
 		identity = runAs.UserName
+	}
+
+	// All resources are supported if the run_as identity is the same as the current deployment identity.
+	if identity == b.Config.Workspace.CurrentUser.UserName {
+		return nil
 	}
 
 	// DLT pipelines do not support run_as in the API.

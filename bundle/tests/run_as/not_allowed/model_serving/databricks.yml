@@ -11,4 +11,5 @@ targets:
 
 resources:
   model_serving_endpoints:
-    name: "skynet"
+    foo:
+      name: "skynet"

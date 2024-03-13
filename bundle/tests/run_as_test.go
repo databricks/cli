@@ -110,9 +110,9 @@ func TestRunAsErrorForPipelines(t *testing.T) {
 	err := bundle.Apply(ctx, b, mutator.SetRunAs())
 
 	if runtime.GOOS == "windows" {
-		assert.EqualError(t, err, "pipelines are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. List of supported resources: [jobs, models, registered_models, experiments]. Location of the unsupported resource: run_as\\not_allowed\\pipelines\\databricks.yml:14:5. Current identity: jane@doe.com. Run as identity: my_service_principal")
+		assert.EqualError(t, err, "pipelines are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. Location of the unsupported resource: run_as\\not_allowed\\pipelines\\databricks.yml:14:5. Current identity: jane@doe.com. Run as identity: my_service_principal")
 	} else {
-		assert.EqualError(t, err, "pipelines are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. List of supported resources: [jobs, models, registered_models, experiments]. Location of the unsupported resource: run_as/not_allowed/pipelines/databricks.yml:14:5. Current identity: jane@doe.com. Run as identity: my_service_principal")
+		assert.EqualError(t, err, "pipelines are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. Location of the unsupported resource: run_as/not_allowed/pipelines/databricks.yml:14:5. Current identity: jane@doe.com. Run as identity: my_service_principal")
 	}
 }
 
@@ -151,9 +151,9 @@ func TestRunAsErrorForModelServing(t *testing.T) {
 	err := bundle.Apply(ctx, b, mutator.SetRunAs())
 
 	if runtime.GOOS == "windows" {
-		assert.EqualError(t, err, "model_serving_endpoints are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. List of supported resources: [jobs, models, registered_models, experiments]. Location of the unsupported resource: run_as\\not_allowed\\model_serving\\databricks.yml:14:5. Current identity: jane@doe.com. Run as identity: my_service_principal")
+		assert.EqualError(t, err, "model_serving_endpoints are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. Location of the unsupported resource: run_as\\not_allowed\\model_serving\\databricks.yml:14:5. Current identity: jane@doe.com. Run as identity: my_service_principal")
 	} else {
-		assert.EqualError(t, err, "model_serving_endpoints are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. List of supported resources: [jobs, models, registered_models, experiments]. Location of the unsupported resource: run_as/not_allowed/model_serving/databricks.yml:14:5. Current identity: jane@doe.com. Run as identity: my_service_principal")
+		assert.EqualError(t, err, "model_serving_endpoints are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. Location of the unsupported resource: run_as/not_allowed/model_serving/databricks.yml:14:5. Current identity: jane@doe.com. Run as identity: my_service_principal")
 	}
 }
 
