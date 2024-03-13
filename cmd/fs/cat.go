@@ -11,7 +11,7 @@ func newCatCommand() *cobra.Command {
 		Use:     "cat FILE_PATH",
 		Short:   "Show file content.",
 		Long:    `Show the contents of a file in DBFS or a UC Volume.`,
-		Args:    cobra.ExactArgs(1),
+		Args:    root.ExactArgs(1),
 		PreRunE: root.MustWorkspaceClient,
 	}
 

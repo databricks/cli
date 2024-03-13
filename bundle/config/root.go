@@ -457,3 +457,12 @@ func validateVariableOverrides(root, target dyn.Value) (err error) {
 
 	return nil
 }
+
+// Best effort to get the location of configuration value at the specified path.
+func (r *Root) TryLocation(path string) dyn.Location {
+	v, err := dyn.Get(r.value, path)
+	if err != nil {
+		return dyn.Location{}
+	}
+	return v.Location()
+}

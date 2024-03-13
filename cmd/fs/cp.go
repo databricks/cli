@@ -141,7 +141,7 @@ func newCpCommand() *cobra.Command {
 	  When copying a file, if TARGET_PATH is a directory, the file will be created
 	  inside the directory, otherwise the file is created at TARGET_PATH.
 	`,
-		Args:    cobra.ExactArgs(2),
+		Args:    root.ExactArgs(2),
 		PreRunE: root.MustWorkspaceClient,
 	}
 

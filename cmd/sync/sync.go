@@ -78,7 +78,7 @@ func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "sync [flags] SRC DST",
 		Short:   "Synchronize a local directory to a workspace directory",
-		Args:    cobra.MaximumNArgs(2),
+		Args:    root.MaximumNArgs(2),
 		GroupID: "development",
 	}
 

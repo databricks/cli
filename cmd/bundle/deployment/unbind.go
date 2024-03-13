@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
 )
 
@@ -13,7 +14,7 @@ func newUnbindCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "unbind KEY",
 		Short:   "Unbind bundle-defined resources from its managed remote resource",
-		Args:    cobra.ExactArgs(1),
+		Args:    root.ExactArgs(1),
 		PreRunE: utils.ConfigureBundleWithVariables,
 	}
 
