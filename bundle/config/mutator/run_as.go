@@ -98,15 +98,14 @@ func validateRunAs(b *bundle.Bundle) error {
 }
 
 func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) error {
-	// Return early if run_as is not defined in the bundle
+	// Mutator is a no-op if run_as is not specified in the bundle
 	runAs := b.Config.RunAs
 	if runAs == nil {
 		return nil
 	}
 
-	// Mutator is a no-op if neither are specified in the bundle
 	if runAs.ServicePrincipalName == "" && runAs.UserName == "" {
-		return nil
+		return fmt.Errorf("run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at %s", b.Config.TryLocation("run_as"))
 	}
 
 	// Assert the run_as configuration is valid in the context of the bundle
