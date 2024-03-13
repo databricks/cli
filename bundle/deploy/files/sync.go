@@ -27,17 +27,22 @@ func GetSyncOptions(ctx context.Context, b *bundle.Bundle) (*sync.SyncOptions, e
 		return nil, fmt.Errorf("cannot get list of sync includes: %w", err)
 	}
 
-	return &sync.SyncOptions{
+	opts := &sync.SyncOptions{
 		LocalPath:  b.Config.Path,
 		RemotePath: b.Config.Workspace.FilePath,
 		Include:    includes,
 		Exclude:    b.Config.Sync.Exclude,
 		Host:       b.WorkspaceClient().Config.Host,
 
-		Full:        false,
-		CurrentUser: b.Config.Workspace.CurrentUser.User,
+		Full: false,
 
 		SnapshotBasePath: cacheDir,
 		WorkspaceClient:  b.WorkspaceClient(),
-	}, nil
+	}
+
+	if b.Config.Workspace.CurrentUser != nil {
+		opts.CurrentUser = b.Config.Workspace.CurrentUser.User
+	}
+
+	return opts, nil
 }
