@@ -29,7 +29,16 @@ func allResourceTypes(t *testing.T) []string {
 	// Assert the total list of resource supported, as a sanity check that using
 	// the dyn library gives us the correct list of all resources supported. Please
 	// also update this check when adding a new resource
-	require.Equal(t, []string{"experiments", "jobs", "model_serving_endpoints", "models", "pipelines", "registered_models"}, resourceTypes)
+	require.Equal(t, []string{
+		"experiments",
+		"jobs",
+		"model_serving_endpoints",
+		"models",
+		"pipelines",
+		"registered_models",
+	},
+		resourceTypes,
+	)
 
 	return resourceTypes
 }
@@ -114,7 +123,7 @@ func TestRunAsErrorForUnsupportedResources(t *testing.T) {
 	// the relevant team whether the resource should be on the allow list or (implicitly) on
 	// the deny list. Any resources that could have run_as semantics in the future
 	// should be on the deny list.
-	// For example: Teams for pipelines, model serving endpoints or lakeview dashboards
+	// For example: Teams for pipelines, model serving endpoints or Lakeview dashboards
 	// are planning to add platform side support for `run_as` for these resources at
 	// some point in the future. These resources are (implicitly) on the deny list.
 	allowList := []string{
@@ -146,6 +155,8 @@ func TestRunAsErrorForUnsupportedResources(t *testing.T) {
 			continue
 		}
 
+		// Add an instance of the resource type that is not on the allow list to
+		// the bundle configuration.
 		nv, err := dyn.SetByPath(v, dyn.NewPath(dyn.Key("resources"), dyn.Key(rt)), dyn.V(map[string]dyn.Value{
 			"foo": dyn.V(map[string]dyn.Value{
 				"path": dyn.V("bar"),
@@ -153,10 +164,12 @@ func TestRunAsErrorForUnsupportedResources(t *testing.T) {
 		}))
 		require.NoError(t, err)
 
+		// Get back typed configuration from the new invalid bundle configuration.
 		r := &config.Root{}
 		err = convert.ToTyped(r, nv)
 		require.NoError(t, err)
 
+		// Assert this invalid bundle configuration fails validation.
 		b := &bundle.Bundle{
 			Config: *r,
 		}

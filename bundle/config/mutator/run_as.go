@@ -34,8 +34,6 @@ type errUnsupportedResourceTypeForRunAs struct {
 	runAsUser        string
 }
 
-// TODO(6 March 2024): This error message is big. We should split this once
-// diag.Diagnostics is ready.
 // TODO(6 March 2024): Link the docs page describing run_as semantics in the error below
 // once the page is ready.
 func (e errUnsupportedResourceTypeForRunAs) Error() string {
