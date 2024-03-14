@@ -13,7 +13,7 @@ import (
 )
 
 type statePush struct {
-	deploy.FilerFactory
+	filerFactory deploy.FilerFactory
 }
 
 func (l *statePush) Name() string {
@@ -21,7 +21,7 @@ func (l *statePush) Name() string {
 }
 
 func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) error {
-	f, err := l.FilerFactory(b)
+	f, err := l.filerFactory(b)
 	if err != nil {
 		return err
 	}

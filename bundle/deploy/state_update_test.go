@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/internal/build"
 	databrickscfg "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -62,6 +63,7 @@ func TestStateUpdate(t *testing.T) {
 
 	require.Equal(t, int64(1), state.Seq)
 	require.Len(t, state.Files, 3)
+	require.Equal(t, build.GetInfo().Version, state.CliVersion)
 
 	err = bundle.Apply(ctx, b, s)
 	require.NoError(t, err)
@@ -72,6 +74,7 @@ func TestStateUpdate(t *testing.T) {
 
 	require.Equal(t, int64(2), state.Seq)
 	require.Len(t, state.Files, 3)
+	require.Equal(t, build.GetInfo().Version, state.CliVersion)
 }
 
 func TestStateUpdateWithExistingState(t *testing.T) {
@@ -116,8 +119,9 @@ func TestStateUpdateWithExistingState(t *testing.T) {
 	require.NoError(t, err)
 
 	state := &DeploymentState{
-		Version: "v1",
-		Seq:     10,
+		Version:    DeploymentStateVersion,
+		Seq:        10,
+		CliVersion: build.GetInfo().Version,
 		Files: []File{
 			{
 				Path: "bar/t1.py",
@@ -140,4 +144,5 @@ func TestStateUpdateWithExistingState(t *testing.T) {
 
 	require.Equal(t, int64(11), state.Seq)
 	require.Len(t, state.Files, 3)
+	require.Equal(t, build.GetInfo().Version, state.CliVersion)
 }

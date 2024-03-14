@@ -62,7 +62,7 @@ func TestStatePush(t *testing.T) {
 	require.NoError(t, err)
 
 	state := DeploymentState{
-		Version: "v1",
+		Version: DeploymentStateVersion,
 		Seq:     1,
 		Files: []File{
 			{

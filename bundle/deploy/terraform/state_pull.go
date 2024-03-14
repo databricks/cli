@@ -16,7 +16,7 @@ import (
 )
 
 type statePull struct {
-	deploy.FilerFactory
+	filerFactory deploy.FilerFactory
 }
 
 func (l *statePull) Name() string {
@@ -46,7 +46,7 @@ func (l *statePull) remoteState(ctx context.Context, f filer.Filer) (*bytes.Buff
 }
 
 func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) error {
-	f, err := l.FilerFactory(b)
+	f, err := l.filerFactory(b)
 	if err != nil {
 		return err
 	}

@@ -15,23 +15,37 @@ import (
 )
 
 const DeploymentStateFileName = "deployment.json"
+const DeploymentStateVersion = 1
 
 type File struct {
-	Path string `json:"path"`
+	Path       string `json:"path"`
+	IsNotebook bool   `json:"is_notebook"`
 }
 
 type Filelist []File
 
 type DeploymentState struct {
-	Version   string    `json:"version"`
-	Seq       int64     `json:"seq"`
+	// Version is the version of the deployment state.
+	Version int64 `json:"version"`
+
+	// Seq is the sequence number of the deployment state.
+	// This number is incremented on every deployment.
+	// It is used to detect if the deployment state is stale.
+	Seq int64 `json:"seq"`
+
+	// CliVersion is the version of the CLI which created the deployment state.
+	CliVersion string `json:"cli_version"`
+
+	// Timestamp is the time when the deployment state was created.
 	Timestamp time.Time `json:"timestamp"`
-	Files     Filelist  `json:"files"`
+
+	// Files is a list of files which has been deployed as part of this deployment.
+	Files Filelist `json:"files"`
 }
 
 // We use this entry type as a proxy to fs.DirEntry.
 // When we construct sync snapshot from deployment state,
-// we use a fileset.File which embeds we use fs.DirEntry as the DirEntry field.
+// we use a fileset.File which embeds fs.DirEntry as the DirEntry field.
 // Because we can't marshal/unmarshal fs.DirEntry directly, instead when we unmarshal
 // the deployment state, we use this entry type to represent the fs.DirEntry in fileset.File instance.
 type entry struct {
@@ -75,25 +89,30 @@ func (e *entry) Info() (fs.FileInfo, error) {
 	return e.info, nil
 }
 
-func FromSlice(files []fileset.File) Filelist {
+func FromSlice(files []fileset.File) (Filelist, error) {
 	var f Filelist
 	for _, file := range files {
+		isNotebook, err := file.IsNotebook()
+		if err != nil {
+			return nil, err
+		}
 		f = append(f, File{
-			Path: file.Relative,
+			Path:       file.Relative,
+			IsNotebook: isNotebook,
 		})
 	}
-	return f
+	return f, nil
 }
 
 func (f Filelist) ToSlice(basePath string) []fileset.File {
 	var files []fileset.File
 	for _, file := range f {
 		absPath := filepath.Join(basePath, file.Path)
-		files = append(files, fileset.File{
-			DirEntry: newEntry(absPath),
-			Absolute: absPath,
-			Relative: file.Path,
-		})
+		if file.IsNotebook {
+			files = append(files, fileset.NewNotebookFile(newEntry(absPath), absPath, file.Path))
+		} else {
+			files = append(files, fileset.NewSourceFile(newEntry(absPath), absPath, file.Path))
+		}
 	}
 	return files
 }

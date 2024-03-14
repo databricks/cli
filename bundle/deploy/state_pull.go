@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/files"
@@ -17,11 +18,11 @@ import (
 )
 
 type statePull struct {
-	FilerFactory
+	filerFactory FilerFactory
 }
 
 func (s *statePull) Apply(ctx context.Context, b *bundle.Bundle) error {
-	f, err := s.FilerFactory(b)
+	f, err := s.filerFactory(b)
 	if err != nil {
 		return err
 	}
@@ -89,6 +90,11 @@ func (s *statePull) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 
+	// Reset last modified times to 0 to make sure all files are synced
+	for k := range snapshotState.LastModifiedTimes {
+		snapshotState.LastModifiedTimes[k] = time.Unix(0, 0)
+	}
+
 	snapshot := &sync.Snapshot{
 		SnapshotPath:  snapshotPath,
 		New:           true,
@@ -129,6 +135,7 @@ func (s *statePull) Name() string {
 	return "deploy:state-pull"
 }
 
+// StatePull returns a mutator that pulls the deployment state from the Databricks workspace
 func StatePull() bundle.Mutator {
 	return &statePull{StateFiler}
 }

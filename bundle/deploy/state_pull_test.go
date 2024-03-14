@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -20,19 +20,35 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func touchNotebook(t *testing.T, path, file string) {
+	os.MkdirAll(path, 0755)
+	f, err := os.Create(filepath.Join(path, file))
+	require.NoError(t, err)
+
+	err = os.WriteFile(filepath.Join(path, file), []byte("# Databricks notebook source"), 0644)
+	require.NoError(t, err)
+	f.Close()
+}
+
 func TestStatePull(t *testing.T) {
 	s := &statePull{func(b *bundle.Bundle) (filer.Filer, error) {
 		f := mockfiler.NewMockFiler(t)
 
 		deploymentStateData, err := json.Marshal(DeploymentState{
-			Version: "v1",
+			Version: DeploymentStateVersion,
 			Seq:     1,
 			Files: []File{
 				{
-					Path: "bar/t1.py",
+					Path:       "bar/t1.py",
+					IsNotebook: false,
 				},
 				{
-					Path: "bar/t2.py",
+					Path:       "bar/t2.py",
+					IsNotebook: false,
+				},
+				{
+					Path:       "bar/notebook.py",
+					IsNotebook: true,
 				},
 			},
 		})
@@ -61,6 +77,10 @@ func TestStatePull(t *testing.T) {
 	}
 	ctx := context.Background()
 
+	touch(t, filepath.Join(b.Config.Path, "bar"), "t1.py")
+	touch(t, filepath.Join(b.Config.Path, "bar"), "t2.py")
+	touchNotebook(t, filepath.Join(b.Config.Path, "bar"), "notebook.py")
+
 	err := bundle.Apply(ctx, b, s)
 	require.NoError(t, err)
 
@@ -76,9 +96,10 @@ func TestStatePull(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, int64(1), state.Seq)
-	require.Len(t, state.Files, 2)
+	require.Len(t, state.Files, 3)
 	require.Equal(t, "bar/t1.py", state.Files[0].Path)
 	require.Equal(t, "bar/t2.py", state.Files[1].Path)
+	require.Equal(t, "bar/notebook.py", state.Files[2].Path)
 
 	opts, err := files.GetSyncOptions(ctx, b)
 	require.NoError(t, err)
@@ -97,14 +118,15 @@ func TestStatePull(t *testing.T) {
 	require.NoError(t, err)
 
 	snapshotState := snapshot.SnapshotState
-	require.Len(t, snapshotState.LocalToRemoteNames, 2)
-	fmt.Println(snapshotState)
+	require.Len(t, snapshotState.LocalToRemoteNames, 3)
 	require.Equal(t, "bar/t1.py", snapshotState.LocalToRemoteNames["bar/t1.py"])
 	require.Equal(t, "bar/t2.py", snapshotState.LocalToRemoteNames["bar/t2.py"])
+	require.Equal(t, "bar/notebook", snapshotState.LocalToRemoteNames["bar/notebook.py"])
 
-	require.Len(t, snapshotState.RemoteToLocalNames, 2)
+	require.Len(t, snapshotState.RemoteToLocalNames, 3)
 	require.Equal(t, "bar/t1.py", snapshotState.RemoteToLocalNames["bar/t1.py"])
 	require.Equal(t, "bar/t2.py", snapshotState.RemoteToLocalNames["bar/t2.py"])
+	require.Equal(t, "bar/notebook.py", snapshotState.RemoteToLocalNames["bar/notebook"])
 }
 
 func TestStatePullSnapshotExists(t *testing.T) {
@@ -112,7 +134,7 @@ func TestStatePullSnapshotExists(t *testing.T) {
 		f := mockfiler.NewMockFiler(t)
 
 		deploymentStateData, err := json.Marshal(DeploymentState{
-			Version: "v1",
+			Version: DeploymentStateVersion,
 			Seq:     1,
 			Files: []File{
 				{
@@ -147,6 +169,9 @@ func TestStatePullSnapshotExists(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
+
+	touch(t, filepath.Join(b.Config.Path, "bar"), "t1.py")
+	touch(t, filepath.Join(b.Config.Path, "bar"), "t2.py")
 
 	opts, err := files.GetSyncOptions(ctx, b)
 	require.NoError(t, err)
@@ -187,7 +212,6 @@ func TestStatePullSnapshotExists(t *testing.T) {
 
 	snapshotState := snapshot.SnapshotState
 	require.Len(t, snapshotState.LocalToRemoteNames, 2)
-	fmt.Println(snapshotState)
 	require.Equal(t, "bar/t1.py", snapshotState.LocalToRemoteNames["bar/t1.py"])
 	require.Equal(t, "bar/t2.py", snapshotState.LocalToRemoteNames["bar/t2.py"])
 
@@ -234,7 +258,7 @@ func TestStatePullOlderState(t *testing.T) {
 		f := mockfiler.NewMockFiler(t)
 
 		deploymentStateData, err := json.Marshal(DeploymentState{
-			Version: "v1",
+			Version: DeploymentStateVersion,
 			Seq:     1,
 			Files: []File{
 				{
@@ -270,7 +294,7 @@ func TestStatePullOlderState(t *testing.T) {
 	require.NoError(t, err)
 
 	newerState := DeploymentState{
-		Version: "v1",
+		Version: DeploymentStateVersion,
 		Seq:     2,
 		Files: []File{
 			{
@@ -306,7 +330,7 @@ func TestStatePullNewerState(t *testing.T) {
 		f := mockfiler.NewMockFiler(t)
 
 		deploymentStateData, err := json.Marshal(DeploymentState{
-			Version: "v1",
+			Version: DeploymentStateVersion,
 			Seq:     1,
 			Files: []File{
 				{
@@ -347,7 +371,7 @@ func TestStatePullNewerState(t *testing.T) {
 	require.NoError(t, err)
 
 	olderState := DeploymentState{
-		Version: "v1",
+		Version: DeploymentStateVersion,
 		Seq:     0,
 		Files: []File{
 			{
@@ -377,4 +401,204 @@ func TestStatePullNewerState(t *testing.T) {
 	require.Len(t, state.Files, 2)
 	require.Equal(t, "bar/t1.py", state.Files[0].Path)
 	require.Equal(t, "bar/t2.py", state.Files[1].Path)
+}
+
+func TestStatePullAndFileIsRemovedLocally(t *testing.T) {
+	s := &statePull{func(b *bundle.Bundle) (filer.Filer, error) {
+		f := mockfiler.NewMockFiler(t)
+
+		deploymentStateData, err := json.Marshal(DeploymentState{
+			Version: DeploymentStateVersion,
+			Seq:     1,
+			Files: []File{
+				{
+					Path:       "bar/t1.py",
+					IsNotebook: false,
+				},
+				{
+					Path:       "bar/t2.py",
+					IsNotebook: false,
+				},
+				{
+					Path:       "bar/notebook.py",
+					IsNotebook: true,
+				},
+			},
+		})
+		require.NoError(t, err)
+
+		f.EXPECT().Read(mock.Anything, DeploymentStateFileName).Return(io.NopCloser(bytes.NewReader(deploymentStateData)), nil)
+
+		return f, nil
+	}}
+
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Path: t.TempDir(),
+			Bundle: config.Bundle{
+				Target: "default",
+			},
+			Workspace: config.Workspace{
+				StatePath: "/state",
+				CurrentUser: &config.User{
+					User: &iam.User{
+						UserName: "test-user",
+					},
+				},
+			},
+		},
+	}
+	ctx := context.Background()
+
+	touch(t, filepath.Join(b.Config.Path, "bar"), "t2.py")
+	touchNotebook(t, filepath.Join(b.Config.Path, "bar"), "notebook.py")
+
+	err := bundle.Apply(ctx, b, s)
+	require.NoError(t, err)
+
+	// Check that deployment state was written
+	statePath, err := getPathToStateFile(ctx, b)
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(statePath)
+	require.NoError(t, err)
+
+	var state DeploymentState
+	err = json.Unmarshal(data, &state)
+	require.NoError(t, err)
+
+	require.Equal(t, int64(1), state.Seq)
+	require.Len(t, state.Files, 3)
+	require.Equal(t, "bar/t1.py", state.Files[0].Path)
+	require.Equal(t, "bar/t2.py", state.Files[1].Path)
+	require.Equal(t, "bar/notebook.py", state.Files[2].Path)
+
+	opts, err := files.GetSyncOptions(ctx, b)
+	require.NoError(t, err)
+
+	snapshotPath, err := sync.SnapshotPath(opts)
+	require.NoError(t, err)
+
+	_, err = os.Stat(snapshotPath)
+	require.NoError(t, err)
+
+	data, err = os.ReadFile(snapshotPath)
+	require.NoError(t, err)
+
+	var snapshot sync.Snapshot
+	err = json.Unmarshal(data, &snapshot)
+	require.NoError(t, err)
+
+	snapshotState := snapshot.SnapshotState
+
+	// Check that even though file is removed locally, it is still in the snapshot restored from deployment state
+	require.Len(t, snapshotState.LocalToRemoteNames, 3)
+	require.Equal(t, "bar/t1.py", snapshotState.LocalToRemoteNames["bar/t1.py"])
+	require.Equal(t, "bar/t2.py", snapshotState.LocalToRemoteNames["bar/t2.py"])
+	require.Equal(t, "bar/notebook", snapshotState.LocalToRemoteNames["bar/notebook.py"])
+
+	require.Len(t, snapshotState.RemoteToLocalNames, 3)
+	require.Equal(t, "bar/t1.py", snapshotState.RemoteToLocalNames["bar/t1.py"])
+	require.Equal(t, "bar/t2.py", snapshotState.RemoteToLocalNames["bar/t2.py"])
+	require.Equal(t, "bar/notebook.py", snapshotState.RemoteToLocalNames["bar/notebook"])
+}
+
+func TestStatePullAndNotebookIsRemovedLocally(t *testing.T) {
+	s := &statePull{func(b *bundle.Bundle) (filer.Filer, error) {
+		f := mockfiler.NewMockFiler(t)
+
+		deploymentStateData, err := json.Marshal(DeploymentState{
+			Version: DeploymentStateVersion,
+			Seq:     1,
+			Files: []File{
+				{
+					Path:       "bar/t1.py",
+					IsNotebook: false,
+				},
+				{
+					Path:       "bar/t2.py",
+					IsNotebook: false,
+				},
+				{
+					Path:       "bar/notebook.py",
+					IsNotebook: true,
+				},
+			},
+		})
+		require.NoError(t, err)
+
+		f.EXPECT().Read(mock.Anything, DeploymentStateFileName).Return(io.NopCloser(bytes.NewReader(deploymentStateData)), nil)
+
+		return f, nil
+	}}
+
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Path: t.TempDir(),
+			Bundle: config.Bundle{
+				Target: "default",
+			},
+			Workspace: config.Workspace{
+				StatePath: "/state",
+				CurrentUser: &config.User{
+					User: &iam.User{
+						UserName: "test-user",
+					},
+				},
+			},
+		},
+	}
+	ctx := context.Background()
+
+	touch(t, filepath.Join(b.Config.Path, "bar"), "t1.py")
+	touch(t, filepath.Join(b.Config.Path, "bar"), "t2.py")
+
+	err := bundle.Apply(ctx, b, s)
+	require.NoError(t, err)
+
+	// Check that deployment state was written
+	statePath, err := getPathToStateFile(ctx, b)
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(statePath)
+	require.NoError(t, err)
+
+	var state DeploymentState
+	err = json.Unmarshal(data, &state)
+	require.NoError(t, err)
+
+	require.Equal(t, int64(1), state.Seq)
+	require.Len(t, state.Files, 3)
+	require.Equal(t, "bar/t1.py", state.Files[0].Path)
+	require.Equal(t, "bar/t2.py", state.Files[1].Path)
+	require.Equal(t, "bar/notebook.py", state.Files[2].Path)
+
+	opts, err := files.GetSyncOptions(ctx, b)
+	require.NoError(t, err)
+
+	snapshotPath, err := sync.SnapshotPath(opts)
+	require.NoError(t, err)
+
+	_, err = os.Stat(snapshotPath)
+	require.NoError(t, err)
+
+	data, err = os.ReadFile(snapshotPath)
+	require.NoError(t, err)
+
+	var snapshot sync.Snapshot
+	err = json.Unmarshal(data, &snapshot)
+	require.NoError(t, err)
+
+	snapshotState := snapshot.SnapshotState
+
+	// Check that even though notebook is removed locally, it is still in the snapshot restored from deployment state
+	require.Len(t, snapshotState.LocalToRemoteNames, 3)
+	require.Equal(t, "bar/t1.py", snapshotState.LocalToRemoteNames["bar/t1.py"])
+	require.Equal(t, "bar/t2.py", snapshotState.LocalToRemoteNames["bar/t2.py"])
+	require.Equal(t, "bar/notebook", snapshotState.LocalToRemoteNames["bar/notebook.py"])
+
+	require.Len(t, snapshotState.RemoteToLocalNames, 3)
+	require.Equal(t, "bar/t1.py", snapshotState.RemoteToLocalNames["bar/t1.py"])
+	require.Equal(t, "bar/t2.py", snapshotState.RemoteToLocalNames["bar/t2.py"])
+	require.Equal(t, "bar/notebook.py", snapshotState.RemoteToLocalNames["bar/notebook"])
 }

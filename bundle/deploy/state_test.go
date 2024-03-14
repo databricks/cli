@@ -12,6 +12,7 @@ import (
 )
 
 func touch(t *testing.T, path, file string) {
+	os.MkdirAll(path, 0755)
 	f, err := os.Create(filepath.Join(path, file))
 	require.NoError(t, err)
 	f.Close()
@@ -27,7 +28,8 @@ func TestFromSlice(t *testing.T) {
 	files, err := fileset.All()
 	require.NoError(t, err)
 
-	f := FromSlice(files)
+	f, err := FromSlice(files)
+	require.NoError(t, err)
 	require.Len(t, f, 3)
 
 	for _, file := range f {
@@ -45,7 +47,8 @@ func TestToSlice(t *testing.T) {
 	files, err := fileset.All()
 	require.NoError(t, err)
 
-	f := FromSlice(files)
+	f, err := FromSlice(files)
+	require.NoError(t, err)
 	require.Len(t, f, 3)
 
 	s := f.ToSlice(tmpDir)

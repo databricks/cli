@@ -10,7 +10,7 @@ import (
 )
 
 type statePush struct {
-	FilerFactory
+	filerFactory FilerFactory
 }
 
 func (s *statePush) Name() string {
@@ -18,7 +18,7 @@ func (s *statePush) Name() string {
 }
 
 func (s *statePush) Apply(ctx context.Context, b *bundle.Bundle) error {
-	f, err := s.FilerFactory(b)
+	f, err := s.filerFactory(b)
 	if err != nil {
 		return err
 	}
@@ -43,6 +43,7 @@ func (s *statePush) Apply(ctx context.Context, b *bundle.Bundle) error {
 	return nil
 }
 
+// StatePush returns a mutator that pushes the deployment state file to Databricks workspace.
 func StatePush() bundle.Mutator {
 	return &statePush{StateFiler}
 }

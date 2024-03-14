@@ -10,6 +10,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/files"
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -44,7 +45,11 @@ func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) error {
 	}
 
 	// Update the state with the current file list.
-	state.Files = FromSlice(files)
+	fl, err := FromSlice(files)
+	if err != nil {
+		return err
+	}
+	state.Files = fl
 
 	statePath, err := getPathToStateFile(ctx, b)
 	if err != nil {
@@ -84,8 +89,9 @@ func load(ctx context.Context, b *bundle.Bundle) (*DeploymentState, error) {
 	if _, err := os.Stat(statePath); os.IsNotExist(err) {
 		log.Infof(ctx, "No deployment state file found")
 		return &DeploymentState{
-			Version: "v1",
-			Seq:     0,
+			Version:    DeploymentStateVersion,
+			Seq:        0,
+			CliVersion: build.GetInfo().Version,
 		}, nil
 	}
 
