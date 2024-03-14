@@ -5,32 +5,32 @@ resources:
       tasks:
         - task_key: notebook_example
           notebook_task:
-            notebook_path: ../src/notebook.py
+            notebook_path: "this value is overridden"
 
         - task_key: spark_python_example
           spark_python_task:
-            python_file: ../src/file.py
+            python_file: "this value is overridden"
 
         - task_key: dbt_example
           dbt_task:
-            project_directory: ../src/dbt_project
+            project_directory: "this value is overridden"
             commands:
               - "dbt run"
 
         - task_key: sql_example
           sql_task:
             file:
-              path: ../src/sql.sql
+              path: "this value is overridden"
             warehouse_id: cafef00d
 
         - task_key: python_wheel_example
           python_wheel_task:
             package_name: my_package
           libraries:
-            - whl: ../dist/some.whl
+            - whl: "this value is overridden"
 
         - task_key: spark_jar_example
           spark_jar_task:
             main_class_name: com.example.Main
           libraries:
-            - jar: ../target/some.jar
+            - jar: "this value is overridden"
