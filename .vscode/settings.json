@@ -1,14 +1,15 @@
 {
     "[go]": {
         "editor.insertSpaces": false,
-        "editor.formatOnSave": true
+        "editor.formatOnSave": true,
+
     },
     "files.trimTrailingWhitespace": true,
     "files.insertFinalNewline": true,
     "files.trimFinalNewlines": true,
-    "python.envFile": "${workspaceFolder}/.databricks/.databricks.env",
+    "python.envFile": "${workspaceRoot}/.env",
     "databricks.python.envFile": "${workspaceFolder}/.env",
     "python.analysis.stubPath": ".vscode",
     "jupyter.interactiveWindow.cellMarker.codeRegex": "^# COMMAND ----------|^# Databricks notebook source|^(#\\s*%%|#\\s*\\<codecell\\>|#\\s*In\\[\\d*?\\]|#\\s*In\\[ \\])",
-    "jupyter.interactiveWindow.cellMarker.default": "# COMMAND ----------"
+    "jupyter.interactiveWindow.cellMarker.default": "# COMMAND ----------",
 }
