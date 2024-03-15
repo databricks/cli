@@ -4,6 +4,14 @@ package tables
 
 import (
 	"fmt"
+	"bytes"
+    "encoding/json"
+    "io/ioutil"
+    "net/http"
+	"bufio"
+    "os"
+    "path/filepath"
+    "strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -11,6 +19,8 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
 )
+
+
 
 // Slice with functions to override default command behavior.
 // Functions can be added from the `init()` function in manually curated files in this directory.
@@ -26,7 +36,7 @@ func New() *cobra.Command {
   permission on its parent catalog. To query a table, users must have the SELECT
   permission on the table, and they must have the USE_CATALOG permission on its
   parent catalog and the USE_SCHEMA permission on its parent schema.
-  
+
   A table can be managed or external. From an API perspective, a __VIEW__ is a
   particular kind of table (rather than a managed or external table).`,
 		GroupID: "catalog",
@@ -42,6 +52,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newList())
 	cmd.AddCommand(newListSummaries())
 	cmd.AddCommand(newUpdate())
+	cmd.AddCommand(generateTableComment())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -70,7 +81,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete FULL_NAME"
 	cmd.Short = `Delete a table.`
 	cmd.Long = `Delete a table.
-  
+
   Deletes a table from the specified parent catalog and schema. The caller must
   be the owner of the parent catalog, have the **USE_CATALOG** privilege on the
   parent catalog and be the owner of the parent schema, or be the owner of the
@@ -144,7 +155,7 @@ func newExists() *cobra.Command {
 	cmd.Use = "exists FULL_NAME"
 	cmd.Short = `Get boolean reflecting if table exists.`
 	cmd.Long = `Get boolean reflecting if table exists.
-  
+
   Gets if a table exists in the metastore for a specific catalog and schema. The
   caller must satisfy one of the following requirements: * Be a metastore admin
   * Be the owner of the parent catalog * Be the owner of the parent schema and
@@ -223,7 +234,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get FULL_NAME"
 	cmd.Short = `Get a table.`
 	cmd.Long = `Get a table.
-  
+
   Gets a table from the metastore for a specific catalog and schema. The caller
   must satisfy one of the following requirements: * Be a metastore admin * Be
   the owner of the parent catalog * Be the owner of the parent schema and have
@@ -305,7 +316,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list CATALOG_NAME SCHEMA_NAME"
 	cmd.Short = `List tables.`
 	cmd.Long = `List tables.
-  
+
   Gets an array of all tables for the current metastore under the parent catalog
   and schema. The caller must be a metastore admin or an owner of (or have the
   **SELECT** privilege on) the table. For the latter case, the caller must also
@@ -372,17 +383,17 @@ func newListSummaries() *cobra.Command {
 	cmd.Use = "list-summaries CATALOG_NAME"
 	cmd.Short = `List table summaries.`
 	cmd.Long = `List table summaries.
-  
+
   Gets an array of summaries for tables for a schema and catalog within the
   metastore. The table summaries returned are either:
-  
+
   * summaries for tables (within the current metastore and parent catalog and
   schema), when the user is a metastore admin, or: * summaries for tables and
   schemas (within the current metastore and parent catalog) for which the user
   has ownership or the **SELECT** privilege on the table and ownership or
   **USE_SCHEMA** privilege on the schema, provided that the user also has
   ownership or the **USE_CATALOG** privilege on the parent catalog.
-  
+
   There is no guarantee of a specific ordering of the elements in the array.
 
   Arguments:
@@ -453,7 +464,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update FULL_NAME"
 	cmd.Short = `Update a table owner.`
 	cmd.Long = `Update a table owner.
-  
+
   Change the owner of the table. The caller must be the owner of the parent
   catalog, have the **USE_CATALOG** privilege on the parent catalog and be the
   owner of the parent schema, or be the owner of the table and have the
@@ -518,3 +529,184 @@ func newUpdate() *cobra.Command {
 }
 
 // end service Tables
+
+// Assuming the response from the previous fetchTableDetails function is like this:
+type Column struct {
+    Name string `json:"name"`
+    Type string `json:"type"`
+}
+
+type TableDetails struct {
+    Comment     string   `json:"comment"`
+    Columns     []Column `json:"columns"`
+    TableName   string   `json:"tableName"`
+    CatalogName string   `json:"catalogName"`
+    SchemaName  string   `json:"schemaName"`
+}
+
+type Payload struct {
+    TableSchema string	`json:"table_schema"`
+    DocType     string 	`json:"doc_type"`
+    MaxToken    int		`json:"max_token"`
+    Temperature float64	`json:"temperature"`
+}
+
+type Response struct {
+    Comment string `json:"comment"`
+}
+
+func readDatabricksConfig() (string, string, error) {
+    homeDir, err := os.UserHomeDir()
+    if err != nil {
+        return "", "", fmt.Errorf("error getting user home directory: %w", err)
+    }
+
+    configFile := filepath.Join(homeDir, ".databrickscfg")
+    file, err := os.Open(configFile)
+    if err != nil {
+        return "", "", fmt.Errorf("error opening config file: %w", err)
+    }
+    defer file.Close()
+
+    scanner := bufio.NewScanner(file)
+    var host, token string
+    for scanner.Scan() {
+        line := scanner.Text()
+        if strings.HasPrefix(line, "host") {
+            host = strings.TrimSpace(strings.Split(line, "=")[1])
+        } else if strings.HasPrefix(line, "token") {
+            token = strings.TrimSpace(strings.Split(line, "=")[1])
+        }
+    }
+
+    if err := scanner.Err(); err != nil {
+        return "", "", fmt.Errorf("error reading config file: %w", err)
+    }
+
+    if host == "" || token == "" {
+        return "", "", fmt.Errorf("host or token not found in config file")
+    }
+
+    return host, token, nil
+}
+
+func generateTableComment() *cobra.Command {
+    cmd := &cobra.Command{}
+	cmd.Use = "describe FULL_NAME"
+    cmd.Short = "Generate a comment for a table"
+    cmd.Long = `Generate a comment for a table.
+Gets an array of all tables for the current metastore under the parent catalog
+and schema. The caller must be a metastore admin or an owner of (or have the
+**SELECT** privilege on) the table. For the latter case, the caller must also
+be the owner or have the **USE_CATALOG** privilege on the parent catalog and
+the **USE_SCHEMA** privilege on the parent schema. There is no guarantee of a
+specific ordering of the elements in the array.
+
+		Arguments:
+			FULL_NAME: Full name of the table.
+	  `
+	cmd.Annotations = make(map[string]string)
+	cmd.PreRunE = root.MustWorkspaceClient
+    cmd.RunE = func(cmd *cobra.Command, args []string) error {
+        ctx := cmd.Context()
+        w := root.WorkspaceClient(ctx)
+
+        if len(args) != 1 {
+            return fmt.Errorf("expected to receive the full name of the table as an argument")
+        }
+
+        var getReq catalog.GetTableRequest
+        getReq.FullName = args[0]
+
+        response, err := w.Tables.Get(ctx, getReq)
+        if err != nil {
+            return fmt.Errorf("error fetching table details: %w", err)
+        }
+		var columns []Column
+		for _, c := range response.Columns {
+			columns = append(columns, Column{
+				Name: c.Name,
+				Type: c.TypeText, // Assuming 'Name' and 'Type' fields exist in catalog.ColumnInfo
+			})
+		}
+
+        // Construct the table details assuming response contains the necessary data
+        tableDetails := TableDetails{
+            Comment:     response.Comment,     // Placeholder; adapt based on actual response structure
+            Columns:     columns,     // Assuming direct assignment is possible
+            TableName:   response.Name,
+            CatalogName: response.CatalogName,
+            SchemaName:  response.SchemaName,
+        }
+		tableSchemaStr, err := json.Marshal(tableDetails)
+		if err != nil {
+			return fmt.Errorf("error marshaling table schema: %w", err)
+		}
+
+        // Construct the payload
+        payload := Payload{
+            TableSchema: string(tableSchemaStr),
+            DocType:     "table",
+            MaxToken:    300,
+            Temperature: 0.2,
+        }
+
+        payloadBytes, err := json.Marshal(payload)
+        if err != nil {
+            return fmt.Errorf("error marshaling payload: %w", err)
+        }
+
+        // Setup HTTP request
+		host, token, err := readDatabricksConfig()
+		if err != nil {
+			// handle error, for instance, log it or return it
+			fmt.Println("Error reading config:", err)
+			return fmt.Errorf("failed to read host and token from ~/.databrickscfg: %w", err)
+		}
+        url := fmt.Sprintf("%s/api/2.0/lineage-tracking/doc-gen/completions", host)
+        req, err := http.NewRequest("POST", url, bytes.NewBuffer(payloadBytes))
+        if err != nil {
+            return fmt.Errorf("error creating request: %w", err)
+        }
+
+        req.Header.Set("Content-Type", "application/json")
+        req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+        client := &http.Client{}
+        resp, err := client.Do(req)
+        if err != nil {
+            return fmt.Errorf("error sending request: %w", err)
+        }
+        defer resp.Body.Close()
+
+        if resp.StatusCode != http.StatusOK {
+            // return fmt.Errorf("received non-200 response status: %d", resp.StatusCode)
+			// Read the response body to get more details about the error
+			responseBody, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				// If there's an error reading the body, return the status code only
+				return fmt.Errorf("received non-200 response status: %d and error reading response body: %v", resp.StatusCode, err)
+			}
+
+			// If the body was read successfully, include it in your error message
+			return fmt.Errorf("received non-200 response status: %d, response body: %s", resp.StatusCode, string(responseBody))
+        }
+
+        responseBody, err := ioutil.ReadAll(resp.Body)
+        if err != nil {
+            return fmt.Errorf("error reading response: %w", err)
+        }
+
+        var responseComment Response
+        if err := json.Unmarshal(responseBody, &responseComment); err != nil {
+            return fmt.Errorf("error parsing response JSON: %w", err)
+        }
+
+        // Output the comment
+//         fmt.Println("\n----------AI Generated Comment----------")
+		fmt.Println(responseComment.Comment)
+        return nil
+    }
+
+    return cmd
+}
