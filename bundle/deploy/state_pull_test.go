@@ -602,3 +602,45 @@ func TestStatePullAndNotebookIsRemovedLocally(t *testing.T) {
 	require.Equal(t, "bar/t2.py", snapshotState.RemoteToLocalNames["bar/t2.py"])
 	require.Equal(t, "bar/notebook.py", snapshotState.RemoteToLocalNames["bar/notebook"])
 }
+
+func TestStatePullNewerDeploymentStateVersion(t *testing.T) {
+	s := &statePull{func(b *bundle.Bundle) (filer.Filer, error) {
+		f := mockfiler.NewMockFiler(t)
+
+		deploymentStateData, err := json.Marshal(DeploymentState{
+			Version:    DeploymentStateVersion + 1,
+			Seq:        1,
+			CliVersion: "1.2.3",
+			Files: []File{
+				{
+					Path: "bar/t1.py",
+				},
+				{
+					Path: "bar/t2.py",
+				},
+			},
+		})
+		require.NoError(t, err)
+
+		f.EXPECT().Read(mock.Anything, DeploymentStateFileName).Return(io.NopCloser(bytes.NewReader(deploymentStateData)), nil)
+
+		return f, nil
+	}}
+
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Path: t.TempDir(),
+			Bundle: config.Bundle{
+				Target: "default",
+			},
+			Workspace: config.Workspace{
+				StatePath: "/state",
+			},
+		},
+	}
+	ctx := context.Background()
+
+	err := bundle.Apply(ctx, b, s)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "remote deployment state is incompatible with current version of CLI, please upgarde to at least 1.2.3")
+}

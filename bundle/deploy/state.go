@@ -131,6 +131,20 @@ func isLocalStateStale(local io.Reader, remote io.Reader) bool {
 	return localState.Seq < remoteState.Seq
 }
 
+func validateRemoteStateCompatibility(remote io.Reader) error {
+	state, err := loadState(remote)
+	if err != nil {
+		return err
+	}
+
+	// If the remote state version is greater than the CLI version, we can't proceed.
+	if state.Version > DeploymentStateVersion {
+		return fmt.Errorf("remote deployment state is incompatible with current version of CLI, please upgarde to at least %s", state.CliVersion)
+	}
+
+	return nil
+}
+
 func loadState(r io.Reader) (*DeploymentState, error) {
 	content, err := io.ReadAll(r)
 	if err != nil {

@@ -51,6 +51,11 @@ func (s *statePull) Apply(ctx context.Context, b *bundle.Bundle) error {
 	defer local.Close()
 
 	data := remote.Bytes()
+	err = validateRemoteStateCompatibility(bytes.NewReader(data))
+	if err != nil {
+		return err
+	}
+
 	if !isLocalStateStale(local, bytes.NewReader(data)) {
 		log.Infof(ctx, "Local deployment state is the same or newer, ignoring remote state")
 		return nil

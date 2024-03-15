@@ -33,6 +33,10 @@ func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// Update timestamp.
 	state.Timestamp = time.Now().UTC()
 
+	// Update the CLI version and deployment state version.
+	state.CliVersion = build.GetInfo().Version
+	state.Version = DeploymentStateVersion
+
 	// Get the current file list.
 	sync, err := files.GetSync(ctx, b)
 	if err != nil {
