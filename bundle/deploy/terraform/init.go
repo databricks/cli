@@ -14,7 +14,6 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hc-install/product"
 	"github.com/hashicorp/hc-install/releases"
 	"github.com/hashicorp/terraform-exec/tfexec"
@@ -28,6 +27,14 @@ func (m *initialize) Name() string {
 }
 
 func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *config.Terraform) (string, error) {
+	// Load exec path from the env var if it is not set.
+	if tf.ExecPath == "" {
+		envExecPath, ok := env.Lookup(ctx, "DATABRICKS_TF_EXEC_PATH")
+		if ok {
+			tf.ExecPath = envExecPath
+		}
+	}
+
 	// If set, pass it through [exec.LookPath] to resolve its absolute path.
 	if tf.ExecPath != "" {
 		execPath, err := exec.LookPath(tf.ExecPath)
@@ -59,7 +66,7 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 	// Download Terraform to private bin directory.
 	installer := &releases.ExactVersion{
 		Product:    product.Terraform,
-		Version:    version.Must(version.NewVersion("1.5.5")),
+		Version:    TerraformVersion,
 		InstallDir: binDir,
 		Timeout:    1 * time.Minute,
 	}
@@ -100,6 +107,12 @@ func inheritEnvVars(ctx context.Context, environ map[string]string) error {
 	configFile, ok := env.Lookup(ctx, "TF_CLI_CONFIG_FILE")
 	if ok {
 		environ["TF_CLI_CONFIG_FILE"] = configFile
+	}
+
+	// This lets us use pre-downloaded Databricks plugin.for Terraform to usefor Terraform to use..
+	cacheDir, ok := env.Lookup(ctx, "DATABRICKS_TF_PLUGIN_CACHE_DIR")
+	if ok {
+		environ["TF_PLUGIN_CACHE_DIR"] = cacheDir
 	}
 
 	return nil
