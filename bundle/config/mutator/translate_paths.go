@@ -167,20 +167,19 @@ func (m *translatePaths) rewriteValue(b *bundle.Bundle, p dyn.Path, v dyn.Value,
 	return dyn.NewValue(out, v.Location()), nil
 }
 
-func (m *translatePaths) rewriteRelativeTo(b *bundle.Bundle, p dyn.Path, v dyn.Value, fn rewriteFunc, dirs []string) (dyn.Value, error) {
-	var err error
-
-	for _, dir := range dirs {
-		nv, nerr := m.rewriteValue(b, p, v, fn, dir)
-		if nerr != nil {
-			// If we haven't seen an error yet, store the first one.
-			if err == nil {
-				err = nerr
-			}
-			continue
-		}
-
+func (m *translatePaths) rewriteRelativeTo(b *bundle.Bundle, p dyn.Path, v dyn.Value, fn rewriteFunc, dir, fallback string) (dyn.Value, error) {
+	nv, err := m.rewriteValue(b, p, v, fn, dir)
+	if err == nil {
 		return nv, nil
+	}
+
+	// If we failed to rewrite the path, try to rewrite it relative to the fallback directory.
+	if fallback != "" {
+		nv, nerr := m.rewriteValue(b, p, v, fn, fallback)
+		if nerr == nil {
+			// TODO: Emit a warning that this path should be rewritten.
+			return nv, nil
+		}
 	}
 
 	return dyn.InvalidValue, err

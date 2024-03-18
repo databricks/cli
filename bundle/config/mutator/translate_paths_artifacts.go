@@ -32,7 +32,7 @@ func (m *translatePaths) applyArtifactTranslations(b *bundle.Bundle, v dyn.Value
 				return dyn.InvalidValue, fmt.Errorf("unable to determine directory for artifact %s: %w", key, err)
 			}
 
-			return m.rewriteRelativeTo(b, p, v, t.fn, []string{dir})
+			return m.rewriteRelativeTo(b, p, v, t.fn, dir, "")
 		})
 		if err != nil {
 			return dyn.InvalidValue, err
