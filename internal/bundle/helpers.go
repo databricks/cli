@@ -56,6 +56,15 @@ func deployBundle(t *testing.T, ctx context.Context, path string) error {
 	return err
 }
 
+func deployBundleWithFlags(t *testing.T, ctx context.Context, path string, flags []string) error {
+	t.Setenv("BUNDLE_ROOT", path)
+	args := []string{"bundle", "deploy", "--force-lock"}
+	args = append(args, flags...)
+	c := internal.NewCobraTestRunnerWithContext(t, ctx, args...)
+	_, _, err := c.Run()
+	return err
+}
+
 func runResource(t *testing.T, ctx context.Context, path string, key string) (string, error) {
 	ctx = cmdio.NewContext(ctx, cmdio.Default())
 
