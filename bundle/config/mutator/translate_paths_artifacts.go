@@ -22,7 +22,7 @@ func (m *translatePaths) applyArtifactTranslations(b *bundle.Bundle, v dyn.Value
 		fallback[key] = dir
 	}
 
-	// Base pattern to match all tasks in all jobs.
+	// Base pattern to match all artifacts.
 	base := dyn.NewPattern(
 		dyn.Key("artifacts"),
 		dyn.AnyKey(),
