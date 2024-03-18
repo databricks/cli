@@ -3,7 +3,6 @@ package bundle
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"path"
 	"strconv"
@@ -56,9 +55,7 @@ func TestAccJobsMetadataFile(t *testing.T) {
 	assert.Equal(t, job2.Settings.Name, jobName)
 
 	// Compute root path for the bundle deployment
-	me, err := w.CurrentUser.Me(context.Background())
-	require.NoError(t, err)
-	root := fmt.Sprintf("/Users/%s/.bundle/%s", me.UserName, uniqueId)
+	root := getBundleRemoteRootPath(w, t, uniqueId)
 	f, err := filer.NewWorkspaceFilesClient(w, root)
 	require.NoError(t, err)
 

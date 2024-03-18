@@ -53,6 +53,30 @@ type Snapshot struct {
 
 const syncSnapshotDirName = "sync-snapshots"
 
+func NewSnapshot(localFiles []fileset.File, opts *SyncOptions) (*Snapshot, error) {
+	snapshotPath, err := SnapshotPath(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	snapshotState, err := NewSnapshotState(localFiles)
+	if err != nil {
+		return nil, err
+	}
+
+	// Reset last modified times to make sure all files are synced
+	snapshotState.ResetLastModifiedTimes()
+
+	return &Snapshot{
+		SnapshotPath:  snapshotPath,
+		New:           true,
+		Version:       LatestSnapshotVersion,
+		Host:          opts.Host,
+		RemotePath:    opts.RemotePath,
+		SnapshotState: snapshotState,
+	}, nil
+}
+
 func GetFileName(host, remotePath string) string {
 	hash := md5.Sum([]byte(host + remotePath))
 	hashString := hex.EncodeToString(hash[:])

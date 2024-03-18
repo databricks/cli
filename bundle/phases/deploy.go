@@ -24,6 +24,7 @@ func Deploy() bundle.Mutator {
 		bundle.Defer(
 			bundle.Seq(
 				terraform.StatePull(),
+				deploy.StatePull(),
 				deploy.CheckRunningResource(),
 				mutator.ValidateGitDetails(),
 				libraries.MatchWithArtifacts(),
@@ -31,6 +32,7 @@ func Deploy() bundle.Mutator {
 				artifacts.UploadAll(),
 				python.TransformWheelTask(),
 				files.Upload(),
+				deploy.StateUpdate(),
 				permissions.ApplyWorkspaceRootPermissions(),
 				terraform.Interpolate(),
 				terraform.Write(),
@@ -38,6 +40,7 @@ func Deploy() bundle.Mutator {
 					terraform.Apply(),
 					bundle.Seq(
 						terraform.StatePush(),
+						deploy.StatePush(),
 						terraform.Load(),
 						metadata.Compute(),
 						metadata.Upload(),
