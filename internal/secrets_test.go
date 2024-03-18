@@ -61,7 +61,7 @@ func assertSecretBytesValue(t *acc.WorkspaceT, scope, key string, expected []byt
 	assert.Equal(t, expected, decoded)
 }
 
-func TestSecretsPutSecretStringValue(tt *testing.T) {
+func TestAccSecretsPutSecretStringValue(tt *testing.T) {
 	ctx, t := acc.WorkspaceTest(tt)
 	scope := temporarySecretScope(ctx, t)
 	key := "test-key"
@@ -75,7 +75,7 @@ func TestSecretsPutSecretStringValue(tt *testing.T) {
 	assertSecretBytesValue(t, scope, key, []byte(value))
 }
 
-func TestSecretsPutSecretBytesValue(tt *testing.T) {
+func TestAccSecretsPutSecretBytesValue(tt *testing.T) {
 	ctx, t := acc.WorkspaceTest(tt)
 	scope := temporarySecretScope(ctx, t)
 	key := "test-key"
