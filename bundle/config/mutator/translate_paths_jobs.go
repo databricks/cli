@@ -8,6 +8,40 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 )
 
+type jobTaskRewritePattern struct {
+	pattern dyn.Pattern
+	fn      rewriteFunc
+}
+
+func rewritePatterns(base dyn.Pattern) []jobTaskRewritePattern {
+	return []jobTaskRewritePattern{
+		{
+			base.Append(dyn.Key("notebook_task"), dyn.Key("notebook_path")),
+			translateNotebookPath,
+		},
+		{
+			base.Append(dyn.Key("spark_python_task"), dyn.Key("python_file")),
+			translateFilePath,
+		},
+		{
+			base.Append(dyn.Key("dbt_task"), dyn.Key("project_directory")),
+			translateDirectoryPath,
+		},
+		{
+			base.Append(dyn.Key("sql_task"), dyn.Key("file"), dyn.Key("path")),
+			translateFilePath,
+		},
+		{
+			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("whl")),
+			translateNoOp,
+		},
+		{
+			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("jar")),
+			translateNoOp,
+		},
+	}
+}
+
 func (m *translatePaths) applyJobTranslations(b *bundle.Bundle, v dyn.Value) (dyn.Value, error) {
 	var fallback = make(map[string]string)
 	var ignore []string
@@ -38,35 +72,12 @@ func (m *translatePaths) applyJobTranslations(b *bundle.Bundle, v dyn.Value) (dy
 		dyn.AnyIndex(),
 	)
 
-	for _, t := range []struct {
-		pattern dyn.Pattern
-		fn      rewriteFunc
-	}{
-		{
-			base.Append(dyn.Key("notebook_task"), dyn.Key("notebook_path")),
-			translateNotebookPath,
-		},
-		{
-			base.Append(dyn.Key("spark_python_task"), dyn.Key("python_file")),
-			translateFilePath,
-		},
-		{
-			base.Append(dyn.Key("dbt_task"), dyn.Key("project_directory")),
-			translateDirectoryPath,
-		},
-		{
-			base.Append(dyn.Key("sql_task"), dyn.Key("file"), dyn.Key("path")),
-			translateFilePath,
-		},
-		{
-			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("whl")),
-			translateNoOp,
-		},
-		{
-			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("jar")),
-			translateNoOp,
-		},
-	} {
+	// Compile list of patterns and their respective rewrite functions.
+	taskPatterns := rewritePatterns(base)
+	forEachPatterns := rewritePatterns(base.Append(dyn.Key("for_each_task"), dyn.Key("task")))
+	allPatterns := append(taskPatterns, forEachPatterns...)
+
+	for _, t := range allPatterns {
 		v, err = dyn.MapByPattern(v, t.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			key := p[2].Key()
 

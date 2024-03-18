@@ -66,7 +66,7 @@ func TestPathTranslationNominal(t *testing.T) {
 	assert.NoError(t, err)
 
 	j := b.Config.Resources.Jobs["my_job"]
-	assert.Len(t, j.Tasks, 6)
+	assert.Len(t, j.Tasks, 8)
 
 	assert.Equal(t, "notebook_example", filepath.ToSlash(j.Tasks[0].TaskKey))
 	assert.Equal(t, "src/notebook", filepath.ToSlash(j.Tasks[0].NotebookTask.NotebookPath))
@@ -87,6 +87,12 @@ func TestPathTranslationNominal(t *testing.T) {
 	assert.Equal(t, "spark_jar_example", filepath.ToSlash(j.Tasks[5].TaskKey))
 	assert.Equal(t, "target/jar1.jar", filepath.ToSlash(j.Tasks[5].Libraries[0].Jar))
 	assert.Equal(t, "target/jar2.jar", filepath.ToSlash(j.Tasks[5].Libraries[1].Jar))
+
+	assert.Equal(t, "for_each_notebook_example", filepath.ToSlash(j.Tasks[6].TaskKey))
+	assert.Equal(t, "src/notebook", filepath.ToSlash(j.Tasks[6].ForEachTask.Task.NotebookTask.NotebookPath))
+
+	assert.Equal(t, "for_each_spark_python_example", filepath.ToSlash(j.Tasks[7].TaskKey))
+	assert.Equal(t, "src/file.py", filepath.ToSlash(j.Tasks[7].ForEachTask.Task.SparkPythonTask.PythonFile))
 
 	p := b.Config.Resources.Pipelines["my_pipeline"]
 	assert.Len(t, p.Libraries, 4)

@@ -35,7 +35,10 @@ func NewPatternFromPath(p Path) Pattern {
 
 // Append appends the given components to the pattern.
 func (p Pattern) Append(cs ...patternComponent) Pattern {
-	return append(p, cs...)
+	out := make(Pattern, len(p)+len(cs))
+	copy(out, p)
+	copy(out[len(p):], cs)
+	return out
 }
 
 type anyKeyComponent struct{}

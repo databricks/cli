@@ -34,3 +34,15 @@ resources:
             main_class_name: com.example.Main
           libraries:
             - jar: ../target/jar1.jar
+
+        - task_key: for_each_notebook_example
+          for_each_task:
+            task:
+              notebook_task:
+                notebook_path: "this value is overridden"
+
+        - task_key: for_each_spark_python_example
+          for_each_task:
+            task:
+              spark_python_task:
+                python_file: "this value is overridden"

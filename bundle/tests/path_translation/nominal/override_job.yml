@@ -39,3 +39,15 @@ targets:
               # Append library; the path is resolved relative to this file's directory.
               libraries:
                 - jar: target/jar2.jar
+
+            - task_key: for_each_notebook_example
+              for_each_task:
+                task:
+                  notebook_task:
+                    notebook_path: ./src/notebook.py
+
+            - task_key: for_each_spark_python_example
+              for_each_task:
+                task:
+                  spark_python_task:
+                    python_file: ./src/file.py
