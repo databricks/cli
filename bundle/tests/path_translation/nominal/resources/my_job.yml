@@ -27,10 +27,10 @@ resources:
           python_wheel_task:
             package_name: my_package
           libraries:
-            - whl: "this value is overridden"
+            - whl: ../dist/wheel1.whl
 
         - task_key: spark_jar_example
           spark_jar_task:
             main_class_name: com.example.Main
           libraries:
-            - jar: "this value is overridden"
+            - jar: ../target/jar1.jar
