@@ -8,5 +8,17 @@ resources:
       libraries:
         - notebook:
             path: ./dlt/*
-        - notebook:
-            path: ./non-existent
+
+targets:
+  default:
+    default: true
+
+  error:
+    default: false
+
+    resources:
+      pipelines:
+        nyc_taxi_pipeline:
+          libraries:
+            - notebook:
+                path: ./non-existent
