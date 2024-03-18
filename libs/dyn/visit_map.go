@@ -18,7 +18,7 @@ func Foreach(fn MapFunc) MapFunc {
 			m := maps.Clone(v.MustMap())
 			for key, value := range m {
 				var err error
-				m[key], err = fn(p.Append(Key(key)), value)
+				m[key], err = fn(append(p, Key(key)), value)
 				if err != nil {
 					return InvalidValue, err
 				}
@@ -28,7 +28,7 @@ func Foreach(fn MapFunc) MapFunc {
 			s := slices.Clone(v.MustSequence())
 			for i, value := range s {
 				var err error
-				s[i], err = fn(p.Append(Index(i)), value)
+				s[i], err = fn(append(p, Index(i)), value)
 				if err != nil {
 					return InvalidValue, err
 				}

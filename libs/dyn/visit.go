@@ -66,7 +66,7 @@ func visit(v Value, prefix Path, suffix Pattern, opts visitOptions) (Value, erro
 }
 
 func (component pathComponent) visit(v Value, prefix Path, suffix Pattern, opts visitOptions) (Value, error) {
-	path := prefix.Append(component)
+	path := append(prefix, component)
 
 	switch {
 	case component.isKey():
