@@ -40,10 +40,10 @@ func Deploy() bundle.Mutator {
 					terraform.Apply(),
 					bundle.Seq(
 						terraform.StatePush(),
+						deploy.StatePush(),
 						terraform.Load(),
 						metadata.Compute(),
 						metadata.Upload(),
-						deploy.StatePush(),
 					),
 				),
 			),

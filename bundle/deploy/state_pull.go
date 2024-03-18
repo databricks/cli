@@ -71,16 +71,6 @@ func (s *statePull) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 
-	opts, err := files.GetSyncOptions(ctx, b)
-	if err != nil {
-		return err
-	}
-
-	snapshotPath, err := sync.SnapshotPath(opts)
-	if err != nil {
-		return err
-	}
-
 	var state DeploymentState
 	err = json.Unmarshal(data, &state)
 	if err != nil {
@@ -88,22 +78,15 @@ func (s *statePull) Apply(ctx context.Context, b *bundle.Bundle) error {
 	}
 
 	// Create a new snapshot based on the deployment state file.
-	log.Infof(ctx, "Creating new snapshot")
-	snapshotState, err := sync.NewSnapshotState(state.Files.ToSlice(b.Config.Path))
+	opts, err := files.GetSyncOptions(ctx, b)
 	if err != nil {
 		return err
 	}
 
-	// Reset last modified times to make sure all files are synced
-	snapshotState.ResetLastModifiedTimes()
-
-	snapshot := &sync.Snapshot{
-		SnapshotPath:  snapshotPath,
-		New:           true,
-		Version:       sync.LatestSnapshotVersion,
-		Host:          opts.Host,
-		RemotePath:    opts.RemotePath,
-		SnapshotState: snapshotState,
+	log.Infof(ctx, "Creating new snapshot")
+	snapshot, err := sync.NewSnapshot(state.Files.ToSlice(b.Config.Path), opts)
+	if err != nil {
+		return err
 	}
 
 	// Persist the snapshot to disk.

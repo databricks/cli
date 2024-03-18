@@ -18,8 +18,12 @@ const DeploymentStateFileName = "deployment.json"
 const DeploymentStateVersion = 1
 
 type File struct {
-	LocalPath  string `json:"local_path"`
-	IsNotebook bool   `json:"is_notebook"`
+	LocalPath string `json:"local_path"`
+
+	// If true, this file is a notebook.
+	// This property must be persisted because notebooks are stripped of their extension.
+	// If the local file is no longer present, we need to know what to remove on the workspace side.
+	IsNotebook bool `json:"is_notebook"`
 }
 
 type Filelist []File
