@@ -66,7 +66,7 @@ func TestStatePush(t *testing.T) {
 		Seq:     1,
 		Files: []File{
 			{
-				Path: "bar/t1.py",
+				LocalPath: "bar/t1.py",
 			},
 		},
 	}

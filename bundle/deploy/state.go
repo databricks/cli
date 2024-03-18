@@ -18,7 +18,7 @@ const DeploymentStateFileName = "deployment.json"
 const DeploymentStateVersion = 1
 
 type File struct {
-	Path       string `json:"path"`
+	LocalPath  string `json:"local_path"`
 	IsNotebook bool   `json:"is_notebook"`
 }
 
@@ -26,6 +26,7 @@ type Filelist []File
 
 type DeploymentState struct {
 	// Version is the version of the deployment state.
+	// To be incremented when the schema changes.
 	Version int64 `json:"version"`
 
 	// Seq is the sequence number of the deployment state.
@@ -91,13 +92,14 @@ func (e *entry) Info() (fs.FileInfo, error) {
 
 func FromSlice(files []fileset.File) (Filelist, error) {
 	var f Filelist
-	for _, file := range files {
+	for k := range files {
+		file := &files[k]
 		isNotebook, err := file.IsNotebook()
 		if err != nil {
 			return nil, err
 		}
 		f = append(f, File{
-			Path:       file.Relative,
+			LocalPath:  file.Relative,
 			IsNotebook: isNotebook,
 		})
 	}
@@ -107,11 +109,11 @@ func FromSlice(files []fileset.File) (Filelist, error) {
 func (f Filelist) ToSlice(basePath string) []fileset.File {
 	var files []fileset.File
 	for _, file := range f {
-		absPath := filepath.Join(basePath, file.Path)
+		absPath := filepath.Join(basePath, file.LocalPath)
 		if file.IsNotebook {
-			files = append(files, fileset.NewNotebookFile(newEntry(absPath), absPath, file.Path))
+			files = append(files, fileset.NewNotebookFile(newEntry(absPath), absPath, file.LocalPath))
 		} else {
-			files = append(files, fileset.NewSourceFile(newEntry(absPath), absPath, file.Path))
+			files = append(files, fileset.NewSourceFile(newEntry(absPath), absPath, file.LocalPath))
 		}
 	}
 	return files
@@ -139,7 +141,7 @@ func validateRemoteStateCompatibility(remote io.Reader) error {
 
 	// If the remote state version is greater than the CLI version, we can't proceed.
 	if state.Version > DeploymentStateVersion {
-		return fmt.Errorf("remote deployment state is incompatible with the current version of the CLI (%s), please upgrade to at least %s", state.CliVersion)
+		return fmt.Errorf("remote deployment state is incompatible with the current version of the CLI, please upgrade to at least %s", state.CliVersion)
 	}
 
 	return nil

@@ -90,19 +90,17 @@ func load(ctx context.Context, b *bundle.Bundle) (*DeploymentState, error) {
 	if err != nil {
 		return nil, err
 	}
-	if _, err := os.Stat(statePath); os.IsNotExist(err) {
-		log.Infof(ctx, "No deployment state file found")
-		return &DeploymentState{
-			Version:    DeploymentStateVersion,
-			Seq:        0,
-			CliVersion: build.GetInfo().Version,
-		}, nil
-	}
 
 	log.Infof(ctx, "Loading deployment state from %s", statePath)
-	// Otherwise, load the DeploymentState from the file.
 	f, err := os.Open(statePath)
 	if err != nil {
+		if os.IsNotExist(err) {
+			log.Infof(ctx, "No deployment state file found")
+			return &DeploymentState{
+				Version:    DeploymentStateVersion,
+				CliVersion: build.GetInfo().Version,
+			}, nil
+		}
 		return nil, err
 	}
 	defer f.Close()

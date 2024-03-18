@@ -45,7 +45,8 @@ func NewSnapshotState(localFiles []fileset.File) (*SnapshotState, error) {
 	}
 
 	// Compute the new state.
-	for _, f := range localFiles {
+	for k := range localFiles {
+		f := &localFiles[k]
 		// Compute the remote name the file will have in WSFS
 		remoteName := filepath.ToSlash(f.Relative)
 		isNotebook, err := f.IsNotebook()
@@ -70,6 +71,12 @@ func NewSnapshotState(localFiles []fileset.File) (*SnapshotState, error) {
 		fs.RemoteToLocalNames[remoteName] = f.Relative
 	}
 	return fs, nil
+}
+
+func (fs *SnapshotState) ResetLastModifiedTimes() {
+	for k := range fs.LastModifiedTimes {
+		fs.LastModifiedTimes[k] = time.Unix(0, 0)
+	}
 }
 
 // Consistency checks for the sync files state representation. These are invariants

@@ -3,27 +3,20 @@ package deploy
 import (
 	"bytes"
 	"encoding/json"
-	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/stretchr/testify/require"
 )
 
-func touch(t *testing.T, path, file string) {
-	os.MkdirAll(path, 0755)
-	f, err := os.Create(filepath.Join(path, file))
-	require.NoError(t, err)
-	f.Close()
-}
-
 func TestFromSlice(t *testing.T) {
 	tmpDir := t.TempDir()
 	fileset := fileset.New(tmpDir)
-	touch(t, tmpDir, "test1.py")
-	touch(t, tmpDir, "test2.py")
-	touch(t, tmpDir, "test3.py")
+	testutil.Touch(t, tmpDir, "test1.py")
+	testutil.Touch(t, tmpDir, "test2.py")
+	testutil.Touch(t, tmpDir, "test3.py")
 
 	files, err := fileset.All()
 	require.NoError(t, err)
@@ -33,16 +26,16 @@ func TestFromSlice(t *testing.T) {
 	require.Len(t, f, 3)
 
 	for _, file := range f {
-		require.Contains(t, []string{"test1.py", "test2.py", "test3.py"}, file.Path)
+		require.Contains(t, []string{"test1.py", "test2.py", "test3.py"}, file.LocalPath)
 	}
 }
 
 func TestToSlice(t *testing.T) {
 	tmpDir := t.TempDir()
 	fileset := fileset.New(tmpDir)
-	touch(t, tmpDir, "test1.py")
-	touch(t, tmpDir, "test2.py")
-	touch(t, tmpDir, "test3.py")
+	testutil.Touch(t, tmpDir, "test1.py")
+	testutil.Touch(t, tmpDir, "test2.py")
+	testutil.Touch(t, tmpDir, "test3.py")
 
 	files, err := fileset.All()
 	require.NoError(t, err)

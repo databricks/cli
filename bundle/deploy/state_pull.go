@@ -8,7 +8,6 @@ import (
 	"io"
 	"io/fs"
 	"os"
-	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/files"
@@ -95,10 +94,8 @@ func (s *statePull) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 
-	// Reset last modified times to 0 to make sure all files are synced
-	for k := range snapshotState.LastModifiedTimes {
-		snapshotState.LastModifiedTimes[k] = time.Unix(0, 0)
-	}
+	// Reset last modified times to make sure all files are synced
+	snapshotState.ResetLastModifiedTimes()
 
 	snapshot := &sync.Snapshot{
 		SnapshotPath:  snapshotPath,

@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/internal/testutil"
 	databrickscfg "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -38,8 +39,8 @@ func TestStateUpdate(t *testing.T) {
 		},
 	}
 
-	touch(t, b.Config.Path, "test1.py")
-	touch(t, b.Config.Path, "test2.py")
+	testutil.Touch(t, b.Config.Path, "test1.py")
+	testutil.Touch(t, b.Config.Path, "test2.py")
 
 	m := mocks.NewMockWorkspaceClient(t)
 	m.WorkspaceClient.Config = &databrickscfg.Config{
@@ -98,8 +99,8 @@ func TestStateUpdateWithExistingState(t *testing.T) {
 		},
 	}
 
-	touch(t, b.Config.Path, "test1.py")
-	touch(t, b.Config.Path, "test2.py")
+	testutil.Touch(t, b.Config.Path, "test1.py")
+	testutil.Touch(t, b.Config.Path, "test2.py")
 
 	m := mocks.NewMockWorkspaceClient(t)
 	m.WorkspaceClient.Config = &databrickscfg.Config{
@@ -124,7 +125,7 @@ func TestStateUpdateWithExistingState(t *testing.T) {
 		CliVersion: build.GetInfo().Version,
 		Files: []File{
 			{
-				Path: "bar/t1.py",
+				LocalPath: "bar/t1.py",
 			},
 		},
 	}
