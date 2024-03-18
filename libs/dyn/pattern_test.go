@@ -26,3 +26,12 @@ func TestNewPatternFromPath(t *testing.T) {
 	pat2 := dyn.NewPatternFromPath(path)
 	assert.Equal(t, pat1, pat2)
 }
+
+func TestPatternAppend(t *testing.T) {
+	pat1 := dyn.NewPattern(
+		dyn.Key("foo"),
+		dyn.Index(1),
+	)
+	pat2 := dyn.NewPattern(dyn.Key("foo")).Append(dyn.Index(1))
+	assert.Equal(t, pat1, pat2)
+}
