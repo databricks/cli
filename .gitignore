@@ -31,3 +31,4 @@ __pycache__
 .vscode/tasks.json
 
 .databricks
+__debug_bin*
