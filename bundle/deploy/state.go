@@ -139,7 +139,7 @@ func validateRemoteStateCompatibility(remote io.Reader) error {
 
 	// If the remote state version is greater than the CLI version, we can't proceed.
 	if state.Version > DeploymentStateVersion {
-		return fmt.Errorf("remote deployment state is incompatible with current version of CLI, please upgarde to at least %s", state.CliVersion)
+		return fmt.Errorf("remote deployment state is incompatible with the current version of the CLI (%s), please upgrade to at least %s", state.CliVersion)
 	}
 
 	return nil
