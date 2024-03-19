@@ -37,7 +37,7 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 		}
 		if err == nil {
 			tf.ExecPath = envExecPath
-			log.Debugf(ctx, "Using Terraform at %s", tf.ExecPath)
+			log.Debugf(ctx, "Using Terraform from the environment at %s", tf.ExecPath)
 			return tf.ExecPath, nil
 		}
 	}
