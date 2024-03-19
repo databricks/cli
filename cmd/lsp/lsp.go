@@ -137,7 +137,7 @@ func (p *LocalLspProxy) QuickFix(ctx context.Context, params *protocol.CodeActio
 		return nil, nil
 	}
 	var res struct {
-		Actions []protocol.CodeAction `json:"actions"`
+		CodeActions []protocol.CodeAction `json:"code_actions"`
 	}
 	err := p.client.Do(ctx, "POST", fmt.Sprintf("%s/quickfix", p.host),
 		httpclient.WithRequestData(map[string]any{
@@ -150,11 +150,11 @@ func (p *LocalLspProxy) QuickFix(ctx context.Context, params *protocol.CodeActio
 	}
 	// protocol.CodeActionKindSource has to be handled by a separate method, not QuickFix(...) - e.g reformatting
 	quickFixKind := protocol.CodeActionKindQuickFix
-	for i := range res.Actions {
-		res.Actions[i].Diagnostics = []protocol.Diagnostic{fixMe.resolves}
-		res.Actions[i].Kind = &quickFixKind
+	for i := range res.CodeActions {
+		res.CodeActions[i].Diagnostics = []protocol.Diagnostic{fixMe.resolves}
+		res.CodeActions[i].Kind = &quickFixKind
 	}
-	return res.Actions, nil
+	return res.CodeActions, nil
 }
 
 func startServer(ctx context.Context) error {
