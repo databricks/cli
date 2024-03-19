@@ -301,11 +301,14 @@ func TestFindExecPathFromEnvironmentWithWrongVersion(t *testing.T) {
 			},
 		},
 	}
-	t.Setenv("DATABRICKS_TF_VERSION", "1.2.3")
-	t.Setenv("DATABRICKS_TF_EXEC_PATH", "/tmp/terraform")
-	_, err := m.findExecPath(context.Background(), b, b.Config.Bundle.Terraform)
+	tmpBinPath := filepath.Join(t.TempDir(), "terraform")
+	_, err := os.Create(tmpBinPath)
 	require.NoError(t, err)
-	require.NotEqual(t, "/tmp/terraform", b.Config.Bundle.Terraform.ExecPath)
+	t.Setenv("DATABRICKS_TF_VERSION", "1.2.3")
+	t.Setenv("DATABRICKS_TF_EXEC_PATH", tmpBinPath)
+	_, err = m.findExecPath(context.Background(), b, b.Config.Bundle.Terraform)
+	require.NoError(t, err)
+	require.NotEqual(t, tmpBinPath, b.Config.Bundle.Terraform.ExecPath)
 }
 
 func TestFindExecPathFromEnvironmentWithCorrectVersionAndNoBinary(t *testing.T) {
