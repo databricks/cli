@@ -269,3 +269,20 @@ func TestSetUserProfileFromInheritEnvVars(t *testing.T) {
 	assert.Contains(t, env, "USERPROFILE")
 	assert.Equal(t, env["USERPROFILE"], "c:\\foo\\c")
 }
+
+func TestInheritEnvVarsWithAbsentPluginsCacheDir(t *testing.T) {
+	env := map[string]string{}
+	t.Setenv("DATABRICKS_TF_PLUGIN_CACHE_DIR", "/tmp/cache")
+	err := inheritEnvVars(context.Background(), env)
+	require.NoError(t, err)
+	require.NotContains(t, env, "TF_PLUGIN_CACHE_DIR")
+}
+
+func TestInheritEnvVarsWithRealPluginsCacheDir(t *testing.T) {
+	env := map[string]string{}
+	dir := t.TempDir()
+	t.Setenv("DATABRICKS_TF_PLUGIN_CACHE_DIR", dir)
+	err := inheritEnvVars(context.Background(), env)
+	require.NoError(t, err)
+	require.Equal(t, env["TF_PLUGIN_CACHE_DIR"], dir)
+}

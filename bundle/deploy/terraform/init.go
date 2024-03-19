@@ -117,7 +117,7 @@ func inheritEnvVars(ctx context.Context, environ map[string]string) error {
 	}
 
 	// Map $DATABRICKS_TF_PLUGIN_CACHE_DIR to $TF_PLUGIN_CACHE_DIR
-	// This lets us use pre-downloaded Databricks plugins
+	// This lets terraform use pre-downloaded Databricks plugins
 	cacheDir, ok := env.Lookup(ctx, "DATABRICKS_TF_PLUGIN_CACHE_DIR")
 	if ok {
 		_, err := os.Stat(cacheDir)
