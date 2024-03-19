@@ -58,7 +58,7 @@ func (c anyKeyComponent) visit(v Value, prefix Path, suffix Pattern, opts visitO
 	m = maps.Clone(m)
 	for key, value := range m {
 		var err error
-		nv, err := visit(value, prefix.Append(Key(key)), suffix, opts)
+		nv, err := visit(value, append(prefix, Key(key)), suffix, opts)
 		if err != nil {
 			// Leave the value intact if the suffix pattern didn't match any value.
 			if IsNoSuchKeyError(err) || IsIndexOutOfBoundsError(err) {
@@ -89,7 +89,7 @@ func (c anyIndexComponent) visit(v Value, prefix Path, suffix Pattern, opts visi
 	s = slices.Clone(s)
 	for i, value := range s {
 		var err error
-		nv, err := visit(value, prefix.Append(Index(i)), suffix, opts)
+		nv, err := visit(value, append(prefix, Index(i)), suffix, opts)
 		if err != nil {
 			// Leave the value intact if the suffix pattern didn't match any value.
 			if IsNoSuchKeyError(err) || IsIndexOutOfBoundsError(err) {

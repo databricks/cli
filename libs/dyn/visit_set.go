@@ -30,7 +30,7 @@ func SetByPath(v Value, p Path, nv Value) (Value, error) {
 
 	return visit(v, EmptyPath, NewPatternFromPath(p), visitOptions{
 		fn: func(prefix Path, v Value) (Value, error) {
-			path := prefix.Append(component)
+			path := append(prefix, component)
 
 			switch {
 			case component.isKey():
