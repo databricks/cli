@@ -27,11 +27,18 @@ func (m *initialize) Name() string {
 }
 
 func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *config.Terraform) (string, error) {
-	// Load exec path from the env var if it is not set.
-	if tf.ExecPath == "" {
-		envExecPath, ok := env.Lookup(ctx, "DATABRICKS_TF_EXEC_PATH")
-		if ok {
+	// Load exec path from the environment if it matches the currently used version.
+	envTFVersion := env.Get(ctx, "DATABRICKS_TF_VERSION")
+	envExecPath := env.Get(ctx, "DATABRICKS_TF_EXEC_PATH")
+	if envExecPath != "" && envTFVersion == TerraformVersion.String() {
+		_, err := os.Stat(envExecPath)
+		if err != nil && !os.IsNotExist(err) {
+			return "", err
+		}
+		if err == nil {
 			tf.ExecPath = envExecPath
+			log.Debugf(ctx, "Using Terraform at %s", tf.ExecPath)
+			return tf.ExecPath, nil
 		}
 	}
 
@@ -109,10 +116,18 @@ func inheritEnvVars(ctx context.Context, environ map[string]string) error {
 		environ["TF_CLI_CONFIG_FILE"] = configFile
 	}
 
-	// This lets us use pre-downloaded Databricks plugin.for Terraform to usefor Terraform to use..
+	// Map $DATABRICKS_TF_PLUGIN_CACHE_DIR to $TF_PLUGIN_CACHE_DIR
+	// This lets us use pre-downloaded Databricks plugins
 	cacheDir, ok := env.Lookup(ctx, "DATABRICKS_TF_PLUGIN_CACHE_DIR")
 	if ok {
-		environ["TF_PLUGIN_CACHE_DIR"] = cacheDir
+		_, err := os.Stat(cacheDir)
+		if err != nil && !os.IsNotExist(err) {
+			return err
+		}
+		if err == nil {
+			log.Debugf(ctx, "Using Terraform plugin cache dir: %s", cacheDir)
+			environ["TF_PLUGIN_CACHE_DIR"] = cacheDir
+		}
 	}
 
 	return nil
