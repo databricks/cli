@@ -2,6 +2,8 @@ package lsp
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/databricks-sdk-go/httpclient"
@@ -17,37 +19,171 @@ const lsName = "databricks-lsp"
 var version string = "0.0.1"
 var handler protocol.Handler
 
-var localClient = httpclient.NewApiClient(httpclient.ClientConfig{})
-
-type AnalyseResponse struct {
-	Diagnostics []protocol.Diagnostic `json:"diagnostics"`
+type LspThingy interface {
+	Match(uri protocol.DocumentUri) bool
 }
 
-func callUcx(lspctx *glsp.Context, uri protocol.DocumentUri) error {
-	var res AnalyseResponse
-	err := localClient.Do(context.Background(), "GET", "http://localhost:8000/analyse",
+type Linter interface {
+	Lint(ctx context.Context, uri protocol.DocumentUri) ([]protocol.Diagnostic, error)
+}
+
+type QuickFixer interface {
+	QuickFix(ctx context.Context, params *protocol.CodeActionParams) ([]protocol.CodeAction, error)
+}
+
+type LspMultiplexer struct {
+	things []LspThingy
+}
+
+func (m *LspMultiplexer) Lint(ctx context.Context, uri protocol.DocumentUri) ([]protocol.Diagnostic, error) {
+	diags := []protocol.Diagnostic{}
+	for _, thing := range m.things {
+		if !thing.Match(uri) {
+			continue
+		}
+		linter, ok := thing.(Linter)
+		if !ok {
+			continue
+		}
+		problems, err := linter.Lint(ctx, uri)
+		if err != nil {
+			return nil, fmt.Errorf("linter: %w", err)
+		}
+		diags = append(diags, problems...)
+	}
+	return diags, nil
+}
+
+func (m *LspMultiplexer) QuickFix(ctx context.Context, params *protocol.CodeActionParams) ([]protocol.CodeAction, error) {
+	actions := []protocol.CodeAction{}
+	for _, thing := range m.things {
+		if !thing.Match(params.TextDocument.URI) {
+			continue
+		}
+		fixer, ok := thing.(QuickFixer)
+		if !ok {
+			continue
+		}
+		fixes, err := fixer.QuickFix(ctx, params)
+		if err != nil {
+			return nil, fmt.Errorf("quick fixer: %w", err)
+		}
+		actions = append(actions, fixes...)
+	}
+	return actions, nil
+}
+
+type LocalLspProxy struct {
+	host       string
+	source     string
+	extensions []string
+	client     *httpclient.ApiClient
+}
+
+func (p *LocalLspProxy) Match(uri protocol.DocumentUri) bool {
+	for _, ext := range p.extensions {
+		if strings.HasSuffix(string(uri), ext) {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *LocalLspProxy) Lint(ctx context.Context, uri protocol.DocumentUri) ([]protocol.Diagnostic, error) {
+	var res struct {
+		Diagnostics []protocol.Diagnostic `json:"diagnostics"`
+	}
+	err := p.client.Do(ctx, "GET", fmt.Sprintf("%s/lint", p.host),
 		httpclient.WithRequestData(map[string]any{
 			"file_uri": uri,
 		}), httpclient.WithResponseUnmarshal(&res))
 	if err != nil {
-		return err
+		return nil, err
 	}
- 	lspctx.Notify(protocol.ServerTextDocumentPublishDiagnostics, &protocol.PublishDiagnosticsParams{
-		URI:         uri,
-		Diagnostics: res.Diagnostics,
-	})
+	return res.Diagnostics, nil
+}
+
+type FixMe struct {
+	Range protocol.Range `json:"range"`
+	Code  string         `json:"code"`
+
+	resolves protocol.Diagnostic `json:"-"`
+}
+
+// match diagnostics produced by a given source
+func (p *LocalLspProxy) matchDiagnostic(diagnostics []protocol.Diagnostic) *FixMe {
+	for _, v := range diagnostics {
+		if v.Source == nil {
+			continue
+		}
+		if *v.Source != p.source {
+			continue
+		}
+		if v.Code == nil {
+			continue
+		}
+		return &FixMe{
+			Range:    v.Range,
+			Code:     fmt.Sprint(v.Code.Value),
+			resolves: v,
+		}
+	}
 	return nil
+}
+
+func (p *LocalLspProxy) QuickFix(ctx context.Context, params *protocol.CodeActionParams) ([]protocol.CodeAction, error) {
+	fixMe := p.matchDiagnostic(params.Context.Diagnostics)
+	if fixMe == nil {
+		return nil, nil
+	}
+	var res struct {
+		Actions []protocol.CodeAction `json:"actions"`
+	}
+	err := p.client.Do(ctx, "POST", fmt.Sprintf("%s/quickfix", p.host),
+		httpclient.WithRequestData(map[string]any{
+			"file_uri": params.TextDocument.URI,
+			"code":     fixMe.Code,
+			"range":    params.Range,
+		}), httpclient.WithResponseUnmarshal(&res))
+	if err != nil {
+		return nil, err
+	}
+	// protocol.CodeActionKindSource has to be handled by a separate method, not QuickFix(...) - e.g reformatting
+	quickFixKind := protocol.CodeActionKindQuickFix
+	for i := range res.Actions {
+		res.Actions[i].Diagnostics = []protocol.Diagnostic{fixMe.resolves}
+		res.Actions[i].Kind = &quickFixKind
+	}
+	return res.Actions, nil
 }
 
 func startServer(ctx context.Context) error {
 	commonlog.Configure(1, nil)
 
+	// in production, we'll launch Databricks Labs command proxy, that
+	// will return a JSON on stdout with the following structure:
+	// {
+	//   "host": "http://localhost:<random-port>",
+	//   "source": "databricks.labs.<project-name>",
+	//   "extensions": [".py", <other-extensions>]
+	// }
+	ucx := &LocalLspProxy{
+		host:       "http://localhost:8000",
+		source:     "databricks.labs.ucx",
+		extensions: []string{".py", ".sql"},
+		client:     httpclient.NewApiClient(httpclient.ClientConfig{}),
+	}
+	// and here we'll add DABs, DLT, linters, more SQL introspection, etc
+	multiplexer := &LspMultiplexer{
+		things: []LspThingy{ucx},
+	}
 	handler = protocol.Handler{
 		Initialize:  initialize,
 		Initialized: initialized,
 		Shutdown:    shutdown,
 		SetTrace:    setTrace,
 		TextDocumentCodeAction: func(context *glsp.Context, params *protocol.CodeActionParams) (any, error) {
+			return multiplexer.QuickFix(ctx, params)
 			foundUcx := false
 			var codeRange protocol.Range
 			for _, v := range params.Context.Diagnostics {
@@ -89,11 +225,33 @@ func startServer(ctx context.Context) error {
 		CodeActionResolve: func(context *glsp.Context, params *protocol.CodeAction) (*protocol.CodeAction, error) {
 			return params, nil
 		},
-		TextDocumentDidOpen: func(context *glsp.Context, params *protocol.DidOpenTextDocumentParams) error {
-			return callUcx(context, params.TextDocument.URI)
+		TextDocumentDidOpen: func(lsp *glsp.Context, params *protocol.DidOpenTextDocumentParams) error {
+			problems, err := multiplexer.Lint(ctx, params.TextDocument.URI)
+			if err != nil {
+				return err
+			}
+			if len(problems) == 0 {
+				return nil
+			}
+			lsp.Notify(protocol.ServerTextDocumentPublishDiagnostics, &protocol.PublishDiagnosticsParams{
+				URI:         params.TextDocument.URI,
+				Diagnostics: problems,
+			})
+			return nil
 		},
-		TextDocumentDidChange: func(context *glsp.Context, params *protocol.DidChangeTextDocumentParams) error {
-			return callUcx(context, params.TextDocument.URI)
+		TextDocumentDidChange: func(lsp *glsp.Context, params *protocol.DidChangeTextDocumentParams) error {
+			problems, err := multiplexer.Lint(ctx, params.TextDocument.URI)
+			if err != nil {
+				return err
+			}
+			if len(problems) == 0 {
+				return nil
+			}
+			lsp.Notify(protocol.ServerTextDocumentPublishDiagnostics, &protocol.PublishDiagnosticsParams{
+				URI:         params.TextDocument.URI,
+				Diagnostics: problems,
+			})
+			return nil
 		},
 	}
 

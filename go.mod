@@ -35,6 +35,9 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
+// until https://github.com/tliron/glsp/pull/26 gets merged
+replace github.com/tliron/glsp => github.com/nfx/glsp v0.2.3-0.20240319102602-78d58dda21a7
+
 require (
 	cloud.google.com/go/compute v1.23.4 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect

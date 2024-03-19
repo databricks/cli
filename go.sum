@@ -135,6 +135,8 @@ github.com/mattn/go-runewidth v0.0.14 h1:+xnbZSEeDbOIg5/mE6JF0w6n9duR1l3/WmbinWV
 github.com/mattn/go-runewidth v0.0.14/go.mod h1:Jdepj2loyihRzMpdS35Xk/zdY8IAYHsh153qUoGf23w=
 github.com/muesli/termenv v0.15.2 h1:GohcuySI0QmI3wN8Ok9PtKGkgkFIk7y6Vpb5PvrY+Wo=
 github.com/muesli/termenv v0.15.2/go.mod h1:Epx+iuz8sNs7mNKhxzH4fWXGNpZwUaJKRS1noLXviQ8=
+github.com/nfx/glsp v0.2.3-0.20240319102602-78d58dda21a7 h1:pfkYSCgBf0hNDDwuqk9G9J6+bFkw2/vJZzCMZm96HUA=
+github.com/nfx/glsp v0.2.3-0.20240319102602-78d58dda21a7/go.mod h1:GMVWDNeODxHzmDPvYbYTCs7yHVaEATfYtXiYJ9w1nBg=
 github.com/nwidger/jsoncolor v0.3.2 h1:rVJJlwAWDJShnbTYOQ5RM7yTA20INyKXlJ/fg4JMhHQ=
 github.com/nwidger/jsoncolor v0.3.2/go.mod h1:Cs34umxLbJvgBMnVNVqhji9BhoT/N/KinHqZptQ7cf4=
 github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 h1:q2e307iGHPdTGp0hoxKjt1H5pDo6utceo3dQVK3I5XQ=
@@ -178,8 +180,6 @@ github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsT
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/tliron/commonlog v0.2.8 h1:vpKrEsZX4nlneC9673pXpeKqv3cFLxwpzNEZF1qiaQQ=
 github.com/tliron/commonlog v0.2.8/go.mod h1:HgQZrJEuiKLLRvUixtPWGcmTmWWtKkCtywF6x9X5Spw=
-github.com/tliron/glsp v0.2.1 h1:QS1c22YO1EiY0YZmJXca4Eq13gP0HX2vgy2t38gLNJ0=
-github.com/tliron/glsp v0.2.1/go.mod h1:GMVWDNeODxHzmDPvYbYTCs7yHVaEATfYtXiYJ9w1nBg=
 github.com/tliron/kutil v0.3.11 h1:kongR0dhrrn9FR/3QRFoUfQe27t78/xQvrU9aXIy5bk=
 github.com/tliron/kutil v0.3.11/go.mod h1:4IqOAAdpJuDxYbJxMv4nL8LSH0mPofSrdwIv8u99PDc=
 github.com/xanzy/ssh-agent v0.3.3 h1:+/15pJfg/RsTxqYcX6fHqOXZwwMP+2VyYWJeWM2qQFM=
