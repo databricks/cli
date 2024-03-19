@@ -32,6 +32,7 @@ func Deploy() bundle.Mutator {
 				python.TransformWheelTask(),
 				files.Upload(),
 				deploy.StateUpdate(),
+				deploy.StatePush(),
 				permissions.ApplyWorkspaceRootPermissions(),
 				terraform.Interpolate(),
 				terraform.Write(),
@@ -40,7 +41,6 @@ func Deploy() bundle.Mutator {
 					terraform.Apply(),
 					bundle.Seq(
 						terraform.StatePush(),
-						deploy.StatePush(),
 						terraform.Load(),
 						metadata.Compute(),
 						metadata.Upload(),

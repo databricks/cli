@@ -49,17 +49,13 @@ func NewPath(cs ...pathComponent) Path {
 	return cs
 }
 
-// Join joins the given paths.
-func (p Path) Join(qs ...Path) Path {
-	for _, q := range qs {
-		p = p.Append(q...)
-	}
-	return p
-}
-
 // Append appends the given components to the path.
+// Mutations to the returned path do not affect the original path.
 func (p Path) Append(cs ...pathComponent) Path {
-	return append(p, cs...)
+	out := make(Path, len(p)+len(cs))
+	copy(out, p)
+	copy(out[len(p):], cs)
+	return out
 }
 
 // Equal returns true if the paths are equal.

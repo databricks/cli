@@ -4,39 +4,40 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/dyn"
 )
 
-func transformArtifactPath(resource any, dir string) *transformer {
-	artifact, ok := resource.(*config.Artifact)
-	if !ok {
-		return nil
-	}
+func (m *translatePaths) applyArtifactTranslations(b *bundle.Bundle, v dyn.Value) (dyn.Value, error) {
+	var err error
 
-	return &transformer{
-		dir,
-		&artifact.Path,
-		"artifacts.path",
-		translateNoOp,
-	}
-}
+	// Base pattern to match all artifacts.
+	base := dyn.NewPattern(
+		dyn.Key("artifacts"),
+		dyn.AnyKey(),
+	)
 
-func applyArtifactTransformers(m *translatePaths, b *bundle.Bundle) error {
-	artifactTransformers := []transformFunc{
-		transformArtifactPath,
-	}
+	for _, t := range []struct {
+		pattern dyn.Pattern
+		fn      rewriteFunc
+	}{
+		{
+			base.Append(dyn.Key("path")),
+			translateNoOp,
+		},
+	} {
+		v, err = dyn.MapByPattern(v, t.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			key := p[1].Key()
+			dir, err := v.Location().Directory()
+			if err != nil {
+				return dyn.InvalidValue, fmt.Errorf("unable to determine directory for artifact %s: %w", key, err)
+			}
 
-	for key, artifact := range b.Config.Artifacts {
-		dir, err := artifact.ConfigFileDirectory()
+			return m.rewriteRelativeTo(b, p, v, t.fn, dir, "")
+		})
 		if err != nil {
-			return fmt.Errorf("unable to determine directory for artifact %s: %w", key, err)
-		}
-
-		err = m.applyTransformers(artifactTransformers, b, artifact, dir)
-		if err != nil {
-			return err
+			return dyn.InvalidValue, err
 		}
 	}
 
-	return nil
+	return v, nil
 }

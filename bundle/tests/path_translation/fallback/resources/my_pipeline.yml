@@ -1,0 +1,9 @@
+resources:
+  pipelines:
+    my_pipeline:
+      name: "placeholder"
+      libraries:
+        - file:
+            path: ../src/file1.py
+        - notebook:
+            path: ../src/notebook1.py
