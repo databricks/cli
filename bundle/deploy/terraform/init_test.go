@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
@@ -284,5 +285,68 @@ func TestInheritEnvVarsWithRealPluginsCacheDir(t *testing.T) {
 	t.Setenv("DATABRICKS_TF_PLUGIN_CACHE_DIR", dir)
 	err := inheritEnvVars(context.Background(), env)
 	require.NoError(t, err)
-	require.Equal(t, env["TF_PLUGIN_CACHE_DIR"], dir)
+	require.Equal(t, dir, env["TF_PLUGIN_CACHE_DIR"])
+}
+
+func TestFindExecPathFromEnvironmentWithWrongVersion(t *testing.T) {
+	m := &initialize{}
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Path: t.TempDir(),
+			Bundle: config.Bundle{
+				Target: "whatever",
+				Terraform: &config.Terraform{
+					ExecPath: "terraform",
+				},
+			},
+		},
+	}
+	t.Setenv("DATABRICKS_TF_VERSION", "1.2.3")
+	t.Setenv("DATABRICKS_TF_EXEC_PATH", "/tmp/terraform")
+	_, err := m.findExecPath(context.Background(), b, b.Config.Bundle.Terraform)
+	require.NoError(t, err)
+	require.NotEqual(t, "/tmp/terraform", b.Config.Bundle.Terraform.ExecPath)
+}
+
+func TestFindExecPathFromEnvironmentWithCorrectVersionAndNoBinary(t *testing.T) {
+	m := &initialize{}
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Path: t.TempDir(),
+			Bundle: config.Bundle{
+				Target: "whatever",
+				Terraform: &config.Terraform{
+					ExecPath: "terraform",
+				},
+			},
+		},
+	}
+	t.Setenv("DATABRICKS_TF_VERSION", TerraformVersion.String())
+	t.Setenv("DATABRICKS_TF_EXEC_PATH", "/tmp/terraform")
+	_, err := m.findExecPath(context.Background(), b, b.Config.Bundle.Terraform)
+	require.NoError(t, err)
+	require.NotEqual(t, "/tmp/terraform", b.Config.Bundle.Terraform.ExecPath)
+}
+
+func TestFindExecPathFromEnvironmentWithCorrectVersionAndBinary(t *testing.T) {
+	m := &initialize{}
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Path: t.TempDir(),
+			Bundle: config.Bundle{
+				Target: "whatever",
+				Terraform: &config.Terraform{
+					ExecPath: "terraform",
+				},
+			},
+		},
+	}
+	tmpBinPath := filepath.Join(t.TempDir(), "terraform")
+	_, err := os.Create(tmpBinPath)
+	require.NoError(t, err)
+	t.Setenv("DATABRICKS_TF_VERSION", TerraformVersion.String())
+	t.Setenv("DATABRICKS_TF_EXEC_PATH", tmpBinPath)
+	_, err = m.findExecPath(context.Background(), b, b.Config.Bundle.Terraform)
+	require.NoError(t, err)
+	require.Equal(t, tmpBinPath, b.Config.Bundle.Terraform.ExecPath)
 }
