@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/databricks-sdk-go/httpclient"
@@ -68,7 +69,9 @@ func (m *LspMultiplexer) QuickFix(ctx context.Context, params *protocol.CodeActi
 		if err != nil {
 			return nil, fmt.Errorf("quick fixer: %w", err)
 		}
-		actions = append(actions, fixes...)
+		for _, fix := range fixes {
+			actions = append(actions, fix)
+		}
 	}
 	return actions, nil
 }
@@ -182,54 +185,30 @@ func startServer(ctx context.Context) error {
 		Initialized: initialized,
 		Shutdown:    shutdown,
 		SetTrace:    setTrace,
-		TextDocumentCodeAction: func(context *glsp.Context, params *protocol.CodeActionParams) (any, error) {
-			return multiplexer.QuickFix(ctx, params)
-			foundUcx := false
-			var codeRange protocol.Range
-			for _, v := range params.Context.Diagnostics {
-				if v.Source == nil {
-					continue
-				}
-				if *v.Source == "databricks.labs.ucx" {
-					codeRange = v.Range
-					foundUcx = true
-				}
-			}
-			if !foundUcx {
-				return nil, nil
-			}
-			quickFix := protocol.CodeActionKindQuickFix
-			codeActions := []protocol.CodeAction{
-				{
-					Title: "Replace table with migrated table",
-					Kind:  &quickFix,
-					Edit: &protocol.WorkspaceEdit{
-						DocumentChanges: []any{
-							protocol.TextDocumentEdit{
-								TextDocument: protocol.OptionalVersionedTextDocumentIdentifier{
-									TextDocumentIdentifier: params.TextDocument,
-								},
-								Edits: []any{
-									protocol.TextEdit{
-										Range:   codeRange,
-										NewText: "[beep-v3]",
-									},
-								},
-							},
-						},
-					},
-				},
-			}
-			return codeActions, nil
-		},
-		CodeActionResolve: func(context *glsp.Context, params *protocol.CodeAction) (*protocol.CodeAction, error) {
-			return params, nil
+		TextDocumentCodeAction: func(lsp *glsp.Context, params *protocol.CodeActionParams) (any, error) {
+			started := time.Now()
+			codeActions, err := multiplexer.QuickFix(ctx, params)
+			protocol.Trace(lsp,
+				protocol.MessageTypeLog,
+				fmt.Sprintf("code action: %d items, range %v, took %s",
+					len(codeActions),
+					params.Range,
+					time.Since(started).Round(time.Millisecond).String(),
+				))
+			return codeActions, err
 		},
 		TextDocumentDidOpen: func(lsp *glsp.Context, params *protocol.DidOpenTextDocumentParams) error {
+			started := time.Now()
 			problems, err := multiplexer.Lint(ctx, params.TextDocument.URI)
 			if err != nil {
 				return err
 			}
+			protocol.Trace(lsp,
+				protocol.MessageTypeLog,
+				fmt.Sprintf("did open: %d items: took %s",
+					len(problems),
+					time.Since(started).Round(time.Millisecond).String(),
+				))
 			if len(problems) == 0 {
 				return nil
 			}
@@ -240,10 +219,17 @@ func startServer(ctx context.Context) error {
 			return nil
 		},
 		TextDocumentDidChange: func(lsp *glsp.Context, params *protocol.DidChangeTextDocumentParams) error {
+			started := time.Now()
 			problems, err := multiplexer.Lint(ctx, params.TextDocument.URI)
 			if err != nil {
 				return err
 			}
+			protocol.Trace(lsp,
+				protocol.MessageTypeLog,
+				fmt.Sprintf("did open: %d items: took %s",
+					len(problems),
+					time.Since(started).Round(time.Millisecond).String(),
+				))
 			if len(problems) == 0 {
 				return nil
 			}
