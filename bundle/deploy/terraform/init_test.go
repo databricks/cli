@@ -289,9 +289,11 @@ func TestInheritEnvVarsWithRealPluginsCacheDir(t *testing.T) {
 	require.Equal(t, dir, env["TF_PLUGIN_CACHE_DIR"])
 }
 
-func createTerraformBinary(t *testing.T, dest string) string {
-	binPath := filepath.Join(dest, product.Terraform.BinaryName())
-	_, err := os.Create(binPath)
+func createTerraformBinary(t *testing.T, dest string, name string) string {
+	binPath := filepath.Join(dest, name)
+	f, err := os.Create(binPath)
+	require.NoError(t, err)
+	err = f.Chmod(0755)
 	require.NoError(t, err)
 	return binPath
 }
@@ -309,9 +311,9 @@ func TestFindExecPathFromEnvironmentWithWrongVersion(t *testing.T) {
 	}
 	// Create a pre-existing terraform bin to avoid downloading it
 	cacheDir, _ := b.CacheDir(context.Background(), "bin")
-	existingExecPath := createTerraformBinary(t, cacheDir)
+	existingExecPath := createTerraformBinary(t, cacheDir, product.Terraform.BinaryName())
 	// Create a new terraform binary and expose it through env vars
-	tmpBinPath := createTerraformBinary(t, t.TempDir())
+	tmpBinPath := createTerraformBinary(t, t.TempDir(), "terraform-bin")
 	t.Setenv("DATABRICKS_TF_VERSION", "1.2.3")
 	t.Setenv("DATABRICKS_TF_EXEC_PATH", tmpBinPath)
 	_, err := m.findExecPath(context.Background(), b, b.Config.Bundle.Terraform)
@@ -332,7 +334,7 @@ func TestFindExecPathFromEnvironmentWithCorrectVersionAndNoBinary(t *testing.T) 
 	}
 	// Create a pre-existing terraform bin to avoid downloading it
 	cacheDir, _ := b.CacheDir(context.Background(), "bin")
-	existingExecPath := createTerraformBinary(t, cacheDir)
+	existingExecPath := createTerraformBinary(t, cacheDir, product.Terraform.BinaryName())
 
 	t.Setenv("DATABRICKS_TF_VERSION", TerraformVersion.String())
 	t.Setenv("DATABRICKS_TF_EXEC_PATH", "/tmp/terraform")
@@ -347,20 +349,20 @@ func TestFindExecPathFromEnvironmentWithCorrectVersionAndBinaryAndAlreadySetExec
 		Config: config.Root{
 			Path: t.TempDir(),
 			Bundle: config.Bundle{
-				Target: "whatever",
-				Terraform: &config.Terraform{
-					ExecPath: "terraform",
-				},
+				Target:    "whatever",
+				Terraform: &config.Terraform{},
 			},
 		},
 	}
+	existingExecPath := createTerraformBinary(t, t.TempDir(), "terraform-existing")
+	b.Config.Bundle.Terraform.ExecPath = existingExecPath
 	// Create a new terraform binary and expose it through env vars
-	tmpBinPath := createTerraformBinary(t, t.TempDir())
+	tmpBinPath := createTerraformBinary(t, t.TempDir(), "terraform-bin")
 	t.Setenv("DATABRICKS_TF_VERSION", TerraformVersion.String())
 	t.Setenv("DATABRICKS_TF_EXEC_PATH", tmpBinPath)
 	_, err := m.findExecPath(context.Background(), b, b.Config.Bundle.Terraform)
 	require.NoError(t, err)
-	require.NotEqual(t, tmpBinPath, b.Config.Bundle.Terraform.ExecPath)
+	require.Equal(t, existingExecPath, b.Config.Bundle.Terraform.ExecPath)
 }
 
 func TestFindExecPathFromEnvironmentWithCorrectVersionAndBinary(t *testing.T) {
@@ -376,9 +378,9 @@ func TestFindExecPathFromEnvironmentWithCorrectVersionAndBinary(t *testing.T) {
 	}
 	// Create a pre-existing terraform bin to avoid downloading it
 	cacheDir, _ := b.CacheDir(context.Background(), "bin")
-	createTerraformBinary(t, cacheDir)
+	createTerraformBinary(t, cacheDir, product.Terraform.BinaryName())
 	// Create a new terraform binary and expose it through env vars
-	tmpBinPath := createTerraformBinary(t, t.TempDir())
+	tmpBinPath := createTerraformBinary(t, t.TempDir(), "terraform-bin")
 	t.Setenv("DATABRICKS_TF_VERSION", TerraformVersion.String())
 	t.Setenv("DATABRICKS_TF_EXEC_PATH", tmpBinPath)
 	_, err := m.findExecPath(context.Background(), b, b.Config.Bundle.Terraform)
