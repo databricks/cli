@@ -3,14 +3,7 @@
 USE CATALOG {{"{{"}}catalog{{"}}"}};
 USE SCHEMA {{"{{"}}schema{{"}}"}};
 
-{{- if eq (default_catalog) ""}}
-{{- /* This workspace might not have Unity Catalog, */}}
-{{- /* so let's not show both materialized views and streaming tables. */}}
-{{- /* They're not supported without Unity Catalog! */}}
-CREATE OR REPLACE VIEW orders_daily
-{{- else}}
 CREATE OR REPLACE MATERIALIZED VIEW orders_daily
-{{- end}}
 AS SELECT
   order_date, count(*) AS number_of_orders
 FROM orders_raw
