@@ -293,6 +293,10 @@ func createTerraformBinary(t *testing.T, dest string, name string) string {
 	binPath := filepath.Join(dest, name)
 	f, err := os.Create(binPath)
 	require.NoError(t, err)
+	defer func() {
+		err = f.Close()
+		require.NoError(t, err)
+	}()
 	err = f.Chmod(0755)
 	require.NoError(t, err)
 	return binPath
