@@ -1,4 +1,4 @@
-package bundle
+package config_tests
 
 import (
 	"context"
@@ -11,16 +11,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestBundlePythonWheelBuild(t *testing.T) {
+func TestPythonWheelBuild(t *testing.T) {
 	ctx := context.Background()
-	b, err := bundle.Load(ctx, "./python_wheel")
+	b, err := bundle.Load(ctx, "./python_wheel/python_wheel")
 	require.NoError(t, err)
 
 	m := phases.Build()
 	err = bundle.Apply(ctx, b, m)
 	require.NoError(t, err)
 
-	matches, err := filepath.Glob("python_wheel/my_test_code/dist/my_test_code-*.whl")
+	matches, err := filepath.Glob("./python_wheel/python_wheel/my_test_code/dist/my_test_code-*.whl")
 	require.NoError(t, err)
 	require.Equal(t, 1, len(matches))
 
@@ -29,16 +29,16 @@ func TestBundlePythonWheelBuild(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestBundlePythonWheelBuildAutoDetect(t *testing.T) {
+func TestPythonWheelBuildAutoDetect(t *testing.T) {
 	ctx := context.Background()
-	b, err := bundle.Load(ctx, "./python_wheel_no_artifact")
+	b, err := bundle.Load(ctx, "./python_wheel/python_wheel_no_artifact")
 	require.NoError(t, err)
 
 	m := phases.Build()
 	err = bundle.Apply(ctx, b, m)
 	require.NoError(t, err)
 
-	matches, err := filepath.Glob("python_wheel/my_test_code/dist/my_test_code-*.whl")
+	matches, err := filepath.Glob("./python_wheel/python_wheel_no_artifact/dist/my_test_code-*.whl")
 	require.NoError(t, err)
 	require.Equal(t, 1, len(matches))
 
@@ -47,9 +47,9 @@ func TestBundlePythonWheelBuildAutoDetect(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestBundlePythonWheelWithDBFSLib(t *testing.T) {
+func TestPythonWheelWithDBFSLib(t *testing.T) {
 	ctx := context.Background()
-	b, err := bundle.Load(ctx, "./python_wheel_dbfs_lib")
+	b, err := bundle.Load(ctx, "./python_wheel/python_wheel_dbfs_lib")
 	require.NoError(t, err)
 
 	m := phases.Build()
@@ -61,9 +61,9 @@ func TestBundlePythonWheelWithDBFSLib(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestBundlePythonWheelBuildNoBuildJustUpload(t *testing.T) {
+func TestPythonWheelBuildNoBuildJustUpload(t *testing.T) {
 	ctx := context.Background()
-	b, err := bundle.Load(ctx, "./python_wheel_no_artifact_no_setup")
+	b, err := bundle.Load(ctx, "./python_wheel/python_wheel_no_artifact_no_setup")
 	require.NoError(t, err)
 
 	m := phases.Build()
