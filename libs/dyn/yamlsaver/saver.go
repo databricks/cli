@@ -9,7 +9,6 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/libs/dyn"
-	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
 )
 
@@ -74,21 +73,24 @@ func (s *saver) toYamlNode(v dyn.Value) (*yaml.Node, error) {
 func (s *saver) toYamlNodeWithStyle(v dyn.Value, style yaml.Style) (*yaml.Node, error) {
 	switch v.Kind() {
 	case dyn.KindMap:
-		m, _ := v.AsMap()
-		keys := maps.Keys(m)
+		m := v.MustMapping()
+
 		// We're using location lines to define the order of keys in YAML.
 		// The location is set when we convert API response struct to config.Value representation
 		// See convert.convertMap for details
+		keys := m.Keys()
 		sort.SliceStable(keys, func(i, j int) bool {
-			return m[keys[i]].Location().Line < m[keys[j]].Location().Line
+			vi, _ := m.Get(keys[i])
+			vj, _ := m.Get(keys[j])
+			return vi.Location().Line < vj.Location().Line
 		})
 
 		content := make([]*yaml.Node, 0)
 		for _, k := range keys {
-			item := m[k]
-			node := yaml.Node{Kind: yaml.ScalarNode, Value: k, Style: style}
+			item, _ := m.Get(k)
+			node := yaml.Node{Kind: yaml.ScalarNode, Value: k.MustString(), Style: style}
 			var nestedNodeStyle yaml.Style
-			if customStyle, ok := s.hasStyle(k); ok {
+			if customStyle, ok := s.hasStyle(k.MustString()); ok {
 				nestedNodeStyle = customStyle
 			} else {
 				nestedNodeStyle = style
@@ -103,7 +105,7 @@ func (s *saver) toYamlNodeWithStyle(v dyn.Value, style yaml.Style) (*yaml.Node, 
 
 		return &yaml.Node{Kind: yaml.MappingNode, Content: content, Style: style}, nil
 	case dyn.KindSequence:
-		seq, _ := v.AsSequence()
+		seq := v.MustSequence()
 		content := make([]*yaml.Node, 0)
 		for _, item := range seq {
 			node, err := s.toYamlNodeWithStyle(item, style)

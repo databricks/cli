@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/stretchr/testify/assert"
+	assert "github.com/databricks/cli/libs/dyn/dynassert"
 )
 
 func TestValueUnderlyingMap(t *testing.T) {
@@ -15,18 +15,18 @@ func TestValueUnderlyingMap(t *testing.T) {
 		},
 	)
 
-	vv1, ok := v.AsMap()
+	vv1, ok := v.AsMapping()
 	assert.True(t, ok)
 
-	_, ok = dyn.NilValue.AsMap()
+	_, ok = dyn.NilValue.AsMapping()
 	assert.False(t, ok)
 
-	vv2 := v.MustMap()
+	vv2 := v.MustMapping()
 	assert.Equal(t, vv1, vv2)
 
 	// Test panic.
 	assert.PanicsWithValue(t, "expected kind map, got nil", func() {
-		dyn.NilValue.MustMap()
+		dyn.NilValue.MustMapping()
 	})
 }
 

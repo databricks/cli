@@ -2,7 +2,6 @@ package dyn
 
 import (
 	"fmt"
-	"maps"
 	"slices"
 )
 
@@ -15,13 +14,15 @@ func Foreach(fn MapFunc) MapFunc {
 	return func(p Path, v Value) (Value, error) {
 		switch v.Kind() {
 		case KindMap:
-			m := maps.Clone(v.MustMap())
-			for key, value := range m {
-				var err error
-				m[key], err = fn(append(p, Key(key)), value)
+			m := v.MustMapping().Clone()
+			for _, pair := range m.Pairs() {
+				pk := pair.Key
+				pv := pair.Value
+				nv, err := fn(append(p, Key(pk.MustString())), pv)
 				if err != nil {
 					return InvalidValue, err
 				}
+				m.Set(pk, nv)
 			}
 			return NewValue(m, v.Location()), nil
 		case KindSequence:

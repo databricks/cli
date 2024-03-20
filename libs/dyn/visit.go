@@ -3,7 +3,6 @@ package dyn
 import (
 	"errors"
 	"fmt"
-	"maps"
 	"slices"
 )
 
@@ -71,13 +70,13 @@ func (component pathComponent) visit(v Value, prefix Path, suffix Pattern, opts 
 	switch {
 	case component.isKey():
 		// Expect a map to be set if this is a key.
-		m, ok := v.AsMap()
+		m, ok := v.AsMapping()
 		if !ok {
 			return InvalidValue, fmt.Errorf("expected a map to index %q, found %s", path, v.Kind())
 		}
 
 		// Lookup current value in the map.
-		ev, ok := m[component.key]
+		ev, ok := m.GetByString(component.key)
 		if !ok {
 			return InvalidValue, noSuchKeyError{path}
 		}
@@ -94,8 +93,8 @@ func (component pathComponent) visit(v Value, prefix Path, suffix Pattern, opts 
 		}
 
 		// Return an updated map value.
-		m = maps.Clone(m)
-		m[component.key] = nv
+		m = m.Clone()
+		m.Set(V(component.key), nv)
 		return Value{
 			v: m,
 			k: KindMap,

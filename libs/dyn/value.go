@@ -27,14 +27,16 @@ var NilValue = Value{
 
 // V constructs a new Value with the given value.
 func V(v any) Value {
-	return Value{
-		v: v,
-		k: kindOf(v),
-	}
+	return NewValue(v, Location{})
 }
 
 // NewValue constructs a new Value with the given value and location.
 func NewValue(v any, loc Location) Value {
+	switch vin := v.(type) {
+	case map[string]Value:
+		v = newMappingFromGoMap(vin)
+	}
+
 	return Value{
 		v: v,
 		k: kindOf(v),
@@ -72,12 +74,14 @@ func (v Value) AsAny() any {
 	case KindInvalid:
 		panic("invoked AsAny on invalid value")
 	case KindMap:
-		vv := v.v.(map[string]Value)
-		m := make(map[string]any, len(vv))
-		for k, v := range vv {
-			m[k] = v.AsAny()
+		m := v.v.(Mapping)
+		out := make(map[string]any, m.Len())
+		for _, pair := range m.pairs {
+			pk := pair.Key
+			pv := pair.Value
+			out[pk.MustString()] = pv.AsAny()
 		}
-		return m
+		return out
 	case KindSequence:
 		vv := v.v.([]Value)
 		a := make([]any, len(vv))
@@ -104,12 +108,12 @@ func (v Value) AsAny() any {
 }
 
 func (v Value) Get(key string) Value {
-	m, ok := v.AsMap()
+	m, ok := v.AsMapping()
 	if !ok {
 		return NilValue
 	}
 
-	vv, ok := m[key]
+	vv, ok := m.GetByString(key)
 	if !ok {
 		return NilValue
 	}

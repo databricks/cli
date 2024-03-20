@@ -2,7 +2,6 @@ package dyn
 
 import (
 	"fmt"
-	"maps"
 	"slices"
 )
 
@@ -35,14 +34,14 @@ func SetByPath(v Value, p Path, nv Value) (Value, error) {
 			switch {
 			case component.isKey():
 				// Expect a map to be set if this is a key.
-				m, ok := v.AsMap()
+				m, ok := v.AsMapping()
 				if !ok {
 					return InvalidValue, fmt.Errorf("expected a map to index %q, found %s", path, v.Kind())
 				}
 
 				// Return an updated map value.
-				m = maps.Clone(m)
-				m[component.key] = nv
+				m = m.Clone()
+				m.Set(V(component.key), nv)
 				return Value{
 					v: m,
 					k: KindMap,

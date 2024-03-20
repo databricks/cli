@@ -74,30 +74,32 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 
 	switch src.Kind() {
 	case dyn.KindMap:
-		out := make(map[string]dyn.Value)
+		out := dyn.NewMapping()
 		info := getStructInfo(typ)
-		for k, v := range src.MustMap() {
-			index, ok := info.Fields[k]
+		for _, pair := range src.MustMapping().Pairs() {
+			pk := pair.Key
+			pv := pair.Value
+			index, ok := info.Fields[pk.MustString()]
 			if !ok {
 				diags = diags.Append(diag.Diagnostic{
 					Severity: diag.Warning,
-					Summary:  fmt.Sprintf("unknown field: %s", k),
-					Location: src.Location(),
+					Summary:  fmt.Sprintf("unknown field: %s", pk.MustString()),
+					Location: pk.Location(),
 				})
 				continue
 			}
 
 			// Normalize the value according to the field type.
-			v, err := n.normalizeType(typ.FieldByIndex(index).Type, v, seen)
+			nv, err := n.normalizeType(typ.FieldByIndex(index).Type, pv, seen)
 			if err != nil {
 				diags = diags.Extend(err)
 				// Skip the element if it cannot be normalized.
-				if !v.IsValid() {
+				if !nv.IsValid() {
 					continue
 				}
 			}
 
-			out[k] = v
+			out.Set(pk, nv)
 		}
 
 		// Return the normalized value if missing fields are not included.
@@ -107,7 +109,7 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 
 		// Populate missing fields with their zero values.
 		for k, index := range info.Fields {
-			if _, ok := out[k]; ok {
+			if _, ok := out.GetByString(k); ok {
 				continue
 			}
 
@@ -143,7 +145,7 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 				continue
 			}
 			if v.IsValid() {
-				out[k] = v
+				out.Set(dyn.V(k), v)
 			}
 		}
 
@@ -160,19 +162,22 @@ func (n normalizeOptions) normalizeMap(typ reflect.Type, src dyn.Value, seen []r
 
 	switch src.Kind() {
 	case dyn.KindMap:
-		out := make(map[string]dyn.Value)
-		for k, v := range src.MustMap() {
+		out := dyn.NewMapping()
+		for _, pair := range src.MustMapping().Pairs() {
+			pk := pair.Key
+			pv := pair.Value
+
 			// Normalize the value according to the map element type.
-			v, err := n.normalizeType(typ.Elem(), v, seen)
+			nv, err := n.normalizeType(typ.Elem(), pv, seen)
 			if err != nil {
 				diags = diags.Extend(err)
 				// Skip the element if it cannot be normalized.
-				if !v.IsValid() {
+				if !nv.IsValid() {
 					continue
 				}
 			}
 
-			out[k] = v
+			out.Set(pk, nv)
 		}
 
 		return dyn.NewValue(out, src.Location()), diags
