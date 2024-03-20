@@ -218,6 +218,8 @@ func newGet() *cobra.Command {
 
 	// TODO: short flags
 
+	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to include schemas in the response for which the principal can only access selective metadata for.`)
+
 	cmd.Use = "get FULL_NAME"
 	cmd.Short = `Get a schema.`
 	cmd.Long = `Get a schema.
@@ -290,6 +292,7 @@ func newList() *cobra.Command {
 
 	// TODO: short flags
 
+	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include schemas in the response for which the principal can only access selective metadata for.`)
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of schemas to return.`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
@@ -300,10 +303,8 @@ func newList() *cobra.Command {
   Gets an array of schemas for a catalog in the metastore. If the caller is the
   metastore admin or the owner of the parent catalog, all schemas for the
   catalog will be retrieved. Otherwise, only schemas owned by the caller (or for
-  which the caller has the **USE_SCHEMA** privilege) will be retrieved. For
-  unpaginated request, there is no guarantee of a specific ordering of the
-  elements in the array. For paginated request, elements are ordered by their
-  name.
+  which the caller has the **USE_SCHEMA** privilege) will be retrieved. There is
+  no guarantee of a specific ordering of the elements in the array.
 
   Arguments:
     CATALOG_NAME: Parent catalog for schemas of interest.`

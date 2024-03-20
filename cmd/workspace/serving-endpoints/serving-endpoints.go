@@ -82,9 +82,8 @@ func newBuildLogs() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Use = "build-logs NAME SERVED_MODEL_NAME"
-	cmd.Short = `Retrieve the logs associated with building the model's environment for a given serving endpoint's served model.`
-	cmd.Long = `Retrieve the logs associated with building the model's environment for a given
-  serving endpoint's served model.
+	cmd.Short = `Get build logs for a served model.`
+	cmd.Long = `Get build logs for a served model.
   
   Retrieves the build logs associated with the provided served model.
 
@@ -279,8 +278,8 @@ func newExportMetrics() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Use = "export-metrics NAME"
-	cmd.Short = `Retrieve the metrics associated with a serving endpoint.`
-	cmd.Long = `Retrieve the metrics associated with a serving endpoint.
+	cmd.Short = `Get metrics of a serving endpoint.`
+	cmd.Long = `Get metrics of a serving endpoint.
   
   Retrieves the metrics associated with the provided serving endpoint in either
   Prometheus or OpenMetrics exposition format.
@@ -509,8 +508,8 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	cmd.Use = "list"
-	cmd.Short = `Retrieve all serving endpoints.`
-	cmd.Long = `Retrieve all serving endpoints.`
+	cmd.Short = `Get all serving endpoints.`
+	cmd.Long = `Get all serving endpoints.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -551,9 +550,8 @@ func newLogs() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Use = "logs NAME SERVED_MODEL_NAME"
-	cmd.Short = `Retrieve the most recent log lines associated with a given serving endpoint's served model.`
-	cmd.Long = `Retrieve the most recent log lines associated with a given serving endpoint's
-  served model.
+	cmd.Short = `Get the latest logs for a served model.`
+	cmd.Long = `Get the latest logs for a served model.
   
   Retrieves the service logs associated with the provided served model.
 
@@ -619,8 +617,8 @@ func newPatch() *cobra.Command {
 	// TODO: array: delete_tags
 
 	cmd.Use = "patch NAME"
-	cmd.Short = `Patch the tags of a serving endpoint.`
-	cmd.Long = `Patch the tags of a serving endpoint.
+	cmd.Short = `Update tags of a serving endpoint.`
+	cmd.Long = `Update tags of a serving endpoint.
   
   Used to batch add and delete tags from a serving endpoint with a single API
   call.
@@ -689,8 +687,8 @@ func newPut() *cobra.Command {
 	// TODO: array: rate_limits
 
 	cmd.Use = "put NAME"
-	cmd.Short = `Update the rate limits of a serving endpoint.`
-	cmd.Long = `Update the rate limits of a serving endpoint.
+	cmd.Short = `Update rate limits of a serving endpoint.`
+	cmd.Long = `Update rate limits of a serving endpoint.
   
   Used to update the rate limits of a serving endpoint. NOTE: only external and
   foundation model endpoints are supported as of now.
@@ -771,8 +769,8 @@ func newQuery() *cobra.Command {
 	cmd.Flags().Float64Var(&queryReq.Temperature, "temperature", queryReq.Temperature, `The temperature field used ONLY for __completions__ and __chat external & foundation model__ serving endpoints.`)
 
 	cmd.Use = "query NAME"
-	cmd.Short = `Query a serving endpoint with provided model input.`
-	cmd.Long = `Query a serving endpoint with provided model input.
+	cmd.Short = `Query a serving endpoint.`
+	cmd.Long = `Query a serving endpoint.
 
   Arguments:
     NAME: The name of the serving endpoint. This field is required.`
@@ -914,8 +912,8 @@ func newUpdateConfig() *cobra.Command {
 	// TODO: complex arg: traffic_config
 
 	cmd.Use = "update-config NAME"
-	cmd.Short = `Update a serving endpoint with a new config.`
-	cmd.Long = `Update a serving endpoint with a new config.
+	cmd.Short = `Update config of a serving endpoint.`
+	cmd.Long = `Update config of a serving endpoint.
   
   Updates any combination of the serving endpoint's served entities, the compute
   configuration of those served entities, and the endpoint's traffic config. An

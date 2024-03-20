@@ -193,7 +193,7 @@
                 "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.",
                 "properties": {
                   "pause_status": {
-                    "description": "Whether this trigger is paused or not."
+                    "description": "Indicate whether this schedule is paused or not."
                   }
                 }
               },
@@ -725,7 +725,7 @@
                 "description": "An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                 "properties": {
                   "pause_status": {
-                    "description": "Whether this trigger is paused or not."
+                    "description": "Indicate whether this schedule is paused or not."
                   },
                   "quartz_cron_expression": {
                     "description": "A Cron expression using Quartz syntax that describes the schedule for a job.\nSee [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html)\nfor details. This field is required.\"\n"
@@ -785,7 +785,7 @@
                           "description": "Optional schema to write to. This parameter is only used when a warehouse_id is also provided. If not provided, the `default` schema is used."
                         },
                         "source": {
-                          "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                          "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
                         },
                         "warehouse_id": {
                           "description": "ID of the SQL warehouse to connect to. If provided, we automatically generate and provide the profile and connection details to dbt. It can be overridden on a per-command basis by using the `--profiles-dir` command line argument."
@@ -1269,7 +1269,7 @@
                           "description": "The path of the notebook to be run in the Databricks workspace or remote repository.\nFor notebooks stored in the Databricks workspace, the path must be absolute and begin with a slash.\nFor notebooks stored in a remote repository, the path must be relative. This field is required.\n"
                         },
                         "source": {
-                          "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                          "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
                         }
                       }
                     },
@@ -1371,7 +1371,7 @@
                           "description": "The Python file to be executed. Cloud file URIs (such as dbfs:/, s3:/, adls:/, gcs:/) and workspace paths are supported. For python files stored in the Databricks workspace, the path must be absolute and begin with `/`. For files stored in a remote repository, the path must be relative. This field is required."
                         },
                         "source": {
-                          "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                          "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
                         }
                       }
                     },
@@ -1449,7 +1449,7 @@
                               "description": "Path of the SQL file. Must be relative if the source is a remote Git repository and absolute for workspace paths."
                             },
                             "source": {
-                              "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                              "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
                             }
                           }
                         },
@@ -1551,7 +1551,7 @@
                     }
                   },
                   "pause_status": {
-                    "description": "Whether this trigger is paused or not."
+                    "description": "Indicate whether this schedule is paused or not."
                   },
                   "table": {
                     "description": "Table trigger settings.",
@@ -1653,7 +1653,7 @@
                     }
                   },
                   "served_entities": {
-                    "description": "A list of served entities for the endpoint to serve. A serving endpoint can have up to 10 served entities.",
+                    "description": "A list of served entities for the endpoint to serve. A serving endpoint can have up to 15 served entities.",
                     "items": {
                       "description": "",
                       "properties": {
@@ -1791,7 +1791,7 @@
                     }
                   },
                   "served_models": {
-                    "description": "(Deprecated, use served_entities instead) A list of served models for the endpoint to serve. A serving endpoint can have up to 10 served models.",
+                    "description": "(Deprecated, use served_entities instead) A list of served models for the endpoint to serve. A serving endpoint can have up to 15 served models.",
                     "items": {
                       "description": "",
                       "properties": {
@@ -2726,7 +2726,7 @@
                       "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.",
                       "properties": {
                         "pause_status": {
-                          "description": "Whether this trigger is paused or not."
+                          "description": "Indicate whether this schedule is paused or not."
                         }
                       }
                     },
@@ -3258,7 +3258,7 @@
                       "description": "An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                       "properties": {
                         "pause_status": {
-                          "description": "Whether this trigger is paused or not."
+                          "description": "Indicate whether this schedule is paused or not."
                         },
                         "quartz_cron_expression": {
                           "description": "A Cron expression using Quartz syntax that describes the schedule for a job.\nSee [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html)\nfor details. This field is required.\"\n"
@@ -3318,7 +3318,7 @@
                                 "description": "Optional schema to write to. This parameter is only used when a warehouse_id is also provided. If not provided, the `default` schema is used."
                               },
                               "source": {
-                                "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                                "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
                               },
                               "warehouse_id": {
                                 "description": "ID of the SQL warehouse to connect to. If provided, we automatically generate and provide the profile and connection details to dbt. It can be overridden on a per-command basis by using the `--profiles-dir` command line argument."
@@ -3802,7 +3802,7 @@
                                 "description": "The path of the notebook to be run in the Databricks workspace or remote repository.\nFor notebooks stored in the Databricks workspace, the path must be absolute and begin with a slash.\nFor notebooks stored in a remote repository, the path must be relative. This field is required.\n"
                               },
                               "source": {
-                                "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                                "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
                               }
                             }
                           },
@@ -3904,7 +3904,7 @@
                                 "description": "The Python file to be executed. Cloud file URIs (such as dbfs:/, s3:/, adls:/, gcs:/) and workspace paths are supported. For python files stored in the Databricks workspace, the path must be absolute and begin with `/`. For files stored in a remote repository, the path must be relative. This field is required."
                               },
                               "source": {
-                                "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                                "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
                               }
                             }
                           },
@@ -3982,7 +3982,7 @@
                                     "description": "Path of the SQL file. Must be relative if the source is a remote Git repository and absolute for workspace paths."
                                   },
                                   "source": {
-                                    "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                                    "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
                                   }
                                 }
                               },
@@ -4084,7 +4084,7 @@
                           }
                         },
                         "pause_status": {
-                          "description": "Whether this trigger is paused or not."
+                          "description": "Indicate whether this schedule is paused or not."
                         },
                         "table": {
                           "description": "Table trigger settings.",
@@ -4186,7 +4186,7 @@
                           }
                         },
                         "served_entities": {
-                          "description": "A list of served entities for the endpoint to serve. A serving endpoint can have up to 10 served entities.",
+                          "description": "A list of served entities for the endpoint to serve. A serving endpoint can have up to 15 served entities.",
                           "items": {
                             "description": "",
                             "properties": {
@@ -4324,7 +4324,7 @@
                           }
                         },
                         "served_models": {
-                          "description": "(Deprecated, use served_entities instead) A list of served models for the endpoint to serve. A serving endpoint can have up to 10 served models.",
+                          "description": "(Deprecated, use served_entities instead) A list of served models for the endpoint to serve. A serving endpoint can have up to 15 served models.",
                           "items": {
                             "description": "",
                             "properties": {

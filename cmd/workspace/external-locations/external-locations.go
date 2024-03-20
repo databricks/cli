@@ -222,6 +222,8 @@ func newGet() *cobra.Command {
 
 	// TODO: short flags
 
+	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to include external locations in the response for which the principal can only access selective metadata for.`)
+
 	cmd.Use = "get NAME"
 	cmd.Short = `Get an external location.`
 	cmd.Long = `Get an external location.
@@ -282,6 +284,7 @@ func newList() *cobra.Command {
 
 	// TODO: short flags
 
+	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include external locations in the response for which the principal can only access selective metadata for.`)
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of external locations to return.`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
@@ -291,10 +294,8 @@ func newList() *cobra.Command {
   
   Gets an array of external locations (__ExternalLocationInfo__ objects) from
   the metastore. The caller must be a metastore admin, the owner of the external
-  location, or a user that has some privilege on the external location. For
-  unpaginated request, there is no guarantee of a specific ordering of the
-  elements in the array. For paginated request, elements are ordered by their
-  name.`
+  location, or a user that has some privilege on the external location. There is
+  no guarantee of a specific ordering of the elements in the array.`
 
 	cmd.Annotations = make(map[string]string)
 
