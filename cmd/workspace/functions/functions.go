@@ -204,6 +204,8 @@ func newGet() *cobra.Command {
 
 	// TODO: short flags
 
+	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to include functions in the response for which the principal can only access selective metadata for.`)
+
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a function.`
 	cmd.Long = `Get a function.
@@ -281,6 +283,7 @@ func newList() *cobra.Command {
 
 	// TODO: short flags
 
+	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include functions in the response for which the principal can only access selective metadata for.`)
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of functions to return.`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
@@ -293,9 +296,8 @@ func newList() *cobra.Command {
   the user must have the **USE_CATALOG** privilege on the catalog and the
   **USE_SCHEMA** privilege on the schema, and the output list contains only
   functions for which either the user has the **EXECUTE** privilege or the user
-  is the owner. For unpaginated request, there is no guarantee of a specific
-  ordering of the elements in the array. For paginated request, elements are
-  ordered by their name.
+  is the owner. There is no guarantee of a specific ordering of the elements in
+  the array.
 
   Arguments:
     CATALOG_NAME: Name of parent catalog for functions of interest.

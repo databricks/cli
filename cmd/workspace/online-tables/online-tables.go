@@ -45,13 +45,13 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*catalog.ViewData,
+	*catalog.CreateOnlineTableRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var createReq catalog.ViewData
+	var createReq catalog.CreateOnlineTableRequest
 	var createJson flags.JsonFlag
 
 	// TODO: short flags
