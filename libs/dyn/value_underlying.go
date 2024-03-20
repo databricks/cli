@@ -5,17 +5,17 @@ import (
 	"time"
 )
 
-// AsMapping returns the underlying map if this value is a map,
+// AsMap returns the underlying mapping if this value is a map,
 // the zero value and false otherwise.
-func (v Value) AsMapping() (Mapping, bool) {
+func (v Value) AsMap() (Mapping, bool) {
 	vv, ok := v.v.(Mapping)
 	return vv, ok
 }
 
-// MustMapping returns the underlying map if this value is a map,
+// MustMap returns the underlying mapping if this value is a map,
 // panics otherwise.
-func (v Value) MustMapping() Mapping {
-	vv, ok := v.AsMapping()
+func (v Value) MustMap() Mapping {
+	vv, ok := v.AsMap()
 	if !ok || v.k != KindMap {
 		panic(fmt.Sprintf("expected kind %s, got %s", KindMap, v.k))
 	}

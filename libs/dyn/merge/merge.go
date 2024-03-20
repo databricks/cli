@@ -52,8 +52,8 @@ func merge(a, b dyn.Value) (dyn.Value, error) {
 
 func mergeMap(a, b dyn.Value) (dyn.Value, error) {
 	out := dyn.NewMapping()
-	am := a.MustMapping()
-	bm := b.MustMapping()
+	am := a.MustMap()
+	bm := b.MustMap()
 
 	// Add the values from a into the output map.
 	out.Merge(am)

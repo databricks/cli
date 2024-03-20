@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestThatThisTestPackageIsUsedWhereNecessary(t *testing.T) {
+func TestThatThisTestPackageIsUsed(t *testing.T) {
 	var base = ".."
 	var files []string
 	err := fs.WalkDir(os.DirFS(base), ".", func(path string, d fs.DirEntry, err error) error {
@@ -29,7 +29,8 @@ func TestThatThisTestPackageIsUsedWhereNecessary(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Check that all test files import this package.
+	// Confirm that none of the test files under `libs/dyn` import the
+	// `testify/assert` package and instead import this package for asserts.
 	fset := token.NewFileSet()
 	for _, file := range files {
 		f, err := parser.ParseFile(fset, file, nil, parser.ParseComments)

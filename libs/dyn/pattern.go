@@ -49,7 +49,7 @@ func AnyKey() patternComponent {
 
 // This function implements the patternComponent interface.
 func (c anyKeyComponent) visit(v Value, prefix Path, suffix Pattern, opts visitOptions) (Value, error) {
-	m, ok := v.AsMapping()
+	m, ok := v.AsMap()
 	if !ok {
 		return InvalidValue, fmt.Errorf("expected a map at %q, found %s", prefix, v.Kind())
 	}

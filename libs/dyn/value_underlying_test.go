@@ -15,18 +15,18 @@ func TestValueUnderlyingMap(t *testing.T) {
 		},
 	)
 
-	vv1, ok := v.AsMapping()
+	vv1, ok := v.AsMap()
 	assert.True(t, ok)
 
-	_, ok = dyn.NilValue.AsMapping()
+	_, ok = dyn.NilValue.AsMap()
 	assert.False(t, ok)
 
-	vv2 := v.MustMapping()
+	vv2 := v.MustMap()
 	assert.Equal(t, vv1, vv2)
 
 	// Test panic.
 	assert.PanicsWithValue(t, "expected kind map, got nil", func() {
-		dyn.NilValue.MustMapping()
+		dyn.NilValue.MustMap()
 	})
 }
 

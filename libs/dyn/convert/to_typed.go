@@ -59,11 +59,11 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 		dst.SetZero()
 
 		info := getStructInfo(dst.Type())
-		for _, pair := range src.MustMapping().Pairs() {
-			k := pair.Key.MustString()
-			v := pair.Value
+		for _, pair := range src.MustMap().Pairs() {
+			pk := pair.Key
+			pv := pair.Value
 
-			index, ok := info.Fields[k]
+			index, ok := info.Fields[pk.MustString()]
 			if !ok {
 				// Ignore unknown fields.
 				// A warning will be printed later. See PR #904.
@@ -85,7 +85,7 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 				f = f.Field(x)
 			}
 
-			err := ToTyped(f.Addr().Interface(), v)
+			err := ToTyped(f.Addr().Interface(), pv)
 			if err != nil {
 				return err
 			}
@@ -112,15 +112,17 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 func toTypedMap(dst reflect.Value, src dyn.Value) error {
 	switch src.Kind() {
 	case dyn.KindMap:
-		m := src.MustMapping()
+		m := src.MustMap()
 
 		// Always overwrite.
 		dst.Set(reflect.MakeMapWithSize(dst.Type(), m.Len()))
 		for _, pair := range m.Pairs() {
-			kv := reflect.ValueOf(pair.Key.MustString())
+			pk := pair.Key
+			pv := pair.Value
+			kv := reflect.ValueOf(pk.MustString())
 			kt := dst.Type().Key()
 			vv := reflect.New(dst.Type().Elem())
-			err := ToTyped(vv.Interface(), pair.Value)
+			err := ToTyped(vv.Interface(), pv)
 			if err != nil {
 				return err
 			}

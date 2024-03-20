@@ -76,7 +76,7 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 	case dyn.KindMap:
 		out := dyn.NewMapping()
 		info := getStructInfo(typ)
-		for _, pair := range src.MustMapping().Pairs() {
+		for _, pair := range src.MustMap().Pairs() {
 			pk := pair.Key
 			pv := pair.Value
 			index, ok := info.Fields[pk.MustString()]
@@ -163,7 +163,7 @@ func (n normalizeOptions) normalizeMap(typ reflect.Type, src dyn.Value, seen []r
 	switch src.Kind() {
 	case dyn.KindMap:
 		out := dyn.NewMapping()
-		for _, pair := range src.MustMapping().Pairs() {
+		for _, pair := range src.MustMap().Pairs() {
 			pk := pair.Key
 			pv := pair.Value
 

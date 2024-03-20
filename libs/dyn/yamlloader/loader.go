@@ -157,7 +157,7 @@ func (d *loader) loadMapping(node *yaml.Node, loc dyn.Location) (dyn.Value, erro
 		if err != nil {
 			return dyn.NilValue, err
 		}
-		m, ok := v.AsMapping()
+		m, ok := v.AsMap()
 		if !ok {
 			return dyn.NilValue, merr
 		}

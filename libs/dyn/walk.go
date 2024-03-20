@@ -33,7 +33,7 @@ func walk(v Value, p Path, fn func(p Path, v Value) (Value, error)) (Value, erro
 
 	switch v.Kind() {
 	case KindMap:
-		m := v.MustMapping()
+		m := v.MustMap()
 		out := newMappingWithSize(m.Len())
 		for _, pair := range m.Pairs() {
 			pk := pair.Key

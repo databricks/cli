@@ -108,7 +108,7 @@ func (v Value) AsAny() any {
 }
 
 func (v Value) Get(key string) Value {
-	m, ok := v.AsMapping()
+	m, ok := v.AsMap()
 	if !ok {
 		return NilValue
 	}

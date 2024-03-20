@@ -22,11 +22,11 @@ func TestValueIsAnchor(t *testing.T) {
 
 func TestValueAsMap(t *testing.T) {
 	var zeroValue dyn.Value
-	_, ok := zeroValue.AsMapping()
+	_, ok := zeroValue.AsMap()
 	assert.False(t, ok)
 
 	var intValue = dyn.NewValue(1, dyn.Location{})
-	_, ok = intValue.AsMapping()
+	_, ok = intValue.AsMap()
 	assert.False(t, ok)
 
 	var mapValue = dyn.NewValue(
@@ -35,7 +35,7 @@ func TestValueAsMap(t *testing.T) {
 		},
 		dyn.Location{File: "file", Line: 1, Column: 2},
 	)
-	m, ok := mapValue.AsMapping()
+	m, ok := mapValue.AsMap()
 	assert.True(t, ok)
 	assert.Equal(t, 1, m.Len())
 }

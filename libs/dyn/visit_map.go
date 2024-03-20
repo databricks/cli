@@ -14,7 +14,7 @@ func Foreach(fn MapFunc) MapFunc {
 	return func(p Path, v Value) (Value, error) {
 		switch v.Kind() {
 		case KindMap:
-			m := v.MustMapping().Clone()
+			m := v.MustMap().Clone()
 			for _, pair := range m.Pairs() {
 				pk := pair.Key
 				pv := pair.Value

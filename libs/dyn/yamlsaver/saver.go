@@ -73,7 +73,7 @@ func (s *saver) toYamlNode(v dyn.Value) (*yaml.Node, error) {
 func (s *saver) toYamlNodeWithStyle(v dyn.Value, style yaml.Style) (*yaml.Node, error) {
 	switch v.Kind() {
 	case dyn.KindMap:
-		m := v.MustMapping()
+		m := v.MustMap()
 
 		// We're using location lines to define the order of keys in YAML.
 		// The location is set when we convert API response struct to config.Value representation

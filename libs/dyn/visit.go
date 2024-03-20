@@ -70,7 +70,7 @@ func (component pathComponent) visit(v Value, prefix Path, suffix Pattern, opts 
 	switch {
 	case component.isKey():
 		// Expect a map to be set if this is a key.
-		m, ok := v.AsMapping()
+		m, ok := v.AsMap()
 		if !ok {
 			return InvalidValue, fmt.Errorf("expected a map to index %q, found %s", path, v.Kind())
 		}

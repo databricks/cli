@@ -71,7 +71,7 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 		return dyn.InvalidValue, fmt.Errorf("unhandled type: %s", ref.Kind())
 	}
 
-	refm, _ := ref.AsMapping()
+	refm, _ := ref.AsMap()
 	out := dyn.NewMapping()
 	info := getStructInfo(src.Type())
 	for k, v := range info.FieldValues(src) {
@@ -112,7 +112,7 @@ func fromTypedMap(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 		return dyn.NilValue, nil
 	}
 
-	refm, _ := ref.AsMapping()
+	refm, _ := ref.AsMap()
 	out := dyn.NewMapping()
 	iter := src.MapRange()
 	for iter.Next() {
