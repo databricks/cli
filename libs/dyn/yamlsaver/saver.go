@@ -105,7 +105,7 @@ func (s *saver) toYamlNodeWithStyle(v dyn.Value, style yaml.Style) (*yaml.Node, 
 
 		return &yaml.Node{Kind: yaml.MappingNode, Content: content, Style: style}, nil
 	case dyn.KindSequence:
-		seq := v.MustSequence()
+		seq, _ := v.AsSequence()
 		content := make([]*yaml.Node, 0)
 		for _, item := range seq {
 			node, err := s.toYamlNodeWithStyle(item, style)
