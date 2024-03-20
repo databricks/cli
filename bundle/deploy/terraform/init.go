@@ -41,16 +41,24 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 	// Load exec path from the environment if it matches the currently used version.
 	envTFVersion := env.Get(ctx, "DATABRICKS_TF_VERSION")
 	envExecPath := env.Get(ctx, "DATABRICKS_TF_EXEC_PATH")
-	if envExecPath != "" && envTFVersion == TerraformVersion.String() {
-		_, err := os.Stat(envExecPath)
-		if err != nil && !os.IsNotExist(err) {
-			return "", err
+	if envExecPath != "" && envTFVersion != "" {
+		if envTFVersion == TerraformVersion.String() {
+			_, err := os.Stat(envExecPath)
+			if err != nil && !os.IsNotExist(err) {
+				return "", err
+			}
+			if err == nil {
+				tf.ExecPath = envExecPath
+				log.Debugf(ctx, "Using Terraform from DATABRICKS_TF_EXEC_PATH at %s", tf.ExecPath)
+				return tf.ExecPath, nil
+			} else {
+				log.Debugf(ctx, "Terraform at %s not found, ignoring DATABRICKS_TF_EXEC_PATH", envExecPath)
+			}
+		} else {
+			log.Debugf(ctx, "DATABRICKS_TF_VERSION %s does not match the current version %s, ignoring DATABRICKS_TF_EXEC_PATH", envTFVersion, TerraformVersion.String())
 		}
-		if err == nil {
-			tf.ExecPath = envExecPath
-			log.Debugf(ctx, "Using Terraform from the environment at %s", tf.ExecPath)
-			return tf.ExecPath, nil
-		}
+	} else {
+		log.Debugf(ctx, "DATABRICKS_TF_EXEC_PATH and DATABRICKS_TF_VERSION aren't defined")
 	}
 
 	binDir, err := b.CacheDir(context.Background(), "bin")
@@ -127,6 +135,8 @@ func inheritEnvVars(ctx context.Context, environ map[string]string) error {
 		if err == nil {
 			log.Debugf(ctx, "Using Terraform plugin cache dir: %s", cacheDir)
 			environ["TF_PLUGIN_CACHE_DIR"] = cacheDir
+		} else {
+			log.Debugf(ctx, "Terraform plugin cache dir %s doesn't exist, ignoring DATABRICKS_TF_PLUGIN_CACHE_DIR", cacheDir)
 		}
 	}
 
