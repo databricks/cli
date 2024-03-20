@@ -73,29 +73,28 @@ func (s *saver) toYamlNode(v dyn.Value) (*yaml.Node, error) {
 func (s *saver) toYamlNodeWithStyle(v dyn.Value, style yaml.Style) (*yaml.Node, error) {
 	switch v.Kind() {
 	case dyn.KindMap:
-		m := v.MustMap()
+		m, _ := v.AsMap()
 
 		// We're using location lines to define the order of keys in YAML.
 		// The location is set when we convert API response struct to config.Value representation
 		// See convert.convertMap for details
-		keys := m.Keys()
-		sort.SliceStable(keys, func(i, j int) bool {
-			vi, _ := m.Get(keys[i])
-			vj, _ := m.Get(keys[j])
-			return vi.Location().Line < vj.Location().Line
+		pairs := m.Pairs()
+		sort.SliceStable(pairs, func(i, j int) bool {
+			return pairs[i].Value.Location().Line < pairs[j].Value.Location().Line
 		})
 
 		content := make([]*yaml.Node, 0)
-		for _, k := range keys {
-			item, _ := m.Get(k)
-			node := yaml.Node{Kind: yaml.ScalarNode, Value: k.MustString(), Style: style}
+		for _, pair := range pairs {
+			pk := pair.Key
+			pv := pair.Value
+			node := yaml.Node{Kind: yaml.ScalarNode, Value: pk.MustString(), Style: style}
 			var nestedNodeStyle yaml.Style
-			if customStyle, ok := s.hasStyle(k.MustString()); ok {
+			if customStyle, ok := s.hasStyle(pk.MustString()); ok {
 				nestedNodeStyle = customStyle
 			} else {
 				nestedNodeStyle = style
 			}
-			c, err := s.toYamlNodeWithStyle(item, nestedNodeStyle)
+			c, err := s.toYamlNodeWithStyle(pv, nestedNodeStyle)
 			if err != nil {
 				return nil, err
 			}
