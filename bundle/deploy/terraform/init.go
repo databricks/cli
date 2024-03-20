@@ -27,6 +27,17 @@ func (m *initialize) Name() string {
 }
 
 func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *config.Terraform) (string, error) {
+	// If set, pass it through [exec.LookPath] to resolve its absolute path.
+	if tf.ExecPath != "" {
+		execPath, err := exec.LookPath(tf.ExecPath)
+		if err != nil {
+			return "", err
+		}
+		tf.ExecPath = execPath
+		log.Debugf(ctx, "Using Terraform at %s", tf.ExecPath)
+		return tf.ExecPath, nil
+	}
+
 	// Load exec path from the environment if it matches the currently used version.
 	envTFVersion := env.Get(ctx, "DATABRICKS_TF_VERSION")
 	envExecPath := env.Get(ctx, "DATABRICKS_TF_EXEC_PATH")
@@ -40,17 +51,6 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 			log.Debugf(ctx, "Using Terraform from the environment at %s", tf.ExecPath)
 			return tf.ExecPath, nil
 		}
-	}
-
-	// If set, pass it through [exec.LookPath] to resolve its absolute path.
-	if tf.ExecPath != "" {
-		execPath, err := exec.LookPath(tf.ExecPath)
-		if err != nil {
-			return "", err
-		}
-		tf.ExecPath = execPath
-		log.Debugf(ctx, "Using Terraform at %s", tf.ExecPath)
-		return tf.ExecPath, nil
 	}
 
 	binDir, err := b.CacheDir(context.Background(), "bin")

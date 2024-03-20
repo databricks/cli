@@ -11,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/hashicorp/hc-install/product"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/maps"
@@ -288,27 +289,34 @@ func TestInheritEnvVarsWithRealPluginsCacheDir(t *testing.T) {
 	require.Equal(t, dir, env["TF_PLUGIN_CACHE_DIR"])
 }
 
+func createTerraformBinary(t *testing.T, dest string) string {
+	binPath := filepath.Join(dest, product.Terraform.BinaryName())
+	_, err := os.Create(binPath)
+	require.NoError(t, err)
+	return binPath
+}
+
 func TestFindExecPathFromEnvironmentWithWrongVersion(t *testing.T) {
 	m := &initialize{}
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Path: t.TempDir(),
 			Bundle: config.Bundle{
-				Target: "whatever",
-				Terraform: &config.Terraform{
-					ExecPath: "terraform",
-				},
+				Target:    "whatever",
+				Terraform: &config.Terraform{},
 			},
 		},
 	}
-	tmpBinPath := filepath.Join(t.TempDir(), "terraform")
-	_, err := os.Create(tmpBinPath)
-	require.NoError(t, err)
+	// Create a pre-existing terraform bin to avoid downloading it
+	cacheDir, _ := b.CacheDir(context.Background(), "bin")
+	existingExecPath := createTerraformBinary(t, cacheDir)
+	// Create a new terraform binary and expose it through env vars
+	tmpBinPath := createTerraformBinary(t, t.TempDir())
 	t.Setenv("DATABRICKS_TF_VERSION", "1.2.3")
 	t.Setenv("DATABRICKS_TF_EXEC_PATH", tmpBinPath)
-	_, err = m.findExecPath(context.Background(), b, b.Config.Bundle.Terraform)
+	_, err := m.findExecPath(context.Background(), b, b.Config.Bundle.Terraform)
 	require.NoError(t, err)
-	require.NotEqual(t, tmpBinPath, b.Config.Bundle.Terraform.ExecPath)
+	require.Equal(t, existingExecPath, b.Config.Bundle.Terraform.ExecPath)
 }
 
 func TestFindExecPathFromEnvironmentWithCorrectVersionAndNoBinary(t *testing.T) {
@@ -317,21 +325,23 @@ func TestFindExecPathFromEnvironmentWithCorrectVersionAndNoBinary(t *testing.T) 
 		Config: config.Root{
 			Path: t.TempDir(),
 			Bundle: config.Bundle{
-				Target: "whatever",
-				Terraform: &config.Terraform{
-					ExecPath: "terraform",
-				},
+				Target:    "whatever",
+				Terraform: &config.Terraform{},
 			},
 		},
 	}
+	// Create a pre-existing terraform bin to avoid downloading it
+	cacheDir, _ := b.CacheDir(context.Background(), "bin")
+	existingExecPath := createTerraformBinary(t, cacheDir)
+
 	t.Setenv("DATABRICKS_TF_VERSION", TerraformVersion.String())
 	t.Setenv("DATABRICKS_TF_EXEC_PATH", "/tmp/terraform")
 	_, err := m.findExecPath(context.Background(), b, b.Config.Bundle.Terraform)
 	require.NoError(t, err)
-	require.NotEqual(t, "/tmp/terraform", b.Config.Bundle.Terraform.ExecPath)
+	require.Equal(t, existingExecPath, b.Config.Bundle.Terraform.ExecPath)
 }
 
-func TestFindExecPathFromEnvironmentWithCorrectVersionAndBinary(t *testing.T) {
+func TestFindExecPathFromEnvironmentWithCorrectVersionAndBinaryAndAlreadySetExecPath(t *testing.T) {
 	m := &initialize{}
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -344,12 +354,34 @@ func TestFindExecPathFromEnvironmentWithCorrectVersionAndBinary(t *testing.T) {
 			},
 		},
 	}
-	tmpBinPath := filepath.Join(t.TempDir(), "terraform")
-	_, err := os.Create(tmpBinPath)
-	require.NoError(t, err)
+	// Create a new terraform binary and expose it through env vars
+	tmpBinPath := createTerraformBinary(t, t.TempDir())
 	t.Setenv("DATABRICKS_TF_VERSION", TerraformVersion.String())
 	t.Setenv("DATABRICKS_TF_EXEC_PATH", tmpBinPath)
-	_, err = m.findExecPath(context.Background(), b, b.Config.Bundle.Terraform)
+	_, err := m.findExecPath(context.Background(), b, b.Config.Bundle.Terraform)
+	require.NoError(t, err)
+	require.NotEqual(t, tmpBinPath, b.Config.Bundle.Terraform.ExecPath)
+}
+
+func TestFindExecPathFromEnvironmentWithCorrectVersionAndBinary(t *testing.T) {
+	m := &initialize{}
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Path: t.TempDir(),
+			Bundle: config.Bundle{
+				Target:    "whatever",
+				Terraform: &config.Terraform{},
+			},
+		},
+	}
+	// Create a pre-existing terraform bin to avoid downloading it
+	cacheDir, _ := b.CacheDir(context.Background(), "bin")
+	createTerraformBinary(t, cacheDir)
+	// Create a new terraform binary and expose it through env vars
+	tmpBinPath := createTerraformBinary(t, t.TempDir())
+	t.Setenv("DATABRICKS_TF_VERSION", TerraformVersion.String())
+	t.Setenv("DATABRICKS_TF_EXEC_PATH", tmpBinPath)
+	_, err := m.findExecPath(context.Background(), b, b.Config.Bundle.Terraform)
 	require.NoError(t, err)
 	require.Equal(t, tmpBinPath, b.Config.Bundle.Terraform.ExecPath)
 }
