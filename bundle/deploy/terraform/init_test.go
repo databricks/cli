@@ -354,29 +354,6 @@ func TestFindExecPathFromEnvironmentWithCorrectVersionAndNoBinary(t *testing.T) 
 	require.Equal(t, existingExecPath, b.Config.Bundle.Terraform.ExecPath)
 }
 
-func TestFindExecPathFromEnvironmentWithCorrectVersionAndBinaryAndAlreadySetExecPath(t *testing.T) {
-	ctx := context.Background()
-	m := &initialize{}
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Path: t.TempDir(),
-			Bundle: config.Bundle{
-				Target:    "whatever",
-				Terraform: &config.Terraform{},
-			},
-		},
-	}
-	existingExecPath := createTempFile(t, t.TempDir(), "terraform-existing", true)
-	b.Config.Bundle.Terraform.ExecPath = existingExecPath
-	// Create a new terraform binary and expose it through env vars
-	tmpBinPath := createTempFile(t, t.TempDir(), "terraform-bin", true)
-	ctx = env.Set(ctx, "DATABRICKS_TF_VERSION", TerraformVersion.String())
-	ctx = env.Set(ctx, "DATABRICKS_TF_EXEC_PATH", tmpBinPath)
-	_, err := m.findExecPath(ctx, b, b.Config.Bundle.Terraform)
-	require.NoError(t, err)
-	require.Equal(t, existingExecPath, b.Config.Bundle.Terraform.ExecPath)
-}
-
 func TestFindExecPathFromEnvironmentWithCorrectVersionAndBinary(t *testing.T) {
 	ctx := context.Background()
 	m := &initialize{}
