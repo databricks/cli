@@ -12,6 +12,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/internal/tf/schema"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/hashicorp/hc-install/product"
@@ -39,26 +40,14 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 	}
 
 	// Load exec path from the environment if it matches the currently used version.
-	envTFVersion := env.Get(ctx, "DATABRICKS_TF_VERSION")
-	envExecPath := env.Get(ctx, "DATABRICKS_TF_EXEC_PATH")
-	if envExecPath != "" && envTFVersion != "" {
-		if envTFVersion == TerraformVersion.String() {
-			_, err := os.Stat(envExecPath)
-			if err != nil && !os.IsNotExist(err) {
-				return "", err
-			}
-			if err == nil {
-				tf.ExecPath = envExecPath
-				log.Debugf(ctx, "Using Terraform from DATABRICKS_TF_EXEC_PATH at %s", tf.ExecPath)
-				return tf.ExecPath, nil
-			} else {
-				log.Debugf(ctx, "Terraform at %s not found, ignoring DATABRICKS_TF_EXEC_PATH", envExecPath)
-			}
-		} else {
-			log.Debugf(ctx, "DATABRICKS_TF_VERSION %s does not match the current version %s, ignoring DATABRICKS_TF_EXEC_PATH", envTFVersion, TerraformVersion.String())
-		}
-	} else {
-		log.Debugf(ctx, "DATABRICKS_TF_EXEC_PATH and DATABRICKS_TF_VERSION aren't defined")
+	envExecPath, err := getEnvVarWithMatchingVersion(ctx, "DATABRICKS_TF_EXEC_PATH", "DATABRICKS_TF_VERSION", TerraformVersion.String())
+	if err != nil {
+		return "", err
+	}
+	if envExecPath != "" {
+		tf.ExecPath = envExecPath
+		log.Debugf(ctx, "Using Terraform from DATABRICKS_TF_EXEC_PATH at %s", tf.ExecPath)
+		return tf.ExecPath, nil
 	}
 
 	binDir, err := b.CacheDir(context.Background(), "bin")
@@ -119,28 +108,49 @@ func inheritEnvVars(ctx context.Context, environ map[string]string) error {
 	}
 
 	// Include $TF_CLI_CONFIG_FILE to override terraform provider in development.
-	configFile, ok := env.Lookup(ctx, "TF_CLI_CONFIG_FILE")
+	// See: https://developer.hashicorp.com/terraform/cli/config/config-file#explicit-installation-method-configuration
+	devConfigFile, ok := env.Lookup(ctx, "TF_CLI_CONFIG_FILE")
 	if ok {
+		environ["TF_CLI_CONFIG_FILE"] = devConfigFile
+	}
+
+	// Map $DATABRICKS_TF_CLI_CONFIG_FILE to $TF_CLI_CONFIG_FILE
+	// VSCode extension provides a file with the "provider_installation.filesystem_mirror" configuration.
+	// We only use it if the provider version matches the currently used version,
+	// otherwise terraform will fail to download the right version (even with unrestricted internet access).
+	configFile, err := getEnvVarWithMatchingVersion(ctx, "DATABRICKS_TF_CLI_CONFIG_FILE", "DATABRICKS_TF_PROVIDER_VERSION", schema.ProviderVersion)
+	if err != nil {
+		return err
+	}
+	if configFile != "" {
+		log.Debugf(ctx, "Using Terraform CLI config from DATABRICKS_TF_CLI_CONFIG_FILE at %s", configFile)
 		environ["TF_CLI_CONFIG_FILE"] = configFile
 	}
 
-	// Map $DATABRICKS_TF_PLUGIN_CACHE_DIR to $TF_PLUGIN_CACHE_DIR
-	// This lets terraform use pre-downloaded Databricks plugins
-	cacheDir, ok := env.Lookup(ctx, "DATABRICKS_TF_PLUGIN_CACHE_DIR")
-	if ok {
-		_, err := os.Stat(cacheDir)
-		if err != nil && !os.IsNotExist(err) {
-			return err
-		}
-		if err == nil {
-			log.Debugf(ctx, "Using Terraform plugin cache dir: %s", cacheDir)
-			environ["TF_PLUGIN_CACHE_DIR"] = cacheDir
+	return nil
+}
+
+func getEnvVarWithMatchingVersion(ctx context.Context, envVarName string, versionVarName string, currentVersion string) (string, error) {
+	envValue := env.Get(ctx, envVarName)
+	versionValue := env.Get(ctx, versionVarName)
+	if envValue == "" || versionValue == "" {
+		log.Debugf(ctx, "%s and %s aren't defined", envVarName, versionVarName)
+		return "", nil
+	}
+	if versionValue != currentVersion {
+		log.Debugf(ctx, "%s as %s does not match the current version %s, ignoring %s", versionVarName, versionValue, currentVersion, envVarName)
+		return "", nil
+	}
+	_, err := os.Stat(envValue)
+	if err != nil {
+		if os.IsNotExist(err) {
+			log.Debugf(ctx, "%s at %s does not exist, ignoring %s", envVarName, envValue, versionVarName)
+			return "", nil
 		} else {
-			log.Debugf(ctx, "Terraform plugin cache dir %s doesn't exist, ignoring DATABRICKS_TF_PLUGIN_CACHE_DIR", cacheDir)
+			return "", err
 		}
 	}
-
-	return nil
+	return envValue, nil
 }
 
 // This function sets temp dir location for terraform to use. If user does not
