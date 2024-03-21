@@ -416,6 +416,7 @@ func newQueryIndex() *cobra.Command {
 	cmd.Flags().IntVar(&queryIndexReq.NumResults, "num-results", queryIndexReq.NumResults, `Number of results to return.`)
 	cmd.Flags().StringVar(&queryIndexReq.QueryText, "query-text", queryIndexReq.QueryText, `Query text.`)
 	// TODO: array: query_vector
+	cmd.Flags().Float64Var(&queryIndexReq.ScoreThreshold, "score-threshold", queryIndexReq.ScoreThreshold, `Threshold for the approximate nearest neighbor search.`)
 
 	cmd.Use = "query-index INDEX_NAME"
 	cmd.Short = `Query an index.`
