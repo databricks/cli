@@ -30,12 +30,14 @@ Databricks Terraform Provider URL: https://github.com/databricks/terraform-provi
 Databricks CLI will download its terraform dependencies automatically.
 
 If you run the CLI in air-gapped environment, you can download the dependencies manually and setup these environment variables:
+
 	DATABRICKS_TF_VERSION={{.Version}}
 	DATABRICKS_TF_EXEC_PATH=/path/to/terraform/binary
 	DATABRICKS_TF_PROVIDER_VERSION={{.ProviderVersion}}
 	DATABRICKS_TF_CLI_CONFIG_FILE=/path/to/terraform/cli/config.tfrc
 
 Example of the *.tfrc config file:
+
 	disable_checkpoint = true
 	provider_installation {
 		filesystem_mirror {
@@ -44,6 +46,7 @@ Example of the *.tfrc config file:
 	}
 
 The folder with the databricks terraform provider should have this structure: /registry.terraform.io/databricks/databricks/terraform-provider-databricks_{{.ProviderVersion}}_ARCH.zip
+
 Consult terraform docs for more information about the filesystem mirrors: https://developer.hashicorp.com/terraform/cli/config/config-file#filesystem_mirror
 `,
 		},
