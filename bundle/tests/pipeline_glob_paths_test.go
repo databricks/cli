@@ -1,4 +1,4 @@
-package bundle
+package config_tests
 
 import (
 	"context"
