@@ -45,7 +45,7 @@ Example of the *.tfrc config file:
 		}
 	}
 
-The folder with the databricks terraform provider should have this structure: /registry.terraform.io/databricks/databricks/terraform-provider-databricks_{{.ProviderVersion}}_ARCH.zip
+The folder with the databricks terraform provider should have this structure: /{{.ProviderHost}}/{{.ProviderSource}}/terraform-provider-databricks_{{.ProviderVersion}}_ARCH.zip
 
 Consult terraform docs for more information about the filesystem mirrors: https://developer.hashicorp.com/terraform/cli/config/config-file#filesystem_mirror
 `,
