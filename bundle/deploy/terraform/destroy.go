@@ -78,13 +78,13 @@ func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 	// read plan file
 	plan, err := tf.ShowPlanFile(ctx, b.Plan.Path)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	// print the resources that will be destroyed
 	err = logDestroyPlan(ctx, plan.ResourceChanges)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	// Ask for confirmation, if needed
@@ -92,7 +92,7 @@ func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		red := color.New(color.FgRed).SprintFunc()
 		b.Plan.ConfirmApply, err = cmdio.AskYesOrNo(ctx, fmt.Sprintf("\nThis will permanently %s resources! Proceed?", red("destroy")))
 		if err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 	}
 

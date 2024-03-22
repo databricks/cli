@@ -2,6 +2,7 @@ package terraform
 
 import (
 	"context"
+	"fmt"
 	"slices"
 
 	"github.com/databricks/cli/bundle"
@@ -35,18 +36,18 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 	state, err := b.Terraform.Show(ctx)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	err = l.validateState(state)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	// Merge state into configuration.
 	err = TerraformToBundle(state, &b.Config)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	return nil
@@ -55,13 +56,13 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 func (l *load) validateState(state *tfjson.State) error {
 	if state.Values == nil {
 		if slices.Contains(l.modes, ErrorOnEmptyState) {
-			return diag.Errorf("no deployment state. Did you forget to run 'databricks bundle deploy'?")
+			return fmt.Errorf("no deployment state. Did you forget to run 'databricks bundle deploy'?")
 		}
 		return nil
 	}
 
 	if state.Values.RootModule == nil {
-		return diag.Errorf("malformed terraform state: RootModule not set")
+		return fmt.Errorf("malformed terraform state: RootModule not set")
 	}
 
 	return nil

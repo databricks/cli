@@ -423,8 +423,8 @@ func TestJobNotebookDoesNotExistError(t *testing.T) {
 
 	bundletest.SetLocation(b, ".", filepath.Join(dir, "fake.yml"))
 
-	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
-	assert.EqualError(t, err, "notebook ./doesnt_exist.py not found")
+	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
+	assert.EqualError(t, diags.Error(), "notebook ./doesnt_exist.py not found")
 }
 
 func TestJobFileDoesNotExistError(t *testing.T) {
@@ -453,8 +453,8 @@ func TestJobFileDoesNotExistError(t *testing.T) {
 
 	bundletest.SetLocation(b, ".", filepath.Join(dir, "fake.yml"))
 
-	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
-	assert.EqualError(t, err, "file ./doesnt_exist.py not found")
+	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
+	assert.EqualError(t, diags.Error(), "file ./doesnt_exist.py not found")
 }
 
 func TestPipelineNotebookDoesNotExistError(t *testing.T) {
@@ -483,8 +483,8 @@ func TestPipelineNotebookDoesNotExistError(t *testing.T) {
 
 	bundletest.SetLocation(b, ".", filepath.Join(dir, "fake.yml"))
 
-	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
-	assert.EqualError(t, err, "notebook ./doesnt_exist.py not found")
+	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
+	assert.EqualError(t, diags.Error(), "notebook ./doesnt_exist.py not found")
 }
 
 func TestPipelineFileDoesNotExistError(t *testing.T) {
@@ -513,8 +513,8 @@ func TestPipelineFileDoesNotExistError(t *testing.T) {
 
 	bundletest.SetLocation(b, ".", filepath.Join(dir, "fake.yml"))
 
-	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
-	assert.EqualError(t, err, "file ./doesnt_exist.py not found")
+	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
+	assert.EqualError(t, diags.Error(), "file ./doesnt_exist.py not found")
 }
 
 func TestJobSparkPythonTaskWithNotebookSourceError(t *testing.T) {

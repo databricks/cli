@@ -29,7 +29,7 @@ type importResource struct {
 func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	dir, err := Dir(ctx, b)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	tf := b.Terraform
@@ -71,7 +71,7 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		cmdio.LogString(ctx, output)
 		ans, err := cmdio.AskYesOrNo(ctx, "Confirm import changes? Changes will be remotely applied only after running 'bundle deploy'.")
 		if err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 		if !ans {
 			return diag.Errorf("import aborted")
@@ -81,19 +81,19 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	// If user confirmed changes, move the state file from temp dir to state location
 	f, err := os.Create(filepath.Join(dir, TerraformStateFileName))
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	defer f.Close()
 
 	tmpF, err := os.Open(tmpState)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	defer tmpF.Close()
 
 	_, err = io.Copy(f, tmpF)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	return nil

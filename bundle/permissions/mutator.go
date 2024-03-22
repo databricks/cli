@@ -2,6 +2,7 @@ package permissions
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"strings"
 
@@ -49,7 +50,7 @@ func ApplyBundlePermissions() bundle.Mutator {
 func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	err := validate(b)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	applyForJobs(ctx, b)
@@ -64,7 +65,7 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 func validate(b *bundle.Bundle) error {
 	for _, p := range b.Config.Permissions {
 		if !slices.Contains(allowedLevels, p.Level) {
-			return diag.Errorf("invalid permission level: %s, allowed values: [%s]", p.Level, strings.Join(allowedLevels, ", "))
+			return fmt.Errorf("invalid permission level: %s, allowed values: [%s]", p.Level, strings.Join(allowedLevels, ", "))
 		}
 	}
 

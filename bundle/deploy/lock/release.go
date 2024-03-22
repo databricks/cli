@@ -47,11 +47,11 @@ func (m *release) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 	log.Infof(ctx, "Releasing deployment lock")
 	switch m.goal {
 	case GoalDeploy:
-		return b.Locker.Unlock(ctx)
+		return diag.FromErr(b.Locker.Unlock(ctx))
 	case GoalBind, GoalUnbind:
-		return b.Locker.Unlock(ctx)
+		return diag.FromErr(b.Locker.Unlock(ctx))
 	case GoalDestroy:
-		return b.Locker.Unlock(ctx, locker.AllowLockFileNotExist)
+		return diag.FromErr(b.Locker.Unlock(ctx, locker.AllowLockFileNotExist))
 	default:
 		return diag.Errorf("unknown goal for lock release: %s", m.goal)
 	}

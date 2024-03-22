@@ -42,7 +42,7 @@ func (m *acquire) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 
 	err := m.init(b)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	force := b.Config.Bundle.Deployment.Lock.Force
@@ -57,7 +57,7 @@ func (m *acquire) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 			// we either don't have permissions or the path is invalid.
 			return diag.Errorf("cannot write to deployment root (this can indicate a previous deploy was done with a different identity): %s", b.Config.Workspace.RootPath)
 		}
-		return err
+		return diag.FromErr(err)
 	}
 
 	return nil

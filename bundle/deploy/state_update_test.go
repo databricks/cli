@@ -66,8 +66,8 @@ func TestStateUpdate(t *testing.T) {
 	require.Len(t, state.Files, 3)
 	require.Equal(t, build.GetInfo().Version, state.CliVersion)
 
-	err = bundle.Apply(ctx, b, s)
-	require.NoError(t, err)
+	diags = bundle.Apply(ctx, b, s)
+	require.NoError(t, diags.Error())
 
 	// Check that the state file was updated again.
 	state, err = load(ctx, b)
@@ -136,8 +136,8 @@ func TestStateUpdateWithExistingState(t *testing.T) {
 	err = os.WriteFile(statePath, data, 0644)
 	require.NoError(t, err)
 
-	err = bundle.Apply(ctx, b, s)
-	require.NoError(t, err)
+	diags := bundle.Apply(ctx, b, s)
+	require.NoError(t, diags.Error())
 
 	// Check that the state file was updated.
 	state, err = load(ctx, b)

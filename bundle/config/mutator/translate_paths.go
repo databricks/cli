@@ -90,7 +90,7 @@ func (m *translatePaths) rewritePath(
 		return err
 	}
 	if strings.HasPrefix(localRelPath, "..") {
-		return diag.Errorf("path %s is not contained in bundle root path", localPath)
+		return fmt.Errorf("path %s is not contained in bundle root path", localPath)
 	}
 
 	// Prefix remote path with its remote root path.
@@ -204,5 +204,4 @@ func (m *translatePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 		return v, nil
 	})
 	return diag.FromErr(err)
-
 }

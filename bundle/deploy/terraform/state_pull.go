@@ -49,12 +49,12 @@ func (l *statePull) remoteState(ctx context.Context, f filer.Filer) (*bytes.Buff
 func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	f, err := l.filerFactory(b)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	dir, err := Dir(ctx, b)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	// Download state file from filer to local cache directory.
@@ -62,7 +62,7 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	remote, err := l.remoteState(ctx, f)
 	if err != nil {
 		log.Infof(ctx, "Unable to open remote state file: %s", err)
-		return err
+		return diag.FromErr(err)
 	}
 	if remote == nil {
 		log.Infof(ctx, "Remote state file does not exist")
@@ -72,7 +72,7 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	// Expect the state file to live under dir.
 	local, err := os.OpenFile(filepath.Join(dir, TerraformStateFileName), os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	defer local.Close()
 
@@ -89,7 +89,7 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	log.Infof(ctx, "Writing remote state file to local cache directory")
 	_, err = io.Copy(local, bytes.NewReader(remote.Bytes()))
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	return nil

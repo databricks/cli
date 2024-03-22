@@ -39,7 +39,7 @@ func (m *selectTarget) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnosti
 	// Merge specified target into root configuration structure.
 	err := b.Config.MergeTargetOverrides(m.name)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	// Store specified target in configuration for reference.

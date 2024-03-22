@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 )
@@ -15,7 +16,7 @@ func TestRunAsDefault(t *testing.T) {
 	b := load(t, "./run_as")
 
 	ctx := context.Background()
-	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) error {
+	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		b.Config.Workspace.CurrentUser = &config.User{
 			User: &iam.User{
 				UserName: "jane@doe.com",
@@ -55,7 +56,7 @@ func TestRunAsDevelopment(t *testing.T) {
 	b := loadTarget(t, "./run_as", "development")
 
 	ctx := context.Background()
-	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) error {
+	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		b.Config.Workspace.CurrentUser = &config.User{
 			User: &iam.User{
 				UserName: "jane@doe.com",

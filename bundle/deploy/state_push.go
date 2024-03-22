@@ -21,24 +21,24 @@ func (s *statePush) Name() string {
 func (s *statePush) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	f, err := s.filerFactory(b)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	statePath, err := getPathToStateFile(ctx, b)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	local, err := os.Open(statePath)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	defer local.Close()
 
 	log.Infof(ctx, "Writing local deployment state file to remote state directory")
 	err = f.Write(ctx, DeploymentStateFileName, local, filer.CreateParentDirectories, filer.OverwriteIfExists)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	return nil

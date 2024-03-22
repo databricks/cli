@@ -25,7 +25,7 @@ func (s *stateUpdate) Name() string {
 func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	state, err := load(ctx, b)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	// Increment the state sequence.
@@ -41,41 +41,41 @@ func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 	// Get the current file list.
 	sync, err := files.GetSync(ctx, b)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	files, err := sync.GetFileList(ctx)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	// Update the state with the current file list.
 	fl, err := FromSlice(files)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	state.Files = fl
 
 	statePath, err := getPathToStateFile(ctx, b)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	// Write the state back to the file.
 	f, err := os.OpenFile(statePath, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0600)
 	if err != nil {
 		log.Infof(ctx, "Unable to open deployment state file: %s", err)
-		return err
+		return diag.FromErr(err)
 	}
 	defer f.Close()
 
 	data, err := json.Marshal(state)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	_, err = io.Copy(f, bytes.NewReader(data))
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	return nil

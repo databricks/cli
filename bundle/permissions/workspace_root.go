@@ -20,7 +20,7 @@ func ApplyWorkspaceRootPermissions() bundle.Mutator {
 func (*workspaceRootPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	err := giveAccessForWorkspaceRoot(ctx, b)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	return nil

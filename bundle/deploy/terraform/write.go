@@ -21,7 +21,7 @@ func (w *write) Name() string {
 func (w *write) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	dir, err := Dir(ctx, b)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	var root *schema.Root
@@ -30,12 +30,12 @@ func (w *write) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return v, err
 	})
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	f, err := os.Create(filepath.Join(dir, TerraformConfigFileName))
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	defer f.Close()
@@ -44,7 +44,7 @@ func (w *write) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	enc.SetIndent("", "  ")
 	err = enc.Encode(root)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	return nil

@@ -29,7 +29,7 @@ func (a *match) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 			lib := &task.Libraries[j]
 			_, err := findArtifactFiles(ctx, lib, b)
 			if err != nil {
-				return err
+				return diag.FromErr(err)
 			}
 		}
 	}

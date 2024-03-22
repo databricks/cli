@@ -46,7 +46,7 @@ func (m *trampoline) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 	for _, task := range tasks {
 		err := m.generateNotebookWrapper(ctx, b, task)
 		if err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 	}
 	return nil

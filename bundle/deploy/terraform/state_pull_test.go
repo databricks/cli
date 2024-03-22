@@ -53,7 +53,7 @@ func TestStatePullLocalMissingRemoteMissing(t *testing.T) {
 	assert.Empty(t, diags)
 
 	// Confirm that no local state file has been written.
-	_, err = os.Stat(localStateFile(t, ctx, b))
+	_, err := os.Stat(localStateFile(t, ctx, b))
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 

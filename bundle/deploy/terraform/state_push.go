@@ -24,18 +24,18 @@ func (l *statePush) Name() string {
 func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	f, err := l.filerFactory(b)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	dir, err := Dir(ctx, b)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	// Expect the state file to live under dir.
 	local, err := os.Open(filepath.Join(dir, TerraformStateFileName))
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	defer local.Close()
 
@@ -44,7 +44,7 @@ func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	log.Infof(ctx, "Writing local state file to remote state directory")
 	err = f.Write(ctx, TerraformStateFileName, local, filer.CreateParentDirectories, filer.OverwriteIfExists)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	return nil

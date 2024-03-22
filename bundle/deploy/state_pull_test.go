@@ -453,6 +453,5 @@ func TestStatePullNewerDeploymentStateVersion(t *testing.T) {
 
 	diags := bundle.Apply(ctx, b, s)
 	require.True(t, diags.HasError())
-
-	require.Contains(t, err.Error(), "remote deployment state is incompatible with the current version of the CLI, please upgrade to at least 1.2.3")
+	require.Contains(t, diags.Error(), "remote deployment state is incompatible with the current version of the CLI, please upgrade to at least 1.2.3")
 }

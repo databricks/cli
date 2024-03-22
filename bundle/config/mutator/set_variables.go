@@ -21,7 +21,7 @@ func (m *setVariables) Name() string {
 	return "SetVariables"
 }
 
-func setVariable(ctx context.Context, v *variable.Variable, name string) error {
+func setVariable(ctx context.Context, v *variable.Variable, name string) diag.Diagnostics {
 	// case: variable already has value initialized, so skip
 	if v.HasValue() {
 		return nil
@@ -60,9 +60,9 @@ func setVariable(ctx context.Context, v *variable.Variable, name string) error {
 
 func (m *setVariables) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	for name, variable := range b.Config.Variables {
-		err := setVariable(ctx, variable, name)
-		if err != nil {
-			return err
+		diags := setVariable(ctx, variable, name)
+		if diags != nil {
+			return diags
 		}
 	}
 	return nil

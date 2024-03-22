@@ -43,14 +43,14 @@ func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Persist computed plan
 	tfDir, err := Dir(ctx, b)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	planPath := filepath.Join(tfDir, "plan")
 	destroy := p.goal == PlanDestroy
 
 	notEmpty, err := tf.Plan(ctx, tfexec.Destroy(destroy), tfexec.Out(planPath))
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	// Set plan in main bundle struct for downstream mutators

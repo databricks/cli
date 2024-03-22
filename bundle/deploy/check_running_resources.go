@@ -48,7 +48,7 @@ func (l *checkRunningResources) Apply(ctx context.Context, b *bundle.Bundle) dia
 
 	state, err := b.Terraform.Show(ctx)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	err = checkAnyResourceRunning(ctx, b.WorkspaceClient(), state)
