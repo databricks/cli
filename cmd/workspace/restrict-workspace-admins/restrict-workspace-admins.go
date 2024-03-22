@@ -53,13 +53,13 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*settings.DeleteRestrictWorkspaceAdminRequest,
+	*settings.DeleteRestrictWorkspaceAdminsSettingRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var deleteReq settings.DeleteRestrictWorkspaceAdminRequest
+	var deleteReq settings.DeleteRestrictWorkspaceAdminsSettingRequest
 
 	// TODO: short flags
 
@@ -112,13 +112,13 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*settings.GetRestrictWorkspaceAdminRequest,
+	*settings.GetRestrictWorkspaceAdminsSettingRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getReq settings.GetRestrictWorkspaceAdminRequest
+	var getReq settings.GetRestrictWorkspaceAdminsSettingRequest
 
 	// TODO: short flags
 

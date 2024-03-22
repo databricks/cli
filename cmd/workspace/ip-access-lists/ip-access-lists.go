@@ -243,13 +243,13 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*settings.GetIpAccessListRequest,
+	*settings.GetIpAccessList,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getReq settings.GetIpAccessListRequest
+	var getReq settings.GetIpAccessList
 
 	// TODO: short flags
 

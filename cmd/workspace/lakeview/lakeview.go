@@ -130,13 +130,13 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*dashboards.GetLakeviewRequest,
+	*dashboards.GetDashboardRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getReq dashboards.GetLakeviewRequest
+	var getReq dashboards.GetDashboardRequest
 
 	// TODO: short flags
 
@@ -188,13 +188,13 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getPublishedOverrides []func(
 	*cobra.Command,
-	*dashboards.GetPublishedRequest,
+	*dashboards.GetPublishedDashboardRequest,
 )
 
 func newGetPublished() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getPublishedReq dashboards.GetPublishedRequest
+	var getPublishedReq dashboards.GetPublishedDashboardRequest
 
 	// TODO: short flags
 
@@ -315,13 +315,13 @@ func newPublish() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var trashOverrides []func(
 	*cobra.Command,
-	*dashboards.TrashRequest,
+	*dashboards.TrashDashboardRequest,
 )
 
 func newTrash() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var trashReq dashboards.TrashRequest
+	var trashReq dashboards.TrashDashboardRequest
 
 	// TODO: short flags
 
