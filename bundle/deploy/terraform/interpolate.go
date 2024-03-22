@@ -62,6 +62,6 @@ func (m *interpolateMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 			return dyn.V(fmt.Sprintf("${%s}", path.String())), nil
 		})
 	})
-	return diag.FromErr(err)
 
+	return diag.FromErr(err)
 }

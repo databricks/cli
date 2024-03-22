@@ -87,6 +87,6 @@ func TestInterpolateUnknownResourceType(t *testing.T) {
 		},
 	}
 
-	err := bundle.Apply(context.Background(), b, Interpolate())
-	assert.Contains(t, err.Error(), `reference does not exist: ${resources.unknown.other_unknown.id}`)
+	diags := bundle.Apply(context.Background(), b, Interpolate())
+	assert.ErrorContains(t, diags.Error(), `reference does not exist: ${resources.unknown.other_unknown.id}`)
 }

@@ -32,7 +32,7 @@ func setVariable(ctx context.Context, v *variable.Variable, name string) diag.Di
 	if val, ok := env.Lookup(ctx, envVarName); ok {
 		err := v.Set(val)
 		if err != nil {
-			return diag.Errorf(`failed to assign value "%s" to variable %s from environment variable %s with error: %w`, val, name, envVarName, err)
+			return diag.Errorf(`failed to assign value "%s" to variable %s from environment variable %s with error: %v`, val, name, envVarName, err)
 		}
 		return nil
 	}
@@ -41,7 +41,7 @@ func setVariable(ctx context.Context, v *variable.Variable, name string) diag.Di
 	if v.HasDefault() {
 		err := v.Set(*v.Default)
 		if err != nil {
-			return diag.Errorf(`failed to assign default value from config "%s" to variable %s with error: %w`, *v.Default, name, err)
+			return diag.Errorf(`failed to assign default value from config "%s" to variable %s with error: %v`, *v.Default, name, err)
 		}
 		return nil
 	}
