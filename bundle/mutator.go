@@ -3,6 +3,7 @@ package bundle
 import (
 	"context"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -13,10 +14,10 @@ type Mutator interface {
 	Name() string
 
 	// Apply mutates the specified bundle object.
-	Apply(context.Context, *Bundle) error
+	Apply(context.Context, *Bundle) diag.Diagnostics
 }
 
-func Apply(ctx context.Context, b *Bundle, m Mutator) error {
+func Apply(ctx context.Context, b *Bundle, m Mutator) diag.Diagnostics {
 	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("mutator", m.Name()))
 
 	log.Debugf(ctx, "Apply")
@@ -24,7 +25,7 @@ func Apply(ctx context.Context, b *Bundle, m Mutator) error {
 	err := b.Config.MarkMutatorEntry(ctx)
 	if err != nil {
 		log.Errorf(ctx, "entry error: %s", err)
-		return err
+		return diag.Errorf("entry error: %s", err)
 	}
 
 	defer func() {
@@ -34,28 +35,29 @@ func Apply(ctx context.Context, b *Bundle, m Mutator) error {
 		}
 	}()
 
-	err = m.Apply(ctx, b)
-	if err != nil {
-		log.Errorf(ctx, "Error: %s", err)
-		return err
+	diags := m.Apply(ctx, b)
+	if diags != nil {
+		// log.Errorf(ctx, "Error: %s", err)
+		// TODO!
+		return diags
 	}
 
 	return nil
 }
 
 type funcMutator struct {
-	fn func(context.Context, *Bundle) error
+	fn func(context.Context, *Bundle) diag.Diagnostics
 }
 
 func (m funcMutator) Name() string {
 	return "<func>"
 }
 
-func (m funcMutator) Apply(ctx context.Context, b *Bundle) error {
+func (m funcMutator) Apply(ctx context.Context, b *Bundle) diag.Diagnostics {
 	return m.fn(ctx, b)
 }
 
 // ApplyFunc applies an inline-specified function mutator.
-func ApplyFunc(ctx context.Context, b *Bundle, fn func(context.Context, *Bundle) error) error {
+func ApplyFunc(ctx context.Context, b *Bundle, fn func(context.Context, *Bundle) diag.Diagnostics) diag.Diagnostics {
 	return Apply(ctx, b, funcMutator{fn})
 }

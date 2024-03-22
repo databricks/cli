@@ -32,6 +32,14 @@ func Errorf(format string, args ...any) Diagnostics {
 	}
 }
 
+func FromErr(err error) Diagnostics {
+	if err == nil {
+		return nil
+	}
+	// TODO: Implement this function properly
+	return Errorf("%s", err)
+}
+
 // Warningf creates a new warning diagnostic.
 func Warningf(format string, args ...any) Diagnostics {
 	return []Diagnostic{
@@ -73,4 +81,14 @@ func (ds Diagnostics) HasError() bool {
 		}
 	}
 	return false
+}
+
+// Return first error in the set of diagnostics.
+func (ds Diagnostics) Error() error {
+	for _, d := range ds {
+		if d.Severity == Error {
+			return fmt.Errorf(d.Summary)
+		}
+	}
+	return nil
 }
