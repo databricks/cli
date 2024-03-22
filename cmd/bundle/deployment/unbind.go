@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/spf13/cobra"
 )
 
@@ -29,15 +30,19 @@ func newUnbindCommand() *cobra.Command {
 			return err
 		}
 
-		bundle.ApplyFunc(ctx, b, func(context.Context, *bundle.Bundle) error {
+		bundle.ApplyFunc(ctx, b, func(context.Context, *bundle.Bundle) diag.Diagnostics {
 			b.Config.Bundle.Deployment.Lock.Force = forceLock
 			return nil
 		})
 
-		return bundle.Apply(cmd.Context(), b, bundle.Seq(
+		diags := bundle.Apply(cmd.Context(), b, bundle.Seq(
 			phases.Initialize(),
 			phases.Unbind(resource.TerraformResourceName(), args[0]),
 		))
+		if diags.HasError() {
+			return diags.Error()
+		}
+		return nil
 	}
 
 	return cmd

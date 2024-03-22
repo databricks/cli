@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/env"
+	"github.com/databricks/cli/libs/diag"
 	envlib "github.com/databricks/cli/libs/env"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
@@ -64,18 +65,18 @@ func loadBundle(cmd *cobra.Command, args []string, load func(ctx context.Context
 
 	profile := getProfile(cmd)
 	if profile != "" {
-		err = bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) error {
+		diags := bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 			b.Config.Workspace.Profile = profile
 			return nil
 		})
-		if err != nil {
-			return nil, err
+		if diags.HasError() {
+			return nil, diags.Error()
 		}
 	}
 
-	err = bundle.Apply(ctx, b, bundle.Seq(mutator.DefaultMutators()...))
-	if err != nil {
-		return nil, err
+	diags := bundle.Apply(ctx, b, bundle.Seq(mutator.DefaultMutators()...))
+	if diags.HasError() {
+		return nil, diags.Error()
 	}
 
 	return b, nil
@@ -102,9 +103,9 @@ func configureBundle(cmd *cobra.Command, args []string, load func(ctx context.Co
 	}
 
 	ctx := cmd.Context()
-	err = bundle.Apply(ctx, b, m)
-	if err != nil {
-		return err
+	diags := bundle.Apply(ctx, b, m)
+	if diags.HasError() {
+		return diags.Error()
 	}
 
 	cmd.SetContext(bundle.Context(ctx, b))

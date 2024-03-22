@@ -35,15 +35,15 @@ func newRunCommand() *cobra.Command {
 		ctx := cmd.Context()
 		b := bundle.Get(ctx)
 
-		err := bundle.Apply(ctx, b, bundle.Seq(
+		diags := bundle.Apply(ctx, b, bundle.Seq(
 			phases.Initialize(),
 			terraform.Interpolate(),
 			terraform.Write(),
 			terraform.StatePull(),
 			terraform.Load(terraform.ErrorOnEmptyState),
 		))
-		if err != nil {
-			return err
+		if diags.HasError() {
+			return diags.Error()
 		}
 
 		// If no arguments are specified, prompt the user to select something to run.

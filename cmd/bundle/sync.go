@@ -49,9 +49,9 @@ func newSyncCommand() *cobra.Command {
 		b := bundle.Get(cmd.Context())
 
 		// Run initialize phase to make sure paths are set.
-		err := bundle.Apply(cmd.Context(), b, phases.Initialize())
-		if err != nil {
-			return err
+		diags := bundle.Apply(cmd.Context(), b, phases.Initialize())
+		if diags.HasError() {
+			return diags.Error()
 		}
 
 		opts, err := f.syncOptionsFromBundle(cmd, b)

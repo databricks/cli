@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/spf13/cobra"
 )
 
@@ -44,12 +45,12 @@ func newBindCommand() *cobra.Command {
 			return fmt.Errorf("%s with an id '%s' is not found", resource.TerraformResourceName(), args[1])
 		}
 
-		bundle.ApplyFunc(ctx, b, func(context.Context, *bundle.Bundle) error {
+		bundle.ApplyFunc(ctx, b, func(context.Context, *bundle.Bundle) diag.Diagnostics {
 			b.Config.Bundle.Deployment.Lock.Force = forceLock
 			return nil
 		})
 
-		err = bundle.Apply(ctx, b, bundle.Seq(
+		diags := bundle.Apply(ctx, b, bundle.Seq(
 			phases.Initialize(),
 			phases.Bind(&terraform.BindOptions{
 				AutoApprove:  autoApprove,
@@ -58,8 +59,8 @@ func newBindCommand() *cobra.Command {
 				ResourceId:   args[1],
 			}),
 		))
-		if err != nil {
-			return fmt.Errorf("failed to bind the resource, err: %w", err)
+		if diags.HasError() {
+			return fmt.Errorf("failed to bind the resource, err: %w", diags.Error())
 		}
 
 		cmdio.LogString(ctx, fmt.Sprintf("Successfully bound %s with an id '%s'. Run 'bundle deploy' to deploy changes to your workspace", resource.TerraformResourceName(), args[1]))
