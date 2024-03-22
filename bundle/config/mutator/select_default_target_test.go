@@ -28,8 +28,9 @@ func TestSelectDefaultTargetSingleTargets(t *testing.T) {
 			},
 		},
 	}
-	err := bundle.Apply(context.Background(), b, mutator.SelectDefaultTarget())
-	assert.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, mutator.SelectDefaultTarget())
+	assert.Empty(t, diags)
+
 	assert.Equal(t, "foo", b.Config.Bundle.Target)
 }
 
@@ -84,7 +85,8 @@ func TestSelectDefaultTargetSingleDefault(t *testing.T) {
 			},
 		},
 	}
-	err := bundle.Apply(context.Background(), b, mutator.SelectDefaultTarget())
-	assert.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, mutator.SelectDefaultTarget())
+	assert.Empty(t, diags)
+
 	assert.Equal(t, "bar", b.Config.Bundle.Target)
 }

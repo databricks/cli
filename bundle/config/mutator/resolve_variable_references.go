@@ -37,7 +37,7 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 	// We rewrite it here to make the resolution logic simpler.
 	varPath := dyn.NewPath(dyn.Key("var"))
 
-	return b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
+	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		// Synthesize a copy of the root that has all fields that are present in the type
 		// but not set in the dynamic value set to their corresponding empty value.
 		// This enables users to interpolate variable references to fields that haven't
@@ -93,4 +93,6 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 		}
 		return root, nil
 	})
+	return diag.FromErr(err)
+
 }

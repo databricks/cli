@@ -49,8 +49,8 @@ func TestStatePullLocalMissingRemoteMissing(t *testing.T) {
 
 	ctx := context.Background()
 	b := statePullTestBundle(t)
-	err := bundle.Apply(ctx, b, m)
-	assert.NoError(t, err)
+	diags := bundle.Apply(ctx, b, m)
+	assert.Empty(t, diags)
 
 	// Confirm that no local state file has been written.
 	_, err = os.Stat(localStateFile(t, ctx, b))
@@ -64,8 +64,8 @@ func TestStatePullLocalMissingRemotePresent(t *testing.T) {
 
 	ctx := context.Background()
 	b := statePullTestBundle(t)
-	err := bundle.Apply(ctx, b, m)
-	assert.NoError(t, err)
+	diags := bundle.Apply(ctx, b, m)
+	assert.Empty(t, diags)
 
 	// Confirm that the local state file has been updated.
 	localState := readLocalState(t, ctx, b)
@@ -82,8 +82,8 @@ func TestStatePullLocalStale(t *testing.T) {
 
 	// Write a stale local state file.
 	writeLocalState(t, ctx, b, map[string]int{"serial": 4})
-	err := bundle.Apply(ctx, b, m)
-	assert.NoError(t, err)
+	diags := bundle.Apply(ctx, b, m)
+	assert.Empty(t, diags)
 
 	// Confirm that the local state file has been updated.
 	localState := readLocalState(t, ctx, b)
@@ -100,8 +100,8 @@ func TestStatePullLocalEqual(t *testing.T) {
 
 	// Write a local state file with the same serial as the remote.
 	writeLocalState(t, ctx, b, map[string]int{"serial": 5})
-	err := bundle.Apply(ctx, b, m)
-	assert.NoError(t, err)
+	diags := bundle.Apply(ctx, b, m)
+	assert.Empty(t, diags)
 
 	// Confirm that the local state file has not been updated.
 	localState := readLocalState(t, ctx, b)
@@ -118,8 +118,8 @@ func TestStatePullLocalNewer(t *testing.T) {
 
 	// Write a local state file with a newer serial as the remote.
 	writeLocalState(t, ctx, b, map[string]int{"serial": 6})
-	err := bundle.Apply(ctx, b, m)
-	assert.NoError(t, err)
+	diags := bundle.Apply(ctx, b, m)
+	assert.Empty(t, diags)
 
 	// Confirm that the local state file has not been updated.
 	localState := readLocalState(t, ctx, b)

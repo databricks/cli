@@ -24,8 +24,8 @@ func TestRunAsDefault(t *testing.T) {
 		return nil
 	})
 
-	err := bundle.Apply(ctx, b, mutator.SetRunAs())
-	assert.NoError(t, err)
+	diags := bundle.Apply(ctx, b, mutator.SetRunAs())
+	assert.Empty(t, diags)
 
 	assert.Len(t, b.Config.Resources.Jobs, 3)
 	jobs := b.Config.Resources.Jobs
@@ -64,8 +64,8 @@ func TestRunAsDevelopment(t *testing.T) {
 		return nil
 	})
 
-	err := bundle.Apply(ctx, b, mutator.SetRunAs())
-	assert.NoError(t, err)
+	diags := bundle.Apply(ctx, b, mutator.SetRunAs())
+	assert.Empty(t, diags)
 
 	assert.Len(t, b.Config.Resources.Jobs, 3)
 	jobs := b.Config.Resources.Jobs

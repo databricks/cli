@@ -143,8 +143,8 @@ func TestOverrideProduction(t *testing.T) {
 	}
 
 	m := mutator.OverrideCompute()
-	err := bundle.Apply(context.Background(), b, m)
-	require.Error(t, err)
+	diags := bundle.Apply(context.Background(), b, m)
+	require.True(t, diags.HasError())
 }
 
 func TestOverrideProductionEnv(t *testing.T) {

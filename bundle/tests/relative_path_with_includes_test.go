@@ -14,8 +14,8 @@ func TestRelativePathsWithIncludes(t *testing.T) {
 	b := loadTarget(t, "./relative_path_with_includes", "default")
 
 	m := mutator.TranslatePaths()
-	err := bundle.Apply(context.Background(), b, m)
-	assert.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, m)
+	assert.Empty(t, diags)
 
 	assert.Equal(t, "artifact_a", b.Config.Artifacts["test_a"].Path)
 	assert.Equal(t, filepath.Join("subfolder", "artifact_b"), b.Config.Artifacts["test_b"].Path)

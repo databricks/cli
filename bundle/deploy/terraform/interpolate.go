@@ -22,7 +22,7 @@ func (m *interpolateMutator) Name() string {
 }
 
 func (m *interpolateMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	return b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
+	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		prefix := dyn.MustPathFromString("resources")
 
 		// Resolve variable references in all values.
@@ -62,4 +62,6 @@ func (m *interpolateMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 			return dyn.V(fmt.Sprintf("${%s}", path.String())), nil
 		})
 	})
+	return diag.FromErr(err)
+
 }

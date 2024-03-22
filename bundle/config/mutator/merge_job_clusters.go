@@ -31,7 +31,7 @@ func (m *mergeJobClusters) jobClusterKey(v dyn.Value) string {
 }
 
 func (m *mergeJobClusters) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	return b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		if v == dyn.NilValue {
 			return v, nil
 		}
@@ -40,4 +40,6 @@ func (m *mergeJobClusters) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 			return dyn.Map(job, "job_clusters", merge.ElementsByKey("job_cluster_key", m.jobClusterKey))
 		}))
 	})
+	return diag.FromErr(err)
+
 }

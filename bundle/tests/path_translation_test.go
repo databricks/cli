@@ -62,8 +62,8 @@ func TestPathTranslationNominal(t *testing.T) {
 	b := loadTarget(t, "./path_translation/nominal", "development")
 
 	m := mutator.TranslatePaths()
-	err := bundle.Apply(context.Background(), b, m)
-	assert.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, m)
+	assert.Empty(t, diags)
 
 	j := b.Config.Resources.Jobs["my_job"]
 	assert.Len(t, j.Tasks, 8)

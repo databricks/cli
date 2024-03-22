@@ -58,8 +58,8 @@ func TestMergeJobTasks(t *testing.T) {
 		},
 	}
 
-	err := bundle.Apply(context.Background(), b, mutator.MergeJobTasks())
-	assert.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, mutator.MergeJobTasks())
+	assert.Empty(t, diags)
 
 	j := b.Config.Resources.Jobs["foo"]
 
@@ -111,7 +111,8 @@ func TestMergeJobTasksWithNilKey(t *testing.T) {
 		},
 	}
 
-	err := bundle.Apply(context.Background(), b, mutator.MergeJobTasks())
-	assert.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, mutator.MergeJobTasks())
+	assert.Empty(t, diags)
+
 	assert.Len(t, b.Config.Resources.Jobs["foo"].Tasks, 1)
 }
