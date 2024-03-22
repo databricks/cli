@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 )
 
 type LogStringMutator struct {
@@ -20,8 +21,7 @@ func LogString(message string) Mutator {
 	}
 }
 
-func (m *LogStringMutator) Apply(ctx context.Context, b *Bundle) error {
+func (m *LogStringMutator) Apply(ctx context.Context, b *Bundle) diag.Diagnostics {
 	cmdio.LogString(ctx, m.message)
-
 	return nil
 }
