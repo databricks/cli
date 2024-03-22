@@ -53,7 +53,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 		if filepath.IsAbs(extraIncludePath) {
 			rel, err := filepath.Rel(b.Config.Path, extraIncludePath)
 			if err != nil {
-				return diag.Errorf("unable to include file '%s': %w", extraIncludePath, err)
+				return diag.Errorf("unable to include file '%s': %v", extraIncludePath, err)
 			}
 			extraIncludePath = rel
 		}

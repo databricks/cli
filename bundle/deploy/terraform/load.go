@@ -31,7 +31,7 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 	err := tf.Init(ctx, tfexec.Upgrade(true))
 	if err != nil {
-		return diag.Errorf("terraform init: %w", err)
+		return diag.Errorf("terraform init: %v", err)
 	}
 
 	state, err := b.Terraform.Show(ctx)

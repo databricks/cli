@@ -68,7 +68,7 @@ func (m *basicBuild) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 
 	out, err := artifact.Build(ctx)
 	if err != nil {
-		return diag.Errorf("build for %s failed, error: %w, output: %s", m.name, err, out)
+		return diag.Errorf("build for %s failed, error: %v, output: %s", m.name, err, out)
 	}
 	log.Infof(ctx, "Build succeeded")
 
@@ -110,7 +110,7 @@ func (m *basicUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 
 	err = uploadArtifact(ctx, b, artifact, uploadPath, client)
 	if err != nil {
-		return diag.Errorf("upload for %s failed, error: %w", m.name, err)
+		return diag.Errorf("upload for %s failed, error: %v", m.name, err)
 	}
 
 	return nil

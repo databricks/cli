@@ -26,12 +26,12 @@ func (w *apply) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 	err := tf.Init(ctx, tfexec.Upgrade(true))
 	if err != nil {
-		return diag.Errorf("terraform init: %w", err)
+		return diag.Errorf("terraform init: %v", err)
 	}
 
 	err = tf.Apply(ctx)
 	if err != nil {
-		return diag.Errorf("terraform apply: %w", err)
+		return diag.Errorf("terraform apply: %v", err)
 	}
 
 	log.Infof(ctx, "Resource deployment completed")

@@ -44,7 +44,7 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 	out, err := artifact.Build(ctx)
 	if err != nil {
-		return diag.Errorf("build failed %s, error: %w, output: %s", m.name, err, out)
+		return diag.Errorf("build failed %s, error: %v, output: %s", m.name, err, out)
 	}
 	log.Infof(ctx, "Build succeeded")
 

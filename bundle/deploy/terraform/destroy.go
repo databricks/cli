@@ -110,7 +110,7 @@ func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 	// Apply terraform according to the computed destroy plan
 	err = tf.Apply(ctx, tfexec.DirOrPlan(b.Plan.Path))
 	if err != nil {
-		return diag.Errorf("terraform destroy: %w", err)
+		return diag.Errorf("terraform destroy: %v", err)
 	}
 
 	cmdio.LogString(ctx, "Successfully destroyed resources!")

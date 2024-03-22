@@ -41,7 +41,7 @@ func (m *compute) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// root
 		relativePath, err := filepath.Rel(b.Config.Path, job.ConfigFilePath)
 		if err != nil {
-			return diag.Errorf("failed to compute relative path for job %s: %w", name, err)
+			return diag.Errorf("failed to compute relative path for job %s: %v", name, err)
 		}
 		// Metadata for the job
 		jobsMetadata[name] = &metadata.Job{

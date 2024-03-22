@@ -43,7 +43,7 @@ func (l *checkRunningResources) Apply(ctx context.Context, b *bundle.Bundle) dia
 
 	err := tf.Init(ctx, tfexec.Upgrade(true))
 	if err != nil {
-		return diag.Errorf("terraform init: %w", err)
+		return diag.Errorf("terraform init: %v", err)
 	}
 
 	state, err := b.Terraform.Show(ctx)
@@ -53,7 +53,7 @@ func (l *checkRunningResources) Apply(ctx context.Context, b *bundle.Bundle) dia
 
 	err = checkAnyResourceRunning(ctx, b.WorkspaceClient(), state)
 	if err != nil {
-		return diag.Errorf("deployment aborted, err: %w", err)
+		return diag.Errorf("deployment aborted, err: %v", err)
 	}
 
 	return nil

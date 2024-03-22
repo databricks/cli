@@ -58,7 +58,7 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	for _, f := range artifact.Files {
 		matches, err := filepath.Glob(f.Source)
 		if err != nil {
-			return diag.Errorf("unable to find files for %s: %w", f.Source, err)
+			return diag.Errorf("unable to find files for %s: %v", f.Source, err)
 		}
 
 		if len(matches) == 0 {
@@ -95,7 +95,7 @@ func (m *cleanUp) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 
 	err = b.WorkspaceClient().Workspace.MkdirsByPath(ctx, uploadPath)
 	if err != nil {
-		return diag.Errorf("unable to create directory for %s: %w", uploadPath, err)
+		return diag.Errorf("unable to create directory for %s: %v", uploadPath, err)
 	}
 
 	return nil
