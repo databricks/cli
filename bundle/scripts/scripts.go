@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/exec"
 	"github.com/databricks/cli/libs/log"
 )
@@ -28,7 +29,7 @@ func (m *script) Name() string {
 	return fmt.Sprintf("scripts.%s", m.scriptHook)
 }
 
-func (m *script) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *script) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	executor, err := exec.NewCommandExecutor(b.Config.Path)
 	if err != nil {
 		return err

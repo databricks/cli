@@ -18,8 +18,9 @@ func TestBundlePermissions(t *testing.T) {
 	assert.NotContains(t, b.Config.Permissions, resources.Permission{Level: "CAN_VIEW", ServicePrincipalName: "1234-abcd"})
 	assert.NotContains(t, b.Config.Permissions, resources.Permission{Level: "CAN_RUN", UserName: "bot@company.com"})
 
-	err := bundle.Apply(context.Background(), b, permissions.ApplyBundlePermissions())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, permissions.ApplyBundlePermissions())
+	require.Empty(t, diags)
+
 	pipelinePermissions := b.Config.Resources.Pipelines["nyc_taxi_pipeline"].Permissions
 	assert.Contains(t, pipelinePermissions, resources.Permission{Level: "CAN_RUN", UserName: "test@company.com"})
 	assert.NotContains(t, pipelinePermissions, resources.Permission{Level: "CAN_MANAGE", GroupName: "devs"})
@@ -40,8 +41,9 @@ func TestBundlePermissionsDevTarget(t *testing.T) {
 	assert.Contains(t, b.Config.Permissions, resources.Permission{Level: "CAN_VIEW", ServicePrincipalName: "1234-abcd"})
 	assert.Contains(t, b.Config.Permissions, resources.Permission{Level: "CAN_RUN", UserName: "bot@company.com"})
 
-	err := bundle.Apply(context.Background(), b, permissions.ApplyBundlePermissions())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, permissions.ApplyBundlePermissions())
+	require.Empty(t, diags)
+
 	pipelinePermissions := b.Config.Resources.Pipelines["nyc_taxi_pipeline"].Permissions
 	assert.Contains(t, pipelinePermissions, resources.Permission{Level: "CAN_RUN", UserName: "test@company.com"})
 	assert.Contains(t, pipelinePermissions, resources.Permission{Level: "CAN_MANAGE", GroupName: "devs"})

@@ -2,9 +2,9 @@ package mutator
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"golang.org/x/sync/errgroup"
 )
@@ -15,7 +15,7 @@ func ResolveResourceReferences() bundle.Mutator {
 	return &resolveResourceReferences{}
 }
 
-func (m *resolveResourceReferences) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *resolveResourceReferences) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	errs, errCtx := errgroup.WithContext(ctx)
 
 	for k := range b.Config.Variables {
@@ -32,7 +32,7 @@ func (m *resolveResourceReferences) Apply(ctx context.Context, b *bundle.Bundle)
 		errs.Go(func() error {
 			id, err := v.Lookup.Resolve(errCtx, b.WorkspaceClient())
 			if err != nil {
-				return fmt.Errorf("failed to resolve %s, err: %w", v.Lookup, err)
+				return diag.Errorf("failed to resolve %s, err: %w", v.Lookup, err)
 			}
 
 			v.Set(id)

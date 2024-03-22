@@ -23,8 +23,9 @@ func TestProcessRootIncludesEmpty(t *testing.T) {
 			Path: ".",
 		},
 	}
-	err := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
+	require.Empty(t, diags)
+
 }
 
 func TestProcessRootIncludesAbs(t *testing.T) {
@@ -62,8 +63,8 @@ func TestProcessRootIncludesSingleGlob(t *testing.T) {
 	testutil.Touch(t, b.Config.Path, "a.yml")
 	testutil.Touch(t, b.Config.Path, "b.yml")
 
-	err := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
+	require.Empty(t, diags)
 
 	assert.Equal(t, []string{"a.yml", "b.yml"}, b.Config.Include)
 }
@@ -82,8 +83,8 @@ func TestProcessRootIncludesMultiGlob(t *testing.T) {
 	testutil.Touch(t, b.Config.Path, "a1.yml")
 	testutil.Touch(t, b.Config.Path, "b1.yml")
 
-	err := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
+	require.Empty(t, diags)
 
 	assert.Equal(t, []string{"a1.yml", "b1.yml"}, b.Config.Include)
 }
@@ -101,8 +102,9 @@ func TestProcessRootIncludesRemoveDups(t *testing.T) {
 
 	testutil.Touch(t, b.Config.Path, "a.yml")
 
-	err := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
+	require.Empty(t, diags)
+
 	assert.Equal(t, []string{"a.yml"}, b.Config.Include)
 }
 
@@ -132,8 +134,9 @@ func TestProcessRootIncludesExtrasFromEnvVar(t *testing.T) {
 		},
 	}
 
-	err := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
+	require.Empty(t, diags)
+
 	assert.Contains(t, b.Config.Include, testYamlName)
 }
 
@@ -155,7 +158,8 @@ func TestProcessRootIncludesDedupExtrasFromEnvVar(t *testing.T) {
 		},
 	}
 
-	err := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
+	require.Empty(t, diags)
+
 	assert.Equal(t, []string{testYamlName}, b.Config.Include)
 }

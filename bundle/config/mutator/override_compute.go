@@ -2,11 +2,11 @@ package mutator
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/env"
 )
 
@@ -32,10 +32,10 @@ func overrideJobCompute(j *resources.Job, compute string) {
 	}
 }
 
-func (m *overrideCompute) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *overrideCompute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if b.Config.Bundle.Mode != config.Development {
 		if b.Config.Bundle.ComputeID != "" {
-			return fmt.Errorf("cannot override compute for an target that does not use 'mode: development'")
+			return diag.Errorf("cannot override compute for an target that does not use 'mode: development'")
 		}
 		return nil
 	}

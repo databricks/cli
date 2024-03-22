@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/notebook"
 )
@@ -89,7 +90,7 @@ func (m *translatePaths) rewritePath(
 		return err
 	}
 	if strings.HasPrefix(localRelPath, "..") {
-		return fmt.Errorf("path %s is not contained in bundle root path", localPath)
+		return diag.Errorf("path %s is not contained in bundle root path", localPath)
 	}
 
 	// Prefix remote path with its remote root path.

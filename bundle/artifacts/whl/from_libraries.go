@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/libraries"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -20,7 +21,7 @@ func (m *fromLibraries) Name() string {
 	return "artifacts.whl.DefineArtifactsFromLibraries"
 }
 
-func (*fromLibraries) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (*fromLibraries) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if len(b.Config.Artifacts) != 0 {
 		log.Debugf(ctx, "Skipping defining artifacts from libraries because artifacts section is explicitly defined")
 		return nil

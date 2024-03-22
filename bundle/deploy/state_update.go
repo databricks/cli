@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -21,7 +22,7 @@ func (s *stateUpdate) Name() string {
 	return "deploy:state-update"
 }
 
-func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	state, err := load(ctx, b)
 	if err != nil {
 		return err

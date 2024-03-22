@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
 )
 
@@ -21,7 +22,7 @@ func (m *upload) Name() string {
 	return "metadata.Upload"
 }
 
-func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	f, err := filer.NewWorkspaceFilesClient(b.WorkspaceClient(), b.Config.Workspace.StatePath)
 	if err != nil {
 		return err

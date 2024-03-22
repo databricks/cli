@@ -46,6 +46,7 @@ func TestExecuteMutator(t *testing.T) {
 		},
 	}
 
-	err := bundle.Apply(context.Background(), b, Execute(config.ScriptPreInit))
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, Execute(config.ScriptPreInit))
+	require.Empty(t, diags)
+
 }

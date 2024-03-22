@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
 
@@ -41,7 +42,7 @@ func (m *rewriteSyncPaths) makeRelativeTo(root string) dyn.MapFunc {
 	}
 }
 
-func (m *rewriteSyncPaths) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *rewriteSyncPaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	return b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		return dyn.Map(v, "sync", func(_ dyn.Path, v dyn.Value) (nv dyn.Value, err error) {
 			v, err = dyn.Map(v, "include", dyn.Foreach(m.makeRelativeTo(b.Config.Path)))

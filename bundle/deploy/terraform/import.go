@@ -10,6 +10,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
@@ -25,7 +26,7 @@ type importResource struct {
 }
 
 // Apply implements bundle.Mutator.
-func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	dir, err := Dir(ctx, b)
 	if err != nil {
 		return err
@@ -33,23 +34,23 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) error {
 
 	tf := b.Terraform
 	if tf == nil {
-		return fmt.Errorf("terraform not initialized")
+		return diag.Errorf("terraform not initialized")
 	}
 
 	err = tf.Init(ctx, tfexec.Upgrade(true))
 	if err != nil {
-		return fmt.Errorf("terraform init: %w", err)
+		return diag.Errorf("terraform init: %w", err)
 	}
 	tmpDir, err := os.MkdirTemp("", "state-*")
 	if err != nil {
-		return fmt.Errorf("terraform init: %w", err)
+		return diag.Errorf("terraform init: %w", err)
 	}
 	tmpState := filepath.Join(tmpDir, TerraformStateFileName)
 
 	importAddress := fmt.Sprintf("%s.%s", m.opts.ResourceType, m.opts.ResourceKey)
 	err = tf.Import(ctx, importAddress, m.opts.ResourceId, tfexec.StateOut(tmpState))
 	if err != nil {
-		return fmt.Errorf("terraform import: %w", err)
+		return diag.Errorf("terraform import: %w", err)
 	}
 
 	buf := bytes.NewBuffer(nil)
@@ -58,7 +59,7 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) error {
 	//lint:ignore SA1019 We use legacy -state flag for now to plan the import changes based on temporary state file
 	changed, err := tf.Plan(ctx, tfexec.State(tmpState), tfexec.Target(importAddress))
 	if err != nil {
-		return fmt.Errorf("terraform plan: %w", err)
+		return diag.Errorf("terraform plan: %w", err)
 	}
 
 	defer os.RemoveAll(tmpDir)
@@ -73,7 +74,7 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) error {
 			return err
 		}
 		if !ans {
-			return fmt.Errorf("import aborted")
+			return diag.Errorf("import aborted")
 		}
 	}
 

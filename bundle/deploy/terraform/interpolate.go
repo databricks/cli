@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 )
@@ -20,7 +21,7 @@ func (m *interpolateMutator) Name() string {
 	return "terraform.Interpolate"
 }
 
-func (m *interpolateMutator) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *interpolateMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	return b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		prefix := dyn.MustPathFromString("resources")
 

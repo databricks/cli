@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
@@ -13,20 +14,20 @@ type unbind struct {
 	resourceKey  string
 }
 
-func (m *unbind) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *unbind) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	tf := b.Terraform
 	if tf == nil {
-		return fmt.Errorf("terraform not initialized")
+		return diag.Errorf("terraform not initialized")
 	}
 
 	err := tf.Init(ctx, tfexec.Upgrade(true))
 	if err != nil {
-		return fmt.Errorf("terraform init: %w", err)
+		return diag.Errorf("terraform init: %w", err)
 	}
 
 	err = tf.StateRm(ctx, fmt.Sprintf("%s.%s", m.resourceType, m.resourceKey))
 	if err != nil {
-		return fmt.Errorf("terraform state rm: %w", err)
+		return diag.Errorf("terraform state rm: %w", err)
 	}
 
 	return nil

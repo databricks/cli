@@ -2,9 +2,9 @@ package bundle
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,7 +19,7 @@ func (t *mutatorWithError) Name() string {
 
 func (t *mutatorWithError) Apply(_ context.Context, b *Bundle) error {
 	t.applyCalled++
-	return fmt.Errorf(t.errorMsg)
+	return diag.Errorf(t.errorMsg)
 }
 
 func TestDeferredMutatorWhenAllMutatorsSucceed(t *testing.T) {

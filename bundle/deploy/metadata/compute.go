@@ -2,12 +2,12 @@ package metadata
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/metadata"
+	"github.com/databricks/cli/libs/diag"
 )
 
 type compute struct{}
@@ -41,7 +41,7 @@ func (m *compute) Apply(_ context.Context, b *bundle.Bundle) error {
 		// root
 		relativePath, err := filepath.Rel(b.Config.Path, job.ConfigFilePath)
 		if err != nil {
-			return fmt.Errorf("failed to compute relative path for job %s: %w", name, err)
+			return diag.Errorf("failed to compute relative path for job %s: %w", name, err)
 		}
 		// Metadata for the job
 		jobsMetadata[name] = &metadata.Job{

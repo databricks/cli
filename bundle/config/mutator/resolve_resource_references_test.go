@@ -50,8 +50,9 @@ func TestResolveClusterReference(t *testing.T) {
 		ClusterId: "9876-5432-xywz",
 	}, nil)
 
-	err := bundle.Apply(context.Background(), b, ResolveResourceReferences())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, ResolveResourceReferences())
+	require.Empty(t, diags)
+
 	require.Equal(t, "1234-5678-abcd", *b.Config.Variables["my-cluster-id-1"].Value)
 	require.Equal(t, "9876-5432-xywz", *b.Config.Variables["my-cluster-id-2"].Value)
 }
@@ -102,8 +103,9 @@ func TestNoLookupIfVariableIsSet(t *testing.T) {
 
 	b.Config.Variables["my-cluster-id"].Set("random value")
 
-	err := bundle.Apply(context.Background(), b, ResolveResourceReferences())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, ResolveResourceReferences())
+	require.Empty(t, diags)
+
 	require.Equal(t, "random value", *b.Config.Variables["my-cluster-id"].Value)
 }
 
@@ -129,7 +131,8 @@ func TestResolveServicePrincipal(t *testing.T) {
 		ApplicationId: "app-1234",
 	}, nil)
 
-	err := bundle.Apply(context.Background(), b, ResolveResourceReferences())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, ResolveResourceReferences())
+	require.Empty(t, diags)
+
 	require.Equal(t, "app-1234", *b.Config.Variables["my-sp"].Value)
 }

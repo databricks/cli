@@ -110,8 +110,8 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	b := mockBundle(config.Development)
 
 	m := ProcessTargetMode()
-	err := bundle.Apply(context.Background(), b, m)
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, m)
+	require.Empty(t, diags)
 
 	// Job 1
 	assert.Equal(t, "[dev lennart] job1", b.Config.Resources.Jobs["job1"].Name)
@@ -154,8 +154,8 @@ func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	err := bundle.Apply(context.Background(), b, ProcessTargetMode())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, ProcessTargetMode())
+	require.Empty(t, diags)
 
 	// Assert that tag normalization took place.
 	assert.Equal(t, "Hello world__", b.Config.Resources.Jobs["job1"].Tags["dev"])
@@ -168,8 +168,8 @@ func TestProcessTargetModeDevelopmentTagNormalizationForAzure(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	err := bundle.Apply(context.Background(), b, ProcessTargetMode())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, ProcessTargetMode())
+	require.Empty(t, diags)
 
 	// Assert that tag normalization took place (Azure allows more characters than AWS).
 	assert.Equal(t, "Héllö wörld?!", b.Config.Resources.Jobs["job1"].Tags["dev"])
@@ -182,8 +182,8 @@ func TestProcessTargetModeDevelopmentTagNormalizationForGcp(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	err := bundle.Apply(context.Background(), b, ProcessTargetMode())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, ProcessTargetMode())
+	require.Empty(t, diags)
 
 	// Assert that tag normalization took place.
 	assert.Equal(t, "Hello_world", b.Config.Resources.Jobs["job1"].Tags["dev"])
@@ -193,8 +193,9 @@ func TestProcessTargetModeDefault(t *testing.T) {
 	b := mockBundle("")
 
 	m := ProcessTargetMode()
-	err := bundle.Apply(context.Background(), b, m)
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, m)
+	require.Empty(t, diags)
+
 	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
 	assert.Equal(t, "pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
@@ -277,8 +278,8 @@ func TestAllResourcesRenamed(t *testing.T) {
 	b := mockBundle(config.Development)
 
 	m := ProcessTargetMode()
-	err := bundle.Apply(context.Background(), b, m)
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, m)
+	require.Empty(t, diags)
 
 	resources := reflect.ValueOf(b.Config.Resources)
 	for i := 0; i < resources.NumField(); i++ {

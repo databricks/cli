@@ -11,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/files"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sync"
@@ -20,7 +21,7 @@ type statePull struct {
 	filerFactory FilerFactory
 }
 
-func (s *statePull) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (s *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	f, err := s.filerFactory(b)
 	if err != nil {
 		return err

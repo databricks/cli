@@ -280,8 +280,9 @@ func TestNoWarningWhenPythonWheelWrapperIsOn(t *testing.T) {
 		},
 	}
 
-	err := bundle.Apply(context.Background(), b, WrapperWarning())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, WrapperWarning())
+	require.Empty(t, diags)
+
 }
 
 func TestSparkVersionLowerThanExpected(t *testing.T) {

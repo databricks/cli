@@ -2,11 +2,11 @@ package permissions
 
 import (
 	"context"
-	"fmt"
 	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/diag"
 )
 
 const CAN_MANAGE = "CAN_MANAGE"
@@ -46,7 +46,7 @@ func ApplyBundlePermissions() bundle.Mutator {
 	return &bundlePermissions{}
 }
 
-func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	err := validate(b)
 	if err != nil {
 		return err
@@ -64,7 +64,7 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) error {
 func validate(b *bundle.Bundle) error {
 	for _, p := range b.Config.Permissions {
 		if !slices.Contains(allowedLevels, p.Level) {
-			return fmt.Errorf("invalid permission level: %s, allowed values: [%s]", p.Level, strings.Join(allowedLevels, ", "))
+			return diag.Errorf("invalid permission level: %s, allowed values: [%s]", p.Level, strings.Join(allowedLevels, ", "))
 		}
 	}
 

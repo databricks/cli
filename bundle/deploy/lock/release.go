@@ -2,9 +2,9 @@ package lock
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
 )
@@ -30,7 +30,7 @@ func (m *release) Name() string {
 	return "lock:release"
 }
 
-func (m *release) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *release) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Return early if locking is disabled.
 	if !b.Config.Bundle.Deployment.Lock.IsEnabled() {
 		log.Infof(ctx, "Skipping; locking is disabled")
@@ -53,6 +53,6 @@ func (m *release) Apply(ctx context.Context, b *bundle.Bundle) error {
 	case GoalDestroy:
 		return b.Locker.Unlock(ctx, locker.AllowLockFileNotExist)
 	default:
-		return fmt.Errorf("unknown goal for lock release: %s", m.goal)
+		return diag.Errorf("unknown goal for lock release: %s", m.goal)
 	}
 }

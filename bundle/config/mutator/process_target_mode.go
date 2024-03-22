@@ -2,13 +2,13 @@ package mutator
 
 import (
 	"context"
-	"fmt"
 	"path"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -102,7 +102,7 @@ func transformDevelopmentMode(b *bundle.Bundle) error {
 
 func validateDevelopmentMode(b *bundle.Bundle) error {
 	if path := findNonUserPath(b); path != "" {
-		return fmt.Errorf("%s must start with '~/' or contain the current username when using 'mode: development'", path)
+		return diag.Errorf("%s must start with '~/' or contain the current username when using 'mode: development'", path)
 	}
 	return nil
 }
@@ -134,12 +134,12 @@ func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUs
 	r := b.Config.Resources
 	for i := range r.Pipelines {
 		if r.Pipelines[i].Development {
-			return fmt.Errorf("target with 'mode: production' cannot include a pipeline with 'development: true'")
+			return diag.Errorf("target with 'mode: production' cannot include a pipeline with 'development: true'")
 		}
 	}
 
 	if !isPrincipalUsed && !isRunAsSet(r) {
-		return fmt.Errorf("'run_as' must be set for all jobs when using 'mode: production'")
+		return diag.Errorf("'run_as' must be set for all jobs when using 'mode: production'")
 	}
 	return nil
 }
@@ -156,7 +156,7 @@ func isRunAsSet(r config.Resources) bool {
 	return true
 }
 
-func (m *processTargetMode) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *processTargetMode) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	switch b.Config.Bundle.Mode {
 	case config.Development:
 		err := validateDevelopmentMode(b)
@@ -170,7 +170,7 @@ func (m *processTargetMode) Apply(ctx context.Context, b *bundle.Bundle) error {
 	case "":
 		// No action
 	default:
-		return fmt.Errorf("unsupported value '%s' specified for 'mode': must be either 'development' or 'production'", b.Config.Bundle.Mode)
+		return diag.Errorf("unsupported value '%s' specified for 'mode': must be either 'development' or 'production'", b.Config.Bundle.Mode)
 	}
 
 	return nil

@@ -106,8 +106,8 @@ func testStatePull(t *testing.T, opts statePullOpts) {
 		require.NoError(t, err)
 	}
 
-	err := bundle.Apply(ctx, b, s)
-	require.NoError(t, err)
+	diags := bundle.Apply(ctx, b, s)
+	require.Empty(t, diags)
 
 	// Check that deployment state was written
 	statePath, err := getPathToStateFile(ctx, b)
@@ -263,8 +263,8 @@ func TestStatePullNoState(t *testing.T) {
 	}
 	ctx := context.Background()
 
-	err := bundle.Apply(ctx, b, s)
-	require.NoError(t, err)
+	diags := bundle.Apply(ctx, b, s)
+	require.Empty(t, diags)
 
 	// Check that deployment state was not written
 	statePath, err := getPathToStateFile(ctx, b)

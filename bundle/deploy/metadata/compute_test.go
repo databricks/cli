@@ -91,8 +91,8 @@ func TestComputeMetadataMutator(t *testing.T) {
 		},
 	}
 
-	err := bundle.Apply(context.Background(), b, Compute())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, Compute())
+	require.Empty(t, diags)
 
 	assert.Equal(t, expectedMetadata, b.Metadata)
 }

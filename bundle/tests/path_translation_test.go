@@ -15,8 +15,8 @@ func TestPathTranslationFallback(t *testing.T) {
 	b := loadTarget(t, "./path_translation/fallback", "development")
 
 	m := mutator.TranslatePaths()
-	err := bundle.Apply(context.Background(), b, m)
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, m)
+	require.Empty(t, diags)
 
 	j := b.Config.Resources.Jobs["my_job"]
 	assert.Len(t, j.Tasks, 6)

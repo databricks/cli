@@ -11,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 )
@@ -45,7 +46,7 @@ func (l *statePull) remoteState(ctx context.Context, f filer.Filer) (*bytes.Buff
 	return &buf, nil
 }
 
-func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	f, err := l.filerFactory(b)
 	if err != nil {
 		return err

@@ -12,22 +12,24 @@ import (
 
 func TestInterpolation(t *testing.T) {
 	b := load(t, "./interpolation")
-	err := bundle.Apply(context.Background(), b, mutator.ResolveVariableReferences(
+	diags := bundle.Apply(context.Background(), b, mutator.ResolveVariableReferences(
 		"bundle",
 		"workspace",
 	))
-	require.NoError(t, err)
+	require.Empty(t, diags)
+
 	assert.Equal(t, "foo bar", b.Config.Bundle.Name)
 	assert.Equal(t, "foo bar | bar", b.Config.Resources.Jobs["my_job"].Name)
 }
 
 func TestInterpolationWithTarget(t *testing.T) {
 	b := loadTarget(t, "./interpolation_target", "development")
-	err := bundle.Apply(context.Background(), b, mutator.ResolveVariableReferences(
+	diags := bundle.Apply(context.Background(), b, mutator.ResolveVariableReferences(
 		"bundle",
 		"workspace",
 	))
-	require.NoError(t, err)
+	require.Empty(t, diags)
+
 	assert.Equal(t, "foo bar", b.Config.Bundle.Name)
 	assert.Equal(t, "foo bar | bar | development | development", b.Config.Resources.Jobs["my_job"].Name)
 

@@ -2,10 +2,10 @@ package terraform
 
 import (
 	"context"
-	"fmt"
 	"slices"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/hashicorp/terraform-exec/tfexec"
 	tfjson "github.com/hashicorp/terraform-json"
 )
@@ -22,15 +22,15 @@ func (l *load) Name() string {
 	return "terraform.Load"
 }
 
-func (l *load) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	tf := b.Terraform
 	if tf == nil {
-		return fmt.Errorf("terraform not initialized")
+		return diag.Errorf("terraform not initialized")
 	}
 
 	err := tf.Init(ctx, tfexec.Upgrade(true))
 	if err != nil {
-		return fmt.Errorf("terraform init: %w", err)
+		return diag.Errorf("terraform init: %w", err)
 	}
 
 	state, err := b.Terraform.Show(ctx)
@@ -55,13 +55,13 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) error {
 func (l *load) validateState(state *tfjson.State) error {
 	if state.Values == nil {
 		if slices.Contains(l.modes, ErrorOnEmptyState) {
-			return fmt.Errorf("no deployment state. Did you forget to run 'databricks bundle deploy'?")
+			return diag.Errorf("no deployment state. Did you forget to run 'databricks bundle deploy'?")
 		}
 		return nil
 	}
 
 	if state.Values.RootModule == nil {
-		return fmt.Errorf("malformed terraform state: RootModule not set")
+		return diag.Errorf("malformed terraform state: RootModule not set")
 	}
 
 	return nil

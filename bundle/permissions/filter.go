@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
 
@@ -59,7 +60,7 @@ func filter(currentUser string) dyn.WalkValueFunc {
 	}
 }
 
-func (m *filterCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *filterCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	currentUser := b.Config.Workspace.CurrentUser.UserName
 
 	return b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {

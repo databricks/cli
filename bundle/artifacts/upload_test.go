@@ -9,13 +9,14 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/internal/bundletest"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/testfile"
 	"github.com/stretchr/testify/require"
 )
 
 type noop struct{}
 
-func (n *noop) Apply(context.Context, *bundle.Bundle) error {
+func (n *noop) Apply(context.Context, *bundle.Bundle) diag.Diagnostics {
 	return nil
 }
 
@@ -57,8 +58,8 @@ func TestExpandGlobFilesSource(t *testing.T) {
 		return &noop{}
 	}
 
-	err = bundle.Apply(context.Background(), b, u)
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, u)
+	require.Empty(t, diags)
 
 	require.Equal(t, 2, len(b.Config.Artifacts["test"].Files))
 	require.Equal(t, filepath.Join(rootPath, "test", "myjar1.jar"), b.Config.Artifacts["test"].Files[0].Source)
@@ -93,6 +94,6 @@ func TestExpandGlobFilesSourceWithNoMatches(t *testing.T) {
 		return &noop{}
 	}
 
-	err = bundle.Apply(context.Background(), b, u)
-	require.ErrorContains(t, err, "no files found for")
+	diags := bundle.Apply(context.Background(), b, u)
+	require.ErrorContains(t, diags.Error(), "no files found for")
 }

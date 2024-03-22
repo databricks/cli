@@ -26,8 +26,9 @@ func TestSelectTarget(t *testing.T) {
 			},
 		},
 	}
-	err := bundle.Apply(context.Background(), b, mutator.SelectTarget("default"))
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, mutator.SelectTarget("default"))
+	require.Empty(t, diags)
+
 	assert.Equal(t, "bar", b.Config.Workspace.Host)
 }
 

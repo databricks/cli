@@ -78,8 +78,8 @@ func TestTranslatePathsSkippedWithGitSource(t *testing.T) {
 
 	bundletest.SetLocation(b, ".", filepath.Join(dir, "resource.yml"))
 
-	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
+	require.Empty(t, diags)
 
 	assert.Equal(
 		t,
@@ -201,8 +201,8 @@ func TestTranslatePaths(t *testing.T) {
 
 	bundletest.SetLocation(b, ".", filepath.Join(dir, "resource.yml"))
 
-	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
+	require.Empty(t, diags)
 
 	// Assert that the path in the tasks now refer to the artifact.
 	assert.Equal(
@@ -332,8 +332,8 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 	bundletest.SetLocation(b, "resources.jobs", filepath.Join(dir, "job/resource.yml"))
 	bundletest.SetLocation(b, "resources.pipelines", filepath.Join(dir, "pipeline/resource.yml"))
 
-	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
+	require.Empty(t, diags)
 
 	assert.Equal(
 		t,

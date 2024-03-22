@@ -55,8 +55,8 @@ func TestInterpolate(t *testing.T) {
 		},
 	}
 
-	err := bundle.Apply(context.Background(), b, Interpolate())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, Interpolate())
+	require.Empty(t, diags)
 
 	j := b.Config.Resources.Jobs["my_job"]
 	assert.Equal(t, "${databricks_pipeline.other_pipeline.id}", j.Tags["other_pipeline"])

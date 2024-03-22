@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/internal/tf/schema"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
 
@@ -17,7 +18,7 @@ func (w *write) Name() string {
 	return "terraform.Write"
 }
 
-func (w *write) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (w *write) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	dir, err := Dir(ctx, b)
 	if err != nil {
 		return err

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/merge"
 )
@@ -32,7 +33,7 @@ func (m *mergePipelineClusters) clusterLabel(v dyn.Value) string {
 	}
 }
 
-func (m *mergePipelineClusters) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *mergePipelineClusters) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	return b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		if v == dyn.NilValue {
 			return v, nil

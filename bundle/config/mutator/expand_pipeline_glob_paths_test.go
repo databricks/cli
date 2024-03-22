@@ -109,8 +109,8 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 	bundletest.SetLocation(b, "resources.pipelines.pipeline.libraries[3]", filepath.Join(dir, "relative", "resource.yml"))
 
 	m := ExpandPipelineGlobPaths()
-	err := bundle.Apply(context.Background(), b, m)
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, m)
+	require.Empty(t, diags)
 
 	libraries := b.Config.Resources.Pipelines["pipeline"].Libraries
 	require.Len(t, libraries, 13)
