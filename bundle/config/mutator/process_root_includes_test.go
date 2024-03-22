@@ -44,9 +44,9 @@ func TestProcessRootIncludesAbs(t *testing.T) {
 			},
 		},
 	}
-	err := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "must be relative paths")
+	diags := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
+	require.True(t, diags.HasError())
+	assert.ErrorContains(t, diags.Error(), "must be relative paths")
 }
 
 func TestProcessRootIncludesSingleGlob(t *testing.T) {
@@ -117,9 +117,9 @@ func TestProcessRootIncludesNotExists(t *testing.T) {
 			},
 		},
 	}
-	err := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "notexist.yml defined in 'include' section does not match any files")
+	diags := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
+	require.True(t, diags.HasError())
+	assert.ErrorContains(t, diags.Error(), "notexist.yml defined in 'include' section does not match any files")
 }
 
 func TestProcessRootIncludesExtrasFromEnvVar(t *testing.T) {

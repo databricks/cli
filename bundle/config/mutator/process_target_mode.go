@@ -29,7 +29,7 @@ func (m *processTargetMode) Name() string {
 // Mark all resources as being for 'development' purposes, i.e.
 // changing their their name, adding tags, and (in the future)
 // marking them as 'hidden' in the UI.
-func transformDevelopmentMode(b *bundle.Bundle) error {
+func transformDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
 	r := b.Config.Resources
 
 	shortName := b.Config.Workspace.CurrentUser.ShortName
@@ -100,7 +100,7 @@ func transformDevelopmentMode(b *bundle.Bundle) error {
 	return nil
 }
 
-func validateDevelopmentMode(b *bundle.Bundle) error {
+func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
 	if path := findNonUserPath(b); path != "" {
 		return diag.Errorf("%s must start with '~/' or contain the current username when using 'mode: development'", path)
 	}
@@ -125,7 +125,7 @@ func findNonUserPath(b *bundle.Bundle) string {
 	return ""
 }
 
-func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUsed bool) error {
+func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUsed bool) diag.Diagnostics {
 	if b.Config.Bundle.Git.Inferred {
 		env := b.Config.Bundle.Target
 		log.Warnf(ctx, "target with 'mode: production' should specify an explicit 'targets.%s.git' configuration", env)
@@ -159,9 +159,9 @@ func isRunAsSet(r config.Resources) bool {
 func (m *processTargetMode) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	switch b.Config.Bundle.Mode {
 	case config.Development:
-		err := validateDevelopmentMode(b)
-		if err != nil {
-			return err
+		diags := validateDevelopmentMode(b)
+		if diags != nil {
+			return diags
 		}
 		return transformDevelopmentMode(b)
 	case config.Production:

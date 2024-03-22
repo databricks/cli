@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
@@ -23,7 +24,7 @@ func (m *setRunAs) Name() string {
 	return "SetRunAs"
 }
 
-func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) error {
+func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	runAs := b.Config.RunAs
 	if runAs == nil {
 		return nil

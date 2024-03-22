@@ -80,8 +80,8 @@ func TestResolveNonExistentClusterReference(t *testing.T) {
 	clusterApi := m.GetMockClustersAPI()
 	clusterApi.EXPECT().GetByClusterName(mock.Anything, clusterRef).Return(nil, fmt.Errorf("ClusterDetails named '%s' does not exist", clusterRef))
 
-	err := bundle.Apply(context.Background(), b, ResolveResourceReferences())
-	require.ErrorContains(t, err, "failed to resolve cluster: Random, err: ClusterDetails named 'Random' does not exist")
+	diags := bundle.Apply(context.Background(), b, ResolveResourceReferences())
+	require.ErrorContains(t, diags.Error(), "failed to resolve cluster: Random, err: ClusterDetails named 'Random' does not exist")
 }
 
 func TestNoLookupIfVariableIsSet(t *testing.T) {

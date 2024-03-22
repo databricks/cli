@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/config/variable"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -31,13 +32,12 @@ func TestResolveVariableReferences(t *testing.T) {
 	// Apply with an invalid prefix. This should not change the workspace root path.
 	diags := bundle.Apply(context.Background(), b, ResolveVariableReferences("doesntexist"))
 	require.Empty(t, diags)
-
 	require.Equal(t, "${bundle.name}/bar", b.Config.Workspace.RootPath)
 	require.Equal(t, "${workspace.root_path}/baz", b.Config.Workspace.FilePath)
 
 	// Apply with a valid prefix. This should change the workspace root path.
-	err = bundle.Apply(context.Background(), b, ResolveVariableReferences("bundle", "workspace"))
-	require.NoError(t, err)
+	diags = bundle.Apply(context.Background(), b, ResolveVariableReferences("bundle", "workspace"))
+	require.Empty(t, diags)
 	require.Equal(t, "example/bar", b.Config.Workspace.RootPath)
 	require.Equal(t, "example/bar/baz", b.Config.Workspace.FilePath)
 }
@@ -66,7 +66,6 @@ func TestResolveVariableReferencesToBundleVariables(t *testing.T) {
 	// Apply with a valid prefix. This should change the workspace root path.
 	diags := bundle.Apply(context.Background(), b, ResolveVariableReferences("bundle", "variables"))
 	require.Empty(t, diags)
-
 	require.Equal(t, "example/bar", b.Config.Workspace.RootPath)
 }
 
@@ -102,7 +101,7 @@ func TestResolveVariableReferencesToEmptyFields(t *testing.T) {
 }
 
 func TestResolveVariableReferencesForPrimitiveNonStringFields(t *testing.T) {
-	var err error
+	var diags diag.Diagnostics
 
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -144,20 +143,21 @@ func TestResolveVariableReferencesForPrimitiveNonStringFields(t *testing.T) {
 	ctx := context.Background()
 
 	// Initialize the variables.
-	err = bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) error {
-		return b.Config.InitializeVariables([]string{
+	diags = bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+		err := b.Config.InitializeVariables([]string{
 			"no_alert_for_canceled_runs=true",
 			"no_alert_for_skipped_runs=true",
 			"min_workers=1",
 			"max_workers=2",
 			"spot_bid_max_price=0.5",
 		})
+		return diag.FromErr(err)
 	})
-	require.NoError(t, err)
+	require.NoError(t, diags.Error())
 
 	// Assign the variables to the dynamic configuration.
-	err = bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) error {
-		return b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+	diags = bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+		err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 			var p dyn.Path
 			var err error
 
@@ -182,12 +182,13 @@ func TestResolveVariableReferencesForPrimitiveNonStringFields(t *testing.T) {
 
 			return v, nil
 		})
+		return diag.FromErr(err)
 	})
-	require.NoError(t, err)
+	require.NoError(t, diags.Error())
 
 	// Apply for the variable prefix. This should resolve the variables to their values.
-	err = bundle.Apply(context.Background(), b, ResolveVariableReferences("variables"))
-	require.NoError(t, err)
+	diags = bundle.Apply(context.Background(), b, ResolveVariableReferences("variables"))
+	require.NoError(t, diags.Error())
 	assert.Equal(t, true, b.Config.Resources.Jobs["job1"].JobSettings.NotificationSettings.NoAlertForCanceledRuns)
 	assert.Equal(t, true, b.Config.Resources.Jobs["job1"].JobSettings.NotificationSettings.NoAlertForSkippedRuns)
 	assert.Equal(t, 1, b.Config.Resources.Jobs["job1"].JobSettings.Tasks[0].NewCluster.Autoscale.MinWorkers)

@@ -206,15 +206,15 @@ func TestProcessTargetModeDefault(t *testing.T) {
 func TestProcessTargetModeProduction(t *testing.T) {
 	b := mockBundle(config.Production)
 
-	err := validateProductionMode(context.Background(), b, false)
-	require.ErrorContains(t, err, "run_as")
+	diags := validateProductionMode(context.Background(), b, false)
+	require.ErrorContains(t, diags.Error(), "run_as")
 
 	b.Config.Workspace.StatePath = "/Shared/.bundle/x/y/state"
 	b.Config.Workspace.ArtifactPath = "/Shared/.bundle/x/y/artifacts"
 	b.Config.Workspace.FilePath = "/Shared/.bundle/x/y/files"
 
-	err = validateProductionMode(context.Background(), b, false)
-	require.ErrorContains(t, err, "production")
+	diags = validateProductionMode(context.Background(), b, false)
+	require.ErrorContains(t, diags.Error(), "production")
 
 	permissions := []resources.Permission{
 		{
@@ -233,8 +233,8 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	b.Config.Resources.Models["model1"].Permissions = permissions
 	b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Permissions = permissions
 
-	err = validateProductionMode(context.Background(), b, false)
-	require.NoError(t, err)
+	diags = validateProductionMode(context.Background(), b, false)
+	require.NoError(t, diags.Error())
 
 	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
 	assert.Equal(t, "pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
@@ -247,12 +247,12 @@ func TestProcessTargetModeProductionOkForPrincipal(t *testing.T) {
 	b := mockBundle(config.Production)
 
 	// Our target has all kinds of problems when not using service principals ...
-	err := validateProductionMode(context.Background(), b, false)
-	require.Error(t, err)
+	diags := validateProductionMode(context.Background(), b, false)
+	require.Error(t, diags.Error())
 
 	// ... but we're much less strict when a principal is used
-	err = validateProductionMode(context.Background(), b, true)
-	require.NoError(t, err)
+	diags = validateProductionMode(context.Background(), b, true)
+	require.NoError(t, diags.Error())
 }
 
 // Make sure that we have test coverage for all resource types

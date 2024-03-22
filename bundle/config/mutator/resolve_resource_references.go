@@ -2,6 +2,7 @@ package mutator
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
@@ -32,7 +33,7 @@ func (m *resolveResourceReferences) Apply(ctx context.Context, b *bundle.Bundle)
 		errs.Go(func() error {
 			id, err := v.Lookup.Resolve(errCtx, b.WorkspaceClient())
 			if err != nil {
-				return diag.Errorf("failed to resolve %s, err: %w", v.Lookup, err)
+				return fmt.Errorf("failed to resolve %s, err: %w", v.Lookup, err)
 			}
 
 			v.Set(id)
@@ -40,7 +41,7 @@ func (m *resolveResourceReferences) Apply(ctx context.Context, b *bundle.Bundle)
 		})
 	}
 
-	return errs.Wait()
+	return diag.FromErr(errs.Wait())
 }
 
 func (*resolveResourceReferences) Name() string {

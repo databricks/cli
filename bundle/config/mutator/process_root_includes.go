@@ -72,7 +72,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 		// Anchor includes to the bundle root path.
 		matches, err := filepath.Glob(filepath.Join(b.Config.Path, entry))
 		if err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 
 		// If the entry is not a glob pattern and no matches found,
@@ -86,7 +86,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 		for _, match := range matches {
 			rel, err := filepath.Rel(b.Config.Path, match)
 			if err != nil {
-				return err
+				return diag.FromErr(err)
 			}
 			if _, ok := seen[rel]; ok {
 				continue
