@@ -12,9 +12,9 @@ var TerraformVersion = version.Must(version.NewVersion("1.5.5"))
 
 type TerraformMetadata struct {
 	Version         string `json:"version"`
-	ProviderHost    string `json:"provider_host"`
-	ProviderSource  string `json:"provider_source"`
-	ProviderVersion string `json:"provider_version"`
+	ProviderHost    string `json:"providerHost"`
+	ProviderSource  string `json:"providerSource"`
+	ProviderVersion string `json:"providerVersion"`
 }
 
 func NewTerraformMetadata() *TerraformMetadata {
