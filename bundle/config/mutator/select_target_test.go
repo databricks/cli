@@ -40,6 +40,7 @@ func TestSelectTargetNotFound(t *testing.T) {
 			},
 		},
 	}
-	err := bundle.Apply(context.Background(), b, mutator.SelectTarget("doesnt-exist"))
-	require.Error(t, err, "no targets defined")
+	diags := bundle.Apply(context.Background(), b, mutator.SelectTarget("doesnt-exist"))
+	require.Error(t, diags.Error(), "no targets defined")
+
 }

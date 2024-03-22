@@ -16,8 +16,9 @@ func TestSelectDefaultTargetNoTargets(t *testing.T) {
 			Targets: map[string]*config.Target{},
 		},
 	}
-	err := bundle.Apply(context.Background(), b, mutator.SelectDefaultTarget())
-	assert.ErrorContains(t, err, "no targets defined")
+	diags := bundle.Apply(context.Background(), b, mutator.SelectDefaultTarget())
+	assert.ErrorContains(t, diags.Error(), "no targets defined")
+
 }
 
 func TestSelectDefaultTargetSingleTargets(t *testing.T) {
@@ -44,8 +45,9 @@ func TestSelectDefaultTargetNoDefaults(t *testing.T) {
 			},
 		},
 	}
-	err := bundle.Apply(context.Background(), b, mutator.SelectDefaultTarget())
-	assert.ErrorContains(t, err, "please specify target")
+	diags := bundle.Apply(context.Background(), b, mutator.SelectDefaultTarget())
+	assert.ErrorContains(t, diags.Error(), "please specify target")
+
 }
 
 func TestSelectDefaultTargetNoDefaultsWithNil(t *testing.T) {
@@ -57,8 +59,9 @@ func TestSelectDefaultTargetNoDefaultsWithNil(t *testing.T) {
 			},
 		},
 	}
-	err := bundle.Apply(context.Background(), b, mutator.SelectDefaultTarget())
-	assert.ErrorContains(t, err, "please specify target")
+	diags := bundle.Apply(context.Background(), b, mutator.SelectDefaultTarget())
+	assert.ErrorContains(t, diags.Error(), "please specify target")
+
 }
 
 func TestSelectDefaultTargetMultipleDefaults(t *testing.T) {
@@ -71,8 +74,9 @@ func TestSelectDefaultTargetMultipleDefaults(t *testing.T) {
 			},
 		},
 	}
-	err := bundle.Apply(context.Background(), b, mutator.SelectDefaultTarget())
-	assert.ErrorContains(t, err, "multiple targets are marked as default")
+	diags := bundle.Apply(context.Background(), b, mutator.SelectDefaultTarget())
+	assert.ErrorContains(t, diags.Error(), "multiple targets are marked as default")
+
 }
 
 func TestSelectDefaultTargetSingleDefault(t *testing.T) {

@@ -20,7 +20,7 @@ func (m *compute) Name() string {
 	return "metadata.Compute"
 }
 
-func (m *compute) Apply(_ context.Context, b *bundle.Bundle) error {
+func (m *compute) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	b.Metadata = metadata.Metadata{
 		Version: metadata.Version,
 		Config:  metadata.Config{},

@@ -26,13 +26,14 @@ func TestVariables(t *testing.T) {
 
 func TestVariablesLoadingFailsWhenRequiredVariableIsNotSpecified(t *testing.T) {
 	b := load(t, "./variables/vanilla")
-	err := bundle.Apply(context.Background(), b, bundle.Seq(
+	diags := bundle.Apply(context.Background(), b, bundle.Seq(
 		mutator.SetVariables(),
 		mutator.ResolveVariableReferences(
 			"variables",
 		),
 	))
-	assert.ErrorContains(t, err, "no value assigned to required variable b. Assignment can be done through the \"--var\" flag or by setting the BUNDLE_VAR_b environment variable")
+	assert.ErrorContains(t, diags.Error(), "no value assigned to required variable b. Assignment can be done through the \"--var\" flag or by setting the BUNDLE_VAR_b environment variable")
+
 }
 
 func TestVariablesTargetsBlockOverride(t *testing.T) {
@@ -80,26 +81,28 @@ func TestVariablesTargetsBlockOverrideWithProcessEnvVars(t *testing.T) {
 
 func TestVariablesTargetsBlockOverrideWithMissingVariables(t *testing.T) {
 	b := load(t, "./variables/env_overrides")
-	err := bundle.Apply(context.Background(), b, bundle.Seq(
+	diags := bundle.Apply(context.Background(), b, bundle.Seq(
 		mutator.SelectTarget("env-missing-a-required-variable-assignment"),
 		mutator.SetVariables(),
 		mutator.ResolveVariableReferences(
 			"variables",
 		),
 	))
-	assert.ErrorContains(t, err, "no value assigned to required variable b. Assignment can be done through the \"--var\" flag or by setting the BUNDLE_VAR_b environment variable")
+	assert.ErrorContains(t, diags.Error(), "no value assigned to required variable b. Assignment can be done through the \"--var\" flag or by setting the BUNDLE_VAR_b environment variable")
+
 }
 
 func TestVariablesTargetsBlockOverrideWithUndefinedVariables(t *testing.T) {
 	b := load(t, "./variables/env_overrides")
-	err := bundle.Apply(context.Background(), b, bundle.Seq(
+	diags := bundle.Apply(context.Background(), b, bundle.Seq(
 		mutator.SelectTarget("env-using-an-undefined-variable"),
 		mutator.SetVariables(),
 		mutator.ResolveVariableReferences(
 			"variables",
 		),
 	))
-	assert.ErrorContains(t, err, "variable c is not defined but is assigned a value")
+	assert.ErrorContains(t, diags.Error(), "variable c is not defined but is assigned a value")
+
 }
 
 func TestVariablesWithoutDefinition(t *testing.T) {

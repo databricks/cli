@@ -25,7 +25,7 @@ func (m *selectTarget) Name() string {
 	return fmt.Sprintf("SelectTarget(%s)", m.name)
 }
 
-func (m *selectTarget) Apply(_ context.Context, b *bundle.Bundle) error {
+func (m *selectTarget) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if b.Config.Targets == nil {
 		return diag.Errorf("no targets defined")
 	}

@@ -18,7 +18,7 @@ func (m *annotateJobs) Name() string {
 	return "metadata.AnnotateJobs"
 }
 
-func (m *annotateJobs) Apply(_ context.Context, b *bundle.Bundle) error {
+func (m *annotateJobs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	for _, job := range b.Config.Resources.Jobs {
 		if job.JobSettings == nil {
 			continue
