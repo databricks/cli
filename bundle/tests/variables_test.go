@@ -20,7 +20,6 @@ func TestVariables(t *testing.T) {
 		),
 	))
 	require.Empty(t, diags)
-
 	assert.Equal(t, "abc def", b.Config.Bundle.Name)
 }
 
@@ -33,7 +32,6 @@ func TestVariablesLoadingFailsWhenRequiredVariableIsNotSpecified(t *testing.T) {
 		),
 	))
 	assert.ErrorContains(t, diags.Error(), "no value assigned to required variable b. Assignment can be done through the \"--var\" flag or by setting the BUNDLE_VAR_b environment variable")
-
 }
 
 func TestVariablesTargetsBlockOverride(t *testing.T) {
@@ -46,7 +44,6 @@ func TestVariablesTargetsBlockOverride(t *testing.T) {
 		),
 	))
 	require.Empty(t, diags)
-
 	assert.Equal(t, "default-a dev-b", b.Config.Workspace.Profile)
 }
 
@@ -60,7 +57,6 @@ func TestVariablesTargetsBlockOverrideForMultipleVariables(t *testing.T) {
 		),
 	))
 	require.Empty(t, diags)
-
 	assert.Equal(t, "prod-a prod-b", b.Config.Workspace.Profile)
 }
 
@@ -75,7 +71,6 @@ func TestVariablesTargetsBlockOverrideWithProcessEnvVars(t *testing.T) {
 		),
 	))
 	require.Empty(t, diags)
-
 	assert.Equal(t, "prod-a env-var-b", b.Config.Workspace.Profile)
 }
 
@@ -89,7 +84,6 @@ func TestVariablesTargetsBlockOverrideWithMissingVariables(t *testing.T) {
 		),
 	))
 	assert.ErrorContains(t, diags.Error(), "no value assigned to required variable b. Assignment can be done through the \"--var\" flag or by setting the BUNDLE_VAR_b environment variable")
-
 }
 
 func TestVariablesTargetsBlockOverrideWithUndefinedVariables(t *testing.T) {
@@ -102,7 +96,6 @@ func TestVariablesTargetsBlockOverrideWithUndefinedVariables(t *testing.T) {
 		),
 	))
 	assert.ErrorContains(t, diags.Error(), "variable c is not defined but is assigned a value")
-
 }
 
 func TestVariablesWithoutDefinition(t *testing.T) {
@@ -111,7 +104,6 @@ func TestVariablesWithoutDefinition(t *testing.T) {
 	b := load(t, "./variables/without_definition")
 	diags := bundle.Apply(context.Background(), b, mutator.SetVariables())
 	require.Empty(t, diags)
-
 	require.True(t, b.Config.Variables["a"].HasValue())
 	require.True(t, b.Config.Variables["b"].HasValue())
 	assert.Equal(t, "foo", *b.Config.Variables["a"].Value)
@@ -125,7 +117,6 @@ func TestVariablesWithTargetLookupOverrides(t *testing.T) {
 		mutator.SetVariables(),
 	))
 	require.Empty(t, diags)
-
 	assert.Equal(t, "cluster: some-test-cluster", b.Config.Variables["d"].Lookup.String())
 	assert.Equal(t, "instance-pool: some-test-instance-pool", b.Config.Variables["e"].Lookup.String())
 }

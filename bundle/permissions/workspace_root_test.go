@@ -71,5 +71,4 @@ func TestApplyWorkspaceRootPermissions(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, ApplyWorkspaceRootPermissions())
 	require.Empty(t, diags)
-
 }

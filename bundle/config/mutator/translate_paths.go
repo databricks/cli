@@ -203,5 +203,6 @@ func (m *translatePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 		return v, nil
 	})
+
 	return diag.FromErr(err)
 }

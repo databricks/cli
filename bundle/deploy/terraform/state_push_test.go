@@ -58,5 +58,4 @@ func TestStatePush(t *testing.T) {
 	writeLocalState(t, ctx, b, map[string]int{"serial": 4})
 	diags := bundle.Apply(ctx, b, m)
 	assert.Empty(t, diags)
-
 }

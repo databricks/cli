@@ -103,7 +103,6 @@ func TestIncompatibleWheelTasksWithJobClusterKey(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, WrapperWarning())
 	require.ErrorContains(t, diags.Error(), "python wheel tasks with local libraries require compute with DBR 13.1+.")
-
 }
 
 func TestIncompatibleWheelTasksWithExistingClusterId(t *testing.T) {
@@ -283,7 +282,6 @@ func TestNoWarningWhenPythonWheelWrapperIsOn(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, WrapperWarning())
 	require.Empty(t, diags)
-
 }
 
 func TestSparkVersionLowerThanExpected(t *testing.T) {

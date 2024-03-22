@@ -48,5 +48,4 @@ func TestExecuteMutator(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, Execute(config.ScriptPreInit))
 	require.Empty(t, diags)
-
 }

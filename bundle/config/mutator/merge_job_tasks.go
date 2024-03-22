@@ -40,6 +40,6 @@ func (m *mergeJobTasks) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 			return dyn.Map(job, "tasks", merge.ElementsByKey("task_key", m.taskKeyString))
 		}))
 	})
-	return diag.FromErr(err)
 
+	return diag.FromErr(err)
 }

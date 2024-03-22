@@ -40,6 +40,6 @@ func (m *mergeJobClusters) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 			return dyn.Map(job, "job_clusters", merge.ElementsByKey("job_cluster_key", m.jobClusterKey))
 		}))
 	})
-	return diag.FromErr(err)
 
+	return diag.FromErr(err)
 }

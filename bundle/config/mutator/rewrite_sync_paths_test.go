@@ -84,7 +84,6 @@ func TestRewriteSyncPathsErrorPaths(t *testing.T) {
 
 		diags := bundle.Apply(context.Background(), b, mutator.RewriteSyncPaths())
 		assert.Empty(t, diags)
-
 	})
 
 	t.Run("empty include/exclude blocks", func(t *testing.T) {
@@ -100,6 +99,5 @@ func TestRewriteSyncPathsErrorPaths(t *testing.T) {
 
 		diags := bundle.Apply(context.Background(), b, mutator.RewriteSyncPaths())
 		assert.Empty(t, diags)
-
 	})
 }

@@ -394,7 +394,6 @@ func TestTranslatePathsOutsideBundleRoot(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.ErrorContains(t, diags.Error(), "is not contained in bundle root")
-
 }
 
 func TestJobNotebookDoesNotExistError(t *testing.T) {
@@ -549,7 +548,6 @@ func TestJobSparkPythonTaskWithNotebookSourceError(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.ErrorContains(t, diags.Error(), `expected a file for "resources.jobs.job.tasks[0].spark_python_task.python_file" but got a notebook`)
-
 }
 
 func TestJobNotebookTaskWithFileSourceError(t *testing.T) {
@@ -584,7 +582,6 @@ func TestJobNotebookTaskWithFileSourceError(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.ErrorContains(t, diags.Error(), `expected a notebook for "resources.jobs.job.tasks[0].notebook_task.notebook_path" but got a file`)
-
 }
 
 func TestPipelineNotebookLibraryWithFileSourceError(t *testing.T) {
@@ -619,7 +616,6 @@ func TestPipelineNotebookLibraryWithFileSourceError(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.ErrorContains(t, diags.Error(), `expected a notebook for "resources.pipelines.pipeline.libraries[0].notebook.path" but got a file`)
-
 }
 
 func TestPipelineFileLibraryWithNotebookSourceError(t *testing.T) {
@@ -654,5 +650,4 @@ func TestPipelineFileLibraryWithNotebookSourceError(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.ErrorContains(t, diags.Error(), `expected a file for "resources.pipelines.pipeline.libraries[0].file.path" but got a notebook`)
-
 }

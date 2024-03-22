@@ -56,7 +56,6 @@ func TestPathTranslationFallbackError(t *testing.T) {
 	m := mutator.TranslatePaths()
 	diags := bundle.Apply(context.Background(), b, m)
 	assert.ErrorContains(t, diags.Error(), `notebook this value is overridden not found`)
-
 }
 
 func TestPathTranslationNominal(t *testing.T) {
@@ -110,5 +109,4 @@ func TestPathTranslationNominalError(t *testing.T) {
 	m := mutator.TranslatePaths()
 	diags := bundle.Apply(context.Background(), b, m)
 	assert.ErrorContains(t, diags.Error(), `notebook this value is overridden not found`)
-
 }

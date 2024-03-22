@@ -171,5 +171,4 @@ func TestFilterCurrentUserDoesNotErrorWhenNoResources(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, FilterCurrentUser())
 	assert.Empty(t, diags)
-
 }

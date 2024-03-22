@@ -36,5 +36,6 @@ func TestLoadWithNoState(t *testing.T) {
 		Initialize(),
 		Load(ErrorOnEmptyState),
 	))
+
 	require.ErrorContains(t, diags.Error(), "Did you forget to run 'databricks bundle deploy'")
 }

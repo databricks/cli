@@ -195,7 +195,6 @@ func TestProcessTargetModeDefault(t *testing.T) {
 	m := ProcessTargetMode()
 	diags := bundle.Apply(context.Background(), b, m)
 	require.Empty(t, diags)
-
 	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
 	assert.Equal(t, "pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)

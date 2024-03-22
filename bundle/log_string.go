@@ -23,5 +23,6 @@ func LogString(message string) Mutator {
 
 func (m *LogStringMutator) Apply(ctx context.Context, b *Bundle) diag.Diagnostics {
 	cmdio.LogString(ctx, m.message)
+
 	return nil
 }

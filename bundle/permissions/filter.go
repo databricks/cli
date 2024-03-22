@@ -78,6 +78,6 @@ func (m *filterCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 		// Set the resources with the filtered permissions back into the bundle
 		return dyn.Set(v, "resources", nv)
 	})
-	return diag.FromErr(err)
 
+	return diag.FromErr(err)
 }

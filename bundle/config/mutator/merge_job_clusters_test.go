@@ -101,6 +101,5 @@ func TestMergeJobClustersWithNilKey(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, mutator.MergeJobClusters())
 	assert.Empty(t, diags)
-
 	assert.Len(t, b.Config.Resources.Jobs["foo"].JobClusters, 1)
 }

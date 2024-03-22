@@ -43,6 +43,6 @@ func (m *mergePipelineClusters) Apply(ctx context.Context, b *bundle.Bundle) dia
 			return dyn.Map(pipeline, "clusters", merge.ElementsByKey("label", m.clusterLabel))
 		}))
 	})
-	return diag.FromErr(err)
 
+	return diag.FromErr(err)
 }

@@ -56,6 +56,6 @@ func (m *rewriteSyncPaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 			return v, nil
 		})
 	})
-	return diag.FromErr(err)
 
+	return diag.FromErr(err)
 }

@@ -17,7 +17,6 @@ func TestInterpolation(t *testing.T) {
 		"workspace",
 	))
 	require.Empty(t, diags)
-
 	assert.Equal(t, "foo bar", b.Config.Bundle.Name)
 	assert.Equal(t, "foo bar | bar", b.Config.Resources.Jobs["my_job"].Name)
 }
@@ -29,8 +28,6 @@ func TestInterpolationWithTarget(t *testing.T) {
 		"workspace",
 	))
 	require.Empty(t, diags)
-
 	assert.Equal(t, "foo bar", b.Config.Bundle.Name)
 	assert.Equal(t, "foo bar | bar | development | development", b.Config.Resources.Jobs["my_job"].Name)
-
 }

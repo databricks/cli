@@ -29,7 +29,6 @@ func TestExpandPipelineGlobPaths(t *testing.T) {
 	ctx := context.Background()
 	diags := bundle.Apply(ctx, b, phases.Initialize())
 	require.Empty(t, diags)
-
 	require.Equal(
 		t,
 		"/Users/user@domain.com/.bundle/pipeline_glob_paths/default/files/dlt/nyc_taxi_loader",
@@ -53,5 +52,4 @@ func TestExpandPipelineGlobPathsWithNonExistent(t *testing.T) {
 	ctx := context.Background()
 	diags := bundle.Apply(ctx, b, phases.Initialize())
 	require.ErrorContains(t, diags.Error(), "notebook ./non-existent not found")
-
 }

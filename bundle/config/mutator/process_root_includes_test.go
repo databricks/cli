@@ -25,7 +25,6 @@ func TestProcessRootIncludesEmpty(t *testing.T) {
 	}
 	diags := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
 	require.Empty(t, diags)
-
 }
 
 func TestProcessRootIncludesAbs(t *testing.T) {
@@ -65,7 +64,6 @@ func TestProcessRootIncludesSingleGlob(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
 	require.Empty(t, diags)
-
 	assert.Equal(t, []string{"a.yml", "b.yml"}, b.Config.Include)
 }
 
@@ -85,7 +83,6 @@ func TestProcessRootIncludesMultiGlob(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
 	require.Empty(t, diags)
-
 	assert.Equal(t, []string{"a1.yml", "b1.yml"}, b.Config.Include)
 }
 
@@ -104,7 +101,6 @@ func TestProcessRootIncludesRemoveDups(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
 	require.Empty(t, diags)
-
 	assert.Equal(t, []string{"a.yml"}, b.Config.Include)
 }
 
@@ -136,7 +132,6 @@ func TestProcessRootIncludesExtrasFromEnvVar(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
 	require.Empty(t, diags)
-
 	assert.Contains(t, b.Config.Include, testYamlName)
 }
 
@@ -160,6 +155,5 @@ func TestProcessRootIncludesDedupExtrasFromEnvVar(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
 	require.Empty(t, diags)
-
 	assert.Equal(t, []string{testYamlName}, b.Config.Include)
 }
