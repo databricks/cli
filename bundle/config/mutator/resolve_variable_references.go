@@ -125,7 +125,7 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 
 		// Normalize the result because variable resolution may have been applied to non-string fields.
 		// For example, a variable reference may have been resolved to a integer.
-		root, diags := convert.Normalize(b.Config, root)
+		root, diags := convert.Normalize(b.Config, root, make(map[string]string))
 		for _, diag := range diags {
 			// This occurs when a variable's resolved value is incompatible with the field's type.
 			// Log a warning until we have a better way to surface these diagnostics to the user.

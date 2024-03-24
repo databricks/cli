@@ -22,7 +22,7 @@ func convertPipelineResource(ctx context.Context, vin dyn.Value) (dyn.Value, err
 	}
 
 	// Normalize the output value to the target schema.
-	vout, diags := convert.Normalize(schema.ResourcePipeline{}, vout)
+	vout, diags := convert.Normalize(schema.ResourcePipeline{}, vout, make(map[string]string))
 	for _, diag := range diags {
 		log.Debugf(ctx, "pipeline normalization diagnostic: %s", diag.Summary)
 	}

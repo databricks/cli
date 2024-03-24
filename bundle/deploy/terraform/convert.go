@@ -222,6 +222,14 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 		}
 	}
 
+	for k, src := range config.Resources.LakehouseMonitor {
+		noResources = false
+		var dst schema.ResourceLakehouseMonitor
+		conv(src, &dst)
+		dst.TableName = src.FullName
+		tfroot.Resource.LakehouseMonitor[k] = &dst
+	}
+
 	// We explicitly set "resource" to nil to omit it from a JSON encoding.
 	// This is required because the terraform CLI requires >= 1 resources defined
 	// if the "resource" property is used in a .tf.json file.
@@ -365,6 +373,16 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 				}
 				cur.ID = instance.Attributes.ID
 				config.Resources.RegisteredModels[resource.Name] = cur
+			case "databricks_lakehouse_monitor":
+				var tmp schema.ResourceLakehouseMonitor
+				conv(resource.AttributeValues, &tmp)
+				if config.Resources.LakehouseMonitor == nil {
+					config.Resources.LakehouseMonitor = make(map[string]*resources.LakehouseMonitor)
+				}
+				cur := config.Resources.LakehouseMonitor[resource.Name]
+				modifiedStatus := convRemoteToLocal(tmp, &cur)
+				cur.ModifiedStatus = modifiedStatus
+				config.Resources.LakehouseMonitor[resource.Name] = cur
 			case "databricks_permissions":
 			case "databricks_grants":
 				// Ignore; no need to pull these back into the configuration.
