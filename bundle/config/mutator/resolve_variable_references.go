@@ -50,7 +50,7 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 		// We can ignore the diagnostics return valuebecause we know that the dynamic value
 		// has already been normalized when it was first loaded from the configuration file.
 		//
-		normalized, _ := convert.Normalize(b.Config, root, convert.IncludeMissingFields)
+		normalized, _ := convert.Normalize(b.Config, root, make(map[string]string), convert.IncludeMissingFields)
 		lookup := func(path dyn.Path) (dyn.Value, error) {
 			// Future opportunity: if we lookup this path in both the given root
 			// and the synthesized root, we know if it was explicitly set or implied to be empty.
@@ -84,7 +84,7 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 
 		// Normalize the result because variable resolution may have been applied to non-string fields.
 		// For example, a variable reference may have been resolved to a integer.
-		root, diags := convert.Normalize(b.Config, root)
+		root, diags := convert.Normalize(b.Config, root, make(map[string]string))
 		for _, diag := range diags {
 			// This occurs when a variable's resolved value is incompatible with the field's type.
 			// Log a warning until we have a better way to surface these diagnostics to the user.

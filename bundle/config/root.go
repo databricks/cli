@@ -97,7 +97,7 @@ func Load(path string) (*Root, error) {
 	}
 
 	// Normalize dynamic configuration tree according to configuration type.
-	v, diags := convert.Normalize(r, v)
+	v, diags := convert.Normalize(r, v, make(map[string]string))
 
 	// Keep track of diagnostics (warnings and errors in the schema).
 	// We delay acting on diagnostics until we have loaded all

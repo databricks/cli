@@ -243,6 +243,19 @@ func (reader *OpenapiReader) registeredModelDocs() (*Docs, error) {
 	return registeredModelsAllDocs, nil
 }
 
+func (reader *OpenapiReader) lakehouseMonitorDocs() (*Docs, error) {
+	lakehouseMonitorSpecSchema, err := reader.readResolvedSchema(SchemaPathPrefix + "catalog.CreateMonitor")
+	if err != nil {
+		return nil, err
+	}
+	lakehouseMonitorDocs := schemaToDocs(lakehouseMonitorSpecSchema)
+	lakehouseMonitorAllDocs := &Docs{
+		Description:          "List of Lakehouse Monitors",
+		AdditionalProperties: lakehouseMonitorDocs,
+	}
+	return lakehouseMonitorAllDocs, nil
+}
+
 func (reader *OpenapiReader) ResourcesDocs() (*Docs, error) {
 	jobsDocs, err := reader.jobsDocs()
 	if err != nil {
@@ -269,6 +282,11 @@ func (reader *OpenapiReader) ResourcesDocs() (*Docs, error) {
 		return nil, err
 	}
 
+	lakehouseMonitorDocs, err := reader.lakehouseMonitorDocs()
+	if err != nil {
+		return nil, err
+	}
+
 	return &Docs{
 		Description: "Collection of Databricks resources to deploy.",
 		Properties: map[string]*Docs{
@@ -278,6 +296,7 @@ func (reader *OpenapiReader) ResourcesDocs() (*Docs, error) {
 			"models":                  modelsDocs,
 			"model_serving_endpoints": modelServingEndpointsDocs,
 			"registered_models":       registeredModelsDocs,
+			"lakehouse_monitor":       lakehouseMonitorDocs,
 		},
 	}, nil
 }

@@ -2,6 +2,7 @@ package convert
 
 import (
 	"reflect"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -43,6 +44,9 @@ func getStructInfo(typ reflect.Type) structInfo {
 
 // buildStructInfo populates a new [structInfo] for the given type.
 func buildStructInfo(typ reflect.Type) structInfo {
+	var matchFirstCap = regexp.MustCompile("(.)([A-Z][a-z]+)")
+	var matchAllCap = regexp.MustCompile("([a-z0-9])([A-Z])")
+
 	var out = structInfo{
 		Fields: make(map[string][]int),
 	}
@@ -84,8 +88,14 @@ func buildStructInfo(typ reflect.Type) structInfo {
 			}
 
 			name, _, _ := strings.Cut(sf.Tag.Get("json"), ",")
-			if name == "" || name == "-" {
+			if name == "" {
 				continue
+			}
+			if name == "-" {
+				// convert Name to snake case
+				snake := matchFirstCap.ReplaceAllString(sf.Name, "${1}_${2}")
+				snake = matchAllCap.ReplaceAllString(snake, "${1}_${2}")
+				name = strings.ToLower(snake)
 			}
 
 			// Top level fields always take precedence.

@@ -1,0 +1,31 @@
+resources:
+  lakehouse_monitor:
+    my_lakehouse_monitor:
+      full_name: "main.test.thing1"
+      assets_dir: "/Shared/provider-test/databricks_lakehouse_monitoring/main.test.thing1"
+      output_schema_name: "test"
+      inference_log:
+        granularities: ["1 day"]
+        timestamp_col:  "timestamp"
+        prediction_col: "prediction"
+        model_id_col:  "model_id"
+        problem_type: "PROBLEM_TYPE_REGRESSION"
+
+
+targets:
+  development:
+    mode: development
+    resources:
+      lakehouse_monitor:
+        my_lakehouse_monitor:
+          full_name: "main.test.dev"
+  staging:
+    resources:
+      lakehouse_monitor:
+        my_lakehouse_monitor:
+          full_name: "main.test.staging"
+  production:
+    resources:
+      lakehouse_monitor:
+        my_lakehouse_monitor:
+          full_name: "main.test.prod"
