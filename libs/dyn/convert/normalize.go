@@ -149,7 +149,6 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 				out[k] = v
 			}
 		}
-		print("HELLLOOOOOO")
 		return dyn.NewValue(out, src.Location()), diags
 	case dyn.KindNil:
 		return src, diags
