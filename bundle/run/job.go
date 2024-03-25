@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 )
 
 // Default timeout for waiting for a job run to complete.
@@ -275,6 +276,45 @@ func (r *jobRunner) convertPythonParams(opts *Options) error {
 	}
 
 	return nil
+}
+
+func (r *jobRunner) Cancel(ctx context.Context) error {
+	w := r.bundle.WorkspaceClient()
+	jobID, err := strconv.ParseInt(r.job.ID, 10, 64)
+	if err != nil {
+		return fmt.Errorf("job ID is not an integer: %s", r.job.ID)
+	}
+
+	runs, err := w.Jobs.ListRunsAll(ctx, jobs.ListRunsRequest{
+		ActiveOnly: true,
+		JobId:      jobID,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	if len(runs) == 0 {
+		return nil
+	}
+
+	errGroup, errCtx := errgroup.WithContext(ctx)
+	for _, run := range runs {
+		runId := run.RunId
+		errGroup.Go(func() error {
+			wait, err := w.Jobs.CancelRun(errCtx, jobs.CancelRun{
+				RunId: runId,
+			})
+			if err != nil {
+				return err
+			}
+			// Waits for the Terminated or Skipped state
+			_, err = wait.GetWithTimeout(jobRunTimeout)
+			return err
+		})
+	}
+
+	return errGroup.Wait()
 }
 
 func (r *jobRunner) ParseArgs(args []string, opts *Options) error {

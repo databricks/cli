@@ -41,6 +41,22 @@ func New() *cobra.Command {
 		},
 	}
 
+	// Add methods
+	cmd.AddCommand(newCreate())
+	cmd.AddCommand(newDelete())
+	cmd.AddCommand(newGet())
+	cmd.AddCommand(newGetPermissionLevels())
+	cmd.AddCommand(newGetPermissions())
+	cmd.AddCommand(newGetUpdate())
+	cmd.AddCommand(newListPipelineEvents())
+	cmd.AddCommand(newListPipelines())
+	cmd.AddCommand(newListUpdates())
+	cmd.AddCommand(newSetPermissions())
+	cmd.AddCommand(newStartUpdate())
+	cmd.AddCommand(newStop())
+	cmd.AddCommand(newUpdate())
+	cmd.AddCommand(newUpdatePermissions())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -109,12 +125,6 @@ func newCreate() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newCreate())
-	})
-}
-
 // start delete command
 
 // Slice with functions to override default command behavior.
@@ -180,12 +190,6 @@ func newDelete() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDelete())
-	})
 }
 
 // start get command
@@ -258,12 +262,6 @@ func newGet() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGet())
-	})
-}
-
 // start get-permission-levels command
 
 // Slice with functions to override default command behavior.
@@ -332,12 +330,6 @@ func newGetPermissionLevels() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetPermissionLevels())
-	})
 }
 
 // start get-permissions command
@@ -411,12 +403,6 @@ func newGetPermissions() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetPermissions())
-	})
-}
-
 // start get-update command
 
 // Slice with functions to override default command behavior.
@@ -446,7 +432,7 @@ func newGetUpdate() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -475,12 +461,6 @@ func newGetUpdate() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetUpdate())
-	})
 }
 
 // start list-pipeline-events command
@@ -536,11 +516,8 @@ func newListPipelineEvents() *cobra.Command {
 		}
 		listPipelineEventsReq.PipelineId = args[0]
 
-		response, err := w.Pipelines.ListPipelineEventsAll(ctx, listPipelineEventsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Pipelines.ListPipelineEvents(ctx, listPipelineEventsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -553,12 +530,6 @@ func newListPipelineEvents() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newListPipelineEvents())
-	})
 }
 
 // start list-pipelines command
@@ -591,7 +562,7 @@ func newListPipelines() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(0)
+		check := root.ExactArgs(0)
 		return check(cmd, args)
 	}
 
@@ -600,11 +571,8 @@ func newListPipelines() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.Pipelines.ListPipelinesAll(ctx, listPipelinesReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Pipelines.ListPipelines(ctx, listPipelinesReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -617,12 +585,6 @@ func newListPipelines() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newListPipelines())
-	})
 }
 
 // start list-updates command
@@ -697,102 +659,6 @@ func newListUpdates() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newListUpdates())
-	})
-}
-
-// start reset command
-
-// Slice with functions to override default command behavior.
-// Functions can be added from the `init()` function in manually curated files in this directory.
-var resetOverrides []func(
-	*cobra.Command,
-	*pipelines.ResetRequest,
-)
-
-func newReset() *cobra.Command {
-	cmd := &cobra.Command{}
-
-	var resetReq pipelines.ResetRequest
-
-	var resetSkipWait bool
-	var resetTimeout time.Duration
-
-	cmd.Flags().BoolVar(&resetSkipWait, "no-wait", resetSkipWait, `do not wait to reach RUNNING state`)
-	cmd.Flags().DurationVar(&resetTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
-	// TODO: short flags
-
-	cmd.Use = "reset PIPELINE_ID"
-	cmd.Short = `Reset a pipeline.`
-	cmd.Long = `Reset a pipeline.
-  
-  Resets a pipeline.`
-
-	cmd.Annotations = make(map[string]string)
-
-	cmd.PreRunE = root.MustWorkspaceClient
-	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
-		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
-
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
-			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
-		}
-		resetReq.PipelineId = args[0]
-
-		wait, err := w.Pipelines.Reset(ctx, resetReq)
-		if err != nil {
-			return err
-		}
-		if resetSkipWait {
-			return nil
-		}
-		spinner := cmdio.Spinner(ctx)
-		info, err := wait.OnProgress(func(i *pipelines.GetPipelineResponse) {
-			statusMessage := i.Cause
-			spinner <- statusMessage
-		}).GetWithTimeout(resetTimeout)
-		close(spinner)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, info)
-	}
-
-	// Disable completions since they are not applicable.
-	// Can be overridden by manual implementation in `override.go`.
-	cmd.ValidArgsFunction = cobra.NoFileCompletions
-
-	// Apply optional overrides to this command.
-	for _, fn := range resetOverrides {
-		fn(cmd, &resetReq)
-	}
-
-	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newReset())
-	})
 }
 
 // start set-permissions command
@@ -876,12 +742,6 @@ func newSetPermissions() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newSetPermissions())
-	})
-}
-
 // start start-update command
 
 // Slice with functions to override default command behavior.
@@ -911,6 +771,7 @@ func newStartUpdate() *cobra.Command {
 	cmd.Flags().BoolVar(&startUpdateReq.FullRefresh, "full-refresh", startUpdateReq.FullRefresh, `If true, this update will reset all tables before running.`)
 	// TODO: array: full_refresh_selection
 	// TODO: array: refresh_selection
+	cmd.Flags().BoolVar(&startUpdateReq.ValidateOnly, "validate-only", startUpdateReq.ValidateOnly, `If true, this update only validates the correctness of pipeline source code but does not materialize or publish any datasets.`)
 
 	cmd.Use = "start-update PIPELINE_ID"
 	cmd.Short = `Start a pipeline.`
@@ -968,12 +829,6 @@ func newStartUpdate() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newStartUpdate())
-	})
 }
 
 // start stop command
@@ -1059,12 +914,6 @@ func newStop() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newStop())
-	})
 }
 
 // start update command
@@ -1166,12 +1015,6 @@ func newUpdate() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdate())
-	})
-}
-
 // start update-permissions command
 
 // Slice with functions to override default command behavior.
@@ -1251,12 +1094,6 @@ func newUpdatePermissions() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdatePermissions())
-	})
 }
 
 // end service Pipelines

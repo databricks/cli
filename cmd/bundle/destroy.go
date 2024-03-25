@@ -1,11 +1,14 @@
 package bundle
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/cmd/bundle/utils"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
@@ -14,10 +17,10 @@ import (
 
 func newDestroyCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "destroy",
-		Short: "Destroy deployed bundle resources",
-
-		PreRunE: ConfigureBundleWithVariables,
+		Use:     "destroy",
+		Short:   "Destroy deployed bundle resources",
+		Args:    root.NoArgs,
+		PreRunE: utils.ConfigureBundleWithVariables,
 	}
 
 	var autoApprove bool
@@ -29,11 +32,15 @@ func newDestroyCommand() *cobra.Command {
 		ctx := cmd.Context()
 		b := bundle.Get(ctx)
 
-		// If `--force-lock` is specified, force acquisition of the deployment lock.
-		b.Config.Bundle.Lock.Force = forceDestroy
+		bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) error {
+			// If `--force-lock` is specified, force acquisition of the deployment lock.
+			b.Config.Bundle.Deployment.Lock.Force = forceDestroy
 
-		// If `--auto-approve`` is specified, we skip confirmation checks
-		b.AutoApprove = autoApprove
+			// If `--auto-approve`` is specified, we skip confirmation checks
+			b.AutoApprove = autoApprove
+
+			return nil
+		})
 
 		// we require auto-approve for non tty terminals since interactive consent
 		// is not possible

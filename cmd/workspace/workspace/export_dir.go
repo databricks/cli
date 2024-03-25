@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
 )
@@ -47,27 +48,14 @@ func (opts exportDirOptions) callback(ctx context.Context, workspaceFiler filer.
 			return err
 		}
 		objectInfo := info.Sys().(workspace.ObjectInfo)
-		if objectInfo.ObjectType == workspace.ObjectTypeNotebook {
-			switch objectInfo.Language {
-			case workspace.LanguagePython:
-				targetPath += ".py"
-			case workspace.LanguageR:
-				targetPath += ".r"
-			case workspace.LanguageScala:
-				targetPath += ".scala"
-			case workspace.LanguageSql:
-				targetPath += ".sql"
-			default:
-				// Do not add any extension to the file name
-			}
-		}
+		targetPath += notebook.GetExtensionByLanguage(&objectInfo)
 
 		// Skip file if a file already exists in path.
 		// os.Stat returns a fs.ErrNotExist if a file does not exist at path.
 		// If a file exists, and overwrite is not set, we skip exporting the file
 		if _, err := os.Stat(targetPath); err == nil && !overwrite {
 			// Log event that this file/directory has been skipped
-			return cmdio.RenderWithTemplate(ctx, newFileSkippedEvent(relPath, targetPath), "{{.SourcePath}} -> {{.TargetPath}} (skipped; already exists)\n")
+			return cmdio.RenderWithTemplate(ctx, newFileSkippedEvent(relPath, targetPath), "", "{{.SourcePath}} -> {{.TargetPath}} (skipped; already exists)\n")
 		}
 
 		// create the file
@@ -86,7 +74,7 @@ func (opts exportDirOptions) callback(ctx context.Context, workspaceFiler filer.
 		if err != nil {
 			return err
 		}
-		return cmdio.RenderWithTemplate(ctx, newFileExportedEvent(sourcePath, targetPath), "{{.SourcePath}} -> {{.TargetPath}}\n")
+		return cmdio.RenderWithTemplate(ctx, newFileExportedEvent(sourcePath, targetPath), "", "{{.SourcePath}} -> {{.TargetPath}}\n")
 	}
 }
 
@@ -106,7 +94,7 @@ func newExportDir() *cobra.Command {
 	`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Args = cobra.ExactArgs(2)
+	cmd.Args = root.ExactArgs(2)
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {

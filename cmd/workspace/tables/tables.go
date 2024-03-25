@@ -35,6 +35,14 @@ func New() *cobra.Command {
 		},
 	}
 
+	// Add methods
+	cmd.AddCommand(newDelete())
+	cmd.AddCommand(newExists())
+	cmd.AddCommand(newGet())
+	cmd.AddCommand(newList())
+	cmd.AddCommand(newListSummaries())
+	cmd.AddCommand(newUpdate())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -117,10 +125,81 @@ func newDelete() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDelete())
-	})
+// start exists command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var existsOverrides []func(
+	*cobra.Command,
+	*catalog.ExistsRequest,
+)
+
+func newExists() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var existsReq catalog.ExistsRequest
+
+	// TODO: short flags
+
+	cmd.Use = "exists FULL_NAME"
+	cmd.Short = `Get boolean reflecting if table exists.`
+	cmd.Long = `Get boolean reflecting if table exists.
+  
+  Gets if a table exists in the metastore for a specific catalog and schema. The
+  caller must satisfy one of the following requirements: * Be a metastore admin
+  * Be the owner of the parent catalog * Be the owner of the parent schema and
+  have the USE_CATALOG privilege on the parent catalog * Have the
+  **USE_CATALOG** privilege on the parent catalog and the **USE_SCHEMA**
+  privilege on the parent schema, and either be the table owner or have the
+  SELECT privilege on the table. * Have BROWSE privilege on the parent catalog *
+  Have BROWSE privilege on the parent schema.
+
+  Arguments:
+    FULL_NAME: Full name of the table.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No FULL_NAME argument specified. Loading names for Tables drop-down."
+			names, err := w.Tables.TableInfoNameToTableIdMap(ctx, catalog.ListTablesRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Tables drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Full name of the table")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have full name of the table")
+		}
+		existsReq.FullName = args[0]
+
+		response, err := w.Tables.Exists(ctx, existsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range existsOverrides {
+		fn(cmd, &existsReq)
+	}
+
+	return cmd
 }
 
 // start get command
@@ -139,6 +218,7 @@ func newGet() *cobra.Command {
 
 	// TODO: short flags
 
+	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to include tables in the response for which the principal can only access selective metadata for.`)
 	cmd.Flags().BoolVar(&getReq.IncludeDeltaMetadata, "include-delta-metadata", getReq.IncludeDeltaMetadata, `Whether delta metadata should be included in the response.`)
 
 	cmd.Use = "get FULL_NAME"
@@ -146,10 +226,12 @@ func newGet() *cobra.Command {
 	cmd.Long = `Get a table.
   
   Gets a table from the metastore for a specific catalog and schema. The caller
-  must be a metastore admin, be the owner of the table and have the
-  **USE_CATALOG** privilege on the parent catalog and the **USE_SCHEMA**
-  privilege on the parent schema, or be the owner of the table and have the
-  **SELECT** privilege on it as well.
+  must satisfy one of the following requirements: * Be a metastore admin * Be
+  the owner of the parent catalog * Be the owner of the parent schema and have
+  the USE_CATALOG privilege on the parent catalog * Have the **USE_CATALOG**
+  privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent
+  schema, and either be the table owner or have the SELECT privilege on the
+  table.
 
   Arguments:
     FULL_NAME: Full name of the table.`
@@ -199,12 +281,6 @@ func newGet() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGet())
-	})
-}
-
 // start list command
 
 // Slice with functions to override default command behavior.
@@ -221,6 +297,7 @@ func newList() *cobra.Command {
 
 	// TODO: short flags
 
+	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include tables in the response for which the principal can only access selective metadata for.`)
 	cmd.Flags().BoolVar(&listReq.IncludeDeltaMetadata, "include-delta-metadata", listReq.IncludeDeltaMetadata, `Whether delta metadata should be included in the response.`)
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of tables to return.`)
 	cmd.Flags().BoolVar(&listReq.OmitColumns, "omit-columns", listReq.OmitColumns, `Whether to omit the columns of the table from the response or not.`)
@@ -245,7 +322,7 @@ func newList() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -257,11 +334,8 @@ func newList() *cobra.Command {
 		listReq.CatalogName = args[0]
 		listReq.SchemaName = args[1]
 
-		response, err := w.Tables.ListAll(ctx, listReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Tables.List(ctx, listReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -274,12 +348,6 @@ func newList() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newList())
-	})
 }
 
 // start list-summaries command
@@ -348,11 +416,8 @@ func newListSummaries() *cobra.Command {
 		}
 		listSummariesReq.CatalogName = args[0]
 
-		response, err := w.Tables.ListSummariesAll(ctx, listSummariesReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Tables.ListSummaries(ctx, listSummariesReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -365,12 +430,6 @@ func newListSummaries() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newListSummaries())
-	})
 }
 
 // start update command
@@ -458,12 +517,6 @@ func newUpdate() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdate())
-	})
 }
 
 // end service Tables

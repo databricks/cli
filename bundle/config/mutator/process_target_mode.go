@@ -70,7 +70,7 @@ func transformDevelopmentMode(b *bundle.Bundle) error {
 
 	for i := range r.Models {
 		r.Models[i].Name = prefix + r.Models[i].Name
-		r.Models[i].Tags = append(r.Models[i].Tags, ml.ModelTag{Key: "dev", Value: ""})
+		r.Models[i].Tags = append(r.Models[i].Tags, ml.ModelTag{Key: "dev", Value: tagValue})
 	}
 
 	for i := range r.Experiments {

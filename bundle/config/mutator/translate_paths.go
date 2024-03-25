@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/notebook"
 )
 
@@ -150,55 +151,55 @@ func translateNoOp(literal, localFullPath, localRelPath, remotePath string) (str
 	return localRelPath, nil
 }
 
-type transformer struct {
-	// A directory path relative to which `path` will be transformed
-	dir string
-	// A path to transform
-	path *string
-	// Name of the config property where the path string is coming from
-	configPath string
-	// A function that performs the actual rewriting logic.
-	fn rewriteFunc
+func (m *translatePaths) rewriteValue(b *bundle.Bundle, p dyn.Path, v dyn.Value, fn rewriteFunc, dir string) (dyn.Value, error) {
+	out := v.MustString()
+	err := m.rewritePath(dir, b, &out, fn)
+	if err != nil {
+		if target := (&ErrIsNotebook{}); errors.As(err, target) {
+			return dyn.InvalidValue, fmt.Errorf(`expected a file for "%s" but got a notebook: %w`, p, target)
+		}
+		if target := (&ErrIsNotNotebook{}); errors.As(err, target) {
+			return dyn.InvalidValue, fmt.Errorf(`expected a notebook for "%s" but got a file: %w`, p, target)
+		}
+		return dyn.InvalidValue, err
+	}
+
+	return dyn.NewValue(out, v.Location()), nil
 }
 
-type transformFunc func(resource any, dir string) *transformer
+func (m *translatePaths) rewriteRelativeTo(b *bundle.Bundle, p dyn.Path, v dyn.Value, fn rewriteFunc, dir, fallback string) (dyn.Value, error) {
+	nv, err := m.rewriteValue(b, p, v, fn, dir)
+	if err == nil {
+		return nv, nil
+	}
 
-// Apply all matches transformers for the given resource
-func (m *translatePaths) applyTransformers(funcs []transformFunc, b *bundle.Bundle, resource any, dir string) error {
-	for _, transformFn := range funcs {
-		transformer := transformFn(resource, dir)
-		if transformer == nil {
-			continue
-		}
-
-		err := m.rewritePath(transformer.dir, b, transformer.path, transformer.fn)
-		if err != nil {
-			if target := (&ErrIsNotebook{}); errors.As(err, target) {
-				return fmt.Errorf(`expected a file for "%s" but got a notebook: %w`, transformer.configPath, target)
-			}
-			if target := (&ErrIsNotNotebook{}); errors.As(err, target) {
-				return fmt.Errorf(`expected a notebook for "%s" but got a file: %w`, transformer.configPath, target)
-			}
-			return err
+	// If we failed to rewrite the path, try to rewrite it relative to the fallback directory.
+	if fallback != "" {
+		nv, nerr := m.rewriteValue(b, p, v, fn, fallback)
+		if nerr == nil {
+			// TODO: Emit a warning that this path should be rewritten.
+			return nv, nil
 		}
 	}
 
-	return nil
+	return dyn.InvalidValue, err
 }
 
 func (m *translatePaths) Apply(_ context.Context, b *bundle.Bundle) error {
 	m.seen = make(map[string]string)
 
-	for _, fn := range []func(*translatePaths, *bundle.Bundle) error{
-		applyJobTransformers,
-		applyPipelineTransformers,
-		applyArtifactTransformers,
-	} {
-		err := fn(m, b)
-		if err != nil {
-			return err
+	return b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		var err error
+		for _, fn := range []func(*bundle.Bundle, dyn.Value) (dyn.Value, error){
+			m.applyJobTranslations,
+			m.applyPipelineTranslations,
+			m.applyArtifactTranslations,
+		} {
+			v, err = fn(b, v)
+			if err != nil {
+				return dyn.InvalidValue, err
+			}
 		}
-	}
-
-	return nil
+		return v, nil
+	})
 }

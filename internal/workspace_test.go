@@ -34,15 +34,15 @@ func TestAccWorkspaceList(t *testing.T) {
 
 func TestWorkpaceListErrorWhenNoArguments(t *testing.T) {
 	_, _, err := RequireErrorRun(t, "workspace", "list")
-	assert.Equal(t, "accepts 1 arg(s), received 0", err.Error())
+	assert.Contains(t, err.Error(), "accepts 1 arg(s), received 0")
 }
 
 func TestWorkpaceGetStatusErrorWhenNoArguments(t *testing.T) {
 	_, _, err := RequireErrorRun(t, "workspace", "get-status")
-	assert.Equal(t, "accepts 1 arg(s), received 0", err.Error())
+	assert.Contains(t, err.Error(), "accepts 1 arg(s), received 0")
 }
 
-func TestWorkpaceExportPrintsContents(t *testing.T) {
+func TestAccWorkpaceExportPrintsContents(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
@@ -81,7 +81,6 @@ func setupWorkspaceImportExportTest(t *testing.T) (context.Context, filer.Filer,
 	return ctx, f, tmpdir
 }
 
-// TODO: add tests for the progress event output logs: https://github.com/databricks/cli/issues/447
 func assertLocalFileContents(t *testing.T, path string, content string) {
 	require.FileExists(t, path)
 	b, err := os.ReadFile(path)

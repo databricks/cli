@@ -30,6 +30,14 @@ func New() *cobra.Command {
 		},
 	}
 
+	// Add methods
+	cmd.AddCommand(newCreate())
+	cmd.AddCommand(newDelete())
+	cmd.AddCommand(newGet())
+	cmd.AddCommand(newList())
+	cmd.AddCommand(newRestore())
+	cmd.AddCommand(newUpdate())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -105,12 +113,6 @@ func newCreate() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newCreate())
-	})
-}
-
 // start delete command
 
 // Slice with functions to override default command behavior.
@@ -178,12 +180,6 @@ func newDelete() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDelete())
-	})
 }
 
 // start get command
@@ -254,12 +250,6 @@ func newGet() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGet())
-	})
-}
-
 // start list command
 
 // Slice with functions to override default command behavior.
@@ -286,12 +276,15 @@ func newList() *cobra.Command {
 	cmd.Long = `Get a list of queries.
   
   Gets a list of queries. Optionally, this list can be filtered by a search
-  term.`
+  term.
+  
+  ### **Warning: Calling this API concurrently 10 or more times could result in
+  throttling, service degradation, or a temporary ban.**`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(0)
+		check := root.ExactArgs(0)
 		return check(cmd, args)
 	}
 
@@ -300,11 +293,8 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.Queries.ListAll(ctx, listReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Queries.List(ctx, listReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -317,12 +307,6 @@ func newList() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newList())
-	})
 }
 
 // start restore command
@@ -393,12 +377,6 @@ func newRestore() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newRestore())
-	})
-}
-
 // start update command
 
 // Slice with functions to override default command behavior.
@@ -422,6 +400,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The title of this query that appears in list views, widget headings, and on the query page.`)
 	// TODO: any: options
 	cmd.Flags().StringVar(&updateReq.Query, "query", updateReq.Query, `The text of the query to be run.`)
+	cmd.Flags().Var(&updateReq.RunAsRole, "run-as-role", `Sets the **Run as** role for the object. Supported values: [owner, viewer]`)
 
 	cmd.Use = "update QUERY_ID"
 	cmd.Short = `Change a query definition.`
@@ -480,12 +459,6 @@ func newUpdate() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdate())
-	})
 }
 
 // end service Queries

@@ -45,7 +45,7 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) error {
 	}
 
 	// Clean up sync snapshot file
-	sync, err := getSync(ctx, b)
+	sync, err := GetSync(ctx, b)
 	if err != nil {
 		return err
 	}

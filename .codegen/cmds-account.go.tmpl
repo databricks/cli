@@ -7,7 +7,7 @@ package account
 import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
-    {{range .Services}}{{if .IsAccounts}}{{if not (in $excludes .KebabName) }}
+    {{range .Services}}{{if and .IsAccounts (not .HasParent)}}{{if not (in $excludes .KebabName) }}
 	{{.SnakeName}} "github.com/databricks/cli/cmd/account/{{(.TrimPrefix "account").KebabName}}"{{end}}{{end}}{{end}}
 )
 
@@ -17,7 +17,7 @@ func New() *cobra.Command {
 		Short: `Databricks Account Commands`,
 	}
 
-	{{range .Services}}{{if .IsAccounts}}{{if not (in $excludes .KebabName) -}}
+	{{range .Services}}{{if and .IsAccounts (not .HasParent)}}{{if not (in $excludes .KebabName) -}}
 	cmd.AddCommand({{.SnakeName}}.New())
 	{{end}}{{end}}{{end}}
 

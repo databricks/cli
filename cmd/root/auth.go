@@ -189,7 +189,7 @@ func AskForWorkspaceProfile(ctx context.Context) (string, error) {
 	}
 	switch len(profiles) {
 	case 0:
-		return "", fmt.Errorf("%s does not contain workspace profiles; please create one first", path)
+		return "", fmt.Errorf("%s does not contain workspace profiles; please create one by running 'databricks configure'", path)
 	case 1:
 		return profiles[0].Name, nil
 	}
@@ -222,7 +222,7 @@ func AskForAccountProfile(ctx context.Context) (string, error) {
 	}
 	switch len(profiles) {
 	case 0:
-		return "", fmt.Errorf("%s does not contain account profiles; please create one first", path)
+		return "", fmt.Errorf("%s does not contain account profiles; please create one by running 'databricks configure'", path)
 	case 1:
 		return profiles[0].Name, nil
 	}

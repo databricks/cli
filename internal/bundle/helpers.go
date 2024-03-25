@@ -3,6 +3,7 @@ package bundle
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,9 +14,11 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/template"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/stretchr/testify/require"
 )
 
-func initTestTemplate(t *testing.T, templateName string, config map[string]any) (string, error) {
+func initTestTemplate(t *testing.T, ctx context.Context, templateName string, config map[string]any) (string, error) {
 	templateRoot := filepath.Join("bundles", templateName)
 
 	bundleRoot := t.TempDir()
@@ -24,8 +27,8 @@ func initTestTemplate(t *testing.T, templateName string, config map[string]any) 
 		return "", err
 	}
 
-	ctx := root.SetWorkspaceClient(context.Background(), nil)
-	cmd := cmdio.NewIO(flags.OutputJSON, strings.NewReader(""), os.Stdout, os.Stderr, "bundles")
+	ctx = root.SetWorkspaceClient(ctx, nil)
+	cmd := cmdio.NewIO(flags.OutputJSON, strings.NewReader(""), os.Stdout, os.Stderr, "", "bundles")
 	ctx = cmdio.InContext(ctx, cmd)
 
 	err = template.Materialize(ctx, configFilePath, templateRoot, bundleRoot)
@@ -46,15 +49,23 @@ func writeConfigFile(t *testing.T, config map[string]any) (string, error) {
 	return filepath, err
 }
 
-func deployBundle(t *testing.T, path string) error {
+func deployBundle(t *testing.T, ctx context.Context, path string) error {
 	t.Setenv("BUNDLE_ROOT", path)
-	c := internal.NewCobraTestRunner(t, "bundle", "deploy", "--force-lock")
+	c := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "deploy", "--force-lock")
 	_, _, err := c.Run()
 	return err
 }
 
-func runResource(t *testing.T, path string, key string) (string, error) {
-	ctx := context.Background()
+func deployBundleWithFlags(t *testing.T, ctx context.Context, path string, flags []string) error {
+	t.Setenv("BUNDLE_ROOT", path)
+	args := []string{"bundle", "deploy", "--force-lock"}
+	args = append(args, flags...)
+	c := internal.NewCobraTestRunnerWithContext(t, ctx, args...)
+	_, _, err := c.Run()
+	return err
+}
+
+func runResource(t *testing.T, ctx context.Context, path string, key string) (string, error) {
 	ctx = cmdio.NewContext(ctx, cmdio.Default())
 
 	c := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "run", key)
@@ -62,8 +73,7 @@ func runResource(t *testing.T, path string, key string) (string, error) {
 	return stdout.String(), err
 }
 
-func runResourceWithParams(t *testing.T, path string, key string, params ...string) (string, error) {
-	ctx := context.Background()
+func runResourceWithParams(t *testing.T, ctx context.Context, path string, key string, params ...string) (string, error) {
 	ctx = cmdio.NewContext(ctx, cmdio.Default())
 
 	args := make([]string, 0)
@@ -74,9 +84,17 @@ func runResourceWithParams(t *testing.T, path string, key string, params ...stri
 	return stdout.String(), err
 }
 
-func destroyBundle(t *testing.T, path string) error {
+func destroyBundle(t *testing.T, ctx context.Context, path string) error {
 	t.Setenv("BUNDLE_ROOT", path)
-	c := internal.NewCobraTestRunner(t, "bundle", "destroy", "--auto-approve")
+	c := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "destroy", "--auto-approve")
 	_, _, err := c.Run()
 	return err
+}
+
+func getBundleRemoteRootPath(w *databricks.WorkspaceClient, t *testing.T, uniqueId string) string {
+	// Compute root path for the bundle deployment
+	me, err := w.CurrentUser.Me(context.Background())
+	require.NoError(t, err)
+	root := fmt.Sprintf("/Users/%s/.bundle/%s", me.UserName, uniqueId)
+	return root
 }

@@ -14,7 +14,7 @@ import (
 
 func TestSecretsCreateScopeErrWhenNoArguments(t *testing.T) {
 	_, _, err := RequireErrorRun(t, "secrets", "create-scope")
-	assert.Equal(t, "accepts 1 arg(s), received 0", err.Error())
+	assert.Contains(t, err.Error(), "accepts 1 arg(s), received 0")
 }
 
 func temporarySecretScope(ctx context.Context, t *acc.WorkspaceT) string {
@@ -61,7 +61,7 @@ func assertSecretBytesValue(t *acc.WorkspaceT, scope, key string, expected []byt
 	assert.Equal(t, expected, decoded)
 }
 
-func TestSecretsPutSecretStringValue(tt *testing.T) {
+func TestAccSecretsPutSecretStringValue(tt *testing.T) {
 	ctx, t := acc.WorkspaceTest(tt)
 	scope := temporarySecretScope(ctx, t)
 	key := "test-key"
@@ -75,7 +75,7 @@ func TestSecretsPutSecretStringValue(tt *testing.T) {
 	assertSecretBytesValue(t, scope, key, []byte(value))
 }
 
-func TestSecretsPutSecretBytesValue(tt *testing.T) {
+func TestAccSecretsPutSecretBytesValue(tt *testing.T) {
 	ctx, t := acc.WorkspaceTest(tt)
 	scope := temporarySecretScope(ctx, t)
 	key := "test-key"

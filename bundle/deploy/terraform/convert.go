@@ -1,18 +1,31 @@
 package terraform
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/deploy/terraform/tfdyn"
 	"github.com/databricks/cli/bundle/internal/tf/schema"
+	"github.com/databricks/cli/libs/dyn"
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
 func conv(from any, to any) {
 	buf, _ := json.Marshal(from)
 	json.Unmarshal(buf, &to)
+}
+
+func convRemoteToLocal(remote any, local any) resources.ModifiedStatus {
+	var modifiedStatus resources.ModifiedStatus
+	if reflect.ValueOf(local).Elem().IsNil() {
+		modifiedStatus = resources.ModifiedStatusDeleted
+	}
+	conv(remote, local)
+	return modifiedStatus
 }
 
 func convPermissions(acl []resources.Permission) *schema.ResourcePermissions {
@@ -218,60 +231,171 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 	return tfroot
 }
 
-func TerraformToBundle(state *tfjson.State, config *config.Root) error {
-	// This is a no-op if the state is empty.
-	if state.Values == nil || state.Values.RootModule == nil {
-		return nil
+// BundleToTerraformWithDynValue converts resources in a bundle configuration
+// to the equivalent Terraform JSON representation.
+func BundleToTerraformWithDynValue(ctx context.Context, root dyn.Value) (*schema.Root, error) {
+	tfroot := schema.NewRoot()
+	tfroot.Provider = schema.NewProviders()
+
+	// Convert each resource in the bundle to the equivalent Terraform representation.
+	resources, err := dyn.Get(root, "resources")
+	if err != nil {
+		// If the resources key is missing, return an empty root.
+		if dyn.IsNoSuchKeyError(err) {
+			return tfroot, nil
+		}
+		return nil, err
 	}
 
-	for _, resource := range state.Values.RootModule.Resources {
-		// Limit to resources.
-		if resource.Mode != tfjson.ManagedResourceMode {
-			continue
+	tfroot.Resource = schema.NewResources()
+
+	numResources := 0
+	_, err = dyn.Walk(resources, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		if len(p) < 2 {
+			return v, nil
 		}
 
-		switch resource.Type {
-		case "databricks_job":
-			var tmp schema.ResourceJob
-			conv(resource.AttributeValues, &tmp)
-			cur := config.Resources.Jobs[resource.Name]
-			conv(tmp, &cur)
-			config.Resources.Jobs[resource.Name] = cur
-		case "databricks_pipeline":
-			var tmp schema.ResourcePipeline
-			conv(resource.AttributeValues, &tmp)
-			cur := config.Resources.Pipelines[resource.Name]
-			conv(tmp, &cur)
-			config.Resources.Pipelines[resource.Name] = cur
-		case "databricks_mlflow_model":
-			var tmp schema.ResourceMlflowModel
-			conv(resource.AttributeValues, &tmp)
-			cur := config.Resources.Models[resource.Name]
-			conv(tmp, &cur)
-			config.Resources.Models[resource.Name] = cur
-		case "databricks_mlflow_experiment":
-			var tmp schema.ResourceMlflowExperiment
-			conv(resource.AttributeValues, &tmp)
-			cur := config.Resources.Experiments[resource.Name]
-			conv(tmp, &cur)
-			config.Resources.Experiments[resource.Name] = cur
-		case "databricks_model_serving":
-			var tmp schema.ResourceModelServing
-			conv(resource.AttributeValues, &tmp)
-			cur := config.Resources.ModelServingEndpoints[resource.Name]
-			conv(tmp, &cur)
-			config.Resources.ModelServingEndpoints[resource.Name] = cur
-		case "databricks_registered_model":
-			var tmp schema.ResourceRegisteredModel
-			conv(resource.AttributeValues, &tmp)
-			cur := config.Resources.RegisteredModels[resource.Name]
-			conv(tmp, &cur)
-			config.Resources.RegisteredModels[resource.Name] = cur
-		case "databricks_permissions":
-		case "databricks_grants":
-			// Ignore; no need to pull these back into the configuration.
-		default:
-			return fmt.Errorf("missing mapping for %s", resource.Type)
+		typ := p[0].Key()
+		key := p[1].Key()
+
+		// Lookup the converter based on the resource type.
+		c, ok := tfdyn.GetConverter(typ)
+		if !ok {
+			return dyn.InvalidValue, fmt.Errorf("no converter for resource type %s", typ)
+		}
+
+		// Convert resource to Terraform representation.
+		err := c.Convert(ctx, key, v, tfroot.Resource)
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+
+		numResources++
+
+		// Skip traversal of the resource itself.
+		return v, dyn.ErrSkip
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// We explicitly set "resource" to nil to omit it from a JSON encoding.
+	// This is required because the terraform CLI requires >= 1 resources defined
+	// if the "resource" property is used in a .tf.json file.
+	if numResources == 0 {
+		tfroot.Resource = nil
+	}
+
+	return tfroot, nil
+}
+
+func TerraformToBundle(state *tfjson.State, config *config.Root) error {
+	if state.Values != nil && state.Values.RootModule != nil {
+		for _, resource := range state.Values.RootModule.Resources {
+			// Limit to resources.
+			if resource.Mode != tfjson.ManagedResourceMode {
+				continue
+			}
+
+			switch resource.Type {
+			case "databricks_job":
+				var tmp schema.ResourceJob
+				conv(resource.AttributeValues, &tmp)
+				if config.Resources.Jobs == nil {
+					config.Resources.Jobs = make(map[string]*resources.Job)
+				}
+				cur := config.Resources.Jobs[resource.Name]
+				// TODO: make sure we can unmarshall tf state properly and don't swallow errors
+				modifiedStatus := convRemoteToLocal(tmp, &cur)
+				cur.ModifiedStatus = modifiedStatus
+				config.Resources.Jobs[resource.Name] = cur
+			case "databricks_pipeline":
+				var tmp schema.ResourcePipeline
+				conv(resource.AttributeValues, &tmp)
+				if config.Resources.Pipelines == nil {
+					config.Resources.Pipelines = make(map[string]*resources.Pipeline)
+				}
+				cur := config.Resources.Pipelines[resource.Name]
+				modifiedStatus := convRemoteToLocal(tmp, &cur)
+				cur.ModifiedStatus = modifiedStatus
+				config.Resources.Pipelines[resource.Name] = cur
+			case "databricks_mlflow_model":
+				var tmp schema.ResourceMlflowModel
+				conv(resource.AttributeValues, &tmp)
+				if config.Resources.Models == nil {
+					config.Resources.Models = make(map[string]*resources.MlflowModel)
+				}
+				cur := config.Resources.Models[resource.Name]
+				modifiedStatus := convRemoteToLocal(tmp, &cur)
+				cur.ModifiedStatus = modifiedStatus
+				config.Resources.Models[resource.Name] = cur
+			case "databricks_mlflow_experiment":
+				var tmp schema.ResourceMlflowExperiment
+				conv(resource.AttributeValues, &tmp)
+				if config.Resources.Experiments == nil {
+					config.Resources.Experiments = make(map[string]*resources.MlflowExperiment)
+				}
+				cur := config.Resources.Experiments[resource.Name]
+				modifiedStatus := convRemoteToLocal(tmp, &cur)
+				cur.ModifiedStatus = modifiedStatus
+				config.Resources.Experiments[resource.Name] = cur
+			case "databricks_model_serving":
+				var tmp schema.ResourceModelServing
+				conv(resource.AttributeValues, &tmp)
+				if config.Resources.ModelServingEndpoints == nil {
+					config.Resources.ModelServingEndpoints = make(map[string]*resources.ModelServingEndpoint)
+				}
+				cur := config.Resources.ModelServingEndpoints[resource.Name]
+				modifiedStatus := convRemoteToLocal(tmp, &cur)
+				cur.ModifiedStatus = modifiedStatus
+				config.Resources.ModelServingEndpoints[resource.Name] = cur
+			case "databricks_registered_model":
+				var tmp schema.ResourceRegisteredModel
+				conv(resource.AttributeValues, &tmp)
+				if config.Resources.RegisteredModels == nil {
+					config.Resources.RegisteredModels = make(map[string]*resources.RegisteredModel)
+				}
+				cur := config.Resources.RegisteredModels[resource.Name]
+				modifiedStatus := convRemoteToLocal(tmp, &cur)
+				cur.ModifiedStatus = modifiedStatus
+				config.Resources.RegisteredModels[resource.Name] = cur
+			case "databricks_permissions":
+			case "databricks_grants":
+				// Ignore; no need to pull these back into the configuration.
+			default:
+				return fmt.Errorf("missing mapping for %s", resource.Type)
+			}
+		}
+	}
+
+	for _, src := range config.Resources.Jobs {
+		if src.ModifiedStatus == "" && src.ID == "" {
+			src.ModifiedStatus = resources.ModifiedStatusCreated
+		}
+	}
+	for _, src := range config.Resources.Pipelines {
+		if src.ModifiedStatus == "" && src.ID == "" {
+			src.ModifiedStatus = resources.ModifiedStatusCreated
+		}
+	}
+	for _, src := range config.Resources.Models {
+		if src.ModifiedStatus == "" && src.ID == "" {
+			src.ModifiedStatus = resources.ModifiedStatusCreated
+		}
+	}
+	for _, src := range config.Resources.Experiments {
+		if src.ModifiedStatus == "" && src.ID == "" {
+			src.ModifiedStatus = resources.ModifiedStatusCreated
+		}
+	}
+	for _, src := range config.Resources.ModelServingEndpoints {
+		if src.ModifiedStatus == "" && src.ID == "" {
+			src.ModifiedStatus = resources.ModifiedStatusCreated
+		}
+	}
+	for _, src := range config.Resources.RegisteredModels {
+		if src.ModifiedStatus == "" && src.ID == "" {
+			src.ModifiedStatus = resources.ModifiedStatusCreated
 		}
 	}
 

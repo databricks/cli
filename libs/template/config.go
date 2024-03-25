@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/jsonschema"
+	"github.com/databricks/cli/libs/log"
 	"golang.org/x/exp/maps"
 )
 
@@ -88,7 +89,10 @@ func (c *config) assignValuesFromFile(path string) error {
 
 // Assigns default values from schema to input config map
 func (c *config) assignDefaultValues(r *renderer) error {
-	for name, property := range c.schema.Properties {
+	for _, p := range c.schema.OrderedProperties() {
+		name := p.Name
+		property := p.Schema
+
 		// Config already has a value assigned
 		if _, ok := c.values[name]; ok {
 			continue
@@ -124,12 +128,9 @@ func (c *config) skipPrompt(p jsonschema.Property, r *renderer) (bool, error) {
 		return false, nil
 	}
 
-	// Check if conditions specified by template author for skipping the prompt
-	// are satisfied. If they are not, we have to prompt for a user input.
-	for name, property := range p.Schema.SkipPromptIf.Properties {
-		if v, ok := c.values[name]; ok && v == property.Const {
-			continue
-		}
+	// Validate the partial config against skip_prompt_if schema
+	validationErr := p.Schema.SkipPromptIf.ValidateInstance(c.values)
+	if validationErr != nil {
 		return false, nil
 	}
 
@@ -247,6 +248,7 @@ func (c *config) promptOrAssignDefaultValues(r *renderer) error {
 	if cmdio.IsOutTTY(c.ctx) && cmdio.IsInTTY(c.ctx) && !cmdio.IsGitBash(c.ctx) {
 		return c.promptForValues(r)
 	}
+	log.Debugf(c.ctx, "Terminal is not TTY. Assigning default values to template input parameters")
 	return c.assignDefaultValues(r)
 }
 

@@ -36,7 +36,7 @@ func walk(v Value, p Path, fn func(p Path, v Value) (Value, error)) (Value, erro
 		m := v.MustMap()
 		out := make(map[string]Value, len(m))
 		for k := range m {
-			nv, err := walk(m[k], p.Append(Key(k)), fn)
+			nv, err := walk(m[k], append(p, Key(k)), fn)
 			if err == ErrDrop {
 				continue
 			}
@@ -50,7 +50,7 @@ func walk(v Value, p Path, fn func(p Path, v Value) (Value, error)) (Value, erro
 		s := v.MustSequence()
 		out := make([]Value, 0, len(s))
 		for i := range s {
-			nv, err := walk(s[i], p.Append(Index(i)), fn)
+			nv, err := walk(s[i], append(p, Index(i)), fn)
 			if err == ErrDrop {
 				continue
 			}

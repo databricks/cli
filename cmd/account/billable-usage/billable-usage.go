@@ -25,6 +25,9 @@ func New() *cobra.Command {
 		},
 	}
 
+	// Add methods
+	cmd.AddCommand(newDownload())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -75,7 +78,7 @@ func newDownload() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -92,7 +95,7 @@ func newDownload() *cobra.Command {
 			return err
 		}
 		defer response.Contents.Close()
-		return cmdio.RenderReader(ctx, response.Contents)
+		return cmdio.Render(ctx, response.Contents)
 	}
 
 	// Disable completions since they are not applicable.
@@ -105,12 +108,6 @@ func newDownload() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDownload())
-	})
 }
 
 // end service BillableUsage

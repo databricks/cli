@@ -43,12 +43,20 @@ func TestPipelineOptionsFullRefresh(t *testing.T) {
 	assert.Equal(t, []string{"arg1", "arg2", "arg3"}, opts.FullRefresh)
 }
 
+func TestPipelineOptionsValidateOnly(t *testing.T) {
+	fs, opts := setupPipelineOptions(t)
+	err := fs.Parse([]string{`--validate-only`})
+	require.NoError(t, err)
+	assert.True(t, opts.ValidateOnly)
+}
+
 func TestPipelineOptionsValidateSuccessWithSingleOption(t *testing.T) {
 	args := []string{
 		`--refresh-all`,
 		`--refresh=arg1,arg2,arg3`,
 		`--full-refresh-all`,
 		`--full-refresh=arg1,arg2,arg3`,
+		`--validate-only`,
 	}
 	for _, arg := range args {
 		fs, opts := setupPipelineOptions(t)
@@ -65,6 +73,7 @@ func TestPipelineOptionsValidateFailureWithMultipleOptions(t *testing.T) {
 		`--refresh=arg1,arg2,arg3`,
 		`--full-refresh-all`,
 		`--full-refresh=arg1,arg2,arg3`,
+		`--validate-only`,
 	}
 	for i := range args {
 		for j := range args {

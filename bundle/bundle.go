@@ -16,7 +16,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
-	"github.com/databricks/cli/folders"
+	"github.com/databricks/cli/libs/folders"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
@@ -138,6 +138,13 @@ func (b *Bundle) WorkspaceClient() *databricks.WorkspaceClient {
 		}
 	})
 	return b.client
+}
+
+// SetWorkpaceClient sets the workspace client for this bundle.
+// This is used to inject a mock client for testing.
+func (b *Bundle) SetWorkpaceClient(w *databricks.WorkspaceClient) {
+	b.clientOnce.Do(func() {})
+	b.client = w
 }
 
 // CacheDir returns directory to use for temporary files for this bundle.

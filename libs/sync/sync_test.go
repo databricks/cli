@@ -93,7 +93,7 @@ func TestGetFileSet(t *testing.T) {
 		excludeFileSet: excl,
 	}
 
-	fileList, err := getFileList(ctx, s)
+	fileList, err := s.GetFileList(ctx)
 	require.NoError(t, err)
 	require.Equal(t, len(fileList), 9)
 
@@ -111,7 +111,7 @@ func TestGetFileSet(t *testing.T) {
 		excludeFileSet: excl,
 	}
 
-	fileList, err = getFileList(ctx, s)
+	fileList, err = s.GetFileList(ctx)
 	require.NoError(t, err)
 	require.Equal(t, len(fileList), 1)
 
@@ -129,7 +129,7 @@ func TestGetFileSet(t *testing.T) {
 		excludeFileSet: excl,
 	}
 
-	fileList, err = getFileList(ctx, s)
+	fileList, err = s.GetFileList(ctx)
 	require.NoError(t, err)
 	require.Equal(t, len(fileList), 10)
 }
@@ -158,7 +158,7 @@ func TestRecursiveExclude(t *testing.T) {
 		excludeFileSet: excl,
 	}
 
-	fileList, err := getFileList(ctx, s)
+	fileList, err := s.GetFileList(ctx)
 	require.NoError(t, err)
 	require.Equal(t, len(fileList), 7)
 }

@@ -8,29 +8,10 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/env"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-// Changes into specified directory for the duration of the test.
-// Returns the current working directory.
-func chdir(t *testing.T, dir string) string {
-	wd, err := os.Getwd()
-	require.NoError(t, err)
-
-	abs, err := filepath.Abs(dir)
-	require.NoError(t, err)
-
-	err = os.Chdir(abs)
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		err := os.Chdir(wd)
-		require.NoError(t, err)
-	})
-
-	return wd
-}
 
 func TestRootFromEnv(t *testing.T) {
 	ctx := context.Background()
@@ -83,7 +64,7 @@ func TestRootLookup(t *testing.T) {
 	t.Setenv(env.RootVariable, "")
 	os.Unsetenv(env.RootVariable)
 
-	chdir(t, t.TempDir())
+	testutil.Chdir(t, t.TempDir())
 
 	// Create databricks.yml file.
 	f, err := os.Create(config.FileNames[0])
@@ -95,7 +76,7 @@ func TestRootLookup(t *testing.T) {
 	require.NoError(t, err)
 
 	// It should find the project root from $PWD.
-	wd := chdir(t, "./a/b/c")
+	wd := testutil.Chdir(t, "./a/b/c")
 	root, err := mustGetRoot(ctx)
 	require.NoError(t, err)
 	require.Equal(t, wd, root)
@@ -109,14 +90,14 @@ func TestRootLookupError(t *testing.T) {
 	os.Unsetenv(env.RootVariable)
 
 	// It can't find a project root from a temporary directory.
-	_ = chdir(t, t.TempDir())
+	_ = testutil.Chdir(t, t.TempDir())
 	_, err := mustGetRoot(ctx)
 	require.ErrorContains(t, err, "unable to locate bundle root")
 }
 
 func TestLoadYamlWhenIncludesEnvPresent(t *testing.T) {
 	ctx := context.Background()
-	chdir(t, filepath.Join(".", "tests", "basic"))
+	testutil.Chdir(t, filepath.Join(".", "tests", "basic"))
 	t.Setenv(env.IncludesVariable, "test")
 
 	bundle, err := MustLoad(ctx)
@@ -131,7 +112,7 @@ func TestLoadYamlWhenIncludesEnvPresent(t *testing.T) {
 func TestLoadDefautlBundleWhenNoYamlAndRootAndIncludesEnvPresent(t *testing.T) {
 	ctx := context.Background()
 	dir := t.TempDir()
-	chdir(t, dir)
+	testutil.Chdir(t, dir)
 	t.Setenv(env.RootVariable, dir)
 	t.Setenv(env.IncludesVariable, "test")
 
@@ -143,7 +124,7 @@ func TestLoadDefautlBundleWhenNoYamlAndRootAndIncludesEnvPresent(t *testing.T) {
 func TestErrorIfNoYamlNoRootEnvAndIncludesEnvPresent(t *testing.T) {
 	ctx := context.Background()
 	dir := t.TempDir()
-	chdir(t, dir)
+	testutil.Chdir(t, dir)
 	t.Setenv(env.IncludesVariable, "test")
 
 	_, err := MustLoad(ctx)
@@ -153,7 +134,7 @@ func TestErrorIfNoYamlNoRootEnvAndIncludesEnvPresent(t *testing.T) {
 func TestErrorIfNoYamlNoIncludesEnvAndRootEnvPresent(t *testing.T) {
 	ctx := context.Background()
 	dir := t.TempDir()
-	chdir(t, dir)
+	testutil.Chdir(t, dir)
 	t.Setenv(env.RootVariable, dir)
 
 	_, err := MustLoad(ctx)

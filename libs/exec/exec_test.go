@@ -2,8 +2,11 @@ package exec
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"os"
+	osexec "os/exec"
 	"runtime"
 	"sync"
 	"testing"
@@ -29,6 +32,15 @@ func TestExecutorWithComplexInput(t *testing.T) {
 	assert.Equal(t, "Hello\nWorld\n", string(out))
 }
 
+func TestExecutorWithStderr(t *testing.T) {
+	executor, err := NewCommandExecutor(".")
+	assert.NoError(t, err)
+	out, err := executor.Exec(context.Background(), "echo 'Hello' && >&2 echo 'Error'")
+	assert.NoError(t, err)
+	assert.NotNil(t, out)
+	assert.Equal(t, "Hello\nError\n", string(out))
+}
+
 func TestExecutorWithInvalidCommand(t *testing.T) {
 	executor, err := NewCommandExecutor(".")
 	assert.NoError(t, err)
@@ -49,60 +61,72 @@ func TestExecutorWithInvalidCommandWithWindowsLikePath(t *testing.T) {
 	assert.Contains(t, string(out), "C:\\Program Files\\invalid-command.exe: No such file or directory")
 }
 
-func TestFindBashInterpreterNonWindows(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.SkipNow()
+func testExecutorWithShell(t *testing.T, shell string) {
+	p, err := osexec.LookPath(shell)
+	if err != nil {
+		if errors.Is(err, osexec.ErrNotFound) {
+			switch runtime.GOOS {
+			case "windows":
+				if shell == "cmd" {
+					// We must find `cmd.exe` on Windows.
+					t.Fatal("cmd.exe not found")
+				}
+			default:
+				if shell == "bash" || shell == "sh" {
+					// We must find `bash` or `sh` on other operating systems.
+					t.Fatal("bash or sh not found")
+				}
+			}
+			t.Skipf("shell %s not found", shell)
+		}
+		t.Fatal(err)
 	}
 
-	interpreter, err := findBashInterpreter()
-	assert.NoError(t, err)
-	assert.NotEmpty(t, interpreter)
+	// Create temporary directory with only the shell executable in the PATH.
+	tmpDir := t.TempDir()
+	t.Setenv("PATH", tmpDir)
+	if runtime.GOOS == "windows" {
+		os.Symlink(p, fmt.Sprintf("%s/%s.exe", tmpDir, shell))
+	} else {
+		os.Symlink(p, fmt.Sprintf("%s/%s", tmpDir, shell))
+	}
 
-	e, err := NewCommandExecutor(".")
+	executor, err := NewCommandExecutor(".")
 	assert.NoError(t, err)
-	e.interpreter = interpreter
-
+	out, err := executor.Exec(context.Background(), "echo 'Hello from shell'")
 	assert.NoError(t, err)
-	out, err := e.Exec(context.Background(), `echo "Hello from bash"`)
-	assert.NoError(t, err)
-
-	assert.Equal(t, "Hello from bash\n", string(out))
+	assert.NotNil(t, out)
+	assert.Contains(t, string(out), "Hello from shell")
 }
 
-func TestFindCmdInterpreter(t *testing.T) {
-	if runtime.GOOS != "windows" {
-		t.SkipNow()
+func TestExecutorWithDifferentShells(t *testing.T) {
+	for _, shell := range []string{"bash", "sh", "cmd"} {
+		t.Run(shell, func(t *testing.T) {
+			testExecutorWithShell(t, shell)
+		})
 	}
+}
 
-	interpreter, err := findCmdInterpreter()
-	assert.NoError(t, err)
-	assert.NotEmpty(t, interpreter)
-
-	e, err := NewCommandExecutor(".")
-	assert.NoError(t, err)
-	e.interpreter = interpreter
-
-	assert.NoError(t, err)
-	out, err := e.Exec(context.Background(), `echo "Hello from cmd"`)
-	assert.NoError(t, err)
-
-	assert.Contains(t, string(out), "Hello from cmd")
+func TestExecutorNoShellFound(t *testing.T) {
+	t.Setenv("PATH", "")
+	_, err := NewCommandExecutor(".")
+	assert.ErrorContains(t, err, "no shell found")
 }
 
 func TestExecutorCleanupsTempFiles(t *testing.T) {
 	executor, err := NewCommandExecutor(".")
 	assert.NoError(t, err)
 
-	ec, err := executor.interpreter.prepare("echo 'Hello'")
+	cmd, ec, err := executor.prepareCommand(context.Background(), "echo 'Hello'")
 	assert.NoError(t, err)
 
-	cmd, err := executor.start(context.Background(), ec)
+	command, err := executor.start(context.Background(), cmd, ec)
 	assert.NoError(t, err)
 
 	fileName := ec.args[1]
 	assert.FileExists(t, fileName)
 
-	err = cmd.Wait()
+	err = command.Wait()
 	assert.NoError(t, err)
 	assert.NoFileExists(t, fileName)
 }

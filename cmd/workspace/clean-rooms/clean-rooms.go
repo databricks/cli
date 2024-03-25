@@ -35,6 +35,13 @@ func New() *cobra.Command {
 		Hidden: true,
 	}
 
+	// Add methods
+	cmd.AddCommand(newCreate())
+	cmd.AddCommand(newDelete())
+	cmd.AddCommand(newGet())
+	cmd.AddCommand(newList())
+	cmd.AddCommand(newUpdate())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -105,12 +112,6 @@ func newCreate() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newCreate())
-	})
-}
-
 // start delete command
 
 // Slice with functions to override default command behavior.
@@ -127,7 +128,7 @@ func newDelete() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Use = "delete NAME_ARG"
+	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a clean room.`
 	cmd.Long = `Delete a clean room.
   
@@ -135,12 +136,12 @@ func newDelete() *cobra.Command {
   owner of the clean room.
 
   Arguments:
-    NAME_ARG: The name of the clean room.`
+    NAME: The name of the clean room.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -149,7 +150,7 @@ func newDelete() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		deleteReq.NameArg = args[0]
+		deleteReq.Name = args[0]
 
 		err = w.CleanRooms.Delete(ctx, deleteReq)
 		if err != nil {
@@ -170,12 +171,6 @@ func newDelete() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDelete())
-	})
-}
-
 // start get command
 
 // Slice with functions to override default command behavior.
@@ -194,7 +189,7 @@ func newGet() *cobra.Command {
 
 	cmd.Flags().BoolVar(&getReq.IncludeRemoteDetails, "include-remote-details", getReq.IncludeRemoteDetails, `Whether to include remote details (central) on the clean room.`)
 
-	cmd.Use = "get NAME_ARG"
+	cmd.Use = "get NAME"
 	cmd.Short = `Get a clean room.`
 	cmd.Long = `Get a clean room.
   
@@ -202,12 +197,12 @@ func newGet() *cobra.Command {
   metastore admin or the owner of the clean room.
 
   Arguments:
-    NAME_ARG: The name of the clean room.`
+    NAME: The name of the clean room.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -216,7 +211,7 @@ func newGet() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		getReq.NameArg = args[0]
+		getReq.Name = args[0]
 
 		response, err := w.CleanRooms.Get(ctx, getReq)
 		if err != nil {
@@ -235,12 +230,6 @@ func newGet() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGet())
-	})
 }
 
 // start list command
@@ -273,7 +262,7 @@ func newList() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(0)
+		check := root.ExactArgs(0)
 		return check(cmd, args)
 	}
 
@@ -282,11 +271,8 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.CleanRooms.ListAll(ctx, listReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.CleanRooms.List(ctx, listReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -299,12 +285,6 @@ func newList() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newList())
-	})
 }
 
 // start update command
@@ -329,7 +309,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of clean room.`)
 
-	cmd.Use = "update NAME_ARG"
+	cmd.Use = "update NAME"
 	cmd.Short = `Update a clean room.`
 	cmd.Long = `Update a clean room.
   
@@ -349,12 +329,12 @@ func newUpdate() *cobra.Command {
   Table removals through **update** do not require additional privileges.
 
   Arguments:
-    NAME_ARG: The name of the clean room.`
+    NAME: The name of the clean room.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -369,7 +349,7 @@ func newUpdate() *cobra.Command {
 				return err
 			}
 		}
-		updateReq.NameArg = args[0]
+		updateReq.Name = args[0]
 
 		response, err := w.CleanRooms.Update(ctx, updateReq)
 		if err != nil {
@@ -388,12 +368,6 @@ func newUpdate() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdate())
-	})
 }
 
 // end service CleanRooms

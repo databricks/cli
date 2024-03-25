@@ -138,6 +138,7 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Model 1
 	assert.Equal(t, "[dev lennart] model1", b.Config.Resources.Models["model1"].Name)
+	assert.Contains(t, b.Config.Resources.Models["model1"].Tags, ml.ModelTag{Key: "dev", Value: "lennart"})
 
 	// Model serving endpoint 1
 	assert.Equal(t, "dev_lennart_servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
@@ -274,12 +275,12 @@ func TestAllResourcesMocked(t *testing.T) {
 // Make sure that we at least rename all resources
 func TestAllResourcesRenamed(t *testing.T) {
 	b := mockBundle(config.Development)
-	resources := reflect.ValueOf(b.Config.Resources)
 
 	m := ProcessTargetMode()
 	err := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, err)
 
+	resources := reflect.ValueOf(b.Config.Resources)
 	for i := 0; i < resources.NumField(); i++ {
 		field := resources.Field(i)
 

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/sync"
@@ -29,28 +30,14 @@ func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, args []string, b *
 		return nil, fmt.Errorf("SRC and DST are not configurable in the context of a bundle")
 	}
 
-	cacheDir, err := b.CacheDir(cmd.Context())
+	opts, err := files.GetSyncOptions(cmd.Context(), b)
 	if err != nil {
-		return nil, fmt.Errorf("cannot get bundle cache directory: %w", err)
+		return nil, fmt.Errorf("cannot get sync options: %w", err)
 	}
 
-	includes, err := b.GetSyncIncludePatterns(cmd.Context())
-	if err != nil {
-		return nil, fmt.Errorf("cannot get list of sync includes: %w", err)
-	}
-
-	opts := sync.SyncOptions{
-		LocalPath:    b.Config.Path,
-		RemotePath:   b.Config.Workspace.FilePath,
-		Include:      includes,
-		Exclude:      b.Config.Sync.Exclude,
-		Full:         f.full,
-		PollInterval: f.interval,
-
-		SnapshotBasePath: cacheDir,
-		WorkspaceClient:  b.WorkspaceClient(),
-	}
-	return &opts, nil
+	opts.Full = f.full
+	opts.PollInterval = f.interval
+	return opts, nil
 }
 
 func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*sync.SyncOptions, error) {
@@ -78,7 +65,7 @@ func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "sync [flags] SRC DST",
 		Short:   "Synchronize a local directory to a workspace directory",
-		Args:    cobra.MaximumNArgs(2),
+		Args:    root.MaximumNArgs(2),
 		GroupID: "development",
 	}
 

@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts/whl"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
@@ -106,7 +107,7 @@ func (m *basicUpload) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 
-	err = uploadArtifact(ctx, artifact, uploadPath, client)
+	err = uploadArtifact(ctx, b, artifact, uploadPath, client)
 	if err != nil {
 		return fmt.Errorf("upload for %s failed, error: %w", m.name, err)
 	}
@@ -114,23 +115,45 @@ func (m *basicUpload) Apply(ctx context.Context, b *bundle.Bundle) error {
 	return nil
 }
 
-func uploadArtifact(ctx context.Context, a *config.Artifact, uploadPath string, client filer.Filer) error {
+func uploadArtifact(ctx context.Context, b *bundle.Bundle, a *config.Artifact, uploadPath string, client filer.Filer) error {
+	filesToLibraries := libraries.MapFilesToTaskLibraries(ctx, b)
+
 	for i := range a.Files {
 		f := &a.Files[i]
-		if f.NeedsUpload() {
-			filename := filepath.Base(f.Source)
-			cmdio.LogString(ctx, fmt.Sprintf("Uploading %s...", filename))
 
-			err := uploadArtifactFile(ctx, f.Source, client)
-			if err != nil {
-				return err
+		filename := filepath.Base(f.Source)
+		cmdio.LogString(ctx, fmt.Sprintf("Uploading %s...", filename))
+
+		err := uploadArtifactFile(ctx, f.Source, client)
+		if err != nil {
+			return err
+		}
+
+		log.Infof(ctx, "Upload succeeded")
+		f.RemotePath = path.Join(uploadPath, filepath.Base(f.Source))
+
+		// Lookup all tasks that reference this file.
+		libs, ok := filesToLibraries[f.Source]
+		if !ok {
+			log.Debugf(ctx, "No tasks reference %s", f.Source)
+			continue
+		}
+
+		// Update all tasks that reference this file.
+		for _, lib := range libs {
+			wsfsBase := "/Workspace"
+			remotePath := path.Join(wsfsBase, f.RemotePath)
+			if lib.Whl != "" {
+				lib.Whl = remotePath
+				continue
 			}
-			log.Infof(ctx, "Upload succeeded")
-			f.RemotePath = path.Join(uploadPath, filepath.Base(f.Source))
+			if lib.Jar != "" {
+				lib.Jar = remotePath
+				continue
+			}
 		}
 	}
 
-	a.NormalisePaths()
 	return nil
 }
 

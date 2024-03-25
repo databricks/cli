@@ -27,6 +27,9 @@ type Runner interface {
 	// Run the underlying worklow.
 	Run(ctx context.Context, opts *Options) (output.RunOutput, error)
 
+	// Cancel the underlying workflow.
+	Cancel(ctx context.Context) error
+
 	// Runners support parsing and completion of additional positional arguments.
 	argsHandler
 }

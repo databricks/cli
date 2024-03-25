@@ -168,6 +168,21 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 	}
 }
 
+func (r *pipelineRunner) Cancel(ctx context.Context) error {
+	w := r.bundle.WorkspaceClient()
+	wait, err := w.Pipelines.Stop(ctx, pipelines.StopRequest{
+		PipelineId: r.pipeline.ID,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	// Waits for the Idle state of the pipeline
+	_, err = wait.GetWithTimeout(jobRunTimeout)
+	return err
+}
+
 func (r *pipelineRunner) ParseArgs(args []string, opts *Options) error {
 	if len(args) == 0 {
 		return nil

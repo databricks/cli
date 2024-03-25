@@ -2,9 +2,12 @@ package testutil
 
 import (
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // CleanupEnvironment sets up a pristine environment containing only $PATH and $HOME.
@@ -43,4 +46,24 @@ func GetEnvOrSkipTest(t *testing.T, name string) string {
 		t.Skipf("Environment variable %s is missing", name)
 	}
 	return value
+}
+
+// Changes into specified directory for the duration of the test.
+// Returns the current working directory.
+func Chdir(t *testing.T, dir string) string {
+	wd, err := os.Getwd()
+	require.NoError(t, err)
+
+	abs, err := filepath.Abs(dir)
+	require.NoError(t, err)
+
+	err = os.Chdir(abs)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err := os.Chdir(wd)
+		require.NoError(t, err)
+	})
+
+	return wd
 }

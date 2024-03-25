@@ -28,6 +28,12 @@ func New() *cobra.Command {
 		},
 	}
 
+	// Add methods
+	cmd.AddCommand(newCreateEndpoint())
+	cmd.AddCommand(newDeleteEndpoint())
+	cmd.AddCommand(newGetEndpoint())
+	cmd.AddCommand(newListEndpoints())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -73,13 +79,13 @@ func newCreateEndpoint() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'endpoint_type' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(2)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -142,12 +148,6 @@ func newCreateEndpoint() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newCreateEndpoint())
-	})
-}
-
 // start delete-endpoint command
 
 // Slice with functions to override default command behavior.
@@ -164,18 +164,17 @@ func newDeleteEndpoint() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Use = "delete-endpoint ENDPOINT_NAME NAME"
+	cmd.Use = "delete-endpoint ENDPOINT_NAME"
 	cmd.Short = `Delete an endpoint.`
 	cmd.Long = `Delete an endpoint.
 
   Arguments:
-    ENDPOINT_NAME: Name of the endpoint
-    NAME: Name of the endpoint to delete`
+    ENDPOINT_NAME: Name of the endpoint`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -185,7 +184,6 @@ func newDeleteEndpoint() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		deleteEndpointReq.EndpointName = args[0]
-		deleteEndpointReq.Name = args[1]
 
 		err = w.VectorSearchEndpoints.DeleteEndpoint(ctx, deleteEndpointReq)
 		if err != nil {
@@ -204,12 +202,6 @@ func newDeleteEndpoint() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDeleteEndpoint())
-	})
 }
 
 // start get-endpoint command
@@ -238,7 +230,7 @@ func newGetEndpoint() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -268,12 +260,6 @@ func newGetEndpoint() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetEndpoint())
-	})
-}
-
 // start list-endpoints command
 
 // Slice with functions to override default command behavior.
@@ -299,7 +285,7 @@ func newListEndpoints() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(0)
+		check := root.ExactArgs(0)
 		return check(cmd, args)
 	}
 
@@ -308,11 +294,8 @@ func newListEndpoints() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.VectorSearchEndpoints.ListEndpointsAll(ctx, listEndpointsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.VectorSearchEndpoints.ListEndpoints(ctx, listEndpointsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -325,12 +308,6 @@ func newListEndpoints() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newListEndpoints())
-	})
 }
 
 // end service VectorSearchEndpoints

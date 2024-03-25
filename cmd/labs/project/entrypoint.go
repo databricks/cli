@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -231,6 +232,8 @@ func (e *Entrypoint) validLogin(cmd *cobra.Command) (*config.Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	ctx := cmd.Context()
+	logger.Debugf(ctx, "Resolved login: %s", config.ConfigAttributes.DebugString(cfg))
 	// merge ~/.databrickscfg and ~/.databricks/labs/x/config/login.json when
 	// it comes to project-specific configuration
 	if e.NeedsCluster() && cfg.ClusterID == "" {
@@ -239,8 +242,35 @@ func (e *Entrypoint) validLogin(cmd *cobra.Command) (*config.Config, error) {
 	if e.NeedsWarehouse() && cfg.WarehouseID == "" {
 		cfg.WarehouseID = lc.WarehouseID
 	}
+	// there's a lot of end-user friction for projects, that require account-level commands.
+	// this is mainly related to the fact, that, as of January 2024, workspace administrators
+	// do not necessarily have access to call account-level APIs. There are ongoing discussions
+	// on how to best implement this on a platform level.
+	//
+	// Current temporary workaround is creating dummy ~/.databrickscfg profile with `account_id`
+	// field, though it doesn't really remove the end-user friction, hence we don't require
+	// an account profile during installation (anymore) and just prompt for it, when context
+	// does require it. This also means that we always prompt for account-level commands, unless
+	// users specify a `--profile` flag.
 	isACC := cfg.IsAccountClient()
-	if e.IsAccountLevel && !isACC {
+	if e.IsAccountLevel && cfg.Profile == "" {
+		if !cmdio.IsPromptSupported(ctx) {
+			return nil, config.ErrCannotConfigureAuth
+		}
+		replaceCfg, err := e.envAwareConfig(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("replace config: %w", err)
+		}
+		err = lc.askAccountProfile(ctx, replaceCfg)
+		if err != nil {
+			return nil, fmt.Errorf("account: %w", err)
+		}
+		err = replaceCfg.EnsureResolved()
+		if err != nil {
+			return nil, fmt.Errorf("resolve: %w", err)
+		}
+		return replaceCfg, nil
+	} else if e.IsAccountLevel && !isACC {
 		return nil, databricks.ErrNotAccountClient
 	}
 	if e.NeedsCluster() && !isACC && cfg.ClusterID == "" {

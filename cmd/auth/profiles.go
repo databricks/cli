@@ -6,9 +6,11 @@ import (
 	"net/http"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
@@ -29,8 +31,10 @@ func (c *profileMetadata) IsEmpty() bool {
 }
 
 func (c *profileMetadata) Load(ctx context.Context, skipValidate bool) {
-	// TODO: disable config loaders other than configfile
-	cfg := &config.Config{Profile: c.Name}
+	cfg := &config.Config{
+		Loaders: []config.Loader{config.ConfigFile},
+		Profile: c.Name,
+	}
 	_ = cfg.EnsureResolved()
 	if cfg.IsAws() {
 		c.Cloud = "aws"
@@ -47,6 +51,7 @@ func (c *profileMetadata) Load(ctx context.Context, skipValidate bool) {
 		if err != nil {
 			return
 		}
+		c.Host = cfg.Host
 		c.AuthType = cfg.AuthType
 		return
 	}
@@ -57,6 +62,7 @@ func (c *profileMetadata) Load(ctx context.Context, skipValidate bool) {
 			return
 		}
 		_, err = a.Workspaces.List(ctx)
+		c.Host = cfg.Host
 		c.AuthType = cfg.AuthType
 		if err != nil {
 			return
@@ -68,14 +74,13 @@ func (c *profileMetadata) Load(ctx context.Context, skipValidate bool) {
 			return
 		}
 		_, err = w.CurrentUser.Me(ctx)
+		c.Host = cfg.Host
 		c.AuthType = cfg.AuthType
 		if err != nil {
 			return
 		}
 		c.Valid = true
 	}
-	// set host again, this time normalized
-	c.Host = cfg.Host
 }
 
 func newProfilesCommand() *cobra.Command {
@@ -117,8 +122,10 @@ func newProfilesCommand() *cobra.Command {
 			}
 			wg.Add(1)
 			go func() {
-				// load more information about profile
-				profile.Load(cmd.Context(), skipValidate)
+				ctx := cmd.Context()
+				t := time.Now()
+				profile.Load(ctx, skipValidate)
+				log.Debugf(ctx, "Profile %q took %s to load", profile.Name, time.Since(t))
 				wg.Done()
 			}()
 			profiles = append(profiles, profile)

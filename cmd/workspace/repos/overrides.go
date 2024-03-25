@@ -25,7 +25,7 @@ func createOverride(createCmd *cobra.Command, createReq *workspace.CreateRepo) {
 		// If the provider argument is not specified, we try to detect it from the URL.
 		check := cobra.RangeArgs(1, 2)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			check = root.ExactArgs(0)
 		}
 		return check(cmd, args)
 	}

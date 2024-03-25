@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/fileset"
-	"github.com/databricks/cli/libs/notebook"
 )
 
 // SnapshotState keeps track of files on the local filesystem and their corresponding
@@ -46,10 +45,12 @@ func NewSnapshotState(localFiles []fileset.File) (*SnapshotState, error) {
 	}
 
 	// Compute the new state.
-	for _, f := range localFiles {
+	for k := range localFiles {
+		f := &localFiles[k]
 		// Compute the remote name the file will have in WSFS
 		remoteName := filepath.ToSlash(f.Relative)
-		isNotebook, _, err := notebook.Detect(f.Absolute)
+		isNotebook, err := f.IsNotebook()
+
 		if err != nil {
 			// Ignore this file if we're unable to determine the notebook type.
 			// Trying to upload such a file to the workspace would fail anyway.
@@ -70,6 +71,12 @@ func NewSnapshotState(localFiles []fileset.File) (*SnapshotState, error) {
 		fs.RemoteToLocalNames[remoteName] = f.Relative
 	}
 	return fs, nil
+}
+
+func (fs *SnapshotState) ResetLastModifiedTimes() {
+	for k := range fs.LastModifiedTimes {
+		fs.LastModifiedTimes[k] = time.Unix(0, 0)
+	}
 }
 
 // Consistency checks for the sync files state representation. These are invariants

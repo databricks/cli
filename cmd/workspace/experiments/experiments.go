@@ -35,6 +35,38 @@ func New() *cobra.Command {
 		},
 	}
 
+	// Add methods
+	cmd.AddCommand(newCreateExperiment())
+	cmd.AddCommand(newCreateRun())
+	cmd.AddCommand(newDeleteExperiment())
+	cmd.AddCommand(newDeleteRun())
+	cmd.AddCommand(newDeleteRuns())
+	cmd.AddCommand(newDeleteTag())
+	cmd.AddCommand(newGetByName())
+	cmd.AddCommand(newGetExperiment())
+	cmd.AddCommand(newGetHistory())
+	cmd.AddCommand(newGetPermissionLevels())
+	cmd.AddCommand(newGetPermissions())
+	cmd.AddCommand(newGetRun())
+	cmd.AddCommand(newListArtifacts())
+	cmd.AddCommand(newListExperiments())
+	cmd.AddCommand(newLogBatch())
+	cmd.AddCommand(newLogInputs())
+	cmd.AddCommand(newLogMetric())
+	cmd.AddCommand(newLogModel())
+	cmd.AddCommand(newLogParam())
+	cmd.AddCommand(newRestoreExperiment())
+	cmd.AddCommand(newRestoreRun())
+	cmd.AddCommand(newRestoreRuns())
+	cmd.AddCommand(newSearchExperiments())
+	cmd.AddCommand(newSearchRuns())
+	cmd.AddCommand(newSetExperimentTag())
+	cmd.AddCommand(newSetPermissions())
+	cmd.AddCommand(newSetTag())
+	cmd.AddCommand(newUpdateExperiment())
+	cmd.AddCommand(newUpdatePermissions())
+	cmd.AddCommand(newUpdateRun())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -82,13 +114,13 @@ func newCreateExperiment() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -126,12 +158,6 @@ func newCreateExperiment() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newCreateExperiment())
-	})
-}
-
 // start create-run command
 
 // Slice with functions to override default command behavior.
@@ -167,7 +193,7 @@ func newCreateRun() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(0)
+		check := root.ExactArgs(0)
 		return check(cmd, args)
 	}
 
@@ -200,12 +226,6 @@ func newCreateRun() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newCreateRun())
-	})
 }
 
 // start delete-experiment command
@@ -241,13 +261,13 @@ func newDeleteExperiment() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'experiment_id' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -285,12 +305,6 @@ func newDeleteExperiment() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDeleteExperiment())
-	})
-}
-
 // start delete-run command
 
 // Slice with functions to override default command behavior.
@@ -322,13 +336,13 @@ func newDeleteRun() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'run_id' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -366,12 +380,6 @@ func newDeleteRun() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDeleteRun())
-	})
-}
-
 // start delete-runs command
 
 // Slice with functions to override default command behavior.
@@ -397,7 +405,9 @@ func newDeleteRuns() *cobra.Command {
 	cmd.Long = `Delete runs by creation time.
   
   Bulk delete runs in an experiment that were created prior to or at the
-  specified timestamp. Deletes at most max_runs per request.
+  specified timestamp. Deletes at most max_runs per request. To call this API
+  from a Databricks Notebook in Python, you can use the client code snippet on
+  https://learn.microsoft.com/en-us/azure/databricks/mlflow/runs#bulk-delete.
 
   Arguments:
     EXPERIMENT_ID: The ID of the experiment containing the runs to delete.
@@ -409,13 +419,13 @@ func newDeleteRuns() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'experiment_id', 'max_timestamp_millis' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(2)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -459,12 +469,6 @@ func newDeleteRuns() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDeleteRuns())
-	})
-}
-
 // start delete-tag command
 
 // Slice with functions to override default command behavior.
@@ -498,13 +502,13 @@ func newDeleteTag() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'run_id', 'key' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(2)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -545,12 +549,6 @@ func newDeleteTag() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDeleteTag())
-	})
-}
-
 // start get-by-name command
 
 // Slice with functions to override default command behavior.
@@ -587,7 +585,7 @@ func newGetByName() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -615,12 +613,6 @@ func newGetByName() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetByName())
-	})
 }
 
 // start get-experiment command
@@ -651,7 +643,7 @@ func newGetExperiment() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -679,12 +671,6 @@ func newGetExperiment() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetExperiment())
-	})
 }
 
 // start get-history command
@@ -720,7 +706,7 @@ func newGetHistory() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -731,11 +717,8 @@ func newGetHistory() *cobra.Command {
 
 		getHistoryReq.MetricKey = args[0]
 
-		response, err := w.Experiments.GetHistoryAll(ctx, getHistoryReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Experiments.GetHistory(ctx, getHistoryReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -748,12 +731,6 @@ func newGetHistory() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetHistory())
-	})
 }
 
 // start get-permission-levels command
@@ -784,7 +761,7 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -812,12 +789,6 @@ func newGetPermissionLevels() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetPermissionLevels())
-	})
 }
 
 // start get-permissions command
@@ -849,7 +820,7 @@ func newGetPermissions() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -877,12 +848,6 @@ func newGetPermissions() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetPermissions())
-	})
 }
 
 // start get-run command
@@ -920,7 +885,7 @@ func newGetRun() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -948,12 +913,6 @@ func newGetRun() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetRun())
-	})
 }
 
 // start list-artifacts command
@@ -987,7 +946,7 @@ func newListArtifacts() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(0)
+		check := root.ExactArgs(0)
 		return check(cmd, args)
 	}
 
@@ -996,11 +955,8 @@ func newListArtifacts() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.Experiments.ListArtifactsAll(ctx, listArtifactsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Experiments.ListArtifacts(ctx, listArtifactsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1013,12 +969,6 @@ func newListArtifacts() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newListArtifacts())
-	})
 }
 
 // start list-experiments command
@@ -1050,7 +1000,7 @@ func newListExperiments() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(0)
+		check := root.ExactArgs(0)
 		return check(cmd, args)
 	}
 
@@ -1059,11 +1009,8 @@ func newListExperiments() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.Experiments.ListExperimentsAll(ctx, listExperimentsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Experiments.ListExperiments(ctx, listExperimentsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1076,12 +1023,6 @@ func newListExperiments() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newListExperiments())
-	})
 }
 
 // start log-batch command
@@ -1152,7 +1093,7 @@ func newLogBatch() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(0)
+		check := root.ExactArgs(0)
 		return check(cmd, args)
 	}
 
@@ -1187,12 +1128,6 @@ func newLogBatch() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newLogBatch())
-	})
-}
-
 // start log-inputs command
 
 // Slice with functions to override default command behavior.
@@ -1224,7 +1159,7 @@ func newLogInputs() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(0)
+		check := root.ExactArgs(0)
 		return check(cmd, args)
 	}
 
@@ -1257,12 +1192,6 @@ func newLogInputs() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newLogInputs())
-	})
 }
 
 // start log-metric command
@@ -1304,13 +1233,13 @@ func newLogMetric() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'key', 'value', 'timestamp' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(3)
+		check := root.ExactArgs(3)
 		return check(cmd, args)
 	}
 
@@ -1360,12 +1289,6 @@ func newLogMetric() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newLogMetric())
-	})
-}
-
 // start log-model command
 
 // Slice with functions to override default command behavior.
@@ -1397,7 +1320,7 @@ func newLogModel() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(0)
+		check := root.ExactArgs(0)
 		return check(cmd, args)
 	}
 
@@ -1430,12 +1353,6 @@ func newLogModel() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newLogModel())
-	})
 }
 
 // start log-param command
@@ -1476,13 +1393,13 @@ func newLogParam() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'key', 'value' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(2)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -1523,12 +1440,6 @@ func newLogParam() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newLogParam())
-	})
-}
-
 // start restore-experiment command
 
 // Slice with functions to override default command behavior.
@@ -1565,13 +1476,13 @@ func newRestoreExperiment() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'experiment_id' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -1609,12 +1520,6 @@ func newRestoreExperiment() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newRestoreExperiment())
-	})
-}
-
 // start restore-run command
 
 // Slice with functions to override default command behavior.
@@ -1646,13 +1551,13 @@ func newRestoreRun() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'run_id' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -1690,12 +1595,6 @@ func newRestoreRun() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newRestoreRun())
-	})
-}
-
 // start restore-runs command
 
 // Slice with functions to override default command behavior.
@@ -1721,7 +1620,9 @@ func newRestoreRuns() *cobra.Command {
 	cmd.Long = `Restore runs by deletion time.
   
   Bulk restore runs in an experiment that were deleted no earlier than the
-  specified timestamp. Restores at most max_runs per request.
+  specified timestamp. Restores at most max_runs per request. To call this API
+  from a Databricks Notebook in Python, you can use the client code snippet on
+  https://learn.microsoft.com/en-us/azure/databricks/mlflow/runs#bulk-restore.
 
   Arguments:
     EXPERIMENT_ID: The ID of the experiment containing the runs to restore.
@@ -1733,13 +1634,13 @@ func newRestoreRuns() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'experiment_id', 'min_timestamp_millis' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(2)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -1783,12 +1684,6 @@ func newRestoreRuns() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newRestoreRuns())
-	})
-}
-
 // start search-experiments command
 
 // Slice with functions to override default command behavior.
@@ -1822,7 +1717,7 @@ func newSearchExperiments() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(0)
+		check := root.ExactArgs(0)
 		return check(cmd, args)
 	}
 
@@ -1838,11 +1733,8 @@ func newSearchExperiments() *cobra.Command {
 			}
 		}
 
-		response, err := w.Experiments.SearchExperimentsAll(ctx, searchExperimentsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Experiments.SearchExperiments(ctx, searchExperimentsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1855,12 +1747,6 @@ func newSearchExperiments() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newSearchExperiments())
-	})
 }
 
 // start search-runs command
@@ -1899,7 +1785,7 @@ func newSearchRuns() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(0)
+		check := root.ExactArgs(0)
 		return check(cmd, args)
 	}
 
@@ -1915,11 +1801,8 @@ func newSearchRuns() *cobra.Command {
 			}
 		}
 
-		response, err := w.Experiments.SearchRunsAll(ctx, searchRunsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Experiments.SearchRuns(ctx, searchRunsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1932,12 +1815,6 @@ func newSearchRuns() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newSearchRuns())
-	})
 }
 
 // start set-experiment-tag command
@@ -1976,13 +1853,13 @@ func newSetExperimentTag() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'experiment_id', 'key', 'value' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(3)
+		check := root.ExactArgs(3)
 		return check(cmd, args)
 	}
 
@@ -2026,12 +1903,6 @@ func newSetExperimentTag() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newSetExperimentTag())
-	})
-}
-
 // start set-permissions command
 
 // Slice with functions to override default command behavior.
@@ -2065,7 +1936,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -2099,12 +1970,6 @@ func newSetPermissions() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newSetPermissions())
-	})
 }
 
 // start set-tag command
@@ -2146,13 +2011,13 @@ func newSetTag() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'key', 'value' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(2)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -2193,12 +2058,6 @@ func newSetTag() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newSetTag())
-	})
-}
-
 // start update-experiment command
 
 // Slice with functions to override default command behavior.
@@ -2232,13 +2091,13 @@ func newUpdateExperiment() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'experiment_id' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -2276,12 +2135,6 @@ func newUpdateExperiment() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdateExperiment())
-	})
-}
-
 // start update-permissions command
 
 // Slice with functions to override default command behavior.
@@ -2315,7 +2168,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -2351,12 +2204,6 @@ func newUpdatePermissions() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdatePermissions())
-	})
-}
-
 // start update-run command
 
 // Slice with functions to override default command behavior.
@@ -2389,7 +2236,7 @@ func newUpdateRun() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(0)
+		check := root.ExactArgs(0)
 		return check(cmd, args)
 	}
 
@@ -2422,12 +2269,6 @@ func newUpdateRun() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdateRun())
-	})
 }
 
 // end service Experiments

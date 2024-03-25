@@ -10,12 +10,13 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 )
 
 type statePull struct {
-	filerFunc
+	filerFactory deploy.FilerFactory
 }
 
 func (l *statePull) Name() string {
@@ -45,7 +46,7 @@ func (l *statePull) remoteState(ctx context.Context, f filer.Filer) (*bytes.Buff
 }
 
 func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) error {
-	f, err := l.filerFunc(b)
+	f, err := l.filerFactory(b)
 	if err != nil {
 		return err
 	}
@@ -94,5 +95,5 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) error {
 }
 
 func StatePull() bundle.Mutator {
-	return &statePull{stateFiler}
+	return &statePull{deploy.StateFiler}
 }

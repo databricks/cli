@@ -2,11 +2,10 @@ package mutator
 
 import (
 	"context"
-	"strings"
-	"unicode"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/tags"
 )
 
@@ -33,7 +32,7 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) error
 	}
 
 	b.Config.Workspace.CurrentUser = &config.User{
-		ShortName: getShortUserName(me.UserName),
+		ShortName: auth.GetShortUserName(me.UserName),
 		User:      me,
 	}
 
@@ -41,19 +40,4 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) error
 	b.Tagging = tags.ForCloud(w.Config)
 
 	return nil
-}
-
-func replaceNonAlphanumeric(r rune) rune {
-	if unicode.IsLetter(r) || unicode.IsDigit(r) {
-		return r
-	}
-	return '_'
-}
-
-// Get a short-form username, based on the user's primary email address.
-// We leave the full range of unicode letters in tact, but remove all "special" characters,
-// including dots, which are not supported in e.g. experiment names.
-func getShortUserName(emailAddress string) string {
-	local, _, _ := strings.Cut(emailAddress, "@")
-	return strings.Map(replaceNonAlphanumeric, local)
 }

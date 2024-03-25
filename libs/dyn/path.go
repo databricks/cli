@@ -10,6 +10,22 @@ type pathComponent struct {
 	index int
 }
 
+func (c pathComponent) Key() string {
+	return c.key
+}
+
+func (c pathComponent) Index() int {
+	return c.index
+}
+
+func (c pathComponent) isKey() bool {
+	return c.key != ""
+}
+
+func (c pathComponent) isIndex() bool {
+	return c.key == ""
+}
+
 // Path represents a path to a value in a [Value] configuration tree.
 type Path []pathComponent
 
@@ -33,17 +49,13 @@ func NewPath(cs ...pathComponent) Path {
 	return cs
 }
 
-// Join joins the given paths.
-func (p Path) Join(qs ...Path) Path {
-	for _, q := range qs {
-		p = p.Append(q...)
-	}
-	return p
-}
-
 // Append appends the given components to the path.
+// Mutations to the returned path do not affect the original path.
 func (p Path) Append(cs ...pathComponent) Path {
-	return append(p, cs...)
+	out := make(Path, len(p)+len(cs))
+	copy(out, p)
+	copy(out[len(p):], cs)
+	return out
 }
 
 // Equal returns true if the paths are equal.

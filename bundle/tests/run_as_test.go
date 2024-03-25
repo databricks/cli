@@ -13,12 +13,17 @@ import (
 
 func TestRunAsDefault(t *testing.T) {
 	b := load(t, "./run_as")
-	b.Config.Workspace.CurrentUser = &config.User{
-		User: &iam.User{
-			UserName: "jane@doe.com",
-		},
-	}
+
 	ctx := context.Background()
+	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) error {
+		b.Config.Workspace.CurrentUser = &config.User{
+			User: &iam.User{
+				UserName: "jane@doe.com",
+			},
+		}
+		return nil
+	})
+
 	err := bundle.Apply(ctx, b, mutator.SetRunAs())
 	assert.NoError(t, err)
 
@@ -39,21 +44,26 @@ func TestRunAsDefault(t *testing.T) {
 
 	pipelines := b.Config.Resources.Pipelines
 	assert.Len(t, pipelines["nyc_taxi_pipeline"].Permissions, 2)
-	assert.Equal(t, pipelines["nyc_taxi_pipeline"].Permissions[0].Level, "CAN_VIEW")
-	assert.Equal(t, pipelines["nyc_taxi_pipeline"].Permissions[0].UserName, "my_user_name")
+	assert.Equal(t, "CAN_VIEW", pipelines["nyc_taxi_pipeline"].Permissions[0].Level)
+	assert.Equal(t, "my_user_name", pipelines["nyc_taxi_pipeline"].Permissions[0].UserName)
 
-	assert.Equal(t, pipelines["nyc_taxi_pipeline"].Permissions[1].Level, "IS_OWNER")
-	assert.Equal(t, pipelines["nyc_taxi_pipeline"].Permissions[1].ServicePrincipalName, "my_service_principal")
+	assert.Equal(t, "IS_OWNER", pipelines["nyc_taxi_pipeline"].Permissions[1].Level)
+	assert.Equal(t, "my_service_principal", pipelines["nyc_taxi_pipeline"].Permissions[1].ServicePrincipalName)
 }
 
 func TestRunAsDevelopment(t *testing.T) {
 	b := loadTarget(t, "./run_as", "development")
-	b.Config.Workspace.CurrentUser = &config.User{
-		User: &iam.User{
-			UserName: "jane@doe.com",
-		},
-	}
+
 	ctx := context.Background()
+	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) error {
+		b.Config.Workspace.CurrentUser = &config.User{
+			User: &iam.User{
+				UserName: "jane@doe.com",
+			},
+		}
+		return nil
+	})
+
 	err := bundle.Apply(ctx, b, mutator.SetRunAs())
 	assert.NoError(t, err)
 
@@ -74,9 +84,9 @@ func TestRunAsDevelopment(t *testing.T) {
 
 	pipelines := b.Config.Resources.Pipelines
 	assert.Len(t, pipelines["nyc_taxi_pipeline"].Permissions, 2)
-	assert.Equal(t, pipelines["nyc_taxi_pipeline"].Permissions[0].Level, "CAN_VIEW")
-	assert.Equal(t, pipelines["nyc_taxi_pipeline"].Permissions[0].ServicePrincipalName, "my_service_principal")
+	assert.Equal(t, "CAN_VIEW", pipelines["nyc_taxi_pipeline"].Permissions[0].Level)
+	assert.Equal(t, "my_service_principal", pipelines["nyc_taxi_pipeline"].Permissions[0].ServicePrincipalName)
 
-	assert.Equal(t, pipelines["nyc_taxi_pipeline"].Permissions[1].Level, "IS_OWNER")
-	assert.Equal(t, pipelines["nyc_taxi_pipeline"].Permissions[1].UserName, "my_user_name")
+	assert.Equal(t, "IS_OWNER", pipelines["nyc_taxi_pipeline"].Permissions[1].Level)
+	assert.Equal(t, "my_user_name", pipelines["nyc_taxi_pipeline"].Permissions[1].UserName)
 }

@@ -8,8 +8,8 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/paths"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/require"
@@ -35,6 +35,10 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 	touchEmptyFile(t, filepath.Join(dir, "test1.py"))
 	touchEmptyFile(t, filepath.Join(dir, "test/test2.py"))
 	touchEmptyFile(t, filepath.Join(dir, "test/test3.py"))
+	touchEmptyFile(t, filepath.Join(dir, "relative/test4.py"))
+	touchEmptyFile(t, filepath.Join(dir, "relative/test5.py"))
+	touchEmptyFile(t, filepath.Join(dir, "skip/test6.py"))
+	touchEmptyFile(t, filepath.Join(dir, "skip/test7.py"))
 
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -42,9 +46,6 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						Paths: paths.Paths{
-							ConfigFilePath: filepath.Join(dir, "resource.yml"),
-						},
 						PipelineSpec: &pipelines.PipelineSpec{
 							Libraries: []pipelines.PipelineLibrary{
 								{
@@ -57,7 +58,13 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 								},
 								{
 									File: &pipelines.FileLibrary{
-										Path: "./**/*.py",
+										Path: "./test/*.py",
+									},
+								},
+								{
+									// This value is annotated to be defined in the "./relative" directory.
+									File: &pipelines.FileLibrary{
+										Path: "./*.py",
 									},
 								},
 								{
@@ -98,18 +105,25 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 		},
 	}
 
+	bundletest.SetLocation(b, ".", filepath.Join(dir, "resource.yml"))
+	bundletest.SetLocation(b, "resources.pipelines.pipeline.libraries[3]", filepath.Join(dir, "relative", "resource.yml"))
+
 	m := ExpandPipelineGlobPaths()
 	err := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, err)
 
 	libraries := b.Config.Resources.Pipelines["pipeline"].Libraries
-	require.Len(t, libraries, 11)
+	require.Len(t, libraries, 13)
 
 	// Making sure glob patterns are expanded correctly
 	require.True(t, containsNotebook(libraries, filepath.Join("test", "test2.ipynb")))
 	require.True(t, containsNotebook(libraries, filepath.Join("test", "test3.ipynb")))
 	require.True(t, containsFile(libraries, filepath.Join("test", "test2.py")))
 	require.True(t, containsFile(libraries, filepath.Join("test", "test3.py")))
+
+	// These patterns are defined relative to "./relative"
+	require.True(t, containsFile(libraries, "test4.py"))
+	require.True(t, containsFile(libraries, "test5.py"))
 
 	// Making sure exact file references work as well
 	require.True(t, containsNotebook(libraries, "test1.ipynb"))

@@ -25,7 +25,7 @@ func NewRoot() *Root {
 			"required_providers": map[string]interface{}{
 				"databricks": map[string]interface{}{
 					"source":  "databricks/databricks",
-					"version": "1.31.1",
+					"version": "1.37.0",
 				},
 			},
 		},

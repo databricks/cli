@@ -32,6 +32,14 @@ func New() *cobra.Command {
 		Hidden: true,
 	}
 
+	// Add methods
+	cmd.AddCommand(newCreate())
+	cmd.AddCommand(newDeleteApp())
+	cmd.AddCommand(newGetApp())
+	cmd.AddCommand(newGetAppDeploymentStatus())
+	cmd.AddCommand(newGetApps())
+	cmd.AddCommand(newGetEvents())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -58,7 +66,7 @@ func newCreate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: output-only field
+	// TODO: any: resources
 
 	cmd.Use = "create"
 	cmd.Short = `Create and deploy an application.`
@@ -101,12 +109,6 @@ func newCreate() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newCreate())
-	})
-}
-
 // start delete-app command
 
 // Slice with functions to override default command behavior.
@@ -135,7 +137,7 @@ func newDeleteApp() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -163,12 +165,6 @@ func newDeleteApp() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDeleteApp())
-	})
 }
 
 // start get-app command
@@ -199,7 +195,7 @@ func newGetApp() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -227,12 +223,6 @@ func newGetApp() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetApp())
-	})
 }
 
 // start get-app-deployment-status command
@@ -265,7 +255,7 @@ func newGetAppDeploymentStatus() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -293,12 +283,6 @@ func newGetAppDeploymentStatus() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetAppDeploymentStatus())
-	})
 }
 
 // start get-apps command
@@ -343,12 +327,6 @@ func newGetApps() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetApps())
-	})
-}
-
 // start get-events command
 
 // Slice with functions to override default command behavior.
@@ -377,7 +355,7 @@ func newGetEvents() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -405,12 +383,6 @@ func newGetEvents() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetEvents())
-	})
 }
 
 // end service Apps

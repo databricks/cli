@@ -42,8 +42,21 @@ func NewValue(v any, loc Location) Value {
 	}
 }
 
+// WithLocation returns a new Value with its location set to the given value.
+func (v Value) WithLocation(loc Location) Value {
+	return Value{
+		v: v.v,
+		k: v.k,
+		l: loc,
+	}
+}
+
 func (v Value) Kind() Kind {
 	return v.k
+}
+
+func (v Value) Value() any {
+	return v.v
 }
 
 func (v Value) Location() Location {
@@ -129,4 +142,40 @@ func (v Value) MarkAnchor() Value {
 
 func (v Value) IsAnchor() bool {
 	return v.anchor
+}
+
+// eq is an internal only method that compares two values.
+// It is used to determine if a value has changed during a visit.
+// We need a custom implementation because maps and slices
+// cannot be compared with the regular == operator.
+func (v Value) eq(w Value) bool {
+	if v.k != w.k || v.l != w.l {
+		return false
+	}
+
+	switch v.k {
+	case KindMap:
+		// Compare pointers to the underlying map.
+		// This is safe because we don't allow maps to be mutated.
+		return &v.v == &w.v
+	case KindSequence:
+		vs := v.v.([]Value)
+		ws := w.v.([]Value)
+		lv := len(vs)
+		lw := len(ws)
+		// If both slices are empty, they are equal.
+		if lv == 0 && lw == 0 {
+			return true
+		}
+		// If they have different lengths, they are not equal.
+		if lv != lw {
+			return false
+		}
+		// They are both non-empty and have the same length.
+		// Compare pointers to the underlying slice.
+		// This is safe because we don't allow slices to be mutated.
+		return &vs[0] == &ws[0]
+	default:
+		return v.v == w.v
+	}
 }
