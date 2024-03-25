@@ -24,7 +24,7 @@ type normalizeOptions struct {
 	includeMissingFields bool
 }
 
-func Normalize(dst any, src dyn.Value, opts ...NormalizeOption) (dyn.Value, diag.Diagnostics) {
+func Normalize(dst any, src dyn.Value, field_substitutions map[string]string, opts ...NormalizeOption) (dyn.Value, diag.Diagnostics) {
 	var n normalizeOptions
 	for _, opt := range opts {
 		switch opt {
@@ -33,21 +33,21 @@ func Normalize(dst any, src dyn.Value, opts ...NormalizeOption) (dyn.Value, diag
 		}
 	}
 
-	return n.normalizeType(reflect.TypeOf(dst), src, []reflect.Type{})
+	return n.normalizeType(reflect.TypeOf(dst), src, []reflect.Type{}, field_substitutions)
 }
 
-func (n normalizeOptions) normalizeType(typ reflect.Type, src dyn.Value, seen []reflect.Type) (dyn.Value, diag.Diagnostics) {
+func (n normalizeOptions) normalizeType(typ reflect.Type, src dyn.Value, seen []reflect.Type, field_substitutions map[string]string) (dyn.Value, diag.Diagnostics) {
 	for typ.Kind() == reflect.Pointer {
 		typ = typ.Elem()
 	}
 
 	switch typ.Kind() {
 	case reflect.Struct:
-		return n.normalizeStruct(typ, src, append(seen, typ))
+		return n.normalizeStruct(typ, src, append(seen, typ), field_substitutions)
 	case reflect.Map:
-		return n.normalizeMap(typ, src, append(seen, typ))
+		return n.normalizeMap(typ, src, append(seen, typ), field_substitutions)
 	case reflect.Slice:
-		return n.normalizeSlice(typ, src, append(seen, typ))
+		return n.normalizeSlice(typ, src, append(seen, typ), field_substitutions)
 	case reflect.String:
 		return n.normalizeString(typ, src)
 	case reflect.Bool:
@@ -69,7 +69,7 @@ func typeMismatch(expected dyn.Kind, src dyn.Value) diag.Diagnostic {
 	}
 }
 
-func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen []reflect.Type) (dyn.Value, diag.Diagnostics) {
+func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen []reflect.Type, field_substitutions map[string]string) (dyn.Value, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	switch src.Kind() {
@@ -77,6 +77,10 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 		out := make(map[string]dyn.Value)
 		info := getStructInfo(typ)
 		for k, v := range src.MustMap() {
+			value, exists := field_substitutions[k]
+			if exists {
+				k = value
+			}
 			index, ok := info.Fields[k]
 			if !ok {
 				diags = diags.Append(diag.Diagnostic{
@@ -88,7 +92,7 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 			}
 
 			// Normalize the value according to the field type.
-			v, err := n.normalizeType(typ.FieldByIndex(index).Type, v, seen)
+			v, err := n.normalizeType(typ.FieldByIndex(index).Type, v, seen, field_substitutions)
 			if err != nil {
 				diags = diags.Extend(err)
 				// Skip the element if it cannot be normalized.
@@ -96,7 +100,6 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 					continue
 				}
 			}
-
 			out[k] = v
 		}
 
@@ -126,17 +129,17 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 			var v dyn.Value
 			switch ftyp.Kind() {
 			case reflect.Struct, reflect.Map:
-				v, _ = n.normalizeType(ftyp, dyn.V(map[string]dyn.Value{}), seen)
+				v, _ = n.normalizeType(ftyp, dyn.V(map[string]dyn.Value{}), seen, field_substitutions)
 			case reflect.Slice:
-				v, _ = n.normalizeType(ftyp, dyn.V([]dyn.Value{}), seen)
+				v, _ = n.normalizeType(ftyp, dyn.V([]dyn.Value{}), seen, field_substitutions)
 			case reflect.String:
-				v, _ = n.normalizeType(ftyp, dyn.V(""), seen)
+				v, _ = n.normalizeType(ftyp, dyn.V(""), seen, field_substitutions)
 			case reflect.Bool:
-				v, _ = n.normalizeType(ftyp, dyn.V(false), seen)
+				v, _ = n.normalizeType(ftyp, dyn.V(false), seen, field_substitutions)
 			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-				v, _ = n.normalizeType(ftyp, dyn.V(int64(0)), seen)
+				v, _ = n.normalizeType(ftyp, dyn.V(int64(0)), seen, field_substitutions)
 			case reflect.Float32, reflect.Float64:
-				v, _ = n.normalizeType(ftyp, dyn.V(float64(0)), seen)
+				v, _ = n.normalizeType(ftyp, dyn.V(float64(0)), seen, field_substitutions)
 			default:
 				// Skip fields for which we do not have a natural [dyn.Value] equivalent.
 				// For example, we don't handle reflect.Complex* and reflect.Uint* types.
@@ -146,7 +149,6 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 				out[k] = v
 			}
 		}
-
 		return dyn.NewValue(out, src.Location()), diags
 	case dyn.KindNil:
 		return src, diags
@@ -155,7 +157,7 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 	return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindMap, src))
 }
 
-func (n normalizeOptions) normalizeMap(typ reflect.Type, src dyn.Value, seen []reflect.Type) (dyn.Value, diag.Diagnostics) {
+func (n normalizeOptions) normalizeMap(typ reflect.Type, src dyn.Value, seen []reflect.Type, field_substitutions map[string]string) (dyn.Value, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	switch src.Kind() {
@@ -163,7 +165,7 @@ func (n normalizeOptions) normalizeMap(typ reflect.Type, src dyn.Value, seen []r
 		out := make(map[string]dyn.Value)
 		for k, v := range src.MustMap() {
 			// Normalize the value according to the map element type.
-			v, err := n.normalizeType(typ.Elem(), v, seen)
+			v, err := n.normalizeType(typ.Elem(), v, seen, field_substitutions)
 			if err != nil {
 				diags = diags.Extend(err)
 				// Skip the element if it cannot be normalized.
@@ -183,7 +185,7 @@ func (n normalizeOptions) normalizeMap(typ reflect.Type, src dyn.Value, seen []r
 	return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindMap, src))
 }
 
-func (n normalizeOptions) normalizeSlice(typ reflect.Type, src dyn.Value, seen []reflect.Type) (dyn.Value, diag.Diagnostics) {
+func (n normalizeOptions) normalizeSlice(typ reflect.Type, src dyn.Value, seen []reflect.Type, field_substitutions map[string]string) (dyn.Value, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	switch src.Kind() {
@@ -191,7 +193,7 @@ func (n normalizeOptions) normalizeSlice(typ reflect.Type, src dyn.Value, seen [
 		out := make([]dyn.Value, 0, len(src.MustSequence()))
 		for _, v := range src.MustSequence() {
 			// Normalize the value according to the slice element type.
-			v, err := n.normalizeType(typ.Elem(), v, seen)
+			v, err := n.normalizeType(typ.Elem(), v, seen, field_substitutions)
 			if err != nil {
 				diags = diags.Extend(err)
 				// Skip the element if it cannot be normalized.

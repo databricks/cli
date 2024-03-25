@@ -548,6 +548,12 @@ func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
 						Name:            "test_registered_model",
 						AttributeValues: map[string]interface{}{"id": "1"},
 					},
+					{
+						Type:            "databricks_lakehouse_monitor",
+						Mode:            "managed",
+						Name:            "test_lakehouse_monitor",
+						AttributeValues: map[string]interface{}{"id": "1"},
+					},
 				},
 			},
 		},
@@ -573,6 +579,8 @@ func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
 	assert.Equal(t, "1", config.Resources.RegisteredModels["test_registered_model"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.RegisteredModels["test_registered_model"].ModifiedStatus)
 
+	assert.Equal(t, "1", config.Resources.RegisteredModels["test_lakehouse_monitor"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.RegisteredModels["test_lakehouse_monitor"].ModifiedStatus)
 	AssertFullResourceCoverage(t, &config)
 }
 
@@ -618,6 +626,13 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 				"test_registered_model": {
 					CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{
 						Name: "test_registered_model",
+					},
+				},
+			},
+			LakehouseMonitor: map[string]*resources.LakehouseMonitor{
+				"test_lakehouse_monitor": {
+					CreateMonitor: &catalog.CreateMonitor{
+						FullName: "test_lakehouse_monitor",
 					},
 				},
 			},
@@ -722,6 +737,18 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 				"test_registered_model_new": {
 					CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{
 						Name: "test_registered_model_new",
+					},
+				},
+			},
+			LakehouseMonitor: map[string]*resources.LakehouseMonitor{
+				"test_lakehouse_monitor": {
+					CreateMonitor: &catalog.CreateMonitor{
+						FullName: "test_lakehouse_monitor",
+					},
+				},
+				"test_lakehouse_monitor_new": {
+					CreateMonitor: &catalog.CreateMonitor{
+						FullName: "test_lakehouse_monitor_new",
 					},
 				},
 			},

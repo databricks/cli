@@ -17,6 +17,7 @@ type Resources struct {
 	Experiments           map[string]*resources.MlflowExperiment     `json:"experiments,omitempty"`
 	ModelServingEndpoints map[string]*resources.ModelServingEndpoint `json:"model_serving_endpoints,omitempty"`
 	RegisteredModels      map[string]*resources.RegisteredModel      `json:"registered_models,omitempty"`
+	LakehouseMonitor      map[string]*resources.LakehouseMonitor     `json:"lakehouse_monitor,omitempty"`
 }
 
 type UniqueResourceIdTracker struct {
@@ -122,6 +123,19 @@ func (r *Resources) VerifyUniqueResourceIdentifiers() (*UniqueResourceIdTracker,
 		}
 		tracker.Type[k] = "registered_model"
 		tracker.ConfigPath[k] = r.RegisteredModels[k].ConfigFilePath
+	}
+	for k := range r.LakehouseMonitor {
+		if _, ok := tracker.Type[k]; ok {
+			return tracker, fmt.Errorf("multiple resources named %s (%s at %s, %s at %s)",
+				k,
+				tracker.Type[k],
+				tracker.ConfigPath[k],
+				"lakehouse_monitor",
+				r.LakehouseMonitor[k].ConfigFilePath,
+			)
+		}
+		tracker.Type[k] = "lakehouse_monitor"
+		tracker.ConfigPath[k] = r.LakehouseMonitor[k].ConfigFilePath
 	}
 	return tracker, nil
 }
