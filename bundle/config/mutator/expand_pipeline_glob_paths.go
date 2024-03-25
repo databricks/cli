@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/libraries"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
 
@@ -92,8 +93,8 @@ func (m *expandPipelineGlobPaths) expandSequence(p dyn.Path, v dyn.Value) (dyn.V
 	return dyn.NewValue(vs, v.Location()), nil
 }
 
-func (m *expandPipelineGlobPaths) Apply(_ context.Context, b *bundle.Bundle) error {
-	return b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+func (m *expandPipelineGlobPaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		p := dyn.NewPattern(
 			dyn.Key("resources"),
 			dyn.Key("pipelines"),
@@ -104,6 +105,8 @@ func (m *expandPipelineGlobPaths) Apply(_ context.Context, b *bundle.Bundle) err
 		// Visit each pipeline's "libraries" field and expand any glob patterns.
 		return dyn.MapByPattern(v, p, m.expandSequence)
 	})
+
+	return diag.FromErr(err)
 }
 
 func (*expandPipelineGlobPaths) Name() string {

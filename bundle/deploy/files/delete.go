@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/fatih/color"
 )
@@ -16,7 +17,7 @@ func (m *delete) Name() string {
 	return "files.Delete"
 }
 
-func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Do not delete files if terraform destroy was not consented
 	if !b.Plan.IsEmpty && !b.Plan.ConfirmApply {
 		return nil
@@ -29,7 +30,7 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) error {
 	if !b.AutoApprove {
 		proceed, err := cmdio.AskYesOrNo(ctx, fmt.Sprintf("\n%s and all files in it will be %s Proceed?", b.Config.Workspace.RootPath, red("deleted permanently!")))
 		if err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 		if !proceed {
 			return nil
@@ -41,17 +42,17 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) error {
 		Recursive: true,
 	})
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	// Clean up sync snapshot file
 	sync, err := GetSync(ctx, b)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	err = sync.DestroySnapshot(ctx)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("Deleted snapshot file at %s", sync.SnapshotPath()))

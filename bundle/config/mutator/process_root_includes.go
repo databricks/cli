@@ -2,7 +2,6 @@ package mutator
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -11,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/env"
+	"github.com/databricks/cli/libs/diag"
 )
 
 // Get extra include paths from environment variable
@@ -34,7 +34,7 @@ func (m *processRootIncludes) Name() string {
 	return "ProcessRootIncludes"
 }
 
-func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var out []bundle.Mutator
 
 	// Map with files we've already seen to avoid loading them twice.
@@ -53,7 +53,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) error
 		if filepath.IsAbs(extraIncludePath) {
 			rel, err := filepath.Rel(b.Config.Path, extraIncludePath)
 			if err != nil {
-				return fmt.Errorf("unable to include file '%s': %w", extraIncludePath, err)
+				return diag.Errorf("unable to include file '%s': %v", extraIncludePath, err)
 			}
 			extraIncludePath = rel
 		}
@@ -66,19 +66,19 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) error
 	for _, entry := range b.Config.Include {
 		// Include paths must be relative.
 		if filepath.IsAbs(entry) {
-			return fmt.Errorf("%s: includes must be relative paths", entry)
+			return diag.Errorf("%s: includes must be relative paths", entry)
 		}
 
 		// Anchor includes to the bundle root path.
 		matches, err := filepath.Glob(filepath.Join(b.Config.Path, entry))
 		if err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 
 		// If the entry is not a glob pattern and no matches found,
 		// return an error because the file defined is not found
 		if len(matches) == 0 && !strings.ContainsAny(entry, "*?[") {
-			return fmt.Errorf("%s defined in 'include' section does not match any files", entry)
+			return diag.Errorf("%s defined in 'include' section does not match any files", entry)
 		}
 
 		// Filter matches to ones we haven't seen yet.
@@ -86,7 +86,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) error
 		for _, match := range matches {
 			rel, err := filepath.Rel(b.Config.Path, match)
 			if err != nil {
-				return err
+				return diag.FromErr(err)
 			}
 			if _, ok := seen[rel]; ok {
 				continue

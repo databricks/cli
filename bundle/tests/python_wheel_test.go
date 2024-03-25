@@ -17,16 +17,16 @@ func TestPythonWheelBuild(t *testing.T) {
 	require.NoError(t, err)
 
 	m := phases.Build()
-	err = bundle.Apply(ctx, b, m)
-	require.NoError(t, err)
+	diags := bundle.Apply(ctx, b, m)
+	require.NoError(t, diags.Error())
 
 	matches, err := filepath.Glob("./python_wheel/python_wheel/my_test_code/dist/my_test_code-*.whl")
 	require.NoError(t, err)
 	require.Equal(t, 1, len(matches))
 
 	match := libraries.MatchWithArtifacts()
-	err = bundle.Apply(ctx, b, match)
-	require.NoError(t, err)
+	diags = bundle.Apply(ctx, b, match)
+	require.NoError(t, diags.Error())
 }
 
 func TestPythonWheelBuildAutoDetect(t *testing.T) {
@@ -35,16 +35,16 @@ func TestPythonWheelBuildAutoDetect(t *testing.T) {
 	require.NoError(t, err)
 
 	m := phases.Build()
-	err = bundle.Apply(ctx, b, m)
-	require.NoError(t, err)
+	diags := bundle.Apply(ctx, b, m)
+	require.NoError(t, diags.Error())
 
 	matches, err := filepath.Glob("./python_wheel/python_wheel_no_artifact/dist/my_test_code-*.whl")
 	require.NoError(t, err)
 	require.Equal(t, 1, len(matches))
 
 	match := libraries.MatchWithArtifacts()
-	err = bundle.Apply(ctx, b, match)
-	require.NoError(t, err)
+	diags = bundle.Apply(ctx, b, match)
+	require.NoError(t, diags.Error())
 }
 
 func TestPythonWheelWithDBFSLib(t *testing.T) {
@@ -53,12 +53,12 @@ func TestPythonWheelWithDBFSLib(t *testing.T) {
 	require.NoError(t, err)
 
 	m := phases.Build()
-	err = bundle.Apply(ctx, b, m)
-	require.NoError(t, err)
+	diags := bundle.Apply(ctx, b, m)
+	require.NoError(t, diags.Error())
 
 	match := libraries.MatchWithArtifacts()
-	err = bundle.Apply(ctx, b, match)
-	require.NoError(t, err)
+	diags = bundle.Apply(ctx, b, match)
+	require.NoError(t, diags.Error())
 }
 
 func TestPythonWheelBuildNoBuildJustUpload(t *testing.T) {
@@ -67,12 +67,12 @@ func TestPythonWheelBuildNoBuildJustUpload(t *testing.T) {
 	require.NoError(t, err)
 
 	m := phases.Build()
-	err = bundle.Apply(ctx, b, m)
-	require.NoError(t, err)
+	diags := bundle.Apply(ctx, b, m)
+	require.NoError(t, diags.Error())
 
 	match := libraries.MatchWithArtifacts()
-	err = bundle.Apply(ctx, b, match)
-	require.ErrorContains(t, err, "./non-existing/*.whl")
+	diags = bundle.Apply(ctx, b, match)
+	require.ErrorContains(t, diags.Error(), "./non-existing/*.whl")
 
 	require.NotZero(t, len(b.Config.Artifacts))
 

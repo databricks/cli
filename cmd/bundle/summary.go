@@ -33,8 +33,8 @@ func newSummaryCommand() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		b := bundle.Get(cmd.Context())
 
-		err := bundle.Apply(cmd.Context(), b, phases.Initialize())
-		if err != nil {
+		diags := bundle.Apply(cmd.Context(), b, phases.Initialize())
+		if err := diags.Error(); err != nil {
 			return err
 		}
 
@@ -47,18 +47,18 @@ func newSummaryCommand() *cobra.Command {
 		noCache := errors.Is(stateFileErr, os.ErrNotExist) || errors.Is(configFileErr, os.ErrNotExist)
 
 		if forcePull || noCache {
-			err = bundle.Apply(cmd.Context(), b, bundle.Seq(
+			diags = bundle.Apply(cmd.Context(), b, bundle.Seq(
 				terraform.StatePull(),
 				terraform.Interpolate(),
 				terraform.Write(),
 			))
-			if err != nil {
+			if err := diags.Error(); err != nil {
 				return err
 			}
 		}
 
-		err = bundle.Apply(cmd.Context(), b, terraform.Load())
-		if err != nil {
+		diags = bundle.Apply(cmd.Context(), b, terraform.Load())
+		if err := diags.Error(); err != nil {
 			return err
 		}
 

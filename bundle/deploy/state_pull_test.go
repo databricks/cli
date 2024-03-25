@@ -106,8 +106,8 @@ func testStatePull(t *testing.T, opts statePullOpts) {
 		require.NoError(t, err)
 	}
 
-	err := bundle.Apply(ctx, b, s)
-	require.NoError(t, err)
+	diags := bundle.Apply(ctx, b, s)
+	require.NoError(t, diags.Error())
 
 	// Check that deployment state was written
 	statePath, err := getPathToStateFile(ctx, b)
@@ -263,8 +263,8 @@ func TestStatePullNoState(t *testing.T) {
 	}
 	ctx := context.Background()
 
-	err := bundle.Apply(ctx, b, s)
-	require.NoError(t, err)
+	diags := bundle.Apply(ctx, b, s)
+	require.NoError(t, diags.Error())
 
 	// Check that deployment state was not written
 	statePath, err := getPathToStateFile(ctx, b)
@@ -451,7 +451,7 @@ func TestStatePullNewerDeploymentStateVersion(t *testing.T) {
 	}
 	ctx := context.Background()
 
-	err := bundle.Apply(ctx, b, s)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "remote deployment state is incompatible with the current version of the CLI, please upgrade to at least 1.2.3")
+	diags := bundle.Apply(ctx, b, s)
+	require.True(t, diags.HasError())
+	require.ErrorContains(t, diags.Error(), "remote deployment state is incompatible with the current version of the CLI, please upgrade to at least 1.2.3")
 }

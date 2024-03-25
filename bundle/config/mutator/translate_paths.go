@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/notebook"
 )
@@ -185,10 +186,10 @@ func (m *translatePaths) rewriteRelativeTo(b *bundle.Bundle, p dyn.Path, v dyn.V
 	return dyn.InvalidValue, err
 }
 
-func (m *translatePaths) Apply(_ context.Context, b *bundle.Bundle) error {
+func (m *translatePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	m.seen = make(map[string]string)
 
-	return b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		var err error
 		for _, fn := range []func(*bundle.Bundle, dyn.Value) (dyn.Value, error){
 			m.applyJobTranslations,
@@ -202,4 +203,6 @@ func (m *translatePaths) Apply(_ context.Context, b *bundle.Bundle) error {
 		}
 		return v, nil
 	})
+
+	return diag.FromErr(err)
 }

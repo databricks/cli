@@ -12,6 +12,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/hashicorp/go-version"
@@ -151,7 +152,7 @@ func setProxyEnvVars(ctx context.Context, environ map[string]string, b *bundle.B
 	return nil
 }
 
-func (m *initialize) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *initialize) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	tfConfig := b.Config.Bundle.Terraform
 	if tfConfig == nil {
 		tfConfig = &config.Terraform{}
@@ -160,46 +161,46 @@ func (m *initialize) Apply(ctx context.Context, b *bundle.Bundle) error {
 
 	execPath, err := m.findExecPath(ctx, b, tfConfig)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	workingDir, err := Dir(ctx, b)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	tf, err := tfexec.NewTerraform(workingDir, execPath)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	environ, err := b.AuthEnv()
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	err = inheritEnvVars(ctx, environ)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	// Set the temporary directory environment variables
 	err = setTempDirEnvVars(ctx, environ, b)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	// Set the proxy related environment variables
 	err = setProxyEnvVars(ctx, environ, b)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	// Configure environment variables for auth for Terraform to use.
 	log.Debugf(ctx, "Environment variables for Terraform: %s", strings.Join(maps.Keys(environ), ", "))
 	err = tf.SetEnv(environ)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	b.Terraform = tf

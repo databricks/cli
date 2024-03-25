@@ -22,8 +22,8 @@ func newValidateCommand() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		b := bundle.Get(cmd.Context())
 
-		err := bundle.Apply(cmd.Context(), b, phases.Initialize())
-		if err != nil {
+		diags := bundle.Apply(cmd.Context(), b, phases.Initialize())
+		if err := diags.Error(); err != nil {
 			return err
 		}
 

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/diag"
 )
 
 func BuildAll() bundle.Mutator {
@@ -27,10 +28,10 @@ func (m *build) Name() string {
 	return fmt.Sprintf("artifacts.Build(%s)", m.name)
 }
 
-func (m *build) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	artifact, ok := b.Config.Artifacts[m.name]
 	if !ok {
-		return fmt.Errorf("artifact doesn't exist: %s", m.name)
+		return diag.Errorf("artifact doesn't exist: %s", m.name)
 	}
 
 	// Skip building if build command is not specified or infered
@@ -38,7 +39,7 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) error {
 		// If no build command was specified or infered and there is no
 		// artifact output files specified, artifact is misconfigured
 		if len(artifact.Files) == 0 {
-			return fmt.Errorf("misconfigured artifact: please specify 'build' or 'files' property")
+			return diag.Errorf("misconfigured artifact: please specify 'build' or 'files' property")
 		}
 		return nil
 	}
