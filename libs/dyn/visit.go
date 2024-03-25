@@ -3,7 +3,6 @@ package dyn
 import (
 	"errors"
 	"fmt"
-	"maps"
 	"slices"
 )
 
@@ -77,7 +76,7 @@ func (component pathComponent) visit(v Value, prefix Path, suffix Pattern, opts 
 		}
 
 		// Lookup current value in the map.
-		ev, ok := m[component.key]
+		ev, ok := m.GetByString(component.key)
 		if !ok {
 			return InvalidValue, noSuchKeyError{path}
 		}
@@ -94,8 +93,8 @@ func (component pathComponent) visit(v Value, prefix Path, suffix Pattern, opts 
 		}
 
 		// Return an updated map value.
-		m = maps.Clone(m)
-		m[component.key] = nv
+		m = m.Clone()
+		m.Set(V(component.key), nv)
 		return Value{
 			v: m,
 			k: KindMap,

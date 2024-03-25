@@ -92,7 +92,7 @@ func (d *loader) loadSequence(node *yaml.Node, loc dyn.Location) (dyn.Value, err
 func (d *loader) loadMapping(node *yaml.Node, loc dyn.Location) (dyn.Value, error) {
 	var merge *yaml.Node
 
-	acc := make(map[string]dyn.Value)
+	acc := dyn.NewMapping()
 	for i := 0; i < len(node.Content); i += 2 {
 		key := node.Content[i]
 		val := node.Content[i+1]
@@ -116,12 +116,17 @@ func (d *loader) loadMapping(node *yaml.Node, loc dyn.Location) (dyn.Value, erro
 			return dyn.NilValue, errorf(loc, "invalid key tag: %v", st)
 		}
 
+		k, err := d.load(key)
+		if err != nil {
+			return dyn.NilValue, err
+		}
+
 		v, err := d.load(val)
 		if err != nil {
 			return dyn.NilValue, err
 		}
 
-		acc[key.Value] = v
+		acc.Set(k, v)
 	}
 
 	if merge == nil {
@@ -146,7 +151,7 @@ func (d *loader) loadMapping(node *yaml.Node, loc dyn.Location) (dyn.Value, erro
 
 	// Build a sequence of values to merge.
 	// The entries that we already accumulated have precedence.
-	var seq []map[string]dyn.Value
+	var seq []dyn.Mapping
 	for _, n := range mnodes {
 		v, err := d.load(n)
 		if err != nil {
@@ -161,11 +166,9 @@ func (d *loader) loadMapping(node *yaml.Node, loc dyn.Location) (dyn.Value, erro
 
 	// Append the accumulated entries to the sequence.
 	seq = append(seq, acc)
-	out := make(map[string]dyn.Value)
+	out := dyn.NewMapping()
 	for _, m := range seq {
-		for k, v := range m {
-			out[k] = v
-		}
+		out.Merge(m)
 	}
 
 	return dyn.NewValue(out, loc), nil

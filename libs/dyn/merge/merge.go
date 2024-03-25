@@ -51,27 +51,27 @@ func merge(a, b dyn.Value) (dyn.Value, error) {
 }
 
 func mergeMap(a, b dyn.Value) (dyn.Value, error) {
-	out := make(map[string]dyn.Value)
+	out := dyn.NewMapping()
 	am := a.MustMap()
 	bm := b.MustMap()
 
 	// Add the values from a into the output map.
-	for k, v := range am {
-		out[k] = v
-	}
+	out.Merge(am)
 
 	// Merge the values from b into the output map.
-	for k, v := range bm {
-		if _, ok := out[k]; ok {
+	for _, pair := range bm.Pairs() {
+		pk := pair.Key
+		pv := pair.Value
+		if ov, ok := out.Get(pk); ok {
 			// If the key already exists, merge the values.
-			merged, err := merge(out[k], v)
+			merged, err := merge(ov, pv)
 			if err != nil {
 				return dyn.NilValue, err
 			}
-			out[k] = merged
+			out.Set(pk, merged)
 		} else {
 			// Otherwise, just set the value.
-			out[k] = v
+			out.Set(pk, pv)
 		}
 	}
 

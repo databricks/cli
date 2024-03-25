@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/stretchr/testify/assert"
+	assert "github.com/databricks/cli/libs/dyn/dynassert"
 )
 
 func TestConvertToMapValueWithOrder(t *testing.T) {
@@ -32,7 +32,7 @@ func TestConvertToMapValueWithOrder(t *testing.T) {
 	result, err := ConvertToMapValue(v, NewOrder([]string{"list", "name", "map"}), []string{"format"}, map[string]dyn.Value{})
 	assert.NoError(t, err)
 
-	assert.Equal(t, map[string]dyn.Value{
+	assert.Equal(t, dyn.V(map[string]dyn.Value{
 		"list": dyn.NewValue([]dyn.Value{
 			dyn.V("a"),
 			dyn.V("b"),
@@ -44,5 +44,5 @@ func TestConvertToMapValueWithOrder(t *testing.T) {
 			"key2": dyn.V("value2"),
 		}, dyn.Location{Line: -1}),
 		"long_name_field": dyn.NewValue("long name goes here", dyn.Location{Line: 1}),
-	}, result.MustMap())
+	}), result)
 }
