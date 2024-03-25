@@ -1553,7 +1553,7 @@
                   "pause_status": {
                     "description": "Whether this trigger is paused or not."
                   },
-                  "table": {
+                  "table_update": {
                     "description": "Table trigger settings.",
                     "properties": {
                       "condition": {
@@ -1565,7 +1565,7 @@
                       "table_names": {
                         "description": "A list of Delta tables to monitor for changes. The table name must be in the format `catalog_name.schema_name.table_name`.",
                         "items": {
-                          "description": ""
+                          "description": "A Delta tables to monitor for changes. Must be in the format `catalog_name.schema_name.table_name`."
                         }
                       },
                       "wait_after_last_change_seconds": {

@@ -1202,9 +1202,17 @@ type DataSourceJobJobSettingsSettingsTriggerFileArrival struct {
 	WaitAfterLastChangeSeconds    int    `json:"wait_after_last_change_seconds,omitempty"`
 }
 
+type DataSourceJobJobSettingsSettingsTriggerTableUpdate struct {
+	TableNames                    []string `json:"table_names"`
+	Condition                     string   `json:"condition,omitempty"`
+	MinTimeBetweenTriggersSeconds int32    `json:"min_time_between_triggers_seconds,omitempty"`
+	WaitAfterLastChangeSeconds    int32    `json:"wait_after_last_change_seconds,omitempty"`
+}
+
 type DataSourceJobJobSettingsSettingsTrigger struct {
 	PauseStatus string                                              `json:"pause_status,omitempty"`
 	FileArrival *DataSourceJobJobSettingsSettingsTriggerFileArrival `json:"file_arrival,omitempty"`
+	TableUpdate *DataSourceJobJobSettingsSettingsTriggerTableUpdate `json:"table_update,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsWebhookNotificationsOnDurationWarningThresholdExceeded struct {

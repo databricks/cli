@@ -1202,9 +1202,17 @@ type ResourceJobTriggerFileArrival struct {
 	WaitAfterLastChangeSeconds    int    `json:"wait_after_last_change_seconds,omitempty"`
 }
 
+type ResourceJobTriggerTableUpdate struct {
+	TableNames                    []string `json:"table_names"`
+	Condition                     string   `json:"condition,omitempty"`
+	MinTimeBetweenTriggersSeconds int32    `json:"min_time_between_triggers_seconds,omitempty"`
+	WaitAfterLastChangeSeconds    int32    `json:"wait_after_last_change_seconds,omitempty"`
+}
+
 type ResourceJobTrigger struct {
 	PauseStatus string                         `json:"pause_status,omitempty"`
 	FileArrival *ResourceJobTriggerFileArrival `json:"file_arrival,omitempty"`
+	TableUpdate *ResourceJobTriggerTableUpdate `json:"table_update,omitempty"`
 }
 
 type ResourceJobWebhookNotificationsOnDurationWarningThresholdExceeded struct {
