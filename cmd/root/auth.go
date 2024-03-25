@@ -78,6 +78,10 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 		cfg.Profile = profile
 	}
 
+	ctx := cmd.Context()
+	ctx = context.WithValue(ctx, &configUsed, cfg)
+	cmd.SetContext(ctx)
+
 	if cfg.Profile == "" {
 		// account-level CLI was not really done before, so here are the assumptions:
 		// 1. only admins will have account configured
@@ -100,7 +104,8 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	cmd.SetContext(context.WithValue(cmd.Context(), &accountClient, a))
+	ctx = context.WithValue(ctx, &accountClient, a)
+	cmd.SetContext(ctx)
 	return nil
 }
 

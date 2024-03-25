@@ -12,24 +12,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var authTemplate = fmt.Sprintf(`{{"Workspace:" | bold}} {{.Details.Host}}.
+var authTemplate = `{{"Workspace:" | bold}} {{.Details.Host}}.
 {{if .Username }}{{"User:" | bold}} {{.Username}}.{{end}}
 {{"Authenticated with:" | bold}} {{.Details.AuthType}}
 {{if .AccountID }}{{"Account ID:" | bold}} {{.AccountID}}.{{end}}
 -----
-%s
-`, configurationTemplate)
+` + configurationTemplate
 
-var errorTemplate = fmt.Sprintf(`Unable to authenticate: {{.Error}}
+var errorTemplate = `Unable to authenticate: {{.Error}}
 -----
-%s
-`, configurationTemplate)
+` + configurationTemplate
 
 const configurationTemplate = `Configuration:
   {{- $details := .Details}}
   {{- range $k, $v := $details.Configuration }}
-  {{if $v.AuthTypeMismatch}}x{{else}}✓{{end}} {{$k | bold}}: {{$v.Value}}
-  {{- if $v.Source }}
+  {{if $v.AuthTypeMismatch}}~{{else}}✓{{end}} {{$k | bold}}: {{$v.Value}}
+  {{- if and (not (eq $v.Source.String "dynamic configuration")) $v.Source }}
   {{- " (from" | italic}} {{$v.Source.String | italic}}
   {{- if $v.AuthTypeMismatch}}, {{ "not used for auth type " | red | italic }}{{$details.AuthType | red | italic}}{{end}})
   {{- end}}
@@ -167,6 +165,15 @@ func getAuthDetails(cmd *cobra.Command, cfg *config.Config, showSensitive bool) 
 		if k == "host" && cmd.Flag("host").Changed {
 			v.Source = config.Source{Type: config.SourceType("flag"), Name: "--host"}
 		}
+	}
+
+	// If profile is not set explicitly, default to "default"
+	if _, ok := details.Configuration["profile"]; !ok {
+		profile := cfg.Profile
+		if profile == "" {
+			profile = "default"
+		}
+		details.Configuration["profile"] = &config.AttrConfig{Value: profile, Source: config.Source{Type: config.SourceDynamicConfig}}
 	}
 
 	return details
