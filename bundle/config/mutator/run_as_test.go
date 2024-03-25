@@ -14,7 +14,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/maps"
 )
 
 func allResourceTypes(t *testing.T) []string {
@@ -23,7 +22,10 @@ func allResourceTypes(t *testing.T) []string {
 	rv, err := convert.FromTyped(r, dyn.NilValue)
 	require.NoError(t, err)
 	normalized, _ := convert.Normalize(r, rv, convert.IncludeMissingFields)
-	resourceTypes := maps.Keys(normalized.MustMap())
+	resourceTypes := []string{}
+	for _, k := range normalized.MustMap().Keys() {
+		resourceTypes = append(resourceTypes, k.MustString())
+	}
 	slices.Sort(resourceTypes)
 
 	// Assert the total list of resource supported, as a sanity check that using
@@ -89,8 +91,8 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 		Config: config,
 	}
 
-	err := bundle.Apply(context.Background(), b, SetRunAs())
-	assert.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, SetRunAs())
+	assert.NoError(t, diags.Error())
 
 	for _, job := range b.Config.Resources.Jobs {
 		assert.Equal(t, "bob", job.RunAs.UserName)
@@ -175,7 +177,12 @@ func TestRunAsErrorForUnsupportedResources(t *testing.T) {
 		b := &bundle.Bundle{
 			Config: *r,
 		}
-		err = bundle.Apply(context.Background(), b, SetRunAs())
-		assert.ErrorAs(t, err, &errUnsupportedResourceTypeForRunAs{}, "expected run_as not supported error for resource type: %s", rt)
+		diags := bundle.Apply(context.Background(), b, SetRunAs())
+		assert.Equal(t, diags.Error().Error(), errUnsupportedResourceTypeForRunAs{
+			resourceType:     rt,
+			resourceLocation: dyn.Location{},
+			currentUser:      "alice",
+			runAsUser:        "bob",
+		}.Error(), "expected run_as with a different identity than the current deployment user to not supported for resources of type: %s", rt)
 	}
 }
