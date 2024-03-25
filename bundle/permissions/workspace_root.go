@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
@@ -16,10 +17,10 @@ func ApplyWorkspaceRootPermissions() bundle.Mutator {
 }
 
 // Apply implements bundle.Mutator.
-func (*workspaceRootPermissions) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (*workspaceRootPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	err := giveAccessForWorkspaceRoot(ctx, b)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	return nil

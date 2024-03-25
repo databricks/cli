@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/diag"
 )
 
 type processInclude struct {
@@ -25,10 +26,12 @@ func (m *processInclude) Name() string {
 	return fmt.Sprintf("ProcessInclude(%s)", m.relPath)
 }
 
-func (m *processInclude) Apply(_ context.Context, b *bundle.Bundle) error {
+func (m *processInclude) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	this, err := config.Load(m.fullPath)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
-	return b.Config.Merge(this)
+	// TODO: Return actual warnings.
+	err = b.Config.Merge(this)
+	return diag.FromErr(err)
 }

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/diag"
 )
 
 type expandWorkspaceRoot struct{}
@@ -20,15 +21,15 @@ func (m *expandWorkspaceRoot) Name() string {
 	return "ExpandWorkspaceRoot"
 }
 
-func (m *expandWorkspaceRoot) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *expandWorkspaceRoot) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	root := b.Config.Workspace.RootPath
 	if root == "" {
-		return fmt.Errorf("unable to expand workspace root: workspace root not defined")
+		return diag.Errorf("unable to expand workspace root: workspace root not defined")
 	}
 
 	currentUser := b.Config.Workspace.CurrentUser
 	if currentUser == nil || currentUser.UserName == "" {
-		return fmt.Errorf("unable to expand workspace root: current user not set")
+		return diag.Errorf("unable to expand workspace root: current user not set")
 	}
 
 	if strings.HasPrefix(root, "~/") {

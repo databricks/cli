@@ -77,6 +77,6 @@ func TestStatePush(t *testing.T) {
 	err = os.WriteFile(statePath, data, 0644)
 	require.NoError(t, err)
 
-	err = bundle.Apply(ctx, b, s)
-	require.NoError(t, err)
+	diags := bundle.Apply(ctx, b, s)
+	require.NoError(t, diags.Error())
 }

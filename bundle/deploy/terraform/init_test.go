@@ -45,8 +45,8 @@ func TestInitEnvironmentVariables(t *testing.T) {
 	t.Setenv("DATABRICKS_TOKEN", "foobar")
 	b.WorkspaceClient()
 
-	err = bundle.Apply(context.Background(), b, Initialize())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, Initialize())
+	require.NoError(t, diags.Error())
 }
 
 func TestSetTempDirEnvVarsForUnixWithTmpDirSet(t *testing.T) {

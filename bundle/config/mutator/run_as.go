@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
@@ -102,7 +103,7 @@ func validateRunAs(b *bundle.Bundle) error {
 	return nil
 }
 
-func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) error {
+func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Mutator is a no-op if run_as is not specified in the bundle
 	runAs := b.Config.RunAs
 	if runAs == nil {
@@ -111,7 +112,7 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) error {
 
 	// Assert the run_as configuration is valid in the context of the bundle
 	if err := validateRunAs(b); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	// Set run_as for jobs

@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 )
@@ -20,21 +21,21 @@ func (l *statePush) Name() string {
 	return "terraform:state-push"
 }
 
-func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	f, err := l.filerFactory(b)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	dir, err := Dir(ctx, b)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	// Expect the state file to live under dir.
 	local, err := os.Open(filepath.Join(dir, TerraformStateFileName))
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	defer local.Close()
 
@@ -43,7 +44,7 @@ func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) error {
 	log.Infof(ctx, "Writing local state file to remote state directory")
 	err = f.Write(ctx, TerraformStateFileName, local, filer.CreateParentDirectories, filer.OverwriteIfExists)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	return nil

@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/spf13/cobra"
 )
 
@@ -22,7 +23,9 @@ func ConfigureBundleWithVariables(cmd *cobra.Command, args []string) error {
 
 	// Initialize variables by assigning them values passed as command line flags
 	b := bundle.Get(cmd.Context())
-	return bundle.ApplyFunc(cmd.Context(), b, func(ctx context.Context, b *bundle.Bundle) error {
-		return b.Config.InitializeVariables(variables)
+	diags := bundle.ApplyFunc(cmd.Context(), b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+		err := b.Config.InitializeVariables(variables)
+		return diag.FromErr(err)
 	})
+	return diags.Error()
 }

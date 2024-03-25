@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
 
@@ -18,7 +19,7 @@ func (m *environmentsToTargets) Name() string {
 	return "EnvironmentsToTargets"
 }
 
-func (m *environmentsToTargets) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *environmentsToTargets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Short circuit if the "environments" key is not set.
 	// This is the common case.
 	if b.Config.Environments == nil {
@@ -26,7 +27,7 @@ func (m *environmentsToTargets) Apply(ctx context.Context, b *bundle.Bundle) err
 	}
 
 	// The "environments" key is set; validate and rewrite it to "targets".
-	return b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		environments := v.Get("environments")
 		targets := v.Get("targets")
 
@@ -60,4 +61,6 @@ func (m *environmentsToTargets) Apply(ctx context.Context, b *bundle.Bundle) err
 
 		return v, nil
 	})
+
+	return diag.FromErr(err)
 }

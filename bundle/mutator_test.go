@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,7 +17,7 @@ func (t *testMutator) Name() string {
 	return "test"
 }
 
-func (t *testMutator) Apply(ctx context.Context, b *Bundle) error {
+func (t *testMutator) Apply(ctx context.Context, b *Bundle) diag.Diagnostics {
 	t.applyCalled++
 	return Apply(ctx, b, Seq(t.nestedMutators...))
 }
@@ -35,8 +36,8 @@ func TestMutator(t *testing.T) {
 	}
 
 	b := &Bundle{}
-	err := Apply(context.Background(), b, m)
-	assert.NoError(t, err)
+	diags := Apply(context.Background(), b, m)
+	assert.NoError(t, diags.Error())
 
 	assert.Equal(t, 1, m.applyCalled)
 	assert.Equal(t, 1, nested[0].applyCalled)
