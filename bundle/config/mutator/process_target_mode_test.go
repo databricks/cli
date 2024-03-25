@@ -80,6 +80,17 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 							},
 						},
 					},
+					"job5": {
+						JobSettings: &jobs.JobSettings{
+							Name: "job3",
+							Trigger: &jobs.TriggerSettings{
+								TableUpdate: &jobs.TableUpdateTriggerConfiguration{
+									TableNames: []string{"catalog.schema.table1", "catalog.schema.table2"},
+									Condition:  "ALL_UPDATED",
+								},
+							},
+						},
+					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline1": {PipelineSpec: &pipelines.PipelineSpec{Name: "pipeline1"}},
