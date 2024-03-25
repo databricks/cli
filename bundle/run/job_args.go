@@ -97,7 +97,7 @@ type jobTaskSparkSubmitParamArgs struct {
 }
 
 func (a jobTaskSparkSubmitParamArgs) ParseArgs(args []string, opts *Options) error {
-	opts.Job.sparkSubmitParams = append(opts.Job.pythonParams, args...)
+	opts.Job.sparkSubmitParams = append(opts.Job.sparkSubmitParams, args...)
 	return nil
 }
 
@@ -132,52 +132,43 @@ func (r *jobRunner) posArgsHandler() argsHandler {
 
 	// Handle task parameters otherwise.
 	var seen = make(map[jobTaskType]bool)
-	var typ jobTaskType
 	for _, t := range job.Tasks {
 		if t.NotebookTask != nil {
-			typ = jobTaskTypeNotebook
-			seen[typ] = true
+			seen[jobTaskTypeNotebook] = true
 		}
 		if t.SparkJarTask != nil {
-			typ = jobTaskTypeSparkJar
-			seen[typ] = true
+			seen[jobTaskTypeSparkJar] = true
 		}
 		if t.SparkPythonTask != nil {
-			typ = jobTaskTypeSparkPython
-			seen[typ] = true
+			seen[jobTaskTypeSparkPython] = true
 		}
 		if t.SparkSubmitTask != nil {
-			typ = jobTaskTypeSparkSubmit
-			seen[typ] = true
+			seen[jobTaskTypeSparkSubmit] = true
 		}
 		if t.PipelineTask != nil {
-			typ = jobTaskTypePipeline
-			seen[typ] = true
+			seen[jobTaskTypePipeline] = true
 		}
 		if t.PythonWheelTask != nil {
-			typ = jobTaskTypePythonWheel
-			seen[typ] = true
+			seen[jobTaskTypePythonWheel] = true
 		}
 		if t.SqlTask != nil {
-			typ = jobTaskTypeSql
-			seen[typ] = true
+			seen[jobTaskTypeSql] = true
 		}
 		if t.DbtTask != nil {
-			typ = jobTaskTypeDbt
-			seen[typ] = true
+			seen[jobTaskTypeDbt] = true
 		}
 		if t.RunJobTask != nil {
-			typ = jobTaskTypeRunJob
-			seen[typ] = true
+			seen[jobTaskTypeRunJob] = true
 		}
 	}
 
 	// Cannot handle positional arguments if we have more than one task type.
-	if len(seen) != 1 {
+	keys := maps.Keys(seen)
+	if len(keys) != 1 {
 		return nopArgsHandler{}
 	}
 
-	switch typ {
+	switch keys[0] {
 	case jobTaskTypeNotebook:
 		return jobTaskNotebookParamArgs{job}
 	case jobTaskTypeSparkJar:

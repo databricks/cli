@@ -46,7 +46,7 @@ func TestJobParameterArgs(t *testing.T) {
 		)
 	})
 
-	t.Run("ParseArgsCopy", func(t *testing.T) {
+	t.Run("ParseArgsAppend", func(t *testing.T) {
 		var opts Options
 		opts.Job.jobParams = map[string]string{"p1": "v1"}
 		err := a.ParseArgs([]string{"--p2=v2"}, &opts)
@@ -105,7 +105,7 @@ func TestJobTaskNotebookParamArgs(t *testing.T) {
 		)
 	})
 
-	t.Run("ParseArgsCopy", func(t *testing.T) {
+	t.Run("ParseArgsAppend", func(t *testing.T) {
 		var opts Options
 		opts.Job.notebookParams = map[string]string{"p1": "v1"}
 		err := a.ParseArgs([]string{"--p2=v2"}, &opts)
@@ -122,7 +122,7 @@ func TestJobTaskNotebookParamArgs(t *testing.T) {
 
 	t.Run("CompleteArgs", func(t *testing.T) {
 		completions, _ := a.CompleteArgs([]string{}, "")
-		assert.Equal(t, []string{"--foo=", "--bar="}, completions)
+		assert.ElementsMatch(t, []string{"--foo=", "--bar="}, completions)
 	})
 }
 
@@ -131,11 +131,23 @@ func TestJobTaskJarParamArgs(t *testing.T) {
 
 	t.Run("ParseArgs", func(t *testing.T) {
 		var opts Options
-		err := a.ParseArgs([]string{"--p1=v1", "superfluous"}, &opts)
+		err := a.ParseArgs([]string{"foo", "bar"}, &opts)
 		assert.NoError(t, err)
 		assert.Equal(
 			t,
-			[]string{"--p1=v1", "superfluous"},
+			[]string{"foo", "bar"},
+			opts.Job.jarParams,
+		)
+	})
+
+	t.Run("ParseArgsAppend", func(t *testing.T) {
+		var opts Options
+		opts.Job.jarParams = []string{"foo"}
+		err := a.ParseArgs([]string{"bar"}, &opts)
+		assert.NoError(t, err)
+		assert.Equal(
+			t,
+			[]string{"foo", "bar"},
 			opts.Job.jarParams,
 		)
 	})
@@ -151,11 +163,23 @@ func TestJobTaskPythonParamArgs(t *testing.T) {
 
 	t.Run("ParseArgs", func(t *testing.T) {
 		var opts Options
-		err := a.ParseArgs([]string{"--p1=v1", "superfluous"}, &opts)
+		err := a.ParseArgs([]string{"foo", "bar"}, &opts)
 		assert.NoError(t, err)
 		assert.Equal(
 			t,
-			[]string{"--p1=v1", "superfluous"},
+			[]string{"foo", "bar"},
+			opts.Job.pythonParams,
+		)
+	})
+
+	t.Run("ParseArgsAppend", func(t *testing.T) {
+		var opts Options
+		opts.Job.pythonParams = []string{"foo"}
+		err := a.ParseArgs([]string{"bar"}, &opts)
+		assert.NoError(t, err)
+		assert.Equal(
+			t,
+			[]string{"foo", "bar"},
 			opts.Job.pythonParams,
 		)
 	})
@@ -171,11 +195,23 @@ func TestJobTaskSparkSubmitParamArgs(t *testing.T) {
 
 	t.Run("ParseArgs", func(t *testing.T) {
 		var opts Options
-		err := a.ParseArgs([]string{"--p1=v1", "superfluous"}, &opts)
+		err := a.ParseArgs([]string{"foo", "bar"}, &opts)
 		assert.NoError(t, err)
 		assert.Equal(
 			t,
-			[]string{"--p1=v1", "superfluous"},
+			[]string{"foo", "bar"},
+			opts.Job.sparkSubmitParams,
+		)
+	})
+
+	t.Run("ParseArgsAppend", func(t *testing.T) {
+		var opts Options
+		opts.Job.sparkSubmitParams = []string{"foo"}
+		err := a.ParseArgs([]string{"bar"}, &opts)
+		assert.NoError(t, err)
+		assert.Equal(
+			t,
+			[]string{"foo", "bar"},
 			opts.Job.sparkSubmitParams,
 		)
 	})
