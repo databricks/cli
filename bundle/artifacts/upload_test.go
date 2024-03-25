@@ -59,7 +59,7 @@ func TestExpandGlobFilesSource(t *testing.T) {
 	}
 
 	diags := bundle.Apply(context.Background(), b, u)
-	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
 
 	require.Equal(t, 2, len(b.Config.Artifacts["test"].Files))
 	require.Equal(t, filepath.Join(rootPath, "test", "myjar1.jar"), b.Config.Artifacts["test"].Files[0].Source)

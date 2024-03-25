@@ -33,6 +33,6 @@ func TestProcessInclude(t *testing.T) {
 
 	assert.Equal(t, "foo", b.Config.Workspace.Host)
 	diags := bundle.Apply(context.Background(), b, mutator.ProcessInclude(fullPath, relPath))
-	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
 	assert.Equal(t, "bar", b.Config.Workspace.Host)
 }

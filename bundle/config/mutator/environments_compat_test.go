@@ -43,7 +43,7 @@ func TestEnvironmentsToTargetsWithEnvironmentsDefined(t *testing.T) {
 	}
 
 	diags := bundle.Apply(context.Background(), b, mutator.EnvironmentsToTargets())
-	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
 	assert.Len(t, b.Config.Environments, 0)
 	assert.Len(t, b.Config.Targets, 1)
 }
@@ -60,7 +60,7 @@ func TestEnvironmentsToTargetsWithTargetsDefined(t *testing.T) {
 	}
 
 	diags := bundle.Apply(context.Background(), b, mutator.EnvironmentsToTargets())
-	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
 	assert.Len(t, b.Config.Environments, 0)
 	assert.Len(t, b.Config.Targets, 1)
 }

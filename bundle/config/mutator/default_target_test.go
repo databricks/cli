@@ -14,7 +14,7 @@ import (
 func TestDefaultTarget(t *testing.T) {
 	b := &bundle.Bundle{}
 	diags := bundle.Apply(context.Background(), b, mutator.DefineDefaultTarget())
-	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
 
 	env, ok := b.Config.Targets["default"]
 	assert.True(t, ok)
@@ -30,7 +30,7 @@ func TestDefaultTargetAlreadySpecified(t *testing.T) {
 		},
 	}
 	diags := bundle.Apply(context.Background(), b, mutator.DefineDefaultTarget())
-	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
 
 	_, ok := b.Config.Targets["default"]
 	assert.False(t, ok)

@@ -43,7 +43,7 @@ func TestMergePipelineClusters(t *testing.T) {
 	}
 
 	diags := bundle.Apply(context.Background(), b, mutator.MergePipelineClusters())
-	assert.Empty(t, diags)
+	assert.NoError(t, diags.Error())
 
 	p := b.Config.Resources.Pipelines["foo"]
 
@@ -87,7 +87,7 @@ func TestMergePipelineClustersCaseInsensitive(t *testing.T) {
 	}
 
 	diags := bundle.Apply(context.Background(), b, mutator.MergePipelineClusters())
-	assert.Empty(t, diags)
+	assert.NoError(t, diags.Error())
 
 	p := b.Config.Resources.Pipelines["foo"]
 	assert.Len(t, p.Clusters, 1)
@@ -108,7 +108,7 @@ func TestMergePipelineClustersNilPipelines(t *testing.T) {
 	}
 
 	diags := bundle.Apply(context.Background(), b, mutator.MergePipelineClusters())
-	assert.Empty(t, diags)
+	assert.NoError(t, diags.Error())
 }
 
 func TestMergePipelineClustersEmptyPipelines(t *testing.T) {
@@ -121,5 +121,5 @@ func TestMergePipelineClustersEmptyPipelines(t *testing.T) {
 	}
 
 	diags := bundle.Apply(context.Background(), b, mutator.MergePipelineClusters())
-	assert.Empty(t, diags)
+	assert.NoError(t, diags.Error())
 }

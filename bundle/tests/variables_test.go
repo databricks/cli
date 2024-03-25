@@ -19,7 +19,7 @@ func TestVariables(t *testing.T) {
 			"variables",
 		),
 	))
-	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
 	assert.Equal(t, "abc def", b.Config.Bundle.Name)
 }
 
@@ -43,7 +43,7 @@ func TestVariablesTargetsBlockOverride(t *testing.T) {
 			"variables",
 		),
 	))
-	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
 	assert.Equal(t, "default-a dev-b", b.Config.Workspace.Profile)
 }
 
@@ -56,7 +56,7 @@ func TestVariablesTargetsBlockOverrideForMultipleVariables(t *testing.T) {
 			"variables",
 		),
 	))
-	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
 	assert.Equal(t, "prod-a prod-b", b.Config.Workspace.Profile)
 }
 
@@ -70,7 +70,7 @@ func TestVariablesTargetsBlockOverrideWithProcessEnvVars(t *testing.T) {
 			"variables",
 		),
 	))
-	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
 	assert.Equal(t, "prod-a env-var-b", b.Config.Workspace.Profile)
 }
 
@@ -103,7 +103,7 @@ func TestVariablesWithoutDefinition(t *testing.T) {
 	t.Setenv("BUNDLE_VAR_b", "bar")
 	b := load(t, "./variables/without_definition")
 	diags := bundle.Apply(context.Background(), b, mutator.SetVariables())
-	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
 	require.True(t, b.Config.Variables["a"].HasValue())
 	require.True(t, b.Config.Variables["b"].HasValue())
 	assert.Equal(t, "foo", *b.Config.Variables["a"].Value)
@@ -116,7 +116,7 @@ func TestVariablesWithTargetLookupOverrides(t *testing.T) {
 		mutator.SelectTarget("env-overrides-lookup"),
 		mutator.SetVariables(),
 	))
-	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
 	assert.Equal(t, "cluster: some-test-cluster", b.Config.Variables["d"].Lookup.String())
 	assert.Equal(t, "instance-pool: some-test-instance-pool", b.Config.Variables["e"].Lookup.String())
 }

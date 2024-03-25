@@ -57,5 +57,5 @@ func TestStatePush(t *testing.T) {
 	// Write a stale local state file.
 	writeLocalState(t, ctx, b, map[string]int{"serial": 4})
 	diags := bundle.Apply(ctx, b, m)
-	assert.Empty(t, diags)
+	assert.NoError(t, diags.Error())
 }

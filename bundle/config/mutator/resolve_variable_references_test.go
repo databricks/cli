@@ -31,13 +31,13 @@ func TestResolveVariableReferences(t *testing.T) {
 
 	// Apply with an invalid prefix. This should not change the workspace root path.
 	diags := bundle.Apply(context.Background(), b, ResolveVariableReferences("doesntexist"))
-	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
 	require.Equal(t, "${bundle.name}/bar", b.Config.Workspace.RootPath)
 	require.Equal(t, "${workspace.root_path}/baz", b.Config.Workspace.FilePath)
 
 	// Apply with a valid prefix. This should change the workspace root path.
 	diags = bundle.Apply(context.Background(), b, ResolveVariableReferences("bundle", "workspace"))
-	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
 	require.Equal(t, "example/bar", b.Config.Workspace.RootPath)
 	require.Equal(t, "example/bar/baz", b.Config.Workspace.FilePath)
 }
@@ -65,7 +65,7 @@ func TestResolveVariableReferencesToBundleVariables(t *testing.T) {
 
 	// Apply with a valid prefix. This should change the workspace root path.
 	diags := bundle.Apply(context.Background(), b, ResolveVariableReferences("bundle", "variables"))
-	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
 	require.Equal(t, "example/bar", b.Config.Workspace.RootPath)
 }
 
@@ -94,7 +94,7 @@ func TestResolveVariableReferencesToEmptyFields(t *testing.T) {
 
 	// Apply for the bundle prefix.
 	diags := bundle.Apply(context.Background(), b, ResolveVariableReferences("bundle"))
-	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
 
 	// The job settings should have been interpolated to an empty string.
 	require.Equal(t, "", b.Config.Resources.Jobs["job1"].JobSettings.Tags["git_branch"])

@@ -23,7 +23,7 @@ func TestValidateGitDetailsMatchingBranches(t *testing.T) {
 
 	m := ValidateGitDetails()
 	diags := bundle.Apply(context.Background(), b, m)
-	assert.Empty(t, diags)
+	assert.NoError(t, diags.Error())
 }
 
 func TestValidateGitDetailsNonMatchingBranches(t *testing.T) {
@@ -59,5 +59,5 @@ func TestValidateGitDetailsNotUsingGit(t *testing.T) {
 
 	m := ValidateGitDetails()
 	diags := bundle.Apply(context.Background(), b, m)
-	assert.Empty(t, diags)
+	assert.NoError(t, diags.Error())
 }

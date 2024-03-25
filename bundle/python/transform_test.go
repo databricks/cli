@@ -141,5 +141,5 @@ func TestNoPanicWithNoPythonWheelTasks(t *testing.T) {
 	}
 	trampoline := TransformWheelTask()
 	diags := bundle.Apply(context.Background(), b, trampoline)
-	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
 }

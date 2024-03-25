@@ -33,6 +33,5 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return diag.FromErr(err)
 	}
 
-	err = f.Write(ctx, MetadataFileName, bytes.NewReader(metadata), filer.CreateParentDirectories, filer.OverwriteIfExists)
-	return diag.FromErr(err)
+	return diag.FromErr(f.Write(ctx, MetadataFileName, bytes.NewReader(metadata), filer.CreateParentDirectories, filer.OverwriteIfExists))
 }

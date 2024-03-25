@@ -50,7 +50,7 @@ func TestOverrideDevelopment(t *testing.T) {
 
 	m := mutator.OverrideCompute()
 	diags := bundle.Apply(context.Background(), b, m)
-	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
 	assert.Nil(t, b.Config.Resources.Jobs["job1"].Tasks[0].NewCluster)
 	assert.Equal(t, "newClusterID", b.Config.Resources.Jobs["job1"].Tasks[0].ExistingClusterId)
 	assert.Equal(t, "newClusterID", b.Config.Resources.Jobs["job1"].Tasks[1].ExistingClusterId)
@@ -86,7 +86,7 @@ func TestOverrideDevelopmentEnv(t *testing.T) {
 
 	m := mutator.OverrideCompute()
 	diags := bundle.Apply(context.Background(), b, m)
-	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
 	assert.Equal(t, "cluster2", b.Config.Resources.Jobs["job1"].Tasks[1].ExistingClusterId)
 }
 
@@ -111,7 +111,7 @@ func TestOverridePipelineTask(t *testing.T) {
 
 	m := mutator.OverrideCompute()
 	diags := bundle.Apply(context.Background(), b, m)
-	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
 	assert.Empty(t, b.Config.Resources.Jobs["job1"].Tasks[0].ExistingClusterId)
 }
 
@@ -168,5 +168,5 @@ func TestOverrideProductionEnv(t *testing.T) {
 
 	m := mutator.OverrideCompute()
 	diags := bundle.Apply(context.Background(), b, m)
-	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
 }

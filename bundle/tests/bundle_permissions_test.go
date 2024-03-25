@@ -19,7 +19,7 @@ func TestBundlePermissions(t *testing.T) {
 	assert.NotContains(t, b.Config.Permissions, resources.Permission{Level: "CAN_RUN", UserName: "bot@company.com"})
 
 	diags := bundle.Apply(context.Background(), b, permissions.ApplyBundlePermissions())
-	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
 
 	pipelinePermissions := b.Config.Resources.Pipelines["nyc_taxi_pipeline"].Permissions
 	assert.Contains(t, pipelinePermissions, resources.Permission{Level: "CAN_RUN", UserName: "test@company.com"})
@@ -42,7 +42,7 @@ func TestBundlePermissionsDevTarget(t *testing.T) {
 	assert.Contains(t, b.Config.Permissions, resources.Permission{Level: "CAN_RUN", UserName: "bot@company.com"})
 
 	diags := bundle.Apply(context.Background(), b, permissions.ApplyBundlePermissions())
-	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
 
 	pipelinePermissions := b.Config.Resources.Pipelines["nyc_taxi_pipeline"].Permissions
 	assert.Contains(t, pipelinePermissions, resources.Permission{Level: "CAN_RUN", UserName: "test@company.com"})

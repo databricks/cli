@@ -36,5 +36,4 @@ func TestGitBundleBranchValidation(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, mutator.ValidateGitDetails())
 	assert.ErrorContains(t, diags.Error(), "not on the right Git branch:")
-
 }

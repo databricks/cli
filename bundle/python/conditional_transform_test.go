@@ -48,7 +48,7 @@ func TestNoTransformByDefault(t *testing.T) {
 
 	trampoline := TransformWheelTask()
 	diags := bundle.Apply(context.Background(), b, trampoline)
-	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
 
 	task := b.Config.Resources.Jobs["job1"].Tasks[0]
 	require.NotNil(t, task.PythonWheelTask)
@@ -97,7 +97,7 @@ func TestTransformWithExperimentalSettingSetToTrue(t *testing.T) {
 
 	trampoline := TransformWheelTask()
 	diags := bundle.Apply(context.Background(), b, trampoline)
-	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
 
 	task := b.Config.Resources.Jobs["job1"].Tasks[0]
 	require.Nil(t, task.PythonWheelTask)

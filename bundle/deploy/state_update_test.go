@@ -56,7 +56,7 @@ func TestStateUpdate(t *testing.T) {
 	ctx := context.Background()
 
 	diags := bundle.Apply(ctx, b, s)
-	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
 
 	// Check that the state file was updated.
 	state, err := load(ctx, b)

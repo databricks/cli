@@ -81,7 +81,7 @@ func TestGenerateTrampoline(t *testing.T) {
 	funcs := functions{}
 	trampoline := NewTrampoline("test_trampoline", &funcs, "Hello from {{.MyName}}")
 	diags := bundle.Apply(ctx, b, trampoline)
-	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
 
 	dir, err := b.InternalDir(ctx)
 	require.NoError(t, err)

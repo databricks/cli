@@ -110,7 +110,7 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 
 	m := ExpandPipelineGlobPaths()
 	diags := bundle.Apply(context.Background(), b, m)
-	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
 
 	libraries := b.Config.Resources.Pipelines["pipeline"].Libraries
 	require.Len(t, libraries, 13)

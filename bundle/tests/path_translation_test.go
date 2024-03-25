@@ -16,7 +16,7 @@ func TestPathTranslationFallback(t *testing.T) {
 
 	m := mutator.TranslatePaths()
 	diags := bundle.Apply(context.Background(), b, m)
-	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
 
 	j := b.Config.Resources.Jobs["my_job"]
 	assert.Len(t, j.Tasks, 6)
@@ -63,7 +63,7 @@ func TestPathTranslationNominal(t *testing.T) {
 
 	m := mutator.TranslatePaths()
 	diags := bundle.Apply(context.Background(), b, m)
-	assert.Empty(t, diags)
+	assert.NoError(t, diags.Error())
 
 	j := b.Config.Resources.Jobs["my_job"]
 	assert.Len(t, j.Tasks, 8)

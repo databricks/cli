@@ -59,11 +59,12 @@ func setVariable(ctx context.Context, v *variable.Variable, name string) diag.Di
 }
 
 func (m *setVariables) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	var diags diag.Diagnostics
 	for name, variable := range b.Config.Variables {
-		diags := setVariable(ctx, variable, name)
-		if diags != nil {
+		diags = diags.Extend(setVariable(ctx, variable, name))
+		if diags.HasError() {
 			return diags
 		}
 	}
-	return nil
+	return diags
 }

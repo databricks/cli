@@ -28,7 +28,7 @@ func TestExpandPipelineGlobPaths(t *testing.T) {
 
 	ctx := context.Background()
 	diags := bundle.Apply(ctx, b, phases.Initialize())
-	require.Empty(t, diags)
+	require.NoError(t, diags.Error())
 	require.Equal(
 		t,
 		"/Users/user@domain.com/.bundle/pipeline_glob_paths/default/files/dlt/nyc_taxi_loader",

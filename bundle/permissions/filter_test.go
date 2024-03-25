@@ -90,7 +90,7 @@ func TestFilterCurrentUser(t *testing.T) {
 	b := testFixture("alice@databricks.com")
 
 	diags := bundle.Apply(context.Background(), b, FilterCurrentUser())
-	assert.Empty(t, diags)
+	assert.NoError(t, diags.Error())
 
 	// Assert current user is filtered out.
 	assert.Equal(t, 2, len(b.Config.Resources.Jobs["job1"].Permissions))
@@ -125,7 +125,7 @@ func TestFilterCurrentServicePrincipal(t *testing.T) {
 	b := testFixture("i-Robot")
 
 	diags := bundle.Apply(context.Background(), b, FilterCurrentUser())
-	assert.Empty(t, diags)
+	assert.NoError(t, diags.Error())
 
 	// Assert current user is filtered out.
 	assert.Equal(t, 2, len(b.Config.Resources.Jobs["job1"].Permissions))
@@ -170,5 +170,5 @@ func TestFilterCurrentUserDoesNotErrorWhenNoResources(t *testing.T) {
 	}
 
 	diags := bundle.Apply(context.Background(), b, FilterCurrentUser())
-	assert.Empty(t, diags)
+	assert.NoError(t, diags.Error())
 }
