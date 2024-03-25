@@ -36,13 +36,16 @@ func Apply(ctx context.Context, b *Bundle, m Mutator) diag.Diagnostics {
 	}()
 
 	diags := m.Apply(ctx, b)
-	if diags != nil {
-		// log.Errorf(ctx, "Error: %s", err)
-		// TODO!
-		return diags
+
+	// Log error in diagnostics if any.
+	// Note: errors should be logged when constructing them
+	// such that they are not logged multiple times.
+	// If this is done, we can omit this block.
+	if err := diags.Error(); err != nil {
+		log.Errorf(ctx, "Error: %s", err)
 	}
 
-	return nil
+	return diags
 }
 
 type funcMutator struct {
