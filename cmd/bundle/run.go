@@ -60,11 +60,17 @@ func newRunCommand() *cobra.Command {
 			args = append(args, id)
 		}
 
-		if len(args) != 1 {
+		if len(args) < 1 {
 			return fmt.Errorf("expected a KEY of the resource to run")
 		}
 
 		runner, err := run.Find(b, args[0])
+		if err != nil {
+			return err
+		}
+
+		// Parse additional positional arguments.
+		err = runner.ParseArgs(args[1:], &runOptions)
 		if err != nil {
 			return err
 		}
@@ -105,10 +111,6 @@ func newRunCommand() *cobra.Command {
 	}
 
 	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		if len(args) > 0 {
-			return nil, cobra.ShellCompDirectiveNoFileComp
-		}
-
 		err := root.MustConfigureBundle(cmd, args)
 		if err != nil {
 			cobra.CompErrorln(err.Error())
@@ -122,7 +124,16 @@ func newRunCommand() *cobra.Command {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
 
-		return run.ResourceCompletions(b), cobra.ShellCompDirectiveNoFileComp
+		if len(args) == 0 {
+			return run.ResourceCompletions(b), cobra.ShellCompDirectiveNoFileComp
+		} else {
+			// If we know the resource to run, we can complete additional positional arguments.
+			runner, err := run.Find(b, args[0])
+			if err != nil {
+				return nil, cobra.ShellCompDirectiveError
+			}
+			return runner.CompleteArgs(args[1:], toComplete)
+		}
 	}
 
 	return cmd

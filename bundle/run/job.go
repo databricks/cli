@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/fatih/color"
+	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -314,4 +315,12 @@ func (r *jobRunner) Cancel(ctx context.Context) error {
 	}
 
 	return errGroup.Wait()
+}
+
+func (r *jobRunner) ParseArgs(args []string, opts *Options) error {
+	return r.posArgsHandler().ParseArgs(args, opts)
+}
+
+func (r *jobRunner) CompleteArgs(args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return r.posArgsHandler().CompleteArgs(args, toComplete)
 }
