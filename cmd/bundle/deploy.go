@@ -51,8 +51,8 @@ func newDeployCommand() *cobra.Command {
 			phases.Build(),
 			phases.Deploy(),
 		))
-		if diags.HasError() {
-			return diags.Error()
+		if err := diags.Error(); err != nil {
+			return err
 		}
 		return nil
 	}

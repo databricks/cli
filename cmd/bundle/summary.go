@@ -34,8 +34,8 @@ func newSummaryCommand() *cobra.Command {
 		b := bundle.Get(cmd.Context())
 
 		diags := bundle.Apply(cmd.Context(), b, phases.Initialize())
-		if diags.HasError() {
-			return diags.Error()
+		if err := diags.Error(); err != nil {
+			return err
 		}
 
 		cacheDir, err := terraform.Dir(cmd.Context(), b)
@@ -52,14 +52,14 @@ func newSummaryCommand() *cobra.Command {
 				terraform.Interpolate(),
 				terraform.Write(),
 			))
-			if diags.HasError() {
-				return diags.Error()
+			if err := diags.Error(); err != nil {
+				return err
 			}
 		}
 
 		diags = bundle.Apply(cmd.Context(), b, terraform.Load())
-		if diags.HasError() {
-			return diags.Error()
+		if err := diags.Error(); err != nil {
+			return err
 		}
 
 		switch root.OutputType(cmd) {

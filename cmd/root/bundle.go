@@ -69,14 +69,14 @@ func loadBundle(cmd *cobra.Command, args []string, load func(ctx context.Context
 			b.Config.Workspace.Profile = profile
 			return nil
 		})
-		if diags.HasError() {
-			return nil, diags.Error()
+		if err := diags.Error(); err != nil {
+			return nil, err
 		}
 	}
 
 	diags := bundle.Apply(ctx, b, bundle.Seq(mutator.DefaultMutators()...))
-	if diags.HasError() {
-		return nil, diags.Error()
+	if err := diags.Error(); err != nil {
+		return nil, err
 	}
 
 	return b, nil
@@ -104,8 +104,8 @@ func configureBundle(cmd *cobra.Command, args []string, load func(ctx context.Co
 
 	ctx := cmd.Context()
 	diags := bundle.Apply(ctx, b, m)
-	if diags.HasError() {
-		return diags.Error()
+	if err := diags.Error(); err != nil {
+		return err
 	}
 
 	cmd.SetContext(bundle.Context(ctx, b))

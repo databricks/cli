@@ -42,8 +42,8 @@ func newRunCommand() *cobra.Command {
 			terraform.StatePull(),
 			terraform.Load(terraform.ErrorOnEmptyState),
 		))
-		if diags.HasError() {
-			return diags.Error()
+		if err := diags.Error(); err != nil {
+			return err
 		}
 
 		// If no arguments are specified, prompt the user to select something to run.

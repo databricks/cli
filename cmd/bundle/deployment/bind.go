@@ -59,8 +59,8 @@ func newBindCommand() *cobra.Command {
 				ResourceId:   args[1],
 			}),
 		))
-		if diags.HasError() {
-			return fmt.Errorf("failed to bind the resource, err: %w", diags.Error())
+		if err := diags.Error(); err != nil {
+			return fmt.Errorf("failed to bind the resource, err: %w", err)
 		}
 
 		cmdio.LogString(ctx, fmt.Sprintf("Successfully bound %s with an id '%s'. Run 'bundle deploy' to deploy changes to your workspace", resource.TerraformResourceName(), args[1]))

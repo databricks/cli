@@ -23,8 +23,8 @@ func newValidateCommand() *cobra.Command {
 		b := bundle.Get(cmd.Context())
 
 		diags := bundle.Apply(cmd.Context(), b, phases.Initialize())
-		if diags.HasError() {
-			return diags.Error()
+		if err := diags.Error(); err != nil {
+			return err
 		}
 
 		// Until we change up the output of this command to be a text representation,
