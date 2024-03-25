@@ -98,7 +98,7 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 }
 
 func TestRunAsErrorForUnsupportedResources(t *testing.T) {
-	// Bundle "run_as" has two mode of operations, each with a different set of
+	// Bundle "run_as" has two modes of operation, each with a different set of
 	// resources that are supported.
 	// Cases:
 	//   1. When the bundle "run_as" identity is same as the current deployment
@@ -110,22 +110,24 @@ func TestRunAsErrorForUnsupportedResources(t *testing.T) {
 	// To be a part of the allow list, the resource must satisfy one of the following
 	// two conditions:
 	//   1. The resource supports setting a run_as identity to a different user
-	//      from the owner/creator of the job. For example, jobs.
+	//      from the owner/creator of the resource. For example, jobs.
 	//   2. Run as semantics do not apply to the resource. We do not plan to add
 	//      platform side support for `run_as` for these resources. For example,
 	//      experiments or registered models.
 	//
 	// Any resource that is not on the allow list cannot be used when the bundle
 	// run_as is different from the current deployment user. "bundle validate" must
-	// return an error if such a resource has been defined in the bundle configuration.
+	// return an error if such a resource has been defined, and the run_as identity
+	// is different from the current deployment identity.
 	//
 	// Action Item: If you are adding a new resource to DABs, please check in with
-	// the relevant team whether the resource should be on the allow list or (implicitly) on
+	// the relevant owning team whether the resource should be on the allow list or (implicitly) on
 	// the deny list. Any resources that could have run_as semantics in the future
 	// should be on the deny list.
 	// For example: Teams for pipelines, model serving endpoints or Lakeview dashboards
 	// are planning to add platform side support for `run_as` for these resources at
-	// some point in the future. These resources are (implicitly) on the deny list.
+	// some point in the future. These resources are (implicitly) on the deny list, since
+	// they are not on the allow list below.
 	allowList := []string{
 		"jobs",
 		"models",
@@ -164,7 +166,7 @@ func TestRunAsErrorForUnsupportedResources(t *testing.T) {
 		}))
 		require.NoError(t, err)
 
-		// Get back typed configuration from the new invalid bundle configuration.
+		// Get back typed configuration from the newly created invalid bundle configuration.
 		r := &config.Root{}
 		err = convert.ToTyped(r, nv)
 		require.NoError(t, err)
