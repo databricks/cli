@@ -24,16 +24,19 @@ func Deploy() bundle.Mutator {
 		bundle.Defer(
 			bundle.Seq(
 				terraform.StatePull(),
-				deploy.CheckRunningResource(),
+				deploy.StatePull(),
 				mutator.ValidateGitDetails(),
 				libraries.MatchWithArtifacts(),
 				artifacts.CleanUp(),
 				artifacts.UploadAll(),
 				python.TransformWheelTask(),
 				files.Upload(),
+				deploy.StateUpdate(),
+				deploy.StatePush(),
 				permissions.ApplyWorkspaceRootPermissions(),
 				terraform.Interpolate(),
 				terraform.Write(),
+				deploy.CheckRunningResource(),
 				bundle.Defer(
 					terraform.Apply(),
 					bundle.Seq(

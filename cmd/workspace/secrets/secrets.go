@@ -85,8 +85,7 @@ func newCreateScope() *cobra.Command {
 	cmd.Long = `Create a new secret scope.
   
   The scope name must consist of alphanumeric characters, dashes, underscores,
-  and periods, and may not exceed 128 characters. The maximum number of scopes
-  in a workspace is 100.
+  and periods, and may not exceed 128 characters.
 
   Arguments:
     SCOPE: Scope name requested by the user. Scope names are unique.`

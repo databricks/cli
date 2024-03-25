@@ -84,7 +84,7 @@ func (w *FileSet) recursiveListFiles() (fileList []File, err error) {
 			return nil
 		}
 
-		fileList = append(fileList, File{d, path, relPath})
+		fileList = append(fileList, NewFile(d, path, relPath))
 		return nil
 	})
 	return

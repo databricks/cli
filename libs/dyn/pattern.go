@@ -2,7 +2,6 @@ package dyn
 
 import (
 	"fmt"
-	"maps"
 	"slices"
 )
 
@@ -33,6 +32,14 @@ func NewPatternFromPath(p Path) Pattern {
 	return cs
 }
 
+// Append appends the given components to the pattern.
+func (p Pattern) Append(cs ...patternComponent) Pattern {
+	out := make(Pattern, len(p)+len(cs))
+	copy(out, p)
+	copy(out[len(p):], cs)
+	return out
+}
+
 type anyKeyComponent struct{}
 
 // AnyKey returns a pattern component that matches any key.
@@ -47,10 +54,13 @@ func (c anyKeyComponent) visit(v Value, prefix Path, suffix Pattern, opts visitO
 		return InvalidValue, fmt.Errorf("expected a map at %q, found %s", prefix, v.Kind())
 	}
 
-	m = maps.Clone(m)
-	for key, value := range m {
+	m = m.Clone()
+	for _, pair := range m.Pairs() {
+		pk := pair.Key
+		pv := pair.Value
+
 		var err error
-		nv, err := visit(value, prefix.Append(Key(key)), suffix, opts)
+		nv, err := visit(pv, append(prefix, Key(pk.MustString())), suffix, opts)
 		if err != nil {
 			// Leave the value intact if the suffix pattern didn't match any value.
 			if IsNoSuchKeyError(err) || IsIndexOutOfBoundsError(err) {
@@ -58,7 +68,8 @@ func (c anyKeyComponent) visit(v Value, prefix Path, suffix Pattern, opts visitO
 			}
 			return InvalidValue, err
 		}
-		m[key] = nv
+
+		m.Set(pk, nv)
 	}
 
 	return NewValue(m, v.Location()), nil
@@ -81,7 +92,7 @@ func (c anyIndexComponent) visit(v Value, prefix Path, suffix Pattern, opts visi
 	s = slices.Clone(s)
 	for i, value := range s {
 		var err error
-		nv, err := visit(value, prefix.Append(Index(i)), suffix, opts)
+		nv, err := visit(value, append(prefix, Index(i)), suffix, opts)
 		if err != nil {
 			// Leave the value intact if the suffix pattern didn't match any value.
 			if IsNoSuchKeyError(err) || IsIndexOutOfBoundsError(err) {

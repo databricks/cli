@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"path"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
@@ -13,15 +12,10 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/env"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func touch(t *testing.T, path, file string) {
-	f, err := os.Create(filepath.Join(path, file))
-	require.NoError(t, err)
-	f.Close()
-}
 
 func TestProcessRootIncludesEmpty(t *testing.T) {
 	b := &bundle.Bundle{
@@ -64,9 +58,9 @@ func TestProcessRootIncludesSingleGlob(t *testing.T) {
 		},
 	}
 
-	touch(t, b.Config.Path, "databricks.yml")
-	touch(t, b.Config.Path, "a.yml")
-	touch(t, b.Config.Path, "b.yml")
+	testutil.Touch(t, b.Config.Path, "databricks.yml")
+	testutil.Touch(t, b.Config.Path, "a.yml")
+	testutil.Touch(t, b.Config.Path, "b.yml")
 
 	err := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
 	require.NoError(t, err)
@@ -85,8 +79,8 @@ func TestProcessRootIncludesMultiGlob(t *testing.T) {
 		},
 	}
 
-	touch(t, b.Config.Path, "a1.yml")
-	touch(t, b.Config.Path, "b1.yml")
+	testutil.Touch(t, b.Config.Path, "a1.yml")
+	testutil.Touch(t, b.Config.Path, "b1.yml")
 
 	err := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
 	require.NoError(t, err)
@@ -105,7 +99,7 @@ func TestProcessRootIncludesRemoveDups(t *testing.T) {
 		},
 	}
 
-	touch(t, b.Config.Path, "a.yml")
+	testutil.Touch(t, b.Config.Path, "a.yml")
 
 	err := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
 	require.NoError(t, err)
@@ -129,7 +123,7 @@ func TestProcessRootIncludesNotExists(t *testing.T) {
 func TestProcessRootIncludesExtrasFromEnvVar(t *testing.T) {
 	rootPath := t.TempDir()
 	testYamlName := "extra_include_path.yml"
-	touch(t, rootPath, testYamlName)
+	testutil.Touch(t, rootPath, testYamlName)
 	t.Setenv(env.IncludesVariable, path.Join(rootPath, testYamlName))
 
 	b := &bundle.Bundle{
@@ -146,7 +140,7 @@ func TestProcessRootIncludesExtrasFromEnvVar(t *testing.T) {
 func TestProcessRootIncludesDedupExtrasFromEnvVar(t *testing.T) {
 	rootPath := t.TempDir()
 	testYamlName := "extra_include_path.yml"
-	touch(t, rootPath, testYamlName)
+	testutil.Touch(t, rootPath, testYamlName)
 	t.Setenv(env.IncludesVariable, strings.Join(
 		[]string{
 			path.Join(rootPath, testYamlName),

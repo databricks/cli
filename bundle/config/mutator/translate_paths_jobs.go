@@ -2,132 +2,101 @@ package mutator
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/libs/dyn"
 )
 
-func transformNotebookTask(resource any, dir string) *transformer {
-	task, ok := resource.(*jobs.Task)
-	if !ok || task.NotebookTask == nil {
-		return nil
-	}
+type jobTaskRewritePattern struct {
+	pattern dyn.Pattern
+	fn      rewriteFunc
+}
 
-	return &transformer{
-		dir,
-		&task.NotebookTask.NotebookPath,
-		"tasks.notebook_task.notebook_path",
-		translateNotebookPath,
+func rewritePatterns(base dyn.Pattern) []jobTaskRewritePattern {
+	return []jobTaskRewritePattern{
+		{
+			base.Append(dyn.Key("notebook_task"), dyn.Key("notebook_path")),
+			translateNotebookPath,
+		},
+		{
+			base.Append(dyn.Key("spark_python_task"), dyn.Key("python_file")),
+			translateFilePath,
+		},
+		{
+			base.Append(dyn.Key("dbt_task"), dyn.Key("project_directory")),
+			translateDirectoryPath,
+		},
+		{
+			base.Append(dyn.Key("sql_task"), dyn.Key("file"), dyn.Key("path")),
+			translateFilePath,
+		},
+		{
+			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("whl")),
+			translateNoOp,
+		},
+		{
+			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("jar")),
+			translateNoOp,
+		},
 	}
 }
 
-func transformSparkTask(resource any, dir string) *transformer {
-	task, ok := resource.(*jobs.Task)
-	if !ok || task.SparkPythonTask == nil {
-		return nil
-	}
-
-	return &transformer{
-		dir,
-		&task.SparkPythonTask.PythonFile,
-		"tasks.spark_python_task.python_file",
-		translateFilePath,
-	}
-}
-
-func transformWhlLibrary(resource any, dir string) *transformer {
-	library, ok := resource.(*compute.Library)
-	if !ok || library.Whl == "" {
-		return nil
-	}
-
-	return &transformer{
-		dir,
-		&library.Whl,
-		"libraries.whl",
-		translateNoOp, // Does not convert to remote path but makes sure that nested paths resolved correctly
-	}
-}
-
-func transformDbtTask(resource any, dir string) *transformer {
-	task, ok := resource.(*jobs.Task)
-	if !ok || task.DbtTask == nil {
-		return nil
-	}
-
-	return &transformer{
-		dir,
-		&task.DbtTask.ProjectDirectory,
-		"tasks.dbt_task.project_directory",
-		translateDirectoryPath,
-	}
-}
-
-func transformSqlFileTask(resource any, dir string) *transformer {
-	task, ok := resource.(*jobs.Task)
-	if !ok || task.SqlTask == nil || task.SqlTask.File == nil {
-		return nil
-	}
-
-	return &transformer{
-		dir,
-		&task.SqlTask.File.Path,
-		"tasks.sql_task.file.path",
-		translateFilePath,
-	}
-}
-
-func transformJarLibrary(resource any, dir string) *transformer {
-	library, ok := resource.(*compute.Library)
-	if !ok || library.Jar == "" {
-		return nil
-	}
-
-	return &transformer{
-		dir,
-		&library.Jar,
-		"libraries.jar",
-		translateNoOp, // Does not convert to remote path but makes sure that nested paths resolved correctly
-	}
-}
-
-func applyJobTransformers(m *translatePaths, b *bundle.Bundle) error {
-	jobTransformers := []transformFunc{
-		transformNotebookTask,
-		transformSparkTask,
-		transformWhlLibrary,
-		transformJarLibrary,
-		transformDbtTask,
-		transformSqlFileTask,
-	}
+func (m *translatePaths) applyJobTranslations(b *bundle.Bundle, v dyn.Value) (dyn.Value, error) {
+	var fallback = make(map[string]string)
+	var ignore []string
+	var err error
 
 	for key, job := range b.Config.Resources.Jobs {
 		dir, err := job.ConfigFileDirectory()
 		if err != nil {
-			return fmt.Errorf("unable to determine directory for job %s: %w", key, err)
+			return dyn.InvalidValue, fmt.Errorf("unable to determine directory for job %s: %w", key, err)
 		}
+
+		// If we cannot resolve the relative path using the [dyn.Value] location itself,
+		// use the job's location as fallback. This is necessary for backwards compatibility.
+		fallback[key] = dir
 
 		// Do not translate job task paths if using git source
 		if job.GitSource != nil {
-			continue
-		}
-
-		for i := 0; i < len(job.Tasks); i++ {
-			task := &job.Tasks[i]
-			err := m.applyTransformers(jobTransformers, b, task, dir)
-			if err != nil {
-				return err
-			}
-			for j := 0; j < len(task.Libraries); j++ {
-				library := &task.Libraries[j]
-				err := m.applyTransformers(jobTransformers, b, library, dir)
-				if err != nil {
-					return err
-				}
-			}
+			ignore = append(ignore, key)
 		}
 	}
 
-	return nil
+	// Base pattern to match all tasks in all jobs.
+	base := dyn.NewPattern(
+		dyn.Key("resources"),
+		dyn.Key("jobs"),
+		dyn.AnyKey(),
+		dyn.Key("tasks"),
+		dyn.AnyIndex(),
+	)
+
+	// Compile list of patterns and their respective rewrite functions.
+	taskPatterns := rewritePatterns(base)
+	forEachPatterns := rewritePatterns(base.Append(dyn.Key("for_each_task"), dyn.Key("task")))
+	allPatterns := append(taskPatterns, forEachPatterns...)
+
+	for _, t := range allPatterns {
+		v, err = dyn.MapByPattern(v, t.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			key := p[2].Key()
+
+			// Skip path translation if the job is using git source.
+			if slices.Contains(ignore, key) {
+				return v, nil
+			}
+
+			dir, err := v.Location().Directory()
+			if err != nil {
+				return dyn.InvalidValue, fmt.Errorf("unable to determine directory for job %s: %w", key, err)
+			}
+
+			return m.rewriteRelativeTo(b, p, v, t.fn, dir, fallback[key])
+		})
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+	}
+
+	return v, nil
 }

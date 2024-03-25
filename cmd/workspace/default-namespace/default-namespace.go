@@ -53,13 +53,13 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*settings.DeleteDefaultNamespaceRequest,
+	*settings.DeleteDefaultNamespaceSettingRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var deleteReq settings.DeleteDefaultNamespaceRequest
+	var deleteReq settings.DeleteDefaultNamespaceSettingRequest
 
 	// TODO: short flags
 
@@ -112,13 +112,13 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*settings.GetDefaultNamespaceRequest,
+	*settings.GetDefaultNamespaceSettingRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getReq settings.GetDefaultNamespaceRequest
+	var getReq settings.GetDefaultNamespaceSettingRequest
 
 	// TODO: short flags
 

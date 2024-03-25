@@ -42,13 +42,13 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*settings.GetAutomaticClusterUpdateRequest,
+	*settings.GetAutomaticClusterUpdateSettingRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getReq settings.GetAutomaticClusterUpdateRequest
+	var getReq settings.GetAutomaticClusterUpdateSettingRequest
 
 	// TODO: short flags
 

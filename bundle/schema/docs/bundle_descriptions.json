@@ -785,7 +785,7 @@
                           "description": "Optional schema to write to. This parameter is only used when a warehouse_id is also provided. If not provided, the `default` schema is used."
                         },
                         "source": {
-                          "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                          "description": "Optional location type of the project directory. When set to `WORKSPACE`, the project will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the project will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Project is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Project is located in cloud Git provider.\n"
                         },
                         "warehouse_id": {
                           "description": "ID of the SQL warehouse to connect to. If provided, we automatically generate and provide the profile and connection details to dbt. It can be overridden on a per-command basis by using the `--profiles-dir` command line argument."
@@ -1269,7 +1269,7 @@
                           "description": "The path of the notebook to be run in the Databricks workspace or remote repository.\nFor notebooks stored in the Databricks workspace, the path must be absolute and begin with a slash.\nFor notebooks stored in a remote repository, the path must be relative. This field is required.\n"
                         },
                         "source": {
-                          "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                          "description": "Optional location type of the project directory. When set to `WORKSPACE`, the project will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the project will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Project is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Project is located in cloud Git provider.\n"
                         }
                       }
                     },
@@ -1371,7 +1371,7 @@
                           "description": "The Python file to be executed. Cloud file URIs (such as dbfs:/, s3:/, adls:/, gcs:/) and workspace paths are supported. For python files stored in the Databricks workspace, the path must be absolute and begin with `/`. For files stored in a remote repository, the path must be relative. This field is required."
                         },
                         "source": {
-                          "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                          "description": "Optional location type of the project directory. When set to `WORKSPACE`, the project will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the project will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Project is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Project is located in cloud Git provider.\n"
                         }
                       }
                     },
@@ -1449,7 +1449,7 @@
                               "description": "Path of the SQL file. Must be relative if the source is a remote Git repository and absolute for workspace paths."
                             },
                             "source": {
-                              "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                              "description": "Optional location type of the project directory. When set to `WORKSPACE`, the project will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the project will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Project is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Project is located in cloud Git provider.\n"
                             }
                           }
                         },
@@ -1653,7 +1653,7 @@
                     }
                   },
                   "served_entities": {
-                    "description": "A list of served entities for the endpoint to serve. A serving endpoint can have up to 10 served entities.",
+                    "description": "A list of served entities for the endpoint to serve. A serving endpoint can have up to 15 served entities.",
                     "items": {
                       "description": "",
                       "properties": {
@@ -1791,7 +1791,7 @@
                     }
                   },
                   "served_models": {
-                    "description": "(Deprecated, use served_entities instead) A list of served models for the endpoint to serve. A serving endpoint can have up to 10 served models.",
+                    "description": "(Deprecated, use served_entities instead) A list of served models for the endpoint to serve. A serving endpoint can have up to 15 served models.",
                     "items": {
                       "description": "",
                       "properties": {
@@ -3318,7 +3318,7 @@
                                 "description": "Optional schema to write to. This parameter is only used when a warehouse_id is also provided. If not provided, the `default` schema is used."
                               },
                               "source": {
-                                "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                                "description": "Optional location type of the project directory. When set to `WORKSPACE`, the project will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the project will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Project is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Project is located in cloud Git provider.\n"
                               },
                               "warehouse_id": {
                                 "description": "ID of the SQL warehouse to connect to. If provided, we automatically generate and provide the profile and connection details to dbt. It can be overridden on a per-command basis by using the `--profiles-dir` command line argument."
@@ -3802,7 +3802,7 @@
                                 "description": "The path of the notebook to be run in the Databricks workspace or remote repository.\nFor notebooks stored in the Databricks workspace, the path must be absolute and begin with a slash.\nFor notebooks stored in a remote repository, the path must be relative. This field is required.\n"
                               },
                               "source": {
-                                "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                                "description": "Optional location type of the project directory. When set to `WORKSPACE`, the project will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the project will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Project is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Project is located in cloud Git provider.\n"
                               }
                             }
                           },
@@ -3904,7 +3904,7 @@
                                 "description": "The Python file to be executed. Cloud file URIs (such as dbfs:/, s3:/, adls:/, gcs:/) and workspace paths are supported. For python files stored in the Databricks workspace, the path must be absolute and begin with `/`. For files stored in a remote repository, the path must be relative. This field is required."
                               },
                               "source": {
-                                "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                                "description": "Optional location type of the project directory. When set to `WORKSPACE`, the project will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the project will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Project is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Project is located in cloud Git provider.\n"
                               }
                             }
                           },
@@ -3982,7 +3982,7 @@
                                     "description": "Path of the SQL file. Must be relative if the source is a remote Git repository and absolute for workspace paths."
                                   },
                                   "source": {
-                                    "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                                    "description": "Optional location type of the project directory. When set to `WORKSPACE`, the project will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the project will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Project is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Project is located in cloud Git provider.\n"
                                   }
                                 }
                               },
@@ -4186,7 +4186,7 @@
                           }
                         },
                         "served_entities": {
-                          "description": "A list of served entities for the endpoint to serve. A serving endpoint can have up to 10 served entities.",
+                          "description": "A list of served entities for the endpoint to serve. A serving endpoint can have up to 15 served entities.",
                           "items": {
                             "description": "",
                             "properties": {
@@ -4324,7 +4324,7 @@
                           }
                         },
                         "served_models": {
-                          "description": "(Deprecated, use served_entities instead) A list of served models for the endpoint to serve. A serving endpoint can have up to 10 served models.",
+                          "description": "(Deprecated, use served_entities instead) A list of served models for the endpoint to serve. A serving endpoint can have up to 15 served models.",
                           "items": {
                             "description": "",
                             "properties": {

@@ -89,7 +89,10 @@ func (c *config) assignValuesFromFile(path string) error {
 
 // Assigns default values from schema to input config map
 func (c *config) assignDefaultValues(r *renderer) error {
-	for name, property := range c.schema.Properties {
+	for _, p := range c.schema.OrderedProperties() {
+		name := p.Name
+		property := p.Schema
+
 		// Config already has a value assigned
 		if _, ok := c.values[name]; ok {
 			continue
