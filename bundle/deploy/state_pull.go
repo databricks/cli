@@ -11,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/files"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sync"
@@ -20,10 +21,10 @@ type statePull struct {
 	filerFactory FilerFactory
 }
 
-func (s *statePull) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (s *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	f, err := s.filerFactory(b)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	// Download deployment state file from filer to local cache directory.
@@ -31,7 +32,7 @@ func (s *statePull) Apply(ctx context.Context, b *bundle.Bundle) error {
 	remote, err := s.remoteState(ctx, f)
 	if err != nil {
 		log.Infof(ctx, "Unable to open remote deployment state file: %s", err)
-		return err
+		return diag.FromErr(err)
 	}
 	if remote == nil {
 		log.Infof(ctx, "Remote deployment state file does not exist")
@@ -40,19 +41,19 @@ func (s *statePull) Apply(ctx context.Context, b *bundle.Bundle) error {
 
 	statePath, err := getPathToStateFile(ctx, b)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	local, err := os.OpenFile(statePath, os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	defer local.Close()
 
 	data := remote.Bytes()
 	err = validateRemoteStateCompatibility(bytes.NewReader(data))
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	if !isLocalStateStale(local, bytes.NewReader(data)) {
@@ -68,30 +69,30 @@ func (s *statePull) Apply(ctx context.Context, b *bundle.Bundle) error {
 	log.Infof(ctx, "Writing remote deployment state file to local cache directory")
 	_, err = io.Copy(local, bytes.NewReader(data))
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	var state DeploymentState
 	err = json.Unmarshal(data, &state)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	// Create a new snapshot based on the deployment state file.
 	opts, err := files.GetSyncOptions(ctx, b)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	log.Infof(ctx, "Creating new snapshot")
 	snapshot, err := sync.NewSnapshot(state.Files.ToSlice(b.Config.Path), opts)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	// Persist the snapshot to disk.
 	log.Infof(ctx, "Persisting snapshot to disk")
-	return snapshot.Save(ctx)
+	return diag.FromErr(snapshot.Save(ctx))
 }
 
 func (s *statePull) remoteState(ctx context.Context, f filer.Filer) (*bytes.Buffer, error) {

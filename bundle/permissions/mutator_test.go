@@ -46,8 +46,8 @@ func TestApplyBundlePermissions(t *testing.T) {
 		},
 	}
 
-	err := bundle.Apply(context.Background(), b, ApplyBundlePermissions())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, ApplyBundlePermissions())
+	require.NoError(t, diags.Error())
 
 	require.Len(t, b.Config.Resources.Jobs["job_1"].Permissions, 3)
 	require.Contains(t, b.Config.Resources.Jobs["job_1"].Permissions, resources.Permission{Level: "CAN_MANAGE", UserName: "TestUser"})
@@ -123,8 +123,8 @@ func TestWarningOnOverlapPermission(t *testing.T) {
 		},
 	}
 
-	err := bundle.Apply(context.Background(), b, ApplyBundlePermissions())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, ApplyBundlePermissions())
+	require.NoError(t, diags.Error())
 
 	require.Contains(t, b.Config.Resources.Jobs["job_1"].Permissions, resources.Permission{Level: "CAN_VIEW", UserName: "TestUser"})
 	require.Contains(t, b.Config.Resources.Jobs["job_1"].Permissions, resources.Permission{Level: "CAN_VIEW", GroupName: "TestGroup"})

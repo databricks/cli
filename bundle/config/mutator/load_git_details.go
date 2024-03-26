@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/log"
 )
@@ -19,11 +20,11 @@ func (m *loadGitDetails) Name() string {
 	return "LoadGitDetails"
 }
 
-func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Load relevant git repository
 	repo, err := git.NewRepository(b.Config.Path)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	// Read branch name of current checkout
@@ -57,12 +58,12 @@ func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// Compute relative path of the bundle root from the Git repo root.
 	absBundlePath, err := filepath.Abs(b.Config.Path)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	// repo.Root() returns the absolute path of the repo
 	relBundlePath, err := filepath.Rel(repo.Root(), absBundlePath)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	b.Config.Bundle.Git.BundleRootPath = filepath.ToSlash(relBundlePath)
 	return nil

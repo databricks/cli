@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/libraries"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -25,7 +26,7 @@ func (m *detectPkg) Name() string {
 	return "artifacts.whl.AutoDetect"
 }
 
-func (m *detectPkg) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *detectPkg) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	wheelTasks := libraries.FindAllWheelTasksWithLocalLibraries(b)
 	if len(wheelTasks) == 0 {
 		log.Infof(ctx, "No local wheel tasks in databricks.yml config, skipping auto detect")
@@ -50,7 +51,7 @@ func (m *detectPkg) Apply(ctx context.Context, b *bundle.Bundle) error {
 
 	pkgPath, err := filepath.Abs(b.Config.Path)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	b.Config.Artifacts[module] = &config.Artifact{
 		Path: pkgPath,

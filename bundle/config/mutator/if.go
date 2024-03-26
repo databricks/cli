@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/diag"
 )
 
 type ifMutator struct {
@@ -22,7 +23,7 @@ func If(
 	}
 }
 
-func (m *ifMutator) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *ifMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if m.condition(b) {
 		return bundle.Apply(ctx, b, m.onTrueMutator)
 	} else {

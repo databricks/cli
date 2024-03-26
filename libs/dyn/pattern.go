@@ -2,7 +2,6 @@ package dyn
 
 import (
 	"fmt"
-	"maps"
 	"slices"
 )
 
@@ -55,10 +54,13 @@ func (c anyKeyComponent) visit(v Value, prefix Path, suffix Pattern, opts visitO
 		return InvalidValue, fmt.Errorf("expected a map at %q, found %s", prefix, v.Kind())
 	}
 
-	m = maps.Clone(m)
-	for key, value := range m {
+	m = m.Clone()
+	for _, pair := range m.Pairs() {
+		pk := pair.Key
+		pv := pair.Value
+
 		var err error
-		nv, err := visit(value, append(prefix, Key(key)), suffix, opts)
+		nv, err := visit(pv, append(prefix, Key(pk.MustString())), suffix, opts)
 		if err != nil {
 			// Leave the value intact if the suffix pattern didn't match any value.
 			if IsNoSuchKeyError(err) || IsIndexOutOfBoundsError(err) {
@@ -66,7 +68,8 @@ func (c anyKeyComponent) visit(v Value, prefix Path, suffix Pattern, opts visitO
 			}
 			return InvalidValue, err
 		}
-		m[key] = nv
+
+		m.Set(pk, nv)
 	}
 
 	return NewValue(m, v.Location()), nil

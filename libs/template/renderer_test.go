@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/databricks-sdk-go"
 	workspaceConfig "github.com/databricks/databricks-sdk-go/config"
@@ -69,7 +70,7 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 	require.NoError(t, err)
 
 	// Apply initialize / validation mutators
-	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) error {
+	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		b.Config.Workspace.CurrentUser = &bundleConfig.User{User: cachedUser}
 		return nil
 	})
@@ -79,17 +80,17 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 	b.Config.Bundle.Terraform = &bundleConfig.Terraform{
 		ExecPath: "sh",
 	}
-	err = bundle.Apply(ctx, b, bundle.Seq(
+	diags := bundle.Apply(ctx, b, bundle.Seq(
 		bundle.Seq(mutator.DefaultMutators()...),
 		mutator.SelectTarget(target),
 		phases.Initialize(),
 	))
-	require.NoError(t, err)
+	require.NoError(t, diags.Error())
 
 	// Apply build mutator
 	if build {
-		err = bundle.Apply(ctx, b, phases.Build())
-		require.NoError(t, err)
+		diags = bundle.Apply(ctx, b, phases.Build())
+		require.NoError(t, diags.Error())
 	}
 }
 

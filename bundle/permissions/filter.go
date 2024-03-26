@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
 
@@ -59,10 +60,10 @@ func filter(currentUser string) dyn.WalkValueFunc {
 	}
 }
 
-func (m *filterCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *filterCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	currentUser := b.Config.Workspace.CurrentUser.UserName
 
-	return b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		rv, err := dyn.Get(v, "resources")
 		if err != nil {
 			return dyn.InvalidValue, err
@@ -77,4 +78,6 @@ func (m *filterCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) error {
 		// Set the resources with the filtered permissions back into the bundle
 		return dyn.Set(v, "resources", nv)
 	})
+
+	return diag.FromErr(err)
 }

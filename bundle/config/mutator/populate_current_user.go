@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/tags"
 )
 
@@ -20,7 +21,7 @@ func (m *populateCurrentUser) Name() string {
 	return "PopulateCurrentUser"
 }
 
-func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if b.Config.Workspace.CurrentUser != nil {
 		return nil
 	}
@@ -28,7 +29,7 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) error
 	w := b.WorkspaceClient()
 	me, err := w.CurrentUser.Me(ctx)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	b.Config.Workspace.CurrentUser = &config.User{

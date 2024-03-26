@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/fatih/color"
 	"github.com/hashicorp/terraform-exec/tfexec"
 	tfjson "github.com/hashicorp/terraform-json"
@@ -62,7 +63,7 @@ func (w *destroy) Name() string {
 	return "terraform.Destroy"
 }
 
-func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// return early if plan is empty
 	if b.Plan.IsEmpty {
 		cmdio.LogString(ctx, "No resources to destroy in plan. Skipping destroy!")
@@ -71,19 +72,19 @@ func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) error {
 
 	tf := b.Terraform
 	if tf == nil {
-		return fmt.Errorf("terraform not initialized")
+		return diag.Errorf("terraform not initialized")
 	}
 
 	// read plan file
 	plan, err := tf.ShowPlanFile(ctx, b.Plan.Path)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	// print the resources that will be destroyed
 	err = logDestroyPlan(ctx, plan.ResourceChanges)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	// Ask for confirmation, if needed
@@ -91,7 +92,7 @@ func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) error {
 		red := color.New(color.FgRed).SprintFunc()
 		b.Plan.ConfirmApply, err = cmdio.AskYesOrNo(ctx, fmt.Sprintf("\nThis will permanently %s resources! Proceed?", red("destroy")))
 		if err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 	}
 
@@ -101,7 +102,7 @@ func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) error {
 	}
 
 	if b.Plan.Path == "" {
-		return fmt.Errorf("no plan found")
+		return diag.Errorf("no plan found")
 	}
 
 	cmdio.LogString(ctx, "Starting to destroy resources")
@@ -109,7 +110,7 @@ func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// Apply terraform according to the computed destroy plan
 	err = tf.Apply(ctx, tfexec.DirOrPlan(b.Plan.Path))
 	if err != nil {
-		return fmt.Errorf("terraform destroy: %w", err)
+		return diag.Errorf("terraform destroy: %v", err)
 	}
 
 	cmdio.LogString(ctx, "Successfully destroyed resources!")

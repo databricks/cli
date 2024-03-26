@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/dynvar"
@@ -26,7 +27,7 @@ func (m *resolveVariableReferences) Validate(ctx context.Context, b *bundle.Bund
 	return nil
 }
 
-func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	prefixes := make([]dyn.Path, len(m.prefixes))
 	for i, prefix := range m.prefixes {
 		prefixes[i] = dyn.MustPathFromString(prefix)
@@ -36,7 +37,7 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 	// We rewrite it here to make the resolution logic simpler.
 	varPath := dyn.NewPath(dyn.Key("var"))
 
-	return b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
+	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		// Synthesize a copy of the root that has all fields that are present in the type
 		// but not set in the dynamic value set to their corresponding empty value.
 		// This enables users to interpolate variable references to fields that haven't
@@ -92,4 +93,6 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 		}
 		return root, nil
 	})
+
+	return diag.FromErr(err)
 }

@@ -34,16 +34,18 @@ func walk(v Value, p Path, fn func(p Path, v Value) (Value, error)) (Value, erro
 	switch v.Kind() {
 	case KindMap:
 		m := v.MustMap()
-		out := make(map[string]Value, len(m))
-		for k := range m {
-			nv, err := walk(m[k], append(p, Key(k)), fn)
+		out := newMappingWithSize(m.Len())
+		for _, pair := range m.Pairs() {
+			pk := pair.Key
+			pv := pair.Value
+			nv, err := walk(pv, append(p, Key(pk.MustString())), fn)
 			if err == ErrDrop {
 				continue
 			}
 			if err != nil {
 				return NilValue, err
 			}
-			out[k] = nv
+			out.Set(pk, nv)
 		}
 		v.v = out
 	case KindSequence:
