@@ -18,7 +18,7 @@ type Dependencies struct {
 func newDependenciesCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "internal-dependencies",
-		Short: "Prints CLI terraform dependencies required for the bundle namespace",
+		Short: "Prints Terraform dependencies required for the bundle commands",
 		Args:  root.NoArgs,
 		Annotations: map[string]string{
 			"template": `Terraform version: {{.Version}}
@@ -27,16 +27,16 @@ Terraform URL: https://releases.hashicorp.com/terraform/{{.Version}}
 Databricks Terraform Provider version: {{.ProviderVersion}}
 Databricks Terraform Provider URL: https://github.com/databricks/terraform-provider-databricks/releases/tag/v{{.ProviderVersion}}
 
-Databricks CLI will download its terraform dependencies automatically.
+Databricks CLI downloads its Terraform dependencies automatically.
 
-If you run the CLI in air-gapped environment, you can download the dependencies manually and setup these environment variables:
+If you run the CLI in an air-gapped environment, you can download the dependencies manually and set these environment variables:
 
 	DATABRICKS_TF_VERSION={{.Version}}
 	DATABRICKS_TF_EXEC_PATH=/path/to/terraform/binary
 	DATABRICKS_TF_PROVIDER_VERSION={{.ProviderVersion}}
 	DATABRICKS_TF_CLI_CONFIG_FILE=/path/to/terraform/cli/config.tfrc
 
-Example of the *.tfrc config file:
+Here is an example *.tfrc configuration file:
 
 	disable_checkpoint = true
 	provider_installation {
@@ -45,9 +45,9 @@ Example of the *.tfrc config file:
 		}
 	}
 
-The folder with the databricks terraform provider should have this structure: /{{.ProviderHost}}/{{.ProviderSource}}/terraform-provider-databricks_{{.ProviderVersion}}_ARCH.zip
+The filesystem mirror path should point to the folder with this structure: /{{.ProviderHost}}/{{.ProviderSource}}/terraform-provider-databricks_{{.ProviderVersion}}_ARCH.zip
 
-Consult terraform docs for more information about the filesystem mirrors: https://developer.hashicorp.com/terraform/cli/config/config-file#filesystem_mirror
+For more information about filesystem mirrors, see the Terraform documentation: https://developer.hashicorp.com/terraform/cli/config/config-file#filesystem_mirror
 `,
 		},
 		// This command is currently intended for the Databricks VSCode extension only
