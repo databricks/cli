@@ -67,7 +67,9 @@ type Bundle struct {
 }
 
 func Load(ctx context.Context, path string) (*Bundle, error) {
-	b := &Bundle{}
+	b := &Bundle{
+		RootPath: filepath.Clean(path),
+	}
 	stat, err := os.Stat(path)
 	if err != nil {
 		return nil, err
@@ -78,7 +80,6 @@ func Load(ctx context.Context, path string) (*Bundle, error) {
 		_, hasIncludesEnv := env.Includes(ctx)
 		if hasRootEnv && hasIncludesEnv && stat.IsDir() {
 			log.Debugf(ctx, "No bundle configuration; using bundle root: %s", path)
-			b.RootPath = path
 			b.Config = config.Root{
 				Bundle: config.Bundle{
 					Name: filepath.Base(path),
