@@ -65,7 +65,7 @@ func findLibraryMatches(lib *compute.Library, b *bundle.Bundle) ([]string, error
 		return nil, nil
 	}
 
-	fullPath := filepath.Join(b.Config.Path, path)
+	fullPath := filepath.Join(b.Path, path)
 	return filepath.Glob(fullPath)
 }
 

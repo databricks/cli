@@ -36,8 +36,8 @@ func TestExpandGlobFilesSource(t *testing.T) {
 	t2.Close(t)
 
 	b := &bundle.Bundle{
+		Path: rootPath,
 		Config: config.Root{
-			Path: rootPath,
 			Artifacts: map[string]*config.Artifact{
 				"test": {
 					Type: "custom",
@@ -72,8 +72,8 @@ func TestExpandGlobFilesSourceWithNoMatches(t *testing.T) {
 	require.NoError(t, err)
 
 	b := &bundle.Bundle{
+		Path: rootPath,
 		Config: config.Root{
-			Path: rootPath,
 			Artifacts: map[string]*config.Artifact{
 				"test": {
 					Type: "custom",

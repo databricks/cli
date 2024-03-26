@@ -28,7 +28,7 @@ func GetSyncOptions(ctx context.Context, b *bundle.Bundle) (*sync.SyncOptions, e
 	}
 
 	opts := &sync.SyncOptions{
-		LocalPath:  b.Config.Path,
+		LocalPath:  b.Path,
 		RemotePath: b.Config.Workspace.FilePath,
 		Include:    includes,
 		Exclude:    b.Config.Sync.Exclude,

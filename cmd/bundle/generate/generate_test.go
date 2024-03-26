@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -25,9 +24,7 @@ func TestGeneratePipelineCommand(t *testing.T) {
 
 	root := t.TempDir()
 	b := &bundle.Bundle{
-		Config: config.Root{
-			Path: root,
-		},
+		Path: root,
 	}
 
 	m := mocks.NewMockWorkspaceClient(t)
@@ -125,9 +122,7 @@ func TestGenerateJobCommand(t *testing.T) {
 
 	root := t.TempDir()
 	b := &bundle.Bundle{
-		Config: config.Root{
-			Path: root,
-		},
+		Path: root,
 	}
 
 	m := mocks.NewMockWorkspaceClient(t)

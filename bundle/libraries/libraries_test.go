@@ -15,8 +15,8 @@ import (
 
 func TestMapFilesToTaskLibrariesNoGlob(t *testing.T) {
 	b := &bundle.Bundle{
+		Path: "testdata",
 		Config: config.Root{
-			Path: "testdata",
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {

@@ -82,7 +82,7 @@ func (m *trampoline) generateNotebookWrapper(ctx context.Context, b *bundle.Bund
 		return err
 	}
 
-	internalDirRel, err := filepath.Rel(b.Config.Path, internalDir)
+	internalDirRel, err := filepath.Rel(b.Path, internalDir)
 	if err != nil {
 		return err
 	}

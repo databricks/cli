@@ -19,9 +19,7 @@ import (
 
 func TestProcessRootIncludesEmpty(t *testing.T) {
 	b := &bundle.Bundle{
-		Config: config.Root{
-			Path: ".",
-		},
+		Path: ".",
 	}
 	diags := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
 	require.NoError(t, diags.Error())
@@ -36,8 +34,8 @@ func TestProcessRootIncludesAbs(t *testing.T) {
 	}
 
 	b := &bundle.Bundle{
+		Path: ".",
 		Config: config.Root{
-			Path: ".",
 			Include: []string{
 				"/tmp/*.yml",
 			},
@@ -50,17 +48,17 @@ func TestProcessRootIncludesAbs(t *testing.T) {
 
 func TestProcessRootIncludesSingleGlob(t *testing.T) {
 	b := &bundle.Bundle{
+		Path: t.TempDir(),
 		Config: config.Root{
-			Path: t.TempDir(),
 			Include: []string{
 				"*.yml",
 			},
 		},
 	}
 
-	testutil.Touch(t, b.Config.Path, "databricks.yml")
-	testutil.Touch(t, b.Config.Path, "a.yml")
-	testutil.Touch(t, b.Config.Path, "b.yml")
+	testutil.Touch(t, b.Path, "databricks.yml")
+	testutil.Touch(t, b.Path, "a.yml")
+	testutil.Touch(t, b.Path, "b.yml")
 
 	diags := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
 	require.NoError(t, diags.Error())
@@ -69,8 +67,8 @@ func TestProcessRootIncludesSingleGlob(t *testing.T) {
 
 func TestProcessRootIncludesMultiGlob(t *testing.T) {
 	b := &bundle.Bundle{
+		Path: t.TempDir(),
 		Config: config.Root{
-			Path: t.TempDir(),
 			Include: []string{
 				"a*.yml",
 				"b*.yml",
@@ -78,8 +76,8 @@ func TestProcessRootIncludesMultiGlob(t *testing.T) {
 		},
 	}
 
-	testutil.Touch(t, b.Config.Path, "a1.yml")
-	testutil.Touch(t, b.Config.Path, "b1.yml")
+	testutil.Touch(t, b.Path, "a1.yml")
+	testutil.Touch(t, b.Path, "b1.yml")
 
 	diags := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
 	require.NoError(t, diags.Error())
@@ -88,8 +86,8 @@ func TestProcessRootIncludesMultiGlob(t *testing.T) {
 
 func TestProcessRootIncludesRemoveDups(t *testing.T) {
 	b := &bundle.Bundle{
+		Path: t.TempDir(),
 		Config: config.Root{
-			Path: t.TempDir(),
 			Include: []string{
 				"*.yml",
 				"*.yml",
@@ -97,7 +95,7 @@ func TestProcessRootIncludesRemoveDups(t *testing.T) {
 		},
 	}
 
-	testutil.Touch(t, b.Config.Path, "a.yml")
+	testutil.Touch(t, b.Path, "a.yml")
 
 	diags := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
 	require.NoError(t, diags.Error())
@@ -106,8 +104,8 @@ func TestProcessRootIncludesRemoveDups(t *testing.T) {
 
 func TestProcessRootIncludesNotExists(t *testing.T) {
 	b := &bundle.Bundle{
+		Path: t.TempDir(),
 		Config: config.Root{
-			Path: t.TempDir(),
 			Include: []string{
 				"notexist.yml",
 			},
@@ -125,9 +123,7 @@ func TestProcessRootIncludesExtrasFromEnvVar(t *testing.T) {
 	t.Setenv(env.IncludesVariable, path.Join(rootPath, testYamlName))
 
 	b := &bundle.Bundle{
-		Config: config.Root{
-			Path: rootPath,
-		},
+		Path: rootPath,
 	}
 
 	diags := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
@@ -148,9 +144,7 @@ func TestProcessRootIncludesDedupExtrasFromEnvVar(t *testing.T) {
 	))
 
 	b := &bundle.Bundle{
-		Config: config.Root{
-			Path: rootPath,
-		},
+		Path: rootPath,
 	}
 
 	diags := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())

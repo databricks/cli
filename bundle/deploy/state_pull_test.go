@@ -59,8 +59,8 @@ func testStatePull(t *testing.T, opts statePullOpts) {
 	}}
 
 	b := &bundle.Bundle{
+		Path: t.TempDir(),
 		Config: config.Root{
-			Path: t.TempDir(),
 			Bundle: config.Bundle{
 				Target: "default",
 			},
@@ -77,11 +77,11 @@ func testStatePull(t *testing.T, opts statePullOpts) {
 	ctx := context.Background()
 
 	for _, file := range opts.localFiles {
-		testutil.Touch(t, filepath.Join(b.Config.Path, "bar"), file)
+		testutil.Touch(t, filepath.Join(b.Path, "bar"), file)
 	}
 
 	for _, file := range opts.localNotebooks {
-		testutil.TouchNotebook(t, filepath.Join(b.Config.Path, "bar"), file)
+		testutil.TouchNotebook(t, filepath.Join(b.Path, "bar"), file)
 	}
 
 	if opts.withExistingSnapshot {
@@ -251,8 +251,8 @@ func TestStatePullNoState(t *testing.T) {
 	}}
 
 	b := &bundle.Bundle{
+		Path: t.TempDir(),
 		Config: config.Root{
-			Path: t.TempDir(),
 			Bundle: config.Bundle{
 				Target: "default",
 			},
@@ -439,8 +439,8 @@ func TestStatePullNewerDeploymentStateVersion(t *testing.T) {
 	}}
 
 	b := &bundle.Bundle{
+		Path: t.TempDir(),
 		Config: config.Root{
-			Path: t.TempDir(),
 			Bundle: config.Bundle{
 				Target: "default",
 			},

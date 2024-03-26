@@ -17,8 +17,8 @@ func TestLoadWithNoState(t *testing.T) {
 	}
 
 	b := &bundle.Bundle{
+		Path: t.TempDir(),
 		Config: config.Root{
-			Path: t.TempDir(),
 			Bundle: config.Bundle{
 				Target: "whatever",
 				Terraform: &config.Terraform{
