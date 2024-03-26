@@ -1,4 +1,4 @@
-package mutator_test
+package loader_test
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/config/loader"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,7 +17,7 @@ func TestProcessRootIncludesEmpty(t *testing.T) {
 	b := &bundle.Bundle{
 		RootPath: ".",
 	}
-	diags := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
+	diags := bundle.Apply(context.Background(), b, loader.ProcessRootIncludes())
 	require.NoError(t, diags.Error())
 }
 
@@ -37,7 +37,7 @@ func TestProcessRootIncludesAbs(t *testing.T) {
 			},
 		},
 	}
-	diags := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
+	diags := bundle.Apply(context.Background(), b, loader.ProcessRootIncludes())
 	require.True(t, diags.HasError())
 	assert.ErrorContains(t, diags.Error(), "must be relative paths")
 }
@@ -56,7 +56,7 @@ func TestProcessRootIncludesSingleGlob(t *testing.T) {
 	testutil.Touch(t, b.RootPath, "a.yml")
 	testutil.Touch(t, b.RootPath, "b.yml")
 
-	diags := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
+	diags := bundle.Apply(context.Background(), b, loader.ProcessRootIncludes())
 	require.NoError(t, diags.Error())
 	assert.Equal(t, []string{"a.yml", "b.yml"}, b.Config.Include)
 }
@@ -75,7 +75,7 @@ func TestProcessRootIncludesMultiGlob(t *testing.T) {
 	testutil.Touch(t, b.RootPath, "a1.yml")
 	testutil.Touch(t, b.RootPath, "b1.yml")
 
-	diags := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
+	diags := bundle.Apply(context.Background(), b, loader.ProcessRootIncludes())
 	require.NoError(t, diags.Error())
 	assert.Equal(t, []string{"a1.yml", "b1.yml"}, b.Config.Include)
 }
@@ -93,7 +93,7 @@ func TestProcessRootIncludesRemoveDups(t *testing.T) {
 
 	testutil.Touch(t, b.RootPath, "a.yml")
 
-	diags := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
+	diags := bundle.Apply(context.Background(), b, loader.ProcessRootIncludes())
 	require.NoError(t, diags.Error())
 	assert.Equal(t, []string{"a.yml"}, b.Config.Include)
 }
@@ -107,7 +107,7 @@ func TestProcessRootIncludesNotExists(t *testing.T) {
 			},
 		},
 	}
-	diags := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
+	diags := bundle.Apply(context.Background(), b, loader.ProcessRootIncludes())
 	require.True(t, diags.HasError())
 	assert.ErrorContains(t, diags.Error(), "notexist.yml defined in 'include' section does not match any files")
 }
