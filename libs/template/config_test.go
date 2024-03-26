@@ -58,7 +58,9 @@ func TestTemplateConfigAssignValuesFromFileFiltersPropertiesNotInTheSchema(t *te
 	err := c.assignValuesFromFile("./testdata/config-assign-from-file-unknown-property/config.json")
 	assert.NoError(t, err)
 
-	assert.Len(t, c.values, 0)
+	// assert only the known property is loaded
+	assert.Len(t, c.values, 1)
+	assert.Equal(t, "i am a known property", c.values["string_val"])
 }
 
 func TestTemplateConfigAssignDefaultValues(t *testing.T) {
