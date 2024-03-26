@@ -9,8 +9,11 @@ import (
 
 func DefaultMutators() []bundle.Mutator {
 	return []bundle.Mutator{
-		scripts.Execute(config.ScriptPreInit),
+		loader.EntryPoint(),
 		loader.ProcessRootIncludes(),
+
+		// Execute preinit script after loading all configuration files.
+		scripts.Execute(config.ScriptPreInit),
 		EnvironmentsToTargets(),
 		InitializeVariables(),
 		DefineDefaultTarget(),

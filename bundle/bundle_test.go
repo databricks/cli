@@ -20,8 +20,8 @@ func TestLoadNotExists(t *testing.T) {
 
 func TestLoadExists(t *testing.T) {
 	b, err := Load(context.Background(), "./tests/basic")
-	require.Nil(t, err)
-	assert.Equal(t, "basic", b.Config.Bundle.Name)
+	assert.NoError(t, err)
+	assert.NotNil(t, b)
 }
 
 func TestBundleCacheDir(t *testing.T) {

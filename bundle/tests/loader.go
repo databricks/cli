@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/phases"
 	"github.com/stretchr/testify/require"
 )
 
@@ -13,7 +14,7 @@ func load(t *testing.T, path string) *bundle.Bundle {
 	ctx := context.Background()
 	b, err := bundle.Load(ctx, path)
 	require.NoError(t, err)
-	diags := bundle.Apply(ctx, b, bundle.Seq(mutator.DefaultMutators()...))
+	diags := bundle.Apply(ctx, b, phases.Load())
 	require.NoError(t, diags.Error())
 	return b
 }

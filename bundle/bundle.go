@@ -74,12 +74,7 @@ func Load(ctx context.Context, path string) (*Bundle, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Debugf(ctx, "Loading bundle configuration from: %s", configFile)
-	root, err := config.Load(configFile)
-	if err != nil {
-		return nil, err
-	}
-	b.Config = *root
+	log.Debugf(ctx, "Found bundle root at %s (file %s)", b.RootPath, configFile)
 	return b, nil
 }
 
