@@ -1,4 +1,4 @@
-package bundle
+package debug
 
 import (
 	"encoding/json"
@@ -15,9 +15,9 @@ type Dependencies struct {
 	Terraform *terraform.TerraformMetadata `json:"terraform"`
 }
 
-func newDependenciesCommand() *cobra.Command {
+func NewTerraformCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "internal-dependencies",
+		Use:   "terraform",
 		Short: "Prints Terraform dependencies required for the bundle commands",
 		Args:  root.NoArgs,
 		Annotations: map[string]string{
