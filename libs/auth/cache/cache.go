@@ -74,6 +74,13 @@ func (c *TokenCache) Lookup(key string) (*oauth2.Token, error) {
 }
 
 func (c *TokenCache) location() (string, error) {
+	// Allow users to override the location of the token cache file
+	tokenCacheDirName, exists := os.LookupEnv("DATABRICKS_TOKEN_CACHE_DIR")
+	if exists {
+		return filepath.Join(tokenCacheDirName, tokenCacheFile), nil
+	}
+
+	// Otherwise, default to using the home directory
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("home: %w", err)
