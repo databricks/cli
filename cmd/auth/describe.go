@@ -37,7 +37,7 @@ const configurationTemplate = `Configuration:
 func newDescribeCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "describe",
-		Short: "Describes which auth credentials is being used by the CLI and identify their source",
+		Short: "Describes the credentials and the source of those credentials, being used by the CLI to authenticate",
 	}
 
 	var showSensitive bool
