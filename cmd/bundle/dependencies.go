@@ -45,7 +45,7 @@ Here is an example *.tfrc configuration file:
 		}
 	}
 
-The filesystem mirror path should point to the folder with this structure: /{{.ProviderHost}}/{{.ProviderSource}}/terraform-provider-databricks_{{.ProviderVersion}}_ARCH.zip
+The filesystem mirror path should point to the folder with the Databricks Terraform Provider. The folder should have this structure: /{{.ProviderHost}}/{{.ProviderSource}}/terraform-provider-databricks_{{.ProviderVersion}}_ARCH.zip
 
 For more information about filesystem mirrors, see the Terraform documentation: https://developer.hashicorp.com/terraform/cli/config/config-file#filesystem_mirror
 `,
