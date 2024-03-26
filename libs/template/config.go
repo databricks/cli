@@ -71,16 +71,13 @@ func validateSchema(schema *jsonschema.Schema) error {
 // Reads json file at path and assigns values from the file
 func (c *config) assignValuesFromFile(path string) error {
 	// It's valid to set additional properties in the config file that are not
-	// defined in the schema. They are filtered below. For the duration of this
-	// function we disable the additional properties check, to allow those
-	// properties to be loaded.
+	// defined in the schema. They will be filtered below. Thus for the duration of
+	// the LoadInstance call, we disable the additional properties check,
+	// to allow those properties to be loaded.
 	c.schema.AdditionalProperties = true
-	defer func() {
-		c.schema.AdditionalProperties = false
-	}()
-
-	// Load the config file.
 	configFromFile, err := c.schema.LoadInstance(path)
+	c.schema.AdditionalProperties = false
+
 	if err != nil {
 		return fmt.Errorf("failed to load config from file %s: %w", path, err)
 	}
