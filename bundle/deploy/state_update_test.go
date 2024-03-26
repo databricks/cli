@@ -22,7 +22,7 @@ func TestStateUpdate(t *testing.T) {
 	s := &stateUpdate{}
 
 	b := &bundle.Bundle{
-		Path: t.TempDir(),
+		RootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "default",
@@ -39,8 +39,8 @@ func TestStateUpdate(t *testing.T) {
 		},
 	}
 
-	testutil.Touch(t, b.Path, "test1.py")
-	testutil.Touch(t, b.Path, "test2.py")
+	testutil.Touch(t, b.RootPath, "test1.py")
+	testutil.Touch(t, b.RootPath, "test2.py")
 
 	m := mocks.NewMockWorkspaceClient(t)
 	m.WorkspaceClient.Config = &databrickscfg.Config{
@@ -82,7 +82,7 @@ func TestStateUpdateWithExistingState(t *testing.T) {
 	s := &stateUpdate{}
 
 	b := &bundle.Bundle{
-		Path: t.TempDir(),
+		RootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "default",
@@ -99,8 +99,8 @@ func TestStateUpdateWithExistingState(t *testing.T) {
 		},
 	}
 
-	testutil.Touch(t, b.Path, "test1.py")
-	testutil.Touch(t, b.Path, "test2.py")
+	testutil.Touch(t, b.RootPath, "test1.py")
+	testutil.Touch(t, b.RootPath, "test2.py")
 
 	m := mocks.NewMockWorkspaceClient(t)
 	m.WorkspaceClient.Config = &databrickscfg.Config{

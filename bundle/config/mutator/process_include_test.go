@@ -16,7 +16,7 @@ import (
 
 func TestProcessInclude(t *testing.T) {
 	b := &bundle.Bundle{
-		Path: t.TempDir(),
+		RootPath: t.TempDir(),
 		Config: config.Root{
 			Workspace: config.Workspace{
 				Host: "foo",
@@ -25,7 +25,7 @@ func TestProcessInclude(t *testing.T) {
 	}
 
 	relPath := "./file.yml"
-	fullPath := filepath.Join(b.Path, relPath)
+	fullPath := filepath.Join(b.RootPath, relPath)
 	f, err := os.Create(fullPath)
 	require.NoError(t, err)
 	fmt.Fprint(f, "workspace:\n  host: bar\n")

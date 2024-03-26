@@ -24,7 +24,7 @@ func TestGeneratePipelineCommand(t *testing.T) {
 
 	root := t.TempDir()
 	b := &bundle.Bundle{
-		Path: root,
+		RootPath: root,
 	}
 
 	m := mocks.NewMockWorkspaceClient(t)
@@ -122,7 +122,7 @@ func TestGenerateJobCommand(t *testing.T) {
 
 	root := t.TempDir()
 	b := &bundle.Bundle{
-		Path: root,
+		RootPath: root,
 	}
 
 	m := mocks.NewMockWorkspaceClient(t)

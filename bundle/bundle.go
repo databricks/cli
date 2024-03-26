@@ -30,9 +30,9 @@ import (
 const internalFolder = ".internal"
 
 type Bundle struct {
-	// Path contains the directory path to the root of the bundle.
+	// RootPath contains the directory path to the root of the bundle.
 	// It is set when we instantiate a new bundle instance.
-	Path string
+	RootPath string
 
 	Config config.Root
 
@@ -78,7 +78,7 @@ func Load(ctx context.Context, path string) (*Bundle, error) {
 		_, hasIncludesEnv := env.Includes(ctx)
 		if hasRootEnv && hasIncludesEnv && stat.IsDir() {
 			log.Debugf(ctx, "No bundle configuration; using bundle root: %s", path)
-			b.Path = path
+			b.RootPath = path
 			b.Config = config.Root{
 				Bundle: config.Bundle{
 					Name: filepath.Base(path),
@@ -162,7 +162,7 @@ func (b *Bundle) CacheDir(ctx context.Context, paths ...string) (string, error) 
 	if !exists || cacheDirName == "" {
 		cacheDirName = filepath.Join(
 			// Anchor at bundle root directory.
-			b.Path,
+			b.RootPath,
 			// Static cache directory.
 			".databricks",
 			"bundle",
@@ -214,7 +214,7 @@ func (b *Bundle) GetSyncIncludePatterns(ctx context.Context) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	internalDirRel, err := filepath.Rel(b.Path, internalDir)
+	internalDirRel, err := filepath.Rel(b.RootPath, internalDir)
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +222,7 @@ func (b *Bundle) GetSyncIncludePatterns(ctx context.Context) ([]string, error) {
 }
 
 func (b *Bundle) GitRepository() (*git.Repository, error) {
-	rootPath, err := folders.FindDirWithLeaf(b.Path, ".git")
+	rootPath, err := folders.FindDirWithLeaf(b.RootPath, ".git")
 	if err != nil {
 		return nil, fmt.Errorf("unable to locate repository root: %w", err)
 	}

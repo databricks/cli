@@ -36,7 +36,7 @@ func TestAccUploadArtifactFileToCorrectRemotePath(t *testing.T) {
 	wsDir := internal.TemporaryWorkspaceDir(t, w)
 
 	b := &bundle.Bundle{
-		Path: dir,
+		RootPath: dir,
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "whatever",

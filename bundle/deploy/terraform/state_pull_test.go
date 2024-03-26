@@ -32,7 +32,7 @@ func mockStateFilerForPull(t *testing.T, contents map[string]int, merr error) fi
 
 func statePullTestBundle(t *testing.T) *bundle.Bundle {
 	return &bundle.Bundle{
-		Path: t.TempDir(),
+		RootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "default",

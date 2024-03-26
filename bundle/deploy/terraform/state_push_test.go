@@ -29,7 +29,7 @@ func mockStateFilerForPush(t *testing.T, fn func(body io.Reader)) filer.Filer {
 
 func statePushTestBundle(t *testing.T) *bundle.Bundle {
 	return &bundle.Bundle{
-		Path: t.TempDir(),
+		RootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "default",

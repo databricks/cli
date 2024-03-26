@@ -57,7 +57,7 @@ func TestGenerateTrampoline(t *testing.T) {
 	}
 
 	b := &bundle.Bundle{
-		Path: tmpDir,
+		RootPath: tmpDir,
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "development",

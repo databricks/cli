@@ -14,7 +14,7 @@ import (
 
 func TestRewriteSyncPathsRelative(t *testing.T) {
 	b := &bundle.Bundle{
-		Path: ".",
+		RootPath: ".",
 		Config: config.Root{
 			Sync: config.Sync{
 				Include: []string{
@@ -45,7 +45,7 @@ func TestRewriteSyncPathsRelative(t *testing.T) {
 
 func TestRewriteSyncPathsAbsolute(t *testing.T) {
 	b := &bundle.Bundle{
-		Path: "/tmp/dir",
+		RootPath: "/tmp/dir",
 		Config: config.Root{
 			Sync: config.Sync{
 				Include: []string{
@@ -77,7 +77,7 @@ func TestRewriteSyncPathsAbsolute(t *testing.T) {
 func TestRewriteSyncPathsErrorPaths(t *testing.T) {
 	t.Run("no sync block", func(t *testing.T) {
 		b := &bundle.Bundle{
-			Path: ".",
+			RootPath: ".",
 		}
 
 		diags := bundle.Apply(context.Background(), b, mutator.RewriteSyncPaths())
@@ -86,7 +86,7 @@ func TestRewriteSyncPathsErrorPaths(t *testing.T) {
 
 	t.Run("empty include/exclude blocks", func(t *testing.T) {
 		b := &bundle.Bundle{
-			Path: ".",
+			RootPath: ".",
 			Config: config.Root{
 				Sync: config.Sync{
 					Include: []string{},
