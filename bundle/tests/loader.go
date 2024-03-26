@@ -23,9 +23,8 @@ func loadTarget(t *testing.T, path, env string) *bundle.Bundle {
 	ctx := context.Background()
 	b, err := bundle.Load(ctx, path)
 	require.NoError(t, err)
-	diags := bundle.Apply(ctx, b, bundle.Seq(mutator.DefaultMutatorsForTarget(env)...))
-	require.NoError(t, diags.Error())
-	diags = bundle.Apply(ctx, b, bundle.Seq(
+	diags := bundle.Apply(ctx, b, bundle.Seq(
+		phases.LoadNamedTarget(env),
 		mutator.RewriteSyncPaths(),
 		mutator.MergeJobClusters(),
 		mutator.MergeJobTasks(),
