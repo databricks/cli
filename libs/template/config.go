@@ -92,7 +92,7 @@ func (c *config) assignValuesFromFile(path string) error {
 		if _, ok := c.schema.Properties[name]; !ok {
 			continue
 		}
-		// If a value is already assigned, keep it.
+		// If a value is already assigned, keep the original value.
 		if _, ok := c.values[name]; ok {
 			continue
 		}
