@@ -8,8 +8,6 @@ import (
 
 	"log/slog"
 
-	"github.com/databricks/cli/cmd/root/bundleflag"
-	"github.com/databricks/cli/cmd/root/profileflag"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
@@ -40,8 +38,9 @@ func New(ctx context.Context) *cobra.Command {
 	logFlags := initLogFlags(cmd)
 	progressLoggerFlag := initProgressLoggerFlag(cmd, logFlags)
 	outputFlag := initOutputFlag(cmd)
-	profileflag.Init(cmd)
-	bundleflag.Init(cmd)
+	initProfileFlag(cmd)
+	initEnvironmentFlag(cmd)
+	initTargetFlag(cmd)
 
 	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()

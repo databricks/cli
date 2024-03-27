@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/databricks/cli/cmd/root/profileflag"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/databricks-sdk-go"
@@ -18,6 +17,20 @@ import (
 // Placeholders to use as unique keys in context.Context.
 var workspaceClient int
 var accountClient int
+
+func initProfileFlag(cmd *cobra.Command) {
+	cmd.PersistentFlags().StringP("profile", "p", "", "~/.databrickscfg profile")
+	cmd.RegisterFlagCompletionFunc("profile", databrickscfg.ProfileCompletion)
+}
+
+func profileFlagValue(cmd *cobra.Command) (string, bool) {
+	profileFlag := cmd.Flag("profile")
+	if profileFlag == nil {
+		return "", false
+	}
+	value := profileFlag.Value.String()
+	return value, value != ""
+}
 
 // Helper function to create an account client or prompt once if the given configuration is not valid.
 func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt bool) (*databricks.AccountClient, error) {
@@ -58,7 +71,7 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 	cfg := &config.Config{}
 
 	// The command-line profile flag takes precedence over DATABRICKS_CONFIG_PROFILE.
-	profile, hasProfileFlag := profileflag.Value(cmd)
+	profile, hasProfileFlag := profileFlagValue(cmd)
 	if hasProfileFlag {
 		cfg.Profile = profile
 	}
@@ -128,7 +141,7 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	cfg := &config.Config{}
 
 	// The command-line profile flag takes precedence over DATABRICKS_CONFIG_PROFILE.
-	profile, hasProfileFlag := profileflag.Value(cmd)
+	profile, hasProfileFlag := profileFlagValue(cmd)
 	if hasProfileFlag {
 		cfg.Profile = profile
 	}

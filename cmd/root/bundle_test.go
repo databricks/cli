@@ -9,8 +9,6 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/cmd/root/bundleflag"
-	"github.com/databricks/cli/cmd/root/profileflag"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -36,7 +34,7 @@ func emptyCommand(t *testing.T) *cobra.Command {
 	ctx := context.Background()
 	cmd := &cobra.Command{}
 	cmd.SetContext(ctx)
-	profileflag.Init(cmd)
+	initProfileFlag(cmd)
 	return cmd
 }
 
@@ -140,37 +138,38 @@ func TestBundleConfigureWithProfileFlagAndEnvVariable(t *testing.T) {
 
 func TestTargetFlagFull(t *testing.T) {
 	cmd := emptyCommand(t)
-	bundleflag.Init(cmd)
+	initTargetFlag(cmd)
 	cmd.SetArgs([]string{"version", "--target", "development"})
 
 	ctx := context.Background()
 	err := cmd.ExecuteContext(ctx)
 	assert.NoError(t, err)
 
-	assert.Equal(t, "development", bundleflag.Target(cmd))
+	assert.Equal(t, "development", getTarget(cmd))
 }
 
 func TestTargetFlagShort(t *testing.T) {
 	cmd := emptyCommand(t)
-	bundleflag.Init(cmd)
+	initTargetFlag(cmd)
 	cmd.SetArgs([]string{"version", "-t", "production"})
 
 	ctx := context.Background()
 	err := cmd.ExecuteContext(ctx)
 	assert.NoError(t, err)
 
-	assert.Equal(t, "production", bundleflag.Target(cmd))
+	assert.Equal(t, "production", getTarget(cmd))
 }
 
 // TODO: remove when environment flag is fully deprecated
 func TestTargetEnvironmentFlag(t *testing.T) {
 	cmd := emptyCommand(t)
-	bundleflag.Init(cmd)
+	initTargetFlag(cmd)
+	initEnvironmentFlag(cmd)
 	cmd.SetArgs([]string{"version", "--environment", "development"})
 
 	ctx := context.Background()
 	err := cmd.ExecuteContext(ctx)
 	assert.NoError(t, err)
 
-	assert.Equal(t, "development", bundleflag.Target(cmd))
+	assert.Equal(t, "development", getTarget(cmd))
 }
