@@ -43,4 +43,10 @@ type Bundle struct {
 
 	// Deployment section specifies deployment related configuration for bundle
 	Deployment Deployment `json:"deployment"`
+
+	// Minimum Databricks CLI version required to run the bundle.
+	MinDatabricksCliVersion string `json:"min_databricks_cli_version,omitempty"`
+
+	// Maximum Databricks CLI version required to run the bundle.
+	MaxDatabricksCliVersion string `json:"max_databricks_cli_version,omitempty"`
 }

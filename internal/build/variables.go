@@ -16,3 +16,9 @@ var buildPatch string = "0"
 var buildPrerelease string = ""
 var buildIsSnapshot string = "false"
 var buildTimestamp string = "0"
+
+// This function is used to set the build version for testing purposes.
+func SetBuildVersion(version string) {
+	buildVersion = version
+	info.Version = version
+}
