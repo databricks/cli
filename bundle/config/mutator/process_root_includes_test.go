@@ -2,16 +2,12 @@ package mutator_test
 
 import (
 	"context"
-	"os"
-	"path"
 	"runtime"
-	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
-	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -114,40 +110,4 @@ func TestProcessRootIncludesNotExists(t *testing.T) {
 	diags := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
 	require.True(t, diags.HasError())
 	assert.ErrorContains(t, diags.Error(), "notexist.yml defined in 'include' section does not match any files")
-}
-
-func TestProcessRootIncludesExtrasFromEnvVar(t *testing.T) {
-	rootPath := t.TempDir()
-	testYamlName := "extra_include_path.yml"
-	testutil.Touch(t, rootPath, testYamlName)
-	t.Setenv(env.IncludesVariable, path.Join(rootPath, testYamlName))
-
-	b := &bundle.Bundle{
-		RootPath: rootPath,
-	}
-
-	diags := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
-	require.NoError(t, diags.Error())
-	assert.Contains(t, b.Config.Include, testYamlName)
-}
-
-func TestProcessRootIncludesDedupExtrasFromEnvVar(t *testing.T) {
-	rootPath := t.TempDir()
-	testYamlName := "extra_include_path.yml"
-	testutil.Touch(t, rootPath, testYamlName)
-	t.Setenv(env.IncludesVariable, strings.Join(
-		[]string{
-			path.Join(rootPath, testYamlName),
-			path.Join(rootPath, testYamlName),
-		},
-		string(os.PathListSeparator),
-	))
-
-	b := &bundle.Bundle{
-		RootPath: rootPath,
-	}
-
-	diags := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
-	require.NoError(t, diags.Error())
-	assert.Equal(t, []string{testYamlName}, b.Config.Include)
 }

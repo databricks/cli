@@ -70,23 +70,8 @@ func Load(ctx context.Context, path string) (*Bundle, error) {
 	b := &Bundle{
 		RootPath: filepath.Clean(path),
 	}
-	stat, err := os.Stat(path)
-	if err != nil {
-		return nil, err
-	}
 	configFile, err := config.FileNames.FindInPath(path)
 	if err != nil {
-		_, hasRootEnv := env.Root(ctx)
-		_, hasIncludesEnv := env.Includes(ctx)
-		if hasRootEnv && hasIncludesEnv && stat.IsDir() {
-			log.Debugf(ctx, "No bundle configuration; using bundle root: %s", path)
-			b.Config = config.Root{
-				Bundle: config.Bundle{
-					Name: filepath.Base(path),
-				},
-			}
-			return b, nil
-		}
 		return nil, err
 	}
 	log.Debugf(ctx, "Loading bundle configuration from: %s", configFile)
