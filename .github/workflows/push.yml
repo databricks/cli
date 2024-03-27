@@ -117,5 +117,5 @@ jobs:
       - name: Validate bundle schema
         run: |
           echo -e "bundle:\n  name: abcd" > config.yaml
-          echo {"foo": "bar"} > schema.json
+          echo "{'foo': 'bar'}"" > schema.json
           ajv -s schema.json -d config.yaml
