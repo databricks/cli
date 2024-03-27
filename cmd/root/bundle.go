@@ -90,6 +90,13 @@ func configureBundle(cmd *cobra.Command, b *bundle.Bundle) (*bundle.Bundle, diag
 
 // MustConfigureBundle configures a bundle on the command context.
 func MustConfigureBundle(cmd *cobra.Command) (*bundle.Bundle, diag.Diagnostics) {
+	// A bundle may be configured on the context when testing.
+	// If it is, return it immediately.
+	b := bundle.GetOrNil(cmd.Context())
+	if b != nil {
+		return b, nil
+	}
+
 	b, err := bundle.MustLoad(cmd.Context())
 	if err != nil {
 		return nil, diag.FromErr(err)
@@ -101,6 +108,13 @@ func MustConfigureBundle(cmd *cobra.Command) (*bundle.Bundle, diag.Diagnostics) 
 // TryConfigureBundle configures a bundle on the command context
 // if there is one, but doesn't fail if there isn't one.
 func TryConfigureBundle(cmd *cobra.Command) (*bundle.Bundle, diag.Diagnostics) {
+	// A bundle may be configured on the context when testing.
+	// If it is, return it immediately.
+	b := bundle.GetOrNil(cmd.Context())
+	if b != nil {
+		return b, nil
+	}
+
 	b, err := bundle.TryLoad(cmd.Context())
 	if err != nil {
 		return nil, diag.FromErr(err)
