@@ -95,7 +95,9 @@ func safeToSchema(golangType reflect.Type, docs *Docs, traceId string, tracker *
 	// HACK to unblock CLI release (13th Feb 2024). This is temporary until proper
 	// support for recursive types is added to the schema generator. PR: https://github.com/databricks/cli/pull/1204
 	if traceId == "for_each_task" {
-		return nil, nil
+		return &jsonschema.Schema{
+			Type: jsonschema.ObjectType,
+		}, nil
 	}
 
 	// WE ERROR OUT IF THERE ARE CYCLES IN THE JSON SCHEMA
