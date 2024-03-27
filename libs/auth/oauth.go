@@ -24,8 +24,9 @@ const (
 	// these values are predefined by Databricks as a public client
 	// and is specific to this application only. Using these values
 	// for other applications is not allowed.
-	appClientID     = "databricks-cli"
-	appRedirectAddr = "localhost:8020"
+	appClientID            = "databricks-cli"
+	appRedirectPort        = ":8020"
+	defaultAppRedirectAddr = "localhost" + appRedirectPort
 
 	// maximum amount of time to acquire listener on appRedirectAddr
 	DefaultTimeout = 45 * time.Second
@@ -41,10 +42,12 @@ type PersistentAuth struct {
 	Host      string
 	AccountID string
 
-	http    *httpclient.ApiClient
-	cache   tokenCache
-	ln      net.Listener
-	browser func(string) error
+	http              *httpclient.ApiClient
+	cache             tokenCache
+	ln                net.Listener
+	browser           func(string) error
+	BindPublicAddress bool
+	BoundAddress      string
 }
 
 type tokenCache interface {
@@ -146,13 +149,24 @@ func (a *PersistentAuth) init(ctx context.Context) error {
 	if a.browser == nil {
 		a.browser = browser.OpenURL
 	}
+
+	// For various use cases need to bind to the port rather than an address, otherwise
+	// we only bind to a single IP which may or may not be correct.  This is controlled
+	// by the BindPublicAddress flag.  By default we will just used the defaultAppRedirectAddr
+	// which is localhost. See: https://pkg.go.dev/net#ListenIP for issues with this.
+	if a.BindPublicAddress {
+		a.BoundAddress = appRedirectPort
+	} else {
+		a.BoundAddress = defaultAppRedirectAddr
+	}
+
 	// try acquire listener, which we also use as a machine-local
 	// exclusive lock to prevent token cache corruption in the scope
 	// of developer machine, where this command runs.
 	listener, err := retries.Poll(ctx, DefaultTimeout,
 		func() (*net.Listener, *retries.Err) {
 			var lc net.ListenConfig
-			l, err := lc.Listen(ctx, "tcp", appRedirectAddr)
+			l, err := lc.Listen(ctx, "tcp", a.BoundAddress)
 			if err != nil {
 				return nil, retries.Continue(err)
 			}
@@ -213,7 +227,7 @@ func (a *PersistentAuth) oauth2Config(ctx context.Context) (*oauth2.Config, erro
 			TokenURL:  endpoints.TokenEndpoint,
 			AuthStyle: oauth2.AuthStyleInParams,
 		},
-		RedirectURL: fmt.Sprintf("http://%s", appRedirectAddr),
+		RedirectURL: fmt.Sprintf("http://%s", a.BoundAddress),
 		Scopes:      scopes,
 	}, nil
 }

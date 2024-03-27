@@ -181,7 +181,7 @@ func TestChallenge(t *testing.T) {
 		}()
 
 		state := <-browserOpened
-		resp, err := http.Get(fmt.Sprintf("http://%s?code=__THIS__&state=%s", appRedirectAddr, state))
+		resp, err := http.Get(fmt.Sprintf("http://%s?code=__THIS__&state=%s", defaultAppRedirectAddr, state))
 		assert.NoError(t, err)
 		assert.Equal(t, 200, resp.StatusCode)
 
@@ -220,11 +220,53 @@ func TestChallengeFailed(t *testing.T) {
 		<-browserOpened
 		resp, err := http.Get(fmt.Sprintf(
 			"http://%s?error=access_denied&error_description=Policy%%20evaluation%%20failed%%20for%%20this%%20request",
-			appRedirectAddr))
+			defaultAppRedirectAddr))
 		assert.NoError(t, err)
 		assert.Equal(t, 400, resp.StatusCode)
 
 		err = <-errc
 		assert.EqualError(t, err, "authorize: access_denied: Policy evaluation failed for this request")
 	})
+}
+
+func TestBindPublicAddress(t *testing.T) {
+	p := &PersistentAuth{
+		Host:      "abc",
+		AccountID: "xyz",
+		cache: &tokenCacheMock{
+			lookup: func(key string) (*oauth2.Token, error) {
+				assert.Equal(t, "https://abc/oidc/accounts/xyz", key)
+				return &oauth2.Token{
+					AccessToken: "bcd",
+					Expiry:      time.Now().Add(1 * time.Minute),
+				}, nil
+			},
+		},
+		BindPublicAddress: true,
+	}
+	defer p.Close()
+	_, err := p.Load(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, "[::]:8020", p.ln.Addr().String())
+}
+
+func TestBindPrivateAddressOnly(t *testing.T) {
+	p := &PersistentAuth{
+		Host:      "abc",
+		AccountID: "xyz",
+		cache: &tokenCacheMock{
+			lookup: func(key string) (*oauth2.Token, error) {
+				assert.Equal(t, "https://abc/oidc/accounts/xyz", key)
+				return &oauth2.Token{
+					AccessToken: "bcd",
+					Expiry:      time.Now().Add(1 * time.Minute),
+				}, nil
+			},
+		},
+		BindPublicAddress: false,
+	}
+	defer p.Close()
+	_, err := p.Load(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, "127.0.0.1:8020", p.ln.Addr().String())
 }
