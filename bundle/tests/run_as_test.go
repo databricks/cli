@@ -2,7 +2,8 @@ package config_tests
 
 import (
 	"context"
-	"runtime"
+	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -111,11 +112,8 @@ func TestRunAsErrorForPipelines(t *testing.T) {
 	diags := bundle.Apply(ctx, b, mutator.SetRunAs())
 	err := diags.Error()
 
-	if runtime.GOOS == "windows" {
-		assert.EqualError(t, err, "pipelines are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. Location of the unsupported resource: run_as\\not_allowed\\pipelines\\databricks.yml:14:5. Current identity: jane@doe.com. Run as identity: my_service_principal")
-	} else {
-		assert.EqualError(t, err, "pipelines are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. Location of the unsupported resource: run_as/not_allowed/pipelines/databricks.yml:14:5. Current identity: jane@doe.com. Run as identity: my_service_principal")
-	}
+	configPath := filepath.FromSlash("run_as/not_allowed/pipelines/databricks.yml")
+	assert.EqualError(t, err, fmt.Sprintf("pipelines are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. Location of the unsupported resource: %s:14:5. Current identity: jane@doe.com. Run as identity: my_service_principal", configPath))
 }
 
 func TestRunAsNoErrorForPipelines(t *testing.T) {
@@ -153,11 +151,8 @@ func TestRunAsErrorForModelServing(t *testing.T) {
 	diags := bundle.Apply(ctx, b, mutator.SetRunAs())
 	err := diags.Error()
 
-	if runtime.GOOS == "windows" {
-		assert.EqualError(t, err, "model_serving_endpoints are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. Location of the unsupported resource: run_as\\not_allowed\\model_serving\\databricks.yml:14:5. Current identity: jane@doe.com. Run as identity: my_service_principal")
-	} else {
-		assert.EqualError(t, err, "model_serving_endpoints are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. Location of the unsupported resource: run_as/not_allowed/model_serving/databricks.yml:14:5. Current identity: jane@doe.com. Run as identity: my_service_principal")
-	}
+	configPath := filepath.FromSlash("run_as/not_allowed/model_serving/databricks.yml")
+	assert.EqualError(t, err, fmt.Sprintf("model_serving_endpoints are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. Location of the unsupported resource: %s:14:5. Current identity: jane@doe.com. Run as identity: my_service_principal", configPath))
 }
 
 func TestRunAsNoErrorForModelServingEndpoints(t *testing.T) {
@@ -195,11 +190,8 @@ func TestRunAsErrorWhenBothUserAndSpSpecified(t *testing.T) {
 	diags := bundle.Apply(ctx, b, mutator.SetRunAs())
 	err := diags.Error()
 
-	if runtime.GOOS == "windows" {
-		assert.EqualError(t, err, "run_as section must specify exactly one identity. A service_principal_name \"my_service_principal\" is specified at run_as\\not_allowed\\both_sp_and_user\\databricks.yml:6:27. A user_name \"my_user_name\" is defined at run_as\\not_allowed\\both_sp_and_user\\databricks.yml:7:14")
-	} else {
-		assert.EqualError(t, err, "run_as section must specify exactly one identity. A service_principal_name \"my_service_principal\" is specified at run_as/not_allowed/both_sp_and_user/databricks.yml:6:27. A user_name \"my_user_name\" is defined at run_as/not_allowed/both_sp_and_user/databricks.yml:7:14")
-	}
+	configPath := filepath.FromSlash("run_as/not_allowed/both_sp_and_user/databricks.yml")
+	assert.EqualError(t, err, fmt.Sprintf("run_as section must specify exactly one identity. A service_principal_name \"my_service_principal\" is specified at %s:6:27. A user_name \"my_user_name\" is defined at %s:7:14", configPath, configPath))
 }
 
 func TestRunAsErrorNeitherUserOrSpSpecified(t *testing.T) {
@@ -218,11 +210,8 @@ func TestRunAsErrorNeitherUserOrSpSpecified(t *testing.T) {
 	diags := bundle.Apply(ctx, b, mutator.SetRunAs())
 	err := diags.Error()
 
-	if runtime.GOOS == "windows" {
-		assert.EqualError(t, err, "run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at run_as\\not_allowed\\neither_sp_nor_user\\databricks.yml:4:8")
-	} else {
-		assert.EqualError(t, err, "run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at run_as/not_allowed/neither_sp_nor_user/databricks.yml:4:8")
-	}
+	configPath := filepath.FromSlash("run_as/not_allowed/neither_sp_nor_user/databricks.yml")
+	assert.EqualError(t, err, fmt.Sprintf("run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at %s:4:8", configPath))
 }
 
 func TestRunAsErrorNeitherUserOrSpSpecifiedAtTargetOverride(t *testing.T) {
@@ -241,9 +230,6 @@ func TestRunAsErrorNeitherUserOrSpSpecifiedAtTargetOverride(t *testing.T) {
 	diags := bundle.Apply(ctx, b, mutator.SetRunAs())
 	err := diags.Error()
 
-	if runtime.GOOS == "windows" {
-		assert.EqualError(t, err, "run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at run_as\\not_allowed\\neither_sp_nor_user_override\\override.yml:4:12")
-	} else {
-		assert.EqualError(t, err, "run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at run_as/not_allowed/neither_sp_nor_user_override/override.yml:4:12")
-	}
+	configPath := filepath.FromSlash("run_as/not_allowed/neither_sp_nor_user_override/override.yml")
+	assert.EqualError(t, err, fmt.Sprintf("run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at %s:4:12", configPath))
 }
