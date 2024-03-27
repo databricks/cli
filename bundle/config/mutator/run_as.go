@@ -57,7 +57,7 @@ func validateRunAs(b *bundle.Bundle) error {
 
 	// Error if neither service_principal_name nor user_name are specified
 	if runAs.ServicePrincipalName == "" && runAs.UserName == "" {
-		return fmt.Errorf("run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at %s", b.Config.TryLocation("run_as"))
+		return fmt.Errorf("run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at %s", b.Config.GetLocation("run_as"))
 	}
 
 	// Error if both service_principal_name and user_name are specified
@@ -65,8 +65,8 @@ func validateRunAs(b *bundle.Bundle) error {
 		return errBothSpAndUserSpecified{
 			spName:   runAs.ServicePrincipalName,
 			userName: runAs.UserName,
-			spLoc:    b.Config.TryLocation("run_as.service_principal_name"),
-			userLoc:  b.Config.TryLocation("run_as.user_name"),
+			spLoc:    b.Config.GetLocation("run_as.service_principal_name"),
+			userLoc:  b.Config.GetLocation("run_as.user_name"),
 		}
 	}
 
@@ -84,7 +84,7 @@ func validateRunAs(b *bundle.Bundle) error {
 	if len(b.Config.Resources.Pipelines) > 0 {
 		return errUnsupportedResourceTypeForRunAs{
 			resourceType:     "pipelines",
-			resourceLocation: b.Config.TryLocation("resources.pipelines"),
+			resourceLocation: b.Config.GetLocation("resources.pipelines"),
 			currentUser:      b.Config.Workspace.CurrentUser.UserName,
 			runAsUser:        identity,
 		}
@@ -94,7 +94,7 @@ func validateRunAs(b *bundle.Bundle) error {
 	if len(b.Config.Resources.ModelServingEndpoints) > 0 {
 		return errUnsupportedResourceTypeForRunAs{
 			resourceType:     "model_serving_endpoints",
-			resourceLocation: b.Config.TryLocation("resources.model_serving_endpoints"),
+			resourceLocation: b.Config.GetLocation("resources.model_serving_endpoints"),
 			currentUser:      b.Config.Workspace.CurrentUser.UserName,
 			runAsUser:        identity,
 		}
