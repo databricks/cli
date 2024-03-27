@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -24,7 +23,6 @@ func TestGeneratePipelineCommand(t *testing.T) {
 	cmd := NewGeneratePipelineCommand()
 
 	root := t.TempDir()
-	testutil.Touch(t, root, "databricks.yml")
 	b := &bundle.Bundle{
 		RootPath: root,
 	}
@@ -123,7 +121,6 @@ func TestGenerateJobCommand(t *testing.T) {
 	cmd := NewGenerateJobCommand()
 
 	root := t.TempDir()
-	testutil.Touch(t, root, "databricks.yml")
 	b := &bundle.Bundle{
 		RootPath: root,
 	}
