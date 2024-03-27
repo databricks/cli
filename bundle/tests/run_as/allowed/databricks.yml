@@ -11,20 +11,6 @@ targets:
       user_name: "my_user_name"
 
 resources:
-  pipelines:
-    nyc_taxi_pipeline:
-      name: "nyc taxi loader"
-
-      permissions:
-        - level: CAN_VIEW
-          service_principal_name: my_service_principal
-        - level: CAN_VIEW
-          user_name: my_user_name
-
-      libraries:
-        - notebook:
-            path: ./dlt/nyc_taxi_loader
-
   jobs:
     job_one:
       name: Job One
@@ -52,3 +38,15 @@ resources:
         - task_key: "task_three"
           notebook_task:
             notebook_path: "./test.py"
+
+  models:
+    model_one:
+      name: "skynet"
+
+  registered_models:
+    model_two:
+      name: "skynet (in UC)"
+
+  experiments:
+    experiment_one:
+      name: "experiment_one"

@@ -448,3 +448,14 @@ func validateVariableOverrides(root, target dyn.Value) (err error) {
 
 	return nil
 }
+
+// Best effort to get the location of configuration value at the specified path.
+// This function is useful to annotate error messages with the location, because
+// we don't want to fail with a different error message if we cannot retrieve the location.
+func (r *Root) GetLocation(path string) dyn.Location {
+	v, err := dyn.Get(r.value, path)
+	if err != nil {
+		return dyn.Location{}
+	}
+	return v.Location()
+}
