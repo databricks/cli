@@ -79,9 +79,7 @@ func TestPythonWheelBuildNoBuildJustUpload(t *testing.T) {
 	artifact := b.Config.Artifacts["my_test_code-0.0.1-py3-none-any.whl"]
 	require.NotNil(t, artifact)
 	require.Empty(t, artifact.BuildCommand)
-	require.Contains(t, artifact.Files[0].Source, filepath.Join(
-		b.Config.Path,
-		"package",
+	require.Contains(t, artifact.Files[0].Source, filepath.Join(b.RootPath, "package",
 		"my_test_code-0.0.1-py3-none-any.whl",
 	))
 }

@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -23,10 +22,6 @@ type Root struct {
 	value dyn.Value
 	diags diag.Diagnostics
 	depth int
-
-	// Path contains the directory path to the root of the bundle.
-	// It is set when loading `databricks.yml`.
-	Path string `json:"-" bundle:"readonly"`
 
 	// Contains user defined variables
 	Variables map[string]*variable.Variable `json:"variables,omitempty"`
@@ -80,9 +75,7 @@ func Load(path string) (*Root, error) {
 		return nil, err
 	}
 
-	r := Root{
-		Path: filepath.Dir(path),
-	}
+	r := Root{}
 
 	// Load configuration tree from YAML.
 	v, err := yamlloader.LoadYAML(path, bytes.NewBuffer(raw))
@@ -135,12 +128,10 @@ func (r *Root) updateWithDynamicValue(nv dyn.Value) error {
 	// the configuration equals nil (happens in tests).
 	diags := r.diags
 	depth := r.depth
-	path := r.Path
 
 	defer func() {
 		r.diags = diags
 		r.depth = depth
-		r.Path = path
 	}()
 
 	// Convert normalized configuration tree to typed configuration.

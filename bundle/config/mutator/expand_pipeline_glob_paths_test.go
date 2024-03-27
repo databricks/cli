@@ -41,8 +41,8 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 	touchEmptyFile(t, filepath.Join(dir, "skip/test7.py"))
 
 	b := &bundle.Bundle{
+		RootPath: dir,
 		Config: config.Root{
-			Path: dir,
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {

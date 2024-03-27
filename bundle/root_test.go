@@ -106,7 +106,7 @@ func TestLoadYamlWhenIncludesEnvPresent(t *testing.T) {
 
 	cwd, err := os.Getwd()
 	assert.NoError(t, err)
-	assert.Equal(t, cwd, bundle.Config.Path)
+	assert.Equal(t, cwd, bundle.RootPath)
 }
 
 func TestLoadDefautlBundleWhenNoYamlAndRootAndIncludesEnvPresent(t *testing.T) {
@@ -118,7 +118,7 @@ func TestLoadDefautlBundleWhenNoYamlAndRootAndIncludesEnvPresent(t *testing.T) {
 
 	bundle, err := MustLoad(ctx)
 	assert.NoError(t, err)
-	assert.Equal(t, dir, bundle.Config.Path)
+	assert.Equal(t, dir, bundle.RootPath)
 }
 
 func TestErrorIfNoYamlNoRootEnvAndIncludesEnvPresent(t *testing.T) {
