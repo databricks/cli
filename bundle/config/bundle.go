@@ -42,7 +42,7 @@ type Bundle struct {
 	ComputeID string `json:"compute_id,omitempty"`
 
 	// Deployment section specifies deployment related configuration for bundle
-	Deployment Deployment `json:"deployment"`
+	Deployment Deployment `json:"deployment,omitempty"`
 
 	// Minimum Databricks CLI version required to run the bundle.
 	MinDatabricksCliVersion string `json:"min_databricks_cli_version,omitempty"`
