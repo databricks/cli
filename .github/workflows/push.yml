@@ -102,7 +102,21 @@ jobs:
         with:
           go-version: 1.21.x
 
+      - name: Set go env
+        run: |
+          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
+      - name: test runner
+        run: go run main.go
+
       # Github repo: https://github.com/ajv-validator/ajv-cli
       # TODO: version lock the installation.
       - name: Install ajv-cli
-        run: npm install -g ajv-cli
+        run: npm install -g ajv-cli@5.0.0
+
+      - name: Validate bundle schema
+        run: |
+          echo -e "bundle:\n  name: abcd" > config.yaml
+          go run main.go bundle schema > schema.json
+          ajv -s schema.json -d config.yaml
