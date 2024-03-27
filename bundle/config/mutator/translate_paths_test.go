@@ -36,8 +36,8 @@ func touchEmptyFile(t *testing.T, path string) {
 func TestTranslatePathsSkippedWithGitSource(t *testing.T) {
 	dir := t.TempDir()
 	b := &bundle.Bundle{
+		RootPath: dir,
 		Config: config.Root{
-			Path: dir,
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
 			},
@@ -106,8 +106,8 @@ func TestTranslatePaths(t *testing.T) {
 	touchEmptyFile(t, filepath.Join(dir, "dist", "task.jar"))
 
 	b := &bundle.Bundle{
+		RootPath: dir,
 		Config: config.Root{
-			Path: dir,
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
 			},
@@ -273,8 +273,8 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 	touchEmptyFile(t, filepath.Join(dir, "job", "my_dbt_project", "dbt_project.yml"))
 
 	b := &bundle.Bundle{
+		RootPath: dir,
 		Config: config.Root{
-			Path: dir,
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
 			},
@@ -367,8 +367,8 @@ func TestTranslatePathsOutsideBundleRoot(t *testing.T) {
 	dir := t.TempDir()
 
 	b := &bundle.Bundle{
+		RootPath: dir,
 		Config: config.Root{
-			Path: dir,
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
 			},
@@ -400,8 +400,8 @@ func TestJobNotebookDoesNotExistError(t *testing.T) {
 	dir := t.TempDir()
 
 	b := &bundle.Bundle{
+		RootPath: dir,
 		Config: config.Root{
-			Path: dir,
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
@@ -430,8 +430,8 @@ func TestJobFileDoesNotExistError(t *testing.T) {
 	dir := t.TempDir()
 
 	b := &bundle.Bundle{
+		RootPath: dir,
 		Config: config.Root{
-			Path: dir,
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
@@ -460,8 +460,8 @@ func TestPipelineNotebookDoesNotExistError(t *testing.T) {
 	dir := t.TempDir()
 
 	b := &bundle.Bundle{
+		RootPath: dir,
 		Config: config.Root{
-			Path: dir,
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
@@ -490,8 +490,8 @@ func TestPipelineFileDoesNotExistError(t *testing.T) {
 	dir := t.TempDir()
 
 	b := &bundle.Bundle{
+		RootPath: dir,
 		Config: config.Root{
-			Path: dir,
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
@@ -521,8 +521,8 @@ func TestJobSparkPythonTaskWithNotebookSourceError(t *testing.T) {
 	touchNotebookFile(t, filepath.Join(dir, "my_notebook.py"))
 
 	b := &bundle.Bundle{
+		RootPath: dir,
 		Config: config.Root{
-			Path: dir,
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
 			},
@@ -555,8 +555,8 @@ func TestJobNotebookTaskWithFileSourceError(t *testing.T) {
 	touchEmptyFile(t, filepath.Join(dir, "my_file.py"))
 
 	b := &bundle.Bundle{
+		RootPath: dir,
 		Config: config.Root{
-			Path: dir,
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
 			},
@@ -589,8 +589,8 @@ func TestPipelineNotebookLibraryWithFileSourceError(t *testing.T) {
 	touchEmptyFile(t, filepath.Join(dir, "my_file.py"))
 
 	b := &bundle.Bundle{
+		RootPath: dir,
 		Config: config.Root{
-			Path: dir,
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
 			},
@@ -623,8 +623,8 @@ func TestPipelineFileLibraryWithNotebookSourceError(t *testing.T) {
 	touchNotebookFile(t, filepath.Join(dir, "my_notebook.py"))
 
 	b := &bundle.Bundle{
+		RootPath: dir,
 		Config: config.Root{
-			Path: dir,
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
 			},

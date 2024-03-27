@@ -30,7 +30,7 @@ func (*fromLibraries) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 	tasks := libraries.FindAllWheelTasksWithLocalLibraries(b)
 	for _, task := range tasks {
 		for _, lib := range task.Libraries {
-			matches, err := filepath.Glob(filepath.Join(b.Config.Path, lib.Whl))
+			matches, err := filepath.Glob(filepath.Join(b.RootPath, lib.Whl))
 			// File referenced from libraries section does not exists, skipping
 			if err != nil {
 				continue

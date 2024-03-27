@@ -30,7 +30,7 @@ func (m *script) Name() string {
 }
 
 func (m *script) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	executor, err := exec.NewCommandExecutor(b.Config.Path)
+	executor, err := exec.NewCommandExecutor(b.RootPath)
 	if err != nil {
 		return diag.FromErr(err)
 	}

@@ -85,7 +85,7 @@ func (m *translatePaths) rewritePath(
 	}
 
 	// Remote path must be relative to the bundle root.
-	localRelPath, err := filepath.Rel(b.Config.Path, localPath)
+	localRelPath, err := filepath.Rel(b.RootPath, localPath)
 	if err != nil {
 		return err
 	}
