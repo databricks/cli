@@ -40,8 +40,12 @@ func emptyCommand(t *testing.T) *cobra.Command {
 func setup(t *testing.T, cmd *cobra.Command, host string) *bundle.Bundle {
 	setupDatabricksCfg(t)
 
+	rootPath := t.TempDir()
+	testutil.Touch(t, rootPath, "databricks.yml")
+
 	err := configureBundle(cmd, []string{"validate"}, func(_ context.Context) (*bundle.Bundle, error) {
 		return &bundle.Bundle{
+			RootPath: rootPath,
 			Config: config.Root{
 				Bundle: config.Bundle{
 					Name: "test",
