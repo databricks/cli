@@ -63,7 +63,7 @@ func configureProfile(cmd *cobra.Command, b *bundle.Bundle) diag.Diagnostics {
 	})
 }
 
-// configureBundle applies basic mutators to the bundle configures it on the command's context.
+// configureBundle loads the bundle configuration and configures flag values, if any.
 func configureBundle(cmd *cobra.Command, b *bundle.Bundle) (*bundle.Bundle, diag.Diagnostics) {
 	var m bundle.Mutator
 	if target := getTarget(cmd); target == "" {
