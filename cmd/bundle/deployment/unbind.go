@@ -13,10 +13,9 @@ import (
 
 func newUnbindCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "unbind KEY",
-		Short:   "Unbind bundle-defined resources from its managed remote resource",
-		Args:    root.ExactArgs(1),
-		PreRunE: utils.ConfigureBundleWithVariables,
+		Use:   "unbind KEY",
+		Short: "Unbind bundle-defined resources from its managed remote resource",
+		Args:  root.ExactArgs(1),
 	}
 
 	var forceLock bool
@@ -24,7 +23,11 @@ func newUnbindCommand() *cobra.Command {
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		b := bundle.Get(ctx)
+		b, diags := utils.ConfigureBundleWithVariables(cmd)
+		if err := diags.Error(); err != nil {
+			return diags.Error()
+		}
+
 		resource, err := b.Config.Resources.FindResourceByConfigKey(args[0])
 		if err != nil {
 			return err
@@ -35,7 +38,7 @@ func newUnbindCommand() *cobra.Command {
 			return nil
 		})
 
-		diags := bundle.Apply(cmd.Context(), b, bundle.Seq(
+		diags = bundle.Apply(cmd.Context(), b, bundle.Seq(
 			phases.Initialize(),
 			phases.Unbind(resource.TerraformResourceName(), args[0]),
 		))

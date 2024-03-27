@@ -2,16 +2,19 @@ package root
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/cmd/root/bundleflag"
+	"github.com/databricks/cli/cmd/root/profileflag"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func setupDatabricksCfg(t *testing.T) {
@@ -33,7 +36,7 @@ func emptyCommand(t *testing.T) *cobra.Command {
 	ctx := context.Background()
 	cmd := &cobra.Command{}
 	cmd.SetContext(ctx)
-	initProfileFlag(cmd)
+	profileflag.Init(cmd)
 	return cmd
 }
 
@@ -41,23 +44,18 @@ func setup(t *testing.T, cmd *cobra.Command, host string) *bundle.Bundle {
 	setupDatabricksCfg(t)
 
 	rootPath := t.TempDir()
-	testutil.Touch(t, rootPath, "databricks.yml")
+	testutil.Chdir(t, rootPath)
 
-	err := configureBundle(cmd, []string{"validate"}, func(_ context.Context) (*bundle.Bundle, error) {
-		return &bundle.Bundle{
-			RootPath: rootPath,
-			Config: config.Root{
-				Bundle: config.Bundle{
-					Name: "test",
-				},
-				Workspace: config.Workspace{
-					Host: host,
-				},
-			},
-		}, nil
-	})
-	assert.NoError(t, err)
-	return bundle.Get(cmd.Context())
+	contents := fmt.Sprintf(`
+workspace:
+  host: %q
+`, host)
+	err := os.WriteFile(filepath.Join(rootPath, "databricks.yml"), []byte(contents), 0644)
+	require.NoError(t, err)
+
+	b, diags := MustConfigureBundle(cmd)
+	require.NoError(t, diags.Error())
+	return b
 }
 
 func TestBundleConfigureDefault(t *testing.T) {
@@ -142,38 +140,37 @@ func TestBundleConfigureWithProfileFlagAndEnvVariable(t *testing.T) {
 
 func TestTargetFlagFull(t *testing.T) {
 	cmd := emptyCommand(t)
-	initTargetFlag(cmd)
+	bundleflag.Init(cmd)
 	cmd.SetArgs([]string{"version", "--target", "development"})
 
 	ctx := context.Background()
 	err := cmd.ExecuteContext(ctx)
 	assert.NoError(t, err)
 
-	assert.Equal(t, getTarget(cmd), "development")
+	assert.Equal(t, "development", bundleflag.Target(cmd))
 }
 
 func TestTargetFlagShort(t *testing.T) {
 	cmd := emptyCommand(t)
-	initTargetFlag(cmd)
+	bundleflag.Init(cmd)
 	cmd.SetArgs([]string{"version", "-t", "production"})
 
 	ctx := context.Background()
 	err := cmd.ExecuteContext(ctx)
 	assert.NoError(t, err)
 
-	assert.Equal(t, getTarget(cmd), "production")
+	assert.Equal(t, "production", bundleflag.Target(cmd))
 }
 
 // TODO: remove when environment flag is fully deprecated
 func TestTargetEnvironmentFlag(t *testing.T) {
 	cmd := emptyCommand(t)
-	initTargetFlag(cmd)
-	initEnvironmentFlag(cmd)
+	bundleflag.Init(cmd)
 	cmd.SetArgs([]string{"version", "--environment", "development"})
 
 	ctx := context.Background()
 	err := cmd.ExecuteContext(ctx)
 	assert.NoError(t, err)
 
-	assert.Equal(t, getTarget(cmd), "development")
+	assert.Equal(t, "development", bundleflag.Target(cmd))
 }

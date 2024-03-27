@@ -1,0 +1,7 @@
+bundle:
+  name: valid
+
+targets:
+  foo: ~
+  bar: ~
+  qux: ~

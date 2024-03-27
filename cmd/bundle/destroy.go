@@ -18,10 +18,9 @@ import (
 
 func newDestroyCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "destroy",
-		Short:   "Destroy deployed bundle resources",
-		Args:    root.NoArgs,
-		PreRunE: utils.ConfigureBundleWithVariables,
+		Use:   "destroy",
+		Short: "Destroy deployed bundle resources",
+		Args:  root.NoArgs,
 	}
 
 	var autoApprove bool
@@ -31,7 +30,10 @@ func newDestroyCommand() *cobra.Command {
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		b := bundle.Get(ctx)
+		b, diags := utils.ConfigureBundleWithVariables(cmd)
+		if err := diags.Error(); err != nil {
+			return diags.Error()
+		}
 
 		bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 			// If `--force-lock` is specified, force acquisition of the deployment lock.
@@ -58,7 +60,7 @@ func newDestroyCommand() *cobra.Command {
 			return fmt.Errorf("please specify --auto-approve since selected logging format is json")
 		}
 
-		diags := bundle.Apply(ctx, b, bundle.Seq(
+		diags = bundle.Apply(ctx, b, bundle.Seq(
 			phases.Initialize(),
 			phases.Build(),
 			phases.Destroy(),

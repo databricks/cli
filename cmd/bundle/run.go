@@ -17,10 +17,9 @@ import (
 
 func newRunCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "run [flags] KEY",
-		Short:   "Run a resource (e.g. a job or a pipeline)",
-		Args:    root.MaximumNArgs(1),
-		PreRunE: utils.ConfigureBundleWithVariables,
+		Use:   "run [flags] KEY",
+		Short: "Run a resource (e.g. a job or a pipeline)",
+		Args:  root.MaximumNArgs(1),
 	}
 
 	var runOptions run.Options
@@ -33,9 +32,12 @@ func newRunCommand() *cobra.Command {
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		b := bundle.Get(ctx)
+		b, diags := utils.ConfigureBundleWithVariables(cmd)
+		if err := diags.Error(); err != nil {
+			return diags.Error()
+		}
 
-		diags := bundle.Apply(ctx, b, bundle.Seq(
+		diags = bundle.Apply(ctx, b, bundle.Seq(
 			phases.Initialize(),
 			terraform.Interpolate(),
 			terraform.Write(),
@@ -109,15 +111,14 @@ func newRunCommand() *cobra.Command {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
 
-		err := root.MustConfigureBundle(cmd, args)
-		if err != nil {
+		b, diags := root.MustConfigureBundle(cmd)
+		if err := diags.Error(); err != nil {
 			cobra.CompErrorln(err.Error())
 			return nil, cobra.ShellCompDirectiveError
 		}
 
 		// No completion in the context of a bundle.
 		// Source and destination paths are taken from bundle configuration.
-		b := bundle.GetOrNil(cmd.Context())
 		if b == nil {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}

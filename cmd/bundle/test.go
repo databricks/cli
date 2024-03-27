@@ -3,7 +3,6 @@ package bundle
 import (
 	"fmt"
 
-	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
 )
 
@@ -15,8 +14,6 @@ func newTestCommand() *cobra.Command {
 
 		// We're not ready to expose this command until we specify its semantics.
 		Hidden: true,
-
-		PreRunE: root.MustConfigureBundle,
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {

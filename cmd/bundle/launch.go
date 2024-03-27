@@ -16,8 +16,6 @@ func newLaunchCommand() *cobra.Command {
 
 		// We're not ready to expose this command until we specify its semantics.
 		Hidden: true,
-
-		PreRunE: root.MustConfigureBundle,
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {

@@ -1,0 +1,5 @@
+bundle:
+  name: invalid
+
+include:
+  - ./i_dont_exist.yml

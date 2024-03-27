@@ -13,10 +13,9 @@ import (
 
 func newDeployCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "deploy",
-		Short:   "Deploy bundle",
-		Args:    root.NoArgs,
-		PreRunE: utils.ConfigureBundleWithVariables,
+		Use:   "deploy",
+		Short: "Deploy bundle",
+		Args:  root.NoArgs,
 	}
 
 	var force bool
@@ -30,7 +29,10 @@ func newDeployCommand() *cobra.Command {
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		b := bundle.Get(ctx)
+		b, diags := utils.ConfigureBundleWithVariables(cmd)
+		if err := diags.Error(); err != nil {
+			return diags.Error()
+		}
 
 		bundle.ApplyFunc(ctx, b, func(context.Context, *bundle.Bundle) diag.Diagnostics {
 			b.Config.Bundle.Force = force
@@ -46,7 +48,7 @@ func newDeployCommand() *cobra.Command {
 			return nil
 		})
 
-		diags := bundle.Apply(ctx, b, bundle.Seq(
+		diags = bundle.Apply(ctx, b, bundle.Seq(
 			phases.Initialize(),
 			phases.Build(),
 			phases.Deploy(),

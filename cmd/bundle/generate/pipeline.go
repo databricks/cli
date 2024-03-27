@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/generate"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -24,9 +23,8 @@ func NewGeneratePipelineCommand() *cobra.Command {
 	var force bool
 
 	cmd := &cobra.Command{
-		Use:     "pipeline",
-		Short:   "Generate bundle configuration for a pipeline",
-		PreRunE: root.MustConfigureBundle,
+		Use:   "pipeline",
+		Short: "Generate bundle configuration for a pipeline",
 	}
 
 	cmd.Flags().StringVar(&pipelineId, "existing-pipeline-id", "", `ID of the pipeline to generate config for`)
@@ -43,9 +41,12 @@ func NewGeneratePipelineCommand() *cobra.Command {
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		b := bundle.Get(ctx)
-		w := b.WorkspaceClient()
+		b, diags := root.MustConfigureBundle(cmd)
+		if err := diags.Error(); err != nil {
+			return diags.Error()
+		}
 
+		w := b.WorkspaceClient()
 		pipeline, err := w.Pipelines.Get(ctx, pipelines.GetPipelineRequest{PipelineId: pipelineId})
 		if err != nil {
 			return err
