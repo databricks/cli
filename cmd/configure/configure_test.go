@@ -78,7 +78,8 @@ func TestConfigFileFromEnvNoInteractive(t *testing.T) {
 	//TODO: Replace with similar test code from go SDK, once we start using it directly
 	ctx := context.Background()
 	tempHomeDir := setup(t)
-	cfgPath := filepath.Join(tempHomeDir, ".databrickscfg")
+	defaultCfgPath := filepath.Join(tempHomeDir, ".databrickscfg")
+	cfgPath := filepath.Join(tempHomeDir, "overwrite-databricks-cfg")
 	t.Setenv("DATABRICKS_CONFIG_FILE", cfgPath)
 
 	inp := getTempFileWithContent(t, tempHomeDir, "token\n")
@@ -95,6 +96,13 @@ func TestConfigFileFromEnvNoInteractive(t *testing.T) {
 
 	_, err = os.Stat(cfgPath)
 	assert.NoError(t, err)
+
+	_, err = os.Stat(defaultCfgPath)
+	if runtime.GOOS == "windows" {
+		assert.ErrorContains(t, err, "cannot find the file specified")
+	} else {
+		assert.ErrorContains(t, err, "no such file or directory")
+	}
 
 	cfg, err := ini.Load(cfgPath)
 	assert.NoError(t, err)

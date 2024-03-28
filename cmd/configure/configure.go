@@ -139,10 +139,11 @@ The host must be specified with the --host flag or the DATABRICKS_HOST environme
 
 		// Save profile to config file.
 		return databrickscfg.SaveToProfile(ctx, &config.Config{
-			Profile:   cfg.Profile,
-			Host:      cfg.Host,
-			Token:     cfg.Token,
-			ClusterID: cfg.ClusterID,
+			Profile:    cfg.Profile,
+			Host:       cfg.Host,
+			Token:      cfg.Token,
+			ClusterID:  cfg.ClusterID,
+			ConfigFile: cfg.ConfigFile,
 		})
 	}
 
