@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/databricks-sdk-go"
@@ -149,11 +148,11 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 
 	// Try to load a bundle configuration if we're allowed to by the caller (see `./auth_options.go`).
 	if !shouldSkipLoadBundle(cmd.Context()) {
-		err := TryConfigureBundle(cmd, args)
-		if err != nil {
+		b, diags := TryConfigureBundle(cmd)
+		if err := diags.Error(); err != nil {
 			return err
 		}
-		if b := bundle.GetOrNil(cmd.Context()); b != nil {
+		if b != nil {
 			client, err := b.InitializeWorkspaceClient()
 			if err != nil {
 				return err

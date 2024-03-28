@@ -13,16 +13,19 @@ import (
 
 func newValidateCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "validate",
-		Short:   "Validate configuration",
-		Args:    root.NoArgs,
-		PreRunE: utils.ConfigureBundleWithVariables,
+		Use:   "validate",
+		Short: "Validate configuration",
+		Args:  root.NoArgs,
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		b := bundle.Get(cmd.Context())
+		ctx := cmd.Context()
+		b, diags := utils.ConfigureBundleWithVariables(cmd)
+		if err := diags.Error(); err != nil {
+			return diags.Error()
+		}
 
-		diags := bundle.Apply(cmd.Context(), b, phases.Initialize())
+		diags = bundle.Apply(ctx, b, phases.Initialize())
 		if err := diags.Error(); err != nil {
 			return err
 		}
