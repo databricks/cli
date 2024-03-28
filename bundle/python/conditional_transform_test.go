@@ -18,8 +18,8 @@ func TestNoTransformByDefault(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	b := &bundle.Bundle{
+		RootPath: tmpDir,
 		Config: config.Root{
-			Path: tmpDir,
 			Bundle: config.Bundle{
 				Target: "development",
 			},
@@ -63,8 +63,8 @@ func TestTransformWithExperimentalSettingSetToTrue(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	b := &bundle.Bundle{
+		RootPath: tmpDir,
 		Config: config.Root{
-			Path: tmpDir,
 			Bundle: config.Bundle{
 				Target: "development",
 			},
@@ -106,7 +106,7 @@ func TestTransformWithExperimentalSettingSetToTrue(t *testing.T) {
 	dir, err := b.InternalDir(context.Background())
 	require.NoError(t, err)
 
-	internalDirRel, err := filepath.Rel(b.Config.Path, dir)
+	internalDirRel, err := filepath.Rel(b.RootPath, dir)
 	require.NoError(t, err)
 
 	require.Equal(t, path.Join(filepath.ToSlash(internalDirRel), "notebook_job1_key1"), task.NotebookTask.NotebookPath)

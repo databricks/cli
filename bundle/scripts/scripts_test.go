@@ -23,7 +23,7 @@ func TestExecutesHook(t *testing.T) {
 		},
 	}
 
-	executor, err := exec.NewCommandExecutor(b.Config.Path)
+	executor, err := exec.NewCommandExecutor(b.RootPath)
 	require.NoError(t, err)
 	_, out, err := executeHook(context.Background(), executor, b, config.ScriptPreBuild)
 	require.NoError(t, err)

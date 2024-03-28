@@ -14,7 +14,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	bundleConfig "github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/diag"
@@ -66,23 +65,25 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 	require.NoError(t, err)
 	err = renderer.persistToDisk()
 	require.NoError(t, err)
+
 	b, err := bundle.Load(ctx, filepath.Join(tempDir, "template", "my_project"))
 	require.NoError(t, err)
+	diags := bundle.Apply(ctx, b, phases.LoadNamedTarget(target))
+	require.NoError(t, diags.Error())
 
 	// Apply initialize / validation mutators
 	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		b.Config.Workspace.CurrentUser = &bundleConfig.User{User: cachedUser}
+		b.Config.Bundle.Terraform = &bundleConfig.Terraform{
+			ExecPath: "sh",
+		}
 		return nil
 	})
 
 	b.Tagging = tags.ForCloud(w.Config)
 	b.WorkspaceClient()
-	b.Config.Bundle.Terraform = &bundleConfig.Terraform{
-		ExecPath: "sh",
-	}
-	diags := bundle.Apply(ctx, b, bundle.Seq(
-		bundle.Seq(mutator.DefaultMutators()...),
-		mutator.SelectTarget(target),
+
+	diags = bundle.Apply(ctx, b, bundle.Seq(
 		phases.Initialize(),
 	))
 	require.NoError(t, diags.Error())

@@ -36,8 +36,6 @@ func newSyncCommand() *cobra.Command {
 		Use:   "sync [flags]",
 		Short: "Synchronize bundle tree to the workspace",
 		Args:  root.NoArgs,
-
-		PreRunE: utils.ConfigureBundleWithVariables,
 	}
 
 	var f syncFlags
@@ -46,10 +44,14 @@ func newSyncCommand() *cobra.Command {
 	cmd.Flags().BoolVar(&f.watch, "watch", false, "watch local file system for changes")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		b := bundle.Get(cmd.Context())
+		ctx := cmd.Context()
+		b, diags := utils.ConfigureBundleWithVariables(cmd)
+		if err := diags.Error(); err != nil {
+			return diags.Error()
+		}
 
 		// Run initialize phase to make sure paths are set.
-		diags := bundle.Apply(cmd.Context(), b, phases.Initialize())
+		diags = bundle.Apply(ctx, b, phases.Initialize())
 		if err := diags.Error(); err != nil {
 			return err
 		}
@@ -59,7 +61,6 @@ func newSyncCommand() *cobra.Command {
 			return err
 		}
 
-		ctx := cmd.Context()
 		s, err := sync.New(ctx, *opts)
 		if err != nil {
 			return err

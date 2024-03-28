@@ -22,7 +22,7 @@ func (m *loadGitDetails) Name() string {
 
 func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Load relevant git repository
-	repo, err := git.NewRepository(b.Config.Path)
+	repo, err := git.NewRepository(b.RootPath)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -56,7 +56,7 @@ func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	}
 
 	// Compute relative path of the bundle root from the Git repo root.
-	absBundlePath, err := filepath.Abs(b.Config.Path)
+	absBundlePath, err := filepath.Abs(b.RootPath)
 	if err != nil {
 		return diag.FromErr(err)
 	}

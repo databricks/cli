@@ -39,7 +39,7 @@ func (m *compute) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	for name, job := range b.Config.Resources.Jobs {
 		// Compute config file path the job is defined in, relative to the bundle
 		// root
-		relativePath, err := filepath.Rel(b.Config.Path, job.ConfigFilePath)
+		relativePath, err := filepath.Rel(b.RootPath, job.ConfigFilePath)
 		if err != nil {
 			return diag.Errorf("failed to compute relative path for job %s: %v", name, err)
 		}
