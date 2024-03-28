@@ -76,6 +76,23 @@ func TestVerifyCliVersion(t *testing.T) {
 			maxVersion:     "0.100.2",
 			expectedError:  "maximum Databricks CLI version required: v0.100.2, current version: v0.101.0",
 		},
+		{
+			currentVersion: "0.100.0-beta",
+			minVersion:     "0.100.0",
+			maxVersion:     "0.100.2",
+			expectedError:  "minimum Databricks CLI version required: v0.100.0, current version: v0.100.0-beta",
+		},
+		{
+			currentVersion: "0.100.1-beta",
+			minVersion:     "0.100.0",
+			maxVersion:     "0.100.2",
+		},
+		{
+			currentVersion: "0.100.3-beta",
+			minVersion:     "0.100.0",
+			maxVersion:     "0.100.2",
+			expectedError:  "maximum Databricks CLI version required: v0.100.2, current version: v0.100.3-beta",
+		},
 	}
 
 	t.Cleanup(func() {
