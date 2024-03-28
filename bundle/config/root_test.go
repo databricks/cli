@@ -25,24 +25,24 @@ func TestRootMarshalUnmarshal(t *testing.T) {
 }
 
 func TestRootLoad(t *testing.T) {
-	root, err := Load("../tests/basic/databricks.yml")
-	require.NoError(t, err)
+	root, diags := Load("../tests/basic/databricks.yml")
+	require.NoError(t, diags.Error())
 	assert.Equal(t, "basic", root.Bundle.Name)
 }
 
 func TestDuplicateIdOnLoadReturnsError(t *testing.T) {
-	_, err := Load("./testdata/duplicate_resource_names_in_root/databricks.yml")
-	assert.ErrorContains(t, err, "multiple resources named foo (job at ./testdata/duplicate_resource_names_in_root/databricks.yml, pipeline at ./testdata/duplicate_resource_names_in_root/databricks.yml)")
+	_, diags := Load("./testdata/duplicate_resource_names_in_root/databricks.yml")
+	assert.ErrorContains(t, diags.Error(), "multiple resources named foo (job at ./testdata/duplicate_resource_names_in_root/databricks.yml, pipeline at ./testdata/duplicate_resource_names_in_root/databricks.yml)")
 }
 
 func TestDuplicateIdOnMergeReturnsError(t *testing.T) {
-	root, err := Load("./testdata/duplicate_resource_name_in_subconfiguration/databricks.yml")
-	require.NoError(t, err)
+	root, diags := Load("./testdata/duplicate_resource_name_in_subconfiguration/databricks.yml")
+	require.NoError(t, diags.Error())
 
-	other, err := Load("./testdata/duplicate_resource_name_in_subconfiguration/resources.yml")
-	require.NoError(t, err)
+	other, diags := Load("./testdata/duplicate_resource_name_in_subconfiguration/resources.yml")
+	require.NoError(t, diags.Error())
 
-	err = root.Merge(other)
+	err := root.Merge(other)
 	assert.ErrorContains(t, err, "multiple resources named foo (job at ./testdata/duplicate_resource_name_in_subconfiguration/databricks.yml, pipeline at ./testdata/duplicate_resource_name_in_subconfiguration/resources.yml)")
 }
 
