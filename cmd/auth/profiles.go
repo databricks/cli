@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"sync"
 	"time"
@@ -45,13 +44,7 @@ func (c *profileMetadata) Load(ctx context.Context, skipValidate bool) {
 	}
 
 	if skipValidate {
-		err := cfg.Authenticate(&http.Request{
-			Header: make(http.Header),
-		})
-		if err != nil {
-			return
-		}
-		c.Host = cfg.Host
+		c.Host = cfg.CanonicalHostName()
 		c.AuthType = cfg.AuthType
 		return
 	}
