@@ -311,8 +311,8 @@ func TestFindExecPathFromEnvironmentWithWrongVersion(t *testing.T) {
 	ctx := context.Background()
 	m := &initialize{}
 	b := &bundle.Bundle{
+		RootPath: t.TempDir(),
 		Config: config.Root{
-			Path: t.TempDir(),
 			Bundle: config.Bundle{
 				Target:    "whatever",
 				Terraform: &config.Terraform{},
@@ -335,8 +335,8 @@ func TestFindExecPathFromEnvironmentWithCorrectVersionAndNoBinary(t *testing.T) 
 	ctx := context.Background()
 	m := &initialize{}
 	b := &bundle.Bundle{
+		RootPath: t.TempDir(),
 		Config: config.Root{
-			Path: t.TempDir(),
 			Bundle: config.Bundle{
 				Target:    "whatever",
 				Terraform: &config.Terraform{},
@@ -358,8 +358,8 @@ func TestFindExecPathFromEnvironmentWithCorrectVersionAndBinary(t *testing.T) {
 	ctx := context.Background()
 	m := &initialize{}
 	b := &bundle.Bundle{
+		RootPath: t.TempDir(),
 		Config: config.Root{
-			Path: t.TempDir(),
 			Bundle: config.Bundle{
 				Target:    "whatever",
 				Terraform: &config.Terraform{},
