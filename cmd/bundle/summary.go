@@ -18,10 +18,9 @@ import (
 
 func newSummaryCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "summary",
-		Short:   "Describe the bundle resources and their deployment states",
-		Args:    root.NoArgs,
-		PreRunE: utils.ConfigureBundleWithVariables,
+		Use:   "summary",
+		Short: "Describe the bundle resources and their deployment states",
+		Args:  root.NoArgs,
 
 		// This command is currently intended for the Databricks VSCode extension only
 		Hidden: true,
@@ -31,14 +30,18 @@ func newSummaryCommand() *cobra.Command {
 	cmd.Flags().BoolVar(&forcePull, "force-pull", false, "Skip local cache and load the state from the remote workspace")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		b := bundle.Get(cmd.Context())
+		ctx := cmd.Context()
+		b, diags := utils.ConfigureBundleWithVariables(cmd)
+		if err := diags.Error(); err != nil {
+			return diags.Error()
+		}
 
-		err := bundle.Apply(cmd.Context(), b, phases.Initialize())
-		if err != nil {
+		diags = bundle.Apply(ctx, b, phases.Initialize())
+		if err := diags.Error(); err != nil {
 			return err
 		}
 
-		cacheDir, err := terraform.Dir(cmd.Context(), b)
+		cacheDir, err := terraform.Dir(ctx, b)
 		if err != nil {
 			return err
 		}
@@ -47,18 +50,18 @@ func newSummaryCommand() *cobra.Command {
 		noCache := errors.Is(stateFileErr, os.ErrNotExist) || errors.Is(configFileErr, os.ErrNotExist)
 
 		if forcePull || noCache {
-			err = bundle.Apply(cmd.Context(), b, bundle.Seq(
+			diags = bundle.Apply(ctx, b, bundle.Seq(
 				terraform.StatePull(),
 				terraform.Interpolate(),
 				terraform.Write(),
 			))
-			if err != nil {
+			if err := diags.Error(); err != nil {
 				return err
 			}
 		}
 
-		err = bundle.Apply(cmd.Context(), b, terraform.Load())
-		if err != nil {
+		diags = bundle.Apply(ctx, b, terraform.Load())
+		if err := diags.Error(); err != nil {
 			return err
 		}
 

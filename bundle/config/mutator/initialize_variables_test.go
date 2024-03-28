@@ -23,8 +23,8 @@ func TestInitializeVariables(t *testing.T) {
 			},
 		},
 	}
-	err := bundle.Apply(context.Background(), b, mutator.InitializeVariables())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, mutator.InitializeVariables())
+	require.NoError(t, diags.Error())
 	assert.NotNil(t, b.Config.Variables["foo"])
 	assert.NotNil(t, b.Config.Variables["bar"])
 	assert.Equal(t, "This is a description", b.Config.Variables["bar"].Description)
@@ -36,7 +36,7 @@ func TestInitializeVariablesWithoutVariables(t *testing.T) {
 			Variables: nil,
 		},
 	}
-	err := bundle.Apply(context.Background(), b, mutator.InitializeVariables())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, mutator.InitializeVariables())
+	require.NoError(t, diags.Error())
 	assert.Nil(t, b.Config.Variables)
 }

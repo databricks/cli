@@ -15,8 +15,8 @@ func TestPathTranslationFallback(t *testing.T) {
 	b := loadTarget(t, "./path_translation/fallback", "development")
 
 	m := mutator.TranslatePaths()
-	err := bundle.Apply(context.Background(), b, m)
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, m)
+	require.NoError(t, diags.Error())
 
 	j := b.Config.Resources.Jobs["my_job"]
 	assert.Len(t, j.Tasks, 6)
@@ -54,16 +54,16 @@ func TestPathTranslationFallbackError(t *testing.T) {
 	b := loadTarget(t, "./path_translation/fallback", "error")
 
 	m := mutator.TranslatePaths()
-	err := bundle.Apply(context.Background(), b, m)
-	assert.ErrorContains(t, err, `notebook this value is overridden not found`)
+	diags := bundle.Apply(context.Background(), b, m)
+	assert.ErrorContains(t, diags.Error(), `notebook this value is overridden not found`)
 }
 
 func TestPathTranslationNominal(t *testing.T) {
 	b := loadTarget(t, "./path_translation/nominal", "development")
 
 	m := mutator.TranslatePaths()
-	err := bundle.Apply(context.Background(), b, m)
-	assert.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, m)
+	assert.NoError(t, diags.Error())
 
 	j := b.Config.Resources.Jobs["my_job"]
 	assert.Len(t, j.Tasks, 8)
@@ -107,6 +107,6 @@ func TestPathTranslationNominalError(t *testing.T) {
 	b := loadTarget(t, "./path_translation/nominal", "error")
 
 	m := mutator.TranslatePaths()
-	err := bundle.Apply(context.Background(), b, m)
-	assert.ErrorContains(t, err, `notebook this value is overridden not found`)
+	diags := bundle.Apply(context.Background(), b, m)
+	assert.ErrorContains(t, diags.Error(), `notebook this value is overridden not found`)
 }

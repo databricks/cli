@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -17,10 +18,9 @@ import (
 
 func newDestroyCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "destroy",
-		Short:   "Destroy deployed bundle resources",
-		Args:    root.NoArgs,
-		PreRunE: utils.ConfigureBundleWithVariables,
+		Use:   "destroy",
+		Short: "Destroy deployed bundle resources",
+		Args:  root.NoArgs,
 	}
 
 	var autoApprove bool
@@ -30,9 +30,12 @@ func newDestroyCommand() *cobra.Command {
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		b := bundle.Get(ctx)
+		b, diags := utils.ConfigureBundleWithVariables(cmd)
+		if err := diags.Error(); err != nil {
+			return diags.Error()
+		}
 
-		bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) error {
+		bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 			// If `--force-lock` is specified, force acquisition of the deployment lock.
 			b.Config.Bundle.Deployment.Lock.Force = forceDestroy
 
@@ -57,11 +60,15 @@ func newDestroyCommand() *cobra.Command {
 			return fmt.Errorf("please specify --auto-approve since selected logging format is json")
 		}
 
-		return bundle.Apply(ctx, b, bundle.Seq(
+		diags = bundle.Apply(ctx, b, bundle.Seq(
 			phases.Initialize(),
 			phases.Build(),
 			phases.Destroy(),
 		))
+		if err := diags.Error(); err != nil {
+			return err
+		}
+		return nil
 	}
 
 	return cmd

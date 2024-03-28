@@ -27,8 +27,8 @@ func TestExpandPipelineGlobPaths(t *testing.T) {
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
 	ctx := context.Background()
-	err := bundle.Apply(ctx, b, phases.Initialize())
-	require.NoError(t, err)
+	diags := bundle.Apply(ctx, b, phases.Initialize())
+	require.NoError(t, diags.Error())
 	require.Equal(
 		t,
 		"/Users/user@domain.com/.bundle/pipeline_glob_paths/default/files/dlt/nyc_taxi_loader",
@@ -50,6 +50,6 @@ func TestExpandPipelineGlobPathsWithNonExistent(t *testing.T) {
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
 	ctx := context.Background()
-	err := bundle.Apply(ctx, b, phases.Initialize())
-	require.ErrorContains(t, err, "notebook ./non-existent not found")
+	diags := bundle.Apply(ctx, b, phases.Initialize())
+	require.ErrorContains(t, diags.Error(), "notebook ./non-existent not found")
 }

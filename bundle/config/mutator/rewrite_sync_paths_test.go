@@ -14,8 +14,8 @@ import (
 
 func TestRewriteSyncPathsRelative(t *testing.T) {
 	b := &bundle.Bundle{
+		RootPath: ".",
 		Config: config.Root{
-			Path: ".",
 			Sync: config.Sync{
 				Include: []string{
 					"foo",
@@ -34,8 +34,8 @@ func TestRewriteSyncPathsRelative(t *testing.T) {
 	bundletest.SetLocation(b, "sync.exclude[0]", "./a/b/file.yml")
 	bundletest.SetLocation(b, "sync.exclude[1]", "./a/b/c/file.yml")
 
-	err := bundle.Apply(context.Background(), b, mutator.RewriteSyncPaths())
-	assert.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, mutator.RewriteSyncPaths())
+	assert.NoError(t, diags.Error())
 
 	assert.Equal(t, filepath.Clean("foo"), b.Config.Sync.Include[0])
 	assert.Equal(t, filepath.Clean("a/bar"), b.Config.Sync.Include[1])
@@ -45,8 +45,8 @@ func TestRewriteSyncPathsRelative(t *testing.T) {
 
 func TestRewriteSyncPathsAbsolute(t *testing.T) {
 	b := &bundle.Bundle{
+		RootPath: "/tmp/dir",
 		Config: config.Root{
-			Path: "/tmp/dir",
 			Sync: config.Sync{
 				Include: []string{
 					"foo",
@@ -65,8 +65,8 @@ func TestRewriteSyncPathsAbsolute(t *testing.T) {
 	bundletest.SetLocation(b, "sync.exclude[0]", "/tmp/dir/a/b/file.yml")
 	bundletest.SetLocation(b, "sync.exclude[1]", "/tmp/dir/a/b/c/file.yml")
 
-	err := bundle.Apply(context.Background(), b, mutator.RewriteSyncPaths())
-	assert.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, mutator.RewriteSyncPaths())
+	assert.NoError(t, diags.Error())
 
 	assert.Equal(t, filepath.Clean("foo"), b.Config.Sync.Include[0])
 	assert.Equal(t, filepath.Clean("a/bar"), b.Config.Sync.Include[1])
@@ -77,19 +77,17 @@ func TestRewriteSyncPathsAbsolute(t *testing.T) {
 func TestRewriteSyncPathsErrorPaths(t *testing.T) {
 	t.Run("no sync block", func(t *testing.T) {
 		b := &bundle.Bundle{
-			Config: config.Root{
-				Path: ".",
-			},
+			RootPath: ".",
 		}
 
-		err := bundle.Apply(context.Background(), b, mutator.RewriteSyncPaths())
-		assert.NoError(t, err)
+		diags := bundle.Apply(context.Background(), b, mutator.RewriteSyncPaths())
+		assert.NoError(t, diags.Error())
 	})
 
 	t.Run("empty include/exclude blocks", func(t *testing.T) {
 		b := &bundle.Bundle{
+			RootPath: ".",
 			Config: config.Root{
-				Path: ".",
 				Sync: config.Sync{
 					Include: []string{},
 					Exclude: []string{},
@@ -97,7 +95,7 @@ func TestRewriteSyncPathsErrorPaths(t *testing.T) {
 			},
 		}
 
-		err := bundle.Apply(context.Background(), b, mutator.RewriteSyncPaths())
-		assert.NoError(t, err)
+		diags := bundle.Apply(context.Background(), b, mutator.RewriteSyncPaths())
+		assert.NoError(t, diags.Error())
 	})
 }

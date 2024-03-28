@@ -110,8 +110,8 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	b := mockBundle(config.Development)
 
 	m := ProcessTargetMode()
-	err := bundle.Apply(context.Background(), b, m)
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, m)
+	require.NoError(t, diags.Error())
 
 	// Job 1
 	assert.Equal(t, "[dev lennart] job1", b.Config.Resources.Jobs["job1"].Name)
@@ -154,8 +154,8 @@ func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	err := bundle.Apply(context.Background(), b, ProcessTargetMode())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, ProcessTargetMode())
+	require.NoError(t, diags.Error())
 
 	// Assert that tag normalization took place.
 	assert.Equal(t, "Hello world__", b.Config.Resources.Jobs["job1"].Tags["dev"])
@@ -168,8 +168,8 @@ func TestProcessTargetModeDevelopmentTagNormalizationForAzure(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	err := bundle.Apply(context.Background(), b, ProcessTargetMode())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, ProcessTargetMode())
+	require.NoError(t, diags.Error())
 
 	// Assert that tag normalization took place (Azure allows more characters than AWS).
 	assert.Equal(t, "Héllö wörld?!", b.Config.Resources.Jobs["job1"].Tags["dev"])
@@ -182,8 +182,8 @@ func TestProcessTargetModeDevelopmentTagNormalizationForGcp(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	err := bundle.Apply(context.Background(), b, ProcessTargetMode())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, ProcessTargetMode())
+	require.NoError(t, diags.Error())
 
 	// Assert that tag normalization took place.
 	assert.Equal(t, "Hello_world", b.Config.Resources.Jobs["job1"].Tags["dev"])
@@ -193,8 +193,8 @@ func TestProcessTargetModeDefault(t *testing.T) {
 	b := mockBundle("")
 
 	m := ProcessTargetMode()
-	err := bundle.Apply(context.Background(), b, m)
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, m)
+	require.NoError(t, diags.Error())
 	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
 	assert.Equal(t, "pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
@@ -205,15 +205,15 @@ func TestProcessTargetModeDefault(t *testing.T) {
 func TestProcessTargetModeProduction(t *testing.T) {
 	b := mockBundle(config.Production)
 
-	err := validateProductionMode(context.Background(), b, false)
-	require.ErrorContains(t, err, "run_as")
+	diags := validateProductionMode(context.Background(), b, false)
+	require.ErrorContains(t, diags.Error(), "run_as")
 
 	b.Config.Workspace.StatePath = "/Shared/.bundle/x/y/state"
 	b.Config.Workspace.ArtifactPath = "/Shared/.bundle/x/y/artifacts"
 	b.Config.Workspace.FilePath = "/Shared/.bundle/x/y/files"
 
-	err = validateProductionMode(context.Background(), b, false)
-	require.ErrorContains(t, err, "production")
+	diags = validateProductionMode(context.Background(), b, false)
+	require.ErrorContains(t, diags.Error(), "production")
 
 	permissions := []resources.Permission{
 		{
@@ -232,8 +232,8 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	b.Config.Resources.Models["model1"].Permissions = permissions
 	b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Permissions = permissions
 
-	err = validateProductionMode(context.Background(), b, false)
-	require.NoError(t, err)
+	diags = validateProductionMode(context.Background(), b, false)
+	require.NoError(t, diags.Error())
 
 	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
 	assert.Equal(t, "pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
@@ -246,12 +246,12 @@ func TestProcessTargetModeProductionOkForPrincipal(t *testing.T) {
 	b := mockBundle(config.Production)
 
 	// Our target has all kinds of problems when not using service principals ...
-	err := validateProductionMode(context.Background(), b, false)
-	require.Error(t, err)
+	diags := validateProductionMode(context.Background(), b, false)
+	require.Error(t, diags.Error())
 
 	// ... but we're much less strict when a principal is used
-	err = validateProductionMode(context.Background(), b, true)
-	require.NoError(t, err)
+	diags = validateProductionMode(context.Background(), b, true)
+	require.NoError(t, diags.Error())
 }
 
 // Make sure that we have test coverage for all resource types
@@ -277,8 +277,8 @@ func TestAllResourcesRenamed(t *testing.T) {
 	b := mockBundle(config.Development)
 
 	m := ProcessTargetMode()
-	err := bundle.Apply(context.Background(), b, m)
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, m)
+	require.NoError(t, diags.Error())
 
 	resources := reflect.ValueOf(b.Config.Resources)
 	for i := 0; i < resources.NumField(); i++ {

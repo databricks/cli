@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -30,29 +31,29 @@ func (l *checkRunningResources) Name() string {
 	return "check-running-resources"
 }
 
-func (l *checkRunningResources) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (l *checkRunningResources) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if !b.Config.Bundle.Deployment.FailOnActiveRuns {
 		return nil
 	}
 
 	tf := b.Terraform
 	if tf == nil {
-		return fmt.Errorf("terraform not initialized")
+		return diag.Errorf("terraform not initialized")
 	}
 
 	err := tf.Init(ctx, tfexec.Upgrade(true))
 	if err != nil {
-		return fmt.Errorf("terraform init: %w", err)
+		return diag.Errorf("terraform init: %v", err)
 	}
 
 	state, err := b.Terraform.Show(ctx)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	err = checkAnyResourceRunning(ctx, b.WorkspaceClient(), state)
 	if err != nil {
-		return fmt.Errorf("deployment aborted, err: %w", err)
+		return diag.Errorf("deployment aborted, err: %v", err)
 	}
 
 	return nil

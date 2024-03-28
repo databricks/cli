@@ -1,3 +1,4 @@
 {
-    "unknown_prop":    123
+    "unknown_prop": 123,
+    "string_val": "i am a known property"
 }

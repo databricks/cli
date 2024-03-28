@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
@@ -203,11 +202,11 @@ func (e *Entrypoint) getLoginConfig(cmd *cobra.Command) (*loginConfig, *config.C
 		return lc, cfg, nil
 	}
 	if e.IsBundleAware {
-		err = root.TryConfigureBundle(cmd, []string{})
-		if err != nil {
+		b, diags := root.TryConfigureBundle(cmd)
+		if err := diags.Error(); err != nil {
 			return nil, nil, fmt.Errorf("bundle: %w", err)
 		}
-		if b := bundle.GetOrNil(cmd.Context()); b != nil {
+		if b != nil {
 			log.Infof(ctx, "Using login configuration from Databricks Asset Bundle")
 			return &loginConfig{}, b.WorkspaceClient().Config, nil
 		}

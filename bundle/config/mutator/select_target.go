@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/diag"
 	"golang.org/x/exp/maps"
 )
 
@@ -24,21 +25,21 @@ func (m *selectTarget) Name() string {
 	return fmt.Sprintf("SelectTarget(%s)", m.name)
 }
 
-func (m *selectTarget) Apply(_ context.Context, b *bundle.Bundle) error {
+func (m *selectTarget) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if b.Config.Targets == nil {
-		return fmt.Errorf("no targets defined")
+		return diag.Errorf("no targets defined")
 	}
 
 	// Get specified target
 	_, ok := b.Config.Targets[m.name]
 	if !ok {
-		return fmt.Errorf("%s: no such target. Available targets: %s", m.name, strings.Join(maps.Keys(b.Config.Targets), ", "))
+		return diag.Errorf("%s: no such target. Available targets: %s", m.name, strings.Join(maps.Keys(b.Config.Targets), ", "))
 	}
 
 	// Merge specified target into root configuration structure.
 	err := b.Config.MergeTargetOverrides(m.name)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	// Store specified target in configuration for reference.

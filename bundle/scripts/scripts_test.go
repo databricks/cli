@@ -23,7 +23,7 @@ func TestExecutesHook(t *testing.T) {
 		},
 	}
 
-	executor, err := exec.NewCommandExecutor(b.Config.Path)
+	executor, err := exec.NewCommandExecutor(b.RootPath)
 	require.NoError(t, err)
 	_, out, err := executeHook(context.Background(), executor, b, config.ScriptPreBuild)
 	require.NoError(t, err)
@@ -46,6 +46,6 @@ func TestExecuteMutator(t *testing.T) {
 		},
 	}
 
-	err := bundle.Apply(context.Background(), b, Execute(config.ScriptPreInit))
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, Execute(config.ScriptPreInit))
+	require.NoError(t, diags.Error())
 }
