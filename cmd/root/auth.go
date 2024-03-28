@@ -19,6 +19,22 @@ var workspaceClient int
 var accountClient int
 var configUsed int
 
+type ErrNoWorkspaceProfiles struct {
+	path string
+}
+
+func (e ErrNoWorkspaceProfiles) Error() string {
+	return fmt.Sprintf("%s does not contain workspace profiles; please create one by running 'databricks configure'", e.path)
+}
+
+type ErrNoAccountProfiles struct {
+	path string
+}
+
+func (e ErrNoAccountProfiles) Error() string {
+	return fmt.Sprintf("%s does not contain account profiles; please create one by running 'databricks configure'", e.path)
+}
+
 func initProfileFlag(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringP("profile", "p", "", "~/.databrickscfg profile")
 	cmd.RegisterFlagCompletionFunc("profile", databrickscfg.ProfileCompletion)
@@ -66,6 +82,27 @@ func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt 
 		}
 	}
 	return a, err
+}
+
+func MustAnyClient(cmd *cobra.Command, args []string) (bool, error) {
+	// Try to create a workspace client
+	werr := MustWorkspaceClient(cmd, args)
+	if werr == nil {
+		return false, nil
+	}
+
+	// If the error is not a workspace client error, return it because configuration is for workspace client
+	if !errors.Is(werr, databricks.ErrNotWorkspaceClient) && !errors.As(werr, &ErrNoWorkspaceProfiles{}) {
+		return false, werr
+	}
+
+	// Otherwise, the config used is account client one, so try to create an account client
+	aerr := MustAccountClient(cmd, args)
+	if errors.As(aerr, &ErrNoAccountProfiles{}) {
+		return false, fmt.Errorf("%s does not contain any profiles; please create one by running 'databricks configure'", aerr.(ErrNoAccountProfiles).path)
+	}
+
+	return true, aerr
 }
 
 func MustAccountClient(cmd *cobra.Command, args []string) error {
@@ -164,7 +201,7 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		}
 
 		if b != nil {
-      ctx = context.WithValue(ctx, &configUsed, b.Config.Workspace.Config())
+			ctx = context.WithValue(ctx, &configUsed, b.Config.Workspace.Config())
 			cmd.SetContext(ctx)
 			client, err := b.InitializeWorkspaceClient()
 			if err != nil {
@@ -204,7 +241,7 @@ func AskForWorkspaceProfile(ctx context.Context) (string, error) {
 	}
 	switch len(profiles) {
 	case 0:
-		return "", fmt.Errorf("%s does not contain workspace profiles; please create one by running 'databricks configure'", path)
+		return "", ErrNoWorkspaceProfiles{path: path}
 	case 1:
 		return profiles[0].Name, nil
 	}
@@ -237,7 +274,7 @@ func AskForAccountProfile(ctx context.Context) (string, error) {
 	}
 	switch len(profiles) {
 	case 0:
-		return "", fmt.Errorf("%s does not contain account profiles; please create one by running 'databricks configure'", path)
+		return "", ErrNoAccountProfiles{path}
 	case 1:
 		return profiles[0].Name, nil
 	}

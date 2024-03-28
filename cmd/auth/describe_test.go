@@ -41,13 +41,13 @@ func TestGetWorkspaceAuthStatus(t *testing.T) {
 	t.Setenv("DATABRICKS_AUTH_TYPE", "azure-cli")
 	config.ConfigAttributes.Configure(cfg)
 
-	status, err := getWorkspaceAuthStatus(cmd, []string{}, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, error) {
+	status, err := getAuthStatus(cmd, []string{}, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
 		config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
 			"host":      "https://test.com",
 			"token":     "test-token",
 			"auth_type": "azure-cli",
 		})
-		return cfg, nil
+		return cfg, false, nil
 	})
 	require.NoError(t, err)
 	require.NotNil(t, status)
@@ -91,13 +91,13 @@ func TestGetWorkspaceAuthStatusError(t *testing.T) {
 	t.Setenv("DATABRICKS_AUTH_TYPE", "azure-cli")
 	config.ConfigAttributes.Configure(cfg)
 
-	status, err := getWorkspaceAuthStatus(cmd, []string{}, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, error) {
+	status, err := getAuthStatus(cmd, []string{}, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
 		config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
 			"host":      "https://test.com",
 			"token":     "test-token",
 			"auth_type": "azure-cli",
 		})
-		return cfg, fmt.Errorf("auth error")
+		return cfg, false, fmt.Errorf("auth error")
 	})
 	require.NoError(t, err)
 	require.NotNil(t, status)
@@ -138,13 +138,13 @@ func TestGetWorkspaceAuthStatusSensitive(t *testing.T) {
 	t.Setenv("DATABRICKS_AUTH_TYPE", "azure-cli")
 	config.ConfigAttributes.Configure(cfg)
 
-	status, err := getWorkspaceAuthStatus(cmd, []string{}, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, error) {
+	status, err := getAuthStatus(cmd, []string{}, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
 		config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
 			"host":      "https://test.com",
 			"token":     "test-token",
 			"auth_type": "azure-cli",
 		})
-		return cfg, fmt.Errorf("auth error")
+		return cfg, false, fmt.Errorf("auth error")
 	})
 	require.NoError(t, err)
 	require.NotNil(t, status)
@@ -181,7 +181,7 @@ func TestGetAccountAuthStatus(t *testing.T) {
 	t.Setenv("DATABRICKS_AUTH_TYPE", "azure-cli")
 	config.ConfigAttributes.Configure(cfg)
 
-	status, err := getAccountAuthStatus(cmd, []string{}, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, error) {
+	status, err := getAuthStatus(cmd, []string{}, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
 		config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
 			"account_id": "test-account-id",
 			"username":   "test-user",
@@ -189,7 +189,7 @@ func TestGetAccountAuthStatus(t *testing.T) {
 			"token":      "test-token",
 			"auth_type":  "azure-cli",
 		})
-		return cfg, nil
+		return cfg, true, nil
 	})
 	require.NoError(t, err)
 	require.NotNil(t, status)

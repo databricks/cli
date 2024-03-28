@@ -229,3 +229,81 @@ func TestMustAccountClientErrorsWithNoDatabricksCfg(t *testing.T) {
 	err := MustAccountClient(cmd, []string{})
 	require.ErrorContains(t, err, "no configuration file found at")
 }
+
+func TestMustAnyClientCanCreateWorkspaceClient(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	dir := t.TempDir()
+	configFile := filepath.Join(dir, ".databrickscfg")
+	err := os.WriteFile(
+		configFile,
+		[]byte(`
+			[workspace-1111]
+			host = https://adb-1111.11.azuredatabricks.net/
+			token = foobar
+			`),
+		0755)
+	require.NoError(t, err)
+
+	ctx, tt := cmdio.SetupTest(context.Background())
+	t.Cleanup(tt.Done)
+	cmd := New(ctx)
+
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	isAccount, err := MustAnyClient(cmd, []string{})
+	require.False(t, isAccount)
+	require.NoError(t, err)
+
+	w := WorkspaceClient(cmd.Context())
+	require.NotNil(t, w)
+}
+
+func TestMustAnyClientCanCreateAccountClient(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	dir := t.TempDir()
+	configFile := filepath.Join(dir, ".databrickscfg")
+	err := os.WriteFile(
+		configFile,
+		[]byte(`
+			[account-1111]
+			host = https://accounts.azuredatabricks.net/
+			account_id = 1111
+			token = foobar
+			`),
+		0755)
+	require.NoError(t, err)
+
+	ctx, tt := cmdio.SetupTest(context.Background())
+	t.Cleanup(tt.Done)
+	cmd := New(ctx)
+
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	isAccount, err := MustAnyClient(cmd, []string{})
+	require.NoError(t, err)
+	require.True(t, isAccount)
+
+	a := AccountClient(cmd.Context())
+	require.NotNil(t, a)
+}
+
+func TestMustAnyClientWithEmptyDatabricksCfg(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
+	dir := t.TempDir()
+	configFile := filepath.Join(dir, ".databrickscfg")
+	err := os.WriteFile(
+		configFile,
+		[]byte(""), // empty file
+		0755)
+	require.NoError(t, err)
+
+	ctx, tt := cmdio.SetupTest(context.Background())
+	t.Cleanup(tt.Done)
+	cmd := New(ctx)
+
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+
+	_, err = MustAnyClient(cmd, []string{})
+	require.ErrorContains(t, err, "does not contain any profiles; please create one by running 'databricks configure'")
+}

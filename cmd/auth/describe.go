@@ -12,10 +12,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var authTemplate = `{{"Workspace:" | bold}} {{.Details.Host}}
-{{if .Username }}{{"User:" | bold}} {{.Username}}{{end}}
+var authTemplate = `{{"Host:" | bold}} {{.Details.Host}}
+{{- if .Username}}
+{{"User:" | bold}} {{.Username}}
+{{- end}}
 {{"Authenticated with:" | bold}} {{.Details.AuthType}}
-{{if .AccountID }}{{"Account ID:" | bold}} {{.AccountID}}{{end}}
+{{- if .AccountID}}
+{{"Account ID:" | bold}} {{.AccountID}}
+{{- end}}
 -----
 ` + configurationTemplate
 
@@ -23,11 +27,11 @@ var errorTemplate = `Unable to authenticate: {{.Error}}
 -----
 ` + configurationTemplate
 
-const configurationTemplate = `Configuration:
+const configurationTemplate = `Current configuration:
   {{- $details := .Details}}
   {{- range $k, $v := $details.Configuration }}
   {{if $v.AuthTypeMismatch}}~{{else}}✓{{end}} {{$k | bold}}: {{$v.Value}}
-  {{- if and (not (eq $v.Source.String "dynamic configuration")) $v.Source }}
+  {{- if not (eq $v.Source.String "dynamic configuration")}}
   {{- " (from" | italic}} {{$v.Source.String | italic}}
   {{- if $v.AuthTypeMismatch}}, {{ "not used for auth type " | red | italic }}{{$details.AuthType | red | italic}}{{end}})
   {{- end}}
@@ -41,25 +45,16 @@ func newDescribeCommand() *cobra.Command {
 	}
 
 	var showSensitive bool
-	var isAccount bool
 	cmd.Flags().BoolVar(&showSensitive, "sensitive", false, "Include sensitive fields like passwords and tokens in the output")
-	cmd.Flags().BoolVar(&isAccount, "account", false, "Describe the account client instead of the workspace client")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		var status *authStatus
 		var err error
-		if isAccount {
-			status, err = getAccountAuthStatus(cmd, args, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, error) {
-				err := root.MustAccountClient(cmd, args)
-				return root.ConfigUsed(cmd.Context()), err
-			})
-		} else {
-			status, err = getWorkspaceAuthStatus(cmd, args, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, error) {
-				err := root.MustWorkspaceClient(cmd, args)
-				return root.ConfigUsed(cmd.Context()), err
-			})
-		}
+		status, err = getAuthStatus(cmd, args, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
+			isAccount, err := root.MustAnyClient(cmd, args)
+			return root.ConfigUsed(cmd.Context()), isAccount, err
+		})
 
 		if err != nil {
 			return err
@@ -75,10 +70,10 @@ func newDescribeCommand() *cobra.Command {
 	return cmd
 }
 
-type tryAuth func(cmd *cobra.Command, args []string) (*config.Config, error)
+type tryAuth func(cmd *cobra.Command, args []string) (*config.Config, bool, error)
 
-func getWorkspaceAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn tryAuth) (*authStatus, error) {
-	cfg, err := fn(cmd, args)
+func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn tryAuth) (*authStatus, error) {
+	cfg, isAccount, err := fn(cmd, args)
 	ctx := cmd.Context()
 	if err != nil {
 		return &authStatus{
@@ -86,6 +81,18 @@ func getWorkspaceAuthStatus(cmd *cobra.Command, args []string, showSensitive boo
 			Error:   err,
 			Details: getAuthDetails(cmd, cfg, showSensitive),
 		}, nil
+	}
+
+	if isAccount {
+		a := root.AccountClient(ctx)
+		status := authStatus{
+			Status:    "success",
+			Details:   getAuthDetails(cmd, a.Config, showSensitive),
+			AccountID: a.Config.AccountID,
+			Username:  a.Config.Username,
+		}
+
+		return &status, nil
 	}
 
 	w := root.WorkspaceClient(ctx)
@@ -98,28 +105,6 @@ func getWorkspaceAuthStatus(cmd *cobra.Command, args []string, showSensitive boo
 		Status:   "success",
 		Details:  getAuthDetails(cmd, w.Config, showSensitive),
 		Username: me.UserName,
-	}
-
-	return &status, nil
-}
-
-func getAccountAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn tryAuth) (*authStatus, error) {
-	cfg, err := fn(cmd, args)
-	ctx := cmd.Context()
-	if err != nil {
-		return &authStatus{
-			Status:  "error",
-			Error:   err,
-			Details: getAuthDetails(cmd, cfg, showSensitive),
-		}, nil
-	}
-
-	a := root.AccountClient(ctx)
-	status := authStatus{
-		Status:    "success",
-		Details:   getAuthDetails(cmd, a.Config, showSensitive),
-		AccountID: a.Config.AccountID,
-		Username:  a.Config.Username,
 	}
 
 	return &status, nil
@@ -174,6 +159,11 @@ func getAuthDetails(cmd *cobra.Command, cfg *config.Config, showSensitive bool) 
 			profile = "default"
 		}
 		details.Configuration["profile"] = &config.AttrConfig{Value: profile, Source: config.Source{Type: config.SourceDynamicConfig}}
+	}
+
+	// Unset source for databricks_cli_path because it can't be overridden anyway
+	if v, ok := details.Configuration["databricks_cli_path"]; ok {
+		v.Source = config.Source{Type: config.SourceDynamicConfig}
 	}
 
 	return details
