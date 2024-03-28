@@ -4,12 +4,16 @@ import (
 	"context"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/internal/tf/schema"
+	"github.com/databricks/cli/libs/env"
+	"github.com/hashicorp/hc-install/product"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/maps"
@@ -268,4 +272,123 @@ func TestSetUserProfileFromInheritEnvVars(t *testing.T) {
 
 	assert.Contains(t, env, "USERPROFILE")
 	assert.Equal(t, env["USERPROFILE"], "c:\\foo\\c")
+}
+
+func TestInheritEnvVarsWithAbsentTFConfigFile(t *testing.T) {
+	ctx := context.Background()
+	envMap := map[string]string{}
+	ctx = env.Set(ctx, "DATABRICKS_TF_PROVIDER_VERSION", schema.ProviderVersion)
+	ctx = env.Set(ctx, "DATABRICKS_TF_CLI_CONFIG_FILE", "/tmp/config.tfrc")
+	err := inheritEnvVars(ctx, envMap)
+	require.NoError(t, err)
+	require.NotContains(t, envMap, "TF_CLI_CONFIG_FILE")
+}
+
+func TestInheritEnvVarsWithWrongTFProviderVersion(t *testing.T) {
+	ctx := context.Background()
+	envMap := map[string]string{}
+	configFile := createTempFile(t, t.TempDir(), "config.tfrc", false)
+	ctx = env.Set(ctx, "DATABRICKS_TF_PROVIDER_VERSION", "wrong")
+	ctx = env.Set(ctx, "DATABRICKS_TF_CLI_CONFIG_FILE", configFile)
+	err := inheritEnvVars(ctx, envMap)
+	require.NoError(t, err)
+	require.NotContains(t, envMap, "TF_CLI_CONFIG_FILE")
+}
+
+func TestInheritEnvVarsWithCorrectTFCLIConfigFile(t *testing.T) {
+	ctx := context.Background()
+	envMap := map[string]string{}
+	configFile := createTempFile(t, t.TempDir(), "config.tfrc", false)
+	ctx = env.Set(ctx, "DATABRICKS_TF_PROVIDER_VERSION", schema.ProviderVersion)
+	ctx = env.Set(ctx, "DATABRICKS_TF_CLI_CONFIG_FILE", configFile)
+	err := inheritEnvVars(ctx, envMap)
+	require.NoError(t, err)
+	require.Contains(t, envMap, "TF_CLI_CONFIG_FILE")
+	require.Equal(t, configFile, envMap["TF_CLI_CONFIG_FILE"])
+}
+
+func TestFindExecPathFromEnvironmentWithWrongVersion(t *testing.T) {
+	ctx := context.Background()
+	m := &initialize{}
+	b := &bundle.Bundle{
+		RootPath: t.TempDir(),
+		Config: config.Root{
+			Bundle: config.Bundle{
+				Target:    "whatever",
+				Terraform: &config.Terraform{},
+			},
+		},
+	}
+	// Create a pre-existing terraform bin to avoid downloading it
+	cacheDir, _ := b.CacheDir(ctx, "bin")
+	existingExecPath := createTempFile(t, cacheDir, product.Terraform.BinaryName(), true)
+	// Create a new terraform binary and expose it through env vars
+	tmpBinPath := createTempFile(t, t.TempDir(), "terraform-bin", true)
+	ctx = env.Set(ctx, "DATABRICKS_TF_VERSION", "1.2.3")
+	ctx = env.Set(ctx, "DATABRICKS_TF_EXEC_PATH", tmpBinPath)
+	_, err := m.findExecPath(ctx, b, b.Config.Bundle.Terraform)
+	require.NoError(t, err)
+	require.Equal(t, existingExecPath, b.Config.Bundle.Terraform.ExecPath)
+}
+
+func TestFindExecPathFromEnvironmentWithCorrectVersionAndNoBinary(t *testing.T) {
+	ctx := context.Background()
+	m := &initialize{}
+	b := &bundle.Bundle{
+		RootPath: t.TempDir(),
+		Config: config.Root{
+			Bundle: config.Bundle{
+				Target:    "whatever",
+				Terraform: &config.Terraform{},
+			},
+		},
+	}
+	// Create a pre-existing terraform bin to avoid downloading it
+	cacheDir, _ := b.CacheDir(ctx, "bin")
+	existingExecPath := createTempFile(t, cacheDir, product.Terraform.BinaryName(), true)
+
+	ctx = env.Set(ctx, "DATABRICKS_TF_VERSION", TerraformVersion.String())
+	ctx = env.Set(ctx, "DATABRICKS_TF_EXEC_PATH", "/tmp/terraform")
+	_, err := m.findExecPath(ctx, b, b.Config.Bundle.Terraform)
+	require.NoError(t, err)
+	require.Equal(t, existingExecPath, b.Config.Bundle.Terraform.ExecPath)
+}
+
+func TestFindExecPathFromEnvironmentWithCorrectVersionAndBinary(t *testing.T) {
+	ctx := context.Background()
+	m := &initialize{}
+	b := &bundle.Bundle{
+		RootPath: t.TempDir(),
+		Config: config.Root{
+			Bundle: config.Bundle{
+				Target:    "whatever",
+				Terraform: &config.Terraform{},
+			},
+		},
+	}
+	// Create a pre-existing terraform bin to avoid downloading it
+	cacheDir, _ := b.CacheDir(ctx, "bin")
+	createTempFile(t, cacheDir, product.Terraform.BinaryName(), true)
+	// Create a new terraform binary and expose it through env vars
+	tmpBinPath := createTempFile(t, t.TempDir(), "terraform-bin", true)
+	ctx = env.Set(ctx, "DATABRICKS_TF_VERSION", TerraformVersion.String())
+	ctx = env.Set(ctx, "DATABRICKS_TF_EXEC_PATH", tmpBinPath)
+	_, err := m.findExecPath(ctx, b, b.Config.Bundle.Terraform)
+	require.NoError(t, err)
+	require.Equal(t, tmpBinPath, b.Config.Bundle.Terraform.ExecPath)
+}
+
+func createTempFile(t *testing.T, dest string, name string, executable bool) string {
+	binPath := filepath.Join(dest, name)
+	f, err := os.Create(binPath)
+	require.NoError(t, err)
+	defer func() {
+		err = f.Close()
+		require.NoError(t, err)
+	}()
+	if executable {
+		err = f.Chmod(0777)
+		require.NoError(t, err)
+	}
+	return binPath
 }
