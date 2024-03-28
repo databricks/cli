@@ -12,6 +12,9 @@ func DefaultMutators() []bundle.Mutator {
 		loader.EntryPoint(),
 		loader.ProcessRootIncludes(),
 
+		// Verify that the CLI version is within the specified range.
+		VerifyCliVersion(),
+
 		// Execute preinit script after loading all configuration files.
 		scripts.Execute(config.ScriptPreInit),
 		EnvironmentsToTargets(),
