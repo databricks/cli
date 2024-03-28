@@ -60,43 +60,43 @@ func TestVerifyCliVersion(t *testing.T) {
 		},
 		{
 			currentVersion: "0.99.0",
-			constraint:     ">= 0.100.0 <= 0.100.2",
-			expectedError:  "Databricks CLI version constraint not satisfied. Required: >= 0.100.0 <= 0.100.2, current: 0.99.0",
+			constraint:     ">= 0.100.0, <= 0.100.2",
+			expectedError:  "Databricks CLI version constraint not satisfied. Required: >= 0.100.0, <= 0.100.2, current: 0.99.0",
 		},
 		{
 			currentVersion: "0.100.0",
-			constraint:     ">= 0.100.0 <= 0.100.2",
+			constraint:     ">= 0.100.0, <= 0.100.2",
 		},
 		{
 			currentVersion: "0.100.1",
-			constraint:     ">= 0.100.0 <= 0.100.2",
+			constraint:     ">= 0.100.0, <= 0.100.2",
 		},
 		{
 			currentVersion: "0.100.2",
-			constraint:     ">= 0.100.0 <= 0.100.2",
+			constraint:     ">= 0.100.0, <= 0.100.2",
 		},
 		{
 			currentVersion: "0.101.0",
-			constraint:     ">= 0.100.0 <= 0.100.2",
-			expectedError:  "Databricks CLI version constraint not satisfied. Required: >= 0.100.0 <= 0.100.2, current: 0.101.0",
+			constraint:     ">= 0.100.0, <= 0.100.2",
+			expectedError:  "Databricks CLI version constraint not satisfied. Required: >= 0.100.0, <= 0.100.2, current: 0.101.0",
 		},
 		{
 			currentVersion: "0.100.0-beta",
-			constraint:     ">= 0.100.0 <= 0.100.2",
-			expectedError:  "Databricks CLI version constraint not satisfied. Required: >= 0.100.0 <= 0.100.2, current: 0.100.0-beta",
+			constraint:     ">= 0.100.0, <= 0.100.2",
+			expectedError:  "Databricks CLI version constraint not satisfied. Required: >= 0.100.0, <= 0.100.2, current: 0.100.0-beta",
 		},
 		{
 			currentVersion: "0.100.0-beta",
-			constraint:     ">= 0.100.0-0 <= 0.100.2-0",
+			constraint:     ">= 0.100.0-0, <= 0.100.2-0",
 		},
 		{
 			currentVersion: "0.100.1-beta",
-			constraint:     ">= 0.100.0-0 <= 0.100.2-0",
+			constraint:     ">= 0.100.0-0, <= 0.100.2-0",
 		},
 		{
 			currentVersion: "0.100.3-beta",
-			constraint:     ">= 0.100.0 <= 0.100.2",
-			expectedError:  "Databricks CLI version constraint not satisfied. Required: >= 0.100.0 <= 0.100.2, current: 0.100.3-beta",
+			constraint:     ">= 0.100.0, <= 0.100.2",
+			expectedError:  "Databricks CLI version constraint not satisfied. Required: >= 0.100.0, <= 0.100.2, current: 0.100.3-beta",
 		},
 		{
 			currentVersion: "0.100.123",
