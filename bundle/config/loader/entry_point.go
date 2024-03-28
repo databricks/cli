@@ -24,11 +24,13 @@ func (m *entryPoint) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	this, err := config.Load(path)
-	if err != nil {
-		return diag.FromErr(err)
+	this, diags := config.Load(path)
+	if diags.HasError() {
+		return diags
 	}
-	// TODO: Return actual warnings.
 	err = b.Config.Merge(this)
-	return diag.FromErr(err)
+	if err != nil {
+		diags = diags.Extend(diag.FromErr(err))
+	}
+	return diags
 }

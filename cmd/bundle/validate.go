@@ -32,7 +32,7 @@ func newValidateCommand() *cobra.Command {
 
 		// Until we change up the output of this command to be a text representation,
 		// we'll just output all diagnostics as debug logs.
-		for _, diag := range b.Config.Diagnostics() {
+		for _, diag := range diags {
 			log.Debugf(cmd.Context(), "[%s]: %s", diag.Location, diag.Summary)
 		}
 
