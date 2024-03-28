@@ -103,3 +103,13 @@ func TestStoreOnDev(t *testing.T) {
 	// macOS: read-only file system
 	assert.Error(t, err)
 }
+
+func TestOverrideTokenCacheLocationUsingEnvVar(t *testing.T) {
+	t.Setenv("DATABRICKS_TOKEN_CACHE_DIR", os.TempDir())
+	c := &TokenCache{}
+	err := c.Store("x", &oauth2.Token{
+		AccessToken: "abc",
+	})
+	require.NoError(t, err)
+	assert.Contains(t, c.fileLocation, os.TempDir())
+}
