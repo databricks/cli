@@ -13,8 +13,7 @@ import (
 
 type testCase struct {
 	currentVersion string
-	minVersion     string
-	maxVersion     string
+	constraint     string
 	expectedError  string
 }
 
@@ -25,73 +24,87 @@ func TestVerifyCliVersion(t *testing.T) {
 		},
 		{
 			currentVersion: "0.0.1",
-			minVersion:     "0.100.0",
-			expectedError:  "minimum Databricks CLI version required: v0.100.0, current version: v0.0.1",
+			constraint:     "0.100.0",
+			expectedError:  "Databricks CLI version constraint not satisfied. Required: 0.100.0, current: 0.0.1",
+		},
+		{
+			currentVersion: "0.0.1",
+			constraint:     ">= 0.100.0",
+			expectedError:  "Databricks CLI version constraint not satisfied. Required: >= 0.100.0, current: 0.0.1",
 		},
 		{
 			currentVersion: "0.100.0",
-			minVersion:     "0.100.0",
+			constraint:     "0.100.0",
 		},
 		{
 			currentVersion: "0.100.1",
-			minVersion:     "0.100.0",
+			constraint:     "0.100.0",
+			expectedError:  "Databricks CLI version constraint not satisfied. Required: 0.100.0, current: 0.100.1",
+		},
+		{
+			currentVersion: "0.100.1",
+			constraint:     ">= 0.100.0",
 		},
 		{
 			currentVersion: "0.100.0",
-			maxVersion:     "1.0.0",
+			constraint:     "<= 1.0.0",
 		},
 		{
 			currentVersion: "1.0.0",
-			maxVersion:     "1.0.0",
+			constraint:     "<= 1.0.0",
 		},
 		{
 			currentVersion: "1.0.0",
-			maxVersion:     "0.100.0",
-			expectedError:  "maximum Databricks CLI version required: v0.100.0, current version: v1.0.0",
+			constraint:     "<= 0.100.0",
+			expectedError:  "Databricks CLI version constraint not satisfied. Required: <= 0.100.0, current: 1.0.0",
 		},
 		{
 			currentVersion: "0.99.0",
-			minVersion:     "0.100.0",
-			maxVersion:     "0.100.2",
-			expectedError:  "minimum Databricks CLI version required: v0.100.0, current version: v0.99.0",
+			constraint:     ">= 0.100.0 <= 0.100.2",
+			expectedError:  "Databricks CLI version constraint not satisfied. Required: >= 0.100.0 <= 0.100.2, current: 0.99.0",
 		},
 		{
 			currentVersion: "0.100.0",
-			minVersion:     "0.100.0",
-			maxVersion:     "0.100.2",
+			constraint:     ">= 0.100.0 <= 0.100.2",
 		},
 		{
 			currentVersion: "0.100.1",
-			minVersion:     "0.100.0",
-			maxVersion:     "0.100.2",
+			constraint:     ">= 0.100.0 <= 0.100.2",
 		},
 		{
 			currentVersion: "0.100.2",
-			minVersion:     "0.100.0",
-			maxVersion:     "0.100.2",
+			constraint:     ">= 0.100.0 <= 0.100.2",
 		},
 		{
 			currentVersion: "0.101.0",
-			minVersion:     "0.100.0",
-			maxVersion:     "0.100.2",
-			expectedError:  "maximum Databricks CLI version required: v0.100.2, current version: v0.101.0",
+			constraint:     ">= 0.100.0 <= 0.100.2",
+			expectedError:  "Databricks CLI version constraint not satisfied. Required: >= 0.100.0 <= 0.100.2, current: 0.101.0",
 		},
 		{
 			currentVersion: "0.100.0-beta",
-			minVersion:     "0.100.0",
-			maxVersion:     "0.100.2",
-			expectedError:  "minimum Databricks CLI version required: v0.100.0, current version: v0.100.0-beta",
+			constraint:     ">= 0.100.0 <= 0.100.2",
+			expectedError:  "Databricks CLI version constraint not satisfied. Required: >= 0.100.0 <= 0.100.2, current: 0.100.0-beta",
+		},
+		{
+			currentVersion: "0.100.0-beta",
+			constraint:     ">= 0.100.0-0 <= 0.100.2-0",
 		},
 		{
 			currentVersion: "0.100.1-beta",
-			minVersion:     "0.100.0",
-			maxVersion:     "0.100.2",
+			constraint:     ">= 0.100.0-0 <= 0.100.2-0",
 		},
 		{
 			currentVersion: "0.100.3-beta",
-			minVersion:     "0.100.0",
-			maxVersion:     "0.100.2",
-			expectedError:  "maximum Databricks CLI version required: v0.100.2, current version: v0.100.3-beta",
+			constraint:     ">= 0.100.0 <= 0.100.2",
+			expectedError:  "Databricks CLI version constraint not satisfied. Required: >= 0.100.0 <= 0.100.2, current: 0.100.3-beta",
+		},
+		{
+			currentVersion: "0.100.123",
+			constraint:     "0.100.*",
+		},
+		{
+			currentVersion: "0.100.123",
+			constraint:     "^0.100",
 		},
 	}
 
@@ -105,8 +118,7 @@ func TestVerifyCliVersion(t *testing.T) {
 			b := &bundle.Bundle{
 				Config: config.Root{
 					Bundle: config.Bundle{
-						MinDatabricksCliVersion: tc.minVersion,
-						MaxDatabricksCliVersion: tc.maxVersion,
+						DatabricksCliVersion: tc.constraint,
 					},
 				},
 			}
