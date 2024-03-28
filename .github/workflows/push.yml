@@ -113,6 +113,5 @@ jobs:
       # specification. See for details: https://ajv.js.org/options.html#strict-mode-options
       - name: Validate bundle schema
         run: |
-          echo -e "bundle:\n  name: abcd" > config.yaml
           go run main.go bundle schema > schema.json
-          ajv -s schema.json -d config.yaml
+          ajv -s schema.json -d ./bundle/tests/basic/databricks.yml
