@@ -25,7 +25,7 @@ func newValidateCommand() *cobra.Command {
 			return diags.Error()
 		}
 
-		diags = diags.Extend(bundle.Apply(ctx, b, phases.Initialize()))
+		diags = bundle.Apply(ctx, b, phases.Initialize())
 		if err := diags.Error(); err != nil {
 			return err
 		}
