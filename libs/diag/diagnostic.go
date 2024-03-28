@@ -20,6 +20,8 @@ type Diagnostic struct {
 	// Location is a source code location associated with the diagnostic message.
 	// It may be zero if there is no associated location.
 	Location dyn.Location
+
+	Path dyn.Path
 }
 
 // Errorf creates a new error diagnostic.
