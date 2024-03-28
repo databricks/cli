@@ -56,3 +56,35 @@ changelog:
     exclude:
     - '^docs:'
     - '^test:'
+
+dockers:
+  -
+    id: amd64
+    goos: linux
+    goarch: amd64
+    image_templates:
+      - ghcr.io/{{ envOrDefault "DOCKER_IMAGE_NAME" "databricks/cli" }}:{{ replace .Version "+" "-" }}-amd64
+      - ghcr.io/{{ envOrDefault "DOCKER_IMAGE_NAME" "databricks/cli" }}:latest-amd64
+    build_flag_templates:
+        - "--build-arg=BASE_IMAGE_ARCH=base"
+        - "--platform=linux/amd64"
+  -
+    id: arm64
+    goos: linux
+    goarch: arm64
+    image_templates:
+      - ghcr.io/{{ envOrDefault "DOCKER_IMAGE_NAME" "databricks/cli" }}:{{ replace .Version "+" "-" }}-arm64
+      - ghcr.io/{{ envOrDefault "DOCKER_IMAGE_NAME" "databricks/cli" }}:latest-arm64
+    build_flag_templates:
+        - "--build-arg=BASE_IMAGE_ARCH=base:latest-arm64"
+        - "--platform=linux/arm64"
+
+docker_manifests:
+- name_template: ghcr.io/{{ envOrDefault "DOCKER_IMAGE_NAME" "databricks/cli" }}:{{ replace .Version "+" "-" }}
+  image_templates:
+  - ghcr.io/{{ envOrDefault "DOCKER_IMAGE_NAME" "databricks/cli" }}:{{ replace .Version "+" "-" }}-amd64
+  - ghcr.io/{{ envOrDefault "DOCKER_IMAGE_NAME" "databricks/cli" }}:{{ replace .Version "+" "-" }}-arm64
+- name_template: ghcr.io/{{ envOrDefault "DOCKER_IMAGE_NAME" "databricks/cli" }}:latest
+  image_templates:
+  - ghcr.io/{{ envOrDefault "DOCKER_IMAGE_NAME" "databricks/cli" }}:latest-amd64
+  - ghcr.io/{{ envOrDefault "DOCKER_IMAGE_NAME" "databricks/cli" }}:latest-arm64
