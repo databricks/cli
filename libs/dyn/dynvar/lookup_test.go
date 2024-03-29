@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
+	assert "github.com/databricks/cli/libs/dyn/dynassert"
 	"github.com/databricks/cli/libs/dyn/dynvar"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestDefaultLookup(t *testing.T) {

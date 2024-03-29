@@ -55,8 +55,8 @@ func TestInterpolate(t *testing.T) {
 		},
 	}
 
-	err := bundle.Apply(context.Background(), b, Interpolate())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, Interpolate())
+	require.NoError(t, diags.Error())
 
 	j := b.Config.Resources.Jobs["my_job"]
 	assert.Equal(t, "${databricks_pipeline.other_pipeline.id}", j.Tags["other_pipeline"])
@@ -87,6 +87,6 @@ func TestInterpolateUnknownResourceType(t *testing.T) {
 		},
 	}
 
-	err := bundle.Apply(context.Background(), b, Interpolate())
-	assert.Contains(t, err.Error(), `reference does not exist: ${resources.unknown.other_unknown.id}`)
+	diags := bundle.Apply(context.Background(), b, Interpolate())
+	assert.ErrorContains(t, diags.Error(), `reference does not exist: ${resources.unknown.other_unknown.id}`)
 }

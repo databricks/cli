@@ -22,8 +22,8 @@ func TestStateUpdate(t *testing.T) {
 	s := &stateUpdate{}
 
 	b := &bundle.Bundle{
+		RootPath: t.TempDir(),
 		Config: config.Root{
-			Path: t.TempDir(),
 			Bundle: config.Bundle{
 				Target: "default",
 			},
@@ -39,8 +39,8 @@ func TestStateUpdate(t *testing.T) {
 		},
 	}
 
-	testutil.Touch(t, b.Config.Path, "test1.py")
-	testutil.Touch(t, b.Config.Path, "test2.py")
+	testutil.Touch(t, b.RootPath, "test1.py")
+	testutil.Touch(t, b.RootPath, "test2.py")
 
 	m := mocks.NewMockWorkspaceClient(t)
 	m.WorkspaceClient.Config = &databrickscfg.Config{
@@ -55,8 +55,8 @@ func TestStateUpdate(t *testing.T) {
 
 	ctx := context.Background()
 
-	err := bundle.Apply(ctx, b, s)
-	require.NoError(t, err)
+	diags := bundle.Apply(ctx, b, s)
+	require.NoError(t, diags.Error())
 
 	// Check that the state file was updated.
 	state, err := load(ctx, b)
@@ -66,8 +66,8 @@ func TestStateUpdate(t *testing.T) {
 	require.Len(t, state.Files, 3)
 	require.Equal(t, build.GetInfo().Version, state.CliVersion)
 
-	err = bundle.Apply(ctx, b, s)
-	require.NoError(t, err)
+	diags = bundle.Apply(ctx, b, s)
+	require.NoError(t, diags.Error())
 
 	// Check that the state file was updated again.
 	state, err = load(ctx, b)
@@ -82,8 +82,8 @@ func TestStateUpdateWithExistingState(t *testing.T) {
 	s := &stateUpdate{}
 
 	b := &bundle.Bundle{
+		RootPath: t.TempDir(),
 		Config: config.Root{
-			Path: t.TempDir(),
 			Bundle: config.Bundle{
 				Target: "default",
 			},
@@ -99,8 +99,8 @@ func TestStateUpdateWithExistingState(t *testing.T) {
 		},
 	}
 
-	testutil.Touch(t, b.Config.Path, "test1.py")
-	testutil.Touch(t, b.Config.Path, "test2.py")
+	testutil.Touch(t, b.RootPath, "test1.py")
+	testutil.Touch(t, b.RootPath, "test2.py")
 
 	m := mocks.NewMockWorkspaceClient(t)
 	m.WorkspaceClient.Config = &databrickscfg.Config{
@@ -136,8 +136,8 @@ func TestStateUpdateWithExistingState(t *testing.T) {
 	err = os.WriteFile(statePath, data, 0644)
 	require.NoError(t, err)
 
-	err = bundle.Apply(ctx, b, s)
-	require.NoError(t, err)
+	diags := bundle.Apply(ctx, b, s)
+	require.NoError(t, diags.Error())
 
 	// Check that the state file was updated.
 	state, err = load(ctx, b)

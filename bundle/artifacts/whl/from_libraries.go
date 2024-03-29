@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/libraries"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -20,7 +21,7 @@ func (m *fromLibraries) Name() string {
 	return "artifacts.whl.DefineArtifactsFromLibraries"
 }
 
-func (*fromLibraries) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (*fromLibraries) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if len(b.Config.Artifacts) != 0 {
 		log.Debugf(ctx, "Skipping defining artifacts from libraries because artifacts section is explicitly defined")
 		return nil
@@ -29,7 +30,7 @@ func (*fromLibraries) Apply(ctx context.Context, b *bundle.Bundle) error {
 	tasks := libraries.FindAllWheelTasksWithLocalLibraries(b)
 	for _, task := range tasks {
 		for _, lib := range task.Libraries {
-			matches, err := filepath.Glob(filepath.Join(b.Config.Path, lib.Whl))
+			matches, err := filepath.Glob(filepath.Join(b.RootPath, lib.Whl))
 			// File referenced from libraries section does not exists, skipping
 			if err != nil {
 				continue

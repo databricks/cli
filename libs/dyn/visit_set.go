@@ -2,7 +2,6 @@ package dyn
 
 import (
 	"fmt"
-	"maps"
 	"slices"
 )
 
@@ -41,8 +40,8 @@ func SetByPath(v Value, p Path, nv Value) (Value, error) {
 				}
 
 				// Return an updated map value.
-				m = maps.Clone(m)
-				m[component.key] = nv
+				m = m.Clone()
+				m.Set(V(component.key), nv)
 				return Value{
 					v: m,
 					k: KindMap,

@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/libraries"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -25,7 +26,7 @@ func (m *detectPkg) Name() string {
 	return "artifacts.whl.AutoDetect"
 }
 
-func (m *detectPkg) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *detectPkg) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	wheelTasks := libraries.FindAllWheelTasksWithLocalLibraries(b)
 	if len(wheelTasks) == 0 {
 		log.Infof(ctx, "No local wheel tasks in databricks.yml config, skipping auto detect")
@@ -34,23 +35,23 @@ func (m *detectPkg) Apply(ctx context.Context, b *bundle.Bundle) error {
 	log.Infof(ctx, "Detecting Python wheel project...")
 
 	// checking if there is setup.py in the bundle root
-	setupPy := filepath.Join(b.Config.Path, "setup.py")
+	setupPy := filepath.Join(b.RootPath, "setup.py")
 	_, err := os.Stat(setupPy)
 	if err != nil {
 		log.Infof(ctx, "No Python wheel project found at bundle root folder")
 		return nil
 	}
 
-	log.Infof(ctx, fmt.Sprintf("Found Python wheel project at %s", b.Config.Path))
+	log.Infof(ctx, fmt.Sprintf("Found Python wheel project at %s", b.RootPath))
 	module := extractModuleName(setupPy)
 
 	if b.Config.Artifacts == nil {
 		b.Config.Artifacts = make(map[string]*config.Artifact)
 	}
 
-	pkgPath, err := filepath.Abs(b.Config.Path)
+	pkgPath, err := filepath.Abs(b.RootPath)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	b.Config.Artifacts[module] = &config.Artifact{
 		Path: pkgPath,

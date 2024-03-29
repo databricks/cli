@@ -32,6 +32,19 @@ func Errorf(format string, args ...any) Diagnostics {
 	}
 }
 
+// FromErr returns a new error diagnostic from the specified error, if any.
+func FromErr(err error) Diagnostics {
+	if err == nil {
+		return nil
+	}
+	return []Diagnostic{
+		{
+			Severity: Error,
+			Summary:  err.Error(),
+		},
+	}
+}
+
 // Warningf creates a new warning diagnostic.
 func Warningf(format string, args ...any) Diagnostics {
 	return []Diagnostic{
@@ -73,4 +86,14 @@ func (ds Diagnostics) HasError() bool {
 		}
 	}
 	return false
+}
+
+// Return first error in the set of diagnostics.
+func (ds Diagnostics) Error() error {
+	for _, d := range ds {
+		if d.Severity == Error {
+			return fmt.Errorf(d.Summary)
+		}
+	}
+	return nil
 }
