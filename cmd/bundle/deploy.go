@@ -7,15 +7,15 @@ import (
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/spf13/cobra"
 )
 
 func newDeployCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "deploy",
-		Short:   "Deploy bundle",
-		Args:    root.NoArgs,
-		PreRunE: utils.ConfigureBundleWithVariables,
+		Use:   "deploy",
+		Short: "Deploy bundle",
+		Args:  root.NoArgs,
 	}
 
 	var force bool
@@ -29,9 +29,12 @@ func newDeployCommand() *cobra.Command {
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		b := bundle.Get(ctx)
+		b, diags := utils.ConfigureBundleWithVariables(cmd)
+		if err := diags.Error(); err != nil {
+			return diags.Error()
+		}
 
-		bundle.ApplyFunc(ctx, b, func(context.Context, *bundle.Bundle) error {
+		bundle.ApplyFunc(ctx, b, func(context.Context, *bundle.Bundle) diag.Diagnostics {
 			b.Config.Bundle.Force = force
 			b.Config.Bundle.Deployment.Lock.Force = forceLock
 			if cmd.Flag("compute-id").Changed {
@@ -45,11 +48,15 @@ func newDeployCommand() *cobra.Command {
 			return nil
 		})
 
-		return bundle.Apply(ctx, b, bundle.Seq(
+		diags = bundle.Apply(ctx, b, bundle.Seq(
 			phases.Initialize(),
 			phases.Build(),
 			phases.Deploy(),
 		))
+		if err := diags.Error(); err != nil {
+			return err
+		}
+		return nil
 	}
 
 	return cmd

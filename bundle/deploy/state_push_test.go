@@ -45,8 +45,8 @@ func TestStatePush(t *testing.T) {
 	}}
 
 	b := &bundle.Bundle{
+		RootPath: t.TempDir(),
 		Config: config.Root{
-			Path: t.TempDir(),
 			Bundle: config.Bundle{
 				Target: "default",
 			},
@@ -77,6 +77,6 @@ func TestStatePush(t *testing.T) {
 	err = os.WriteFile(statePath, data, 0644)
 	require.NoError(t, err)
 
-	err = bundle.Apply(ctx, b, s)
-	require.NoError(t, err)
+	diags := bundle.Apply(ctx, b, s)
+	require.NoError(t, diags.Error())
 }

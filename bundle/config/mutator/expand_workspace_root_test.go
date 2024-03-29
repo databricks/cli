@@ -25,8 +25,8 @@ func TestExpandWorkspaceRoot(t *testing.T) {
 			},
 		},
 	}
-	err := bundle.Apply(context.Background(), b, mutator.ExpandWorkspaceRoot())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, mutator.ExpandWorkspaceRoot())
+	require.NoError(t, diags.Error())
 	assert.Equal(t, "/Users/jane@doe.com/foo", b.Config.Workspace.RootPath)
 }
 
@@ -43,8 +43,8 @@ func TestExpandWorkspaceRootDoesNothing(t *testing.T) {
 			},
 		},
 	}
-	err := bundle.Apply(context.Background(), b, mutator.ExpandWorkspaceRoot())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, mutator.ExpandWorkspaceRoot())
+	require.NoError(t, diags.Error())
 	assert.Equal(t, "/Users/charly@doe.com/foo", b.Config.Workspace.RootPath)
 }
 
@@ -60,8 +60,8 @@ func TestExpandWorkspaceRootWithoutRoot(t *testing.T) {
 			},
 		},
 	}
-	err := bundle.Apply(context.Background(), b, mutator.ExpandWorkspaceRoot())
-	require.Error(t, err)
+	diags := bundle.Apply(context.Background(), b, mutator.ExpandWorkspaceRoot())
+	require.True(t, diags.HasError())
 }
 
 func TestExpandWorkspaceRootWithoutCurrentUser(t *testing.T) {
@@ -72,6 +72,6 @@ func TestExpandWorkspaceRootWithoutCurrentUser(t *testing.T) {
 			},
 		},
 	}
-	err := bundle.Apply(context.Background(), b, mutator.ExpandWorkspaceRoot())
-	require.Error(t, err)
+	diags := bundle.Apply(context.Background(), b, mutator.ExpandWorkspaceRoot())
+	require.True(t, diags.HasError())
 }

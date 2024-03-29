@@ -42,5 +42,5 @@ type Bundle struct {
 	ComputeID string `json:"compute_id,omitempty"`
 
 	// Deployment section specifies deployment related configuration for bundle
-	Deployment Deployment `json:"deployment"`
+	Deployment Deployment `json:"deployment,omitempty"`
 }

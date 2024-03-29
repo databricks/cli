@@ -6,6 +6,7 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/hashicorp/terraform-exec/tfexec"
 	tfjson "github.com/hashicorp/terraform-json"
 )
@@ -22,31 +23,31 @@ func (l *load) Name() string {
 	return "terraform.Load"
 }
 
-func (l *load) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	tf := b.Terraform
 	if tf == nil {
-		return fmt.Errorf("terraform not initialized")
+		return diag.Errorf("terraform not initialized")
 	}
 
 	err := tf.Init(ctx, tfexec.Upgrade(true))
 	if err != nil {
-		return fmt.Errorf("terraform init: %w", err)
+		return diag.Errorf("terraform init: %v", err)
 	}
 
 	state, err := b.Terraform.Show(ctx)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	err = l.validateState(state)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	// Merge state into configuration.
 	err = TerraformToBundle(state, &b.Config)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	return nil

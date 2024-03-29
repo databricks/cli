@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -21,12 +20,7 @@ import (
 
 type Root struct {
 	value dyn.Value
-	diags diag.Diagnostics
 	depth int
-
-	// Path contains the directory path to the root of the bundle.
-	// It is set when loading `databricks.yml`.
-	Path string `json:"-" bundle:"readonly"`
 
 	// Contains user defined variables
 	Variables map[string]*variable.Variable `json:"variables,omitempty"`
@@ -74,44 +68,40 @@ type Root struct {
 }
 
 // Load loads the bundle configuration file at the specified path.
-func Load(path string) (*Root, error) {
+func Load(path string) (*Root, diag.Diagnostics) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return nil, diag.FromErr(err)
 	}
 
-	r := Root{
-		Path: filepath.Dir(path),
-	}
+	r := Root{}
 
 	// Load configuration tree from YAML.
 	v, err := yamlloader.LoadYAML(path, bytes.NewBuffer(raw))
 	if err != nil {
-		return nil, fmt.Errorf("failed to load %s: %w", path, err)
+		return nil, diag.Errorf("failed to load %s: %v", path, err)
 	}
 
 	// Rewrite configuration tree where necessary.
 	v, err = rewriteShorthands(v)
 	if err != nil {
-		return nil, fmt.Errorf("failed to rewrite %s: %w", path, err)
+		return nil, diag.Errorf("failed to rewrite %s: %v", path, err)
 	}
 
 	// Normalize dynamic configuration tree according to configuration type.
 	v, diags := convert.Normalize(r, v)
 
-	// Keep track of diagnostics (warnings and errors in the schema).
-	// We delay acting on diagnostics until we have loaded all
-	// configuration files and merged them together.
-	r.diags = diags
-
 	// Convert normalized configuration tree to typed configuration.
 	err = r.updateWithDynamicValue(v)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load %s: %w", path, err)
+		return nil, diag.Errorf("failed to load %s: %v", path, err)
 	}
 
 	_, err = r.Resources.VerifyUniqueResourceIdentifiers()
-	return &r, err
+	if err != nil {
+		diags = diags.Extend(diag.FromErr(err))
+	}
+	return &r, diags
 }
 
 func (r *Root) initializeDynamicValue() error {
@@ -133,14 +123,10 @@ func (r *Root) initializeDynamicValue() error {
 func (r *Root) updateWithDynamicValue(nv dyn.Value) error {
 	// Hack: restore state; it may be cleared by [ToTyped] if
 	// the configuration equals nil (happens in tests).
-	diags := r.diags
 	depth := r.depth
-	path := r.Path
 
 	defer func() {
-		r.diags = diags
 		r.depth = depth
-		r.Path = path
 	}()
 
 	// Convert normalized configuration tree to typed configuration.
@@ -245,10 +231,6 @@ func (r *Root) MarkMutatorExit(ctx context.Context) error {
 	return nil
 }
 
-func (r *Root) Diagnostics() diag.Diagnostics {
-	return r.diags
-}
-
 // SetConfigFilePath configures the path that its configuration
 // was loaded from in configuration leafs that require it.
 func (r *Root) ConfigureConfigFilePath() {
@@ -282,9 +264,6 @@ func (r *Root) InitializeVariables(vars []string) error {
 }
 
 func (r *Root) Merge(other *Root) error {
-	// Merge diagnostics.
-	r.diags = append(r.diags, other.diags...)
-
 	// Check for safe merge, protecting against duplicate resource identifiers
 	err := r.Resources.VerifySafeMerge(&other.Resources)
 	if err != nil {
@@ -468,4 +447,15 @@ func validateVariableOverrides(root, target dyn.Value) (err error) {
 	}
 
 	return nil
+}
+
+// Best effort to get the location of configuration value at the specified path.
+// This function is useful to annotate error messages with the location, because
+// we don't want to fail with a different error message if we cannot retrieve the location.
+func (r *Root) GetLocation(path string) dyn.Location {
+	v, err := dyn.Get(r.value, path)
+	if err != nil {
+		return dyn.Location{}
+	}
+	return v.Location()
 }

@@ -29,11 +29,11 @@ func mockStateFilerForPush(t *testing.T, fn func(body io.Reader)) filer.Filer {
 
 func statePushTestBundle(t *testing.T) *bundle.Bundle {
 	return &bundle.Bundle{
+		RootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "default",
 			},
-			Path: t.TempDir(),
 		},
 	}
 }
@@ -56,6 +56,6 @@ func TestStatePush(t *testing.T) {
 
 	// Write a stale local state file.
 	writeLocalState(t, ctx, b, map[string]int{"serial": 4})
-	err := bundle.Apply(ctx, b, m)
-	assert.NoError(t, err)
+	diags := bundle.Apply(ctx, b, m)
+	assert.NoError(t, diags.Error())
 }

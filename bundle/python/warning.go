@@ -2,11 +2,11 @@ package python
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/libraries"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"golang.org/x/mod/semver"
@@ -19,13 +19,13 @@ func WrapperWarning() bundle.Mutator {
 	return &wrapperWarning{}
 }
 
-func (m *wrapperWarning) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *wrapperWarning) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if isPythonWheelWrapperOn(b) {
 		return nil
 	}
 
 	if hasIncompatibleWheelTasks(ctx, b) {
-		return fmt.Errorf("python wheel tasks with local libraries require compute with DBR 13.1+. Please change your cluster configuration or set experimental 'python_wheel_wrapper' setting to 'true'")
+		return diag.Errorf("python wheel tasks with local libraries require compute with DBR 13.1+. Please change your cluster configuration or set experimental 'python_wheel_wrapper' setting to 'true'")
 	}
 	return nil
 }

@@ -14,8 +14,8 @@ func TestSeqMutator(t *testing.T) {
 	seqMutator := Seq(m1, m2, m3)
 
 	b := &Bundle{}
-	err := Apply(context.Background(), b, seqMutator)
-	assert.NoError(t, err)
+	diags := Apply(context.Background(), b, seqMutator)
+	assert.NoError(t, diags.Error())
 
 	assert.Equal(t, 1, m1.applyCalled)
 	assert.Equal(t, 1, m2.applyCalled)
@@ -30,8 +30,8 @@ func TestSeqWithDeferredMutator(t *testing.T) {
 	seqMutator := Seq(m1, Defer(m2, m3), m4)
 
 	b := &Bundle{}
-	err := Apply(context.Background(), b, seqMutator)
-	assert.NoError(t, err)
+	diags := Apply(context.Background(), b, seqMutator)
+	assert.NoError(t, diags.Error())
 
 	assert.Equal(t, 1, m1.applyCalled)
 	assert.Equal(t, 1, m2.applyCalled)
@@ -47,8 +47,8 @@ func TestSeqWithErrorAndDeferredMutator(t *testing.T) {
 	seqMutator := Seq(errorMut, Defer(m1, m2), m3)
 
 	b := &Bundle{}
-	err := Apply(context.Background(), b, seqMutator)
-	assert.Error(t, err)
+	diags := Apply(context.Background(), b, seqMutator)
+	assert.Error(t, diags.Error())
 
 	assert.Equal(t, 1, errorMut.applyCalled)
 	assert.Equal(t, 0, m1.applyCalled)
@@ -64,8 +64,8 @@ func TestSeqWithErrorInsideDeferredMutator(t *testing.T) {
 	seqMutator := Seq(m1, Defer(errorMut, m2), m3)
 
 	b := &Bundle{}
-	err := Apply(context.Background(), b, seqMutator)
-	assert.Error(t, err)
+	diags := Apply(context.Background(), b, seqMutator)
+	assert.Error(t, diags.Error())
 
 	assert.Equal(t, 1, m1.applyCalled)
 	assert.Equal(t, 1, errorMut.applyCalled)
@@ -81,8 +81,8 @@ func TestSeqWithErrorInsideFinallyStage(t *testing.T) {
 	seqMutator := Seq(m1, Defer(m2, errorMut), m3)
 
 	b := &Bundle{}
-	err := Apply(context.Background(), b, seqMutator)
-	assert.Error(t, err)
+	diags := Apply(context.Background(), b, seqMutator)
+	assert.Error(t, diags.Error())
 
 	assert.Equal(t, 1, m1.applyCalled)
 	assert.Equal(t, 1, m2.applyCalled)

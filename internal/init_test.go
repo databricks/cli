@@ -138,7 +138,7 @@ func TestAccBundleInitHelpers(t *testing.T) {
 		},
 		{
 			funcName: "{{is_service_principal}}",
-			expected: strconv.FormatBool(auth.IsServicePrincipal(me.Id)),
+			expected: strconv.FormatBool(auth.IsServicePrincipal(me.UserName)),
 		},
 		{
 			funcName: "{{smallest_node_type}}",

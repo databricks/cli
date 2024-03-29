@@ -53,13 +53,13 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*settings.DeletePersonalComputeRequest,
+	*settings.DeletePersonalComputeSettingRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var deleteReq settings.DeletePersonalComputeRequest
+	var deleteReq settings.DeletePersonalComputeSettingRequest
 
 	// TODO: short flags
 
@@ -108,13 +108,13 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*settings.GetPersonalComputeRequest,
+	*settings.GetPersonalComputeSettingRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getReq settings.GetPersonalComputeRequest
+	var getReq settings.GetPersonalComputeSettingRequest
 
 	// TODO: short flags
 
