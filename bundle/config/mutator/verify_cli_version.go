@@ -62,7 +62,7 @@ func validateConstraintSyntax(constraint string) error {
 
 // Generate regexp which matches the supported version constraint syntax.
 func generateConstraintSyntaxRegexp() *regexp.Regexp {
-	// Supported formats are:
+	// We intentionally only support the format supported by requirements.txt:
 	// 1. 0.0.0
 	// 2. >= 0.0.0
 	// 3. <= 0.0.0
