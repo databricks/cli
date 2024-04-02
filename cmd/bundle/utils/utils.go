@@ -9,23 +9,30 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func ConfigureBundleWithVariables(cmd *cobra.Command, args []string) error {
+func configureVariables(cmd *cobra.Command, b *bundle.Bundle, variables []string) diag.Diagnostics {
+	return bundle.ApplyFunc(cmd.Context(), b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+		err := b.Config.InitializeVariables(variables)
+		return diag.FromErr(err)
+	})
+}
+
+func ConfigureBundleWithVariables(cmd *cobra.Command) (*bundle.Bundle, diag.Diagnostics) {
 	// Load bundle config and apply target
-	err := root.MustConfigureBundle(cmd, args)
-	if err != nil {
-		return err
+	b, diags := root.MustConfigureBundle(cmd)
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	variables, err := cmd.Flags().GetStringSlice("var")
 	if err != nil {
-		return err
+		return nil, diag.FromErr(err)
 	}
 
 	// Initialize variables by assigning them values passed as command line flags
-	b := bundle.Get(cmd.Context())
-	diags := bundle.ApplyFunc(cmd.Context(), b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-		err := b.Config.InitializeVariables(variables)
-		return diag.FromErr(err)
-	})
-	return diags.Error()
+	diags = diags.Extend(configureVariables(cmd, b, variables))
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	return b, diags
 }

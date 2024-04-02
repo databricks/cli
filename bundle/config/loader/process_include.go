@@ -27,11 +27,13 @@ func (m *processInclude) Name() string {
 }
 
 func (m *processInclude) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
-	this, err := config.Load(m.fullPath)
-	if err != nil {
-		return diag.FromErr(err)
+	this, diags := config.Load(m.fullPath)
+	if diags.HasError() {
+		return diags
 	}
-	// TODO: Return actual warnings.
-	err = b.Config.Merge(this)
-	return diag.FromErr(err)
+	err := b.Config.Merge(this)
+	if err != nil {
+		diags = diags.Extend(diag.FromErr(err))
+	}
+	return diags
 }
