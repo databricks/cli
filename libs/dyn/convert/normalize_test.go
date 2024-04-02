@@ -408,7 +408,7 @@ func TestNormalizeStringNil(t *testing.T) {
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
 		Severity: diag.Warning,
-		Summary:  `expected a string value, found nil`,
+		Summary:  `expected a string value, found null`,
 		Location: vin.Location(),
 	}, err[0])
 }
@@ -464,7 +464,7 @@ func TestNormalizeBoolNil(t *testing.T) {
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
 		Severity: diag.Warning,
-		Summary:  `expected a bool value, found nil`,
+		Summary:  `expected a bool value, found null`,
 		Location: vin.Location(),
 	}, err[0])
 }
