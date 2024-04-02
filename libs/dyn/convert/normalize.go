@@ -61,6 +61,14 @@ func (n normalizeOptions) normalizeType(typ reflect.Type, src dyn.Value, seen []
 	return dyn.InvalidValue, diag.Errorf("unsupported type: %s", typ.Kind())
 }
 
+func nilWarning(expected dyn.Kind, src dyn.Value) diag.Diagnostic {
+	return diag.Diagnostic{
+		Severity: diag.Warning,
+		Summary:  fmt.Sprintf("expected a %s value, found null", expected),
+		Location: src.Location(),
+	}
+}
+
 func typeMismatch(expected dyn.Kind, src dyn.Value) diag.Diagnostic {
 	return diag.Diagnostic{
 		Severity: diag.Error,
@@ -229,6 +237,9 @@ func (n normalizeOptions) normalizeString(typ reflect.Type, src dyn.Value) (dyn.
 		out = strconv.FormatInt(src.MustInt(), 10)
 	case dyn.KindFloat:
 		out = strconv.FormatFloat(src.MustFloat(), 'f', -1, 64)
+	case dyn.KindNil:
+		// Return a warning if the field is present but has a null value.
+		return dyn.InvalidValue, diags.Append(nilWarning(dyn.KindString, src))
 	default:
 		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindString, src))
 	}
@@ -259,6 +270,9 @@ func (n normalizeOptions) normalizeBool(typ reflect.Type, src dyn.Value) (dyn.Va
 			// Cannot interpret as a boolean.
 			return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindBool, src))
 		}
+	case dyn.KindNil:
+		// Return a warning if the field is present but has a null value.
+		return dyn.InvalidValue, diags.Append(nilWarning(dyn.KindBool, src))
 	default:
 		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindBool, src))
 	}
@@ -288,6 +302,9 @@ func (n normalizeOptions) normalizeInt(typ reflect.Type, src dyn.Value) (dyn.Val
 				Location: src.Location(),
 			})
 		}
+	case dyn.KindNil:
+		// Return a warning if the field is present but has a null value.
+		return dyn.InvalidValue, diags.Append(nilWarning(dyn.KindInt, src))
 	default:
 		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindInt, src))
 	}
@@ -317,6 +334,9 @@ func (n normalizeOptions) normalizeFloat(typ reflect.Type, src dyn.Value) (dyn.V
 				Location: src.Location(),
 			})
 		}
+	case dyn.KindNil:
+		// Return a warning if the field is present but has a null value.
+		return dyn.InvalidValue, diags.Append(nilWarning(dyn.KindFloat, src))
 	default:
 		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindFloat, src))
 	}

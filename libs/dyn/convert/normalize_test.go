@@ -407,8 +407,8 @@ func TestNormalizeStringNil(t *testing.T) {
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
-		Summary:  `expected string, found nil`,
+		Severity: diag.Warning,
+		Summary:  `expected a string value, found nil`,
 		Location: vin.Location(),
 	}, err[0])
 }
@@ -463,8 +463,8 @@ func TestNormalizeBoolNil(t *testing.T) {
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
-		Summary:  `expected bool, found nil`,
+		Severity: diag.Warning,
+		Summary:  `expected a bool value, found nil`,
 		Location: vin.Location(),
 	}, err[0])
 }
@@ -536,8 +536,8 @@ func TestNormalizeIntNil(t *testing.T) {
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
-		Summary:  `expected int, found nil`,
+		Severity: diag.Warning,
+		Summary:  `expected a int value, found null`,
 		Location: vin.Location(),
 	}, err[0])
 }
@@ -596,8 +596,8 @@ func TestNormalizeFloatNil(t *testing.T) {
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
-		Summary:  `expected float, found nil`,
+		Severity: diag.Warning,
+		Summary:  `expected a float value, found null`,
 		Location: vin.Location(),
 	}, err[0])
 }
