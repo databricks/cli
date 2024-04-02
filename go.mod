@@ -3,6 +3,7 @@ module github.com/databricks/cli
 go 1.21
 
 require (
+	github.com/Masterminds/semver/v3 v3.2.1 // MIT
 	github.com/briandowns/spinner v1.23.0 // Apache 2.0
 	github.com/databricks/databricks-sdk-go v0.36.0 // Apache 2.0
 	github.com/fatih/color v1.16.0 // MIT
@@ -27,10 +28,6 @@ require (
 	golang.org/x/term v0.18.0
 	golang.org/x/text v0.14.0
 	gopkg.in/ini.v1 v1.67.0 // Apache 2.0
-)
-
-require (
-	github.com/Masterminds/semver/v3 v3.2.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 

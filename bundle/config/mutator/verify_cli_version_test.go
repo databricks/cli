@@ -110,6 +110,10 @@ func TestVerifyCliVersion(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
+		// Reset the build version to the default version
+		// so that it doesn't affect other tests
+		// It doesn't really matter what we configure this to when testing
+		// as long as it is a valid semver version.
 		build.SetBuildVersion(build.DefaultSemver)
 	})
 
