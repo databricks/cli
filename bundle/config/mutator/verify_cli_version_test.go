@@ -105,6 +105,7 @@ func TestVerifyCliVersion(t *testing.T) {
 		{
 			currentVersion: "0.100.123",
 			constraint:     "^0.100",
+			expectedError:  "invalid version constraint \"^0.100\" specified. Please specify the version constraint in the format (>=) 0.0.0(, <= 1.0.0)",
 		},
 	}
 
@@ -128,6 +129,41 @@ func TestVerifyCliVersion(t *testing.T) {
 				require.Equal(t, tc.expectedError, diags.Error().Error())
 			} else {
 				require.Empty(t, diags)
+			}
+		})
+	}
+}
+
+func TestValidateConstraint(t *testing.T) {
+	testCases := []struct {
+		constraint string
+		expected   bool
+	}{
+		{"0.0.0", true},
+		{">= 0.0.0", true},
+		{"<= 0.0.0", true},
+		{"> 0.0.0", true},
+		{"< 0.0.0", true},
+		{"!= 0.0.0", true},
+		{"0.0.*", true},
+		{"0.*", true},
+		{">= 0.0.0, <= 1.0.0", true},
+		{">= 0.0.0-0, <= 1.0.0-0", true},
+		{"0.0.0-0", true},
+		{"0.0.0-beta", true},
+		{"^0.0.0", false},
+		{"~0.0.0", false},
+		{"0.0.0 1.0.0", false},
+		{"> 0.0.0 < 1.0.0", false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.constraint, func(t *testing.T) {
+			err := validateConstraintSyntax(tc.constraint)
+			if tc.expected {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
 			}
 		})
 	}
