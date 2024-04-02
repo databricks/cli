@@ -181,6 +181,9 @@ func TestGetAccountAuthStatus(t *testing.T) {
 	t.Setenv("DATABRICKS_AUTH_TYPE", "azure-cli")
 	config.ConfigAttributes.Configure(cfg)
 
+	wsApi := m.GetMockWorkspacesAPI()
+	wsApi.EXPECT().List(mock.Anything).Return(nil, nil)
+
 	status, err := getAuthStatus(cmd, []string{}, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
 		config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
 			"account_id": "test-account-id",

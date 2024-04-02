@@ -13,13 +13,13 @@ import (
 )
 
 var authTemplate = `{{"Host:" | bold}} {{.Details.Host}}
+{{- if .AccountID}}
+{{"Account ID:" | bold}} {{.AccountID}}
+{{- end}}
 {{- if .Username}}
 {{"User:" | bold}} {{.Username}}
 {{- end}}
 {{"Authenticated with:" | bold}} {{.Details.AuthType}}
-{{- if .AccountID}}
-{{"Account ID:" | bold}} {{.AccountID}}
-{{- end}}
 -----
 ` + configurationTemplate
 
@@ -28,12 +28,16 @@ var errorTemplate = `Unable to authenticate: {{.Error}}
 ` + configurationTemplate
 
 const configurationTemplate = `Current configuration:
-  {{- $details := .Details}}
-  {{- range $k, $v := $details.Configuration }}
+  {{- $details := .Status.Details}}
+  {{- range $a := .ConfigAttributes}}
+  {{- $k := $a.Name}}
+  {{- if index $details.Configuration $k}}
+  {{- $v := index $details.Configuration $k}}
   {{if $v.AuthTypeMismatch}}~{{else}}✓{{end}} {{$k | bold}}: {{$v.Value}}
   {{- if not (eq $v.Source.String "dynamic configuration")}}
   {{- " (from" | italic}} {{$v.Source.String | italic}}
   {{- if $v.AuthTypeMismatch}}, {{ "not used for auth type " | red | italic }}{{$details.AuthType | red | italic}}{{end}})
+  {{- end}}
   {{- end}}
   {{- end}}
 `
@@ -85,6 +89,17 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 
 	if isAccount {
 		a := root.AccountClient(ctx)
+
+		// Doing a simple API call to check if the auth is valid
+		_, err := a.Workspaces.List(ctx)
+		if err != nil {
+			return &authStatus{
+				Status:  "error",
+				Error:   err,
+				Details: getAuthDetails(cmd, cfg, showSensitive),
+			}, nil
+		}
+
 		status := authStatus{
 			Status:    "success",
 			Details:   getAuthDetails(cmd, a.Config, showSensitive),
@@ -98,7 +113,11 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 	w := root.WorkspaceClient(ctx)
 	me, err := w.CurrentUser.Me(ctx)
 	if err != nil {
-		return nil, err
+		return &authStatus{
+			Status:  "error",
+			Error:   err,
+			Details: getAuthDetails(cmd, cfg, showSensitive),
+		}, nil
 	}
 
 	status := authStatus{
@@ -113,7 +132,10 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 func render(ctx context.Context, cmd *cobra.Command, status *authStatus, template string) error {
 	switch root.OutputType(cmd) {
 	case flags.OutputText:
-		return cmdio.RenderWithTemplate(ctx, status, "", template)
+		return cmdio.RenderWithTemplate(ctx, map[string]any{
+			"Status":           status,
+			"ConfigAttributes": config.ConfigAttributes,
+		}, "", template)
 	case flags.OutputJSON:
 		buf, err := json.MarshalIndent(status, "", "  ")
 		if err != nil {

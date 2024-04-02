@@ -32,7 +32,7 @@ type ErrNoAccountProfiles struct {
 }
 
 func (e ErrNoAccountProfiles) Error() string {
-	return fmt.Sprintf("%s does not contain account profiles; please create one by running 'databricks configure'", e.path)
+	return fmt.Sprintf("%s does not contain account profiles", e.path)
 }
 
 func initProfileFlag(cmd *cobra.Command) {
@@ -99,7 +99,7 @@ func MustAnyClient(cmd *cobra.Command, args []string) (bool, error) {
 	// Otherwise, the config used is account client one, so try to create an account client
 	aerr := MustAccountClient(cmd, args)
 	if errors.As(aerr, &ErrNoAccountProfiles{}) {
-		return false, fmt.Errorf("%s does not contain any profiles; please create one by running 'databricks configure'", aerr.(ErrNoAccountProfiles).path)
+		return false, aerr
 	}
 
 	return true, aerr
