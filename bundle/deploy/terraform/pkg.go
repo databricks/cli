@@ -12,7 +12,7 @@ const TerraformConfigFileName = "bundle.tf.json"
 // This allows users to use the CLI in an air-gapped environments. See the `debug terraform` command.
 const TerraformExecPathEnv = "DATABRICKS_TF_EXEC_PATH"
 const TerraformVersionEnv = "DATABRICKS_TF_VERSION"
-const TerraformCliCofigPathEnv = "DATABRICKS_TF_CLI_CONFIG_FILE"
+const TerraformCliConfigPathEnv = "DATABRICKS_TF_CLI_CONFIG_FILE"
 const TerraformProviderVersionEnv = "DATABRICKS_TF_PROVIDER_VERSION"
 
 var TerraformVersion = version.Must(version.NewVersion("1.5.5"))

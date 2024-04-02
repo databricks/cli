@@ -119,12 +119,12 @@ func inheritEnvVars(ctx context.Context, environ map[string]string) error {
 	// VSCode extension provides a file with the "provider_installation.filesystem_mirror" configuration.
 	// We only use it if the provider version matches the currently used version,
 	// otherwise terraform will fail to download the right version (even with unrestricted internet access).
-	configFile, err := getEnvVarWithMatchingVersion(ctx, TerraformCliCofigPathEnv, TerraformProviderVersionEnv, schema.ProviderVersion)
+	configFile, err := getEnvVarWithMatchingVersion(ctx, TerraformCliConfigPathEnv, TerraformProviderVersionEnv, schema.ProviderVersion)
 	if err != nil {
 		return err
 	}
 	if configFile != "" {
-		log.Debugf(ctx, "Using Terraform CLI config from %s at %s", TerraformCliCofigPathEnv, configFile)
+		log.Debugf(ctx, "Using Terraform CLI config from %s at %s", TerraformCliConfigPathEnv, configFile)
 		environ["TF_CLI_CONFIG_FILE"] = configFile
 	}
 
