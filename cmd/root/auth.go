@@ -91,7 +91,9 @@ func MustAnyClient(cmd *cobra.Command, args []string) (bool, error) {
 		return false, nil
 	}
 
-	// If the error is not a workspace client error, return it because configuration is for workspace client
+	// If the error is other than "not a workspace client error" or "no workspace profiles",
+	// return it because configuration is for workspace client
+	// and we don't want to try to create an account client.
 	if !errors.Is(werr, databricks.ErrNotWorkspaceClient) && !errors.As(werr, &ErrNoWorkspaceProfiles{}) {
 		return false, werr
 	}
