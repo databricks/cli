@@ -73,6 +73,10 @@ ghodss/yaml - https://github.com/ghodss/yaml
 Copyright (c) 2014 Sam Ghods
 License - https://github.com/ghodss/yaml/blob/master/LICENSE
 
+Masterminds/semver - https://github.com/Masterminds/semver
+Copyright (C) 2014-2019, Matt Butcher and Matt Farina
+License - https://github.com/Masterminds/semver/blob/master/LICENSE.txt
+
 mattn/go-isatty - https://github.com/mattn/go-isatty
 Copyright (c) Yasuhiro MATSUMOTO <mattn.jp@gmail.com>
 https://github.com/mattn/go-isatty/blob/master/LICENSE
