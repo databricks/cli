@@ -41,13 +41,13 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 	}
 
 	// Load exec path from the environment if it matches the currently used version.
-	envExecPath, err := getEnvVarWithMatchingVersion(ctx, "DATABRICKS_TF_EXEC_PATH", "DATABRICKS_TF_VERSION", TerraformVersion.String())
+	envExecPath, err := getEnvVarWithMatchingVersion(ctx, TerraformExecPathEnv, TerraformVersionEnv, TerraformVersion.String())
 	if err != nil {
 		return "", err
 	}
 	if envExecPath != "" {
 		tf.ExecPath = envExecPath
-		log.Debugf(ctx, "Using Terraform from DATABRICKS_TF_EXEC_PATH at %s", tf.ExecPath)
+		log.Debugf(ctx, "Using Terraform from %s at %s", TerraformExecPathEnv, tf.ExecPath)
 		return tf.ExecPath, nil
 	}
 
@@ -119,12 +119,12 @@ func inheritEnvVars(ctx context.Context, environ map[string]string) error {
 	// VSCode extension provides a file with the "provider_installation.filesystem_mirror" configuration.
 	// We only use it if the provider version matches the currently used version,
 	// otherwise terraform will fail to download the right version (even with unrestricted internet access).
-	configFile, err := getEnvVarWithMatchingVersion(ctx, "DATABRICKS_TF_CLI_CONFIG_FILE", "DATABRICKS_TF_PROVIDER_VERSION", schema.ProviderVersion)
+	configFile, err := getEnvVarWithMatchingVersion(ctx, TerraformCliCofigPathEnv, TerraformProviderVersionEnv, schema.ProviderVersion)
 	if err != nil {
 		return err
 	}
 	if configFile != "" {
-		log.Debugf(ctx, "Using Terraform CLI config from DATABRICKS_TF_CLI_CONFIG_FILE at %s", configFile)
+		log.Debugf(ctx, "Using Terraform CLI config from %s at %s", TerraformCliCofigPathEnv, configFile)
 		environ["TF_CLI_CONFIG_FILE"] = configFile
 	}
 
