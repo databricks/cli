@@ -2,17 +2,19 @@
 
 ## 0.217.0
 
+Breaking Change:
+ * Add allow list for resources when bundle `run_as` is set ([#1233](https://github.com/databricks/cli/pull/1233)).
+ * Make bundle validation print text output by default ([#1335](https://github.com/databricks/cli/pull/1335)).
+
 CLI:
  * Added `auth describe` command ([#1244](https://github.com/databricks/cli/pull/1244)).
  * Fixed message for successful auth describe run ([#1336](https://github.com/databricks/cli/pull/1336)).
 
 Bundles:
- * Make bundle validation print text output by default ([#1335](https://github.com/databricks/cli/pull/1335)).
  * Use UserName field to identify if service principal is used ([#1310](https://github.com/databricks/cli/pull/1310)).
  * Allow unknown properties in the config file for template initialization ([#1315](https://github.com/databricks/cli/pull/1315)).
  * Remove support for DATABRICKS_BUNDLE_INCLUDES ([#1317](https://github.com/databricks/cli/pull/1317)).
  * Make `bundle.deployment` optional in the bundle schema ([#1321](https://github.com/databricks/cli/pull/1321)).
- * Add allow list for resources when bundle `run_as` is set ([#1233](https://github.com/databricks/cli/pull/1233)).
  * Fix the generated DABs JSON schema ([#1322](https://github.com/databricks/cli/pull/1322)).
  * Make bundle loaders return diagnostics ([#1319](https://github.com/databricks/cli/pull/1319)).
  * Add `bundle debug terraform` command ([#1294](https://github.com/databricks/cli/pull/1294)).
