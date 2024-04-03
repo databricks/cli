@@ -21,6 +21,8 @@ type Diagnostic struct {
 	// It may be zero if there is no associated location.
 	Location dyn.Location
 
+	// Path is a path to the value in a configuration tree that the diagnostic is associated with.
+	// It may be nil if there is no associated path.
 	Path dyn.Path
 }
 
