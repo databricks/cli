@@ -101,3 +101,14 @@ func (ds Diagnostics) Error() error {
 	}
 	return nil
 }
+
+// Filter returns a new list of diagnostics that match the specified severity.
+func (ds Diagnostics) Filter(severity Severity) Diagnostics {
+	var out Diagnostics
+	for _, d := range ds {
+		if d.Severity == severity {
+			out = append(out, d)
+		}
+	}
+	return out
+}
