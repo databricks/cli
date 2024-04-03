@@ -43,4 +43,7 @@ type Bundle struct {
 
 	// Deployment section specifies deployment related configuration for bundle
 	Deployment Deployment `json:"deployment,omitempty"`
+
+	// Databricks CLI version constraints required to run the bundle.
+	DatabricksCliVersion string `json:"databricks_cli_version,omitempty"`
 }

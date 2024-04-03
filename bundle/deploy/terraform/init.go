@@ -12,10 +12,10 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/internal/tf/schema"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hc-install/product"
 	"github.com/hashicorp/hc-install/releases"
 	"github.com/hashicorp/terraform-exec/tfexec"
@@ -40,6 +40,17 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 		return tf.ExecPath, nil
 	}
 
+	// Load exec path from the environment if it matches the currently used version.
+	envExecPath, err := getEnvVarWithMatchingVersion(ctx, TerraformExecPathEnv, TerraformVersionEnv, TerraformVersion.String())
+	if err != nil {
+		return "", err
+	}
+	if envExecPath != "" {
+		tf.ExecPath = envExecPath
+		log.Debugf(ctx, "Using Terraform from %s at %s", TerraformExecPathEnv, tf.ExecPath)
+		return tf.ExecPath, nil
+	}
+
 	binDir, err := b.CacheDir(context.Background(), "bin")
 	if err != nil {
 		return "", err
@@ -60,7 +71,7 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 	// Download Terraform to private bin directory.
 	installer := &releases.ExactVersion{
 		Product:    product.Terraform,
-		Version:    version.Must(version.NewVersion("1.5.5")),
+		Version:    TerraformVersion,
 		InstallDir: binDir,
 		Timeout:    1 * time.Minute,
 	}
@@ -98,12 +109,53 @@ func inheritEnvVars(ctx context.Context, environ map[string]string) error {
 	}
 
 	// Include $TF_CLI_CONFIG_FILE to override terraform provider in development.
-	configFile, ok := env.Lookup(ctx, "TF_CLI_CONFIG_FILE")
+	// See: https://developer.hashicorp.com/terraform/cli/config/config-file#explicit-installation-method-configuration
+	devConfigFile, ok := env.Lookup(ctx, "TF_CLI_CONFIG_FILE")
 	if ok {
+		environ["TF_CLI_CONFIG_FILE"] = devConfigFile
+	}
+
+	// Map $DATABRICKS_TF_CLI_CONFIG_FILE to $TF_CLI_CONFIG_FILE
+	// VSCode extension provides a file with the "provider_installation.filesystem_mirror" configuration.
+	// We only use it if the provider version matches the currently used version,
+	// otherwise terraform will fail to download the right version (even with unrestricted internet access).
+	configFile, err := getEnvVarWithMatchingVersion(ctx, TerraformCliConfigPathEnv, TerraformProviderVersionEnv, schema.ProviderVersion)
+	if err != nil {
+		return err
+	}
+	if configFile != "" {
+		log.Debugf(ctx, "Using Terraform CLI config from %s at %s", TerraformCliConfigPathEnv, configFile)
 		environ["TF_CLI_CONFIG_FILE"] = configFile
 	}
 
 	return nil
+}
+
+// Example: this function will return a value of TF_EXEC_PATH only if the path exists and if TF_VERSION matches the TerraformVersion.
+// This function is used for env vars set by the Databricks VSCode extension. The variables are intended to be used by the CLI
+// bundled with the Databricks VSCode extension, but users can use different CLI versions in the VSCode terminals, in which case we want to ignore
+// the variables if that CLI uses different versions of the dependencies.
+func getEnvVarWithMatchingVersion(ctx context.Context, envVarName string, versionVarName string, currentVersion string) (string, error) {
+	envValue := env.Get(ctx, envVarName)
+	versionValue := env.Get(ctx, versionVarName)
+	if envValue == "" || versionValue == "" {
+		log.Debugf(ctx, "%s and %s aren't defined", envVarName, versionVarName)
+		return "", nil
+	}
+	if versionValue != currentVersion {
+		log.Debugf(ctx, "%s as %s does not match the current version %s, ignoring %s", versionVarName, versionValue, currentVersion, envVarName)
+		return "", nil
+	}
+	_, err := os.Stat(envValue)
+	if err != nil {
+		if os.IsNotExist(err) {
+			log.Debugf(ctx, "%s at %s does not exist, ignoring %s", envVarName, envValue, versionVarName)
+			return "", nil
+		} else {
+			return "", err
+		}
+	}
+	return envValue, nil
 }
 
 // This function sets temp dir location for terraform to use. If user does not

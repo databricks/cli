@@ -133,12 +133,12 @@ func TestGenerateJobCommand(t *testing.T) {
 		Settings: &jobs.JobSettings{
 			Name: "test-job",
 			JobClusters: []jobs.JobCluster{
-				{NewCluster: &compute.ClusterSpec{
+				{NewCluster: compute.ClusterSpec{
 					CustomTags: map[string]string{
 						"Tag1": "24X7-1234",
 					},
 				}},
-				{NewCluster: &compute.ClusterSpec{
+				{NewCluster: compute.ClusterSpec{
 					SparkConf: map[string]string{
 						"spark.databricks.delta.preview.enabled": "true",
 					},
