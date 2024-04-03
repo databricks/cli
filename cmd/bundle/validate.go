@@ -77,14 +77,17 @@ func buildTrailer(diags diag.Diagnostics) string {
 }
 
 func renderTextOutput(cmd *cobra.Command, b *bundle.Bundle, diags diag.Diagnostics) error {
+	errorT := template.Must(template.New("error").Funcs(validateFuncMap).Parse(errorTemplate))
+	warningT := template.Must(template.New("warning").Funcs(validateFuncMap).Parse(warningTemplate))
+
 	// Print errors and warnings.
 	for _, d := range diags {
 		var t *template.Template
 		switch d.Severity {
 		case diag.Error:
-			t = template.Must(template.New("error").Funcs(validateFuncMap).Parse(errorTemplate))
+			t = errorT
 		case diag.Warning:
-			t = template.Must(template.New("warning").Funcs(validateFuncMap).Parse(warningTemplate))
+			t = warningT
 		}
 
 		// Make file relative to bundle root
