@@ -29,7 +29,7 @@ func TestBundleToTerraformJob(t *testing.T) {
 			JobClusters: []jobs.JobCluster{
 				{
 					JobClusterKey: "key",
-					NewCluster: &compute.ClusterSpec{
+					NewCluster: compute.ClusterSpec{
 						SparkVersion: "10.4.x-scala2.12",
 					},
 				},

@@ -33,8 +33,10 @@ func New() *cobra.Command {
 	cmd.AddCommand(newCreate())
 	cmd.AddCommand(newGet())
 	cmd.AddCommand(newGetPublished())
+	cmd.AddCommand(newMigrate())
 	cmd.AddCommand(newPublish())
 	cmd.AddCommand(newTrash())
+	cmd.AddCommand(newUnpublish())
 	cmd.AddCommand(newUpdate())
 
 	// Apply optional overrides to this command.
@@ -240,6 +242,87 @@ func newGetPublished() *cobra.Command {
 	return cmd
 }
 
+// start migrate command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var migrateOverrides []func(
+	*cobra.Command,
+	*dashboards.MigrateDashboardRequest,
+)
+
+func newMigrate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var migrateReq dashboards.MigrateDashboardRequest
+	var migrateJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&migrateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&migrateReq.DisplayName, "display-name", migrateReq.DisplayName, `Display name for the new Lakeview dashboard.`)
+	cmd.Flags().StringVar(&migrateReq.ParentPath, "parent-path", migrateReq.ParentPath, `The workspace path of the folder to contain the migrated Lakeview dashboard.`)
+
+	cmd.Use = "migrate SOURCE_DASHBOARD_ID"
+	cmd.Short = `Migrate dashboard.`
+	cmd.Long = `Migrate dashboard.
+  
+  Migrates a classic SQL dashboard to Lakeview.
+
+  Arguments:
+    SOURCE_DASHBOARD_ID: UUID of the dashboard to be migrated.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'source_dashboard_id' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = migrateJson.Unmarshal(&migrateReq)
+			if err != nil {
+				return err
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			migrateReq.SourceDashboardId = args[0]
+		}
+
+		response, err := w.Lakeview.Migrate(ctx, migrateReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range migrateOverrides {
+		fn(cmd, &migrateReq)
+	}
+
+	return cmd
+}
+
 // start publish command
 
 // Slice with functions to override default command behavior.
@@ -362,6 +445,67 @@ func newTrash() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range trashOverrides {
 		fn(cmd, &trashReq)
+	}
+
+	return cmd
+}
+
+// start unpublish command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var unpublishOverrides []func(
+	*cobra.Command,
+	*dashboards.UnpublishDashboardRequest,
+)
+
+func newUnpublish() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var unpublishReq dashboards.UnpublishDashboardRequest
+
+	// TODO: short flags
+
+	cmd.Use = "unpublish DASHBOARD_ID"
+	cmd.Short = `Unpublish dashboard.`
+	cmd.Long = `Unpublish dashboard.
+  
+  Unpublish the dashboard.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard to be published.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		unpublishReq.DashboardId = args[0]
+
+		err = w.Lakeview.Unpublish(ctx, unpublishReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range unpublishOverrides {
+		fn(cmd, &unpublishReq)
 	}
 
 	return cmd

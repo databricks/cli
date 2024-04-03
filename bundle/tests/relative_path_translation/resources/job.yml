@@ -1,0 +1,14 @@
+resources:
+  jobs:
+    job:
+      tasks:
+        - task_key: local
+          spark_python_task:
+            python_file: ../src/file1.py
+
+        - task_key: variable_reference
+          spark_python_task:
+            # Note: this is a pure variable reference yet needs to persist the location
+            # of the reference, not the location of the variable value.
+            # Also see https://github.com/databricks/cli/issues/1330.
+            python_file: ${var.file_path}
