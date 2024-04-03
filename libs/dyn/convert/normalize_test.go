@@ -40,7 +40,7 @@ func TestNormalizeStructElementDiagnostic(t *testing.T) {
 	vout, err := Normalize(typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
+		Severity: diag.Warning,
 		Summary:  `expected string, found map`,
 		Location: dyn.Location{},
 		Path:     dyn.NewPath(dyn.Key("bar")),
@@ -100,7 +100,7 @@ func TestNormalizeStructError(t *testing.T) {
 	_, err := Normalize(typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
+		Severity: diag.Warning,
 		Summary:  `expected map, found string`,
 		Location: vin.Get("foo").Location(),
 		Path:     dyn.EmptyPath,
@@ -245,7 +245,7 @@ func TestNormalizeMapElementDiagnostic(t *testing.T) {
 	vout, err := Normalize(typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
+		Severity: diag.Warning,
 		Summary:  `expected string, found map`,
 		Location: dyn.Location{},
 		Path:     dyn.NewPath(dyn.Key("bar")),
@@ -271,7 +271,7 @@ func TestNormalizeMapError(t *testing.T) {
 	_, err := Normalize(typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
+		Severity: diag.Warning,
 		Summary:  `expected map, found string`,
 		Location: vin.Location(),
 		Path:     dyn.EmptyPath,
@@ -335,7 +335,7 @@ func TestNormalizeSliceElementDiagnostic(t *testing.T) {
 	vout, err := Normalize(typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
+		Severity: diag.Warning,
 		Summary:  `expected string, found map`,
 		Location: dyn.Location{},
 		Path:     dyn.NewPath(dyn.Index(2)),
@@ -359,7 +359,7 @@ func TestNormalizeSliceError(t *testing.T) {
 	_, err := Normalize(typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
+		Severity: diag.Warning,
 		Summary:  `expected sequence, found string`,
 		Location: vin.Location(),
 		Path:     dyn.EmptyPath,
@@ -451,7 +451,7 @@ func TestNormalizeStringError(t *testing.T) {
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
+		Severity: diag.Warning,
 		Summary:  `expected string, found map`,
 		Location: dyn.Location{},
 		Path:     dyn.EmptyPath,
@@ -514,7 +514,7 @@ func TestNormalizeBoolFromStringError(t *testing.T) {
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
+		Severity: diag.Warning,
 		Summary:  `expected bool, found string`,
 		Location: vin.Location(),
 		Path:     dyn.EmptyPath,
@@ -527,7 +527,7 @@ func TestNormalizeBoolError(t *testing.T) {
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
+		Severity: diag.Warning,
 		Summary:  `expected bool, found map`,
 		Location: dyn.Location{},
 		Path:     dyn.EmptyPath,
@@ -577,7 +577,7 @@ func TestNormalizeIntFromStringError(t *testing.T) {
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
+		Severity: diag.Warning,
 		Summary:  `cannot parse "abc" as an integer`,
 		Location: vin.Location(),
 		Path:     dyn.EmptyPath,
@@ -590,7 +590,7 @@ func TestNormalizeIntError(t *testing.T) {
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
+		Severity: diag.Warning,
 		Summary:  `expected int, found map`,
 		Location: dyn.Location{},
 		Path:     dyn.EmptyPath,
@@ -640,7 +640,7 @@ func TestNormalizeFloatFromStringError(t *testing.T) {
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
+		Severity: diag.Warning,
 		Summary:  `cannot parse "abc" as a floating point number`,
 		Location: vin.Location(),
 		Path:     dyn.EmptyPath,
@@ -653,7 +653,7 @@ func TestNormalizeFloatError(t *testing.T) {
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
+		Severity: diag.Warning,
 		Summary:  `expected float, found map`,
 		Location: dyn.Location{},
 		Path:     dyn.EmptyPath,
