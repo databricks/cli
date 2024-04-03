@@ -33,14 +33,14 @@ var validateFuncMap = template.FuncMap{
 }
 
 const errorTemplate = `{{ "Error" | red }}: {{ .Summary }}
-  {{ "At " }}{{ .Path.String | green }}
-  {{ "In " }}{{ .Location.String | cyan }}
+  {{ "at " }}{{ .Path.String | green }}
+  {{ "in " }}{{ .Location.String | cyan }}
 
 `
 
 const warningTemplate = `{{ "Warning" | yellow }}: {{ .Summary }}
-  {{ "At " }}{{ .Path.String | green }}
-  {{ "In " }}{{ .Location.String | cyan }}
+  {{ "at " }}{{ .Path.String | green }}
+  {{ "in " }}{{ .Location.String | cyan }}
 
 `
 
