@@ -33,51 +33,53 @@ func Normalize(dst any, src dyn.Value, opts ...NormalizeOption) (dyn.Value, diag
 		}
 	}
 
-	return n.normalizeType(reflect.TypeOf(dst), src, []reflect.Type{})
+	return n.normalizeType(reflect.TypeOf(dst), src, []reflect.Type{}, dyn.EmptyPath)
 }
 
-func (n normalizeOptions) normalizeType(typ reflect.Type, src dyn.Value, seen []reflect.Type) (dyn.Value, diag.Diagnostics) {
+func (n normalizeOptions) normalizeType(typ reflect.Type, src dyn.Value, seen []reflect.Type, path dyn.Path) (dyn.Value, diag.Diagnostics) {
 	for typ.Kind() == reflect.Pointer {
 		typ = typ.Elem()
 	}
 
 	switch typ.Kind() {
 	case reflect.Struct:
-		return n.normalizeStruct(typ, src, append(seen, typ))
+		return n.normalizeStruct(typ, src, append(seen, typ), path)
 	case reflect.Map:
-		return n.normalizeMap(typ, src, append(seen, typ))
+		return n.normalizeMap(typ, src, append(seen, typ), path)
 	case reflect.Slice:
-		return n.normalizeSlice(typ, src, append(seen, typ))
+		return n.normalizeSlice(typ, src, append(seen, typ), path)
 	case reflect.String:
-		return n.normalizeString(typ, src)
+		return n.normalizeString(typ, src, path)
 	case reflect.Bool:
-		return n.normalizeBool(typ, src)
+		return n.normalizeBool(typ, src, path)
 	case reflect.Int, reflect.Int32, reflect.Int64:
-		return n.normalizeInt(typ, src)
+		return n.normalizeInt(typ, src, path)
 	case reflect.Float32, reflect.Float64:
-		return n.normalizeFloat(typ, src)
+		return n.normalizeFloat(typ, src, path)
 	}
 
 	return dyn.InvalidValue, diag.Errorf("unsupported type: %s", typ.Kind())
 }
 
-func nullWarning(expected dyn.Kind, src dyn.Value) diag.Diagnostic {
+func nullWarning(expected dyn.Kind, src dyn.Value, path dyn.Path) diag.Diagnostic {
 	return diag.Diagnostic{
 		Severity: diag.Warning,
 		Summary:  fmt.Sprintf("expected a %s value, found null", expected),
 		Location: src.Location(),
+		Path:     path,
 	}
 }
 
-func typeMismatch(expected dyn.Kind, src dyn.Value) diag.Diagnostic {
+func typeMismatch(expected dyn.Kind, src dyn.Value, path dyn.Path) diag.Diagnostic {
 	return diag.Diagnostic{
 		Severity: diag.Error,
 		Summary:  fmt.Sprintf("expected %s, found %s", expected, src.Kind()),
 		Location: src.Location(),
+		Path:     path,
 	}
 }
 
-func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen []reflect.Type) (dyn.Value, diag.Diagnostics) {
+func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen []reflect.Type, path dyn.Path) (dyn.Value, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	switch src.Kind() {
@@ -93,12 +95,13 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 					Severity: diag.Warning,
 					Summary:  fmt.Sprintf("unknown field: %s", pk.MustString()),
 					Location: pk.Location(),
+					Path:     path,
 				})
 				continue
 			}
 
 			// Normalize the value according to the field type.
-			nv, err := n.normalizeType(typ.FieldByIndex(index).Type, pv, seen)
+			nv, err := n.normalizeType(typ.FieldByIndex(index).Type, pv, seen, path.Append(dyn.Key(pk.MustString())))
 			if err != nil {
 				diags = diags.Extend(err)
 				// Skip the element if it cannot be normalized.
@@ -136,17 +139,17 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 			var v dyn.Value
 			switch ftyp.Kind() {
 			case reflect.Struct, reflect.Map:
-				v, _ = n.normalizeType(ftyp, dyn.V(map[string]dyn.Value{}), seen)
+				v, _ = n.normalizeType(ftyp, dyn.V(map[string]dyn.Value{}), seen, path.Append(dyn.Key(k)))
 			case reflect.Slice:
-				v, _ = n.normalizeType(ftyp, dyn.V([]dyn.Value{}), seen)
+				v, _ = n.normalizeType(ftyp, dyn.V([]dyn.Value{}), seen, path.Append(dyn.Key(k)))
 			case reflect.String:
-				v, _ = n.normalizeType(ftyp, dyn.V(""), seen)
+				v, _ = n.normalizeType(ftyp, dyn.V(""), seen, path.Append(dyn.Key(k)))
 			case reflect.Bool:
-				v, _ = n.normalizeType(ftyp, dyn.V(false), seen)
+				v, _ = n.normalizeType(ftyp, dyn.V(false), seen, path.Append(dyn.Key(k)))
 			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-				v, _ = n.normalizeType(ftyp, dyn.V(int64(0)), seen)
+				v, _ = n.normalizeType(ftyp, dyn.V(int64(0)), seen, path.Append(dyn.Key(k)))
 			case reflect.Float32, reflect.Float64:
-				v, _ = n.normalizeType(ftyp, dyn.V(float64(0)), seen)
+				v, _ = n.normalizeType(ftyp, dyn.V(float64(0)), seen, path.Append(dyn.Key(k)))
 			default:
 				// Skip fields for which we do not have a natural [dyn.Value] equivalent.
 				// For example, we don't handle reflect.Complex* and reflect.Uint* types.
@@ -162,10 +165,10 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 		return src, diags
 	}
 
-	return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindMap, src))
+	return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindMap, src, path))
 }
 
-func (n normalizeOptions) normalizeMap(typ reflect.Type, src dyn.Value, seen []reflect.Type) (dyn.Value, diag.Diagnostics) {
+func (n normalizeOptions) normalizeMap(typ reflect.Type, src dyn.Value, seen []reflect.Type, path dyn.Path) (dyn.Value, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	switch src.Kind() {
@@ -176,7 +179,7 @@ func (n normalizeOptions) normalizeMap(typ reflect.Type, src dyn.Value, seen []r
 			pv := pair.Value
 
 			// Normalize the value according to the map element type.
-			nv, err := n.normalizeType(typ.Elem(), pv, seen)
+			nv, err := n.normalizeType(typ.Elem(), pv, seen, path.Append(dyn.Key(pk.MustString())))
 			if err != nil {
 				diags = diags.Extend(err)
 				// Skip the element if it cannot be normalized.
@@ -193,10 +196,10 @@ func (n normalizeOptions) normalizeMap(typ reflect.Type, src dyn.Value, seen []r
 		return src, diags
 	}
 
-	return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindMap, src))
+	return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindMap, src, path))
 }
 
-func (n normalizeOptions) normalizeSlice(typ reflect.Type, src dyn.Value, seen []reflect.Type) (dyn.Value, diag.Diagnostics) {
+func (n normalizeOptions) normalizeSlice(typ reflect.Type, src dyn.Value, seen []reflect.Type, path dyn.Path) (dyn.Value, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	switch src.Kind() {
@@ -204,7 +207,7 @@ func (n normalizeOptions) normalizeSlice(typ reflect.Type, src dyn.Value, seen [
 		out := make([]dyn.Value, 0, len(src.MustSequence()))
 		for _, v := range src.MustSequence() {
 			// Normalize the value according to the slice element type.
-			v, err := n.normalizeType(typ.Elem(), v, seen)
+			v, err := n.normalizeType(typ.Elem(), v, seen, path.Append(dyn.Index(len(out))))
 			if err != nil {
 				diags = diags.Extend(err)
 				// Skip the element if it cannot be normalized.
@@ -221,10 +224,10 @@ func (n normalizeOptions) normalizeSlice(typ reflect.Type, src dyn.Value, seen [
 		return src, diags
 	}
 
-	return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindSequence, src))
+	return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindSequence, src, path))
 }
 
-func (n normalizeOptions) normalizeString(typ reflect.Type, src dyn.Value) (dyn.Value, diag.Diagnostics) {
+func (n normalizeOptions) normalizeString(typ reflect.Type, src dyn.Value, path dyn.Path) (dyn.Value, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var out string
 
@@ -239,15 +242,15 @@ func (n normalizeOptions) normalizeString(typ reflect.Type, src dyn.Value) (dyn.
 		out = strconv.FormatFloat(src.MustFloat(), 'f', -1, 64)
 	case dyn.KindNil:
 		// Return a warning if the field is present but has a null value.
-		return dyn.InvalidValue, diags.Append(nullWarning(dyn.KindString, src))
+		return dyn.InvalidValue, diags.Append(nullWarning(dyn.KindString, src, path))
 	default:
-		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindString, src))
+		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindString, src, path))
 	}
 
 	return dyn.NewValue(out, src.Location()), diags
 }
 
-func (n normalizeOptions) normalizeBool(typ reflect.Type, src dyn.Value) (dyn.Value, diag.Diagnostics) {
+func (n normalizeOptions) normalizeBool(typ reflect.Type, src dyn.Value, path dyn.Path) (dyn.Value, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var out bool
 
@@ -268,19 +271,19 @@ func (n normalizeOptions) normalizeBool(typ reflect.Type, src dyn.Value) (dyn.Va
 			}
 
 			// Cannot interpret as a boolean.
-			return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindBool, src))
+			return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindBool, src, path))
 		}
 	case dyn.KindNil:
 		// Return a warning if the field is present but has a null value.
-		return dyn.InvalidValue, diags.Append(nullWarning(dyn.KindBool, src))
+		return dyn.InvalidValue, diags.Append(nullWarning(dyn.KindBool, src, path))
 	default:
-		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindBool, src))
+		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindBool, src, path))
 	}
 
 	return dyn.NewValue(out, src.Location()), diags
 }
 
-func (n normalizeOptions) normalizeInt(typ reflect.Type, src dyn.Value) (dyn.Value, diag.Diagnostics) {
+func (n normalizeOptions) normalizeInt(typ reflect.Type, src dyn.Value, path dyn.Path) (dyn.Value, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var out int64
 
@@ -300,19 +303,20 @@ func (n normalizeOptions) normalizeInt(typ reflect.Type, src dyn.Value) (dyn.Val
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("cannot parse %q as an integer", src.MustString()),
 				Location: src.Location(),
+				Path:     path,
 			})
 		}
 	case dyn.KindNil:
 		// Return a warning if the field is present but has a null value.
-		return dyn.InvalidValue, diags.Append(nullWarning(dyn.KindInt, src))
+		return dyn.InvalidValue, diags.Append(nullWarning(dyn.KindInt, src, path))
 	default:
-		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindInt, src))
+		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindInt, src, path))
 	}
 
 	return dyn.NewValue(out, src.Location()), diags
 }
 
-func (n normalizeOptions) normalizeFloat(typ reflect.Type, src dyn.Value) (dyn.Value, diag.Diagnostics) {
+func (n normalizeOptions) normalizeFloat(typ reflect.Type, src dyn.Value, path dyn.Path) (dyn.Value, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var out float64
 
@@ -332,13 +336,14 @@ func (n normalizeOptions) normalizeFloat(typ reflect.Type, src dyn.Value) (dyn.V
 				Severity: diag.Error,
 				Summary:  fmt.Sprintf("cannot parse %q as a floating point number", src.MustString()),
 				Location: src.Location(),
+				Path:     path,
 			})
 		}
 	case dyn.KindNil:
 		// Return a warning if the field is present but has a null value.
-		return dyn.InvalidValue, diags.Append(nullWarning(dyn.KindFloat, src))
+		return dyn.InvalidValue, diags.Append(nullWarning(dyn.KindFloat, src, path))
 	default:
-		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindFloat, src))
+		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindFloat, src, path))
 	}
 
 	return dyn.NewValue(out, src.Location()), diags
