@@ -305,5 +305,5 @@ func TestMustAnyClientWithEmptyDatabricksCfg(t *testing.T) {
 	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
 
 	_, err = MustAnyClient(cmd, []string{})
-	require.ErrorContains(t, err, "does not contain any profiles; please create one by running 'databricks configure'")
+	require.ErrorContains(t, err, "does not contain account profiles")
 }
