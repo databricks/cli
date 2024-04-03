@@ -72,7 +72,7 @@ func nullWarning(expected dyn.Kind, src dyn.Value, path dyn.Path) diag.Diagnosti
 
 func typeMismatch(expected dyn.Kind, src dyn.Value, path dyn.Path) diag.Diagnostic {
 	return diag.Diagnostic{
-		Severity: diag.Error,
+		Severity: diag.Warning,
 		Summary:  fmt.Sprintf("expected %s, found %s", expected, src.Kind()),
 		Location: src.Location(),
 		Path:     path,
@@ -93,7 +93,7 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 			if !ok {
 				diags = diags.Append(diag.Diagnostic{
 					Severity: diag.Warning,
-					Summary:  fmt.Sprintf("unknown field %q", pk.MustString()),
+					Summary:  fmt.Sprintf("unknown field: %s", pk.MustString()),
 					Location: pk.Location(),
 					Path:     path,
 				})
@@ -300,7 +300,7 @@ func (n normalizeOptions) normalizeInt(typ reflect.Type, src dyn.Value, path dyn
 			}
 
 			return dyn.InvalidValue, diags.Append(diag.Diagnostic{
-				Severity: diag.Error,
+				Severity: diag.Warning,
 				Summary:  fmt.Sprintf("cannot parse %q as an integer", src.MustString()),
 				Location: src.Location(),
 				Path:     path,
@@ -333,7 +333,7 @@ func (n normalizeOptions) normalizeFloat(typ reflect.Type, src dyn.Value, path d
 			}
 
 			return dyn.InvalidValue, diags.Append(diag.Diagnostic{
-				Severity: diag.Error,
+				Severity: diag.Warning,
 				Summary:  fmt.Sprintf("cannot parse %q as a floating point number", src.MustString()),
 				Location: src.Location(),
 				Path:     path,

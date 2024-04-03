@@ -93,10 +93,6 @@ func (p Path) HasPrefix(q Path) bool {
 func (p Path) String() string {
 	var buf bytes.Buffer
 
-	if len(p) == 0 {
-		return "<root>"
-	}
-
 	for i, c := range p {
 		if i > 0 && c.key != "" {
 			buf.WriteRune('.')

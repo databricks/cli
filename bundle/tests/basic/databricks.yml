@@ -1,13 +1,2 @@
 bundle:
   name: basic
-
-foobar: unknown
-
-resources:
-  jobs:
-    my_job:
-      tasks:
-        - task_key: task_1
-        - task_key: task_2
-        - task_key: task_3
-          task_property: unknown
