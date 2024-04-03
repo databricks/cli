@@ -12,14 +12,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var authTemplate = `{{"Host:" | bold}} {{.Details.Host}}
-{{- if .AccountID}}
-{{"Account ID:" | bold}} {{.AccountID}}
+var authTemplate = `{{"Host:" | bold}} {{.Status.Details.Host}}
+{{- if .Status.AccountID}}
+{{"Account ID:" | bold}} {{.Status.AccountID}}
 {{- end}}
-{{- if .Username}}
-{{"User:" | bold}} {{.Username}}
+{{- if .Status.Username}}
+{{"User:" | bold}} {{.Status.Username}}
 {{- end}}
-{{"Authenticated with:" | bold}} {{.Details.AuthType}}
+{{"Authenticated with:" | bold}} {{.Status.Details.AuthType}}
 -----
 ` + configurationTemplate
 
