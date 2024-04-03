@@ -1,5 +1,46 @@
 # Version changelog
 
+## 0.217.0
+
+Breaking Change:
+ * Add allow list for resources when bundle `run_as` is set ([#1233](https://github.com/databricks/cli/pull/1233)).
+ * Make bundle validation print text output by default ([#1335](https://github.com/databricks/cli/pull/1335)).
+
+CLI:
+ * Added `auth describe` command ([#1244](https://github.com/databricks/cli/pull/1244)).
+ * Fixed message for successful auth describe run ([#1336](https://github.com/databricks/cli/pull/1336)).
+
+Bundles:
+ * Use UserName field to identify if service principal is used ([#1310](https://github.com/databricks/cli/pull/1310)).
+ * Allow unknown properties in the config file for template initialization ([#1315](https://github.com/databricks/cli/pull/1315)).
+ * Remove support for DATABRICKS_BUNDLE_INCLUDES ([#1317](https://github.com/databricks/cli/pull/1317)).
+ * Make `bundle.deployment` optional in the bundle schema ([#1321](https://github.com/databricks/cli/pull/1321)).
+ * Fix the generated DABs JSON schema ([#1322](https://github.com/databricks/cli/pull/1322)).
+ * Make bundle loaders return diagnostics ([#1319](https://github.com/databricks/cli/pull/1319)).
+ * Add `bundle debug terraform` command ([#1294](https://github.com/databricks/cli/pull/1294)).
+ * Allow specifying CLI version constraints required to run the bundle ([#1320](https://github.com/databricks/cli/pull/1320)).
+
+Internal:
+ * Retain location information of variable reference ([#1333](https://github.com/databricks/cli/pull/1333)).
+ * Define `dyn.Mapping` to represent maps ([#1301](https://github.com/databricks/cli/pull/1301)).
+ * Return `diag.Diagnostics` from mutators ([#1305](https://github.com/databricks/cli/pull/1305)).
+ * Fix flaky test in `libs/process` ([#1314](https://github.com/databricks/cli/pull/1314)).
+ * Move path field to bundle type ([#1316](https://github.com/databricks/cli/pull/1316)).
+ * Load bundle configuration from mutator ([#1318](https://github.com/databricks/cli/pull/1318)).
+ * Return diagnostics from `config.Load` ([#1324](https://github.com/databricks/cli/pull/1324)).
+ * Return warning for nil primitive types during normalization ([#1329](https://github.com/databricks/cli/pull/1329)).
+ * Include `dyn.Path` in normalization warnings and errors ([#1332](https://github.com/databricks/cli/pull/1332)).
+ * Make normalization return warnings instead of errors ([#1334](https://github.com/databricks/cli/pull/1334)).
+
+API Changes:
+ * Added `databricks lakeview migrate` command.
+ * Added `databricks lakeview unpublish` command.
+ * Changed `databricks ip-access-lists get` command . New request type is .
+
+OpenAPI commit e316cc3d78d087522a74650e26586088da9ac8cb (2024-04-03)
+Dependency updates:
+ * Bump github.com/databricks/databricks-sdk-go from 0.36.0 to 0.37.0 ([#1326](https://github.com/databricks/cli/pull/1326)).
+
 ## 0.216.0
 
 CLI:
