@@ -65,7 +65,7 @@ func newCreate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.GitUsername, "git-username", createReq.GitUsername, `Git username.`)
+	cmd.Flags().StringVar(&createReq.GitUsername, "git-username", createReq.GitUsername, `The username or email provided with your Git provider account, depending on which provider you are using.`)
 	cmd.Flags().StringVar(&createReq.PersonalAccessToken, "personal-access-token", createReq.PersonalAccessToken, `The personal access token used to authenticate to the corresponding Git provider.`)
 
 	cmd.Use = "create GIT_PROVIDER"
@@ -335,7 +335,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.GitProvider, "git-provider", updateReq.GitProvider, `Git provider.`)
-	cmd.Flags().StringVar(&updateReq.GitUsername, "git-username", updateReq.GitUsername, `Git username.`)
+	cmd.Flags().StringVar(&updateReq.GitUsername, "git-username", updateReq.GitUsername, `The username or email provided with your Git provider account, depending on which provider you are using.`)
 	cmd.Flags().StringVar(&updateReq.PersonalAccessToken, "personal-access-token", updateReq.PersonalAccessToken, `The personal access token used to authenticate to the corresponding Git provider.`)
 
 	cmd.Use = "update CREDENTIAL_ID"

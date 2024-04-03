@@ -64,6 +64,9 @@ func New() *cobra.Command {
   For the mapping of the required permissions for specific actions or abilities
   and other important information, see [Access Control].
   
+  Note that to manage access control on service principals, use **[Account
+  Access Control Proxy](:service:accountaccesscontrolproxy)**.
+  
   [Access Control]: https://docs.databricks.com/security/auth-authz/access-control/index.html`,
 		GroupID: "iam",
 		Annotations: map[string]string{
@@ -112,7 +115,7 @@ func newGet() *cobra.Command {
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following:
       authorization, clusters, cluster-policies, directories, experiments,
       files, instance-pools, jobs, notebooks, pipelines, registered-models,
-      repos, serving-endpoints, or sql-warehouses.
+      repos, serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
 	cmd.Annotations = make(map[string]string)
@@ -240,7 +243,7 @@ func newSet() *cobra.Command {
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following:
       authorization, clusters, cluster-policies, directories, experiments,
       files, instance-pools, jobs, notebooks, pipelines, registered-models,
-      repos, serving-endpoints, or sql-warehouses.
+      repos, serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
 	cmd.Annotations = make(map[string]string)
@@ -314,7 +317,7 @@ func newUpdate() *cobra.Command {
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following:
       authorization, clusters, cluster-policies, directories, experiments,
       files, instance-pools, jobs, notebooks, pipelines, registered-models,
-      repos, serving-endpoints, or sql-warehouses.
+      repos, serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
 	cmd.Annotations = make(map[string]string)

@@ -22,6 +22,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newLoginCommand(&perisistentAuth))
 	cmd.AddCommand(newProfilesCommand())
 	cmd.AddCommand(newTokenCommand(&perisistentAuth))
+	cmd.AddCommand(newDescribeCommand())
 	return cmd
 }
 

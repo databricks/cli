@@ -436,7 +436,7 @@ func newDeleteRun() *cobra.Command {
   Deletes a non-active run. Returns an error if the run is active.
 
   Arguments:
-    RUN_ID: The canonical identifier of the run for which to retrieve the metadata.`
+    RUN_ID: ID of the run to delete.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -470,14 +470,14 @@ func newDeleteRun() *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
-				id, err := cmdio.Select(ctx, names, "The canonical identifier of the run for which to retrieve the metadata")
+				id, err := cmdio.Select(ctx, names, "ID of the run to delete")
 				if err != nil {
 					return err
 				}
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have the canonical identifier of the run for which to retrieve the metadata")
+				return fmt.Errorf("expected to have id of the run to delete")
 			}
 			_, err = fmt.Sscan(args[0], &deleteRunReq.RunId)
 			if err != nil {
@@ -908,7 +908,7 @@ func newGetRunOutput() *cobra.Command {
   60 days, you must save old run results before they expire.
 
   Arguments:
-    RUN_ID: The canonical identifier for the run. This field is required.`
+    RUN_ID: The canonical identifier for the run.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1038,8 +1038,8 @@ func newListRuns() *cobra.Command {
 	cmd.Flags().IntVar(&listRunsReq.Offset, "offset", listRunsReq.Offset, `The offset of the first run to return, relative to the most recent run.`)
 	cmd.Flags().StringVar(&listRunsReq.PageToken, "page-token", listRunsReq.PageToken, `Use next_page_token or prev_page_token returned from the previous request to list the next or previous page of runs respectively.`)
 	cmd.Flags().Var(&listRunsReq.RunType, "run-type", `The type of runs to return. Supported values: [JOB_RUN, SUBMIT_RUN, WORKFLOW_RUN]`)
-	cmd.Flags().IntVar(&listRunsReq.StartTimeFrom, "start-time-from", listRunsReq.StartTimeFrom, `Show runs that started _at or after_ this value.`)
-	cmd.Flags().IntVar(&listRunsReq.StartTimeTo, "start-time-to", listRunsReq.StartTimeTo, `Show runs that started _at or before_ this value.`)
+	cmd.Flags().Int64Var(&listRunsReq.StartTimeFrom, "start-time-from", listRunsReq.StartTimeFrom, `Show runs that started _at or after_ this value.`)
+	cmd.Flags().Int64Var(&listRunsReq.StartTimeTo, "start-time-to", listRunsReq.StartTimeTo, `Show runs that started _at or before_ this value.`)
 
 	cmd.Use = "list-runs"
 	cmd.Short = `List job runs.`
@@ -1502,13 +1502,23 @@ func newSubmit() *cobra.Command {
 	cmd.Flags().Var(&submitJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
+	// TODO: complex arg: condition_task
+	// TODO: complex arg: dbt_task
 	// TODO: complex arg: email_notifications
 	// TODO: complex arg: git_source
 	// TODO: complex arg: health
 	cmd.Flags().StringVar(&submitReq.IdempotencyToken, "idempotency-token", submitReq.IdempotencyToken, `An optional token that can be used to guarantee the idempotency of job run requests.`)
+	// TODO: complex arg: notebook_task
 	// TODO: complex arg: notification_settings
+	// TODO: complex arg: pipeline_task
+	// TODO: complex arg: python_wheel_task
 	// TODO: complex arg: queue
+	// TODO: complex arg: run_job_task
 	cmd.Flags().StringVar(&submitReq.RunName, "run-name", submitReq.RunName, `An optional name for the run.`)
+	// TODO: complex arg: spark_jar_task
+	// TODO: complex arg: spark_python_task
+	// TODO: complex arg: spark_submit_task
+	// TODO: complex arg: sql_task
 	// TODO: array: tasks
 	cmd.Flags().IntVar(&submitReq.TimeoutSeconds, "timeout-seconds", submitReq.TimeoutSeconds, `An optional timeout applied to each run of this job.`)
 	// TODO: complex arg: webhook_notifications
