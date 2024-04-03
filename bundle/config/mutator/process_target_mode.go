@@ -31,11 +31,6 @@ func (m *processTargetMode) Name() string {
 // changing their their name, adding tags, and (in the future)
 // marking them as 'hidden' in the UI.
 func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	r := b.Config.Resources
-
-	shortName := b.Config.Workspace.CurrentUser.ShortName
-	prefix := "[dev " + shortName + "] "
-
 	if !b.Config.Bundle.Deployment.Lock.IsExplicitlyEnabled() {
 		log.Infof(ctx, "Development mode: disabling deployment lock since bundle.deployment.lock.enabled is not set to true")
 		err := disableDeploymentLock(b)
@@ -43,6 +38,10 @@ func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) diag.Diagno
 			return diag.FromErr(err)
 		}
 	}
+
+	r := b.Config.Resources
+	shortName := b.Config.Workspace.CurrentUser.ShortName
+	prefix := "[dev " + shortName + "] "
 
 	// Generate a normalized version of the short name that can be used as a tag value.
 	tagValue := b.Tagging.NormalizeValue(shortName)
