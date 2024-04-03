@@ -61,6 +61,21 @@ func pluralize(n int, singular, plural string) string {
 	return fmt.Sprintf("%d %s", n, plural)
 }
 
+func buildTrailer(diags diag.Diagnostics) string {
+	parts := []string{}
+	if errors := len(diags.Filter(diag.Error)); errors > 0 {
+		parts = append(parts, color.RedString(pluralize(errors, "error", "errors")))
+	}
+	if warnings := len(diags.Filter(diag.Warning)); warnings > 0 {
+		parts = append(parts, color.YellowString(pluralize(warnings, "warning", "warnings")))
+	}
+	if len(parts) > 0 {
+		return fmt.Sprintf("Found %s", strings.Join(parts, " and "))
+	} else {
+		return color.GreenString("Validation OK!")
+	}
+}
+
 func renderTextOutput(cmd *cobra.Command, b *bundle.Bundle, diags diag.Diagnostics) error {
 	// Print errors and warnings.
 	for _, d := range diags {
@@ -85,22 +100,11 @@ func renderTextOutput(cmd *cobra.Command, b *bundle.Bundle, diags diag.Diagnosti
 		}
 	}
 
-	trailer := []string{}
-	if errors := len(diags.Filter(diag.Error)); errors > 0 {
-		trailer = append(trailer, color.RedString(pluralize(errors, "error", "errors")))
-	}
-	if warnings := len(diags.Filter(diag.Warning)); warnings > 0 {
-		trailer = append(trailer, color.YellowString(pluralize(warnings, "warning", "warnings")))
-	}
-	if len(trailer) == 0 {
-		trailer = append(trailer, color.GreenString("Validation OK!"))
-	}
-
 	// Print validation summary.
 	t := template.Must(template.New("summary").Funcs(validateFuncMap).Parse(summaryTemplate))
 	err := t.Execute(cmd.OutOrStdout(), map[string]any{
 		"Config":  b.Config,
-		"Trailer": strings.Join(trailer, ", "),
+		"Trailer": buildTrailer(diags),
 	})
 	if err != nil {
 		return err
