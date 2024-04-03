@@ -150,7 +150,12 @@ func (r *resolver) resolveRef(ref ref, seen []string) (dyn.Value, error) {
 	if ref.isPure() && complete {
 		// If the variable reference is pure, we can substitute it.
 		// This is useful for interpolating values of non-string types.
-		return resolved[0], nil
+		//
+		// Note: we use the location of the variable reference to preserve the information
+		// of where it is used. This also means that relative path resolution is done
+		// relative to where a variable is used, not where it is defined.
+		//
+		return dyn.NewValue(resolved[0].Value(), ref.value.Location()), nil
 	}
 
 	// Not pure; perform string interpolation.
