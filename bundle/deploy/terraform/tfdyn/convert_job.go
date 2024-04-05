@@ -45,7 +45,18 @@ func convertJobResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 
 	// Modify keys in the "task" blocks
 	vout, err = dyn.Map(vout, "task", dyn.Foreach(func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
-		return renameKeys(v, map[string]string{
+		// Modify "library" blocks for for_each_task
+		vout, err = dyn.Map(v, "for_each_task.task", func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
+			return renameKeys(v, map[string]string{
+				"libraries": "library",
+			})
+		})
+
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+
+		return renameKeys(vout, map[string]string{
 			"libraries": "library",
 		})
 	}))

@@ -100,6 +100,16 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 					t.Library = append(t.Library, l)
 				}
 
+				// Convert for_each_task libraries
+				if v.ForEachTask != nil {
+					for _, v_ := range v.ForEachTask.Task.Libraries {
+						var l schema.ResourceJobTaskForEachTaskTaskLibrary
+						conv(v_, &l)
+						t.ForEachTask.Task.Library = append(t.ForEachTask.Task.Library, l)
+					}
+
+				}
+
 				dst.Task = append(dst.Task, t)
 			}
 
