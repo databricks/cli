@@ -15,6 +15,8 @@ type ResourceGrants struct {
 	Id                string                `json:"id,omitempty"`
 	Metastore         string                `json:"metastore,omitempty"`
 	Model             string                `json:"model,omitempty"`
+	Pipeline          string                `json:"pipeline,omitempty"`
+	Recipient         string                `json:"recipient,omitempty"`
 	Schema            string                `json:"schema,omitempty"`
 	Share             string                `json:"share,omitempty"`
 	StorageCredential string                `json:"storage_credential,omitempty"`
