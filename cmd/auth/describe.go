@@ -23,7 +23,7 @@ var authTemplate = `{{"Host:" | bold}} {{.Status.Details.Host}}
 -----
 ` + configurationTemplate
 
-var errorTemplate = `Unable to authenticate: {{.Error}}
+var errorTemplate = `Unable to authenticate: {{.Status.Error}}
 -----
 ` + configurationTemplate
 
