@@ -21,8 +21,9 @@ func TestProfiles(t *testing.T) {
 	err := databrickscfg.SaveToProfile(ctx, &config.Config{
 		ConfigFile: configFile,
 		Profile:    "profile1",
-		Host:       "https://abc.cloud.databricks.com",
+		Host:       "abc.cloud.databricks.com",
 		Token:      "token1",
+		AuthType:   "pat",
 	})
 	require.NoError(t, err)
 
