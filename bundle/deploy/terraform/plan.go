@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/terraform"
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
@@ -26,30 +27,30 @@ func (p *plan) Name() string {
 	return "terraform.Plan"
 }
 
-func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	tf := b.Terraform
 	if tf == nil {
-		return fmt.Errorf("terraform not initialized")
+		return diag.Errorf("terraform not initialized")
 	}
 
 	cmdio.LogString(ctx, "Starting plan computation")
 
 	err := tf.Init(ctx, tfexec.Upgrade(true))
 	if err != nil {
-		return fmt.Errorf("terraform init: %w", err)
+		return diag.Errorf("terraform init: %v", err)
 	}
 
 	// Persist computed plan
 	tfDir, err := Dir(ctx, b)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 	planPath := filepath.Join(tfDir, "plan")
 	destroy := p.goal == PlanDestroy
 
 	notEmpty, err := tf.Plan(ctx, tfexec.Destroy(destroy), tfexec.Out(planPath))
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	// Set plan in main bundle struct for downstream mutators

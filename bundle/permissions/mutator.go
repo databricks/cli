@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/diag"
 )
 
 const CAN_MANAGE = "CAN_MANAGE"
@@ -46,10 +47,10 @@ func ApplyBundlePermissions() bundle.Mutator {
 	return &bundlePermissions{}
 }
 
-func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	err := validate(b)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	applyForJobs(ctx, b)

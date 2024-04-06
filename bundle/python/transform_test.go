@@ -116,8 +116,8 @@ func TestTransformFiltersWheelTasksOnly(t *testing.T) {
 func TestNoPanicWithNoPythonWheelTasks(t *testing.T) {
 	tmpDir := t.TempDir()
 	b := &bundle.Bundle{
+		RootPath: tmpDir,
 		Config: config.Root{
-			Path: tmpDir,
 			Bundle: config.Bundle{
 				Target: "development",
 			},
@@ -140,6 +140,6 @@ func TestNoPanicWithNoPythonWheelTasks(t *testing.T) {
 		},
 	}
 	trampoline := TransformWheelTask()
-	err := bundle.Apply(context.Background(), b, trampoline)
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, trampoline)
+	require.NoError(t, diags.Error())
 }

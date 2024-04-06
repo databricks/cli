@@ -1,4 +1,4 @@
-package mutator
+package loader
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/diag"
 )
 
 type processInclude struct {
@@ -25,10 +26,14 @@ func (m *processInclude) Name() string {
 	return fmt.Sprintf("ProcessInclude(%s)", m.relPath)
 }
 
-func (m *processInclude) Apply(_ context.Context, b *bundle.Bundle) error {
-	this, err := config.Load(m.fullPath)
-	if err != nil {
-		return err
+func (m *processInclude) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+	this, diags := config.Load(m.fullPath)
+	if diags.HasError() {
+		return diags
 	}
-	return b.Config.Merge(this)
+	err := b.Config.Merge(this)
+	if err != nil {
+		diags = diags.Extend(diag.FromErr(err))
+	}
+	return diags
 }

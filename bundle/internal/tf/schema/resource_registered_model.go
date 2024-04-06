@@ -7,6 +7,7 @@ type ResourceRegisteredModel struct {
 	Comment         string `json:"comment,omitempty"`
 	Id              string `json:"id,omitempty"`
 	Name            string `json:"name"`
+	Owner           string `json:"owner,omitempty"`
 	SchemaName      string `json:"schema_name"`
 	StorageLocation string `json:"storage_location,omitempty"`
 }

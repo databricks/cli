@@ -29,7 +29,7 @@ func TestBundleToTerraformJob(t *testing.T) {
 			JobClusters: []jobs.JobCluster{
 				{
 					JobClusterKey: "key",
-					NewCluster: &compute.ClusterSpec{
+					NewCluster: compute.ClusterSpec{
 						SparkVersion: "10.4.x-scala2.12",
 					},
 				},
@@ -136,6 +136,50 @@ func TestBundleToTerraformJobTaskLibraries(t *testing.T) {
 	require.Len(t, resource.Task, 1)
 	require.Len(t, resource.Task[0].Library, 1)
 	assert.Equal(t, "mlflow", resource.Task[0].Library[0].Pypi.Package)
+
+	bundleToTerraformEquivalenceTest(t, &config)
+}
+
+func TestBundleToTerraformForEachTaskLibraries(t *testing.T) {
+	var src = resources.Job{
+		JobSettings: &jobs.JobSettings{
+			Name: "my job",
+			Tasks: []jobs.Task{
+				{
+					TaskKey: "key",
+					ForEachTask: &jobs.ForEachTask{
+						Inputs: "[1,2,3]",
+						Task: jobs.Task{
+							TaskKey: "iteration",
+							Libraries: []compute.Library{
+								{
+									Pypi: &compute.PythonPyPiLibrary{
+										Package: "mlflow",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	var config = config.Root{
+		Resources: config.Resources{
+			Jobs: map[string]*resources.Job{
+				"my_job": &src,
+			},
+		},
+	}
+
+	out := BundleToTerraform(&config)
+	resource := out.Resource.Job["my_job"].(*schema.ResourceJob)
+
+	assert.Equal(t, "my job", resource.Name)
+	require.Len(t, resource.Task, 1)
+	require.Len(t, resource.Task[0].ForEachTask.Task.Library, 1)
+	assert.Equal(t, "mlflow", resource.Task[0].ForEachTask.Task.Library[0].Pypi.Package)
 
 	bundleToTerraformEquivalenceTest(t, &config)
 }

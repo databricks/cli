@@ -45,13 +45,13 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*settings.GetEsmEnablementAccountRequest,
+	*settings.GetEsmEnablementAccountSettingRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getReq settings.GetEsmEnablementAccountRequest
+	var getReq settings.GetEsmEnablementAccountSettingRequest
 
 	// TODO: short flags
 
