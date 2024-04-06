@@ -1,0 +1,14 @@
+variables:
+  a:
+    description: sequence variable
+    default:
+      - this
+      - that
+  b:
+    description: string variable
+    default: abc def
+
+include: ${var.a}
+
+bundle:
+  name: ${var.b}

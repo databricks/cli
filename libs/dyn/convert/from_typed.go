@@ -36,7 +36,7 @@ func fromTyped(src any, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, 
 	srcv := reflect.ValueOf(src)
 
 	// Dereference pointer if necessary
-	for srcv.Kind() == reflect.Pointer {
+	for srcv.Kind() == reflect.Pointer || srcv.Kind() == reflect.Interface {
 		if srcv.IsNil() {
 			return dyn.NilValue, nil
 		}
@@ -58,6 +58,8 @@ func fromTyped(src any, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, 
 		return fromTypedInt(srcv, ref, options...)
 	case reflect.Float32, reflect.Float64:
 		return fromTypedFloat(srcv, ref, options...)
+	case reflect.Interface:
+		return dyn.NewValue(srcv, ref.Location()), nil
 	}
 
 	return dyn.InvalidValue, fmt.Errorf("unsupported type: %s", srcv.Kind())

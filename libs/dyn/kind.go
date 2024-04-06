@@ -2,6 +2,7 @@ package dyn
 
 import (
 	"fmt"
+	"reflect"
 	"time"
 )
 
@@ -21,23 +22,30 @@ const (
 )
 
 func kindOf(v any) Kind {
-	switch v.(type) {
-	case map[string]Value:
+	vc := reflect.ValueOf(v)
+
+	for vc.Kind() == reflect.Pointer || vc.Kind() == reflect.Interface {
+		if vc.IsNil() {
+			return KindNil
+		}
+		vc = vc.Elem()
+	}
+
+	switch vc.Kind() {
+	case reflect.Map:
 		return KindMap
-	case []Value:
+	case reflect.Slice:
 		return KindSequence
-	case string:
+	case reflect.String:
 		return KindString
-	case bool:
+	case reflect.Bool:
 		return KindBool
-	case int, int32, int64:
+	case reflect.Int, reflect.Int32, reflect.Int64:
 		return KindInt
-	case float32, float64:
+	case reflect.Float32, reflect.Float64:
 		return KindFloat
-	case time.Time:
+	case reflect.TypeOf(time.Time{}).Kind():
 		return KindTime
-	case nil:
-		return KindNil
 	default:
 		panic("not handled")
 	}

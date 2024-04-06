@@ -120,3 +120,15 @@ func TestVariablesWithTargetLookupOverrides(t *testing.T) {
 	assert.Equal(t, "cluster: some-test-cluster", b.Config.Variables["d"].Lookup.String())
 	assert.Equal(t, "instance-pool: some-test-instance-pool", b.Config.Variables["e"].Lookup.String())
 }
+
+func TestVariablesWithSequenceType(t *testing.T) {
+	b := load(t, "./variables/complex_types")
+	err := bundle.Apply(context.Background(), b, bundle.Seq(
+		mutator.SetVariables(),
+		mutator.ResolveVariableReferences(
+			"variables",
+		),
+	))
+	require.NoError(t, err)
+	assert.Equal(t, "abc def", b.Config.Bundle.Name)
+}

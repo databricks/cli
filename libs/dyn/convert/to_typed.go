@@ -46,6 +46,9 @@ func ToTyped(dst any, src dyn.Value) error {
 		return toTypedInt(dstv, src)
 	case reflect.Float32, reflect.Float64:
 		return toTypedFloat(dstv, src)
+	case reflect.Interface:
+		dstv.Set(reflect.ValueOf(src.AsAny()))
+		return nil
 	}
 
 	return fmt.Errorf("unsupported type: %s", dstv.Kind())
