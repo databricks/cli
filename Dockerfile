@@ -1,6 +1,6 @@
 FROM alpine:3.19 as builder
 
-RUN apk add jq
+RUN ["apk", "add", "jq"]
 
 WORKDIR /build
 
