@@ -1,26 +1,32 @@
 #!/bin/sh
 set -euo pipefail
 
-# TODO: Add assertions that this script is build called from /build
-
-
-
-TF_VERSION=$(/build/databricks bundle debug terraform --output json | jq .terraform.version -r)
-PROVIDER_VERSION=$(/build/databricks bundle debug terraform --output json | jq .terraform.providerVersion -r)
-# BUILD_ARCH="${1:-invalid}"
-
-# TODO: Test this
-# if [ "$BUILD_ARCH" = "invalid" ]; then
-#   exit 1
-# fi
-
-# TODO: add check that build arch is either amd64 or arm64
-mkdir -p zip
+DATABRICKS_TF_VERSION=$(/app/databricks bundle debug terraform --output json | jq -r .terraform.version)
+DATABRICKS_TF_PROVIDER_VERSION=$(/app/databricks bundle debug terraform --output json | jq -r .terraform.providerVersion)
 
 # Download the terraform binary
-wget https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_${BUILD_ARCH}.zip -O zip/terraform.zip
+mkdir -p zip
+wget https://releases.hashicorp.com/terraform/${DATABRICKS_TF_VERSION}/terraform_${DATABRICKS_TF_VERSION}_linux_${ARCH}.zip -O zip/terraform.zip
 unzip zip/terraform.zip -d zip/terraform
+mkdir -p /app/bin
+mv zip/terraform/terraform /app/bin/terraform
 
-# Download the databricks terraform provider
-wget https://github.com/databricks/terraform-provider-databricks/releases/download/v${PROVIDER_VERSION}/terraform-provider-databricks_${PROVIDER_VERSION}_linux_${BUILD_ARCH}.zip -O zip/provider.zip
-unzip zip/provider.zip -d zip/provider
+# Download the provider plugin
+TF_PROVIDER_NAME=terraform-provider-databricks_${DATABRICKS_TF_PROVIDER_VERSION}_linux_${ARCH}.zip
+mkdir -p /app/providers/registry.terraform.io/databricks/databricks
+wget https://github.com/databricks/terraform-provider-databricks/releases/download/v${DATABRICKS_TF_PROVIDER_VERSION}/${TF_PROVIDER_NAME} -O /app/providers/registry.terraform.io/databricks/databricks/${TF_PROVIDER_NAME}
+
+
+# TODO: document both the interactive and the non interactive workflows for
+# working with DABs with the docker container. Execing into the container
+# allows for a better iteration loop
+
+# For the interactive devloop:
+# docker run -it --entrypoint /bin/sh cli ...
+
+# For the non-interactive devloop:
+# docker run cli ...
+
+# TODO: End to end test for this image?
+
+# TODO: Final sanity check that the docker image is indeed airgapped.

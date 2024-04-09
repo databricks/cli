@@ -45,6 +45,34 @@ archives:
   # file name then additional logic to clean up older builds would be needed.
   name_template: 'databricks_cli_{{ if not .IsSnapshot }}{{ .Version }}_{{ end }}{{ .Os }}_{{ .Arch }}'
 
+#TODO: Add some documentation / a readme to the docker directory on how to maintain this.
+
+dockers:
+  - id: arm64
+    goarch: arm64
+    image_templates:
+      # Docker tags can't have "+" in them, so we replace it with "-"
+      - 'ghcr.io/databricks/cli:{{replace .Version "+" "-"}}-arm64'
+    build_flag_templates:
+      - "--build-arg=ARCH=arm64"
+      - "--platform=linux/arm64"
+    extra_files:
+      - "./docker/config.tfrc"
+      - "./docker/setup.sh"
+
+  - id: amd64
+    goarch: amd64
+    image_templates:
+      # Docker tags can't have "+" in them, so we replace it with "-"
+      - 'ghcr.io/databricks/cli:{{replace .Version "+" "-"}}-amd64'
+    build_flag_templates:
+      - "--build-arg=ARCH=amd64"
+      - "--platform=linux/amd64"
+    extra_files:
+      - "./docker/config.tfrc"
+      - "./docker/setup.sh"
+
+
 checksum:
   name_template: 'databricks_cli_{{ .Version }}_SHA256SUMS'
   algorithm: sha256

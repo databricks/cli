@@ -1,30 +1,28 @@
-FROM golang:alpine as builder
+FROM alpine:3.19 as builder
 
 RUN apk add jq
 
 WORKDIR /build
 
-# # Copy repo to wd
-# COPY . .
+# TODO: Copt the entire repo to the build directory. This is temp for testing.
+COPY ./docker/setup.sh /build/docker/setup.sh
+COPY ./databricks /app/databricks
+COPY ./docker/config.tfrc /app/config/config.tfrc
 
-# # Build CLI binary
-# RUN go mod download && go mod verify
-# RUN CGO_ENABLED=0 go build -o /build/databricks
+# TODO: Parameterize this in goreleaser. Make this a build arg and pass it
+# as a positional argument to the setup.sh script.
+ARG ARCH
+RUN /build/docker/setup.sh
 
-COPY ./docker/setup.sh ./docker/setup.sh
-COPY ./databricks ./databricks
 
-ENV BUILD_ARCH "arm64"
-RUN ./docker/setup.sh
-
-# Construct final image
+# Start from a fresh base image, to remove any build artifacts and scripts.
 FROM alpine:3.19
 
+ENV DATABRICKS_TF_EXEC_PATH "/app/bin/terraform"
+ENV DATABRICKS_TF_CLI_CONFIG_FILE "/app/config/config.tfrc"
+ENV PATH="/app:${PATH}"
 
+COPY --from=builder /app /app
 
-# # COPY --from=builder /build/databricks /app/databricks
-# # COPY --from=builder /build/bundle/internal/tf/codegen/tmp/bin/terraform /app/terraform/terraform
-# # COPY --from=builder /build/bundle/internal/tf/codegen/tmp/
-
-# # CONTINUE: stop using the Go script. It does not work. Instead rely on a new shell
-# # script that I write.
+ENTRYPOINT ["/app/databricks"]
+CMD ["-h"]
