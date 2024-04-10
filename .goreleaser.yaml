@@ -45,7 +45,7 @@ archives:
   # file name then additional logic to clean up older builds would be needed.
   name_template: 'databricks_cli_{{ if not .IsSnapshot }}{{ .Version }}_{{ end }}{{ .Os }}_{{ .Arch }}'
 
-#TODO: Add some documentation / a readme to the docker directory on how to maintain this.
+# TODO: Add some documentation / a readme to the docker directory on how to maintain this.
 
 dockers:
   - id: arm64
