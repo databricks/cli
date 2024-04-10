@@ -50,6 +50,7 @@ archives:
 dockers:
   - id: arm64
     goarch: arm64
+    use: buildx
     image_templates:
       # Docker tags can't have "+" in them, so we replace it with "-"
       - 'ghcr.io/databricks/cli:{{replace .Version "+" "-"}}-arm64'
@@ -62,6 +63,7 @@ dockers:
 
   - id: amd64
     goarch: amd64
+    use: buildx
     image_templates:
       # Docker tags can't have "+" in them, so we replace it with "-"
       - 'ghcr.io/databricks/cli:{{replace .Version "+" "-"}}-amd64'
