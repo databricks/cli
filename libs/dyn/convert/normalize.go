@@ -89,6 +89,12 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 		for _, pair := range src.MustMap().Pairs() {
 			pk := pair.Key
 			pv := pair.Value
+
+			// Skip anchor fields.
+			if pv.IsAnchor() {
+				continue
+			}
+
 			index, ok := info.Fields[pk.MustString()]
 			if !ok {
 				diags = diags.Append(diag.Diagnostic{

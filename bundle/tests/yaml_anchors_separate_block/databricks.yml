@@ -1,0 +1,15 @@
+bundle:
+  name: yaml_anchors_separate_block
+
+tags: &custom_tags
+  Tag1: "Value1"
+  Tag2: "Value2"
+  Tag3: "Value3"
+
+resources:
+  jobs:
+    my_job:
+      tasks:
+      - task_key: yaml_anchors_separate_block
+      tags:
+        <<: *custom_tags
