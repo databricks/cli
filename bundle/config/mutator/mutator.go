@@ -10,13 +10,16 @@ import (
 func DefaultMutators() []bundle.Mutator {
 	return []bundle.Mutator{
 		loader.EntryPoint(),
+
+		// Execute preinit script before processing includes.
+		// It needs to be done before processing configuration files to allow
+		// the script to modify the configuration or add own configuration files.
+		scripts.Execute(config.ScriptPreInit),
 		loader.ProcessRootIncludes(),
 
 		// Verify that the CLI version is within the specified range.
 		VerifyCliVersion(),
 
-		// Execute preinit script after loading all configuration files.
-		scripts.Execute(config.ScriptPreInit),
 		EnvironmentsToTargets(),
 		InitializeVariables(),
 		DefineDefaultTarget(),

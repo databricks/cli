@@ -659,3 +659,23 @@ func TestNormalizeFloatError(t *testing.T) {
 		Path:     dyn.EmptyPath,
 	}, err[0])
 }
+
+func TestNormalizeAnchors(t *testing.T) {
+	type Tmp struct {
+		Foo string `json:"foo"`
+	}
+
+	var typ Tmp
+	vin := dyn.V(map[string]dyn.Value{
+		"foo":    dyn.V("bar"),
+		"anchor": dyn.V("anchor").MarkAnchor(),
+	})
+
+	vout, err := Normalize(typ, vin)
+	assert.Len(t, err, 0)
+
+	// The field that can be mapped to the struct field is retained.
+	assert.Equal(t, map[string]any{
+		"foo": "bar",
+	}, vout.AsAny())
+}

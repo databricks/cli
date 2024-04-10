@@ -472,9 +472,9 @@ type ResourceJobSparkSubmitTask struct {
 }
 
 type ResourceJobTaskConditionTask struct {
-	Left  string `json:"left,omitempty"`
-	Op    string `json:"op,omitempty"`
-	Right string `json:"right,omitempty"`
+	Left  string `json:"left"`
+	Op    string `json:"op"`
+	Right string `json:"right"`
 }
 
 type ResourceJobTaskDbtTask struct {
@@ -493,6 +493,7 @@ type ResourceJobTaskDependsOn struct {
 }
 
 type ResourceJobTaskEmailNotifications struct {
+	NoAlertForSkippedRuns              bool     `json:"no_alert_for_skipped_runs,omitempty"`
 	OnDurationWarningThresholdExceeded []string `json:"on_duration_warning_threshold_exceeded,omitempty"`
 	OnFailure                          []string `json:"on_failure,omitempty"`
 	OnStart                            []string `json:"on_start,omitempty"`
@@ -500,9 +501,9 @@ type ResourceJobTaskEmailNotifications struct {
 }
 
 type ResourceJobTaskForEachTaskTaskConditionTask struct {
-	Left  string `json:"left,omitempty"`
-	Op    string `json:"op,omitempty"`
-	Right string `json:"right,omitempty"`
+	Left  string `json:"left"`
+	Op    string `json:"op"`
+	Right string `json:"right"`
 }
 
 type ResourceJobTaskForEachTaskTaskDbtTask struct {
@@ -521,6 +522,7 @@ type ResourceJobTaskForEachTaskTaskDependsOn struct {
 }
 
 type ResourceJobTaskForEachTaskTaskEmailNotifications struct {
+	NoAlertForSkippedRuns              bool     `json:"no_alert_for_skipped_runs,omitempty"`
 	OnDurationWarningThresholdExceeded []string `json:"on_duration_warning_threshold_exceeded,omitempty"`
 	OnFailure                          []string `json:"on_failure,omitempty"`
 	OnStart                            []string `json:"on_start,omitempty"`
@@ -806,19 +808,19 @@ type ResourceJobTaskForEachTaskTaskSqlTask struct {
 }
 
 type ResourceJobTaskForEachTaskTaskWebhookNotificationsOnDurationWarningThresholdExceeded struct {
-	Id string `json:"id,omitempty"`
+	Id string `json:"id"`
 }
 
 type ResourceJobTaskForEachTaskTaskWebhookNotificationsOnFailure struct {
-	Id string `json:"id,omitempty"`
+	Id string `json:"id"`
 }
 
 type ResourceJobTaskForEachTaskTaskWebhookNotificationsOnStart struct {
-	Id string `json:"id,omitempty"`
+	Id string `json:"id"`
 }
 
 type ResourceJobTaskForEachTaskTaskWebhookNotificationsOnSuccess struct {
-	Id string `json:"id,omitempty"`
+	Id string `json:"id"`
 }
 
 type ResourceJobTaskForEachTaskTaskWebhookNotifications struct {
@@ -1143,19 +1145,19 @@ type ResourceJobTaskSqlTask struct {
 }
 
 type ResourceJobTaskWebhookNotificationsOnDurationWarningThresholdExceeded struct {
-	Id string `json:"id,omitempty"`
+	Id string `json:"id"`
 }
 
 type ResourceJobTaskWebhookNotificationsOnFailure struct {
-	Id string `json:"id,omitempty"`
+	Id string `json:"id"`
 }
 
 type ResourceJobTaskWebhookNotificationsOnStart struct {
-	Id string `json:"id,omitempty"`
+	Id string `json:"id"`
 }
 
 type ResourceJobTaskWebhookNotificationsOnSuccess struct {
-	Id string `json:"id,omitempty"`
+	Id string `json:"id"`
 }
 
 type ResourceJobTaskWebhookNotifications struct {
@@ -1202,25 +1204,33 @@ type ResourceJobTriggerFileArrival struct {
 	WaitAfterLastChangeSeconds    int    `json:"wait_after_last_change_seconds,omitempty"`
 }
 
+type ResourceJobTriggerTableUpdate struct {
+	Condition                     string   `json:"condition,omitempty"`
+	MinTimeBetweenTriggersSeconds int      `json:"min_time_between_triggers_seconds,omitempty"`
+	TableNames                    []string `json:"table_names"`
+	WaitAfterLastChangeSeconds    int      `json:"wait_after_last_change_seconds,omitempty"`
+}
+
 type ResourceJobTrigger struct {
 	PauseStatus string                         `json:"pause_status,omitempty"`
 	FileArrival *ResourceJobTriggerFileArrival `json:"file_arrival,omitempty"`
+	TableUpdate *ResourceJobTriggerTableUpdate `json:"table_update,omitempty"`
 }
 
 type ResourceJobWebhookNotificationsOnDurationWarningThresholdExceeded struct {
-	Id string `json:"id,omitempty"`
+	Id string `json:"id"`
 }
 
 type ResourceJobWebhookNotificationsOnFailure struct {
-	Id string `json:"id,omitempty"`
+	Id string `json:"id"`
 }
 
 type ResourceJobWebhookNotificationsOnStart struct {
-	Id string `json:"id,omitempty"`
+	Id string `json:"id"`
 }
 
 type ResourceJobWebhookNotificationsOnSuccess struct {
-	Id string `json:"id,omitempty"`
+	Id string `json:"id"`
 }
 
 type ResourceJobWebhookNotifications struct {

@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,9 +21,18 @@ func load(t *testing.T, path string) *bundle.Bundle {
 }
 
 func loadTarget(t *testing.T, path, env string) *bundle.Bundle {
+	b, diags := loadTargetWithDiags(path, env)
+	require.NoError(t, diags.Error())
+	return b
+}
+
+func loadTargetWithDiags(path, env string) (*bundle.Bundle, diag.Diagnostics) {
 	ctx := context.Background()
 	b, err := bundle.Load(ctx, path)
-	require.NoError(t, err)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
 	diags := bundle.Apply(ctx, b, bundle.Seq(
 		phases.LoadNamedTarget(env),
 		mutator.RewriteSyncPaths(),
@@ -30,6 +40,5 @@ func loadTarget(t *testing.T, path, env string) *bundle.Bundle {
 		mutator.MergeJobTasks(),
 		mutator.MergePipelineClusters(),
 	))
-	require.NoError(t, diags.Error())
-	return b
+	return b, diags
 }

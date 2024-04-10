@@ -1,5 +1,26 @@
 # Version changelog
 
+## 0.217.1
+
+CLI:
+ * Don't attempt auth in `auth profiles --skip-validate` ([#1282](https://github.com/databricks/cli/pull/1282)).
+ * Fixed typo in error template for auth describe ([#1341](https://github.com/databricks/cli/pull/1341)).
+
+Bundles:
+ * Correctly transform libraries in for_each_task block ([#1340](https://github.com/databricks/cli/pull/1340)).
+ * Do not emit warning on YAML anchor blocks ([#1354](https://github.com/databricks/cli/pull/1354)).
+ * Fixed pre-init script order ([#1348](https://github.com/databricks/cli/pull/1348)).
+ * Execute preinit after entry point to make sure scripts are loaded ([#1351](https://github.com/databricks/cli/pull/1351)).
+
+
+Dependency updates:
+ * Bump internal terraform provider version to `1.39` ([#1339](https://github.com/databricks/cli/pull/1339)).
+ * Bump golang.org/x/term from 0.18.0 to 0.19.0 ([#1343](https://github.com/databricks/cli/pull/1343)).
+ * Bump github.com/hashicorp/hc-install from 0.6.3 to 0.6.4 ([#1344](https://github.com/databricks/cli/pull/1344)).
+ * Bump golang.org/x/mod from 0.16.0 to 0.17.0 ([#1345](https://github.com/databricks/cli/pull/1345)).
+ * Bump golang.org/x/oauth2 from 0.18.0 to 0.19.0 ([#1347](https://github.com/databricks/cli/pull/1347)).
+ * Bump golang.org/x/sync from 0.6.0 to 0.7.0 ([#1346](https://github.com/databricks/cli/pull/1346)).
+
 ## 0.217.0
 
 Breaking Change:

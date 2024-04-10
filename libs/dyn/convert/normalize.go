@@ -89,14 +89,17 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 		for _, pair := range src.MustMap().Pairs() {
 			pk := pair.Key
 			pv := pair.Value
+
 			index, ok := info.Fields[pk.MustString()]
 			if !ok {
-				diags = diags.Append(diag.Diagnostic{
-					Severity: diag.Warning,
-					Summary:  fmt.Sprintf("unknown field: %s", pk.MustString()),
-					Location: pk.Location(),
-					Path:     path,
-				})
+				if !pv.IsAnchor() {
+					diags = diags.Append(diag.Diagnostic{
+						Severity: diag.Warning,
+						Summary:  fmt.Sprintf("unknown field: %s", pk.MustString()),
+						Location: pk.Location(),
+						Path:     path,
+					})
+				}
 				continue
 			}
 

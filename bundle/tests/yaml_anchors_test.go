@@ -19,6 +19,18 @@ func TestYAMLAnchors(t *testing.T) {
 	require.NotNil(t, t0)
 	require.NotNil(t, t1)
 
+	require.NotNil(t, t0.NewCluster)
+	require.NotNil(t, t1.NewCluster)
 	assert.Equal(t, "10.4.x-scala2.12", t0.NewCluster.SparkVersion)
 	assert.Equal(t, "10.4.x-scala2.12", t1.NewCluster.SparkVersion)
+}
+
+func TestYAMLAnchorsNoWarnings(t *testing.T) {
+	_, diags := loadTargetWithDiags("./yaml_anchors", "default")
+	assert.Empty(t, diags)
+}
+
+func TestYAMLAnchorsSeparateBlockNoWarnings(t *testing.T) {
+	_, diags := loadTargetWithDiags("./yaml_anchors_separate_block", "default")
+	assert.Empty(t, diags)
 }
