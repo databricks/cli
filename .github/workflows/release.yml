@@ -30,6 +30,8 @@ jobs:
           username: "${{ github.actor }}"
           password: "${{ secrets.GITHUB_TOKEN }}"
 
+      # QEMU is required to build cross platform docker images using buildx.
+      # It's allows virtualization of the CPU architecture in software.
       - name: Set up QEMU dependency
         uses: docker/setup-qemu-action@v3
 

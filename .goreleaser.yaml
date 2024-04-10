@@ -50,6 +50,7 @@ archives:
 dockers:
   - id: arm64
     goarch: arm64
+    # We need to use buildx to build arm64 image on a amd64 machine.
     use: buildx
     image_templates:
       # Docker tags can't have "+" in them, so we replace it with "-"
