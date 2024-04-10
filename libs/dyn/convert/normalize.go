@@ -90,19 +90,16 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 			pk := pair.Key
 			pv := pair.Value
 
-			// Skip anchor fields.
-			if pv.IsAnchor() {
-				continue
-			}
-
 			index, ok := info.Fields[pk.MustString()]
 			if !ok {
-				diags = diags.Append(diag.Diagnostic{
-					Severity: diag.Warning,
-					Summary:  fmt.Sprintf("unknown field: %s", pk.MustString()),
-					Location: pk.Location(),
-					Path:     path,
-				})
+				if !pv.IsAnchor() {
+					diags = diags.Append(diag.Diagnostic{
+						Severity: diag.Warning,
+						Summary:  fmt.Sprintf("unknown field: %s", pk.MustString()),
+						Location: pk.Location(),
+						Path:     path,
+					})
+				}
 				continue
 			}
 
