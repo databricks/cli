@@ -161,9 +161,8 @@ func getEnvVarWithMatchingVersion(ctx context.Context, envVarName string, versio
 		return envValue, nil
 	}
 
-	// If the version environment variable is set, we check if it matches the current version.
-	// If it does not match, we ignore the environment variable.
-	// if it matches, we check if the path exists.
+	// When the version environment variable is set, we check if it matches the current version.
+	// If it does not match, we return an empty string.
 	if versionValue != currentVersion {
 		log.Debugf(ctx, "%s as %s does not match the current version %s, ignoring %s", versionVarName, versionValue, currentVersion, envVarName)
 		return "", nil
