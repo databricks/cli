@@ -22,7 +22,12 @@ func (m *overrideCompute) Name() string {
 
 func overrideJobCompute(j *resources.Job, compute string) {
 	for i := range j.Tasks {
-		task := &j.Tasks[i]
+		var task = &j.Tasks[i]
+
+		if task.ForEachTask != nil {
+			task = &task.ForEachTask.Task
+		}
+
 		if task.NewCluster != nil || task.ExistingClusterId != "" || task.ComputeKey != "" || task.JobClusterKey != "" {
 			task.NewCluster = nil
 			task.JobClusterKey = ""

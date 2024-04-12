@@ -115,6 +115,31 @@ func TestOverridePipelineTask(t *testing.T) {
 	assert.Empty(t, b.Config.Resources.Jobs["job1"].Tasks[0].ExistingClusterId)
 }
 
+func TestOverrideForEachTask(t *testing.T) {
+	t.Setenv("DATABRICKS_CLUSTER_ID", "newClusterId")
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job1": {JobSettings: &jobs.JobSettings{
+						Name: "job1",
+						Tasks: []jobs.Task{
+							{
+								ForEachTask: &jobs.ForEachTask{},
+							},
+						},
+					}},
+				},
+			},
+		},
+	}
+
+	m := mutator.OverrideCompute()
+	diags := bundle.Apply(context.Background(), b, m)
+	require.NoError(t, diags.Error())
+	assert.Empty(t, b.Config.Resources.Jobs["job1"].Tasks[0].ForEachTask.Task)
+}
+
 func TestOverrideProduction(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
