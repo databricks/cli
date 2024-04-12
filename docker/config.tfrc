@@ -1,0 +1,6 @@
+provider_installation {
+    filesystem_mirror {
+        path = "/app/providers"
+        include = ["registry.terraform.io/databricks/databricks"]
+    }
+}

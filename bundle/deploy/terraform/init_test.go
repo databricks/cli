@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/internal/tf/schema"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
 	"github.com/hashicorp/hc-install/product"
 	"github.com/stretchr/testify/assert"
@@ -391,4 +392,61 @@ func createTempFile(t *testing.T, dest string, name string, executable bool) str
 		require.NoError(t, err)
 	}
 	return binPath
+}
+
+func TestGetEnvVarWithMatchingVersion(t *testing.T) {
+	envVarName := "FOO"
+	versionVarName := "FOO_VERSION"
+
+	tmp := t.TempDir()
+	testutil.Touch(t, tmp, "bar")
+
+	var tc = []struct {
+		envValue       string
+		versionValue   string
+		currentVersion string
+		expected       string
+	}{
+		{
+			envValue:       filepath.Join(tmp, "bar"),
+			versionValue:   "1.2.3",
+			currentVersion: "1.2.3",
+			expected:       filepath.Join(tmp, "bar"),
+		},
+		{
+			envValue:       filepath.Join(tmp, "does-not-exist"),
+			versionValue:   "1.2.3",
+			currentVersion: "1.2.3",
+			expected:       "",
+		},
+		{
+			envValue:       filepath.Join(tmp, "bar"),
+			versionValue:   "1.2.3",
+			currentVersion: "1.2.4",
+			expected:       "",
+		},
+		{
+			envValue:       "",
+			versionValue:   "1.2.3",
+			currentVersion: "1.2.3",
+			expected:       "",
+		},
+		{
+			envValue:       filepath.Join(tmp, "bar"),
+			versionValue:   "",
+			currentVersion: "1.2.3",
+			expected:       filepath.Join(tmp, "bar"),
+		},
+	}
+
+	for _, c := range tc {
+		t.Run("", func(t *testing.T) {
+			t.Setenv(envVarName, c.envValue)
+			t.Setenv(versionVarName, c.versionValue)
+
+			actual, err := getEnvVarWithMatchingVersion(context.Background(), envVarName, versionVarName, c.currentVersion)
+			require.NoError(t, err)
+			assert.Equal(t, c.expected, actual)
+		})
+	}
 }

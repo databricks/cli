@@ -24,6 +24,19 @@ jobs:
         with:
           go-version: 1.21.x
 
+      # Log into the GitHub Container Registry. The goreleaser action will create
+      # the docker images and push them to the GitHub Container Registry.
+      - uses: "docker/login-action@v3"
+        with:
+          registry: "ghcr.io"
+          username: "${{ github.actor }}"
+          password: "${{ secrets.GITHUB_TOKEN }}"
+
+      # QEMU is required to build cross platform docker images using buildx.
+      # It allows virtualization of the CPU architecture at the application level.
+      - name: Set up QEMU dependency
+        uses: docker/setup-qemu-action@v3
+
       - name: Run GoReleaser
         id: releaser
         uses: goreleaser/goreleaser-action@v4
