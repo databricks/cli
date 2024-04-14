@@ -1,14 +1,6 @@
-from databricks.connect import DatabricksSession
-from pyspark.sql import SparkSession
-from default_python import main
+from default_python.main import get_taxis, get_spark
 
-# Create a new Databricks Connect session. If this fails,
-# check that you have configured Databricks Connect correctly.
-# See https://docs.databricks.com/dev-tools/databricks-connect.html.
-
-SparkSession.builder = DatabricksSession.builder
-SparkSession.builder.getOrCreate()
 
 def test_main():
-    taxis = main.get_taxis()
+    taxis = get_taxis(get_spark())
     assert taxis.count() > 5
