@@ -12,7 +12,7 @@ import (
 
 func convertExperimentResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	// Normalize the output value to the target schema.
-	vout, diags := convert.Normalize(schema.ResourceMlflowExperiment{}, vin, make(map[string]string))
+	vout, diags := convert.Normalize(schema.ResourceMlflowExperiment{}, vin)
 	for _, diag := range diags {
 		log.Debugf(ctx, "experiment normalization diagnostic: %s", diag.Summary)
 	}

@@ -1,5 +1,5 @@
 resources:
-  lakehouse_monitor:
+  lakehouse_monitors:
     my_lakehouse_monitor:
       full_name: "main.test.thing1"
       assets_dir: "/Shared/provider-test/databricks_lakehouse_monitoring/main.test.thing1"
@@ -16,16 +16,16 @@ targets:
   development:
     mode: development
     resources:
-      lakehouse_monitor:
+      lakehouse_monitors:
         my_lakehouse_monitor:
           full_name: "main.test.dev"
   staging:
     resources:
-      lakehouse_monitor:
+      lakehouse_monitors:
         my_lakehouse_monitor:
           full_name: "main.test.staging"
   production:
     resources:
-      lakehouse_monitor:
+      lakehouse_monitors:
         my_lakehouse_monitor:
           full_name: "main.test.prod"

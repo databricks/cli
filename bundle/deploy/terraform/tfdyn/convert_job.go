@@ -14,7 +14,7 @@ import (
 func convertJobResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	// Normalize the input value to the underlying job schema.
 	// This removes superfluous keys and adapts the input to the expected schema.
-	vin, diags := convert.Normalize(jobs.JobSettings{}, vin, make(map[string]string))
+	vin, diags := convert.Normalize(jobs.JobSettings{}, vin)
 	for _, diag := range diags {
 		log.Debugf(ctx, "job normalization diagnostic: %s", diag.Summary)
 	}
@@ -66,7 +66,7 @@ func convertJobResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	}
 
 	// Normalize the output value to the target schema.
-	vout, diags = convert.Normalize(schema.ResourceJob{}, vout, make(map[string]string))
+	vout, diags = convert.Normalize(schema.ResourceJob{}, vout)
 	for _, diag := range diags {
 		log.Debugf(ctx, "job normalization diagnostic: %s", diag.Summary)
 	}

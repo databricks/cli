@@ -10,14 +10,18 @@ import (
 )
 
 func convertLakehouseMonitorResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
-	var substitutions = make(map[string]string)
-	substitutions["full_name"] = "table_name"
+	vin, err := renameKeys(vin, map[string]string{
+		"full_name": "table_name",
+	})
+
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
 	// Normalize the output value to the target schema.
-	vout, diags := convert.Normalize(schema.ResourceLakehouseMonitor{}, vin, substitutions)
+	vout, diags := convert.Normalize(schema.ResourceLakehouseMonitor{}, vin)
 	for _, diag := range diags {
 		log.Debugf(ctx, "lakehouse monitor normalization diagnostic: %s", diag.Summary)
 	}
-
 	return vout, nil
 }
 

@@ -89,7 +89,7 @@ func Load(path string) (*Root, diag.Diagnostics) {
 	}
 
 	// Normalize dynamic configuration tree according to configuration type.
-	v, diags := convert.Normalize(r, v, make(map[string]string))
+	v, diags := convert.Normalize(r, v)
 
 	// Convert normalized configuration tree to typed configuration.
 	err = r.updateWithDynamicValue(v)

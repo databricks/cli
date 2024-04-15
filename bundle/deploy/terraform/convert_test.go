@@ -710,7 +710,7 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
-			LakehouseMonitor: map[string]*resources.LakehouseMonitor{
+			LakehouseMonitors: map[string]*resources.LakehouseMonitor{
 				"test_lakehouse_monitor": {
 					CreateMonitor: &catalog.CreateMonitor{
 						FullName: "test_lakehouse_monitor",
@@ -821,7 +821,7 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 					},
 				},
 			},
-			LakehouseMonitor: map[string]*resources.LakehouseMonitor{
+			LakehouseMonitors: map[string]*resources.LakehouseMonitor{
 				"test_lakehouse_monitor": {
 					CreateMonitor: &catalog.CreateMonitor{
 						FullName: "test_lakehouse_monitor",

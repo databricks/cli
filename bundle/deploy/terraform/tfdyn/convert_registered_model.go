@@ -12,7 +12,7 @@ import (
 
 func convertRegisteredModelResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	// Normalize the output value to the target schema.
-	vout, diags := convert.Normalize(schema.ResourceRegisteredModel{}, vin, make(map[string]string))
+	vout, diags := convert.Normalize(schema.ResourceRegisteredModel{}, vin)
 	for _, diag := range diags {
 		log.Debugf(ctx, "registered model normalization diagnostic: %s", diag.Summary)
 	}

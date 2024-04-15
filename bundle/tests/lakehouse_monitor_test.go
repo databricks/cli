@@ -21,28 +21,28 @@ func assertExpectedLakehouseMonitor(t *testing.T, p *resources.LakehouseMonitor)
 
 func TestLakehouseMonitorDevelepment(t *testing.T) {
 	b := loadTarget(t, "./lakehouse_monitor", "development")
-	assert.Len(t, b.Config.Resources.LakehouseMonitor, 1)
+	assert.Len(t, b.Config.Resources.LakehouseMonitors, 1)
 	assert.Equal(t, b.Config.Bundle.Mode, config.Development)
 
-	p := b.Config.Resources.LakehouseMonitor["my_lakehouse_monitor"]
+	p := b.Config.Resources.LakehouseMonitors["my_lakehouse_monitor"]
 	assert.Equal(t, "main.test.dev", p.FullName)
 	assertExpectedLakehouseMonitor(t, p)
 }
 
 func TestLakehouseMonitorStaging(t *testing.T) {
 	b := loadTarget(t, "./lakehouse_monitor", "staging")
-	assert.Len(t, b.Config.Resources.LakehouseMonitor, 1)
+	assert.Len(t, b.Config.Resources.LakehouseMonitors, 1)
 
-	p := b.Config.Resources.LakehouseMonitor["my_lakehouse_monitor"]
+	p := b.Config.Resources.LakehouseMonitors["my_lakehouse_monitor"]
 	assert.Equal(t, "main.test.staging", p.FullName)
 	assertExpectedLakehouseMonitor(t, p)
 }
 
 func TestLakehouseMonitorProduction(t *testing.T) {
 	b := loadTarget(t, "./lakehouse_monitor", "production")
-	assert.Len(t, b.Config.Resources.LakehouseMonitor, 1)
+	assert.Len(t, b.Config.Resources.LakehouseMonitors, 1)
 
-	p := b.Config.Resources.LakehouseMonitor["my_lakehouse_monitor"]
+	p := b.Config.Resources.LakehouseMonitors["my_lakehouse_monitor"]
 	assert.Equal(t, "main.test.prod", p.FullName)
 	assertExpectedLakehouseMonitor(t, p)
 }

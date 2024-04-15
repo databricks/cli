@@ -34,6 +34,7 @@ func allResourceTypes(t *testing.T) []string {
 	require.Equal(t, []string{
 		"experiments",
 		"jobs",
+		"lakehouse_monitors",
 		"model_serving_endpoints",
 		"models",
 		"pipelines",

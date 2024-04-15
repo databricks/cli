@@ -97,7 +97,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				RegisteredModels: map[string]*resources.RegisteredModel{
 					"registeredmodel1": {CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{Name: "registeredmodel1"}},
 				},
-				LakehouseMonitor: map[string]*resources.LakehouseMonitor{
+				LakehouseMonitors: map[string]*resources.LakehouseMonitor{
 					"lakehouseMonitor1": {CreateMonitor: &catalog.CreateMonitor{FullName: "lakehouseMonitor1"}},
 				},
 			},

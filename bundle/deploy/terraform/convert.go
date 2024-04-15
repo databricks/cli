@@ -222,7 +222,7 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 		}
 	}
 
-	for k, src := range config.Resources.LakehouseMonitor {
+	for k, src := range config.Resources.LakehouseMonitors {
 		noResources = false
 		var dst schema.ResourceLakehouseMonitor
 		conv(src, &dst)
@@ -376,13 +376,13 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 			case "databricks_lakehouse_monitor":
 				var tmp schema.ResourceLakehouseMonitor
 				conv(resource.AttributeValues, &tmp)
-				if config.Resources.LakehouseMonitor == nil {
-					config.Resources.LakehouseMonitor = make(map[string]*resources.LakehouseMonitor)
+				if config.Resources.LakehouseMonitors == nil {
+					config.Resources.LakehouseMonitors = make(map[string]*resources.LakehouseMonitor)
 				}
-				cur := config.Resources.LakehouseMonitor[resource.Name]
+				cur := config.Resources.LakehouseMonitors[resource.Name]
 				modifiedStatus := convRemoteToLocal(tmp, &cur)
 				cur.ModifiedStatus = modifiedStatus
-				config.Resources.LakehouseMonitor[resource.Name] = cur
+				config.Resources.LakehouseMonitors[resource.Name] = cur
 			case "databricks_permissions":
 			case "databricks_grants":
 				// Ignore; no need to pull these back into the configuration.
