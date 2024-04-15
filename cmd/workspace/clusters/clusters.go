@@ -193,6 +193,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().IntVar(&createReq.AutoterminationMinutes, "autotermination-minutes", createReq.AutoterminationMinutes, `Automatically terminates the cluster after it is inactive for this time in minutes.`)
 	// TODO: complex arg: aws_attributes
 	// TODO: complex arg: azure_attributes
+	// TODO: complex arg: clone_from
 	// TODO: complex arg: cluster_log_conf
 	cmd.Flags().StringVar(&createReq.ClusterName, "cluster-name", createReq.ClusterName, `Cluster name requested by the user.`)
 	cmd.Flags().Var(&createReq.ClusterSource, "cluster-source", `Determines whether the cluster was created by a user through the UI, created by the Databricks Jobs Scheduler, or through an API request. Supported values: [
@@ -447,6 +448,7 @@ func newEdit() *cobra.Command {
 	cmd.Flags().IntVar(&editReq.AutoterminationMinutes, "autotermination-minutes", editReq.AutoterminationMinutes, `Automatically terminates the cluster after it is inactive for this time in minutes.`)
 	// TODO: complex arg: aws_attributes
 	// TODO: complex arg: azure_attributes
+	// TODO: complex arg: clone_from
 	// TODO: complex arg: cluster_log_conf
 	cmd.Flags().StringVar(&editReq.ClusterName, "cluster-name", editReq.ClusterName, `Cluster name requested by the user.`)
 	cmd.Flags().Var(&editReq.ClusterSource, "cluster-source", `Determines whether the cluster was created by a user through the UI, created by the Databricks Jobs Scheduler, or through an API request. Supported values: [
