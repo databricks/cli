@@ -15,6 +15,13 @@ See https://github.com/databricks/cli/releases for releases and
 [the docs pages](https://docs.databricks.com/dev-tools/cli/databricks-cli.html) for
 installation instructions.
 
+------
+You can install the CLI as a docker image by pulling from `ghcr.io`. You can find more releases
+at: https://github.com/databricks/cli/pkgs/container/cli.
+```
+docker pull ghcr.io/databricks/cli:latest
+```
+
 ## Authentication
 
 This CLI follows the Databricks Unified Authentication principles.
