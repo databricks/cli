@@ -13,7 +13,7 @@ func New() *cobra.Command {
 		Use:   "auth",
 		Short: "Authentication related commands",
 		Long: `Authentication related commands. For more information regarding how
-authentication for tooling works at Databricks please refer to the documentation
+authentication for the Databricks CLI and SDKs work please refer to the documentation
 linked below.
 
 AWS: https://docs.databricks.com/en/dev-tools/auth/index.html
