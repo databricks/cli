@@ -48,7 +48,7 @@ func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 		"Timeout for completing login challenge in the browser")
 	cmd.Flags().BoolVar(&configureCluster, "configure-cluster", false,
 		"Prompts to configure cluster")
-	cmd.Flags().StringVarP(&profileName, "profile", "p", "", `Name of the the profile. By default you will be logged into the
+	cmd.Flags().StringVarP(&profileName, "profile", "p", "", `Name of the the profile. By default, you will be logged into the
   host specified by this profile (if any). If the profile does not exist,
   a new profile will be created.`)
 
