@@ -28,9 +28,7 @@ func New() *cobra.Command {
 
 func promptForHost(ctx context.Context) (string, error) {
 	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Databricks Host"
-	prompt.Default = "https://"
-	prompt.AllowEdit = true
+	prompt.Label = "Databricks Host (e.g. https://<databricks-instance>.cloud.databricks.com)"
 	// Validate?
 	host, err := prompt.Run()
 	if err != nil {
