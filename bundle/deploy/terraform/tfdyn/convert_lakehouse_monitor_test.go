@@ -33,7 +33,6 @@ func TestConvertLakehouseMonitor(t *testing.T) {
 	err = lakehouseMonitorConverter{}.Convert(ctx, "my_lakehouse_monitor", vin, out)
 
 	require.NoError(t, err)
-	print(out)
 	assert.Equal(t, map[string]any{
 		"assets_dir":         "assets_dir",
 		"output_schema_name": "output_schema_name",
