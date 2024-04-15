@@ -34,24 +34,28 @@ const minimalDbConnectVersion = "13.1"
 func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "login [HOST]",
-		Short: "Authenticate this machine",
+		Short: "Log into a Databricks workspace or account",
+		Long: `Log into a Databricks workspace or account. This command will open a
+ browser to authenticate you and save the authentication configuration
+ in a profile (in ~/.databrickscfg by default). You can then use this
+ profile to authenticate other Databricks CLI commands.`,
 	}
 
 	var loginTimeout time.Duration
 	var configureCluster bool
+	var profileName string
 	cmd.Flags().DurationVar(&loginTimeout, "timeout", auth.DefaultTimeout,
 		"Timeout for completing login challenge in the browser")
 	cmd.Flags().BoolVar(&configureCluster, "configure-cluster", false,
 		"Prompts to configure cluster")
+	cmd.Flags().StringVarP(&profileName, "profile", "p", "", `Name of the the profile. By default you will be logged into the
+  host specified by this profile (if any). If the profile does not exist,
+  a new profile will be created.`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 
-		var profileName string
-		profileFlag := cmd.Flag("profile")
-		if profileFlag != nil && profileFlag.Value.String() != "" {
-			profileName = profileFlag.Value.String()
-		} else if cmdio.IsInTTY(ctx) {
+		if profileName == "" && cmdio.IsInTTY(ctx) {
 			prompt := cmdio.Prompt(ctx)
 			prompt.Label = "Databricks Profile Name"
 			prompt.Default = persistentAuth.ProfileName()
