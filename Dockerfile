@@ -10,7 +10,7 @@ COPY ./databricks /app/databricks
 COPY ./docker/config.tfrc /app/config/config.tfrc
 
 ARG ARCH
-RUN ["/bin/bash", "/build/docker/setup.sh"]
+RUN /build/docker/setup.sh
 
 # Start from a fresh base image, to remove any build artifacts and scripts.
 FROM alpine:3.19
