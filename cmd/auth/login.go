@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
@@ -15,7 +14,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
-
 
 func promptForProfile(ctx context.Context, dv string) (string, error) {
 	if !cmdio.IsInTTY(ctx) {
