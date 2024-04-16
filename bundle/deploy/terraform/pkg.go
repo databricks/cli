@@ -20,6 +20,7 @@ const TerraformProviderVersionEnv = "DATABRICKS_TF_PROVIDER_VERSION"
 // update the checksums when the terraform version is updated. The checksums
 // were obtained from https://releases.hashicorp.com/terraform/1.5.5.
 var TerraformVersion = version.Must(version.NewVersion("1.5.5"))
+
 const checksumLinuxArm64 = "b055aefe343d0b710d8a7afd31aeb702b37bbf4493bb9385a709991e48dfbcd2"
 const checksumLinuxAmd64 = "ad0c696c870c8525357b5127680cd79c0bdf58179af9acd091d43b1d6482da4a"
 
