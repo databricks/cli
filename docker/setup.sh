@@ -5,7 +5,7 @@ DATABRICKS_TF_VERSION=$(/app/databricks bundle debug terraform --output json | j
 DATABRICKS_TF_PROVIDER_VERSION=$(/app/databricks bundle debug terraform --output json | jq -r .terraform.providerVersion)
 
 # Checksums for the terraform binary version 1.5.5. The checksums are used to verify the integrity of the downloaded binary.
-# The checksums are optained from https://releases.hashicorp.com/terraform/1.5.5/
+# The checksums are obtained from https://releases.hashicorp.com/terraform/1.5.5/
 EXPECTED_CHECKSUM="invalid"
 if [ $ARCH == "arm64" ]; then
   EXPECTED_CHECKSUM=b055aefe343d0b710d8a7afd31aeb702b37bbf4493bb9385a709991e48dfbcd2 # linux/arm64
