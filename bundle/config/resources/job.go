@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/bundle/config/paths"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -26,6 +27,20 @@ func (s *Job) UnmarshalJSON(b []byte) error {
 }
 
 func (s Job) MarshalJSON() ([]byte, error) {
+	// If local_ssd_count is set, we need to force send it
+	p := dyn.NewPattern(
+		dyn.Key("job_clusters"),
+		dyn.AnyIndex(),
+		dyn.Key("new_cluster"),
+		dyn.Key("gcp_attributes"),
+		dyn.Key("local_ssd_count"),
+	)
+
+	dyn.MapByPattern(s.DynamicValue, p, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		s.JobSettings.JobClusters[p[1].Index()].NewCluster.GcpAttributes.ForceSendFields = []string{"LocalSsdCount"}
+		return v, nil
+	})
+
 	return marshal.Marshal(s)
 }
 
