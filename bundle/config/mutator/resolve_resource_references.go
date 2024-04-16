@@ -6,9 +6,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
-	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
 	"golang.org/x/sync/errgroup"
 )
@@ -21,37 +18,6 @@ func ResolveResourceReferences() bundle.Mutator {
 
 func (m *resolveResourceReferences) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	errs, errCtx := errgroup.WithContext(ctx)
-	varPath := dyn.NewPath(dyn.Key("var"))
-	p := dyn.NewPattern(
-		dyn.Key("variables"),
-		dyn.AnyKey(),
-		dyn.Key("lookup"),
-	)
-
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		normalized, _ := convert.Normalize(b.Config, v, convert.IncludeMissingFields)
-
-		// Resolve all variable references in the lookup field.
-		return dyn.MapByPattern(v, p, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			return dynvar.Resolve(v, func(path dyn.Path) (dyn.Value, error) {
-				// Rewrite the shorthand path ${var.foo} into ${variables.foo.value}.
-				if path.HasPrefix(varPath) && len(path) == 2 {
-					path = dyn.NewPath(
-						dyn.Key("variables"),
-						path[1],
-						dyn.Key("value"),
-					)
-				}
-
-				return dyn.GetByPath(normalized, path)
-			})
-		})
-	})
-
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
 	for k := range b.Config.Variables {
 		v := b.Config.Variables[k]
 		if v == nil || v.Lookup == nil {

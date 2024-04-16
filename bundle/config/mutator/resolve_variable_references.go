@@ -2,6 +2,7 @@ package mutator
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
@@ -13,10 +14,15 @@ import (
 
 type resolveVariableReferences struct {
 	prefixes []string
+	pattern  dyn.Pattern
 }
 
 func ResolveVariableReferences(prefixes ...string) bundle.Mutator {
 	return &resolveVariableReferences{prefixes: prefixes}
+}
+
+func ResolveVariableReferencesFor(p dyn.Pattern, prefixes ...string) bundle.Mutator {
+	return &resolveVariableReferences{prefixes: prefixes, pattern: p}
 }
 
 func (*resolveVariableReferences) Name() string {
@@ -56,29 +62,56 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 			// Future opportunity: if we lookup this path in both the given root
 			// and the synthesized root, we know if it was explicitly set or implied to be empty.
 			// Then we can emit a warning if it was not explicitly set.
-			return dyn.GetByPath(normalized, path)
+			v, err := dyn.GetByPath(normalized, path)
+			if err != nil {
+				return dyn.InvalidValue, err
+			}
+
+			// Check if the variable we're looking up has a lookup field in it
+			lookupV, err := dyn.GetByPath(normalized, path[:len(path)-1].Append(dyn.Key("lookup")))
+
+			// If nothing is found, it means the variable is not a lookup variable, so we can just return the value
+			if err != nil || lookupV == dyn.InvalidValue {
+				return v, nil
+			}
+
+			// Check that the lookup variable was resolved to non-empty string already
+			sv, ok := v.AsString()
+			if !ok {
+				return v, nil
+			}
+
+			// If the lookup variable is empty, it means it was not resolved yet which means it is used inside another lookup variable
+			if sv == "" {
+				return dyn.InvalidValue, fmt.Errorf("lookup variables cannot contain references to another lookup variables")
+			}
+
+			return v, nil
 		}
 
-		// Resolve variable references in all values.
-		root, err := dynvar.Resolve(root, func(path dyn.Path) (dyn.Value, error) {
-			// Rewrite the shorthand path ${var.foo} into ${variables.foo.value}.
-			if path.HasPrefix(varPath) && len(path) == 2 {
-				path = dyn.NewPath(
-					dyn.Key("variables"),
-					path[1],
-					dyn.Key("value"),
-				)
-			}
-
-			// Perform resolution only if the path starts with one of the specified prefixes.
-			for _, prefix := range prefixes {
-				if path.HasPrefix(prefix) {
-					return lookup(path)
+		root, err := dyn.MapByPattern(root, m.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			// Resolve variable references in all values.
+			return dynvar.Resolve(v, func(path dyn.Path) (dyn.Value, error) {
+				// Rewrite the shorthand path ${var.foo} into ${variables.foo.value}.
+				if path.HasPrefix(varPath) && len(path) == 2 {
+					path = dyn.NewPath(
+						dyn.Key("variables"),
+						path[1],
+						dyn.Key("value"),
+					)
 				}
-			}
 
-			return dyn.InvalidValue, dynvar.ErrSkipResolution
+				// Perform resolution only if the path starts with one of the specified prefixes.
+				for _, prefix := range prefixes {
+					if path.HasPrefix(prefix) {
+						return lookup(path)
+					}
+				}
+
+				return dyn.InvalidValue, dynvar.ErrSkipResolution
+			})
 		})
+
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
