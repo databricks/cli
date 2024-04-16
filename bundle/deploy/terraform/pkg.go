@@ -15,8 +15,10 @@ const TerraformVersionEnv = "DATABRICKS_TF_VERSION"
 const TerraformCliConfigPathEnv = "DATABRICKS_TF_CLI_CONFIG_FILE"
 const TerraformProviderVersionEnv = "DATABRICKS_TF_PROVIDER_VERSION"
 
-// Checksums for the terraform binary version 1.5.5 for linux. The checksums are used to verify the integrity of the downloaded binary.
-// The checksums are obtained from https://releases.hashicorp.com/terraform/1.5.5. Please update the checksums when the terraform version is updated.
+// Terraform CLI version to use and the corresponding checksums for it. The
+// checksums are used to verify the integrity of the downloaded binary. Please
+// update the checksums when the terraform version is updated. The checksums
+// were obtained from https://releases.hashicorp.com/terraform/1.5.5.
 var TerraformVersion = version.Must(version.NewVersion("1.5.5"))
 const checksumLinuxArm64 = "b055aefe343d0b710d8a7afd31aeb702b37bbf4493bb9385a709991e48dfbcd2"
 const checksumLinuxAmd64 = "ad0c696c870c8525357b5127680cd79c0bdf58179af9acd091d43b1d6482da4a"
