@@ -6,7 +6,6 @@ on:
       - "main"
       - "demo-*"
 
-
   workflow_dispatch:
 
 jobs:
