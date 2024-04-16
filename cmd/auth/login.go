@@ -16,21 +16,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func promptForHost(ctx context.Context) (string, error) {
-	if !cmdio.IsInTTY(ctx) {
-		return "", fmt.Errorf("the command is being run in a non-interactive environment, please specify a host using --host")
-	}
-
-	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Databricks Host"
-	prompt.Validate = func(host string) error {
-		if !strings.HasPrefix(host, "https://") {
-			return fmt.Errorf("host URL must have a https:// prefix")
-		}
-		return nil
-	}
-	return prompt.Run()
-}
 
 func promptForProfile(ctx context.Context, dv string) (string, error) {
 	if !cmdio.IsInTTY(ctx) {
@@ -40,18 +25,6 @@ func promptForProfile(ctx context.Context, dv string) (string, error) {
 	prompt := cmdio.Prompt(ctx)
 	prompt.Label = "Databricks Profile Name"
 	prompt.Default = dv
-	prompt.AllowEdit = true
-	return prompt.Run()
-}
-
-func promptForAccountID(ctx context.Context) (string, error) {
-	if !cmdio.IsInTTY(ctx) {
-		return "", errors.New("the command is being run in a non-interactive environment, please specify an account ID using --account-id")
-	}
-
-	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Databricks Account ID"
-	prompt.Default = ""
 	prompt.AllowEdit = true
 	return prompt.Run()
 }
