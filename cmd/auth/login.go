@@ -69,8 +69,7 @@ func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 
-		// If the user has not specified a profile name, and we are in an interactive
-		// session, prompt for one.
+		// If the user has not specified a profile name, prompt for one.
 		if profileName == "" {
 			var err error
 			profileName, err = promptForProfile(ctx, persistentAuth.DefaultProfileName())
