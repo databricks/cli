@@ -6,6 +6,10 @@ on:
       - "main"
       - "demo-*"
 
+  # TODO: Remove before merging. Only to test the workflow.
+  pull_request:
+    types: [synchronize]
+
   workflow_dispatch:
 
 jobs:
