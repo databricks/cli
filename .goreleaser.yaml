@@ -75,6 +75,16 @@ dockers:
       - "./docker/config.tfrc"
       - "./docker/setup.sh"
 
+docker_manifests:
+  - name_template: ghcr.io/databricks/cli:{{replace .Version "+" "-"}}
+    image_templates:
+      - ghcr.io/databricks/cli:{{replace .Version "+" "-"}}-amd64
+      - ghcr.io/databricks/cli:{{replace .Version "+" "-"}}-arm64
+  - name_template: ghcr.io/databricks/cli:latest
+    image_templates:
+      - ghcr.io/databricks/cli:latest-amd64
+      - ghcr.io/databricks/cli:latest-arm64
+
 
 checksum:
   name_template: 'databricks_cli_{{ .Version }}_SHA256SUMS'
