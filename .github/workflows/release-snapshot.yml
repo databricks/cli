@@ -30,7 +30,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v4
         with:
           version: latest
-          args: release --snapshot
+          args: release --snapshot --skip docker
 
       - name: Upload macOS binaries
         uses: actions/upload-artifact@v3
