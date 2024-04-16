@@ -18,6 +18,7 @@ func ResolveResourceReferences() bundle.Mutator {
 
 func (m *resolveResourceReferences) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	errs, errCtx := errgroup.WithContext(ctx)
+
 	for k := range b.Config.Variables {
 		v := b.Config.Variables[k]
 		if v == nil || v.Lookup == nil {
