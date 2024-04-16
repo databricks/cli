@@ -19,7 +19,7 @@ func (lock Lock) IsEnabled() bool {
 	return true
 }
 
-// IsAlwaysEnabled checks if the deployment lock is explicitly enabled.
+// IsExplicitlyEnabled checks if the deployment lock is explicitly enabled.
 // Only returns true if locking is explicitly set using a command-line
 // flag or configuration file.
 func (lock Lock) IsExplicitlyEnabled() bool {
