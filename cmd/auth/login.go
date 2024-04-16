@@ -44,9 +44,9 @@ specifying the --profile flag. This profile can also be used to authenticate
 other Databricks tooling that supports the Databricks Unified Authentication
 Specification. This includes the Databricks Go, Python, and Java SDKs. For more information,
 you can refer to the documentation linked below.
-  AWS: https://docs.databricks.com/en/dev-tools/auth/index.html
-  Azure: https://learn.microsoft.com/en-us/azure/databricks/dev-tools/auth
-  GCP: https://docs.gcp.databricks.com/en/dev-tools/auth/index.html
+  AWS: https://docs.databricks.com/dev-tools/auth/index.html
+  Azure: https://learn.microsoft.com/azure/databricks/dev-tools/auth
+  GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html
 
 
 This command requires a Databricks Host URL (using --host or as a positional arg
