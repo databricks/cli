@@ -42,7 +42,7 @@ the authentication configuration in a profile (in ~/.databrickscfg by default).
 This profile can then be used to authenticate other Databricks CLI commands by
 specifying the --profile flag. This profile can also be used to authenticate
 other Databricks tooling that supports the Databricks Unified Authentication
-Spec. This includes the Databricks Go, Python and Java SDKs. For more information,
+Specification. This includes the Databricks Go, Python, and Java SDKs. For more information,
 you can refer to the documentation linked below.
   AWS: https://docs.databricks.com/en/dev-tools/auth/index.html
   Azure: https://learn.microsoft.com/en-us/azure/databricks/dev-tools/auth
