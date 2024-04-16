@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
@@ -15,17 +16,101 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func configureHost(ctx context.Context, persistentAuth *auth.PersistentAuth, args []string, argIndex int) error {
-	if len(args) > argIndex {
-		persistentAuth.Host = args[argIndex]
-		return nil
+func promptForHost(ctx context.Context) (string, error) {
+	if !cmdio.IsInTTY(ctx) {
+		return "", fmt.Errorf("the command is being run in a non-interactive environment, please specify a host using --host")
 	}
 
-	host, err := promptForHost(ctx)
-	if err != nil {
-		return err
+	prompt := cmdio.Prompt(ctx)
+	prompt.Label = "Databricks Host"
+	prompt.Validate = func(host string) error {
+		if !strings.HasPrefix(host, "https://") {
+			return fmt.Errorf("host URL must have a https:// prefix")
+		}
+		return nil
 	}
-	persistentAuth.Host = host
+	return prompt.Run()
+}
+
+func promptForProfile(ctx context.Context, dv string) (string, error) {
+	if !cmdio.IsInTTY(ctx) {
+		return "", errors.New("the command is being run in a non-interactive environment, please specify a profile using --profile")
+	}
+
+	prompt := cmdio.Prompt(ctx)
+	prompt.Label = "Databricks Profile Name"
+	prompt.Default = dv
+	prompt.AllowEdit = true
+	return prompt.Run()
+}
+
+func promptForAccountID(ctx context.Context) (string, error) {
+	if !cmdio.IsInTTY(ctx) {
+		return "", errors.New("the command is being run in a non-interactive environment, please specify an account ID using --account-id")
+	}
+
+	prompt := cmdio.Prompt(ctx)
+	prompt.Label = "Databricks Account ID"
+	prompt.Default = ""
+	prompt.AllowEdit = true
+	return prompt.Run()
+}
+
+func getHostFromProfile(ctx context.Context, profileName string) (string, error) {
+	_, profiles, err := databrickscfg.LoadProfiles(ctx, func(p databrickscfg.Profile) bool {
+		return p.Name == profileName
+	})
+
+	// Tolerate ErrNoConfiguration here, as we will write out a configuration file
+	// as part of the login flow.
+	// TODO: verify that a configuration file is written out as part of the login flow.
+	if err != nil && errors.Is(err, databrickscfg.ErrNoConfiguration) {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+
+	// Return host from profile
+	if len(profiles) > 0 && profiles[0].Host != "" {
+		return profiles[0].Host, nil
+	}
+	return "", nil
+}
+
+// Sets the host in the persistentAuth object based on the provided arguments and flags.
+// Follows the following precedence:
+// 1. [HOST] (first positional argument) or --host flag. Error if both are specified.
+// 2. Profile host, if available.
+// 3. Prompt the user for the host.
+func setHost(ctx context.Context, profileName string, persistentAuth *auth.PersistentAuth, args []string) error {
+	// If both [HOST] and --host are provided, return an error.
+	// TODO: test for error for this case.
+	if len(args) > 0 && persistentAuth.Host != "" {
+		return fmt.Errorf("please only provide a host as an argument or a flag, not both")
+	}
+
+	// If [HOST] is provided, set the host to the provided positional argument.
+	if len(args) > 0 && persistentAuth.Host == "" {
+		persistentAuth.Host = args[0]
+	}
+
+	// If neither [HOST] nor --host are provided, and the profile has a host, use it.
+	// Otherwise, prompt the user for a host.
+	if len(args) == 0 && persistentAuth.Host == "" {
+		hostName, err := getHostFromProfile(ctx, profileName)
+		if err != nil {
+			return err
+		}
+		if hostName == "" {
+			var err error
+			hostName, err = promptForHost(ctx)
+			if err != nil {
+				return err
+			}
+		}
+		persistentAuth.Host = hostName
+	}
 	return nil
 }
 
@@ -49,23 +134,21 @@ func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 
-		if profileName == "" && cmdio.IsInTTY(ctx) {
-			prompt := cmdio.Prompt(ctx)
-			prompt.Label = "Databricks Profile Name"
-			prompt.Default = persistentAuth.ProfileName()
-			prompt.AllowEdit = true
-			profile, err := prompt.Run()
+		// If the user has not specified a profile name, and we are in an interactive
+		// session, prompt for one.
+		if profileName == "" {
+			var err error
+			profileName, err = promptForProfile(ctx, persistentAuth.DefaultProfileName())
 			if err != nil {
 				return err
 			}
-			profileName = profile
 		}
 
+		// Set the host based on the provided arguments and flags.
 		err := setHost(ctx, profileName, persistentAuth, args)
 		if err != nil {
 			return err
 		}
-		defer persistentAuth.Close()
 
 		// We need the config without the profile before it's used to initialise new workspace client below.
 		// Otherwise it will complain about non existing profile because it was not yet saved.
@@ -89,6 +172,7 @@ func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 		if err != nil {
 			return err
 		}
+		defer persistentAuth.Close()
 
 		if configureCluster {
 			w, err := databricks.NewWorkspaceClient((*databricks.Config)(&cfg))
@@ -123,23 +207,4 @@ func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 	}
 
 	return cmd
-}
-
-func setHost(ctx context.Context, profileName string, persistentAuth *auth.PersistentAuth, args []string) error {
-	// If the chosen profile has a hostname and the user hasn't specified a host, infer the host from the profile.
-	_, profiles, err := databrickscfg.LoadProfiles(ctx, func(p databrickscfg.Profile) bool {
-		return p.Name == profileName
-	})
-	// Tolerate ErrNoConfiguration here, as we will write out a configuration as part of the login flow.
-	if err != nil && !errors.Is(err, databrickscfg.ErrNoConfiguration) {
-		return err
-	}
-	if persistentAuth.Host == "" {
-		if len(profiles) > 0 && profiles[0].Host != "" {
-			persistentAuth.Host = profiles[0].Host
-		} else {
-			configureHost(ctx, persistentAuth, args, 0)
-		}
-	}
-	return nil
 }

@@ -1,10 +1,7 @@
 package auth
 
 import (
-	"context"
-
 	"github.com/databricks/cli/libs/auth"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
 )
 
@@ -31,28 +28,4 @@ GCP: https://docs.gcp.databricks.com/en/dev-tools/auth/index.html`,
 	cmd.AddCommand(newTokenCommand(&perisistentAuth))
 	cmd.AddCommand(newDescribeCommand())
 	return cmd
-}
-
-func promptForHost(ctx context.Context) (string, error) {
-	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Databricks Host (e.g. https://<databricks-instance>.cloud.databricks.com)"
-	// Validate?
-	host, err := prompt.Run()
-	if err != nil {
-		return "", err
-	}
-	return host, nil
-}
-
-func promptForAccountID(ctx context.Context) (string, error) {
-	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Databricks Account ID"
-	prompt.Default = ""
-	prompt.AllowEdit = true
-	// Validate?
-	accountId, err := prompt.Run()
-	if err != nil {
-		return "", err
-	}
-	return accountId, nil
 }
