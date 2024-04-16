@@ -295,9 +295,7 @@ func (n normalizeOptions) normalizeInt(typ reflect.Type, src dyn.Value, path dyn
 		out = src.MustInt()
 	case dyn.KindFloat:
 		out = int64(src.MustFloat())
-		fstr := fmt.Sprint(src.MustFloat())
-		istr := fmt.Sprint(out)
-		if fstr != istr {
+		if src.MustFloat() != float64(out) {
 			return dyn.InvalidValue, diags.Append(diag.Diagnostic{
 				Severity: diag.Warning,
 				Summary:  fmt.Sprintf(`cannot accurately represent "%g" as integer due to precision loss`, src.MustFloat()),
