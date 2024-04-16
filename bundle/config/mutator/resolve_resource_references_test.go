@@ -133,3 +133,38 @@ func TestResolveServicePrincipal(t *testing.T) {
 	require.NoError(t, diags.Error())
 	require.Equal(t, "app-1234", *b.Config.Variables["my-sp"].Value)
 }
+
+func TestResolveVariableReferencesInVariableLookups(t *testing.T) {
+	s := func(s string) *string {
+		return &s
+	}
+
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Bundle: config.Bundle{
+				Environment: "dev",
+			},
+			Variables: map[string]*variable.Variable{
+				"foo": {
+					Value: s("bar"),
+				},
+				"lookup": {
+					Lookup: &variable.Lookup{
+						Cluster: "cluster-${var.foo}-${bundle.environment}",
+					},
+				},
+			},
+		},
+	}
+
+	m := mocks.NewMockWorkspaceClient(t)
+	b.SetWorkpaceClient(m.WorkspaceClient)
+	clusterApi := m.GetMockClustersAPI()
+	clusterApi.EXPECT().GetByClusterName(mock.Anything, "cluster-bar-dev").Return(&compute.ClusterDetails{
+		ClusterId: "1234-5678-abcd",
+	}, nil)
+
+	diags := bundle.Apply(context.Background(), b, ResolveResourceReferences())
+	require.NoError(t, diags.Error())
+	require.Equal(t, "cluster-bar-dev", b.Config.Variables["lookup"].Lookup.Cluster)
+}
