@@ -293,6 +293,18 @@ func (n normalizeOptions) normalizeInt(typ reflect.Type, src dyn.Value, path dyn
 	switch src.Kind() {
 	case dyn.KindInt:
 		out = src.MustInt()
+	case dyn.KindFloat:
+		out = int64(src.MustFloat())
+		fstr := fmt.Sprint(src.MustFloat())
+		istr := fmt.Sprint(out)
+		if fstr != istr {
+			return dyn.InvalidValue, diags.Append(diag.Diagnostic{
+				Severity: diag.Warning,
+				Summary:  fmt.Sprintf(`cannot accurately represent "%g" as integer due to precision loss`, src.MustFloat()),
+				Location: src.Location(),
+				Path:     path,
+			})
+		}
 	case dyn.KindString:
 		var err error
 		out, err = strconv.ParseInt(src.MustString(), 10, 64)
@@ -326,6 +338,16 @@ func (n normalizeOptions) normalizeFloat(typ reflect.Type, src dyn.Value, path d
 	switch src.Kind() {
 	case dyn.KindFloat:
 		out = src.MustFloat()
+	case dyn.KindInt:
+		out = float64(src.MustInt())
+		if src.MustInt() != int64(out) {
+			return dyn.InvalidValue, diags.Append(diag.Diagnostic{
+				Severity: diag.Warning,
+				Summary:  fmt.Sprintf(`cannot accurately represent "%d" as floating point number due to precision loss`, src.MustInt()),
+				Location: src.Location(),
+				Path:     path,
+			})
+		}
 	case dyn.KindString:
 		var err error
 		out, err = strconv.ParseFloat(src.MustString(), 64)
