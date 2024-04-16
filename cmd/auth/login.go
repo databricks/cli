@@ -78,42 +78,6 @@ func getHostFromProfile(ctx context.Context, profileName string) (string, error)
 	return "", nil
 }
 
-// Sets the host in the persistentAuth object based on the provided arguments and flags.
-// Follows the following precedence:
-// 1. [HOST] (first positional argument) or --host flag. Error if both are specified.
-// 2. Profile host, if available.
-// 3. Prompt the user for the host.
-func setHost(ctx context.Context, profileName string, persistentAuth *auth.PersistentAuth, args []string) error {
-	// If both [HOST] and --host are provided, return an error.
-	// TODO: test for error for this case.
-	if len(args) > 0 && persistentAuth.Host != "" {
-		return fmt.Errorf("please only provide a host as an argument or a flag, not both")
-	}
-
-	// If [HOST] is provided, set the host to the provided positional argument.
-	if len(args) > 0 && persistentAuth.Host == "" {
-		persistentAuth.Host = args[0]
-	}
-
-	// If neither [HOST] nor --host are provided, and the profile has a host, use it.
-	// Otherwise, prompt the user for a host.
-	if len(args) == 0 && persistentAuth.Host == "" {
-		hostName, err := getHostFromProfile(ctx, profileName)
-		if err != nil {
-			return err
-		}
-		if hostName == "" {
-			var err error
-			hostName, err = promptForHost(ctx)
-			if err != nil {
-				return err
-			}
-		}
-		persistentAuth.Host = hostName
-	}
-	return nil
-}
-
 const minimalDbConnectVersion = "13.1"
 
 func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
@@ -207,4 +171,40 @@ func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 	}
 
 	return cmd
+}
+
+// Sets the host in the persistentAuth object based on the provided arguments and flags.
+// Follows the following precedence:
+// 1. [HOST] (first positional argument) or --host flag. Error if both are specified.
+// 2. Profile host, if available.
+// 3. Prompt the user for the host.
+func setHost(ctx context.Context, profileName string, persistentAuth *auth.PersistentAuth, args []string) error {
+	// If both [HOST] and --host are provided, return an error.
+	// TODO: test for error for this case.
+	if len(args) > 0 && persistentAuth.Host != "" {
+		return fmt.Errorf("please only provide a host as an argument or a flag, not both")
+	}
+
+	// If [HOST] is provided, set the host to the provided positional argument.
+	if len(args) > 0 && persistentAuth.Host == "" {
+		persistentAuth.Host = args[0]
+	}
+
+	// If neither [HOST] nor --host are provided, and the profile has a host, use it.
+	// Otherwise, prompt the user for a host.
+	if len(args) == 0 && persistentAuth.Host == "" {
+		hostName, err := getHostFromProfile(ctx, profileName)
+		if err != nil {
+			return err
+		}
+		if hostName == "" {
+			var err error
+			hostName, err = promptForHost(ctx)
+			if err != nil {
+				return err
+			}
+		}
+		persistentAuth.Host = hostName
+	}
+	return nil
 }
