@@ -36,7 +36,7 @@ func TestOverrideDevelopment(t *testing.T) {
 								ExistingClusterId: "cluster2",
 							},
 							{
-								ComputeKey: "compute_key",
+								EnvironmentKey: "environment_key",
 							},
 							{
 								JobClusterKey: "cluster_key",
@@ -58,7 +58,7 @@ func TestOverrideDevelopment(t *testing.T) {
 	assert.Equal(t, "newClusterID", b.Config.Resources.Jobs["job1"].Tasks[3].ExistingClusterId)
 
 	assert.Nil(t, b.Config.Resources.Jobs["job1"].Tasks[0].NewCluster)
-	assert.Empty(t, b.Config.Resources.Jobs["job1"].Tasks[2].ComputeKey)
+	assert.Empty(t, b.Config.Resources.Jobs["job1"].Tasks[2].EnvironmentKey)
 	assert.Empty(t, b.Config.Resources.Jobs["job1"].Tasks[3].JobClusterKey)
 }
 

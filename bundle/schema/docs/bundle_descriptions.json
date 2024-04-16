@@ -38,6 +38,9 @@
         "compute_id": {
           "description": ""
         },
+        "databricks_cli_version": {
+          "description": ""
+        },
         "deployment": {
           "description": "",
           "properties": {
@@ -170,30 +173,11 @@
           "additionalproperties": {
             "description": "",
             "properties": {
-              "compute": {
-                "description": "A list of compute requirements that can be referenced by tasks of this job.",
-                "items": {
-                  "description": "",
-                  "properties": {
-                    "compute_key": {
-                      "description": "A unique name for the compute requirement. This field is required and must be unique within the job.\n`JobTaskSettings` may refer to this field to determine the compute requirements for the task execution."
-                    },
-                    "spec": {
-                      "description": "",
-                      "properties": {
-                        "kind": {
-                          "description": "The kind of compute described by this compute specification."
-                        }
-                      }
-                    }
-                  }
-                }
-              },
               "continuous": {
                 "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.",
                 "properties": {
                   "pause_status": {
-                    "description": "Whether this trigger is paused or not."
+                    "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
                   }
                 }
               },
@@ -242,6 +226,31 @@
                     "description": "A list of email addresses to be notified when a run successfully completes. A run is considered to have completed successfully if it ends with a `TERMINATED` `life_cycle_state` and a `SUCCESS` result_state. If not specified on job creation, reset, or update, the list is empty, and notifications are not sent.",
                     "items": {
                       "description": ""
+                    }
+                  }
+                }
+              },
+              "environments": {
+                "description": "A list of task execution environment specifications that can be referenced by tasks of this job.",
+                "items": {
+                  "description": "",
+                  "properties": {
+                    "environment_key": {
+                      "description": "The key of an environment. It has to be unique within a job."
+                    },
+                    "spec": {
+                      "description": "",
+                      "properties": {
+                        "client": {
+                          "description": "*\nUser-friendly name for the client version: “client”: “1”\nThe version is a string, consisting of the major client version"
+                        },
+                        "dependencies": {
+                          "description": "List of pip dependencies, as supported by the version of pip in this environment.\nEach dependency is a pip requirement file line https://pip.pypa.io/en/stable/reference/requirements-file-format/\nAllowed dependency could be \u003crequirement specifier\u003e, \u003carchive url/path\u003e, \u003clocal project path\u003e(WSFS or Volumes in Databricks), \u003cvcs project url\u003e\nE.g. dependencies: [\"foo==0.0.1\", \"-r /Workspace/test/requirements.txt\"]",
+                          "items": {
+                            "description": ""
+                          }
+                        }
+                      }
                     }
                   }
                 }
@@ -322,7 +331,7 @@
                       "description": "A unique name for the job cluster. This field is required and must be unique within the job.\n`JobTaskSettings` may refer to this field to determine which cluster to launch for the task execution."
                     },
                     "new_cluster": {
-                      "description": "If new_cluster, a description of a new cluster that is created for each run.",
+                      "description": "If new_cluster, a description of a cluster that is created for each task.",
                       "properties": {
                         "apply_policy_default_values": {
                           "description": ""
@@ -398,6 +407,14 @@
                             },
                             "spot_bid_max_price": {
                               "description": "The max bid price to be used for Azure spot instances.\nThe Max price for the bid cannot be higher than the on-demand price of the instance.\nIf not specified, the default value is -1, which specifies that the instance cannot be evicted\non the basis of price, and only on the basis of availability. Further, the value should \u003e 0 or -1."
+                            }
+                          }
+                        },
+                        "clone_from": {
+                          "description": "When specified, this clones libraries from a source cluster during the creation of a new cluster.",
+                          "properties": {
+                            "source_cluster_id": {
+                              "description": "The cluster that is being cloned."
                             }
                           }
                         },
@@ -725,7 +742,7 @@
                 "description": "An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                 "properties": {
                   "pause_status": {
-                    "description": "Whether this trigger is paused or not."
+                    "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
                   },
                   "quartz_cron_expression": {
                     "description": "A Cron expression using Quartz syntax that describes the schedule for a job. See [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html) for details. This field is required."
@@ -746,9 +763,6 @@
                 "items": {
                   "description": "",
                   "properties": {
-                    "compute_key": {
-                      "description": "The key of the compute requirement, specified in `job.settings.compute`, to use for execution of this task."
-                    },
                     "condition_task": {
                       "description": "If condition_task, specifies a condition with an outcome that can be used to control the execution of other tasks. Does not require a cluster to execute and does not support retries or notifications.",
                       "properties": {
@@ -785,7 +799,7 @@
                           "description": "Optional schema to write to. This parameter is only used when a warehouse_id is also provided. If not provided, the `default` schema is used."
                         },
                         "source": {
-                          "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved from the local\nDatabricks workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a Databricks workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository."
+                          "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved from the local Databricks workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n* `WORKSPACE`: Notebook is located in Databricks workspace.\n* `GIT`: Notebook is located in cloud Git provider."
                         },
                         "warehouse_id": {
                           "description": "ID of the SQL warehouse to connect to. If provided, we automatically generate and provide the profile and connection details to dbt. It can be overridden on a per-command basis by using the `--profiles-dir` command line argument."
@@ -843,6 +857,9 @@
                           }
                         }
                       }
+                    },
+                    "environment_key": {
+                      "description": "The key that references an environment spec in a job. This field is required for Python script, Python wheel and dbt tasks when using serverless compute."
                     },
                     "existing_cluster_id": {
                       "description": "If existing_cluster_id, the ID of an existing cluster that is used for all runs.\nWhen running jobs or tasks on an existing cluster, you may need to manually restart\nthe cluster if it stops responding. We suggest running jobs and tasks on new clusters for\ngreater reliability"
@@ -938,7 +955,7 @@
                       "description": "An optional minimal interval in milliseconds between the start of the failed run and the subsequent retry run. The default behavior is that unsuccessful runs are immediately retried."
                     },
                     "new_cluster": {
-                      "description": "If new_cluster, a description of a new cluster that is created for each run.",
+                      "description": "If new_cluster, a description of a cluster that is created for each task.",
                       "properties": {
                         "apply_policy_default_values": {
                           "description": ""
@@ -1014,6 +1031,14 @@
                             },
                             "spot_bid_max_price": {
                               "description": "The max bid price to be used for Azure spot instances.\nThe Max price for the bid cannot be higher than the on-demand price of the instance.\nIf not specified, the default value is -1, which specifies that the instance cannot be evicted\non the basis of price, and only on the basis of availability. Further, the value should \u003e 0 or -1."
+                            }
+                          }
+                        },
+                        "clone_from": {
+                          "description": "When specified, this clones libraries from a source cluster during the creation of a new cluster.",
+                          "properties": {
+                            "source_cluster_id": {
+                              "description": "The cluster that is being cloned."
                             }
                           }
                         },
@@ -1277,7 +1302,7 @@
                           "description": "The path of the notebook to be run in the Databricks workspace or remote repository.\nFor notebooks stored in the Databricks workspace, the path must be absolute and begin with a slash.\nFor notebooks stored in a remote repository, the path must be relative. This field is required."
                         },
                         "source": {
-                          "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved from the local\nDatabricks workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a Databricks workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository."
+                          "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved from the local Databricks workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n* `WORKSPACE`: Notebook is located in Databricks workspace.\n* `GIT`: Notebook is located in cloud Git provider."
                         }
                       }
                     },
@@ -1429,7 +1454,7 @@
                           "description": "The Python file to be executed. Cloud file URIs (such as dbfs:/, s3:/, adls:/, gcs:/) and workspace paths are supported. For python files stored in the Databricks workspace, the path must be absolute and begin with `/`. For files stored in a remote repository, the path must be relative. This field is required."
                         },
                         "source": {
-                          "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved from the local\nDatabricks workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a Databricks workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository."
+                          "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved from the local Databricks workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n* `WORKSPACE`: Notebook is located in Databricks workspace.\n* `GIT`: Notebook is located in cloud Git provider."
                         }
                       }
                     },
@@ -1507,7 +1532,7 @@
                               "description": "Path of the SQL file. Must be relative if the source is a remote Git repository and absolute for workspace paths."
                             },
                             "source": {
-                              "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved from the local\nDatabricks workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a Databricks workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository."
+                              "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved from the local Databricks workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n* `WORKSPACE`: Notebook is located in Databricks workspace.\n* `GIT`: Notebook is located in cloud Git provider."
                             }
                           }
                         },
@@ -1609,7 +1634,7 @@
                     }
                   },
                   "pause_status": {
-                    "description": "Whether this trigger is paused or not."
+                    "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
                   },
                   "table": {
                     "description": "",
@@ -2649,6 +2674,9 @@
               "compute_id": {
                 "description": ""
               },
+              "databricks_cli_version": {
+                "description": ""
+              },
               "deployment": {
                 "description": "",
                 "properties": {
@@ -2781,30 +2809,11 @@
                 "additionalproperties": {
                   "description": "",
                   "properties": {
-                    "compute": {
-                      "description": "A list of compute requirements that can be referenced by tasks of this job.",
-                      "items": {
-                        "description": "",
-                        "properties": {
-                          "compute_key": {
-                            "description": "A unique name for the compute requirement. This field is required and must be unique within the job.\n`JobTaskSettings` may refer to this field to determine the compute requirements for the task execution."
-                          },
-                          "spec": {
-                            "description": "",
-                            "properties": {
-                              "kind": {
-                                "description": "The kind of compute described by this compute specification."
-                              }
-                            }
-                          }
-                        }
-                      }
-                    },
                     "continuous": {
                       "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.",
                       "properties": {
                         "pause_status": {
-                          "description": "Whether this trigger is paused or not."
+                          "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
                         }
                       }
                     },
@@ -2853,6 +2862,31 @@
                           "description": "A list of email addresses to be notified when a run successfully completes. A run is considered to have completed successfully if it ends with a `TERMINATED` `life_cycle_state` and a `SUCCESS` result_state. If not specified on job creation, reset, or update, the list is empty, and notifications are not sent.",
                           "items": {
                             "description": ""
+                          }
+                        }
+                      }
+                    },
+                    "environments": {
+                      "description": "A list of task execution environment specifications that can be referenced by tasks of this job.",
+                      "items": {
+                        "description": "",
+                        "properties": {
+                          "environment_key": {
+                            "description": "The key of an environment. It has to be unique within a job."
+                          },
+                          "spec": {
+                            "description": "",
+                            "properties": {
+                              "client": {
+                                "description": "*\nUser-friendly name for the client version: “client”: “1”\nThe version is a string, consisting of the major client version"
+                              },
+                              "dependencies": {
+                                "description": "List of pip dependencies, as supported by the version of pip in this environment.\nEach dependency is a pip requirement file line https://pip.pypa.io/en/stable/reference/requirements-file-format/\nAllowed dependency could be \u003crequirement specifier\u003e, \u003carchive url/path\u003e, \u003clocal project path\u003e(WSFS or Volumes in Databricks), \u003cvcs project url\u003e\nE.g. dependencies: [\"foo==0.0.1\", \"-r /Workspace/test/requirements.txt\"]",
+                                "items": {
+                                  "description": ""
+                                }
+                              }
+                            }
                           }
                         }
                       }
@@ -2933,7 +2967,7 @@
                             "description": "A unique name for the job cluster. This field is required and must be unique within the job.\n`JobTaskSettings` may refer to this field to determine which cluster to launch for the task execution."
                           },
                           "new_cluster": {
-                            "description": "If new_cluster, a description of a new cluster that is created for each run.",
+                            "description": "If new_cluster, a description of a cluster that is created for each task.",
                             "properties": {
                               "apply_policy_default_values": {
                                 "description": ""
@@ -3009,6 +3043,14 @@
                                   },
                                   "spot_bid_max_price": {
                                     "description": "The max bid price to be used for Azure spot instances.\nThe Max price for the bid cannot be higher than the on-demand price of the instance.\nIf not specified, the default value is -1, which specifies that the instance cannot be evicted\non the basis of price, and only on the basis of availability. Further, the value should \u003e 0 or -1."
+                                  }
+                                }
+                              },
+                              "clone_from": {
+                                "description": "When specified, this clones libraries from a source cluster during the creation of a new cluster.",
+                                "properties": {
+                                  "source_cluster_id": {
+                                    "description": "The cluster that is being cloned."
                                   }
                                 }
                               },
@@ -3336,7 +3378,7 @@
                       "description": "An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                       "properties": {
                         "pause_status": {
-                          "description": "Whether this trigger is paused or not."
+                          "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
                         },
                         "quartz_cron_expression": {
                           "description": "A Cron expression using Quartz syntax that describes the schedule for a job. See [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html) for details. This field is required."
@@ -3357,9 +3399,6 @@
                       "items": {
                         "description": "",
                         "properties": {
-                          "compute_key": {
-                            "description": "The key of the compute requirement, specified in `job.settings.compute`, to use for execution of this task."
-                          },
                           "condition_task": {
                             "description": "If condition_task, specifies a condition with an outcome that can be used to control the execution of other tasks. Does not require a cluster to execute and does not support retries or notifications.",
                             "properties": {
@@ -3396,7 +3435,7 @@
                                 "description": "Optional schema to write to. This parameter is only used when a warehouse_id is also provided. If not provided, the `default` schema is used."
                               },
                               "source": {
-                                "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved from the local\nDatabricks workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a Databricks workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository."
+                                "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved from the local Databricks workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n* `WORKSPACE`: Notebook is located in Databricks workspace.\n* `GIT`: Notebook is located in cloud Git provider."
                               },
                               "warehouse_id": {
                                 "description": "ID of the SQL warehouse to connect to. If provided, we automatically generate and provide the profile and connection details to dbt. It can be overridden on a per-command basis by using the `--profiles-dir` command line argument."
@@ -3454,6 +3493,9 @@
                                 }
                               }
                             }
+                          },
+                          "environment_key": {
+                            "description": "The key that references an environment spec in a job. This field is required for Python script, Python wheel and dbt tasks when using serverless compute."
                           },
                           "existing_cluster_id": {
                             "description": "If existing_cluster_id, the ID of an existing cluster that is used for all runs.\nWhen running jobs or tasks on an existing cluster, you may need to manually restart\nthe cluster if it stops responding. We suggest running jobs and tasks on new clusters for\ngreater reliability"
@@ -3549,7 +3591,7 @@
                             "description": "An optional minimal interval in milliseconds between the start of the failed run and the subsequent retry run. The default behavior is that unsuccessful runs are immediately retried."
                           },
                           "new_cluster": {
-                            "description": "If new_cluster, a description of a new cluster that is created for each run.",
+                            "description": "If new_cluster, a description of a cluster that is created for each task.",
                             "properties": {
                               "apply_policy_default_values": {
                                 "description": ""
@@ -3625,6 +3667,14 @@
                                   },
                                   "spot_bid_max_price": {
                                     "description": "The max bid price to be used for Azure spot instances.\nThe Max price for the bid cannot be higher than the on-demand price of the instance.\nIf not specified, the default value is -1, which specifies that the instance cannot be evicted\non the basis of price, and only on the basis of availability. Further, the value should \u003e 0 or -1."
+                                  }
+                                }
+                              },
+                              "clone_from": {
+                                "description": "When specified, this clones libraries from a source cluster during the creation of a new cluster.",
+                                "properties": {
+                                  "source_cluster_id": {
+                                    "description": "The cluster that is being cloned."
                                   }
                                 }
                               },
@@ -3888,7 +3938,7 @@
                                 "description": "The path of the notebook to be run in the Databricks workspace or remote repository.\nFor notebooks stored in the Databricks workspace, the path must be absolute and begin with a slash.\nFor notebooks stored in a remote repository, the path must be relative. This field is required."
                               },
                               "source": {
-                                "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved from the local\nDatabricks workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a Databricks workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository."
+                                "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved from the local Databricks workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n* `WORKSPACE`: Notebook is located in Databricks workspace.\n* `GIT`: Notebook is located in cloud Git provider."
                               }
                             }
                           },
@@ -4040,7 +4090,7 @@
                                 "description": "The Python file to be executed. Cloud file URIs (such as dbfs:/, s3:/, adls:/, gcs:/) and workspace paths are supported. For python files stored in the Databricks workspace, the path must be absolute and begin with `/`. For files stored in a remote repository, the path must be relative. This field is required."
                               },
                               "source": {
-                                "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved from the local\nDatabricks workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a Databricks workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository."
+                                "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved from the local Databricks workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n* `WORKSPACE`: Notebook is located in Databricks workspace.\n* `GIT`: Notebook is located in cloud Git provider."
                               }
                             }
                           },
@@ -4118,7 +4168,7 @@
                                     "description": "Path of the SQL file. Must be relative if the source is a remote Git repository and absolute for workspace paths."
                                   },
                                   "source": {
-                                    "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved from the local\nDatabricks workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a Databricks workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository."
+                                    "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved from the local Databricks workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n* `WORKSPACE`: Notebook is located in Databricks workspace.\n* `GIT`: Notebook is located in cloud Git provider."
                                   }
                                 }
                               },
@@ -4220,7 +4270,7 @@
                           }
                         },
                         "pause_status": {
-                          "description": "Whether this trigger is paused or not."
+                          "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
                         },
                         "table": {
                           "description": "",

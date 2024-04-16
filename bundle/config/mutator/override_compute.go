@@ -28,10 +28,10 @@ func overrideJobCompute(j *resources.Job, compute string) {
 			task = &task.ForEachTask.Task
 		}
 
-		if task.NewCluster != nil || task.ExistingClusterId != "" || task.ComputeKey != "" || task.JobClusterKey != "" {
+		if task.NewCluster != nil || task.ExistingClusterId != "" || task.EnvironmentKey != "" || task.JobClusterKey != "" {
 			task.NewCluster = nil
 			task.JobClusterKey = ""
-			task.ComputeKey = ""
+			task.EnvironmentKey = ""
 			task.ExistingClusterId = compute
 		}
 	}

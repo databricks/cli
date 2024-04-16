@@ -11,6 +11,11 @@ import (
 	cluster_policies "github.com/databricks/cli/cmd/workspace/cluster-policies"
 	clusters "github.com/databricks/cli/cmd/workspace/clusters"
 	connections "github.com/databricks/cli/cmd/workspace/connections"
+	consumer_fulfillments "github.com/databricks/cli/cmd/workspace/consumer-fulfillments"
+	consumer_installations "github.com/databricks/cli/cmd/workspace/consumer-installations"
+	consumer_listings "github.com/databricks/cli/cmd/workspace/consumer-listings"
+	consumer_personalization_requests "github.com/databricks/cli/cmd/workspace/consumer-personalization-requests"
+	consumer_providers "github.com/databricks/cli/cmd/workspace/consumer-providers"
 	credentials_manager "github.com/databricks/cli/cmd/workspace/credentials-manager"
 	current_user "github.com/databricks/cli/cmd/workspace/current-user"
 	dashboard_widgets "github.com/databricks/cli/cmd/workspace/dashboard-widgets"
@@ -38,6 +43,13 @@ import (
 	permissions "github.com/databricks/cli/cmd/workspace/permissions"
 	pipelines "github.com/databricks/cli/cmd/workspace/pipelines"
 	policy_families "github.com/databricks/cli/cmd/workspace/policy-families"
+	provider_exchange_filters "github.com/databricks/cli/cmd/workspace/provider-exchange-filters"
+	provider_exchanges "github.com/databricks/cli/cmd/workspace/provider-exchanges"
+	provider_files "github.com/databricks/cli/cmd/workspace/provider-files"
+	provider_listings "github.com/databricks/cli/cmd/workspace/provider-listings"
+	provider_personalization_requests "github.com/databricks/cli/cmd/workspace/provider-personalization-requests"
+	provider_provider_analytics_dashboards "github.com/databricks/cli/cmd/workspace/provider-provider-analytics-dashboards"
+	provider_providers "github.com/databricks/cli/cmd/workspace/provider-providers"
 	providers "github.com/databricks/cli/cmd/workspace/providers"
 	queries "github.com/databricks/cli/cmd/workspace/queries"
 	query_history "github.com/databricks/cli/cmd/workspace/query-history"
@@ -80,6 +92,11 @@ func All() []*cobra.Command {
 	out = append(out, cluster_policies.New())
 	out = append(out, clusters.New())
 	out = append(out, connections.New())
+	out = append(out, consumer_fulfillments.New())
+	out = append(out, consumer_installations.New())
+	out = append(out, consumer_listings.New())
+	out = append(out, consumer_personalization_requests.New())
+	out = append(out, consumer_providers.New())
 	out = append(out, credentials_manager.New())
 	out = append(out, current_user.New())
 	out = append(out, dashboard_widgets.New())
@@ -107,6 +124,13 @@ func All() []*cobra.Command {
 	out = append(out, permissions.New())
 	out = append(out, pipelines.New())
 	out = append(out, policy_families.New())
+	out = append(out, provider_exchange_filters.New())
+	out = append(out, provider_exchanges.New())
+	out = append(out, provider_files.New())
+	out = append(out, provider_listings.New())
+	out = append(out, provider_personalization_requests.New())
+	out = append(out, provider_provider_analytics_dashboards.New())
+	out = append(out, provider_providers.New())
 	out = append(out, providers.New())
 	out = append(out, queries.New())
 	out = append(out, query_history.New())
