@@ -79,17 +79,19 @@ depends on the existing profiles you have set in your configuration file
 
 	var loginTimeout time.Duration
 	var configureCluster bool
-	var profileName string
 	cmd.Flags().DurationVar(&loginTimeout, "timeout", auth.DefaultTimeout,
 		"Timeout for completing login challenge in the browser")
 	cmd.Flags().BoolVar(&configureCluster, "configure-cluster", false,
 		"Prompts to configure cluster")
-	cmd.Flags().StringVarP(&profileName, "profile", "p", "", `Name of the profile.`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 
-		if profileName == "" && cmdio.IsInTTY(ctx) {
+		var profileName string
+		profileFlag := cmd.Flag("profile")
+		if profileFlag != nil && profileFlag.Value.String() != "" {
+			profileName = profileFlag.Value.String()
+		} else if cmdio.IsInTTY(ctx) {
 			prompt := cmdio.Prompt(ctx)
 			prompt.Label = "Databricks Profile Name"
 			prompt.Default = persistentAuth.ProfileName()
