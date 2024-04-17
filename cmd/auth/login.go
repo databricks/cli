@@ -34,7 +34,6 @@ func getHostFromProfile(ctx context.Context, profileName string) (string, error)
 
 	// Tolerate ErrNoConfiguration here, as we will write out a configuration file
 	// as part of the login flow.
-	// TODO: verify that a configuration file is written out as part of the login flow.
 	if err != nil && errors.Is(err, databrickscfg.ErrNoConfiguration) {
 		return "", nil
 	}
@@ -150,7 +149,6 @@ func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 // 3. Prompt the user for the host.
 func setHost(ctx context.Context, profileName string, persistentAuth *auth.PersistentAuth, args []string) error {
 	// If both [HOST] and --host are provided, return an error.
-	// TODO: test for error for this case.
 	if len(args) > 0 && persistentAuth.Host != "" {
 		return fmt.Errorf("please only provide a host as an argument or a flag, not both")
 	}
