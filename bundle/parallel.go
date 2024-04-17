@@ -24,9 +24,10 @@ func (m *parallel) Apply(ctx context.Context, rb ReadOnlyBundle) diag.Diagnostic
 	for _, mutator := range m.mutators {
 		go func(mutator ReadOnlyMutator) {
 			defer wg.Done()
+			d := ApplyReadOnly(ctx, rb, mutator)
 
 			mu.Lock()
-			diags = diags.Extend(ApplyReadOnly(ctx, rb, mutator))
+			diags = diags.Extend(d)
 			mu.Unlock()
 		}(mutator)
 	}
