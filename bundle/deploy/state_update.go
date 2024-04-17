@@ -39,7 +39,7 @@ func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 	state.Version = DeploymentStateVersion
 
 	// Get the current file list.
-	sync, err := files.GetSync(ctx, b)
+	sync, err := files.GetSync(ctx, bundle.ReadOnly(b))
 	if err != nil {
 		return diag.FromErr(err)
 	}

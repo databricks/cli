@@ -11,16 +11,17 @@ import (
 
 type addToContainer struct {
 	container *[]int
+	value     int
 	err       bool
 }
 
-func (m *addToContainer) Apply(ctx context.Context, b *Bundle) diag.Diagnostics {
+func (m *addToContainer) Apply(ctx context.Context, b ReadOnlyBundle) diag.Diagnostics {
 	if m.err {
 		return diag.Errorf("error")
 	}
 
 	c := *m.container
-	c = append(c, 1)
+	c = append(c, m.value)
 	*m.container = c
 	return nil
 }
@@ -35,16 +36,19 @@ func TestParallelMutatorWork(t *testing.T) {
 	}
 
 	container := []int{}
-	m1 := &addToContainer{container: &container}
-	m2 := &addToContainer{container: &container}
-	m3 := &addToContainer{container: &container}
+	m1 := &addToContainer{container: &container, value: 1}
+	m2 := &addToContainer{container: &container, value: 2}
+	m3 := &addToContainer{container: &container, value: 3}
 
 	m := Parallel(m1, m2, m3)
 
 	// Apply the mutator
-	diags := m.Apply(context.Background(), b)
+	diags := ApplyReadOnly(context.Background(), ReadOnly(b), m)
 	require.Empty(t, diags)
 	require.Len(t, container, 3)
+	require.Contains(t, container, 1)
+	require.Contains(t, container, 2)
+	require.Contains(t, container, 3)
 }
 
 func TestParallelMutatorWorkWithErrors(t *testing.T) {
@@ -53,15 +57,17 @@ func TestParallelMutatorWorkWithErrors(t *testing.T) {
 	}
 
 	container := []int{}
-	m1 := &addToContainer{container: &container}
-	m2 := &addToContainer{container: &container, err: true}
-	m3 := &addToContainer{container: &container}
+	m1 := &addToContainer{container: &container, value: 1}
+	m2 := &addToContainer{container: &container, err: true, value: 2}
+	m3 := &addToContainer{container: &container, value: 3}
 
 	m := Parallel(m1, m2, m3)
 
 	// Apply the mutator
-	diags := m.Apply(context.Background(), b)
+	diags := ApplyReadOnly(context.Background(), ReadOnly(b), m)
 	require.Len(t, diags, 1)
 	require.Equal(t, "error", diags[0].Summary)
 	require.Len(t, container, 2)
+	require.Contains(t, container, 1)
+	require.Contains(t, container, 3)
 }

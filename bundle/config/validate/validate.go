@@ -13,11 +13,11 @@ type validate struct {
 
 type location struct {
 	path string
-	b    *bundle.Bundle
+	rb   bundle.ReadOnlyBundle
 }
 
 func (l location) Location() dyn.Location {
-	return l.b.Config.GetLocation(l.path)
+	return l.rb.Config().GetLocation(l.path)
 }
 
 func (l location) Path() dyn.Path {
@@ -26,9 +26,10 @@ func (l location) Path() dyn.Path {
 
 // Apply implements bundle.Mutator.
 func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	return bundle.Apply(ctx, b, bundle.Parallel(
+	return bundle.ApplyReadOnly(ctx, bundle.ReadOnly(b), bundle.Parallel(
 		JobClusterKeyDefined(),
 		FilesToSync(),
+		ValidateSyncPatterns(),
 	))
 }
 

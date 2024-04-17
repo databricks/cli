@@ -8,21 +8,26 @@ import (
 )
 
 type parallel struct {
-	mutators []Mutator
+	mutators []ReadOnlyMutator
 }
 
 func (m *parallel) Name() string {
 	return "parallel"
 }
 
-func (m *parallel) Apply(ctx context.Context, b *Bundle) diag.Diagnostics {
+func (m *parallel) Apply(ctx context.Context, rb ReadOnlyBundle) diag.Diagnostics {
 	var wg sync.WaitGroup
-	diags := diag.Diagnostics{}
+	var mu sync.Mutex
+	var diags diag.Diagnostics
+
 	wg.Add(len(m.mutators))
 	for _, mutator := range m.mutators {
-		go func(mutator Mutator) {
+		go func(mutator ReadOnlyMutator) {
 			defer wg.Done()
-			diags = diags.Extend(mutator.Apply(ctx, b))
+
+			mu.Lock()
+			diags = diags.Extend(ApplyReadOnly(ctx, rb, mutator))
+			mu.Unlock()
 		}(mutator)
 	}
 	wg.Wait()
@@ -30,7 +35,7 @@ func (m *parallel) Apply(ctx context.Context, b *Bundle) diag.Diagnostics {
 }
 
 // Parallel runs the given mutators in parallel.
-func Parallel(mutators ...Mutator) Mutator {
+func Parallel(mutators ...ReadOnlyMutator) ReadOnlyMutator {
 	return &parallel{
 		mutators: mutators,
 	}

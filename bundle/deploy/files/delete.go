@@ -46,7 +46,7 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	}
 
 	// Clean up sync snapshot file
-	sync, err := GetSync(ctx, b)
+	sync, err := GetSync(ctx, bundle.ReadOnly(b))
 	if err != nil {
 		return diag.FromErr(err)
 	}
