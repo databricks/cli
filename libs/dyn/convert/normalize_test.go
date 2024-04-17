@@ -555,6 +555,27 @@ func TestNormalizeIntNil(t *testing.T) {
 	}, err[0])
 }
 
+func TestNormalizeIntFromFloat(t *testing.T) {
+	var typ int
+	vin := dyn.V(float64(1.0))
+	vout, err := Normalize(&typ, vin)
+	assert.Empty(t, err)
+	assert.Equal(t, dyn.V(int64(1)), vout)
+}
+
+func TestNormalizeIntFromFloatError(t *testing.T) {
+	var typ int
+	vin := dyn.V(1.5)
+	_, err := Normalize(&typ, vin)
+	assert.Len(t, err, 1)
+	assert.Equal(t, diag.Diagnostic{
+		Severity: diag.Warning,
+		Summary:  `cannot accurately represent "1.5" as integer due to precision loss`,
+		Location: vin.Location(),
+		Path:     dyn.EmptyPath,
+	}, err[0])
+}
+
 func TestNormalizeIntFromString(t *testing.T) {
 	var typ int
 	vin := dyn.V("123")
@@ -613,6 +634,31 @@ func TestNormalizeFloatNil(t *testing.T) {
 	assert.Equal(t, diag.Diagnostic{
 		Severity: diag.Warning,
 		Summary:  `expected a float value, found null`,
+		Location: vin.Location(),
+		Path:     dyn.EmptyPath,
+	}, err[0])
+}
+
+func TestNormalizeFloatFromInt(t *testing.T) {
+	var typ float64
+
+	// Maximum safe integer that can be accurately represented as a float.
+	vin := dyn.V(int64(9007199254740992))
+	vout, err := Normalize(&typ, vin)
+	assert.Empty(t, err)
+	assert.Equal(t, dyn.V(float64(9007199254740992)), vout)
+}
+
+func TestNormalizeFloatFromIntError(t *testing.T) {
+	var typ float64
+
+	// Minimum integer that cannot be accurately represented as a float.
+	vin := dyn.V(9007199254740992 + 1)
+	_, err := Normalize(&typ, vin)
+	assert.Len(t, err, 1)
+	assert.Equal(t, diag.Diagnostic{
+		Severity: diag.Warning,
+		Summary:  `cannot accurately represent "9007199254740993" as floating point number due to precision loss`,
 		Location: vin.Location(),
 		Path:     dyn.EmptyPath,
 	}, err[0])
