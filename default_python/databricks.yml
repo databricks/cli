@@ -19,7 +19,7 @@ targets:
       host: https://myworkspace.databricks.com
 
   ## Optionally, there could be a 'staging' target here.
-  ## (See Databricks docs on CI/CD at https://docs.databricks.com/dev-tools/bundles/index.html.)
+  ## (See Databricks docs on CI/CD at https://docs.databricks.com/dev-tools/bundles/ci-cd.html.)
   #
   # staging:
   #  workspace:
@@ -31,9 +31,11 @@ targets:
     # Doing so enables strict verification of the settings below.
     mode: production
     workspace:
-      host: https://myworkspace.databricks.com
+      host: https://e2-dogfood.staging.cloud.databricks.com
+      # We always use /Users/user@company.com for all resources to make sure we only have a single copy.
+      # If this path results in an error, please make sure you have a recent version of the CLI installed.
+      root_path: /Users/user@company.com/.bundle/${bundle.name}/${bundle.target}
     run_as:
-      # This runs as username@company.com in production. Alternatively,
-      # a service principal could be used here using service_principal_name
-      # (see Databricks documentation).
+      # This runs as user@company.com in production. We could also use a service principal here,
+      # see https://docs.databricks.com/dev-tools/bundles/permissions.html.
       user_name: user@company.com
