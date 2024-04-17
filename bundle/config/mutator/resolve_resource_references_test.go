@@ -8,7 +8,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/variable"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
@@ -143,7 +142,7 @@ func TestResolveVariableReferencesInVariableLookups(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Bundle: config.Bundle{
-				Environment: "dev",
+				Target: "dev",
 			},
 			Variables: map[string]*variable.Variable{
 				"foo": {
@@ -151,7 +150,7 @@ func TestResolveVariableReferencesInVariableLookups(t *testing.T) {
 				},
 				"lookup": {
 					Lookup: &variable.Lookup{
-						Cluster: "cluster-${var.foo}-${bundle.environment}",
+						Cluster: "cluster-${var.foo}-${bundle.target}",
 					},
 				},
 			},
@@ -165,21 +164,15 @@ func TestResolveVariableReferencesInVariableLookups(t *testing.T) {
 		ClusterId: "1234-5678-abcd",
 	}, nil)
 
-	diags := bundle.Apply(context.Background(), b, bundle.Seq(ResolveVariableReferencesFor(
-		dyn.NewPattern(dyn.Key("variables"), dyn.AnyKey(), dyn.Key("lookup")),
-		"bundle",
-		"variables",
-	), ResolveResourceReferences()))
+	diags := bundle.Apply(context.Background(), b, bundle.Seq(ResolveVariableReferencesInLookup(), ResolveResourceReferences()))
 	require.NoError(t, diags.Error())
 	require.Equal(t, "cluster-bar-dev", b.Config.Variables["lookup"].Lookup.Cluster)
+	require.Equal(t, "1234-5678-abcd", *b.Config.Variables["lookup"].Value)
 }
 
 func TestResolveLookupVariableReferencesInVariableLookups(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
-			Bundle: config.Bundle{
-				Environment: "dev",
-			},
 			Variables: map[string]*variable.Variable{
 				"another_lookup": {
 					Lookup: &variable.Lookup{
@@ -198,10 +191,6 @@ func TestResolveLookupVariableReferencesInVariableLookups(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
-	diags := bundle.Apply(context.Background(), b, bundle.Seq(ResolveVariableReferencesFor(
-		dyn.NewPattern(dyn.Key("variables"), dyn.AnyKey(), dyn.Key("lookup")),
-		"bundle",
-		"variables",
-	), ResolveResourceReferences()))
+	diags := bundle.Apply(context.Background(), b, bundle.Seq(ResolveVariableReferencesInLookup(), ResolveResourceReferences()))
 	require.ErrorContains(t, diags.Error(), "lookup variables cannot contain references to another lookup variables")
 }

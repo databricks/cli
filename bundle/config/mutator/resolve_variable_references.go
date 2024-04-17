@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
@@ -15,14 +16,49 @@ import (
 type resolveVariableReferences struct {
 	prefixes []string
 	pattern  dyn.Pattern
+	lookupFn func(dyn.Value, dyn.Path) (dyn.Value, error)
 }
 
 func ResolveVariableReferences(prefixes ...string) bundle.Mutator {
-	return &resolveVariableReferences{prefixes: prefixes}
+	return &resolveVariableReferences{prefixes: prefixes, lookupFn: lookup}
 }
 
-func ResolveVariableReferencesFor(p dyn.Pattern, prefixes ...string) bundle.Mutator {
-	return &resolveVariableReferences{prefixes: prefixes, pattern: p}
+func ResolveVariableReferencesInLookup() bundle.Mutator {
+	return &resolveVariableReferences{prefixes: []string{
+		"bundle",
+		"workspace",
+		"variables",
+	}, pattern: dyn.NewPattern(dyn.Key("variables"), dyn.AnyKey(), dyn.Key("lookup")), lookupFn: lookupForVariables}
+}
+
+func lookup(v dyn.Value, path dyn.Path) (dyn.Value, error) {
+	// Future opportunity: if we lookup this path in both the given root
+	// and the synthesized root, we know if it was explicitly set or implied to be empty.
+	// Then we can emit a warning if it was not explicitly set.
+	return dyn.GetByPath(v, path)
+}
+
+func lookupForVariables(v dyn.Value, path dyn.Path) (dyn.Value, error) {
+	if path[0].Key() != "variables" {
+		return lookup(v, path)
+	}
+
+	varV, err := dyn.GetByPath(v, path[:len(path)-1])
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
+
+	var vv variable.Variable
+	err = convert.ToTyped(&vv, varV)
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
+
+	if vv.Lookup != nil && vv.Lookup.String() != "" {
+		return dyn.InvalidValue, fmt.Errorf("lookup variables cannot contain references to another lookup variables")
+	}
+
+	return lookup(v, path)
 }
 
 func (*resolveVariableReferences) Name() string {
@@ -54,41 +90,12 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 		//
 		// This is consistent with the behavior prior to using the dynamic value system.
 		//
-		// We can ignore the diagnostics return valuebecause we know that the dynamic value
+		// We can ignore the diagnostics return value because we know that the dynamic value
 		// has already been normalized when it was first loaded from the configuration file.
 		//
 		normalized, _ := convert.Normalize(b.Config, root, convert.IncludeMissingFields)
-		lookup := func(path dyn.Path) (dyn.Value, error) {
-			// Future opportunity: if we lookup this path in both the given root
-			// and the synthesized root, we know if it was explicitly set or implied to be empty.
-			// Then we can emit a warning if it was not explicitly set.
-			v, err := dyn.GetByPath(normalized, path)
-			if err != nil {
-				return dyn.InvalidValue, err
-			}
 
-			// Check if the variable we're looking up has a lookup field in it
-			lookupV, err := dyn.GetByPath(normalized, path[:len(path)-1].Append(dyn.Key("lookup")))
-
-			// If nothing is found, it means the variable is not a lookup variable, so we can just return the value
-			if err != nil || lookupV == dyn.InvalidValue {
-				return v, nil
-			}
-
-			// Check that the lookup variable was resolved to non-empty string already
-			sv, ok := v.AsString()
-			if !ok {
-				return v, nil
-			}
-
-			// If the lookup variable is empty, it means it was not resolved yet which means it is used inside another lookup variable
-			if sv == "" {
-				return dyn.InvalidValue, fmt.Errorf("lookup variables cannot contain references to another lookup variables")
-			}
-
-			return v, nil
-		}
-
+		// If the pattern is nil, we resolve references in the entire configuration.
 		root, err := dyn.MapByPattern(root, m.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			// Resolve variable references in all values.
 			return dynvar.Resolve(v, func(path dyn.Path) (dyn.Value, error) {
@@ -104,7 +111,7 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 				// Perform resolution only if the path starts with one of the specified prefixes.
 				for _, prefix := range prefixes {
 					if path.HasPrefix(prefix) {
-						return lookup(path)
+						return m.lookupFn(normalized, path)
 					}
 				}
 

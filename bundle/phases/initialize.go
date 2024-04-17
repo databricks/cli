@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/python"
 	"github.com/databricks/cli/bundle/scripts"
-	"github.com/databricks/cli/libs/dyn"
 )
 
 // The initialize phase fills in defaults and connects to the workspace.
@@ -29,12 +28,7 @@ func Initialize() bundle.Mutator {
 			mutator.ExpandWorkspaceRoot(),
 			mutator.DefineDefaultWorkspacePaths(),
 			mutator.SetVariables(),
-			mutator.ResolveVariableReferencesFor(
-				dyn.NewPattern(dyn.Key("variables"), dyn.AnyKey(), dyn.Key("lookup")),
-				"bundle",
-				"workspace",
-				"variables",
-			),
+			mutator.ResolveVariableReferencesInLookup(),
 			mutator.ResolveResourceReferences(),
 			mutator.ResolveVariableReferences(
 				"bundle",
