@@ -12,6 +12,13 @@ func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "auth",
 		Short: "Authentication related commands",
+		Long: `Authentication related commands. For more information regarding how
+authentication for the Databricks CLI and SDKs work please refer to the documentation
+linked below.
+
+AWS: https://docs.databricks.com/en/dev-tools/auth/index.html
+Azure: https://learn.microsoft.com/en-us/azure/databricks/dev-tools/auth
+GCP: https://docs.gcp.databricks.com/en/dev-tools/auth/index.html`,
 	}
 
 	var perisistentAuth auth.PersistentAuth
@@ -28,9 +35,7 @@ func New() *cobra.Command {
 
 func promptForHost(ctx context.Context) (string, error) {
 	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Databricks Host"
-	prompt.Default = "https://"
-	prompt.AllowEdit = true
+	prompt.Label = "Databricks Host (e.g. https://<databricks-instance>.cloud.databricks.com)"
 	// Validate?
 	host, err := prompt.Run()
 	if err != nil {
