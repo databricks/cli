@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"runtime"
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
@@ -32,12 +33,16 @@ func configureHost(ctx context.Context, persistentAuth *auth.PersistentAuth, arg
 const minimalDbConnectVersion = "13.1"
 
 func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
+	defaultConfigPath := "~/.databrickscfg"
+	if runtime.GOOS == "windows" {
+		defaultConfigPath = "%USERPROFILE%\\.databrickscfg"
+	}
 	cmd := &cobra.Command{
 		Use:   "login [HOST]",
 		Short: "Log into a Databricks workspace or account",
-		Long: `Log into a Databricks workspace or account.
+		Long: fmt.Sprintf(`Log into a Databricks workspace or account.
 This command logs you into the Databricks workspace or account and saves
-the authentication configuration in a profile (in ~/.databrickscfg by default).
+the authentication configuration in a profile (in %s by default).
 
 This profile can then be used to authenticate other Databricks CLI commands by
 specifying the --profile flag. This profile can also be used to authenticate
@@ -56,7 +61,7 @@ values, you'll be prompted for values at runtime.
 
 While this command always logs you into the specified host, the runtime behaviour
 depends on the existing profiles you have set in your configuration file
-(at ~/.databrickscfg by default).
+(at %s by default).
 
 1. If a profile with the specified name exists and specifies a host, you'll
    be logged into the host specified by the profile. The profile will be updated
@@ -74,7 +79,7 @@ depends on the existing profiles you have set in your configuration file
 
 4. If a profile with the specified name does not exist, a new profile will be
    created with the specified host. The auth type will be set to "databricks-cli".
-`,
+`, defaultConfigPath, defaultConfigPath),
 	}
 
 	var loginTimeout time.Duration
