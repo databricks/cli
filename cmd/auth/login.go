@@ -54,7 +54,7 @@ you can refer to the documentation linked below.
   GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html
 
 
-This command requires a Databricks Host URL (using --host or as a positional arg
+This command requires a Databricks Host URL (using --host or as a positional argument
 or implicitly inferred from the specified profile name)
 and a profile name (using --profile) to be specified. If you don't specify these
 values, you'll be prompted for values at runtime.
