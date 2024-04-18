@@ -2,15 +2,6 @@
 
 package schema
 
-type ResourceJobComputeSpec struct {
-	Kind string `json:"kind,omitempty"`
-}
-
-type ResourceJobCompute struct {
-	ComputeKey string                  `json:"compute_key,omitempty"`
-	Spec       *ResourceJobComputeSpec `json:"spec,omitempty"`
-}
-
 type ResourceJobContinuous struct {
 	PauseStatus string `json:"pause_status,omitempty"`
 }
@@ -36,6 +27,16 @@ type ResourceJobEmailNotifications struct {
 	OnFailure                          []string `json:"on_failure,omitempty"`
 	OnStart                            []string `json:"on_start,omitempty"`
 	OnSuccess                          []string `json:"on_success,omitempty"`
+}
+
+type ResourceJobEnvironmentSpec struct {
+	Client       string   `json:"client"`
+	Dependencies []string `json:"dependencies,omitempty"`
+}
+
+type ResourceJobEnvironment struct {
+	EnvironmentKey string                      `json:"environment_key"`
+	Spec           *ResourceJobEnvironmentSpec `json:"spec,omitempty"`
 }
 
 type ResourceJobGitSourceJobSource struct {
@@ -411,6 +412,7 @@ type ResourceJobNotebookTask struct {
 	BaseParameters map[string]string `json:"base_parameters,omitempty"`
 	NotebookPath   string            `json:"notebook_path"`
 	Source         string            `json:"source,omitempty"`
+	WarehouseId    string            `json:"warehouse_id,omitempty"`
 }
 
 type ResourceJobNotificationSettings struct {
@@ -725,6 +727,7 @@ type ResourceJobTaskForEachTaskTaskNotebookTask struct {
 	BaseParameters map[string]string `json:"base_parameters,omitempty"`
 	NotebookPath   string            `json:"notebook_path"`
 	Source         string            `json:"source,omitempty"`
+	WarehouseId    string            `json:"warehouse_id,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskNotificationSettings struct {
@@ -831,8 +834,8 @@ type ResourceJobTaskForEachTaskTaskWebhookNotifications struct {
 }
 
 type ResourceJobTaskForEachTaskTask struct {
-	ComputeKey             string                                              `json:"compute_key,omitempty"`
 	Description            string                                              `json:"description,omitempty"`
+	EnvironmentKey         string                                              `json:"environment_key,omitempty"`
 	ExistingClusterId      string                                              `json:"existing_cluster_id,omitempty"`
 	JobClusterKey          string                                              `json:"job_cluster_key,omitempty"`
 	MaxRetries             int                                                 `json:"max_retries,omitempty"`
@@ -1062,6 +1065,7 @@ type ResourceJobTaskNotebookTask struct {
 	BaseParameters map[string]string `json:"base_parameters,omitempty"`
 	NotebookPath   string            `json:"notebook_path"`
 	Source         string            `json:"source,omitempty"`
+	WarehouseId    string            `json:"warehouse_id,omitempty"`
 }
 
 type ResourceJobTaskNotificationSettings struct {
@@ -1168,8 +1172,8 @@ type ResourceJobTaskWebhookNotifications struct {
 }
 
 type ResourceJobTask struct {
-	ComputeKey             string                               `json:"compute_key,omitempty"`
 	Description            string                               `json:"description,omitempty"`
+	EnvironmentKey         string                               `json:"environment_key,omitempty"`
 	ExistingClusterId      string                               `json:"existing_cluster_id,omitempty"`
 	JobClusterKey          string                               `json:"job_cluster_key,omitempty"`
 	MaxRetries             int                                  `json:"max_retries,omitempty"`
@@ -1256,11 +1260,11 @@ type ResourceJob struct {
 	Tags                   map[string]string                `json:"tags,omitempty"`
 	TimeoutSeconds         int                              `json:"timeout_seconds,omitempty"`
 	Url                    string                           `json:"url,omitempty"`
-	Compute                []ResourceJobCompute             `json:"compute,omitempty"`
 	Continuous             *ResourceJobContinuous           `json:"continuous,omitempty"`
 	DbtTask                *ResourceJobDbtTask              `json:"dbt_task,omitempty"`
 	Deployment             *ResourceJobDeployment           `json:"deployment,omitempty"`
 	EmailNotifications     *ResourceJobEmailNotifications   `json:"email_notifications,omitempty"`
+	Environment            []ResourceJobEnvironment         `json:"environment,omitempty"`
 	GitSource              *ResourceJobGitSource            `json:"git_source,omitempty"`
 	Health                 *ResourceJobHealth               `json:"health,omitempty"`
 	JobCluster             []ResourceJobJobCluster          `json:"job_cluster,omitempty"`
