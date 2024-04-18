@@ -19,6 +19,11 @@ const TerraformProviderVersionEnv = "DATABRICKS_TF_PROVIDER_VERSION"
 // checksums are used to verify the integrity of the downloaded binary. Please
 // update the checksums when the Terraform version is updated. The checksums
 // were obtained from https://releases.hashicorp.com/terraform/1.5.5.
+//
+// These hashes are not used inside the CLI. They are only co-located here to be
+// output in the "databricks bundle debug terraform" output. Downstream applications
+// like the CLI docker image use these checksums to verify the integrity of the
+// downloaded Terraform archive.
 var TerraformVersion = version.Must(version.NewVersion("1.5.5"))
 
 const checksumLinuxArm64 = "b055aefe343d0b710d8a7afd31aeb702b37bbf4493bb9385a709991e48dfbcd2"
