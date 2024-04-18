@@ -2,8 +2,10 @@ package mutator
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
@@ -13,10 +15,50 @@ import (
 
 type resolveVariableReferences struct {
 	prefixes []string
+	pattern  dyn.Pattern
+	lookupFn func(dyn.Value, dyn.Path) (dyn.Value, error)
 }
 
 func ResolveVariableReferences(prefixes ...string) bundle.Mutator {
-	return &resolveVariableReferences{prefixes: prefixes}
+	return &resolveVariableReferences{prefixes: prefixes, lookupFn: lookup}
+}
+
+func ResolveVariableReferencesInLookup() bundle.Mutator {
+	return &resolveVariableReferences{prefixes: []string{
+		"bundle",
+		"workspace",
+		"variables",
+	}, pattern: dyn.NewPattern(dyn.Key("variables"), dyn.AnyKey(), dyn.Key("lookup")), lookupFn: lookupForVariables}
+}
+
+func lookup(v dyn.Value, path dyn.Path) (dyn.Value, error) {
+	// Future opportunity: if we lookup this path in both the given root
+	// and the synthesized root, we know if it was explicitly set or implied to be empty.
+	// Then we can emit a warning if it was not explicitly set.
+	return dyn.GetByPath(v, path)
+}
+
+func lookupForVariables(v dyn.Value, path dyn.Path) (dyn.Value, error) {
+	if path[0].Key() != "variables" {
+		return lookup(v, path)
+	}
+
+	varV, err := dyn.GetByPath(v, path[:len(path)-1])
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
+
+	var vv variable.Variable
+	err = convert.ToTyped(&vv, varV)
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
+
+	if vv.Lookup != nil && vv.Lookup.String() != "" {
+		return dyn.InvalidValue, fmt.Errorf("lookup variables cannot contain references to another lookup variables")
+	}
+
+	return lookup(v, path)
 }
 
 func (*resolveVariableReferences) Name() string {
@@ -48,37 +90,35 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 		//
 		// This is consistent with the behavior prior to using the dynamic value system.
 		//
-		// We can ignore the diagnostics return valuebecause we know that the dynamic value
+		// We can ignore the diagnostics return value because we know that the dynamic value
 		// has already been normalized when it was first loaded from the configuration file.
 		//
 		normalized, _ := convert.Normalize(b.Config, root, convert.IncludeMissingFields)
-		lookup := func(path dyn.Path) (dyn.Value, error) {
-			// Future opportunity: if we lookup this path in both the given root
-			// and the synthesized root, we know if it was explicitly set or implied to be empty.
-			// Then we can emit a warning if it was not explicitly set.
-			return dyn.GetByPath(normalized, path)
-		}
 
-		// Resolve variable references in all values.
-		root, err := dynvar.Resolve(root, func(path dyn.Path) (dyn.Value, error) {
-			// Rewrite the shorthand path ${var.foo} into ${variables.foo.value}.
-			if path.HasPrefix(varPath) && len(path) == 2 {
-				path = dyn.NewPath(
-					dyn.Key("variables"),
-					path[1],
-					dyn.Key("value"),
-				)
-			}
-
-			// Perform resolution only if the path starts with one of the specified prefixes.
-			for _, prefix := range prefixes {
-				if path.HasPrefix(prefix) {
-					return lookup(path)
+		// If the pattern is nil, we resolve references in the entire configuration.
+		root, err := dyn.MapByPattern(root, m.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			// Resolve variable references in all values.
+			return dynvar.Resolve(v, func(path dyn.Path) (dyn.Value, error) {
+				// Rewrite the shorthand path ${var.foo} into ${variables.foo.value}.
+				if path.HasPrefix(varPath) && len(path) == 2 {
+					path = dyn.NewPath(
+						dyn.Key("variables"),
+						path[1],
+						dyn.Key("value"),
+					)
 				}
-			}
 
-			return dyn.InvalidValue, dynvar.ErrSkipResolution
+				// Perform resolution only if the path starts with one of the specified prefixes.
+				for _, prefix := range prefixes {
+					if path.HasPrefix(prefix) {
+						return m.lookupFn(normalized, path)
+					}
+				}
+
+				return dyn.InvalidValue, dynvar.ErrSkipResolution
+			})
 		})
+
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
