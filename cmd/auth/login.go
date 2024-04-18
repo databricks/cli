@@ -22,7 +22,7 @@ func promptForProfile(ctx context.Context, dv string) (string, error) {
 	}
 
 	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Databricks Profile Name"
+	prompt.Label = "Databricks profile name"
 	prompt.Default = dv
 	prompt.AllowEdit = true
 	return prompt.Run()

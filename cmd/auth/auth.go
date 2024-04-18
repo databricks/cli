@@ -42,7 +42,7 @@ func promptForHost(ctx context.Context) (string, error) {
 	}
 
 	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Databricks Host"
+	prompt.Label = "Databricks host"
 	prompt.Validate = func(host string) error {
 		if !strings.HasPrefix(host, "https://") {
 			return fmt.Errorf("host URL must have a https:// prefix")
@@ -58,7 +58,7 @@ func promptForAccountID(ctx context.Context) (string, error) {
 	}
 
 	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Databricks Account ID"
+	prompt.Label = "Databricks account id"
 	prompt.Default = ""
 	prompt.AllowEdit = true
 	prompt.Validate = func(accountID string) error {
