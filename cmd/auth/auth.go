@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
 
@@ -60,5 +61,12 @@ func promptForAccountID(ctx context.Context) (string, error) {
 	prompt.Label = "Databricks Account ID"
 	prompt.Default = ""
 	prompt.AllowEdit = true
+	prompt.Validate = func(accountID string) error {
+		_, err := uuid.Parse(accountID)
+		if err != nil {
+			return fmt.Errorf("account ID must be a valid UUID: %w", err)
+		}
+		return nil
+	}
 	return prompt.Run()
 }
