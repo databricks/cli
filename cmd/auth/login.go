@@ -126,6 +126,7 @@ depends on the existing profiles you have set in your configuration file
 		if err != nil {
 			return err
 		}
+		defer persistentAuth.Close()
 
 		// We need the config without the profile before it's used to initialise new workspace client below.
 		// Otherwise it will complain about non existing profile because it was not yet saved.
@@ -149,7 +150,6 @@ depends on the existing profiles you have set in your configuration file
 		if err != nil {
 			return err
 		}
-		defer persistentAuth.Close()
 
 		if configureCluster {
 			w, err := databricks.NewWorkspaceClient((*databricks.Config)(&cfg))
