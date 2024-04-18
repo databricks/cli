@@ -272,9 +272,6 @@ func newMigrate() *cobra.Command {
   Arguments:
     SOURCE_DASHBOARD_ID: UUID of the dashboard to be migrated.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -474,9 +471,6 @@ func newUnpublish() *cobra.Command {
 
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard to be published.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 

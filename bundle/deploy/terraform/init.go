@@ -138,22 +138,34 @@ func inheritEnvVars(ctx context.Context, environ map[string]string) error {
 func getEnvVarWithMatchingVersion(ctx context.Context, envVarName string, versionVarName string, currentVersion string) (string, error) {
 	envValue := env.Get(ctx, envVarName)
 	versionValue := env.Get(ctx, versionVarName)
-	if envValue == "" || versionValue == "" {
-		log.Debugf(ctx, "%s and %s aren't defined", envVarName, versionVarName)
+
+	// return early if the environment variable is not set
+	if envValue == "" {
+		log.Debugf(ctx, "%s is not defined", envVarName)
 		return "", nil
 	}
-	if versionValue != currentVersion {
-		log.Debugf(ctx, "%s as %s does not match the current version %s, ignoring %s", versionVarName, versionValue, currentVersion, envVarName)
-		return "", nil
-	}
+
+	// If the path does not exist, we return early.
 	_, err := os.Stat(envValue)
 	if err != nil {
 		if os.IsNotExist(err) {
-			log.Debugf(ctx, "%s at %s does not exist, ignoring %s", envVarName, envValue, versionVarName)
+			log.Debugf(ctx, "%s at %s does not exist", envVarName, envValue)
 			return "", nil
 		} else {
 			return "", err
 		}
+	}
+
+	// If the version environment variable is not set, we directly return the value of the environment variable.
+	if versionValue == "" {
+		return envValue, nil
+	}
+
+	// When the version environment variable is set, we check if it matches the current version.
+	// If it does not match, we return an empty string.
+	if versionValue != currentVersion {
+		log.Debugf(ctx, "%s as %s does not match the current version %s, ignoring %s", versionVarName, versionValue, currentVersion, envVarName)
+		return "", nil
 	}
 	return envValue, nil
 }

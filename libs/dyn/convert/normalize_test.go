@@ -555,6 +555,27 @@ func TestNormalizeIntNil(t *testing.T) {
 	}, err[0])
 }
 
+func TestNormalizeIntFromFloat(t *testing.T) {
+	var typ int
+	vin := dyn.V(float64(1.0))
+	vout, err := Normalize(&typ, vin)
+	assert.Empty(t, err)
+	assert.Equal(t, dyn.V(int64(1)), vout)
+}
+
+func TestNormalizeIntFromFloatError(t *testing.T) {
+	var typ int
+	vin := dyn.V(1.5)
+	_, err := Normalize(&typ, vin)
+	assert.Len(t, err, 1)
+	assert.Equal(t, diag.Diagnostic{
+		Severity: diag.Warning,
+		Summary:  `cannot accurately represent "1.5" as integer due to precision loss`,
+		Location: vin.Location(),
+		Path:     dyn.EmptyPath,
+	}, err[0])
+}
+
 func TestNormalizeIntFromString(t *testing.T) {
 	var typ int
 	vin := dyn.V("123")
@@ -618,6 +639,31 @@ func TestNormalizeFloatNil(t *testing.T) {
 	}, err[0])
 }
 
+func TestNormalizeFloatFromInt(t *testing.T) {
+	var typ float64
+
+	// Maximum safe integer that can be accurately represented as a float.
+	vin := dyn.V(int64(9007199254740992))
+	vout, err := Normalize(&typ, vin)
+	assert.Empty(t, err)
+	assert.Equal(t, dyn.V(float64(9007199254740992)), vout)
+}
+
+func TestNormalizeFloatFromIntError(t *testing.T) {
+	var typ float64
+
+	// Minimum integer that cannot be accurately represented as a float.
+	vin := dyn.V(9007199254740992 + 1)
+	_, err := Normalize(&typ, vin)
+	assert.Len(t, err, 1)
+	assert.Equal(t, diag.Diagnostic{
+		Severity: diag.Warning,
+		Summary:  `cannot accurately represent "9007199254740993" as floating point number due to precision loss`,
+		Location: vin.Location(),
+		Path:     dyn.EmptyPath,
+	}, err[0])
+}
+
 func TestNormalizeFloatFromString(t *testing.T) {
 	var typ float64
 	vin := dyn.V("1.2")
@@ -658,4 +704,24 @@ func TestNormalizeFloatError(t *testing.T) {
 		Location: dyn.Location{},
 		Path:     dyn.EmptyPath,
 	}, err[0])
+}
+
+func TestNormalizeAnchors(t *testing.T) {
+	type Tmp struct {
+		Foo string `json:"foo"`
+	}
+
+	var typ Tmp
+	vin := dyn.V(map[string]dyn.Value{
+		"foo":    dyn.V("bar"),
+		"anchor": dyn.V("anchor").MarkAnchor(),
+	})
+
+	vout, err := Normalize(typ, vin)
+	assert.Len(t, err, 0)
+
+	// The field that can be mapped to the struct field is retained.
+	assert.Equal(t, map[string]any{
+		"foo": "bar",
+	}, vout.AsAny())
 }
