@@ -55,7 +55,7 @@ you can refer to the documentation linked below.
 
 
 This command requires a Databricks Host URL (using --host or as a positional arg
- or implicitly inferred from the specified profile name)
+or implicitly inferred from the specified profile name)
 and a profile name (using --profile) to be specified. If you don't specify these
 values, you'll be prompted for values at runtime.
 
