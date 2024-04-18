@@ -64,5 +64,9 @@ func Groups() []cobra.Group {
 			ID:    "dashboards",
 			Title: "Dashboards",
 		},
+		{
+			ID:    "marketplace",
+			Title: "Marketplace",
+		},
 	}
 }

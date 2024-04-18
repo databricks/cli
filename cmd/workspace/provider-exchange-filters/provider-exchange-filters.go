@@ -1,6 +1,6 @@
 // Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
 
-package workspace_assignment
+package provider_exchange_filters
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/databricks/databricks-sdk-go/service/marketplace"
 	"github.com/spf13/cobra"
 )
 
@@ -18,19 +18,21 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "workspace-assignment",
-		Short: `The Workspace Permission Assignment API allows you to manage workspace permissions for principals in your account.`,
-		Long: `The Workspace Permission Assignment API allows you to manage workspace
-  permissions for principals in your account.`,
-		GroupID: "iam",
+		Use:     "provider-exchange-filters",
+		Short:   `Marketplace exchanges filters curate which groups can access an exchange.`,
+		Long:    `Marketplace exchanges filters curate which groups can access an exchange.`,
+		GroupID: "marketplace",
 		Annotations: map[string]string{
-			"package": "iam",
+			"package": "marketplace",
 		},
+
+		// This service is being previewed; hide from help output.
+		Hidden: true,
 	}
 
 	// Add methods
+	cmd.AddCommand(newCreate())
 	cmd.AddCommand(newDelete())
-	cmd.AddCommand(newGet())
 	cmd.AddCommand(newList())
 	cmd.AddCommand(newUpdate())
 
@@ -42,55 +44,120 @@ func New() *cobra.Command {
 	return cmd
 }
 
+// start create command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createOverrides []func(
+	*cobra.Command,
+	*marketplace.CreateExchangeFilterRequest,
+)
+
+func newCreate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createReq marketplace.CreateExchangeFilterRequest
+	var createJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Use = "create"
+	cmd.Short = `Create a new exchange filter.`
+	cmd.Long = `Create a new exchange filter.
+  
+  Add an exchange filter.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+		}
+
+		response, err := w.ProviderExchangeFilters.Create(ctx, createReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createOverrides {
+		fn(cmd, &createReq)
+	}
+
+	return cmd
+}
+
 // start delete command
 
 // Slice with functions to override default command behavior.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*iam.DeleteWorkspaceAssignmentRequest,
+	*marketplace.DeleteExchangeFilterRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var deleteReq iam.DeleteWorkspaceAssignmentRequest
+	var deleteReq marketplace.DeleteExchangeFilterRequest
 
 	// TODO: short flags
 
-	cmd.Use = "delete WORKSPACE_ID PRINCIPAL_ID"
-	cmd.Short = `Delete permissions assignment.`
-	cmd.Long = `Delete permissions assignment.
+	cmd.Use = "delete ID"
+	cmd.Short = `Delete an exchange filter.`
+	cmd.Long = `Delete an exchange filter.
   
-  Deletes the workspace permissions assignment in a given account and workspace
-  for the specified principal.
+  Delete an exchange filter`
 
-  Arguments:
-    WORKSPACE_ID: The workspace ID.
-    PRINCIPAL_ID: The ID of the user, service principal, or group.`
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(2)
-		return check(cmd, args)
-	}
-
-	cmd.PreRunE = root.MustAccountClient
+	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		w := root.WorkspaceClient(ctx)
 
-		_, err = fmt.Sscan(args[0], &deleteReq.WorkspaceId)
-		if err != nil {
-			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No ID argument specified. Loading names for Provider Exchange Filters drop-down."
+			names, err := w.ProviderExchangeFilters.ExchangeFilterNameToIdMap(ctx, marketplace.ListExchangeFiltersRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Provider Exchange Filters drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
 		}
-		_, err = fmt.Sscan(args[1], &deleteReq.PrincipalId)
-		if err != nil {
-			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[1])
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have ")
 		}
+		deleteReq.Id = args[0]
 
-		err = a.WorkspaceAssignment.Delete(ctx, deleteReq)
+		err = w.ProviderExchangeFilters.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
@@ -109,92 +176,33 @@ func newDelete() *cobra.Command {
 	return cmd
 }
 
-// start get command
-
-// Slice with functions to override default command behavior.
-// Functions can be added from the `init()` function in manually curated files in this directory.
-var getOverrides []func(
-	*cobra.Command,
-	*iam.GetWorkspaceAssignmentRequest,
-)
-
-func newGet() *cobra.Command {
-	cmd := &cobra.Command{}
-
-	var getReq iam.GetWorkspaceAssignmentRequest
-
-	// TODO: short flags
-
-	cmd.Use = "get WORKSPACE_ID"
-	cmd.Short = `List workspace permissions.`
-	cmd.Long = `List workspace permissions.
-  
-  Get an array of workspace permissions for the specified account and workspace.
-
-  Arguments:
-    WORKSPACE_ID: The workspace ID.`
-
-	cmd.Annotations = make(map[string]string)
-
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
-		return check(cmd, args)
-	}
-
-	cmd.PreRunE = root.MustAccountClient
-	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
-		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
-
-		_, err = fmt.Sscan(args[0], &getReq.WorkspaceId)
-		if err != nil {
-			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
-		}
-
-		response, err := a.WorkspaceAssignment.Get(ctx, getReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
-	}
-
-	// Disable completions since they are not applicable.
-	// Can be overridden by manual implementation in `override.go`.
-	cmd.ValidArgsFunction = cobra.NoFileCompletions
-
-	// Apply optional overrides to this command.
-	for _, fn := range getOverrides {
-		fn(cmd, &getReq)
-	}
-
-	return cmd
-}
-
 // start list command
 
 // Slice with functions to override default command behavior.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*iam.ListWorkspaceAssignmentRequest,
+	*marketplace.ListExchangeFiltersRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var listReq iam.ListWorkspaceAssignmentRequest
+	var listReq marketplace.ListExchangeFiltersRequest
 
 	// TODO: short flags
 
-	cmd.Use = "list WORKSPACE_ID"
-	cmd.Short = `Get permission assignments.`
-	cmd.Long = `Get permission assignments.
-  
-  Get the permission assignments for the specified Databricks account and
-  Databricks workspace.
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
 
-  Arguments:
-    WORKSPACE_ID: The workspace ID for the account.`
+	cmd.Use = "list EXCHANGE_ID"
+	cmd.Short = `List exchange filters.`
+	cmd.Long = `List exchange filters.
+  
+  List exchange filter`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -203,17 +211,14 @@ func newList() *cobra.Command {
 		return check(cmd, args)
 	}
 
-	cmd.PreRunE = root.MustAccountClient
+	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		w := root.WorkspaceClient(ctx)
 
-		_, err = fmt.Sscan(args[0], &listReq.WorkspaceId)
-		if err != nil {
-			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
-		}
+		listReq.ExchangeId = args[0]
 
-		response := a.WorkspaceAssignment.List(ctx, listReq)
+		response := w.ProviderExchangeFilters.List(ctx, listReq)
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -235,40 +240,38 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*iam.UpdateWorkspaceAssignments,
+	*marketplace.UpdateExchangeFilterRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var updateReq iam.UpdateWorkspaceAssignments
+	var updateReq marketplace.UpdateExchangeFilterRequest
 	var updateJson flags.JsonFlag
 
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Use = "update WORKSPACE_ID PRINCIPAL_ID"
-	cmd.Short = `Create or update permissions assignment.`
-	cmd.Long = `Create or update permissions assignment.
+	cmd.Use = "update ID"
+	cmd.Short = `Update exchange filter.`
+	cmd.Long = `Update exchange filter.
   
-  Creates or updates the workspace permissions assignment in a given account and
-  workspace for the specified principal.
+  Update an exchange filter.`
 
-  Arguments:
-    WORKSPACE_ID: The workspace ID.
-    PRINCIPAL_ID: The ID of the user, service principal, or group.`
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(2)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
-	cmd.PreRunE = root.MustAccountClient
+	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
+		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
 			err = updateJson.Unmarshal(&updateReq)
@@ -278,16 +281,9 @@ func newUpdate() *cobra.Command {
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
-		_, err = fmt.Sscan(args[0], &updateReq.WorkspaceId)
-		if err != nil {
-			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
-		}
-		_, err = fmt.Sscan(args[1], &updateReq.PrincipalId)
-		if err != nil {
-			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[1])
-		}
+		updateReq.Id = args[0]
 
-		response, err := a.WorkspaceAssignment.Update(ctx, updateReq)
+		response, err := w.ProviderExchangeFilters.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
@@ -306,4 +302,4 @@ func newUpdate() *cobra.Command {
 	return cmd
 }
 
-// end service WorkspaceAssignment
+// end service ProviderExchangeFilters
