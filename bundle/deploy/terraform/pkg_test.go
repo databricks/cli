@@ -3,6 +3,7 @@ package terraform
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -41,6 +42,9 @@ func downloadAndChecksum(t *testing.T, url string, expectedChecksum string) {
 }
 
 func TestTerraformArchiveChecksums(t *testing.T) {
-	downloadAndChecksum(t, "https://releases.hashicorp.com/terraform/1.5.5/terraform_1.5.5_linux_amd64.zip", checksumLinuxAmd64)
-	downloadAndChecksum(t, "https://releases.hashicorp.com/terraform/1.5.5/terraform_1.5.5_linux_arm64.zip", checksumLinuxArm64)
+	armUrl := fmt.Sprintf("https://releases.hashicorp.com/terraform/%s/terraform_%s_linux_arm64.zip", TerraformVersion, TerraformVersion)
+	amdUrl := fmt.Sprintf("https://releases.hashicorp.com/terraform/%s/terraform_%s_linux_amd64.zip", TerraformVersion, TerraformVersion)
+
+	downloadAndChecksum(t, amdUrl, checksumLinuxAmd64)
+	downloadAndChecksum(t, armUrl, checksumLinuxArm64)
 }
