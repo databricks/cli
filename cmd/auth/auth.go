@@ -18,9 +18,9 @@ func New() *cobra.Command {
 authentication for the Databricks CLI and SDKs work please refer to the documentation
 linked below.
 
-AWS: https://docs.databricks.com/en/dev-tools/auth/index.html
-Azure: https://learn.microsoft.com/en-us/azure/databricks/dev-tools/auth
-GCP: https://docs.gcp.databricks.com/en/dev-tools/auth/index.html`,
+AWS: https://docs.databricks.com/dev-tools/auth/index.html
+Azure: https://learn.microsoft.com/azure/databricks/dev-tools/auth
+GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html`,
 	}
 
 	var perisistentAuth auth.PersistentAuth
