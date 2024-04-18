@@ -17,7 +17,7 @@ wget https://releases.hashicorp.com/terraform/${DATABRICKS_TF_VERSION}/terraform
 EXPECTED_CHECKSUM="$(/app/databricks bundle debug terraform --output json | jq -r .terraform.checksum.linux_$ARCH)"
 COMPUTED_CHECKSUM=$(sha256sum zip/terraform.zip | awk '{ print $1 }')
 if [ "$COMPUTED_CHECKSUM" != "$EXPECTED_CHECKSUM" ]; then
-    echo "Checksum mismatch for terraform binary. Version: $DATABRICKS_TF_VERSION, Arch: $ARCH, Expected checksum: $EXPECTED_CHECKSUM, Computed checksum: $COMPUTED_CHECKSUM."
+    echo "Checksum mismatch for Terraform binary. Version: $DATABRICKS_TF_VERSION, Arch: $ARCH, Expected checksum: $EXPECTED_CHECKSUM, Computed checksum: $COMPUTED_CHECKSUM."
     exit 1
 fi
 
