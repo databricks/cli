@@ -25,6 +25,8 @@ type DataSourceMetastoreMetastoreInfo struct {
 
 type DataSourceMetastore struct {
 	Id            string                            `json:"id,omitempty"`
-	MetastoreId   string                            `json:"metastore_id"`
+	MetastoreId   string                            `json:"metastore_id,omitempty"`
+	Name          string                            `json:"name,omitempty"`
+	Region        string                            `json:"region,omitempty"`
 	MetastoreInfo *DataSourceMetastoreMetastoreInfo `json:"metastore_info,omitempty"`
 }

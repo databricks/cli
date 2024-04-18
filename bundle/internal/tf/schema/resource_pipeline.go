@@ -117,6 +117,11 @@ type ResourcePipelineCluster struct {
 	InitScripts               []ResourcePipelineClusterInitScripts    `json:"init_scripts,omitempty"`
 }
 
+type ResourcePipelineDeployment struct {
+	Kind             string `json:"kind,omitempty"`
+	MetadataFilePath string `json:"metadata_file_path,omitempty"`
+}
+
 type ResourcePipelineFilters struct {
 	Exclude []string `json:"exclude,omitempty"`
 	Include []string `json:"include,omitempty"`
@@ -165,6 +170,7 @@ type ResourcePipeline struct {
 	Target              string                         `json:"target,omitempty"`
 	Url                 string                         `json:"url,omitempty"`
 	Cluster             []ResourcePipelineCluster      `json:"cluster,omitempty"`
+	Deployment          *ResourcePipelineDeployment    `json:"deployment,omitempty"`
 	Filters             *ResourcePipelineFilters       `json:"filters,omitempty"`
 	Library             []ResourcePipelineLibrary      `json:"library,omitempty"`
 	Notification        []ResourcePipelineNotification `json:"notification,omitempty"`
