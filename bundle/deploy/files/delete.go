@@ -3,10 +3,12 @@ package files
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/fatih/color"
 )
@@ -46,17 +48,35 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	}
 
 	// Clean up sync snapshot file
-	sync, err := GetSync(ctx, b)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	err = sync.DestroySnapshot(ctx)
+	err = deleteSnapshotFile(ctx, b)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Deleted snapshot file at %s", sync.SnapshotPath()))
 	cmdio.LogString(ctx, "Successfully deleted files!")
+	return nil
+}
+
+// TODO: write test that verifies that the snapshot file is deleted.
+// TODO: write test to prevent this regression.
+func deleteSnapshotFile(ctx context.Context, b *bundle.Bundle) error {
+	cacheDir, err := b.CacheDir(ctx)
+	if err != nil {
+		return err
+	}
+	sp, err := sync.SnapshotPath(&sync.SyncOptions{
+		SnapshotBasePath: cacheDir,
+		Host:             b.WorkspaceClient().Config.Host,
+		RemotePath:       b.Config.Workspace.FilePath,
+	})
+	if err != nil {
+		return err
+	}
+	err = os.Remove(sp)
+	if err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to destroy sync snapshot file: %s", err)
+	}
+	cmdio.LogString(ctx, fmt.Sprintf("Deleted snapshot file at %s", sp))
 	return nil
 }
 
