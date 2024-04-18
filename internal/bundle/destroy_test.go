@@ -23,8 +23,10 @@ func TestAccBundleDestroy(t *testing.T) {
 	})
 	require.NoError(t, err)
 
+	snapshotsDir := filepath.Join(bundleRoot, ".databricks", "bundle", "default", "sync-snapshots")
+
 	// Assert the snapshot file does not exist
-	_, err = os.ReadDir(filepath.Join(bundleRoot, ".databricks", "bundle", "sync-snapshots"))
+	_, err = os.ReadDir(snapshotsDir)
 	assert.ErrorIs(t, err, os.ErrNotExist)
 
 	// deploy pipeline
@@ -32,7 +34,7 @@ func TestAccBundleDestroy(t *testing.T) {
 	require.NoError(t, err)
 
 	// Assert the snapshot file exists
-	entries, err := os.ReadDir(filepath.Join(bundleRoot, ".databricks", "bundle", "default", "sync-snapshots"))
+	entries, err := os.ReadDir(snapshotsDir)
 	assert.NoError(t, err)
 	assert.Len(t, entries, 1)
 
@@ -56,8 +58,9 @@ func TestAccBundleDestroy(t *testing.T) {
 	assert.ErrorContains(t, err, "does not exist")
 
 	// Assert snapshot file is deleted
-	_, err = os.ReadDir(filepath.Join(bundleRoot, ".databricks", "bundle", "sync-snapshots"))
-	assert.ErrorIs(t, err, os.ErrNotExist)
+	entries, err = os.ReadDir(snapshotsDir)
+	require.NoError(t, err)
+	assert.Len(t, entries, 0)
 
 	// Assert bundle deployment path is deleted
 	_, err = w.Workspace.GetStatusByPath(ctx, remoteRoot)

@@ -57,8 +57,6 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	return nil
 }
 
-// TODO: write test that verifies that the snapshot file is deleted.
-// TODO: write test to prevent this regression.
 func deleteSnapshotFile(ctx context.Context, b *bundle.Bundle) error {
 	cacheDir, err := b.CacheDir(ctx)
 	if err != nil {
