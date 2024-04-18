@@ -35,7 +35,7 @@ func (v *filesToSync) Apply(ctx context.Context, rb bundle.ReadOnlyBundle) diag.
 	}
 
 	diags := diag.Diagnostics{}
-	if len(rb.Config().Sync().Exclude) == 0 {
+	if len(rb.Config().Sync.Exclude) == 0 {
 		diags = diags.Append(diag.Diagnostic{
 			Severity: diag.Warning,
 			Summary:  "There are no files to sync, please check your .gitignore",

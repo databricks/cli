@@ -29,9 +29,9 @@ func GetSyncOptions(ctx context.Context, rb bundle.ReadOnlyBundle) (*sync.SyncOp
 
 	opts := &sync.SyncOptions{
 		LocalPath:  rb.RootPath(),
-		RemotePath: rb.Config().Workspace().FilePath,
+		RemotePath: rb.Config().Workspace.FilePath,
 		Include:    includes,
-		Exclude:    rb.Config().Sync().Exclude,
+		Exclude:    rb.Config().Sync.Exclude,
 		Host:       rb.WorkspaceClient().Config.Host,
 
 		Full: false,
@@ -40,8 +40,8 @@ func GetSyncOptions(ctx context.Context, rb bundle.ReadOnlyBundle) (*sync.SyncOp
 		WorkspaceClient:  rb.WorkspaceClient(),
 	}
 
-	if rb.Config().Workspace().CurrentUser != nil {
-		opts.CurrentUser = rb.Config().Workspace().CurrentUser.User
+	if rb.Config().Workspace.CurrentUser != nil {
+		opts.CurrentUser = rb.Config().Workspace.CurrentUser.User
 	}
 
 	return opts, nil

@@ -23,7 +23,7 @@ func (v *validateSyncPatterns) Name() string {
 }
 
 func (v *validateSyncPatterns) Apply(ctx context.Context, rb bundle.ReadOnlyBundle) diag.Diagnostics {
-	s := rb.Config().Sync()
+	s := rb.Config().Sync
 	if len(s.Exclude) == 0 && len(s.Include) == 0 {
 		return nil
 	}
