@@ -26,6 +26,7 @@ func downloadAndChecksum(t *testing.T, url string, expectedChecksum string) {
 	tmpDir := t.TempDir()
 	tmpFile, err := os.Create(filepath.Join(tmpDir, "archive.zip"))
 	require.NoError(t, err)
+	defer tmpFile.Close()
 
 	_, err = io.Copy(tmpFile, resp.Body)
 	require.NoError(t, err)
