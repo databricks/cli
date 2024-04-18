@@ -54,7 +54,7 @@ func promptForHost(ctx context.Context) (string, error) {
 
 func promptForAccountID(ctx context.Context) (string, error) {
 	if !cmdio.IsInTTY(ctx) {
-		return "", errors.New("the command is being run in a non-interactive environment, please specify an account ID using --account-id")
+		return "", fmt.Errorf("the command is being run in a non-interactive environment, please specify an account ID using --account-id")
 	}
 
 	prompt := cmdio.Prompt(ctx)
