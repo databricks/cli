@@ -17,7 +17,7 @@ const TerraformProviderVersionEnv = "DATABRICKS_TF_PROVIDER_VERSION"
 
 // Terraform CLI version to use and the corresponding checksums for it. The
 // checksums are used to verify the integrity of the downloaded binary. Please
-// update the checksums when the terraform version is updated. The checksums
+// update the checksums when the Terraform version is updated. The checksums
 // were obtained from https://releases.hashicorp.com/terraform/1.5.5.
 var TerraformVersion = version.Must(version.NewVersion("1.5.5"))
 
