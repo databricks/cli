@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"runtime"
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
@@ -32,9 +33,53 @@ func configureHost(ctx context.Context, persistentAuth *auth.PersistentAuth, arg
 const minimalDbConnectVersion = "13.1"
 
 func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
+	defaultConfigPath := "~/.databrickscfg"
+	if runtime.GOOS == "windows" {
+		defaultConfigPath = "%USERPROFILE%\\.databrickscfg"
+	}
 	cmd := &cobra.Command{
 		Use:   "login [HOST]",
-		Short: "Authenticate this machine",
+		Short: "Log into a Databricks workspace or account",
+		Long: fmt.Sprintf(`Log into a Databricks workspace or account.
+This command logs you into the Databricks workspace or account and saves
+the authentication configuration in a profile (in %s by default).
+
+This profile can then be used to authenticate other Databricks CLI commands by
+specifying the --profile flag. This profile can also be used to authenticate
+other Databricks tooling that supports the Databricks Unified Authentication
+Specification. This includes the Databricks Go, Python, and Java SDKs. For more information,
+you can refer to the documentation linked below.
+  AWS: https://docs.databricks.com/dev-tools/auth/index.html
+  Azure: https://learn.microsoft.com/azure/databricks/dev-tools/auth
+  GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html
+
+
+This command requires a Databricks Host URL (using --host or as a positional argument
+or implicitly inferred from the specified profile name)
+and a profile name (using --profile) to be specified. If you don't specify these
+values, you'll be prompted for values at runtime.
+
+While this command always logs you into the specified host, the runtime behaviour
+depends on the existing profiles you have set in your configuration file
+(at %s by default).
+
+1. If a profile with the specified name exists and specifies a host, you'll
+   be logged into the host specified by the profile. The profile will be updated
+   to use "databricks-cli" as the auth type if that was not the case before.
+
+2. If a profile with the specified name exists but does not specify a host,
+   you'll be prompted to specify a host. The profile will be updated to use the
+   specified host. The auth type will be updated to "databricks-cli" if that was
+   not the case before.
+
+3. If a profile with the specified name exists and specifies a host, but you
+   specify a host using --host (or as the [HOST] positional arg), the profile will
+   be updated to use the newly specified host. The auth type will be updated to
+   "databricks-cli" if that was not the case before.
+
+4. If a profile with the specified name does not exist, a new profile will be
+   created with the specified host. The auth type will be set to "databricks-cli".
+`, defaultConfigPath, defaultConfigPath),
 	}
 
 	var loginTimeout time.Duration
