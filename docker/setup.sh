@@ -13,7 +13,7 @@ fi
 mkdir -p zip
 wget https://releases.hashicorp.com/terraform/${DATABRICKS_TF_VERSION}/terraform_${DATABRICKS_TF_VERSION}_linux_${ARCH}.zip -O zip/terraform.zip
 
-# Verify the checksum. This is to ensure that the downloaded binary is not tampered with.
+# Verify the checksum. This is to ensure that the downloaded archive is not tampered with.
 EXPECTED_CHECKSUM="$(/app/databricks bundle debug terraform --output json | jq -r .terraform.checksum.linux_$ARCH)"
 COMPUTED_CHECKSUM=$(sha256sum zip/terraform.zip | awk '{ print $1 }')
 if [ "$COMPUTED_CHECKSUM" != "$EXPECTED_CHECKSUM" ]; then
