@@ -58,15 +58,11 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 }
 
 func deleteSnapshotFile(ctx context.Context, b *bundle.Bundle) error {
-	cacheDir, err := b.CacheDir(ctx)
+	opts, err := GetSyncOptions(ctx, b)
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot get sync options: %w", err)
 	}
-	sp, err := sync.SnapshotPath(&sync.SyncOptions{
-		SnapshotBasePath: cacheDir,
-		Host:             b.WorkspaceClient().Config.Host,
-		RemotePath:       b.Config.Workspace.FilePath,
-	})
+	sp, err := sync.SnapshotPath(opts)
 	if err != nil {
 		return err
 	}
