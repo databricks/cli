@@ -1,9 +1,7 @@
 package libraries
 
 import (
-	"fmt"
 	"net/url"
-	"os"
 	"path"
 	"strings"
 
@@ -41,8 +39,18 @@ func IsLocalPath(p string) bool {
 }
 
 func IsEnvironmentDependencyLocal(dep string) bool {
-	return strings.HasPrefix(dep, fmt.Sprintf(".%s", string(os.PathSeparator))) ||
-		strings.HasPrefix(dep, fmt.Sprintf("..%s", string(os.PathSeparator)))
+	possiblePrefixes := []string{
+		".",
+		"..",
+	}
+
+	for _, prefix := range possiblePrefixes {
+		if strings.HasPrefix(dep, prefix) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func isRemoteStorageScheme(path string) bool {

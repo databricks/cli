@@ -49,10 +49,15 @@ func TestIsEnvironmentDependencyLocal(t *testing.T) {
 		expected bool
 	}){
 		{path: "./local/*.whl", expected: true},
+		{path: ".\\local\\*.whl", expected: true},
 		{path: "./local/mypath.whl", expected: true},
+		{path: ".\\local\\mypath.whl", expected: true},
 		{path: "../local/*.whl", expected: true},
+		{path: "..\\local\\*.whl", expected: true},
 		{path: "./../local/*.whl", expected: true},
+		{path: ".\\..\\local\\*.whl", expected: true},
 		{path: "../../local/*.whl", expected: true},
+		{path: "..\\..\\local\\*.whl", expected: true},
 		{path: "pypipackage", expected: false},
 		{path: "pypipackage/test.whl", expected: false},
 		{path: "pypipackage/*.whl", expected: false},
