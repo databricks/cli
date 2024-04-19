@@ -117,8 +117,6 @@ func (m *basicUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 }
 
 func uploadArtifact(ctx context.Context, b *bundle.Bundle, a *config.Artifact, uploadPath string, client filer.Filer) error {
-	filesToLibraries := libraries.MapFilesToTaskLibraries(ctx, b)
-
 	for i := range a.Files {
 		f := &a.Files[i]
 
@@ -133,24 +131,34 @@ func uploadArtifact(ctx context.Context, b *bundle.Bundle, a *config.Artifact, u
 		log.Infof(ctx, "Upload succeeded")
 		f.RemotePath = path.Join(uploadPath, filepath.Base(f.Source))
 
-		// Lookup all tasks that reference this file.
-		libs, ok := filesToLibraries[f.Source]
-		if !ok {
-			log.Debugf(ctx, "No tasks reference %s", f.Source)
-			continue
-		}
+		// TODO: confirm if we still need to update the references in the config
+		wsfsBase := "/Workspace"
+		remotePath := path.Join(wsfsBase, f.RemotePath)
 
-		// Update all tasks that reference this file.
-		for _, lib := range libs {
-			wsfsBase := "/Workspace"
-			remotePath := path.Join(wsfsBase, f.RemotePath)
-			if lib.Whl != "" {
-				lib.Whl = remotePath
-				continue
+		for jobKey, job := range b.Config.Resources.Jobs {
+			for i := range job.Tasks {
+				task := &job.Tasks[i]
+				for j := range task.Libraries {
+					lib := &task.Libraries[j]
+					res := fmt.Sprintf("resources.jobs.%s.tasks.%d.libraries.%d", jobKey, i, j)
+					if lib.Whl != "" && libraries.AbsPathForResource(b, res, lib.Whl) == f.Source {
+						lib.Whl = remotePath
+					}
+					if lib.Jar != "" && libraries.AbsPathForResource(b, res, lib.Jar) == f.Source {
+						lib.Jar = remotePath
+					}
+				}
 			}
-			if lib.Jar != "" {
-				lib.Jar = remotePath
-				continue
+
+			for i := range job.Environments {
+				env := &job.Environments[i]
+				for j := range env.Spec.Dependencies {
+					lib := env.Spec.Dependencies[j]
+					res := fmt.Sprintf("resources.jobs.%s.environments.%d.spec.dependencies.%d", jobKey, i, j)
+					if libraries.AbsPathForResource(b, res, lib) == f.Source {
+						env.Spec.Dependencies[j] = remotePath
+					}
+				}
 			}
 		}
 	}

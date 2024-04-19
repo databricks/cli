@@ -89,3 +89,67 @@ func TestAccUploadArtifactFileToCorrectRemotePath(t *testing.T) {
 		b.Config.Resources.Jobs["test"].JobSettings.Tasks[0].Libraries[0].Whl,
 	)
 }
+
+func TestAccUploadArtifactFileToCorrectRemotePathWithEnvironments(t *testing.T) {
+	ctx, wt := acc.WorkspaceTest(t)
+	w := wt.W
+	dir := t.TempDir()
+	whlPath := filepath.Join(dir, "dist", "test.whl")
+	touchEmptyFile(t, whlPath)
+
+	wsDir := internal.TemporaryWorkspaceDir(t, w)
+
+	b := &bundle.Bundle{
+		RootPath: dir,
+		Config: config.Root{
+			Bundle: config.Bundle{
+				Target: "whatever",
+			},
+			Workspace: config.Workspace{
+				ArtifactPath: wsDir,
+			},
+			Artifacts: config.Artifacts{
+				"test": &config.Artifact{
+					Type: "whl",
+					Files: []config.ArtifactFile{
+						{
+							Source: whlPath,
+						},
+					},
+				},
+			},
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"test": {
+						JobSettings: &jobs.JobSettings{
+							Environments: []jobs.JobEnvironment{
+								{
+									Spec: &compute.Environment{
+										Dependencies: []string{
+											"dist/test.whl",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	diags := bundle.Apply(ctx, b, artifacts.BasicUpload("test"))
+	require.NoError(t, diags.Error())
+
+	// The remote path attribute on the artifact file should have been set.
+	require.Regexp(t,
+		regexp.MustCompile(path.Join(regexp.QuoteMeta(wsDir), `.internal/test\.whl`)),
+		b.Config.Artifacts["test"].Files[0].RemotePath,
+	)
+
+	// The job environment deps path should have been updated to the remote path.
+	require.Regexp(t,
+		regexp.MustCompile(path.Join("/Workspace", regexp.QuoteMeta(wsDir), `.internal/test\.whl`)),
+		b.Config.Resources.Jobs["test"].JobSettings.Environments[0].Spec.Dependencies[0],
+	)
+}
