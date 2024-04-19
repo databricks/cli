@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"io"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -77,11 +76,11 @@ func testStatePull(t *testing.T, opts statePullOpts) {
 	ctx := context.Background()
 
 	for _, file := range opts.localFiles {
-		testutil.Touch(t, filepath.Join(b.RootPath, "bar"), file)
+		testutil.Touch(t, b.RootPath, "bar", file)
 	}
 
 	for _, file := range opts.localNotebooks {
-		testutil.TouchNotebook(t, filepath.Join(b.RootPath, "bar"), file)
+		testutil.TouchNotebook(t, b.RootPath, "bar", file)
 	}
 
 	if opts.withExistingSnapshot {
