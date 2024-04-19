@@ -59,8 +59,8 @@ func testStatePull(t *testing.T, opts statePullOpts) {
 	}}
 
 	b := &bundle.Bundle{
+		RootPath: t.TempDir(),
 		Config: config.Root{
-			Path: t.TempDir(),
 			Bundle: config.Bundle{
 				Target: "default",
 			},
@@ -77,15 +77,15 @@ func testStatePull(t *testing.T, opts statePullOpts) {
 	ctx := context.Background()
 
 	for _, file := range opts.localFiles {
-		testutil.Touch(t, filepath.Join(b.Config.Path, "bar"), file)
+		testutil.Touch(t, filepath.Join(b.RootPath, "bar"), file)
 	}
 
 	for _, file := range opts.localNotebooks {
-		testutil.TouchNotebook(t, filepath.Join(b.Config.Path, "bar"), file)
+		testutil.TouchNotebook(t, filepath.Join(b.RootPath, "bar"), file)
 	}
 
 	if opts.withExistingSnapshot {
-		opts, err := files.GetSyncOptions(ctx, b)
+		opts, err := files.GetSyncOptions(ctx, bundle.ReadOnly(b))
 		require.NoError(t, err)
 
 		snapshotPath, err := sync.SnapshotPath(opts)
@@ -106,8 +106,8 @@ func testStatePull(t *testing.T, opts statePullOpts) {
 		require.NoError(t, err)
 	}
 
-	err := bundle.Apply(ctx, b, s)
-	require.NoError(t, err)
+	diags := bundle.Apply(ctx, b, s)
+	require.NoError(t, diags.Error())
 
 	// Check that deployment state was written
 	statePath, err := getPathToStateFile(ctx, b)
@@ -127,7 +127,7 @@ func testStatePull(t *testing.T, opts statePullOpts) {
 	}
 
 	if opts.expects.snapshotState != nil {
-		syncOpts, err := files.GetSyncOptions(ctx, b)
+		syncOpts, err := files.GetSyncOptions(ctx, bundle.ReadOnly(b))
 		require.NoError(t, err)
 
 		snapshotPath, err := sync.SnapshotPath(syncOpts)
@@ -251,8 +251,8 @@ func TestStatePullNoState(t *testing.T) {
 	}}
 
 	b := &bundle.Bundle{
+		RootPath: t.TempDir(),
 		Config: config.Root{
-			Path: t.TempDir(),
 			Bundle: config.Bundle{
 				Target: "default",
 			},
@@ -263,8 +263,8 @@ func TestStatePullNoState(t *testing.T) {
 	}
 	ctx := context.Background()
 
-	err := bundle.Apply(ctx, b, s)
-	require.NoError(t, err)
+	diags := bundle.Apply(ctx, b, s)
+	require.NoError(t, diags.Error())
 
 	// Check that deployment state was not written
 	statePath, err := getPathToStateFile(ctx, b)
@@ -439,8 +439,8 @@ func TestStatePullNewerDeploymentStateVersion(t *testing.T) {
 	}}
 
 	b := &bundle.Bundle{
+		RootPath: t.TempDir(),
 		Config: config.Root{
-			Path: t.TempDir(),
 			Bundle: config.Bundle{
 				Target: "default",
 			},
@@ -451,7 +451,7 @@ func TestStatePullNewerDeploymentStateVersion(t *testing.T) {
 	}
 	ctx := context.Background()
 
-	err := bundle.Apply(ctx, b, s)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "remote deployment state is incompatible with the current version of the CLI, please upgrade to at least 1.2.3")
+	diags := bundle.Apply(ctx, b, s)
+	require.True(t, diags.HasError())
+	require.ErrorContains(t, diags.Error(), "remote deployment state is incompatible with the current version of the CLI, please upgrade to at least 1.2.3")
 }

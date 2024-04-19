@@ -9,6 +9,70 @@ type ResourceModelServingConfigAutoCaptureConfig struct {
 	TableNamePrefix string `json:"table_name_prefix,omitempty"`
 }
 
+type ResourceModelServingConfigServedEntitiesExternalModelAi21LabsConfig struct {
+	Ai21LabsApiKey string `json:"ai21labs_api_key"`
+}
+
+type ResourceModelServingConfigServedEntitiesExternalModelAmazonBedrockConfig struct {
+	AwsAccessKeyId     string `json:"aws_access_key_id"`
+	AwsRegion          string `json:"aws_region"`
+	AwsSecretAccessKey string `json:"aws_secret_access_key"`
+	BedrockProvider    string `json:"bedrock_provider"`
+}
+
+type ResourceModelServingConfigServedEntitiesExternalModelAnthropicConfig struct {
+	AnthropicApiKey string `json:"anthropic_api_key"`
+}
+
+type ResourceModelServingConfigServedEntitiesExternalModelCohereConfig struct {
+	CohereApiKey string `json:"cohere_api_key"`
+}
+
+type ResourceModelServingConfigServedEntitiesExternalModelDatabricksModelServingConfig struct {
+	DatabricksApiToken     string `json:"databricks_api_token"`
+	DatabricksWorkspaceUrl string `json:"databricks_workspace_url"`
+}
+
+type ResourceModelServingConfigServedEntitiesExternalModelOpenaiConfig struct {
+	OpenaiApiBase        string `json:"openai_api_base,omitempty"`
+	OpenaiApiKey         string `json:"openai_api_key"`
+	OpenaiApiType        string `json:"openai_api_type,omitempty"`
+	OpenaiApiVersion     string `json:"openai_api_version,omitempty"`
+	OpenaiDeploymentName string `json:"openai_deployment_name,omitempty"`
+	OpenaiOrganization   string `json:"openai_organization,omitempty"`
+}
+
+type ResourceModelServingConfigServedEntitiesExternalModelPalmConfig struct {
+	PalmApiKey string `json:"palm_api_key"`
+}
+
+type ResourceModelServingConfigServedEntitiesExternalModel struct {
+	Name                         string                                                                             `json:"name"`
+	Provider                     string                                                                             `json:"provider"`
+	Task                         string                                                                             `json:"task"`
+	Ai21LabsConfig               *ResourceModelServingConfigServedEntitiesExternalModelAi21LabsConfig               `json:"ai21labs_config,omitempty"`
+	AmazonBedrockConfig          *ResourceModelServingConfigServedEntitiesExternalModelAmazonBedrockConfig          `json:"amazon_bedrock_config,omitempty"`
+	AnthropicConfig              *ResourceModelServingConfigServedEntitiesExternalModelAnthropicConfig              `json:"anthropic_config,omitempty"`
+	CohereConfig                 *ResourceModelServingConfigServedEntitiesExternalModelCohereConfig                 `json:"cohere_config,omitempty"`
+	DatabricksModelServingConfig *ResourceModelServingConfigServedEntitiesExternalModelDatabricksModelServingConfig `json:"databricks_model_serving_config,omitempty"`
+	OpenaiConfig                 *ResourceModelServingConfigServedEntitiesExternalModelOpenaiConfig                 `json:"openai_config,omitempty"`
+	PalmConfig                   *ResourceModelServingConfigServedEntitiesExternalModelPalmConfig                   `json:"palm_config,omitempty"`
+}
+
+type ResourceModelServingConfigServedEntities struct {
+	EntityName               string                                                 `json:"entity_name,omitempty"`
+	EntityVersion            string                                                 `json:"entity_version,omitempty"`
+	EnvironmentVars          map[string]string                                      `json:"environment_vars,omitempty"`
+	InstanceProfileArn       string                                                 `json:"instance_profile_arn,omitempty"`
+	MaxProvisionedThroughput int                                                    `json:"max_provisioned_throughput,omitempty"`
+	MinProvisionedThroughput int                                                    `json:"min_provisioned_throughput,omitempty"`
+	Name                     string                                                 `json:"name,omitempty"`
+	ScaleToZeroEnabled       bool                                                   `json:"scale_to_zero_enabled,omitempty"`
+	WorkloadSize             string                                                 `json:"workload_size,omitempty"`
+	WorkloadType             string                                                 `json:"workload_type,omitempty"`
+	ExternalModel            *ResourceModelServingConfigServedEntitiesExternalModel `json:"external_model,omitempty"`
+}
+
 type ResourceModelServingConfigServedModels struct {
 	EnvironmentVars    map[string]string `json:"environment_vars,omitempty"`
 	InstanceProfileArn string            `json:"instance_profile_arn,omitempty"`
@@ -31,6 +95,7 @@ type ResourceModelServingConfigTrafficConfig struct {
 
 type ResourceModelServingConfig struct {
 	AutoCaptureConfig *ResourceModelServingConfigAutoCaptureConfig `json:"auto_capture_config,omitempty"`
+	ServedEntities    []ResourceModelServingConfigServedEntities   `json:"served_entities,omitempty"`
 	ServedModels      []ResourceModelServingConfigServedModels     `json:"served_models,omitempty"`
 	TrafficConfig     *ResourceModelServingConfigTrafficConfig     `json:"traffic_config,omitempty"`
 }

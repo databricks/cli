@@ -287,11 +287,11 @@ func newUpdate() *cobra.Command {
 			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[1])
 		}
 
-		err = a.WorkspaceAssignment.Update(ctx, updateReq)
+		response, err := a.WorkspaceAssignment.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

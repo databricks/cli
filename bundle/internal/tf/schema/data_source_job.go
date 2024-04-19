@@ -2,15 +2,6 @@
 
 package schema
 
-type DataSourceJobJobSettingsSettingsComputeSpec struct {
-	Kind string `json:"kind,omitempty"`
-}
-
-type DataSourceJobJobSettingsSettingsCompute struct {
-	ComputeKey string                                       `json:"compute_key,omitempty"`
-	Spec       *DataSourceJobJobSettingsSettingsComputeSpec `json:"spec,omitempty"`
-}
-
 type DataSourceJobJobSettingsSettingsContinuous struct {
 	PauseStatus string `json:"pause_status,omitempty"`
 }
@@ -36,6 +27,16 @@ type DataSourceJobJobSettingsSettingsEmailNotifications struct {
 	OnFailure                          []string `json:"on_failure,omitempty"`
 	OnStart                            []string `json:"on_start,omitempty"`
 	OnSuccess                          []string `json:"on_success,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsEnvironmentSpec struct {
+	Client       string   `json:"client"`
+	Dependencies []string `json:"dependencies,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsEnvironment struct {
+	EnvironmentKey string                                           `json:"environment_key"`
+	Spec           *DataSourceJobJobSettingsSettingsEnvironmentSpec `json:"spec,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsGitSourceJobSource struct {
@@ -411,6 +412,7 @@ type DataSourceJobJobSettingsSettingsNotebookTask struct {
 	BaseParameters map[string]string `json:"base_parameters,omitempty"`
 	NotebookPath   string            `json:"notebook_path"`
 	Source         string            `json:"source,omitempty"`
+	WarehouseId    string            `json:"warehouse_id,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsNotificationSettings struct {
@@ -472,9 +474,9 @@ type DataSourceJobJobSettingsSettingsSparkSubmitTask struct {
 }
 
 type DataSourceJobJobSettingsSettingsTaskConditionTask struct {
-	Left  string `json:"left,omitempty"`
-	Op    string `json:"op,omitempty"`
-	Right string `json:"right,omitempty"`
+	Left  string `json:"left"`
+	Op    string `json:"op"`
+	Right string `json:"right"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskDbtTask struct {
@@ -493,6 +495,7 @@ type DataSourceJobJobSettingsSettingsTaskDependsOn struct {
 }
 
 type DataSourceJobJobSettingsSettingsTaskEmailNotifications struct {
+	NoAlertForSkippedRuns              bool     `json:"no_alert_for_skipped_runs,omitempty"`
 	OnDurationWarningThresholdExceeded []string `json:"on_duration_warning_threshold_exceeded,omitempty"`
 	OnFailure                          []string `json:"on_failure,omitempty"`
 	OnStart                            []string `json:"on_start,omitempty"`
@@ -500,9 +503,9 @@ type DataSourceJobJobSettingsSettingsTaskEmailNotifications struct {
 }
 
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskConditionTask struct {
-	Left  string `json:"left,omitempty"`
-	Op    string `json:"op,omitempty"`
-	Right string `json:"right,omitempty"`
+	Left  string `json:"left"`
+	Op    string `json:"op"`
+	Right string `json:"right"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskDbtTask struct {
@@ -521,6 +524,7 @@ type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskDependsOn struct {
 }
 
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskEmailNotifications struct {
+	NoAlertForSkippedRuns              bool     `json:"no_alert_for_skipped_runs,omitempty"`
 	OnDurationWarningThresholdExceeded []string `json:"on_duration_warning_threshold_exceeded,omitempty"`
 	OnFailure                          []string `json:"on_failure,omitempty"`
 	OnStart                            []string `json:"on_start,omitempty"`
@@ -723,6 +727,7 @@ type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNotebookTask struct {
 	BaseParameters map[string]string `json:"base_parameters,omitempty"`
 	NotebookPath   string            `json:"notebook_path"`
 	Source         string            `json:"source,omitempty"`
+	WarehouseId    string            `json:"warehouse_id,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNotificationSettings struct {
@@ -806,19 +811,19 @@ type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSqlTask struct {
 }
 
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskWebhookNotificationsOnDurationWarningThresholdExceeded struct {
-	Id string `json:"id,omitempty"`
+	Id string `json:"id"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskWebhookNotificationsOnFailure struct {
-	Id string `json:"id,omitempty"`
+	Id string `json:"id"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskWebhookNotificationsOnStart struct {
-	Id string `json:"id,omitempty"`
+	Id string `json:"id"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskWebhookNotificationsOnSuccess struct {
-	Id string `json:"id,omitempty"`
+	Id string `json:"id"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskWebhookNotifications struct {
@@ -829,8 +834,8 @@ type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskWebhookNotifications str
 }
 
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTask struct {
-	ComputeKey             string                                                                   `json:"compute_key,omitempty"`
 	Description            string                                                                   `json:"description,omitempty"`
+	EnvironmentKey         string                                                                   `json:"environment_key,omitempty"`
 	ExistingClusterId      string                                                                   `json:"existing_cluster_id,omitempty"`
 	JobClusterKey          string                                                                   `json:"job_cluster_key,omitempty"`
 	MaxRetries             int                                                                      `json:"max_retries,omitempty"`
@@ -1060,6 +1065,7 @@ type DataSourceJobJobSettingsSettingsTaskNotebookTask struct {
 	BaseParameters map[string]string `json:"base_parameters,omitempty"`
 	NotebookPath   string            `json:"notebook_path"`
 	Source         string            `json:"source,omitempty"`
+	WarehouseId    string            `json:"warehouse_id,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskNotificationSettings struct {
@@ -1143,19 +1149,19 @@ type DataSourceJobJobSettingsSettingsTaskSqlTask struct {
 }
 
 type DataSourceJobJobSettingsSettingsTaskWebhookNotificationsOnDurationWarningThresholdExceeded struct {
-	Id string `json:"id,omitempty"`
+	Id string `json:"id"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskWebhookNotificationsOnFailure struct {
-	Id string `json:"id,omitempty"`
+	Id string `json:"id"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskWebhookNotificationsOnStart struct {
-	Id string `json:"id,omitempty"`
+	Id string `json:"id"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskWebhookNotificationsOnSuccess struct {
-	Id string `json:"id,omitempty"`
+	Id string `json:"id"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskWebhookNotifications struct {
@@ -1166,8 +1172,8 @@ type DataSourceJobJobSettingsSettingsTaskWebhookNotifications struct {
 }
 
 type DataSourceJobJobSettingsSettingsTask struct {
-	ComputeKey             string                                                    `json:"compute_key,omitempty"`
 	Description            string                                                    `json:"description,omitempty"`
+	EnvironmentKey         string                                                    `json:"environment_key,omitempty"`
 	ExistingClusterId      string                                                    `json:"existing_cluster_id,omitempty"`
 	JobClusterKey          string                                                    `json:"job_cluster_key,omitempty"`
 	MaxRetries             int                                                       `json:"max_retries,omitempty"`
@@ -1202,25 +1208,33 @@ type DataSourceJobJobSettingsSettingsTriggerFileArrival struct {
 	WaitAfterLastChangeSeconds    int    `json:"wait_after_last_change_seconds,omitempty"`
 }
 
+type DataSourceJobJobSettingsSettingsTriggerTableUpdate struct {
+	Condition                     string   `json:"condition,omitempty"`
+	MinTimeBetweenTriggersSeconds int      `json:"min_time_between_triggers_seconds,omitempty"`
+	TableNames                    []string `json:"table_names"`
+	WaitAfterLastChangeSeconds    int      `json:"wait_after_last_change_seconds,omitempty"`
+}
+
 type DataSourceJobJobSettingsSettingsTrigger struct {
 	PauseStatus string                                              `json:"pause_status,omitempty"`
 	FileArrival *DataSourceJobJobSettingsSettingsTriggerFileArrival `json:"file_arrival,omitempty"`
+	TableUpdate *DataSourceJobJobSettingsSettingsTriggerTableUpdate `json:"table_update,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsWebhookNotificationsOnDurationWarningThresholdExceeded struct {
-	Id string `json:"id,omitempty"`
+	Id string `json:"id"`
 }
 
 type DataSourceJobJobSettingsSettingsWebhookNotificationsOnFailure struct {
-	Id string `json:"id,omitempty"`
+	Id string `json:"id"`
 }
 
 type DataSourceJobJobSettingsSettingsWebhookNotificationsOnStart struct {
-	Id string `json:"id,omitempty"`
+	Id string `json:"id"`
 }
 
 type DataSourceJobJobSettingsSettingsWebhookNotificationsOnSuccess struct {
-	Id string `json:"id,omitempty"`
+	Id string `json:"id"`
 }
 
 type DataSourceJobJobSettingsSettingsWebhookNotifications struct {
@@ -1242,11 +1256,11 @@ type DataSourceJobJobSettingsSettings struct {
 	RetryOnTimeout         bool                                                  `json:"retry_on_timeout,omitempty"`
 	Tags                   map[string]string                                     `json:"tags,omitempty"`
 	TimeoutSeconds         int                                                   `json:"timeout_seconds,omitempty"`
-	Compute                []DataSourceJobJobSettingsSettingsCompute             `json:"compute,omitempty"`
 	Continuous             *DataSourceJobJobSettingsSettingsContinuous           `json:"continuous,omitempty"`
 	DbtTask                *DataSourceJobJobSettingsSettingsDbtTask              `json:"dbt_task,omitempty"`
 	Deployment             *DataSourceJobJobSettingsSettingsDeployment           `json:"deployment,omitempty"`
 	EmailNotifications     *DataSourceJobJobSettingsSettingsEmailNotifications   `json:"email_notifications,omitempty"`
+	Environment            []DataSourceJobJobSettingsSettingsEnvironment         `json:"environment,omitempty"`
 	GitSource              *DataSourceJobJobSettingsSettingsGitSource            `json:"git_source,omitempty"`
 	Health                 *DataSourceJobJobSettingsSettingsHealth               `json:"health,omitempty"`
 	JobCluster             []DataSourceJobJobSettingsSettingsJobCluster          `json:"job_cluster,omitempty"`

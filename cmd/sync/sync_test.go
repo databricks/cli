@@ -16,9 +16,8 @@ import (
 func TestSyncOptionsFromBundle(t *testing.T) {
 	tempDir := t.TempDir()
 	b := &bundle.Bundle{
+		RootPath: tempDir,
 		Config: config.Root{
-			Path: tempDir,
-
 			Bundle: config.Bundle{
 				Target: "default",
 			},

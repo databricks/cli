@@ -2,7 +2,6 @@ package bundle
 
 import (
 	"github.com/databricks/cli/cmd/bundle/generate"
-	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -10,10 +9,9 @@ func newGenerateCommand() *cobra.Command {
 	var key string
 
 	cmd := &cobra.Command{
-		Use:     "generate",
-		Short:   "Generate bundle configuration",
-		Long:    "Generate bundle configuration",
-		PreRunE: utils.ConfigureBundleWithVariables,
+		Use:   "generate",
+		Short: "Generate bundle configuration",
+		Long:  "Generate bundle configuration",
 	}
 
 	cmd.AddCommand(generate.NewGenerateJobCommand())

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/merge"
 )
@@ -29,8 +30,8 @@ func (m *mergeJobTasks) taskKeyString(v dyn.Value) string {
 	}
 }
 
-func (m *mergeJobTasks) Apply(ctx context.Context, b *bundle.Bundle) error {
-	return b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+func (m *mergeJobTasks) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		if v == dyn.NilValue {
 			return v, nil
 		}
@@ -39,4 +40,6 @@ func (m *mergeJobTasks) Apply(ctx context.Context, b *bundle.Bundle) error {
 			return dyn.Map(job, "tasks", merge.ElementsByKey("task_key", m.taskKeyString))
 		}))
 	})
+
+	return diag.FromErr(err)
 }

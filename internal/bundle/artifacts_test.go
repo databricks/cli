@@ -36,8 +36,8 @@ func TestAccUploadArtifactFileToCorrectRemotePath(t *testing.T) {
 	wsDir := internal.TemporaryWorkspaceDir(t, w)
 
 	b := &bundle.Bundle{
+		RootPath: dir,
 		Config: config.Root{
-			Path: dir,
 			Bundle: config.Bundle{
 				Target: "whatever",
 			},
@@ -74,8 +74,8 @@ func TestAccUploadArtifactFileToCorrectRemotePath(t *testing.T) {
 		},
 	}
 
-	err := bundle.Apply(ctx, b, artifacts.BasicUpload("test"))
-	require.NoError(t, err)
+	diags := bundle.Apply(ctx, b, artifacts.BasicUpload("test"))
+	require.NoError(t, diags.Error())
 
 	// The remote path attribute on the artifact file should have been set.
 	require.Regexp(t,

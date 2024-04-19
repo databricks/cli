@@ -2,10 +2,10 @@ package mutator
 
 import (
 	"context"
-	"fmt"
 	"path"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/diag"
 )
 
 type defineDefaultWorkspacePaths struct{}
@@ -19,10 +19,10 @@ func (m *defineDefaultWorkspacePaths) Name() string {
 	return "DefaultWorkspacePaths"
 }
 
-func (m *defineDefaultWorkspacePaths) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *defineDefaultWorkspacePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	root := b.Config.Workspace.RootPath
 	if root == "" {
-		return fmt.Errorf("unable to define default workspace paths: workspace root not defined")
+		return diag.Errorf("unable to define default workspace paths: workspace root not defined")
 	}
 
 	if b.Config.Workspace.FilePath == "" {

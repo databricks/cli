@@ -71,17 +71,28 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 		return dyn.InvalidValue, fmt.Errorf("unhandled type: %s", ref.Kind())
 	}
 
-	out := make(map[string]dyn.Value)
+	refm, _ := ref.AsMap()
+	out := dyn.NewMapping()
 	info := getStructInfo(src.Type())
 	for k, v := range info.FieldValues(src) {
+		pair, ok := refm.GetPairByString(k)
+		refk := pair.Key
+		refv := pair.Value
+
+		// Use nil reference if there is no reference for this key
+		if !ok {
+			refk = dyn.V(k)
+			refv = dyn.NilValue
+		}
+
 		// Convert the field taking into account the reference value (may be equal to config.NilValue).
-		nv, err := fromTyped(v.Interface(), ref.Get(k))
+		nv, err := fromTyped(v.Interface(), refv)
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
 
 		if nv != dyn.NilValue {
-			out[k] = nv
+			out.Set(refk, nv)
 		}
 	}
 
@@ -101,21 +112,31 @@ func fromTypedMap(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 		return dyn.NilValue, nil
 	}
 
-	out := make(map[string]dyn.Value)
+	refm, _ := ref.AsMap()
+	out := dyn.NewMapping()
 	iter := src.MapRange()
 	for iter.Next() {
 		k := iter.Key().String()
 		v := iter.Value()
+		pair, ok := refm.GetPairByString(k)
+		refk := pair.Key
+		refv := pair.Value
+
+		// Use nil reference if there is no reference for this key
+		if !ok {
+			refk = dyn.V(k)
+			refv = dyn.NilValue
+		}
 
 		// Convert entry taking into account the reference value (may be equal to dyn.NilValue).
-		nv, err := fromTyped(v.Interface(), ref.Get(k), includeZeroValues)
+		nv, err := fromTyped(v.Interface(), refv, includeZeroValues)
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
 
 		// Every entry is represented, even if it is a nil.
 		// Otherwise, a map with zero-valued structs would yield a nil as well.
-		out[k] = nv
+		out.Set(refk, nv)
 	}
 
 	return dyn.NewValue(out, ref.Location()), nil

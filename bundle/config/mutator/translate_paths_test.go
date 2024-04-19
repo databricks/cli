@@ -36,8 +36,8 @@ func touchEmptyFile(t *testing.T, path string) {
 func TestTranslatePathsSkippedWithGitSource(t *testing.T) {
 	dir := t.TempDir()
 	b := &bundle.Bundle{
+		RootPath: dir,
 		Config: config.Root{
-			Path: dir,
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
 			},
@@ -78,8 +78,8 @@ func TestTranslatePathsSkippedWithGitSource(t *testing.T) {
 
 	bundletest.SetLocation(b, ".", filepath.Join(dir, "resource.yml"))
 
-	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
+	require.NoError(t, diags.Error())
 
 	assert.Equal(
 		t,
@@ -106,8 +106,8 @@ func TestTranslatePaths(t *testing.T) {
 	touchEmptyFile(t, filepath.Join(dir, "dist", "task.jar"))
 
 	b := &bundle.Bundle{
+		RootPath: dir,
 		Config: config.Root{
-			Path: dir,
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
 			},
@@ -201,8 +201,8 @@ func TestTranslatePaths(t *testing.T) {
 
 	bundletest.SetLocation(b, ".", filepath.Join(dir, "resource.yml"))
 
-	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
+	require.NoError(t, diags.Error())
 
 	// Assert that the path in the tasks now refer to the artifact.
 	assert.Equal(
@@ -273,8 +273,8 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 	touchEmptyFile(t, filepath.Join(dir, "job", "my_dbt_project", "dbt_project.yml"))
 
 	b := &bundle.Bundle{
+		RootPath: dir,
 		Config: config.Root{
-			Path: dir,
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
 			},
@@ -332,8 +332,8 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 	bundletest.SetLocation(b, "resources.jobs", filepath.Join(dir, "job/resource.yml"))
 	bundletest.SetLocation(b, "resources.pipelines", filepath.Join(dir, "pipeline/resource.yml"))
 
-	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
+	require.NoError(t, diags.Error())
 
 	assert.Equal(
 		t,
@@ -367,8 +367,8 @@ func TestTranslatePathsOutsideBundleRoot(t *testing.T) {
 	dir := t.TempDir()
 
 	b := &bundle.Bundle{
+		RootPath: dir,
 		Config: config.Root{
-			Path: dir,
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
 			},
@@ -392,16 +392,16 @@ func TestTranslatePathsOutsideBundleRoot(t *testing.T) {
 
 	bundletest.SetLocation(b, ".", filepath.Join(dir, "../resource.yml"))
 
-	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
-	assert.ErrorContains(t, err, "is not contained in bundle root")
+	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
+	assert.ErrorContains(t, diags.Error(), "is not contained in bundle root")
 }
 
 func TestJobNotebookDoesNotExistError(t *testing.T) {
 	dir := t.TempDir()
 
 	b := &bundle.Bundle{
+		RootPath: dir,
 		Config: config.Root{
-			Path: dir,
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
@@ -422,16 +422,16 @@ func TestJobNotebookDoesNotExistError(t *testing.T) {
 
 	bundletest.SetLocation(b, ".", filepath.Join(dir, "fake.yml"))
 
-	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
-	assert.EqualError(t, err, "notebook ./doesnt_exist.py not found")
+	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
+	assert.EqualError(t, diags.Error(), "notebook ./doesnt_exist.py not found")
 }
 
 func TestJobFileDoesNotExistError(t *testing.T) {
 	dir := t.TempDir()
 
 	b := &bundle.Bundle{
+		RootPath: dir,
 		Config: config.Root{
-			Path: dir,
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
@@ -452,16 +452,16 @@ func TestJobFileDoesNotExistError(t *testing.T) {
 
 	bundletest.SetLocation(b, ".", filepath.Join(dir, "fake.yml"))
 
-	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
-	assert.EqualError(t, err, "file ./doesnt_exist.py not found")
+	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
+	assert.EqualError(t, diags.Error(), "file ./doesnt_exist.py not found")
 }
 
 func TestPipelineNotebookDoesNotExistError(t *testing.T) {
 	dir := t.TempDir()
 
 	b := &bundle.Bundle{
+		RootPath: dir,
 		Config: config.Root{
-			Path: dir,
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
@@ -482,16 +482,16 @@ func TestPipelineNotebookDoesNotExistError(t *testing.T) {
 
 	bundletest.SetLocation(b, ".", filepath.Join(dir, "fake.yml"))
 
-	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
-	assert.EqualError(t, err, "notebook ./doesnt_exist.py not found")
+	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
+	assert.EqualError(t, diags.Error(), "notebook ./doesnt_exist.py not found")
 }
 
 func TestPipelineFileDoesNotExistError(t *testing.T) {
 	dir := t.TempDir()
 
 	b := &bundle.Bundle{
+		RootPath: dir,
 		Config: config.Root{
-			Path: dir,
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
@@ -512,8 +512,8 @@ func TestPipelineFileDoesNotExistError(t *testing.T) {
 
 	bundletest.SetLocation(b, ".", filepath.Join(dir, "fake.yml"))
 
-	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
-	assert.EqualError(t, err, "file ./doesnt_exist.py not found")
+	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
+	assert.EqualError(t, diags.Error(), "file ./doesnt_exist.py not found")
 }
 
 func TestJobSparkPythonTaskWithNotebookSourceError(t *testing.T) {
@@ -521,8 +521,8 @@ func TestJobSparkPythonTaskWithNotebookSourceError(t *testing.T) {
 	touchNotebookFile(t, filepath.Join(dir, "my_notebook.py"))
 
 	b := &bundle.Bundle{
+		RootPath: dir,
 		Config: config.Root{
-			Path: dir,
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
 			},
@@ -546,8 +546,8 @@ func TestJobSparkPythonTaskWithNotebookSourceError(t *testing.T) {
 
 	bundletest.SetLocation(b, ".", filepath.Join(dir, "resource.yml"))
 
-	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
-	assert.ErrorContains(t, err, `expected a file for "resources.jobs.job.tasks[0].spark_python_task.python_file" but got a notebook`)
+	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
+	assert.ErrorContains(t, diags.Error(), `expected a file for "resources.jobs.job.tasks[0].spark_python_task.python_file" but got a notebook`)
 }
 
 func TestJobNotebookTaskWithFileSourceError(t *testing.T) {
@@ -555,8 +555,8 @@ func TestJobNotebookTaskWithFileSourceError(t *testing.T) {
 	touchEmptyFile(t, filepath.Join(dir, "my_file.py"))
 
 	b := &bundle.Bundle{
+		RootPath: dir,
 		Config: config.Root{
-			Path: dir,
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
 			},
@@ -580,8 +580,8 @@ func TestJobNotebookTaskWithFileSourceError(t *testing.T) {
 
 	bundletest.SetLocation(b, ".", filepath.Join(dir, "resource.yml"))
 
-	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
-	assert.ErrorContains(t, err, `expected a notebook for "resources.jobs.job.tasks[0].notebook_task.notebook_path" but got a file`)
+	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
+	assert.ErrorContains(t, diags.Error(), `expected a notebook for "resources.jobs.job.tasks[0].notebook_task.notebook_path" but got a file`)
 }
 
 func TestPipelineNotebookLibraryWithFileSourceError(t *testing.T) {
@@ -589,8 +589,8 @@ func TestPipelineNotebookLibraryWithFileSourceError(t *testing.T) {
 	touchEmptyFile(t, filepath.Join(dir, "my_file.py"))
 
 	b := &bundle.Bundle{
+		RootPath: dir,
 		Config: config.Root{
-			Path: dir,
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
 			},
@@ -614,8 +614,8 @@ func TestPipelineNotebookLibraryWithFileSourceError(t *testing.T) {
 
 	bundletest.SetLocation(b, ".", filepath.Join(dir, "resource.yml"))
 
-	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
-	assert.ErrorContains(t, err, `expected a notebook for "resources.pipelines.pipeline.libraries[0].notebook.path" but got a file`)
+	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
+	assert.ErrorContains(t, diags.Error(), `expected a notebook for "resources.pipelines.pipeline.libraries[0].notebook.path" but got a file`)
 }
 
 func TestPipelineFileLibraryWithNotebookSourceError(t *testing.T) {
@@ -623,8 +623,8 @@ func TestPipelineFileLibraryWithNotebookSourceError(t *testing.T) {
 	touchNotebookFile(t, filepath.Join(dir, "my_notebook.py"))
 
 	b := &bundle.Bundle{
+		RootPath: dir,
 		Config: config.Root{
-			Path: dir,
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
 			},
@@ -648,6 +648,6 @@ func TestPipelineFileLibraryWithNotebookSourceError(t *testing.T) {
 
 	bundletest.SetLocation(b, ".", filepath.Join(dir, "resource.yml"))
 
-	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
-	assert.ErrorContains(t, err, `expected a file for "resources.pipelines.pipeline.libraries[0].file.path" but got a notebook`)
+	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
+	assert.ErrorContains(t, diags.Error(), `expected a file for "resources.pipelines.pipeline.libraries[0].file.path" but got a notebook`)
 }

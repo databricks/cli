@@ -3,7 +3,12 @@
 package schema
 
 type DataSourceAwsCrossaccountPolicy struct {
-	Id        string   `json:"id,omitempty"`
-	Json      string   `json:"json,omitempty"`
-	PassRoles []string `json:"pass_roles,omitempty"`
+	AwsAccountId    string   `json:"aws_account_id,omitempty"`
+	Id              string   `json:"id,omitempty"`
+	Json            string   `json:"json,omitempty"`
+	PassRoles       []string `json:"pass_roles,omitempty"`
+	PolicyType      string   `json:"policy_type,omitempty"`
+	Region          string   `json:"region,omitempty"`
+	SecurityGroupId string   `json:"security_group_id,omitempty"`
+	VpcId           string   `json:"vpc_id,omitempty"`
 }

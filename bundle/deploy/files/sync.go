@@ -8,40 +8,40 @@ import (
 	"github.com/databricks/cli/libs/sync"
 )
 
-func GetSync(ctx context.Context, b *bundle.Bundle) (*sync.Sync, error) {
-	opts, err := GetSyncOptions(ctx, b)
+func GetSync(ctx context.Context, rb bundle.ReadOnlyBundle) (*sync.Sync, error) {
+	opts, err := GetSyncOptions(ctx, rb)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get sync options: %w", err)
 	}
 	return sync.New(ctx, *opts)
 }
 
-func GetSyncOptions(ctx context.Context, b *bundle.Bundle) (*sync.SyncOptions, error) {
-	cacheDir, err := b.CacheDir(ctx)
+func GetSyncOptions(ctx context.Context, rb bundle.ReadOnlyBundle) (*sync.SyncOptions, error) {
+	cacheDir, err := rb.CacheDir(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get bundle cache directory: %w", err)
 	}
 
-	includes, err := b.GetSyncIncludePatterns(ctx)
+	includes, err := rb.GetSyncIncludePatterns(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get list of sync includes: %w", err)
 	}
 
 	opts := &sync.SyncOptions{
-		LocalPath:  b.Config.Path,
-		RemotePath: b.Config.Workspace.FilePath,
+		LocalPath:  rb.RootPath(),
+		RemotePath: rb.Config().Workspace.FilePath,
 		Include:    includes,
-		Exclude:    b.Config.Sync.Exclude,
-		Host:       b.WorkspaceClient().Config.Host,
+		Exclude:    rb.Config().Sync.Exclude,
+		Host:       rb.WorkspaceClient().Config.Host,
 
 		Full: false,
 
 		SnapshotBasePath: cacheDir,
-		WorkspaceClient:  b.WorkspaceClient(),
+		WorkspaceClient:  rb.WorkspaceClient(),
 	}
 
-	if b.Config.Workspace.CurrentUser != nil {
-		opts.CurrentUser = b.Config.Workspace.CurrentUser.User
+	if rb.Config().Workspace.CurrentUser != nil {
+		opts.CurrentUser = rb.Config().Workspace.CurrentUser.User
 	}
 
 	return opts, nil

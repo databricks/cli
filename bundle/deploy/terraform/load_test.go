@@ -17,8 +17,8 @@ func TestLoadWithNoState(t *testing.T) {
 	}
 
 	b := &bundle.Bundle{
+		RootPath: t.TempDir(),
 		Config: config.Root{
-			Path: t.TempDir(),
 			Bundle: config.Bundle{
 				Target: "whatever",
 				Terraform: &config.Terraform{
@@ -32,10 +32,10 @@ func TestLoadWithNoState(t *testing.T) {
 	t.Setenv("DATABRICKS_TOKEN", "foobar")
 	b.WorkspaceClient()
 
-	err = bundle.Apply(context.Background(), b, bundle.Seq(
+	diags := bundle.Apply(context.Background(), b, bundle.Seq(
 		Initialize(),
 		Load(ErrorOnEmptyState),
 	))
 
-	require.ErrorContains(t, err, "Did you forget to run 'databricks bundle deploy'")
+	require.ErrorContains(t, diags.Error(), "Did you forget to run 'databricks bundle deploy'")
 }

@@ -41,8 +41,8 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 	touchEmptyFile(t, filepath.Join(dir, "skip/test7.py"))
 
 	b := &bundle.Bundle{
+		RootPath: dir,
 		Config: config.Root{
-			Path: dir,
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
@@ -109,8 +109,8 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 	bundletest.SetLocation(b, "resources.pipelines.pipeline.libraries[3]", filepath.Join(dir, "relative", "resource.yml"))
 
 	m := ExpandPipelineGlobPaths()
-	err := bundle.Apply(context.Background(), b, m)
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, m)
+	require.NoError(t, diags.Error())
 
 	libraries := b.Config.Resources.Pipelines["pipeline"].Libraries
 	require.Len(t, libraries, 13)

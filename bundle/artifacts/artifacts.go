@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 )
@@ -57,17 +58,17 @@ func (m *basicBuild) Name() string {
 	return fmt.Sprintf("artifacts.Build(%s)", m.name)
 }
 
-func (m *basicBuild) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *basicBuild) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	artifact, ok := b.Config.Artifacts[m.name]
 	if !ok {
-		return fmt.Errorf("artifact doesn't exist: %s", m.name)
+		return diag.Errorf("artifact doesn't exist: %s", m.name)
 	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("Building %s...", m.name))
 
 	out, err := artifact.Build(ctx)
 	if err != nil {
-		return fmt.Errorf("build for %s failed, error: %w, output: %s", m.name, err, out)
+		return diag.Errorf("build for %s failed, error: %v, output: %s", m.name, err, out)
 	}
 	log.Infof(ctx, "Build succeeded")
 
@@ -87,29 +88,29 @@ func (m *basicUpload) Name() string {
 	return fmt.Sprintf("artifacts.Upload(%s)", m.name)
 }
 
-func (m *basicUpload) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *basicUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	artifact, ok := b.Config.Artifacts[m.name]
 	if !ok {
-		return fmt.Errorf("artifact doesn't exist: %s", m.name)
+		return diag.Errorf("artifact doesn't exist: %s", m.name)
 	}
 
 	if len(artifact.Files) == 0 {
-		return fmt.Errorf("artifact source is not configured: %s", m.name)
+		return diag.Errorf("artifact source is not configured: %s", m.name)
 	}
 
 	uploadPath, err := getUploadBasePath(b)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	client, err := filer.NewWorkspaceFilesClient(b.WorkspaceClient(), uploadPath)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	err = uploadArtifact(ctx, b, artifact, uploadPath, client)
 	if err != nil {
-		return fmt.Errorf("upload for %s failed, error: %w", m.name, err)
+		return diag.Errorf("upload for %s failed, error: %v", m.name, err)
 	}
 
 	return nil

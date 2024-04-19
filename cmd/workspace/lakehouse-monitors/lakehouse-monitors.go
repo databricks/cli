@@ -68,7 +68,7 @@ func newCancelRefresh() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Use = "cancel-refresh FULL_NAME REFRESH_ID"
+	cmd.Use = "cancel-refresh TABLE_NAME REFRESH_ID"
 	cmd.Short = `Cancel refresh.`
 	cmd.Long = `Cancel refresh.
   
@@ -84,7 +84,7 @@ func newCancelRefresh() *cobra.Command {
   created.
 
   Arguments:
-    FULL_NAME: Full name of the table.
+    TABLE_NAME: Full name of the table.
     REFRESH_ID: ID of the refresh.`
 
 	// This command is being previewed; hide from help output.
@@ -102,7 +102,7 @@ func newCancelRefresh() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		cancelRefreshReq.FullName = args[0]
+		cancelRefreshReq.TableName = args[0]
 		cancelRefreshReq.RefreshId = args[1]
 
 		err = w.LakehouseMonitors.CancelRefresh(ctx, cancelRefreshReq)
@@ -154,7 +154,7 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: time_series
 	cmd.Flags().StringVar(&createReq.WarehouseId, "warehouse-id", createReq.WarehouseId, `Optional argument to specify the warehouse for dashboard creation.`)
 
-	cmd.Use = "create FULL_NAME ASSETS_DIR OUTPUT_SCHEMA_NAME"
+	cmd.Use = "create TABLE_NAME ASSETS_DIR OUTPUT_SCHEMA_NAME"
 	cmd.Short = `Create a table monitor.`
 	cmd.Long = `Create a table monitor.
   
@@ -171,7 +171,7 @@ func newCreate() *cobra.Command {
   where this call was made.
 
   Arguments:
-    FULL_NAME: Full name of the table.
+    TABLE_NAME: Full name of the table.
     ASSETS_DIR: The directory to store monitoring assets (e.g. dashboard, metric tables).
     OUTPUT_SCHEMA_NAME: Schema where output metric tables are created.`
 
@@ -181,7 +181,7 @@ func newCreate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only FULL_NAME as positional arguments. Provide 'assets_dir', 'output_schema_name' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, provide only TABLE_NAME as positional arguments. Provide 'assets_dir', 'output_schema_name' in your JSON input")
 			}
 			return nil
 		}
@@ -200,7 +200,7 @@ func newCreate() *cobra.Command {
 				return err
 			}
 		}
-		createReq.FullName = args[0]
+		createReq.TableName = args[0]
 		if !cmd.Flags().Changed("json") {
 			createReq.AssetsDir = args[1]
 		}
@@ -243,7 +243,7 @@ func newDelete() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Use = "delete FULL_NAME"
+	cmd.Use = "delete TABLE_NAME"
 	cmd.Short = `Delete a table monitor.`
 	cmd.Long = `Delete a table monitor.
   
@@ -262,7 +262,7 @@ func newDelete() *cobra.Command {
   call; those assets must be manually cleaned up (if desired).
 
   Arguments:
-    FULL_NAME: Full name of the table.`
+    TABLE_NAME: Full name of the table.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -276,7 +276,7 @@ func newDelete() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		deleteReq.FullName = args[0]
+		deleteReq.TableName = args[0]
 
 		err = w.LakehouseMonitors.Delete(ctx, deleteReq)
 		if err != nil {
@@ -313,7 +313,7 @@ func newGet() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Use = "get FULL_NAME"
+	cmd.Use = "get TABLE_NAME"
 	cmd.Short = `Get a table monitor.`
 	cmd.Long = `Get a table monitor.
   
@@ -331,7 +331,7 @@ func newGet() *cobra.Command {
   was created.
 
   Arguments:
-    FULL_NAME: Full name of the table.`
+    TABLE_NAME: Full name of the table.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -345,7 +345,7 @@ func newGet() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		getReq.FullName = args[0]
+		getReq.TableName = args[0]
 
 		response, err := w.LakehouseMonitors.Get(ctx, getReq)
 		if err != nil {
@@ -382,7 +382,7 @@ func newGetRefresh() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Use = "get-refresh FULL_NAME REFRESH_ID"
+	cmd.Use = "get-refresh TABLE_NAME REFRESH_ID"
 	cmd.Short = `Get refresh.`
 	cmd.Long = `Get refresh.
   
@@ -398,7 +398,7 @@ func newGetRefresh() *cobra.Command {
   created.
 
   Arguments:
-    FULL_NAME: Full name of the table.
+    TABLE_NAME: Full name of the table.
     REFRESH_ID: ID of the refresh.`
 
 	cmd.Annotations = make(map[string]string)
@@ -413,7 +413,7 @@ func newGetRefresh() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		getRefreshReq.FullName = args[0]
+		getRefreshReq.TableName = args[0]
 		getRefreshReq.RefreshId = args[1]
 
 		response, err := w.LakehouseMonitors.GetRefresh(ctx, getRefreshReq)
@@ -451,7 +451,7 @@ func newListRefreshes() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Use = "list-refreshes FULL_NAME"
+	cmd.Use = "list-refreshes TABLE_NAME"
 	cmd.Short = `List refreshes.`
 	cmd.Long = `List refreshes.
   
@@ -468,7 +468,7 @@ func newListRefreshes() *cobra.Command {
   created.
 
   Arguments:
-    FULL_NAME: Full name of the table.`
+    TABLE_NAME: Full name of the table.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -482,7 +482,7 @@ func newListRefreshes() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		listRefreshesReq.FullName = args[0]
+		listRefreshesReq.TableName = args[0]
 
 		response, err := w.LakehouseMonitors.ListRefreshes(ctx, listRefreshesReq)
 		if err != nil {
@@ -519,7 +519,7 @@ func newRunRefresh() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Use = "run-refresh FULL_NAME"
+	cmd.Use = "run-refresh TABLE_NAME"
 	cmd.Short = `Queue a metric refresh for a monitor.`
 	cmd.Long = `Queue a metric refresh for a monitor.
   
@@ -536,7 +536,7 @@ func newRunRefresh() *cobra.Command {
   created.
 
   Arguments:
-    FULL_NAME: Full name of the table.`
+    TABLE_NAME: Full name of the table.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -550,7 +550,7 @@ func newRunRefresh() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		runRefreshReq.FullName = args[0]
+		runRefreshReq.TableName = args[0]
 
 		response, err := w.LakehouseMonitors.RunRefresh(ctx, runRefreshReq)
 		if err != nil {
@@ -599,7 +599,7 @@ func newUpdate() *cobra.Command {
 	// TODO: complex arg: snapshot
 	// TODO: complex arg: time_series
 
-	cmd.Use = "update FULL_NAME OUTPUT_SCHEMA_NAME"
+	cmd.Use = "update TABLE_NAME OUTPUT_SCHEMA_NAME"
 	cmd.Short = `Update a table monitor.`
 	cmd.Long = `Update a table monitor.
   
@@ -618,7 +618,7 @@ func newUpdate() *cobra.Command {
   updated.
 
   Arguments:
-    FULL_NAME: Full name of the table.
+    TABLE_NAME: Full name of the table.
     OUTPUT_SCHEMA_NAME: Schema where output metric tables are created.`
 
 	cmd.Annotations = make(map[string]string)
@@ -627,7 +627,7 @@ func newUpdate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only FULL_NAME as positional arguments. Provide 'output_schema_name' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, provide only TABLE_NAME as positional arguments. Provide 'output_schema_name' in your JSON input")
 			}
 			return nil
 		}
@@ -646,7 +646,7 @@ func newUpdate() *cobra.Command {
 				return err
 			}
 		}
-		updateReq.FullName = args[0]
+		updateReq.TableName = args[0]
 		if !cmd.Flags().Changed("json") {
 			updateReq.OutputSchemaName = args[1]
 		}

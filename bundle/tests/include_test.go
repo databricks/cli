@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/phases"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/maps"
@@ -17,9 +17,9 @@ func TestIncludeInvalid(t *testing.T) {
 	ctx := context.Background()
 	b, err := bundle.Load(ctx, "./include_invalid")
 	require.NoError(t, err)
-	err = bundle.Apply(ctx, b, bundle.Seq(mutator.DefaultMutators()...))
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "notexists.yml defined in 'include' section does not match any files")
+	diags := bundle.Apply(ctx, b, phases.Load())
+	require.Error(t, diags.Error())
+	assert.ErrorContains(t, diags.Error(), "notexists.yml defined in 'include' section does not match any files")
 }
 
 func TestIncludeWithGlob(t *testing.T) {

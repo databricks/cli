@@ -145,7 +145,13 @@ func new{{.PascalName}}() *cobra.Command {
 	{{- end}}
 	{{end}}
 
-	{{- $excludeFromPrompts := list "workspace get-status" -}}
+	{{- $excludeFromPrompts := list
+		"workspace get-status"
+		"provider-exchanges get"
+		"provider-exchanges delete"
+		"provider-exchanges delete-listing-from-exchange"
+		"provider-exchanges list-exchanges-for-listing"
+		-}}
 	{{- $fullCommandName := (print $serviceName " " .KebabName) -}}
 	{{- $noPrompt := or .IsCrudCreate (in $excludeFromPrompts $fullCommandName) }}
 

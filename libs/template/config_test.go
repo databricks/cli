@@ -52,6 +52,17 @@ func TestTemplateConfigAssignValuesFromFileDoesNotOverwriteExistingConfigs(t *te
 	assert.Equal(t, "this-is-not-overwritten", c.values["string_val"])
 }
 
+func TestTemplateConfigAssignValuesFromFileFiltersPropertiesNotInTheSchema(t *testing.T) {
+	c := testConfig(t)
+
+	err := c.assignValuesFromFile("./testdata/config-assign-from-file-unknown-property/config.json")
+	assert.NoError(t, err)
+
+	// assert only the known property is loaded
+	assert.Len(t, c.values, 1)
+	assert.Equal(t, "i am a known property", c.values["string_val"])
+}
+
 func TestTemplateConfigAssignDefaultValues(t *testing.T) {
 	c := testConfig(t)
 

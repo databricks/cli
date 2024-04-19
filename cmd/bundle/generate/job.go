@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/generate"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -24,9 +23,8 @@ func NewGenerateJobCommand() *cobra.Command {
 	var force bool
 
 	cmd := &cobra.Command{
-		Use:     "job",
-		Short:   "Generate bundle configuration for a job",
-		PreRunE: root.MustConfigureBundle,
+		Use:   "job",
+		Short: "Generate bundle configuration for a job",
 	}
 
 	cmd.Flags().Int64Var(&jobId, "existing-job-id", 0, `Job ID of the job to generate config for`)
@@ -43,9 +41,12 @@ func NewGenerateJobCommand() *cobra.Command {
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		b := bundle.Get(ctx)
-		w := b.WorkspaceClient()
+		b, diags := root.MustConfigureBundle(cmd)
+		if err := diags.Error(); err != nil {
+			return diags.Error()
+		}
 
+		w := b.WorkspaceClient()
 		job, err := w.Jobs.Get(ctx, jobs.GetJobRequest{JobId: jobId})
 		if err != nil {
 			return err

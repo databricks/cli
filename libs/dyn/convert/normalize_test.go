@@ -5,7 +5,7 @@ import (
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/stretchr/testify/assert"
+	assert "github.com/databricks/cli/libs/dyn/dynassert"
 )
 
 func TestNormalizeStruct(t *testing.T) {
@@ -40,9 +40,10 @@ func TestNormalizeStructElementDiagnostic(t *testing.T) {
 	vout, err := Normalize(typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
+		Severity: diag.Warning,
 		Summary:  `expected string, found map`,
 		Location: dyn.Location{},
+		Path:     dyn.NewPath(dyn.Key("bar")),
 	}, err[0])
 
 	// Elements that encounter an error during normalization are dropped.
@@ -68,6 +69,7 @@ func TestNormalizeStructUnknownField(t *testing.T) {
 		Severity: diag.Warning,
 		Summary:  `unknown field: bar`,
 		Location: vin.Get("foo").Location(),
+		Path:     dyn.EmptyPath,
 	}, err[0])
 
 	// The field that can be mapped to the struct field is retained.
@@ -98,9 +100,10 @@ func TestNormalizeStructError(t *testing.T) {
 	_, err := Normalize(typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
+		Severity: diag.Warning,
 		Summary:  `expected map, found string`,
 		Location: vin.Get("foo").Location(),
+		Path:     dyn.EmptyPath,
 	}, err[0])
 }
 
@@ -242,9 +245,10 @@ func TestNormalizeMapElementDiagnostic(t *testing.T) {
 	vout, err := Normalize(typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
+		Severity: diag.Warning,
 		Summary:  `expected string, found map`,
 		Location: dyn.Location{},
+		Path:     dyn.NewPath(dyn.Key("bar")),
 	}, err[0])
 
 	// Elements that encounter an error during normalization are dropped.
@@ -267,9 +271,10 @@ func TestNormalizeMapError(t *testing.T) {
 	_, err := Normalize(typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
+		Severity: diag.Warning,
 		Summary:  `expected map, found string`,
 		Location: vin.Location(),
+		Path:     dyn.EmptyPath,
 	}, err[0])
 }
 
@@ -330,9 +335,10 @@ func TestNormalizeSliceElementDiagnostic(t *testing.T) {
 	vout, err := Normalize(typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
+		Severity: diag.Warning,
 		Summary:  `expected string, found map`,
 		Location: dyn.Location{},
+		Path:     dyn.NewPath(dyn.Index(2)),
 	}, err[0])
 
 	// Elements that encounter an error during normalization are dropped.
@@ -353,9 +359,10 @@ func TestNormalizeSliceError(t *testing.T) {
 	_, err := Normalize(typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
+		Severity: diag.Warning,
 		Summary:  `expected sequence, found string`,
 		Location: vin.Location(),
+		Path:     dyn.EmptyPath,
 	}, err[0])
 }
 
@@ -407,9 +414,10 @@ func TestNormalizeStringNil(t *testing.T) {
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
-		Summary:  `expected string, found nil`,
+		Severity: diag.Warning,
+		Summary:  `expected a string value, found null`,
 		Location: vin.Location(),
+		Path:     dyn.EmptyPath,
 	}, err[0])
 }
 
@@ -443,9 +451,10 @@ func TestNormalizeStringError(t *testing.T) {
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
+		Severity: diag.Warning,
 		Summary:  `expected string, found map`,
 		Location: dyn.Location{},
+		Path:     dyn.EmptyPath,
 	}, err[0])
 }
 
@@ -463,9 +472,10 @@ func TestNormalizeBoolNil(t *testing.T) {
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
-		Summary:  `expected bool, found nil`,
+		Severity: diag.Warning,
+		Summary:  `expected a bool value, found null`,
 		Location: vin.Location(),
+		Path:     dyn.EmptyPath,
 	}, err[0])
 }
 
@@ -504,9 +514,10 @@ func TestNormalizeBoolFromStringError(t *testing.T) {
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
+		Severity: diag.Warning,
 		Summary:  `expected bool, found string`,
 		Location: vin.Location(),
+		Path:     dyn.EmptyPath,
 	}, err[0])
 }
 
@@ -516,9 +527,10 @@ func TestNormalizeBoolError(t *testing.T) {
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
+		Severity: diag.Warning,
 		Summary:  `expected bool, found map`,
 		Location: dyn.Location{},
+		Path:     dyn.EmptyPath,
 	}, err[0])
 }
 
@@ -536,9 +548,31 @@ func TestNormalizeIntNil(t *testing.T) {
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
-		Summary:  `expected int, found nil`,
+		Severity: diag.Warning,
+		Summary:  `expected a int value, found null`,
 		Location: vin.Location(),
+		Path:     dyn.EmptyPath,
+	}, err[0])
+}
+
+func TestNormalizeIntFromFloat(t *testing.T) {
+	var typ int
+	vin := dyn.V(float64(1.0))
+	vout, err := Normalize(&typ, vin)
+	assert.Empty(t, err)
+	assert.Equal(t, dyn.V(int64(1)), vout)
+}
+
+func TestNormalizeIntFromFloatError(t *testing.T) {
+	var typ int
+	vin := dyn.V(1.5)
+	_, err := Normalize(&typ, vin)
+	assert.Len(t, err, 1)
+	assert.Equal(t, diag.Diagnostic{
+		Severity: diag.Warning,
+		Summary:  `cannot accurately represent "1.5" as integer due to precision loss`,
+		Location: vin.Location(),
+		Path:     dyn.EmptyPath,
 	}, err[0])
 }
 
@@ -564,9 +598,10 @@ func TestNormalizeIntFromStringError(t *testing.T) {
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
+		Severity: diag.Warning,
 		Summary:  `cannot parse "abc" as an integer`,
 		Location: vin.Location(),
+		Path:     dyn.EmptyPath,
 	}, err[0])
 }
 
@@ -576,9 +611,10 @@ func TestNormalizeIntError(t *testing.T) {
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
+		Severity: diag.Warning,
 		Summary:  `expected int, found map`,
 		Location: dyn.Location{},
+		Path:     dyn.EmptyPath,
 	}, err[0])
 }
 
@@ -596,9 +632,35 @@ func TestNormalizeFloatNil(t *testing.T) {
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
-		Summary:  `expected float, found nil`,
+		Severity: diag.Warning,
+		Summary:  `expected a float value, found null`,
 		Location: vin.Location(),
+		Path:     dyn.EmptyPath,
+	}, err[0])
+}
+
+func TestNormalizeFloatFromInt(t *testing.T) {
+	var typ float64
+
+	// Maximum safe integer that can be accurately represented as a float.
+	vin := dyn.V(int64(9007199254740992))
+	vout, err := Normalize(&typ, vin)
+	assert.Empty(t, err)
+	assert.Equal(t, dyn.V(float64(9007199254740992)), vout)
+}
+
+func TestNormalizeFloatFromIntError(t *testing.T) {
+	var typ float64
+
+	// Minimum integer that cannot be accurately represented as a float.
+	vin := dyn.V(9007199254740992 + 1)
+	_, err := Normalize(&typ, vin)
+	assert.Len(t, err, 1)
+	assert.Equal(t, diag.Diagnostic{
+		Severity: diag.Warning,
+		Summary:  `cannot accurately represent "9007199254740993" as floating point number due to precision loss`,
+		Location: vin.Location(),
+		Path:     dyn.EmptyPath,
 	}, err[0])
 }
 
@@ -624,9 +686,10 @@ func TestNormalizeFloatFromStringError(t *testing.T) {
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
+		Severity: diag.Warning,
 		Summary:  `cannot parse "abc" as a floating point number`,
 		Location: vin.Location(),
+		Path:     dyn.EmptyPath,
 	}, err[0])
 }
 
@@ -636,8 +699,29 @@ func TestNormalizeFloatError(t *testing.T) {
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity: diag.Error,
+		Severity: diag.Warning,
 		Summary:  `expected float, found map`,
 		Location: dyn.Location{},
+		Path:     dyn.EmptyPath,
 	}, err[0])
+}
+
+func TestNormalizeAnchors(t *testing.T) {
+	type Tmp struct {
+		Foo string `json:"foo"`
+	}
+
+	var typ Tmp
+	vin := dyn.V(map[string]dyn.Value{
+		"foo":    dyn.V("bar"),
+		"anchor": dyn.V("anchor").MarkAnchor(),
+	})
+
+	vout, err := Normalize(typ, vin)
+	assert.Len(t, err, 0)
+
+	// The field that can be mapped to the struct field is retained.
+	assert.Equal(t, map[string]any{
+		"foo": "bar",
+	}, vout.AsAny())
 }

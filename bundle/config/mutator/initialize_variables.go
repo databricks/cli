@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/variable"
+	"github.com/databricks/cli/libs/diag"
 )
 
 type initializeVariables struct{}
@@ -18,7 +19,7 @@ func (m *initializeVariables) Name() string {
 	return "InitializeVariables"
 }
 
-func (m *initializeVariables) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *initializeVariables) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	vars := b.Config.Variables
 	for k, v := range vars {
 		if v == nil {
