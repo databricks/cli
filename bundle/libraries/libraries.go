@@ -1,22 +1,15 @@
 package libraries
 
 import (
-	"path/filepath"
-
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
-func findAllTasks(b *bundle.Bundle) map[string]([]*jobs.Task) {
+func findAllTasks(b *bundle.Bundle) map[string]([]jobs.Task) {
 	r := b.Config.Resources
-	result := make(map[string]([]*jobs.Task), 0)
+	result := make(map[string]([]jobs.Task), 0)
 	for k := range b.Config.Resources.Jobs {
-		result[k] = make([]*jobs.Task, 0)
-		tasks := r.Jobs[k].JobSettings.Tasks
-		for i := range tasks {
-			task := &tasks[i]
-			result[k] = append(result[k], task)
-		}
+		result[k] = append(result[k], r.Jobs[k].JobSettings.Tasks...)
 	}
 
 	return result
@@ -38,7 +31,7 @@ func findAllEnvironments(b *bundle.Bundle) map[string]([]jobs.JobEnvironment) {
 func isEnvsWithLocalLibraries(envs []jobs.JobEnvironment) bool {
 	for _, e := range envs {
 		for _, l := range e.Spec.Dependencies {
-			if IsLocalPath(l) {
+			if IsEnvironmentDependencyLocal(l) {
 				return true
 			}
 		}
@@ -59,11 +52,11 @@ func FindAllWheelTasksWithLocalLibraries(b *bundle.Bundle) []*jobs.Task {
 			}
 
 			if isTaskWithLocalLibraries(task) {
-				wheelTasks = append(wheelTasks, task)
+				wheelTasks = append(wheelTasks, &task)
 			}
 
 			if envs[k] != nil && isEnvsWithLocalLibraries(envs[k]) {
-				wheelTasks = append(wheelTasks, task)
+				wheelTasks = append(wheelTasks, &task)
 			}
 		}
 	}
@@ -71,7 +64,7 @@ func FindAllWheelTasksWithLocalLibraries(b *bundle.Bundle) []*jobs.Task {
 	return wheelTasks
 }
 
-func isTaskWithLocalLibraries(task *jobs.Task) bool {
+func isTaskWithLocalLibraries(task jobs.Task) bool {
 	for _, l := range task.Libraries {
 		if IsLocalLibrary(&l) {
 			return true
@@ -81,7 +74,7 @@ func isTaskWithLocalLibraries(task *jobs.Task) bool {
 	return false
 }
 
-func IsTaskWithWorkspaceLibraries(task *jobs.Task) bool {
+func IsTaskWithWorkspaceLibraries(task jobs.Task) bool {
 	for _, l := range task.Libraries {
 		if IsWorkspaceLibrary(&l) {
 			return true
@@ -89,18 +82,4 @@ func IsTaskWithWorkspaceLibraries(task *jobs.Task) bool {
 	}
 
 	return false
-}
-
-func findMatches(path string, b *bundle.Bundle) ([]string, error) {
-	fullPath := filepath.Join(b.RootPath, path)
-	return filepath.Glob(fullPath)
-}
-
-func AbsPathForResource(b *bundle.Bundle, resource string, path string) string {
-	p := filepath.Dir(b.Config.GetLocation(resource).File)
-	if !filepath.IsAbs(p) {
-		p = filepath.Join(b.RootPath, p)
-	}
-
-	return filepath.Join(p, path)
 }

@@ -1,7 +1,9 @@
 package libraries
 
 import (
+	"fmt"
 	"net/url"
+	"os"
 	"path"
 	"strings"
 
@@ -36,6 +38,11 @@ func IsLocalPath(p string) bool {
 
 	// If path starts with /, it's a remote absolute path
 	return !path.IsAbs(p)
+}
+
+func IsEnvironmentDependencyLocal(dep string) bool {
+	return strings.HasPrefix(dep, fmt.Sprintf(".%s", string(os.PathSeparator))) ||
+		strings.HasPrefix(dep, fmt.Sprintf("..%s", string(os.PathSeparator)))
 }
 
 func isRemoteStorageScheme(path string) bool {

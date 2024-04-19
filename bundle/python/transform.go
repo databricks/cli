@@ -98,7 +98,7 @@ func (t *pythonTrampoline) GetTasks(b *bundle.Bundle) []mutator.TaskWithJobKey {
 	for k := range b.Config.Resources.Jobs {
 		tasks := r.Jobs[k].JobSettings.Tasks
 		for i := range tasks {
-			task := &tasks[i]
+			task := tasks[i]
 
 			// Keep only Python wheel tasks with workspace libraries referenced.
 			// At this point of moment we don't have local paths in Libraries sections anymore
@@ -110,14 +110,14 @@ func (t *pythonTrampoline) GetTasks(b *bundle.Bundle) []mutator.TaskWithJobKey {
 
 			result = append(result, mutator.TaskWithJobKey{
 				JobKey: k,
-				Task:   task,
+				Task:   &task,
 			})
 		}
 	}
 	return result
 }
 
-func needsTrampoline(task *jobs.Task) bool {
+func needsTrampoline(task jobs.Task) bool {
 	return libraries.IsTaskWithWorkspaceLibraries(task)
 }
 

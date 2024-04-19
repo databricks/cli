@@ -7,6 +7,6 @@ import (
 )
 
 func TestEnvironmentKeySupported(t *testing.T) {
-	_, diags := loadTargetWithDiags("./environment_key", "default")
+	_, diags := loadTargetWithDiags("./python_wheel/environment_key", "default")
 	require.Empty(t, diags)
 }

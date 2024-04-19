@@ -12,7 +12,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts/whl"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
@@ -131,20 +130,19 @@ func uploadArtifact(ctx context.Context, b *bundle.Bundle, a *config.Artifact, u
 		log.Infof(ctx, "Upload succeeded")
 		f.RemotePath = path.Join(uploadPath, filepath.Base(f.Source))
 
-		// TODO: confirm if we still need to update the references in the config
+		// TODO: confirm if we still need to update the remote path to start with /Workspace
 		wsfsBase := "/Workspace"
 		remotePath := path.Join(wsfsBase, f.RemotePath)
 
-		for jobKey, job := range b.Config.Resources.Jobs {
+		for _, job := range b.Config.Resources.Jobs {
 			for i := range job.Tasks {
 				task := &job.Tasks[i]
 				for j := range task.Libraries {
 					lib := &task.Libraries[j]
-					res := fmt.Sprintf("resources.jobs.%s.tasks.%d.libraries.%d", jobKey, i, j)
-					if lib.Whl != "" && libraries.AbsPathForResource(b, res, lib.Whl) == f.Source {
+					if lib.Whl != "" && isArtifactMatchLibrary(f, lib.Whl, b) {
 						lib.Whl = remotePath
 					}
-					if lib.Jar != "" && libraries.AbsPathForResource(b, res, lib.Jar) == f.Source {
+					if lib.Jar != "" && isArtifactMatchLibrary(f, lib.Jar, b) {
 						lib.Jar = remotePath
 					}
 				}
@@ -154,8 +152,7 @@ func uploadArtifact(ctx context.Context, b *bundle.Bundle, a *config.Artifact, u
 				env := &job.Environments[i]
 				for j := range env.Spec.Dependencies {
 					lib := env.Spec.Dependencies[j]
-					res := fmt.Sprintf("resources.jobs.%s.environments.%d.spec.dependencies.%d", jobKey, i, j)
-					if libraries.AbsPathForResource(b, res, lib) == f.Source {
+					if isArtifactMatchLibrary(f, lib, b) {
 						env.Spec.Dependencies[j] = remotePath
 					}
 				}
@@ -164,6 +161,26 @@ func uploadArtifact(ctx context.Context, b *bundle.Bundle, a *config.Artifact, u
 	}
 
 	return nil
+}
+
+func isArtifactMatchLibrary(f *config.ArtifactFile, libPath string, b *bundle.Bundle) bool {
+	if !filepath.IsAbs(libPath) {
+		libPath = filepath.Join(b.RootPath, libPath)
+	}
+
+	// libPath can be a glob pattern, so do the match first
+	matches, err := filepath.Glob(libPath)
+	if err != nil {
+		return false
+	}
+
+	for _, m := range matches {
+		if m == f.Source {
+			return true
+		}
+	}
+
+	return false
 }
 
 // Function to upload artifact file to Workspace

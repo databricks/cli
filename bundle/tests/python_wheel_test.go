@@ -88,7 +88,7 @@ func TestPythonWheelBuildWithEnvironmentKey(t *testing.T) {
 	diags := bundle.Apply(ctx, b, bundle.Seq(phases.Load(), phases.Build()))
 	require.NoError(t, diags.Error())
 
-	matches, err := filepath.Glob("./python_wheel/python_wheel/my_test_code/dist/my_test_code-*.whl")
+	matches, err := filepath.Glob("./python_wheel/environment_key/my_test_code/dist/my_test_code-*.whl")
 	require.NoError(t, err)
 	require.Equal(t, 1, len(matches))
 

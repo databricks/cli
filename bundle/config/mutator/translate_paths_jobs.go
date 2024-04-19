@@ -5,39 +5,51 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/dyn"
 )
 
-type jobTaskRewritePattern struct {
-	pattern dyn.Pattern
-	fn      rewriteFunc
+type jobRewritePattern struct {
+	pattern     dyn.Pattern
+	fn          rewriteFunc
+	skipRewrite func(string) bool
 }
 
-func rewritePatterns(base dyn.Pattern) []jobTaskRewritePattern {
-	return []jobTaskRewritePattern{
+func noSkipRewrite(string) bool {
+	return false
+}
+
+func rewritePatterns(base dyn.Pattern) []jobRewritePattern {
+	return []jobRewritePattern{
 		{
 			base.Append(dyn.Key("notebook_task"), dyn.Key("notebook_path")),
 			translateNotebookPath,
+			noSkipRewrite,
 		},
 		{
 			base.Append(dyn.Key("spark_python_task"), dyn.Key("python_file")),
 			translateFilePath,
+			noSkipRewrite,
 		},
 		{
 			base.Append(dyn.Key("dbt_task"), dyn.Key("project_directory")),
 			translateDirectoryPath,
+			noSkipRewrite,
 		},
 		{
 			base.Append(dyn.Key("sql_task"), dyn.Key("file"), dyn.Key("path")),
 			translateFilePath,
+			noSkipRewrite,
 		},
 		{
 			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("whl")),
 			translateNoOp,
+			noSkipRewrite,
 		},
 		{
 			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("jar")),
 			translateNoOp,
+			noSkipRewrite,
 		},
 	}
 }
@@ -73,9 +85,28 @@ func (m *translatePaths) applyJobTranslations(b *bundle.Bundle, v dyn.Value) (dy
 	)
 
 	// Compile list of patterns and their respective rewrite functions.
+	jobEnvironmentsPatterns := []jobRewritePattern{
+		{
+			dyn.NewPattern(
+				dyn.Key("resources"),
+				dyn.Key("jobs"),
+				dyn.AnyKey(),
+				dyn.Key("environments"),
+				dyn.AnyIndex(),
+				dyn.Key("spec"),
+				dyn.Key("dependencies"),
+				dyn.AnyIndex(),
+			),
+			translateNoOp,
+			func(s string) bool {
+				return !libraries.IsEnvironmentDependencyLocal(s)
+			},
+		},
+	}
 	taskPatterns := rewritePatterns(base)
 	forEachPatterns := rewritePatterns(base.Append(dyn.Key("for_each_task"), dyn.Key("task")))
-	allPatterns := append(taskPatterns, forEachPatterns...)
+	allPatterns := append(taskPatterns, jobEnvironmentsPatterns...)
+	allPatterns = append(allPatterns, forEachPatterns...)
 
 	for _, t := range allPatterns {
 		v, err = dyn.MapByPattern(v, t.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
@@ -91,6 +122,10 @@ func (m *translatePaths) applyJobTranslations(b *bundle.Bundle, v dyn.Value) (dy
 				return dyn.InvalidValue, fmt.Errorf("unable to determine directory for job %s: %w", key, err)
 			}
 
+			sv := v.MustString()
+			if t.skipRewrite(sv) {
+				return v, nil
+			}
 			return m.rewriteRelativeTo(b, p, v, t.fn, dir, fallback[key])
 		})
 		if err != nil {

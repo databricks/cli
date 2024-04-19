@@ -23,14 +23,14 @@ func (a *match) Name() string {
 }
 
 func (a *match) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	for jobKey, job := range b.Config.Resources.Jobs {
-		err := validateEnvironments(job.Environments, b, jobKey)
+	for _, job := range b.Config.Resources.Jobs {
+		err := validateEnvironments(job.Environments, b)
 		if err != nil {
 			return diag.FromErr(err)
 		}
 
-		for i, task := range job.JobSettings.Tasks {
-			err := validateTaskLibraries(task.Libraries, b, jobKey, i)
+		for _, task := range job.JobSettings.Tasks {
+			err := validateTaskLibraries(task.Libraries, b)
 			if err != nil {
 				return diag.FromErr(err)
 			}
@@ -40,15 +40,14 @@ func (a *match) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	return nil
 }
 
-func validateTaskLibraries(libs []compute.Library, b *bundle.Bundle, jobKey string, taskIndex int) error {
-	for i, lib := range libs {
+func validateTaskLibraries(libs []compute.Library, b *bundle.Bundle) error {
+	for _, lib := range libs {
 		path := libraryPath(&lib)
 		if path == "" || !IsLocalPath(path) {
 			continue
 		}
 
-		loc := b.Config.GetLocation(fmt.Sprintf("resources.jobs.%s.tasks.%d.libraries.%d", jobKey, taskIndex, i))
-		matches, err := findMatches(filepath.Join(filepath.Dir(loc.File), path), b)
+		matches, err := filepath.Glob(filepath.Join(b.RootPath, path))
 		if err != nil {
 			return err
 		}
@@ -61,16 +60,15 @@ func validateTaskLibraries(libs []compute.Library, b *bundle.Bundle, jobKey stri
 	return nil
 }
 
-func validateEnvironments(envs []jobs.JobEnvironment, b *bundle.Bundle, jobKey string) error {
-	for i, env := range envs {
-		for j, dep := range env.Spec.Dependencies {
-			loc := b.Config.GetLocation(fmt.Sprintf("resources.jobs.%s.environments.%d.spec.dependencies.%d", jobKey, i, j))
-			matches, err := findMatches(filepath.Join(filepath.Dir(loc.File), dep), b)
+func validateEnvironments(envs []jobs.JobEnvironment, b *bundle.Bundle) error {
+	for _, env := range envs {
+		for _, dep := range env.Spec.Dependencies {
+			matches, err := filepath.Glob(filepath.Join(b.RootPath, dep))
 			if err != nil {
 				return err
 			}
 
-			if len(matches) == 0 && IsLocalPath(dep) {
+			if len(matches) == 0 && IsEnvironmentDependencyLocal(dep) {
 				return fmt.Errorf("file %s is referenced in environments section but doesn't exist on the local file system", dep)
 			}
 		}

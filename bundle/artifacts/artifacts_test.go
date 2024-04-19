@@ -45,7 +45,7 @@ func TestArtifactUpload(t *testing.T) {
 								{
 									Libraries: []compute.Library{
 										{
-											Whl: filepath.Join("whl", "source.whl"),
+											Whl: filepath.Join("whl", "*.whl"),
 										},
 										{
 											Whl: "/Workspace/Users/foo@bar.com/mywheel.whl",

@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestIsLocalPath(t *testing.T) {
@@ -40,4 +41,27 @@ func TestIsLocalLibrary(t *testing.T) {
 
 	// Empty.
 	assert.False(t, IsLocalLibrary(&compute.Library{}))
+}
+
+func TestIsEnvironmentDependencyLocal(t *testing.T) {
+	testCases := [](struct {
+		path     string
+		expected bool
+	}){
+		{path: "./local/*.whl", expected: true},
+		{path: "./local/mypath.whl", expected: true},
+		{path: "../local/*.whl", expected: true},
+		{path: "./../local/*.whl", expected: true},
+		{path: "../../local/*.whl", expected: true},
+		{path: "pypipackage", expected: false},
+		{path: "pypipackage/test.whl", expected: false},
+		{path: "pypipackage/*.whl", expected: false},
+		{path: "/Volumes/catalog/schema/volume/path.whl", expected: false},
+		{path: "/Workspace/my_project/dist.whl", expected: false},
+		{path: "-r /Workspace/my_project/requirements.txt", expected: false},
+	}
+
+	for _, tc := range testCases {
+		require.Equal(t, IsEnvironmentDependencyLocal(tc.path), tc.expected)
+	}
 }
