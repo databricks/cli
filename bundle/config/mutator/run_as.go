@@ -161,7 +161,7 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if b.Config.RunAs.UseLegacy {
 		legacySetRunAsForPipelines(b)
 		setRunAsForJobs(b)
-		return diag.Warningf("Using legacy mode of run_as. This mode changes the OWNER of a pipeline to the run_as identity. Changing the owner of a DLT pipeline requires the user deploying the DAB to be a workspace and metastore admin.")
+		return diag.Warningf("Using legacy mode of run_as. This mode changes the OWNER of a pipeline to the run_as identity. Changing the owner of a DLT pipeline requires the user deploying the DAB to be both a workspace and metastore admin.")
 	}
 
 	// Assert the run_as configuration is valid in the context of the bundle
