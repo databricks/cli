@@ -1,6 +1,7 @@
 package fileset
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
@@ -26,7 +27,7 @@ func TestUnknownFileDetectsNotebook(t *testing.T) {
 
 	t.Run("file", func(t *testing.T) {
 		path := testutil.Touch(t, tmpDir, "test.py")
-		f := NewFile(nil, path, "test.py")
+		f := NewFile(nil, path, filepath.Base(path))
 		isNotebook, err := f.IsNotebook()
 		require.NoError(t, err)
 		require.False(t, isNotebook)
@@ -34,7 +35,7 @@ func TestUnknownFileDetectsNotebook(t *testing.T) {
 
 	t.Run("notebook", func(t *testing.T) {
 		path := testutil.TouchNotebook(t, tmpDir, "notebook.py")
-		f := NewFile(nil, path, "notebook.py")
+		f := NewFile(nil, path, filepath.Base(path))
 		isNotebook, err := f.IsNotebook()
 		require.NoError(t, err)
 		require.True(t, isNotebook)
