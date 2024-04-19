@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
@@ -31,6 +32,10 @@ func (w *apply) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 	err = tf.Apply(ctx)
 	if err != nil {
+		diagnosis := permissions.TryReportTerraformPermissionError(ctx, b, err)
+		if diagnosis != nil {
+			return diagnosis
+		}
 		return diag.Errorf("terraform apply: %v", err)
 	}
 
