@@ -98,19 +98,19 @@ func (t *pythonTrampoline) GetTasks(b *bundle.Bundle) []mutator.TaskWithJobKey {
 	for k := range b.Config.Resources.Jobs {
 		tasks := r.Jobs[k].JobSettings.Tasks
 		for i := range tasks {
-			task := tasks[i]
+			task := &tasks[i]
 
 			// Keep only Python wheel tasks with workspace libraries referenced.
 			// At this point of moment we don't have local paths in Libraries sections anymore
 			// Local paths have been replaced with the remote when the artifacts where uploaded
 			// in artifacts.UploadAll mutator.
-			if task.PythonWheelTask == nil || !needsTrampoline(task) {
+			if task.PythonWheelTask == nil || !needsTrampoline(*task) {
 				continue
 			}
 
 			result = append(result, mutator.TaskWithJobKey{
 				JobKey: k,
-				Task:   &task,
+				Task:   task,
 			})
 		}
 	}
