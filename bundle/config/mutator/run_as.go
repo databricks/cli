@@ -35,8 +35,6 @@ type errUnsupportedResourceTypeForRunAs struct {
 	runAsUser        string
 }
 
-
-
 func (e errUnsupportedResourceTypeForRunAs) Error() string {
 	return fmt.Sprintf("%s are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. Please refer to the documentation at https://docs.databricks.com/dev-tools/bundles/run-as.html for more details. Location of the unsupported resource: %s. Current identity: %s. Run as identity: %s", e.resourceType, e.resourceLocation, e.currentUser, e.runAsUser)
 }
