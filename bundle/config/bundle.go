@@ -4,6 +4,8 @@ type Terraform struct {
 	ExecPath string `json:"exec_path"`
 }
 
+type FeatureFlag string
+
 type Bundle struct {
 	Name string `json:"name"`
 

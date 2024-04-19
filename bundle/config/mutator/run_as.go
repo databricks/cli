@@ -3,8 +3,10 @@ package mutator
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -103,19 +105,12 @@ func validateRunAs(b *bundle.Bundle) error {
 	return nil
 }
 
-func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
-	// Mutator is a no-op if run_as is not specified in the bundle
+func setRunAsForJobs(b *bundle.Bundle) {
 	runAs := b.Config.RunAs
 	if runAs == nil {
-		return nil
+		return
 	}
 
-	// Assert the run_as configuration is valid in the context of the bundle
-	if err := validateRunAs(b); err != nil {
-		return diag.FromErr(err)
-	}
-
-	// Set run_as for jobs
 	for i := range b.Config.Resources.Jobs {
 		job := b.Config.Resources.Jobs[i]
 		if job.RunAs != nil {
@@ -126,6 +121,54 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 			UserName:             runAs.UserName,
 		}
 	}
+}
 
+func legacySetRunAsForPipelines(b *bundle.Bundle) {
+	runAs := b.Config.RunAs
+	if runAs == nil {
+		return
+	}
+
+	me := b.Config.Workspace.CurrentUser.UserName
+	// If user deploying the bundle and the one defined in run_as are the same
+	// Do not add IS_OWNER permission. Current user is implied to be an owner in this case.
+	// Otherwise, it will fail due to this bug https://github.com/databricks/terraform-provider-databricks/issues/2407
+	if runAs.UserName == me || runAs.ServicePrincipalName == me {
+		return
+	}
+
+	for i := range b.Config.Resources.Pipelines {
+		pipeline := b.Config.Resources.Pipelines[i]
+		pipeline.Permissions = slices.DeleteFunc(pipeline.Permissions, func(p resources.Permission) bool {
+			return (runAs.ServicePrincipalName != "" && p.ServicePrincipalName == runAs.ServicePrincipalName) ||
+				(runAs.UserName != "" && p.UserName == runAs.UserName)
+		})
+		pipeline.Permissions = append(pipeline.Permissions, resources.Permission{
+			Level:                "IS_OWNER",
+			ServicePrincipalName: runAs.ServicePrincipalName,
+			UserName:             runAs.UserName,
+		})
+	}
+}
+
+func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+	// Mutator is a no-op if run_as is not specified in the bundle
+	runAs := b.Config.RunAs
+	if runAs == nil {
+		return nil
+	}
+
+	if b.Config.RunAs.UseLegacy {
+		legacySetRunAsForPipelines(b)
+		setRunAsForJobs(b)
+		return diag.Warningf("Using legacy mode of run_as. This mode changes the OWNER of a pipeline to the run_as identity. Changing the owner of a DLT pipeline requires the user deploying the DAB to be a workspace and metastore admin.")
+	}
+
+	// Assert the run_as configuration is valid in the context of the bundle
+	if err := validateRunAs(b); err != nil {
+		return diag.FromErr(err)
+	}
+
+	setRunAsForJobs(b)
 	return nil
 }
