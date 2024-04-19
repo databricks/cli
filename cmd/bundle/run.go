@@ -19,7 +19,28 @@ func newRunCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run [flags] KEY",
 		Short: "Run a resource (e.g. a job or a pipeline)",
-		Args:  root.MaximumNArgs(1),
+		Long: `Run a resource (e.g. a job or a pipeline)
+
+The KEY argument is the unique identifier of the resource to run. You can customize the run by
+specifying any of the flags below, or if applicable, additional positional arguments.
+
+Additional positional arguments can be specified like this:
+
+   databricks bundle run my_job -- --key1 value1 --key2 value2
+
+Or:
+
+   databricks bundle run my_job -- example positional arguments
+
+If the specified job uses job parameters, the former example applies and flag names are mapped
+to the job parameter names.
+
+If the specified job does not use job parameters, either the former or the latter example applies,
+depending on the task types of the job. If the job has a notebook task, the former example applies
+and the flag names are mapped to the notebook parameters. If the job has a Python file task or a
+Python wheel task, the latter example applies.
+`,
+		Args: root.MaximumNArgs(1),
 	}
 
 	var runOptions run.Options
