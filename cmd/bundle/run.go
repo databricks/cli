@@ -40,7 +40,6 @@ depending on the task types of the job. If the job has a notebook task, the form
 and the flag names are mapped to the notebook parameters. If the job has a Python file task or a
 Python wheel task, the latter example applies.
 `,
-		Args: root.MaximumNArgs(1),
 	}
 
 	var runOptions run.Options
