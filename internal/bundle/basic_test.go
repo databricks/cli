@@ -20,7 +20,7 @@ func TestAccBasicBundleDeployWithFailOnActiveRuns(t *testing.T) {
 	root, err := initTestTemplate(t, ctx, "basic", map[string]any{
 		"unique_id":     uniqueId,
 		"node_type_id":  nodeTypeId,
-		"spark_version": "13.3.x-snapshot-scala2.12",
+		"spark_version": defaultSparkVersion,
 	})
 	require.NoError(t, err)
 

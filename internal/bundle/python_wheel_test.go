@@ -43,6 +43,7 @@ func runPythonWheelTest(t *testing.T, sparkVersion string, pythonWheelWrapper bo
 }
 
 func TestAccPythonWheelTaskDeployAndRunWithoutWrapper(t *testing.T) {
+	// This is the first DBR version where we can install Python wheels from the Workspace File System.
 	runPythonWheelTest(t, "13.3.x-snapshot-scala2.12", false)
 }
 
