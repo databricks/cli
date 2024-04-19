@@ -18,6 +18,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const defaultSparkVersion = "13.3.x-snapshot-scala2.12"
+
 func initTestTemplate(t *testing.T, ctx context.Context, templateName string, config map[string]any) (string, error) {
 	templateRoot := filepath.Join("bundles", templateName)
 
