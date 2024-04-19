@@ -70,7 +70,6 @@ func deleteSnapshotFile(ctx context.Context, b *bundle.Bundle) error {
 	if err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to destroy sync snapshot file: %s", err)
 	}
-	cmdio.LogString(ctx, fmt.Sprintf("Deleted snapshot file at %s", sp))
 	return nil
 }
 
