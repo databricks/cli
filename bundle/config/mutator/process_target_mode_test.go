@@ -31,6 +31,9 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					Branch:    "main",
 				},
 			},
+			Targets: map[string]*config.Target{
+				"": {},
+			},
 			Workspace: config.Workspace{
 				CurrentUser: &config.User{
 					ShortName: "lennart",
@@ -206,7 +209,7 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	b := mockBundle(config.Production)
 
 	diags := validateProductionMode(context.Background(), b, false)
-	require.ErrorContains(t, diags.Error(), "run_as")
+	require.ErrorContains(t, diags.Error(), "production")
 
 	b.Config.Workspace.StatePath = "/Shared/.bundle/x/y/state"
 	b.Config.Workspace.ArtifactPath = "/Shared/.bundle/x/y/artifacts"
@@ -251,6 +254,21 @@ func TestProcessTargetModeProductionOkForPrincipal(t *testing.T) {
 
 	// ... but we're much less strict when a principal is used
 	diags = validateProductionMode(context.Background(), b, true)
+	require.NoError(t, diags.Error())
+}
+
+func TestProcessTargetModeProductionOkWithRootPath(t *testing.T) {
+	b := mockBundle(config.Production)
+
+	// Our target has all kinds of problems when not using service principals ...
+	diags := validateProductionMode(context.Background(), b, false)
+	require.Error(t, diags.Error())
+
+	// ... but we're okay if we specify a root path
+	b.Config.Targets[""].Workspace = &config.Workspace{
+		RootPath: "some-root-path",
+	}
+	diags = validateProductionMode(context.Background(), b, false)
 	require.NoError(t, diags.Error())
 }
 

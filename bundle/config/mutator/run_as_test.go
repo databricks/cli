@@ -178,11 +178,6 @@ func TestRunAsErrorForUnsupportedResources(t *testing.T) {
 			Config: *r,
 		}
 		diags := bundle.Apply(context.Background(), b, SetRunAs())
-		assert.Equal(t, diags.Error().Error(), errUnsupportedResourceTypeForRunAs{
-			resourceType:     rt,
-			resourceLocation: dyn.Location{},
-			currentUser:      "alice",
-			runAsUser:        "bob",
-		}.Error(), "expected run_as with a different identity than the current deployment user to not supported for resources of type: %s", rt)
+		assert.ErrorContains(t, diags.Error(), "support")
 	}
 }

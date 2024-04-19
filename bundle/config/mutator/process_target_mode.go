@@ -138,8 +138,15 @@ func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUs
 		}
 	}
 
-	if !isPrincipalUsed && !isRunAsSet(r) {
-		return diag.Errorf("'run_as' must be set for all jobs when using 'mode: production'")
+	// We need to verify that there is only a single deployment of the current target.
+	// A good way to enforce this is to explicitly set root_path or run_as.
+	if !isExplicitRootSet(b) && !isRunAsSet(r) {
+		// Only show a warning in case a principal was used for backward compatibility
+		// with projects from before the DABs GA.
+		if isPrincipalUsed {
+			return diag.Warningf("target with 'mode: production' should specify explicit 'workspace.root_path' to make sure only one copy is deployed")
+		}
+		return diag.Errorf("target with 'mode: production' must specify explicit 'workspace.root_path' to make sure only one copy is deployed")
 	}
 	return nil
 }
@@ -154,6 +161,14 @@ func isRunAsSet(r config.Resources) bool {
 		}
 	}
 	return true
+}
+
+func isExplicitRootSet(b *bundle.Bundle) bool {
+	targetConfig := b.Config.Targets[b.Config.Bundle.Target]
+	if targetConfig.Workspace == nil {
+		return false
+	}
+	return targetConfig.Workspace.RootPath != ""
 }
 
 func (m *processTargetMode) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {

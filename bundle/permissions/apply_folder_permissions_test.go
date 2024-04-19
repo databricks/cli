@@ -59,7 +59,7 @@ func TestApplyWorkspaceRootPermissions(t *testing.T) {
 	workspaceApi.EXPECT().GetStatusByPath(mock.Anything, "/Users/foo@bar.com").Return(&workspace.ObjectInfo{
 		ObjectId: 1234,
 	}, nil)
-	workspaceApi.EXPECT().UpdatePermissions(mock.Anything, workspace.WorkspaceObjectPermissionsRequest{
+	workspaceApi.EXPECT().SetPermissions(mock.Anything, workspace.WorkspaceObjectPermissionsRequest{
 		AccessControlList: []workspace.WorkspaceObjectAccessControlRequest{
 			{UserName: "TestUser", PermissionLevel: "CAN_MANAGE"},
 			{GroupName: "TestGroup", PermissionLevel: "CAN_READ"},
@@ -69,6 +69,6 @@ func TestApplyWorkspaceRootPermissions(t *testing.T) {
 		WorkspaceObjectType: "directories",
 	}).Return(nil, nil)
 
-	diags := bundle.Apply(context.Background(), b, ApplyWorkspaceRootPermissions())
+	diags := bundle.Apply(context.Background(), b, ApplyFolderPermissions())
 	require.NoError(t, diags.Error())
 }

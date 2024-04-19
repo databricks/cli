@@ -49,9 +49,5 @@ func (m *selectTarget) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnosti
 	// TODO: remove when Environments section is not supported anymore.
 	b.Config.Bundle.Environment = b.Config.Bundle.Target
 
-	// Clear targets after loading.
-	b.Config.Targets = nil
-	b.Config.Environments = nil
-
 	return nil
 }

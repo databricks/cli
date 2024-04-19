@@ -33,7 +33,7 @@ func Deploy() bundle.Mutator {
 				files.Upload(),
 				deploy.StateUpdate(),
 				deploy.StatePush(),
-				permissions.ApplyWorkspaceRootPermissions(),
+				permissions.ApplyFolderPermissions(),
 				terraform.Interpolate(),
 				terraform.Write(),
 				deploy.CheckRunningResource(),

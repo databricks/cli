@@ -9,15 +9,15 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
-type workspaceRootPermissions struct {
+type applyFolderPermissions struct {
 }
 
-func ApplyWorkspaceRootPermissions() bundle.Mutator {
-	return &workspaceRootPermissions{}
+func ApplyFolderPermissions() bundle.Mutator {
+	return &applyFolderPermissions{}
 }
 
 // Apply implements bundle.Mutator.
-func (*workspaceRootPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (*applyFolderPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	err := giveAccessForWorkspaceRoot(ctx, b)
 	if err != nil {
 		return diag.FromErr(err)
@@ -26,8 +26,8 @@ func (*workspaceRootPermissions) Apply(ctx context.Context, b *bundle.Bundle) di
 	return nil
 }
 
-func (*workspaceRootPermissions) Name() string {
-	return "ApplyWorkspaceRootPermissions"
+func (*applyFolderPermissions) Name() string {
+	return "ApplyFolderPermissions"
 }
 
 func giveAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle) error {
@@ -57,7 +57,7 @@ func giveAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 
-	_, err = w.UpdatePermissions(ctx, workspace.WorkspaceObjectPermissionsRequest{
+	_, err = w.SetPermissions(ctx, workspace.WorkspaceObjectPermissionsRequest{
 		WorkspaceObjectId:   fmt.Sprint(obj.ObjectId),
 		WorkspaceObjectType: "directories",
 		AccessControlList:   permissions,
@@ -67,7 +67,7 @@ func giveAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle) error {
 
 func getWorkspaceObjectPermissionLevel(bundlePermission string) (workspace.WorkspaceObjectPermissionLevel, error) {
 	switch bundlePermission {
-	case CAN_MANAGE:
+	case CAN_MANAGE, IS_OWNER:
 		return workspace.WorkspaceObjectPermissionLevelCanManage, nil
 	case CAN_RUN:
 		return workspace.WorkspaceObjectPermissionLevelCanRun, nil
