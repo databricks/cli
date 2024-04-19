@@ -54,8 +54,10 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 				},
 			},
 		},
-		RunAs: &jobs.JobRunAs{
-			UserName: "bob",
+		RunAs: &config.RunAs{
+			JobRunAs: jobs.JobRunAs{
+				UserName: "bob",
+			},
 		},
 		Resources: config.Resources{
 			Jobs: map[string]*resources.Job{
@@ -145,8 +147,10 @@ func TestRunAsErrorForUnsupportedResources(t *testing.T) {
 				},
 			},
 		},
-		RunAs: &jobs.JobRunAs{
-			UserName: "bob",
+		RunAs: &config.RunAs{
+			JobRunAs: jobs.JobRunAs{
+				UserName: "bob",
+			},
 		},
 	}
 
