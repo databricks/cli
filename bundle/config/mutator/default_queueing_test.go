@@ -22,19 +22,17 @@ func TestName(t *testing.T) {
 }
 
 func TestApplyNoJobs(t *testing.T) {
-	m := DefaultQueueing().(*defaultQueueing)
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{},
 		},
 	}
-	d := m.Apply(context.Background(), b)
+	d := bundle.Apply(context.Background(), b, DefaultQueueing())
 	assert.Len(t, d, 0)
 	assert.Len(t, b.Config.Resources.Jobs, 0)
 }
 
 func TestApplyJobsAlreadyEnabled(t *testing.T) {
-	m := DefaultQueueing().(*defaultQueueing)
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
@@ -48,32 +46,28 @@ func TestApplyJobsAlreadyEnabled(t *testing.T) {
 			},
 		},
 	}
-	d := m.Apply(context.Background(), b)
+	d := bundle.Apply(context.Background(), b, DefaultQueueing())
 	assert.Len(t, d, 0)
 	assert.True(t, b.Config.Resources.Jobs["job"].Queue.Enabled)
 }
 
 func TestApplyEnableQueueing(t *testing.T) {
-	m := DefaultQueueing().(*defaultQueueing)
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
-					"job": {
-						JobSettings: &jobs.JobSettings{},
-					},
+					"job": {},
 				},
 			},
 		},
 	}
-	d := m.Apply(context.Background(), b)
+	d := bundle.Apply(context.Background(), b, DefaultQueueing())
 	assert.Len(t, d, 0)
 	assert.NotNil(t, b.Config.Resources.Jobs["job"].Queue)
 	assert.True(t, b.Config.Resources.Jobs["job"].Queue.Enabled)
 }
 
 func TestApplyWithMultipleJobs(t *testing.T) {
-	m := DefaultQueueing().(*defaultQueueing)
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
@@ -83,9 +77,7 @@ func TestApplyWithMultipleJobs(t *testing.T) {
 							Queue: &jobs.QueueSettings{Enabled: false},
 						},
 					},
-					"job2": {
-						JobSettings: &jobs.JobSettings{},
-					},
+					"job2": {},
 					"job3": {
 						JobSettings: &jobs.JobSettings{
 							Queue: &jobs.QueueSettings{Enabled: true},
@@ -95,7 +87,7 @@ func TestApplyWithMultipleJobs(t *testing.T) {
 			},
 		},
 	}
-	d := m.Apply(context.Background(), b)
+	d := bundle.Apply(context.Background(), b, DefaultQueueing())
 	assert.Len(t, d, 0)
 	assert.False(t, b.Config.Resources.Jobs["job1"].Queue.Enabled)
 	assert.True(t, b.Config.Resources.Jobs["job2"].Queue.Enabled)
