@@ -420,4 +420,7 @@ func TestUpgraderWorksForReleases(t *testing.T) {
 
 	r := internal.NewCobraTestRunnerWithContext(t, ctx, "labs", "upgrade", "blueprint")
 	r.RunAndExpectOutput("setting up important infrastructure")
+
+	// TODO: Need to process.WithStub here - work out the output before submitting the PR
+
 }
