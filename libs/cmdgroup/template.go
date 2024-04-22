@@ -11,4 +11,5 @@ const usageTemplate = `Usage:{{if .Command.Runnable}}
 {{.NonGroupedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .Command.HasAvailableInheritedFlags}}
 
 Global Flags:
-{{.Command.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}`
+{{.Command.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}
+`
