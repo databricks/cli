@@ -70,6 +70,21 @@ func TestArgsToKeyValueMap(t *testing.T) {
 			},
 			tail: []string{},
 		},
+		{
+			input: []string{"--foo=bar", "--baz="},
+			expected: map[string]string{
+				"foo": "bar",
+				"baz": "",
+			},
+			tail: []string{},
+		},
+		{
+			input: []string{"--foo=bar", "--baz"},
+			expected: map[string]string{
+				"foo": "bar",
+			},
+			tail: []string{"--baz"},
+		},
 	} {
 		actual, tail := argsToKeyValueMap(tc.input)
 		assert.Equal(t, tc.expected, actual)
