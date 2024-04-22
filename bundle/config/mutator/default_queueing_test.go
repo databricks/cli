@@ -51,7 +51,7 @@ func TestDefaultQueueingApplyJobsAlreadyEnabled(t *testing.T) {
 	assert.True(t, b.Config.Resources.Jobs["job"].Queue.Enabled)
 }
 
-func TestApplyEnableQueueing(t *testing.T) {
+func TestDefaultQueueingApplyEnableQueueing(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
