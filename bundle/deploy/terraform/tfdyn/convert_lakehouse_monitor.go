@@ -40,5 +40,5 @@ func (lakehouseMonitorConverter) Convert(ctx context.Context, key string, vin dy
 }
 
 func init() {
-	registerConverter("lakehouse_monitor", lakehouseMonitorConverter{})
+	registerConverter("lakehouse_monitors", lakehouseMonitorConverter{})
 }

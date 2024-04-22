@@ -148,6 +148,9 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Registered model 1
 	assert.Equal(t, "dev_lennart_registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
+
+	// Lakehouse monitor 1
+	assert.Equal(t, "lakehouseMonitor1", b.Config.Resources.LakehouseMonitors["lakehouseMonitor1"].FullName)
 }
 
 func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {
@@ -203,6 +206,7 @@ func TestProcessTargetModeDefault(t *testing.T) {
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
 	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
+	assert.Equal(t, "lakehouseMonitor1", b.Config.Resources.LakehouseMonitors["lakehouseMonitor1"].FullName)
 }
 
 func TestProcessTargetModeProduction(t *testing.T) {
@@ -243,6 +247,7 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
 	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
+	assert.Equal(t, "lakehouseMonitor1", b.Config.Resources.LakehouseMonitors["lakehouseMonitor1"].FullName)
 }
 
 func TestProcessTargetModeProductionOkForPrincipal(t *testing.T) {
