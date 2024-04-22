@@ -121,7 +121,7 @@ func setRunAsForJobs(b *bundle.Bundle) {
 	}
 }
 
-// Legacy behavior of run_as. Available under the experimental.use_run_as_legacy flag.
+// Legacy behavior of run_as for DLT pipelines. Available under the experimental.use_run_as_legacy flag.
 // Only available to unblock customers stuck due to breaking changes in https://github.com/databricks/cli/pull/1233
 func setPipelineOwnersToRunAsIdentity(b *bundle.Bundle) {
 	runAs := b.Config.RunAs
