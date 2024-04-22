@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 type Root struct {
@@ -57,7 +58,7 @@ type Root struct {
 	Sync Sync `json:"sync,omitempty"`
 
 	// RunAs section allows to define an execution identity for jobs and pipelines runs
-	RunAs *RunAs `json:"run_as,omitempty"`
+	RunAs *jobs.JobRunAs `json:"run_as,omitempty"`
 
 	Experimental *Experimental `json:"experimental,omitempty"`
 

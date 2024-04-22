@@ -3,7 +3,9 @@ bundle:
 
 run_as:
   service_principal_name: "my_service_principal"
-  use_legacy: true
+
+experimental:
+  use_legacy_run_as: true
 
 resources:
   jobs:
