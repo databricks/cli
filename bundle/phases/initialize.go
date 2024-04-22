@@ -38,6 +38,7 @@ func Initialize() bundle.Mutator {
 			mutator.SetRunAs(),
 			mutator.OverrideCompute(),
 			mutator.ProcessTargetMode(),
+			mutator.DefaultQueueing(),
 			mutator.ExpandPipelineGlobPaths(),
 			mutator.TranslatePaths(),
 			python.WrapperWarning(),

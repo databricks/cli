@@ -114,7 +114,7 @@ func TestRunAsErrorForPipelines(t *testing.T) {
 	err := diags.Error()
 
 	configPath := filepath.FromSlash("run_as/not_allowed/pipelines/databricks.yml")
-	assert.EqualError(t, err, fmt.Sprintf("pipelines are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. Location of the unsupported resource: %s:14:5. Current identity: jane@doe.com. Run as identity: my_service_principal", configPath))
+	assert.EqualError(t, err, fmt.Sprintf("pipelines are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. Please refer to the documentation at https://docs.databricks.com/dev-tools/bundles/run-as.html for more details. Location of the unsupported resource: %s:14:5. Current identity: jane@doe.com. Run as identity: my_service_principal", configPath))
 }
 
 func TestRunAsNoErrorForPipelines(t *testing.T) {
@@ -153,7 +153,7 @@ func TestRunAsErrorForModelServing(t *testing.T) {
 	err := diags.Error()
 
 	configPath := filepath.FromSlash("run_as/not_allowed/model_serving/databricks.yml")
-	assert.EqualError(t, err, fmt.Sprintf("model_serving_endpoints are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. Location of the unsupported resource: %s:14:5. Current identity: jane@doe.com. Run as identity: my_service_principal", configPath))
+	assert.EqualError(t, err, fmt.Sprintf("model_serving_endpoints are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. Please refer to the documentation at https://docs.databricks.com/dev-tools/bundles/run-as.html for more details. Location of the unsupported resource: %s:14:5. Current identity: jane@doe.com. Run as identity: my_service_principal", configPath))
 }
 
 func TestRunAsNoErrorForModelServingEndpoints(t *testing.T) {
