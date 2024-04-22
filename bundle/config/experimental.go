@@ -10,6 +10,19 @@ type Experimental struct {
 	// In this case the configured wheel task will be deployed as a notebook task which install defined wheel in runtime and executes it.
 	// For more details see https://github.com/databricks/cli/pull/797 and https://github.com/databricks/cli/pull/635
 	PythonWheelWrapper bool `json:"python_wheel_wrapper,omitempty"`
+
+	// Enable legacy run_as behavior. That is:
+	// - Set the run_as identity as the owner of any pipelines in the bundle.
+	// - Do not error in the presence of resources that do not support run_as.
+	//   As of April 2024 this includes pipelines and model serving endpoints.
+	//
+	// This mode of run_as requires the deploying user to be a workspace and metastore
+	// admin. Use of this flag is not recommend for new bundles, and it is only provided
+	// to unblock customers that are stuck due to breaking changes in the run_as behavior
+	// made in https://github.com/databricks/cli/pull/1233. This flag might
+	// be removed in the future once we have a proper workaround like allowing IS_OWNER
+	// as a top-level permission in the DAB.
+	UseLegacyRunAs bool `json:"use_legacy_run_as,omitempty"`
 }
 
 type Command string
