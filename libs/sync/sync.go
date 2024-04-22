@@ -216,10 +216,6 @@ func (s *Sync) GetFileList(ctx context.Context) ([]fileset.File, error) {
 	return all.Iter(), nil
 }
 
-func (s *Sync) DestroySnapshot(ctx context.Context) error {
-	return s.snapshot.Destroy(ctx)
-}
-
 func (s *Sync) SnapshotPath() string {
 	return s.snapshot.SnapshotPath
 }

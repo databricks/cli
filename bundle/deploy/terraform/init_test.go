@@ -399,7 +399,7 @@ func TestGetEnvVarWithMatchingVersion(t *testing.T) {
 	versionVarName := "FOO_VERSION"
 
 	tmp := t.TempDir()
-	testutil.Touch(t, tmp, "bar")
+	file := testutil.Touch(t, tmp, "bar")
 
 	var tc = []struct {
 		envValue       string
@@ -408,19 +408,19 @@ func TestGetEnvVarWithMatchingVersion(t *testing.T) {
 		expected       string
 	}{
 		{
-			envValue:       filepath.Join(tmp, "bar"),
+			envValue:       file,
 			versionValue:   "1.2.3",
 			currentVersion: "1.2.3",
-			expected:       filepath.Join(tmp, "bar"),
+			expected:       file,
 		},
 		{
-			envValue:       filepath.Join(tmp, "does-not-exist"),
+			envValue:       "does-not-exist",
 			versionValue:   "1.2.3",
 			currentVersion: "1.2.3",
 			expected:       "",
 		},
 		{
-			envValue:       filepath.Join(tmp, "bar"),
+			envValue:       file,
 			versionValue:   "1.2.3",
 			currentVersion: "1.2.4",
 			expected:       "",
@@ -432,10 +432,10 @@ func TestGetEnvVarWithMatchingVersion(t *testing.T) {
 			expected:       "",
 		},
 		{
-			envValue:       filepath.Join(tmp, "bar"),
+			envValue:       file,
 			versionValue:   "",
 			currentVersion: "1.2.3",
-			expected:       filepath.Join(tmp, "bar"),
+			expected:       file,
 		},
 	}
 

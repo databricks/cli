@@ -17,8 +17,16 @@ func TestCommandFlagGrouping(t *testing.T) {
 		},
 	}
 
+	parent := &cobra.Command{
+		Use: "parent",
+	}
+
+	parent.PersistentFlags().String("global", "", "Global flag")
+	parent.AddCommand(cmd)
+
 	wrappedCmd := NewCommandWithGroupFlag(cmd)
 	jobGroup := NewFlagGroup("Job")
+	jobGroup.SetDescription("Description.")
 	fs := jobGroup.FlagSet()
 	fs.String("job-name", "", "Name of the job")
 	fs.String("job-type", "", "Type of the job")
@@ -37,9 +45,10 @@ func TestCommandFlagGrouping(t *testing.T) {
 	cmd.Usage()
 
 	expected := `Usage:
-  test [flags]
+  parent test [flags]
 
 Job Flags:
+  Description.
       --job-name string   Name of the job
       --job-type string   Type of the job
 
@@ -48,7 +57,11 @@ Pipeline Flags:
       --pipeline-type string   Type of the pipeline
 
 Flags:
-  -b, --bool   Bool flag`
+  -b, --bool   Bool flag
+
+Global Flags:
+      --global string   Global flag
+`
 	require.Equal(t, expected, buf.String())
 
 	require.NotNil(t, cmd.Flags().Lookup("job-name"))
