@@ -32,7 +32,7 @@ func TestDefaultQueueingApplyNoJobs(t *testing.T) {
 	assert.Len(t, b.Config.Resources.Jobs, 0)
 }
 
-func TestApplyJobsAlreadyEnabled(t *testing.T) {
+func TestDefaultQueueingApplyJobsAlreadyEnabled(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
