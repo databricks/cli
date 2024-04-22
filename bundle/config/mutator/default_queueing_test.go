@@ -16,7 +16,7 @@ func TestDefaultQueueing(t *testing.T) {
 	assert.IsType(t, &defaultQueueing{}, m)
 }
 
-func TestName(t *testing.T) {
+func TestDefaultQueueingName(t *testing.T) {
 	m := DefaultQueueing()
 	assert.Equal(t, "DefaultQueueing", m.Name())
 }
