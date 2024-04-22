@@ -158,16 +158,15 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return nil
 	}
 
-	if b.Config.Experimental.UseLegacyRunAs {
+	if b.Config.Experimental != nil && b.Config.Experimental.UseLegacyRunAs {
 		setPipelineOwnersToRunAsIdentity(b)
 		setRunAsForJobs(b)
 		return diag.Diagnostics{
 			{
 				Severity: diag.Warning,
-				// TODO: Refine the warning message.
-				Summary:  "Using legacy mode of run_as. This mode changes the OWNER of a pipeline to the run_as identity. Changing the owner of a DLT pipeline requires the user deploying the bundle to be a workspace admin, and a metastore admin if the target is in UC.",
-				Path:     dyn.MustPathFromString("run_as.use_legacy"),
-				Location: b.Config.GetLocation("run_as.use_legacy"),
+				Summary:  "You are using the legacy mode of run_as. The support for this mode is experimental and might be removed in a future release of the CLI. In order to run the DLT pipelines in your DAB as the run_as user this mode changes the owners of the pipelines to the run_as identity, which requires the user deploying the bundle to be a workspace admin, and also a Metastore admin if the pipeline target is in UC.",
+				Path:     dyn.MustPathFromString("experimental.use_legacy_run_as"),
+				Location: b.Config.GetLocation("experimental.use_legacy_run_as"),
 			},
 		}
 	}
