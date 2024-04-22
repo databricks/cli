@@ -43,7 +43,7 @@ func runPythonWheelTest(t *testing.T, sparkVersion string, pythonWheelWrapper bo
 }
 
 func TestAccPythonWheelTaskDeployAndRunWithoutWrapper(t *testing.T) {
-	runPythonWheelTest(t, "13.2.x-snapshot-scala2.12", false)
+	runPythonWheelTest(t, "13.3.x-snapshot-scala2.12", false)
 }
 
 func TestAccPythonWheelTaskDeployAndRunWithWrapper(t *testing.T) {

@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -29,9 +30,16 @@ func (m *processTargetMode) Name() string {
 // Mark all resources as being for 'development' purposes, i.e.
 // changing their their name, adding tags, and (in the future)
 // marking them as 'hidden' in the UI.
-func transformDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
-	r := b.Config.Resources
+func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	if !b.Config.Bundle.Deployment.Lock.IsExplicitlyEnabled() {
+		log.Infof(ctx, "Development mode: disabling deployment lock since bundle.deployment.lock.enabled is not set to true")
+		err := disableDeploymentLock(b)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
 
+	r := b.Config.Resources
 	shortName := b.Config.Workspace.CurrentUser.ShortName
 	prefix := "[dev " + shortName + "] "
 
@@ -98,6 +106,14 @@ func transformDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
 	}
 
 	return nil
+}
+
+func disableDeploymentLock(b *bundle.Bundle) error {
+	return b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		return dyn.Map(v, "bundle.deployment.lock", func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
+			return dyn.Set(v, "enabled", dyn.V(false))
+		})
+	})
 }
 
 func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
@@ -178,7 +194,7 @@ func (m *processTargetMode) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 		if diags != nil {
 			return diags
 		}
-		return transformDevelopmentMode(b)
+		return transformDevelopmentMode(ctx, b)
 	case config.Production:
 		isPrincipal := auth.IsServicePrincipal(b.Config.Workspace.CurrentUser.UserName)
 		return validateProductionMode(ctx, b, isPrincipal)

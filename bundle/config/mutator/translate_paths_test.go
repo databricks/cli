@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -650,4 +651,46 @@ func TestPipelineFileLibraryWithNotebookSourceError(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.ErrorContains(t, diags.Error(), `expected a file for "resources.pipelines.pipeline.libraries[0].file.path" but got a notebook`)
+}
+
+func TestTranslatePathJobEnvironments(t *testing.T) {
+	dir := t.TempDir()
+	touchEmptyFile(t, filepath.Join(dir, "env1.py"))
+	touchEmptyFile(t, filepath.Join(dir, "env2.py"))
+
+	b := &bundle.Bundle{
+		RootPath: dir,
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job": {
+						JobSettings: &jobs.JobSettings{
+							Environments: []jobs.JobEnvironment{
+								{
+									Spec: &compute.Environment{
+										Dependencies: []string{
+											"./dist/env1.whl",
+											"../dist/env2.whl",
+											"simplejson",
+											"/Workspace/Users/foo@bar.com/test.whl",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	bundletest.SetLocation(b, "resources.jobs", filepath.Join(dir, "job/resource.yml"))
+
+	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
+	require.NoError(t, diags.Error())
+
+	assert.Equal(t, strings.Join([]string{".", "job", "dist", "env1.whl"}, string(os.PathSeparator)), b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[0])
+	assert.Equal(t, strings.Join([]string{".", "dist", "env2.whl"}, string(os.PathSeparator)), b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[1])
+	assert.Equal(t, "simplejson", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[2])
+	assert.Equal(t, "/Workspace/Users/foo@bar.com/test.whl", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[3])
 }

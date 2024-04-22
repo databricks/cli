@@ -26,7 +26,7 @@ func Deploy() bundle.Mutator {
 				terraform.StatePull(),
 				deploy.StatePull(),
 				mutator.ValidateGitDetails(),
-				libraries.MatchWithArtifacts(),
+				libraries.ValidateLocalLibrariesExist(),
 				artifacts.CleanUp(),
 				artifacts.UploadAll(),
 				python.TransformWheelTask(),

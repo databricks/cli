@@ -12,7 +12,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts/whl"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
@@ -117,8 +116,6 @@ func (m *basicUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 }
 
 func uploadArtifact(ctx context.Context, b *bundle.Bundle, a *config.Artifact, uploadPath string, client filer.Filer) error {
-	filesToLibraries := libraries.MapFilesToTaskLibraries(ctx, b)
-
 	for i := range a.Files {
 		f := &a.Files[i]
 
@@ -133,29 +130,57 @@ func uploadArtifact(ctx context.Context, b *bundle.Bundle, a *config.Artifact, u
 		log.Infof(ctx, "Upload succeeded")
 		f.RemotePath = path.Join(uploadPath, filepath.Base(f.Source))
 
-		// Lookup all tasks that reference this file.
-		libs, ok := filesToLibraries[f.Source]
-		if !ok {
-			log.Debugf(ctx, "No tasks reference %s", f.Source)
-			continue
-		}
+		// TODO: confirm if we still need to update the remote path to start with /Workspace
+		wsfsBase := "/Workspace"
+		remotePath := path.Join(wsfsBase, f.RemotePath)
 
-		// Update all tasks that reference this file.
-		for _, lib := range libs {
-			wsfsBase := "/Workspace"
-			remotePath := path.Join(wsfsBase, f.RemotePath)
-			if lib.Whl != "" {
-				lib.Whl = remotePath
-				continue
+		for _, job := range b.Config.Resources.Jobs {
+			for i := range job.Tasks {
+				task := &job.Tasks[i]
+				for j := range task.Libraries {
+					lib := &task.Libraries[j]
+					if lib.Whl != "" && isArtifactMatchLibrary(f, lib.Whl, b) {
+						lib.Whl = remotePath
+					}
+					if lib.Jar != "" && isArtifactMatchLibrary(f, lib.Jar, b) {
+						lib.Jar = remotePath
+					}
+				}
 			}
-			if lib.Jar != "" {
-				lib.Jar = remotePath
-				continue
+
+			for i := range job.Environments {
+				env := &job.Environments[i]
+				for j := range env.Spec.Dependencies {
+					lib := env.Spec.Dependencies[j]
+					if isArtifactMatchLibrary(f, lib, b) {
+						env.Spec.Dependencies[j] = remotePath
+					}
+				}
 			}
 		}
 	}
 
 	return nil
+}
+
+func isArtifactMatchLibrary(f *config.ArtifactFile, libPath string, b *bundle.Bundle) bool {
+	if !filepath.IsAbs(libPath) {
+		libPath = filepath.Join(b.RootPath, libPath)
+	}
+
+	// libPath can be a glob pattern, so do the match first
+	matches, err := filepath.Glob(libPath)
+	if err != nil {
+		return false
+	}
+
+	for _, m := range matches {
+		if m == f.Source {
+			return true
+		}
+	}
+
+	return false
 }
 
 // Function to upload artifact file to Workspace

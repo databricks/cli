@@ -104,7 +104,7 @@ func (t *pythonTrampoline) GetTasks(b *bundle.Bundle) []mutator.TaskWithJobKey {
 			// At this point of moment we don't have local paths in Libraries sections anymore
 			// Local paths have been replaced with the remote when the artifacts where uploaded
 			// in artifacts.UploadAll mutator.
-			if task.PythonWheelTask == nil || !needsTrampoline(task) {
+			if task.PythonWheelTask == nil || !needsTrampoline(*task) {
 				continue
 			}
 
@@ -117,7 +117,7 @@ func (t *pythonTrampoline) GetTasks(b *bundle.Bundle) []mutator.TaskWithJobKey {
 	return result
 }
 
-func needsTrampoline(task *jobs.Task) bool {
+func needsTrampoline(task jobs.Task) bool {
 	return libraries.IsTaskWithWorkspaceLibraries(task)
 }
 
