@@ -38,10 +38,14 @@ func IsLocalPath(p string) bool {
 	return !path.IsAbs(p)
 }
 
+// IsEnvironmentDependencyLocal returns true if the specified dependency
+// should be interpreted as a local path.
+// We use this to check if the dependency in environment spec is local.
+// We can't use IsLocalPath beacuse environment dependencies can be
+// a pypi package name which can be misinterpreted as a local path by IsLocalPath.
 func IsEnvironmentDependencyLocal(dep string) bool {
 	possiblePrefixes := []string{
 		".",
-		"..",
 	}
 
 	for _, prefix := range possiblePrefixes {
