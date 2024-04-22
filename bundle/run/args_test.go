@@ -31,6 +31,11 @@ func TestArgsToKeyValueMap(t *testing.T) {
 		err      error
 	}{
 		{
+			input:    []string{},
+			expected: map[string]string{},
+			tail:     []string{},
+		},
+		{
 			input: []string{"--foo=bar", "--baz", "qux"},
 			expected: map[string]string{
 				"foo": "bar",
