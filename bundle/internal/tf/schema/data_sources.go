@@ -17,6 +17,8 @@ type DataSources struct {
 	DbfsFile              map[string]any `json:"databricks_dbfs_file,omitempty"`
 	DbfsFilePaths         map[string]any `json:"databricks_dbfs_file_paths,omitempty"`
 	Directory             map[string]any `json:"databricks_directory,omitempty"`
+	ExternalLocation      map[string]any `json:"databricks_external_location,omitempty"`
+	ExternalLocations     map[string]any `json:"databricks_external_locations,omitempty"`
 	Group                 map[string]any `json:"databricks_group,omitempty"`
 	InstancePool          map[string]any `json:"databricks_instance_pool,omitempty"`
 	InstanceProfiles      map[string]any `json:"databricks_instance_profiles,omitempty"`
@@ -64,6 +66,8 @@ func NewDataSources() *DataSources {
 		DbfsFile:              make(map[string]any),
 		DbfsFilePaths:         make(map[string]any),
 		Directory:             make(map[string]any),
+		ExternalLocation:      make(map[string]any),
+		ExternalLocations:     make(map[string]any),
 		Group:                 make(map[string]any),
 		InstancePool:          make(map[string]any),
 		InstanceProfiles:      make(map[string]any),
