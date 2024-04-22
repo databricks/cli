@@ -30,28 +30,45 @@ func (*fromLibraries) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 	tasks := libraries.FindAllWheelTasksWithLocalLibraries(b)
 	for _, task := range tasks {
 		for _, lib := range task.Libraries {
-			matches, err := filepath.Glob(filepath.Join(b.RootPath, lib.Whl))
-			// File referenced from libraries section does not exists, skipping
-			if err != nil {
-				continue
-			}
+			matchAndAdd(ctx, lib.Whl, b)
+		}
+	}
 
-			for _, match := range matches {
-				name := filepath.Base(match)
-				if b.Config.Artifacts == nil {
-					b.Config.Artifacts = make(map[string]*config.Artifact)
-				}
-
-				log.Debugf(ctx, "Adding an artifact block for %s", match)
-				b.Config.Artifacts[name] = &config.Artifact{
-					Files: []config.ArtifactFile{
-						{Source: match},
-					},
-					Type: config.ArtifactPythonWheel,
+	envs := libraries.FindAllEnvironments(b)
+	for _, jobEnvs := range envs {
+		for _, env := range jobEnvs {
+			if env.Spec != nil {
+				for _, dep := range env.Spec.Dependencies {
+					if libraries.IsEnvironmentDependencyLocal(dep) {
+						matchAndAdd(ctx, dep, b)
+					}
 				}
 			}
 		}
 	}
 
 	return nil
+}
+
+func matchAndAdd(ctx context.Context, lib string, b *bundle.Bundle) {
+	matches, err := filepath.Glob(filepath.Join(b.RootPath, lib))
+	// File referenced from libraries section does not exists, skipping
+	if err != nil {
+		return
+	}
+
+	for _, match := range matches {
+		name := filepath.Base(match)
+		if b.Config.Artifacts == nil {
+			b.Config.Artifacts = make(map[string]*config.Artifact)
+		}
+
+		log.Debugf(ctx, "Adding an artifact block for %s", match)
+		b.Config.Artifacts[name] = &config.Artifact{
+			Files: []config.ArtifactFile{
+				{Source: match},
+			},
+			Type: config.ArtifactPythonWheel,
+		}
+	}
 }

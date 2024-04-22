@@ -2,44 +2,77 @@ package libraries
 
 import (
 	"context"
+	"fmt"
+	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 type match struct {
 }
 
-func MatchWithArtifacts() bundle.Mutator {
+func ValidateLocalLibrariesExist() bundle.Mutator {
 	return &match{}
 }
 
 func (a *match) Name() string {
-	return "libraries.MatchWithArtifacts"
+	return "libraries.ValidateLocalLibrariesExist"
 }
 
 func (a *match) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	tasks := findAllTasks(b)
-	for _, task := range tasks {
-		if isMissingRequiredLibraries(task) {
-			return diag.Errorf("task '%s' is missing required libraries. Please include your package code in task libraries block", task.TaskKey)
+	for _, job := range b.Config.Resources.Jobs {
+		err := validateEnvironments(job.Environments, b)
+		if err != nil {
+			return diag.FromErr(err)
 		}
-		for j := range task.Libraries {
-			lib := &task.Libraries[j]
-			_, err := findArtifactFiles(ctx, lib, b)
+
+		for _, task := range job.JobSettings.Tasks {
+			err := validateTaskLibraries(task.Libraries, b)
 			if err != nil {
 				return diag.FromErr(err)
 			}
 		}
 	}
+
 	return nil
 }
 
-func isMissingRequiredLibraries(task *jobs.Task) bool {
-	if task.Libraries != nil {
-		return false
+func validateTaskLibraries(libs []compute.Library, b *bundle.Bundle) error {
+	for _, lib := range libs {
+		path := libraryPath(&lib)
+		if path == "" || !IsLocalPath(path) {
+			continue
+		}
+
+		matches, err := filepath.Glob(filepath.Join(b.RootPath, path))
+		if err != nil {
+			return err
+		}
+
+		if len(matches) == 0 {
+			return fmt.Errorf("file %s is referenced in libraries section but doesn't exist on the local file system", libraryPath(&lib))
+		}
 	}
 
-	return task.PythonWheelTask != nil || task.SparkJarTask != nil
+	return nil
+}
+
+func validateEnvironments(envs []jobs.JobEnvironment, b *bundle.Bundle) error {
+	for _, env := range envs {
+		for _, dep := range env.Spec.Dependencies {
+			matches, err := filepath.Glob(filepath.Join(b.RootPath, dep))
+			if err != nil {
+				return err
+			}
+
+			if len(matches) == 0 && IsEnvironmentDependencyLocal(dep) {
+				return fmt.Errorf("file %s is referenced in environments section but doesn't exist on the local file system", dep)
+			}
+		}
+	}
+
+	return nil
 }
