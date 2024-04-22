@@ -21,7 +21,7 @@ func TestDefaultQueueingName(t *testing.T) {
 	assert.Equal(t, "DefaultQueueing", m.Name())
 }
 
-func TestApplyNoJobs(t *testing.T) {
+func TestDefaultQueueingApplyNoJobs(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{},
