@@ -36,6 +36,10 @@ hashicorp/terraform-json - https://github.com/hashicorp/terraform-json
 Copyright 2019 HashiCorp, Inc.
 License - https://github.com/hashicorp/terraform-json/blob/main/LICENSE
 
+hashicorp/terraform - https://github.com/hashicorp/terraform
+Copyright 2014 HashiCorp, Inc.
+License - https://github.com/hashicorp/terraform/blob/v1.5.5/LICENSE
+
 ---
 
 This software contains code from the following open source projects, licensed under the BSD (2-clause) license:

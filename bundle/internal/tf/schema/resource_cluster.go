@@ -32,6 +32,10 @@ type ResourceClusterAzureAttributes struct {
 	LogAnalyticsInfo *ResourceClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
 }
 
+type ResourceClusterCloneFrom struct {
+	SourceClusterId string `json:"source_cluster_id"`
+}
+
 type ResourceClusterClusterLogConfDbfs struct {
 	Destination string `json:"destination"`
 }
@@ -190,6 +194,7 @@ type ResourceCluster struct {
 	Autoscale                 *ResourceClusterAutoscale         `json:"autoscale,omitempty"`
 	AwsAttributes             *ResourceClusterAwsAttributes     `json:"aws_attributes,omitempty"`
 	AzureAttributes           *ResourceClusterAzureAttributes   `json:"azure_attributes,omitempty"`
+	CloneFrom                 *ResourceClusterCloneFrom         `json:"clone_from,omitempty"`
 	ClusterLogConf            *ResourceClusterClusterLogConf    `json:"cluster_log_conf,omitempty"`
 	ClusterMountInfo          []ResourceClusterClusterMountInfo `json:"cluster_mount_info,omitempty"`
 	DockerImage               *ResourceClusterDockerImage       `json:"docker_image,omitempty"`
