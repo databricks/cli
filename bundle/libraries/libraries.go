@@ -15,14 +15,14 @@ func findAllTasks(b *bundle.Bundle) map[string]([]jobs.Task) {
 	return result
 }
 
-func findAllEnvironments(b *bundle.Bundle) map[string]([]jobs.JobEnvironment) {
+func FindAllEnvironments(b *bundle.Bundle) map[string]([]jobs.JobEnvironment) {
 	jobEnvs := make(map[string]([]jobs.JobEnvironment), 0)
-	for _, job := range b.Config.Resources.Jobs {
+	for jobKey, job := range b.Config.Resources.Jobs {
 		if len(job.Environments) == 0 {
 			continue
 		}
 
-		jobEnvs[job.Name] = job.Environments
+		jobEnvs[jobKey] = job.Environments
 	}
 
 	return jobEnvs
@@ -42,7 +42,7 @@ func isEnvsWithLocalLibraries(envs []jobs.JobEnvironment) bool {
 
 func FindAllWheelTasksWithLocalLibraries(b *bundle.Bundle) []*jobs.Task {
 	tasks := findAllTasks(b)
-	envs := findAllEnvironments(b)
+	envs := FindAllEnvironments(b)
 
 	wheelTasks := make([]*jobs.Task, 0)
 	for k, jobTasks := range tasks {

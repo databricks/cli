@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -688,8 +689,8 @@ func TestTranslatePathJobEnvironments(t *testing.T) {
 	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	require.NoError(t, diags.Error())
 
-	assert.Equal(t, filepath.Join("job", "dist", "env1.whl"), b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[0])
-	assert.Equal(t, filepath.Join("dist", "env2.whl"), b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[1])
+	assert.Equal(t, strings.Join([]string{".", "job", "dist", "env1.whl"}, string(os.PathSeparator)), b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[0])
+	assert.Equal(t, strings.Join([]string{".", "dist", "env2.whl"}, string(os.PathSeparator)), b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[1])
 	assert.Equal(t, "simplejson", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[2])
 	assert.Equal(t, "/Workspace/Users/foo@bar.com/test.whl", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[3])
 }

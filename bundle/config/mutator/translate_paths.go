@@ -152,6 +152,13 @@ func translateNoOp(literal, localFullPath, localRelPath, remotePath string) (str
 	return localRelPath, nil
 }
 
+func translateNoOpWithPrefix(literal, localFullPath, localRelPath, remotePath string) (string, error) {
+	if !strings.HasPrefix(localRelPath, ".") {
+		localRelPath = "." + string(filepath.Separator) + localRelPath
+	}
+	return localRelPath, nil
+}
+
 func (m *translatePaths) rewriteValue(b *bundle.Bundle, p dyn.Path, v dyn.Value, fn rewriteFunc, dir string) (dyn.Value, error) {
 	out := v.MustString()
 	err := m.rewritePath(dir, b, &out, fn)

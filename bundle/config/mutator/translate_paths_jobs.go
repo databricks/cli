@@ -97,7 +97,7 @@ func (m *translatePaths) applyJobTranslations(b *bundle.Bundle, v dyn.Value) (dy
 				dyn.Key("dependencies"),
 				dyn.AnyIndex(),
 			),
-			translateNoOp,
+			translateNoOpWithPrefix,
 			func(s string) bool {
 				return !libraries.IsEnvironmentDependencyLocal(s)
 			},

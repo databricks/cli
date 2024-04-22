@@ -24,6 +24,7 @@ func convertJobResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 		"tasks":        "task",
 		"job_clusters": "job_cluster",
 		"parameters":   "parameter",
+		"environments": "environment",
 	})
 	if err != nil {
 		return dyn.InvalidValue, err
