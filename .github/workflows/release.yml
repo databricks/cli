@@ -84,7 +84,7 @@ jobs:
         with:
           github-token: ${{ secrets.DECO_GITHUB_TOKEN }}
           script: |
-            let artifacts = JSON.parse('${{ needs.goreleaser.outputs.artifacts }}')
+            let artifacts = ${{ needs.goreleaser.outputs.artifacts }}
             artifacts = artifacts.filter(a => a.type == "Archive")
             artifacts = new Map(
               artifacts.map(a => [
