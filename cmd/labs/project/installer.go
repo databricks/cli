@@ -136,6 +136,10 @@ func (i *installer) Upgrade(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("installer: %w", err)
 	}
+	err = i.installPythonDependencies(ctx, ".")
+	if err != nil {
+		return fmt.Errorf("python dependencies: %w", err)
+	}
 	return nil
 }
 
