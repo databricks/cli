@@ -412,7 +412,8 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 
 			case dyn.KindString, dyn.KindBool, dyn.KindFloat, dyn.KindInt:
 				// Rewrite the variable to a map with a single key called "default".
-				// This conforms to the variable type.
+				// This conforms to the variable type. Normalization back to the typed
+				// configuration will convert this to a string if necessary.
 				return dyn.NewValue(map[string]dyn.Value{
 					"default": variable,
 				}, variable.Location()), nil
