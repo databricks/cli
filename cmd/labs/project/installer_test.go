@@ -403,6 +403,12 @@ func TestUpgraderWorksForReleases(t *testing.T) {
 	newHome := copyTestdata(t, "testdata/installed-in-home")
 	ctx = env.WithUserHomeDir(ctx, newHome)
 
+	// Install stubs for the python calls we need to ensure were run in the
+	// upgrade process.
+	ctx, stub := process.WithStub(ctx)
+	stub.WithStderrFor(`python[\S]+ -m pip install .`, "[mock pip install]")
+	stub.WithStdoutFor(`python[\S]+ install.py`, "setting up important infrastructure")
+
 	py, _ := python.DetectExecutable(ctx)
 	py, _ = filepath.Abs(py)
 	ctx = env.Set(ctx, "PYTHON_BIN", py)
@@ -421,6 +427,16 @@ func TestUpgraderWorksForReleases(t *testing.T) {
 	r := internal.NewCobraTestRunnerWithContext(t, ctx, "labs", "upgrade", "blueprint")
 	r.RunAndExpectOutput("setting up important infrastructure")
 
-	// TODO: Need to process.WithStub here - work out the output before submitting the PR
-
+	// Check if the stub was called with the 'python -m pip install' command
+	pi := false
+	for _, call := range stub.Commands() {
+		if strings.HasSuffix(call, "-m pip install .") {
+			pi = true
+			break
+		}
+	}
+	if !pi {
+		t.Logf(`Expected stub command 'python[\S]+ -m pip install .' not found`)
+		t.FailNow()
+	}
 }
