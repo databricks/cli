@@ -408,15 +408,18 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 
 		// For each variable, normalize its contents if it is a single string.
 		return dyn.Map(target, "variables", dyn.Foreach(func(_ dyn.Path, variable dyn.Value) (dyn.Value, error) {
-			if variable.Kind() != dyn.KindString {
+			switch variable.Kind() {
+
+			case dyn.KindString, dyn.KindBool, dyn.KindFloat, dyn.KindInt:
+				// Rewrite the variable to a map with a single key called "default".
+				// This conforms to the variable type.
+				return dyn.NewValue(map[string]dyn.Value{
+					"default": variable,
+				}, variable.Location()), nil
+
+			default:
 				return variable, nil
 			}
-
-			// Rewrite the variable to a map with a single key called "default".
-			// This conforms to the variable type.
-			return dyn.NewValue(map[string]dyn.Value{
-				"default": variable,
-			}, variable.Location()), nil
 		}))
 	}))
 }
