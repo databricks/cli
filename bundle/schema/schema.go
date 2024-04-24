@@ -48,61 +48,7 @@ func New(golangType reflect.Type, docs *Docs) (*jsonschema.Schema, error) {
 	if err != nil {
 		return nil, tracker.errWithTrace(err.Error(), "root")
 	}
-
-	err = overrideVariables(schema)
-	if err != nil {
-		return nil, err
-	}
-
 	return schema, nil
-}
-
-func overrideVariables(s *jsonschema.Schema) error {
-	// Override schema for default values to allow for multiple primitive types.
-	// These are normalized to strings when converted to the typed representation.
-	err := s.SetByPath("variables.*.default", jsonschema.Schema{
-		AnyOf: []*jsonschema.Schema{
-			{
-				Type: jsonschema.StringType,
-			},
-			{
-				Type: jsonschema.BooleanType,
-			},
-			{
-				Type: jsonschema.NumberType,
-			},
-			{
-				Type: jsonschema.IntegerType,
-			},
-		},
-	})
-	if err != nil {
-		return err
-	}
-
-	// Override schema for variables in targets to allow just specifying the value
-	// along side overriding the variable definition if needed.
-	ns, err := s.GetByPath("variables.*")
-	if err != nil {
-		return err
-	}
-	return s.SetByPath("targets.*.variables.*", jsonschema.Schema{
-		AnyOf: []*jsonschema.Schema{
-			{
-				Type: jsonschema.StringType,
-			},
-			{
-				Type: jsonschema.BooleanType,
-			},
-			{
-				Type: jsonschema.NumberType,
-			},
-			{
-				Type: jsonschema.IntegerType,
-			},
-			&ns,
-		},
-	})
 }
 
 func jsonSchemaType(golangType reflect.Type) (jsonschema.Type, error) {
