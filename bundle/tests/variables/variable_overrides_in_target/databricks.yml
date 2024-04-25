@@ -1,0 +1,41 @@
+bundle:
+  name: foobar
+
+resources:
+  pipelines:
+    my_pipeline:
+      name: ${var.foo}
+      continuous: ${var.baz}
+      clusters:
+        - num_workers: ${var.bar}
+
+
+
+variables:
+  foo:
+    default: "a_string"
+    description: "A string variable"
+
+  bar:
+    default: 42
+    description: "An integer variable"
+
+  baz:
+    default: true
+    description: "A boolean variable"
+
+targets:
+  use-default-variable-values:
+
+  override-string-variable:
+    variables:
+      foo: "overridden_string"
+
+  override-int-variable:
+    variables:
+      bar: 43
+
+  override-both-bool-and-string-variables:
+    variables:
+      foo: "overridden_string"
+      baz: false
