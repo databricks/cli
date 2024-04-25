@@ -1,35 +1,42 @@
+# This is a Databricks asset bundle definition for my_project.
+# See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
 bundle:
-  name: bundle_permissions
+  name: default_python
 
-permissions:
-  - level: CAN_RUN
-    user_name: test@company.com
+include:
+  - resources/*.yml
 
 targets:
-  development:
+  # The 'dev' target, for development purposes. This target is the default.
+  dev:
+    # We use 'mode: development' to indicate this is a personal development copy:
+    # - Deployed resources get prefixed with '[dev my_user_name]'
+    # - Any job schedules and triggers are paused by default
+    # - The 'development' mode is used for Delta Live Tables pipelines
+    mode: development
+    default: true
+    workspace:
+      host: https://myworkspace.databricks.com
+
+  ## Optionally, there could be a 'staging' target here.
+  ## (See Databricks docs on CI/CD at https://docs.databricks.com/dev-tools/bundles/ci-cd.html.)
+  #
+  # staging:
+  #  workspace:
+  #    host: https://myworkspace.databricks.com
+
+  # The 'prod' target, used for production deployment.
+  prod:
+    # We use 'mode: production' to indicate this is a production deployment.
+    # Doing so enables strict verification of the settings below.
+    mode: production
+    workspace:
+      host: https://e2-dogfood.staging.cloud.databricks.com
+      # We always use /Users/user@company.com for all resources to make sure we only have a single copy.
+      # If this path results in an error, please make sure you have a recent version of the CLI installed.
+      root_path: /Users/user@company.com/.bundle/${bundle.name}/${bundle.target}
+    run_as:
+      user_name: user@company.com
     permissions:
       - level: CAN_MANAGE
-        group_name: devs
-      - level: CAN_VIEW
-        service_principal_name: 1234-abcd
-      - level: CAN_RUN
-        user_name: bot@company.com
-
-resources:
-  pipelines:
-    nyc_taxi_pipeline:
-      target: nyc_taxi_production
-      development: false
-      photon: true
-
-  jobs:
-    pipeline_schedule:
-      name: Daily refresh of production pipeline
-
-      schedule:
-        quartz_cron_expression: 6 6 11 * * ?
-        timezone_id: UTC
-
-      tasks:
-        - pipeline_task:
-            pipeline_id: "to be interpolated"
+        group_name: data_scientists@company.com

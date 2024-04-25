@@ -1,5 +1,49 @@
 # Version changelog
 
+## 0.218.0
+
+This release marks the general availability of Databricks Asset Bundles.
+
+CLI:
+ * Publish Docker images ([#1353](https://github.com/databricks/cli/pull/1353)).
+ * Add support for multi-arch Docker images ([#1362](https://github.com/databricks/cli/pull/1362)).
+ * Do not prefill https:// in prompt for Databricks Host ([#1364](https://github.com/databricks/cli/pull/1364)).
+ * Add better documentation for the `auth login` command ([#1366](https://github.com/databricks/cli/pull/1366)).
+ * Add URLs for authentication documentation to the auth command help ([#1365](https://github.com/databricks/cli/pull/1365)).
+
+Bundles:
+ * Fix compute override for foreach tasks ([#1357](https://github.com/databricks/cli/pull/1357)).
+ * Transform artifact files source patterns in build not upload stage ([#1359](https://github.com/databricks/cli/pull/1359)).
+ * Convert between integer and float in normalization ([#1371](https://github.com/databricks/cli/pull/1371)).
+ * Disable locking for development mode ([#1302](https://github.com/databricks/cli/pull/1302)).
+ * Resolve variable references inside variable lookup fields ([#1368](https://github.com/databricks/cli/pull/1368)).
+ * Added validate mutator to surface additional bundle warnings ([#1352](https://github.com/databricks/cli/pull/1352)).
+ * Upgrade terraform-provider-databricks to 1.40.0 ([#1376](https://github.com/databricks/cli/pull/1376)).
+ * Print host in `bundle validate` when passed via profile or environment variables ([#1378](https://github.com/databricks/cli/pull/1378)).
+ * Cleanup remote file path on bundle destroy ([#1374](https://github.com/databricks/cli/pull/1374)).
+ * Add docs URL for `run_as` in error message ([#1381](https://github.com/databricks/cli/pull/1381)).
+ * Enable job queueing by default ([#1385](https://github.com/databricks/cli/pull/1385)).
+ * Added support for job environments ([#1379](https://github.com/databricks/cli/pull/1379)).
+ * Processing and completion of positional args to bundle run ([#1120](https://github.com/databricks/cli/pull/1120)).
+ * Add legacy option for `run_as` ([#1384](https://github.com/databricks/cli/pull/1384)).
+
+API Changes:
+ * Changed `databricks lakehouse-monitors cancel-refresh` command with new required argument order.
+ * Changed `databricks lakehouse-monitors create` command with new required argument order.
+ * Changed `databricks lakehouse-monitors delete` command with new required argument order.
+ * Changed `databricks lakehouse-monitors get` command with new required argument order.
+ * Changed `databricks lakehouse-monitors get-refresh` command with new required argument order.
+ * Changed `databricks lakehouse-monitors list-refreshes` command with new required argument order.
+ * Changed `databricks lakehouse-monitors run-refresh` command with new required argument order.
+ * Changed `databricks lakehouse-monitors update` command with new required argument order.
+ * Changed `databricks account workspace-assignment update` command to return response.
+
+OpenAPI commit 94684175b8bd65f8701f89729351f8069e8309c9 (2024-04-11)
+
+Dependency updates:
+ * Bump github.com/databricks/databricks-sdk-go from 0.37.0 to 0.38.0 ([#1361](https://github.com/databricks/cli/pull/1361)).
+ * Bump golang.org/x/net from 0.22.0 to 0.23.0 ([#1380](https://github.com/databricks/cli/pull/1380)).
+
 ## 0.217.1
 
 CLI:

@@ -24,16 +24,20 @@ func TestSourceFileIsNotNotebook(t *testing.T) {
 
 func TestUnknownFileDetectsNotebook(t *testing.T) {
 	tmpDir := t.TempDir()
-	testutil.Touch(t, tmpDir, "test.py")
-	testutil.TouchNotebook(t, tmpDir, "notebook.py")
 
-	f := NewFile(nil, filepath.Join(tmpDir, "test.py"), "test.py")
-	isNotebook, err := f.IsNotebook()
-	require.NoError(t, err)
-	require.False(t, isNotebook)
+	t.Run("file", func(t *testing.T) {
+		path := testutil.Touch(t, tmpDir, "test.py")
+		f := NewFile(nil, path, filepath.Base(path))
+		isNotebook, err := f.IsNotebook()
+		require.NoError(t, err)
+		require.False(t, isNotebook)
+	})
 
-	f = NewFile(nil, filepath.Join(tmpDir, "notebook.py"), "notebook.py")
-	isNotebook, err = f.IsNotebook()
-	require.NoError(t, err)
-	require.True(t, isNotebook)
+	t.Run("notebook", func(t *testing.T) {
+		path := testutil.TouchNotebook(t, tmpDir, "notebook.py")
+		f := NewFile(nil, path, filepath.Base(path))
+		isNotebook, err := f.IsNotebook()
+		require.NoError(t, err)
+		require.True(t, isNotebook)
+	})
 }

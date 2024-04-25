@@ -25,7 +25,7 @@ func (m *wrapperWarning) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	}
 
 	if hasIncompatibleWheelTasks(ctx, b) {
-		return diag.Errorf("python wheel tasks with local libraries require compute with DBR 13.1+. Please change your cluster configuration or set experimental 'python_wheel_wrapper' setting to 'true'")
+		return diag.Errorf("Python wheel tasks require compute with DBR 13.3+ to include local libraries. Please change your cluster configuration or use the experimental 'python_wheel_wrapper' setting. See https://docs.databricks.com/dev-tools/bundles/python-wheel.html for more information.")
 	}
 	return nil
 }
