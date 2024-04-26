@@ -53,8 +53,6 @@ func setVariable(ctx context.Context, v *variable.Variable, name string) diag.Di
 	}
 
 	// We should have had a value to set for the variable at this point.
-	// TODO: use cmdio to request values for unassigned variables if current
-	// terminal is a tty. Tracked in https://github.com/databricks/cli/issues/379
 	return diag.Errorf(`no value assigned to required variable %s. Assignment can be done through the "--var" flag or by setting the %s environment variable`, name, bundleVarPrefix+name)
 }
 

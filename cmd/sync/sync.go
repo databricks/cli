@@ -30,7 +30,7 @@ func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, args []string, b *
 		return nil, fmt.Errorf("SRC and DST are not configurable in the context of a bundle")
 	}
 
-	opts, err := files.GetSyncOptions(cmd.Context(), b)
+	opts, err := files.GetSyncOptions(cmd.Context(), bundle.ReadOnly(b))
 	if err != nil {
 		return nil, fmt.Errorf("cannot get sync options: %w", err)
 	}

@@ -8,6 +8,7 @@ import (
 	"text/template"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
@@ -47,7 +48,7 @@ const warningTemplate = `{{ "Warning" | yellow }}: {{ .Summary }}
 const summaryTemplate = `Name: {{ .Config.Bundle.Name | bold }}
 Target: {{ .Config.Bundle.Target | bold }}
 Workspace:
-  Host: {{ .Config.Workspace.Host | bold }}
+  Host: {{ .WorkspaceClient.Config.Host | bold }}
   User: {{ .Config.Workspace.CurrentUser.UserName | bold }}
   Path: {{ .Config.Workspace.RootPath | bold }}
 
@@ -106,8 +107,9 @@ func renderTextOutput(cmd *cobra.Command, b *bundle.Bundle, diags diag.Diagnosti
 	// Print validation summary.
 	t := template.Must(template.New("summary").Funcs(validateFuncMap).Parse(summaryTemplate))
 	err := t.Execute(cmd.OutOrStdout(), map[string]any{
-		"Config":  b.Config,
-		"Trailer": buildTrailer(diags),
+		"Config":          b.Config,
+		"Trailer":         buildTrailer(diags),
+		"WorkspaceClient": b.WorkspaceClient(),
 	})
 	if err != nil {
 		return err
@@ -140,6 +142,7 @@ func newValidateCommand() *cobra.Command {
 		}
 
 		diags = diags.Extend(bundle.Apply(ctx, b, phases.Initialize()))
+		diags = diags.Extend(bundle.Apply(ctx, b, validate.Validate()))
 		if err := diags.Error(); err != nil {
 			return err
 		}

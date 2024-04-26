@@ -1,0 +1,27 @@
+bundle:
+  name: job_cluster_key
+
+workspace:
+  host: https://acme.cloud.databricks.com/
+
+targets:
+  default:
+    resources:
+      jobs:
+        foo:
+          name: job
+          tasks:
+          - task_key: test
+            job_cluster_key: key
+  development:
+    resources:
+      jobs:
+        foo:
+          job_clusters:
+            - job_cluster_key: key
+              new_cluster:
+                node_type_id: i3.xlarge
+                num_workers: 1
+          tasks:
+          - task_key: test
+            job_cluster_key: key
