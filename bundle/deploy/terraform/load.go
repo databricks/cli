@@ -2,6 +2,7 @@ package terraform
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"slices"
 
@@ -23,6 +24,28 @@ func (l *load) Name() string {
 	return "terraform.Load"
 }
 
+// Partial representation of the latest Terraform state file format.
+// We are only interested in resource types, names, modes, and ids.
+type terraformState struct {
+	Version   *int                     `json:"version"`
+	Resources []terraformStateResource `json:"resources"`
+}
+
+type terraformStateResource struct {
+	Type      string                           `json:"type"`
+	Name      string                           `json:"name"`
+	Mode      tfjson.ResourceMode              `json:"mode"`
+	Instances []terraformStateResourceInstance `json:"instances"`
+}
+
+type terraformStateResourceInstance struct {
+	Attributes terraformStateInstanceAttributes `json:"attributes"`
+}
+
+type terraformStateInstanceAttributes struct {
+	ID string `json:"id"`
+}
+
 func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	tf := b.Terraform
 	if tf == nil {
@@ -34,18 +57,26 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return diag.Errorf("terraform init: %v", err)
 	}
 
-	state, err := b.Terraform.Show(ctx)
+	rawState, err := b.Terraform.StatePull(ctx)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	err = l.validateState(state)
+	var state terraformState
+	if rawState != "" {
+		err = json.Unmarshal([]byte(rawState), &state)
+		if err != nil {
+			return diag.FromErr(fmt.Errorf("failed to parse deployment state: %w", err))
+		}
+	}
+
+	err = l.validateState(&state)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	// Merge state into configuration.
-	err = TerraformToBundle(state, &b.Config)
+	err = TerraformToBundle(&state, &b.Config)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -53,16 +84,16 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	return nil
 }
 
-func (l *load) validateState(state *tfjson.State) error {
-	if state.Values == nil {
+func (l *load) validateState(state *terraformState) error {
+	if state.Version != nil && *state.Version != 4 {
+		return fmt.Errorf("unsupported deployment state version: %d. Try re-deploying the bundle", *state.Version)
+	}
+
+	if len(state.Resources) == 0 {
 		if slices.Contains(l.modes, ErrorOnEmptyState) {
 			return fmt.Errorf("no deployment state. Did you forget to run 'databricks bundle deploy'?")
 		}
 		return nil
-	}
-
-	if state.Values.RootModule == nil {
-		return fmt.Errorf("malformed terraform state: RootModule not set")
 	}
 
 	return nil

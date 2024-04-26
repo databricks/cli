@@ -17,7 +17,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/serving"
-	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -552,46 +551,54 @@ func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
 	var config = config.Root{
 		Resources: config.Resources{},
 	}
-	var tfState = tfjson.State{
-		Values: &tfjson.StateValues{
-			RootModule: &tfjson.StateModule{
-				Resources: []*tfjson.StateResource{
-					{
-						Type:            "databricks_job",
-						Mode:            "managed",
-						Name:            "test_job",
-						AttributeValues: map[string]interface{}{"id": "1"},
-					},
-					{
-						Type:            "databricks_pipeline",
-						Mode:            "managed",
-						Name:            "test_pipeline",
-						AttributeValues: map[string]interface{}{"id": "1"},
-					},
-					{
-						Type:            "databricks_mlflow_model",
-						Mode:            "managed",
-						Name:            "test_mlflow_model",
-						AttributeValues: map[string]interface{}{"id": "1"},
-					},
-					{
-						Type:            "databricks_mlflow_experiment",
-						Mode:            "managed",
-						Name:            "test_mlflow_experiment",
-						AttributeValues: map[string]interface{}{"id": "1"},
-					},
-					{
-						Type:            "databricks_model_serving",
-						Mode:            "managed",
-						Name:            "test_model_serving",
-						AttributeValues: map[string]interface{}{"id": "1"},
-					},
-					{
-						Type:            "databricks_registered_model",
-						Mode:            "managed",
-						Name:            "test_registered_model",
-						AttributeValues: map[string]interface{}{"id": "1"},
-					},
+	var tfState = terraformState{
+		Resources: []terraformStateResource{
+			{
+				Type: "databricks_job",
+				Mode: "managed",
+				Name: "test_job",
+				Instances: []terraformStateResourceInstance{
+					{Attributes: terraformStateInstanceAttributes{ID: "1"}},
+				},
+			},
+			{
+				Type: "databricks_pipeline",
+				Mode: "managed",
+				Name: "test_pipeline",
+				Instances: []terraformStateResourceInstance{
+					{Attributes: terraformStateInstanceAttributes{ID: "1"}},
+				},
+			},
+			{
+				Type: "databricks_mlflow_model",
+				Mode: "managed",
+				Name: "test_mlflow_model",
+				Instances: []terraformStateResourceInstance{
+					{Attributes: terraformStateInstanceAttributes{ID: "1"}},
+				},
+			},
+			{
+				Type: "databricks_mlflow_experiment",
+				Mode: "managed",
+				Name: "test_mlflow_experiment",
+				Instances: []terraformStateResourceInstance{
+					{Attributes: terraformStateInstanceAttributes{ID: "1"}},
+				},
+			},
+			{
+				Type: "databricks_model_serving",
+				Mode: "managed",
+				Name: "test_model_serving",
+				Instances: []terraformStateResourceInstance{
+					{Attributes: terraformStateInstanceAttributes{ID: "1"}},
+				},
+			},
+			{
+				Type: "databricks_registered_model",
+				Mode: "managed",
+				Name: "test_registered_model",
+				Instances: []terraformStateResourceInstance{
+					{Attributes: terraformStateInstanceAttributes{ID: "1"}},
 				},
 			},
 		},
@@ -667,8 +674,8 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 			},
 		},
 	}
-	var tfState = tfjson.State{
-		Values: nil,
+	var tfState = terraformState{
+		Resources: nil,
 	}
 	err := TerraformToBundle(&tfState, &config)
 	assert.NoError(t, err)
@@ -771,82 +778,102 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 			},
 		},
 	}
-	var tfState = tfjson.State{
-		Values: &tfjson.StateValues{
-			RootModule: &tfjson.StateModule{
-				Resources: []*tfjson.StateResource{
-					{
-						Type:            "databricks_job",
-						Mode:            "managed",
-						Name:            "test_job",
-						AttributeValues: map[string]interface{}{"id": "1"},
-					},
-					{
-						Type:            "databricks_job",
-						Mode:            "managed",
-						Name:            "test_job_old",
-						AttributeValues: map[string]interface{}{"id": "2"},
-					},
-					{
-						Type:            "databricks_pipeline",
-						Mode:            "managed",
-						Name:            "test_pipeline",
-						AttributeValues: map[string]interface{}{"id": "1"},
-					},
-					{
-						Type:            "databricks_pipeline",
-						Mode:            "managed",
-						Name:            "test_pipeline_old",
-						AttributeValues: map[string]interface{}{"id": "2"},
-					},
-					{
-						Type:            "databricks_mlflow_model",
-						Mode:            "managed",
-						Name:            "test_mlflow_model",
-						AttributeValues: map[string]interface{}{"id": "1"},
-					},
-					{
-						Type:            "databricks_mlflow_model",
-						Mode:            "managed",
-						Name:            "test_mlflow_model_old",
-						AttributeValues: map[string]interface{}{"id": "2"},
-					},
-					{
-						Type:            "databricks_mlflow_experiment",
-						Mode:            "managed",
-						Name:            "test_mlflow_experiment",
-						AttributeValues: map[string]interface{}{"id": "1"},
-					},
-					{
-						Type:            "databricks_mlflow_experiment",
-						Mode:            "managed",
-						Name:            "test_mlflow_experiment_old",
-						AttributeValues: map[string]interface{}{"id": "2"},
-					},
-					{
-						Type:            "databricks_model_serving",
-						Mode:            "managed",
-						Name:            "test_model_serving",
-						AttributeValues: map[string]interface{}{"id": "1"},
-					},
-					{
-						Type:            "databricks_model_serving",
-						Mode:            "managed",
-						Name:            "test_model_serving_old",
-						AttributeValues: map[string]interface{}{"id": "2"},
-					},
-					{
-						Type:            "databricks_registered_model",
-						Mode:            "managed",
-						Name:            "test_registered_model",
-						AttributeValues: map[string]interface{}{"id": "1"},
-					},
-					{
-						Type:            "databricks_registered_model",
-						Mode:            "managed",
-						Name:            "test_registered_model_old",
-						AttributeValues: map[string]interface{}{"id": "2"},
-					},
+	var tfState = terraformState{
+		Resources: []terraformStateResource{
+			{
+				Type: "databricks_job",
+				Mode: "managed",
+				Name: "test_job",
+				Instances: []terraformStateResourceInstance{
+					{Attributes: terraformStateInstanceAttributes{ID: "1"}},
+				},
+			},
+			{
+				Type: "databricks_job",
+				Mode: "managed",
+				Name: "test_job_old",
+				Instances: []terraformStateResourceInstance{
+					{Attributes: terraformStateInstanceAttributes{ID: "2"}},
+				},
+			},
+			{
+				Type: "databricks_pipeline",
+				Mode: "managed",
+				Name: "test_pipeline",
+				Instances: []terraformStateResourceInstance{
+					{Attributes: terraformStateInstanceAttributes{ID: "1"}},
+				},
+			},
+			{
+				Type: "databricks_pipeline",
+				Mode: "managed",
+				Name: "test_pipeline_old",
+				Instances: []terraformStateResourceInstance{
+					{Attributes: terraformStateInstanceAttributes{ID: "2"}},
+				},
+			},
+			{
+				Type: "databricks_mlflow_model",
+				Mode: "managed",
+				Name: "test_mlflow_model",
+				Instances: []terraformStateResourceInstance{
+					{Attributes: terraformStateInstanceAttributes{ID: "1"}},
+				},
+			},
+			{
+				Type: "databricks_mlflow_model",
+				Mode: "managed",
+				Name: "test_mlflow_model_old",
+				Instances: []terraformStateResourceInstance{
+					{Attributes: terraformStateInstanceAttributes{ID: "2"}},
+				},
+			},
+			{
+				Type: "databricks_mlflow_experiment",
+				Mode: "managed",
+				Name: "test_mlflow_experiment",
+				Instances: []terraformStateResourceInstance{
+					{Attributes: terraformStateInstanceAttributes{ID: "1"}},
+				},
+			},
+			{
+				Type: "databricks_mlflow_experiment",
+				Mode: "managed",
+				Name: "test_mlflow_experiment_old",
+				Instances: []terraformStateResourceInstance{
+					{Attributes: terraformStateInstanceAttributes{ID: "2"}},
+				},
+			},
+			{
+				Type: "databricks_model_serving",
+				Mode: "managed",
+				Name: "test_model_serving",
+				Instances: []terraformStateResourceInstance{
+					{Attributes: terraformStateInstanceAttributes{ID: "1"}},
+				},
+			},
+			{
+				Type: "databricks_model_serving",
+				Mode: "managed",
+				Name: "test_model_serving_old",
+				Instances: []terraformStateResourceInstance{
+					{Attributes: terraformStateInstanceAttributes{ID: "2"}},
+				},
+			},
+			{
+				Type: "databricks_registered_model",
+				Mode: "managed",
+				Name: "test_registered_model",
+				Instances: []terraformStateResourceInstance{
+					{Attributes: terraformStateInstanceAttributes{ID: "1"}},
+				},
+			},
+			{
+				Type: "databricks_registered_model",
+				Mode: "managed",
+				Name: "test_registered_model_old",
+				Instances: []terraformStateResourceInstance{
+					{Attributes: terraformStateInstanceAttributes{ID: "2"}},
 				},
 			},
 		},

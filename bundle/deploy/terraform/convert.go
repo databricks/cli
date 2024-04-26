@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"reflect"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
@@ -17,15 +16,6 @@ import (
 func conv(from any, to any) {
 	buf, _ := json.Marshal(from)
 	json.Unmarshal(buf, &to)
-}
-
-func convRemoteToLocal(remote any, local any) resources.ModifiedStatus {
-	var modifiedStatus resources.ModifiedStatus
-	if reflect.ValueOf(local).Elem().IsNil() {
-		modifiedStatus = resources.ModifiedStatusDeleted
-	}
-	conv(remote, local)
-	return modifiedStatus
 }
 
 func convPermissions(acl []resources.Permission) *schema.ResourcePermissions {
@@ -299,75 +289,72 @@ func BundleToTerraformWithDynValue(ctx context.Context, root dyn.Value) (*schema
 	return tfroot, nil
 }
 
-func TerraformToBundle(state *tfjson.State, config *config.Root) error {
-	if state.Values != nil && state.Values.RootModule != nil {
-		for _, resource := range state.Values.RootModule.Resources {
-			// Limit to resources.
-			if resource.Mode != tfjson.ManagedResourceMode {
-				continue
-			}
-
+func TerraformToBundle(state *terraformState, config *config.Root) error {
+	for _, resource := range state.Resources {
+		if resource.Mode != tfjson.ManagedResourceMode {
+			continue
+		}
+		for _, instance := range resource.Instances {
 			switch resource.Type {
 			case "databricks_job":
-				var tmp schema.ResourceJob
-				conv(resource.AttributeValues, &tmp)
 				if config.Resources.Jobs == nil {
 					config.Resources.Jobs = make(map[string]*resources.Job)
 				}
 				cur := config.Resources.Jobs[resource.Name]
-				// TODO: make sure we can unmarshall tf state properly and don't swallow errors
-				modifiedStatus := convRemoteToLocal(tmp, &cur)
-				cur.ModifiedStatus = modifiedStatus
+				if cur == nil {
+					cur = &resources.Job{ModifiedStatus: resources.ModifiedStatusDeleted}
+				}
+				cur.ID = instance.Attributes.ID
 				config.Resources.Jobs[resource.Name] = cur
 			case "databricks_pipeline":
-				var tmp schema.ResourcePipeline
-				conv(resource.AttributeValues, &tmp)
 				if config.Resources.Pipelines == nil {
 					config.Resources.Pipelines = make(map[string]*resources.Pipeline)
 				}
 				cur := config.Resources.Pipelines[resource.Name]
-				modifiedStatus := convRemoteToLocal(tmp, &cur)
-				cur.ModifiedStatus = modifiedStatus
+				if cur == nil {
+					cur = &resources.Pipeline{ModifiedStatus: resources.ModifiedStatusDeleted}
+				}
+				cur.ID = instance.Attributes.ID
 				config.Resources.Pipelines[resource.Name] = cur
 			case "databricks_mlflow_model":
-				var tmp schema.ResourceMlflowModel
-				conv(resource.AttributeValues, &tmp)
 				if config.Resources.Models == nil {
 					config.Resources.Models = make(map[string]*resources.MlflowModel)
 				}
 				cur := config.Resources.Models[resource.Name]
-				modifiedStatus := convRemoteToLocal(tmp, &cur)
-				cur.ModifiedStatus = modifiedStatus
+				if cur == nil {
+					cur = &resources.MlflowModel{ModifiedStatus: resources.ModifiedStatusDeleted}
+				}
+				cur.ID = instance.Attributes.ID
 				config.Resources.Models[resource.Name] = cur
 			case "databricks_mlflow_experiment":
-				var tmp schema.ResourceMlflowExperiment
-				conv(resource.AttributeValues, &tmp)
 				if config.Resources.Experiments == nil {
 					config.Resources.Experiments = make(map[string]*resources.MlflowExperiment)
 				}
 				cur := config.Resources.Experiments[resource.Name]
-				modifiedStatus := convRemoteToLocal(tmp, &cur)
-				cur.ModifiedStatus = modifiedStatus
+				if cur == nil {
+					cur = &resources.MlflowExperiment{ModifiedStatus: resources.ModifiedStatusDeleted}
+				}
+				cur.ID = instance.Attributes.ID
 				config.Resources.Experiments[resource.Name] = cur
 			case "databricks_model_serving":
-				var tmp schema.ResourceModelServing
-				conv(resource.AttributeValues, &tmp)
 				if config.Resources.ModelServingEndpoints == nil {
 					config.Resources.ModelServingEndpoints = make(map[string]*resources.ModelServingEndpoint)
 				}
 				cur := config.Resources.ModelServingEndpoints[resource.Name]
-				modifiedStatus := convRemoteToLocal(tmp, &cur)
-				cur.ModifiedStatus = modifiedStatus
+				if cur == nil {
+					cur = &resources.ModelServingEndpoint{ModifiedStatus: resources.ModifiedStatusDeleted}
+				}
+				cur.ID = instance.Attributes.ID
 				config.Resources.ModelServingEndpoints[resource.Name] = cur
 			case "databricks_registered_model":
-				var tmp schema.ResourceRegisteredModel
-				conv(resource.AttributeValues, &tmp)
 				if config.Resources.RegisteredModels == nil {
 					config.Resources.RegisteredModels = make(map[string]*resources.RegisteredModel)
 				}
 				cur := config.Resources.RegisteredModels[resource.Name]
-				modifiedStatus := convRemoteToLocal(tmp, &cur)
-				cur.ModifiedStatus = modifiedStatus
+				if cur == nil {
+					cur = &resources.RegisteredModel{ModifiedStatus: resources.ModifiedStatusDeleted}
+				}
+				cur.ID = instance.Attributes.ID
 				config.Resources.RegisteredModels[resource.Name] = cur
 			case "databricks_permissions":
 			case "databricks_grants":
