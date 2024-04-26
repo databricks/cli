@@ -289,7 +289,7 @@ func BundleToTerraformWithDynValue(ctx context.Context, root dyn.Value) (*schema
 	return tfroot, nil
 }
 
-func TerraformToBundle(state *terraformState, config *config.Root) error {
+func TerraformToBundle(state *resourcesState, config *config.Root) error {
 	for _, resource := range state.Resources {
 		if resource.Mode != tfjson.ManagedResourceMode {
 			continue
