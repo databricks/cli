@@ -21,7 +21,7 @@ type syncFlags struct {
 }
 
 func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) (*sync.SyncOptions, error) {
-	opts, err := files.GetSyncOptions(cmd.Context(), b)
+	opts, err := files.GetSyncOptions(cmd.Context(), bundle.ReadOnly(b))
 	if err != nil {
 		return nil, fmt.Errorf("cannot get sync options: %w", err)
 	}

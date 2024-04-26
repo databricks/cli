@@ -143,6 +143,18 @@ func (r *Root) updateWithDynamicValue(nv dyn.Value) error {
 	return nil
 }
 
+// Mutate applies a transformation to the dynamic configuration value of a Root object.
+//
+// Parameters:
+// - fn: A function that mutates a dyn.Value object
+//
+// Example usage, setting bundle.deployment.lock.enabled to false:
+//
+//	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+//	    return dyn.Map(v, "bundle.deployment.lock", func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
+//	        return dyn.Set(v, "enabled", dyn.V(false))
+//	    })
+//	})
 func (r *Root) Mutate(fn func(dyn.Value) (dyn.Value, error)) error {
 	err := r.initializeDynamicValue()
 	if err != nil {
@@ -396,15 +408,19 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 
 		// For each variable, normalize its contents if it is a single string.
 		return dyn.Map(target, "variables", dyn.Foreach(func(_ dyn.Path, variable dyn.Value) (dyn.Value, error) {
-			if variable.Kind() != dyn.KindString {
+			switch variable.Kind() {
+
+			case dyn.KindString, dyn.KindBool, dyn.KindFloat, dyn.KindInt:
+				// Rewrite the variable to a map with a single key called "default".
+				// This conforms to the variable type. Normalization back to the typed
+				// configuration will convert this to a string if necessary.
+				return dyn.NewValue(map[string]dyn.Value{
+					"default": variable,
+				}, variable.Location()), nil
+
+			default:
 				return variable, nil
 			}
-
-			// Rewrite the variable to a map with a single key called "default".
-			// This conforms to the variable type.
-			return dyn.NewValue(map[string]dyn.Value{
-				"default": variable,
-			}, variable.Location()), nil
 		}))
 	}))
 }
@@ -440,7 +456,7 @@ func validateVariableOverrides(root, target dyn.Value) (err error) {
 // Best effort to get the location of configuration value at the specified path.
 // This function is useful to annotate error messages with the location, because
 // we don't want to fail with a different error message if we cannot retrieve the location.
-func (r *Root) GetLocation(path string) dyn.Location {
+func (r Root) GetLocation(path string) dyn.Location {
 	v, err := dyn.Get(r.value, path)
 	if err != nil {
 		return dyn.Location{}

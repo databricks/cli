@@ -3,11 +3,11 @@
 package schema
 
 type ResourceLakehouseMonitorCustomMetrics struct {
-	Definition     string   `json:"definition,omitempty"`
-	InputColumns   []string `json:"input_columns,omitempty"`
-	Name           string   `json:"name,omitempty"`
-	OutputDataType string   `json:"output_data_type,omitempty"`
-	Type           string   `json:"type,omitempty"`
+	Definition     string   `json:"definition"`
+	InputColumns   []string `json:"input_columns"`
+	Name           string   `json:"name"`
+	OutputDataType string   `json:"output_data_type"`
+	Type           string   `json:"type"`
 }
 
 type ResourceLakehouseMonitorDataClassificationConfig struct {
@@ -15,35 +15,40 @@ type ResourceLakehouseMonitorDataClassificationConfig struct {
 }
 
 type ResourceLakehouseMonitorInferenceLog struct {
-	Granularities      []string `json:"granularities,omitempty"`
+	Granularities      []string `json:"granularities"`
 	LabelCol           string   `json:"label_col,omitempty"`
-	ModelIdCol         string   `json:"model_id_col,omitempty"`
-	PredictionCol      string   `json:"prediction_col,omitempty"`
+	ModelIdCol         string   `json:"model_id_col"`
+	PredictionCol      string   `json:"prediction_col"`
 	PredictionProbaCol string   `json:"prediction_proba_col,omitempty"`
-	ProblemType        string   `json:"problem_type,omitempty"`
-	TimestampCol       string   `json:"timestamp_col,omitempty"`
+	ProblemType        string   `json:"problem_type"`
+	TimestampCol       string   `json:"timestamp_col"`
 }
 
 type ResourceLakehouseMonitorNotificationsOnFailure struct {
 	EmailAddresses []string `json:"email_addresses,omitempty"`
 }
 
+type ResourceLakehouseMonitorNotificationsOnNewClassificationTagDetected struct {
+	EmailAddresses []string `json:"email_addresses,omitempty"`
+}
+
 type ResourceLakehouseMonitorNotifications struct {
-	OnFailure *ResourceLakehouseMonitorNotificationsOnFailure `json:"on_failure,omitempty"`
+	OnFailure                      *ResourceLakehouseMonitorNotificationsOnFailure                      `json:"on_failure,omitempty"`
+	OnNewClassificationTagDetected *ResourceLakehouseMonitorNotificationsOnNewClassificationTagDetected `json:"on_new_classification_tag_detected,omitempty"`
 }
 
 type ResourceLakehouseMonitorSchedule struct {
 	PauseStatus          string `json:"pause_status,omitempty"`
-	QuartzCronExpression string `json:"quartz_cron_expression,omitempty"`
-	TimezoneId           string `json:"timezone_id,omitempty"`
+	QuartzCronExpression string `json:"quartz_cron_expression"`
+	TimezoneId           string `json:"timezone_id"`
 }
 
 type ResourceLakehouseMonitorSnapshot struct {
 }
 
 type ResourceLakehouseMonitorTimeSeries struct {
-	Granularities []string `json:"granularities,omitempty"`
-	TimestampCol  string   `json:"timestamp_col,omitempty"`
+	Granularities []string `json:"granularities"`
+	TimestampCol  string   `json:"timestamp_col"`
 }
 
 type ResourceLakehouseMonitor struct {

@@ -120,3 +120,52 @@ func TestVariablesWithTargetLookupOverrides(t *testing.T) {
 	assert.Equal(t, "cluster: some-test-cluster", b.Config.Variables["d"].Lookup.String())
 	assert.Equal(t, "instance-pool: some-test-instance-pool", b.Config.Variables["e"].Lookup.String())
 }
+
+func TestVariableTargetOverrides(t *testing.T) {
+	var tcases = []struct {
+		targetName         string
+		pipelineName       string
+		pipelineContinuous bool
+		pipelineNumWorkers int
+	}{
+		{
+			"use-default-variable-values",
+			"a_string",
+			true,
+			42,
+		},
+		{
+			"override-string-variable",
+			"overridden_string",
+			true,
+			42,
+		},
+		{
+			"override-int-variable",
+			"a_string",
+			true,
+			43,
+		},
+		{
+			"override-both-bool-and-string-variables",
+			"overridden_string",
+			false,
+			42,
+		},
+	}
+
+	for _, tcase := range tcases {
+		t.Run(tcase.targetName, func(t *testing.T) {
+			b := loadTarget(t, "./variables/variable_overrides_in_target", tcase.targetName)
+			diags := bundle.Apply(context.Background(), b, bundle.Seq(
+				mutator.SetVariables(),
+				mutator.ResolveVariableReferences("variables")),
+			)
+			require.NoError(t, diags.Error())
+
+			assert.Equal(t, tcase.pipelineName, b.Config.Resources.Pipelines["my_pipeline"].Name)
+			assert.Equal(t, tcase.pipelineContinuous, b.Config.Resources.Pipelines["my_pipeline"].Continuous)
+			assert.Equal(t, tcase.pipelineNumWorkers, b.Config.Resources.Pipelines["my_pipeline"].Clusters[0].NumWorkers)
+		})
+	}
+}

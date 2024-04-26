@@ -36,7 +36,7 @@ func TestProfiles(t *testing.T) {
 
 	// Load the profile
 	profile := &profileMetadata{Name: "profile1"}
-	profile.Load(ctx, true)
+	profile.Load(ctx, configFile, true)
 
 	// Check the profile
 	assert.Equal(t, "profile1", profile.Name)

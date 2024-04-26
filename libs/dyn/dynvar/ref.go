@@ -6,7 +6,9 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 )
 
-var re = regexp.MustCompile(`\$\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\}`)
+const VariableRegex = `\$\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\}`
+
+var re = regexp.MustCompile(VariableRegex)
 
 // ref represents a variable reference.
 // It is a string [dyn.Value] contained in a larger [dyn.Value].
