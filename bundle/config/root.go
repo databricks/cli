@@ -138,6 +138,11 @@ func (r *Root) updateWithDynamicValue(nv dyn.Value) error {
 	// Assign the normalized configuration tree.
 	r.value = nv
 
+	err = r.Resources.VerifyAllResourcesDefined()
+	if err != nil {
+		return err
+	}
+
 	// Assign config file paths after converting to typed configuration.
 	r.ConfigureConfigFilePath()
 	return nil

@@ -126,6 +126,46 @@ func (r *Resources) VerifyUniqueResourceIdentifiers() (*UniqueResourceIdTracker,
 	return tracker, nil
 }
 
+func (r *Resources) VerifyAllResourcesDefined() error {
+	for k, e := range r.Jobs {
+		if e == nil || !e.DynamicValue.IsValid() {
+			return fmt.Errorf("job %s is not defined", k)
+		}
+	}
+
+	for k, e := range r.Pipelines {
+		if e == nil || !e.DynamicValue.IsValid() {
+			return fmt.Errorf("pipeline %s is not defined", k)
+		}
+	}
+
+	for k, e := range r.Models {
+		if e == nil || !e.DynamicValue.IsValid() {
+			return fmt.Errorf("model %s is not defined", k)
+		}
+	}
+
+	for k, e := range r.Experiments {
+		if e == nil || !e.DynamicValue.IsValid() {
+			return fmt.Errorf("experiment %s is not defined", k)
+		}
+	}
+
+	for k, e := range r.ModelServingEndpoints {
+		if e == nil || !e.DynamicValue.IsValid() {
+			return fmt.Errorf("model serving endpoint %s is not defined", k)
+		}
+	}
+
+	for k, e := range r.RegisteredModels {
+		if e == nil || !e.DynamicValue.IsValid() {
+			return fmt.Errorf("registered model %s is not defined", k)
+		}
+	}
+
+	return nil
+}
+
 // ConfigureConfigFilePath sets the specified path for all resources contained in this instance.
 // This property is used to correctly resolve paths relative to the path
 // of the configuration file they were defined in.
