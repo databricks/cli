@@ -53,8 +53,8 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 }
 
 func (l *load) validateState(state *resourcesState) error {
-	if state.Version != nil && *state.Version != 4 {
-		return fmt.Errorf("unsupported deployment state version: %d. Try re-deploying the bundle", *state.Version)
+	if state.Version != SupportedStateVersion {
+		return fmt.Errorf("unsupported deployment state version: %d. Try re-deploying the bundle", state.Version)
 	}
 
 	if len(state.Resources) == 0 && slices.Contains(l.modes, ErrorOnEmptyState) {

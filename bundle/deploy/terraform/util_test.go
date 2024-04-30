@@ -58,7 +58,7 @@ func TestParseResourcesStateWithNoFile(t *testing.T) {
 	}
 	state, err := ParseResourcesState(context.Background(), b)
 	assert.NoError(t, err)
-	assert.Equal(t, &resourcesState{}, state)
+	assert.Equal(t, &resourcesState{Version: SupportedStateVersion}, state)
 }
 
 func TestParseResourcesStateWithExistingStateFile(t *testing.T) {
@@ -122,9 +122,8 @@ func TestParseResourcesStateWithExistingStateFile(t *testing.T) {
 	assert.NoError(t, err)
 	state, err := ParseResourcesState(ctx, b)
 	assert.NoError(t, err)
-	version := 4
 	expected := &resourcesState{
-		Version: &version,
+		Version: 4,
 		Resources: []stateResource{
 			{
 				Mode: "managed",

@@ -16,9 +16,11 @@ import (
 // We are only interested global version and serial numbers,
 // plus resource types, names, modes, and ids.
 type resourcesState struct {
-	Version   *int            `json:"version"`
+	Version   int             `json:"version"`
 	Resources []stateResource `json:"resources"`
 }
+
+const SupportedStateVersion = 4
 
 type serialState struct {
 	Serial int `json:"serial"`
@@ -75,7 +77,7 @@ func ParseResourcesState(ctx context.Context, b *bundle.Bundle) (*resourcesState
 	rawState, err := os.ReadFile(filepath.Join(cacheDir, TerraformStateFileName))
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return &resourcesState{}, nil
+			return &resourcesState{Version: SupportedStateVersion}, nil
 		}
 		return nil, err
 	}
