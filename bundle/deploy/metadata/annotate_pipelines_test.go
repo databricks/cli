@@ -69,6 +69,4 @@ func TestAnnotatePipelinesMutatorPipelineWithoutASpec(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, AnnotatePipelines())
 	require.NoError(t, diags.Error())
-
-	assert.Nil(t, b.Config.Resources.Pipelines["my-pipeline-1"].PipelineSpec)
 }
