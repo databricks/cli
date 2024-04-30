@@ -2,7 +2,6 @@ package metadata
 
 import (
 	"context"
-	"path"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
@@ -27,7 +26,7 @@ func (m *annotatePipelines) Apply(_ context.Context, b *bundle.Bundle) diag.Diag
 
 		pipeline.PipelineSpec.Deployment = &pipelines.PipelineDeployment{
 			Kind:             pipelines.DeploymentKindBundle,
-			MetadataFilePath: path.Join(b.Config.Workspace.StatePath, MetadataFileName),
+			MetadataFilePath: metadataFilePath(b),
 		}
 	}
 

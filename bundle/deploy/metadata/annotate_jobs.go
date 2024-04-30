@@ -2,7 +2,6 @@ package metadata
 
 import (
 	"context"
-	"path"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
@@ -27,7 +26,7 @@ func (m *annotateJobs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnosti
 
 		job.JobSettings.Deployment = &jobs.JobDeployment{
 			Kind:             jobs.JobDeploymentKindBundle,
-			MetadataFilePath: path.Join(b.Config.Workspace.StatePath, MetadataFileName),
+			MetadataFilePath: metadataFilePath(b),
 		}
 		job.JobSettings.EditMode = jobs.JobEditModeUiLocked
 		job.JobSettings.Format = jobs.FormatMultiTask
