@@ -547,6 +547,34 @@ func TestBundleToTerraformRegisteredModelGrants(t *testing.T) {
 	bundleToTerraformEquivalenceTest(t, &config)
 }
 
+func TestBundleToTerraformDeletedResources(t *testing.T) {
+	var job1 = resources.Job{
+		JobSettings: &jobs.JobSettings{},
+	}
+	var job2 = resources.Job{
+		ModifiedStatus: resources.ModifiedStatusDeleted,
+		JobSettings:    &jobs.JobSettings{},
+	}
+	var config = config.Root{
+		Resources: config.Resources{
+			Jobs: map[string]*resources.Job{
+				"my_job1": &job1,
+				"my_job2": &job2,
+			},
+		},
+	}
+
+	vin, err := convert.FromTyped(config, dyn.NilValue)
+	require.NoError(t, err)
+	out, err := BundleToTerraformWithDynValue(context.Background(), vin)
+	require.NoError(t, err)
+
+	_, ok := out.Resource.Job["my_job1"]
+	assert.True(t, ok)
+	_, ok = out.Resource.Job["my_job2"]
+	assert.False(t, ok)
+}
+
 func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
 	var config = config.Root{
 		Resources: config.Resources{},

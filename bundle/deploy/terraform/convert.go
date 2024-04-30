@@ -238,7 +238,7 @@ func BundleToTerraformWithDynValue(ctx context.Context, root dyn.Value) (*schema
 	tfroot.Provider = schema.NewProviders()
 
 	// Convert each resource in the bundle to the equivalent Terraform representation.
-	resources, err := dyn.Get(root, "resources")
+	dynResources, err := dyn.Get(root, "resources")
 	if err != nil {
 		// If the resources key is missing, return an empty root.
 		if dyn.IsNoSuchKeyError(err) {
@@ -250,9 +250,18 @@ func BundleToTerraformWithDynValue(ctx context.Context, root dyn.Value) (*schema
 	tfroot.Resource = schema.NewResources()
 
 	numResources := 0
-	_, err = dyn.Walk(resources, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+	_, err = dyn.Walk(dynResources, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 		if len(p) < 2 {
 			return v, nil
+		}
+
+		// Skip resources that have been deleted locally.
+		modifiedStatus, err := dyn.Get(v, "modified_status")
+		if err == nil {
+			modifiedStatusStr, ok := modifiedStatus.AsString()
+			if ok && modifiedStatusStr == resources.ModifiedStatusDeleted {
+				return v, dyn.ErrSkip
+			}
 		}
 
 		typ := p[0].Key()
@@ -265,7 +274,7 @@ func BundleToTerraformWithDynValue(ctx context.Context, root dyn.Value) (*schema
 		}
 
 		// Convert resource to Terraform representation.
-		err := c.Convert(ctx, key, v, tfroot.Resource)
+		err = c.Convert(ctx, key, v, tfroot.Resource)
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
