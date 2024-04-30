@@ -117,7 +117,7 @@ func (reader *OpenapiReader) safeResolveRefs(root *jsonschema.Schema, tracker *t
 	return root, err
 }
 
-// Traverse the nested properties of the schema to resolve "ref" references. This function
+// Traverse the nested properties of the schema to resolve "$ref" references. This function
 // and safeResolveRefs are mutually recursive.
 func (reader *OpenapiReader) traverseSchema(root *jsonschema.Schema, tracker *tracker) (*jsonschema.Schema, error) {
 	// case primitive (or invalid)
