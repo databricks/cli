@@ -508,28 +508,16 @@ func newListListingsForExchange() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No EXCHANGE_ID argument specified. Loading names for Provider Exchanges drop-down."
-			names, err := w.ProviderExchanges.ExchangeListingExchangeNameToExchangeIdMap(ctx, marketplace.ListExchangesForListingRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Provider Exchanges drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
-		}
 		listListingsForExchangeReq.ExchangeId = args[0]
 
 		response := w.ProviderExchanges.ListListingsForExchange(ctx, listListingsForExchangeReq)

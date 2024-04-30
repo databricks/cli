@@ -46,6 +46,17 @@
           "properties": {
             "fail_on_active_runs": {
               "description": ""
+            },
+            "lock": {
+              "description": "",
+              "properties": {
+                "enabled": {
+                  "description": ""
+                },
+                "force": {
+                  "description": ""
+                }
+              }
             }
           }
         },
@@ -76,6 +87,9 @@
           "additionalproperties": {
             "description": ""
           }
+        },
+        "use_legacy_run_as": {
+          "description": ""
         }
       }
     },
@@ -242,7 +256,7 @@
                       "description": "",
                       "properties": {
                         "client": {
-                          "description": "*\nUser-friendly name for the client version: “client”: “1”\nThe version is a string, consisting of the major client version"
+                          "description": "Client version used by the environment\nThe client is the user-facing environment of the runtime.\nEach client comes with a specific set of pre-installed libraries.\nThe version is a string, consisting of the major client version."
                         },
                         "dependencies": {
                           "description": "List of pip dependencies, as supported by the version of pip in this environment.\nEach dependency is a pip requirement file line https://pip.pypa.io/en/stable/reference/requirements-file-format/\nAllowed dependency could be \u003crequirement specifier\u003e, \u003carchive url/path\u003e, \u003clocal project path\u003e(WSFS or Volumes in Databricks), \u003cvcs project url\u003e\nE.g. dependencies: [\"foo==0.0.1\", \"-r /Workspace/test/requirements.txt\"]",
@@ -909,10 +923,10 @@
                             }
                           },
                           "egg": {
-                            "description": "URI of the egg to be installed. Currently only DBFS and S3 URIs are supported.\nFor example: `{ \"egg\": \"dbfs:/my/egg\" }` or\n`{ \"egg\": \"s3://my-bucket/egg\" }`.\nIf S3 is used, please make sure the cluster has read access on the library. You may need to\nlaunch the cluster with an IAM role to access the S3 URI."
+                            "description": "URI of the egg library to install. Supported URIs include Workspace paths, Unity Catalog Volumes paths, and S3 URIs.\nFor example: `{ \"egg\": \"/Workspace/path/to/library.egg\" }`, `{ \"egg\" : \"/Volumes/path/to/library.egg\" }` or\n`{ \"egg\": \"s3://my-bucket/library.egg\" }`.\nIf S3 is used, please make sure the cluster has read access on the library. You may need to\nlaunch the cluster with an IAM role to access the S3 URI."
                           },
                           "jar": {
-                            "description": "URI of the jar to be installed. Currently only DBFS and S3 URIs are supported.\nFor example: `{ \"jar\": \"dbfs:/mnt/databricks/library.jar\" }` or\n`{ \"jar\": \"s3://my-bucket/library.jar\" }`.\nIf S3 is used, please make sure the cluster has read access on the library. You may need to\nlaunch the cluster with an IAM role to access the S3 URI."
+                            "description": "URI of the JAR library to install. Supported URIs include Workspace paths, Unity Catalog Volumes paths, and S3 URIs.\nFor example: `{ \"jar\": \"/Workspace/path/to/library.jar\" }`, `{ \"jar\" : \"/Volumes/path/to/library.jar\" }` or\n`{ \"jar\": \"s3://my-bucket/library.jar\" }`.\nIf S3 is used, please make sure the cluster has read access on the library. You may need to\nlaunch the cluster with an IAM role to access the S3 URI."
                           },
                           "maven": {
                             "description": "Specification of a maven library to be installed. For example:\n`{ \"coordinates\": \"org.jsoup:jsoup:1.7.2\" }`",
@@ -942,8 +956,11 @@
                               }
                             }
                           },
+                          "requirements": {
+                            "description": "URI of the requirements.txt file to install. Only Workspace paths and Unity Catalog Volumes paths are supported.\nFor example: `{ \"requirements\": \"/Workspace/path/to/requirements.txt\" }` or `{ \"requirements\" : \"/Volumes/path/to/requirements.txt\" }`"
+                          },
                           "whl": {
-                            "description": "URI of the wheel to be installed.\nFor example: `{ \"whl\": \"dbfs:/my/whl\" }` or `{ \"whl\": \"s3://my-bucket/whl\" }`.\nIf S3 is used, please make sure the cluster has read access on the library. You may need to\nlaunch the cluster with an IAM role to access the S3 URI."
+                            "description": "URI of the wheel library to install. Supported URIs include Workspace paths, Unity Catalog Volumes paths, and S3 URIs.\nFor example: `{ \"whl\": \"/Workspace/path/to/library.whl\" }`, `{ \"whl\" : \"/Volumes/path/to/library.whl\" }` or\n`{ \"whl\": \"s3://my-bucket/library.whl\" }`.\nIf S3 is used, please make sure the cluster has read access on the library. You may need to\nlaunch the cluster with an IAM role to access the S3 URI."
                           }
                         }
                       }
@@ -1303,6 +1320,9 @@
                         },
                         "source": {
                           "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved from the local Databricks workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n* `WORKSPACE`: Notebook is located in Databricks workspace.\n* `GIT`: Notebook is located in cloud Git provider."
+                        },
+                        "warehouse_id": {
+                          "description": "Optional `warehouse_id` to run the notebook on a SQL warehouse. Classic SQL warehouses are NOT supported, please use serverless or pro SQL warehouses.\n\nNote that SQL warehouses only support SQL cells; if the notebook contains non-SQL cells, the run will fail."
                         }
                       }
                     },
@@ -1526,7 +1546,7 @@
                           }
                         },
                         "file": {
-                          "description": "If file, indicates that this job runs a SQL file in a remote Git repository. Only one SQL statement is supported in a file. Multiple SQL statements separated by semicolons (;) are not permitted.",
+                          "description": "If file, indicates that this job runs a SQL file in a remote Git repository.",
                           "properties": {
                             "path": {
                               "description": "Path of the SQL file. Must be relative if the source is a remote Git repository and absolute for workspace paths."
@@ -1562,7 +1582,7 @@
                       "description": "An optional timeout applied to each run of this job task. A value of `0` means no timeout."
                     },
                     "webhook_notifications": {
-                      "description": "A collection of system notification IDs to notify when runs of this task begin or complete. The default behavior is to not send any system notifications.",
+                      "description": "A collection of system notification IDs to notify when runs of this job begin or complete.",
                       "properties": {
                         "on_duration_warning_threshold_exceeded": {
                           "description": "An optional list of system notification IDs to call when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. A maximum of 3 destinations can be specified for the `on_duration_warning_threshold_exceeded` property.",
@@ -1679,7 +1699,7 @@
                 }
               },
               "webhook_notifications": {
-                "description": "A collection of system notification IDs to notify when runs of this task begin or complete. The default behavior is to not send any system notifications.",
+                "description": "A collection of system notification IDs to notify when runs of this job begin or complete.",
                 "properties": {
                   "on_duration_warning_threshold_exceeded": {
                     "description": "An optional list of system notification IDs to call when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. A maximum of 3 destinations can be specified for the `on_duration_warning_threshold_exceeded` property.",
@@ -2415,6 +2435,17 @@
               "continuous": {
                 "description": "Whether the pipeline is continuous or triggered. This replaces `trigger`."
               },
+              "deployment": {
+                "description": "Deployment type of this pipeline.",
+                "properties": {
+                  "kind": {
+                    "description": "The deployment method that manages the pipeline."
+                  },
+                  "metadata_file_path": {
+                    "description": "The path to the file containing metadata about the deployment."
+                  }
+                }
+              },
               "development": {
                 "description": "Whether the pipeline is in Development mode. Defaults to false."
               },
@@ -2440,6 +2471,65 @@
               },
               "id": {
                 "description": "Unique identifier for this pipeline."
+              },
+              "ingestion_definition": {
+                "description": "The configuration for a managed ingestion pipeline. These settings cannot be used with the 'libraries', 'target' or 'catalog' settings.",
+                "properties": {
+                  "connection_name": {
+                    "description": "Immutable. The Unity Catalog connection this ingestion pipeline uses to communicate with the source. Specify either ingestion_gateway_id or connection_name."
+                  },
+                  "ingestion_gateway_id": {
+                    "description": "Immutable. Identifier for the ingestion gateway used by this ingestion pipeline to communicate with the source. Specify either ingestion_gateway_id or connection_name."
+                  },
+                  "objects": {
+                    "description": "Required. Settings specifying tables to replicate and the destination for the replicated tables.",
+                    "items": {
+                      "description": "",
+                      "properties": {
+                        "schema": {
+                          "description": "Select tables from a specific source schema.",
+                          "properties": {
+                            "destination_catalog": {
+                              "description": "Required. Destination catalog to store tables."
+                            },
+                            "destination_schema": {
+                              "description": "Required. Destination schema to store tables in. Tables with the same name as the source tables are created in this destination schema. The pipeline fails If a table with the same name already exists."
+                            },
+                            "source_catalog": {
+                              "description": "The source catalog name. Might be optional depending on the type of source."
+                            },
+                            "source_schema": {
+                              "description": "Required. Schema name in the source database."
+                            }
+                          }
+                        },
+                        "table": {
+                          "description": "Select tables from a specific source table.",
+                          "properties": {
+                            "destination_catalog": {
+                              "description": "Required. Destination catalog to store table."
+                            },
+                            "destination_schema": {
+                              "description": "Required. Destination schema to store table."
+                            },
+                            "destination_table": {
+                              "description": "Optional. Destination table name. The pipeline fails If a table with that name already exists. If not set, the source table name is used."
+                            },
+                            "source_catalog": {
+                              "description": "Source catalog name. Might be optional depending on the type of source."
+                            },
+                            "source_schema": {
+                              "description": "Schema name in the source database. Might be optional depending on the type of source."
+                            },
+                            "source_table": {
+                              "description": "Required. Table name in the source database."
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
               },
               "libraries": {
                 "description": "Libraries or code needed by this deployment.",
@@ -2682,6 +2772,17 @@
                 "properties": {
                   "fail_on_active_runs": {
                     "description": ""
+                  },
+                  "lock": {
+                    "description": "",
+                    "properties": {
+                      "enabled": {
+                        "description": ""
+                      },
+                      "force": {
+                        "description": ""
+                      }
+                    }
                   }
                 }
               },
@@ -2878,7 +2979,7 @@
                             "description": "",
                             "properties": {
                               "client": {
-                                "description": "*\nUser-friendly name for the client version: “client”: “1”\nThe version is a string, consisting of the major client version"
+                                "description": "Client version used by the environment\nThe client is the user-facing environment of the runtime.\nEach client comes with a specific set of pre-installed libraries.\nThe version is a string, consisting of the major client version."
                               },
                               "dependencies": {
                                 "description": "List of pip dependencies, as supported by the version of pip in this environment.\nEach dependency is a pip requirement file line https://pip.pypa.io/en/stable/reference/requirements-file-format/\nAllowed dependency could be \u003crequirement specifier\u003e, \u003carchive url/path\u003e, \u003clocal project path\u003e(WSFS or Volumes in Databricks), \u003cvcs project url\u003e\nE.g. dependencies: [\"foo==0.0.1\", \"-r /Workspace/test/requirements.txt\"]",
@@ -3545,10 +3646,10 @@
                                   }
                                 },
                                 "egg": {
-                                  "description": "URI of the egg to be installed. Currently only DBFS and S3 URIs are supported.\nFor example: `{ \"egg\": \"dbfs:/my/egg\" }` or\n`{ \"egg\": \"s3://my-bucket/egg\" }`.\nIf S3 is used, please make sure the cluster has read access on the library. You may need to\nlaunch the cluster with an IAM role to access the S3 URI."
+                                  "description": "URI of the egg library to install. Supported URIs include Workspace paths, Unity Catalog Volumes paths, and S3 URIs.\nFor example: `{ \"egg\": \"/Workspace/path/to/library.egg\" }`, `{ \"egg\" : \"/Volumes/path/to/library.egg\" }` or\n`{ \"egg\": \"s3://my-bucket/library.egg\" }`.\nIf S3 is used, please make sure the cluster has read access on the library. You may need to\nlaunch the cluster with an IAM role to access the S3 URI."
                                 },
                                 "jar": {
-                                  "description": "URI of the jar to be installed. Currently only DBFS and S3 URIs are supported.\nFor example: `{ \"jar\": \"dbfs:/mnt/databricks/library.jar\" }` or\n`{ \"jar\": \"s3://my-bucket/library.jar\" }`.\nIf S3 is used, please make sure the cluster has read access on the library. You may need to\nlaunch the cluster with an IAM role to access the S3 URI."
+                                  "description": "URI of the JAR library to install. Supported URIs include Workspace paths, Unity Catalog Volumes paths, and S3 URIs.\nFor example: `{ \"jar\": \"/Workspace/path/to/library.jar\" }`, `{ \"jar\" : \"/Volumes/path/to/library.jar\" }` or\n`{ \"jar\": \"s3://my-bucket/library.jar\" }`.\nIf S3 is used, please make sure the cluster has read access on the library. You may need to\nlaunch the cluster with an IAM role to access the S3 URI."
                                 },
                                 "maven": {
                                   "description": "Specification of a maven library to be installed. For example:\n`{ \"coordinates\": \"org.jsoup:jsoup:1.7.2\" }`",
@@ -3578,8 +3679,11 @@
                                     }
                                   }
                                 },
+                                "requirements": {
+                                  "description": "URI of the requirements.txt file to install. Only Workspace paths and Unity Catalog Volumes paths are supported.\nFor example: `{ \"requirements\": \"/Workspace/path/to/requirements.txt\" }` or `{ \"requirements\" : \"/Volumes/path/to/requirements.txt\" }`"
+                                },
                                 "whl": {
-                                  "description": "URI of the wheel to be installed.\nFor example: `{ \"whl\": \"dbfs:/my/whl\" }` or `{ \"whl\": \"s3://my-bucket/whl\" }`.\nIf S3 is used, please make sure the cluster has read access on the library. You may need to\nlaunch the cluster with an IAM role to access the S3 URI."
+                                  "description": "URI of the wheel library to install. Supported URIs include Workspace paths, Unity Catalog Volumes paths, and S3 URIs.\nFor example: `{ \"whl\": \"/Workspace/path/to/library.whl\" }`, `{ \"whl\" : \"/Volumes/path/to/library.whl\" }` or\n`{ \"whl\": \"s3://my-bucket/library.whl\" }`.\nIf S3 is used, please make sure the cluster has read access on the library. You may need to\nlaunch the cluster with an IAM role to access the S3 URI."
                                 }
                               }
                             }
@@ -3939,6 +4043,9 @@
                               },
                               "source": {
                                 "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved from the local Databricks workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n* `WORKSPACE`: Notebook is located in Databricks workspace.\n* `GIT`: Notebook is located in cloud Git provider."
+                              },
+                              "warehouse_id": {
+                                "description": "Optional `warehouse_id` to run the notebook on a SQL warehouse. Classic SQL warehouses are NOT supported, please use serverless or pro SQL warehouses.\n\nNote that SQL warehouses only support SQL cells; if the notebook contains non-SQL cells, the run will fail."
                               }
                             }
                           },
@@ -4162,7 +4269,7 @@
                                 }
                               },
                               "file": {
-                                "description": "If file, indicates that this job runs a SQL file in a remote Git repository. Only one SQL statement is supported in a file. Multiple SQL statements separated by semicolons (;) are not permitted.",
+                                "description": "If file, indicates that this job runs a SQL file in a remote Git repository.",
                                 "properties": {
                                   "path": {
                                     "description": "Path of the SQL file. Must be relative if the source is a remote Git repository and absolute for workspace paths."
@@ -4198,7 +4305,7 @@
                             "description": "An optional timeout applied to each run of this job task. A value of `0` means no timeout."
                           },
                           "webhook_notifications": {
-                            "description": "A collection of system notification IDs to notify when runs of this task begin or complete. The default behavior is to not send any system notifications.",
+                            "description": "A collection of system notification IDs to notify when runs of this job begin or complete.",
                             "properties": {
                               "on_duration_warning_threshold_exceeded": {
                                 "description": "An optional list of system notification IDs to call when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. A maximum of 3 destinations can be specified for the `on_duration_warning_threshold_exceeded` property.",
@@ -4315,7 +4422,7 @@
                       }
                     },
                     "webhook_notifications": {
-                      "description": "A collection of system notification IDs to notify when runs of this task begin or complete. The default behavior is to not send any system notifications.",
+                      "description": "A collection of system notification IDs to notify when runs of this job begin or complete.",
                       "properties": {
                         "on_duration_warning_threshold_exceeded": {
                           "description": "An optional list of system notification IDs to call when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. A maximum of 3 destinations can be specified for the `on_duration_warning_threshold_exceeded` property.",
@@ -5051,6 +5158,17 @@
                     "continuous": {
                       "description": "Whether the pipeline is continuous or triggered. This replaces `trigger`."
                     },
+                    "deployment": {
+                      "description": "Deployment type of this pipeline.",
+                      "properties": {
+                        "kind": {
+                          "description": "The deployment method that manages the pipeline."
+                        },
+                        "metadata_file_path": {
+                          "description": "The path to the file containing metadata about the deployment."
+                        }
+                      }
+                    },
                     "development": {
                       "description": "Whether the pipeline is in Development mode. Defaults to false."
                     },
@@ -5076,6 +5194,65 @@
                     },
                     "id": {
                       "description": "Unique identifier for this pipeline."
+                    },
+                    "ingestion_definition": {
+                      "description": "The configuration for a managed ingestion pipeline. These settings cannot be used with the 'libraries', 'target' or 'catalog' settings.",
+                      "properties": {
+                        "connection_name": {
+                          "description": "Immutable. The Unity Catalog connection this ingestion pipeline uses to communicate with the source. Specify either ingestion_gateway_id or connection_name."
+                        },
+                        "ingestion_gateway_id": {
+                          "description": "Immutable. Identifier for the ingestion gateway used by this ingestion pipeline to communicate with the source. Specify either ingestion_gateway_id or connection_name."
+                        },
+                        "objects": {
+                          "description": "Required. Settings specifying tables to replicate and the destination for the replicated tables.",
+                          "items": {
+                            "description": "",
+                            "properties": {
+                              "schema": {
+                                "description": "Select tables from a specific source schema.",
+                                "properties": {
+                                  "destination_catalog": {
+                                    "description": "Required. Destination catalog to store tables."
+                                  },
+                                  "destination_schema": {
+                                    "description": "Required. Destination schema to store tables in. Tables with the same name as the source tables are created in this destination schema. The pipeline fails If a table with the same name already exists."
+                                  },
+                                  "source_catalog": {
+                                    "description": "The source catalog name. Might be optional depending on the type of source."
+                                  },
+                                  "source_schema": {
+                                    "description": "Required. Schema name in the source database."
+                                  }
+                                }
+                              },
+                              "table": {
+                                "description": "Select tables from a specific source table.",
+                                "properties": {
+                                  "destination_catalog": {
+                                    "description": "Required. Destination catalog to store table."
+                                  },
+                                  "destination_schema": {
+                                    "description": "Required. Destination schema to store table."
+                                  },
+                                  "destination_table": {
+                                    "description": "Optional. Destination table name. The pipeline fails If a table with that name already exists. If not set, the source table name is used."
+                                  },
+                                  "source_catalog": {
+                                    "description": "Source catalog name. Might be optional depending on the type of source."
+                                  },
+                                  "source_schema": {
+                                    "description": "Schema name in the source database. Might be optional depending on the type of source."
+                                  },
+                                  "source_table": {
+                                    "description": "Required. Table name in the source database."
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
                     },
                     "libraries": {
                       "description": "Libraries or code needed by this deployment.",
