@@ -46,6 +46,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newDelete())
 	cmd.AddCommand(newExportMetrics())
 	cmd.AddCommand(newGet())
+	cmd.AddCommand(newGetOpenApi())
 	cmd.AddCommand(newGetPermissionLevels())
 	cmd.AddCommand(newGetPermissions())
 	cmd.AddCommand(newList())
@@ -374,6 +375,67 @@ func newGet() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range getOverrides {
 		fn(cmd, &getReq)
+	}
+
+	return cmd
+}
+
+// start get-open-api command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getOpenApiOverrides []func(
+	*cobra.Command,
+	*serving.GetOpenApiRequest,
+)
+
+func newGetOpenApi() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getOpenApiReq serving.GetOpenApiRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-open-api NAME"
+	cmd.Short = `Get the schema for a serving endpoint.`
+	cmd.Long = `Get the schema for a serving endpoint.
+  
+  Get the query schema of the serving endpoint in OpenAPI format. The schema
+  contains information for the supported paths, input and output format and
+  datatypes.
+
+  Arguments:
+    NAME: The name of the serving endpoint that the served model belongs to. This
+      field is required.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		getOpenApiReq.Name = args[0]
+
+		err = w.ServingEndpoints.GetOpenApi(ctx, getOpenApiReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getOpenApiOverrides {
+		fn(cmd, &getOpenApiReq)
 	}
 
 	return cmd
