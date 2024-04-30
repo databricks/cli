@@ -72,11 +72,12 @@ func ParseResourcesState(ctx context.Context, b *bundle.Bundle) (*resourcesState
 	if err != nil {
 		return nil, err
 	}
-	rawState, stateFileErr := os.ReadFile(filepath.Join(cacheDir, TerraformStateFileName))
-	if errors.Is(stateFileErr, os.ErrNotExist) {
-		return &resourcesState{}, nil
-	} else if stateFileErr != nil {
-		return nil, stateFileErr
+	rawState, err := os.ReadFile(filepath.Join(cacheDir, TerraformStateFileName))
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return &resourcesState{}, nil
+		}
+		return nil, err
 	}
 	var state resourcesState
 	err = json.Unmarshal(rawState, &state)
