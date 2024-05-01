@@ -1,5 +1,21 @@
 # Version changelog
 
+## 0.219.0
+
+Bundles:
+ * Don't fail while parsing outdated terraform state ([#1404](https://github.com/databricks/cli/pull/1404)).
+ * Annotate DLT pipelines when deployed using DABs ([#1410](https://github.com/databricks/cli/pull/1410)).
+
+
+API Changes:
+ * Changed `databricks libraries cluster-status` command. New request type is compute.ClusterStatus.
+ * Changed `databricks libraries cluster-status` command to return .
+ * Added `databricks serving-endpoints get-open-api` command.
+
+OpenAPI commit 21f9f1482f9d0d15228da59f2cd9f0863d2a6d55 (2024-04-23)
+Dependency updates:
+ * Bump github.com/databricks/databricks-sdk-go from 0.38.0 to 0.39.0 ([#1405](https://github.com/databricks/cli/pull/1405)).
+
 ## 0.218.1
 
 This is a bugfix release.
