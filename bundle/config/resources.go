@@ -163,30 +163,6 @@ func (r *Resources) VerifyAllResourcesDefined() error {
 		}
 	}
 
-	for k, e := range r.Models {
-		if e == nil || !e.DynamicValue.IsValid() {
-			return fmt.Errorf("model %s is not defined", k)
-		}
-	}
-
-	for k, e := range r.Experiments {
-		if e == nil || !e.DynamicValue.IsValid() {
-			return fmt.Errorf("experiment %s is not defined", k)
-		}
-	}
-
-	for k, e := range r.ModelServingEndpoints {
-		if e == nil || !e.DynamicValue.IsValid() {
-			return fmt.Errorf("model serving endpoint %s is not defined", k)
-		}
-	}
-
-	for k, e := range r.RegisteredModels {
-		if e == nil || !e.DynamicValue.IsValid() {
-			return fmt.Errorf("registered model %s is not defined", k)
-		}
-	}
-
 	return nil
 }
 
