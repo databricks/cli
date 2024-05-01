@@ -126,16 +126,40 @@ func (r *Resources) VerifyUniqueResourceIdentifiers() (*UniqueResourceIdTracker,
 	return tracker, nil
 }
 
-func (r *Resources) VerifyAllResourcesDefined() error {
-	for k, e := range r.Jobs {
-		if e == nil || !e.DynamicValue.IsValid() {
-			return fmt.Errorf("job %s is not defined", k)
-		}
-	}
+type resource struct {
+	resource ConfigResource
+	key      string
+}
 
+func (r *Resources) allResources() []resource {
+	all := make([]resource, 0)
+	for k, e := range r.Jobs {
+		all = append(all, resource{resource: e, key: k})
+	}
 	for k, e := range r.Pipelines {
-		if e == nil || !e.DynamicValue.IsValid() {
-			return fmt.Errorf("pipeline %s is not defined", k)
+		all = append(all, resource{resource: e, key: k})
+	}
+	for k, e := range r.Models {
+		all = append(all, resource{resource: e, key: k})
+	}
+	for k, e := range r.Experiments {
+		all = append(all, resource{resource: e, key: k})
+	}
+	for k, e := range r.ModelServingEndpoints {
+		all = append(all, resource{resource: e, key: k})
+	}
+	for k, e := range r.RegisteredModels {
+		all = append(all, resource{resource: e, key: k})
+	}
+	return all
+}
+
+func (r *Resources) VerifyAllResourcesDefined() error {
+	all := r.allResources()
+	for _, e := range all {
+		err := e.resource.Validate(e.key)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -193,6 +217,7 @@ func (r *Resources) ConfigureConfigFilePath() {
 type ConfigResource interface {
 	Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error)
 	TerraformResourceName() string
+	Validate(key string) error
 }
 
 func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) {

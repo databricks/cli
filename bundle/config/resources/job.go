@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"github.com/databricks/cli/bundle/config/paths"
@@ -46,4 +47,12 @@ func (j *Job) Exists(ctx context.Context, w *databricks.WorkspaceClient, id stri
 
 func (j *Job) TerraformResourceName() string {
 	return "databricks_job"
+}
+
+func (j *Job) Validate(key string) error {
+	if j == nil || !j.DynamicValue.IsValid() || j.JobSettings == nil {
+		return fmt.Errorf("job %s is not defined", key)
+	}
+
+	return nil
 }

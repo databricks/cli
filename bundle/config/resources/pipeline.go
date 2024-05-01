@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/databricks/cli/bundle/config/paths"
 	"github.com/databricks/cli/libs/log"
@@ -41,4 +42,12 @@ func (p *Pipeline) Exists(ctx context.Context, w *databricks.WorkspaceClient, id
 
 func (p *Pipeline) TerraformResourceName() string {
 	return "databricks_pipeline"
+}
+
+func (p *Pipeline) Validate(key string) error {
+	if p == nil || !p.DynamicValue.IsValid() {
+		return fmt.Errorf("pipeline %s is not defined", key)
+	}
+
+	return nil
 }
