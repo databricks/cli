@@ -136,18 +136,6 @@ func (r *Resources) ConfigureConfigFilePath() {
 	for _, e := range r.Pipelines {
 		e.ConfigureConfigFilePath()
 	}
-	for _, e := range r.Models {
-		e.ConfigureConfigFilePath()
-	}
-	for _, e := range r.Experiments {
-		e.ConfigureConfigFilePath()
-	}
-	for _, e := range r.ModelServingEndpoints {
-		e.ConfigureConfigFilePath()
-	}
-	for _, e := range r.RegisteredModels {
-		e.ConfigureConfigFilePath()
-	}
 }
 
 type ConfigResource interface {
