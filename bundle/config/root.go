@@ -482,13 +482,13 @@ func (r Root) verifySafeMerge(other Root) error {
 	for k, p := range paths {
 		if _, ok := otherPaths[k]; ok {
 			// Type and location of the existing resource in the map.
-			ot := strings.TrimSuffix(paths[k][0].Key(), "s")
-			ov, _ := dyn.GetByPath(r.value.Get("resources"), paths[k])
+			ot := strings.TrimSuffix(p[0].Key(), "s")
+			ov, _ := dyn.GetByPath(r.value.Get("resources"), p)
 			ol := ov.Location()
 
 			// Type and location of the newly encountered resource with a duplicate name.
-			nt := strings.TrimSuffix(p[0].Key(), "s")
-			nv, _ := dyn.GetByPath(r.value.Get("resources"), p)
+			nt := strings.TrimSuffix(otherPaths[k][0].Key(), "s")
+			nv, _ := dyn.GetByPath(other.value.Get("resources"), otherPaths[k])
 			nl := nv.Location()
 
 			// Error, encountered a duplicate resource identifier.
@@ -501,9 +501,9 @@ func (r Root) verifySafeMerge(other Root) error {
 // This function gathers the resource identifiers, which exist in the bundle configuration
 // in the form: resources.<resource_type>.<resource_identifiers>.
 //
-// It returns an error if it encounters a duplicate resource identifiers.
+// It returns an error if it encounters duplicate resource identifiers.
 //
-// Otherwise it returns a map of resource identifiers to their paths in the configuration tree
+// Otherwise it returns a map of resource identifiers to their paths in the configuration tree,
 // relative to the resources key.
 func (r Root) gatherResourceIdentifiers() (map[string]dyn.Path, error) {
 	paths := make(map[string]dyn.Path)
@@ -519,8 +519,6 @@ func (r Root) gatherResourceIdentifiers() (map[string]dyn.Path, error) {
 		if len(p) > 2 {
 			return v, dyn.ErrSkip
 		}
-
-		// TODO: Add validation that the resource is a map.
 
 		// If the resource identifier already exists in the map, return an error.
 		k := p[1].Key()

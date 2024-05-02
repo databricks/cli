@@ -48,7 +48,7 @@ func TestDuplicateIdOnMergeReturnsErrorForJobAndPipeline(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	err := root.Merge(other)
-	assert.ErrorContains(t, err, "multiple resources named foo (job at ./testdata/duplicate_resource_name_in_subconfiguration/databricks.yml:10:7, job at ./testdata/duplicate_resource_name_in_subconfiguration/databricks.yml:10:7)")
+	assert.ErrorContains(t, err, "multiple resources named foo (job at ./testdata/duplicate_resource_name_in_subconfiguration/databricks.yml:10:7, pipeline at ./testdata/duplicate_resource_name_in_subconfiguration/resources.yml:4:7)")
 }
 
 func TestDuplicateIdOnMergeReturnsErrorForJobAndJob(t *testing.T) {
@@ -59,7 +59,7 @@ func TestDuplicateIdOnMergeReturnsErrorForJobAndJob(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	err := root.Merge(other)
-	assert.ErrorContains(t, err, "multiple resources named foo (job at ./testdata/duplicate_resource_name_in_subconfiguration_job_and_job/databricks.yml:10:7, job at ./testdata/duplicate_resource_name_in_subconfiguration_job_and_job/databricks.yml:10:7)")
+	assert.ErrorContains(t, err, "multiple resources named foo (job at ./testdata/duplicate_resource_name_in_subconfiguration_job_and_job/databricks.yml:10:7, job at ./testdata/duplicate_resource_name_in_subconfiguration_job_and_job/resources.yml:4:7)")
 }
 
 func TestInitializeVariables(t *testing.T) {
