@@ -38,7 +38,7 @@ func TestDuplicateIdOnLoadReturnsErrorForJobAndPipeline(t *testing.T) {
 
 func TestDuplicateIdOnLoadReturnsErrorForJobsAndExperiments(t *testing.T) {
 	_, diags := Load("./testdata/duplicate_resource_names_in_root_job_and_experiment/databricks.yml")
-	assert.ErrorContains(t, diags.Error(), "multiple resources named foo (job at ./testdata/duplicate_resource_names_in_root_jobs_and_experiments/databricks.yml:10:7, experiment at ./testdata/duplicate_resource_names_in_root_jobs_and_experiments/databricks.yml:18:7)")
+	assert.ErrorContains(t, diags.Error(), "multiple resources named foo (job at ./testdata/duplicate_resource_names_in_root_job_and_experiment/databricks.yml:10:7, experiment at ./testdata/duplicate_resource_names_in_root_job_and_experiment/databricks.yml:18:7)")
 }
 
 func TestDuplicateIdOnMergeReturnsErrorForJobAndPipeline(t *testing.T) {
