@@ -63,12 +63,13 @@ func convGrants(acl []resources.Grant) *schema.ResourceGrants {
 	return &resource
 }
 
-// BundleToTerraform converts resources in a bundle configuration
+// bundleToTerraformLegacy converts resources in a bundle configuration
 // to the equivalent Terraform JSON representation.
 //
-// NOTE: THIS IS CURRENTLY A HACK. WE NEED A BETTER WAY TO
-// CONVERT TO/FROM TERRAFORM COMPATIBLE FORMAT.
-func BundleToTerraform(config *config.Root) *schema.Root {
+// NOTE: This is the old implementation. We now use the new (ie dynamic) implementation
+// at BundleToTerraformWithDynValue. This function is kept around to ensure equivalence
+// between the output of the two implementations.
+func bundleToTerraformLegacy(config *config.Root) *schema.Root {
 	tfroot := schema.NewRoot()
 	tfroot.Provider = schema.NewProviders()
 	tfroot.Resource = schema.NewResources()

@@ -58,7 +58,7 @@ func TestBundleToTerraformJob(t *testing.T) {
 		},
 	}
 
-	out := BundleToTerraform(&config)
+	out := bundleToTerraformLegacy(&config)
 	resource := out.Resource.Job["my_job"].(*schema.ResourceJob)
 
 	assert.Equal(t, "my job", resource.Name)
@@ -90,7 +90,7 @@ func TestBundleToTerraformJobPermissions(t *testing.T) {
 		},
 	}
 
-	out := BundleToTerraform(&config)
+	out := bundleToTerraformLegacy(&config)
 	resource := out.Resource.Permissions["job_my_job"].(*schema.ResourcePermissions)
 
 	assert.NotEmpty(t, resource.JobId)
@@ -128,7 +128,7 @@ func TestBundleToTerraformJobTaskLibraries(t *testing.T) {
 		},
 	}
 
-	out := BundleToTerraform(&config)
+	out := bundleToTerraformLegacy(&config)
 	resource := out.Resource.Job["my_job"].(*schema.ResourceJob)
 
 	assert.Equal(t, "my job", resource.Name)
@@ -172,7 +172,7 @@ func TestBundleToTerraformForEachTaskLibraries(t *testing.T) {
 		},
 	}
 
-	out := BundleToTerraform(&config)
+	out := bundleToTerraformLegacy(&config)
 	resource := out.Resource.Job["my_job"].(*schema.ResourceJob)
 
 	assert.Equal(t, "my job", resource.Name)
@@ -230,7 +230,7 @@ func TestBundleToTerraformPipeline(t *testing.T) {
 		},
 	}
 
-	out := BundleToTerraform(&config)
+	out := bundleToTerraformLegacy(&config)
 	resource := out.Resource.Pipeline["my_pipeline"].(*schema.ResourcePipeline)
 
 	assert.Equal(t, "my pipeline", resource.Name)
@@ -263,7 +263,7 @@ func TestBundleToTerraformPipelinePermissions(t *testing.T) {
 		},
 	}
 
-	out := BundleToTerraform(&config)
+	out := bundleToTerraformLegacy(&config)
 	resource := out.Resource.Permissions["pipeline_my_pipeline"].(*schema.ResourcePermissions)
 
 	assert.NotEmpty(t, resource.PipelineId)
@@ -300,7 +300,7 @@ func TestBundleToTerraformModel(t *testing.T) {
 		},
 	}
 
-	out := BundleToTerraform(&config)
+	out := bundleToTerraformLegacy(&config)
 	resource := out.Resource.MlflowModel["my_model"].(*schema.ResourceMlflowModel)
 
 	assert.Equal(t, "name", resource.Name)
@@ -336,7 +336,7 @@ func TestBundleToTerraformModelPermissions(t *testing.T) {
 		},
 	}
 
-	out := BundleToTerraform(&config)
+	out := bundleToTerraformLegacy(&config)
 	resource := out.Resource.Permissions["mlflow_model_my_model"].(*schema.ResourcePermissions)
 
 	assert.NotEmpty(t, resource.RegisteredModelId)
@@ -362,7 +362,7 @@ func TestBundleToTerraformExperiment(t *testing.T) {
 		},
 	}
 
-	out := BundleToTerraform(&config)
+	out := bundleToTerraformLegacy(&config)
 	resource := out.Resource.MlflowExperiment["my_experiment"].(*schema.ResourceMlflowExperiment)
 
 	assert.Equal(t, "name", resource.Name)
@@ -392,7 +392,7 @@ func TestBundleToTerraformExperimentPermissions(t *testing.T) {
 		},
 	}
 
-	out := BundleToTerraform(&config)
+	out := bundleToTerraformLegacy(&config)
 	resource := out.Resource.Permissions["mlflow_experiment_my_experiment"].(*schema.ResourcePermissions)
 
 	assert.NotEmpty(t, resource.ExperimentId)
@@ -436,7 +436,7 @@ func TestBundleToTerraformModelServing(t *testing.T) {
 		},
 	}
 
-	out := BundleToTerraform(&config)
+	out := bundleToTerraformLegacy(&config)
 	resource := out.Resource.ModelServing["my_model_serving_endpoint"].(*schema.ResourceModelServing)
 
 	assert.Equal(t, "name", resource.Name)
@@ -472,7 +472,7 @@ func TestBundleToTerraformModelServingPermissions(t *testing.T) {
 		},
 	}
 
-	out := BundleToTerraform(&config)
+	out := bundleToTerraformLegacy(&config)
 	resource := out.Resource.Permissions["model_serving_my_model_serving_endpoint"].(*schema.ResourcePermissions)
 
 	assert.NotEmpty(t, resource.ServingEndpointId)
@@ -501,7 +501,7 @@ func TestBundleToTerraformRegisteredModel(t *testing.T) {
 		},
 	}
 
-	out := BundleToTerraform(&config)
+	out := bundleToTerraformLegacy(&config)
 	resource := out.Resource.RegisteredModel["my_registered_model"].(*schema.ResourceRegisteredModel)
 
 	assert.Equal(t, "name", resource.Name)
@@ -536,7 +536,7 @@ func TestBundleToTerraformRegisteredModelGrants(t *testing.T) {
 		},
 	}
 
-	out := BundleToTerraform(&config)
+	out := bundleToTerraformLegacy(&config)
 	resource := out.Resource.Grants["registered_model_my_registered_model"].(*schema.ResourceGrants)
 
 	assert.NotEmpty(t, resource.Function)
@@ -979,7 +979,7 @@ func assertEqualTerraformRoot(t *testing.T, a, b *schema.Root) {
 
 func bundleToTerraformEquivalenceTest(t *testing.T, config *config.Root) {
 	t.Run("dyn equivalence", func(t *testing.T) {
-		tf1 := BundleToTerraform(config)
+		tf1 := bundleToTerraformLegacy(config)
 
 		vin, err := convert.FromTyped(config, dyn.NilValue)
 		require.NoError(t, err)
