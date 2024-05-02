@@ -97,7 +97,8 @@ func Load(path string) (*Root, diag.Diagnostics) {
 		return nil, diag.Errorf("failed to load %s: %v", path, err)
 	}
 
-	_, err = r.Resources.VerifyUniqueResourceIdentifiers()
+	// Error if there are duplicate resource identifiers in the config file.
+	_, err = r.gatherResourceIdentifiers()
 	if err != nil {
 		diags = diags.Extend(diag.FromErr(err))
 	}
@@ -265,7 +266,7 @@ func (r *Root) InitializeVariables(vars []string) error {
 
 func (r *Root) Merge(other *Root) error {
 	// Check for safe merge, protecting against duplicate resource identifiers
-	err := r.Resources.VerifySafeMerge(&other.Resources)
+	err := r.verifySafeMerge(*other)
 	if err != nil {
 		return err
 	}
@@ -462,4 +463,85 @@ func (r Root) GetLocation(path string) dyn.Location {
 		return dyn.Location{}
 	}
 	return v.Location()
+}
+
+// This function verifies that the merge of two Root objects is safe. It checks
+// there will be no duplicate resource identifiers in the merged configuration.
+func (r Root) verifySafeMerge(other Root) error {
+	paths, err := r.gatherResourceIdentifiers()
+	if err != nil {
+		return err
+	}
+
+	otherPaths, err := other.gatherResourceIdentifiers()
+	if err != nil {
+		return err
+	}
+
+	// If duplicate keys exist, return
+	for k, p := range paths {
+		if _, ok := otherPaths[k]; ok {
+			// Type and location of the existing resource in the map.
+			ot := strings.TrimSuffix(paths[k][0].Key(), "s")
+			ov, _ := dyn.GetByPath(r.value.Get("resources"), paths[k])
+			ol := ov.Location()
+
+			// Type and location of the newly encountered resource with a duplicate name.
+			nt := strings.TrimSuffix(p[0].Key(), "s")
+			nv, _ := dyn.GetByPath(r.value.Get("resources"), p)
+			nl := nv.Location()
+
+			// Error, encountered a duplicate resource identifier.
+			return fmt.Errorf("multiple resources named %s (%s at %v, %s at %v)", k, ot, ol, nt, nl)
+		}
+	}
+	return nil
+}
+
+// This function gathers the resource identifiers, which exist in the bundle configuration
+// in the form: resources.<resource_type>.<resource_identifiers>.
+//
+// It returns an error if it encounters a duplicate resource identifiers.
+//
+// Otherwise it returns a map of resource identifiers to their paths in the configuration tree
+// relative to the resources key.
+func (r Root) gatherResourceIdentifiers() (map[string]dyn.Path, error) {
+	paths := make(map[string]dyn.Path)
+	rrv := r.value.Get("resources")
+
+	// Walk the resources tree and accumulate the resource identifiers.
+	_, err := dyn.Walk(rrv, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		// The path is expected to be of length 2, and of the form <resource_type>.<resource_identifier>.
+		// Eg: jobs.my_job, pipelines.my_pipeline, etc.
+		if len(p) < 2 {
+			return v, nil
+		}
+		if len(p) > 2 {
+			return v, dyn.ErrSkip
+		}
+
+		// TODO: Add validation that the resource is a map.
+
+		// If the resource identifier already exists in the map, return an error.
+		k := p[1].Key()
+		if _, ok := paths[k]; ok {
+			// Type and location of the existing resource in the map.
+			ot := strings.TrimSuffix(paths[k][0].Key(), "s")
+			ov, _ := dyn.GetByPath(rrv, paths[k])
+			ol := ov.Location()
+
+			// Type and location of the newly encountered with a duplicate name.
+			nt := strings.TrimSuffix(p[0].Key(), "s")
+			nv, _ := dyn.GetByPath(rrv, p)
+			nl := nv.Location()
+
+			// Error, encountered a duplicate resource identifier.
+			return v, fmt.Errorf("multiple resources named %s (%s at %v, %s at %v)", k, ot, ol, nt, nl)
+		}
+
+		// Accumulate the resource identifier and its path.
+		paths[k] = p
+		return v, nil
+	})
+	return paths, err
 }

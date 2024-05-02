@@ -1,0 +1,10 @@
+bundle:
+  name: test
+
+workspace:
+  profile: test
+
+resources:
+  jobs:
+    foo:
+      name: job foo
