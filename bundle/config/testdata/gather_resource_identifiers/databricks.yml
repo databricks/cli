@@ -1,0 +1,22 @@
+bundle:
+  name: test
+
+workspace:
+  profile: test
+
+resources:
+  jobs:
+    foo:
+      name: job foo
+    bar:
+      name: job bar
+  pipelines:
+    zab:
+      name: pipeline foo
+    baz:
+      name: pipeline baz
+  experiments:
+    zaz:
+      name: experiment zaz
+    zuz:
+      name: experiment zuz

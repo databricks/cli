@@ -8,10 +8,6 @@ resources:
   jobs:
     foo:
       name: job foo
-    bar:
-      name: job bar
   pipelines:
     foo:
       name: pipeline foo
-    baz:
-      name: pipeline baz

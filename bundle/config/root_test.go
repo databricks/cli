@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/variable"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -32,7 +33,7 @@ func TestRootLoad(t *testing.T) {
 
 func TestDuplicateIdOnLoadReturnsErrorForJobAndPipeline(t *testing.T) {
 	_, diags := Load("./testdata/duplicate_resource_names_in_root_job_and_pipeline/databricks.yml")
-	assert.ErrorContains(t, diags.Error(), "multiple resources named foo (job at ./testdata/duplicate_resource_names_in_root_job_and_pipeline/databricks.yml:10:7, pipeline at ./testdata/duplicate_resource_names_in_root_job_and_pipeline/databricks.yml:15:7)")
+	assert.ErrorContains(t, diags.Error(), "multiple resources named foo (job at ./testdata/duplicate_resource_names_in_root_job_and_pipeline/databricks.yml:10:7, pipeline at ./testdata/duplicate_resource_names_in_root_job_and_pipeline/databricks.yml:13:7)")
 }
 
 func TestDuplicateIdOnLoadReturnsErrorForJobsAndExperiments(t *testing.T) {
@@ -60,6 +61,24 @@ func TestDuplicateIdOnMergeReturnsErrorForJobAndJob(t *testing.T) {
 
 	err := root.Merge(other)
 	assert.ErrorContains(t, err, "multiple resources named foo (job at ./testdata/duplicate_resource_name_in_subconfiguration_job_and_job/databricks.yml:10:7, job at ./testdata/duplicate_resource_name_in_subconfiguration_job_and_job/resources.yml:4:7)")
+}
+
+func TestGatherResourceIdentifiers(t *testing.T) {
+	root, diags := Load("./testdata/gather_resource_identifiers/databricks.yml")
+	require.NoError(t, diags.Error())
+
+	actual, err := root.gatherResourceIdentifiers()
+	assert.NoError(t, err)
+
+	expected := map[string]dyn.Path{
+		"foo": dyn.MustPathFromString("jobs.foo"),
+		"bar": dyn.MustPathFromString("jobs.bar"),
+		"zab": dyn.MustPathFromString("pipelines.zab"),
+		"baz": dyn.MustPathFromString("pipelines.baz"),
+		"zaz": dyn.MustPathFromString("experiments.zaz"),
+		"zuz": dyn.MustPathFromString("experiments.zuz"),
+	}
+	assert.Equal(t, expected, actual)
 }
 
 func TestInitializeVariables(t *testing.T) {
