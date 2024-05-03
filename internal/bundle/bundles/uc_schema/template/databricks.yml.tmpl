@@ -1,0 +1,22 @@
+bundle:
+  name: "bundle-playground"
+
+resources:
+  pipelines:
+    foo:
+      name: test-pipeline-{{.unique_id}}
+      libraries:
+        - notebook:
+            path: ./nb.sql
+      development: true
+      catalog: main
+      target: ${resources.schemas.bar.id}
+
+  schemas:
+    bar:
+      name: test-schema-{{.unique_id}}
+      catalog_name: main
+      comment: This schema was created from DABs
+
+    # TODO: Add grants here, and test that.
+    # TODO: test for development mode etc?
