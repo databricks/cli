@@ -66,8 +66,10 @@ func convGrants(acl []resources.Grant) *schema.ResourceGrants {
 // BundleToTerraform converts resources in a bundle configuration
 // to the equivalent Terraform JSON representation.
 //
-// NOTE: THIS IS CURRENTLY A HACK. WE NEED A BETTER WAY TO
-// CONVERT TO/FROM TERRAFORM COMPATIBLE FORMAT.
+// Note: This function is an older implementation of the conversion logic. It is
+// no longer used in any code paths and is kept around to be used in tests.
+// New resources do not need to modify this functions, and can instead use the
+// new tfdyn package to define the conversion logic.
 func BundleToTerraform(config *config.Root) *schema.Root {
 	tfroot := schema.NewRoot()
 	tfroot.Provider = schema.NewProviders()
