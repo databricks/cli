@@ -243,12 +243,13 @@ type DataSourceJobJobSettingsSettingsLibraryPypi struct {
 }
 
 type DataSourceJobJobSettingsSettingsLibrary struct {
-	Egg   string                                        `json:"egg,omitempty"`
-	Jar   string                                        `json:"jar,omitempty"`
-	Whl   string                                        `json:"whl,omitempty"`
-	Cran  *DataSourceJobJobSettingsSettingsLibraryCran  `json:"cran,omitempty"`
-	Maven *DataSourceJobJobSettingsSettingsLibraryMaven `json:"maven,omitempty"`
-	Pypi  *DataSourceJobJobSettingsSettingsLibraryPypi  `json:"pypi,omitempty"`
+	Egg          string                                        `json:"egg,omitempty"`
+	Jar          string                                        `json:"jar,omitempty"`
+	Requirements string                                        `json:"requirements,omitempty"`
+	Whl          string                                        `json:"whl,omitempty"`
+	Cran         *DataSourceJobJobSettingsSettingsLibraryCran  `json:"cran,omitempty"`
+	Maven        *DataSourceJobJobSettingsSettingsLibraryMaven `json:"maven,omitempty"`
+	Pypi         *DataSourceJobJobSettingsSettingsLibraryPypi  `json:"pypi,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsNewClusterAutoscale struct {
@@ -558,12 +559,13 @@ type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryPypi struct {
 }
 
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibrary struct {
-	Egg   string                                                           `json:"egg,omitempty"`
-	Jar   string                                                           `json:"jar,omitempty"`
-	Whl   string                                                           `json:"whl,omitempty"`
-	Cran  *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryCran  `json:"cran,omitempty"`
-	Maven *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryMaven `json:"maven,omitempty"`
-	Pypi  *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryPypi  `json:"pypi,omitempty"`
+	Egg          string                                                           `json:"egg,omitempty"`
+	Jar          string                                                           `json:"jar,omitempty"`
+	Requirements string                                                           `json:"requirements,omitempty"`
+	Whl          string                                                           `json:"whl,omitempty"`
+	Cran         *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryCran  `json:"cran,omitempty"`
+	Maven        *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryMaven `json:"maven,omitempty"`
+	Pypi         *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryPypi  `json:"pypi,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterAutoscale struct {
@@ -896,12 +898,13 @@ type DataSourceJobJobSettingsSettingsTaskLibraryPypi struct {
 }
 
 type DataSourceJobJobSettingsSettingsTaskLibrary struct {
-	Egg   string                                            `json:"egg,omitempty"`
-	Jar   string                                            `json:"jar,omitempty"`
-	Whl   string                                            `json:"whl,omitempty"`
-	Cran  *DataSourceJobJobSettingsSettingsTaskLibraryCran  `json:"cran,omitempty"`
-	Maven *DataSourceJobJobSettingsSettingsTaskLibraryMaven `json:"maven,omitempty"`
-	Pypi  *DataSourceJobJobSettingsSettingsTaskLibraryPypi  `json:"pypi,omitempty"`
+	Egg          string                                            `json:"egg,omitempty"`
+	Jar          string                                            `json:"jar,omitempty"`
+	Requirements string                                            `json:"requirements,omitempty"`
+	Whl          string                                            `json:"whl,omitempty"`
+	Cran         *DataSourceJobJobSettingsSettingsTaskLibraryCran  `json:"cran,omitempty"`
+	Maven        *DataSourceJobJobSettingsSettingsTaskLibraryMaven `json:"maven,omitempty"`
+	Pypi         *DataSourceJobJobSettingsSettingsTaskLibraryPypi  `json:"pypi,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskNewClusterAutoscale struct {
