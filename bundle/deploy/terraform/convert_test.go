@@ -660,8 +660,8 @@ func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
 	assert.Equal(t, "1", config.Resources.RegisteredModels["test_registered_model"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.RegisteredModels["test_registered_model"].ModifiedStatus)
 
-	assert.Equal(t, "1", config.Resources.RegisteredModels["test_lakehouse_monitor"].ID)
-	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.RegisteredModels["test_lakehouse_monitor"].ModifiedStatus)
+	assert.Equal(t, "1", config.Resources.LakehouseMonitors["test_lakehouse_monitor"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.LakehouseMonitors["test_lakehouse_monitor"].ModifiedStatus)
 	AssertFullResourceCoverage(t, &config)
 }
 

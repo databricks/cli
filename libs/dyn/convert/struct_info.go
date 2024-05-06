@@ -92,10 +92,17 @@ func buildStructInfo(typ reflect.Type) structInfo {
 				continue
 			}
 			if name == "-" {
-				// convert Name to snake case
-				snake := matchFirstCap.ReplaceAllString(sf.Name, "${1}_${2}")
-				snake = matchAllCap.ReplaceAllString(snake, "${1}_${2}")
-				name = strings.ToLower(snake)
+				url_name, _, _ := strings.Cut(sf.Tag.Get("url"), ",")
+				// If the `jsonTag` and the `urlTag` are `-` then infer the name from the variable name
+				if url_name == "-" {
+					// convert Name to snake case
+					snake := matchFirstCap.ReplaceAllString(sf.Name, "${1}_${2}")
+					snake = matchAllCap.ReplaceAllString(snake, "${1}_${2}")
+					name = strings.ToLower(snake)
+				} else {
+					continue
+				}
+
 			}
 
 			// Top level fields always take precedence.
