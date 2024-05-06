@@ -10,13 +10,6 @@ import (
 )
 
 func convertLakehouseMonitorResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
-	vin, err := renameKeys(vin, map[string]string{
-		"full_name": "table_name",
-	})
-
-	if err != nil {
-		return dyn.InvalidValue, err
-	}
 	// Normalize the output value to the target schema.
 	vout, diags := convert.Normalize(schema.ResourceLakehouseMonitor{}, vin)
 	for _, diag := range diags {

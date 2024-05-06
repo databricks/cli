@@ -713,7 +713,7 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 			LakehouseMonitors: map[string]*resources.LakehouseMonitor{
 				"test_lakehouse_monitor": {
 					CreateMonitor: &catalog.CreateMonitor{
-						FullName: "test_lakehouse_monitor",
+						TableName: "test_lakehouse_monitor",
 					},
 				},
 			},
@@ -742,6 +742,9 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 
 	assert.Equal(t, "", config.Resources.RegisteredModels["test_registered_model"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.RegisteredModels["test_registered_model"].ModifiedStatus)
+
+	assert.Equal(t, "", config.Resources.LakehouseMonitors["test_lakehouse_monitor"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.LakehouseMonitors["test_lakehouse_monitor"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -824,12 +827,12 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 			LakehouseMonitors: map[string]*resources.LakehouseMonitor{
 				"test_lakehouse_monitor": {
 					CreateMonitor: &catalog.CreateMonitor{
-						FullName: "test_lakehouse_monitor",
+						TableName: "test_lakehouse_monitor",
 					},
 				},
 				"test_lakehouse_monitor_new": {
 					CreateMonitor: &catalog.CreateMonitor{
-						FullName: "test_lakehouse_monitor_new",
+						TableName: "test_lakehouse_monitor_new",
 					},
 				},
 			},
@@ -933,6 +936,22 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 					{Attributes: stateInstanceAttributes{ID: "2"}},
 				},
 			},
+			{
+				Type: "databricks_lakehouse_monitor",
+				Mode: "managed",
+				Name: "test_lakehouse_monitor",
+				Instances: []stateResourceInstance{
+					{Attributes: stateInstanceAttributes{ID: "test_lakehouse_monitor"}},
+				},
+			},
+			{
+				Type: "databricks_lakehouse_monitor",
+				Mode: "managed",
+				Name: "test_lakehouse_monitor_old",
+				Instances: []stateResourceInstance{
+					{Attributes: stateInstanceAttributes{ID: "test_lakehouse_monitor_old"}},
+				},
+			},
 		},
 	}
 	err := TerraformToBundle(&tfState, &config)
@@ -980,6 +999,12 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, "", config.Resources.ModelServingEndpoints["test_model_serving_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.ModelServingEndpoints["test_model_serving_new"].ModifiedStatus)
 
+	assert.Equal(t, "test_lakehouse_monitor", config.Resources.LakehouseMonitors["test_lakehouse_monitor"].ID)
+	assert.Equal(t, "", config.Resources.LakehouseMonitors["test_lakehouse_monitor"].ModifiedStatus)
+	assert.Equal(t, "test_lakehouse_monitor_old", config.Resources.LakehouseMonitors["test_lakehouse_monitor_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.LakehouseMonitors["test_lakehouse_monitor_old"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.LakehouseMonitors["test_lakehouse_monitor_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.LakehouseMonitors["test_lakehouse_monitor_new"].ModifiedStatus)
 	AssertFullResourceCoverage(t, &config)
 }
 

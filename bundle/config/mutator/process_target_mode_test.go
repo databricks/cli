@@ -98,7 +98,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					"registeredmodel1": {CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{Name: "registeredmodel1"}},
 				},
 				LakehouseMonitors: map[string]*resources.LakehouseMonitor{
-					"lakehouseMonitor1": {CreateMonitor: &catalog.CreateMonitor{FullName: "lakehouseMonitor1"}},
+					"lakehouseMonitor1": {CreateMonitor: &catalog.CreateMonitor{TableName: "lakehouseMonitor1"}},
 				},
 			},
 		},
@@ -150,7 +150,7 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	assert.Equal(t, "dev_lennart_registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 
 	// Lakehouse monitor 1
-	assert.Equal(t, "lakehouseMonitor1", b.Config.Resources.LakehouseMonitors["lakehouseMonitor1"].FullName)
+	assert.Equal(t, "lakehouseMonitor1", b.Config.Resources.LakehouseMonitors["lakehouseMonitor1"].TableName)
 }
 
 func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {
@@ -206,7 +206,7 @@ func TestProcessTargetModeDefault(t *testing.T) {
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
 	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
-	assert.Equal(t, "lakehouseMonitor1", b.Config.Resources.LakehouseMonitors["lakehouseMonitor1"].FullName)
+	assert.Equal(t, "lakehouseMonitor1", b.Config.Resources.LakehouseMonitors["lakehouseMonitor1"].TableName)
 }
 
 func TestProcessTargetModeProduction(t *testing.T) {
@@ -247,7 +247,7 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
 	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
-	assert.Equal(t, "lakehouseMonitor1", b.Config.Resources.LakehouseMonitors["lakehouseMonitor1"].FullName)
+	assert.Equal(t, "lakehouseMonitor1", b.Config.Resources.LakehouseMonitors["lakehouseMonitor1"].TableName)
 }
 
 func TestProcessTargetModeProductionOkForPrincipal(t *testing.T) {

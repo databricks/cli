@@ -226,7 +226,6 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 		noResources = false
 		var dst schema.ResourceLakehouseMonitor
 		conv(src, &dst)
-		dst.TableName = src.FullName
 		tfroot.Resource.LakehouseMonitor[k] = &dst
 	}
 
@@ -374,14 +373,14 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 				cur.ID = instance.Attributes.ID
 				config.Resources.RegisteredModels[resource.Name] = cur
 			case "databricks_lakehouse_monitor":
-				var tmp schema.ResourceLakehouseMonitor
-				conv(resource.AttributeValues, &tmp)
 				if config.Resources.LakehouseMonitors == nil {
 					config.Resources.LakehouseMonitors = make(map[string]*resources.LakehouseMonitor)
 				}
 				cur := config.Resources.LakehouseMonitors[resource.Name]
-				modifiedStatus := convRemoteToLocal(tmp, &cur)
-				cur.ModifiedStatus = modifiedStatus
+				if cur == nil {
+					cur = &resources.LakehouseMonitor{ModifiedStatus: resources.ModifiedStatusDeleted}
+				}
+				cur.ID = instance.Attributes.ID
 				config.Resources.LakehouseMonitors[resource.Name] = cur
 			case "databricks_permissions":
 			case "databricks_grants":
@@ -418,6 +417,11 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 		}
 	}
 	for _, src := range config.Resources.RegisteredModels {
+		if src.ModifiedStatus == "" && src.ID == "" {
+			src.ModifiedStatus = resources.ModifiedStatusCreated
+		}
+	}
+	for _, src := range config.Resources.LakehouseMonitors {
 		if src.ModifiedStatus == "" && src.ID == "" {
 			src.ModifiedStatus = resources.ModifiedStatusCreated
 		}

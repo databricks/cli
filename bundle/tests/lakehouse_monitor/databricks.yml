@@ -1,7 +1,7 @@
 resources:
   lakehouse_monitors:
     my_lakehouse_monitor:
-      full_name: "main.test.thing1"
+      table_name: "main.test.thing1"
       assets_dir: "/Shared/provider-test/databricks_lakehouse_monitoring/main.test.thing1"
       output_schema_name: "test"
       inference_log:
@@ -18,14 +18,22 @@ targets:
     resources:
       lakehouse_monitors:
         my_lakehouse_monitor:
-          full_name: "main.test.dev"
+          table_name: "main.test.dev"
   staging:
     resources:
       lakehouse_monitors:
         my_lakehouse_monitor:
-          full_name: "main.test.staging"
+          table_name: "main.test.staging"
+          output_schema_name: "staging"
   production:
     resources:
       lakehouse_monitors:
         my_lakehouse_monitor:
-          full_name: "main.test.prod"
+          table_name: "main.test.prod"
+          output_schema_name: "prod"
+          inference_log:
+            granularities: ["1 hour"]
+            timestamp_col:  "timestamp_prod"
+            prediction_col: "prediction_prod"
+            model_id_col:  "model_id"
+            problem_type: "PROBLEM_TYPE_REGRESSION"

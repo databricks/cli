@@ -16,10 +16,10 @@ import (
 func TestConvertLakehouseMonitor(t *testing.T) {
 	var src = resources.LakehouseMonitor{
 		CreateMonitor: &catalog.CreateMonitor{
-			FullName:         "test_table_name",
+			TableName:        "test_table_name",
 			AssetsDir:        "assets_dir",
 			OutputSchemaName: "output_schema_name",
-			InferenceLog: &catalog.MonitorInferenceLogProfileType{
+			InferenceLog: &catalog.MonitorInferenceLog{
 				ModelIdCol:    "model_id",
 				PredictionCol: "test_prediction_col",
 				ProblemType:   "PROBLEM_TYPE_CLASSIFICATION",
