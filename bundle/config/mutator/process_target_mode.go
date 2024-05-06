@@ -111,6 +111,7 @@ func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) diag.Diagno
 			r.QualityMonitors[i].Schedule = nil
 		}
 	}
+
 	// TODO: test this manually
 	for i := range r.Schemas {
 		prefix = "dev_" + b.Config.Workspace.CurrentUser.ShortName + "_"
