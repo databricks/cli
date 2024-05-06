@@ -23,7 +23,7 @@ require (
 	github.com/stretchr/testify v1.9.0 // MIT
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225
 	golang.org/x/mod v0.17.0
-	golang.org/x/oauth2 v0.19.0
+	golang.org/x/oauth2 v0.20.0
 	golang.org/x/sync v0.7.0
 	golang.org/x/term v0.19.0
 	golang.org/x/text v0.14.0
@@ -32,8 +32,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute v1.23.4 // indirect
-	cloud.google.com/go/compute/metadata v0.2.3 // indirect
+	cloud.google.com/go/compute/metadata v0.3.0 // indirect
 	github.com/ProtonMail/go-crypto v1.1.0-alpha.2 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect
