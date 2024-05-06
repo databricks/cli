@@ -113,6 +113,10 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 							},
 						},
 					},
+				}
+			{
+				Schemas: map[string]*resources.Schema{
+					"schema1": {CreateSchema: &catalog.CreateSchema{Name: "schema1"}},
 				},
 			},
 		},
@@ -167,6 +171,9 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
 	assert.Nil(t, b.Config.Resources.QualityMonitors["qualityMonitor2"].Schedule)
 	assert.Equal(t, catalog.MonitorCronSchedulePauseStatusUnpaused, b.Config.Resources.QualityMonitors["qualityMonitor3"].Schedule.PauseStatus)
+
+	// Schema 1
+	assert.Equal(t, "dev_lennart_schema1", b.Config.Resources.Schemas["schema1"].Name)
 }
 
 func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {

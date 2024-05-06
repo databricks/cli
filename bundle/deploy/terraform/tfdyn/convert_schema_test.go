@@ -30,6 +30,10 @@ func TestConvertSchema(t *testing.T) {
 				Privileges: []string{"EXECUTE"},
 				Principal:  "jack@gmail.com",
 			},
+			{
+				Privileges: []string{"RUN"},
+				Principal:  "jane@gmail.com",
+			},
 		},
 	}
 
@@ -60,6 +64,10 @@ func TestConvertSchema(t *testing.T) {
 			{
 				Privileges: []string{"EXECUTE"},
 				Principal:  "jack@gmail.com",
+			},
+			{
+				Privileges: []string{"RUN"},
+				Principal:  "jane@gmail.com",
 			},
 		},
 	}, out.Grants["schema_my_schema"])
