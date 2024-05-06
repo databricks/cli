@@ -24,12 +24,11 @@ func TestAccBundleDeployUcSchema(t *testing.T) {
 	err = deployBundle(t, ctx, bundleRoot)
 	require.NoError(t, err)
 
-	t.Cleanup(func() {a
+	t.Cleanup(func() {
 		destroyBundle(t, ctx, bundleRoot)
 	})
 
 	// Assert the schema is created
-	// TODO: Skip this test on non-uc workspaces. Need a new filter function for it?
 	schemaName := "main.test-schema-" + uniqueId
 	schema, err := w.Schemas.GetByFullName(ctx, schemaName)
 	require.NoError(t, err)
