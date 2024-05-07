@@ -35,7 +35,7 @@ func TestAccBundleDeployUcSchema(t *testing.T) {
 	assert.Equal(t, schema.FullName, schemaName)
 	assert.Equal(t, schema.Comment, "This schema was created from DABs")
 
-	// Assert the pipeline is created, and it uses the specified schema
+	// Assert the pipeline is created
 	pipelineName := "test-pipeline-" + uniqueId
 	pipeline, err := w.Pipelines.GetByName(ctx, pipelineName)
 	require.NoError(t, err)
