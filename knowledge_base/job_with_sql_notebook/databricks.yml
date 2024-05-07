@@ -1,0 +1,14 @@
+bundle:
+  name: job_with_sql_notebook
+
+
+resources:
+  jobs:
+    job_with_sql_notebook:
+      name: Job to demonstrate using a SQL notebook with a SQL warehouse
+
+      tasks:
+        - task_key: notebook
+          notebook_task:
+            notebook_path: ./select.sql
+            warehouse_id: 744f096837fddbb4
