@@ -16,7 +16,7 @@ See https://github.com/databricks/cli/releases for releases and
 installation instructions.
 
 ------
-You can use the CLI through a Docker image by pulling from `ghcr.io`. You can find all releases
+You can use the CLI through a Docker image by pulling from `ghcr.io`. You can find all available versions
 at: https://github.com/databricks/cli/pkgs/container/cli.
 ```
 docker pull ghcr.io/databricks/cli:latest
