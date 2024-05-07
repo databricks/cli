@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
@@ -15,4 +16,12 @@ type Schema struct {
 	*catalog.CreateSchema
 
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
+}
+
+func (s *Schema) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s Schema) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
 }
