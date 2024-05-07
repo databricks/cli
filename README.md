@@ -22,7 +22,7 @@ at: https://github.com/databricks/cli/pkgs/container/cli.
 docker pull ghcr.io/databricks/cli:latest
 ```
 
-Example of how to run the CLI using the docker image. [TODO: Link docs here once live.]:
+Example of how to run the CLI using the docker image. More documentation is available at https://docs.databricks.com/dev-tools/bun.dles/airgapped-environment.html
 ```
 docker run -e DATABRICKS_HOST=$YOUR_HOST_URL -e DATABRICKS_TOKEN=$YOUR_TOKEN ghcr.io/databricks/cli:latest current-user me
 ```
