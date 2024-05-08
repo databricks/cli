@@ -18,7 +18,7 @@ type addToContainer struct {
 	err       bool
 
 	// mu is a mutex that protects container. It is used to ensure that the
-	// container is only modified by one goroutine at a time.
+	// container slice is only modified by one goroutine at a time.
 	mu *sync.Mutex
 }
 
