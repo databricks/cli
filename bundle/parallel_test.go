@@ -2,6 +2,8 @@ package bundle
 
 import (
 	"context"
+	"fmt"
+	"sync"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
@@ -10,9 +12,14 @@ import (
 )
 
 type addToContainer struct {
+	t         *testing.T
 	container *[]int
 	value     int
 	err       bool
+
+	// mu is a mutex that protects container. It is used to ensure that the
+	// container is only modified by one goroutine at a time.
+	mu *sync.Mutex
 }
 
 func (m *addToContainer) Apply(ctx context.Context, b ReadOnlyBundle) diag.Diagnostics {
@@ -20,9 +27,10 @@ func (m *addToContainer) Apply(ctx context.Context, b ReadOnlyBundle) diag.Diagn
 		return diag.Errorf("error")
 	}
 
-	c := *m.container
-	c = append(c, m.value)
-	*m.container = c
+	m.mu.Lock()
+	*m.container = append(*m.container, m.value)
+	m.mu.Unlock()
+
 	return nil
 }
 
@@ -30,15 +38,32 @@ func (m *addToContainer) Name() string {
 	return "addToContainer"
 }
 
-func TestParallelMutatorWork(t *testing.T) {
+func TestParallelMutatorWork1000Times(t *testing.T) {
+	for i := 0; i < 1000; i++ {
+		t.Run(fmt.Sprintf("iter %v", i), func(t *testing.T) {
+			testParallelMutatorWork(t)
+		})
+	}
+}
+
+func TestParallelMutatorWorkWithErrors1000Times(t *testing.T) {
+	for i := 0; i < 1000; i++ {
+		t.Run(fmt.Sprintf("iter %v", i), func(t *testing.T) {
+			testParallelMutatorWorkWithErrors(t)
+		})
+	}
+}
+
+func testParallelMutatorWork(t *testing.T) {
 	b := &Bundle{
 		Config: config.Root{},
 	}
 
 	container := []int{}
-	m1 := &addToContainer{container: &container, value: 1}
-	m2 := &addToContainer{container: &container, value: 2}
-	m3 := &addToContainer{container: &container, value: 3}
+	var mu sync.Mutex
+	m1 := &addToContainer{t: t, container: &container, value: 1, mu: &mu}
+	m2 := &addToContainer{t: t, container: &container, value: 2, mu: &mu}
+	m3 := &addToContainer{t: t, container: &container, value: 3, mu: &mu}
 
 	m := Parallel(m1, m2, m3)
 
@@ -51,15 +76,16 @@ func TestParallelMutatorWork(t *testing.T) {
 	require.Contains(t, container, 3)
 }
 
-func TestParallelMutatorWorkWithErrors(t *testing.T) {
+func testParallelMutatorWorkWithErrors(t *testing.T) {
 	b := &Bundle{
 		Config: config.Root{},
 	}
 
 	container := []int{}
-	m1 := &addToContainer{container: &container, value: 1}
-	m2 := &addToContainer{container: &container, err: true, value: 2}
-	m3 := &addToContainer{container: &container, value: 3}
+	var mu sync.Mutex
+	m1 := &addToContainer{container: &container, value: 1, mu: &mu}
+	m2 := &addToContainer{container: &container, err: true, value: 2, mu: &mu}
+	m3 := &addToContainer{container: &container, value: 3, mu: &mu}
 
 	m := Parallel(m1, m2, m3)
 
