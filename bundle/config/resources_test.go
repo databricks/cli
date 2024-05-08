@@ -139,6 +139,7 @@ func TestVerifySafeMergeForRegisteredModels(t *testing.T) {
 // are implemented at the top level?
 // If a method is implemented for an embedded struct, the top level struct will
 // also have that method and satisfy the interface. This is why we cannot assert
+// that the methods are implemented at the top level using an interface.
 //
 // Why don't we use reflection to assert that the methods are implemented at the
 // top level?
