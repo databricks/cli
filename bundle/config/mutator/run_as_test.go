@@ -34,9 +34,9 @@ func allResourceTypes(t *testing.T) []string {
 	require.Equal(t, []string{
 		"experiments",
 		"jobs",
-		"lakehouse_monitors",
 		"model_serving_endpoints",
 		"models",
+		"monitors",
 		"pipelines",
 		"registered_models",
 	},
@@ -159,9 +159,6 @@ func TestRunAsErrorForUnsupportedResources(t *testing.T) {
 		if slices.Contains(allowList, rt) {
 			continue
 		}
-		if rt == "lakehouse_monitors" {
-			continue
-		}
 
 		// Add an instance of the resource type that is not on the allow list to
 		// the bundle configuration.
@@ -176,9 +173,6 @@ func TestRunAsErrorForUnsupportedResources(t *testing.T) {
 		r := &config.Root{}
 		err = convert.ToTyped(r, nv)
 		require.NoError(t, err)
-		if rt == "model_serving_endpoints" {
-			print("hello")
-		}
 		// Assert this invalid bundle configuration fails validation.
 		b := &bundle.Bundle{
 			Config: *r,

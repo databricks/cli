@@ -1,8 +1,8 @@
 resources:
-  lakehouse_monitors:
-    my_lakehouse_monitor:
+  monitors:
+    my_monitor:
       table_name: "main.test.thing1"
-      assets_dir: "/Shared/provider-test/databricks_lakehouse_monitoring/main.test.thing1"
+      assets_dir: "/Shared/provider-test/databricks_monitoring/main.test.thing1"
       output_schema_name: "test"
       inference_log:
         granularities: ["1 day"]
@@ -16,19 +16,19 @@ targets:
   development:
     mode: development
     resources:
-      lakehouse_monitors:
-        my_lakehouse_monitor:
+      monitors:
+        my_monitor:
           table_name: "main.test.dev"
   staging:
     resources:
-      lakehouse_monitors:
-        my_lakehouse_monitor:
+      monitors:
+        my_monitor:
           table_name: "main.test.staging"
           output_schema_name: "staging"
   production:
     resources:
-      lakehouse_monitors:
-        my_lakehouse_monitor:
+      monitors:
+        my_monitor:
           table_name: "main.test.prod"
           output_schema_name: "prod"
           inference_log:

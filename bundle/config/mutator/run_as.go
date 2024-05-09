@@ -100,11 +100,11 @@ func validateRunAs(b *bundle.Bundle) error {
 		}
 	}
 
-	// Lakehouse Monitors do not support run_as in the API.
-	if len(b.Config.Resources.LakehouseMonitors) > 0 {
+	// Monitors do not support run_as in the API.
+	if len(b.Config.Resources.Monitors) > 0 {
 		return errUnsupportedResourceTypeForRunAs{
-			resourceType:     "lakehouse_monitors",
-			resourceLocation: b.Config.GetLocation("resources.lakehouse_monitors"),
+			resourceType:     "monitors",
+			resourceLocation: b.Config.GetLocation("resources.monitors"),
 			currentUser:      b.Config.Workspace.CurrentUser.UserName,
 			runAsUser:        identity,
 		}

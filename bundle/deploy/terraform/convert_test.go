@@ -630,9 +630,9 @@ func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
 				},
 			},
 			{
-				Type: "databricks_lakehouse_monitor",
+				Type: "databricks_monitor",
 				Mode: "managed",
-				Name: "test_lakehouse_monitor",
+				Name: "test_monitor",
 				Instances: []stateResourceInstance{
 					{Attributes: stateInstanceAttributes{ID: "1"}},
 				},
@@ -660,8 +660,8 @@ func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
 	assert.Equal(t, "1", config.Resources.RegisteredModels["test_registered_model"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.RegisteredModels["test_registered_model"].ModifiedStatus)
 
-	assert.Equal(t, "1", config.Resources.LakehouseMonitors["test_lakehouse_monitor"].ID)
-	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.LakehouseMonitors["test_lakehouse_monitor"].ModifiedStatus)
+	assert.Equal(t, "1", config.Resources.Monitors["test_monitor"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Monitors["test_monitor"].ModifiedStatus)
 	AssertFullResourceCoverage(t, &config)
 }
 
@@ -710,10 +710,10 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
-			LakehouseMonitors: map[string]*resources.LakehouseMonitor{
-				"test_lakehouse_monitor": {
+			Monitors: map[string]*resources.Monitor{
+				"test_monitor": {
 					CreateMonitor: &catalog.CreateMonitor{
-						TableName: "test_lakehouse_monitor",
+						TableName: "test_monitor",
 					},
 				},
 			},
@@ -743,8 +743,8 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 	assert.Equal(t, "", config.Resources.RegisteredModels["test_registered_model"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.RegisteredModels["test_registered_model"].ModifiedStatus)
 
-	assert.Equal(t, "", config.Resources.LakehouseMonitors["test_lakehouse_monitor"].ID)
-	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.LakehouseMonitors["test_lakehouse_monitor"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.Monitors["test_monitor"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Monitors["test_monitor"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -824,15 +824,15 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 					},
 				},
 			},
-			LakehouseMonitors: map[string]*resources.LakehouseMonitor{
-				"test_lakehouse_monitor": {
+			Monitors: map[string]*resources.Monitor{
+				"test_monitor": {
 					CreateMonitor: &catalog.CreateMonitor{
-						TableName: "test_lakehouse_monitor",
+						TableName: "test_monitor",
 					},
 				},
-				"test_lakehouse_monitor_new": {
+				"test_monitor_new": {
 					CreateMonitor: &catalog.CreateMonitor{
-						TableName: "test_lakehouse_monitor_new",
+						TableName: "test_monitor_new",
 					},
 				},
 			},
@@ -937,19 +937,19 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 				},
 			},
 			{
-				Type: "databricks_lakehouse_monitor",
+				Type: "databricks_monitor",
 				Mode: "managed",
-				Name: "test_lakehouse_monitor",
+				Name: "test_monitor",
 				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "test_lakehouse_monitor"}},
+					{Attributes: stateInstanceAttributes{ID: "test_monitor"}},
 				},
 			},
 			{
-				Type: "databricks_lakehouse_monitor",
+				Type: "databricks_monitor",
 				Mode: "managed",
-				Name: "test_lakehouse_monitor_old",
+				Name: "test_monitor_old",
 				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "test_lakehouse_monitor_old"}},
+					{Attributes: stateInstanceAttributes{ID: "test_monitor_old"}},
 				},
 			},
 		},
@@ -999,12 +999,12 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, "", config.Resources.ModelServingEndpoints["test_model_serving_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.ModelServingEndpoints["test_model_serving_new"].ModifiedStatus)
 
-	assert.Equal(t, "test_lakehouse_monitor", config.Resources.LakehouseMonitors["test_lakehouse_monitor"].ID)
-	assert.Equal(t, "", config.Resources.LakehouseMonitors["test_lakehouse_monitor"].ModifiedStatus)
-	assert.Equal(t, "test_lakehouse_monitor_old", config.Resources.LakehouseMonitors["test_lakehouse_monitor_old"].ID)
-	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.LakehouseMonitors["test_lakehouse_monitor_old"].ModifiedStatus)
-	assert.Equal(t, "", config.Resources.LakehouseMonitors["test_lakehouse_monitor_new"].ID)
-	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.LakehouseMonitors["test_lakehouse_monitor_new"].ModifiedStatus)
+	assert.Equal(t, "test_monitor", config.Resources.Monitors["test_monitor"].ID)
+	assert.Equal(t, "", config.Resources.Monitors["test_monitor"].ModifiedStatus)
+	assert.Equal(t, "test_monitor_old", config.Resources.Monitors["test_monitor_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Monitors["test_monitor_old"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.Monitors["test_monitor_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Monitors["test_monitor_new"].ModifiedStatus)
 	AssertFullResourceCoverage(t, &config)
 }
 

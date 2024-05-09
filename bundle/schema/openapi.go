@@ -254,17 +254,17 @@ func (reader *OpenapiReader) registeredModelDocs() (*Docs, error) {
 	return registeredModelsAllDocs, nil
 }
 
-func (reader *OpenapiReader) lakehouseMonitorDocs() (*Docs, error) {
-	lakehouseMonitorSpecSchema, err := reader.readResolvedSchema(SchemaPathPrefix + "catalog.CreateMonitor")
+func (reader *OpenapiReader) monitorDocs() (*Docs, error) {
+	monitorSpecSchema, err := reader.readResolvedSchema(SchemaPathPrefix + "catalog.CreateMonitor")
 	if err != nil {
 		return nil, err
 	}
-	lakehouseMonitorDocs := schemaToDocs(lakehouseMonitorSpecSchema)
-	lakehouseMonitorAllDocs := &Docs{
+	monitorDocs := schemaToDocs(monitorSpecSchema)
+	monitorAllDocs := &Docs{
 		Description:          "List of Lakehouse Monitors",
-		AdditionalProperties: lakehouseMonitorDocs,
+		AdditionalProperties: monitorDocs,
 	}
-	return lakehouseMonitorAllDocs, nil
+	return monitorAllDocs, nil
 }
 
 func (reader *OpenapiReader) ResourcesDocs() (*Docs, error) {
@@ -293,7 +293,7 @@ func (reader *OpenapiReader) ResourcesDocs() (*Docs, error) {
 		return nil, err
 	}
 
-	lakehouseMonitorDocs, err := reader.lakehouseMonitorDocs()
+	monitorsDocs, err := reader.monitorDocs()
 	if err != nil {
 		return nil, err
 	}
@@ -307,7 +307,7 @@ func (reader *OpenapiReader) ResourcesDocs() (*Docs, error) {
 			"models":                  modelsDocs,
 			"model_serving_endpoints": modelServingEndpointsDocs,
 			"registered_models":       registeredModelsDocs,
-			"lakehouse_monitor":       lakehouseMonitorDocs,
+			"monitors":                monitorsDocs,
 		},
 	}, nil
 }

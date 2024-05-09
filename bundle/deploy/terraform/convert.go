@@ -222,7 +222,7 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 		}
 	}
 
-	for k, src := range config.Resources.LakehouseMonitors {
+	for k, src := range config.Resources.Monitors {
 		noResources = false
 		var dst schema.ResourceLakehouseMonitor
 		conv(src, &dst)
@@ -372,16 +372,16 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 				}
 				cur.ID = instance.Attributes.ID
 				config.Resources.RegisteredModels[resource.Name] = cur
-			case "databricks_lakehouse_monitor":
-				if config.Resources.LakehouseMonitors == nil {
-					config.Resources.LakehouseMonitors = make(map[string]*resources.LakehouseMonitor)
+			case "databricks_monitor":
+				if config.Resources.Monitors == nil {
+					config.Resources.Monitors = make(map[string]*resources.Monitor)
 				}
-				cur := config.Resources.LakehouseMonitors[resource.Name]
+				cur := config.Resources.Monitors[resource.Name]
 				if cur == nil {
-					cur = &resources.LakehouseMonitor{ModifiedStatus: resources.ModifiedStatusDeleted}
+					cur = &resources.Monitor{ModifiedStatus: resources.ModifiedStatusDeleted}
 				}
 				cur.ID = instance.Attributes.ID
-				config.Resources.LakehouseMonitors[resource.Name] = cur
+				config.Resources.Monitors[resource.Name] = cur
 			case "databricks_permissions":
 			case "databricks_grants":
 				// Ignore; no need to pull these back into the configuration.
@@ -421,7 +421,7 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 			src.ModifiedStatus = resources.ModifiedStatusCreated
 		}
 	}
-	for _, src := range config.Resources.LakehouseMonitors {
+	for _, src := range config.Resources.Monitors {
 		if src.ModifiedStatus == "" && src.ID == "" {
 			src.ModifiedStatus = resources.ModifiedStatusCreated
 		}

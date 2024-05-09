@@ -5,7 +5,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
-type LakehouseMonitor struct {
+type Monitor struct {
 	// Represents the Input Arguments for Terraform and will get
 	// converted to a HCL representation for CRUD
 	*catalog.CreateMonitor
