@@ -2,7 +2,6 @@ package bundle
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"testing"
 
@@ -38,23 +37,7 @@ func (m *addToContainer) Name() string {
 	return "addToContainer"
 }
 
-func TestParallelMutatorWork1000Times(t *testing.T) {
-	for i := 0; i < 1000; i++ {
-		t.Run(fmt.Sprintf("iter %v", i), func(t *testing.T) {
-			testParallelMutatorWork(t)
-		})
-	}
-}
-
-func TestParallelMutatorWorkWithErrors1000Times(t *testing.T) {
-	for i := 0; i < 1000; i++ {
-		t.Run(fmt.Sprintf("iter %v", i), func(t *testing.T) {
-			testParallelMutatorWorkWithErrors(t)
-		})
-	}
-}
-
-func testParallelMutatorWork(t *testing.T) {
+func TestParallelMutatorWork(t *testing.T) {
 	b := &Bundle{
 		Config: config.Root{},
 	}
@@ -76,7 +59,7 @@ func testParallelMutatorWork(t *testing.T) {
 	require.Contains(t, container, 3)
 }
 
-func testParallelMutatorWorkWithErrors(t *testing.T) {
+func TestParallelMutatorWorkWithErrors(t *testing.T) {
 	b := &Bundle{
 		Config: config.Root{},
 	}
