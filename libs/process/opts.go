@@ -48,6 +48,20 @@ func WithStdoutPipe(dst *io.ReadCloser) execOption {
 	}
 }
 
+func WithStdinReader(src io.Reader) execOption {
+	return func(_ context.Context, c *exec.Cmd) error {
+		c.Stdin = src
+		return nil
+	}
+}
+
+func WithStderrWriter(writer io.Writer) execOption {
+	return func(_ context.Context, c *exec.Cmd) error {
+		c.Stderr = writer
+		return nil
+	}
+}
+
 func WithCombinedOutput(buf *bytes.Buffer) execOption {
 	return func(_ context.Context, c *exec.Cmd) error {
 		c.Stdout = io.MultiWriter(buf, c.Stdout)
