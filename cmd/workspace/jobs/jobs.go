@@ -1513,6 +1513,7 @@ func newSubmit() *cobra.Command {
 	// TODO: complex arg: pipeline_task
 	// TODO: complex arg: python_wheel_task
 	// TODO: complex arg: queue
+	// TODO: complex arg: run_as
 	// TODO: complex arg: run_job_task
 	cmd.Flags().StringVar(&submitReq.RunName, "run-name", submitReq.RunName, `An optional name for the run.`)
 	// TODO: complex arg: spark_jar_task

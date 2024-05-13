@@ -25,6 +25,9 @@ func New() *cobra.Command {
   off.
   
   This settings can NOT be disabled once it is enabled.`,
+
+		// This service is being previewed; hide from help output.
+		Hidden: true,
 	}
 
 	// Add methods

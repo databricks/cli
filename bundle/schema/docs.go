@@ -70,7 +70,7 @@ func UpdateBundleDescriptions(openapiSpecPath string) (*Docs, error) {
 	}
 	openapiReader := &OpenapiReader{
 		OpenapiSpec: spec,
-		Memo:        make(map[string]*jsonschema.Schema),
+		memo:        make(map[string]jsonschema.Schema),
 	}
 
 	// Generate descriptions for the "resources" field
