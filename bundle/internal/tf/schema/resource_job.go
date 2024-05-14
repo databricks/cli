@@ -243,12 +243,13 @@ type ResourceJobLibraryPypi struct {
 }
 
 type ResourceJobLibrary struct {
-	Egg   string                   `json:"egg,omitempty"`
-	Jar   string                   `json:"jar,omitempty"`
-	Whl   string                   `json:"whl,omitempty"`
-	Cran  *ResourceJobLibraryCran  `json:"cran,omitempty"`
-	Maven *ResourceJobLibraryMaven `json:"maven,omitempty"`
-	Pypi  *ResourceJobLibraryPypi  `json:"pypi,omitempty"`
+	Egg          string                   `json:"egg,omitempty"`
+	Jar          string                   `json:"jar,omitempty"`
+	Requirements string                   `json:"requirements,omitempty"`
+	Whl          string                   `json:"whl,omitempty"`
+	Cran         *ResourceJobLibraryCran  `json:"cran,omitempty"`
+	Maven        *ResourceJobLibraryMaven `json:"maven,omitempty"`
+	Pypi         *ResourceJobLibraryPypi  `json:"pypi,omitempty"`
 }
 
 type ResourceJobNewClusterAutoscale struct {
@@ -558,12 +559,13 @@ type ResourceJobTaskForEachTaskTaskLibraryPypi struct {
 }
 
 type ResourceJobTaskForEachTaskTaskLibrary struct {
-	Egg   string                                      `json:"egg,omitempty"`
-	Jar   string                                      `json:"jar,omitempty"`
-	Whl   string                                      `json:"whl,omitempty"`
-	Cran  *ResourceJobTaskForEachTaskTaskLibraryCran  `json:"cran,omitempty"`
-	Maven *ResourceJobTaskForEachTaskTaskLibraryMaven `json:"maven,omitempty"`
-	Pypi  *ResourceJobTaskForEachTaskTaskLibraryPypi  `json:"pypi,omitempty"`
+	Egg          string                                      `json:"egg,omitempty"`
+	Jar          string                                      `json:"jar,omitempty"`
+	Requirements string                                      `json:"requirements,omitempty"`
+	Whl          string                                      `json:"whl,omitempty"`
+	Cran         *ResourceJobTaskForEachTaskTaskLibraryCran  `json:"cran,omitempty"`
+	Maven        *ResourceJobTaskForEachTaskTaskLibraryMaven `json:"maven,omitempty"`
+	Pypi         *ResourceJobTaskForEachTaskTaskLibraryPypi  `json:"pypi,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskNewClusterAutoscale struct {
@@ -896,12 +898,13 @@ type ResourceJobTaskLibraryPypi struct {
 }
 
 type ResourceJobTaskLibrary struct {
-	Egg   string                       `json:"egg,omitempty"`
-	Jar   string                       `json:"jar,omitempty"`
-	Whl   string                       `json:"whl,omitempty"`
-	Cran  *ResourceJobTaskLibraryCran  `json:"cran,omitempty"`
-	Maven *ResourceJobTaskLibraryMaven `json:"maven,omitempty"`
-	Pypi  *ResourceJobTaskLibraryPypi  `json:"pypi,omitempty"`
+	Egg          string                       `json:"egg,omitempty"`
+	Jar          string                       `json:"jar,omitempty"`
+	Requirements string                       `json:"requirements,omitempty"`
+	Whl          string                       `json:"whl,omitempty"`
+	Cran         *ResourceJobTaskLibraryCran  `json:"cran,omitempty"`
+	Maven        *ResourceJobTaskLibraryMaven `json:"maven,omitempty"`
+	Pypi         *ResourceJobTaskLibraryPypi  `json:"pypi,omitempty"`
 }
 
 type ResourceJobTaskNewClusterAutoscale struct {

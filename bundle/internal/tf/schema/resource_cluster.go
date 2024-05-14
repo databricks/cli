@@ -146,12 +146,13 @@ type ResourceClusterLibraryPypi struct {
 }
 
 type ResourceClusterLibrary struct {
-	Egg   string                       `json:"egg,omitempty"`
-	Jar   string                       `json:"jar,omitempty"`
-	Whl   string                       `json:"whl,omitempty"`
-	Cran  *ResourceClusterLibraryCran  `json:"cran,omitempty"`
-	Maven *ResourceClusterLibraryMaven `json:"maven,omitempty"`
-	Pypi  *ResourceClusterLibraryPypi  `json:"pypi,omitempty"`
+	Egg          string                       `json:"egg,omitempty"`
+	Jar          string                       `json:"jar,omitempty"`
+	Requirements string                       `json:"requirements,omitempty"`
+	Whl          string                       `json:"whl,omitempty"`
+	Cran         *ResourceClusterLibraryCran  `json:"cran,omitempty"`
+	Maven        *ResourceClusterLibraryMaven `json:"maven,omitempty"`
+	Pypi         *ResourceClusterLibraryPypi  `json:"pypi,omitempty"`
 }
 
 type ResourceClusterWorkloadTypeClients struct {

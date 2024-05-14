@@ -45,6 +45,9 @@ type Resources struct {
 	MwsCredentials                 map[string]any `json:"databricks_mws_credentials,omitempty"`
 	MwsCustomerManagedKeys         map[string]any `json:"databricks_mws_customer_managed_keys,omitempty"`
 	MwsLogDelivery                 map[string]any `json:"databricks_mws_log_delivery,omitempty"`
+	MwsNccBinding                  map[string]any `json:"databricks_mws_ncc_binding,omitempty"`
+	MwsNccPrivateEndpointRule      map[string]any `json:"databricks_mws_ncc_private_endpoint_rule,omitempty"`
+	MwsNetworkConnectivityConfig   map[string]any `json:"databricks_mws_network_connectivity_config,omitempty"`
 	MwsNetworks                    map[string]any `json:"databricks_mws_networks,omitempty"`
 	MwsPermissionAssignment        map[string]any `json:"databricks_mws_permission_assignment,omitempty"`
 	MwsPrivateAccessSettings       map[string]any `json:"databricks_mws_private_access_settings,omitempty"`
@@ -137,6 +140,9 @@ func NewResources() *Resources {
 		MwsCredentials:                 make(map[string]any),
 		MwsCustomerManagedKeys:         make(map[string]any),
 		MwsLogDelivery:                 make(map[string]any),
+		MwsNccBinding:                  make(map[string]any),
+		MwsNccPrivateEndpointRule:      make(map[string]any),
+		MwsNetworkConnectivityConfig:   make(map[string]any),
 		MwsNetworks:                    make(map[string]any),
 		MwsPermissionAssignment:        make(map[string]any),
 		MwsPrivateAccessSettings:       make(map[string]any),
