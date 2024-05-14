@@ -131,9 +131,11 @@ func TestVerifySafeMergeForRegisteredModels(t *testing.T) {
 // This test ensures that all resources have a custom marshaller and unmarshaller.
 // This is required because DABs resources map to Databricks APIs, and they do so
 // by embedding the corresponding Go SDK structs.
-// The Go SDK structs implement custom marshalling and unmarshalling methods. If we
-// do not implement custom marshalling and unmarshalling methods for the resources
-// at the top level, marshalling and unmarshalling will panic.
+//
+// Go SDK structs often implement custom marshalling and unmarshalling methods (based on the API specifics).
+// If the Go SDK struct implements custom marshalling and unmarshalling and we do not
+// for the resources at the top level, marshalling and unmarshalling operations will panic.
+// Thus we will be overly cautious and ensure that all resources need a custom marshaller and unmarshaller.
 //
 // Why do we not assert this using an interface to assert MarshalJSON and UnmarshalJSON
 // are implemented at the top level?
