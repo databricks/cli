@@ -7,7 +7,6 @@ import (
 	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/permissions"
-	"github.com/databricks/cli/bundle/python"
 	"github.com/databricks/cli/bundle/scripts"
 )
 
@@ -18,6 +17,7 @@ func Initialize() bundle.Mutator {
 	return newPhase(
 		"initialize",
 		[]bundle.Mutator{
+			mutator.ValidateUniqueResourceKeys(),
 			mutator.RewriteSyncPaths(),
 			mutator.MergeJobClusters(),
 			mutator.MergeJobTasks(),
@@ -41,7 +41,7 @@ func Initialize() bundle.Mutator {
 			mutator.DefaultQueueing(),
 			mutator.ExpandPipelineGlobPaths(),
 			mutator.TranslatePaths(),
-			python.WrapperWarning(),
+			// python.WrapperWarning(),
 			permissions.ApplyBundlePermissions(),
 			permissions.FilterCurrentUser(),
 			metadata.AnnotateJobs(),
