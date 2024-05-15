@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/manifoldco/promptui"
@@ -37,7 +37,7 @@ func (e ErrNoAccountProfiles) Error() string {
 
 func initProfileFlag(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringP("profile", "p", "", "~/.databrickscfg profile")
-	cmd.RegisterFlagCompletionFunc("profile", databrickscfg.ProfileCompletion)
+	cmd.RegisterFlagCompletionFunc("profile", profile.ProfileCompletion)
 }
 
 func profileFlagValue(cmd *cobra.Command) (string, bool) {
@@ -111,27 +111,29 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 	cfg := &config.Config{}
 
 	// The command-line profile flag takes precedence over DATABRICKS_CONFIG_PROFILE.
-	profile, hasProfileFlag := profileFlagValue(cmd)
+	pr, hasProfileFlag := profileFlagValue(cmd)
 	if hasProfileFlag {
-		cfg.Profile = profile
+		cfg.Profile = pr
 	}
 
 	ctx := cmd.Context()
 	ctx = context.WithValue(ctx, &configUsed, cfg)
 	cmd.SetContext(ctx)
 
+	profiler := profile.GetProfiler(ctx)
+
 	if cfg.Profile == "" {
 		// account-level CLI was not really done before, so here are the assumptions:
 		// 1. only admins will have account configured
 		// 2. 99% of admins will have access to just one account
 		// hence, we don't need to create a special "DEFAULT_ACCOUNT" profile yet
-		_, profiles, err := databrickscfg.LoadProfiles(cmd.Context(), databrickscfg.MatchAccountProfiles)
+		profiles, err := profiler.LoadProfiles(cmd.Context(), profile.MatchAccountProfiles)
 		if err == nil && len(profiles) == 1 {
 			cfg.Profile = profiles[0].Name
 		}
 
 		// if there is no config file, we don't want to fail and instead just skip it
-		if err != nil && !errors.Is(err, databrickscfg.ErrNoConfiguration) {
+		if err != nil && !errors.Is(err, profile.ErrNoConfiguration) {
 			return err
 		}
 	}
@@ -233,11 +235,12 @@ func SetAccountClient(ctx context.Context, a *databricks.AccountClient) context.
 }
 
 func AskForWorkspaceProfile(ctx context.Context) (string, error) {
-	path, err := databrickscfg.GetPath(ctx)
+	profiler := profile.GetProfiler(ctx)
+	path, err := profiler.GetPath(ctx)
 	if err != nil {
 		return "", fmt.Errorf("cannot determine Databricks config file path: %w", err)
 	}
-	file, profiles, err := databrickscfg.LoadProfiles(ctx, databrickscfg.MatchWorkspaceProfiles)
+	profiles, err := profiler.LoadProfiles(ctx, profile.MatchWorkspaceProfiles)
 	if err != nil {
 		return "", err
 	}
@@ -248,7 +251,7 @@ func AskForWorkspaceProfile(ctx context.Context) (string, error) {
 		return profiles[0].Name, nil
 	}
 	i, _, err := cmdio.RunSelect(ctx, &promptui.Select{
-		Label:             fmt.Sprintf("Workspace profiles defined in %s", file),
+		Label:             fmt.Sprintf("Workspace profiles defined in %s", path),
 		Items:             profiles,
 		Searcher:          profiles.SearchCaseInsensitive,
 		StartInSearchMode: true,
@@ -266,11 +269,12 @@ func AskForWorkspaceProfile(ctx context.Context) (string, error) {
 }
 
 func AskForAccountProfile(ctx context.Context) (string, error) {
-	path, err := databrickscfg.GetPath(ctx)
+	profiler := profile.GetProfiler(ctx)
+	path, err := profiler.GetPath(ctx)
 	if err != nil {
 		return "", fmt.Errorf("cannot determine Databricks config file path: %w", err)
 	}
-	file, profiles, err := databrickscfg.LoadProfiles(ctx, databrickscfg.MatchAccountProfiles)
+	profiles, err := profiler.LoadProfiles(ctx, profile.MatchAccountProfiles)
 	if err != nil {
 		return "", err
 	}
@@ -281,7 +285,7 @@ func AskForAccountProfile(ctx context.Context) (string, error) {
 		return profiles[0].Name, nil
 	}
 	i, _, err := cmdio.RunSelect(ctx, &promptui.Select{
-		Label:             fmt.Sprintf("Account profiles defined in %s", file),
+		Label:             fmt.Sprintf("Account profiles defined in %s", path),
 		Items:             profiles,
 		Searcher:          profiles.SearchCaseInsensitive,
 		StartInSearchMode: true,

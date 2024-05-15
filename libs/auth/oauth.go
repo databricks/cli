@@ -28,7 +28,7 @@ const (
 	appRedirectAddr = "localhost:8020"
 
 	// maximum amount of time to acquire listener on appRedirectAddr
-	DefaultTimeout = 1 * time.Hour
+	listenerTimeout = 45 * time.Second
 )
 
 var ( // Databricks SDK API: `databricks OAuth is not` will be checked for presence
@@ -42,14 +42,17 @@ type PersistentAuth struct {
 	AccountID string
 
 	http    *httpclient.ApiClient
-	cache   tokenCache
+	cache   cache.TokenCache
 	ln      net.Listener
 	browser func(string) error
 }
 
-type tokenCache interface {
-	Store(key string, t *oauth2.Token) error
-	Lookup(key string) (*oauth2.Token, error)
+func (a *PersistentAuth) SetTokenCache(c cache.TokenCache) {
+	a.cache = c
+}
+
+func (a *PersistentAuth) SetApiClient(h *httpclient.ApiClient) {
+	a.http = h
 }
 
 func (a *PersistentAuth) Load(ctx context.Context) (*oauth2.Token, error) {
@@ -141,7 +144,7 @@ func (a *PersistentAuth) init(ctx context.Context) error {
 		})
 	}
 	if a.cache == nil {
-		a.cache = &cache.TokenCache{}
+		a.cache = &cache.FileTokenCache{}
 	}
 	if a.browser == nil {
 		a.browser = browser.OpenURL
@@ -149,7 +152,7 @@ func (a *PersistentAuth) init(ctx context.Context) error {
 	// try acquire listener, which we also use as a machine-local
 	// exclusive lock to prevent token cache corruption in the scope
 	// of developer machine, where this command runs.
-	listener, err := retries.Poll(ctx, DefaultTimeout,
+	listener, err := retries.Poll(ctx, listenerTimeout,
 		func() (*net.Listener, *retries.Err) {
 			var lc net.ListenConfig
 			l, err := lc.Listen(ctx, "tcp", appRedirectAddr)

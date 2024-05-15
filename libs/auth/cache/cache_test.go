@@ -27,7 +27,7 @@ func setup(t *testing.T) string {
 
 func TestStoreAndLookup(t *testing.T) {
 	setup(t)
-	c := &TokenCache{}
+	c := &FileTokenCache{}
 	err := c.Store("x", &oauth2.Token{
 		AccessToken: "abc",
 	})
@@ -38,7 +38,7 @@ func TestStoreAndLookup(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	l := &TokenCache{}
+	l := &FileTokenCache{}
 	tok, err := l.Lookup("x")
 	require.NoError(t, err)
 	assert.Equal(t, "abc", tok.AccessToken)
@@ -50,7 +50,7 @@ func TestStoreAndLookup(t *testing.T) {
 
 func TestNoCacheFileReturnsErrNotConfigured(t *testing.T) {
 	setup(t)
-	l := &TokenCache{}
+	l := &FileTokenCache{}
 	_, err := l.Lookup("x")
 	assert.Equal(t, ErrNotConfigured, err)
 }
@@ -63,7 +63,7 @@ func TestLoadCorruptFile(t *testing.T) {
 	err = os.WriteFile(f, []byte("abc"), ownerExecReadWrite)
 	require.NoError(t, err)
 
-	l := &TokenCache{}
+	l := &FileTokenCache{}
 	_, err = l.Lookup("x")
 	assert.EqualError(t, err, "load: parse: invalid character 'a' looking for beginning of value")
 }
@@ -76,14 +76,14 @@ func TestLoadWrongVersion(t *testing.T) {
 	err = os.WriteFile(f, []byte(`{"version": 823, "things": []}`), ownerExecReadWrite)
 	require.NoError(t, err)
 
-	l := &TokenCache{}
+	l := &FileTokenCache{}
 	_, err = l.Lookup("x")
 	assert.EqualError(t, err, "load: needs version 1, got version 823")
 }
 
 func TestDevNull(t *testing.T) {
 	t.Setenv(homeEnvVar, "/dev/null")
-	l := &TokenCache{}
+	l := &FileTokenCache{}
 	_, err := l.Lookup("x")
 	// macOS/Linux: load: read: open /dev/null/.databricks/token-cache.json:
 	// windows: databricks OAuth is not configured for this host
@@ -95,7 +95,7 @@ func TestStoreOnDev(t *testing.T) {
 		t.SkipNow()
 	}
 	t.Setenv(homeEnvVar, "/dev")
-	c := &TokenCache{}
+	c := &FileTokenCache{}
 	err := c.Store("x", &oauth2.Token{
 		AccessToken: "abc",
 	})

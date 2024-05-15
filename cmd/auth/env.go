@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 	"gopkg.in/ini.v1"
@@ -70,7 +70,7 @@ func resolveSection(cfg *config.Config, iniFile *config.File) (*ini.Section, err
 }
 
 func loadFromDatabricksCfg(ctx context.Context, cfg *config.Config) error {
-	iniFile, err := databrickscfg.Get(ctx)
+	iniFile, err := profile.FileProfilerImpl{}.Get(ctx)
 	if errors.Is(err, fs.ErrNotExist) {
 		// it's fine not to have ~/.databrickscfg
 		return nil

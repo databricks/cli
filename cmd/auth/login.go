@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
@@ -31,6 +32,7 @@ func configureHost(ctx context.Context, persistentAuth *auth.PersistentAuth, arg
 }
 
 const minimalDbConnectVersion = "13.1"
+const defaultTimeout = 1 * time.Hour
 
 func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 	defaultConfigPath := "~/.databrickscfg"
@@ -84,7 +86,7 @@ depends on the existing profiles you have set in your configuration file
 
 	var loginTimeout time.Duration
 	var configureCluster bool
-	cmd.Flags().DurationVar(&loginTimeout, "timeout", auth.DefaultTimeout,
+	cmd.Flags().DurationVar(&loginTimeout, "timeout", defaultTimeout,
 		"Timeout for completing login challenge in the browser")
 	cmd.Flags().BoolVar(&configureCluster, "configure-cluster", false,
 		"Prompts to configure cluster")
@@ -166,12 +168,11 @@ depends on the existing profiles you have set in your configuration file
 }
 
 func setHostAndAccountId(ctx context.Context, profileName string, persistentAuth *auth.PersistentAuth, args []string) error {
+	profiler := profile.GetProfiler(ctx)
 	// If the chosen profile has a hostname and the user hasn't specified a host, infer the host from the profile.
-	_, profiles, err := databrickscfg.LoadProfiles(ctx, func(p databrickscfg.Profile) bool {
-		return p.Name == profileName
-	})
+	profiles, err := profiler.LoadProfiles(ctx, profile.WithName(profileName))
 	// Tolerate ErrNoConfiguration here, as we will write out a configuration as part of the login flow.
-	if err != nil && !errors.Is(err, databrickscfg.ErrNoConfiguration) {
+	if err != nil && !errors.Is(err, profile.ErrNoConfiguration) {
 		return err
 	}
 

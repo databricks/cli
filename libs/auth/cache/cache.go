@@ -11,6 +11,11 @@ import (
 	"golang.org/x/oauth2"
 )
 
+type TokenCache interface {
+	Store(key string, t *oauth2.Token) error
+	Lookup(key string) (*oauth2.Token, error)
+}
+
 const (
 	// where the token cache is stored
 	tokenCacheFile = ".databricks/token-cache.json"
@@ -29,14 +34,14 @@ var ErrNotConfigured = errors.New("databricks OAuth is not configured for this h
 
 // this implementation requires the calling code to do a machine-wide lock,
 // otherwise the file might get corrupt.
-type TokenCache struct {
+type FileTokenCache struct {
 	Version int                      `json:"version"`
 	Tokens  map[string]*oauth2.Token `json:"tokens"`
 
 	fileLocation string
 }
 
-func (c *TokenCache) Store(key string, t *oauth2.Token) error {
+func (c *FileTokenCache) Store(key string, t *oauth2.Token) error {
 	err := c.load()
 	if errors.Is(err, fs.ErrNotExist) {
 		dir := filepath.Dir(c.fileLocation)
@@ -59,7 +64,7 @@ func (c *TokenCache) Store(key string, t *oauth2.Token) error {
 	return os.WriteFile(c.fileLocation, raw, ownerReadWrite)
 }
 
-func (c *TokenCache) Lookup(key string) (*oauth2.Token, error) {
+func (c *FileTokenCache) Lookup(key string) (*oauth2.Token, error) {
 	err := c.load()
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil, ErrNotConfigured
@@ -73,7 +78,7 @@ func (c *TokenCache) Lookup(key string) (*oauth2.Token, error) {
 	return t, nil
 }
 
-func (c *TokenCache) location() (string, error) {
+func (c *FileTokenCache) location() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("home: %w", err)
@@ -81,7 +86,7 @@ func (c *TokenCache) location() (string, error) {
 	return filepath.Join(home, tokenCacheFile), nil
 }
 
-func (c *TokenCache) load() error {
+func (c *FileTokenCache) load() error {
 	loc, err := c.location()
 	if err != nil {
 		return err

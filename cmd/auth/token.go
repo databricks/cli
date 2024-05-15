@@ -44,7 +44,7 @@ func newTokenCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 	}
 
 	var tokenTimeout time.Duration
-	cmd.Flags().DurationVar(&tokenTimeout, "timeout", auth.DefaultTimeout,
+	cmd.Flags().DurationVar(&tokenTimeout, "timeout", defaultTimeout,
 		"Timeout for acquiring a token.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
