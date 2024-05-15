@@ -1,12 +1,10 @@
-package deploy
+package terraform
 
 import (
 	"context"
 	"errors"
 	"testing"
 
-	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -16,15 +14,22 @@ import (
 
 func TestIsAnyResourceRunningWithEmptyState(t *testing.T) {
 	mock := mocks.NewMockWorkspaceClient(t)
-	err := checkAnyResourceRunning(context.Background(), mock.WorkspaceClient, &config.Resources{})
+	err := checkAnyResourceRunning(context.Background(), mock.WorkspaceClient, &resourcesState{})
 	require.NoError(t, err)
 }
 
 func TestIsAnyResourceRunningWithJob(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
-	resources := &config.Resources{
-		Jobs: map[string]*resources.Job{
-			"job1": {ID: "123"},
+	resources := &resourcesState{
+		Resources: []stateResource{
+			{
+				Type: "databricks_job",
+				Mode: "managed",
+				Name: "job1",
+				Instances: []stateResourceInstance{
+					{Attributes: stateInstanceAttributes{ID: "123"}},
+				},
+			},
 		},
 	}
 
@@ -50,9 +55,16 @@ func TestIsAnyResourceRunningWithJob(t *testing.T) {
 
 func TestIsAnyResourceRunningWithPipeline(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
-	resources := &config.Resources{
-		Pipelines: map[string]*resources.Pipeline{
-			"pipeline1": {ID: "123"},
+	resources := &resourcesState{
+		Resources: []stateResource{
+			{
+				Type: "databricks_pipeline",
+				Mode: "managed",
+				Name: "pipeline1",
+				Instances: []stateResourceInstance{
+					{Attributes: stateInstanceAttributes{ID: "123"}},
+				},
+			},
 		},
 	}
 
@@ -79,9 +91,16 @@ func TestIsAnyResourceRunningWithPipeline(t *testing.T) {
 
 func TestIsAnyResourceRunningWithAPIFailure(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
-	resources := &config.Resources{
-		Pipelines: map[string]*resources.Pipeline{
-			"pipeline1": {ID: "123"},
+	resources := &resourcesState{
+		Resources: []stateResource{
+			{
+				Type: "databricks_pipeline",
+				Mode: "managed",
+				Name: "pipeline1",
+				Instances: []stateResourceInstance{
+					{Attributes: stateInstanceAttributes{ID: "123"}},
+				},
+			},
 		},
 	}
 
