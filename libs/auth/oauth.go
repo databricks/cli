@@ -28,7 +28,7 @@ const (
 	appRedirectAddr = "localhost:8020"
 
 	// maximum amount of time to acquire listener on appRedirectAddr
-	DefaultTimeout = 45 * time.Second
+	DefaultTimeout = 1 * time.Hour
 )
 
 var ( // Databricks SDK API: `databricks OAuth is not` will be checked for presence

@@ -4,11 +4,38 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/spf13/cobra"
 )
+
+type tokenErrorResponse struct {
+	Error            string `json:"error"`
+	ErrorDescription string `json:"error_description"`
+}
+
+func buildLoginCommand(profile string, persistentAuth *auth.PersistentAuth) string {
+	executable := os.Args[0]
+	cmd := []string{
+		executable,
+		"auth",
+		"login",
+	}
+	if profile != "" {
+		cmd = append(cmd, "--profile", profile)
+	} else {
+		cmd = append(cmd, "--host", persistentAuth.Host)
+		if persistentAuth.AccountID != "" {
+			cmd = append(cmd, "--account-id", persistentAuth.AccountID)
+		}
+	}
+	return strings.Join(cmd, " ")
+}
 
 func newTokenCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 	cmd := &cobra.Command{
@@ -33,7 +60,7 @@ func newTokenCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 			}
 		}
 
-		err := setHost(ctx, profileName, persistentAuth, args)
+		err := setHostAndAccountId(ctx, profileName, persistentAuth, args)
 		if err != nil {
 			return err
 		}
@@ -42,7 +69,17 @@ func newTokenCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 		ctx, cancel := context.WithTimeout(ctx, tokenTimeout)
 		defer cancel()
 		t, err := persistentAuth.Load(ctx)
-		if err != nil {
+		var httpErr *httpclient.HttpError
+		if errors.As(err, &httpErr) {
+			t := &tokenErrorResponse{}
+			err = json.Unmarshal([]byte(httpErr.Message), t)
+			if err != nil {
+				return fmt.Errorf("error parsing token response: %w", err)
+			}
+			if t.ErrorDescription == "Refresh token is invalid" {
+				return fmt.Errorf("a new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run `%s`", buildLoginCommand(profileName, persistentAuth))
+			}
+		} else if err != nil {
 			return err
 		}
 		raw, err := json.MarshalIndent(t, "", "  ")
