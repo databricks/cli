@@ -67,4 +67,9 @@ func TestAdditional(t *testing.T) {
 			SliceOfPointer: []*string{nil},
 		})
 	})
+
+	t.Run("pointer to a empty string", func(t *testing.T) {
+		s := ""
+		assertFromTypedToTypedEqual(t, &s)
+	})
 }
