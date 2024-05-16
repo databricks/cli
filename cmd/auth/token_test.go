@@ -133,7 +133,7 @@ func TestTokenCmdInvalidResponse(t *testing.T) {
 	out := output.String()
 	assert.Empty(t, out)
 	assert.ErrorContains(t, err, "unexpected parsing token response: invalid character 'N' looking for beginning of value. Try logging in again with ")
-	assert.ErrorContains(t, err, "auth login --profile active` and retrying the command. If this fails, report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new")
+	assert.ErrorContains(t, err, "auth login --profile active` before retrying. If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new")
 }
 
 func TestTokenCmdOtherErrorResponse(t *testing.T) {
@@ -144,7 +144,7 @@ func TestTokenCmdOtherErrorResponse(t *testing.T) {
 	out := output.String()
 	assert.Empty(t, out)
 	assert.ErrorContains(t, err, "unexpected error refreshing token: Databricks is down. Try logging in again with ")
-	assert.ErrorContains(t, err, "auth login --profile active` and retrying the command. If this fails, report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new")
+	assert.ErrorContains(t, err, "auth login --profile active` before retrying. If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new")
 }
 
 func TestTokenCmdWithProfileSuccess(t *testing.T) {
