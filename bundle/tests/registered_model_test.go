@@ -1,7 +1,6 @@
 package config_tests
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
@@ -10,7 +9,6 @@ import (
 )
 
 func assertExpectedModel(t *testing.T, p *resources.RegisteredModel) {
-	assert.Equal(t, "registered_model/databricks.yml", filepath.ToSlash(p.ConfigFilePath))
 	assert.Equal(t, "main", p.CatalogName)
 	assert.Equal(t, "default", p.SchemaName)
 	assert.Equal(t, "comment", p.Comment)
