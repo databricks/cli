@@ -213,3 +213,31 @@ func (m *translatePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 
 	return diag.FromErr(err)
 }
+
+func gatherFallbackPaths(v dyn.Value, typ string) (map[string]string, error) {
+	var fallback = make(map[string]string)
+	var pattern = dyn.NewPattern(dyn.Key("resources"), dyn.Key(typ), dyn.AnyKey())
+
+	// Previous behavior was to use a resource's location as the base path to resolve
+	// relative paths in its definition. With the introduction of [dyn.Value] throughout,
+	// we can use the location of the [dyn.Value] of the relative path itself.
+	//
+	// This is more flexible, as resources may have overrides that are not
+	// located in the same directory as the resource configuration file.
+	//
+	// To maintain backwards compatibility, we allow relative paths to be resolved using
+	// the original approach as fallback if the [dyn.Value] location cannot be resolved.
+	_, err := dyn.MapByPattern(v, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		key := p[2].Key()
+		dir, err := v.Location().Directory()
+		if err != nil {
+			return dyn.InvalidValue, fmt.Errorf("unable to determine directory for %s: %w", p, err)
+		}
+		fallback[key] = dir
+		return v, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return fallback, nil
+}

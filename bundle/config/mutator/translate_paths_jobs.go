@@ -55,21 +55,14 @@ func rewritePatterns(base dyn.Pattern) []jobRewritePattern {
 }
 
 func (m *translatePaths) applyJobTranslations(b *bundle.Bundle, v dyn.Value) (dyn.Value, error) {
-	var fallback = make(map[string]string)
+	fallback, err := gatherFallbackPaths(v, "jobs")
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
+
+	// Do not translate job task paths if using Git source
 	var ignore []string
-	var err error
-
 	for key, job := range b.Config.Resources.Jobs {
-		dir, err := job.ConfigFileDirectory()
-		if err != nil {
-			return dyn.InvalidValue, fmt.Errorf("unable to determine directory for job %s: %w", key, err)
-		}
-
-		// If we cannot resolve the relative path using the [dyn.Value] location itself,
-		// use the job's location as fallback. This is necessary for backwards compatibility.
-		fallback[key] = dir
-
-		// Do not translate job task paths if using git source
 		if job.GitSource != nil {
 			ignore = append(ignore, key)
 		}
