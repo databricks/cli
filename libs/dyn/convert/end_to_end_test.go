@@ -73,9 +73,43 @@ func TestAdditional(t *testing.T) {
 		assertFromTypedToTypedEqual(t, &s)
 	})
 
-
 	t.Run("nil pointer", func(t *testing.T) {
 		var s *string
 		assertFromTypedToTypedEqual(t, s)
+	})
+
+	t.Run("struct with scalar values", func(t *testing.T) {
+		s := ""
+		type foo struct {
+			A string  `json:"a"`
+			B int     `json:"b"`
+			C bool    `json:"c"`
+			D *string `json:"d"`
+		}
+		assertFromTypedToTypedEqual(t, foo{
+			A: "a",
+			B: 1,
+			C: true,
+			D: &s,
+		})
+		assertFromTypedToTypedEqual(t, foo{
+			A: "",
+			B: 0,
+			C: false,
+			D: nil,
+		})
+	})
+
+	t.Run("map with scalar values", func(t *testing.T) {
+		assertFromTypedToTypedEqual(t, map[string]string{
+			"a": "a",
+			"b": "b",
+			"c": "",
+		})
+		assertFromTypedToTypedEqual(t, map[string]int{
+			"a": 1,
+			"b": 0,
+			"c": 2,
+		})
 	})
 }
