@@ -16,18 +16,37 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func configureHost(ctx context.Context, persistentAuth *auth.PersistentAuth, args []string, argIndex int) error {
-	if len(args) > argIndex {
-		persistentAuth.Host = args[argIndex]
-		return nil
+func promptForProfile(ctx context.Context, dv string) (string, error) {
+	if !cmdio.IsInTTY(ctx) {
+		return "", fmt.Errorf("the command is being run in a non-interactive environment, please specify a profile using --profile")
 	}
 
-	host, err := promptForHost(ctx)
-	if err != nil {
-		return err
+	prompt := cmdio.Prompt(ctx)
+	prompt.Label = "Databricks profile name"
+	prompt.Default = dv
+	prompt.AllowEdit = true
+	return prompt.Run()
+}
+
+func getHostFromProfile(ctx context.Context, profileName string) (string, error) {
+	_, profiles, err := databrickscfg.LoadProfiles(ctx, func(p databrickscfg.Profile) bool {
+		return p.Name == profileName
+	})
+
+	// Tolerate ErrNoConfiguration here, as we will write out a configuration file
+	// as part of the login flow.
+	if err != nil && errors.Is(err, databrickscfg.ErrNoConfiguration) {
+		return "", nil
 	}
-	persistentAuth.Host = host
-	return nil
+	if err != nil {
+		return "", err
+	}
+
+	// Return host from profile
+	if len(profiles) > 0 && profiles[0].Host != "" {
+		return profiles[0].Host, nil
+	}
+	return "", nil
 }
 
 const minimalDbConnectVersion = "13.1"
@@ -91,23 +110,18 @@ depends on the existing profiles you have set in your configuration file
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
+		profileName := cmd.Flag("profile").Value.String()
 
-		var profileName string
-		profileFlag := cmd.Flag("profile")
-		if profileFlag != nil && profileFlag.Value.String() != "" {
-			profileName = profileFlag.Value.String()
-		} else if cmdio.IsInTTY(ctx) {
-			prompt := cmdio.Prompt(ctx)
-			prompt.Label = "Databricks Profile Name"
-			prompt.Default = persistentAuth.ProfileName()
-			prompt.AllowEdit = true
-			profile, err := prompt.Run()
+		// If the user has not specified a profile name, prompt for one.
+		if profileName == "" {
+			var err error
+			profileName, err = promptForProfile(ctx, persistentAuth.DefaultProfileName())
 			if err != nil {
 				return err
 			}
-			profileName = profile
 		}
 
+		// Set the host based on the provided arguments and flags.
 		err := setHost(ctx, profileName, persistentAuth, args)
 		if err != nil {
 			return err
@@ -172,21 +186,37 @@ depends on the existing profiles you have set in your configuration file
 	return cmd
 }
 
+// Sets the host in the persistentAuth object based on the provided arguments and flags.
+// Follows the following precedence:
+// 1. [HOST] (first positional argument) or --host flag. Error if both are specified.
+// 2. Profile host, if available.
+// 3. Prompt the user for the host.
 func setHost(ctx context.Context, profileName string, persistentAuth *auth.PersistentAuth, args []string) error {
-	// If the chosen profile has a hostname and the user hasn't specified a host, infer the host from the profile.
-	_, profiles, err := databrickscfg.LoadProfiles(ctx, func(p databrickscfg.Profile) bool {
-		return p.Name == profileName
-	})
-	// Tolerate ErrNoConfiguration here, as we will write out a configuration as part of the login flow.
-	if err != nil && !errors.Is(err, databrickscfg.ErrNoConfiguration) {
-		return err
+	// If both [HOST] and --host are provided, return an error.
+	if len(args) > 0 && persistentAuth.Host != "" {
+		return fmt.Errorf("please only provide a host as an argument or a flag, not both")
 	}
-	if persistentAuth.Host == "" {
-		if len(profiles) > 0 && profiles[0].Host != "" {
-			persistentAuth.Host = profiles[0].Host
-		} else {
-			configureHost(ctx, persistentAuth, args, 0)
+
+	// If [HOST] is provided, set the host to the provided positional argument.
+	if len(args) > 0 && persistentAuth.Host == "" {
+		persistentAuth.Host = args[0]
+	}
+
+	// If neither [HOST] nor --host are provided, and the profile has a host, use it.
+	// Otherwise, prompt the user for a host.
+	if len(args) == 0 && persistentAuth.Host == "" {
+		hostName, err := getHostFromProfile(ctx, profileName)
+		if err != nil {
+			return err
 		}
+		if hostName == "" {
+			var err error
+			hostName, err = promptForHost(ctx)
+			if err != nil {
+				return err
+			}
+		}
+		persistentAuth.Host = hostName
 	}
 	return nil
 }
