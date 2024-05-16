@@ -15,19 +15,35 @@ import (
 
 type FileProfilerImpl struct{}
 
-// Get the path to the .databrickscfg file, falling back to the default in the current user's home directory.
-func (f FileProfilerImpl) GetPath(ctx context.Context) (string, error) {
+func (f FileProfilerImpl) getPath(ctx context.Context, replaceHomeDirWithTilde bool) (string, error) {
 	configFile := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
 	if configFile == "" {
 		configFile = "~/.databrickscfg"
 	}
-	return filepath.Clean(configFile), nil
+	if !replaceHomeDirWithTilde {
+		return configFile, nil
+	}
+	homedir, err := env.UserHomeDir(ctx)
+	if err != nil {
+		return "", err
+	}
+	configFile = strings.Replace(configFile, homedir, "~", 1)
+	return configFile, nil
+}
+
+// Get the path to the .databrickscfg file, falling back to the default in the current user's home directory.
+func (f FileProfilerImpl) GetPath(ctx context.Context) (string, error) {
+	fp, err := f.getPath(ctx, true)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Clean(fp), nil
 }
 
 var ErrNoConfiguration = errors.New("no configuration file found")
 
 func (f FileProfilerImpl) Get(ctx context.Context) (*config.File, error) {
-	path, err := f.GetPath(ctx)
+	path, err := f.getPath(ctx, false)
 	if err != nil {
 		return nil, fmt.Errorf("cannot determine Databricks config file path: %w", err)
 	}
