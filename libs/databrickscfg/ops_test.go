@@ -30,7 +30,7 @@ func TestLoadOrCreate_NotAllowed(t *testing.T) {
 }
 
 func TestLoadOrCreate_Bad(t *testing.T) {
-	path := "testdata/badcfg"
+	path := "profile/testdata/badcfg"
 	file, err := loadOrCreateConfigFile(path)
 	assert.Error(t, err)
 	assert.Nil(t, file)
@@ -40,7 +40,7 @@ func TestMatchOrCreateSection_Direct(t *testing.T) {
 	cfg := &config.Config{
 		Profile: "query",
 	}
-	file, err := loadOrCreateConfigFile("testdata/databrickscfg")
+	file, err := loadOrCreateConfigFile("profile/testdata/databrickscfg")
 	assert.NoError(t, err)
 
 	ctx := context.Background()
@@ -54,7 +54,7 @@ func TestMatchOrCreateSection_AccountID(t *testing.T) {
 	cfg := &config.Config{
 		AccountID: "abc",
 	}
-	file, err := loadOrCreateConfigFile("testdata/databrickscfg")
+	file, err := loadOrCreateConfigFile("profile/testdata/databrickscfg")
 	assert.NoError(t, err)
 
 	ctx := context.Background()
@@ -68,7 +68,7 @@ func TestMatchOrCreateSection_NormalizeHost(t *testing.T) {
 	cfg := &config.Config{
 		Host: "https://query/?o=abracadabra",
 	}
-	file, err := loadOrCreateConfigFile("testdata/databrickscfg")
+	file, err := loadOrCreateConfigFile("profile/testdata/databrickscfg")
 	assert.NoError(t, err)
 
 	ctx := context.Background()
@@ -80,7 +80,7 @@ func TestMatchOrCreateSection_NormalizeHost(t *testing.T) {
 
 func TestMatchOrCreateSection_NoProfileOrHost(t *testing.T) {
 	cfg := &config.Config{}
-	file, err := loadOrCreateConfigFile("testdata/databrickscfg")
+	file, err := loadOrCreateConfigFile("profile/testdata/databrickscfg")
 	assert.NoError(t, err)
 
 	ctx := context.Background()
@@ -92,7 +92,7 @@ func TestMatchOrCreateSection_MultipleProfiles(t *testing.T) {
 	cfg := &config.Config{
 		Host: "https://foo",
 	}
-	file, err := loadOrCreateConfigFile("testdata/databrickscfg")
+	file, err := loadOrCreateConfigFile("profile/testdata/databrickscfg")
 	assert.NoError(t, err)
 
 	ctx := context.Background()
@@ -105,7 +105,7 @@ func TestMatchOrCreateSection_NewProfile(t *testing.T) {
 		Host:    "https://bar",
 		Profile: "delirium",
 	}
-	file, err := loadOrCreateConfigFile("testdata/databrickscfg")
+	file, err := loadOrCreateConfigFile("profile/testdata/databrickscfg")
 	assert.NoError(t, err)
 
 	ctx := context.Background()
