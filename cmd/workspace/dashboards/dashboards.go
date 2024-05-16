@@ -386,6 +386,7 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The title of this dashboard that appears in list views and at the top of the dashboard page.`)
 	cmd.Flags().Var(&updateReq.RunAsRole, "run-as-role", `Sets the **Run as** role for the object. Supported values: [owner, viewer]`)
+	// TODO: array: tags
 
 	cmd.Use = "update DASHBOARD_ID"
 	cmd.Short = `Change a dashboard definition.`
