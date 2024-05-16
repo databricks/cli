@@ -78,7 +78,7 @@ func TestAdditional(t *testing.T) {
 		assertFromTypedToTypedEqual(t, s)
 	})
 
-	t.Run("struct with scalar values", func(t *testing.T) {
+	t.Run("pointer to struct with scalar values", func(t *testing.T) {
 		s := ""
 		type foo struct {
 			A string  `json:"a"`
@@ -86,13 +86,13 @@ func TestAdditional(t *testing.T) {
 			C bool    `json:"c"`
 			D *string `json:"d"`
 		}
-		assertFromTypedToTypedEqual(t, foo{
+		assertFromTypedToTypedEqual(t, &foo{
 			A: "a",
 			B: 1,
 			C: true,
 			D: &s,
 		})
-		assertFromTypedToTypedEqual(t, foo{
+		assertFromTypedToTypedEqual(t, &foo{
 			A: "",
 			B: 0,
 			C: false,
