@@ -42,10 +42,10 @@ func fromTyped(src any, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, 
 		}
 		srcv = srcv.Elem()
 
-		// If a pointer to a scalar type is non-nil but is zero-valued, we should
-		// include its zero value in the dynamic representation. This is because
-		// by default the zero value of a pointer is nil, and it not being nil
-		// indicates it was intentionally set to zero.
+		// If a pointer to a scalar type points to a zero value, we should include
+		// that zero value in the dynamic representation.
+		// This is because by default a pointer is nil in Go, and it not being nil
+		// indicates its value was intentionally set to zero.
 		if !slices.Contains(options, includeZeroValues) {
 			options = append(options, includeZeroValues)
 		}
