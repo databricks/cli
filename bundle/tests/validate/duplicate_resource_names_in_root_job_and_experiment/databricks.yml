@@ -1,0 +1,18 @@
+bundle:
+  name: test
+
+workspace:
+  profile: test
+
+resources:
+  jobs:
+    foo:
+      name: job foo
+    bar:
+      name: job bar
+  pipelines:
+    baz:
+      name: pipeline baz
+  experiments:
+    foo:
+      name: experiment foo

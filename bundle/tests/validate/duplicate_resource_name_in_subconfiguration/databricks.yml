@@ -4,10 +4,10 @@ bundle:
 workspace:
   profile: test
 
+include:
+  - ./resources.yml
+
 resources:
   jobs:
     foo:
       name: job foo
-  pipelines:
-    foo:
-      name: pipeline foo
