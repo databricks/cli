@@ -1,6 +1,6 @@
 // Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
 
-package esm_enablement
+package enhanced_security_monitoring
 
 import (
 	"fmt"
@@ -18,7 +18,7 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "esm-enablement",
+		Use:   "enhanced-security-monitoring",
 		Short: `Controls whether enhanced security monitoring is enabled for the current workspace.`,
 		Long: `Controls whether enhanced security monitoring is enabled for the current
   workspace. If the compliance security profile is enabled, this is
@@ -50,13 +50,13 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*settings.GetEsmEnablementSettingRequest,
+	*settings.GetEnhancedSecurityMonitoringSettingRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getReq settings.GetEsmEnablementSettingRequest
+	var getReq settings.GetEnhancedSecurityMonitoringSettingRequest
 
 	// TODO: short flags
 
@@ -80,7 +80,7 @@ func newGet() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.Settings.EsmEnablement().Get(ctx, getReq)
+		response, err := w.Settings.EnhancedSecurityMonitoring().Get(ctx, getReq)
 		if err != nil {
 			return err
 		}
@@ -105,13 +105,13 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*settings.UpdateEsmEnablementSettingRequest,
+	*settings.UpdateEnhancedSecurityMonitoringSettingRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var updateReq settings.UpdateEsmEnablementSettingRequest
+	var updateReq settings.UpdateEnhancedSecurityMonitoringSettingRequest
 	var updateJson flags.JsonFlag
 
 	// TODO: short flags
@@ -143,7 +143,7 @@ func newUpdate() *cobra.Command {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.Settings.EsmEnablement().Update(ctx, updateReq)
+		response, err := w.Settings.EnhancedSecurityMonitoring().Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
@@ -162,4 +162,4 @@ func newUpdate() *cobra.Command {
 	return cmd
 }
 
-// end service ESMEnablement
+// end service EnhancedSecurityMonitoring
