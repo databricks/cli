@@ -21,6 +21,9 @@ func (m *validateUniqueResourceKeys) Name() string {
 	return "ValidateUniqueResourceKeys"
 }
 
+// TODO: Make this a readonly mutator.
+// TODO: Make this a bit terser.
+
 // TODO: Ensure all duplicate key sites are returned to the user in the diagnostics.
 func (m *validateUniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
@@ -30,7 +33,7 @@ func (m *validateUniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle
 		rv := v.Get("resources")
 
 		// Walk the resources tree and accumulate the resource identifiers.
-		return dyn.Walk(rv, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		_, err := dyn.Walk(rv, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			// The path is expected to be of length 2, and of the form <resource_type>.<resource_identifier>.
 			// Eg: jobs.my_job, pipelines.my_pipeline, etc.
 			if len(p) < 2 {
@@ -56,6 +59,7 @@ func (m *validateUniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle
 				diags = append(diags, diag.Diagnostic{
 					Severity: diag.Error,
 					Summary:  fmt.Sprintf("multiple resources named %s (%s at %s, %s at %s)", k, paths[k].String(), nl, p.String(), ol),
+					Location: nl,
 				})
 			}
 
@@ -63,6 +67,7 @@ func (m *validateUniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle
 			paths[k] = p
 			return v, nil
 		})
+		return v, err
 	})
 	if err != nil {
 		diags = append(diags, diag.FromErr(err)...)
