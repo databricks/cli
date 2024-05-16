@@ -1,12 +1,10 @@
 package config
 
 import (
-	"context"
 	"encoding/json"
 	"reflect"
 	"testing"
 
-	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -33,10 +31,8 @@ func TestRootLoad(t *testing.T) {
 }
 
 func TestDuplicateIdOnLoadReturnsErrorForJobAndPipeline(t *testing.T) {
-	b, diags := Load("./testdata/duplicate_resource_names_in_root_job_and_pipeline/databricks.yml")
+	_, diags := Load("./testdata/duplicate_resource_names_in_root_job_and_pipeline/databricks.yml")
 	assert.NoError(t, diags.Error())
-
-	diags = bundle.Apply(context.Background(), b, validate.PreInitialize())
 
 	assert.ErrorContains(t, diags.Error(), "multiple resources named foo (job at ./testdata/duplicate_resource_names_in_root_job_and_pipeline/databricks.yml:10:7, pipeline at ./testdata/duplicate_resource_names_in_root_job_and_pipeline/databricks.yml:13:7)")
 }
