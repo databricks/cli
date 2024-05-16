@@ -44,9 +44,9 @@ func (s *MlflowModel) TerraformResourceName() string {
 	return "databricks_mlflow_model"
 }
 
-func (s *MlflowModel) Validate(key string) error {
+func (s *MlflowModel) Validate() error {
 	if s == nil || !s.DynamicValue.IsValid() {
-		return fmt.Errorf("model %s is not defined", key)
+		return fmt.Errorf("model is not defined")
 	}
 
 	return nil

@@ -55,9 +55,9 @@ func (s *RegisteredModel) TerraformResourceName() string {
 	return "databricks_registered_model"
 }
 
-func (s *RegisteredModel) Validate(key string) error {
+func (s *RegisteredModel) Validate() error {
 	if s == nil || !s.DynamicValue.IsValid() {
-		return fmt.Errorf("registered model %s is not defined", key)
+		return fmt.Errorf("registered model is not defined")
 	}
 
 	return nil

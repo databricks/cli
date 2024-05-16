@@ -44,9 +44,9 @@ func (p *Pipeline) TerraformResourceName() string {
 	return "databricks_pipeline"
 }
 
-func (p *Pipeline) Validate(key string) error {
+func (p *Pipeline) Validate() error {
 	if p == nil || !p.DynamicValue.IsValid() {
-		return fmt.Errorf("pipeline %s is not defined", key)
+		return fmt.Errorf("pipeline is not defined")
 	}
 
 	return nil

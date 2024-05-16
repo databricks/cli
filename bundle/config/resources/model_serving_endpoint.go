@@ -54,9 +54,9 @@ func (s *ModelServingEndpoint) TerraformResourceName() string {
 	return "databricks_model_serving"
 }
 
-func (s *ModelServingEndpoint) Validate(key string) error {
+func (s *ModelServingEndpoint) Validate() error {
 	if s == nil || !s.DynamicValue.IsValid() {
-		return fmt.Errorf("serving endpoint %s is not defined", key)
+		return fmt.Errorf("serving endpoint is not defined")
 	}
 
 	return nil

@@ -49,9 +49,9 @@ func (j *Job) TerraformResourceName() string {
 	return "databricks_job"
 }
 
-func (j *Job) Validate(key string) error {
+func (j *Job) Validate() error {
 	if j == nil || !j.DynamicValue.IsValid() || j.JobSettings == nil {
-		return fmt.Errorf("job %s is not defined", key)
+		return fmt.Errorf("job is not defined")
 	}
 
 	return nil

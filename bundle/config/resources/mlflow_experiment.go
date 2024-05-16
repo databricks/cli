@@ -44,9 +44,9 @@ func (s *MlflowExperiment) TerraformResourceName() string {
 	return "databricks_mlflow_experiment"
 }
 
-func (s *MlflowExperiment) Validate(key string) error {
+func (s *MlflowExperiment) Validate() error {
 	if s == nil || !s.DynamicValue.IsValid() {
-		return fmt.Errorf("experiment %s is not defined", key)
+		return fmt.Errorf("experiment is not defined")
 	}
 
 	return nil
