@@ -46,7 +46,10 @@ func fromTyped(src any, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, 
 		// that zero value in the dynamic representation.
 		// This is because by default a pointer is nil in Go, and it not being nil
 		// indicates its value was intentionally set to zero.
-		if !slices.Contains(options, includeZeroValues) {
+		isScalar := srcv.Kind() == reflect.String || srcv.Kind() == reflect.Bool ||
+			srcv.Kind() == reflect.Int || srcv.Kind() == reflect.Int32 || srcv.Kind() == reflect.Int64 ||
+			srcv.Kind() == reflect.Float32 || srcv.Kind() == reflect.Float64
+		if !slices.Contains(options, includeZeroValues) && isScalar {
 			options = append(options, includeZeroValues)
 		}
 	}

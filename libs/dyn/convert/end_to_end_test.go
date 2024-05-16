@@ -72,4 +72,10 @@ func TestAdditional(t *testing.T) {
 		s := ""
 		assertFromTypedToTypedEqual(t, &s)
 	})
+
+
+	t.Run("nil pointer", func(t *testing.T) {
+		var s *string
+		assertFromTypedToTypedEqual(t, s)
+	})
 }
