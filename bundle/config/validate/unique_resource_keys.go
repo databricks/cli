@@ -22,6 +22,7 @@ func (m *uniqueResourceKeys) Name() string {
 }
 
 // TODO: Ensure all duplicate key sites are returned to the user in the diagnostics.
+// TODO: Add unit tests for this mutator.
 func (m *uniqueResourceKeys) Apply(ctx context.Context, rb bundle.ReadOnlyBundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
