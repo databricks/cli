@@ -157,4 +157,4 @@ func newUpdate() *cobra.Command {
 	return cmd
 }
 
-// end service ESMEnablementAccount
+// end service EsmEnablementAccount

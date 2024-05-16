@@ -156,4 +156,4 @@ func newUpdate() *cobra.Command {
 	return cmd
 }
 
-// end service CSPEnablementAccount
+// end service CspEnablementAccount
