@@ -11,7 +11,7 @@ func WithProfiler(ctx context.Context, p Profiler) context.Context {
 func GetProfiler(ctx context.Context) Profiler {
 	p, ok := ctx.Value(&profiler).(Profiler)
 	if !ok {
-		return FileProfilerImpl{}
+		return DefaultProfiler
 	}
 	return p
 }

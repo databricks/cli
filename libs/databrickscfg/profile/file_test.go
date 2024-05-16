@@ -28,7 +28,7 @@ func TestProfilesSearchCaseInsensitive(t *testing.T) {
 	assert.False(t, profiles.SearchCaseInsensitive("qu", 0))
 }
 
-func TestSoadProfilesReturnsHomedirAsTilde(t *testing.T) {
+func TestLoadProfilesReturnsHomedirAsTilde(t *testing.T) {
 	ctx := context.Background()
 	ctx = env.WithUserHomeDir(ctx, "testdata")
 	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", "./testdata/databrickscfg")

@@ -76,7 +76,7 @@ func (f FileProfilerImpl) LoadProfiles(ctx context.Context, fn ProfileMatchFunct
 }
 
 func ProfileCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	profiles, err := FileProfilerImpl{}.LoadProfiles(cmd.Context(), MatchAllProfiles)
+	profiles, err := DefaultProfiler.LoadProfiles(cmd.Context(), MatchAllProfiles)
 	if err != nil {
 		return nil, cobra.ShellCompDirectiveError
 	}

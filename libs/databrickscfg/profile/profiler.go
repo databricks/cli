@@ -28,3 +28,5 @@ type Profiler interface {
 	LoadProfiles(context.Context, ProfileMatchFunction) (Profiles, error)
 	GetPath(context.Context) (string, error)
 }
+
+var DefaultProfiler = FileProfilerImpl{}

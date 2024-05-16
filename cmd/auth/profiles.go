@@ -94,7 +94,7 @@ func newProfilesCommand() *cobra.Command {
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		var profiles []*profileMetadata
-		iniFile, err := profile.FileProfilerImpl{}.Get(cmd.Context())
+		iniFile, err := profile.DefaultProfiler.Get(cmd.Context())
 		if os.IsNotExist(err) {
 			// return empty list for non-configured machines
 			iniFile = &config.File{
