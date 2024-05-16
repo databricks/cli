@@ -38,6 +38,7 @@ func (v *validate) Name() string {
 	return "validate"
 }
 
+// Validations to perform in the bundle validate command.
 func Validate() bundle.Mutator {
 	return &validate{}
 }
