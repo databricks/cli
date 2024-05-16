@@ -39,7 +39,7 @@ func buildLoginCommand(profile string, persistentAuth *auth.PersistentAuth) stri
 
 func helpfulError(profile string, persistentAuth *auth.PersistentAuth) string {
 	loginMsg := buildLoginCommand(profile, persistentAuth)
-	return fmt.Sprintf("Try logging in again with `%s` and retrying the command. If this fails, report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new", loginMsg)
+	return fmt.Sprintf("Try logging in again with `%s` before retrying. If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new", loginMsg)
 }
 
 func newTokenCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
