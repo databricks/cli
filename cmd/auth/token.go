@@ -61,7 +61,7 @@ func newTokenCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 			profileName = profileFlag.Value.String()
 			// If a profile is provided we read the host from the .databrickscfg file
 			if profileName != "" && len(args) > 0 {
-				return errors.New("providing both a profile and a host parameters is not supported")
+				return errors.New("providing both a profile and the host parameter is not supported")
 			}
 		}
 
@@ -88,7 +88,7 @@ func newTokenCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 				return fmt.Errorf("unexpected error refreshing token: %s. %s", t.ErrorDescription, helpMsg)
 			}
 		} else if err != nil {
-			return err
+			return fmt.Errorf("unexpected error refreshing token: %w. %s", err, helpfulError(profileName, persistentAuth))
 		}
 		raw, err := json.MarshalIndent(t, "", "  ")
 		if err != nil {
