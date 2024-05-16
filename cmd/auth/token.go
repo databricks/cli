@@ -37,6 +37,11 @@ func buildLoginCommand(profile string, persistentAuth *auth.PersistentAuth) stri
 	return strings.Join(cmd, " ")
 }
 
+func helpfulError(profile string, persistentAuth *auth.PersistentAuth) string {
+	loginMsg := buildLoginCommand(profile, persistentAuth)
+	return fmt.Sprintf("Try logging in again with `%s` and retrying the command. If this fails, report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new", loginMsg)
+}
+
 func newTokenCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "token [HOST]",
@@ -71,13 +76,16 @@ func newTokenCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 		t, err := persistentAuth.Load(ctx)
 		var httpErr *httpclient.HttpError
 		if errors.As(err, &httpErr) {
+			helpMsg := helpfulError(profileName, persistentAuth)
 			t := &tokenErrorResponse{}
 			err = json.Unmarshal([]byte(httpErr.Message), t)
 			if err != nil {
-				return fmt.Errorf("error parsing token response: %w", err)
+				return fmt.Errorf("unexpected parsing token response: %w. %s", err, helpMsg)
 			}
 			if t.ErrorDescription == "Refresh token is invalid" {
 				return fmt.Errorf("a new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run `%s`", buildLoginCommand(profileName, persistentAuth))
+			} else {
+				return fmt.Errorf("unexpected error refreshing token: %s. %s", t.ErrorDescription, helpMsg)
 			}
 		} else if err != nil {
 			return err

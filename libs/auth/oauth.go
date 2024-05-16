@@ -20,6 +20,20 @@ import (
 	"golang.org/x/oauth2/authhandler"
 )
 
+var apiClientForOauth int
+
+func WithApiClientForOAuth(ctx context.Context, c *httpclient.ApiClient) context.Context {
+	return context.WithValue(ctx, &apiClientForOauth, c)
+}
+
+func GetApiClientForOAuth(ctx context.Context) *httpclient.ApiClient {
+	c, ok := ctx.Value(&apiClientForOauth).(*httpclient.ApiClient)
+	if !ok {
+		return httpclient.NewApiClient(httpclient.ClientConfig{})
+	}
+	return c
+}
+
 const (
 	// these values are predefined by Databricks as a public client
 	// and is specific to this application only. Using these values
@@ -45,10 +59,6 @@ type PersistentAuth struct {
 	cache   cache.TokenCache
 	ln      net.Listener
 	browser func(string) error
-}
-
-func (a *PersistentAuth) SetTokenCache(c cache.TokenCache) {
-	a.cache = c
 }
 
 func (a *PersistentAuth) SetApiClient(h *httpclient.ApiClient) {
@@ -139,12 +149,10 @@ func (a *PersistentAuth) init(ctx context.Context) error {
 		return ErrFetchCredentials
 	}
 	if a.http == nil {
-		a.http = httpclient.NewApiClient(httpclient.ClientConfig{
-			// noop
-		})
+		a.http = GetApiClientForOAuth(ctx)
 	}
 	if a.cache == nil {
-		a.cache = &cache.FileTokenCache{}
+		a.cache = cache.GetTokenCache(ctx)
 	}
 	if a.browser == nil {
 		a.browser = browser.OpenURL
