@@ -64,9 +64,6 @@ func newGet() *cobra.Command {
   Get a provider in the Databricks Marketplace with at least one visible
   listing.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -138,9 +135,6 @@ func newList() *cobra.Command {
   
   List all providers in the Databricks Marketplace with at least one visible
   listing.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 

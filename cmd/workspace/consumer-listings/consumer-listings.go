@@ -66,9 +66,6 @@ func newGet() *cobra.Command {
   Get a published listing in the Databricks Marketplace that the consumer has
   access to.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -148,9 +145,6 @@ func newList() *cobra.Command {
   List all published listings in the Databricks Marketplace that the consumer
   has access to.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -214,9 +208,6 @@ func newSearch() *cobra.Command {
 
   Arguments:
     QUERY: Fuzzy matches query`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 

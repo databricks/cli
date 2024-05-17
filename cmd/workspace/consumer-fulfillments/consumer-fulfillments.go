@@ -64,9 +64,6 @@ func newGet() *cobra.Command {
   
   Get a high level preview of the metadata of listing installable content.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -125,9 +122,6 @@ func newList() *cobra.Command {
   attached share or git repo. Only one of these fields will be present.
   Personalized installations contain metadata about the attached share or git
   repo, as well as the Delta Sharing recipient type.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 

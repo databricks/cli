@@ -68,9 +68,6 @@ func newCreate() *cobra.Command {
   
   Add an exchange filter.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -127,9 +124,6 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete an exchange filter.
   
   Delete an exchange filter`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -201,9 +195,6 @@ func newList() *cobra.Command {
   
   List exchange filter`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -257,9 +248,6 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Update exchange filter.
   
   Update an exchange filter.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 

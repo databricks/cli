@@ -39,6 +39,7 @@ import (
 
 {{define "service"}}
 {{- $excludeMethods := list "put-secret" -}}
+{{- $hideService := .IsPrivatePreview }}
 
 // Slice with functions to override default command behavior.
 // Functions can be added from the `init()` function in manually curated files in this directory.
@@ -57,7 +58,7 @@ func New() *cobra.Command {
 			"package": "{{ .Package.Name }}",
 		},
 		{{- end }}
-		{{- if .IsPrivatePreview }}
+		{{- if $hideService }}
 
 		// This service is being previewed; hide from help output.
 		Hidden: true,
@@ -190,7 +191,8 @@ func new{{.PascalName}}() *cobra.Command {
     {{- end -}}
 	`
 	{{- end }}
-	{{- if .IsPrivatePreview }}
+	{{/* Don't hide commands if the service itself is already hidden. */}}
+	{{- if and (not $hideService) .IsPrivatePreview }}
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true
