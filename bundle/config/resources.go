@@ -126,6 +126,47 @@ func (r *Resources) VerifyUniqueResourceIdentifiers() (*UniqueResourceIdTracker,
 	return tracker, nil
 }
 
+type resource struct {
+	resource      ConfigResource
+	resource_type string
+	key           string
+}
+
+func (r *Resources) allResources() []resource {
+	all := make([]resource, 0)
+	for k, e := range r.Jobs {
+		all = append(all, resource{resource_type: "job", resource: e, key: k})
+	}
+	for k, e := range r.Pipelines {
+		all = append(all, resource{resource_type: "pipeline", resource: e, key: k})
+	}
+	for k, e := range r.Models {
+		all = append(all, resource{resource_type: "model", resource: e, key: k})
+	}
+	for k, e := range r.Experiments {
+		all = append(all, resource{resource_type: "experiment", resource: e, key: k})
+	}
+	for k, e := range r.ModelServingEndpoints {
+		all = append(all, resource{resource_type: "serving endpoint", resource: e, key: k})
+	}
+	for k, e := range r.RegisteredModels {
+		all = append(all, resource{resource_type: "registered model", resource: e, key: k})
+	}
+	return all
+}
+
+func (r *Resources) VerifyAllResourcesDefined() error {
+	all := r.allResources()
+	for _, e := range all {
+		err := e.resource.Validate()
+		if err != nil {
+			return fmt.Errorf("%s %s is not defined", e.resource_type, e.key)
+		}
+	}
+
+	return nil
+}
+
 // ConfigureConfigFilePath sets the specified path for all resources contained in this instance.
 // This property is used to correctly resolve paths relative to the path
 // of the configuration file they were defined in.
@@ -153,6 +194,7 @@ func (r *Resources) ConfigureConfigFilePath() {
 type ConfigResource interface {
 	Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error)
 	TerraformResourceName() string
+	Validate() error
 }
 
 func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) {

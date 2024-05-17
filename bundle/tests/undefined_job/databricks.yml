@@ -1,0 +1,8 @@
+bundle:
+  name: undefined-job
+
+resources:
+  jobs:
+    undefined:
+    test:
+      name: "Test Job"
