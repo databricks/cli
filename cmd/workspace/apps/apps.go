@@ -89,9 +89,6 @@ func newCreate() *cobra.Command {
       characters and hyphens and be between 2 and 30 characters long. It must be
       unique within the workspace.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -192,9 +189,6 @@ func newCreateDeployment() *cobra.Command {
     APP_NAME: The name of the app.
     SOURCE_CODE_PATH: The source code path of the deployment.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -288,9 +282,6 @@ func newDelete() *cobra.Command {
   Arguments:
     NAME: The name of the app.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -348,9 +339,6 @@ func newGet() *cobra.Command {
 
   Arguments:
     NAME: The name of the app.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -412,9 +400,6 @@ func newGetDeployment() *cobra.Command {
     APP_NAME: The name of the app.
     DEPLOYMENT_ID: The unique id of the deployment.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -474,9 +459,6 @@ func newGetEnvironment() *cobra.Command {
   Arguments:
     NAME: The name of the app.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -535,9 +517,6 @@ func newList() *cobra.Command {
   
   Lists all apps in the workspace.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -594,9 +573,6 @@ func newListDeployments() *cobra.Command {
   Arguments:
     APP_NAME: The name of the app.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -651,9 +627,6 @@ func newStop() *cobra.Command {
 
   Arguments:
     NAME: The name of the app.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -718,9 +691,6 @@ func newUpdate() *cobra.Command {
     NAME: The name of the app. The name must contain only lowercase alphanumeric
       characters and hyphens and be between 2 and 30 characters long. It must be
       unique within the workspace.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
