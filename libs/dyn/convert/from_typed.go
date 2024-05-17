@@ -36,12 +36,6 @@ func FromTyped(src any, ref dyn.Value) (dyn.Value, error) {
 	return fromTyped(src, ref)
 }
 
-func isScalarValue(v reflect.Value) bool {
-	return v.Kind() == reflect.String || v.Kind() == reflect.Bool ||
-		v.Kind() == reflect.Int || v.Kind() == reflect.Int32 || v.Kind() == reflect.Int64 ||
-		v.Kind() == reflect.Float32 || v.Kind() == reflect.Float64
-}
-
 // Private implementation of FromTyped that allows for additional options not exposed
 // in the public API.
 func fromTyped(src any, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, error) {
@@ -58,7 +52,7 @@ func fromTyped(src any, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, 
 		// that zero value in the dynamic representation.
 		// This is because by default a pointer is nil in Go, and it not being nil
 		// indicates its value was intentionally set to zero.
-		if !slices.Contains(options, includeZeroValuedScalars) && isScalarValue(srcv) {
+		if !slices.Contains(options, includeZeroValuedScalars) {
 			options = append(options, includeZeroValuedScalars)
 		}
 	}
