@@ -1,21 +1,19 @@
 package python
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"github.com/databricks/cli/libs/dyn"
-	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"reflect"
 	"testing"
 
+	"github.com/databricks/cli/libs/dyn"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	assert "github.com/databricks/cli/libs/dyn/dynassert"
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/process"
 )
 
@@ -36,7 +34,8 @@ func TestApplyPythonMutator_preinit(t *testing.T) {
 
 	b := loadYaml("bundle.yaml", `
       experimental:
-        enable_pydabs: true
+        pydabs:
+          enable: true
         venv:
           path: .venv
       resources:
@@ -54,7 +53,7 @@ func TestApplyPythonMutator_preinit(t *testing.T) {
 		},
 		`{
 			"experimental": {
-				"enable_pydabs": true,
+				"pydabs": { "enable": true },
 				"venv": { "path": ".venv" }
 			},
 			"resources": {
@@ -67,11 +66,7 @@ func TestApplyPythonMutator_preinit(t *testing.T) {
 					},
 				}
 			}
-		}`,
-		`{"level": "INFO", "message": "Applying Python mutator"}`,
-	)
-
-	loggerBuf, ctx := withLoggerStub(ctx)
+		}`)
 
 	mutator := ApplyPythonMutator(ApplyPythonMutatorPhasePreInit)
 	diag := bundle.Apply(ctx, b, mutator)
@@ -87,8 +82,6 @@ func TestApplyPythonMutator_preinit(t *testing.T) {
 	if job1, ok := b.Config.Resources.Jobs["job1"]; ok {
 		assert.Equal(t, "job_1", job1.Name)
 	}
-
-	assert.Equal(t, "level=INFO msg=\"Applying Python mutator\"\n", loggerBuf.String())
 }
 
 func TestApplyPythonMutator_preinit_disallowed(t *testing.T) {
@@ -96,7 +89,8 @@ func TestApplyPythonMutator_preinit_disallowed(t *testing.T) {
 
 	b := loadYaml("bundle.yaml", `
       experimental:
-        enable_pydabs: true
+        pydabs:
+          enable: true
         venv:
           path: .venv
       resources:
@@ -114,7 +108,7 @@ func TestApplyPythonMutator_preinit_disallowed(t *testing.T) {
 		},
 		`{
 			"experimental": {
-				"enable_pydabs": true,
+				"pydabs": { "enable": true },
 				"venv": { "path": ".venv" }
 			},
 			"resources": {
@@ -125,9 +119,7 @@ func TestApplyPythonMutator_preinit_disallowed(t *testing.T) {
 					}
 				}
 			}
-		}`,
-		"",
-	)
+		}`)
 
 	mutator := ApplyPythonMutator(ApplyPythonMutatorPhasePreInit)
 	diag := bundle.Apply(ctx, b, mutator)
@@ -140,7 +132,8 @@ func TestApplyPythonMutator_init(t *testing.T) {
 
 	b := loadYaml("bundle.yaml", `
       experimental:
-        enable_pydabs: true
+        pydabs:
+          enable: true
         venv:
           path: .venv
       resources:
@@ -158,7 +151,7 @@ func TestApplyPythonMutator_init(t *testing.T) {
 		},
 		`{
 			"experimental": {
-				"enable_pydabs": true,
+				"pydabs": { "enable": true },
 				"venv": { "path": ".venv" }
 			},
 			"resources": {
@@ -169,10 +162,7 @@ func TestApplyPythonMutator_init(t *testing.T) {
 					}
 				}
 			}
-		}`,
-		`{"level": "INFO", "message": "Applying Python mutator"}`,
-	)
-	loggerBuf, ctx := withLoggerStub(ctx)
+		}`)
 
 	mutator := ApplyPythonMutator(ApplyPythonMutatorPhaseInit)
 	diag := bundle.Apply(ctx, b, mutator)
@@ -182,21 +172,10 @@ func TestApplyPythonMutator_init(t *testing.T) {
 	assert.ElementsMatch(t, []string{"job0"}, keys(b.Config.Resources.Jobs))
 	assert.Equal(t, "job_0", b.Config.Resources.Jobs["job0"].Name)
 	assert.Equal(t, "my job", b.Config.Resources.Jobs["job0"].Description)
-
-	assert.Equal(t, "level=INFO msg=\"Applying Python mutator\"\n", loggerBuf.String())
 }
 
 func TestApplyPythonMutator_disabled(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Experimental: &config.Experimental{
-				EnablePyDABs: false,
-				VEnv: config.VEnv{
-					Path: ".venv",
-				},
-			},
-		},
-	}
+	b := loadYaml("bundle.yaml", ``)
 
 	ctx := context.Background()
 	mutator := ApplyPythonMutator(ApplyPythonMutatorPhasePreInit)
@@ -206,14 +185,10 @@ func TestApplyPythonMutator_disabled(t *testing.T) {
 }
 
 func TestApplyPythonMutator_venvRequired(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Experimental: &config.Experimental{
-				EnablePyDABs: true,
-				VEnv:         config.VEnv{},
-			},
-		},
-	}
+	b := loadYaml("bundle.yaml", `
+      experimental:
+        pydabs:
+          enable: true`)
 
 	ctx := context.Background()
 	mutator := ApplyPythonMutator(ApplyPythonMutatorPhasePreInit)
@@ -223,11 +198,10 @@ func TestApplyPythonMutator_venvRequired(t *testing.T) {
 }
 
 func TestApplyPythonMutator_venvNotFound(t *testing.T) {
-	withFakeVEnv(t, ".venv")
-
 	b := loadYaml("bundle.yaml", `
       experimental:
-        enable_pydabs: true
+        pydabs:
+          enable: true
         venv:
           path: bad_path`)
 
@@ -362,19 +336,13 @@ func TestCreateOverrideVisitor(t *testing.T) {
 	}
 }
 
-func withProcessStub(args []string, stdout string, stderr string) context.Context {
+func withProcessStub(args []string, stdout string) context.Context {
 	ctx := context.Background()
 	ctx, stub := process.WithStub(ctx)
 
 	stub.WithCallback(func(actual *exec.Cmd) error {
 		if reflect.DeepEqual(actual.Args, args) {
 			_, err := actual.Stdout.Write([]byte(stdout))
-
-			if err != nil {
-				return err
-			}
-
-			_, err = actual.Stderr.Write([]byte(stderr))
 
 			return err
 		} else {
@@ -383,28 +351,6 @@ func withProcessStub(args []string, stdout string, stderr string) context.Contex
 	})
 
 	return ctx
-}
-
-func withLoggerStub(ctx context.Context) (*bytes.Buffer, context.Context) {
-	var buf = bytes.Buffer{}
-
-	opts := slog.HandlerOptions{
-		Level: slog.LevelInfo,
-		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-			// remove everything except 'msg' and 'level' for less output
-			if a.Key == slog.MessageKey || a.Key == slog.LevelKey {
-				return a
-			} else {
-				return slog.Attr{}
-			}
-		},
-	}
-	handler := slog.NewTextHandler(&buf, &opts)
-	logger := slog.New(handler)
-
-	ctx = log.NewContext(ctx, logger)
-
-	return &buf, ctx
 }
 
 func keys[T any](value map[string]T) []string {

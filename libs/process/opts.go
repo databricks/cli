@@ -55,9 +55,16 @@ func WithStdinReader(src io.Reader) execOption {
 	}
 }
 
-func WithStderrWriter(writer io.Writer) execOption {
+func WithStderrWriter(dst io.Writer) execOption {
 	return func(_ context.Context, c *exec.Cmd) error {
-		c.Stderr = writer
+		c.Stderr = dst
+		return nil
+	}
+}
+
+func WithStdoutWriter(dst io.Writer) execOption {
+	return func(_ context.Context, c *exec.Cmd) error {
+		c.Stdout = dst
 		return nil
 	}
 }

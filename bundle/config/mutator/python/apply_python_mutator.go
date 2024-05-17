@@ -5,6 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path"
+	"path/filepath"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
@@ -14,9 +18,6 @@ import (
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/process"
-	"os"
-	"path"
-	"path/filepath"
 )
 
 type phase string
@@ -51,13 +52,13 @@ func getExperimental(b *bundle.Bundle) config.Experimental {
 func (m *applyPythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	experimental := getExperimental(b)
 
-	if !experimental.EnablePyDABs {
-		log.Debugf(ctx, "'experimental.enable_pydabs' isn't enabled, skipping")
+	if !experimental.PyDABs.Enable {
+		log.Debugf(ctx, "'experimental.pydabs.enable' isn't enabled, skipping")
 		return nil
 	}
 
-	if experimental.EnablePyDABs && experimental.VEnv.Path == "" {
-		return diag.Errorf("'experimental.enable_pydabs' can only be used when 'experimental.venv.path' is set")
+	if experimental.PyDABs.Enable && experimental.VEnv.Path == "" {
+		return diag.Errorf("'experimental.pydabs.enable' can only be used when 'experimental.venv.path' is set")
 	}
 
 	err := b.Config.Mutate(func(leftRoot dyn.Value) (dyn.Value, error) {
@@ -100,13 +101,13 @@ func (m *applyPythonMutator) runPythonMutator(ctx context.Context, rootPath stri
 		return dyn.InvalidValue, fmt.Errorf("failed to marshal root config: %w", err)
 	}
 
-	pythonLogger := NewStderrLogger(ctx)
+	logWriter := newLogWriter(ctx, "stderr: ")
 
 	stdout, err := process.Background(
 		ctx,
 		args,
 		process.WithDir(rootPath),
-		process.WithStderrWriter(pythonLogger),
+		process.WithStderrWriter(logWriter),
 		process.WithStdinReader(bytes.NewBuffer(rootConfigJson)),
 	)
 
@@ -136,7 +137,6 @@ func (m *applyPythonMutator) runPythonMutator(ctx context.Context, rootPath stri
 
 	return normalized, nil
 }
-
 func createOverrideVisitor(ctx context.Context, phase phase) merge.OverrideVisitor {
 	jobsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))
 
