@@ -20,7 +20,7 @@ func TestValidateUniqueResourceIdentifiers(t *testing.T) {
 		},
 		{
 			name:     "duplicate_resource_names_in_root_job_and_experiment",
-			errorMsg: "multiple resources named foo (jobs.foo at validate/duplicate_resource_names_in_root_job_and_experiment/databricks.yml:10:7, experiments.foo at validate/duplicate_resource_names_in_root_job_and_experiment/databricks.yml:18:7)",
+			errorMsg: "multiple resources named foo (experiments.foo at validate/duplicate_resource_names_in_root_job_and_experiment/databricks.yml:18:7, jobs.foo at validate/duplicate_resource_names_in_root_job_and_experiment/databricks.yml:10:7)",
 		},
 		{
 			name:     "duplicate_resource_name_in_subconfiguration",

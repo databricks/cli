@@ -35,7 +35,9 @@ func walk(v Value, p Path, fn func(p Path, v Value) (Value, error)) (Value, erro
 	case KindMap:
 		m := v.MustMap()
 		out := newMappingWithSize(m.Len())
-		for _, pair := range m.Pairs() {
+
+		// Iterate over the pairs in sorted order to ensure a deterministic order.
+		for _, pair := range m.SortedPairs() {
 			pk := pair.Key
 			pv := pair.Value
 			nv, err := walk(pv, append(p, Key(pk.MustString())), fn)
