@@ -1,6 +1,7 @@
 package merge
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -351,13 +352,48 @@ func TestOverride_Primitive(t *testing.T) {
 
 	for _, tc := range modifiedTestCases {
 		t.Run(tc.name, func(t *testing.T) {
-			s, visitor := createVisitor()
+			s, visitor := createVisitor(visitorOpts{})
 			out, err := override(dyn.NewPath(dyn.Key("root")), tc.left, tc.right, visitor)
 
 			assert.NoError(t, err)
 			assert.Equal(t, tc.state, *s)
 			assert.Equal(t, tc.expected, out)
 		})
+
+		modified := len(tc.state.removed)+len(tc.state.added)+len(tc.state.updated) > 0
+
+		// visitor is not used unless there is a change
+
+		if modified {
+			t.Run(tc.name+" - visitor has error", func(t *testing.T) {
+				_, visitor := createVisitor(visitorOpts{error: fmt.Errorf("unexpected change in test")})
+				_, err := override(dyn.EmptyPath, tc.left, tc.right, visitor)
+
+				assert.EqualError(t, err, "unexpected change in test")
+			})
+
+			t.Run(tc.name+" - visitor overrides value", func(t *testing.T) {
+				expected := dyn.NewValue("return value", dyn.Location{})
+				s, visitor := createVisitor(visitorOpts{returnValue: &expected})
+				out, err := override(dyn.EmptyPath, tc.left, tc.right, visitor)
+
+				assert.NoError(t, err)
+
+				for _, added := range s.added {
+					actual, err := dyn.GetByPath(out, dyn.MustPathFromString(added))
+
+					assert.NoError(t, err)
+					assert.Equal(t, expected, actual)
+				}
+
+				for _, updated := range s.updated {
+					actual, err := dyn.GetByPath(out, dyn.MustPathFromString(updated))
+
+					assert.NoError(t, err)
+					assert.Equal(t, expected, actual)
+				}
+			})
+		}
 	}
 }
 
@@ -376,7 +412,7 @@ func TestOverride_PreserveMappingKeys(t *testing.T) {
 	right := dyn.NewMapping()
 	right.Set(dyn.NewValue("a", rightKeyLocation), dyn.NewValue(7, rightValueLocation))
 
-	state, visitor := createVisitor()
+	state, visitor := createVisitor(visitorOpts{})
 
 	out, err := override(
 		dyn.EmptyPath,
@@ -411,24 +447,41 @@ type visitorState struct {
 	updated []string
 }
 
-func createVisitor() (*visitorState, OverrideVisitor) {
+type visitorOpts struct {
+	error       error
+	returnValue *dyn.Value
+}
+
+func createVisitor(opts visitorOpts) (*visitorState, OverrideVisitor) {
 	s := visitorState{}
 
 	return &s, OverrideVisitor{
 		VisitUpdate: func(valuePath dyn.Path, left dyn.Value, right dyn.Value) (dyn.Value, error) {
 			s.updated = append(s.updated, valuePath.String())
 
-			return right, nil
+			if opts.error != nil {
+				return dyn.NilValue, opts.error
+			} else if opts.returnValue != nil {
+				return *opts.returnValue, nil
+			} else {
+				return right, nil
+			}
 		},
 		VisitDelete: func(valuePath dyn.Path, left dyn.Value) error {
 			s.removed = append(s.removed, valuePath.String())
 
-			return nil
+			return opts.error
 		},
 		VisitInsert: func(valuePath dyn.Path, right dyn.Value) (dyn.Value, error) {
 			s.added = append(s.added, valuePath.String())
 
-			return right, nil
+			if opts.error != nil {
+				return dyn.NilValue, opts.error
+			} else if opts.returnValue != nil {
+				return *opts.returnValue, nil
+			} else {
+				return right, nil
+			}
 		},
 	}
 }
