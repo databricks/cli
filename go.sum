@@ -101,8 +101,8 @@ github.com/hashicorp/go-version v1.6.0 h1:feTTfFNnjP967rlCxM/I9g701jU+RN74YKx2mO
 github.com/hashicorp/go-version v1.6.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
 github.com/hashicorp/hc-install v0.6.4 h1:QLqlM56/+SIIGvGcfFiwMY3z5WGXT066suo/v9Km8e0=
 github.com/hashicorp/hc-install v0.6.4/go.mod h1:05LWLy8TD842OtgcfBbOT0WMoInBMUSHjmDx10zuBIA=
-github.com/hashicorp/terraform-exec v0.20.0 h1:DIZnPsqzPGuUnq6cH8jWcPunBfY+C+M8JyYF3vpnuEo=
-github.com/hashicorp/terraform-exec v0.20.0/go.mod h1:ckKGkJWbsNqFKV1itgMnE0hY9IYf1HoiekpuN0eWoDw=
+github.com/hashicorp/terraform-exec v0.21.0 h1:uNkLAe95ey5Uux6KJdua6+cv8asgILFVWkd/RG0D2XQ=
+github.com/hashicorp/terraform-exec v0.21.0/go.mod h1:1PPeMYou+KDUSSeRE9szMZ/oHf4fYUmB923Wzbq1ICg=
 github.com/hashicorp/terraform-json v0.22.1 h1:xft84GZR0QzjPVWs4lRUwvTcPnegqlyS7orfb5Ltvec=
 github.com/hashicorp/terraform-json v0.22.1/go.mod h1:JbWSQCLFSXFFhg42T7l9iJwdGXBYV8fmmD6o/ML4p3A=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
