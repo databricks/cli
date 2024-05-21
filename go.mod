@@ -12,7 +12,7 @@ require (
 	github.com/hashicorp/go-version v1.6.0 // MPL 2.0
 	github.com/hashicorp/hc-install v0.6.4 // MPL 2.0
 	github.com/hashicorp/terraform-exec v0.20.0 // MPL 2.0
-	github.com/hashicorp/terraform-json v0.21.0 // MPL 2.0
+	github.com/hashicorp/terraform-json v0.22.1 // MPL 2.0
 	github.com/manifoldco/promptui v0.9.0 // BSD-3-Clause
 	github.com/mattn/go-isatty v0.0.20 // MIT
 	github.com/nwidger/jsoncolor v0.3.2 // MIT
@@ -51,7 +51,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
-	github.com/zclconf/go-cty v1.14.1 // indirect
+	github.com/zclconf/go-cty v1.14.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect
