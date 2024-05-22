@@ -1,5 +1,44 @@
 # Version changelog
 
+## 0.220.0
+
+CLI:
+ * Add line about Docker installation to README.md ([#1363](https://github.com/databricks/cli/pull/1363)).
+ * Improve token refresh flow ([#1434](https://github.com/databricks/cli/pull/1434)).
+
+Bundles:
+ * Upgrade Terraform provider to v1.42.0 ([#1418](https://github.com/databricks/cli/pull/1418)).
+ * Upgrade Terraform provider to v1.43.0 ([#1429](https://github.com/databricks/cli/pull/1429)).
+ * Don't merge-in remote resources during deployments ([#1432](https://github.com/databricks/cli/pull/1432)).
+ * Remove dependency on `ConfigFilePath` from path translation mutator ([#1437](https://github.com/databricks/cli/pull/1437)).
+ * Add `merge.Override` transform ([#1428](https://github.com/databricks/cli/pull/1428)).
+ * Fixed panic when loading incorrectly defined jobs ([#1402](https://github.com/databricks/cli/pull/1402)).
+ * Add more tests for `merge.Override` ([#1439](https://github.com/databricks/cli/pull/1439)).
+ * Fixed seg fault when specifying environment key for tasks ([#1443](https://github.com/databricks/cli/pull/1443)).
+ * Fix conversion of zero valued scalar pointers to a dynamic value ([#1433](https://github.com/databricks/cli/pull/1433)).
+
+Internal:
+ * Don't hide commands of services that are already hidden ([#1438](https://github.com/databricks/cli/pull/1438)).
+
+API Changes:
+ * Renamed `lakehouse-monitors` command group to `quality-monitors`.
+ * Added `apps` command group.
+ * Renamed `csp-enablement` command group to `compliance-security-profile`.
+ * Renamed `esm-enablement` command group to `enhanced-security-monitoring`.
+ * Added `databricks vector-search-indexes scan-index` command.
+
+OpenAPI commit 7eb5ad9a2ed3e3f1055968a2d1014ac92c06fe92 (2024-05-21)
+
+Dependency updates:
+ * Bump golang.org/x/text from 0.14.0 to 0.15.0 ([#1419](https://github.com/databricks/cli/pull/1419)).
+ * Bump golang.org/x/oauth2 from 0.19.0 to 0.20.0 ([#1421](https://github.com/databricks/cli/pull/1421)).
+ * Bump golang.org/x/term from 0.19.0 to 0.20.0 ([#1422](https://github.com/databricks/cli/pull/1422)).
+ * Bump github.com/databricks/databricks-sdk-go from 0.39.0 to 0.40.1 ([#1431](https://github.com/databricks/cli/pull/1431)).
+ * Bump github.com/fatih/color from 1.16.0 to 1.17.0 ([#1441](https://github.com/databricks/cli/pull/1441)).
+ * Bump github.com/hashicorp/terraform-json from 0.21.0 to 0.22.1 ([#1440](https://github.com/databricks/cli/pull/1440)).
+ * Bump github.com/hashicorp/terraform-exec from 0.20.0 to 0.21.0 ([#1442](https://github.com/databricks/cli/pull/1442)).
+ * Update Go SDK to v0.41.0 ([#1445](https://github.com/databricks/cli/pull/1445)).
+
 ## 0.219.0
 
 Bundles:
