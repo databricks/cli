@@ -27,9 +27,6 @@ func New() *cobra.Command {
   
   If the compliance security profile is disabled, you can enable or disable this
   setting and it is not permanent.`,
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
 	}
 
 	// Add methods
