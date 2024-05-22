@@ -129,13 +129,14 @@ func newList() *cobra.Command {
 
 	// TODO: array: assets
 	// TODO: array: categories
+	cmd.Flags().BoolVar(&listReq.IsAscending, "is-ascending", listReq.IsAscending, ``)
 	cmd.Flags().BoolVar(&listReq.IsFree, "is-free", listReq.IsFree, `Filters each listing based on if it is free.`)
 	cmd.Flags().BoolVar(&listReq.IsPrivateExchange, "is-private-exchange", listReq.IsPrivateExchange, `Filters each listing based on if it is a private exchange.`)
 	cmd.Flags().BoolVar(&listReq.IsStaffPick, "is-staff-pick", listReq.IsStaffPick, `Filters each listing based on whether it is a staff pick.`)
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
 	// TODO: array: provider_ids
-	// TODO: complex arg: sort_by_spec
+	cmd.Flags().Var(&listReq.SortBy, "sort-by", `Criteria for sorting the resulting set of listings. Supported values: [SORT_BY_DATE, SORT_BY_RELEVANCE, SORT_BY_TITLE, SORT_BY_UNSPECIFIED]`)
 	// TODO: array: tags
 
 	cmd.Use = "list"
@@ -191,6 +192,7 @@ func newSearch() *cobra.Command {
 
 	// TODO: array: assets
 	// TODO: array: categories
+	cmd.Flags().BoolVar(&searchReq.IsAscending, "is-ascending", searchReq.IsAscending, ``)
 	cmd.Flags().BoolVar(&searchReq.IsFree, "is-free", searchReq.IsFree, ``)
 	cmd.Flags().BoolVar(&searchReq.IsPrivateExchange, "is-private-exchange", searchReq.IsPrivateExchange, ``)
 	cmd.Flags().IntVar(&searchReq.PageSize, "page-size", searchReq.PageSize, ``)

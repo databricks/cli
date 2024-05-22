@@ -3,8 +3,6 @@
 package system_schemas
 
 import (
-	"fmt"
-
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -81,10 +79,7 @@ func newDisable() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		disableReq.MetastoreId = args[0]
-		_, err = fmt.Sscan(args[1], &disableReq.SchemaName)
-		if err != nil {
-			return fmt.Errorf("invalid SCHEMA_NAME: %s", args[1])
-		}
+		disableReq.SchemaName = args[1]
 
 		err = w.SystemSchemas.Disable(ctx, disableReq)
 		if err != nil {
@@ -145,10 +140,7 @@ func newEnable() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		enableReq.MetastoreId = args[0]
-		_, err = fmt.Sscan(args[1], &enableReq.SchemaName)
-		if err != nil {
-			return fmt.Errorf("invalid SCHEMA_NAME: %s", args[1])
-		}
+		enableReq.SchemaName = args[1]
 
 		err = w.SystemSchemas.Enable(ctx, enableReq)
 		if err != nil {

@@ -22,9 +22,6 @@ func New() *cobra.Command {
 		Short: `Controls whether automatic cluster update is enabled for the current workspace.`,
 		Long: `Controls whether automatic cluster update is enabled for the current
   workspace. By default, it is turned off.`,
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
 	}
 
 	// Add methods

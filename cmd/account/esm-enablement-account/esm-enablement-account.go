@@ -25,9 +25,6 @@ func New() *cobra.Command {
   setting is disabled for new workspaces. After workspace creation, account
   admins can enable enhanced security monitoring individually for each
   workspace.`,
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
 	}
 
 	// Add methods

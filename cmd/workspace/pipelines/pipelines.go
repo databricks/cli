@@ -945,6 +945,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.Edition, "edition", updateReq.Edition, `Pipeline product edition.`)
 	cmd.Flags().Int64Var(&updateReq.ExpectedLastModified, "expected-last-modified", updateReq.ExpectedLastModified, `If present, the last-modified time of the pipeline settings before the edit.`)
 	// TODO: complex arg: filters
+	// TODO: complex arg: gateway_definition
 	cmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `Unique identifier for this pipeline.`)
 	// TODO: complex arg: ingestion_definition
 	// TODO: array: libraries
