@@ -3,7 +3,9 @@ package notebook
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
+	"path/filepath"
 
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
@@ -56,8 +58,8 @@ func resolveLanguage(nb *jupyter) workspace.Language {
 // DetectJupyter returns whether the file at path is a valid Jupyter notebook.
 // We assume it is valid if we can read it as JSON and see a couple expected fields.
 // If we cannot, importing into the workspace will always fail, so we also return an error.
-func DetectJupyter(path string) (notebook bool, language workspace.Language, err error) {
-	f, err := os.Open(path)
+func DetectJupyterWithFS(fsys fs.FS, name string) (notebook bool, language workspace.Language, err error) {
+	f, err := fsys.Open(name)
 	if err != nil {
 		return false, "", err
 	}
@@ -68,18 +70,26 @@ func DetectJupyter(path string) (notebook bool, language workspace.Language, err
 	dec := json.NewDecoder(f)
 	err = dec.Decode(&nb)
 	if err != nil {
-		return false, "", fmt.Errorf("%s: error loading Jupyter notebook file: %w", path, err)
+		return false, "", fmt.Errorf("%s: error loading Jupyter notebook file: %w", name, err)
 	}
 
 	// Not a Jupyter notebook if the cells or metadata fields aren't defined.
 	if nb.Cells == nil || nb.Metadata == nil {
-		return false, "", fmt.Errorf("%s: invalid Jupyter notebook file", path)
+		return false, "", fmt.Errorf("%s: invalid Jupyter notebook file", name)
 	}
 
 	// Major version must be at least 4.
 	if nb.NbFormatMajor < 4 {
-		return false, "", fmt.Errorf("%s: unsupported Jupyter notebook version: %d", path, nb.NbFormatMajor)
+		return false, "", fmt.Errorf("%s: unsupported Jupyter notebook version: %d", name, nb.NbFormatMajor)
 	}
 
 	return true, resolveLanguage(&nb), nil
+}
+
+// DetectJupyter calls DetectJupyterWithFS with the local filesystem.
+// The name argument may be a local relative path or a local absolute path.
+func DetectJupyter(name string) (notebook bool, language workspace.Language, err error) {
+	d := filepath.ToSlash(filepath.Dir(name))
+	b := filepath.Base(name)
+	return DetectJupyterWithFS(os.DirFS(d), b)
 }
