@@ -34,10 +34,6 @@ func (f *FileSet) IgnoreDirectory(dir string) (bool, error) {
 	return f.view.IgnoreDirectory(dir)
 }
 
-func (f *FileSet) Root() string {
-	return f.fileset.Root()
-}
-
 func (f *FileSet) All() ([]fileset.File, error) {
 	f.view.repo.taintIgnoreRules()
 	return f.fileset.All()

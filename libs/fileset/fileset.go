@@ -32,11 +32,6 @@ func (w *FileSet) SetIgnorer(ignore Ignorer) {
 	w.ignore = ignore
 }
 
-// Return root for fileset.
-func (w *FileSet) Root() string {
-	return w.root
-}
-
 // Return all tracked files for Repo
 func (w *FileSet) All() ([]File, error) {
 	return w.recursiveListFiles()
