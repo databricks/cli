@@ -222,11 +222,11 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 		}
 	}
 
-	for k, src := range config.Resources.Monitors {
+	for k, src := range config.Resources.QualityMonitors {
 		noResources = false
-		var dst schema.ResourceLakehouseMonitor
+		var dst schema.ResourceQualityMonitor
 		conv(src, &dst)
-		tfroot.Resource.LakehouseMonitor[k] = &dst
+		tfroot.Resource.QualityMonitor[k] = &dst
 	}
 
 	// We explicitly set "resource" to nil to omit it from a JSON encoding.
@@ -372,16 +372,16 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 				}
 				cur.ID = instance.Attributes.ID
 				config.Resources.RegisteredModels[resource.Name] = cur
-			case "databricks_monitor":
-				if config.Resources.Monitors == nil {
-					config.Resources.Monitors = make(map[string]*resources.Monitor)
+			case "databricks_quality_monitor":
+				if config.Resources.QualityMonitors == nil {
+					config.Resources.QualityMonitors = make(map[string]*resources.QualityMonitor)
 				}
-				cur := config.Resources.Monitors[resource.Name]
+				cur := config.Resources.QualityMonitors[resource.Name]
 				if cur == nil {
-					cur = &resources.Monitor{ModifiedStatus: resources.ModifiedStatusDeleted}
+					cur = &resources.QualityMonitor{ModifiedStatus: resources.ModifiedStatusDeleted}
 				}
 				cur.ID = instance.Attributes.ID
-				config.Resources.Monitors[resource.Name] = cur
+				config.Resources.QualityMonitors[resource.Name] = cur
 			case "databricks_permissions":
 			case "databricks_grants":
 				// Ignore; no need to pull these back into the configuration.
@@ -421,7 +421,7 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 			src.ModifiedStatus = resources.ModifiedStatusCreated
 		}
 	}
-	for _, src := range config.Resources.Monitors {
+	for _, src := range config.Resources.QualityMonitors {
 		if src.ModifiedStatus == "" && src.ID == "" {
 			src.ModifiedStatus = resources.ModifiedStatusCreated
 		}

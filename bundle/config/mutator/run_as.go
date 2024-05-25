@@ -101,10 +101,10 @@ func validateRunAs(b *bundle.Bundle) error {
 	}
 
 	// Monitors do not support run_as in the API.
-	if len(b.Config.Resources.Monitors) > 0 {
+	if len(b.Config.Resources.QualityMonitors) > 0 {
 		return errUnsupportedResourceTypeForRunAs{
-			resourceType:     "monitors",
-			resourceLocation: b.Config.GetLocation("resources.monitors"),
+			resourceType:     "quality_monitors",
+			resourceLocation: b.Config.GetLocation("resources.quality_monitors"),
 			currentUser:      b.Config.Workspace.CurrentUser.UserName,
 			runAsUser:        identity,
 		}

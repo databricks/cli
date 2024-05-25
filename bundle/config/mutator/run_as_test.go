@@ -36,8 +36,8 @@ func allResourceTypes(t *testing.T) []string {
 		"jobs",
 		"model_serving_endpoints",
 		"models",
-		"monitors",
 		"pipelines",
+		"quality_monitors",
 		"registered_models",
 	},
 		resourceTypes,
@@ -173,6 +173,7 @@ func TestRunAsErrorForUnsupportedResources(t *testing.T) {
 		r := &config.Root{}
 		err = convert.ToTyped(r, nv)
 		require.NoError(t, err)
+
 		// Assert this invalid bundle configuration fails validation.
 		b := &bundle.Bundle{
 			Config: *r,

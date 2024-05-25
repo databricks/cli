@@ -13,8 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestConvertLakehouseMonitor(t *testing.T) {
-	var src = resources.Monitor{
+func TestConvertQualityMonitor(t *testing.T) {
+	var src = resources.QualityMonitor{
 		CreateMonitor: &catalog.CreateMonitor{
 			TableName:        "test_table_name",
 			AssetsDir:        "assets_dir",
@@ -30,7 +30,7 @@ func TestConvertLakehouseMonitor(t *testing.T) {
 	require.NoError(t, err)
 	ctx := context.Background()
 	out := schema.NewResources()
-	err = monitorConverter{}.Convert(ctx, "my_monitor", vin, out)
+	err = qualityMonitorConverter{}.Convert(ctx, "my_monitor", vin, out)
 
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{
@@ -42,5 +42,5 @@ func TestConvertLakehouseMonitor(t *testing.T) {
 			"prediction_col": "test_prediction_col",
 			"problem_type":   "PROBLEM_TYPE_CLASSIFICATION",
 		},
-	}, out.LakehouseMonitor["my_monitor"])
+	}, out.QualityMonitor["my_monitor"])
 }

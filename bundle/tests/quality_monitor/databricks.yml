@@ -1,5 +1,5 @@
 resources:
-  monitors:
+  quality_monitors:
     my_monitor:
       table_name: "main.test.thing1"
       assets_dir: "/Shared/provider-test/databricks_monitoring/main.test.thing1"
@@ -16,18 +16,18 @@ targets:
   development:
     mode: development
     resources:
-      monitors:
+      quality_monitors:
         my_monitor:
           table_name: "main.test.dev"
   staging:
     resources:
-      monitors:
+      quality_monitors:
         my_monitor:
           table_name: "main.test.staging"
           output_schema_name: "staging"
   production:
     resources:
-      monitors:
+      quality_monitors:
         my_monitor:
           table_name: "main.test.prod"
           output_schema_name: "prod"

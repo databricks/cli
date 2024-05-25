@@ -630,7 +630,7 @@ func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
 				},
 			},
 			{
-				Type: "databricks_monitor",
+				Type: "databricks_quality_monitor",
 				Mode: "managed",
 				Name: "test_monitor",
 				Instances: []stateResourceInstance{
@@ -660,8 +660,8 @@ func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
 	assert.Equal(t, "1", config.Resources.RegisteredModels["test_registered_model"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.RegisteredModels["test_registered_model"].ModifiedStatus)
 
-	assert.Equal(t, "1", config.Resources.Monitors["test_monitor"].ID)
-	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Monitors["test_monitor"].ModifiedStatus)
+	assert.Equal(t, "1", config.Resources.QualityMonitors["test_monitor"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.QualityMonitors["test_monitor"].ModifiedStatus)
 	AssertFullResourceCoverage(t, &config)
 }
 
@@ -710,7 +710,7 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
-			Monitors: map[string]*resources.Monitor{
+			QualityMonitors: map[string]*resources.QualityMonitor{
 				"test_monitor": {
 					CreateMonitor: &catalog.CreateMonitor{
 						TableName: "test_monitor",
@@ -743,8 +743,8 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 	assert.Equal(t, "", config.Resources.RegisteredModels["test_registered_model"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.RegisteredModels["test_registered_model"].ModifiedStatus)
 
-	assert.Equal(t, "", config.Resources.Monitors["test_monitor"].ID)
-	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Monitors["test_monitor"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.QualityMonitors["test_monitor"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.QualityMonitors["test_monitor"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -824,7 +824,7 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 					},
 				},
 			},
-			Monitors: map[string]*resources.Monitor{
+			QualityMonitors: map[string]*resources.QualityMonitor{
 				"test_monitor": {
 					CreateMonitor: &catalog.CreateMonitor{
 						TableName: "test_monitor",
@@ -937,7 +937,7 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 				},
 			},
 			{
-				Type: "databricks_monitor",
+				Type: "databricks_quality_monitor",
 				Mode: "managed",
 				Name: "test_monitor",
 				Instances: []stateResourceInstance{
@@ -945,7 +945,7 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 				},
 			},
 			{
-				Type: "databricks_monitor",
+				Type: "databricks_quality_monitor",
 				Mode: "managed",
 				Name: "test_monitor_old",
 				Instances: []stateResourceInstance{
@@ -999,12 +999,12 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, "", config.Resources.ModelServingEndpoints["test_model_serving_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.ModelServingEndpoints["test_model_serving_new"].ModifiedStatus)
 
-	assert.Equal(t, "test_monitor", config.Resources.Monitors["test_monitor"].ID)
-	assert.Equal(t, "", config.Resources.Monitors["test_monitor"].ModifiedStatus)
-	assert.Equal(t, "test_monitor_old", config.Resources.Monitors["test_monitor_old"].ID)
-	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Monitors["test_monitor_old"].ModifiedStatus)
-	assert.Equal(t, "", config.Resources.Monitors["test_monitor_new"].ID)
-	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Monitors["test_monitor_new"].ModifiedStatus)
+	assert.Equal(t, "test_monitor", config.Resources.QualityMonitors["test_monitor"].ID)
+	assert.Equal(t, "", config.Resources.QualityMonitors["test_monitor"].ModifiedStatus)
+	assert.Equal(t, "test_monitor_old", config.Resources.QualityMonitors["test_monitor_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.QualityMonitors["test_monitor_old"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.QualityMonitors["test_monitor_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.QualityMonitors["test_monitor_new"].ModifiedStatus)
 	AssertFullResourceCoverage(t, &config)
 }
 
