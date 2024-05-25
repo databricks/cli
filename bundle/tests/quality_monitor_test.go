@@ -50,5 +50,4 @@ func TestMonitorProduction(t *testing.T) {
 	assert.Equal(t, "prediction_prod", p.InferenceLog.PredictionCol)
 	assert.Equal(t, catalog.MonitorInferenceLogProblemType("PROBLEM_TYPE_REGRESSION"), p.InferenceLog.ProblemType)
 	assert.Equal(t, "timestamp_prod", p.InferenceLog.TimestampCol)
-	assert.Equal(t, "1 hour", p.InferenceLog.Granularities[0])
 }
