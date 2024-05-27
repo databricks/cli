@@ -49,11 +49,14 @@ func TestSyncOptionsFromArgsRequiredTwoArgs(t *testing.T) {
 }
 
 func TestSyncOptionsFromArgs(t *testing.T) {
+	local := t.TempDir()
+	remote := "/remote"
+
 	f := syncFlags{}
 	cmd := New()
 	cmd.SetContext(root.SetWorkspaceClient(context.Background(), nil))
-	opts, err := f.syncOptionsFromArgs(cmd, []string{"/local", "/remote"})
+	opts, err := f.syncOptionsFromArgs(cmd, []string{local, remote})
 	require.NoError(t, err)
-	assert.Equal(t, "/local", opts.LocalPath.Native())
-	assert.Equal(t, "/remote", opts.RemotePath)
+	assert.Equal(t, local, opts.LocalPath.Native())
+	assert.Equal(t, remote, opts.RemotePath)
 }
