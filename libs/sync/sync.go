@@ -16,7 +16,7 @@ import (
 )
 
 type SyncOptions struct {
-	LocalPath  string
+	LocalPath  vfs.Path
 	RemotePath string
 	Include    []string
 	Exclude    []string
@@ -51,8 +51,7 @@ type Sync struct {
 
 // New initializes and returns a new [Sync] instance.
 func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
-	root := vfs.MustNew(opts.LocalPath)
-	fileSet, err := git.NewFileSet(root)
+	fileSet, err := git.NewFileSet(opts.LocalPath)
 	if err != nil {
 		return nil, err
 	}
@@ -62,12 +61,12 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 		return nil, err
 	}
 
-	includeFileSet, err := fileset.NewGlobSet(root, opts.Include)
+	includeFileSet, err := fileset.NewGlobSet(opts.LocalPath, opts.Include)
 	if err != nil {
 		return nil, err
 	}
 
-	excludeFileSet, err := fileset.NewGlobSet(root, opts.Exclude)
+	excludeFileSet, err := fileset.NewGlobSet(opts.LocalPath, opts.Exclude)
 	if err != nil {
 		return nil, err
 	}

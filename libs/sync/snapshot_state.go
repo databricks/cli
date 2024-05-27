@@ -48,7 +48,7 @@ func NewSnapshotState(localFiles []fileset.File) (*SnapshotState, error) {
 	for k := range localFiles {
 		f := &localFiles[k]
 		// Compute the remote name the file will have in WSFS
-		remoteName := filepath.ToSlash(f.Relative)
+		remoteName := f.Relative
 		isNotebook, err := f.IsNotebook()
 
 		if err != nil {
