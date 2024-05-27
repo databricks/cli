@@ -46,7 +46,7 @@ func TestReferenceReferencePathForReference(t *testing.T) {
 	}
 	path, err := ref.ResolvePath()
 	assert.NoError(t, err)
-	assert.Equal(t, filepath.FromSlash("refs/heads/my-branch"), path)
+	assert.Equal(t, "refs/heads/my-branch", path)
 }
 
 func TestReferenceLoadingForObjectID(t *testing.T) {
