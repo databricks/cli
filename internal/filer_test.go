@@ -312,6 +312,7 @@ func TestAccFilerReadDir(t *testing.T) {
 		{"workspace files", setupWsfsFiler},
 		{"dbfs", setupDbfsFiler},
 		{"files", setupUcVolumesFiler},
+		{"workspace fuse", setupWsfsFuseFiler},
 	} {
 		tc := testCase
 
@@ -462,3 +463,5 @@ func TestAccFilerWorkspaceNotebookWithOverwriteFlag(t *testing.T) {
 	filerTest{t, f}.assertContents(ctx, "scalaNb", "// Databricks notebook source\n println(\"second upload\"))")
 	filerTest{t, f}.assertContents(ctx, "jupyterNb", "# Databricks notebook source\nprint(\"Jupyter Notebook Version 2\")")
 }
+
+func runFilerTestsOnDbr

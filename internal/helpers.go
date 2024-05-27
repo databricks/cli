@@ -559,6 +559,19 @@ func setupWsfsFiler(t *testing.T) (filer.Filer, string) {
 	return f, tmpdir
 }
 
+func setupWsfsFuseFiler(t *testing.T) (filer.Filer, string) {
+	// t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	w := databricks.Must(databricks.NewWorkspaceClient())
+	tmpdir := TemporaryWorkspaceDir(t, w)
+	// TODO: I might decide to remove the requirement of having a /Workspace
+	// prefix for the path.
+	f, err := filer.NewWorkspaceFuseClient(w, path.Join("/Workspace", tmpdir))
+	require.NoError(t, err)
+
+	return f, tmpdir
+}
+
 func setupDbfsFiler(t *testing.T) (filer.Filer, string) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
