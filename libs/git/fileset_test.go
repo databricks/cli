@@ -2,6 +2,7 @@ package git
 
 import (
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -10,15 +11,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func testFileSetAll(t *testing.T, path string) {
-	fileSet, err := NewFileSet(path)
+func testFileSetAll(t *testing.T, root string) {
+	fileSet, err := NewFileSet(root)
 	require.NoError(t, err)
 	files, err := fileSet.All()
 	require.NoError(t, err)
 	require.Len(t, files, 3)
-	assert.Equal(t, filepath.Join("a", "b", "world.txt"), files[0].Relative)
-	assert.Equal(t, filepath.Join("a", "hello.txt"), files[1].Relative)
-	assert.Equal(t, filepath.Join("databricks.yml"), files[2].Relative)
+	assert.Equal(t, path.Join("a", "b", "world.txt"), files[0].Relative)
+	assert.Equal(t, path.Join("a", "hello.txt"), files[1].Relative)
+	assert.Equal(t, path.Join("databricks.yml"), files[2].Relative)
 }
 
 func TestFileSetListAllInRepo(t *testing.T) {
