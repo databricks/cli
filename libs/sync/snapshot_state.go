@@ -2,7 +2,7 @@ package sync
 
 import (
 	"fmt"
-	"path/filepath"
+	"path"
 	"strings"
 	"time"
 
@@ -57,7 +57,7 @@ func NewSnapshotState(localFiles []fileset.File) (*SnapshotState, error) {
 			continue
 		}
 		if isNotebook {
-			ext := filepath.Ext(remoteName)
+			ext := path.Ext(remoteName)
 			remoteName = strings.TrimSuffix(remoteName, ext)
 		}
 
