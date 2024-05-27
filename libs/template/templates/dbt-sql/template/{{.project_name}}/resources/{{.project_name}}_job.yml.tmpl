@@ -12,10 +12,6 @@ resources:
         on_failure:
           - {{user_name}}
 
-{{- $dev_schema := .shared_schema }}
-{{- if (regexp "^yes").MatchString .personal_schemas}}
-{{- $dev_schema = "${workspace.current_user.short_name}"}}
-{{- end}}
 
       tasks:
         - task_key: dbt
@@ -26,8 +22,13 @@ resources:
             profiles_directory: dbt_profiles/
             commands:
             - 'dbt deps --target=${bundle.target}'
-            - 'dbt seed --target=${bundle.target} --vars "{ dev_schema: {{$dev_schema}} }"'
-            - 'dbt run --target=${bundle.target} --vars "{ dev_schema: {{$dev_schema}} }"'
+{{- if (regexp "^yes").MatchString .personal_schemas}}
+            - 'dbt seed --target=${bundle.target} --vars "{ dev_schema: ${workspace.current_user.short_name} }"'
+            - 'dbt run --target=${bundle.target} --vars "{ dev_schema: ${workspace.current_user.short_name} }"'
+{{- else}}
+            - 'dbt seed'
+            - 'dbt run'
+{{- end}}
 
           libraries:
           - pypi:

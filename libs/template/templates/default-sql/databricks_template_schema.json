@@ -1,10 +1,10 @@
 {
-    "welcome_message": "\nWelcome to the (EXPERIMENTAL) default SQL template for Databricks Asset Bundles!",
+    "welcome_message": "\nWelcome to the default SQL template for Databricks Asset Bundles!",
     "properties": {
         "project_name": {
             "type": "string",
             "default": "sql_project",
-            "description": "\nPlease provide a unique name for this project.\nproject_name",
+            "description": "\nWorkspace selected based on your current profile (see https://docs.databricks.com/dev-tools/cli/profiles.html for how to change this).\nworkspace_host: {{workspace_host}}\n\nPlease provide a unique name for this project.\nproject_name",
             "order": 1,
             "pattern": "^[A-Za-z_][A-Za-z0-9-_]+$",
             "pattern_match_failure_message": "Name must consist of letters, numbers, dashes, and underscores."
