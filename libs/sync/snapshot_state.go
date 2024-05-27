@@ -3,6 +3,7 @@ package sync
 import (
 	"fmt"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -118,4 +119,31 @@ func (fs *SnapshotState) validate() error {
 		}
 	}
 	return nil
+}
+
+// ToSlash ensures all local paths in the snapshot state
+// are slash-separated. Returns a new snapshot state.
+func (old SnapshotState) ToSlash() *SnapshotState {
+	new := SnapshotState{
+		LastModifiedTimes:  make(map[string]time.Time),
+		LocalToRemoteNames: make(map[string]string),
+		RemoteToLocalNames: make(map[string]string),
+	}
+
+	// Keys are local paths.
+	for k, v := range old.LastModifiedTimes {
+		new.LastModifiedTimes[filepath.ToSlash(k)] = v
+	}
+
+	// Keys are local paths.
+	for k, v := range old.LocalToRemoteNames {
+		new.LocalToRemoteNames[filepath.ToSlash(k)] = v
+	}
+
+	// Values are remote paths.
+	for k, v := range old.RemoteToLocalNames {
+		new.RemoteToLocalNames[k] = filepath.ToSlash(v)
+	}
+
+	return &new
 }

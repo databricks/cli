@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"runtime"
 	"testing"
 	"time"
 
@@ -114,4 +115,31 @@ func TestSnapshotStateValidationErrors(t *testing.T) {
 		},
 	}
 	assert.EqualError(t, s.validate(), "invalid sync state representation. Inconsistent values found. Remote file c points to a. Local file a points to b")
+}
+
+func TestSnapshotStateWithBackslashes(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Skipping test on non-Windows platform")
+	}
+
+	now := time.Now()
+	s1 := &SnapshotState{
+		LastModifiedTimes: map[string]time.Time{
+			"foo\\bar.py": now,
+		},
+		LocalToRemoteNames: map[string]string{
+			"foo\\bar.py": "foo/bar",
+		},
+		RemoteToLocalNames: map[string]string{
+			"foo/bar": "foo\\bar.py",
+		},
+	}
+
+	assert.NoError(t, s1.validate())
+
+	s2 := s1.ToSlash()
+	assert.NoError(t, s1.validate())
+	assert.Equal(t, map[string]time.Time{"foo/bar.py": now}, s2.LastModifiedTimes)
+	assert.Equal(t, map[string]string{"foo/bar.py": "foo/bar"}, s2.LocalToRemoteNames)
+	assert.Equal(t, map[string]string{"foo/bar": "foo/bar.py"}, s2.RemoteToLocalNames)
 }
