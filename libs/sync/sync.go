@@ -51,21 +51,23 @@ type Sync struct {
 
 // New initializes and returns a new [Sync] instance.
 func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
-	fileSet, err := git.NewFileSet(vfs.MustNew(opts.LocalPath))
+	root := vfs.MustNew(opts.LocalPath)
+	fileSet, err := git.NewFileSet(root)
 	if err != nil {
 		return nil, err
 	}
+
 	err = fileSet.EnsureValidGitIgnoreExists()
 	if err != nil {
 		return nil, err
 	}
 
-	includeFileSet, err := fileset.NewGlobSet(vfs.MustNew(opts.LocalPath), opts.Include)
+	includeFileSet, err := fileset.NewGlobSet(root, opts.Include)
 	if err != nil {
 		return nil, err
 	}
 
-	excludeFileSet, err := fileset.NewGlobSet(vfs.MustNew(opts.LocalPath), opts.Exclude)
+	excludeFileSet, err := fileset.NewGlobSet(root, opts.Exclude)
 	if err != nil {
 		return nil, err
 	}
