@@ -116,10 +116,15 @@ func (f Filelist) ToSlice(basePath string) []fileset.File {
 	root := vfs.MustNew(basePath)
 	for _, file := range f {
 		entry := newEntry(filepath.Join(basePath, file.LocalPath))
+
+		// Snapshots created with versions <= v0.220.0 use platform-specific
+		// paths (i.e. with backslashes). Files returned by [libs/fileset] always
+		// contain forward slashes after this version. Normalize before using.
+		relative := filepath.ToSlash(file.LocalPath)
 		if file.IsNotebook {
-			files = append(files, fileset.NewNotebookFile(root, entry, file.LocalPath))
+			files = append(files, fileset.NewNotebookFile(root, entry, relative))
 		} else {
-			files = append(files, fileset.NewSourceFile(root, entry, file.LocalPath))
+			files = append(files, fileset.NewSourceFile(root, entry, relative))
 		}
 	}
 	return files
