@@ -12,13 +12,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
-// TODO: Ensure the root path is correctly configured in the workspace files client
-// and the local client.
 // TODO: Better documentation here regarding the boundary conditions and what
 // exactly is this filer doing.
 type workspaceFuseClient struct {
 	workspaceFilesClient Filer
-	localClient          Filer
 }
 
 type notebookExtension string
@@ -28,6 +25,7 @@ const (
 	notebookExtensionR      notebookExtension = ".r"
 	notebookExtensionScala  notebookExtension = ".scala"
 	notebookExtensionSql    notebookExtension = ".sql"
+	notebookExtensionIpynb  notebookExtension = ".ipynb"
 )
 
 func stripNotebookExtension(name string) (string, bool) {
@@ -40,6 +38,8 @@ func stripNotebookExtension(name string) (string, bool) {
 		return strings.TrimSuffix(name, string(notebookExtensionScala)), true
 	case strings.HasSuffix(name, string(notebookExtensionSql)):
 		return strings.TrimSuffix(name, string(notebookExtensionSql)), true
+	case strings.HasSuffix(name, string(notebookExtensionIpynb)):
+		return strings.TrimSuffix(name, string(notebookExtensionIpynb)), true
 	default:
 		return name, false
 	}
@@ -48,6 +48,9 @@ func stripNotebookExtension(name string) (string, bool) {
 func extensionForLanguage(l workspace.Language) notebookExtension {
 	switch l {
 	case workspace.LanguagePython:
+		// Note: We cannot differentiate between python source notebooks and ipynb
+		// notebook based on the workspace files API. We'll thus assign all python
+		// notebooks the .py extension.
 		return ".py"
 	case workspace.LanguageR:
 		return ".r"
@@ -73,29 +76,26 @@ func (e dupPathError) Error() string {
 	return fmt.Sprintf("duplicate paths. Both %s at %s and %s at %s have the same path %s on the local FUSE mount.", e.oi1.ObjectType, e.oi1.Path, e.oi2.ObjectType, e.oi2.Path, e.commonPath)
 }
 
-// TODO: Should we have this condition of /Workspace prefix here? Would it make
-// more sense to move it outside the function and make it the responsibility of
-// the callsite to validate this?
+// This is a wrapper over the workspace files client that is used to access files in
+// the workspace file system. It fixes the notebook extension problem when directly using
+// the workspace files client (or the API directly).
+//
+// With this client, you can read, write, delete, and stat notebooks in the workspace,
+// using their file names with the extension included.
+// The listing of files will also include the extension for notebooks.
+//
+// This makes the workspace file system resemble a traditional file system more closely,
+// allowing DABs to work from a DBR runtime.
 func NewWorkspaceFuseClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
-	if !strings.HasPrefix(root, "/Workspace") {
-		return nil, errors.New("workspace fuse root path must be under /Workspace")
-	}
-
 	// TODO: Ensure this trim prefix works as expected. Edge cases around empty path strings maybe?
 	// TODO: Does this work if we do not trim the prefix? That might be preferable.
-	wc, err := NewWorkspaceFilesClient(w, strings.TrimPrefix(root, "/Workspace"))
-	if err != nil {
-		return nil, err
-	}
-
-	lc, err := NewLocalClient(root)
+	wc, err := NewWorkspaceFilesClient(w, root)
 	if err != nil {
 		return nil, err
 	}
 
 	return &workspaceFuseClient{
 		workspaceFilesClient: wc,
-		localClient:          lc,
 	}, nil
 }
 
@@ -136,6 +136,7 @@ func (w *workspaceFuseClient) ReadDir(ctx context.Context, name string) ([]fs.Di
 		seenPaths[newPath] = sysInfo
 
 		// Mutate the entry to have the new path
+		newEntry.wsfsFileInfo.oi.Path = newPath
 		entries[i] = newEntry
 	}
 
@@ -143,64 +144,59 @@ func (w *workspaceFuseClient) ReadDir(ctx context.Context, name string) ([]fs.Di
 }
 
 func (w *workspaceFuseClient) Write(ctx context.Context, name string, reader io.Reader, mode ...WriteMode) error {
-	// Note: Any objects (including notebooks) will be written and represented files
-	// on the filesystem.
-	// (future opportunity) There will be usecases where we want to write other objects
-	// (e.g. notebooks or dashboards) to wsfs. A good usecase is templates directly
-	// creating notebooks or dashboards. When we have such usecases, we can add a
-	// new WriteMode to handle them.
-	return w.localClient.Write(ctx, name, reader, mode...)
+	// TODO: Would there be any problems correctness wise or in general with using
+	// the workspace files client to write the file? The only concern would be
+	// what happens when you write a notebook.
+	return w.workspaceFilesClient.Write(ctx, name, reader, mode...)
 }
 
 func (w *workspaceFuseClient) Read(ctx context.Context, name string) (io.ReadCloser, error) {
-	r, err := w.localClient.Read(ctx, name)
+	r, err := w.workspaceFilesClient.Read(ctx, name)
 
-	// If the file is not found in the local file system, it might be a notebook.
-	// In that case, we should try to read the notebook from the workspace.
+	// If the file is not found, it might be a notebook. Try to read the notebook
+	// in that case.
 	if errors.As(err, &FileDoesNotExistError{}) {
 		stripName, ok := stripNotebookExtension(name)
 		if !ok {
 			return nil, err
 		}
 
-		// Check if the file with it's extension stripped is a notebook. If it is not a notebook,
-		// return the original error.
 		stat, err2 := w.workspaceFilesClient.Stat(ctx, stripName)
+		// If we run into an error trying to determine if the file is a notebook,
+		// return the original error.
 		if err2 != nil {
 			return nil, err
 		}
+		// If the file is not a notebook, return the original error.
 		if stat.Sys().(workspace.ObjectInfo).ObjectType != workspace.ObjectTypeNotebook {
 			return nil, err
 		}
 
-		// Since the file is a notebook, we should read the notebook from the workspace.
 		return w.workspaceFilesClient.Read(ctx, stripName)
 	}
 	return r, err
 }
 
-// TODO: will local filer be enough for a recursive delete? Can os.RemoveAll delete directories
-// with notebooks and files
-// TODO: Iterate on the delete semantics a bit. Actually iterate on all the semantics.
+// TODO: Handle file already exists error everywhere? Atleast provide error messages with better context?
 
 func (w *workspaceFuseClient) Delete(ctx context.Context, name string, mode ...DeleteMode) error {
-	err := w.localClient.Delete(ctx, name, mode...)
+	err := w.workspaceFilesClient.Delete(ctx, name, mode...)
 
-	// If the file is not found in the local file system, it might be a notebook.
+	// If the file is not found, it might be a notebook.
 	if errors.As(err, &FileDoesNotExistError{}) {
-		// If the file is not found in the local file system, it might be a notebook.
 		// In that case, we should try to delete the notebook from the workspace.
 		stripName, ok := stripNotebookExtension(name)
 		if !ok {
 			return err
 		}
 
-		// Check if the file with it's extension stripped is a notebook. If it is not a notebook,
-		// return the original error.
 		stat, err2 := w.workspaceFilesClient.Stat(ctx, stripName)
+		// If we run into an error trying to determine if the file is a notebook,
+		// return the original error.
 		if err2 != nil {
 			return err
 		}
+		// If the file is not a notebook, return the original error.
 		if stat.Sys().(workspace.ObjectInfo).ObjectType != workspace.ObjectTypeNotebook {
 			return err
 		}
@@ -213,7 +209,7 @@ func (w *workspaceFuseClient) Delete(ctx context.Context, name string, mode ...D
 }
 
 func (w *workspaceFuseClient) Stat(ctx context.Context, name string) (fs.FileInfo, error) {
-	info, err := w.localClient.Stat(ctx, name)
+	info, err := w.workspaceFilesClient.Stat(ctx, name)
 
 	// If the file is not found in the local file system, it might be a notebook.
 	if errors.As(err, &FileDoesNotExistError{}) {
@@ -225,24 +221,28 @@ func (w *workspaceFuseClient) Stat(ctx context.Context, name string) (fs.FileInf
 		// Check if the file with it's extension stripped is a notebook. If it is not a notebook,
 		// return the original error.
 		stat, err2 := w.workspaceFilesClient.Stat(ctx, stripName)
+		// If we run into an error trying to determine if the file is a notebook,
+		// return the original error.
 		if err2 != nil {
 			return nil, err
 		}
+		// If the file is not a notebook, return the original error.
 		if stat.Sys().(workspace.ObjectInfo).ObjectType != workspace.ObjectTypeNotebook {
 			return nil, err
 		}
 
-		// Since the file is a notebook, we should stat the notebook from the workspace.
-		return stat, nil
+		// Since the file is a notebook, we should return the stat of the notebook,
+		// with the path modified to include the extension.
+		newStat := stat.(wsfsFileInfo)
+		newStat.oi.Path = newStat.oi.Path + string(extensionForLanguage(stat.Sys().(workspace.ObjectInfo).Language))
+		return newStat, nil
 	}
 
 	return info, err
 }
 
-// TODO: Does this work as expected? Does fuse mount have full fidelity
-// with a local file system as far as directories are concerned?
+// TODO: Is incremental sync a problem? Does it need to be fixed for DABs in the
+// workspace?
 func (w *workspaceFuseClient) Mkdir(ctx context.Context, name string) error {
-	return w.localClient.Mkdir(ctx, name)
+	return w.workspaceFilesClient.Mkdir(ctx, name)
 }
-
-

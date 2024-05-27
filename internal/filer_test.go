@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/fs"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 
@@ -35,6 +36,11 @@ func (f filerTest) assertContents(ctx context.Context, name string, contents str
 	}
 
 	assert.Equal(f, contents, body.String())
+}
+
+func (f filerTest) assertNotExists(ctx context.Context, name string) {
+	_, err := f.Stat(ctx, name)
+	assert.ErrorIs(f, err, fs.ErrNotExist)
 }
 
 func commonFilerRecursiveDeleteTest(t *testing.T, ctx context.Context, f filer.Filer) {
@@ -94,6 +100,7 @@ func TestAccFilerRecursiveDelete(t *testing.T) {
 		{"workspace files", setupWsfsFiler},
 		{"dbfs", setupDbfsFiler},
 		{"files", setupUcVolumesFiler},
+		{"workspace fuse", setupWsfsFuseFiler},
 	} {
 		tc := testCase
 
@@ -204,6 +211,7 @@ func TestAccFilerReadWrite(t *testing.T) {
 		{"workspace files", setupWsfsFiler},
 		{"dbfs", setupDbfsFiler},
 		{"files", setupUcVolumesFiler},
+		{"workspace fuse", setupWsfsFuseFiler},
 	} {
 		tc := testCase
 
@@ -464,4 +472,173 @@ func TestAccFilerWorkspaceNotebookWithOverwriteFlag(t *testing.T) {
 	filerTest{t, f}.assertContents(ctx, "jupyterNb", "# Databricks notebook source\nprint(\"Jupyter Notebook Version 2\")")
 }
 
-func runFilerTestsOnDbr
+// TODO: Add test with Git folders to validate the dup encountered error / not supported error
+
+func TestAccFilerWorkspaceFuseReadDir(t *testing.T) {
+	files := []struct {
+		name    string
+		content string
+	}{
+		{"pyNb.py", "# Databricks notebook source\nprint('first upload'))"},
+		{"rNb.r", "# Databricks notebook source\nprint('first upload'))"},
+		{"sqlNb.sql", "-- Databricks notebook source\n SELECT \"first upload\""},
+		{"scalaNb.scala", "// Databricks notebook source\n println(\"first upload\"))"},
+		{"jupyterNb.ipynb", jupyterNotebookContent1},
+		{"jupyterNb2.ipynb", jupyterNotebookContent2},
+		{"dir1/dir2/dir3/file.txt", "file content"},
+		{"foo.py", "print('foo')"},
+		{"foo.r", "print('foo')"},
+		{"foo.sql", "SELECT 'foo'"},
+		{"foo.scala", "println('foo')"},
+	}
+
+	ctx := context.Background()
+	wf, _ := setupWsfsFuseFiler(t)
+
+	for _, f := range files {
+		err := wf.Write(ctx, f.name, strings.NewReader(f.content), filer.CreateParentDirectories)
+		require.NoError(t, err)
+	}
+
+	// Read entries
+	entries, err := wf.ReadDir(ctx, ".")
+	require.NoError(t, err)
+	assert.Len(t, entries, len(files))
+	names := []string{}
+	for _, e := range entries {
+		names = append(names, e.Name())
+	}
+	slices.Sort(names)
+	assert.Equal(t, []string{"dir1", "foo.py", "foo.r", "foo.scala", "foo.sql",
+		"jupyterNb.py", "jupyterNb2.py", "pyNb.py", "rNb.r", "scalaNb.scala", "sqlNb.sql"}, names)
+}
+
+func TestAccFilerWorkspaceFuseRead(t *testing.T) {
+	files := []struct {
+		name    string
+		content string
+	}{
+		{"foo.py", "# Databricks notebook source\nprint('first upload'))"},
+		{"bar.py", "print('foo')"},
+		{"pretender", "not a notebook"},
+		{"dir/file.txt", "file content"},
+	}
+
+	ctx := context.Background()
+	wf, _ := setupWsfsFuseFiler(t)
+
+	for _, f := range files {
+		err := wf.Write(ctx, f.name, strings.NewReader(f.content), filer.CreateParentDirectories)
+		require.NoError(t, err)
+	}
+
+	// Read contents
+	filerTest{t, wf}.assertContents(ctx, "foo.py", "# Databricks notebook source\nprint('first upload'))")
+	filerTest{t, wf}.assertContents(ctx, "bar.py", "print('foo')")
+	filerTest{t, wf}.assertContents(ctx, "dir/file.txt", "file content")
+
+	// Read non-existent file
+	_, err := wf.Read(ctx, "non-existent.py")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+
+	// Ensure we do not read pretender as a notebook
+	_, err = wf.Read(ctx, "pretender.py")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+
+	_, err = wf.Read(ctx, "pretender.ipynb")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+
+	// Read directory
+	_, err = wf.Read(ctx, "dir")
+	assert.ErrorIs(t, err, fs.ErrInvalid)
+}
+
+func TestAccFilerWorkspaceFuseDelete(t *testing.T) {
+	files := []struct {
+		name    string
+		content string
+	}{
+		{"foo.py", "# Databricks notebook source\nprint('first upload'))"},
+		{"bar.py", "print('foo')"},
+		{"pretender", "not a notebook"},
+		{"dir/file.txt", "file content"},
+	}
+
+	ctx := context.Background()
+	wf, _ := setupWsfsFuseFiler(t)
+
+	for _, f := range files {
+		err := wf.Write(ctx, f.name, strings.NewReader(f.content), filer.CreateParentDirectories)
+		require.NoError(t, err)
+	}
+
+	// Delete notebook
+	err := wf.Delete(ctx, "foo.py")
+	require.NoError(t, err)
+	filerTest{t, wf}.assertNotExists(ctx, "foo.py")
+
+	// Delete file
+	err = wf.Delete(ctx, "bar.py")
+	require.NoError(t, err)
+	filerTest{t, wf}.assertNotExists(ctx, "bar.py")
+
+	// Delete non-existent file
+	err = wf.Delete(ctx, "non-existent.py")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+
+	// Ensure we do not delete pretender as a notebook
+	err = wf.Delete(ctx, "pretender.py")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+
+	// Delete directory
+	err = wf.Delete(ctx, "dir")
+	assert.ErrorIs(t, err, fs.ErrInvalid)
+
+	// Delete directory recursively
+	err = wf.Delete(ctx, "dir", filer.DeleteRecursively)
+	require.NoError(t, err)
+	filerTest{t, wf}.assertNotExists(ctx, "dir")
+}
+
+func TestAccFilerWorkspaceFuseStat(t *testing.T) {
+	files := []struct {
+		name    string
+		content string
+	}{
+		{"foo.py", "# Databricks notebook source\nprint('first upload'))"},
+		{"bar.py", "print('foo')"},
+		{"dir/file.txt", "file content"},
+		{"pretender", "not a notebook"},
+	}
+
+	ctx := context.Background()
+	wf, _ := setupWsfsFuseFiler(t)
+
+	for _, f := range files {
+		err := wf.Write(ctx, f.name, strings.NewReader(f.content), filer.CreateParentDirectories)
+		require.NoError(t, err)
+	}
+
+	// Stat on a file
+	info, err := wf.Stat(ctx, "foo.py")
+	require.NoError(t, err)
+	assert.Equal(t, "foo.py", info.Name())
+	assert.False(t, info.IsDir())
+
+	// Stat on a directory
+	info, err = wf.Stat(ctx, "dir")
+	require.NoError(t, err)
+	assert.Equal(t, "dir", info.Name())
+	assert.True(t, info.IsDir())
+
+	// Stat on a non-existent file
+	_, err = wf.Stat(ctx, "non-existent.py")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+
+	// Ensure we do not stat pretender as a notebook
+	_, err = wf.Stat(ctx, "pretender.py")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+
+	_, err = wf.Stat(ctx, "pretender.ipynb")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+}
