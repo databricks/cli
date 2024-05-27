@@ -11,6 +11,10 @@ type Location struct {
 	Column int
 }
 
+// nilLocation is a convenient constant for a nil location.
+// TODO: Remove this constant and rely on the file path in the location?
+var nilLocation = Location{}
+
 func (l Location) String() string {
 	return fmt.Sprintf("%s:%d:%d", l.File, l.Line, l.Column)
 }

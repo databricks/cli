@@ -22,7 +22,7 @@ func merge(a, b dyn.Value) (dyn.Value, error) {
 
 	// If a is nil, return b.
 	if ak == dyn.KindNil {
-		return b, nil
+		return b.WithYamlLocation(a.Location()), nil
 	}
 
 	// If b is nil, return a.
@@ -75,8 +75,9 @@ func mergeMap(a, b dyn.Value) (dyn.Value, error) {
 		}
 	}
 
-	// Preserve the location of the first value.
-	return dyn.NewValue(out, a.Location()), nil
+	// Preserve the location of the first value. Keep track of the location of the second value
+	// as metadata.
+	return dyn.NewValue(out, a.Location()).WithYamlLocation(b.Location()), nil
 }
 
 func mergeSequence(a, b dyn.Value) (dyn.Value, error) {
@@ -88,11 +89,13 @@ func mergeSequence(a, b dyn.Value) (dyn.Value, error) {
 	copy(out[:], as)
 	copy(out[len(as):], bs)
 
-	// Preserve the location of the first value.
-	return dyn.NewValue(out, a.Location()), nil
+	// Preserve the location of the first value. Keep track of the location of the second value
+	// as metadata.
+	return dyn.NewValue(out, a.Location()).WithYamlLocation(b.Location()), nil
 }
 
 func mergePrimitive(a, b dyn.Value) (dyn.Value, error) {
-	// Merging primitive values means using the incoming value.
-	return b, nil
+	// Merging primitive values means using the incoming value. Keep track of the location of the
+	// first value as metadata.
+	return b.WithYamlLocation(a.Location()), nil
 }

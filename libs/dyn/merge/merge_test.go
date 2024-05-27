@@ -41,6 +41,32 @@ func TestMergeMaps(t *testing.T) {
 	}
 }
 
+func TestFoo(t *testing.T) {
+	v1 := dyn.V(map[string]dyn.Value{
+		"foo": dyn.V("bar"),
+		"bar": dyn.V("baz").WithLocation(dyn.Location{File: "abc"}),
+	})
+
+	v2 := dyn.V(map[string]dyn.Value{
+		"bar": dyn.V("qux").WithLocation(dyn.Location{File: "def"}),
+		"qux": dyn.V("foo"),
+	})
+
+	// Merge v2 into v1.
+	{
+		out, err := Merge(v1, v2)
+		assert.NoError(t, err)
+		assert.Equal(t, map[string]any{
+			"foo": "bar",
+			"bar": "qux",
+			"qux": "foo",
+		}, out.AsAny())
+
+		vv, _ := out.MustMap().GetPairByString("bar")
+		assert.Equal(t, []dyn.Location{}, vv.Value.YamlLocations())
+	}
+}
+
 func TestMergeMapsNil(t *testing.T) {
 	v := dyn.V(map[string]dyn.Value{
 		"foo": dyn.V("bar"),

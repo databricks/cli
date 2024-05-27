@@ -91,7 +91,7 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 			return dyn.InvalidValue, err
 		}
 
-		if nv != dyn.NilValue {
+		if !nv.IsNil() {
 			out.Set(refk, nv)
 		}
 	}

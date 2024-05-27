@@ -2,13 +2,22 @@ package dyn
 
 import (
 	"fmt"
+	"slices"
 )
 
 type Value struct {
 	v any
 
 	k Kind
+
+	// Effective location where this value was defined and loaded from.
 	l Location
+
+	// All YAML locations where this value has been defined. When merging configurations,
+	// values in a map may override values in another map. This field is used to track
+	// all YAML locations where a value was defined, even if the values at these locations
+	// were overridden by other values.
+	yamlLocations []Location
 
 	// Whether or not this value is an anchor.
 	// If this node doesn't map to a type, we don't need to warn about it.
@@ -25,6 +34,10 @@ var NilValue = Value{
 	k: KindNil,
 }
 
+func (v Value) IsNil() bool {
+	return v.k == KindNil && v.v == nil
+}
+
 // V constructs a new Value with the given value.
 func V(v any) Value {
 	return NewValue(v, Location{})
@@ -37,20 +50,48 @@ func NewValue(v any, loc Location) Value {
 		v = newMappingFromGoMap(vin)
 	}
 
+	yamlLocations := make([]Location, 0)
+	if loc != nilLocation {
+		yamlLocations = append(yamlLocations, loc)
+	}
+
 	return Value{
-		v: v,
-		k: kindOf(v),
-		l: loc,
+		v:             v,
+		k:             kindOf(v),
+		l:             loc,
+		yamlLocations: yamlLocations,
 	}
 }
 
 // WithLocation returns a new Value with its location set to the given value.
 func (v Value) WithLocation(loc Location) Value {
-	return Value{
-		v: v.v,
-		k: v.k,
-		l: loc,
+	if loc != nilLocation {
+		v.yamlLocations = append(v.yamlLocations, loc)
 	}
+	return Value{
+		v:             v.v,
+		k:             v.k,
+		l:             loc,
+		yamlLocations: v.yamlLocations,
+	}
+}
+
+// WithYamlLocation returns a new Value with the given location added to its
+// list of tracked YAML locations.
+// This function is idempotent
+func (v Value) WithYamlLocation(loc Location) Value {
+	// Location is already being tracked
+	if slices.Contains(v.yamlLocations, loc) {
+		return v
+	}
+
+	// We don't track empty locations.
+	if loc == nilLocation {
+		return v
+	}
+
+	v.yamlLocations = append(v.yamlLocations, loc)
+	return v
 }
 
 func (v Value) Kind() Kind {
@@ -63,6 +104,12 @@ func (v Value) Value() any {
 
 func (v Value) Location() Location {
 	return v.l
+}
+
+// All YAML locations where this value has been defined. Is empty if the value
+// was never defined in a YAML file.
+func (v Value) YamlLocations() []Location {
+	return v.yamlLocations
 }
 
 func (v Value) IsValid() bool {

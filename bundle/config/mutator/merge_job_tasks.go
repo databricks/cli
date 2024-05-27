@@ -32,7 +32,7 @@ func (m *mergeJobTasks) taskKeyString(v dyn.Value) string {
 
 func (m *mergeJobTasks) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		if v == dyn.NilValue {
+		if v.IsNil() {
 			return v, nil
 		}
 
