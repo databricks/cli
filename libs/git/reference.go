@@ -3,7 +3,6 @@ package git
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -75,8 +74,7 @@ func (ref *Reference) ResolvePath() (string, error) {
 	if ref.Type != ReferenceTypePointer {
 		return "", ErrNotAReferencePointer
 	}
-	refPath := strings.TrimPrefix(ref.Content, ReferencePrefix)
-	return filepath.FromSlash(refPath), nil
+	return strings.TrimPrefix(ref.Content, ReferencePrefix), nil
 }
 
 // resolves the name of the current branch from the reference file content. For example
@@ -89,8 +87,6 @@ func (ref *Reference) CurrentBranch() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// normalize branch ref path to work accross different operating systems
-	branchRefPath = filepath.ToSlash(branchRefPath)
 	if !strings.HasPrefix(branchRefPath, HeadPathPrefix) {
 		return "", fmt.Errorf("reference path %s does not have expected prefix %s", branchRefPath, HeadPathPrefix)
 	}
