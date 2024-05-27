@@ -2,9 +2,7 @@ package fileset
 
 import (
 	"io/fs"
-	"os"
 	"path"
-	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -22,14 +20,11 @@ func collectRelativePaths(files []File) []string {
 }
 
 func TestGlobFileset(t *testing.T) {
-	cwd, err := os.Getwd()
-	require.NoError(t, err)
-	root := filepath.Join(cwd, "..", "filer")
-
-	entries, err := os.ReadDir(root)
+	root := vfs.MustNew("../filer")
+	entries, err := root.ReadDir(".")
 	require.NoError(t, err)
 
-	g, err := NewGlobSet(vfs.MustNew(root), []string{
+	g, err := NewGlobSet(root, []string{
 		"./*.go",
 	})
 	require.NoError(t, err)
@@ -45,7 +40,7 @@ func TestGlobFileset(t *testing.T) {
 		require.True(t, exists)
 	}
 
-	g, err = NewGlobSet(vfs.MustNew(root), []string{
+	g, err = NewGlobSet(root, []string{
 		"./*.js",
 	})
 	require.NoError(t, err)
@@ -56,29 +51,24 @@ func TestGlobFileset(t *testing.T) {
 }
 
 func TestGlobFilesetWithRelativeRoot(t *testing.T) {
-	root := filepath.Join("..", "filer")
-
-	entries, err := os.ReadDir(root)
+	root := vfs.MustNew("../filer")
+	entries, err := root.ReadDir(".")
 	require.NoError(t, err)
 
-	g, err := NewGlobSet(vfs.MustNew(root), []string{
+	g, err := NewGlobSet(root, []string{
 		"./*.go",
 	})
 	require.NoError(t, err)
 
 	files, err := g.All()
 	require.NoError(t, err)
-
 	require.Equal(t, len(files), len(entries))
 }
 
 func TestGlobFilesetRecursively(t *testing.T) {
-	cwd, err := os.Getwd()
-	require.NoError(t, err)
-	root := filepath.Join(cwd, "..", "git")
-
+	root := vfs.MustNew("../git")
 	entries := make([]string, 0)
-	err = fs.WalkDir(os.DirFS(filepath.Join(root)), "testdata", func(path string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(root, "testdata", func(path string, d fs.DirEntry, err error) error {
 		if !d.IsDir() {
 			entries = append(entries, path)
 		}
@@ -86,7 +76,7 @@ func TestGlobFilesetRecursively(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	g, err := NewGlobSet(vfs.MustNew(root), []string{
+	g, err := NewGlobSet(root, []string{
 		"testdata/*",
 	})
 	require.NoError(t, err)
@@ -97,12 +87,9 @@ func TestGlobFilesetRecursively(t *testing.T) {
 }
 
 func TestGlobFilesetDir(t *testing.T) {
-	cwd, err := os.Getwd()
-	require.NoError(t, err)
-	root := filepath.Join(cwd, "..", "git")
-
+	root := vfs.MustNew("../git")
 	entries := make([]string, 0)
-	err = fs.WalkDir(os.DirFS(filepath.Join(root)), "testdata/a", func(path string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(root, "testdata/a", func(path string, d fs.DirEntry, err error) error {
 		if !d.IsDir() {
 			entries = append(entries, path)
 		}
@@ -110,7 +97,7 @@ func TestGlobFilesetDir(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	g, err := NewGlobSet(vfs.MustNew(root), []string{
+	g, err := NewGlobSet(root, []string{
 		"testdata/a",
 	})
 	require.NoError(t, err)
@@ -121,12 +108,9 @@ func TestGlobFilesetDir(t *testing.T) {
 }
 
 func TestGlobFilesetDoubleQuotesWithFilePatterns(t *testing.T) {
-	cwd, err := os.Getwd()
-	require.NoError(t, err)
-	root := filepath.Join(cwd, "..", "git")
-
+	root := vfs.MustNew("../git")
 	entries := make([]string, 0)
-	err = fs.WalkDir(os.DirFS(filepath.Join(root)), "testdata", func(path string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(root, "testdata", func(path string, d fs.DirEntry, err error) error {
 		if strings.HasSuffix(path, ".txt") {
 			entries = append(entries, path)
 		}
@@ -134,7 +118,7 @@ func TestGlobFilesetDoubleQuotesWithFilePatterns(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	g, err := NewGlobSet(vfs.MustNew(root), []string{
+	g, err := NewGlobSet(root, []string{
 		"testdata/**/*.txt",
 	})
 	require.NoError(t, err)
