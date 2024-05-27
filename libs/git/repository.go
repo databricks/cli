@@ -119,7 +119,7 @@ func (r *Repository) loadConfig() error {
 // newIgnoreFile constructs a new [ignoreRules] implementation backed by
 // a file using the specified path relative to the repository root.
 func (r *Repository) newIgnoreFile(relativeIgnoreFilePath string) ignoreRules {
-	return newIgnoreFile(filepath.Join(r.root.Native(), relativeIgnoreFilePath))
+	return newIgnoreFile(r.root, relativeIgnoreFilePath)
 }
 
 // getIgnoreRules returns a slice of [ignoreRules] that apply
@@ -132,7 +132,7 @@ func (r *Repository) getIgnoreRules(prefix string) []ignoreRules {
 		return fs
 	}
 
-	r.ignore[prefix] = append(r.ignore[prefix], r.newIgnoreFile(filepath.Join(prefix, gitIgnoreFileName)))
+	r.ignore[prefix] = append(r.ignore[prefix], r.newIgnoreFile(path.Join(prefix, gitIgnoreFileName)))
 	return r.ignore[prefix]
 }
 
@@ -216,13 +216,21 @@ func NewRepository(path vfs.Path) (*Repository, error) {
 		return nil, fmt.Errorf("unable to access core excludes file: %w", err)
 	}
 
+	// Load global excludes on this machine.
+	// This is by definition a local path so we create a new [vfs.Path] instance.
+	coreExcludes := newStringIgnoreRules([]string{})
+	if coreExcludesPath != "" {
+		dir := filepath.Dir(coreExcludesPath)
+		base := filepath.Base(coreExcludesPath)
+		coreExcludes = newIgnoreFile(vfs.MustNew(dir), base)
+	}
+
 	// Initialize root ignore rules.
 	// These are special and not lazily initialized because:
 	// 1) we include a hardcoded ignore pattern
 	// 2) we include a gitignore file at a non-standard path
 	repo.ignore["."] = []ignoreRules{
-		// Load global excludes on this machine.
-		newIgnoreFile(coreExcludesPath),
+		coreExcludes,
 		// Always ignore root .git directory.
 		newStringIgnoreRules([]string{
 			".git",
