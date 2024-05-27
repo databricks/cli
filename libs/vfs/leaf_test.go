@@ -17,21 +17,21 @@ func TestFindLeafInTree(t *testing.T) {
 
 	// Find from working directory should work.
 	{
-		out, err := FindLeafInTree(New(wd), ".git")
+		out, err := FindLeafInTree(MustNew(wd), ".git")
 		assert.NoError(t, err)
 		assert.Equal(t, root, out.Native())
 	}
 
 	// Find from project root itself should work.
 	{
-		out, err := FindLeafInTree(New(root), ".git")
+		out, err := FindLeafInTree(MustNew(root), ".git")
 		assert.NoError(t, err)
 		assert.Equal(t, root, out.Native())
 	}
 
 	// Find for something that doesn't exist should work.
 	{
-		out, err := FindLeafInTree(New(root), "this-leaf-doesnt-exist-anywhere")
+		out, err := FindLeafInTree(MustNew(root), "this-leaf-doesnt-exist-anywhere")
 		assert.ErrorIs(t, err, os.ErrNotExist)
 		assert.Equal(t, nil, out)
 	}

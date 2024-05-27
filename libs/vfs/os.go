@@ -15,8 +15,28 @@ type osPath struct {
 	readFileFn func(name string) ([]byte, error)
 }
 
-func New(name string) Path {
-	name = filepath.Clean(name)
+func New(name string) (Path, error) {
+	abs, err := filepath.Abs(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return newOsPath(abs), nil
+}
+
+func MustNew(name string) Path {
+	p, err := New(name)
+	if err != nil {
+		panic(err)
+	}
+
+	return p
+}
+
+func newOsPath(name string) Path {
+	if !filepath.IsAbs(name) {
+		panic("vfs: abs path must be absolute")
+	}
 
 	// [os.DirFS] implements all required interfaces.
 	// We used type assertion below to get the underlying types.
@@ -54,7 +74,7 @@ func (o osPath) Parent() Path {
 		return nil
 	}
 
-	return New(dir)
+	return newOsPath(dir)
 }
 
 func (o osPath) Native() string {
