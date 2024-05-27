@@ -154,6 +154,22 @@ func TestOwnerLevel(t *testing.T) {
 						},
 					},
 				},
+				Pipelines: map[string]*resources.Pipeline{
+					"pipeline_1": {},
+				},
+				Models: map[string]*resources.MlflowModel{
+					"model_1": {
+						Permissions: []resources.Permission{
+							{Level: CAN_MANAGE, UserName: "Bob"},
+						},
+					},
+				},
+				Experiments: map[string]*resources.MlflowExperiment{
+					"experiment_1": {},
+				},
+				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
+					"endpoint_1": {},
+				},
 			},
 		},
 	}
@@ -164,4 +180,9 @@ func TestOwnerLevel(t *testing.T) {
 	require.Contains(t, b.Config.Resources.Jobs["job_1"].Permissions, resources.Permission{Level: "IS_OWNER", UserName: "Alice"})
 	require.Contains(t, b.Config.Resources.Jobs["job_2"].Permissions, resources.Permission{Level: "IS_OWNER", UserName: "Bob"})
 	require.NotContains(t, b.Config.Resources.Jobs["job_2"].Permissions, resources.Permission{Level: "IS_OWNER", UserName: "Alice"})
+	require.Contains(t, b.Config.Resources.Pipelines["pipeline_1"].Permissions, resources.Permission{Level: "IS_OWNER", UserName: "Alice"})
+	require.Contains(t, b.Config.Resources.Experiments["experiment_1"].Permissions, resources.Permission{Level: "CAN_MANAGE", UserName: "Alice"})
+	require.Contains(t, b.Config.Resources.Models["model_1"].Permissions, resources.Permission{Level: "CAN_MANAGE", UserName: "Alice"})
+	require.Contains(t, b.Config.Resources.Models["model_1"].Permissions, resources.Permission{Level: "CAN_MANAGE", UserName: "Bob"})
+	require.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint_1"].Permissions, resources.Permission{Level: "CAN_MANAGE", UserName: "Alice"})
 }

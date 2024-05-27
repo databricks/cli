@@ -31,17 +31,17 @@ var levelsMap = map[string](map[string]string){
 		CAN_RUN:    "CAN_RUN",
 	},
 	"mlflow_experiments": {
-		IS_OWNER:   "IS_OWNER",
+		IS_OWNER:   "CAN_MANAGE",
 		CAN_MANAGE: "CAN_MANAGE",
 		CAN_VIEW:   "CAN_READ",
 	},
 	"mlflow_models": {
-		IS_OWNER:   "IS_OWNER",
+		IS_OWNER:   "CAN_MANAGE",
 		CAN_MANAGE: "CAN_MANAGE",
 		CAN_VIEW:   "CAN_READ",
 	},
 	"model_serving_endpoints": {
-		IS_OWNER:   "IS_OWNER",
+		IS_OWNER:   "CAN_MANAGE",
 		CAN_MANAGE: "CAN_MANAGE",
 		CAN_VIEW:   "CAN_VIEW",
 		CAN_RUN:    "CAN_QUERY",
