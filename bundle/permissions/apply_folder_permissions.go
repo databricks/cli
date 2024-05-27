@@ -57,7 +57,7 @@ func giveAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 
-	_, err = w.SetPermissions(ctx, workspace.WorkspaceObjectPermissionsRequest{
+	_, err = w.UpdatePermissions(ctx, workspace.WorkspaceObjectPermissionsRequest{
 		WorkspaceObjectId:   fmt.Sprint(obj.ObjectId),
 		WorkspaceObjectType: "directories",
 		AccessControlList:   permissions,
