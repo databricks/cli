@@ -38,7 +38,7 @@ func TestOsPathParent(t *testing.T) {
 
 	// We should have reached the root.
 	if runtime.GOOS == "windows" {
-		require.Equal(t, filepath.VolumeName(wd), p.Native())
+		require.Equal(t, filepath.VolumeName(wd)+`\`, p.Native())
 	} else {
 		require.Equal(t, "/", p.Native())
 	}
