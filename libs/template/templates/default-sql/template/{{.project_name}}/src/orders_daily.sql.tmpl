@@ -1,12 +1,15 @@
 -- This query is executed using Databricks Workflows (see resources/{{.project_name}}_sql_job.yml)
 {{- /* We can't use a materialized view here since they don't support 'create or refresh' yet.*/}}
 
+USE CATALOG {{"{{"}}catalog{{"}}"}};
+USE IDENTIFIER({{"{{"}}schema{{"}}"}});
+
 CREATE OR REPLACE VIEW
-  IDENTIFIER(CONCAT({{"{{"}}catalog{{"}}"}}, '.', {{"{{"}}schema{{"}}"}}, '.', 'orders_daily'))
+  orders_daily
 AS SELECT
   order_date, count(*) AS number_of_orders
 FROM
-  IDENTIFIER(CONCAT({{"{{"}}catalog{{"}}"}}, '.', {{"{{"}}schema{{"}}"}}, '.', 'orders_raw'))
+  orders_raw
 
 WHERE if(
   {{"{{"}}bundle_target{{"}}"}} != "prod",
