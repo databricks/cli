@@ -5,21 +5,22 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/fileset"
+	"github.com/databricks/cli/libs/vfs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestSnapshotState(t *testing.T) {
-	fileSet := fileset.New("./testdata/sync-fileset")
+	fileSet := fileset.New(vfs.MustNew("./testdata/sync-fileset"))
 	files, err := fileSet.All()
 	require.NoError(t, err)
 
 	// Assert initial contents of the fileset
 	assert.Len(t, files, 4)
-	assert.Equal(t, "invalid-nb.ipynb", files[0].Name())
-	assert.Equal(t, "my-nb.py", files[1].Name())
-	assert.Equal(t, "my-script.py", files[2].Name())
-	assert.Equal(t, "valid-nb.ipynb", files[3].Name())
+	assert.Equal(t, "invalid-nb.ipynb", files[0].Relative)
+	assert.Equal(t, "my-nb.py", files[1].Relative)
+	assert.Equal(t, "my-script.py", files[2].Relative)
+	assert.Equal(t, "valid-nb.ipynb", files[3].Relative)
 
 	// Assert snapshot state generated from the fileset. Note that the invalid notebook
 	// has been ignored.

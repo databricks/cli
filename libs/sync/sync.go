@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/set"
+	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
@@ -59,12 +60,12 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 		return nil, err
 	}
 
-	includeFileSet, err := fileset.NewGlobSet(opts.LocalPath, opts.Include)
+	includeFileSet, err := fileset.NewGlobSet(vfs.MustNew(opts.LocalPath), opts.Include)
 	if err != nil {
 		return nil, err
 	}
 
-	excludeFileSet, err := fileset.NewGlobSet(opts.LocalPath, opts.Exclude)
+	excludeFileSet, err := fileset.NewGlobSet(vfs.MustNew(opts.LocalPath), opts.Exclude)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +187,7 @@ func (s *Sync) GetFileList(ctx context.Context) ([]fileset.File, error) {
 	// tradeoff: doing portable monitoring only due to macOS max descriptor manual ulimit setting requirement
 	// https://github.com/gorakhargosh/watchdog/blob/master/src/watchdog/observers/kqueue.py#L394-L418
 	all := set.NewSetF(func(f fileset.File) string {
-		return f.Absolute
+		return f.Relative
 	})
 	gitFiles, err := s.fileSet.All()
 	if err != nil {

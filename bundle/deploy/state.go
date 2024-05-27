@@ -12,6 +12,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/fileset"
+	"github.com/databricks/cli/libs/vfs"
 )
 
 const DeploymentStateFileName = "deployment.json"
@@ -112,12 +113,13 @@ func FromSlice(files []fileset.File) (Filelist, error) {
 
 func (f Filelist) ToSlice(basePath string) []fileset.File {
 	var files []fileset.File
+	root := vfs.MustNew(basePath)
 	for _, file := range f {
-		absPath := filepath.Join(basePath, file.LocalPath)
+		entry := newEntry(filepath.Join(basePath, file.LocalPath))
 		if file.IsNotebook {
-			files = append(files, fileset.NewNotebookFile(newEntry(absPath), absPath, file.LocalPath))
+			files = append(files, fileset.NewNotebookFile(root, entry, file.LocalPath))
 		} else {
-			files = append(files, fileset.NewSourceFile(newEntry(absPath), absPath, file.LocalPath))
+			files = append(files, fileset.NewSourceFile(root, entry, file.LocalPath))
 		}
 	}
 	return files

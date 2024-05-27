@@ -2,6 +2,7 @@ package git
 
 import (
 	"github.com/databricks/cli/libs/fileset"
+	"github.com/databricks/cli/libs/vfs"
 )
 
 // FileSet is Git repository aware implementation of [fileset.FileSet].
@@ -14,7 +15,7 @@ type FileSet struct {
 
 // NewFileSet returns [FileSet] for the Git repository located at `root`.
 func NewFileSet(root string) (*FileSet, error) {
-	fs := fileset.New(root)
+	fs := fileset.New(vfs.MustNew(root))
 	v, err := NewView(root)
 	if err != nil {
 		return nil, err

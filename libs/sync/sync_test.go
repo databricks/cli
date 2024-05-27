@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/git"
+	"github.com/databricks/cli/libs/vfs"
 	"github.com/stretchr/testify/require"
 )
 
@@ -79,10 +80,10 @@ func TestGetFileSet(t *testing.T) {
 	err = fileSet.EnsureValidGitIgnoreExists()
 	require.NoError(t, err)
 
-	inc, err := fileset.NewGlobSet(dir, []string{})
+	inc, err := fileset.NewGlobSet(vfs.MustNew(dir), []string{})
 	require.NoError(t, err)
 
-	excl, err := fileset.NewGlobSet(dir, []string{})
+	excl, err := fileset.NewGlobSet(vfs.MustNew(dir), []string{})
 	require.NoError(t, err)
 
 	s := &Sync{
@@ -97,10 +98,10 @@ func TestGetFileSet(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, len(fileList), 9)
 
-	inc, err = fileset.NewGlobSet(dir, []string{})
+	inc, err = fileset.NewGlobSet(vfs.MustNew(dir), []string{})
 	require.NoError(t, err)
 
-	excl, err = fileset.NewGlobSet(dir, []string{"*.go"})
+	excl, err = fileset.NewGlobSet(vfs.MustNew(dir), []string{"*.go"})
 	require.NoError(t, err)
 
 	s = &Sync{
@@ -115,10 +116,10 @@ func TestGetFileSet(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, len(fileList), 1)
 
-	inc, err = fileset.NewGlobSet(dir, []string{".databricks/*"})
+	inc, err = fileset.NewGlobSet(vfs.MustNew(dir), []string{".databricks/*"})
 	require.NoError(t, err)
 
-	excl, err = fileset.NewGlobSet(dir, []string{})
+	excl, err = fileset.NewGlobSet(vfs.MustNew(dir), []string{})
 	require.NoError(t, err)
 
 	s = &Sync{
@@ -144,10 +145,10 @@ func TestRecursiveExclude(t *testing.T) {
 	err = fileSet.EnsureValidGitIgnoreExists()
 	require.NoError(t, err)
 
-	inc, err := fileset.NewGlobSet(dir, []string{})
+	inc, err := fileset.NewGlobSet(vfs.MustNew(dir), []string{})
 	require.NoError(t, err)
 
-	excl, err := fileset.NewGlobSet(dir, []string{"test/**"})
+	excl, err := fileset.NewGlobSet(vfs.MustNew(dir), []string{"test/**"})
 	require.NoError(t, err)
 
 	s := &Sync{
