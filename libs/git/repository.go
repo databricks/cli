@@ -149,7 +149,7 @@ func (r *Repository) taintIgnoreRules() {
 // Ignore computes whether to ignore the specified path.
 // The specified path is relative to the repository root path.
 func (r *Repository) Ignore(relPath string) (bool, error) {
-	parts := strings.Split(filepath.ToSlash(relPath), "/")
+	parts := strings.Split(relPath, "/")
 
 	// Retain trailing slash for directory patterns.
 	// We know a trailing slash was present if the last element

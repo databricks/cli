@@ -1,7 +1,9 @@
 package git
 
 import (
+	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -31,17 +33,15 @@ type View struct {
 
 // Ignore computes whether to ignore the specified path.
 // The specified path is relative to the view's target path.
-func (v *View) Ignore(path string) (bool, error) {
-	path = filepath.ToSlash(path)
-
+func (v *View) Ignore(relPath string) (bool, error) {
 	// Retain trailing slash for directory patterns.
 	// Needs special handling because it is removed by path cleaning.
 	trailingSlash := ""
-	if strings.HasSuffix(path, "/") {
+	if strings.HasSuffix(relPath, "/") {
 		trailingSlash = "/"
 	}
 
-	return v.repo.Ignore(filepath.Join(v.targetPath, path) + trailingSlash)
+	return v.repo.Ignore(path.Join(v.targetPath, relPath) + trailingSlash)
 }
 
 // IgnoreFile returns if the gitignore rules in this fileset
@@ -72,21 +72,27 @@ func (v *View) IgnoreDirectory(dir string) (bool, error) {
 	return v.Ignore(dir + "/")
 }
 
-func NewView(path vfs.Path) (*View, error) {
-	repo, err := NewRepository(path)
+func NewView(root vfs.Path) (*View, error) {
+	repo, err := NewRepository(root)
 	if err != nil {
 		return nil, err
 	}
 
 	// Target path must be relative to the repository root path.
-	targetPath, err := filepath.Rel(repo.root.Native(), path.Native())
-	if err != nil {
-		return nil, err
+	target := root.Native()
+	prefix := repo.root.Native()
+	if !strings.HasPrefix(target, prefix) {
+		return nil, fmt.Errorf("path %q is not within repository root %q", root.Native(), prefix)
 	}
+
+	// Make target a relative path.
+	target = strings.TrimPrefix(target, prefix)
+	target = strings.TrimPrefix(target, string(os.PathSeparator))
+	target = path.Clean(filepath.ToSlash(target))
 
 	return &View{
 		repo:       repo,
-		targetPath: targetPath,
+		targetPath: target,
 	}, nil
 }
 
