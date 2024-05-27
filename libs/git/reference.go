@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/databricks/cli/libs/vfs"
 )
 
 type ReferenceType string
@@ -37,9 +39,9 @@ func isSHA1(s string) bool {
 	return re.MatchString(s)
 }
 
-func LoadReferenceFile(path string) (*Reference, error) {
+func LoadReferenceFile(root vfs.Path, path string) (*Reference, error) {
 	// read reference file content
-	b, err := os.ReadFile(path)
+	b, err := root.ReadFile(path)
 	if os.IsNotExist(err) {
 		return nil, nil
 	}

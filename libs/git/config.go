@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/databricks/cli/libs/vfs"
 	"gopkg.in/ini.v1"
 )
 
@@ -87,8 +88,8 @@ func (c config) load(r io.Reader) error {
 	return nil
 }
 
-func (c config) loadFile(path string) error {
-	f, err := os.Open(path)
+func (c config) loadFile(fs vfs.Path, path string) error {
+	f, err := fs.Open(path)
 	if err != nil {
 		// If the file doesn't exist it is ignored.
 		// This is the case for both global and repository specific config files.
@@ -152,8 +153,8 @@ func globalGitConfig() (*config, error) {
 	// > are missing or unreadable they will be ignored.
 	//
 	// We therefore ignore the error return value for the calls below.
-	config.loadFile(filepath.Join(xdgConfigHome, "git/config"))
-	config.loadFile(filepath.Join(config.home, ".gitconfig"))
+	config.loadFile(vfs.MustNew(xdgConfigHome), "git/config")
+	config.loadFile(vfs.MustNew(config.home), ".gitconfig")
 
 	return config, nil
 }

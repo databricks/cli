@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/databricks/cli/libs/vfs"
 )
 
 // View represents a view on a directory tree that takes into account
@@ -70,19 +72,14 @@ func (v *View) IgnoreDirectory(dir string) (bool, error) {
 	return v.Ignore(dir + "/")
 }
 
-func NewView(path string) (*View, error) {
-	path, err := filepath.Abs(path)
-	if err != nil {
-		return nil, err
-	}
-
+func NewView(path vfs.Path) (*View, error) {
 	repo, err := NewRepository(path)
 	if err != nil {
 		return nil, err
 	}
 
 	// Target path must be relative to the repository root path.
-	targetPath, err := filepath.Rel(repo.rootPath, path)
+	targetPath, err := filepath.Rel(repo.root.Native(), path.Native())
 	if err != nil {
 		return nil, err
 	}

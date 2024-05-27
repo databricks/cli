@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/vfs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -55,7 +56,7 @@ func TestReferenceLoadingForObjectID(t *testing.T) {
 	defer f.Close()
 	f.WriteString(strings.Repeat("e", 40) + "\r\n")
 
-	ref, err := LoadReferenceFile(filepath.Join(tmp, "HEAD"))
+	ref, err := LoadReferenceFile(vfs.MustNew(tmp), "HEAD")
 	assert.NoError(t, err)
 	assert.Equal(t, ReferenceTypeSHA1, ref.Type)
 	assert.Equal(t, strings.Repeat("e", 40), ref.Content)
@@ -68,7 +69,7 @@ func TestReferenceLoadingForReference(t *testing.T) {
 	defer f.Close()
 	f.WriteString("ref: refs/heads/foo\n")
 
-	ref, err := LoadReferenceFile(filepath.Join(tmp, "HEAD"))
+	ref, err := LoadReferenceFile(vfs.MustNew(tmp), "HEAD")
 	assert.NoError(t, err)
 	assert.Equal(t, ReferenceTypePointer, ref.Type)
 	assert.Equal(t, "ref: refs/heads/foo", ref.Content)
@@ -81,7 +82,7 @@ func TestReferenceLoadingFailsForInvalidContent(t *testing.T) {
 	defer f.Close()
 	f.WriteString("abc")
 
-	_, err = LoadReferenceFile(filepath.Join(tmp, "HEAD"))
+	_, err = LoadReferenceFile(vfs.MustNew(tmp), "HEAD")
 	assert.ErrorContains(t, err, "unknown format for git HEAD")
 }
 

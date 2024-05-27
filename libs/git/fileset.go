@@ -14,8 +14,8 @@ type FileSet struct {
 }
 
 // NewFileSet returns [FileSet] for the Git repository located at `root`.
-func NewFileSet(root string) (*FileSet, error) {
-	fs := fileset.New(vfs.MustNew(root))
+func NewFileSet(root vfs.Path) (*FileSet, error) {
+	fs := fileset.New(root)
 	v, err := NewView(root)
 	if err != nil {
 		return nil, err

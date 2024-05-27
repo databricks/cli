@@ -51,7 +51,7 @@ type Sync struct {
 
 // New initializes and returns a new [Sync] instance.
 func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
-	fileSet, err := git.NewFileSet(opts.LocalPath)
+	fileSet, err := git.NewFileSet(vfs.MustNew(opts.LocalPath))
 	if err != nil {
 		return nil, err
 	}
