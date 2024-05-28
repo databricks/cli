@@ -544,7 +544,7 @@ func TestAccFilerWorkspaceFuseRead(t *testing.T) {
 	_, err := wf.Read(ctx, "non-existent.py")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 
-	// Ensure we do not read pretender as a notebook
+	// Ensure we do not read a file as a notebook
 	_, err = wf.Read(ctx, "pretender.py")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 
@@ -601,7 +601,7 @@ func TestAccFilerWorkspaceFuseDelete(t *testing.T) {
 	err = wf.Delete(ctx, "non-existent.py")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 
-	// Ensure we do not delete pretender as a notebook
+	// Ensure we do not delete a file as a notebook
 	err = wf.Delete(ctx, "pretender.py")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 
@@ -668,7 +668,7 @@ func TestAccFilerWorkspaceFuseStat(t *testing.T) {
 	_, err = wf.Stat(ctx, "non-existent.py")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 
-	// Ensure we do not stat pretender as a notebook
+	// Ensure we do not stat a file as a notebook
 	_, err = wf.Stat(ctx, "pretender.py")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 
