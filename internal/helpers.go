@@ -560,8 +560,7 @@ func setupWsfsFiler(t *testing.T) (filer.Filer, string) {
 }
 
 func setupWsfsFuseFiler(t *testing.T) (filer.Filer, string) {
-	// TODO: uncomment before merging
-	// t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	w := databricks.Must(databricks.NewWorkspaceClient())
 	tmpdir := TemporaryWorkspaceDir(t, w)

@@ -16,8 +16,6 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-// TODO: Better documentation here regarding the boundary conditions and what
-// exactly is this filer doing.
 type workspaceFuseClient struct {
 	workspaceFilesClient Filer
 }
@@ -68,7 +66,6 @@ type DuplicatePathError struct {
 }
 
 func (e DuplicatePathError) Error() string {
-	// TODO: better error message here.
 	return fmt.Sprintf("duplicate paths. Both %s at %s and %s at %s resolve to the same name %s", e.oi1.ObjectType, e.oi1.Path, e.oi2.ObjectType, e.oi2.Path, e.commonName)
 }
 
@@ -159,6 +156,7 @@ func (w *workspaceFuseClient) Write(ctx context.Context, name string, reader io.
 	return w.workspaceFilesClient.Write(ctx, name, reader, mode...)
 }
 
+// Try to read the file as a regular file. If the file is not found, try to read it as a notebook.
 func (w *workspaceFuseClient) Read(ctx context.Context, name string) (io.ReadCloser, error) {
 	r, err := w.workspaceFilesClient.Read(ctx, name)
 
@@ -174,8 +172,7 @@ func (w *workspaceFuseClient) Read(ctx context.Context, name string) (io.ReadClo
 	return r, err
 }
 
-// TODO: Handle file already exists error everywhere? Atleast provide error messages with better context?
-
+// Try to delete the file as a regular file. If the file is not found, try to delete it as a notebook.
 func (w *workspaceFuseClient) Delete(ctx context.Context, name string, mode ...DeleteMode) error {
 	err := w.workspaceFilesClient.Delete(ctx, name, mode...)
 
@@ -192,6 +189,7 @@ func (w *workspaceFuseClient) Delete(ctx context.Context, name string, mode ...D
 	return err
 }
 
+// Try to stat the file as a regular file. If the file is not found, try to stat it as a notebook.
 func (w *workspaceFuseClient) Stat(ctx context.Context, name string) (fs.FileInfo, error) {
 	info, err := w.workspaceFilesClient.Stat(ctx, name)
 
@@ -218,5 +216,3 @@ func (w *workspaceFuseClient) Stat(ctx context.Context, name string) (fs.FileInf
 func (w *workspaceFuseClient) Mkdir(ctx context.Context, name string) error {
 	return w.workspaceFilesClient.Mkdir(ctx, name)
 }
-
-// TODO: Iterate on the comments for this filer.
