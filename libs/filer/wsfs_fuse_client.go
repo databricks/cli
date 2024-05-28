@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"path"
+	"slices"
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go"
@@ -51,6 +53,11 @@ func extensionForLanguage(l workspace.Language) notebookExtension {
 		// Note: We cannot differentiate between python source notebooks and ipynb
 		// notebook based on the workspace files API. We'll thus assign all python
 		// notebooks the .py extension.
+		//
+		// One notable consequence is that a notebook called foo and a file
+		// called foo.ipynb can live side by side in the same directory in wsfs
+		// and will be supported by DABs. Export such a setup to a Git repo might
+		// fail though.
 		return ".py"
 	case workspace.LanguageR:
 		return ".r"
@@ -63,17 +70,16 @@ func extensionForLanguage(l workspace.Language) notebookExtension {
 	}
 }
 
-// TODO: Show a more informative error upstream, relaying that the project is
-// not supported for DABs in the workspace.
-type dupPathError struct {
+type DuplicatePathError struct {
 	oi1 workspace.ObjectInfo
 	oi2 workspace.ObjectInfo
 
-	commonPath string
+	commonName string
 }
 
-func (e dupPathError) Error() string {
-	return fmt.Sprintf("duplicate paths. Both %s at %s and %s at %s have the same path %s on the local FUSE mount.", e.oi1.ObjectType, e.oi1.Path, e.oi2.ObjectType, e.oi2.Path, e.commonPath)
+func (e DuplicatePathError) Error() string {
+	// TODO: better error message here.
+	return fmt.Sprintf("duplicate paths. Both %s at %s and %s at %s resolve to the same name %s", e.oi1.ObjectType, e.oi1.Path, e.oi2.ObjectType, e.oi2.Path, e.commonName)
 }
 
 // This is a wrapper over the workspace files client that is used to access files in
@@ -86,6 +92,13 @@ func (e dupPathError) Error() string {
 //
 // This makes the workspace file system resemble a traditional file system more closely,
 // allowing DABs to work from a DBR runtime.
+//
+// Usage Conditions:
+// The methods this filer implements assumes that there are no objects with duplicate
+// paths (with extension) in the file tree. That is both a file foo.py and a python notebook
+// foo do not exist in the same directory.
+// The ReadDir method will return an error if such a case is detected. Thus using
+// the ReadDir method before other methods makes them safe to use.
 func NewWorkspaceFuseClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
 	// TODO: Ensure this trim prefix works as expected. Edge cases around empty path strings maybe?
 	// TODO: Does this work if we do not trim the prefix? That might be preferable.
@@ -101,13 +114,18 @@ func NewWorkspaceFuseClient(w *databricks.WorkspaceClient, root string) (Filer, 
 
 // TODO: Notebooks do not have a mod time in the fuse mount. Would incremental sync work
 // for DABs? Does DABs even use incremental sync today?
-// TODO: Run the common filer tests on this client.
 
 func (w *workspaceFuseClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, error) {
 	entries, err := w.workspaceFilesClient.ReadDir(ctx, name)
 	if err != nil {
 		return nil, err
 	}
+
+	// Sort the entries by name to ensure that the order and any resultant
+	// errors are deterministic.
+	slices.SortFunc(entries, func(a, b fs.DirEntry) int {
+		return strings.Compare(a.Name(), b.Name())
+	})
 
 	seenPaths := make(map[string]workspace.ObjectInfo)
 	for i, entry := range entries {
@@ -119,34 +137,37 @@ func (w *workspaceFuseClient) ReadDir(ctx context.Context, name string) ([]fs.Di
 
 		// Skip if the object is not a notebook
 		if sysInfo.ObjectType != workspace.ObjectTypeNotebook {
+			if _, ok := seenPaths[entries[i].Name()]; ok {
+				return nil, DuplicatePathError{
+					oi1:        seenPaths[entries[i].Name()],
+					oi2:        sysInfo,
+					commonName: path.Join(name, entries[i].Name()),
+				}
+			}
+			seenPaths[entry.Name()] = sysInfo
 			continue
 		}
 
 		// Add extension to local file path if the file is a notebook
 		newEntry := entry.(wsfsDirEntry)
-		newPath := newEntry.wsfsFileInfo.oi.Path + string(extensionForLanguage(sysInfo.Language))
+		newEntry.wsfsFileInfo.oi.Path = newEntry.wsfsFileInfo.oi.Path + string(extensionForLanguage(sysInfo.Language))
+		entries[i] = newEntry
 
-		if _, ok := seenPaths[newPath]; ok {
-			return nil, dupPathError{
-				oi1:        seenPaths[newPath],
+		if _, ok := seenPaths[newEntry.Name()]; ok {
+			return nil, DuplicatePathError{
+				oi1:        seenPaths[newEntry.Name()],
 				oi2:        sysInfo,
-				commonPath: newPath,
+				commonName: path.Join(name, newEntry.Name()),
 			}
 		}
-		seenPaths[newPath] = sysInfo
+		seenPaths[newEntry.Name()] = sysInfo
 
-		// Mutate the entry to have the new path
-		newEntry.wsfsFileInfo.oi.Path = newPath
-		entries[i] = newEntry
 	}
 
 	return entries, nil
 }
 
 func (w *workspaceFuseClient) Write(ctx context.Context, name string, reader io.Reader, mode ...WriteMode) error {
-	// TODO: Would there be any problems correctness wise or in general with using
-	// the workspace files client to write the file? The only concern would be
-	// what happens when you write a notebook.
 	return w.workspaceFilesClient.Write(ctx, name, reader, mode...)
 }
 

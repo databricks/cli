@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
+	"path"
 	"regexp"
 	"slices"
 	"strings"
@@ -472,8 +474,6 @@ func TestAccFilerWorkspaceNotebookWithOverwriteFlag(t *testing.T) {
 	filerTest{t, f}.assertContents(ctx, "jupyterNb", "# Databricks notebook source\nprint(\"Jupyter Notebook Version 2\")")
 }
 
-// TODO: Add test with Git folders to validate the dup encountered error / not supported error
-
 func TestAccFilerWorkspaceFuseReadDir(t *testing.T) {
 	files := []struct {
 		name    string
@@ -619,10 +619,16 @@ func TestAccFilerWorkspaceFuseStat(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	// Stat on a file
+	// Stat on a notebook
 	info, err := wf.Stat(ctx, "foo.py")
 	require.NoError(t, err)
 	assert.Equal(t, "foo.py", info.Name())
+	assert.False(t, info.IsDir())
+
+	// Stat on a file
+	info, err = wf.Stat(ctx, "bar.py")
+	require.NoError(t, err)
+	assert.Equal(t, "bar.py", info.Name())
 	assert.False(t, info.IsDir())
 
 	// Stat on a directory
@@ -641,4 +647,63 @@ func TestAccFilerWorkspaceFuseStat(t *testing.T) {
 
 	_, err = wf.Stat(ctx, "pretender.ipynb")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
+}
+
+func TestAccFilerWorkspaceErrorsOnDupName(t *testing.T) {
+	tcases := []struct {
+		files []struct{ name, content string }
+		name  string
+	}{
+		{
+			name: "python",
+			files: []struct{ name, content string }{
+				{"foo.py", "print('foo')"},
+				{"foo.py", "# Databricks notebook source\nprint('foo')"},
+			},
+		},
+		{
+			name: "r",
+			files: []struct{ name, content string }{
+				{"foo.r", "print('foo')"},
+				{"foo.r", "# Databricks notebook source\nprint('foo')"},
+			},
+		},
+		{
+			name: "sql",
+			files: []struct{ name, content string }{
+				{"foo.sql", "SELECT 'foo'"},
+				{"foo.sql", "-- Databricks notebook source\nSELECT 'foo'"},
+			},
+		},
+		{
+			name: "scala",
+			files: []struct{ name, content string }{
+				{"foo.scala", "println('foo')"},
+				{"foo.scala", "// Databricks notebook source\nprintln('foo')"},
+			},
+		},
+		{
+			name: "jupyter",
+			files: []struct{ name, content string }{
+				{"foo.py", "print('foo')"},
+				{"foo.ipynb", jupyterNotebookContent1},
+			},
+		},
+	}
+
+	for _, tc := range tcases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			wf, tmpDir := setupWsfsFuseFiler(t)
+
+			for _, f := range tc.files {
+				err := wf.Write(ctx, f.name, strings.NewReader(f.content), filer.CreateParentDirectories)
+				require.NoError(t, err)
+			}
+
+			_, err := wf.ReadDir(ctx, ".")
+			assert.ErrorAs(t, err, &filer.DuplicatePathError{})
+			assert.ErrorContains(t, err, fmt.Sprintf("duplicate paths. Both NOTEBOOK at %s and FILE at %s resolve to the same name %s", path.Join(tmpDir, "foo"), path.Join(tmpDir, tc.files[0].name), tc.files[0].name))
+		})
+	}
 }
