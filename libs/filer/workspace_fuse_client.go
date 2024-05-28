@@ -22,8 +22,6 @@ type workspaceFuseClient struct {
 	workspaceFilesClient Filer
 }
 
-// TODO: rename this file
-
 func stripNotebookExtension(ctx context.Context, w Filer, name string) (stripName string, stat fs.FileInfo, ok bool) {
 	ext := path.Ext(name)
 
@@ -74,23 +72,21 @@ func (e DuplicatePathError) Error() string {
 	return fmt.Sprintf("duplicate paths. Both %s at %s and %s at %s resolve to the same name %s", e.oi1.ObjectType, e.oi1.Path, e.oi2.ObjectType, e.oi2.Path, e.commonName)
 }
 
-// This is a wrapper over the workspace files client that is used to access files in
-// the workspace file system. It fixes the notebook extension problem when directly using
-// the workspace files client (or the API directly).
+// TODO: What if the resolved name of a notebook clashed with a directory.
+
+// This is a filer for the workspace file system that allows you to pretend the
+// workspace file system is a traditional file system. It allows you to list, read, write,
+// delete, and stat notebooks (and files in general) in the workspace, using their paths
+// with the extension included.
 //
-// With this client, you can read, write, delete, and stat notebooks in the workspace,
-// using their file names with the extension included.
-// The listing of files will also include the extension for notebooks.
+// The ReadDir method returns a DuplicatePathError if this traditional file system view is
+// not possible. For example, a python notebook called foo and a python file called foo.py
+// would resolve to the same path foo.py in a tradition file system.
 //
-// This makes the workspace file system resemble a traditional file system more closely,
-// allowing DABs to work from a DBR runtime.
-//
-// Usage Conditions:
-// The methods this filer implements assumes that there are no objects with duplicate
-// paths (with extension) in the file tree. That is both a file foo.py and a python notebook
-// foo do not exist in the same directory.
-// The ReadDir method will return an error if such a case is detected. Thus using
-// the ReadDir method before other methods makes them safe to use.
+// Users of this filer should be careful when using the Write and Mkdir methods.
+// The underlying import API we use to upload notebooks and files returns opaque internal
+// errors for namespace clashes (e.g. a file and a notebook or a directory and a notebook).
+// Thus users of these methods should be careful to avoid such clashes.
 func NewWorkspaceFuseClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
 	wc, err := NewWorkspaceFilesClient(w, root)
 	if err != nil {
@@ -101,11 +97,6 @@ func NewWorkspaceFuseClient(w *databricks.WorkspaceClient, root string) (Filer, 
 		workspaceFilesClient: wc,
 	}, nil
 }
-
-// TODO: Write note on read methods that it's unsafe in that it might not error
-// on unsupported setups. Or maybe document functionality.
-
-// TODO: Note the loss of information when writing a ipynb notebook.
 
 func (w *workspaceFuseClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, error) {
 	entries, err := w.workspaceFilesClient.ReadDir(ctx, name)
@@ -162,6 +153,10 @@ func (w *workspaceFuseClient) ReadDir(ctx context.Context, name string) ([]fs.Di
 // Note: There is loss of information when writing a ipynb file. A notebook written
 // with .Write(name = "foo.ipynb") will be written as "foo" in the workspace and
 // will have to be read as .Read(name = "foo.py") instead of "foo.ipynb
+//
+// Note: The import API returns opaque internal errors for namespace clashes
+// (e.g. a file and a notebook or a directory and a notebook). Thus users of this
+// method should be careful to avoid such clashes.
 func (w *workspaceFuseClient) Write(ctx context.Context, name string, reader io.Reader, mode ...WriteMode) error {
 	return w.workspaceFilesClient.Write(ctx, name, reader, mode...)
 }
@@ -219,6 +214,9 @@ func (w *workspaceFuseClient) Stat(ctx context.Context, name string) (fs.FileInf
 	return info, err
 }
 
+// Note: The import API returns opaque internal errors for namespace clashes
+// (e.g. a file and a notebook or a directory and a notebook). Thus users of this
+// method should be careful to avoid such clashes.
 func (w *workspaceFuseClient) Mkdir(ctx context.Context, name string) error {
 	return w.workspaceFilesClient.Mkdir(ctx, name)
 }
