@@ -734,7 +734,7 @@ func TestAccFilerWorkspaceFuseErrorsOnDupName(t *testing.T) {
 
 			_, err := wf.ReadDir(ctx, ".")
 			assert.ErrorAs(t, err, &filer.DuplicatePathError{})
-			assert.ErrorContains(t, err, fmt.Sprintf("duplicate paths. Both NOTEBOOK at %s and FILE at %s resolve to the same name %s", path.Join(tmpDir, "foo"), path.Join(tmpDir, tc.files[0].name), tc.files[0].name))
+			assert.ErrorContains(t, err, fmt.Sprintf("cannot read files from the workspace file system by emulating FUSE. Duplicate paths encountered. Both NOTEBOOK at %s and FILE at %s resolve to the same name %s", path.Join(tmpDir, "foo"), path.Join(tmpDir, tc.files[0].name), tc.files[0].name))
 		})
 	}
 }

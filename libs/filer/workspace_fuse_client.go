@@ -66,7 +66,7 @@ type DuplicatePathError struct {
 }
 
 func (e DuplicatePathError) Error() string {
-	return fmt.Sprintf("duplicate paths. Both %s at %s and %s at %s resolve to the same name %s", e.oi1.ObjectType, e.oi1.Path, e.oi2.ObjectType, e.oi2.Path, e.commonName)
+	return fmt.Sprintf("cannot read files from the workspace file system by emulating FUSE. Duplicate paths encountered. Both %s at %s and %s at %s resolve to the same name %s", e.oi1.ObjectType, e.oi1.Path, e.oi2.ObjectType, e.oi2.Path, e.commonName)
 }
 
 // This is a filer for the workspace file system that allows you to pretend the
