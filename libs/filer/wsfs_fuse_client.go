@@ -10,8 +10,10 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"golang.org/x/exp/maps"
 )
 
 // TODO: Better documentation here regarding the boundary conditions and what
@@ -20,54 +22,45 @@ type workspaceFuseClient struct {
 	workspaceFilesClient Filer
 }
 
-type notebookExtension string
+// TODO: rename this file
 
-const (
-	notebookExtensionPython notebookExtension = ".py"
-	notebookExtensionR      notebookExtension = ".r"
-	notebookExtensionScala  notebookExtension = ".scala"
-	notebookExtensionSql    notebookExtension = ".sql"
-	notebookExtensionIpynb  notebookExtension = ".ipynb"
-)
+func stripNotebookExtension(ctx context.Context, w Filer, name string) (stripName string, stat fs.FileInfo, ok bool) {
+	ext := path.Ext(name)
 
-func stripNotebookExtension(name string) (string, bool) {
-	switch {
-	case strings.HasSuffix(name, string(notebookExtensionPython)):
-		return strings.TrimSuffix(name, string(notebookExtensionPython)), true
-	case strings.HasSuffix(name, string(notebookExtensionR)):
-		return strings.TrimSuffix(name, string(notebookExtensionR)), true
-	case strings.HasSuffix(name, string(notebookExtensionScala)):
-		return strings.TrimSuffix(name, string(notebookExtensionScala)), true
-	case strings.HasSuffix(name, string(notebookExtensionSql)):
-		return strings.TrimSuffix(name, string(notebookExtensionSql)), true
-	case strings.HasSuffix(name, string(notebookExtensionIpynb)):
-		return strings.TrimSuffix(name, string(notebookExtensionIpynb)), true
-	default:
-		return name, false
+	extensionsToLanguages := map[string]workspace.Language{
+		".py":    workspace.LanguagePython,
+		".r":     workspace.LanguageR,
+		".scala": workspace.LanguageScala,
+		".sql":   workspace.LanguageSql,
+		".ipynb": workspace.LanguagePython,
 	}
-}
 
-func extensionForLanguage(l workspace.Language) notebookExtension {
-	switch l {
-	case workspace.LanguagePython:
-		// Note: We cannot differentiate between python source notebooks and ipynb
-		// notebook based on the workspace files API. We'll thus assign all python
-		// notebooks the .py extension.
-		//
-		// One notable consequence is that a notebook called foo and a file
-		// called foo.ipynb can live side by side in the same directory in wsfs
-		// and will be supported by DABs. Export such a setup to a Git repo might
-		// fail though.
-		return ".py"
-	case workspace.LanguageR:
-		return ".r"
-	case workspace.LanguageScala:
-		return ".scala"
-	case workspace.LanguageSql:
-		return ".sql"
-	default:
-		return ""
+	stripName = strings.TrimSuffix(name, ext)
+
+	// File name does not have an extension associated with Databricks notebooks, return early.
+	if !slices.Contains(maps.Keys(extensionsToLanguages), ext) {
+		return "", nil, false
 	}
+
+	// If the file could be a notebook, check it's a notebook and has the correct language.
+	stat, err := w.Stat(ctx, stripName)
+	if err != nil {
+		return "", nil, false
+	}
+	info := stat.Sys().(workspace.ObjectInfo)
+
+	// Not a notebook. Return early.
+	if info.ObjectType != workspace.ObjectTypeNotebook {
+		return "", nil, false
+	}
+
+	// Not the correct language. Return early.
+	// TODO: Add a test for this.
+	if info.Language != extensionsToLanguages[ext] {
+		return "", nil, false
+	}
+
+	return stripName, stat, true
 }
 
 type DuplicatePathError struct {
@@ -100,8 +93,6 @@ func (e DuplicatePathError) Error() string {
 // The ReadDir method will return an error if such a case is detected. Thus using
 // the ReadDir method before other methods makes them safe to use.
 func NewWorkspaceFuseClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
-	// TODO: Ensure this trim prefix works as expected. Edge cases around empty path strings maybe?
-	// TODO: Does this work if we do not trim the prefix? That might be preferable.
 	wc, err := NewWorkspaceFilesClient(w, root)
 	if err != nil {
 		return nil, err
@@ -112,8 +103,10 @@ func NewWorkspaceFuseClient(w *databricks.WorkspaceClient, root string) (Filer, 
 	}, nil
 }
 
-// TODO: Notebooks do not have a mod time in the fuse mount. Would incremental sync work
-// for DABs? Does DABs even use incremental sync today?
+// TODO: Write note on read methods that it's unsafe in that it might not error
+// on unsupported setups. Or maybe document functionality.
+
+// TODO: Note the loss of information when writing a ipynb notebook.
 
 func (w *workspaceFuseClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, error) {
 	entries, err := w.workspaceFilesClient.ReadDir(ctx, name)
@@ -150,7 +143,7 @@ func (w *workspaceFuseClient) ReadDir(ctx context.Context, name string) ([]fs.Di
 
 		// Add extension to local file path if the file is a notebook
 		newEntry := entry.(wsfsDirEntry)
-		newEntry.wsfsFileInfo.oi.Path = newEntry.wsfsFileInfo.oi.Path + string(extensionForLanguage(sysInfo.Language))
+		newEntry.wsfsFileInfo.oi.Path = newEntry.wsfsFileInfo.oi.Path + notebook.GetExtensionByLanguage(&sysInfo)
 		entries[i] = newEntry
 
 		if _, ok := seenPaths[newEntry.Name()]; ok {
@@ -167,6 +160,9 @@ func (w *workspaceFuseClient) ReadDir(ctx context.Context, name string) ([]fs.Di
 	return entries, nil
 }
 
+// Note: There is loss of information when writing a ipynb file. A notebook written
+// with .Write(name = "foo.ipynb") will be written as "foo" in the workspace and
+// will have to be read as .Read(name = "foo.py") instead of "foo.ipynb
 func (w *workspaceFuseClient) Write(ctx context.Context, name string, reader io.Reader, mode ...WriteMode) error {
 	return w.workspaceFilesClient.Write(ctx, name, reader, mode...)
 }
@@ -174,25 +170,13 @@ func (w *workspaceFuseClient) Write(ctx context.Context, name string, reader io.
 func (w *workspaceFuseClient) Read(ctx context.Context, name string) (io.ReadCloser, error) {
 	r, err := w.workspaceFilesClient.Read(ctx, name)
 
-	// If the file is not found, it might be a notebook. Try to read the notebook
-	// in that case.
+	// If the file is not found, it might be a notebook.
 	if errors.As(err, &FileDoesNotExistError{}) {
-		stripName, ok := stripNotebookExtension(name)
+		stripName, _, ok := stripNotebookExtension(ctx, w.workspaceFilesClient, name)
 		if !ok {
+			// Not a valid notebook. Return the original error.
 			return nil, err
 		}
-
-		stat, err2 := w.workspaceFilesClient.Stat(ctx, stripName)
-		// If we run into an error trying to determine if the file is a notebook,
-		// return the original error.
-		if err2 != nil {
-			return nil, err
-		}
-		// If the file is not a notebook, return the original error.
-		if stat.Sys().(workspace.ObjectInfo).ObjectType != workspace.ObjectTypeNotebook {
-			return nil, err
-		}
-
 		return w.workspaceFilesClient.Read(ctx, stripName)
 	}
 	return r, err
@@ -205,24 +189,11 @@ func (w *workspaceFuseClient) Delete(ctx context.Context, name string, mode ...D
 
 	// If the file is not found, it might be a notebook.
 	if errors.As(err, &FileDoesNotExistError{}) {
-		// In that case, we should try to delete the notebook from the workspace.
-		stripName, ok := stripNotebookExtension(name)
+		stripName, _, ok := stripNotebookExtension(ctx, w.workspaceFilesClient, name)
 		if !ok {
+			// Not a valid notebook. Return the original error.
 			return err
 		}
-
-		stat, err2 := w.workspaceFilesClient.Stat(ctx, stripName)
-		// If we run into an error trying to determine if the file is a notebook,
-		// return the original error.
-		if err2 != nil {
-			return err
-		}
-		// If the file is not a notebook, return the original error.
-		if stat.Sys().(workspace.ObjectInfo).ObjectType != workspace.ObjectTypeNotebook {
-			return err
-		}
-
-		// Since the file is a notebook, we should delete the notebook from the workspace.
 		return w.workspaceFilesClient.Delete(ctx, stripName, mode...)
 	}
 
@@ -234,36 +205,23 @@ func (w *workspaceFuseClient) Stat(ctx context.Context, name string) (fs.FileInf
 
 	// If the file is not found in the local file system, it might be a notebook.
 	if errors.As(err, &FileDoesNotExistError{}) {
-		stripName, ok := stripNotebookExtension(name)
+		_, stat, ok := stripNotebookExtension(ctx, w.workspaceFilesClient, name)
 		if !ok {
-			return nil, err
-		}
-
-		// Check if the file with it's extension stripped is a notebook. If it is not a notebook,
-		// return the original error.
-		stat, err2 := w.workspaceFilesClient.Stat(ctx, stripName)
-		// If we run into an error trying to determine if the file is a notebook,
-		// return the original error.
-		if err2 != nil {
-			return nil, err
-		}
-		// If the file is not a notebook, return the original error.
-		if stat.Sys().(workspace.ObjectInfo).ObjectType != workspace.ObjectTypeNotebook {
 			return nil, err
 		}
 
 		// Since the file is a notebook, we should return the stat of the notebook,
 		// with the path modified to include the extension.
 		newStat := stat.(wsfsFileInfo)
-		newStat.oi.Path = newStat.oi.Path + string(extensionForLanguage(stat.Sys().(workspace.ObjectInfo).Language))
+		newStat.oi.Path = newStat.oi.Path + notebook.GetExtensionByLanguage(&newStat.oi)
 		return newStat, nil
 	}
 
 	return info, err
 }
 
-// TODO: Is incremental sync a problem? Does it need to be fixed for DABs in the
-// workspace?
 func (w *workspaceFuseClient) Mkdir(ctx context.Context, name string) error {
 	return w.workspaceFilesClient.Mkdir(ctx, name)
 }
+
+// TODO: Iterate on the comments for this filer.
