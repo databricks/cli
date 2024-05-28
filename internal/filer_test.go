@@ -680,7 +680,7 @@ func TestAccFilerWorkspaceFuseStat(t *testing.T) {
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
-func TestAccFilerWorkspaceErrorsOnDupName(t *testing.T) {
+func TestAccFilerWorkspaceFuseErrorsOnDupName(t *testing.T) {
 	tcases := []struct {
 		files []struct{ name, content string }
 		name  string
@@ -737,4 +737,17 @@ func TestAccFilerWorkspaceErrorsOnDupName(t *testing.T) {
 			assert.ErrorContains(t, err, fmt.Sprintf("duplicate paths. Both NOTEBOOK at %s and FILE at %s resolve to the same name %s", path.Join(tmpDir, "foo"), path.Join(tmpDir, tc.files[0].name), tc.files[0].name))
 		})
 	}
+}
+
+func TestAccWorkspaceFuseDirectoriesAreNotNotebooks(t *testing.T) {
+	ctx := context.Background()
+	wf, _ := setupWsfsFuseFiler(t)
+
+	// Create a directory with an extension
+	err := wf.Mkdir(ctx, "foo")
+	require.NoError(t, err)
+
+	// Reading foo.py should fail. foo is a directory, not a notebook.
+	_, err = wf.Read(ctx, "foo.py")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 }

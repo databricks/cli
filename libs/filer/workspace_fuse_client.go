@@ -72,8 +72,6 @@ func (e DuplicatePathError) Error() string {
 	return fmt.Sprintf("duplicate paths. Both %s at %s and %s at %s resolve to the same name %s", e.oi1.ObjectType, e.oi1.Path, e.oi2.ObjectType, e.oi2.Path, e.commonName)
 }
 
-// TODO: What if the resolved name of a notebook clashed with a directory.
-
 // This is a filer for the workspace file system that allows you to pretend the
 // workspace file system is a traditional file system. It allows you to list, read, write,
 // delete, and stat notebooks (and files in general) in the workspace, using their paths
