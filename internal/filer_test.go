@@ -522,6 +522,7 @@ func TestAccFilerWorkspaceFuseRead(t *testing.T) {
 		{"bar.py", "print('foo')"},
 		{"pretender", "not a notebook"},
 		{"dir/file.txt", "file content"},
+		{"scala-notebook.scala", "// Databricks notebook source\nprintln('first upload')"},
 	}
 
 	ctx := context.Background()
@@ -536,6 +537,8 @@ func TestAccFilerWorkspaceFuseRead(t *testing.T) {
 	filerTest{t, wf}.assertContents(ctx, "foo.py", "# Databricks notebook source\nprint('first upload'))")
 	filerTest{t, wf}.assertContents(ctx, "bar.py", "print('foo')")
 	filerTest{t, wf}.assertContents(ctx, "dir/file.txt", "file content")
+	filerTest{t, wf}.assertContents(ctx, "scala-notebook.scala", "// Databricks notebook source\nprintln('first upload')")
+	filerTest{t, wf}.assertContents(ctx, "pretender", "not a notebook")
 
 	// Read non-existent file
 	_, err := wf.Read(ctx, "non-existent.py")
@@ -551,6 +554,10 @@ func TestAccFilerWorkspaceFuseRead(t *testing.T) {
 	// Read directory
 	_, err = wf.Read(ctx, "dir")
 	assert.ErrorIs(t, err, fs.ErrInvalid)
+
+	// Ensure we do not read a scala notebook as a python notebook
+	_, err = wf.Read(ctx, "scala-notebook.py")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
 func TestAccFilerWorkspaceFuseDelete(t *testing.T) {
@@ -562,6 +569,7 @@ func TestAccFilerWorkspaceFuseDelete(t *testing.T) {
 		{"bar.py", "print('foo')"},
 		{"pretender", "not a notebook"},
 		{"dir/file.txt", "file content"},
+		{"scala-notebook.scala", "// Databricks notebook source\nprintln('first upload')"},
 	}
 
 	ctx := context.Background()
@@ -571,6 +579,13 @@ func TestAccFilerWorkspaceFuseDelete(t *testing.T) {
 		err := wf.Write(ctx, f.name, strings.NewReader(f.content), filer.CreateParentDirectories)
 		require.NoError(t, err)
 	}
+
+	// Read contents of test fixtures as a sanity check
+	filerTest{t, wf}.assertContents(ctx, "foo.py", "# Databricks notebook source\nprint('first upload'))")
+	filerTest{t, wf}.assertContents(ctx, "bar.py", "print('foo')")
+	filerTest{t, wf}.assertContents(ctx, "dir/file.txt", "file content")
+	filerTest{t, wf}.assertContents(ctx, "scala-notebook.scala", "// Databricks notebook source\nprintln('first upload')")
+	filerTest{t, wf}.assertContents(ctx, "pretender", "not a notebook")
 
 	// Delete notebook
 	err := wf.Delete(ctx, "foo.py")
@@ -588,6 +603,10 @@ func TestAccFilerWorkspaceFuseDelete(t *testing.T) {
 
 	// Ensure we do not delete pretender as a notebook
 	err = wf.Delete(ctx, "pretender.py")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+
+	// Ensure we do not delete a scala notebook as a python notebook
+	_, err = wf.Read(ctx, "scala-notebook.py")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 
 	// Delete directory
@@ -609,6 +628,7 @@ func TestAccFilerWorkspaceFuseStat(t *testing.T) {
 		{"bar.py", "print('foo')"},
 		{"dir/file.txt", "file content"},
 		{"pretender", "not a notebook"},
+		{"scala-notebook.scala", "// Databricks notebook source\nprintln('first upload')"},
 	}
 
 	ctx := context.Background()
@@ -618,6 +638,13 @@ func TestAccFilerWorkspaceFuseStat(t *testing.T) {
 		err := wf.Write(ctx, f.name, strings.NewReader(f.content), filer.CreateParentDirectories)
 		require.NoError(t, err)
 	}
+
+	// Read contents of test fixtures as a sanity check
+	filerTest{t, wf}.assertContents(ctx, "foo.py", "# Databricks notebook source\nprint('first upload'))")
+	filerTest{t, wf}.assertContents(ctx, "bar.py", "print('foo')")
+	filerTest{t, wf}.assertContents(ctx, "dir/file.txt", "file content")
+	filerTest{t, wf}.assertContents(ctx, "scala-notebook.scala", "// Databricks notebook source\nprintln('first upload')")
+	filerTest{t, wf}.assertContents(ctx, "pretender", "not a notebook")
 
 	// Stat on a notebook
 	info, err := wf.Stat(ctx, "foo.py")
@@ -643,6 +670,10 @@ func TestAccFilerWorkspaceFuseStat(t *testing.T) {
 
 	// Ensure we do not stat pretender as a notebook
 	_, err = wf.Stat(ctx, "pretender.py")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+
+	// Ensure we do not stat a scala notebook as a python notebook
+	_, err = wf.Stat(ctx, "scala-notebook.py")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 
 	_, err = wf.Stat(ctx, "pretender.ipynb")

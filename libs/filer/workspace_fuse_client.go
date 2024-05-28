@@ -55,7 +55,6 @@ func stripNotebookExtension(ctx context.Context, w Filer, name string) (stripNam
 	}
 
 	// Not the correct language. Return early.
-	// TODO: Add a test for this.
 	if info.Language != extensionsToLanguages[ext] {
 		return "", nil, false
 	}
