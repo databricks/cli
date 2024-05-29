@@ -77,7 +77,7 @@ func (w *workspaceFilesExtensionsClient) removeNotebookExtension(ctx context.Con
 	err := w.apiClient.Do(ctx, http.MethodGet, "/api/2.0/workspace/get-status", nil,
 		map[string]string{"path": path.Join(w.root, nameWithoutExtension), "return_export_info": "true"}, stat)
 	if err != nil {
-		log.Debugf(ctx, "attempting to determine if %s could be a notebook. Failed to fetch the status of object at %s: %w", name, path.Join(w.root, nameWithoutExtension), err)
+		log.Debugf(ctx, "attempting to determine if %s could be a notebook. Failed to fetch the status of object at %s: %s", name, path.Join(w.root, nameWithoutExtension), err)
 		return nil, false
 	}
 
