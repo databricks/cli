@@ -101,7 +101,7 @@ func TestAccFilerRecursiveDelete(t *testing.T) {
 		{"workspace files", setupWsfsFiler},
 		{"dbfs", setupDbfsFiler},
 		{"files", setupUcVolumesFiler},
-		{"workspace fuse", setupWsfsFuseFiler},
+		{"workspace files extensions", setupWsfsExtensionsFiler},
 	} {
 		tc := testCase
 
@@ -212,7 +212,7 @@ func TestAccFilerReadWrite(t *testing.T) {
 		{"workspace files", setupWsfsFiler},
 		{"dbfs", setupDbfsFiler},
 		{"files", setupUcVolumesFiler},
-		{"workspace fuse", setupWsfsFuseFiler},
+		{"workspace files extensions", setupWsfsExtensionsFiler},
 	} {
 		tc := testCase
 
@@ -321,7 +321,7 @@ func TestAccFilerReadDir(t *testing.T) {
 		{"workspace files", setupWsfsFiler},
 		{"dbfs", setupDbfsFiler},
 		{"files", setupUcVolumesFiler},
-		{"workspace fuse", setupWsfsFuseFiler},
+		{"workspace files extensions", setupWsfsExtensionsFiler},
 	} {
 		tc := testCase
 
@@ -384,6 +384,8 @@ var jupyterNotebookContent2 = `
 `
 
 func TestAccFilerWorkspaceNotebookConflict(t *testing.T) {
+	t.Parallel()
+
 	f, _ := setupWsfsFiler(t)
 	ctx := context.Background()
 	var err error
@@ -430,6 +432,8 @@ func TestAccFilerWorkspaceNotebookConflict(t *testing.T) {
 }
 
 func TestAccFilerWorkspaceNotebookWithOverwriteFlag(t *testing.T) {
+	t.Parallel()
+
 	f, _ := setupWsfsFiler(t)
 	ctx := context.Background()
 	var err error
@@ -473,7 +477,9 @@ func TestAccFilerWorkspaceNotebookWithOverwriteFlag(t *testing.T) {
 	filerTest{t, f}.assertContents(ctx, "jupyterNb", "# Databricks notebook source\nprint(\"Jupyter Notebook Version 2\")")
 }
 
-func TestAccFilerWorkspaceFuseReadDir(t *testing.T) {
+func TestAccFilerWorkspaceFilesExtensionsReadDir(t *testing.T) {
+	t.Parallel()
+
 	files := []struct {
 		name    string
 		content string
@@ -492,7 +498,7 @@ func TestAccFilerWorkspaceFuseReadDir(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	wf, _ := setupWsfsFuseFiler(t)
+	wf, _ := setupWsfsExtensionsFiler(t)
 
 	for _, f := range files {
 		err := wf.Write(ctx, f.name, strings.NewReader(f.content), filer.CreateParentDirectories)
@@ -513,8 +519,8 @@ func TestAccFilerWorkspaceFuseReadDir(t *testing.T) {
 		"foo.r",
 		"foo.scala",
 		"foo.sql",
-		"jupyterNb.py",
-		"jupyterNb2.py",
+		"jupyterNb.ipynb",
+		"jupyterNb2.ipynb",
 		"pyNb.py",
 		"rNb.r",
 		"scalaNb.scala",
@@ -522,32 +528,43 @@ func TestAccFilerWorkspaceFuseReadDir(t *testing.T) {
 	}, names)
 }
 
-func TestAccFilerWorkspaceFuseRead(t *testing.T) {
+func setupFilerWithExtensionsTest(t *testing.T) filer.Filer {
 	files := []struct {
 		name    string
 		content string
 	}{
 		{"foo.py", "# Databricks notebook source\nprint('first upload'))"},
 		{"bar.py", "print('foo')"},
+		{"jupyter.ipynb", jupyterNotebookContent1},
 		{"pretender", "not a notebook"},
 		{"dir/file.txt", "file content"},
 		{"scala-notebook.scala", "// Databricks notebook source\nprintln('first upload')"},
 	}
 
 	ctx := context.Background()
-	wf, _ := setupWsfsFuseFiler(t)
+	wf, _ := setupWsfsExtensionsFiler(t)
 
 	for _, f := range files {
 		err := wf.Write(ctx, f.name, strings.NewReader(f.content), filer.CreateParentDirectories)
 		require.NoError(t, err)
 	}
 
-	// Read contents
+	// Read contents of test fixtures as a sanity check
 	filerTest{t, wf}.assertContents(ctx, "foo.py", "# Databricks notebook source\nprint('first upload'))")
 	filerTest{t, wf}.assertContents(ctx, "bar.py", "print('foo')")
+	filerTest{t, wf}.assertContents(ctx, "jupyter.ipynb", "# Databricks notebook source\nprint(\"Jupyter Notebook Version 1\")")
 	filerTest{t, wf}.assertContents(ctx, "dir/file.txt", "file content")
 	filerTest{t, wf}.assertContents(ctx, "scala-notebook.scala", "// Databricks notebook source\nprintln('first upload')")
 	filerTest{t, wf}.assertContents(ctx, "pretender", "not a notebook")
+
+	return wf
+}
+
+func TestAccFilerWorkspaceFilesExtensionsRead(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	wf := setupFilerWithExtensionsTest(t)
 
 	// Read non-existent file
 	_, err := wf.Read(ctx, "non-existent.py")
@@ -569,32 +586,11 @@ func TestAccFilerWorkspaceFuseRead(t *testing.T) {
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
-func TestAccFilerWorkspaceFuseDelete(t *testing.T) {
-	files := []struct {
-		name    string
-		content string
-	}{
-		{"foo.py", "# Databricks notebook source\nprint('first upload'))"},
-		{"bar.py", "print('foo')"},
-		{"pretender", "not a notebook"},
-		{"dir/file.txt", "file content"},
-		{"scala-notebook.scala", "// Databricks notebook source\nprintln('first upload')"},
-	}
+func TestAccFilerWorkspaceFilesExtensionsDelete(t *testing.T) {
+	t.Parallel()
 
 	ctx := context.Background()
-	wf, _ := setupWsfsFuseFiler(t)
-
-	for _, f := range files {
-		err := wf.Write(ctx, f.name, strings.NewReader(f.content), filer.CreateParentDirectories)
-		require.NoError(t, err)
-	}
-
-	// Read contents of test fixtures as a sanity check
-	filerTest{t, wf}.assertContents(ctx, "foo.py", "# Databricks notebook source\nprint('first upload'))")
-	filerTest{t, wf}.assertContents(ctx, "bar.py", "print('foo')")
-	filerTest{t, wf}.assertContents(ctx, "dir/file.txt", "file content")
-	filerTest{t, wf}.assertContents(ctx, "scala-notebook.scala", "// Databricks notebook source\nprintln('first upload')")
-	filerTest{t, wf}.assertContents(ctx, "pretender", "not a notebook")
+	wf := setupFilerWithExtensionsTest(t)
 
 	// Delete notebook
 	err := wf.Delete(ctx, "foo.py")
@@ -605,6 +601,11 @@ func TestAccFilerWorkspaceFuseDelete(t *testing.T) {
 	err = wf.Delete(ctx, "bar.py")
 	require.NoError(t, err)
 	filerTest{t, wf}.assertNotExists(ctx, "bar.py")
+
+	// Delete jupyter notebook
+	err = wf.Delete(ctx, "jupyter.ipynb")
+	require.NoError(t, err)
+	filerTest{t, wf}.assertNotExists(ctx, "jupyter.ipynb")
 
 	// Delete non-existent file
 	err = wf.Delete(ctx, "non-existent.py")
@@ -628,32 +629,11 @@ func TestAccFilerWorkspaceFuseDelete(t *testing.T) {
 	filerTest{t, wf}.assertNotExists(ctx, "dir")
 }
 
-func TestAccFilerWorkspaceFuseStat(t *testing.T) {
-	files := []struct {
-		name    string
-		content string
-	}{
-		{"foo.py", "# Databricks notebook source\nprint('first upload'))"},
-		{"bar.py", "print('foo')"},
-		{"dir/file.txt", "file content"},
-		{"pretender", "not a notebook"},
-		{"scala-notebook.scala", "// Databricks notebook source\nprintln('first upload')"},
-	}
+func TestAccFilerWorkspaceFilesExtensionsStat(t *testing.T) {
+	t.Parallel()
 
 	ctx := context.Background()
-	wf, _ := setupWsfsFuseFiler(t)
-
-	for _, f := range files {
-		err := wf.Write(ctx, f.name, strings.NewReader(f.content), filer.CreateParentDirectories)
-		require.NoError(t, err)
-	}
-
-	// Read contents of test fixtures as a sanity check
-	filerTest{t, wf}.assertContents(ctx, "foo.py", "# Databricks notebook source\nprint('first upload'))")
-	filerTest{t, wf}.assertContents(ctx, "bar.py", "print('foo')")
-	filerTest{t, wf}.assertContents(ctx, "dir/file.txt", "file content")
-	filerTest{t, wf}.assertContents(ctx, "scala-notebook.scala", "// Databricks notebook source\nprintln('first upload')")
-	filerTest{t, wf}.assertContents(ctx, "pretender", "not a notebook")
+	wf := setupFilerWithExtensionsTest(t)
 
 	// Stat on a notebook
 	info, err := wf.Stat(ctx, "foo.py")
@@ -665,6 +645,12 @@ func TestAccFilerWorkspaceFuseStat(t *testing.T) {
 	info, err = wf.Stat(ctx, "bar.py")
 	require.NoError(t, err)
 	assert.Equal(t, "bar.py", info.Name())
+	assert.False(t, info.IsDir())
+
+	// Stat on a jupyter notebook
+	info, err = wf.Stat(ctx, "jupyter.ipynb")
+	require.NoError(t, err)
+	assert.Equal(t, "jupyter.ipynb", info.Name())
 	assert.False(t, info.IsDir())
 
 	// Stat on a directory
@@ -689,7 +675,9 @@ func TestAccFilerWorkspaceFuseStat(t *testing.T) {
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
-func TestAccFilerWorkspaceFuseErrorsOnDupName(t *testing.T) {
+func TestAccFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
+	t.Parallel()
+
 	tcases := []struct {
 		files []struct{ name, content string }
 		name  string
@@ -722,19 +710,17 @@ func TestAccFilerWorkspaceFuseErrorsOnDupName(t *testing.T) {
 				{"foo.scala", "// Databricks notebook source\nprintln('foo')"},
 			},
 		},
-		{
-			name: "jupyter",
-			files: []struct{ name, content string }{
-				{"foo.py", "print('foo')"},
-				{"foo.ipynb", jupyterNotebookContent1},
-			},
-		},
+		// We don't need to test this for ipynb notebooks. The import API
+		// fails when you try to import a file with the .ipynb extension but the
+		// file content is not of a valid jupyter notebook.
 	}
 
 	for _, tc := range tcases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			ctx := context.Background()
-			wf, tmpDir := setupWsfsFuseFiler(t)
+			wf, tmpDir := setupWsfsExtensionsFiler(t)
 
 			for _, f := range tc.files {
 				err := wf.Write(ctx, f.name, strings.NewReader(f.content), filer.CreateParentDirectories)
@@ -743,14 +729,17 @@ func TestAccFilerWorkspaceFuseErrorsOnDupName(t *testing.T) {
 
 			_, err := wf.ReadDir(ctx, ".")
 			assert.ErrorAs(t, err, &filer.DuplicatePathError{})
-			assert.ErrorContains(t, err, fmt.Sprintf("cannot read files from the workspace file system by emulating FUSE. Duplicate paths encountered. Both NOTEBOOK at %s and FILE at %s resolve to the same name %s", path.Join(tmpDir, "foo"), path.Join(tmpDir, tc.files[0].name), tc.files[0].name))
+			assert.ErrorContains(t, err, fmt.Sprintf("failed to read files from the workspace file system. Duplicate paths encountered. Both NOTEBOOK at %s and FILE at %s resolve to the same name %s. Changing the name of one of these objects will resolve this issue", path.Join(tmpDir, "foo"), path.Join(tmpDir, tc.files[0].name), tc.files[0].name))
 		})
 	}
+
 }
 
-func TestAccWorkspaceFuseDirectoriesAreNotNotebooks(t *testing.T) {
+func TestAccWorkspaceFilesExtensionsDirectoriesAreNotNotebooks(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.Background()
-	wf, _ := setupWsfsFuseFiler(t)
+	wf, _ := setupWsfsExtensionsFiler(t)
 
 	// Create a directory with an extension
 	err := wf.Mkdir(ctx, "foo")
@@ -758,5 +747,36 @@ func TestAccWorkspaceFuseDirectoriesAreNotNotebooks(t *testing.T) {
 
 	// Reading foo.py should fail. foo is a directory, not a notebook.
 	_, err = wf.Read(ctx, "foo.py")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+}
+
+func TestAccWorkspaceFilesExtensions_ExportFormatIsPreserved(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	wf, _ := setupWsfsExtensionsFiler(t)
+
+	// Case 1: Source Notebook
+	err := wf.Write(ctx, "foo.py", strings.NewReader("# Databricks notebook source\nprint('foo')"))
+	require.NoError(t, err)
+	// The source notebook should exist but not the jupyter notebook
+	filerTest{t, wf}.assertContents(ctx, "foo.py", "# Databricks notebook source\nprint('foo')")
+	_, err = wf.Stat(ctx, "foo.ipynb")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+	_, err = wf.Read(ctx, "foo.ipynb")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+	err = wf.Delete(ctx, "foo.ipynb")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+
+	// Case 2: Jupyter Notebook
+	err = wf.Write(ctx, "bar.ipynb", strings.NewReader(jupyterNotebookContent1))
+	require.NoError(t, err)
+	// The jupyter notebook should exist but not the source notebook
+	filerTest{t, wf}.assertContents(ctx, "bar.ipynb", "# Databricks notebook source\nprint(\"Jupyter Notebook Version 1\")")
+	_, err = wf.Stat(ctx, "bar.py")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+	_, err = wf.Read(ctx, "bar.py")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+	err = wf.Delete(ctx, "bar.py")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
