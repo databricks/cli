@@ -478,17 +478,17 @@ func TestAccFilerWorkspaceFuseReadDir(t *testing.T) {
 		name    string
 		content string
 	}{
-		{"pyNb.py", "# Databricks notebook source\nprint('first upload'))"},
-		{"rNb.r", "# Databricks notebook source\nprint('first upload'))"},
-		{"sqlNb.sql", "-- Databricks notebook source\n SELECT \"first upload\""},
-		{"scalaNb.scala", "// Databricks notebook source\n println(\"first upload\"))"},
-		{"jupyterNb.ipynb", jupyterNotebookContent1},
-		{"jupyterNb2.ipynb", jupyterNotebookContent2},
 		{"dir1/dir2/dir3/file.txt", "file content"},
 		{"foo.py", "print('foo')"},
 		{"foo.r", "print('foo')"},
-		{"foo.sql", "SELECT 'foo'"},
 		{"foo.scala", "println('foo')"},
+		{"foo.sql", "SELECT 'foo'"},
+		{"jupyterNb.ipynb", jupyterNotebookContent1},
+		{"jupyterNb2.ipynb", jupyterNotebookContent2},
+		{"pyNb.py", "# Databricks notebook source\nprint('first upload'))"},
+		{"rNb.r", "# Databricks notebook source\nprint('first upload'))"},
+		{"scalaNb.scala", "// Databricks notebook source\n println(\"first upload\"))"},
+		{"sqlNb.sql", "-- Databricks notebook source\n SELECT \"first upload\""},
 	}
 
 	ctx := context.Background()
