@@ -9,7 +9,6 @@ import (
 	"io/fs"
 	"path"
 	"regexp"
-	"slices"
 	"strings"
 	"testing"
 
@@ -508,7 +507,6 @@ func TestAccFilerWorkspaceFuseReadDir(t *testing.T) {
 	for _, e := range entries {
 		names = append(names, e.Name())
 	}
-	slices.Sort(names)
 	assert.Equal(t, []string{"dir1", "foo.py", "foo.r", "foo.scala", "foo.sql",
 		"jupyterNb.py", "jupyterNb2.py", "pyNb.py", "rNb.r", "scalaNb.scala", "sqlNb.sql"}, names)
 }

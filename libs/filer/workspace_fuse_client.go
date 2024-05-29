@@ -99,12 +99,6 @@ func (w *workspaceFuseClient) ReadDir(ctx context.Context, name string) ([]fs.Di
 		return nil, err
 	}
 
-	// Sort the entries by name to ensure that the order and any resultant
-	// errors are deterministic.
-	slices.SortFunc(entries, func(a, b fs.DirEntry) int {
-		return strings.Compare(a.Name(), b.Name())
-	})
-
 	seenPaths := make(map[string]workspace.ObjectInfo)
 	for i, entry := range entries {
 		info, err := entry.Info()
