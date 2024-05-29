@@ -11,7 +11,7 @@ type FS interface {
 	fs.ReadFileFS
 }
 
-// Path defines a virtual file system interface for:
+// Path defines a read-only virtual file system interface for:
 //
 // 1. Intercepting file operations to inject custom logic (e.g., logging, access control).
 // 2. Traversing directories to find specific leaf directories (e.g., .git).
