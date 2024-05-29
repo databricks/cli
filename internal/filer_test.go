@@ -549,7 +549,8 @@ func setupFilerWithExtensionsTest(t *testing.T) filer.Filer {
 		require.NoError(t, err)
 	}
 
-	// Read contents of test fixtures as a sanity check
+	// Read contents of test fixtures as a sanity check. This also automatically
+	// tests the Read method for the filer.
 	filerTest{t, wf}.assertContents(ctx, "foo.py", "# Databricks notebook source\nprint('first upload'))")
 	filerTest{t, wf}.assertContents(ctx, "bar.py", "print('foo')")
 	filerTest{t, wf}.assertContents(ctx, "jupyter.ipynb", "# Databricks notebook source\nprint(\"Jupyter Notebook Version 1\")")
@@ -711,8 +712,8 @@ func TestAccFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
 			},
 		},
 		// We don't need to test this for ipynb notebooks. The import API
-		// fails when you try to import a file with the .ipynb extension but the
-		// file content is not of a valid jupyter notebook.
+		// fails when the file extension is .ipynb but the content is not a
+		// valid juptyer notebook.
 	}
 
 	for _, tc := range tcases {

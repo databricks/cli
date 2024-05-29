@@ -39,7 +39,7 @@ type workspaceFileStatus struct {
 
 	// Name of the file to be used in any API calls made using the workspace files
 	// filer. For notebooks this path does not include the extension.
-	nameWithoutExtension string
+	nameForWorkspaceAPI string
 }
 
 // A custom unmarsaller for the workspaceFileStatus struct. This is needed because
@@ -56,13 +56,14 @@ func (s *workspaceFileStatus) MarshalJSON() ([]byte, error) {
 }
 
 // This function returns the stat for the provided notebook. The stat object itself
-// contains the path with the extension and is meant to be returned as a fs.FileInfo.
+// contains the path with the extension since it is meant used in the context of a fs.FileInfo.
 func (w *workspaceFilesExtensionsClient) removeNotebookExtension(ctx context.Context, name string) (stat *workspaceFileStatus, ok bool) {
 	ext := path.Ext(name)
 
 	nameWithoutExtension := strings.TrimSuffix(name, ext)
 
-	// File name does not have an extension associated with Databricks notebooks, return early.
+	// File name does not have an extension associated that is with Databricks
+	// notebooks, return early.
 	if _, ok := extensionsToLanguages[ext]; !ok {
 		return nil, false
 	}
@@ -71,7 +72,7 @@ func (w *workspaceFilesExtensionsClient) removeNotebookExtension(ctx context.Con
 	// We need repos_export_format to determine if the file is a py or a ipynb notebook.
 	// This is not exposed by the SDK so we need to make a direct API call.
 	stat = &workspaceFileStatus{
-		nameWithoutExtension: nameWithoutExtension,
+		nameForWorkspaceAPI: nameWithoutExtension,
 	}
 
 	err := w.apiClient.Do(ctx, http.MethodGet, "/api/2.0/workspace/get-status", nil,
@@ -116,8 +117,8 @@ func (w *workspaceFilesExtensionsClient) removeNotebookExtension(ctx context.Con
 func (w *workspaceFilesExtensionsClient) addNotebookExtension(ctx context.Context, name string) (stat *workspaceFileStatus, err error) {
 	// Get status of the file to determine it's extension.
 	stat = &workspaceFileStatus{
-		nameWithoutExtension: name,
-		ObjectInfo:           &workspace.ObjectInfo{},
+		nameForWorkspaceAPI: name,
+		ObjectInfo:          &workspace.ObjectInfo{},
 	}
 	err = w.apiClient.Do(ctx, http.MethodGet, "/api/2.0/workspace/get-status", nil,
 		map[string]string{"path": path.Join(w.root, name), "return_export_info": "true"}, stat)
@@ -256,7 +257,7 @@ func (w *workspaceFilesExtensionsClient) Read(ctx context.Context, name string) 
 			// Not a valid notebook. Return the original error.
 			return nil, err
 		}
-		return w.workspaceFilesClient.Read(ctx, stat.nameWithoutExtension)
+		return w.workspaceFilesClient.Read(ctx, stat.nameForWorkspaceAPI)
 	}
 	return r, err
 }
@@ -272,7 +273,7 @@ func (w *workspaceFilesExtensionsClient) Delete(ctx context.Context, name string
 			// Not a valid notebook. Return the original error.
 			return err
 		}
-		return w.workspaceFilesClient.Delete(ctx, stat.nameWithoutExtension, mode...)
+		return w.workspaceFilesClient.Delete(ctx, stat.nameForWorkspaceAPI, mode...)
 	}
 
 	return err
