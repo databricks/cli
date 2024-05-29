@@ -507,8 +507,19 @@ func TestAccFilerWorkspaceFuseReadDir(t *testing.T) {
 	for _, e := range entries {
 		names = append(names, e.Name())
 	}
-	assert.Equal(t, []string{"dir1", "foo.py", "foo.r", "foo.scala", "foo.sql",
-		"jupyterNb.py", "jupyterNb2.py", "pyNb.py", "rNb.r", "scalaNb.scala", "sqlNb.sql"}, names)
+	assert.Equal(t, []string{
+		"dir1",
+		"foo.py",
+		"foo.r",
+		"foo.scala",
+		"foo.sql",
+		"jupyterNb.py",
+		"jupyterNb2.py",
+		"pyNb.py",
+		"rNb.r",
+		"scalaNb.scala",
+		"sqlNb.sql",
+	}, names)
 }
 
 func TestAccFilerWorkspaceFuseRead(t *testing.T) {
