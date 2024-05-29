@@ -7,34 +7,32 @@ import (
 	"io"
 	"io/fs"
 	"path"
-	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
-	"golang.org/x/exp/maps"
 )
 
 type workspaceFuseClient struct {
 	workspaceFilesClient Filer
 }
 
+var extensionsToLanguages = map[string]workspace.Language{
+	".py":    workspace.LanguagePython,
+	".r":     workspace.LanguageR,
+	".scala": workspace.LanguageScala,
+	".sql":   workspace.LanguageSql,
+	".ipynb": workspace.LanguagePython,
+}
+
 func stripNotebookExtension(ctx context.Context, w Filer, name string) (stripName string, stat fs.FileInfo, ok bool) {
 	ext := path.Ext(name)
-
-	extensionsToLanguages := map[string]workspace.Language{
-		".py":    workspace.LanguagePython,
-		".r":     workspace.LanguageR,
-		".scala": workspace.LanguageScala,
-		".sql":   workspace.LanguageSql,
-		".ipynb": workspace.LanguagePython,
-	}
 
 	stripName = strings.TrimSuffix(name, ext)
 
 	// File name does not have an extension associated with Databricks notebooks, return early.
-	if !slices.Contains(maps.Keys(extensionsToLanguages), ext) {
+	if _, ok := extensionsToLanguages[ext]; !ok {
 		return "", nil, false
 	}
 
@@ -75,8 +73,8 @@ func (e DuplicatePathError) Error() string {
 // with the extension included.
 //
 // The ReadDir method returns a DuplicatePathError if this traditional file system view is
-// not possible. For example, a python notebook called foo and a python file called foo.py
-// would resolve to the same path foo.py in a tradition file system.
+// not possible. For example, a Python notebook called foo and a Python file called `foo.py`
+// would resolve to the same path `foo.py` in a tradition file system.
 //
 // Users of this filer should be careful when using the Write and Mkdir methods.
 // The underlying import API we use to upload notebooks and files returns opaque internal
