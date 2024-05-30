@@ -587,7 +587,7 @@ func TestAccFilerWorkspaceFilesExtensionsRead(t *testing.T) {
 	// Read contents of test fixtures as a sanity check.
 	filerTest{t, wf}.assertContents(ctx, "foo.py", "# Databricks notebook source\nprint('first upload'))")
 	filerTest{t, wf}.assertContents(ctx, "bar.py", "print('foo')")
-	filerTest{t, wf}.assertContents(ctx, "jupyter.ipynb", "# Databricks notebook source\nprint(\"Jupyter Notebook Version 1\")")
+	filerTest{t, wf}.assertContentsJupyter(ctx, "jupyter.ipynb")
 	filerTest{t, wf}.assertContents(ctx, "dir/file.txt", "file content")
 	filerTest{t, wf}.assertContents(ctx, "scala-notebook.scala", "// Databricks notebook source\nprintln('first upload')")
 	filerTest{t, wf}.assertContents(ctx, "pretender", "not a notebook")
