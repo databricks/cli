@@ -549,15 +549,6 @@ func setupFilerWithExtensionsTest(t *testing.T) filer.Filer {
 		require.NoError(t, err)
 	}
 
-	// Read contents of test fixtures as a sanity check. This also automatically
-	// tests the Read method for the filer.
-	filerTest{t, wf}.assertContents(ctx, "foo.py", "# Databricks notebook source\nprint('first upload'))")
-	filerTest{t, wf}.assertContents(ctx, "bar.py", "print('foo')")
-	filerTest{t, wf}.assertContents(ctx, "jupyter.ipynb", "# Databricks notebook source\nprint(\"Jupyter Notebook Version 1\")")
-	filerTest{t, wf}.assertContents(ctx, "dir/file.txt", "file content")
-	filerTest{t, wf}.assertContents(ctx, "scala-notebook.scala", "// Databricks notebook source\nprintln('first upload')")
-	filerTest{t, wf}.assertContents(ctx, "pretender", "not a notebook")
-
 	return wf
 }
 
@@ -567,14 +558,21 @@ func TestAccFilerWorkspaceFilesExtensionsRead(t *testing.T) {
 	ctx := context.Background()
 	wf := setupFilerWithExtensionsTest(t)
 
+	// Read contents of test fixtures as a sanity check.
+	filerTest{t, wf}.assertContents(ctx, "foo.py", "# Databricks notebook source\nprint('first upload'))")
+	filerTest{t, wf}.assertContents(ctx, "bar.py", "print('foo')")
+	filerTest{t, wf}.assertContents(ctx, "jupyter.ipynb", "# Databricks notebook source\nprint(\"Jupyter Notebook Version 1\")")
+	filerTest{t, wf}.assertContents(ctx, "dir/file.txt", "file content")
+	filerTest{t, wf}.assertContents(ctx, "scala-notebook.scala", "// Databricks notebook source\nprintln('first upload')")
+	filerTest{t, wf}.assertContents(ctx, "pretender", "not a notebook")
+
 	// Read non-existent file
 	_, err := wf.Read(ctx, "non-existent.py")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 
-	// Ensure we do not read a file as a notebook
+	// Ensure we do not read a regular file as a notebook
 	_, err = wf.Read(ctx, "pretender.py")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
-
 	_, err = wf.Read(ctx, "pretender.ipynb")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 
@@ -582,7 +580,7 @@ func TestAccFilerWorkspaceFilesExtensionsRead(t *testing.T) {
 	_, err = wf.Read(ctx, "dir")
 	assert.ErrorIs(t, err, fs.ErrInvalid)
 
-	// Ensure we do not read a scala notebook as a python notebook
+	// Ensure we do not read a Scala notebook as a Python notebook
 	_, err = wf.Read(ctx, "scala-notebook.py")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
@@ -616,7 +614,7 @@ func TestAccFilerWorkspaceFilesExtensionsDelete(t *testing.T) {
 	err = wf.Delete(ctx, "pretender.py")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 
-	// Ensure we do not delete a scala notebook as a python notebook
+	// Ensure we do not delete a Scala notebook as a Python notebook
 	_, err = wf.Read(ctx, "scala-notebook.py")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 
@@ -648,7 +646,7 @@ func TestAccFilerWorkspaceFilesExtensionsStat(t *testing.T) {
 	assert.Equal(t, "bar.py", info.Name())
 	assert.False(t, info.IsDir())
 
-	// Stat on a jupyter notebook
+	// Stat on a Jupyter notebook
 	info, err = wf.Stat(ctx, "jupyter.ipynb")
 	require.NoError(t, err)
 	assert.Equal(t, "jupyter.ipynb", info.Name())
@@ -668,7 +666,7 @@ func TestAccFilerWorkspaceFilesExtensionsStat(t *testing.T) {
 	_, err = wf.Stat(ctx, "pretender.py")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 
-	// Ensure we do not stat a scala notebook as a python notebook
+	// Ensure we do not stat a Scala notebook as a Python notebook
 	_, err = wf.Stat(ctx, "scala-notebook.py")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 
@@ -716,7 +714,8 @@ func TestAccFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
 		// valid juptyer notebook.
 	}
 
-	for _, tc := range tcases {
+	for i := range tcases {
+		tc := tcases[i]
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -760,7 +759,8 @@ func TestAccWorkspaceFilesExtensions_ExportFormatIsPreserved(t *testing.T) {
 	// Case 1: Source Notebook
 	err := wf.Write(ctx, "foo.py", strings.NewReader("# Databricks notebook source\nprint('foo')"))
 	require.NoError(t, err)
-	// The source notebook should exist but not the jupyter notebook
+
+	// The source notebook should exist but not the Jupyter notebook
 	filerTest{t, wf}.assertContents(ctx, "foo.py", "# Databricks notebook source\nprint('foo')")
 	_, err = wf.Stat(ctx, "foo.ipynb")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
@@ -772,7 +772,8 @@ func TestAccWorkspaceFilesExtensions_ExportFormatIsPreserved(t *testing.T) {
 	// Case 2: Jupyter Notebook
 	err = wf.Write(ctx, "bar.ipynb", strings.NewReader(jupyterNotebookContent1))
 	require.NoError(t, err)
-	// The jupyter notebook should exist but not the source notebook
+
+	// The Jupyter notebook should exist but not the source notebook
 	filerTest{t, wf}.assertContents(ctx, "bar.ipynb", "# Databricks notebook source\nprint(\"Jupyter Notebook Version 1\")")
 	_, err = wf.Stat(ctx, "bar.py")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
