@@ -33,8 +33,12 @@ var extensionsToLanguages = map[string]workspace.Language{
 	".ipynb": workspace.LanguagePython,
 }
 
+// workspaceFileStatus defines a custom response body for the "/api/2.0/workspace/get-status" API.
+// The "repos_export_format" field is not exposed by the SDK.
 type workspaceFileStatus struct {
 	*workspace.ObjectInfo
+
+	// The export format of the notebook. This is not exposed by the SDK.
 	ReposExportFormat workspace.ExportFormat `json:"repos_export_format,omitempty"`
 
 	// Name of the file to be used in any API calls made using the workspace files
@@ -55,6 +59,28 @@ func (s *workspaceFileStatus) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
+func (w *workspaceFilesExtensionsClient) stat(ctx context.Context, name string) (*workspaceFileStatus, error) {
+	stat := &workspaceFileStatus{
+		nameForWorkspaceAPI: name,
+	}
+
+	// Perform bespoke API call because "return_export_info" is not exposed by the SDK.
+	// We need "repos_export_format" to determine if the file is a py or a ipynb notebook.
+	// This is not exposed by the SDK so we need to make a direct API call.
+	err := w.apiClient.Do(
+		ctx,
+		http.MethodGet,
+		"/api/2.0/workspace/get-status",
+		nil,
+		map[string]string{
+			"path":               path.Join(w.root, name),
+			"return_export_info": "true",
+		},
+		stat,
+	)
+	return stat, err
+}
+
 // This function returns the stat for the provided notebook. The stat object itself
 // contains the path with the extension since it is meant used in the context of a fs.FileInfo.
 func (w *workspaceFilesExtensionsClient) removeNotebookExtension(ctx context.Context, name string) (stat *workspaceFileStatus, ok bool) {
@@ -68,15 +94,8 @@ func (w *workspaceFilesExtensionsClient) removeNotebookExtension(ctx context.Con
 		return nil, false
 	}
 
-	// If the file could be a notebook, check it's a notebook and has the correct language.
-	// We need repos_export_format to determine if the file is a py or a ipynb notebook.
-	// This is not exposed by the SDK so we need to make a direct API call.
-	stat = &workspaceFileStatus{
-		nameForWorkspaceAPI: nameWithoutExtension,
-	}
-
-	err := w.apiClient.Do(ctx, http.MethodGet, "/api/2.0/workspace/get-status", nil,
-		map[string]string{"path": path.Join(w.root, nameWithoutExtension), "return_export_info": "true"}, stat)
+	// If the file could be a notebook, check if it is and has the correct language.
+	stat, err := w.stat(ctx, nameWithoutExtension)
 	if err != nil {
 		log.Debugf(ctx, "attempting to determine if %s could be a notebook. Failed to fetch the status of object at %s: %s", name, path.Join(w.root, nameWithoutExtension), err)
 		return nil, false
@@ -114,14 +133,8 @@ func (w *workspaceFilesExtensionsClient) removeNotebookExtension(ctx context.Con
 	return stat, true
 }
 
-func (w *workspaceFilesExtensionsClient) addNotebookExtension(ctx context.Context, name string) (stat *workspaceFileStatus, err error) {
-	// Get status of the file to determine it's extension.
-	stat = &workspaceFileStatus{
-		nameForWorkspaceAPI: name,
-		ObjectInfo:          &workspace.ObjectInfo{},
-	}
-	err = w.apiClient.Do(ctx, http.MethodGet, "/api/2.0/workspace/get-status", nil,
-		map[string]string{"path": path.Join(w.root, name), "return_export_info": "true"}, stat)
+func (w *workspaceFilesExtensionsClient) addNotebookExtension(ctx context.Context, name string) (*workspaceFileStatus, error) {
+	stat, err := w.stat(ctx, name)
 	if err != nil {
 		return nil, err
 	}
