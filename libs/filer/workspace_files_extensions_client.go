@@ -319,7 +319,7 @@ func (w *workspaceFilesExtensionsClient) Delete(ctx context.Context, name string
 func (w *workspaceFilesExtensionsClient) Stat(ctx context.Context, name string) (fs.FileInfo, error) {
 	info, err := w.wsfs.Stat(ctx, name)
 
-	// If the file is not found in the local file system, it might be a notebook.
+	// If the file is not found, it might be a notebook.
 	if errors.As(err, &FileDoesNotExistError{}) {
 		stat, serr := w.getNotebookStatByNameWithExt(ctx, name)
 		if serr != nil {
