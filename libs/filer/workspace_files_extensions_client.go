@@ -19,12 +19,11 @@ import (
 )
 
 type workspaceFilesExtensionsClient struct {
-	workspaceFilesClient Filer
-
-	root      string
-	apiClient *client.DatabricksClient
-
 	workspaceClient *databricks.WorkspaceClient
+	apiClient       *client.DatabricksClient
+
+	filer Filer
+	root  string
 }
 
 var extensionsToLanguages = map[string]workspace.Language{
@@ -186,27 +185,27 @@ func (e DuplicatePathError) Error() string {
 // errors for namespace clashes (e.g. a file and a notebook or a directory and a notebook).
 // Thus users of these methods should be careful to avoid such clashes.
 func NewWorkspaceFilesExtensionsClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
-	wc, err := NewWorkspaceFilesClient(w, root)
-	if err != nil {
-		return nil, err
-	}
-
 	apiClient, err := client.New(w.Config)
 	if err != nil {
 		return nil, err
 	}
 
-	return &workspaceFilesExtensionsClient{
-		root:                 root,
-		workspaceFilesClient: wc,
-		apiClient:            apiClient,
+	filer, err := NewWorkspaceFilesClient(w, root)
+	if err != nil {
+		return nil, err
+	}
 
+	return &workspaceFilesExtensionsClient{
 		workspaceClient: w,
+		apiClient:       apiClient,
+
+		filer: filer,
+		root:  root,
 	}, nil
 }
 
 func (w *workspaceFilesExtensionsClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, error) {
-	entries, err := w.workspaceFilesClient.ReadDir(ctx, name)
+	entries, err := w.filer.ReadDir(ctx, name)
 	if err != nil {
 		return nil, err
 	}
@@ -261,12 +260,12 @@ func (w *workspaceFilesExtensionsClient) ReadDir(ctx context.Context, name strin
 // (e.g. a file and a notebook or a directory and a notebook). Thus users of this
 // method should be careful to avoid such clashes.
 func (w *workspaceFilesExtensionsClient) Write(ctx context.Context, name string, reader io.Reader, mode ...WriteMode) error {
-	return w.workspaceFilesClient.Write(ctx, name, reader, mode...)
+	return w.filer.Write(ctx, name, reader, mode...)
 }
 
 // Try to read the file as a regular file. If the file is not found, try to read it as a notebook.
 func (w *workspaceFilesExtensionsClient) Read(ctx context.Context, name string) (io.ReadCloser, error) {
-	r, err := w.workspaceFilesClient.Read(ctx, name)
+	r, err := w.filer.Read(ctx, name)
 
 	// If the file is not found, it might be a notebook.
 	if errors.As(err, &FileDoesNotExistError{}) {
@@ -289,7 +288,7 @@ func (w *workspaceFilesExtensionsClient) Read(ctx context.Context, name string) 
 
 // Try to delete the file as a regular file. If the file is not found, try to delete it as a notebook.
 func (w *workspaceFilesExtensionsClient) Delete(ctx context.Context, name string, mode ...DeleteMode) error {
-	err := w.workspaceFilesClient.Delete(ctx, name, mode...)
+	err := w.filer.Delete(ctx, name, mode...)
 
 	// If the file is not found, it might be a notebook.
 	if errors.As(err, &FileDoesNotExistError{}) {
@@ -298,7 +297,7 @@ func (w *workspaceFilesExtensionsClient) Delete(ctx context.Context, name string
 			// Not a valid notebook. Return the original error.
 			return err
 		}
-		return w.workspaceFilesClient.Delete(ctx, stat.nameForWorkspaceAPI, mode...)
+		return w.filer.Delete(ctx, stat.nameForWorkspaceAPI, mode...)
 	}
 
 	return err
@@ -306,7 +305,7 @@ func (w *workspaceFilesExtensionsClient) Delete(ctx context.Context, name string
 
 // Try to stat the file as a regular file. If the file is not found, try to stat it as a notebook.
 func (w *workspaceFilesExtensionsClient) Stat(ctx context.Context, name string) (fs.FileInfo, error) {
-	info, err := w.workspaceFilesClient.Stat(ctx, name)
+	info, err := w.filer.Stat(ctx, name)
 
 	// If the file is not found in the local file system, it might be a notebook.
 	if errors.As(err, &FileDoesNotExistError{}) {
@@ -325,5 +324,5 @@ func (w *workspaceFilesExtensionsClient) Stat(ctx context.Context, name string) 
 // (e.g. a file and a notebook or a directory and a notebook). Thus users of this
 // method should be careful to avoid such clashes.
 func (w *workspaceFilesExtensionsClient) Mkdir(ctx context.Context, name string) error {
-	return w.workspaceFilesClient.Mkdir(ctx, name)
+	return w.filer.Mkdir(ctx, name)
 }
