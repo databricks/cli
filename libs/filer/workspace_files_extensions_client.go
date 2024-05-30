@@ -82,49 +82,47 @@ func (w *workspaceFilesExtensionsClient) stat(ctx context.Context, name string) 
 	return stat, err
 }
 
-// This function returns the stat for the provided notebook. The stat object itself
-// contains the path with the extension since it is meant used in the context of a fs.FileInfo.
-func (w *workspaceFilesExtensionsClient) removeNotebookExtension(ctx context.Context, name string) (stat *workspaceFileStatus, ok bool) {
+// This function returns the stat for the provided notebook. The stat object itself contains the path
+// with the extension since it is meant to be used in the context of a fs.FileInfo.
+func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithExt(ctx context.Context, name string) (stat *workspaceFileStatus, ok bool) {
 	ext := path.Ext(name)
+	nameWithoutExt := strings.TrimSuffix(name, ext)
 
-	nameWithoutExtension := strings.TrimSuffix(name, ext)
-
-	// File name does not have an extension associated that is with Databricks
-	// notebooks, return early.
+	// File name does not have an extension associated with Databricks notebooks, return early.
 	if _, ok := extensionsToLanguages[ext]; !ok {
 		return nil, false
 	}
 
 	// If the file could be a notebook, check if it is and has the correct language.
-	stat, err := w.stat(ctx, nameWithoutExtension)
+	stat, err := w.stat(ctx, nameWithoutExt)
 	if err != nil {
-		log.Debugf(ctx, "attempting to determine if %s could be a notebook. Failed to fetch the status of object at %s: %s", name, path.Join(w.root, nameWithoutExtension), err)
+		log.Debugf(ctx, "attempting to determine if %s could be a notebook. Failed to fetch the status of object at %s: %s", name, path.Join(w.root, nameWithoutExt), err)
 		return nil, false
 	}
 
 	// Not a notebook. Return early.
 	if stat.ObjectType != workspace.ObjectTypeNotebook {
-		log.Debugf(ctx, "attempting to determine if %s could be a notebook. Found an object at %s but it is not a notebook. It is a %s.", name, path.Join(w.root, nameWithoutExtension), stat.ObjectType)
+		log.Debugf(ctx, "attempting to determine if %s could be a notebook. Found an object at %s but it is not a notebook. It is a %s.", name, path.Join(w.root, nameWithoutExt), stat.ObjectType)
 		return nil, false
 	}
 
 	// Not the correct language. Return early.
 	if stat.Language != extensionsToLanguages[ext] {
-		log.Debugf(ctx, "attempting to determine if %s could be a notebook. Found a notebook at %s but it is not of the correct language. Expected %s but found %s.", name, path.Join(w.root, nameWithoutExtension), extensionsToLanguages[ext], stat.Language)
+		log.Debugf(ctx, "attempting to determine if %s could be a notebook. Found a notebook at %s but it is not of the correct language. Expected %s but found %s.", name, path.Join(w.root, nameWithoutExt), extensionsToLanguages[ext], stat.Language)
 		return nil, false
 	}
 
 	// When the extension is .py we expect the export format to be source.
 	// If it's not, return early.
 	if ext == ".py" && stat.ReposExportFormat != workspace.ExportFormatSource {
-		log.Debugf(ctx, "attempting to determine if %s could be a notebook. Found a notebook at %s but it is not exported as a source notebook. Its export format is %s.", name, path.Join(w.root, nameWithoutExtension), stat.ReposExportFormat)
+		log.Debugf(ctx, "attempting to determine if %s could be a notebook. Found a notebook at %s but it is not exported as a source notebook. Its export format is %s.", name, path.Join(w.root, nameWithoutExt), stat.ReposExportFormat)
 		return nil, false
 	}
 
 	// When the extension is .ipynb we expect the export format to be Jupyter.
 	// If it's not, return early.
 	if ext == ".ipynb" && stat.ReposExportFormat != workspace.ExportFormatJupyter {
-		log.Debugf(ctx, "attempting to determine if %s could be a notebook. Found a notebook at %s but it is not exported as a Jupyter notebook. Its export format is %s.", name, path.Join(w.root, nameWithoutExtension), stat.ReposExportFormat)
+		log.Debugf(ctx, "attempting to determine if %s could be a notebook. Found a notebook at %s but it is not exported as a Jupyter notebook. Its export format is %s.", name, path.Join(w.root, nameWithoutExt), stat.ReposExportFormat)
 		return nil, false
 	}
 
@@ -134,7 +132,7 @@ func (w *workspaceFilesExtensionsClient) removeNotebookExtension(ctx context.Con
 	return stat, true
 }
 
-func (w *workspaceFilesExtensionsClient) addNotebookExtension(ctx context.Context, name string) (*workspaceFileStatus, error) {
+func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithoutExt(ctx context.Context, name string) (*workspaceFileStatus, error) {
 	stat, err := w.stat(ctx, name)
 	if err != nil {
 		return nil, err
@@ -211,34 +209,22 @@ func (w *workspaceFilesExtensionsClient) ReadDir(ctx context.Context, name strin
 	}
 
 	seenPaths := make(map[string]workspace.ObjectInfo)
-	for i, entry := range entries {
-		info, err := entry.Info()
+	for i := range entries {
+		info, err := entries[i].Info()
 		if err != nil {
 			return nil, err
 		}
 		sysInfo := info.Sys().(workspace.ObjectInfo)
 
-		// Skip if the object is not a notebook
-		if sysInfo.ObjectType != workspace.ObjectTypeNotebook {
-			// Error if we have seen this path before in the current directory.
-			// If not seen before, add it to the seen paths.
-			if _, ok := seenPaths[entries[i].Name()]; ok {
-				return nil, DuplicatePathError{
-					oi1:        seenPaths[entries[i].Name()],
-					oi2:        sysInfo,
-					commonName: path.Join(name, entries[i].Name()),
-				}
+		// If the object is a notebook, include an extension in the entry.
+		if sysInfo.ObjectType == workspace.ObjectTypeNotebook {
+			stat, err := w.getNotebookStatByNameWithoutExt(ctx, entries[i].Name())
+			if err != nil {
+				return nil, err
 			}
-			seenPaths[entry.Name()] = sysInfo
-			continue
+			// Replace the entry with the new entry that includes the extension.
+			entries[i] = wsfsDirEntry{wsfsFileInfo{oi: *stat.ObjectInfo}}
 		}
-
-		// Add extension to local file path if the file is a notebook
-		stat, err := w.addNotebookExtension(ctx, entry.Name())
-		if err != nil {
-			return nil, err
-		}
-		entries[i] = wsfsDirEntry{wsfsFileInfo{oi: *stat.ObjectInfo}}
 
 		// Error if we have seen this path before in the current directory.
 		// If not seen before, add it to the seen paths.
@@ -250,7 +236,6 @@ func (w *workspaceFilesExtensionsClient) ReadDir(ctx context.Context, name strin
 			}
 		}
 		seenPaths[entries[i].Name()] = sysInfo
-
 	}
 
 	return entries, nil
@@ -269,7 +254,7 @@ func (w *workspaceFilesExtensionsClient) Read(ctx context.Context, name string) 
 
 	// If the file is not found, it might be a notebook.
 	if errors.As(err, &FileDoesNotExistError{}) {
-		stat, ok := w.removeNotebookExtension(ctx, name)
+		stat, ok := w.getNotebookStatByNameWithExt(ctx, name)
 		if !ok {
 			// Not a valid notebook. Return the original error.
 			return nil, err
@@ -292,7 +277,7 @@ func (w *workspaceFilesExtensionsClient) Delete(ctx context.Context, name string
 
 	// If the file is not found, it might be a notebook.
 	if errors.As(err, &FileDoesNotExistError{}) {
-		stat, ok := w.removeNotebookExtension(ctx, name)
+		stat, ok := w.getNotebookStatByNameWithExt(ctx, name)
 		if !ok {
 			// Not a valid notebook. Return the original error.
 			return err
@@ -309,7 +294,7 @@ func (w *workspaceFilesExtensionsClient) Stat(ctx context.Context, name string) 
 
 	// If the file is not found in the local file system, it might be a notebook.
 	if errors.As(err, &FileDoesNotExistError{}) {
-		stat, ok := w.removeNotebookExtension(ctx, name)
+		stat, ok := w.getNotebookStatByNameWithExt(ctx, name)
 		if !ok {
 			return nil, err
 		}
