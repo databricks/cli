@@ -97,6 +97,9 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				RegisteredModels: map[string]*resources.RegisteredModel{
 					"registeredmodel1": {CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{Name: "registeredmodel1"}},
 				},
+				Schemas: map[string]*resources.Schema{
+					"schema1": {CreateSchema: &catalog.CreateSchema{Name: "schema1"}},
+				},
 			},
 		},
 		// Use AWS implementation for testing.
@@ -145,6 +148,9 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Registered model 1
 	assert.Equal(t, "dev_lennart_registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
+
+	// Schema 1
+	assert.Equal(t, "dev_lennart_schema1", b.Config.Resources.Schemas["schema1"].Name)
 }
 
 func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {

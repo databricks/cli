@@ -17,6 +17,7 @@ type Resources struct {
 	Experiments           map[string]*resources.MlflowExperiment     `json:"experiments,omitempty"`
 	ModelServingEndpoints map[string]*resources.ModelServingEndpoint `json:"model_serving_endpoints,omitempty"`
 	RegisteredModels      map[string]*resources.RegisteredModel      `json:"registered_models,omitempty"`
+	Schemas               map[string]*resources.Schema               `json:"schemas,omitempty"`
 }
 
 type UniqueResourceIdTracker struct {

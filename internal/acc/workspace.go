@@ -2,6 +2,7 @@ package acc
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go"
@@ -23,6 +24,33 @@ func WorkspaceTest(t *testing.T) (context.Context, *WorkspaceT) {
 	loadDebugEnvIfRunFromIDE(t, "workspace")
 
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	w, err := databricks.NewWorkspaceClient()
+	require.NoError(t, err)
+
+	wt := &WorkspaceT{
+		T: t,
+
+		W: w,
+
+		ctx: context.Background(),
+	}
+
+	return wt.ctx, wt
+}
+
+// Run the workspace test only on UC workspaces.
+func UcWorkspaceTest(t *testing.T) (context.Context, *WorkspaceT) {
+	loadDebugEnvIfRunFromIDE(t, "workspace")
+
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	if os.Getenv("TEST_METASTORE_ID") == "" {
+		t.Skipf("Skipping on non-UC workspaces")
+	}
+	if os.Getenv("DATABRICKS_ACCOUNT_ID") != "" {
+		t.Skipf("Skipping on accounts")
+	}
 
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
