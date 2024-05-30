@@ -139,9 +139,10 @@ func (w *workspaceFilesExtensionsClient) addNotebookExtension(ctx context.Contex
 		return nil, err
 	}
 
-	// Not a notebook. Return early.
+	// We expect this internal function to only be called from [ReadDir] when we are sure
+	// that the object is a notebook. Thus, this should never happen.
 	if stat.ObjectType != workspace.ObjectTypeNotebook {
-		return nil, nil
+		return nil, fmt.Errorf("expected object at %s to be a notebook but it is a %s", path.Join(w.root, name), stat.ObjectType)
 	}
 
 	// Get the extension for the notebook.
