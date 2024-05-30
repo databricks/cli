@@ -3,11 +3,10 @@ package mutator
 import (
 	"fmt"
 
-	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/dyn"
 )
 
-func (m *translatePaths) applyPipelineTranslations(b *bundle.Bundle, v dyn.Value) (dyn.Value, error) {
+func (r *rewriteContext) applyPipelineTranslations(v dyn.Value) (dyn.Value, error) {
 	fallback, err := gatherFallbackPaths(v, "pipelines")
 	if err != nil {
 		return dyn.InvalidValue, err
@@ -28,11 +27,11 @@ func (m *translatePaths) applyPipelineTranslations(b *bundle.Bundle, v dyn.Value
 	}{
 		{
 			base.Append(dyn.Key("notebook"), dyn.Key("path")),
-			translateNotebookPath,
+			r.translateNotebookPath,
 		},
 		{
 			base.Append(dyn.Key("file"), dyn.Key("path")),
-			translateFilePath,
+			r.translateFilePath,
 		},
 	} {
 		v, err = dyn.MapByPattern(v, t.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
@@ -42,7 +41,7 @@ func (m *translatePaths) applyPipelineTranslations(b *bundle.Bundle, v dyn.Value
 				return dyn.InvalidValue, fmt.Errorf("unable to determine directory for pipeline %s: %w", key, err)
 			}
 
-			return m.rewriteRelativeTo(b, p, v, t.fn, dir, fallback[key])
+			return r.rewriteRelativeTo(p, v, t.fn, dir, fallback[key])
 		})
 		if err != nil {
 			return dyn.InvalidValue, err

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/dyn"
 )
@@ -19,42 +18,42 @@ func noSkipRewrite(string) bool {
 	return false
 }
 
-func rewritePatterns(base dyn.Pattern) []jobRewritePattern {
+func rewritePatterns(r *rewriteContext, base dyn.Pattern) []jobRewritePattern {
 	return []jobRewritePattern{
 		{
 			base.Append(dyn.Key("notebook_task"), dyn.Key("notebook_path")),
-			translateNotebookPath,
+			r.translateNotebookPath,
 			noSkipRewrite,
 		},
 		{
 			base.Append(dyn.Key("spark_python_task"), dyn.Key("python_file")),
-			translateFilePath,
+			r.translateFilePath,
 			noSkipRewrite,
 		},
 		{
 			base.Append(dyn.Key("dbt_task"), dyn.Key("project_directory")),
-			translateDirectoryPath,
+			r.translateDirectoryPath,
 			noSkipRewrite,
 		},
 		{
 			base.Append(dyn.Key("sql_task"), dyn.Key("file"), dyn.Key("path")),
-			translateFilePath,
+			r.translateFilePath,
 			noSkipRewrite,
 		},
 		{
 			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("whl")),
-			translateNoOp,
+			r.translateNoOp,
 			noSkipRewrite,
 		},
 		{
 			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("jar")),
-			translateNoOp,
+			r.translateNoOp,
 			noSkipRewrite,
 		},
 	}
 }
 
-func (m *translatePaths) applyJobTranslations(b *bundle.Bundle, v dyn.Value) (dyn.Value, error) {
+func (r *rewriteContext) applyJobTranslations(v dyn.Value) (dyn.Value, error) {
 	fallback, err := gatherFallbackPaths(v, "jobs")
 	if err != nil {
 		return dyn.InvalidValue, err
@@ -62,7 +61,7 @@ func (m *translatePaths) applyJobTranslations(b *bundle.Bundle, v dyn.Value) (dy
 
 	// Do not translate job task paths if using Git source
 	var ignore []string
-	for key, job := range b.Config.Resources.Jobs {
+	for key, job := range r.b.Config.Resources.Jobs {
 		if job.GitSource != nil {
 			ignore = append(ignore, key)
 		}
@@ -90,14 +89,14 @@ func (m *translatePaths) applyJobTranslations(b *bundle.Bundle, v dyn.Value) (dy
 				dyn.Key("dependencies"),
 				dyn.AnyIndex(),
 			),
-			translateNoOpWithPrefix,
+			r.translateNoOpWithPrefix,
 			func(s string) bool {
 				return !libraries.IsEnvironmentDependencyLocal(s)
 			},
 		},
 	}
-	taskPatterns := rewritePatterns(base)
-	forEachPatterns := rewritePatterns(base.Append(dyn.Key("for_each_task"), dyn.Key("task")))
+	taskPatterns := rewritePatterns(r, base)
+	forEachPatterns := rewritePatterns(r, base.Append(dyn.Key("for_each_task"), dyn.Key("task")))
 	allPatterns := append(taskPatterns, jobEnvironmentsPatterns...)
 	allPatterns = append(allPatterns, forEachPatterns...)
 
@@ -119,7 +118,7 @@ func (m *translatePaths) applyJobTranslations(b *bundle.Bundle, v dyn.Value) (dy
 			if t.skipRewrite(sv) {
 				return v, nil
 			}
-			return m.rewriteRelativeTo(b, p, v, t.fn, dir, fallback[key])
+			return r.rewriteRelativeTo(p, v, t.fn, dir, fallback[key])
 		})
 		if err != nil {
 			return dyn.InvalidValue, err

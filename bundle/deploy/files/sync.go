@@ -6,7 +6,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/sync"
-	"github.com/databricks/cli/libs/vfs"
 )
 
 func GetSync(ctx context.Context, rb bundle.ReadOnlyBundle) (*sync.Sync, error) {
@@ -29,7 +28,7 @@ func GetSyncOptions(ctx context.Context, rb bundle.ReadOnlyBundle) (*sync.SyncOp
 	}
 
 	opts := &sync.SyncOptions{
-		LocalPath:  vfs.MustNew(rb.RootPath()),
+		LocalPath:  rb.SyncRoot(),
 		RemotePath: rb.Config().Workspace.FilePath,
 		Include:    includes,
 		Exclude:    rb.Config().Sync.Exclude,

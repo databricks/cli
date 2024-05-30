@@ -32,9 +32,7 @@ func (err ErrIsNotNotebook) Error() string {
 	return fmt.Sprintf("file at %s is not a notebook", err.path)
 }
 
-type translatePaths struct {
-	seen map[string]string
-}
+type translatePaths struct{}
 
 // TranslatePaths converts paths to local notebook files into paths in the workspace file system.
 func TranslatePaths() bundle.Mutator {
@@ -47,6 +45,14 @@ func (m *translatePaths) Name() string {
 
 type rewriteFunc func(literal, localFullPath, localRelPath, remotePath string) (string, error)
 
+// rewriteContext is a context for rewriting paths in a config.
+// It is freshly instantiated on every mutator apply call.
+type rewriteContext struct {
+	b *bundle.Bundle
+
+	seen map[string]string
+}
+
 // rewritePath converts a given relative path from the loaded config to a new path based on the passed rewriting function
 //
 // It takes these arguments:
@@ -56,14 +62,13 @@ type rewriteFunc func(literal, localFullPath, localRelPath, remotePath string) (
 //     This logic is different between regular files or notebooks.
 //
 // The function returns an error if it is impossible to rewrite the given relative path.
-func (m *translatePaths) rewritePath(
+func (r *rewriteContext) rewritePath(
 	dir string,
-	b *bundle.Bundle,
 	p *string,
 	fn rewriteFunc,
 ) error {
 	// We assume absolute paths point to a location in the workspace
-	if path.IsAbs(filepath.ToSlash(*p)) {
+	if path.IsAbs(*p) {
 		return nil
 	}
 
@@ -79,36 +84,42 @@ func (m *translatePaths) rewritePath(
 
 	// Local path is relative to the directory the resource was defined in.
 	localPath := filepath.Join(dir, filepath.FromSlash(*p))
-	if interp, ok := m.seen[localPath]; ok {
+	if interp, ok := r.seen[localPath]; ok {
 		*p = interp
 		return nil
 	}
 
-	// Remote path must be relative to the bundle root.
-	localRelPath, err := filepath.Rel(b.RootPath, localPath)
+	// Local path must be contained in the sync root.
+	// If it isn't, it won't be synchronized into the workspace.
+	syncRootPath := path.Join(r.b.RootPath, r.b.SyncRootRelative)
+	localRelPath, err := filepath.Rel(syncRootPath, localPath)
 	if err != nil {
 		return err
 	}
 	if strings.HasPrefix(localRelPath, "..") {
-		return fmt.Errorf("path %s is not contained in bundle root path", localPath)
+		return fmt.Errorf("path %s is not contained in sync root path", localPath)
 	}
 
+	// Convert platform-native paths back to slash-separated paths.
+	localPath = filepath.ToSlash(localPath)
+	localRelPath = filepath.ToSlash(localRelPath)
+
 	// Prefix remote path with its remote root path.
-	remotePath := path.Join(b.Config.Workspace.FilePath, filepath.ToSlash(localRelPath))
+	remotePath := path.Join(r.b.Config.Workspace.FilePath, localRelPath)
 
 	// Convert local path into workspace path via specified function.
-	interp, err := fn(*p, localPath, localRelPath, filepath.ToSlash(remotePath))
+	interp, err := fn(*p, localPath, localRelPath, remotePath)
 	if err != nil {
 		return err
 	}
 
 	*p = interp
-	m.seen[localPath] = interp
+	r.seen[localPath] = interp
 	return nil
 }
 
-func translateNotebookPath(literal, localFullPath, localRelPath, remotePath string) (string, error) {
-	nb, _, err := notebook.Detect(localFullPath)
+func (r *rewriteContext) translateNotebookPath(literal, localFullPath, localRelPath, remotePath string) (string, error) {
+	nb, _, err := notebook.DetectWithFS(r.b.SyncRoot, localRelPath)
 	if os.IsNotExist(err) {
 		return "", fmt.Errorf("notebook %s not found", literal)
 	}
@@ -123,8 +134,8 @@ func translateNotebookPath(literal, localFullPath, localRelPath, remotePath stri
 	return strings.TrimSuffix(remotePath, filepath.Ext(localFullPath)), nil
 }
 
-func translateFilePath(literal, localFullPath, localRelPath, remotePath string) (string, error) {
-	nb, _, err := notebook.Detect(localFullPath)
+func (r *rewriteContext) translateFilePath(literal, localFullPath, localRelPath, remotePath string) (string, error) {
+	nb, _, err := notebook.DetectWithFS(r.b.SyncRoot, localRelPath)
 	if os.IsNotExist(err) {
 		return "", fmt.Errorf("file %s not found", literal)
 	}
@@ -137,8 +148,8 @@ func translateFilePath(literal, localFullPath, localRelPath, remotePath string) 
 	return remotePath, nil
 }
 
-func translateDirectoryPath(literal, localFullPath, localRelPath, remotePath string) (string, error) {
-	info, err := os.Stat(localFullPath)
+func (r *rewriteContext) translateDirectoryPath(literal, localFullPath, localRelPath, remotePath string) (string, error) {
+	info, err := r.b.SyncRoot.Stat(localRelPath)
 	if err != nil {
 		return "", err
 	}
@@ -148,20 +159,20 @@ func translateDirectoryPath(literal, localFullPath, localRelPath, remotePath str
 	return remotePath, nil
 }
 
-func translateNoOp(literal, localFullPath, localRelPath, remotePath string) (string, error) {
+func (r *rewriteContext) translateNoOp(literal, localFullPath, localRelPath, remotePath string) (string, error) {
 	return localRelPath, nil
 }
 
-func translateNoOpWithPrefix(literal, localFullPath, localRelPath, remotePath string) (string, error) {
+func (r *rewriteContext) translateNoOpWithPrefix(literal, localFullPath, localRelPath, remotePath string) (string, error) {
 	if !strings.HasPrefix(localRelPath, ".") {
 		localRelPath = "." + string(filepath.Separator) + localRelPath
 	}
 	return localRelPath, nil
 }
 
-func (m *translatePaths) rewriteValue(b *bundle.Bundle, p dyn.Path, v dyn.Value, fn rewriteFunc, dir string) (dyn.Value, error) {
+func (r *rewriteContext) rewriteValue(p dyn.Path, v dyn.Value, fn rewriteFunc, dir string) (dyn.Value, error) {
 	out := v.MustString()
-	err := m.rewritePath(dir, b, &out, fn)
+	err := r.rewritePath(dir, &out, fn)
 	if err != nil {
 		if target := (&ErrIsNotebook{}); errors.As(err, target) {
 			return dyn.InvalidValue, fmt.Errorf(`expected a file for "%s" but got a notebook: %w`, p, target)
@@ -175,15 +186,15 @@ func (m *translatePaths) rewriteValue(b *bundle.Bundle, p dyn.Path, v dyn.Value,
 	return dyn.NewValue(out, v.Location()), nil
 }
 
-func (m *translatePaths) rewriteRelativeTo(b *bundle.Bundle, p dyn.Path, v dyn.Value, fn rewriteFunc, dir, fallback string) (dyn.Value, error) {
-	nv, err := m.rewriteValue(b, p, v, fn, dir)
+func (r *rewriteContext) rewriteRelativeTo(p dyn.Path, v dyn.Value, fn rewriteFunc, dir, fallback string) (dyn.Value, error) {
+	nv, err := r.rewriteValue(p, v, fn, dir)
 	if err == nil {
 		return nv, nil
 	}
 
 	// If we failed to rewrite the path, try to rewrite it relative to the fallback directory.
 	if fallback != "" {
-		nv, nerr := m.rewriteValue(b, p, v, fn, fallback)
+		nv, nerr := r.rewriteValue(p, v, fn, fallback)
 		if nerr == nil {
 			// TODO: Emit a warning that this path should be rewritten.
 			return nv, nil
@@ -194,16 +205,19 @@ func (m *translatePaths) rewriteRelativeTo(b *bundle.Bundle, p dyn.Path, v dyn.V
 }
 
 func (m *translatePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
-	m.seen = make(map[string]string)
+	r := &rewriteContext{
+		b:    b,
+		seen: make(map[string]string),
+	}
 
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		var err error
-		for _, fn := range []func(*bundle.Bundle, dyn.Value) (dyn.Value, error){
-			m.applyJobTranslations,
-			m.applyPipelineTranslations,
-			m.applyArtifactTranslations,
+		for _, fn := range []func(dyn.Value) (dyn.Value, error){
+			r.applyJobTranslations,
+			r.applyPipelineTranslations,
+			r.applyArtifactTranslations,
 		} {
-			v, err = fn(b, v)
+			v, err = fn(v)
 			if err != nil {
 				return dyn.InvalidValue, err
 			}

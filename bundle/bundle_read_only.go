@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
 )
 
@@ -21,6 +22,14 @@ func (r ReadOnlyBundle) Config() config.Root {
 
 func (r ReadOnlyBundle) RootPath() string {
 	return r.b.RootPath
+}
+
+func (r ReadOnlyBundle) BundleRoot() vfs.Path {
+	return r.b.BundleRoot
+}
+
+func (r ReadOnlyBundle) SyncRoot() vfs.Path {
+	return r.b.SyncRoot
 }
 
 func (r ReadOnlyBundle) WorkspaceClient() *databricks.WorkspaceClient {

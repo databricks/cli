@@ -3,11 +3,10 @@ package mutator
 import (
 	"fmt"
 
-	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/dyn"
 )
 
-func (m *translatePaths) applyArtifactTranslations(b *bundle.Bundle, v dyn.Value) (dyn.Value, error) {
+func (r *rewriteContext) applyArtifactTranslations(v dyn.Value) (dyn.Value, error) {
 	var err error
 
 	// Base pattern to match all artifacts.
@@ -22,7 +21,7 @@ func (m *translatePaths) applyArtifactTranslations(b *bundle.Bundle, v dyn.Value
 	}{
 		{
 			base.Append(dyn.Key("path")),
-			translateNoOp,
+			r.translateNoOp,
 		},
 	} {
 		v, err = dyn.MapByPattern(v, t.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
@@ -32,7 +31,7 @@ func (m *translatePaths) applyArtifactTranslations(b *bundle.Bundle, v dyn.Value
 				return dyn.InvalidValue, fmt.Errorf("unable to determine directory for artifact %s: %w", key, err)
 			}
 
-			return m.rewriteRelativeTo(b, p, v, t.fn, dir, "")
+			return r.rewriteRelativeTo(p, v, t.fn, dir, "")
 		})
 		if err != nil {
 			return dyn.InvalidValue, err

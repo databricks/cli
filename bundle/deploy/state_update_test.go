@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/vfs"
 	databrickscfg "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -21,8 +22,13 @@ import (
 func TestStateUpdate(t *testing.T) {
 	s := &stateUpdate{}
 
+	dir := t.TempDir()
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		RootPath:           dir,
+		BundleRoot:         vfs.MustNew(dir),
+		BundleRootRelative: ".",
+		SyncRoot:           vfs.MustNew(dir),
+		SyncRootRelative:   ".",
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "default",
@@ -81,8 +87,13 @@ func TestStateUpdate(t *testing.T) {
 func TestStateUpdateWithExistingState(t *testing.T) {
 	s := &stateUpdate{}
 
+	dir := t.TempDir()
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		RootPath:           dir,
+		BundleRoot:         vfs.MustNew(dir),
+		BundleRootRelative: ".",
+		SyncRoot:           vfs.MustNew(dir),
+		SyncRootRelative:   ".",
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "default",
