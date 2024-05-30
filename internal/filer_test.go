@@ -3,6 +3,7 @@ package internal
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -37,6 +38,31 @@ func (f filerTest) assertContents(ctx context.Context, name string, contents str
 	}
 
 	assert.Equal(f, contents, body.String())
+}
+
+func (f filerTest) assertContentsJupyter(ctx context.Context, name string) {
+	reader, err := f.Read(ctx, name)
+	if !assert.NoError(f, err) {
+		return
+	}
+
+	defer reader.Close()
+
+	var body bytes.Buffer
+	_, err = io.Copy(&body, reader)
+	if !assert.NoError(f, err) {
+		return
+	}
+
+	var actual map[string]any
+	err = json.Unmarshal(body.Bytes(), &actual)
+	if !assert.NoError(f, err) {
+		return
+	}
+
+	// Since a roundtrip to the workspace changes a Jupyter notebook's payload,
+	// the best we can do is assert that the nbformat is correct.
+	assert.EqualValues(f, 4, actual["nbformat"])
 }
 
 func (f filerTest) assertNotExists(ctx context.Context, name string) {
@@ -774,7 +800,7 @@ func TestAccWorkspaceFilesExtensions_ExportFormatIsPreserved(t *testing.T) {
 	require.NoError(t, err)
 
 	// The Jupyter notebook should exist but not the source notebook
-	filerTest{t, wf}.assertContents(ctx, "bar.ipynb", "# Databricks notebook source\nprint(\"Jupyter Notebook Version 1\")")
+	filerTest{t, wf}.assertContentsJupyter(ctx, "bar.ipynb")
 	_, err = wf.Stat(ctx, "bar.py")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 	_, err = wf.Read(ctx, "bar.py")

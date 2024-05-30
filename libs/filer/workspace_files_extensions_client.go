@@ -23,6 +23,8 @@ type workspaceFilesExtensionsClient struct {
 
 	root      string
 	apiClient *client.DatabricksClient
+
+	workspaceClient *databricks.WorkspaceClient
 }
 
 var extensionsToLanguages = map[string]workspace.Language{
@@ -198,6 +200,8 @@ func NewWorkspaceFilesExtensionsClient(w *databricks.WorkspaceClient, root strin
 		root:                 root,
 		workspaceFilesClient: wc,
 		apiClient:            apiClient,
+
+		workspaceClient: w,
 	}, nil
 }
 
@@ -271,7 +275,14 @@ func (w *workspaceFilesExtensionsClient) Read(ctx context.Context, name string) 
 			// Not a valid notebook. Return the original error.
 			return nil, err
 		}
-		return w.workspaceFilesClient.Read(ctx, stat.nameForWorkspaceAPI)
+		// The workspace files filer performs an additional stat call to make sure
+		// the path is not a directory. We can skip this step since we already have
+		// the stat object and know that the path is a notebook.
+		return w.workspaceClient.Workspace.Download(
+			ctx,
+			path.Join(w.root, stat.nameForWorkspaceAPI),
+			workspace.DownloadFormat(stat.ReposExportFormat),
+		)
 	}
 	return r, err
 }
