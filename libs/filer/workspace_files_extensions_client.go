@@ -23,8 +23,8 @@ type workspaceFilesExtensionsClient struct {
 	workspaceClient *databricks.WorkspaceClient
 	apiClient       *client.DatabricksClient
 
-	filer Filer
-	root  string
+	wsfs Filer
+	root string
 }
 
 var extensionsToLanguages = map[string]workspace.Language{
@@ -214,13 +214,13 @@ func NewWorkspaceFilesExtensionsClient(w *databricks.WorkspaceClient, root strin
 		workspaceClient: w,
 		apiClient:       apiClient,
 
-		filer: filer,
-		root:  root,
+		wsfs: filer,
+		root: root,
 	}, nil
 }
 
 func (w *workspaceFilesExtensionsClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, error) {
-	entries, err := w.filer.ReadDir(ctx, name)
+	entries, err := w.wsfs.ReadDir(ctx, name)
 	if err != nil {
 		return nil, err
 	}
@@ -262,12 +262,12 @@ func (w *workspaceFilesExtensionsClient) ReadDir(ctx context.Context, name strin
 // (e.g. a file and a notebook or a directory and a notebook). Thus users of this
 // method should be careful to avoid such clashes.
 func (w *workspaceFilesExtensionsClient) Write(ctx context.Context, name string, reader io.Reader, mode ...WriteMode) error {
-	return w.filer.Write(ctx, name, reader, mode...)
+	return w.wsfs.Write(ctx, name, reader, mode...)
 }
 
 // Try to read the file as a regular file. If the file is not found, try to read it as a notebook.
 func (w *workspaceFilesExtensionsClient) Read(ctx context.Context, name string) (io.ReadCloser, error) {
-	r, err := w.filer.Read(ctx, name)
+	r, err := w.wsfs.Read(ctx, name)
 
 	// If the file is not found, it might be a notebook.
 	if errors.As(err, &FileDoesNotExistError{}) {
@@ -295,7 +295,7 @@ func (w *workspaceFilesExtensionsClient) Read(ctx context.Context, name string) 
 
 // Try to delete the file as a regular file. If the file is not found, try to delete it as a notebook.
 func (w *workspaceFilesExtensionsClient) Delete(ctx context.Context, name string, mode ...DeleteMode) error {
-	err := w.filer.Delete(ctx, name, mode...)
+	err := w.wsfs.Delete(ctx, name, mode...)
 
 	// If the file is not found, it might be a notebook.
 	if errors.As(err, &FileDoesNotExistError{}) {
@@ -309,7 +309,7 @@ func (w *workspaceFilesExtensionsClient) Delete(ctx context.Context, name string
 			return err
 		}
 
-		return w.filer.Delete(ctx, stat.nameForWorkspaceAPI, mode...)
+		return w.wsfs.Delete(ctx, stat.nameForWorkspaceAPI, mode...)
 	}
 
 	return err
@@ -317,7 +317,7 @@ func (w *workspaceFilesExtensionsClient) Delete(ctx context.Context, name string
 
 // Try to stat the file as a regular file. If the file is not found, try to stat it as a notebook.
 func (w *workspaceFilesExtensionsClient) Stat(ctx context.Context, name string) (fs.FileInfo, error) {
-	info, err := w.filer.Stat(ctx, name)
+	info, err := w.wsfs.Stat(ctx, name)
 
 	// If the file is not found in the local file system, it might be a notebook.
 	if errors.As(err, &FileDoesNotExistError{}) {
@@ -341,5 +341,5 @@ func (w *workspaceFilesExtensionsClient) Stat(ctx context.Context, name string) 
 // (e.g. a file and a notebook or a directory and a notebook). Thus users of this
 // method should be careful to avoid such clashes.
 func (w *workspaceFilesExtensionsClient) Mkdir(ctx context.Context, name string) error {
-	return w.filer.Mkdir(ctx, name)
+	return w.wsfs.Mkdir(ctx, name)
 }
