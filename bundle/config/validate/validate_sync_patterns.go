@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/fileset"
+	"github.com/databricks/cli/libs/vfs"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -50,7 +51,7 @@ func checkPatterns(patterns []string, path string, rb bundle.ReadOnlyBundle) (di
 		index := i
 		p := pattern
 		errs.Go(func() error {
-			fs, err := fileset.NewGlobSet(rb.RootPath(), []string{p})
+			fs, err := fileset.NewGlobSet(vfs.MustNew(rb.RootPath()), []string{p})
 			if err != nil {
 				return err
 			}

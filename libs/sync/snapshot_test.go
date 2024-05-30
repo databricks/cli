@@ -10,6 +10,7 @@ import (
 
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/testfile"
+	"github.com/databricks/cli/libs/vfs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -29,7 +30,7 @@ func TestDiff(t *testing.T) {
 
 	// Create temp project dir
 	projectDir := t.TempDir()
-	fileSet, err := git.NewFileSet(projectDir)
+	fileSet, err := git.NewFileSet(vfs.MustNew(projectDir))
 	require.NoError(t, err)
 	state := Snapshot{
 		SnapshotState: &SnapshotState{
@@ -93,7 +94,7 @@ func TestSymlinkDiff(t *testing.T) {
 
 	// Create temp project dir
 	projectDir := t.TempDir()
-	fileSet, err := git.NewFileSet(projectDir)
+	fileSet, err := git.NewFileSet(vfs.MustNew(projectDir))
 	require.NoError(t, err)
 	state := Snapshot{
 		SnapshotState: &SnapshotState{
@@ -124,7 +125,7 @@ func TestFolderDiff(t *testing.T) {
 
 	// Create temp project dir
 	projectDir := t.TempDir()
-	fileSet, err := git.NewFileSet(projectDir)
+	fileSet, err := git.NewFileSet(vfs.MustNew(projectDir))
 	require.NoError(t, err)
 	state := Snapshot{
 		SnapshotState: &SnapshotState{
@@ -169,7 +170,7 @@ func TestPythonNotebookDiff(t *testing.T) {
 
 	// Create temp project dir
 	projectDir := t.TempDir()
-	fileSet, err := git.NewFileSet(projectDir)
+	fileSet, err := git.NewFileSet(vfs.MustNew(projectDir))
 	require.NoError(t, err)
 	state := Snapshot{
 		SnapshotState: &SnapshotState{
@@ -244,7 +245,7 @@ func TestErrorWhenIdenticalRemoteName(t *testing.T) {
 
 	// Create temp project dir
 	projectDir := t.TempDir()
-	fileSet, err := git.NewFileSet(projectDir)
+	fileSet, err := git.NewFileSet(vfs.MustNew(projectDir))
 	require.NoError(t, err)
 	state := Snapshot{
 		SnapshotState: &SnapshotState{
@@ -281,7 +282,7 @@ func TestNoErrorRenameWithIdenticalRemoteName(t *testing.T) {
 
 	// Create temp project dir
 	projectDir := t.TempDir()
-	fileSet, err := git.NewFileSet(projectDir)
+	fileSet, err := git.NewFileSet(vfs.MustNew(projectDir))
 	require.NoError(t, err)
 	state := Snapshot{
 		SnapshotState: &SnapshotState{

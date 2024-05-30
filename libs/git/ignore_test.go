@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/libs/vfs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -13,7 +14,7 @@ func TestIgnoreFile(t *testing.T) {
 	var ign bool
 	var err error
 
-	f := newIgnoreFile("./testdata/.gitignore")
+	f := newIgnoreFile(vfs.MustNew("testdata"), ".gitignore")
 	ign, err = f.MatchesPath("root.foo")
 	require.NoError(t, err)
 	assert.True(t, ign)
@@ -27,7 +28,7 @@ func TestIgnoreFileDoesntExist(t *testing.T) {
 	var err error
 
 	// Files that don't exist are treated as an empty gitignore file.
-	f := newIgnoreFile("./testdata/thispathdoesntexist")
+	f := newIgnoreFile(vfs.MustNew("testdata"), "thispathdoesntexist")
 	ign, err = f.MatchesPath("i'm included")
 	require.NoError(t, err)
 	assert.False(t, ign)
@@ -41,7 +42,7 @@ func TestIgnoreFileTaint(t *testing.T) {
 	gitIgnorePath := filepath.Join(tempDir, ".gitignore")
 
 	// Files that don't exist are treated as an empty gitignore file.
-	f := newIgnoreFile(gitIgnorePath)
+	f := newIgnoreFile(vfs.MustNew(tempDir), ".gitignore")
 	ign, err = f.MatchesPath("hello")
 	require.NoError(t, err)
 	assert.False(t, ign)
