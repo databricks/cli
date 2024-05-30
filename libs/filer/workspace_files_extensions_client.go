@@ -120,10 +120,10 @@ func (w *workspaceFilesExtensionsClient) removeNotebookExtension(ctx context.Con
 		return nil, false
 	}
 
-	// When the extension is .ipynb we expect the export format to be jupyter.
+	// When the extension is .ipynb we expect the export format to be Jupyter.
 	// If it's not, return early.
 	if ext == ".ipynb" && stat.ReposExportFormat != workspace.ExportFormatJupyter {
-		log.Debugf(ctx, "attempting to determine if %s could be a notebook. Found a notebook at %s but it is not exported as a jupyter notebook. Its export format is %s.", name, path.Join(w.root, nameWithoutExtension), stat.ReposExportFormat)
+		log.Debugf(ctx, "attempting to determine if %s could be a notebook. Found a notebook at %s but it is not exported as a Jupyter notebook. Its export format is %s.", name, path.Join(w.root, nameWithoutExtension), stat.ReposExportFormat)
 		return nil, false
 	}
 
@@ -148,7 +148,7 @@ func (w *workspaceFilesExtensionsClient) addNotebookExtension(ctx context.Contex
 	// Get the extension for the notebook.
 	ext := notebook.GetExtensionByLanguage(stat.ObjectInfo)
 
-	// If the notebook was exported as a jupyter notebook, the extension should be .ipynb.
+	// If the notebook was exported as a Jupyter notebook, the extension should be .ipynb.
 	if stat.Language == workspace.LanguagePython && stat.ReposExportFormat == workspace.ExportFormatJupyter {
 		ext = ".ipynb"
 	}
