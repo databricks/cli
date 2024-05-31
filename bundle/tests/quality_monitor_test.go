@@ -10,11 +10,10 @@ import (
 )
 
 func assertExpectedMonitor(t *testing.T, p *resources.QualityMonitor) {
-	assert.Equal(t, "/Shared/provider-test/databricks_monitoring/main.test.thing1", p.AssetsDir)
-	assert.Equal(t, "model_id", p.InferenceLog.ModelIdCol)
-	assert.Equal(t, "prediction", p.InferenceLog.PredictionCol)
-	assert.Equal(t, catalog.MonitorInferenceLogProblemType("PROBLEM_TYPE_REGRESSION"), p.InferenceLog.ProblemType)
 	assert.Equal(t, "timestamp", p.InferenceLog.TimestampCol)
+	assert.Equal(t, "prediction", p.InferenceLog.PredictionCol)
+	assert.Equal(t, "model_id", p.InferenceLog.ModelIdCol)
+	assert.Equal(t, catalog.MonitorInferenceLogProblemType("PROBLEM_TYPE_REGRESSION"), p.InferenceLog.ProblemType)
 }
 
 func TestMonitorTableNames(t *testing.T) {
@@ -24,6 +23,9 @@ func TestMonitorTableNames(t *testing.T) {
 
 	p := b.Config.Resources.QualityMonitors["my_monitor"]
 	assert.Equal(t, "main.test.dev", p.TableName)
+	assert.Equal(t, "/Shared/provider-test/databricks_monitoring/main.test.thing1", p.AssetsDir)
+	assert.Equal(t, "test", p.OutputSchemaName)
+
 	assertExpectedMonitor(t, p)
 }
 
@@ -33,7 +35,9 @@ func TestMonitorStaging(t *testing.T) {
 
 	p := b.Config.Resources.QualityMonitors["my_monitor"]
 	assert.Equal(t, "main.test.staging", p.TableName)
+	assert.Equal(t, "/Shared/provider-test/databricks_monitoring/main.test.thing1", p.AssetsDir)
 	assert.Equal(t, "staging", p.OutputSchemaName)
+
 	assertExpectedMonitor(t, p)
 }
 
@@ -43,11 +47,13 @@ func TestMonitorProduction(t *testing.T) {
 
 	p := b.Config.Resources.QualityMonitors["my_monitor"]
 	assert.Equal(t, "main.test.prod", p.TableName)
+	assert.Equal(t, "/Shared/provider-test/databricks_monitoring/main.test.thing1", p.AssetsDir)
 	assert.Equal(t, "prod", p.OutputSchemaName)
 
-	assert.Equal(t, "/Shared/provider-test/databricks_monitoring/main.test.thing1", p.AssetsDir)
-	assert.Equal(t, "model_id", p.InferenceLog.ModelIdCol)
-	assert.Equal(t, "prediction_prod", p.InferenceLog.PredictionCol)
-	assert.Equal(t, catalog.MonitorInferenceLogProblemType("PROBLEM_TYPE_REGRESSION"), p.InferenceLog.ProblemType)
+	inferenceLog := p.InferenceLog
+	assert.Equal(t, []string{"1 day", "1 hour"}, inferenceLog.Granularities)
 	assert.Equal(t, "timestamp_prod", p.InferenceLog.TimestampCol)
+	assert.Equal(t, "prediction_prod", p.InferenceLog.PredictionCol)
+	assert.Equal(t, "model_id_prod", p.InferenceLog.ModelIdCol)
+	assert.Equal(t, catalog.MonitorInferenceLogProblemType("PROBLEM_TYPE_REGRESSION"), p.InferenceLog.ProblemType)
 }
