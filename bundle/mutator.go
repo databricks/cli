@@ -20,6 +20,11 @@ type Mutator interface {
 func Apply(ctx context.Context, b *Bundle, m Mutator) diag.Diagnostics {
 	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("mutator", m.Name()))
 
+	log.Tracef(ctx, "mutator:entry")
+	defer func() {
+		log.Tracef(ctx, "mutator:exit")
+	}()
+
 	log.Debugf(ctx, "Apply")
 
 	err := b.Config.MarkMutatorEntry(ctx)

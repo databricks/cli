@@ -40,6 +40,10 @@ func Initialize() bundle.Mutator {
 			mutator.ProcessTargetMode(),
 			mutator.DefaultQueueing(),
 			mutator.ExpandPipelineGlobPaths(),
+
+			// Configure use of WSFS for reads if the CLI is running on Databricks.
+			mutator.ConfigureWsfs(),
+
 			mutator.TranslatePaths(),
 			python.WrapperWarning(),
 			permissions.ApplyBundlePermissions(),
