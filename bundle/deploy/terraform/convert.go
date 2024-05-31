@@ -222,6 +222,13 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 		}
 	}
 
+	for k, src := range config.Resources.QualityMonitors {
+		noResources = false
+		var dst schema.ResourceQualityMonitor
+		conv(src, &dst)
+		tfroot.Resource.QualityMonitor[k] = &dst
+	}
+
 	// We explicitly set "resource" to nil to omit it from a JSON encoding.
 	// This is required because the terraform CLI requires >= 1 resources defined
 	// if the "resource" property is used in a .tf.json file.
@@ -365,6 +372,16 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 				}
 				cur.ID = instance.Attributes.ID
 				config.Resources.RegisteredModels[resource.Name] = cur
+			case "databricks_quality_monitor":
+				if config.Resources.QualityMonitors == nil {
+					config.Resources.QualityMonitors = make(map[string]*resources.QualityMonitor)
+				}
+				cur := config.Resources.QualityMonitors[resource.Name]
+				if cur == nil {
+					cur = &resources.QualityMonitor{ModifiedStatus: resources.ModifiedStatusDeleted}
+				}
+				cur.ID = instance.Attributes.ID
+				config.Resources.QualityMonitors[resource.Name] = cur
 			case "databricks_permissions":
 			case "databricks_grants":
 				// Ignore; no need to pull these back into the configuration.
@@ -400,6 +417,11 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 		}
 	}
 	for _, src := range config.Resources.RegisteredModels {
+		if src.ModifiedStatus == "" && src.ID == "" {
+			src.ModifiedStatus = resources.ModifiedStatusCreated
+		}
+	}
+	for _, src := range config.Resources.QualityMonitors {
 		if src.ModifiedStatus == "" && src.ID == "" {
 			src.ModifiedStatus = resources.ModifiedStatusCreated
 		}
