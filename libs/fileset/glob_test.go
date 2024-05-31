@@ -2,21 +2,26 @@ package fileset
 
 import (
 	"io/fs"
-	"os"
-	"path/filepath"
+	"path"
 	"slices"
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/vfs"
 	"github.com/stretchr/testify/require"
 )
 
-func TestGlobFileset(t *testing.T) {
-	cwd, err := os.Getwd()
-	require.NoError(t, err)
-	root := filepath.Join(cwd, "..", "filer")
+func collectRelativePaths(files []File) []string {
+	relativePaths := make([]string, 0)
+	for _, f := range files {
+		relativePaths = append(relativePaths, f.Relative)
+	}
+	return relativePaths
+}
 
-	entries, err := os.ReadDir(root)
+func TestGlobFileset(t *testing.T) {
+	root := vfs.MustNew("../filer")
+	entries, err := root.ReadDir(".")
 	require.NoError(t, err)
 
 	g, err := NewGlobSet(root, []string{
@@ -30,7 +35,7 @@ func TestGlobFileset(t *testing.T) {
 	require.Equal(t, len(files), len(entries))
 	for _, f := range files {
 		exists := slices.ContainsFunc(entries, func(de fs.DirEntry) bool {
-			return de.Name() == f.Name()
+			return de.Name() == path.Base(f.Relative)
 		})
 		require.True(t, exists)
 	}
@@ -46,9 +51,8 @@ func TestGlobFileset(t *testing.T) {
 }
 
 func TestGlobFilesetWithRelativeRoot(t *testing.T) {
-	root := filepath.Join("..", "filer")
-
-	entries, err := os.ReadDir(root)
+	root := vfs.MustNew("../filer")
+	entries, err := root.ReadDir(".")
 	require.NoError(t, err)
 
 	g, err := NewGlobSet(root, []string{
@@ -58,21 +62,14 @@ func TestGlobFilesetWithRelativeRoot(t *testing.T) {
 
 	files, err := g.All()
 	require.NoError(t, err)
-
 	require.Equal(t, len(files), len(entries))
-	for _, f := range files {
-		require.True(t, filepath.IsAbs(f.Absolute))
-	}
 }
 
 func TestGlobFilesetRecursively(t *testing.T) {
-	cwd, err := os.Getwd()
-	require.NoError(t, err)
-	root := filepath.Join(cwd, "..", "git")
-
+	root := vfs.MustNew("../git")
 	entries := make([]string, 0)
-	err = filepath.Walk(filepath.Join(root, "testdata"), func(path string, info fs.FileInfo, err error) error {
-		if !info.IsDir() {
+	err := fs.WalkDir(root, "testdata", func(path string, d fs.DirEntry, err error) error {
+		if !d.IsDir() {
 			entries = append(entries, path)
 		}
 		return nil
@@ -86,24 +83,14 @@ func TestGlobFilesetRecursively(t *testing.T) {
 
 	files, err := g.All()
 	require.NoError(t, err)
-
-	require.Equal(t, len(files), len(entries))
-	for _, f := range files {
-		exists := slices.ContainsFunc(entries, func(path string) bool {
-			return path == f.Absolute
-		})
-		require.True(t, exists)
-	}
+	require.ElementsMatch(t, entries, collectRelativePaths(files))
 }
 
 func TestGlobFilesetDir(t *testing.T) {
-	cwd, err := os.Getwd()
-	require.NoError(t, err)
-	root := filepath.Join(cwd, "..", "git")
-
+	root := vfs.MustNew("../git")
 	entries := make([]string, 0)
-	err = filepath.Walk(filepath.Join(root, "testdata", "a"), func(path string, info fs.FileInfo, err error) error {
-		if !info.IsDir() {
+	err := fs.WalkDir(root, "testdata/a", func(path string, d fs.DirEntry, err error) error {
+		if !d.IsDir() {
 			entries = append(entries, path)
 		}
 		return nil
@@ -117,23 +104,13 @@ func TestGlobFilesetDir(t *testing.T) {
 
 	files, err := g.All()
 	require.NoError(t, err)
-
-	require.Equal(t, len(files), len(entries))
-	for _, f := range files {
-		exists := slices.ContainsFunc(entries, func(path string) bool {
-			return path == f.Absolute
-		})
-		require.True(t, exists)
-	}
+	require.ElementsMatch(t, entries, collectRelativePaths(files))
 }
 
 func TestGlobFilesetDoubleQuotesWithFilePatterns(t *testing.T) {
-	cwd, err := os.Getwd()
-	require.NoError(t, err)
-	root := filepath.Join(cwd, "..", "git")
-
+	root := vfs.MustNew("../git")
 	entries := make([]string, 0)
-	err = filepath.Walk(filepath.Join(root, "testdata"), func(path string, info fs.FileInfo, err error) error {
+	err := fs.WalkDir(root, "testdata", func(path string, d fs.DirEntry, err error) error {
 		if strings.HasSuffix(path, ".txt") {
 			entries = append(entries, path)
 		}
@@ -148,12 +125,5 @@ func TestGlobFilesetDoubleQuotesWithFilePatterns(t *testing.T) {
 
 	files, err := g.All()
 	require.NoError(t, err)
-
-	require.Equal(t, len(files), len(entries))
-	for _, f := range files {
-		exists := slices.ContainsFunc(entries, func(path string) bool {
-			return path == f.Absolute
-		})
-		require.True(t, exists)
-	}
+	require.ElementsMatch(t, entries, collectRelativePaths(files))
 }

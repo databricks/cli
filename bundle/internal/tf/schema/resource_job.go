@@ -60,9 +60,9 @@ type ResourceJobGitSource struct {
 }
 
 type ResourceJobHealthRules struct {
-	Metric string `json:"metric,omitempty"`
-	Op     string `json:"op,omitempty"`
-	Value  int    `json:"value,omitempty"`
+	Metric string `json:"metric"`
+	Op     string `json:"op"`
+	Value  int    `json:"value"`
 }
 
 type ResourceJobHealth struct {
@@ -229,7 +229,6 @@ type ResourceJobJobClusterNewClusterWorkloadType struct {
 
 type ResourceJobJobClusterNewCluster struct {
 	ApplyPolicyDefaultValues  bool                                              `json:"apply_policy_default_values,omitempty"`
-	AutoterminationMinutes    int                                               `json:"autotermination_minutes,omitempty"`
 	ClusterId                 string                                            `json:"cluster_id,omitempty"`
 	ClusterName               string                                            `json:"cluster_name,omitempty"`
 	CustomTags                map[string]string                                 `json:"custom_tags,omitempty"`
@@ -262,7 +261,7 @@ type ResourceJobJobClusterNewCluster struct {
 }
 
 type ResourceJobJobCluster struct {
-	JobClusterKey string                           `json:"job_cluster_key,omitempty"`
+	JobClusterKey string                           `json:"job_cluster_key"`
 	NewCluster    *ResourceJobJobClusterNewCluster `json:"new_cluster,omitempty"`
 }
 
@@ -452,7 +451,6 @@ type ResourceJobNewClusterWorkloadType struct {
 
 type ResourceJobNewCluster struct {
 	ApplyPolicyDefaultValues  bool                                    `json:"apply_policy_default_values,omitempty"`
-	AutoterminationMinutes    int                                     `json:"autotermination_minutes,omitempty"`
 	ClusterId                 string                                  `json:"cluster_id,omitempty"`
 	ClusterName               string                                  `json:"cluster_name,omitempty"`
 	CustomTags                map[string]string                       `json:"custom_tags,omitempty"`
@@ -608,9 +606,9 @@ type ResourceJobTaskForEachTaskTaskEmailNotifications struct {
 }
 
 type ResourceJobTaskForEachTaskTaskHealthRules struct {
-	Metric string `json:"metric,omitempty"`
-	Op     string `json:"op,omitempty"`
-	Value  int    `json:"value,omitempty"`
+	Metric string `json:"metric"`
+	Op     string `json:"op"`
+	Value  int    `json:"value"`
 }
 
 type ResourceJobTaskForEachTaskTaskHealth struct {
@@ -803,7 +801,6 @@ type ResourceJobTaskForEachTaskTaskNewClusterWorkloadType struct {
 
 type ResourceJobTaskForEachTaskTaskNewCluster struct {
 	ApplyPolicyDefaultValues  bool                                                       `json:"apply_policy_default_values,omitempty"`
-	AutoterminationMinutes    int                                                        `json:"autotermination_minutes,omitempty"`
 	ClusterId                 string                                                     `json:"cluster_id,omitempty"`
 	ClusterName               string                                                     `json:"cluster_name,omitempty"`
 	CustomTags                map[string]string                                          `json:"custom_tags,omitempty"`
@@ -927,7 +924,7 @@ type ResourceJobTaskForEachTaskTaskSqlTaskQuery struct {
 
 type ResourceJobTaskForEachTaskTaskSqlTask struct {
 	Parameters  map[string]string                               `json:"parameters,omitempty"`
-	WarehouseId string                                          `json:"warehouse_id,omitempty"`
+	WarehouseId string                                          `json:"warehouse_id"`
 	Alert       *ResourceJobTaskForEachTaskTaskSqlTaskAlert     `json:"alert,omitempty"`
 	Dashboard   *ResourceJobTaskForEachTaskTaskSqlTaskDashboard `json:"dashboard,omitempty"`
 	File        *ResourceJobTaskForEachTaskTaskSqlTaskFile      `json:"file,omitempty"`
@@ -967,7 +964,7 @@ type ResourceJobTaskForEachTaskTask struct {
 	MinRetryIntervalMillis  int                                                 `json:"min_retry_interval_millis,omitempty"`
 	RetryOnTimeout          bool                                                `json:"retry_on_timeout,omitempty"`
 	RunIf                   string                                              `json:"run_if,omitempty"`
-	TaskKey                 string                                              `json:"task_key,omitempty"`
+	TaskKey                 string                                              `json:"task_key"`
 	TimeoutSeconds          int                                                 `json:"timeout_seconds,omitempty"`
 	ConditionTask           *ResourceJobTaskForEachTaskTaskConditionTask        `json:"condition_task,omitempty"`
 	DbtTask                 *ResourceJobTaskForEachTaskTaskDbtTask              `json:"dbt_task,omitempty"`
@@ -995,9 +992,9 @@ type ResourceJobTaskForEachTask struct {
 }
 
 type ResourceJobTaskHealthRules struct {
-	Metric string `json:"metric,omitempty"`
-	Op     string `json:"op,omitempty"`
-	Value  int    `json:"value,omitempty"`
+	Metric string `json:"metric"`
+	Op     string `json:"op"`
+	Value  int    `json:"value"`
 }
 
 type ResourceJobTaskHealth struct {
@@ -1190,7 +1187,6 @@ type ResourceJobTaskNewClusterWorkloadType struct {
 
 type ResourceJobTaskNewCluster struct {
 	ApplyPolicyDefaultValues  bool                                        `json:"apply_policy_default_values,omitempty"`
-	AutoterminationMinutes    int                                         `json:"autotermination_minutes,omitempty"`
 	ClusterId                 string                                      `json:"cluster_id,omitempty"`
 	ClusterName               string                                      `json:"cluster_name,omitempty"`
 	CustomTags                map[string]string                           `json:"custom_tags,omitempty"`
@@ -1314,7 +1310,7 @@ type ResourceJobTaskSqlTaskQuery struct {
 
 type ResourceJobTaskSqlTask struct {
 	Parameters  map[string]string                `json:"parameters,omitempty"`
-	WarehouseId string                           `json:"warehouse_id,omitempty"`
+	WarehouseId string                           `json:"warehouse_id"`
 	Alert       *ResourceJobTaskSqlTaskAlert     `json:"alert,omitempty"`
 	Dashboard   *ResourceJobTaskSqlTaskDashboard `json:"dashboard,omitempty"`
 	File        *ResourceJobTaskSqlTaskFile      `json:"file,omitempty"`
@@ -1354,7 +1350,7 @@ type ResourceJobTask struct {
 	MinRetryIntervalMillis  int                                  `json:"min_retry_interval_millis,omitempty"`
 	RetryOnTimeout          bool                                 `json:"retry_on_timeout,omitempty"`
 	RunIf                   string                               `json:"run_if,omitempty"`
-	TaskKey                 string                               `json:"task_key,omitempty"`
+	TaskKey                 string                               `json:"task_key"`
 	TimeoutSeconds          int                                  `json:"timeout_seconds,omitempty"`
 	ConditionTask           *ResourceJobTaskConditionTask        `json:"condition_task,omitempty"`
 	DbtTask                 *ResourceJobTaskDbtTask              `json:"dbt_task,omitempty"`

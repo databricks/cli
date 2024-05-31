@@ -2,10 +2,12 @@ package git
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/databricks/cli/libs/vfs"
 )
 
 type ReferenceType string
@@ -37,9 +39,9 @@ func isSHA1(s string) bool {
 	return re.MatchString(s)
 }
 
-func LoadReferenceFile(path string) (*Reference, error) {
+func LoadReferenceFile(root vfs.Path, path string) (*Reference, error) {
 	// read reference file content
-	b, err := os.ReadFile(path)
+	b, err := fs.ReadFile(root, path)
 	if os.IsNotExist(err) {
 		return nil, nil
 	}
@@ -73,8 +75,7 @@ func (ref *Reference) ResolvePath() (string, error) {
 	if ref.Type != ReferenceTypePointer {
 		return "", ErrNotAReferencePointer
 	}
-	refPath := strings.TrimPrefix(ref.Content, ReferencePrefix)
-	return filepath.FromSlash(refPath), nil
+	return strings.TrimPrefix(ref.Content, ReferencePrefix), nil
 }
 
 // resolves the name of the current branch from the reference file content. For example
@@ -87,8 +88,6 @@ func (ref *Reference) CurrentBranch() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// normalize branch ref path to work accross different operating systems
-	branchRefPath = filepath.ToSlash(branchRefPath)
 	if !strings.HasPrefix(branchRefPath, HeadPathPrefix) {
 		return "", fmt.Errorf("reference path %s does not have expected prefix %s", branchRefPath, HeadPathPrefix)
 	}
