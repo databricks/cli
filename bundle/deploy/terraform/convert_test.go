@@ -662,6 +662,7 @@ func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
 
 	assert.Equal(t, "1", config.Resources.QualityMonitors["test_monitor"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.QualityMonitors["test_monitor"].ModifiedStatus)
+
 	AssertFullResourceCoverage(t, &config)
 }
 
