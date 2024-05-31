@@ -149,7 +149,7 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	// Registered model 1
 	assert.Equal(t, "dev_lennart_registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 
-	//Quality Monitor 1
+	// Quality Monitor 1
 	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
 }
 
