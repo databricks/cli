@@ -2,11 +2,11 @@ package convert
 
 import (
 	"reflect"
-	"regexp"
 	"strings"
 	"sync"
 
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/textutil"
 )
 
 // structInfo holds the type information we need to efficiently
@@ -44,8 +44,6 @@ func getStructInfo(typ reflect.Type) structInfo {
 
 // buildStructInfo populates a new [structInfo] for the given type.
 func buildStructInfo(typ reflect.Type) structInfo {
-	var matchFirstCap = regexp.MustCompile("(.)([A-Z][a-z]+)")
-	var matchAllCap = regexp.MustCompile("([a-z0-9])([A-Z])")
 	var out = structInfo{
 		Fields: make(map[string][]int),
 	}
@@ -90,9 +88,7 @@ func buildStructInfo(typ reflect.Type) structInfo {
 			if typ.Name() == "QualityMonitor" && name == "-" {
 				urlName, _, _ := strings.Cut(sf.Tag.Get("url"), ",")
 				if urlName == "" || urlName == "-" {
-					snake := matchFirstCap.ReplaceAllString(sf.Name, "${1}_${2}")
-					snake = matchAllCap.ReplaceAllString(snake, "${1}_${2}")
-					name = strings.ToLower(snake)
+					name = textutil.CamelToSnakeCase(sf.Name)
 				} else {
 					name = urlName
 				}
