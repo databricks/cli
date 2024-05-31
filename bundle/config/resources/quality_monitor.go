@@ -41,7 +41,7 @@ func (s *QualityMonitor) Exists(ctx context.Context, w *databricks.WorkspaceClie
 		TableName: id,
 	})
 	if err != nil {
-		log.Debugf(ctx, "registered model %s does not exist", id)
+		log.Debugf(ctx, "quality monitor %s does not exist", id)
 		return false, err
 	}
 	return true, nil
