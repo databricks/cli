@@ -34,12 +34,15 @@ type ResourceModelServingConfigServedEntitiesExternalModelDatabricksModelServing
 }
 
 type ResourceModelServingConfigServedEntitiesExternalModelOpenaiConfig struct {
-	OpenaiApiBase        string `json:"openai_api_base,omitempty"`
-	OpenaiApiKey         string `json:"openai_api_key"`
-	OpenaiApiType        string `json:"openai_api_type,omitempty"`
-	OpenaiApiVersion     string `json:"openai_api_version,omitempty"`
-	OpenaiDeploymentName string `json:"openai_deployment_name,omitempty"`
-	OpenaiOrganization   string `json:"openai_organization,omitempty"`
+	MicrosoftEntraClientId     string `json:"microsoft_entra_client_id,omitempty"`
+	MicrosoftEntraClientSecret string `json:"microsoft_entra_client_secret,omitempty"`
+	MicrosoftEntraTenantId     string `json:"microsoft_entra_tenant_id,omitempty"`
+	OpenaiApiBase              string `json:"openai_api_base,omitempty"`
+	OpenaiApiKey               string `json:"openai_api_key,omitempty"`
+	OpenaiApiType              string `json:"openai_api_type,omitempty"`
+	OpenaiApiVersion           string `json:"openai_api_version,omitempty"`
+	OpenaiDeploymentName       string `json:"openai_deployment_name,omitempty"`
+	OpenaiOrganization         string `json:"openai_organization,omitempty"`
 }
 
 type ResourceModelServingConfigServedEntitiesExternalModelPalmConfig struct {
@@ -114,6 +117,7 @@ type ResourceModelServingTags struct {
 type ResourceModelServing struct {
 	Id                string                           `json:"id,omitempty"`
 	Name              string                           `json:"name"`
+	RouteOptimized    bool                             `json:"route_optimized,omitempty"`
 	ServingEndpointId string                           `json:"serving_endpoint_id,omitempty"`
 	Config            *ResourceModelServingConfig      `json:"config,omitempty"`
 	RateLimits        []ResourceModelServingRateLimits `json:"rate_limits,omitempty"`
