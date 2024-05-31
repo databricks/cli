@@ -53,7 +53,7 @@ func (s *QualityMonitor) TerraformResourceName() string {
 
 func (s *QualityMonitor) Validate() error {
 	if s == nil || !s.DynamicValue.IsValid() {
-		return fmt.Errorf("registered model is not defined")
+		return fmt.Errorf("quality monitor is not defined")
 	}
 
 	return nil
