@@ -88,13 +88,13 @@ func buildStructInfo(typ reflect.Type) structInfo {
 
 			name, _, _ := strings.Cut(sf.Tag.Get("json"), ",")
 			if typ.Name() == "QualityMonitor" && name == "-" {
-				url_name, _, _ := strings.Cut(sf.Tag.Get("url"), ",")
-				if url_name == "" || url_name == "-" {
+				urlName, _, _ := strings.Cut(sf.Tag.Get("url"), ",")
+				if urlName == "" || urlName == "-" {
 					snake := matchFirstCap.ReplaceAllString(sf.Name, "${1}_${2}")
 					snake = matchAllCap.ReplaceAllString(snake, "${1}_${2}")
 					name = strings.ToLower(snake)
 				} else {
-					name = url_name
+					name = urlName
 				}
 			}
 			if name == "" || name == "-" {
