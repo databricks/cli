@@ -88,12 +88,12 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 
 	// Monitors do not support run_as in the API.
 	if len(b.Config.Resources.QualityMonitors) > 0 {
-		return errUnsupportedResourceTypeForRunAs{
-			resourceType:     "quality_monitors",
-			resourceLocation: b.Config.GetLocation("resources.quality_monitors"),
-			currentUser:      b.Config.Workspace.CurrentUser.UserName,
-			runAsUser:        identity,
-		}
+		return reportRunAsNotSupported(
+			"quality_monitors",
+			b.Config.GetLocation("resources.quality_monitors"),
+			b.Config.Workspace.CurrentUser.UserName,
+			identity,
+		)
 	}
 
 	return nil
