@@ -216,14 +216,14 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	b := mockBundle(config.Production)
 
 	diags := validateProductionMode(context.Background(), b, false)
-	require.ErrorContains(t, diags.Error(), "production")
+	require.ErrorContains(t, diags.Error(), "target with 'mode: production' must specify explicit 'workspace.root_path' to make sure only one copy is deployed")
 
 	b.Config.Workspace.StatePath = "/Shared/.bundle/x/y/state"
 	b.Config.Workspace.ArtifactPath = "/Shared/.bundle/x/y/artifacts"
 	b.Config.Workspace.FilePath = "/Shared/.bundle/x/y/files"
 
 	diags = validateProductionMode(context.Background(), b, false)
-	require.ErrorContains(t, diags.Error(), "production")
+	require.ErrorContains(t, diags.Error(), "target with 'mode: production' must specify explicit 'workspace.root_path' to make sure only one copy is deployed")
 
 	permissions := []resources.Permission{
 		{
