@@ -114,7 +114,9 @@ func TestRunAsErrorForPipelines(t *testing.T) {
 	err := diags.Error()
 
 	configPath := filepath.FromSlash("run_as/not_allowed/pipelines/databricks.yml")
-	assert.ErrorContains(t, err, "pipelines do not support", configPath)
+	assert.ErrorContains(t, err, "pipelines do not support a setting a run_as user that is different from the owner.\n"+
+		"Current identity: jane@doe.com. Run as identity: my_service_principal.\n"+
+		"See https://docs", configPath)
 }
 
 func TestRunAsNoErrorForPipelines(t *testing.T) {
@@ -152,7 +154,9 @@ func TestRunAsErrorForModelServing(t *testing.T) {
 	diags := bundle.Apply(ctx, b, mutator.SetRunAs())
 	err := diags.Error()
 
-	assert.ErrorContains(t, err, "model_serving_endpoints do not support")
+	assert.ErrorContains(t, err, "model_serving_endpoints do not support a setting a run_as user that is different from the owner.\n"+
+		"Current identity: jane@doe.com. Run as identity: my_service_principal.\n"+
+		"See https://docs")
 }
 
 func TestRunAsNoErrorForModelServingEndpoints(t *testing.T) {

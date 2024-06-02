@@ -270,7 +270,7 @@ func (w *WorkspaceFilesClient) ReadDir(ctx context.Context, name string) ([]fs.D
 		}
 
 		// This API returns a 404 if the specified path does not exist,
-		// or if we don't have access to write ot the path.
+		// or if we don't have access to write to the path.
 		if aerr.StatusCode == http.StatusNotFound {
 			return nil, NoSuchDirectoryError{path.Dir(absPath)}
 		}

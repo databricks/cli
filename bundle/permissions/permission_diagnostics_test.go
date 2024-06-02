@@ -82,7 +82,7 @@ func TestReportTerraformError1(t *testing.T) {
 	b := mockBundle([]resources.Permission{
 		{Level: "CAN_MANAGE", UserName: "alice@databricks.com"},
 	})
-	err := TryReportTerraformPermissionError(ctx, b, errors.New(`Error: terraform apply: exit status 1
+	err := TryExtendTerraformPermissionError(ctx, b, errors.New(`Error: terraform apply: exit status 1
 
 Error: cannot update permissions: ...
 
@@ -97,7 +97,7 @@ func TestReportTerraformError2(t *testing.T) {
 	b := mockBundle([]resources.Permission{
 		{Level: "CAN_MANAGE", UserName: "alice@databricks.com"},
 	})
-	err := TryReportTerraformPermissionError(ctx, b, errors.New(`Error: terraform apply: exit status 1
+	err := TryExtendTerraformPermissionError(ctx, b, errors.New(`Error: terraform apply: exit status 1
 
 Error: cannot read pipeline: User xyz does not have View permissions on pipeline 4521dbb6-42aa-418c-b94d-b5f4859a3454.
 
@@ -112,7 +112,7 @@ func TestReportTerraformError3(t *testing.T) {
 	b := mockBundle([]resources.Permission{
 		{Level: "CAN_MANAGE", UserName: "alice@databricks.com"},
 	})
-	err := TryReportTerraformPermissionError(ctx, b, errors.New(`Error: terraform apply: exit status 1
+	err := TryExtendTerraformPermissionError(ctx, b, errors.New(`Error: terraform apply: exit status 1
 
 	Error: cannot read permissions: 1706906c-c0a2-4c25-9f57-3a7aa3cb8b90 does not have Owner permissions on Job with ID: ElasticJobId(28263044278868). Please contact the owner or an administrator for access.
 
@@ -130,7 +130,7 @@ func TestReportTerraformErrorNotOwner(t *testing.T) {
 	b.Config.RunAs = &jobs.JobRunAs{
 		UserName: "testuser@databricks.com",
 	}
-	err := TryReportTerraformPermissionError(ctx, b, errors.New(`Error: terraform apply: exit status 1
+	err := TryExtendTerraformPermissionError(ctx, b, errors.New(`Error: terraform apply: exit status 1
 
 Error: cannot read pipeline: User xyz does not have View permissions on pipeline 4521dbb6-42aa-418c-b94d-b5f4859a3454.
 

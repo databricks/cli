@@ -143,14 +143,13 @@ func ReportPermissionDenied(ctx context.Context, b *bundle.Bundle, path string) 
 	}}
 }
 
-func TryReportTerraformPermissionError(ctx context.Context, b *bundle.Bundle, err error) diag.Diagnostics {
+func TryExtendTerraformPermissionError(ctx context.Context, b *bundle.Bundle, err error) diag.Diagnostics {
 	_, assistance := analyzeBundlePermissions(b)
 
-	// In a best-effort attempt to provide curated error messages, we match
+	// In a best-effort attempt to provide actionable error messages, we match
 	// against a few specific error messages that come from the Jobs and Pipelines API.
-	// Matching against messages isn't ideal but it's the best we can do right now.
-	// In the event one of these messages changes, we just show the direct API
-	// error instead.
+	// For matching errors we provide a more specific error message that includes
+	// details on how to resolve the issue.
 	if !strings.Contains(err.Error(), "cannot update permissions") &&
 		!strings.Contains(err.Error(), "permissions on pipeline") &&
 		!strings.Contains(err.Error(), "cannot read permissions") &&
