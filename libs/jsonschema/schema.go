@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/internal/build"
 	"golang.org/x/mod/semver"
@@ -81,6 +82,41 @@ func (s *Schema) ParseString(v string) (any, error) {
 	return fromString(v, s.Type)
 }
 
+func (s *Schema) getByPath(path string) (*Schema, error) {
+	p := strings.Split(path, ".")
+
+	res := s
+	for _, node := range p {
+		if node == "*" {
+			res = res.AdditionalProperties.(*Schema)
+			continue
+		}
+		var ok bool
+		res, ok = res.Properties[node]
+		if !ok {
+			return nil, fmt.Errorf("property %q not found in schema. Query path: %s", node, path)
+		}
+	}
+	return res, nil
+}
+
+func (s *Schema) GetByPath(path string) (Schema, error) {
+	v, err := s.getByPath(path)
+	if err != nil {
+		return Schema{}, err
+	}
+	return *v, nil
+}
+
+func (s *Schema) SetByPath(path string, v Schema) error {
+	dst, err := s.getByPath(path)
+	if err != nil {
+		return err
+	}
+	*dst = v
+	return nil
+}
+
 type Type string
 
 const (
@@ -97,7 +133,7 @@ const (
 func (schema *Schema) validateSchemaPropertyTypes() error {
 	for _, v := range schema.Properties {
 		switch v.Type {
-		case NumberType, BooleanType, StringType, IntegerType:
+		case NumberType, BooleanType, StringType, IntegerType, ObjectType, ArrayType:
 			continue
 		case "int", "int32", "int64":
 			return fmt.Errorf("type %s is not a recognized json schema type. Please use \"integer\" instead", v.Type)

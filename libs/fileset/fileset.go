@@ -4,20 +4,24 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"path/filepath"
+
+	"github.com/databricks/cli/libs/vfs"
 )
 
 // FileSet facilitates fast recursive file listing of a path.
 // It optionally takes into account ignore rules through the [Ignorer] interface.
 type FileSet struct {
-	root   string
+	// Root path of the fileset.
+	root vfs.Path
+
+	// Ignorer interface to check if a file or directory should be ignored.
 	ignore Ignorer
 }
 
 // New returns a [FileSet] for the given root path.
-func New(root string) *FileSet {
+func New(root vfs.Path) *FileSet {
 	return &FileSet{
-		root:   filepath.Clean(root),
+		root:   root,
 		ignore: nopIgnorer{},
 	}
 }
@@ -32,11 +36,6 @@ func (w *FileSet) SetIgnorer(ignore Ignorer) {
 	w.ignore = ignore
 }
 
-// Return root for fileset.
-func (w *FileSet) Root() string {
-	return w.root
-}
-
 // Return all tracked files for Repo
 func (w *FileSet) All() ([]File, error) {
 	return w.recursiveListFiles()
@@ -46,12 +45,7 @@ func (w *FileSet) All() ([]File, error) {
 // that are being tracked in the FileSet (ie not being ignored for matching one of the
 // patterns in w.ignore)
 func (w *FileSet) recursiveListFiles() (fileList []File, err error) {
-	err = filepath.WalkDir(w.root, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		relPath, err := filepath.Rel(w.root, path)
+	err = fs.WalkDir(w.root, ".", func(name string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -66,25 +60,25 @@ func (w *FileSet) recursiveListFiles() (fileList []File, err error) {
 		}
 
 		if d.IsDir() {
-			ign, err := w.ignore.IgnoreDirectory(relPath)
+			ign, err := w.ignore.IgnoreDirectory(name)
 			if err != nil {
-				return fmt.Errorf("cannot check if %s should be ignored: %w", relPath, err)
+				return fmt.Errorf("cannot check if %s should be ignored: %w", name, err)
 			}
 			if ign {
-				return filepath.SkipDir
+				return fs.SkipDir
 			}
 			return nil
 		}
 
-		ign, err := w.ignore.IgnoreFile(relPath)
+		ign, err := w.ignore.IgnoreFile(name)
 		if err != nil {
-			return fmt.Errorf("cannot check if %s should be ignored: %w", relPath, err)
+			return fmt.Errorf("cannot check if %s should be ignored: %w", name, err)
 		}
 		if ign {
 			return nil
 		}
 
-		fileList = append(fileList, NewFile(d, path, relPath))
+		fileList = append(fileList, NewFile(w.root, d, name))
 		return nil
 	})
 	return

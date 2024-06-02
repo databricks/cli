@@ -1,9 +1,6 @@
 package paths
 
 import (
-	"fmt"
-	"path/filepath"
-
 	"github.com/databricks/cli/libs/dyn"
 )
 
@@ -22,11 +19,4 @@ func (p *Paths) ConfigureConfigFilePath() {
 		panic("DynamicValue not set")
 	}
 	p.ConfigFilePath = p.DynamicValue.Location().File
-}
-
-func (p *Paths) ConfigFileDirectory() (string, error) {
-	if p.ConfigFilePath == "" {
-		return "", fmt.Errorf("config file path not configured")
-	}
-	return filepath.Dir(p.ConfigFilePath), nil
 }

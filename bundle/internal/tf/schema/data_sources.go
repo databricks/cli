@@ -7,6 +7,7 @@ type DataSources struct {
 	AwsBucketPolicy       map[string]any `json:"databricks_aws_bucket_policy,omitempty"`
 	AwsCrossaccountPolicy map[string]any `json:"databricks_aws_crossaccount_policy,omitempty"`
 	AwsUnityCatalogPolicy map[string]any `json:"databricks_aws_unity_catalog_policy,omitempty"`
+	Catalog               map[string]any `json:"databricks_catalog,omitempty"`
 	Catalogs              map[string]any `json:"databricks_catalogs,omitempty"`
 	Cluster               map[string]any `json:"databricks_cluster,omitempty"`
 	ClusterPolicy         map[string]any `json:"databricks_cluster_policy,omitempty"`
@@ -26,6 +27,7 @@ type DataSources struct {
 	Jobs                  map[string]any `json:"databricks_jobs,omitempty"`
 	Metastore             map[string]any `json:"databricks_metastore,omitempty"`
 	Metastores            map[string]any `json:"databricks_metastores,omitempty"`
+	MlflowExperiment      map[string]any `json:"databricks_mlflow_experiment,omitempty"`
 	MlflowModel           map[string]any `json:"databricks_mlflow_model,omitempty"`
 	MwsCredentials        map[string]any `json:"databricks_mws_credentials,omitempty"`
 	MwsWorkspaces         map[string]any `json:"databricks_mws_workspaces,omitempty"`
@@ -43,6 +45,7 @@ type DataSources struct {
 	SqlWarehouses         map[string]any `json:"databricks_sql_warehouses,omitempty"`
 	StorageCredential     map[string]any `json:"databricks_storage_credential,omitempty"`
 	StorageCredentials    map[string]any `json:"databricks_storage_credentials,omitempty"`
+	Table                 map[string]any `json:"databricks_table,omitempty"`
 	Tables                map[string]any `json:"databricks_tables,omitempty"`
 	User                  map[string]any `json:"databricks_user,omitempty"`
 	Views                 map[string]any `json:"databricks_views,omitempty"`
@@ -56,6 +59,7 @@ func NewDataSources() *DataSources {
 		AwsBucketPolicy:       make(map[string]any),
 		AwsCrossaccountPolicy: make(map[string]any),
 		AwsUnityCatalogPolicy: make(map[string]any),
+		Catalog:               make(map[string]any),
 		Catalogs:              make(map[string]any),
 		Cluster:               make(map[string]any),
 		ClusterPolicy:         make(map[string]any),
@@ -75,6 +79,7 @@ func NewDataSources() *DataSources {
 		Jobs:                  make(map[string]any),
 		Metastore:             make(map[string]any),
 		Metastores:            make(map[string]any),
+		MlflowExperiment:      make(map[string]any),
 		MlflowModel:           make(map[string]any),
 		MwsCredentials:        make(map[string]any),
 		MwsWorkspaces:         make(map[string]any),
@@ -92,6 +97,7 @@ func NewDataSources() *DataSources {
 		SqlWarehouses:         make(map[string]any),
 		StorageCredential:     make(map[string]any),
 		StorageCredentials:    make(map[string]any),
+		Table:                 make(map[string]any),
 		Tables:                make(map[string]any),
 		User:                  make(map[string]any),
 		Views:                 make(map[string]any),

@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/vfs"
 )
 
 type loadGitDetails struct{}
@@ -22,7 +23,7 @@ func (m *loadGitDetails) Name() string {
 
 func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Load relevant git repository
-	repo, err := git.NewRepository(b.RootPath)
+	repo, err := git.NewRepository(vfs.MustNew(b.RootPath))
 	if err != nil {
 		return diag.FromErr(err)
 	}

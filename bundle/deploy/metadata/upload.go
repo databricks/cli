@@ -4,13 +4,18 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"path"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
 )
 
-const MetadataFileName = "metadata.json"
+const metadataFileName = "metadata.json"
+
+func metadataFilePath(b *bundle.Bundle) string {
+	return path.Join(b.Config.Workspace.StatePath, metadataFileName)
+}
 
 type upload struct{}
 
@@ -33,5 +38,5 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return diag.FromErr(err)
 	}
 
-	return diag.FromErr(f.Write(ctx, MetadataFileName, bytes.NewReader(metadata), filer.CreateParentDirectories, filer.OverwriteIfExists))
+	return diag.FromErr(f.Write(ctx, metadataFileName, bytes.NewReader(metadata), filer.CreateParentDirectories, filer.OverwriteIfExists))
 }

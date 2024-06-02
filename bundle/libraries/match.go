@@ -62,6 +62,10 @@ func validateTaskLibraries(libs []compute.Library, b *bundle.Bundle) error {
 
 func validateEnvironments(envs []jobs.JobEnvironment, b *bundle.Bundle) error {
 	for _, env := range envs {
+		if env.Spec == nil {
+			continue
+		}
+
 		for _, dep := range env.Spec.Dependencies {
 			matches, err := filepath.Glob(filepath.Join(b.RootPath, dep))
 			if err != nil {

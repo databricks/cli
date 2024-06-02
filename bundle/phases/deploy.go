@@ -36,7 +36,7 @@ func Deploy() bundle.Mutator {
 				permissions.ApplyWorkspaceRootPermissions(),
 				terraform.Interpolate(),
 				terraform.Write(),
-				deploy.CheckRunningResource(),
+				terraform.CheckRunningResource(),
 				bundle.Defer(
 					terraform.Apply(),
 					bundle.Seq(

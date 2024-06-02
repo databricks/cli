@@ -401,6 +401,7 @@ func newUpdate() *cobra.Command {
 	// TODO: any: options
 	cmd.Flags().StringVar(&updateReq.Query, "query", updateReq.Query, `The text of the query to be run.`)
 	cmd.Flags().Var(&updateReq.RunAsRole, "run-as-role", `Sets the **Run as** role for the object. Supported values: [owner, viewer]`)
+	// TODO: array: tags
 
 	cmd.Use = "update QUERY_ID"
 	cmd.Short = `Change a query definition.`

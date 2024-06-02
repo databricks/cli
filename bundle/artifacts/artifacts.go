@@ -150,6 +150,10 @@ func uploadArtifact(ctx context.Context, b *bundle.Bundle, a *config.Artifact, u
 
 			for i := range job.Environments {
 				env := &job.Environments[i]
+				if env.Spec == nil {
+					continue
+				}
+
 				for j := range env.Spec.Dependencies {
 					lib := env.Spec.Dependencies[j]
 					if isArtifactMatchLibrary(f, lib, b) {

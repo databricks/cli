@@ -30,6 +30,10 @@ func FindAllEnvironments(b *bundle.Bundle) map[string]([]jobs.JobEnvironment) {
 
 func isEnvsWithLocalLibraries(envs []jobs.JobEnvironment) bool {
 	for _, e := range envs {
+		if e.Spec == nil {
+			continue
+		}
+
 		for _, l := range e.Spec.Dependencies {
 			if IsEnvironmentDependencyLocal(l) {
 				return true

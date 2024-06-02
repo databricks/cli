@@ -37,6 +37,7 @@ func allResourceTypes(t *testing.T) []string {
 		"model_serving_endpoints",
 		"models",
 		"pipelines",
+		"quality_monitors",
 		"registered_models",
 	},
 		resourceTypes,

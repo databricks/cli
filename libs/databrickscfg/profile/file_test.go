@@ -1,4 +1,4 @@
-package databrickscfg
+package profile
 
 import (
 	"context"
@@ -32,7 +32,8 @@ func TestLoadProfilesReturnsHomedirAsTilde(t *testing.T) {
 	ctx := context.Background()
 	ctx = env.WithUserHomeDir(ctx, "testdata")
 	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", "./testdata/databrickscfg")
-	file, _, err := LoadProfiles(ctx, func(p Profile) bool { return true })
+	profiler := FileProfilerImpl{}
+	file, err := profiler.GetPath(ctx)
 	require.NoError(t, err)
 	require.Equal(t, filepath.Clean("~/databrickscfg"), file)
 }
@@ -41,7 +42,8 @@ func TestLoadProfilesReturnsHomedirAsTildeExoticFile(t *testing.T) {
 	ctx := context.Background()
 	ctx = env.WithUserHomeDir(ctx, "testdata")
 	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", "~/databrickscfg")
-	file, _, err := LoadProfiles(ctx, func(p Profile) bool { return true })
+	profiler := FileProfilerImpl{}
+	file, err := profiler.GetPath(ctx)
 	require.NoError(t, err)
 	require.Equal(t, filepath.Clean("~/databrickscfg"), file)
 }
@@ -49,7 +51,8 @@ func TestLoadProfilesReturnsHomedirAsTildeExoticFile(t *testing.T) {
 func TestLoadProfilesReturnsHomedirAsTildeDefaultFile(t *testing.T) {
 	ctx := context.Background()
 	ctx = env.WithUserHomeDir(ctx, "testdata/sample-home")
-	file, _, err := LoadProfiles(ctx, func(p Profile) bool { return true })
+	profiler := FileProfilerImpl{}
+	file, err := profiler.GetPath(ctx)
 	require.NoError(t, err)
 	require.Equal(t, filepath.Clean("~/.databrickscfg"), file)
 }
@@ -57,14 +60,16 @@ func TestLoadProfilesReturnsHomedirAsTildeDefaultFile(t *testing.T) {
 func TestLoadProfilesNoConfiguration(t *testing.T) {
 	ctx := context.Background()
 	ctx = env.WithUserHomeDir(ctx, "testdata")
-	_, _, err := LoadProfiles(ctx, func(p Profile) bool { return true })
+	profiler := FileProfilerImpl{}
+	_, err := profiler.LoadProfiles(ctx, MatchAllProfiles)
 	require.ErrorIs(t, err, ErrNoConfiguration)
 }
 
 func TestLoadProfilesMatchWorkspace(t *testing.T) {
 	ctx := context.Background()
 	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", "./testdata/databrickscfg")
-	_, profiles, err := LoadProfiles(ctx, MatchWorkspaceProfiles)
+	profiler := FileProfilerImpl{}
+	profiles, err := profiler.LoadProfiles(ctx, MatchWorkspaceProfiles)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"DEFAULT", "query", "foo1", "foo2"}, profiles.Names())
 }
@@ -72,7 +77,8 @@ func TestLoadProfilesMatchWorkspace(t *testing.T) {
 func TestLoadProfilesMatchAccount(t *testing.T) {
 	ctx := context.Background()
 	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", "./testdata/databrickscfg")
-	_, profiles, err := LoadProfiles(ctx, MatchAccountProfiles)
+	profiler := FileProfilerImpl{}
+	profiles, err := profiler.LoadProfiles(ctx, MatchAccountProfiles)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"acc"}, profiles.Names())
 }

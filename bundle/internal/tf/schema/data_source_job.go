@@ -55,9 +55,9 @@ type DataSourceJobJobSettingsSettingsGitSource struct {
 }
 
 type DataSourceJobJobSettingsSettingsHealthRules struct {
-	Metric string `json:"metric,omitempty"`
-	Op     string `json:"op,omitempty"`
-	Value  int    `json:"value,omitempty"`
+	Metric string `json:"metric"`
+	Op     string `json:"op"`
+	Value  int    `json:"value"`
 }
 
 type DataSourceJobJobSettingsSettingsHealth struct {
@@ -222,7 +222,7 @@ type DataSourceJobJobSettingsSettingsJobClusterNewCluster struct {
 }
 
 type DataSourceJobJobSettingsSettingsJobCluster struct {
-	JobClusterKey string                                                `json:"job_cluster_key,omitempty"`
+	JobClusterKey string                                                `json:"job_cluster_key"`
 	NewCluster    *DataSourceJobJobSettingsSettingsJobClusterNewCluster `json:"new_cluster,omitempty"`
 }
 
@@ -243,12 +243,13 @@ type DataSourceJobJobSettingsSettingsLibraryPypi struct {
 }
 
 type DataSourceJobJobSettingsSettingsLibrary struct {
-	Egg   string                                        `json:"egg,omitempty"`
-	Jar   string                                        `json:"jar,omitempty"`
-	Whl   string                                        `json:"whl,omitempty"`
-	Cran  *DataSourceJobJobSettingsSettingsLibraryCran  `json:"cran,omitempty"`
-	Maven *DataSourceJobJobSettingsSettingsLibraryMaven `json:"maven,omitempty"`
-	Pypi  *DataSourceJobJobSettingsSettingsLibraryPypi  `json:"pypi,omitempty"`
+	Egg          string                                        `json:"egg,omitempty"`
+	Jar          string                                        `json:"jar,omitempty"`
+	Requirements string                                        `json:"requirements,omitempty"`
+	Whl          string                                        `json:"whl,omitempty"`
+	Cran         *DataSourceJobJobSettingsSettingsLibraryCran  `json:"cran,omitempty"`
+	Maven        *DataSourceJobJobSettingsSettingsLibraryMaven `json:"maven,omitempty"`
+	Pypi         *DataSourceJobJobSettingsSettingsLibraryPypi  `json:"pypi,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsNewClusterAutoscale struct {
@@ -532,9 +533,9 @@ type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskEmailNotifications struc
 }
 
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskHealthRules struct {
-	Metric string `json:"metric,omitempty"`
-	Op     string `json:"op,omitempty"`
-	Value  int    `json:"value,omitempty"`
+	Metric string `json:"metric"`
+	Op     string `json:"op"`
+	Value  int    `json:"value"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskHealth struct {
@@ -558,12 +559,13 @@ type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryPypi struct {
 }
 
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibrary struct {
-	Egg   string                                                           `json:"egg,omitempty"`
-	Jar   string                                                           `json:"jar,omitempty"`
-	Whl   string                                                           `json:"whl,omitempty"`
-	Cran  *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryCran  `json:"cran,omitempty"`
-	Maven *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryMaven `json:"maven,omitempty"`
-	Pypi  *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryPypi  `json:"pypi,omitempty"`
+	Egg          string                                                           `json:"egg,omitempty"`
+	Jar          string                                                           `json:"jar,omitempty"`
+	Requirements string                                                           `json:"requirements,omitempty"`
+	Whl          string                                                           `json:"whl,omitempty"`
+	Cran         *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryCran  `json:"cran,omitempty"`
+	Maven        *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryMaven `json:"maven,omitempty"`
+	Pypi         *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskLibraryPypi  `json:"pypi,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskNewClusterAutoscale struct {
@@ -803,7 +805,7 @@ type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSqlTaskQuery struct {
 
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSqlTask struct {
 	Parameters  map[string]string                                                    `json:"parameters,omitempty"`
-	WarehouseId string                                                               `json:"warehouse_id,omitempty"`
+	WarehouseId string                                                               `json:"warehouse_id"`
 	Alert       *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSqlTaskAlert     `json:"alert,omitempty"`
 	Dashboard   *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSqlTaskDashboard `json:"dashboard,omitempty"`
 	File        *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSqlTaskFile      `json:"file,omitempty"`
@@ -842,7 +844,7 @@ type DataSourceJobJobSettingsSettingsTaskForEachTaskTask struct {
 	MinRetryIntervalMillis int                                                                      `json:"min_retry_interval_millis,omitempty"`
 	RetryOnTimeout         bool                                                                     `json:"retry_on_timeout,omitempty"`
 	RunIf                  string                                                                   `json:"run_if,omitempty"`
-	TaskKey                string                                                                   `json:"task_key,omitempty"`
+	TaskKey                string                                                                   `json:"task_key"`
 	TimeoutSeconds         int                                                                      `json:"timeout_seconds,omitempty"`
 	ConditionTask          *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskConditionTask        `json:"condition_task,omitempty"`
 	DbtTask                *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskDbtTask              `json:"dbt_task,omitempty"`
@@ -870,9 +872,9 @@ type DataSourceJobJobSettingsSettingsTaskForEachTask struct {
 }
 
 type DataSourceJobJobSettingsSettingsTaskHealthRules struct {
-	Metric string `json:"metric,omitempty"`
-	Op     string `json:"op,omitempty"`
-	Value  int    `json:"value,omitempty"`
+	Metric string `json:"metric"`
+	Op     string `json:"op"`
+	Value  int    `json:"value"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskHealth struct {
@@ -896,12 +898,13 @@ type DataSourceJobJobSettingsSettingsTaskLibraryPypi struct {
 }
 
 type DataSourceJobJobSettingsSettingsTaskLibrary struct {
-	Egg   string                                            `json:"egg,omitempty"`
-	Jar   string                                            `json:"jar,omitempty"`
-	Whl   string                                            `json:"whl,omitempty"`
-	Cran  *DataSourceJobJobSettingsSettingsTaskLibraryCran  `json:"cran,omitempty"`
-	Maven *DataSourceJobJobSettingsSettingsTaskLibraryMaven `json:"maven,omitempty"`
-	Pypi  *DataSourceJobJobSettingsSettingsTaskLibraryPypi  `json:"pypi,omitempty"`
+	Egg          string                                            `json:"egg,omitempty"`
+	Jar          string                                            `json:"jar,omitempty"`
+	Requirements string                                            `json:"requirements,omitempty"`
+	Whl          string                                            `json:"whl,omitempty"`
+	Cran         *DataSourceJobJobSettingsSettingsTaskLibraryCran  `json:"cran,omitempty"`
+	Maven        *DataSourceJobJobSettingsSettingsTaskLibraryMaven `json:"maven,omitempty"`
+	Pypi         *DataSourceJobJobSettingsSettingsTaskLibraryPypi  `json:"pypi,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskNewClusterAutoscale struct {
@@ -1141,7 +1144,7 @@ type DataSourceJobJobSettingsSettingsTaskSqlTaskQuery struct {
 
 type DataSourceJobJobSettingsSettingsTaskSqlTask struct {
 	Parameters  map[string]string                                     `json:"parameters,omitempty"`
-	WarehouseId string                                                `json:"warehouse_id,omitempty"`
+	WarehouseId string                                                `json:"warehouse_id"`
 	Alert       *DataSourceJobJobSettingsSettingsTaskSqlTaskAlert     `json:"alert,omitempty"`
 	Dashboard   *DataSourceJobJobSettingsSettingsTaskSqlTaskDashboard `json:"dashboard,omitempty"`
 	File        *DataSourceJobJobSettingsSettingsTaskSqlTaskFile      `json:"file,omitempty"`
@@ -1180,7 +1183,7 @@ type DataSourceJobJobSettingsSettingsTask struct {
 	MinRetryIntervalMillis int                                                       `json:"min_retry_interval_millis,omitempty"`
 	RetryOnTimeout         bool                                                      `json:"retry_on_timeout,omitempty"`
 	RunIf                  string                                                    `json:"run_if,omitempty"`
-	TaskKey                string                                                    `json:"task_key,omitempty"`
+	TaskKey                string                                                    `json:"task_key"`
 	TimeoutSeconds         int                                                       `json:"timeout_seconds,omitempty"`
 	ConditionTask          *DataSourceJobJobSettingsSettingsTaskConditionTask        `json:"condition_task,omitempty"`
 	DbtTask                *DataSourceJobJobSettingsSettingsTaskDbtTask              `json:"dbt_task,omitempty"`
