@@ -18,6 +18,7 @@ type ResourceSqlTable struct {
 	Id                    string                   `json:"id,omitempty"`
 	Name                  string                   `json:"name"`
 	Options               map[string]string        `json:"options,omitempty"`
+	Owner                 string                   `json:"owner,omitempty"`
 	Partitions            []string                 `json:"partitions,omitempty"`
 	Properties            map[string]string        `json:"properties,omitempty"`
 	SchemaName            string                   `json:"schema_name"`

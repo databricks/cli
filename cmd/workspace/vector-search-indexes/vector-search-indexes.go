@@ -42,6 +42,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newGetIndex())
 	cmd.AddCommand(newListIndexes())
 	cmd.AddCommand(newQueryIndex())
+	cmd.AddCommand(newScanIndex())
 	cmd.AddCommand(newSyncIndex())
 	cmd.AddCommand(newUpsertDataVectorIndex())
 
@@ -463,6 +464,76 @@ func newQueryIndex() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range queryIndexOverrides {
 		fn(cmd, &queryIndexReq)
+	}
+
+	return cmd
+}
+
+// start scan-index command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var scanIndexOverrides []func(
+	*cobra.Command,
+	*vectorsearch.ScanVectorIndexRequest,
+)
+
+func newScanIndex() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var scanIndexReq vectorsearch.ScanVectorIndexRequest
+	var scanIndexJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&scanIndexJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&scanIndexReq.LastPrimaryKey, "last-primary-key", scanIndexReq.LastPrimaryKey, `Primary key of the last entry returned in the previous scan.`)
+	cmd.Flags().IntVar(&scanIndexReq.NumResults, "num-results", scanIndexReq.NumResults, `Number of results to return.`)
+
+	cmd.Use = "scan-index INDEX_NAME"
+	cmd.Short = `Scan an index.`
+	cmd.Long = `Scan an index.
+  
+  Scan the specified vector index and return the first num_results entries
+  after the exclusive primary_key.
+
+  Arguments:
+    INDEX_NAME: Name of the vector index to scan.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = scanIndexJson.Unmarshal(&scanIndexReq)
+			if err != nil {
+				return err
+			}
+		}
+		scanIndexReq.IndexName = args[0]
+
+		response, err := w.VectorSearchIndexes.ScanIndex(ctx, scanIndexReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range scanIndexOverrides {
+		fn(cmd, &scanIndexReq)
 	}
 
 	return cmd

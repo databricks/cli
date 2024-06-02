@@ -48,7 +48,7 @@ func TestReadSchemaForObject(t *testing.T) {
 	spec := &openapi.Specification{}
 	reader := &OpenapiReader{
 		OpenapiSpec: spec,
-		Memo:        make(map[string]*jsonschema.Schema),
+		memo:        make(map[string]jsonschema.Schema),
 	}
 	err := json.Unmarshal([]byte(specString), spec)
 	require.NoError(t, err)
@@ -106,7 +106,7 @@ func TestReadSchemaForArray(t *testing.T) {
 	spec := &openapi.Specification{}
 	reader := &OpenapiReader{
 		OpenapiSpec: spec,
-		Memo:        make(map[string]*jsonschema.Schema),
+		memo:        make(map[string]jsonschema.Schema),
 	}
 	err := json.Unmarshal([]byte(specString), spec)
 	require.NoError(t, err)
@@ -152,7 +152,7 @@ func TestReadSchemaForMap(t *testing.T) {
 	spec := &openapi.Specification{}
 	reader := &OpenapiReader{
 		OpenapiSpec: spec,
-		Memo:        make(map[string]*jsonschema.Schema),
+		memo:        make(map[string]jsonschema.Schema),
 	}
 	err := json.Unmarshal([]byte(specString), spec)
 	require.NoError(t, err)
@@ -201,7 +201,7 @@ func TestRootReferenceIsResolved(t *testing.T) {
 	spec := &openapi.Specification{}
 	reader := &OpenapiReader{
 		OpenapiSpec: spec,
-		Memo:        make(map[string]*jsonschema.Schema),
+		memo:        make(map[string]jsonschema.Schema),
 	}
 	err := json.Unmarshal([]byte(specString), spec)
 	require.NoError(t, err)
@@ -251,7 +251,7 @@ func TestSelfReferenceLoopErrors(t *testing.T) {
 	spec := &openapi.Specification{}
 	reader := &OpenapiReader{
 		OpenapiSpec: spec,
-		Memo:        make(map[string]*jsonschema.Schema),
+		memo:        make(map[string]jsonschema.Schema),
 	}
 	err := json.Unmarshal([]byte(specString), spec)
 	require.NoError(t, err)
@@ -285,7 +285,7 @@ func TestCrossReferenceLoopErrors(t *testing.T) {
 	spec := &openapi.Specification{}
 	reader := &OpenapiReader{
 		OpenapiSpec: spec,
-		Memo:        make(map[string]*jsonschema.Schema),
+		memo:        make(map[string]jsonschema.Schema),
 	}
 	err := json.Unmarshal([]byte(specString), spec)
 	require.NoError(t, err)
@@ -330,7 +330,7 @@ func TestReferenceResolutionForMapInObject(t *testing.T) {
 	spec := &openapi.Specification{}
 	reader := &OpenapiReader{
 		OpenapiSpec: spec,
-		Memo:        make(map[string]*jsonschema.Schema),
+		memo:        make(map[string]jsonschema.Schema),
 	}
 	err := json.Unmarshal([]byte(specString), spec)
 	require.NoError(t, err)
@@ -400,7 +400,7 @@ func TestReferenceResolutionForArrayInObject(t *testing.T) {
 	spec := &openapi.Specification{}
 	reader := &OpenapiReader{
 		OpenapiSpec: spec,
-		Memo:        make(map[string]*jsonschema.Schema),
+		memo:        make(map[string]jsonschema.Schema),
 	}
 	err := json.Unmarshal([]byte(specString), spec)
 	require.NoError(t, err)
@@ -426,6 +426,64 @@ func TestReferenceResolutionForArrayInObject(t *testing.T) {
 						"type": "number",
 						"description": "a single mango"
 					}
+				}
+			}
+		}`
+
+	t.Log("[DEBUG] actual: ", string(fruitsSchemaJson))
+	t.Log("[DEBUG] expected: ", expected)
+	assert.Equal(t, expected, string(fruitsSchemaJson))
+}
+
+func TestReferenceResolutionDoesNotOverwriteDescriptions(t *testing.T) {
+	specString := `{
+		"components": {
+			"schemas": {
+				"foo": {
+					"type": "number"
+				},
+				"fruits": {
+					"type": "object",
+					"properties": {
+						"guava": {
+							"type": "object",
+							"description": "Guava is a fruit",
+							"$ref": "#/components/schemas/foo"
+						},
+						"mango": {
+							"type": "object",
+							"description": "What is a mango?",
+							"$ref": "#/components/schemas/foo"
+						}
+					}
+				}
+			}
+		}
+	}`
+	spec := &openapi.Specification{}
+	reader := &OpenapiReader{
+		OpenapiSpec: spec,
+		memo:        make(map[string]jsonschema.Schema),
+	}
+	err := json.Unmarshal([]byte(specString), spec)
+	require.NoError(t, err)
+
+	fruitsSchema, err := reader.readResolvedSchema("#/components/schemas/fruits")
+	require.NoError(t, err)
+
+	fruitsSchemaJson, err := json.MarshalIndent(fruitsSchema, "		", "	")
+	require.NoError(t, err)
+
+	expected := `{
+			"type": "object",
+			"properties": {
+				"guava": {
+					"type": "number",
+					"description": "Guava is a fruit"
+				},
+				"mango": {
+					"type": "number",
+					"description": "What is a mango?"
 				}
 			}
 		}`

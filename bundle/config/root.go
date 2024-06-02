@@ -138,6 +138,14 @@ func (r *Root) updateWithDynamicValue(nv dyn.Value) error {
 	// Assign the normalized configuration tree.
 	r.value = nv
 
+	// At the moment the check has to be done as part of updateWithDynamicValue
+	// because otherwise ConfigureConfigFilePath will fail with a panic.
+	// In the future, we should move this check to a separate mutator in initialise phase.
+	err = r.Resources.VerifyAllResourcesDefined()
+	if err != nil {
+		return err
+	}
+
 	// Assign config file paths after converting to typed configuration.
 	r.ConfigureConfigFilePath()
 	return nil
@@ -408,15 +416,19 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 
 		// For each variable, normalize its contents if it is a single string.
 		return dyn.Map(target, "variables", dyn.Foreach(func(_ dyn.Path, variable dyn.Value) (dyn.Value, error) {
-			if variable.Kind() != dyn.KindString {
+			switch variable.Kind() {
+
+			case dyn.KindString, dyn.KindBool, dyn.KindFloat, dyn.KindInt:
+				// Rewrite the variable to a map with a single key called "default".
+				// This conforms to the variable type. Normalization back to the typed
+				// configuration will convert this to a string if necessary.
+				return dyn.NewValue(map[string]dyn.Value{
+					"default": variable,
+				}, variable.Location()), nil
+
+			default:
 				return variable, nil
 			}
-
-			// Rewrite the variable to a map with a single key called "default".
-			// This conforms to the variable type.
-			return dyn.NewValue(map[string]dyn.Value{
-				"default": variable,
-			}, variable.Location()), nil
 		}))
 	}))
 }

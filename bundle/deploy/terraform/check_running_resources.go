@@ -1,4 +1,4 @@
-package deploy
+package terraform
 
 import (
 	"context"
@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
-	"github.com/hashicorp/terraform-exec/tfexec"
 	tfjson "github.com/hashicorp/terraform-json"
 	"golang.org/x/sync/errgroup"
 )
@@ -36,26 +35,16 @@ func (l *checkRunningResources) Apply(ctx context.Context, b *bundle.Bundle) dia
 		return nil
 	}
 
-	tf := b.Terraform
-	if tf == nil {
-		return diag.Errorf("terraform not initialized")
-	}
-
-	err := tf.Init(ctx, tfexec.Upgrade(true))
-	if err != nil {
-		return diag.Errorf("terraform init: %v", err)
-	}
-
-	state, err := b.Terraform.Show(ctx)
-	if err != nil {
+	state, err := ParseResourcesState(ctx, b)
+	if err != nil && state == nil {
 		return diag.FromErr(err)
 	}
 
-	err = checkAnyResourceRunning(ctx, b.WorkspaceClient(), state)
+	w := b.WorkspaceClient()
+	err = checkAnyResourceRunning(ctx, w, state)
 	if err != nil {
-		return diag.Errorf("deployment aborted, err: %v", err)
+		return diag.FromErr(err)
 	}
-
 	return nil
 }
 
@@ -63,53 +52,49 @@ func CheckRunningResource() *checkRunningResources {
 	return &checkRunningResources{}
 }
 
-func checkAnyResourceRunning(ctx context.Context, w *databricks.WorkspaceClient, state *tfjson.State) error {
-	if state.Values == nil || state.Values.RootModule == nil {
+func checkAnyResourceRunning(ctx context.Context, w *databricks.WorkspaceClient, state *resourcesState) error {
+	if state == nil {
 		return nil
 	}
 
 	errs, errCtx := errgroup.WithContext(ctx)
 
-	for _, resource := range state.Values.RootModule.Resources {
-		// Limit to resources.
+	for _, resource := range state.Resources {
 		if resource.Mode != tfjson.ManagedResourceMode {
 			continue
 		}
+		for _, instance := range resource.Instances {
+			id := instance.Attributes.ID
+			if id == "" {
+				continue
+			}
 
-		value, ok := resource.AttributeValues["id"]
-		if !ok {
-			continue
-		}
-		id, ok := value.(string)
-		if !ok {
-			continue
-		}
-
-		switch resource.Type {
-		case "databricks_job":
-			errs.Go(func() error {
-				isRunning, err := IsJobRunning(errCtx, w, id)
-				// If there's an error retrieving the job, we assume it's not running
-				if err != nil {
-					return err
-				}
-				if isRunning {
-					return &ErrResourceIsRunning{resourceType: "job", resourceId: id}
-				}
-				return nil
-			})
-		case "databricks_pipeline":
-			errs.Go(func() error {
-				isRunning, err := IsPipelineRunning(errCtx, w, id)
-				// If there's an error retrieving the pipeline, we assume it's not running
-				if err != nil {
+			switch resource.Type {
+			case "databricks_job":
+				errs.Go(func() error {
+					isRunning, err := IsJobRunning(errCtx, w, id)
+					// If there's an error retrieving the job, we assume it's not running
+					if err != nil {
+						return err
+					}
+					if isRunning {
+						return &ErrResourceIsRunning{resourceType: "job", resourceId: id}
+					}
 					return nil
-				}
-				if isRunning {
-					return &ErrResourceIsRunning{resourceType: "pipeline", resourceId: id}
-				}
-				return nil
-			})
+				})
+			case "databricks_pipeline":
+				errs.Go(func() error {
+					isRunning, err := IsPipelineRunning(errCtx, w, id)
+					// If there's an error retrieving the pipeline, we assume it's not running
+					if err != nil {
+						return nil
+					}
+					if isRunning {
+						return &ErrResourceIsRunning{resourceType: "pipeline", resourceId: id}
+					}
+					return nil
+				})
+			}
 		}
 	}
 

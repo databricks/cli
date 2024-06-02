@@ -46,6 +46,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newDelete())
 	cmd.AddCommand(newExportMetrics())
 	cmd.AddCommand(newGet())
+	cmd.AddCommand(newGetOpenApi())
 	cmd.AddCommand(newGetPermissionLevels())
 	cmd.AddCommand(newGetPermissions())
 	cmd.AddCommand(newList())
@@ -151,6 +152,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: rate_limits
+	cmd.Flags().BoolVar(&createReq.RouteOptimized, "route-optimized", createReq.RouteOptimized, `Enable route optimization for the serving endpoint.`)
 	// TODO: array: tags
 
 	cmd.Use = "create"
@@ -302,11 +304,12 @@ func newExportMetrics() *cobra.Command {
 
 		exportMetricsReq.Name = args[0]
 
-		err = w.ServingEndpoints.ExportMetrics(ctx, exportMetricsReq)
+		response, err := w.ServingEndpoints.ExportMetrics(ctx, exportMetricsReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		defer response.Contents.Close()
+		return cmdio.Render(ctx, response.Contents)
 	}
 
 	// Disable completions since they are not applicable.
@@ -374,6 +377,67 @@ func newGet() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range getOverrides {
 		fn(cmd, &getReq)
+	}
+
+	return cmd
+}
+
+// start get-open-api command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getOpenApiOverrides []func(
+	*cobra.Command,
+	*serving.GetOpenApiRequest,
+)
+
+func newGetOpenApi() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getOpenApiReq serving.GetOpenApiRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-open-api NAME"
+	cmd.Short = `Get the schema for a serving endpoint.`
+	cmd.Long = `Get the schema for a serving endpoint.
+  
+  Get the query schema of the serving endpoint in OpenAPI format. The schema
+  contains information for the supported paths, input and output format and
+  datatypes.
+
+  Arguments:
+    NAME: The name of the serving endpoint that the served model belongs to. This
+      field is required.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		getOpenApiReq.Name = args[0]
+
+		err = w.ServingEndpoints.GetOpenApi(ctx, getOpenApiReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getOpenApiOverrides {
+		fn(cmd, &getOpenApiReq)
 	}
 
 	return cmd

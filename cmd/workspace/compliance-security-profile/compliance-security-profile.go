@@ -1,6 +1,6 @@
 // Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
 
-package csp_enablement
+package compliance_security_profile
 
 import (
 	"fmt"
@@ -18,7 +18,7 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "csp-enablement",
+		Use:   "compliance-security-profile",
 		Short: `Controls whether to enable the compliance security profile for the current workspace.`,
 		Long: `Controls whether to enable the compliance security profile for the current
   workspace. Enabling it on a workspace is permanent. By default, it is turned
@@ -45,13 +45,13 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*settings.GetCspEnablementSettingRequest,
+	*settings.GetComplianceSecurityProfileSettingRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getReq settings.GetCspEnablementSettingRequest
+	var getReq settings.GetComplianceSecurityProfileSettingRequest
 
 	// TODO: short flags
 
@@ -75,7 +75,7 @@ func newGet() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.Settings.CspEnablement().Get(ctx, getReq)
+		response, err := w.Settings.ComplianceSecurityProfile().Get(ctx, getReq)
 		if err != nil {
 			return err
 		}
@@ -100,13 +100,13 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*settings.UpdateCspEnablementSettingRequest,
+	*settings.UpdateComplianceSecurityProfileSettingRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var updateReq settings.UpdateCspEnablementSettingRequest
+	var updateReq settings.UpdateComplianceSecurityProfileSettingRequest
 	var updateJson flags.JsonFlag
 
 	// TODO: short flags
@@ -138,7 +138,7 @@ func newUpdate() *cobra.Command {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.Settings.CspEnablement().Update(ctx, updateReq)
+		response, err := w.Settings.ComplianceSecurityProfile().Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
@@ -157,4 +157,4 @@ func newUpdate() *cobra.Command {
 	return cmd
 }
 
-// end service CSPEnablement
+// end service ComplianceSecurityProfile

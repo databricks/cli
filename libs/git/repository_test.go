@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/vfs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -43,7 +44,7 @@ func newTestRepository(t *testing.T) *testRepository {
 	_, err = f2.WriteString(`ref: refs/heads/main`)
 	require.NoError(t, err)
 
-	repo, err := NewRepository(tmp)
+	repo, err := NewRepository(vfs.MustNew(tmp))
 	require.NoError(t, err)
 
 	return &testRepository{
@@ -53,7 +54,7 @@ func newTestRepository(t *testing.T) *testRepository {
 }
 
 func (testRepo *testRepository) checkoutCommit(commitId string) {
-	f, err := os.OpenFile(filepath.Join(testRepo.r.rootPath, ".git", "HEAD"), os.O_WRONLY|os.O_TRUNC, os.ModePerm)
+	f, err := os.OpenFile(filepath.Join(testRepo.r.Root(), ".git", "HEAD"), os.O_WRONLY|os.O_TRUNC, os.ModePerm)
 	require.NoError(testRepo.t, err)
 	defer f.Close()
 
@@ -63,7 +64,7 @@ func (testRepo *testRepository) checkoutCommit(commitId string) {
 
 func (testRepo *testRepository) addBranch(name string, latestCommit string) {
 	// create dir for branch head reference
-	branchDir := filepath.Join(testRepo.r.rootPath, ".git", "refs", "heads")
+	branchDir := filepath.Join(testRepo.r.Root(), ".git", "refs", "heads")
 	err := os.MkdirAll(branchDir, os.ModePerm)
 	require.NoError(testRepo.t, err)
 
@@ -78,7 +79,7 @@ func (testRepo *testRepository) addBranch(name string, latestCommit string) {
 }
 
 func (testRepo *testRepository) checkoutBranch(name string) {
-	f, err := os.OpenFile(filepath.Join(testRepo.r.rootPath, ".git", "HEAD"), os.O_WRONLY|os.O_TRUNC, os.ModePerm)
+	f, err := os.OpenFile(filepath.Join(testRepo.r.Root(), ".git", "HEAD"), os.O_WRONLY|os.O_TRUNC, os.ModePerm)
 	require.NoError(testRepo.t, err)
 	defer f.Close()
 
@@ -89,7 +90,7 @@ func (testRepo *testRepository) checkoutBranch(name string) {
 // add remote origin url to test repo
 func (testRepo *testRepository) addOriginUrl(url string) {
 	// open config in append mode
-	f, err := os.OpenFile(filepath.Join(testRepo.r.rootPath, ".git", "config"), os.O_WRONLY|os.O_APPEND, os.ModePerm)
+	f, err := os.OpenFile(filepath.Join(testRepo.r.Root(), ".git", "config"), os.O_WRONLY|os.O_APPEND, os.ModePerm)
 	require.NoError(testRepo.t, err)
 	defer f.Close()
 
@@ -128,7 +129,7 @@ func (testRepo *testRepository) assertOriginUrl(expected string) {
 
 func TestRepository(t *testing.T) {
 	// Load this repository as test.
-	repo, err := NewRepository("../..")
+	repo, err := NewRepository(vfs.MustNew("../.."))
 	tr := testRepository{t, repo}
 	require.NoError(t, err)
 
@@ -142,7 +143,7 @@ func TestRepository(t *testing.T) {
 	assert.True(t, tr.Ignore("vendor/"))
 
 	// Check that ignores under testdata work.
-	assert.True(t, tr.Ignore(filepath.Join("libs", "git", "testdata", "root.ignoreme")))
+	assert.True(t, tr.Ignore("libs/git/testdata/root.ignoreme"))
 }
 
 func TestRepositoryGitConfigForEmptyRepo(t *testing.T) {
@@ -192,7 +193,7 @@ func TestRepositoryGitConfigForSshUrl(t *testing.T) {
 
 func TestRepositoryGitConfigWhenNotARepo(t *testing.T) {
 	tmp := t.TempDir()
-	repo, err := NewRepository(tmp)
+	repo, err := NewRepository(vfs.MustNew(tmp))
 	require.NoError(t, err)
 
 	branch, err := repo.CurrentBranch()

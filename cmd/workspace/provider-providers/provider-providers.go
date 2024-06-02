@@ -69,9 +69,6 @@ func newCreate() *cobra.Command {
   
   Create a provider`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -128,9 +125,6 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete provider.
   
   Delete provider`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -198,9 +192,6 @@ func newGet() *cobra.Command {
 	cmd.Long = `Get provider.
   
   Get provider profile`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -272,9 +263,6 @@ func newList() *cobra.Command {
   
   List provider profiles for account.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -326,9 +314,6 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Update provider.
   
   Update provider profile`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 

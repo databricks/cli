@@ -8,18 +8,9 @@ import (
 )
 
 func (m *translatePaths) applyPipelineTranslations(b *bundle.Bundle, v dyn.Value) (dyn.Value, error) {
-	var fallback = make(map[string]string)
-	var err error
-
-	for key, pipeline := range b.Config.Resources.Pipelines {
-		dir, err := pipeline.ConfigFileDirectory()
-		if err != nil {
-			return dyn.InvalidValue, fmt.Errorf("unable to determine directory for pipeline %s: %w", key, err)
-		}
-
-		// If we cannot resolve the relative path using the [dyn.Value] location itself,
-		// use the pipeline's location as fallback. This is necessary for backwards compatibility.
-		fallback[key] = dir
+	fallback, err := gatherFallbackPaths(v, "pipelines")
+	if err != nil {
+		return dyn.InvalidValue, err
 	}
 
 	// Base pattern to match all libraries in all pipelines.

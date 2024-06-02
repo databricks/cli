@@ -69,9 +69,6 @@ func newList() *cobra.Command {
   List personalization requests to this provider. This will return all
   personalization requests, regardless of which listing they are for.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -127,9 +124,6 @@ func newUpdate() *cobra.Command {
   
   Update personalization request. This method only permits updating the status
   of the request.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 

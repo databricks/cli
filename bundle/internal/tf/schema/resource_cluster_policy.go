@@ -19,12 +19,13 @@ type ResourceClusterPolicyLibrariesPypi struct {
 }
 
 type ResourceClusterPolicyLibraries struct {
-	Egg   string                               `json:"egg,omitempty"`
-	Jar   string                               `json:"jar,omitempty"`
-	Whl   string                               `json:"whl,omitempty"`
-	Cran  *ResourceClusterPolicyLibrariesCran  `json:"cran,omitempty"`
-	Maven *ResourceClusterPolicyLibrariesMaven `json:"maven,omitempty"`
-	Pypi  *ResourceClusterPolicyLibrariesPypi  `json:"pypi,omitempty"`
+	Egg          string                               `json:"egg,omitempty"`
+	Jar          string                               `json:"jar,omitempty"`
+	Requirements string                               `json:"requirements,omitempty"`
+	Whl          string                               `json:"whl,omitempty"`
+	Cran         *ResourceClusterPolicyLibrariesCran  `json:"cran,omitempty"`
+	Maven        *ResourceClusterPolicyLibrariesMaven `json:"maven,omitempty"`
+	Pypi         *ResourceClusterPolicyLibrariesPypi  `json:"pypi,omitempty"`
 }
 
 type ResourceClusterPolicy struct {

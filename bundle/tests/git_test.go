@@ -2,6 +2,8 @@ package config_tests
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -13,14 +15,16 @@ import (
 func TestGitAutoLoad(t *testing.T) {
 	b := load(t, "./autoload_git")
 	assert.True(t, b.Config.Bundle.Git.Inferred)
-	assert.Contains(t, b.Config.Bundle.Git.OriginURL, "/cli")
+	validUrl := strings.Contains(b.Config.Bundle.Git.OriginURL, "/cli") || strings.Contains(b.Config.Bundle.Git.OriginURL, "/bricks")
+	assert.True(t, validUrl, fmt.Sprintf("Expected URL to contain '/cli' or '/bricks', got %s", b.Config.Bundle.Git.OriginURL))
 }
 
 func TestGitManuallySetBranch(t *testing.T) {
 	b := loadTarget(t, "./autoload_git", "production")
 	assert.False(t, b.Config.Bundle.Git.Inferred)
 	assert.Equal(t, "main", b.Config.Bundle.Git.Branch)
-	assert.Contains(t, b.Config.Bundle.Git.OriginURL, "/cli")
+	validUrl := strings.Contains(b.Config.Bundle.Git.OriginURL, "/cli") || strings.Contains(b.Config.Bundle.Git.OriginURL, "/bricks")
+	assert.True(t, validUrl, fmt.Sprintf("Expected URL to contain '/cli' or '/bricks', got %s", b.Config.Bundle.Git.OriginURL))
 }
 
 func TestGitBundleBranchValidation(t *testing.T) {

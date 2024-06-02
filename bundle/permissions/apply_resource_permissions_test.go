@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
 )
 
@@ -23,8 +24,16 @@ func TestApplyBundlePermissions(t *testing.T) {
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
-					"job_1": {},
-					"job_2": {},
+					"job_1": {
+						JobSettings: &jobs.JobSettings{
+							Name: "job_1",
+						},
+					},
+					"job_2": {
+						JobSettings: &jobs.JobSettings{
+							Name: "job_2",
+						},
+					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline_1": {},
@@ -109,11 +118,17 @@ func TestWarningOnOverlapPermission(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job_1": {
+						JobSettings: &jobs.JobSettings{
+							Name: "job_1",
+						},
 						Permissions: []resources.Permission{
 							{Level: CAN_VIEW, UserName: "TestUser"},
 						},
 					},
 					"job_2": {
+						JobSettings: &jobs.JobSettings{
+							Name: "job_2",
+						},
 						Permissions: []resources.Permission{
 							{Level: CAN_VIEW, UserName: "TestUser2"},
 						},

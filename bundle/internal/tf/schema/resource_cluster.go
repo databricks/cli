@@ -32,10 +32,6 @@ type ResourceClusterAzureAttributes struct {
 	LogAnalyticsInfo *ResourceClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
 }
 
-type ResourceClusterCloneFrom struct {
-	SourceClusterId string `json:"source_cluster_id"`
-}
-
 type ResourceClusterClusterLogConfDbfs struct {
 	Destination string `json:"destination"`
 }
@@ -146,12 +142,13 @@ type ResourceClusterLibraryPypi struct {
 }
 
 type ResourceClusterLibrary struct {
-	Egg   string                       `json:"egg,omitempty"`
-	Jar   string                       `json:"jar,omitempty"`
-	Whl   string                       `json:"whl,omitempty"`
-	Cran  *ResourceClusterLibraryCran  `json:"cran,omitempty"`
-	Maven *ResourceClusterLibraryMaven `json:"maven,omitempty"`
-	Pypi  *ResourceClusterLibraryPypi  `json:"pypi,omitempty"`
+	Egg          string                       `json:"egg,omitempty"`
+	Jar          string                       `json:"jar,omitempty"`
+	Requirements string                       `json:"requirements,omitempty"`
+	Whl          string                       `json:"whl,omitempty"`
+	Cran         *ResourceClusterLibraryCran  `json:"cran,omitempty"`
+	Maven        *ResourceClusterLibraryMaven `json:"maven,omitempty"`
+	Pypi         *ResourceClusterLibraryPypi  `json:"pypi,omitempty"`
 }
 
 type ResourceClusterWorkloadTypeClients struct {
@@ -168,7 +165,6 @@ type ResourceCluster struct {
 	AutoterminationMinutes    int                               `json:"autotermination_minutes,omitempty"`
 	ClusterId                 string                            `json:"cluster_id,omitempty"`
 	ClusterName               string                            `json:"cluster_name,omitempty"`
-	ClusterSource             string                            `json:"cluster_source,omitempty"`
 	CustomTags                map[string]string                 `json:"custom_tags,omitempty"`
 	DataSecurityMode          string                            `json:"data_security_mode,omitempty"`
 	DefaultTags               map[string]string                 `json:"default_tags,omitempty"`
@@ -194,7 +190,6 @@ type ResourceCluster struct {
 	Autoscale                 *ResourceClusterAutoscale         `json:"autoscale,omitempty"`
 	AwsAttributes             *ResourceClusterAwsAttributes     `json:"aws_attributes,omitempty"`
 	AzureAttributes           *ResourceClusterAzureAttributes   `json:"azure_attributes,omitempty"`
-	CloneFrom                 *ResourceClusterCloneFrom         `json:"clone_from,omitempty"`
 	ClusterLogConf            *ResourceClusterClusterLogConf    `json:"cluster_log_conf,omitempty"`
 	ClusterMountInfo          []ResourceClusterClusterMountInfo `json:"cluster_mount_info,omitempty"`
 	DockerImage               *ResourceClusterDockerImage       `json:"docker_image,omitempty"`

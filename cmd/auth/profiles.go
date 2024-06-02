@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -29,10 +29,11 @@ func (c *profileMetadata) IsEmpty() bool {
 	return c.Host == "" && c.AccountID == ""
 }
 
-func (c *profileMetadata) Load(ctx context.Context, skipValidate bool) {
+func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipValidate bool) {
 	cfg := &config.Config{
-		Loaders: []config.Loader{config.ConfigFile},
-		Profile: c.Name,
+		Loaders:    []config.Loader{config.ConfigFile},
+		ConfigFile: configFilePath,
+		Profile:    c.Name,
 	}
 	_ = cfg.EnsureResolved()
 	if cfg.IsAws() {
@@ -93,7 +94,7 @@ func newProfilesCommand() *cobra.Command {
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		var profiles []*profileMetadata
-		iniFile, err := databrickscfg.Get(cmd.Context())
+		iniFile, err := profile.DefaultProfiler.Get(cmd.Context())
 		if os.IsNotExist(err) {
 			// return empty list for non-configured machines
 			iniFile = &config.File{
@@ -117,7 +118,7 @@ func newProfilesCommand() *cobra.Command {
 			go func() {
 				ctx := cmd.Context()
 				t := time.Now()
-				profile.Load(ctx, skipValidate)
+				profile.Load(ctx, iniFile.Path(), skipValidate)
 				log.Debugf(ctx, "Profile %q took %s to load", profile.Name, time.Since(t))
 				wg.Done()
 			}()
