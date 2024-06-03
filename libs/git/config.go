@@ -90,8 +90,8 @@ func (c config) load(r io.Reader) error {
 	return nil
 }
 
-func (c config) loadFile(p vfs.Path, path string) error {
-	f, err := p.Open(path)
+func (c config) loadFile(root vfs.Path, path string) error {
+	f, err := root.Open(path)
 	if err != nil {
 		// If the file doesn't exist it is ignored.
 		// This is the case for both global and repository specific config files.
@@ -132,7 +132,7 @@ func (c config) coreExcludesFile() (string, error) {
 	// If there are other problems accessing this file we would
 	// run into them at a later point anyway.
 	_, err := os.Stat(path)
-	if err != nil && !os.IsNotExist(err) {
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return "", err
 	}
 

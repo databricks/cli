@@ -2710,6 +2710,156 @@
             }
           }
         },
+        "quality_monitors": {
+          "description": "",
+          "additionalproperties": {
+            "description": "",
+            "properties": {
+              "assets_dir": {
+                "description": ""
+              },
+              "baseline_table_name": {
+                "description": ""
+              },
+              "custom_metrics": {
+                "description": "",
+                "items": {
+                  "description": "",
+                  "properties": {
+                    "definition": {
+                      "description": ""
+                    },
+                    "input_columns": {
+                      "description": "",
+                      "items": {
+                        "description": ""
+                      }
+                    },
+                    "name": {
+                      "description": ""
+                    },
+                    "output_data_type": {
+                      "description": ""
+                    },
+                    "type": {
+                      "description": ""
+                    }
+                  }
+                }
+              },
+              "data_classification_config": {
+                "description": "",
+                "properties": {
+                  "enabled": {
+                    "description": ""
+                  }
+                }
+              },
+              "inference_log": {
+                "description": "",
+                "properties": {
+                  "granularities": {
+                    "description": "",
+                    "items": {
+                      "description": ""
+                    }
+                  },
+                  "label_col": {
+                    "description": ""
+                  },
+                  "model_id_col": {
+                    "description": ""
+                  },
+                  "prediction_col": {
+                    "description": ""
+                  },
+                  "prediction_proba_col": {
+                    "description": ""
+                  },
+                  "problem_type": {
+                    "description": ""
+                  },
+                  "timestamp_col": {
+                    "description": ""
+                  }
+                }
+              },
+              "notifications": {
+                "description": "",
+                "properties": {
+                  "on_failure": {
+                    "description": "",
+                    "properties": {
+                      "email_addresses": {
+                        "description": "",
+                        "items": {
+                          "description": ""
+                        }
+                      }
+                    }
+                  },
+                  "on_new_classification_tag_detected": {
+                    "description": "",
+                    "properties": {
+                      "email_addresses": {
+                        "description": "",
+                        "items": {
+                          "description": ""
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "output_schema_name": {
+                "description": ""
+              },
+              "schedule": {
+                "description": "",
+                "properties": {
+                  "pause_status": {
+                    "description": ""
+                  },
+                  "quartz_cron_expression": {
+                    "description": ""
+                  },
+                  "timezone_id": {
+                    "description": ""
+                  }
+                }
+              },
+              "skip_builtin_dashboard": {
+                "description": ""
+              },
+              "slicing_exprs": {
+                "description": "",
+                "items": {
+                  "description": ""
+                }
+              },
+              "snapshot": {
+                "description": ""
+              },
+              "time_series": {
+                "description": "",
+                "properties": {
+                  "granularities": {
+                    "description": "",
+                    "items": {
+                      "description": ""
+                    }
+                  },
+                  "timestamp_col": {
+                    "description": ""
+                  }
+                }
+              },
+              "warehouse_id": {
+                "description": ""
+              }
+            }
+          }
+        },
         "registered_models": {
           "description": "List of Registered Models",
           "additionalproperties": {
@@ -5487,6 +5637,156 @@
                           "description": ""
                         }
                       }
+                    }
+                  }
+                }
+              },
+              "quality_monitors": {
+                "description": "",
+                "additionalproperties": {
+                  "description": "",
+                  "properties": {
+                    "assets_dir": {
+                      "description": ""
+                    },
+                    "baseline_table_name": {
+                      "description": ""
+                    },
+                    "custom_metrics": {
+                      "description": "",
+                      "items": {
+                        "description": "",
+                        "properties": {
+                          "definition": {
+                            "description": ""
+                          },
+                          "input_columns": {
+                            "description": "",
+                            "items": {
+                              "description": ""
+                            }
+                          },
+                          "name": {
+                            "description": ""
+                          },
+                          "output_data_type": {
+                            "description": ""
+                          },
+                          "type": {
+                            "description": ""
+                          }
+                        }
+                      }
+                    },
+                    "data_classification_config": {
+                      "description": "",
+                      "properties": {
+                        "enabled": {
+                          "description": ""
+                        }
+                      }
+                    },
+                    "inference_log": {
+                      "description": "",
+                      "properties": {
+                        "granularities": {
+                          "description": "",
+                          "items": {
+                            "description": ""
+                          }
+                        },
+                        "label_col": {
+                          "description": ""
+                        },
+                        "model_id_col": {
+                          "description": ""
+                        },
+                        "prediction_col": {
+                          "description": ""
+                        },
+                        "prediction_proba_col": {
+                          "description": ""
+                        },
+                        "problem_type": {
+                          "description": ""
+                        },
+                        "timestamp_col": {
+                          "description": ""
+                        }
+                      }
+                    },
+                    "notifications": {
+                      "description": "",
+                      "properties": {
+                        "on_failure": {
+                          "description": "",
+                          "properties": {
+                            "email_addresses": {
+                              "description": "",
+                              "items": {
+                                "description": ""
+                              }
+                            }
+                          }
+                        },
+                        "on_new_classification_tag_detected": {
+                          "description": "",
+                          "properties": {
+                            "email_addresses": {
+                              "description": "",
+                              "items": {
+                                "description": ""
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "output_schema_name": {
+                      "description": ""
+                    },
+                    "schedule": {
+                      "description": "",
+                      "properties": {
+                        "pause_status": {
+                          "description": ""
+                        },
+                        "quartz_cron_expression": {
+                          "description": ""
+                        },
+                        "timezone_id": {
+                          "description": ""
+                        }
+                      }
+                    },
+                    "skip_builtin_dashboard": {
+                      "description": ""
+                    },
+                    "slicing_exprs": {
+                      "description": "",
+                      "items": {
+                        "description": ""
+                      }
+                    },
+                    "snapshot": {
+                      "description": ""
+                    },
+                    "time_series": {
+                      "description": "",
+                      "properties": {
+                        "granularities": {
+                          "description": "",
+                          "items": {
+                            "description": ""
+                          }
+                        },
+                        "timestamp_col": {
+                          "description": ""
+                        }
+                      }
+                    },
+                    "warehouse_id": {
+                      "description": ""
                     }
                   }
                 }

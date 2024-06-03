@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
@@ -313,7 +314,7 @@ func (r *renderer) persistToDisk() error {
 		if err == nil {
 			return fmt.Errorf("failed to initialize template, one or more files already exist: %s", path)
 		}
-		if err != nil && !os.IsNotExist(err) {
+		if err != nil && !errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("error while verifying file %s does not already exist: %w", path, err)
 		}
 	}
