@@ -41,7 +41,7 @@ var nativeTemplates = []nativeTemplate{
 	},
 	{
 		name:        "dbt-sql",
-		description: "The dbt SQL template (https://www.databricks.com/blog/delivering-cost-effective-data-real-time-dbt-and-databricks)",
+		description: "The dbt SQL template (databricks.com/blog/delivering-cost-effective-data-real-time-dbt-and-databricks)",
 	},
 	{
 		name:        "mlops-stacks",
