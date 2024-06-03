@@ -15,7 +15,7 @@ func TestSetVariableFromProcessEnvVar(t *testing.T) {
 	defaultVal := "default"
 	variable := variable.Variable{
 		Description: "a test variable",
-		Default:     &defaultVal,
+		Default:     defaultVal,
 	}
 
 	// set value for variable as an environment variable
@@ -23,19 +23,19 @@ func TestSetVariableFromProcessEnvVar(t *testing.T) {
 
 	diags := setVariable(context.Background(), &variable, "foo")
 	require.NoError(t, diags.Error())
-	assert.Equal(t, *variable.Value, "process-env")
+	assert.Equal(t, variable.Value, "process-env")
 }
 
 func TestSetVariableUsingDefaultValue(t *testing.T) {
 	defaultVal := "default"
 	variable := variable.Variable{
 		Description: "a test variable",
-		Default:     &defaultVal,
+		Default:     defaultVal,
 	}
 
 	diags := setVariable(context.Background(), &variable, "foo")
 	require.NoError(t, diags.Error())
-	assert.Equal(t, *variable.Value, "default")
+	assert.Equal(t, variable.Value, "default")
 }
 
 func TestSetVariableWhenAlreadyAValueIsAssigned(t *testing.T) {
@@ -43,15 +43,15 @@ func TestSetVariableWhenAlreadyAValueIsAssigned(t *testing.T) {
 	val := "assigned-value"
 	variable := variable.Variable{
 		Description: "a test variable",
-		Default:     &defaultVal,
-		Value:       &val,
+		Default:     defaultVal,
+		Value:       val,
 	}
 
 	// since a value is already assigned to the variable, it would not be overridden
 	// by the default value
 	diags := setVariable(context.Background(), &variable, "foo")
 	require.NoError(t, diags.Error())
-	assert.Equal(t, *variable.Value, "assigned-value")
+	assert.Equal(t, variable.Value, "assigned-value")
 }
 
 func TestSetVariableEnvVarValueDoesNotOverridePresetValue(t *testing.T) {
@@ -59,8 +59,8 @@ func TestSetVariableEnvVarValueDoesNotOverridePresetValue(t *testing.T) {
 	val := "assigned-value"
 	variable := variable.Variable{
 		Description: "a test variable",
-		Default:     &defaultVal,
-		Value:       &val,
+		Default:     defaultVal,
+		Value:       val,
 	}
 
 	// set value for variable as an environment variable
@@ -70,7 +70,7 @@ func TestSetVariableEnvVarValueDoesNotOverridePresetValue(t *testing.T) {
 	// by the value from environment
 	diags := setVariable(context.Background(), &variable, "foo")
 	require.NoError(t, diags.Error())
-	assert.Equal(t, *variable.Value, "assigned-value")
+	assert.Equal(t, variable.Value, "assigned-value")
 }
 
 func TestSetVariablesErrorsIfAValueCouldNotBeResolved(t *testing.T) {
@@ -92,15 +92,15 @@ func TestSetVariablesMutator(t *testing.T) {
 			Variables: map[string]*variable.Variable{
 				"a": {
 					Description: "resolved to default value",
-					Default:     &defaultValForA,
+					Default:     defaultValForA,
 				},
 				"b": {
 					Description: "resolved from environment vairables",
-					Default:     &defaultValForB,
+					Default:     defaultValForB,
 				},
 				"c": {
 					Description: "has already been assigned a value",
-					Value:       &valForC,
+					Value:       valForC,
 				},
 			},
 		},
@@ -110,7 +110,7 @@ func TestSetVariablesMutator(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, SetVariables())
 	require.NoError(t, diags.Error())
-	assert.Equal(t, "default-a", *b.Config.Variables["a"].Value)
-	assert.Equal(t, "env-var-b", *b.Config.Variables["b"].Value)
-	assert.Equal(t, "assigned-val-c", *b.Config.Variables["c"].Value)
+	assert.Equal(t, "default-a", b.Config.Variables["a"].Value)
+	assert.Equal(t, "env-var-b", b.Config.Variables["b"].Value)
+	assert.Equal(t, "assigned-val-c", b.Config.Variables["c"].Value)
 }

@@ -34,7 +34,7 @@ func TestResolveClusterReference(t *testing.T) {
 					},
 				},
 				"some-variable": {
-					Value: &justString,
+					Value: justString,
 				},
 			},
 		},
@@ -52,8 +52,8 @@ func TestResolveClusterReference(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, ResolveResourceReferences())
 	require.NoError(t, diags.Error())
-	require.Equal(t, "1234-5678-abcd", *b.Config.Variables["my-cluster-id-1"].Value)
-	require.Equal(t, "9876-5432-xywz", *b.Config.Variables["my-cluster-id-2"].Value)
+	require.Equal(t, "1234-5678-abcd", b.Config.Variables["my-cluster-id-1"].Value)
+	require.Equal(t, "9876-5432-xywz", b.Config.Variables["my-cluster-id-2"].Value)
 }
 
 func TestResolveNonExistentClusterReference(t *testing.T) {
@@ -68,7 +68,7 @@ func TestResolveNonExistentClusterReference(t *testing.T) {
 					},
 				},
 				"some-variable": {
-					Value: &justString,
+					Value: justString,
 				},
 			},
 		},
@@ -104,7 +104,7 @@ func TestNoLookupIfVariableIsSet(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, ResolveResourceReferences())
 	require.NoError(t, diags.Error())
-	require.Equal(t, "random value", *b.Config.Variables["my-cluster-id"].Value)
+	require.Equal(t, "random value", b.Config.Variables["my-cluster-id"].Value)
 }
 
 func TestResolveServicePrincipal(t *testing.T) {
@@ -131,14 +131,11 @@ func TestResolveServicePrincipal(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, ResolveResourceReferences())
 	require.NoError(t, diags.Error())
-	require.Equal(t, "app-1234", *b.Config.Variables["my-sp"].Value)
+	require.Equal(t, "app-1234", b.Config.Variables["my-sp"].Value)
 }
 
 func TestResolveVariableReferencesInVariableLookups(t *testing.T) {
-	s := func(s string) *string {
-		return &s
-	}
-
+	s := "bar"
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Bundle: config.Bundle{
@@ -146,7 +143,7 @@ func TestResolveVariableReferencesInVariableLookups(t *testing.T) {
 			},
 			Variables: map[string]*variable.Variable{
 				"foo": {
-					Value: s("bar"),
+					Value: s,
 				},
 				"lookup": {
 					Lookup: &variable.Lookup{
@@ -167,7 +164,7 @@ func TestResolveVariableReferencesInVariableLookups(t *testing.T) {
 	diags := bundle.Apply(context.Background(), b, bundle.Seq(ResolveVariableReferencesInLookup(), ResolveResourceReferences()))
 	require.NoError(t, diags.Error())
 	require.Equal(t, "cluster-bar-dev", b.Config.Variables["lookup"].Lookup.Cluster)
-	require.Equal(t, "1234-5678-abcd", *b.Config.Variables["lookup"].Value)
+	require.Equal(t, "1234-5678-abcd", b.Config.Variables["lookup"].Value)
 }
 
 func TestResolveLookupVariableReferencesInVariableLookups(t *testing.T) {

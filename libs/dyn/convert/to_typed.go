@@ -46,6 +46,8 @@ func ToTyped(dst any, src dyn.Value) error {
 		return toTypedInt(dstv, src)
 	case reflect.Float32, reflect.Float64:
 		return toTypedFloat(dstv, src)
+	case reflect.Interface:
+		return toTypedInterface(dstv, src)
 	}
 
 	return fmt.Errorf("unsupported type: %s", dstv.Kind())
@@ -259,4 +261,9 @@ func toTypedFloat(dst reflect.Value, src dyn.Value) error {
 		value: src,
 		msg:   fmt.Sprintf("expected a float, found a %s", src.Kind()),
 	}
+}
+
+func toTypedInterface(dst reflect.Value, src dyn.Value) error {
+	dst.Set(reflect.ValueOf(src.AsAny()))
+	return nil
 }

@@ -4,10 +4,12 @@ import (
 	"fmt"
 )
 
+type VariableValue = any
+
 // An input variable for the bundle config
 type Variable struct {
 	// A default value which then makes the variable optional
-	Default *string `json:"default,omitempty"`
+	Default VariableValue `json:"default,omitempty"`
 
 	// Documentation for this input variable
 	Description string `json:"description,omitempty"`
@@ -21,7 +23,7 @@ type Variable struct {
 	// 4. Default value defined in variable definition
 	// 5. Throw error, since if no default value is defined, then the variable
 	//    is required
-	Value *string `json:"value,omitempty" bundle:"readonly"`
+	Value VariableValue `json:"value,omitempty" bundle:"readonly"`
 
 	// The value of this field will be used to lookup the resource by name
 	// And assign the value of the variable to ID of the resource found.
@@ -39,10 +41,10 @@ func (v *Variable) HasValue() bool {
 	return v.Value != nil
 }
 
-func (v *Variable) Set(val string) error {
+func (v *Variable) Set(val VariableValue) error {
 	if v.HasValue() {
-		return fmt.Errorf("variable has already been assigned value: %s", *v.Value)
+		return fmt.Errorf("variable has already been assigned value: %s", v.Value)
 	}
-	v.Value = &val
+	v.Value = val
 	return nil
 }

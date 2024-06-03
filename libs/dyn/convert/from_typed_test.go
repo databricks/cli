@@ -619,3 +619,35 @@ func TestFromTypedFloatTypeError(t *testing.T) {
 	_, err := FromTyped(src, ref)
 	require.Error(t, err)
 }
+
+func TestFromTypedAny(t *testing.T) {
+	type Tmp struct {
+		Foo any `json:"foo"`
+		Bar any `json:"bar"`
+		Foz any `json:"foz"`
+		Baz any `json:"baz"`
+	}
+
+	src := Tmp{
+		Foo: "foo",
+		Bar: false,
+		Foz: 0,
+		Baz: map[string]any{
+			"foo": "foo",
+			"bar": 1234,
+		},
+	}
+
+	ref := dyn.NilValue
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.V(map[string]dyn.Value{
+		"foo": dyn.V("foo"),
+		"bar": dyn.V(false),
+		"foz": dyn.V(int64(0)),
+		"baz": dyn.V(map[string]dyn.Value{
+			"foo": dyn.V("foo"),
+			"bar": dyn.V(int64(1234)),
+		}),
+	}), nv)
+}

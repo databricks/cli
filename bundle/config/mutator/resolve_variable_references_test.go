@@ -43,10 +43,6 @@ func TestResolveVariableReferences(t *testing.T) {
 }
 
 func TestResolveVariableReferencesToBundleVariables(t *testing.T) {
-	s := func(s string) *string {
-		return &s
-	}
-
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Bundle: config.Bundle{
@@ -57,7 +53,7 @@ func TestResolveVariableReferencesToBundleVariables(t *testing.T) {
 			},
 			Variables: map[string]*variable.Variable{
 				"foo": {
-					Value: s("bar"),
+					Value: "bar",
 				},
 			},
 		},

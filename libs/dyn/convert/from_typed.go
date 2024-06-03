@@ -99,8 +99,18 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 			refv = dyn.NilValue
 		}
 
+		var options []fromTypedOptions
+		if v.Kind() == reflect.Interface {
+			options = append(options, includeZeroValuedScalars)
+		}
+
 		// Convert the field taking into account the reference value (may be equal to config.NilValue).
-		nv, err := fromTyped(v.Interface(), refv)
+		vint := v.Interface()
+		if vint == nil {
+			continue
+		}
+
+		nv, err := fromTyped(vint, refv, options...)
 		if err != nil {
 			return dyn.InvalidValue, err
 		}

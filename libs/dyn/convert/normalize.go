@@ -56,6 +56,8 @@ func (n normalizeOptions) normalizeType(typ reflect.Type, src dyn.Value, seen []
 		return n.normalizeInt(typ, src, path)
 	case reflect.Float32, reflect.Float64:
 		return n.normalizeFloat(typ, src, path)
+	case reflect.Interface:
+		return n.normalizeInterface(typ, src, path)
 	}
 
 	return dyn.InvalidValue, diag.Errorf("unsupported type: %s", typ.Kind())
@@ -370,4 +372,9 @@ func (n normalizeOptions) normalizeFloat(typ reflect.Type, src dyn.Value, path d
 	}
 
 	return dyn.NewValue(out, src.Location()), diags
+}
+
+func (n normalizeOptions) normalizeInterface(typ reflect.Type, src dyn.Value, path dyn.Path) (dyn.Value, diag.Diagnostics) {
+	out := src.AsAny()
+	return dyn.NewValue(out, src.Location()), nil
 }

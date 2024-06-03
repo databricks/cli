@@ -725,3 +725,19 @@ func TestNormalizeAnchors(t *testing.T) {
 		"foo": "bar",
 	}, vout.AsAny())
 }
+
+func TestNormalizeBoolToAny(t *testing.T) {
+	var typ any
+	vin := dyn.NewValue(false, dyn.Location{File: "file", Line: 1, Column: 1})
+	vout, err := Normalize(&typ, vin)
+	assert.Len(t, err, 0)
+	assert.Equal(t, dyn.NewValue(false, dyn.Location{File: "file", Line: 1, Column: 1}), vout)
+}
+
+func TestNormalizeIntToAny(t *testing.T) {
+	var typ any
+	vin := dyn.NewValue(10, dyn.Location{File: "file", Line: 1, Column: 1})
+	vout, err := Normalize(&typ, vin)
+	assert.Len(t, err, 0)
+	assert.Equal(t, dyn.NewValue(10, dyn.Location{File: "file", Line: 1, Column: 1}), vout)
+}

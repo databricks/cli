@@ -1,0 +1,23 @@
+bundle:
+  name: complex-variables
+
+resources:
+  jobs:
+    my_job:
+      job_clusters:
+        - job_cluster_key: key
+          new_cluster: ${var.cluster}
+      tasks:
+      - task_key: test
+        job_cluster_key: key
+
+variables:
+  cluster:
+    description: "A cluster definition"
+    default:
+      spark_version: "13.2.x-scala2.11"
+      node_type_id: "Standard_DS3_v2"
+      num_workers: 2
+      spark_conf:
+        spark.speculation: true
+        spark.databricks.delta.retentionDurationCheck.enabled: false

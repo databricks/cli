@@ -39,9 +39,9 @@ func setVariable(ctx context.Context, v *variable.Variable, name string) diag.Di
 
 	// case: Set the variable to its default value
 	if v.HasDefault() {
-		err := v.Set(*v.Default)
+		err := v.Set(v.Default)
 		if err != nil {
-			return diag.Errorf(`failed to assign default value from config "%s" to variable %s with error: %v`, *v.Default, name, err)
+			return diag.Errorf(`failed to assign default value from config "%s" to variable %s with error: %v`, v.Default, name, err)
 		}
 		return nil
 	}

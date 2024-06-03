@@ -106,8 +106,8 @@ func TestVariablesWithoutDefinition(t *testing.T) {
 	require.NoError(t, diags.Error())
 	require.True(t, b.Config.Variables["a"].HasValue())
 	require.True(t, b.Config.Variables["b"].HasValue())
-	assert.Equal(t, "foo", *b.Config.Variables["a"].Value)
-	assert.Equal(t, "bar", *b.Config.Variables["b"].Value)
+	assert.Equal(t, "foo", b.Config.Variables["a"].Value)
+	assert.Equal(t, "bar", b.Config.Variables["b"].Value)
 }
 
 func TestVariablesWithTargetLookupOverrides(t *testing.T) {
