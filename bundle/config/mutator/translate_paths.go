@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/fs"
 	"net/url"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -135,15 +134,9 @@ func (r *rewriteContext) translateNotebookPath(literal, localFullPath, localRelP
 	return strings.TrimSuffix(remotePath, filepath.Ext(localFullPath)), nil
 }
 
-<<<<<<< HEAD
 func (r *rewriteContext) translateFilePath(literal, localFullPath, localRelPath, remotePath string) (string, error) {
 	nb, _, err := notebook.DetectWithFS(r.b.SyncRoot, localRelPath)
-	if os.IsNotExist(err) {
-=======
-func translateFilePath(literal, localFullPath, localRelPath, remotePath string) (string, error) {
-	nb, _, err := notebook.Detect(localFullPath)
 	if errors.Is(err, fs.ErrNotExist) {
->>>>>>> origin/main
 		return "", fmt.Errorf("file %s not found", literal)
 	}
 	if err != nil {
