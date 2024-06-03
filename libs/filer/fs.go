@@ -14,7 +14,7 @@ type filerFS struct {
 }
 
 // NewFS returns an fs.FS backed by a filer.
-func NewFS(ctx context.Context, filer Filer) *filerFS {
+func NewFS(ctx context.Context, filer Filer) fs.FS {
 	return &filerFS{ctx: ctx, filer: filer}
 }
 
