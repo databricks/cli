@@ -2,6 +2,8 @@ package bundle
 
 import (
 	"context"
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -14,7 +16,7 @@ import (
 
 func TestLoadNotExists(t *testing.T) {
 	b, err := Load(context.Background(), "/doesntexist")
-	assert.True(t, os.IsNotExist(err))
+	assert.True(t, errors.Is(err, fs.ErrNotExist))
 	assert.Nil(t, b)
 }
 

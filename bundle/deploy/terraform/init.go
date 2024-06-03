@@ -2,7 +2,9 @@ package terraform
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -59,7 +61,7 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 	// If the execPath already exists, return it.
 	execPath := filepath.Join(binDir, product.Terraform.BinaryName())
 	_, err = os.Stat(execPath)
-	if err != nil && !os.IsNotExist(err) {
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return "", err
 	}
 	if err == nil {
@@ -148,7 +150,7 @@ func getEnvVarWithMatchingVersion(ctx context.Context, envVarName string, versio
 	// If the path does not exist, we return early.
 	_, err := os.Stat(envValue)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			log.Debugf(ctx, "%s at %s does not exist", envVarName, envValue)
 			return "", nil
 		} else {

@@ -1,9 +1,9 @@
 package git
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
-	"os"
 	"regexp"
 	"strings"
 
@@ -42,7 +42,7 @@ func isSHA1(s string) bool {
 func LoadReferenceFile(root vfs.Path, path string) (*Reference, error) {
 	// read reference file content
 	b, err := fs.ReadFile(root, path)
-	if os.IsNotExist(err) {
+	if errors.Is(err, fs.ErrNotExist) {
 		return nil, nil
 	}
 	if err != nil {

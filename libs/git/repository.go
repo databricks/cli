@@ -1,8 +1,9 @@
 package git
 
 import (
+	"errors"
 	"fmt"
-	"os"
+	"io/fs"
 	"path"
 	"path/filepath"
 	"strings"
@@ -190,7 +191,7 @@ func NewRepository(path vfs.Path) (*Repository, error) {
 	real := true
 	rootPath, err := vfs.FindLeafInTree(path, GitDirectoryName)
 	if err != nil {
-		if !os.IsNotExist(err) {
+		if !errors.Is(err, fs.ErrNotExist) {
 			return nil, err
 		}
 		// Cannot find `.git` directory.
