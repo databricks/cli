@@ -162,10 +162,16 @@ func TestOwnerLevel(t *testing.T) {
 						Permissions: []resources.Permission{
 							{Level: CAN_MANAGE, UserName: "Bob"},
 						},
+						JobSettings: &jobs.JobSettings{
+							Name: "job_1",
+						},
 					},
 					"job_2": {
 						Permissions: []resources.Permission{
 							{Level: IS_OWNER, UserName: "Bob"},
+						},
+						JobSettings: &jobs.JobSettings{
+							Name: "job_1",
 						},
 					},
 				},
