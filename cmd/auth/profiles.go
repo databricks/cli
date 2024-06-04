@@ -2,8 +2,9 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"os"
+	"io/fs"
 	"sync"
 	"time"
 
@@ -95,7 +96,7 @@ func newProfilesCommand() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		var profiles []*profileMetadata
 		iniFile, err := profile.DefaultProfiler.Get(cmd.Context())
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			// return empty list for non-configured machines
 			iniFile = &config.File{
 				File: &ini.File{},

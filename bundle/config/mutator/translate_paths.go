@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"net/url"
 	"os"
 	"path"
@@ -109,7 +110,7 @@ func (m *translatePaths) rewritePath(
 
 func translateNotebookPath(literal, localFullPath, localRelPath, remotePath string) (string, error) {
 	nb, _, err := notebook.Detect(localFullPath)
-	if os.IsNotExist(err) {
+	if errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("notebook %s not found", literal)
 	}
 	if err != nil {
@@ -125,7 +126,7 @@ func translateNotebookPath(literal, localFullPath, localRelPath, remotePath stri
 
 func translateFilePath(literal, localFullPath, localRelPath, remotePath string) (string, error) {
 	nb, _, err := notebook.Detect(localFullPath)
-	if os.IsNotExist(err) {
+	if errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("file %s not found", literal)
 	}
 	if err != nil {

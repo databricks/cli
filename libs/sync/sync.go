@@ -10,12 +10,13 @@ import (
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/set"
+	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 type SyncOptions struct {
-	LocalPath  string
+	LocalPath  vfs.Path
 	RemotePath string
 	Include    []string
 	Exclude    []string
@@ -54,6 +55,7 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	err = fileSet.EnsureValidGitIgnoreExists()
 	if err != nil {
 		return nil, err
@@ -186,7 +188,7 @@ func (s *Sync) GetFileList(ctx context.Context) ([]fileset.File, error) {
 	// tradeoff: doing portable monitoring only due to macOS max descriptor manual ulimit setting requirement
 	// https://github.com/gorakhargosh/watchdog/blob/master/src/watchdog/observers/kqueue.py#L394-L418
 	all := set.NewSetF(func(f fileset.File) string {
-		return f.Absolute
+		return f.Relative
 	})
 	gitFiles, err := s.fileSet.All()
 	if err != nil {

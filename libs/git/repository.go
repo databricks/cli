@@ -1,13 +1,14 @@
 package git
 
 import (
+	"errors"
 	"fmt"
-	"os"
+	"io/fs"
 	"path"
 	"path/filepath"
 	"strings"
 
-	"github.com/databricks/cli/libs/folders"
+	"github.com/databricks/cli/libs/vfs"
 )
 
 const gitIgnoreFileName = ".gitignore"
@@ -21,8 +22,8 @@ type Repository struct {
 	// directory where we process .gitignore files.
 	real bool
 
-	// rootPath is the absolute path to the repository root.
-	rootPath string
+	// root is the absolute path to the repository root.
+	root vfs.Path
 
 	// ignore contains a list of ignore patterns indexed by the
 	// path prefix relative to the repository root.
@@ -42,12 +43,12 @@ type Repository struct {
 
 // Root returns the absolute path to the repository root.
 func (r *Repository) Root() string {
-	return r.rootPath
+	return r.root.Native()
 }
 
 func (r *Repository) CurrentBranch() (string, error) {
 	// load .git/HEAD
-	ref, err := LoadReferenceFile(filepath.Join(r.rootPath, GitDirectoryName, "HEAD"))
+	ref, err := LoadReferenceFile(r.root, path.Join(GitDirectoryName, "HEAD"))
 	if err != nil {
 		return "", err
 	}
@@ -64,7 +65,7 @@ func (r *Repository) CurrentBranch() (string, error) {
 
 func (r *Repository) LatestCommit() (string, error) {
 	// load .git/HEAD
-	ref, err := LoadReferenceFile(filepath.Join(r.rootPath, GitDirectoryName, "HEAD"))
+	ref, err := LoadReferenceFile(r.root, path.Join(GitDirectoryName, "HEAD"))
 	if err != nil {
 		return "", err
 	}
@@ -83,7 +84,7 @@ func (r *Repository) LatestCommit() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	branchHeadRef, err := LoadReferenceFile(filepath.Join(r.rootPath, GitDirectoryName, branchHeadPath))
+	branchHeadRef, err := LoadReferenceFile(r.root, path.Join(GitDirectoryName, branchHeadPath))
 	if err != nil {
 		return "", err
 	}
@@ -108,7 +109,7 @@ func (r *Repository) loadConfig() error {
 	if err != nil {
 		return fmt.Errorf("unable to load user specific gitconfig: %w", err)
 	}
-	err = config.loadFile(filepath.Join(r.rootPath, ".git/config"))
+	err = config.loadFile(r.root, ".git/config")
 	if err != nil {
 		return fmt.Errorf("unable to load repository specific gitconfig: %w", err)
 	}
@@ -119,7 +120,7 @@ func (r *Repository) loadConfig() error {
 // newIgnoreFile constructs a new [ignoreRules] implementation backed by
 // a file using the specified path relative to the repository root.
 func (r *Repository) newIgnoreFile(relativeIgnoreFilePath string) ignoreRules {
-	return newIgnoreFile(filepath.Join(r.rootPath, relativeIgnoreFilePath))
+	return newIgnoreFile(r.root, relativeIgnoreFilePath)
 }
 
 // getIgnoreRules returns a slice of [ignoreRules] that apply
@@ -132,7 +133,7 @@ func (r *Repository) getIgnoreRules(prefix string) []ignoreRules {
 		return fs
 	}
 
-	r.ignore[prefix] = append(r.ignore[prefix], r.newIgnoreFile(filepath.Join(prefix, gitIgnoreFileName)))
+	r.ignore[prefix] = append(r.ignore[prefix], r.newIgnoreFile(path.Join(prefix, gitIgnoreFileName)))
 	return r.ignore[prefix]
 }
 
@@ -149,7 +150,7 @@ func (r *Repository) taintIgnoreRules() {
 // Ignore computes whether to ignore the specified path.
 // The specified path is relative to the repository root path.
 func (r *Repository) Ignore(relPath string) (bool, error) {
-	parts := strings.Split(filepath.ToSlash(relPath), "/")
+	parts := strings.Split(relPath, "/")
 
 	// Retain trailing slash for directory patterns.
 	// We know a trailing slash was present if the last element
@@ -186,16 +187,11 @@ func (r *Repository) Ignore(relPath string) (bool, error) {
 	return false, nil
 }
 
-func NewRepository(path string) (*Repository, error) {
-	path, err := filepath.Abs(path)
-	if err != nil {
-		return nil, err
-	}
-
+func NewRepository(path vfs.Path) (*Repository, error) {
 	real := true
-	rootPath, err := folders.FindDirWithLeaf(path, GitDirectoryName)
+	rootPath, err := vfs.FindLeafInTree(path, GitDirectoryName)
 	if err != nil {
-		if !os.IsNotExist(err) {
+		if !errors.Is(err, fs.ErrNotExist) {
 			return nil, err
 		}
 		// Cannot find `.git` directory.
@@ -205,9 +201,9 @@ func NewRepository(path string) (*Repository, error) {
 	}
 
 	repo := &Repository{
-		real:     real,
-		rootPath: rootPath,
-		ignore:   make(map[string][]ignoreRules),
+		real:   real,
+		root:   rootPath,
+		ignore: make(map[string][]ignoreRules),
 	}
 
 	err = repo.loadConfig()
@@ -221,13 +217,21 @@ func NewRepository(path string) (*Repository, error) {
 		return nil, fmt.Errorf("unable to access core excludes file: %w", err)
 	}
 
+	// Load global excludes on this machine.
+	// This is by definition a local path so we create a new [vfs.Path] instance.
+	coreExcludes := newStringIgnoreRules([]string{})
+	if coreExcludesPath != "" {
+		dir := filepath.Dir(coreExcludesPath)
+		base := filepath.Base(coreExcludesPath)
+		coreExcludes = newIgnoreFile(vfs.MustNew(dir), base)
+	}
+
 	// Initialize root ignore rules.
 	// These are special and not lazily initialized because:
 	// 1) we include a hardcoded ignore pattern
 	// 2) we include a gitignore file at a non-standard path
 	repo.ignore["."] = []ignoreRules{
-		// Load global excludes on this machine.
-		newIgnoreFile(coreExcludesPath),
+		coreExcludes,
 		// Always ignore root .git directory.
 		newStringIgnoreRules([]string{
 			".git",

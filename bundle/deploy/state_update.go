@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
+	"io/fs"
 	"os"
 	"time"
 
@@ -95,7 +97,7 @@ func load(ctx context.Context, b *bundle.Bundle) (*DeploymentState, error) {
 	log.Infof(ctx, "Loading deployment state from %s", statePath)
 	f, err := os.Open(statePath)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			log.Infof(ctx, "No deployment state file found")
 			return &DeploymentState{
 				Version:    DeploymentStateVersion,

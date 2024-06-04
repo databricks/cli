@@ -35,8 +35,8 @@ func New() *cobra.Command {
 
 	// Add methods
 	cmd.AddCommand(newCreate())
-	cmd.AddCommand(newCreateDeployment())
 	cmd.AddCommand(newDelete())
+	cmd.AddCommand(newDeploy())
 	cmd.AddCommand(newGet())
 	cmd.AddCommand(newGetDeployment())
 	cmd.AddCommand(newGetEnvironment())
@@ -79,15 +79,14 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `The description of the app.`)
 
 	cmd.Use = "create NAME"
-	cmd.Short = `Create an App.`
-	cmd.Long = `Create an App.
+	cmd.Short = `Create an app.`
+	cmd.Long = `Create an app.
   
   Creates a new app.
 
   Arguments:
     NAME: The name of the app. The name must contain only lowercase alphanumeric
-      characters and hyphens and be between 2 and 30 characters long. It must be
-      unique within the workspace.`
+      characters and hyphens. It must be unique within the workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -156,107 +155,6 @@ func newCreate() *cobra.Command {
 	return cmd
 }
 
-// start create-deployment command
-
-// Slice with functions to override default command behavior.
-// Functions can be added from the `init()` function in manually curated files in this directory.
-var createDeploymentOverrides []func(
-	*cobra.Command,
-	*serving.CreateAppDeploymentRequest,
-)
-
-func newCreateDeployment() *cobra.Command {
-	cmd := &cobra.Command{}
-
-	var createDeploymentReq serving.CreateAppDeploymentRequest
-	var createDeploymentJson flags.JsonFlag
-
-	var createDeploymentSkipWait bool
-	var createDeploymentTimeout time.Duration
-
-	cmd.Flags().BoolVar(&createDeploymentSkipWait, "no-wait", createDeploymentSkipWait, `do not wait to reach SUCCEEDED state`)
-	cmd.Flags().DurationVar(&createDeploymentTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach SUCCEEDED state`)
-	// TODO: short flags
-	cmd.Flags().Var(&createDeploymentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
-
-	cmd.Use = "create-deployment APP_NAME SOURCE_CODE_PATH"
-	cmd.Short = `Create an App Deployment.`
-	cmd.Long = `Create an App Deployment.
-  
-  Creates an app deployment for the app with the supplied name.
-
-  Arguments:
-    APP_NAME: The name of the app.
-    SOURCE_CODE_PATH: The source code path of the deployment.`
-
-	cmd.Annotations = make(map[string]string)
-
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		if cmd.Flags().Changed("json") {
-			err := root.ExactArgs(1)(cmd, args)
-			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only APP_NAME as positional arguments. Provide 'source_code_path' in your JSON input")
-			}
-			return nil
-		}
-		check := root.ExactArgs(2)
-		return check(cmd, args)
-	}
-
-	cmd.PreRunE = root.MustWorkspaceClient
-	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
-		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			err = createDeploymentJson.Unmarshal(&createDeploymentReq)
-			if err != nil {
-				return err
-			}
-		}
-		createDeploymentReq.AppName = args[0]
-		if !cmd.Flags().Changed("json") {
-			createDeploymentReq.SourceCodePath = args[1]
-		}
-
-		wait, err := w.Apps.CreateDeployment(ctx, createDeploymentReq)
-		if err != nil {
-			return err
-		}
-		if createDeploymentSkipWait {
-			return cmdio.Render(ctx, wait.Response)
-		}
-		spinner := cmdio.Spinner(ctx)
-		info, err := wait.OnProgress(func(i *serving.AppDeployment) {
-			if i.Status == nil {
-				return
-			}
-			status := i.Status.State
-			statusMessage := fmt.Sprintf("current status: %s", status)
-			if i.Status != nil {
-				statusMessage = i.Status.Message
-			}
-			spinner <- statusMessage
-		}).GetWithTimeout(createDeploymentTimeout)
-		close(spinner)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, info)
-	}
-
-	// Disable completions since they are not applicable.
-	// Can be overridden by manual implementation in `override.go`.
-	cmd.ValidArgsFunction = cobra.NoFileCompletions
-
-	// Apply optional overrides to this command.
-	for _, fn := range createDeploymentOverrides {
-		fn(cmd, &createDeploymentReq)
-	}
-
-	return cmd
-}
-
 // start delete command
 
 // Slice with functions to override default command behavior.
@@ -274,8 +172,8 @@ func newDelete() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Use = "delete NAME"
-	cmd.Short = `Delete an App.`
-	cmd.Long = `Delete an App.
+	cmd.Short = `Delete an app.`
+	cmd.Long = `Delete an app.
   
   Deletes an app.
 
@@ -315,6 +213,120 @@ func newDelete() *cobra.Command {
 	return cmd
 }
 
+// start deploy command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deployOverrides []func(
+	*cobra.Command,
+	*serving.CreateAppDeploymentRequest,
+)
+
+func newDeploy() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deployReq serving.CreateAppDeploymentRequest
+	var deployJson flags.JsonFlag
+
+	var deploySkipWait bool
+	var deployTimeout time.Duration
+
+	cmd.Flags().BoolVar(&deploySkipWait, "no-wait", deploySkipWait, `do not wait to reach SUCCEEDED state`)
+	cmd.Flags().DurationVar(&deployTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach SUCCEEDED state`)
+	// TODO: short flags
+	cmd.Flags().Var(&deployJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Use = "deploy APP_NAME SOURCE_CODE_PATH MODE"
+	cmd.Short = `Create an app deployment.`
+	cmd.Long = `Create an app deployment.
+  
+  Creates an app deployment for the app with the supplied name.
+
+  Arguments:
+    APP_NAME: The name of the app.
+    SOURCE_CODE_PATH: The workspace file system path of the source code used to create the app
+      deployment. This is different from
+      deployment_artifacts.source_code_path, which is the path used by the
+      deployed app. The former refers to the original source code location of
+      the app in the workspace during deployment creation, whereas the latter
+      provides a system generated stable snapshotted source code path used by
+      the deployment.
+    MODE: The mode of which the deployment will manage the source code.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, provide only APP_NAME as positional arguments. Provide 'source_code_path', 'mode' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(3)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = deployJson.Unmarshal(&deployReq)
+			if err != nil {
+				return err
+			}
+		}
+		deployReq.AppName = args[0]
+		if !cmd.Flags().Changed("json") {
+			deployReq.SourceCodePath = args[1]
+		}
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[2], &deployReq.Mode)
+			if err != nil {
+				return fmt.Errorf("invalid MODE: %s", args[2])
+			}
+		}
+
+		wait, err := w.Apps.Deploy(ctx, deployReq)
+		if err != nil {
+			return err
+		}
+		if deploySkipWait {
+			return cmdio.Render(ctx, wait.Response)
+		}
+		spinner := cmdio.Spinner(ctx)
+		info, err := wait.OnProgress(func(i *serving.AppDeployment) {
+			if i.Status == nil {
+				return
+			}
+			status := i.Status.State
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			if i.Status != nil {
+				statusMessage = i.Status.Message
+			}
+			spinner <- statusMessage
+		}).GetWithTimeout(deployTimeout)
+		close(spinner)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, info)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deployOverrides {
+		fn(cmd, &deployReq)
+	}
+
+	return cmd
+}
+
 // start get command
 
 // Slice with functions to override default command behavior.
@@ -332,8 +344,8 @@ func newGet() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Use = "get NAME"
-	cmd.Short = `Get an App.`
-	cmd.Long = `Get an App.
+	cmd.Short = `Get an app.`
+	cmd.Long = `Get an app.
   
   Retrieves information for the app with the supplied name.
 
@@ -390,8 +402,8 @@ func newGetDeployment() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Use = "get-deployment APP_NAME DEPLOYMENT_ID"
-	cmd.Short = `Get an App Deployment.`
-	cmd.Long = `Get an App Deployment.
+	cmd.Short = `Get an app deployment.`
+	cmd.Long = `Get an app deployment.
   
   Retrieves information for the app deployment with the supplied name and
   deployment id.
@@ -451,8 +463,8 @@ func newGetEnvironment() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Use = "get-environment NAME"
-	cmd.Short = `Get App Environment.`
-	cmd.Long = `Get App Environment.
+	cmd.Short = `Get app environment.`
+	cmd.Long = `Get app environment.
   
   Retrieves app environment.
 
@@ -512,8 +524,8 @@ func newList() *cobra.Command {
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token to go to the next page of apps.`)
 
 	cmd.Use = "list"
-	cmd.Short = `List Apps.`
-	cmd.Long = `List Apps.
+	cmd.Short = `List apps.`
+	cmd.Long = `List apps.
   
   Lists all apps in the workspace.`
 
@@ -565,8 +577,8 @@ func newListDeployments() *cobra.Command {
 	cmd.Flags().StringVar(&listDeploymentsReq.PageToken, "page-token", listDeploymentsReq.PageToken, `Pagination token to go to the next page of apps.`)
 
 	cmd.Use = "list-deployments APP_NAME"
-	cmd.Short = `List App Deployments.`
-	cmd.Long = `List App Deployments.
+	cmd.Short = `List app deployments.`
+	cmd.Long = `List app deployments.
   
   Lists all app deployments for the app with the supplied name.
 
@@ -620,8 +632,8 @@ func newStop() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Use = "stop NAME"
-	cmd.Short = `Stop an App.`
-	cmd.Long = `Stop an App.
+	cmd.Short = `Stop an app.`
+	cmd.Long = `Stop an app.
   
   Stops the active deployment of the app in the workspace.
 
@@ -682,15 +694,14 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.Description, "description", updateReq.Description, `The description of the app.`)
 
 	cmd.Use = "update NAME"
-	cmd.Short = `Update an App.`
-	cmd.Long = `Update an App.
+	cmd.Short = `Update an app.`
+	cmd.Long = `Update an app.
   
   Updates the app with the supplied name.
 
   Arguments:
     NAME: The name of the app. The name must contain only lowercase alphanumeric
-      characters and hyphens and be between 2 and 30 characters long. It must be
-      unique within the workspace.`
+      characters and hyphens. It must be unique within the workspace.`
 
 	cmd.Annotations = make(map[string]string)
 

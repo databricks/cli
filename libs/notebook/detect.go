@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,8 +16,8 @@ import (
 const headerLength = 32
 
 // readHeader reads the first N bytes from a file.
-func readHeader(path string) ([]byte, error) {
-	f, err := os.Open(path)
+func readHeader(fsys fs.FS, name string) ([]byte, error) {
+	f, err := fsys.Open(name)
 	if err != nil {
 		return nil, err
 	}
@@ -36,10 +37,10 @@ func readHeader(path string) ([]byte, error) {
 
 // Detect returns whether the file at path is a Databricks notebook.
 // If it is, it returns the notebook language.
-func Detect(path string) (notebook bool, language workspace.Language, err error) {
+func DetectWithFS(fsys fs.FS, name string) (notebook bool, language workspace.Language, err error) {
 	header := ""
 
-	buf, err := readHeader(path)
+	buf, err := readHeader(fsys, name)
 	if err != nil {
 		return false, "", err
 	}
@@ -48,7 +49,7 @@ func Detect(path string) (notebook bool, language workspace.Language, err error)
 	fileHeader := scanner.Text()
 
 	// Determine which header to expect based on filename extension.
-	ext := strings.ToLower(filepath.Ext(path))
+	ext := strings.ToLower(filepath.Ext(name))
 	switch ext {
 	case ".py":
 		header = `# Databricks notebook source`
@@ -63,7 +64,7 @@ func Detect(path string) (notebook bool, language workspace.Language, err error)
 		header = "-- Databricks notebook source"
 		language = workspace.LanguageSql
 	case ".ipynb":
-		return DetectJupyter(path)
+		return DetectJupyterWithFS(fsys, name)
 	default:
 		return false, "", nil
 	}
@@ -73,4 +74,12 @@ func Detect(path string) (notebook bool, language workspace.Language, err error)
 	}
 
 	return true, language, nil
+}
+
+// Detect calls DetectWithFS with the local filesystem.
+// The name argument may be a local relative path or a local absolute path.
+func Detect(name string) (notebook bool, language workspace.Language, err error) {
+	d := filepath.ToSlash(filepath.Dir(name))
+	b := filepath.Base(name)
+	return DetectWithFS(os.DirFS(d), b)
 }

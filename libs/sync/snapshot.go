@@ -3,7 +3,9 @@ package sync
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"time"
@@ -88,7 +90,7 @@ func GetFileName(host, remotePath string) string {
 // precisely it's the first 16 characters of md5(concat(host, remotePath))
 func SnapshotPath(opts *SyncOptions) (string, error) {
 	snapshotDir := filepath.Join(opts.SnapshotBasePath, syncSnapshotDirName)
-	if _, err := os.Stat(snapshotDir); os.IsNotExist(err) {
+	if _, err := os.Stat(snapshotDir); errors.Is(err, fs.ErrNotExist) {
 		err = os.MkdirAll(snapshotDir, 0755)
 		if err != nil {
 			return "", fmt.Errorf("failed to create config directory: %s", err)
@@ -145,7 +147,7 @@ func loadOrNewSnapshot(ctx context.Context, opts *SyncOptions) (*Snapshot, error
 	}
 
 	// Snapshot file not found. We return the new copy.
-	if _, err := os.Stat(snapshot.SnapshotPath); os.IsNotExist(err) {
+	if _, err := os.Stat(snapshot.SnapshotPath); errors.Is(err, fs.ErrNotExist) {
 		return snapshot, nil
 	}
 
@@ -171,6 +173,11 @@ func loadOrNewSnapshot(ctx context.Context, opts *SyncOptions) (*Snapshot, error
 	if err != nil {
 		return nil, fmt.Errorf("failed to json unmarshal persisted snapshot: %s", err)
 	}
+
+	// Ensure that all paths are slash-separated upon loading
+	// an existing snapshot file. If it was created by an older
+	// CLI version (<= v0.220.0), it may contain backslashes.
+	snapshot.SnapshotState = snapshot.SnapshotState.ToSlash()
 
 	snapshot.New = false
 	return snapshot, nil

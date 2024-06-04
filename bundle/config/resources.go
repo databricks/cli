@@ -17,6 +17,7 @@ type Resources struct {
 	Experiments           map[string]*resources.MlflowExperiment     `json:"experiments,omitempty"`
 	ModelServingEndpoints map[string]*resources.ModelServingEndpoint `json:"model_serving_endpoints,omitempty"`
 	RegisteredModels      map[string]*resources.RegisteredModel      `json:"registered_models,omitempty"`
+	QualityMonitors       map[string]*resources.QualityMonitor       `json:"quality_monitors,omitempty"`
 }
 
 type UniqueResourceIdTracker struct {
@@ -123,6 +124,19 @@ func (r *Resources) VerifyUniqueResourceIdentifiers() (*UniqueResourceIdTracker,
 		tracker.Type[k] = "registered_model"
 		tracker.ConfigPath[k] = r.RegisteredModels[k].ConfigFilePath
 	}
+	for k := range r.QualityMonitors {
+		if _, ok := tracker.Type[k]; ok {
+			return tracker, fmt.Errorf("multiple resources named %s (%s at %s, %s at %s)",
+				k,
+				tracker.Type[k],
+				tracker.ConfigPath[k],
+				"quality_monitor",
+				r.QualityMonitors[k].ConfigFilePath,
+			)
+		}
+		tracker.Type[k] = "quality_monitor"
+		tracker.ConfigPath[k] = r.QualityMonitors[k].ConfigFilePath
+	}
 	return tracker, nil
 }
 
@@ -151,6 +165,9 @@ func (r *Resources) allResources() []resource {
 	}
 	for k, e := range r.RegisteredModels {
 		all = append(all, resource{resource_type: "registered model", resource: e, key: k})
+	}
+	for k, e := range r.QualityMonitors {
+		all = append(all, resource{resource_type: "quality monitor", resource: e, key: k})
 	}
 	return all
 }
@@ -187,6 +204,9 @@ func (r *Resources) ConfigureConfigFilePath() {
 		e.ConfigureConfigFilePath()
 	}
 	for _, e := range r.RegisteredModels {
+		e.ConfigureConfigFilePath()
+	}
+	for _, e := range r.QualityMonitors {
 		e.ConfigureConfigFilePath()
 	}
 }

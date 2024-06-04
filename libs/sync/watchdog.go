@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"io/fs"
-	"os"
-	"path/filepath"
 
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
@@ -59,7 +57,7 @@ func (s *Sync) applyMkdir(ctx context.Context, localName string) error {
 func (s *Sync) applyPut(ctx context.Context, localName string) error {
 	s.notifyProgress(ctx, EventActionPut, localName, 0.0)
 
-	localFile, err := os.Open(filepath.Join(s.LocalPath, localName))
+	localFile, err := s.LocalPath.Open(localName)
 	if err != nil {
 		return err
 	}
