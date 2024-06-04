@@ -41,8 +41,6 @@ func TestTranslatePathsSkippedWithGitSource(t *testing.T) {
 		RootPath:           dir,
 		BundleRoot:         vfs.MustNew(dir),
 		BundleRootRelative: ".",
-		SyncRoot:           vfs.MustNew(dir),
-		SyncRootRelative:   ".",
 		Config: config.Root{
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
@@ -115,8 +113,6 @@ func TestTranslatePaths(t *testing.T) {
 		RootPath:           dir,
 		BundleRoot:         vfs.MustNew(dir),
 		BundleRootRelative: ".",
-		SyncRoot:           vfs.MustNew(dir),
-		SyncRootRelative:   ".",
 		Config: config.Root{
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
@@ -286,8 +282,6 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 		RootPath:           dir,
 		BundleRoot:         vfs.MustNew(dir),
 		BundleRootRelative: ".",
-		SyncRoot:           vfs.MustNew(dir),
-		SyncRootRelative:   ".",
 		Config: config.Root{
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
@@ -384,8 +378,6 @@ func TestTranslatePathsOutsideBundleRoot(t *testing.T) {
 		RootPath:           dir,
 		BundleRoot:         vfs.MustNew(dir),
 		BundleRootRelative: ".",
-		SyncRoot:           vfs.MustNew(dir),
-		SyncRootRelative:   ".",
 		Config: config.Root{
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
@@ -421,8 +413,6 @@ func TestJobNotebookDoesNotExistError(t *testing.T) {
 		RootPath:           dir,
 		BundleRoot:         vfs.MustNew(dir),
 		BundleRootRelative: ".",
-		SyncRoot:           vfs.MustNew(dir),
-		SyncRootRelative:   ".",
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -455,8 +445,6 @@ func TestJobFileDoesNotExistError(t *testing.T) {
 		RootPath:           dir,
 		BundleRoot:         vfs.MustNew(dir),
 		BundleRootRelative: ".",
-		SyncRoot:           vfs.MustNew(dir),
-		SyncRootRelative:   ".",
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -489,8 +477,6 @@ func TestPipelineNotebookDoesNotExistError(t *testing.T) {
 		RootPath:           dir,
 		BundleRoot:         vfs.MustNew(dir),
 		BundleRootRelative: ".",
-		SyncRoot:           vfs.MustNew(dir),
-		SyncRootRelative:   ".",
 		Config: config.Root{
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
@@ -523,8 +509,6 @@ func TestPipelineFileDoesNotExistError(t *testing.T) {
 		RootPath:           dir,
 		BundleRoot:         vfs.MustNew(dir),
 		BundleRootRelative: ".",
-		SyncRoot:           vfs.MustNew(dir),
-		SyncRootRelative:   ".",
 		Config: config.Root{
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
@@ -558,8 +542,6 @@ func TestJobSparkPythonTaskWithNotebookSourceError(t *testing.T) {
 		RootPath:           dir,
 		BundleRoot:         vfs.MustNew(dir),
 		BundleRootRelative: ".",
-		SyncRoot:           vfs.MustNew(dir),
-		SyncRootRelative:   ".",
 		Config: config.Root{
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
@@ -596,8 +578,6 @@ func TestJobNotebookTaskWithFileSourceError(t *testing.T) {
 		RootPath:           dir,
 		BundleRoot:         vfs.MustNew(dir),
 		BundleRootRelative: ".",
-		SyncRoot:           vfs.MustNew(dir),
-		SyncRootRelative:   ".",
 		Config: config.Root{
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
@@ -634,8 +614,6 @@ func TestPipelineNotebookLibraryWithFileSourceError(t *testing.T) {
 		RootPath:           dir,
 		BundleRoot:         vfs.MustNew(dir),
 		BundleRootRelative: ".",
-		SyncRoot:           vfs.MustNew(dir),
-		SyncRootRelative:   ".",
 		Config: config.Root{
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
@@ -672,8 +650,6 @@ func TestPipelineFileLibraryWithNotebookSourceError(t *testing.T) {
 		RootPath:           dir,
 		BundleRoot:         vfs.MustNew(dir),
 		BundleRootRelative: ".",
-		SyncRoot:           vfs.MustNew(dir),
-		SyncRootRelative:   ".",
 		Config: config.Root{
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
@@ -711,8 +687,6 @@ func TestTranslatePathJobEnvironments(t *testing.T) {
 		RootPath:           dir,
 		BundleRoot:         vfs.MustNew(dir),
 		BundleRootRelative: ".",
-		SyncRoot:           vfs.MustNew(dir),
-		SyncRootRelative:   ".",
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{

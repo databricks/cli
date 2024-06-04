@@ -27,8 +27,6 @@ func TestStateUpdate(t *testing.T) {
 		RootPath:           dir,
 		BundleRoot:         vfs.MustNew(dir),
 		BundleRootRelative: ".",
-		SyncRoot:           vfs.MustNew(dir),
-		SyncRootRelative:   ".",
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "default",
@@ -92,8 +90,6 @@ func TestStateUpdateWithExistingState(t *testing.T) {
 		RootPath:           dir,
 		BundleRoot:         vfs.MustNew(dir),
 		BundleRootRelative: ".",
-		SyncRoot:           vfs.MustNew(dir),
-		SyncRootRelative:   ".",
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "default",

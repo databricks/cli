@@ -39,10 +39,6 @@ type Bundle struct {
 	BundleRoot         vfs.Path
 	BundleRootRelative string
 
-	//
-	SyncRoot         vfs.Path
-	SyncRootRelative string
-
 	Config config.Root
 
 	// Metadata about the bundle deployment. This is the interface Databricks services
@@ -80,8 +76,6 @@ func Load(ctx context.Context, path string) (*Bundle, error) {
 		RootPath:           filepath.Clean(path),
 		BundleRoot:         vfs.MustNew(path),
 		BundleRootRelative: ".",
-		SyncRoot:           vfs.MustNew(path),
-		SyncRootRelative:   ".",
 	}
 	configFile, err := config.FileNames.FindInPath(path)
 	if err != nil {

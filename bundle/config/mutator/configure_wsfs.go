@@ -43,6 +43,6 @@ func (m *configureWsfs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		return diag.FromErr(err)
 	}
 
-	b.SyncRoot = p
+	b.BundleRoot = p
 	return nil
 }
