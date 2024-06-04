@@ -513,7 +513,7 @@ func TestToTypedWithAliasKeyType(t *testing.T) {
 }
 
 func TestToTypedAnyWithBool(t *testing.T) {
-	var out interface{}
+	var out any
 	err := ToTyped(&out, dyn.V(false))
 	require.NoError(t, err)
 	assert.Equal(t, false, out)
@@ -524,12 +524,12 @@ func TestToTypedAnyWithBool(t *testing.T) {
 }
 
 func TestToTypedAnyWithMap(t *testing.T) {
-	var out interface{}
+	var out any
 	v := dyn.V(map[string]dyn.Value{
 		"foo": dyn.V("bar"),
 		"bar": dyn.V("baz"),
 	})
 	err := ToTyped(&out, v)
 	require.NoError(t, err)
-	assert.Equal(t, map[string]interface{}{"foo": "bar", "bar": "baz"}, out)
+	assert.Equal(t, map[string]any{"foo": "bar", "bar": "baz"}, out)
 }

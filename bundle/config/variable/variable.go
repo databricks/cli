@@ -4,6 +4,9 @@ import (
 	"fmt"
 )
 
+// We are using `any` because since introduction of complex variables,
+// variables can be of any type.
+// Type alias is used to make it easier to understand the code.
 type VariableValue = any
 
 // An input variable for the bundle config

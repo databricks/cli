@@ -375,6 +375,5 @@ func (n normalizeOptions) normalizeFloat(typ reflect.Type, src dyn.Value, path d
 }
 
 func (n normalizeOptions) normalizeInterface(typ reflect.Type, src dyn.Value, path dyn.Path) (dyn.Value, diag.Diagnostics) {
-	out := src.AsAny()
-	return dyn.NewValue(out, src.Location()), nil
+	return src, nil
 }

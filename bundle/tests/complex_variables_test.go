@@ -7,7 +7,6 @@ import (
 )
 
 func TestComplexVariables(t *testing.T) {
-	t.Skip("Skipping until complex variables are implemented")
 	_, diags := loadTargetWithDiags("variables/complex", "default")
 	require.Empty(t, diags)
 }

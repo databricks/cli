@@ -39,6 +39,10 @@ func FromTyped(src any, ref dyn.Value) (dyn.Value, error) {
 // Private implementation of FromTyped that allows for additional options not exposed
 // in the public API.
 func fromTyped(src any, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, error) {
+	if src == nil {
+		return dyn.NilValue, nil
+	}
+
 	srcv := reflect.ValueOf(src)
 
 	// Dereference pointer if necessary
@@ -105,12 +109,7 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 		}
 
 		// Convert the field taking into account the reference value (may be equal to config.NilValue).
-		vint := v.Interface()
-		if vint == nil {
-			continue
-		}
-
-		nv, err := fromTyped(vint, refv, options...)
+		nv, err := fromTyped(v.Interface(), refv, options...)
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
