@@ -84,6 +84,11 @@ func fromTyped(src any, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, 
 func fromTypedStruct(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 	// Check that the reference value is compatible or nil.
 	switch ref.Kind() {
+	case dyn.KindString:
+		// Ignore pure variable references (e.g. ${var.foo}).
+		if dynvar.IsPureVariableReference(ref.MustString()) {
+			return ref, nil
+		}
 	case dyn.KindMap, dyn.KindNil:
 	default:
 		return dyn.InvalidValue, fmt.Errorf("unhandled type: %s", ref.Kind())
@@ -125,6 +130,11 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 func fromTypedMap(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 	// Check that the reference value is compatible or nil.
 	switch ref.Kind() {
+	case dyn.KindString:
+		// Ignore pure variable references (e.g. ${var.foo}).
+		if dynvar.IsPureVariableReference(ref.MustString()) {
+			return ref, nil
+		}
 	case dyn.KindMap, dyn.KindNil:
 	default:
 		return dyn.InvalidValue, fmt.Errorf("unhandled type: %s", ref.Kind())
@@ -168,6 +178,11 @@ func fromTypedMap(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 func fromTypedSlice(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 	// Check that the reference value is compatible or nil.
 	switch ref.Kind() {
+	case dyn.KindString:
+		// Ignore pure variable references (e.g. ${var.foo}).
+		if dynvar.IsPureVariableReference(ref.MustString()) {
+			return ref, nil
+		}
 	case dyn.KindSequence, dyn.KindNil:
 	default:
 		return dyn.InvalidValue, fmt.Errorf("unhandled type: %s", ref.Kind())

@@ -168,9 +168,16 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 		return dyn.NewValue(out, src.Location()), diags
 	case dyn.KindNil:
 		return src, diags
-	}
 
-	return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindMap, src, path))
+	default:
+		// Return verbatim if it's a pure variable reference.
+		if dynvar.IsPureVariableReference(src.MustString()) {
+			return src, nil
+		}
+
+		// Cannot interpret as a slice.
+		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindMap, src, path))
+	}
 }
 
 func (n normalizeOptions) normalizeMap(typ reflect.Type, src dyn.Value, seen []reflect.Type, path dyn.Path) (dyn.Value, diag.Diagnostics) {
@@ -199,9 +206,16 @@ func (n normalizeOptions) normalizeMap(typ reflect.Type, src dyn.Value, seen []r
 		return dyn.NewValue(out, src.Location()), diags
 	case dyn.KindNil:
 		return src, diags
-	}
 
-	return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindMap, src, path))
+	default:
+		// Return verbatim if it's a pure variable reference.
+		if dynvar.IsPureVariableReference(src.MustString()) {
+			return src, nil
+		}
+
+		// Cannot interpret as a slice.
+		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindMap, src, path))
+	}
 }
 
 func (n normalizeOptions) normalizeSlice(typ reflect.Type, src dyn.Value, seen []reflect.Type, path dyn.Path) (dyn.Value, diag.Diagnostics) {
@@ -227,9 +241,16 @@ func (n normalizeOptions) normalizeSlice(typ reflect.Type, src dyn.Value, seen [
 		return dyn.NewValue(out, src.Location()), diags
 	case dyn.KindNil:
 		return src, diags
-	}
 
-	return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindSequence, src, path))
+	default:
+		// Return verbatim if it's a pure variable reference.
+		if dynvar.IsPureVariableReference(src.MustString()) {
+			return src, nil
+		}
+
+		// Cannot interpret as a slice.
+		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindSequence, src, path))
+	}
 }
 
 func (n normalizeOptions) normalizeString(typ reflect.Type, src dyn.Value, path dyn.Path) (dyn.Value, diag.Diagnostics) {

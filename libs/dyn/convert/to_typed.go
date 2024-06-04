@@ -103,6 +103,12 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 	case dyn.KindNil:
 		dst.SetZero()
 		return nil
+	case dyn.KindString:
+		// Ignore pure variable references (e.g. ${var.foo}).
+		if dynvar.IsPureVariableReference(src.MustString()) {
+			dst.SetZero()
+			return nil
+		}
 	}
 
 	return TypeError{
@@ -134,6 +140,12 @@ func toTypedMap(dst reflect.Value, src dyn.Value) error {
 	case dyn.KindNil:
 		dst.SetZero()
 		return nil
+	case dyn.KindString:
+		// Ignore pure variable references (e.g. ${var.foo}).
+		if dynvar.IsPureVariableReference(src.MustString()) {
+			dst.SetZero()
+			return nil
+		}
 	}
 
 	return TypeError{
@@ -159,6 +171,12 @@ func toTypedSlice(dst reflect.Value, src dyn.Value) error {
 	case dyn.KindNil:
 		dst.SetZero()
 		return nil
+	case dyn.KindString:
+		// Ignore pure variable references (e.g. ${var.foo}).
+		if dynvar.IsPureVariableReference(src.MustString()) {
+			dst.SetZero()
+			return nil
+		}
 	}
 
 	return TypeError{
