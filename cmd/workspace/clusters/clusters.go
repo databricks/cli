@@ -200,6 +200,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createReq.DataSecurityMode, "data-security-mode", `Data security mode decides what data governance model to use when accessing data from a cluster. Supported values: [
   LEGACY_PASSTHROUGH,
   LEGACY_SINGLE_USER,
+  LEGACY_SINGLE_USER_STANDARD,
   LEGACY_TABLE_ACL,
   NONE,
   SINGLE_USER,
@@ -445,6 +446,7 @@ func newEdit() *cobra.Command {
 	cmd.Flags().Var(&editReq.DataSecurityMode, "data-security-mode", `Data security mode decides what data governance model to use when accessing data from a cluster. Supported values: [
   LEGACY_PASSTHROUGH,
   LEGACY_SINGLE_USER,
+  LEGACY_SINGLE_USER_STANDARD,
   LEGACY_TABLE_ACL,
   NONE,
   SINGLE_USER,

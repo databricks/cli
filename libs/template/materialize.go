@@ -54,12 +54,6 @@ func Materialize(ctx context.Context, configFilePath, templateRoot, outputDir st
 		return err
 	}
 
-	// Print welcome message
-	welcome := config.schema.WelcomeMessage
-	if welcome != "" {
-		cmdio.LogString(ctx, welcome)
-	}
-
 	// Read and assign config values from file
 	if configFilePath != "" {
 		err = config.assignValuesFromFile(configFilePath)
@@ -71,6 +65,16 @@ func Materialize(ctx context.Context, configFilePath, templateRoot, outputDir st
 	r, err := newRenderer(ctx, config.values, helpers, templatePath, libraryPath, outputDir)
 	if err != nil {
 		return err
+	}
+
+	// Print welcome message
+	welcome := config.schema.WelcomeMessage
+	if welcome != "" {
+		welcome, err = r.executeTemplate(welcome)
+		if err != nil {
+			return err
+		}
+		cmdio.LogString(ctx, welcome)
 	}
 
 	// Prompt user for any missing config values. Assign default values if

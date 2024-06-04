@@ -1915,7 +1915,7 @@
                           "description": "ARN of the instance profile that the served model will use to access AWS resources."
                         },
                         "model_name": {
-                          "description": "The name of the model in Databricks Model Registry to be served or if the model resides in Unity Catalog, the full name of model, \nin the form of __catalog_name__.__schema_name__.__model_name__.\n"
+                          "description": "The name of the model in Databricks Model Registry to be served or if the model resides in Unity Catalog, the full name of model,\nin the form of __catalog_name__.__schema_name__.__model_name__.\n"
                         },
                         "model_version": {
                           "description": "The version of the model in Databricks Model Registry or Unity Catalog to be served."
@@ -4846,7 +4846,7 @@
                                 "description": "ARN of the instance profile that the served model will use to access AWS resources."
                               },
                               "model_name": {
-                                "description": "The name of the model in Databricks Model Registry to be served or if the model resides in Unity Catalog, the full name of model, \nin the form of __catalog_name__.__schema_name__.__model_name__.\n"
+                                "description": "The name of the model in Databricks Model Registry to be served or if the model resides in Unity Catalog, the full name of model,\nin the form of __catalog_name__.__schema_name__.__model_name__.\n"
                               },
                               "model_version": {
                                 "description": "The version of the model in Databricks Model Registry or Unity Catalog to be served."
