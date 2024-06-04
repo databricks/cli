@@ -1,5 +1,5 @@
 {
-    "welcome_message": "\nWelcome to the (EXPERIMENTAL) dbt template for Databricks Asset Bundles!",
+    "welcome_message": "\nWelcome to the dbt template for Databricks Asset Bundles!\n\nWorkspace selected based on your current profile (see https://docs.databricks.com/dev-tools/cli/profiles.html for how to change this).\nworkspace_host: {{workspace_host}}",
     "properties": {
         "project_name": {
             "type": "string",
