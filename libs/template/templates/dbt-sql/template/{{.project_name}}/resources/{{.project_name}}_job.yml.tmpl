@@ -29,8 +29,8 @@ resources:
 {{- else}}
             # The dbt commands to run (see also the dev/prod profiles in dbt_profiles/profiles.yml)
             - 'dbt deps --target=${bundle.target}'
-            - 'dbt seed'
-            - 'dbt run'
+            - 'dbt seed --target=${bundle.target}'
+            - 'dbt run --target=${bundle.target}'
 {{- end}}
 
           libraries:
