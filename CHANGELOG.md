@@ -1,5 +1,33 @@
 # Version changelog
 
+## 0.221.0
+
+CLI:
+ * Update OpenAPI spec ([#1466](https://github.com/databricks/cli/pull/1466)).
+
+Bundles:
+ * Upgrade TF provider to 1.46.0 ([#1460](https://github.com/databricks/cli/pull/1460)).
+ * Add support for Lakehouse monitoring ([#1307](https://github.com/databricks/cli/pull/1307)).
+ * Make dbt-sql and default-sql templates public ([#1463](https://github.com/databricks/cli/pull/1463)).
+
+Internal:
+ * Abstract over filesystem interaction with libs/vfs ([#1452](https://github.com/databricks/cli/pull/1452)).
+ * Add `filer.Filer` to read notebooks from WSFS without omitting their extension ([#1457](https://github.com/databricks/cli/pull/1457)).
+ * Fix listing notebooks in a subdirectory ([#1468](https://github.com/databricks/cli/pull/1468)).
+
+API Changes:
+ * Changed `databricks account storage-credentials list` command to return .
+ * Added `databricks consumer-listings batch-get` command.
+ * Added `databricks consumer-providers batch-get` command.
+ * Removed `databricks apps create-deployment` command.
+ * Added `databricks apps deploy` command.
+
+OpenAPI commit 37b925eba37dfb3d7e05b6ba2d458454ce62d3a0 (2024-06-03)
+
+Dependency updates:
+ * Bump github.com/hashicorp/go-version from 1.6.0 to 1.7.0 ([#1454](https://github.com/databricks/cli/pull/1454)).
+ * Bump github.com/hashicorp/hc-install from 0.6.4 to 0.7.0 ([#1453](https://github.com/databricks/cli/pull/1453)).
+
 ## 0.220.0
 
 CLI:
