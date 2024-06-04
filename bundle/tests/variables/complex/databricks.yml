@@ -13,6 +13,7 @@ resources:
 
 variables:
   cluster:
+    type: complex
     description: "A cluster definition"
     default:
       spark_version: "13.2.x-scala2.11"
@@ -21,3 +22,15 @@ variables:
       spark_conf:
         spark.speculation: true
         spark.databricks.delta.retentionDurationCheck.enabled: false
+
+targets:
+  default:
+  dev:
+    variables:
+      cluster:
+        spark_version: "14.2.x-scala2.11"
+        node_type_id: "Standard_DS3_v2"
+        num_workers: 4
+        spark_conf:
+          spark.speculation: false
+          spark.databricks.delta.retentionDurationCheck.enabled: false

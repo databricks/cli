@@ -2,6 +2,7 @@ package variable
 
 import (
 	"fmt"
+	"reflect"
 )
 
 // We are using `any` because since introduction of complex variables,
@@ -9,8 +10,17 @@ import (
 // Type alias is used to make it easier to understand the code.
 type VariableValue = any
 
+type VariableType string
+
+const (
+	VariableTypeComplex VariableType = "complex"
+)
+
 // An input variable for the bundle config
 type Variable struct {
+	// A type of the variable. This is used to validate the value of the variable
+	Type VariableType `json:"type,omitempty"`
+
 	// A default value which then makes the variable optional
 	Default VariableValue `json:"default,omitempty"`
 
@@ -48,6 +58,20 @@ func (v *Variable) Set(val VariableValue) error {
 	if v.HasValue() {
 		return fmt.Errorf("variable has already been assigned value: %s", v.Value)
 	}
+
+	rv := reflect.ValueOf(val)
+	switch rv.Kind() {
+	case reflect.Struct, reflect.Array, reflect.Slice, reflect.Map:
+		if v.Type != VariableTypeComplex {
+			return fmt.Errorf("variable type is not complex")
+		}
+	}
+
 	v.Value = val
+
 	return nil
+}
+
+func (v *Variable) IsComplex() bool {
+	return v.Type == VariableTypeComplex
 }
