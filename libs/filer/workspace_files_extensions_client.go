@@ -235,7 +235,7 @@ func (w *workspaceFilesExtensionsClient) ReadDir(ctx context.Context, name strin
 
 		// If the object is a notebook, include an extension in the entry.
 		if sysInfo.ObjectType == workspace.ObjectTypeNotebook {
-			stat, err := w.getNotebookStatByNameWithoutExt(ctx, entries[i].Name())
+			stat, err := w.getNotebookStatByNameWithoutExt(ctx, path.Join(name, entries[i].Name()))
 			if err != nil {
 				return nil, err
 			}
