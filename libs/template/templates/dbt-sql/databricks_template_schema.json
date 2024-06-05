@@ -1,5 +1,5 @@
 {
-    "welcome_message": "\nWelcome to the dbt template for Databricks Asset Bundles!\n\nWorkspace selected based on your current profile (see https://docs.databricks.com/dev-tools/cli/profiles.html for how to change this).\nworkspace_host: {{workspace_host}}",
+    "welcome_message": "\nWelcome to the dbt template for Databricks Asset Bundles!\n\nA workspace was selected based on your current profile. For information about how to change this, see https://docs.databricks.com/dev-tools/cli/profiles.html.\nworkspace_host: {{workspace_host}}",
     "properties": {
         "project_name": {
             "type": "string",
@@ -13,7 +13,7 @@
             "type": "string",
             "pattern": "^/sql/.\\../warehouses/[a-z0-9]+$",
             "pattern_match_failure_message": "Path must be of the form /sql/1.0/warehouses/<warehouse id>",
-            "description": " \nPlease provide the HTTP Path of the SQL warehouse you would like to use with dbt during development.\nYou can find this path by clicking on \"Connection details\" for your SQL warehouse.\nhttp_path [example: /sql/1.0/warehouses/abcdef1234567890]",
+            "description": "\nPlease provide the HTTP Path of the SQL warehouse you would like to use with dbt during development.\nYou can find this path by clicking on \"Connection details\" for your SQL warehouse.\nhttp_path [example: /sql/1.0/warehouses/abcdef1234567890]",
             "order": 2
         },
         "default_catalog": {
