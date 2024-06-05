@@ -43,6 +43,7 @@ type ResourceMwsWorkspaces struct {
 	CustomTags                          map[string]string                             `json:"custom_tags,omitempty"`
 	CustomerManagedKeyId                string                                        `json:"customer_managed_key_id,omitempty"`
 	DeploymentName                      string                                        `json:"deployment_name,omitempty"`
+	GcpWorkspaceSa                      string                                        `json:"gcp_workspace_sa,omitempty"`
 	Id                                  string                                        `json:"id,omitempty"`
 	IsNoPublicIpEnabled                 bool                                          `json:"is_no_public_ip_enabled,omitempty"`
 	Location                            string                                        `json:"location,omitempty"`
