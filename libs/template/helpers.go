@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 	"net/url"
 	"os"
 	"regexp"
@@ -45,6 +46,10 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 		// Alias for https://pkg.go.dev/regexp#Compile. Allows usage of all methods of regexp.Regexp
 		"regexp": func(expr string) (*regexp.Regexp, error) {
 			return regexp.Compile(expr)
+		},
+		// Alias for https://pkg.go.dev/math/rand#Intn. Returns, as an int, a non-negative pseudo-random number in the half-open interval [0,n).
+		"randIntn": func(n int) int {
+			return rand.Intn(n)
 		},
 		// A key value pair. This is used with the map function to generate maps
 		// to use inside a template
