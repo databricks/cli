@@ -11,7 +11,7 @@ resources:
 
       email_notifications:
         on_failure:
-          - lennart.kats@databricks.com
+          - user@company.com
 
       tasks:
         - task_key: notebook_task

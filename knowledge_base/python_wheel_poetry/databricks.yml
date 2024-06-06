@@ -5,7 +5,7 @@ include:
   - ./resources/job.yml
 
 workspace:
-  host: https://e2-dogfood.staging.cloud.databricks.com
+  host: https://myworkspace.databricks.com
 
 artifacts:
   default:
