@@ -48,7 +48,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			return regexp.Compile(expr)
 		},
 		// Alias for https://pkg.go.dev/math/rand#Intn. Returns, as an int, a non-negative pseudo-random number in the half-open interval [0,n).
-		"randIntn": func(n int) int {
+		"random_int": func(n int) int {
 			return rand.Intn(n)
 		},
 		// A key value pair. This is used with the map function to generate maps

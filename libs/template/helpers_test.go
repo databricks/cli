@@ -57,7 +57,7 @@ func TestTemplateRandIntFunction(t *testing.T) {
 
 	ctx = root.SetWorkspaceClient(ctx, nil)
 	helpers := loadHelpers(ctx)
-	r, err := newRenderer(ctx, nil, helpers, "./testdata/randintn/template", "./testdata/randintn/library", tmpDir)
+	r, err := newRenderer(ctx, nil, helpers, "./testdata/random-int/template", "./testdata/random-int/library", tmpDir)
 	require.NoError(t, err)
 
 	err = r.walk()
