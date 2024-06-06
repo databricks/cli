@@ -109,9 +109,11 @@ func (r *Repository) loadConfig() error {
 	if err != nil {
 		return fmt.Errorf("unable to load user specific gitconfig: %w", err)
 	}
-	err = config.loadFile(r.root, ".git/config")
-	if err != nil {
-		return fmt.Errorf("unable to load repository specific gitconfig: %w", err)
+	if r.real {
+		err = config.loadFile(r.root, ".git/config")
+		if err != nil {
+			return fmt.Errorf("unable to load repository specific gitconfig: %w", err)
+		}
 	}
 	r.config = config
 	return nil

@@ -50,7 +50,7 @@ func (info wsfsFileInfo) Size() int64 {
 
 func (info wsfsFileInfo) Mode() fs.FileMode {
 	switch info.oi.ObjectType {
-	case workspace.ObjectTypeDirectory:
+	case workspace.ObjectTypeDirectory, workspace.ObjectTypeRepo:
 		return fs.ModeDir
 	default:
 		return fs.ModePerm
@@ -62,7 +62,7 @@ func (info wsfsFileInfo) ModTime() time.Time {
 }
 
 func (info wsfsFileInfo) IsDir() bool {
-	return info.oi.ObjectType == workspace.ObjectTypeDirectory
+	return info.Mode() == fs.ModeDir
 }
 
 func (info wsfsFileInfo) Sys() any {
