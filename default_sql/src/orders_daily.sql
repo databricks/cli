@@ -1,7 +1,7 @@
 -- This query is executed using Databricks Workflows (see resources/default_sql_sql_job.yml)
 
 USE CATALOG {{catalog}};
-USE {{schema}};
+USE IDENTIFIER({{schema}});
 
 CREATE OR REPLACE VIEW
   orders_daily
@@ -11,7 +11,7 @@ FROM
   orders_raw
 
 WHERE if(
-  {{bundle_target}} != "prod",
+  {{bundle_target}} == "prod",
   true,
 
   -- During development, only process a smaller range of data
