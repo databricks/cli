@@ -2,7 +2,7 @@
 {{- /* We can't use a materialized view here since they don't support 'create or refresh' yet.*/}}
 
 USE CATALOG {{"{{"}}catalog{{"}}"}};
-USE {{"{{"}}schema{{"}}"}};
+USE IDENTIFIER({{"{{"}}schema{{"}}"}});
 
 CREATE OR REPLACE VIEW
   orders_daily
