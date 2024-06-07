@@ -20,6 +20,7 @@ resources:
             # The default schema, catalog, etc. are defined in ../dbt_profiles/profiles.yml
             profiles_directory: dbt_profiles/
             commands:
+            # The dbt commands to run (see also dbt_profiles/profiles.yml; dev_schema is used in the dev profile)
             - 'dbt deps --target=${bundle.target}'
             - 'dbt seed --target=${bundle.target} --vars "{ dev_schema: ${workspace.current_user.short_name} }"'
             - 'dbt run --target=${bundle.target} --vars "{ dev_schema: ${workspace.current_user.short_name} }"'

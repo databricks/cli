@@ -5,7 +5,7 @@ Databricks Asset Bundles. It follows the standard dbt project structure
 and has an additional `resources` directory to define Databricks resources such as jobs
 that run dbt models.
 
-* Learn more about the dbt and its standard project structure here: https://docs.getdbt.com/docs/build/projects.
+* Learn more about dbt and its standard project structure here: https://docs.getdbt.com/docs/build/projects.
 * Learn more about Databricks Asset Bundles here: https://docs.databricks.com/en/dev-tools/bundles/index.html
 
 The remainder of this file includes instructions for local development (using dbt)
@@ -94,12 +94,12 @@ target-specific settings. Read more about dbt profiles on Databricks at
 https://docs.databricks.com/en/workflows/jobs/how-to/use-dbt-in-workflows.html#advanced-run-dbt-with-a-custom-profile.
 
 The target workspaces for staging and prod are defined in databricks.yml.
-You can manaulyl deploy based on these configurations (see below).
+You can manaully deploy based on these configurations (see below).
 Or you can use CI/CD to automate deployment. See
 https://docs.databricks.com/dev-tools/bundles/ci-cd.html for documentation
 on CI/CD setup.
 
-## Manually deploying to to Databricks with Databricks Asset Bundles
+## Manually deploying to Databricks with Databricks Asset Bundles
 
 Databricks Asset Bundles can be used to deploy to Databricks and to execute
 dbt commands as a job using Databricks Workflows. See
