@@ -38,6 +38,10 @@ type Bundle struct {
 	// Annotated readonly as this should be set at the target level.
 	Mode Mode `json:"mode,omitempty" bundle:"readonly"`
 
+	// Transformers apply some transformation throughout the bundle, e.g.
+	// adding a name prefix to deployed resources.
+	Transformers Transformers `json:"mutators,omitempty"`
+
 	// Overrides the compute used for jobs and other supported assets.
 	ComputeID string `json:"compute_id,omitempty"`
 

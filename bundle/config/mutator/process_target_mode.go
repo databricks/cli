@@ -2,7 +2,6 @@ package mutator
 
 import (
 	"context"
-	"path"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -10,9 +9,8 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
 type processTargetMode struct{}
@@ -33,87 +31,55 @@ func (m *processTargetMode) Name() string {
 func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if !b.Config.Bundle.Deployment.Lock.IsExplicitlyEnabled() {
 		log.Infof(ctx, "Development mode: disabling deployment lock since bundle.deployment.lock.enabled is not set to true")
-		err := disableDeploymentLock(b)
+		err := setConfig(b, "bundle.deployment.lock.enabled", false)
 		if err != nil {
-			return diag.FromErr(err)
+			return err
 		}
 	}
 
-	r := b.Config.Resources
+	m := b.Config.Bundle.Transformers
 	shortName := b.Config.Workspace.CurrentUser.ShortName
-	prefix := "[dev " + shortName + "] "
 
-	// Generate a normalized version of the short name that can be used as a tag value.
-	tagValue := b.Tagging.NormalizeValue(shortName)
-
-	for i := range r.Jobs {
-		r.Jobs[i].Name = prefix + r.Jobs[i].Name
-		if r.Jobs[i].Tags == nil {
-			r.Jobs[i].Tags = make(map[string]string)
-		}
-		r.Jobs[i].Tags["dev"] = tagValue
-		if r.Jobs[i].MaxConcurrentRuns == 0 {
-			r.Jobs[i].MaxConcurrentRuns = developmentConcurrentRuns
-		}
-
-		// Pause each job. As an exception, we don't pause jobs that are explicitly
-		// marked as "unpaused". This allows users to override the default behavior
-		// of the development mode.
-		if r.Jobs[i].Schedule != nil && r.Jobs[i].Schedule.PauseStatus != jobs.PauseStatusUnpaused {
-			r.Jobs[i].Schedule.PauseStatus = jobs.PauseStatusPaused
-		}
-		if r.Jobs[i].Continuous != nil && r.Jobs[i].Continuous.PauseStatus != jobs.PauseStatusUnpaused {
-			r.Jobs[i].Continuous.PauseStatus = jobs.PauseStatusPaused
-		}
-		if r.Jobs[i].Trigger != nil && r.Jobs[i].Trigger.PauseStatus != jobs.PauseStatusUnpaused {
-			r.Jobs[i].Trigger.PauseStatus = jobs.PauseStatusPaused
-		}
+	// TODO: only set these configs if they're not already set
+	err := setConfig(b, "bundle.mutators.prefix.value", "[dev "+shortName+"] ")
+	if err != nil {
+		return err
 	}
 
-	for i := range r.Pipelines {
-		r.Pipelines[i].Name = prefix + r.Pipelines[i].Name
-		r.Pipelines[i].Development = true
-		// (pipelines don't yet support tags)
-	}
+	// TODO: only set tag if it doesn't already exist
+	setConfigMapping(b, "bundle.mutators.tags.tags", "dev", b.Tagging.NormalizeValue(shortName))
 
-	for i := range r.Models {
-		r.Models[i].Name = prefix + r.Models[i].Name
-		r.Models[i].Tags = append(r.Models[i].Tags, ml.ModelTag{Key: "dev", Value: tagValue})
-	}
+	setConfig(b, "bundle.mutators.jobs_max_concurrent_runs.value", developmentConcurrentRuns) // }
 
-	for i := range r.Experiments {
-		filepath := r.Experiments[i].Name
-		dir := path.Dir(filepath)
-		base := path.Base(filepath)
-		if dir == "." {
-			r.Experiments[i].Name = prefix + base
-		} else {
-			r.Experiments[i].Name = dir + "/" + prefix + base
-		}
-		r.Experiments[i].Tags = append(r.Experiments[i].Tags, ml.ExperimentTag{Key: "dev", Value: tagValue})
-	}
-
-	for i := range r.ModelServingEndpoints {
-		prefix = "dev_" + b.Config.Workspace.CurrentUser.ShortName + "_"
-		r.ModelServingEndpoints[i].Name = prefix + r.ModelServingEndpoints[i].Name
-		// (model serving doesn't yet support tags)
-	}
-
-	for i := range r.RegisteredModels {
-		prefix = "dev_" + b.Config.Workspace.CurrentUser.ShortName + "_"
-		r.RegisteredModels[i].Name = prefix + r.RegisteredModels[i].Name
-		// (registered models in Unity Catalog don't yet support tags)
+	if m.JobsSchedulePauseStatus.Enabled == nil {
+		enabled := true
+		setConfig(b, "bundle.mutators.job_schedule_pause_status.enabled", enabled)
 	}
 
 	return nil
 }
 
-func disableDeploymentLock(b *bundle.Bundle) error {
-	return b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		return dyn.Map(v, "bundle.deployment.lock", func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
-			return dyn.Set(v, "enabled", dyn.V(false))
-		})
+func setConfig(b *bundle.Bundle, path string, value any) diag.Diagnostics {
+	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		return dyn.Set(v, path, dyn.V(value))
 	})
+	return diag.FromErr(err)
+}
+
+func setConfigMapping(b *bundle.Bundle, path string, key string, value string) diag.Diagnostics {
+	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		existingMapping, err := dyn.Get(v, path)
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+		newMapping := dyn.V(map[string]dyn.Value{key: dyn.V(value)})
+		merged, err := merge.Merge(newMapping, existingMapping)
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+		return dyn.Set(v, path, merged)
+	})
+	return diag.FromErr(err)
 }
 
 func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {

@@ -112,7 +112,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 func TestProcessTargetModeDevelopment(t *testing.T) {
 	b := mockBundle(config.Development)
 
-	m := ProcessTargetMode()
+	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -198,7 +198,7 @@ func TestProcessTargetModeDevelopmentTagNormalizationForGcp(t *testing.T) {
 func TestProcessTargetModeDefault(t *testing.T) {
 	b := mockBundle("")
 
-	m := ProcessTargetMode()
+	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
@@ -284,7 +284,7 @@ func TestAllResourcesMocked(t *testing.T) {
 func TestAllResourcesRenamed(t *testing.T) {
 	b := mockBundle(config.Development)
 
-	m := ProcessTargetMode()
+	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
