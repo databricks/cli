@@ -197,23 +197,23 @@ func (s *Sync) GetFileList(ctx context.Context) ([]fileset.File, error) {
 	}
 	all.Add(gitFiles...)
 
-	include, err := s.includeFileSet.All()
-	if err != nil {
-		log.Errorf(ctx, "cannot list include files: %s", err)
-		return nil, err
-	}
+	// include, err := s.includeFileSet.All()
+	// if err != nil {
+	// 	log.Errorf(ctx, "cannot list include files: %s", err)
+	// 	return nil, err
+	// }
 
-	all.Add(include...)
+	// all.Add(include...)
 
-	exclude, err := s.excludeFileSet.All()
-	if err != nil {
-		log.Errorf(ctx, "cannot list exclude files: %s", err)
-		return nil, err
-	}
+	// exclude, err := s.excludeFileSet.All()
+	// if err != nil {
+	// 	log.Errorf(ctx, "cannot list exclude files: %s", err)
+	// 	return nil, err
+	// }
 
-	for _, f := range exclude {
-		all.Remove(f)
-	}
+	// for _, f := range exclude {
+	// 	all.Remove(f)
+	// }
 
 	return all.Iter(), nil
 }
