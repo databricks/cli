@@ -51,7 +51,7 @@ func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) diag.Diagno
 
 	setConfig(b, "bundle.mutators.jobs_max_concurrent_runs.value", developmentConcurrentRuns) // }
 
-	if m.JobsSchedulePauseStatus.Enabled == nil {
+	if m.TriggerPauseStatus.Enabled == nil {
 		enabled := true
 		setConfig(b, "bundle.mutators.job_schedule_pause_status.enabled", enabled)
 	}

@@ -11,7 +11,7 @@ type PipelinesDevelopment struct {
 	Enabled *bool `json:"enabled,omitempty"`
 }
 
-type JobsSchedulePauseStatus struct {
+type TriggerPauseStatus struct {
 	// Whether to set PauseStatus to PauseStatusPaused
 	Enabled *bool `json:"enabled,omitempty"`
 }
@@ -29,9 +29,9 @@ type Tags struct {
 }
 
 type Transformers struct {
-	Prefix                  Prefix                  `json:"prefix,omitempty"`
-	PipelinesDevelopment    PipelinesDevelopment    `json:"pipelines_set_development,omitempty"`
-	JobsSchedulePauseStatus JobsSchedulePauseStatus `json:"jobs_schedule_pause_status,omitempty"`
-	JobsMaxConcurrentRuns   JobsMaxConcurrentRuns   `json:"jobs_max_concurrent_runs,omitempty"`
-	Tags                    Tags                    `json:"tags,omitempty"`
+	Prefix                Prefix                `json:"prefix,omitempty"`
+	PipelinesDevelopment  PipelinesDevelopment  `json:"pipelines_set_development,omitempty"`
+	TriggerPauseStatus    TriggerPauseStatus    `json:"trigger_pause_status,omitempty"`
+	JobsMaxConcurrentRuns JobsMaxConcurrentRuns `json:"jobs_max_concurrent_runs,omitempty"`
+	Tags                  Tags                  `json:"tags,omitempty"`
 }

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -23,21 +24,36 @@ func (m *transformers) Name() string {
 }
 
 func (m *transformers) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	r := b.Config.Resources
 	mutators := b.Config.Bundle.Transformers
+	r := b.Config.Resources
 
-	prefix := mutators.Prefix.Value
-	if !isEnabled(mutators.Prefix.Enabled) {
-		prefix = ""
+	if isEnabled(mutators.Prefix.Enabled) {
+		transformPrefix(r, mutators.Prefix.Value)
+	}
+	if isEnabled(mutators.Tags.Enabled) {
+		transformTags(r, mutators.Tags.Tags)
+	}
+	if isEnabled(mutators.JobsMaxConcurrentRuns.Enabled) {
+		transformJobsMaxConcurrentRuns(r, mutators.JobsMaxConcurrentRuns.Value)
+	}
+	if isEnabled(mutators.TriggerPauseStatus.Enabled) {
+		transformTriggerPauseStatus(r, mutators.TriggerPauseStatus.Enabled)
+	}
+	if isEnabled(mutators.PipelinesDevelopment.Enabled) {
+		transformPipelinesDevelopment(r)
 	}
 
+	return nil
+}
+
+func transformPrefix(r config.Resources, prefix string) {
 	for i := range r.Jobs {
 		r.Jobs[i].Name = prefix + r.Jobs[i].Name
 		if isEnabled(mutators.JobsMaxConcurrentRuns.Enabled) && r.Jobs[i].MaxConcurrentRuns == 0 {
 			r.Jobs[i].MaxConcurrentRuns = mutators.JobsMaxConcurrentRuns.Value
 		}
 
-		if isEnabled(mutators.JobsSchedulePauseStatus.Enabled) {
+		if isEnabled(mutators.TriggerPauseStatus.Enabled) {
 			if r.Jobs[i].Schedule != nil && r.Jobs[i].Schedule.PauseStatus != jobs.PauseStatusUnpaused {
 				r.Jobs[i].Schedule.PauseStatus = jobs.PauseStatusPaused
 			}
@@ -50,6 +66,7 @@ func (m *transformers) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 	}
 
+	// Pipelines transformers: Prefix, PipelinesDevelopment
 	for i := range r.Pipelines {
 		r.Pipelines[i].Name = prefix + r.Pipelines[i].Name
 		if isEnabled(mutators.PipelinesDevelopment.Enabled) {
@@ -57,10 +74,12 @@ func (m *transformers) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 	}
 
+	// Models transformers: Prefix
 	for i := range r.Models {
 		r.Models[i].Name = prefix + r.Models[i].Name
 	}
 
+	// Experiments transformers: Prefix
 	for i := range r.Experiments {
 		filepath := r.Experiments[i].Name
 		dir := path.Dir(filepath)
@@ -72,19 +91,19 @@ func (m *transformers) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 	}
 
+	// Model serving endpoint transformers: Prefix
 	for i := range r.ModelServingEndpoints {
 		r.ModelServingEndpoints[i].Name = normalizePrefix(prefix) + r.ModelServingEndpoints[i].Name
 	}
 
+	// Registered models transformers: Prefix
 	for i := range r.RegisteredModels {
 		r.RegisteredModels[i].Name = normalizePrefix(prefix) + r.RegisteredModels[i].Name
 	}
-
-	addTags(b)
-
-	return nil
 }
 
+// Test whether a transformer is enabled.
+// Enablement has three  states: explicitly enabled, explicitly disabled, and not set.
 func isEnabled(enabled *bool) bool {
 	return enabled != nil && *enabled
 }
@@ -98,16 +117,7 @@ func normalizePrefix(prefix string) string {
 }
 
 // Add tags for supported resources.
-// As of 2024-04, pipelines, model serving, and registered models in Unity Catalog
-// don't yet support tags.
-func addTags(b *bundle.Bundle) {
-	mutators := b.Config.Bundle.Transformers
-	if !isEnabled(mutators.Tags.Enabled) {
-		return
-	}
-
-	r := b.Config.Resources
-	tags := mutators.Tags.Tags
+func transformTags(r config.Resources, tags map[string]string) {
 	for tagKey, tagValue := range tags {
 
 		for i := range r.Jobs {
@@ -127,5 +137,8 @@ func addTags(b *bundle.Bundle) {
 		for i := range r.Experiments {
 			r.Experiments[i].Tags = append(r.Experiments[i].Tags, ml.ExperimentTag{Key: tagKey, Value: tagValue})
 		}
+
+		// As of 2024-04, pipelines, model serving, and registered models in Unity Catalog
+		// don't yet support tags.
 	}
 }
