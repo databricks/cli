@@ -40,20 +40,39 @@ func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	m := b.Config.Bundle.Transformers
 	shortName := b.Config.Workspace.CurrentUser.ShortName
 
-	// TODO: only set these configs if they're not already set
-	err := setConfig(b, "bundle.mutators.prefix.value", "[dev "+shortName+"] ")
-	if err != nil {
-		return err
+	if m.Prefix.IsEnabled() && m.Prefix.Value == "" {
+		err := setConfig(b, "bundle.transformers.prefix.value", "[dev "+shortName+"] ")
+		if err != nil {
+			return err
+		}
 	}
 
-	// TODO: only set tag if it doesn't already exist
-	setConfigMapping(b, "bundle.mutators.tags.tags", "dev", b.Tagging.NormalizeValue(shortName))
+	if m.Tags.IsEnabled() && m.Tags.Tags == nil {
+		err := setConfigMapping(b, "bundle.transformers.tags.tags", "dev", b.Tagging.NormalizeValue(shortName))
+		if err != nil {
+			return err
+		}
+	}
 
-	setConfig(b, "bundle.mutators.jobs_max_concurrent_runs.value", developmentConcurrentRuns) // }
+	if m.JobsMaxConcurrentRuns.IsEnabled() && m.JobsMaxConcurrentRuns.Value == 0 {
+		err := setConfig(b, "bundle.transformers.jobs_max_concurrent_runs.value", developmentConcurrentRuns)
+		if err != nil {
+			return err
+		}
+	}
 
-	if m.TriggerPauseStatus.Enabled == nil {
-		enabled := true
-		setConfig(b, "bundle.mutators.job_schedule_pause_status.enabled", enabled)
+	if !m.TriggerPauseStatus.IsExplicitlyDisabled() {
+		err := setConfig(b, "bundle.transformers.trigger_pause_status.enabled", true)
+		if err != nil {
+			return err
+		}
+	}
+
+	if !m.PipelinesDevelopment.IsExplicitlyDisabled() {
+		err := setConfig(b, "bundle.transformers.pipelines_development.enabled", true)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -68,11 +87,13 @@ func setConfig(b *bundle.Bundle, path string, value any) diag.Diagnostics {
 
 func setConfigMapping(b *bundle.Bundle, path string, key string, value string) diag.Diagnostics {
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		newMapping := dyn.V(map[string]dyn.Value{key: dyn.V(value)})
+
 		existingMapping, err := dyn.Get(v, path)
 		if err != nil {
-			return dyn.InvalidValue, err
+			return dyn.Set(v, path, newMapping)
 		}
-		newMapping := dyn.V(map[string]dyn.Value{key: dyn.V(value)})
+
 		merged, err := merge.Merge(newMapping, existingMapping)
 		if err != nil {
 			return dyn.InvalidValue, err

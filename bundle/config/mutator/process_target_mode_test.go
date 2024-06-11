@@ -51,6 +51,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 							Schedule: &jobs.CronSchedule{
 								QuartzCronExpression: "* * * * *",
 							},
+							Tags: map[string]string{"existing": "tag"},
 						},
 					},
 					"job2": {
@@ -118,6 +119,7 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Job 1
 	assert.Equal(t, "[dev lennart] job1", b.Config.Resources.Jobs["job1"].Name)
+	assert.Equal(t, b.Config.Resources.Jobs["job1"].Tags["existing"], "tag")
 	assert.Equal(t, b.Config.Resources.Jobs["job1"].Tags["dev"], "lennart")
 	assert.Equal(t, b.Config.Resources.Jobs["job1"].Schedule.PauseStatus, jobs.PauseStatusPaused)
 
@@ -160,7 +162,8 @@ func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	diags := bundle.Apply(context.Background(), b, ProcessTargetMode())
+	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
+	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
 	// Assert that tag normalization took place.
@@ -174,7 +177,8 @@ func TestProcessTargetModeDevelopmentTagNormalizationForAzure(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	diags := bundle.Apply(context.Background(), b, ProcessTargetMode())
+	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
+	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
 	// Assert that tag normalization took place (Azure allows more characters than AWS).
@@ -188,7 +192,8 @@ func TestProcessTargetModeDevelopmentTagNormalizationForGcp(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	diags := bundle.Apply(context.Background(), b, ProcessTargetMode())
+	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
+	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
 	// Assert that tag normalization took place.
@@ -328,4 +333,102 @@ func TestDisableLockingDisabled(t *testing.T) {
 	err := transformDevelopmentMode(ctx, b)
 	require.Nil(t, err)
 	assert.True(t, b.Config.Bundle.Deployment.Lock.IsEnabled(), "Deployment lock should remain enabled in development mode when explicitly enabled")
+}
+
+func TestPrefixAlreadySet(t *testing.T) {
+	b := mockBundle(config.Development)
+	b.Config.Bundle.Transformers.Prefix.Value = "custom_prefix_"
+
+	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
+	diags := bundle.Apply(context.Background(), b, m)
+	require.NoError(t, diags.Error())
+
+	assert.Equal(t, "custom_prefix_job1", b.Config.Resources.Jobs["job1"].Name)
+}
+
+func TestPrefixDisabled(t *testing.T) {
+	b := mockBundle(config.Development)
+	notEnabled := false
+	b.Config.Bundle.Transformers.Prefix.Value = "custom_prefix_"
+	b.Config.Bundle.Transformers.Prefix.Enabled = &notEnabled
+
+	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
+	diags := bundle.Apply(context.Background(), b, m)
+	require.NoError(t, diags.Error())
+
+	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
+}
+
+func TestTagsAlreadySet(t *testing.T) {
+	b := mockBundle(config.Development)
+	b.Config.Bundle.Transformers.Tags.Tags = map[string]string{"custom": "tag"}
+
+	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
+	diags := bundle.Apply(context.Background(), b, m)
+	require.NoError(t, diags.Error())
+
+	assert.Equal(t, "tag", b.Config.Resources.Jobs["job1"].Tags["custom"])
+}
+
+func TestTagsDisabled(t *testing.T) {
+	b := mockBundle(config.Development)
+	notEnabled := false
+	b.Config.Bundle.Transformers.Tags.Tags = map[string]string{"custom": "tag"}
+	b.Config.Bundle.Transformers.Tags.Enabled = &notEnabled
+
+	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
+	diags := bundle.Apply(context.Background(), b, m)
+	require.NoError(t, diags.Error())
+
+	assert.Equal(t, "tag", b.Config.Resources.Jobs["job1"].Tags["existing"])
+	assert.Empty(t, b.Config.Resources.Jobs["job2"].Tags)
+}
+
+func TestJobsMaxConcurrentRunsAlreadySet(t *testing.T) {
+	b := mockBundle(config.Development)
+	b.Config.Bundle.Transformers.JobsMaxConcurrentRuns.Value = 10
+
+	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
+	diags := bundle.Apply(context.Background(), b, m)
+	require.NoError(t, diags.Error())
+
+	assert.Equal(t, 10, b.Config.Resources.Jobs["job1"].MaxConcurrentRuns)
+}
+
+func TestJobsMaxConcurrentRunsDisabled(t *testing.T) {
+	b := mockBundle(config.Development)
+	notEnabled := false
+	b.Config.Bundle.Transformers.JobsMaxConcurrentRuns.Value = 10
+	b.Config.Bundle.Transformers.JobsMaxConcurrentRuns.Enabled = &notEnabled
+
+	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
+	diags := bundle.Apply(context.Background(), b, m)
+	require.NoError(t, diags.Error())
+
+	assert.Zero(t, b.Config.Resources.Jobs["job1"].MaxConcurrentRuns)
+}
+
+func TestTriggerPauseStatusDisabled(t *testing.T) {
+	b := mockBundle(config.Development)
+	notEnabled := false
+	b.Config.Bundle.Transformers.TriggerPauseStatus.Enabled = &notEnabled
+
+	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
+	diags := bundle.Apply(context.Background(), b, m)
+	require.NoError(t, diags.Error())
+
+	// Pause status should remain unchanged (unset)
+	assert.Equal(t, jobs.PauseStatus(""), b.Config.Resources.Jobs["job3"].Trigger.PauseStatus)
+}
+
+func TestPipelinesDevelopmentDisabled(t *testing.T) {
+	b := mockBundle(config.Development)
+	notEnabled := false
+	b.Config.Bundle.Transformers.PipelinesDevelopment.Enabled = &notEnabled
+
+	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
+	diags := bundle.Apply(context.Background(), b, m)
+	require.NoError(t, diags.Error())
+
+	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
 }

@@ -1,36 +1,62 @@
 package config
 
-type Prefix struct {
-	Value string `json:"value,omitempty"`
-	// Whether this feature is enabled. Treated as 'true' when not set.
+// A feature with an enablement flag that is on by default.
+type EnableableDefaultOn struct {
+	// Enabled is a user-configurable value controlling enablement
+	// Use IsEnabled to read this value.
 	Enabled *bool `json:"enabled,omitempty"`
+}
+
+// IsEnabled tests whether this feature is enabled.
+// EnableableDefaultOn features are considered enabled by default.
+func (e EnableableDefaultOn) IsEnabled() bool {
+	return e.Enabled == nil || *e.Enabled
+}
+
+// IsExplicitlyDisabled tests whether this feature is explicitly disabled.
+func (e EnableableDefaultOff) IsExplicitlyDisabled() bool {
+	return e.Enabled != nil && !*e.Enabled
+}
+
+// A feature with an enablement flag that is off by default.
+type EnableableDefaultOff struct {
+	// Enabled is a user-configurable value controlling enablement
+	// Use IsEnabled to read this value.
+	Enabled *bool `json:"enabled,omitempty"`
+}
+
+// IsEnabled tests whether this feature is enabled.
+// EnableableDefaultOn features are considered disabled by default.
+func (e EnableableDefaultOff) IsEnabled() bool {
+	return e.Enabled != nil && *e.Enabled
+}
+
+type Prefix struct {
+	EnableableDefaultOn
+	Value string `json:"value,omitempty"`
 }
 
 type PipelinesDevelopment struct {
-	// Whether this feature is enabled. Treated as 'true' when not set.
-	Enabled *bool `json:"enabled,omitempty"`
+	EnableableDefaultOff
 }
 
 type TriggerPauseStatus struct {
-	// Whether to set PauseStatus to PauseStatusPaused
-	Enabled *bool `json:"enabled,omitempty"`
+	EnableableDefaultOff
 }
 
 type JobsMaxConcurrentRuns struct {
+	EnableableDefaultOn
 	Value int `json:"value,omitempty"`
-	// Whether this feature is enabled. Treated as 'true' when not set.
-	Enabled *bool `json:"enabled,omitempty"`
 }
 
 type Tags struct {
+	EnableableDefaultOn
 	Tags map[string]string `json:"tags,omitempty"`
-	// Whether this feature is enabled. Treated as 'true' when not set.
-	Enabled *bool `json:"enabled,omitempty"`
 }
 
 type Transformers struct {
 	Prefix                Prefix                `json:"prefix,omitempty"`
-	PipelinesDevelopment  PipelinesDevelopment  `json:"pipelines_set_development,omitempty"`
+	PipelinesDevelopment  PipelinesDevelopment  `json:"pipelines_development,omitempty"`
 	TriggerPauseStatus    TriggerPauseStatus    `json:"trigger_pause_status,omitempty"`
 	JobsMaxConcurrentRuns JobsMaxConcurrentRuns `json:"jobs_max_concurrent_runs,omitempty"`
 	Tags                  Tags                  `json:"tags,omitempty"`
