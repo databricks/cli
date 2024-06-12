@@ -337,7 +337,7 @@ func TestDisableLockingDisabled(t *testing.T) {
 
 func TestPrefixAlreadySet(t *testing.T) {
 	b := mockBundle(config.Development)
-	b.Config.Bundle.Transformers.Prefix = "custom_prefix_"
+	b.Config.Transformers.Prefix = "custom_prefix_"
 
 	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
 	diags := bundle.Apply(context.Background(), b, m)
@@ -348,7 +348,7 @@ func TestPrefixAlreadySet(t *testing.T) {
 
 func TestTagsAlreadySet(t *testing.T) {
 	b := mockBundle(config.Development)
-	b.Config.Bundle.Transformers.Tags = &map[string]string{"custom": "tag"}
+	b.Config.Transformers.Tags = &map[string]string{"custom": "tag"}
 
 	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
 	diags := bundle.Apply(context.Background(), b, m)
@@ -359,7 +359,7 @@ func TestTagsAlreadySet(t *testing.T) {
 
 func TestTagsNil(t *testing.T) {
 	b := mockBundle(config.Development)
-	b.Config.Bundle.Transformers.Tags = nil
+	b.Config.Transformers.Tags = nil
 
 	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
 	diags := bundle.Apply(context.Background(), b, m)
@@ -370,7 +370,7 @@ func TestTagsNil(t *testing.T) {
 
 func TestTagsEmptySet(t *testing.T) {
 	b := mockBundle(config.Development)
-	b.Config.Bundle.Transformers.Tags = &map[string]string{}
+	b.Config.Transformers.Tags = &map[string]string{}
 
 	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
 	diags := bundle.Apply(context.Background(), b, m)
@@ -381,7 +381,7 @@ func TestTagsEmptySet(t *testing.T) {
 
 func TestJobsMaxConcurrentRunsAlreadySet(t *testing.T) {
 	b := mockBundle(config.Development)
-	b.Config.Bundle.Transformers.DefaultJobsMaxConcurrentRuns = 10
+	b.Config.Transformers.DefaultJobsMaxConcurrentRuns = 10
 
 	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
 	diags := bundle.Apply(context.Background(), b, m)
@@ -392,7 +392,7 @@ func TestJobsMaxConcurrentRunsAlreadySet(t *testing.T) {
 
 func TestJobsMaxConcurrentRunsDisabled(t *testing.T) {
 	b := mockBundle(config.Development)
-	b.Config.Bundle.Transformers.DefaultJobsMaxConcurrentRuns = 1
+	b.Config.Transformers.DefaultJobsMaxConcurrentRuns = 1
 
 	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
 	diags := bundle.Apply(context.Background(), b, m)
@@ -404,7 +404,7 @@ func TestJobsMaxConcurrentRunsDisabled(t *testing.T) {
 func TestTriggerPauseStatusDisabled(t *testing.T) {
 	b := mockBundle(config.Development)
 	notEnabled := false
-	b.Config.Bundle.Transformers.DefaultTriggerPauseStatus = &notEnabled
+	b.Config.Transformers.DefaultTriggerPauseStatus = &notEnabled
 
 	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
 	diags := bundle.Apply(context.Background(), b, m)
@@ -417,7 +417,7 @@ func TestTriggerPauseStatusDisabled(t *testing.T) {
 func TestPipelinesDevelopmentDisabled(t *testing.T) {
 	b := mockBundle(config.Development)
 	notEnabled := false
-	b.Config.Bundle.Transformers.DefaultPipelinesDevelopment = &notEnabled
+	b.Config.Transformers.DefaultPipelinesDevelopment = &notEnabled
 
 	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
 	diags := bundle.Apply(context.Background(), b, m)

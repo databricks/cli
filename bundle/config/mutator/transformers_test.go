@@ -49,10 +49,8 @@ func TestTransformersMutator_Prefix(t *testing.T) {
 							"job1": tt.job,
 						},
 					},
-					Bundle: config.Bundle{
-						Transformers: config.Transformers{
-							Prefix: tt.prefix,
-						},
+					Transformers: config.Transformers{
+						Prefix: tt.prefix,
 					},
 				},
 			}
@@ -122,10 +120,8 @@ func TestTransformersMutator_Tags(t *testing.T) {
 							"job1": tt.job,
 						},
 					},
-					Bundle: config.Bundle{
-						Transformers: config.Transformers{
-							Tags: &tt.tags,
-						},
+					Transformers: config.Transformers{
+						Tags: &tt.tags,
 					},
 				},
 			}
@@ -187,10 +183,8 @@ func TestTransformersMutator_JobsMaxConcurrentRuns(t *testing.T) {
 							"job1": tt.job,
 						},
 					},
-					Bundle: config.Bundle{
-						Transformers: config.Transformers{
-							DefaultJobsMaxConcurrentRuns: tt.setting,
-						},
+					Transformers: config.Transformers{
+						DefaultJobsMaxConcurrentRuns: tt.setting,
 					},
 				},
 			}

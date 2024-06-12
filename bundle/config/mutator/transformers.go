@@ -31,7 +31,7 @@ func (m *transformers) Name() string {
 
 func (m *transformers) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	r := b.Config.Resources
-	t := b.Config.Bundle.Transformers
+	t := b.Config.Transformers
 	prefix := t.Prefix
 	tags := toTagArray(t.Tags)
 

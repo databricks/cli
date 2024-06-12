@@ -1,0 +1,20 @@
+bundle:
+  name: transformers
+
+transformers:
+  tags:
+    prod: true
+  default_pipelines_development: true
+
+targets:
+  dev:
+    transformers:
+      prefix: "myprefix"
+      default_pipelines_development: true
+      default_trigger_pause_status: true
+      default_jobs_max_concurrent_runs: 10
+      tags:
+        dev: true
+  prod:
+    transformers:
+      default_pipelines_development: false
