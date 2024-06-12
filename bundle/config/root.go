@@ -60,9 +60,9 @@ type Root struct {
 	// RunAs section allows to define an execution identity for jobs and pipelines runs
 	RunAs *jobs.JobRunAs `json:"run_as,omitempty"`
 
-	// Transformers apply some transformation throughout the bundle, e.g.
+	// Transform applies transformations throughout the bundle, e.g.
 	// adding a name prefix to deployed resources.
-	Transformers Transformers `json:"transformers,omitempty"`
+	Transform Transforms `json:"transform,omitempty"`
 
 	Experimental *Experimental `json:"experimental,omitempty"`
 
@@ -334,7 +334,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		"sync",
 		"permissions",
 		"variables",
-		"transformers",
+		"transform",
 	} {
 		if root, err = mergeField(root, target, f); err != nil {
 			return err
@@ -349,9 +349,9 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		}
 	}
 
-	// Merge `transformers.tags`. This field must be overwritten if set, not merged.
-	if v, _ := dyn.Get(target, "transformers.tags"); v != dyn.InvalidValue {
-		root, err = dyn.Set(root, "transformers.tags", v)
+	// Merge `transform.tags`. This field must be overwritten if set, not merged.
+	if v, _ := dyn.Get(target, "transform.tags"); v != dyn.InvalidValue {
+		root, err = dyn.Set(root, "transform.tags", v)
 		if err != nil {
 			return err
 		}

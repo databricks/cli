@@ -1,14 +1,14 @@
 bundle:
-  name: transformers
+  name: transform
 
-transformers:
+transform:
   tags:
     prod: true
   default_pipelines_development: true
 
 targets:
   dev:
-    transformers:
+    transform:
       prefix: "myprefix"
       default_pipelines_development: true
       default_trigger_pause_status: PAUSED
@@ -16,5 +16,5 @@ targets:
       tags:
         dev: true
   prod:
-    transformers:
+    transform:
       default_pipelines_development: false

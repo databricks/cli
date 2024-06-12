@@ -14,12 +14,12 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
-type transformers struct{}
+type applyTransforms struct{}
 
-// Apply all transformers, e.g. the prefix transformer that
+// Apply all transforms, e.g. the prefix transform that
 // adds a prefix to all names of all resources.
-func Transformers() *transformers {
-	return &transformers{}
+func ApplyTransforms() *applyTransforms {
+	return &applyTransforms{}
 }
 
 type Tag struct {
@@ -27,34 +27,34 @@ type Tag struct {
 	Value string
 }
 
-func (m *transformers) Name() string {
-	return "Transformers"
+func (m *applyTransforms) Name() string {
+	return "ApplyTransforms"
 }
 
 func validatePauseStatus(b *bundle.Bundle) diag.Diagnostics {
-	p := b.Config.Transformers.DefaultTriggerPauseStatus
+	p := b.Config.Transform.DefaultTriggerPauseStatus
 	if p == "" || p == config.Paused || p == config.Unpaused {
 		return nil
 	}
 	return diag.Diagnostics{{
 		Summary:  "Invalid value for default_trigger_pause_status, should be PAUSED or UNPAUSED",
 		Severity: diag.Error,
-		Location: b.Config.GetLocation("transformers.default_trigger_pause_status"),
+		Location: b.Config.GetLocation("transform.default_trigger_pause_status"),
 	}}
 }
 
-func (m *transformers) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *applyTransforms) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diag := validatePauseStatus(b)
 	if diag != nil {
 		return diag
 	}
 
 	r := b.Config.Resources
-	t := b.Config.Transformers
+	t := b.Config.Transform
 	prefix := t.Prefix
 	tags := toTagArray(t.Tags)
 
-	// Jobs transformers: Prefix, Tags, JobsMaxConcurrentRuns, TriggerPauseStatus
+	// Jobs transforms: Prefix, Tags, JobsMaxConcurrentRuns, TriggerPauseStatus
 	for i := range r.Jobs {
 		r.Jobs[i].Name = prefix + r.Jobs[i].Name
 		if r.Jobs[i].Tags == nil {
@@ -86,7 +86,7 @@ func (m *transformers) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 	}
 
-	// Pipelines transformers: Prefix, PipelinesDevelopment
+	// Pipelines transforms: Prefix, PipelinesDevelopment
 	for i := range r.Pipelines {
 		r.Pipelines[i].Name = prefix + r.Pipelines[i].Name
 		if config.IsExplicitlyEnabled(t.DefaultPipelinesDevelopment) {
@@ -96,7 +96,7 @@ func (m *transformers) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		// As of 2024-06, pipelines don't yet support tags
 	}
 
-	// Models transformers: Prefix, Tags
+	// Models transforms: Prefix, Tags
 	for i := range r.Models {
 		r.Models[i].Name = prefix + r.Models[i].Name
 		for _, t := range tags {
@@ -113,7 +113,7 @@ func (m *transformers) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 	}
 
-	// Experiments transformers: Prefix, Tags
+	// Experiments transforms: Prefix, Tags
 	for i := range r.Experiments {
 		filepath := r.Experiments[i].Name
 		dir := path.Dir(filepath)
@@ -137,14 +137,14 @@ func (m *transformers) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 	}
 
-	// Model serving endpoint transformers: Prefix
+	// Model serving endpoint transforms: Prefix
 	for i := range r.ModelServingEndpoints {
 		r.ModelServingEndpoints[i].Name = normalizePrefix(prefix) + r.ModelServingEndpoints[i].Name
 
 		// As of 2024-06, model serving endpoints don't yet support tags
 	}
 
-	// Registered models transformers: Prefix
+	// Registered models transforms: Prefix
 	for i := range r.RegisteredModels {
 		r.RegisteredModels[i].Name = normalizePrefix(prefix) + r.RegisteredModels[i].Name
 

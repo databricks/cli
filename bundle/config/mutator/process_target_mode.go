@@ -37,39 +37,39 @@ func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		}
 	}
 
-	t := b.Config.Transformers
+	t := b.Config.Transform
 	shortName := b.Config.Workspace.CurrentUser.ShortName
 
 	if t.Prefix == "" {
-		err := setConfig(b, "transformers.prefix", "[dev "+shortName+"] ")
+		err := setConfig(b, "transform.prefix", "[dev "+shortName+"] ")
 		if err != nil {
 			return err
 		}
 	}
 
 	if t.Tags == nil {
-		err := setConfigMapping(b, "transformers.tags", "dev", b.Tagging.NormalizeValue(shortName))
+		err := setConfigMapping(b, "transform.tags", "dev", b.Tagging.NormalizeValue(shortName))
 		if err != nil {
 			return err
 		}
 	}
 
 	if t.DefaultJobsMaxConcurrentRuns == 0 {
-		err := setConfig(b, "transformers.default_jobs_max_concurrent_runs", developmentConcurrentRuns)
+		err := setConfig(b, "transform.default_jobs_max_concurrent_runs", developmentConcurrentRuns)
 		if err != nil {
 			return err
 		}
 	}
 
 	if t.DefaultTriggerPauseStatus == "" {
-		err := setConfig(b, "transformers.default_trigger_pause_status", config.Paused)
+		err := setConfig(b, "transform.default_trigger_pause_status", config.Paused)
 		if err != nil {
 			return err
 		}
 	}
 
 	if !config.IsExplicitlyDisabled(t.DefaultPipelinesDevelopment) {
-		err := setConfig(b, "transformers.default_pipelines_development", true)
+		err := setConfig(b, "transform.default_pipelines_development", true)
 		if err != nil {
 			return err
 		}

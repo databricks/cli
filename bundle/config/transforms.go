@@ -3,7 +3,7 @@ package config
 const Paused = "PAUSED"
 const Unpaused = "UNPAUSED"
 
-type Transformers struct {
+type Transforms struct {
 	// Prefix to prepend to all resource names.
 	Prefix string `json:"prefix,omitempty"`
 

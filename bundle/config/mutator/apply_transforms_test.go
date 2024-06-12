@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTransformersPrefix(t *testing.T) {
+func TestTransformPrefix(t *testing.T) {
 	tests := []struct {
 		name   string
 		prefix string
@@ -50,13 +50,13 @@ func TestTransformersPrefix(t *testing.T) {
 							"job1": tt.job,
 						},
 					},
-					Transformers: config.Transformers{
+					Transform: config.Transforms{
 						Prefix: tt.prefix,
 					},
 				},
 			}
 
-			mutator := mutator.Transformers()
+			mutator := mutator.ApplyTransforms()
 			diag := mutator.Apply(context.Background(), b)
 
 			if diag.HasError() {
@@ -70,7 +70,7 @@ func TestTransformersPrefix(t *testing.T) {
 	}
 }
 
-func TestTransformersTags(t *testing.T) {
+func TestTransformTags(t *testing.T) {
 	tests := []struct {
 		name string
 		tags map[string]string
@@ -121,13 +121,13 @@ func TestTransformersTags(t *testing.T) {
 							"job1": tt.job,
 						},
 					},
-					Transformers: config.Transformers{
+					Transform: config.Transforms{
 						Tags: &tt.tags,
 					},
 				},
 			}
 
-			mutator := mutator.Transformers()
+			mutator := mutator.ApplyTransforms()
 			diag := mutator.Apply(context.Background(), b)
 
 			if diag.HasError() {
@@ -144,7 +144,7 @@ func TestTransformersTags(t *testing.T) {
 	}
 }
 
-func TestTransformersJobsMaxConcurrentRuns(t *testing.T) {
+func TestTransformJobsMaxConcurrentRuns(t *testing.T) {
 	tests := []struct {
 		name    string
 		job     *resources.Job
@@ -184,13 +184,13 @@ func TestTransformersJobsMaxConcurrentRuns(t *testing.T) {
 							"job1": tt.job,
 						},
 					},
-					Transformers: config.Transformers{
+					Transform: config.Transforms{
 						DefaultJobsMaxConcurrentRuns: tt.setting,
 					},
 				},
 			}
 
-			mutator := mutator.Transformers()
+			mutator := mutator.ApplyTransforms()
 			diag := mutator.Apply(context.Background(), b)
 
 			if diag.HasError() {
@@ -204,16 +204,16 @@ func TestTransformersJobsMaxConcurrentRuns(t *testing.T) {
 	}
 }
 
-func TestTransformersValidation(t *testing.T) {
+func TestTransformValidation(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
-			Transformers: config.Transformers{
+			Transform: config.Transforms{
 				DefaultTriggerPauseStatus: "invalid",
 			},
 		},
 	}
 
-	mutator := mutator.Transformers()
+	mutator := mutator.ApplyTransforms()
 	diag := mutator.Apply(context.Background(), b)
 	assert.Equal(t, "Invalid value for default_trigger_pause_status, should be PAUSED or UNPAUSED", diag[0].Summary)
 }
