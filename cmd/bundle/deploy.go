@@ -2,13 +2,11 @@ package bundle
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/spf13/cobra"
 )
@@ -57,9 +55,6 @@ func newDeployCommand() *cobra.Command {
 		))
 		if err := diags.Error(); err != nil {
 			return err
-		}
-		for _, diag := range diags {
-			cmdio.LogString(ctx, fmt.Sprintf("Warning: %s", diag.Summary))
 		}
 		return nil
 	}
