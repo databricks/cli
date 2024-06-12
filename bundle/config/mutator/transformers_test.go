@@ -12,8 +12,6 @@ import (
 )
 
 func TestTransformersMutator_Prefix(t *testing.T) {
-	enabled := true
-
 	tests := []struct {
 		name   string
 		prefix string
@@ -53,10 +51,7 @@ func TestTransformersMutator_Prefix(t *testing.T) {
 					},
 					Bundle: config.Bundle{
 						Transformers: config.Transformers{
-							Prefix: config.Prefix{
-								EnableableDefaultOn: config.EnableableDefaultOn{Enabled: &enabled},
-								Value:               tt.prefix,
-							},
+							Prefix: tt.prefix,
 						},
 					},
 				},
@@ -77,8 +72,6 @@ func TestTransformersMutator_Prefix(t *testing.T) {
 }
 
 func TestTransformersMutator_Tags(t *testing.T) {
-	enabled := true
-
 	tests := []struct {
 		name string
 		tags map[string]string
@@ -107,6 +100,17 @@ func TestTransformersMutator_Tags(t *testing.T) {
 			},
 			want: map[string]string{"env": "dev", "team": "data"},
 		},
+		{
+			name: "don't override existing job tags",
+			tags: map[string]string{"env": "dev"},
+			job: &resources.Job{
+				JobSettings: &jobs.JobSettings{
+					Name: "job1",
+					Tags: map[string]string{"env": "prod"},
+				},
+			},
+			want: map[string]string{"env": "prod"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -120,10 +124,7 @@ func TestTransformersMutator_Tags(t *testing.T) {
 					},
 					Bundle: config.Bundle{
 						Transformers: config.Transformers{
-							Tags: config.Tags{
-								EnableableDefaultOn: config.EnableableDefaultOn{Enabled: &enabled},
-								Tags:                tt.tags,
-							},
+							Tags: &tt.tags,
 						},
 					},
 				},
@@ -147,13 +148,11 @@ func TestTransformersMutator_Tags(t *testing.T) {
 }
 
 func TestTransformersMutator_JobsMaxConcurrentRuns(t *testing.T) {
-	enabled := true
-
 	tests := []struct {
-		name string
-		job  *resources.Job
-		max  int
-		want int
+		name    string
+		job     *resources.Job
+		setting int
+		want    int
 	}{
 		{
 			name: "set max concurrent runs",
@@ -163,8 +162,8 @@ func TestTransformersMutator_JobsMaxConcurrentRuns(t *testing.T) {
 					MaxConcurrentRuns: 0,
 				},
 			},
-			max:  5,
-			want: 5,
+			setting: 5,
+			want:    5,
 		},
 		{
 			name: "do not override existing max concurrent runs",
@@ -174,8 +173,8 @@ func TestTransformersMutator_JobsMaxConcurrentRuns(t *testing.T) {
 					MaxConcurrentRuns: 3,
 				},
 			},
-			max:  5,
-			want: 3,
+			setting: 5,
+			want:    3,
 		},
 	}
 
@@ -190,10 +189,7 @@ func TestTransformersMutator_JobsMaxConcurrentRuns(t *testing.T) {
 					},
 					Bundle: config.Bundle{
 						Transformers: config.Transformers{
-							JobsMaxConcurrentRuns: config.JobsMaxConcurrentRuns{
-								EnableableDefaultOn: config.EnableableDefaultOn{Enabled: &enabled},
-								Value:               tt.max,
-							},
+							DefaultJobsMaxConcurrentRuns: tt.setting,
 						},
 					},
 				},

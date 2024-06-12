@@ -3,9 +3,11 @@ package mutator
 import (
 	"context"
 	"path"
+	"sort"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -18,6 +20,11 @@ func TransformersMutator() *transformers {
 	return &transformers{}
 }
 
+type Tag struct {
+	Key   string
+	Value string
+}
+
 func (m *transformers) Name() string {
 	return "TransformersMutator"
 }
@@ -25,26 +32,24 @@ func (m *transformers) Name() string {
 func (m *transformers) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	r := b.Config.Resources
 	t := b.Config.Bundle.Transformers
-	prefix := t.Prefix.Value
-	tags := t.Tags.Tags
+	prefix := t.Prefix
+	tags := toTagArray(t.Tags)
 
 	// Jobs transformers: Prefix, Tags, JobsMaxConcurrentRuns, TriggerPauseStatus
 	for i := range r.Jobs {
-		if t.Prefix.IsEnabled() {
-			r.Jobs[i].Name = prefix + r.Jobs[i].Name
+		r.Jobs[i].Name = prefix + r.Jobs[i].Name
+		if r.Jobs[i].Tags == nil {
+			r.Jobs[i].Tags = make(map[string]string)
 		}
-		if t.Tags.IsEnabled() {
-			for tagKey, tagValue := range tags {
-				if r.Jobs[i].Tags == nil {
-					r.Jobs[i].Tags = make(map[string]string)
-				}
-				r.Jobs[i].Tags[tagKey] = tagValue
+		for _, tag := range tags {
+			if r.Jobs[i].Tags[tag.Key] == "" {
+				r.Jobs[i].Tags[tag.Key] = tag.Value
 			}
 		}
-		if t.JobsMaxConcurrentRuns.IsEnabled() && r.Jobs[i].MaxConcurrentRuns == 0 {
-			r.Jobs[i].MaxConcurrentRuns = t.JobsMaxConcurrentRuns.Value
+		if r.Jobs[i].MaxConcurrentRuns == 0 {
+			r.Jobs[i].MaxConcurrentRuns = t.DefaultJobsMaxConcurrentRuns
 		}
-		if t.TriggerPauseStatus.IsEnabled() {
+		if config.IsExplicitlyEnabled(t.DefaultTriggerPauseStatus) {
 			if r.Jobs[i].Schedule != nil && r.Jobs[i].Schedule.PauseStatus != jobs.PauseStatusUnpaused {
 				r.Jobs[i].Schedule.PauseStatus = jobs.PauseStatusPaused
 			}
@@ -59,10 +64,8 @@ func (m *transformers) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 
 	// Pipelines transformers: Prefix, PipelinesDevelopment
 	for i := range r.Pipelines {
-		if t.Prefix.IsEnabled() {
-			r.Pipelines[i].Name = prefix + r.Pipelines[i].Name
-		}
-		if t.PipelinesDevelopment.IsEnabled() {
+		r.Pipelines[i].Name = prefix + r.Pipelines[i].Name
+		if config.IsExplicitlyEnabled(t.DefaultPipelinesDevelopment) {
 			r.Pipelines[i].Development = true
 		}
 
@@ -71,54 +74,76 @@ func (m *transformers) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 
 	// Models transformers: Prefix, Tags
 	for i := range r.Models {
-		if t.Prefix.IsEnabled() {
-			r.Models[i].Name = prefix + r.Models[i].Name
-		}
-		if t.Tags.IsEnabled() {
-			for tagKey, tagValue := range tags {
-				r.Models[i].Tags = append(r.Models[i].Tags, ml.ModelTag{Key: tagKey, Value: tagValue})
+		r.Models[i].Name = prefix + r.Models[i].Name
+		for _, t := range tags {
+			exists := false
+			for _, modelTag := range r.Models[i].Tags {
+				if modelTag.Key == t.Key {
+					exists = true
+					break
+				}
+			}
+			if !exists {
+				r.Models[i].Tags = append(r.Models[i].Tags, ml.ModelTag{Key: t.Key, Value: t.Value})
 			}
 		}
 	}
 
 	// Experiments transformers: Prefix, Tags
 	for i := range r.Experiments {
-		if t.Prefix.IsEnabled() {
-			filepath := r.Experiments[i].Name
-			dir := path.Dir(filepath)
-			base := path.Base(filepath)
-			if dir == "." {
-				r.Experiments[i].Name = prefix + base
-			} else {
-				r.Experiments[i].Name = dir + "/" + prefix + base
-			}
+		filepath := r.Experiments[i].Name
+		dir := path.Dir(filepath)
+		base := path.Base(filepath)
+		if dir == "." {
+			r.Experiments[i].Name = prefix + base
+		} else {
+			r.Experiments[i].Name = dir + "/" + prefix + base
 		}
-		if t.Tags.IsEnabled() {
-			for tagKey, tagValue := range tags {
-				r.Experiments[i].Tags = append(r.Experiments[i].Tags, ml.ExperimentTag{Key: tagKey, Value: tagValue})
+		for _, t := range tags {
+			exists := false
+			for _, experimentTag := range r.Experiments[i].Tags {
+				if experimentTag.Key == t.Key {
+					exists = true
+					break
+				}
+			}
+			if !exists {
+				r.Experiments[i].Tags = append(r.Experiments[i].Tags, ml.ExperimentTag{Key: t.Key, Value: t.Value})
 			}
 		}
 	}
 
 	// Model serving endpoint transformers: Prefix
 	for i := range r.ModelServingEndpoints {
-		if t.Prefix.IsEnabled() {
-			r.ModelServingEndpoints[i].Name = normalizePrefix(prefix) + r.ModelServingEndpoints[i].Name
-		}
+		r.ModelServingEndpoints[i].Name = normalizePrefix(prefix) + r.ModelServingEndpoints[i].Name
 
 		// As of 2024-06, model serving endpoints don't yet support tags
 	}
 
 	// Registered models transformers: Prefix
 	for i := range r.RegisteredModels {
-		if t.Prefix.IsEnabled() {
-			r.RegisteredModels[i].Name = normalizePrefix(prefix) + r.RegisteredModels[i].Name
-		}
+		r.RegisteredModels[i].Name = normalizePrefix(prefix) + r.RegisteredModels[i].Name
 
 		// As of 2024-06, registered models don't yet support tags
 	}
 
 	return nil
+}
+
+// Convert a map of tags to an array of tags.
+// We sort tags so we always produce a consistent list of tags.
+func toTagArray(tags *map[string]string) []Tag {
+	var tagArray []Tag
+	if tags == nil {
+		return tagArray
+	}
+	for key, value := range *tags {
+		tagArray = append(tagArray, Tag{Key: key, Value: value})
+	}
+	sort.Slice(tagArray, func(i, j int) bool {
+		return tagArray[i].Key < tagArray[j].Key
+	})
+	return tagArray
 }
 
 // Normalize prefix strings like '[dev lennart] ' to 'dev_lennart_'.

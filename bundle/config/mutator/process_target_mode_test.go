@@ -337,7 +337,7 @@ func TestDisableLockingDisabled(t *testing.T) {
 
 func TestPrefixAlreadySet(t *testing.T) {
 	b := mockBundle(config.Development)
-	b.Config.Bundle.Transformers.Prefix.Value = "custom_prefix_"
+	b.Config.Bundle.Transformers.Prefix = "custom_prefix_"
 
 	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
 	diags := bundle.Apply(context.Background(), b, m)
@@ -346,22 +346,9 @@ func TestPrefixAlreadySet(t *testing.T) {
 	assert.Equal(t, "custom_prefix_job1", b.Config.Resources.Jobs["job1"].Name)
 }
 
-func TestPrefixDisabled(t *testing.T) {
-	b := mockBundle(config.Development)
-	notEnabled := false
-	b.Config.Bundle.Transformers.Prefix.Value = "custom_prefix_"
-	b.Config.Bundle.Transformers.Prefix.Enabled = &notEnabled
-
-	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
-	diags := bundle.Apply(context.Background(), b, m)
-	require.NoError(t, diags.Error())
-
-	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
-}
-
 func TestTagsAlreadySet(t *testing.T) {
 	b := mockBundle(config.Development)
-	b.Config.Bundle.Transformers.Tags.Tags = map[string]string{"custom": "tag"}
+	b.Config.Bundle.Transformers.Tags = &map[string]string{"custom": "tag"}
 
 	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
 	diags := bundle.Apply(context.Background(), b, m)
@@ -370,23 +357,31 @@ func TestTagsAlreadySet(t *testing.T) {
 	assert.Equal(t, "tag", b.Config.Resources.Jobs["job1"].Tags["custom"])
 }
 
-func TestTagsDisabled(t *testing.T) {
+func TestTagsNil(t *testing.T) {
 	b := mockBundle(config.Development)
-	notEnabled := false
-	b.Config.Bundle.Transformers.Tags.Tags = map[string]string{"custom": "tag"}
-	b.Config.Bundle.Transformers.Tags.Enabled = &notEnabled
+	b.Config.Bundle.Transformers.Tags = nil
 
 	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
-	assert.Equal(t, "tag", b.Config.Resources.Jobs["job1"].Tags["existing"])
+	assert.Equal(t, "lennart", b.Config.Resources.Jobs["job2"].Tags["dev"])
+}
+
+func TestTagsEmptySet(t *testing.T) {
+	b := mockBundle(config.Development)
+	b.Config.Bundle.Transformers.Tags = &map[string]string{}
+
+	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
+	diags := bundle.Apply(context.Background(), b, m)
+	require.NoError(t, diags.Error())
+
 	assert.Empty(t, b.Config.Resources.Jobs["job2"].Tags)
 }
 
 func TestJobsMaxConcurrentRunsAlreadySet(t *testing.T) {
 	b := mockBundle(config.Development)
-	b.Config.Bundle.Transformers.JobsMaxConcurrentRuns.Value = 10
+	b.Config.Bundle.Transformers.DefaultJobsMaxConcurrentRuns = 10
 
 	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
 	diags := bundle.Apply(context.Background(), b, m)
@@ -397,21 +392,19 @@ func TestJobsMaxConcurrentRunsAlreadySet(t *testing.T) {
 
 func TestJobsMaxConcurrentRunsDisabled(t *testing.T) {
 	b := mockBundle(config.Development)
-	notEnabled := false
-	b.Config.Bundle.Transformers.JobsMaxConcurrentRuns.Value = 10
-	b.Config.Bundle.Transformers.JobsMaxConcurrentRuns.Enabled = &notEnabled
+	b.Config.Bundle.Transformers.DefaultJobsMaxConcurrentRuns = 1
 
 	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
-	assert.Zero(t, b.Config.Resources.Jobs["job1"].MaxConcurrentRuns)
+	assert.Equal(t, 1, b.Config.Resources.Jobs["job1"].MaxConcurrentRuns)
 }
 
 func TestTriggerPauseStatusDisabled(t *testing.T) {
 	b := mockBundle(config.Development)
 	notEnabled := false
-	b.Config.Bundle.Transformers.TriggerPauseStatus.Enabled = &notEnabled
+	b.Config.Bundle.Transformers.DefaultTriggerPauseStatus = &notEnabled
 
 	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
 	diags := bundle.Apply(context.Background(), b, m)
@@ -424,7 +417,7 @@ func TestTriggerPauseStatusDisabled(t *testing.T) {
 func TestPipelinesDevelopmentDisabled(t *testing.T) {
 	b := mockBundle(config.Development)
 	notEnabled := false
-	b.Config.Bundle.Transformers.PipelinesDevelopment.Enabled = &notEnabled
+	b.Config.Bundle.Transformers.DefaultPipelinesDevelopment = &notEnabled
 
 	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
 	diags := bundle.Apply(context.Background(), b, m)
