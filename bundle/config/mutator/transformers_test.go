@@ -9,9 +9,10 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestTransformersMutator_Prefix(t *testing.T) {
+func TestTransformersPrefix(t *testing.T) {
 	tests := []struct {
 		name   string
 		prefix string
@@ -69,7 +70,7 @@ func TestTransformersMutator_Prefix(t *testing.T) {
 	}
 }
 
-func TestTransformersMutator_Tags(t *testing.T) {
+func TestTransformersTags(t *testing.T) {
 	tests := []struct {
 		name string
 		tags map[string]string
@@ -143,7 +144,7 @@ func TestTransformersMutator_Tags(t *testing.T) {
 	}
 }
 
-func TestTransformersMutator_JobsMaxConcurrentRuns(t *testing.T) {
+func TestTransformersJobsMaxConcurrentRuns(t *testing.T) {
 	tests := []struct {
 		name    string
 		job     *resources.Job
@@ -201,4 +202,18 @@ func TestTransformersMutator_JobsMaxConcurrentRuns(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestTransformersValidation(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Transformers: config.Transformers{
+				DefaultTriggerPauseStatus: "invalid",
+			},
+		},
+	}
+
+	mutator := mutator.Transformers()
+	diag := mutator.Apply(context.Background(), b)
+	assert.Equal(t, "Invalid value for default_trigger_pause_status, should be PAUSED or UNPAUSED", diag[0].Summary)
 }

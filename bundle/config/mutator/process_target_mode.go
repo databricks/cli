@@ -61,8 +61,8 @@ func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		}
 	}
 
-	if !config.IsExplicitlyDisabled(t.DefaultTriggerPauseStatus) {
-		err := setConfig(b, "transformers.default_trigger_pause_status", true)
+	if t.DefaultTriggerPauseStatus == "" {
+		err := setConfig(b, "transformers.default_trigger_pause_status", config.Paused)
 		if err != nil {
 			return err
 		}

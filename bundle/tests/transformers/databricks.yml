@@ -11,7 +11,7 @@ targets:
     transformers:
       prefix: "myprefix"
       default_pipelines_development: true
-      default_trigger_pause_status: true
+      default_trigger_pause_status: PAUSED
       default_jobs_max_concurrent_runs: 10
       tags:
         dev: true

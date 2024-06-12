@@ -401,17 +401,16 @@ func TestJobsMaxConcurrentRunsDisabled(t *testing.T) {
 	assert.Equal(t, 1, b.Config.Resources.Jobs["job1"].MaxConcurrentRuns)
 }
 
-func TestTriggerPauseStatusDisabled(t *testing.T) {
+func TestTriggerPauseStatusWhenUnpaused(t *testing.T) {
 	b := mockBundle(config.Development)
-	notEnabled := false
-	b.Config.Transformers.DefaultTriggerPauseStatus = &notEnabled
+	b.Config.Transformers.DefaultTriggerPauseStatus = config.Unpaused
 
 	m := bundle.Seq(ProcessTargetMode(), Transformers())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
-	// Pause status should remain unchanged (unset)
-	assert.Equal(t, jobs.PauseStatus(""), b.Config.Resources.Jobs["job3"].Trigger.PauseStatus)
+	// Pause status should take the value from the override above
+	assert.Equal(t, jobs.PauseStatusUnpaused, b.Config.Resources.Jobs["job3"].Trigger.PauseStatus)
 }
 
 func TestPipelinesDevelopmentDisabled(t *testing.T) {

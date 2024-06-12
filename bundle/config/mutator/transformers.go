@@ -31,7 +31,24 @@ func (m *transformers) Name() string {
 	return "Transformers"
 }
 
+func validatePauseStatus(b *bundle.Bundle) diag.Diagnostics {
+	p := b.Config.Transformers.DefaultTriggerPauseStatus
+	if p == "" || p == config.Paused || p == config.Unpaused {
+		return nil
+	}
+	return diag.Diagnostics{{
+		Summary:  "Invalid value for default_trigger_pause_status, should be PAUSED or UNPAUSED",
+		Severity: diag.Error,
+		Location: b.Config.GetLocation("transformers.default_trigger_pause_status"),
+	}}
+}
+
 func (m *transformers) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	diag := validatePauseStatus(b)
+	if diag != nil {
+		return diag
+	}
+
 	r := b.Config.Resources
 	t := b.Config.Transformers
 	prefix := t.Prefix
@@ -51,15 +68,20 @@ func (m *transformers) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if r.Jobs[i].MaxConcurrentRuns == 0 {
 			r.Jobs[i].MaxConcurrentRuns = t.DefaultJobsMaxConcurrentRuns
 		}
-		if config.IsExplicitlyEnabled(t.DefaultTriggerPauseStatus) {
-			if r.Jobs[i].Schedule != nil && r.Jobs[i].Schedule.PauseStatus != jobs.PauseStatusUnpaused {
-				r.Jobs[i].Schedule.PauseStatus = jobs.PauseStatusPaused
+		if t.DefaultTriggerPauseStatus != "" {
+			paused := jobs.PauseStatusPaused
+			if t.DefaultTriggerPauseStatus == config.Unpaused {
+				paused = jobs.PauseStatusUnpaused
 			}
-			if r.Jobs[i].Continuous != nil && r.Jobs[i].Continuous.PauseStatus != jobs.PauseStatusUnpaused {
-				r.Jobs[i].Continuous.PauseStatus = jobs.PauseStatusPaused
+
+			if r.Jobs[i].Schedule != nil && r.Jobs[i].Schedule.PauseStatus == "" {
+				r.Jobs[i].Schedule.PauseStatus = paused
 			}
-			if r.Jobs[i].Trigger != nil && r.Jobs[i].Trigger.PauseStatus != jobs.PauseStatusUnpaused {
-				r.Jobs[i].Trigger.PauseStatus = jobs.PauseStatusPaused
+			if r.Jobs[i].Continuous != nil && r.Jobs[i].Continuous.PauseStatus == "" {
+				r.Jobs[i].Continuous.PauseStatus = paused
+			}
+			if r.Jobs[i].Trigger != nil && r.Jobs[i].Trigger.PauseStatus == "" {
+				r.Jobs[i].Trigger.PauseStatus = paused
 			}
 		}
 	}

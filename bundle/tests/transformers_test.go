@@ -3,6 +3,7 @@ package config_tests
 import (
 	"testing"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -10,7 +11,7 @@ func TestTransformersDev(t *testing.T) {
 	b := loadTarget(t, "./transformers", "dev")
 
 	assert.Equal(t, "myprefix", b.Config.Transformers.Prefix)
-	assert.Equal(t, true, *b.Config.Transformers.DefaultTriggerPauseStatus)
+	assert.Equal(t, config.Paused, b.Config.Transformers.DefaultTriggerPauseStatus)
 	assert.Equal(t, 10, b.Config.Transformers.DefaultJobsMaxConcurrentRuns)
 	assert.Equal(t, true, *b.Config.Transformers.DefaultPipelinesDevelopment)
 	assert.Equal(t, "true", (*b.Config.Transformers.Tags)["dev"])
