@@ -55,7 +55,7 @@ func TestTransformersMutator_Prefix(t *testing.T) {
 				},
 			}
 
-			mutator := mutator.TransformersMutator()
+			mutator := mutator.Transformers()
 			diag := mutator.Apply(context.Background(), b)
 
 			if diag.HasError() {
@@ -126,7 +126,7 @@ func TestTransformersMutator_Tags(t *testing.T) {
 				},
 			}
 
-			mutator := mutator.TransformersMutator()
+			mutator := mutator.Transformers()
 			diag := mutator.Apply(context.Background(), b)
 
 			if diag.HasError() {
@@ -189,7 +189,7 @@ func TestTransformersMutator_JobsMaxConcurrentRuns(t *testing.T) {
 				},
 			}
 
-			mutator := mutator.TransformersMutator()
+			mutator := mutator.Transformers()
 			diag := mutator.Apply(context.Background(), b)
 
 			if diag.HasError() {

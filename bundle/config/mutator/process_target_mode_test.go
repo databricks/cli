@@ -113,7 +113,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 func TestProcessTargetModeDevelopment(t *testing.T) {
 	b := mockBundle(config.Development)
 
-	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
+	m := bundle.Seq(ProcessTargetMode(), Transformers())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -162,7 +162,7 @@ func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
+	m := bundle.Seq(ProcessTargetMode(), Transformers())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -177,7 +177,7 @@ func TestProcessTargetModeDevelopmentTagNormalizationForAzure(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
+	m := bundle.Seq(ProcessTargetMode(), Transformers())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -192,7 +192,7 @@ func TestProcessTargetModeDevelopmentTagNormalizationForGcp(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
+	m := bundle.Seq(ProcessTargetMode(), Transformers())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -203,7 +203,7 @@ func TestProcessTargetModeDevelopmentTagNormalizationForGcp(t *testing.T) {
 func TestProcessTargetModeDefault(t *testing.T) {
 	b := mockBundle("")
 
-	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
+	m := bundle.Seq(ProcessTargetMode(), Transformers())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
@@ -289,7 +289,7 @@ func TestAllResourcesMocked(t *testing.T) {
 func TestAllResourcesRenamed(t *testing.T) {
 	b := mockBundle(config.Development)
 
-	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
+	m := bundle.Seq(ProcessTargetMode(), Transformers())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -339,7 +339,7 @@ func TestPrefixAlreadySet(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Transformers.Prefix = "custom_prefix_"
 
-	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
+	m := bundle.Seq(ProcessTargetMode(), Transformers())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -350,7 +350,7 @@ func TestTagsAlreadySet(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Transformers.Tags = &map[string]string{"custom": "tag"}
 
-	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
+	m := bundle.Seq(ProcessTargetMode(), Transformers())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -361,7 +361,7 @@ func TestTagsNil(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Transformers.Tags = nil
 
-	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
+	m := bundle.Seq(ProcessTargetMode(), Transformers())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -372,7 +372,7 @@ func TestTagsEmptySet(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Transformers.Tags = &map[string]string{}
 
-	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
+	m := bundle.Seq(ProcessTargetMode(), Transformers())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -383,7 +383,7 @@ func TestJobsMaxConcurrentRunsAlreadySet(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Transformers.DefaultJobsMaxConcurrentRuns = 10
 
-	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
+	m := bundle.Seq(ProcessTargetMode(), Transformers())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -394,7 +394,7 @@ func TestJobsMaxConcurrentRunsDisabled(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Transformers.DefaultJobsMaxConcurrentRuns = 1
 
-	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
+	m := bundle.Seq(ProcessTargetMode(), Transformers())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -406,7 +406,7 @@ func TestTriggerPauseStatusDisabled(t *testing.T) {
 	notEnabled := false
 	b.Config.Transformers.DefaultTriggerPauseStatus = &notEnabled
 
-	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
+	m := bundle.Seq(ProcessTargetMode(), Transformers())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -419,7 +419,7 @@ func TestPipelinesDevelopmentDisabled(t *testing.T) {
 	notEnabled := false
 	b.Config.Transformers.DefaultPipelinesDevelopment = &notEnabled
 
-	m := bundle.Seq(ProcessTargetMode(), TransformersMutator())
+	m := bundle.Seq(ProcessTargetMode(), Transformers())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 

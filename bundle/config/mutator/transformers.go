@@ -16,7 +16,9 @@ import (
 
 type transformers struct{}
 
-func TransformersMutator() *transformers {
+// Apply all transformers, e.g. the prefix transformer that
+// adds a prefix to all names of all resources.
+func Transformers() *transformers {
 	return &transformers{}
 }
 
@@ -26,7 +28,7 @@ type Tag struct {
 }
 
 func (m *transformers) Name() string {
-	return "TransformersMutator"
+	return "Transformers"
 }
 
 func (m *transformers) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {

@@ -350,7 +350,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 	}
 
 	// Merge `transformers.tags`. This field must be overwritten if set, not merged.
-	if v, _ := dyn.Get(target, "transformers.tags"); v != dyn.NilValue {
+	if v, _ := dyn.Get(target, "transformers.tags"); v != dyn.InvalidValue {
 		root, err = dyn.Set(root, "transformers.tags", v)
 		if err != nil {
 			return err
