@@ -155,8 +155,8 @@ func (s *Sync) notifyComplete(ctx context.Context, d diff) {
 // Upload all files in the file tree rooted at the local path configured in the
 // SyncOptions to the remote path configured in the SyncOptions.
 //
-// Returns the list of files tracked by the syncer during the run, and an error
-// if any occurred.
+// Returns the list of files tracked (and synchronized) by the syncer during the run,
+// and an error if any occurred.
 func (s *Sync) RunOnce(ctx context.Context) ([]fileset.File, error) {
 	files, err := s.GetFileList(ctx)
 	if err != nil {
