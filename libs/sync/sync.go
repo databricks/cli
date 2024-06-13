@@ -236,7 +236,7 @@ func (s *Sync) RunContinuous(ctx context.Context) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-ticker.C:
-			err := s.RunOnce(ctx)
+			_, err := s.RunOnce(ctx)
 			if err != nil {
 				return err
 			}
