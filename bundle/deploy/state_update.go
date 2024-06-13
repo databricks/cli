@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
@@ -40,19 +39,8 @@ func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 	state.CliVersion = build.GetInfo().Version
 	state.Version = DeploymentStateVersion
 
-	// Get the current file list.
-	sync, err := files.GetSync(ctx, bundle.ReadOnly(b))
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	files, err := sync.GetFileList(ctx)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	// Update the state with the current file list.
-	fl, err := FromSlice(files)
+	// Update the state with the current list of synced files.
+	fl, err := FromSlice(b.SyncedFiles)
 	if err != nil {
 		return diag.FromErr(err)
 	}

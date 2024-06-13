@@ -152,36 +152,41 @@ func (s *Sync) notifyComplete(ctx context.Context, d diff) {
 	s.seq++
 }
 
-func (s *Sync) RunOnce(ctx context.Context) error {
+// Upload all files in the file tree rooted at the local path configured in the
+// SyncOptions to the remote path configured in the SyncOptions.
+//
+// Returns the list of files tracked by the syncer during the run, and an error
+// if any occurred.
+func (s *Sync) RunOnce(ctx context.Context) ([]fileset.File, error) {
 	files, err := s.GetFileList(ctx)
 	if err != nil {
-		return err
+		return files, err
 	}
 
 	change, err := s.snapshot.diff(ctx, files)
 	if err != nil {
-		return err
+		return files, err
 	}
 
 	s.notifyStart(ctx, change)
 	if change.IsEmpty() {
 		s.notifyComplete(ctx, change)
-		return nil
+		return files, nil
 	}
 
 	err = s.applyDiff(ctx, change)
 	if err != nil {
-		return err
+		return files, err
 	}
 
 	err = s.snapshot.Save(ctx)
 	if err != nil {
 		log.Errorf(ctx, "cannot store snapshot: %s", err)
-		return err
+		return files, err
 	}
 
 	s.notifyComplete(ctx, change)
-	return nil
+	return files, nil
 }
 
 func (s *Sync) GetFileList(ctx context.Context) ([]fileset.File, error) {

@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
+	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/folders"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/locker"
@@ -49,6 +50,9 @@ type Bundle struct {
 	// It can be initialized on demand after loading the configuration.
 	clientOnce sync.Once
 	client     *databricks.WorkspaceClient
+
+	// Files that are synced to the workspace.file_path
+	SyncedFiles []fileset.File
 
 	// Stores an initialized copy of this bundle's Terraform wrapper.
 	Terraform *tfexec.Terraform
