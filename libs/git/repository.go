@@ -103,10 +103,14 @@ func (r *Repository) LatestCommit() (string, error) {
 func (r *Repository) OriginUrl() string {
 	rawUrl := r.config.variables["remote.origin.url"]
 
-	// Remove username and credentials from the URL.
+	// Remove username and passwork from the URL.
 	parsedUrl, err := url.Parse(rawUrl)
 	if err != nil {
-		return ""
+		// Git supports https URLs and non standard URLs like "ssh://" or "file://".
+		// Parsing these URLs is not supported by the Go standard library. In case
+		// of an error, we return the raw URL. This is okay because for ssh URLs
+		// because passwords cannot be included in the URL.
+		return rawUrl
 	}
 	// Setting User to nil removes the username and password from the URL when
 	// .String() is called.
