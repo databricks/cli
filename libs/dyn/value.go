@@ -8,7 +8,17 @@ type Value struct {
 	v any
 
 	k Kind
+
+	// Location of value in the source YAML. For primitive values this is the location
+	// the value was defined at.
+	// For maps and sequences, this is one of the locations the values was defined at.
+	// This is because merge for maps and sequences can combine values from multiple locations.
 	l Location
+
+	// All locations in the source YAML files where this value was defined. Some of
+	// these locations may have had no effect on the final value because they were
+	// overridden by other values at other locations.
+	yamlLocations []Location
 
 	// Whether or not this value is an anchor.
 	// If this node doesn't map to a type, we don't need to warn about it.
@@ -25,6 +35,10 @@ var NilValue = Value{
 	k: KindNil,
 }
 
+func (v Value) IsNil() bool {
+	return v.k == KindNil && v.v == nil
+}
+
 // V constructs a new Value with the given value.
 func V(v any) Value {
 	return NewValue(v, Location{})
@@ -38,9 +52,10 @@ func NewValue(v any, loc Location) Value {
 	}
 
 	return Value{
-		v: v,
-		k: kindOf(v),
-		l: loc,
+		v:             v,
+		k:             kindOf(v),
+		l:             loc,
+		yamlLocations: []Location{loc},
 	}
 }
 
@@ -53,6 +68,11 @@ func (v Value) WithLocation(loc Location) Value {
 	}
 }
 
+func (v Value) AppendYamlLocation(loc Location) Value {
+	v.yamlLocations = append(v.yamlLocations, loc)
+	return v
+}
+
 func (v Value) Kind() Kind {
 	return v.k
 }
@@ -63,6 +83,10 @@ func (v Value) Value() any {
 
 func (v Value) Location() Location {
 	return v.l
+}
+
+func (v Value) YamlLocations() []Location {
+	return v.yamlLocations
 }
 
 func (v Value) IsValid() bool {
