@@ -30,7 +30,7 @@ func Override(leftRoot dyn.Value, rightRoot dyn.Value, visitor OverrideVisitor) 
 }
 
 func override(basePath dyn.Path, left dyn.Value, right dyn.Value, visitor OverrideVisitor) (dyn.Value, error) {
-	if left == dyn.NilValue && right == dyn.NilValue {
+	if left.IsNil() && right.IsNil() {
 		return dyn.NilValue, nil
 	}
 

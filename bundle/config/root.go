@@ -337,7 +337,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 	}
 
 	// Merge `run_as`. This field must be overwritten if set, not merged.
-	if v := target.Get("run_as"); v != dyn.NilValue {
+	if v := target.Get("run_as"); !v.IsNil() {
 		root, err = dyn.Set(root, "run_as", v)
 		if err != nil {
 			return err
@@ -345,7 +345,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 	}
 
 	// Below, we're setting fields on the bundle key, so make sure it exists.
-	if root.Get("bundle") == dyn.NilValue {
+	if root.Get("bundle").IsNil() {
 		root, err = dyn.Set(root, "bundle", dyn.NewValue(map[string]dyn.Value{}, dyn.Location{}))
 		if err != nil {
 			return err
@@ -353,7 +353,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 	}
 
 	// Merge `mode`. This field must be overwritten if set, not merged.
-	if v := target.Get("mode"); v != dyn.NilValue {
+	if v := target.Get("mode"); !v.IsNil() {
 		root, err = dyn.SetByPath(root, dyn.NewPath(dyn.Key("bundle"), dyn.Key("mode")), v)
 		if err != nil {
 			return err
@@ -361,7 +361,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 	}
 
 	// Merge `compute_id`. This field must be overwritten if set, not merged.
-	if v := target.Get("compute_id"); v != dyn.NilValue {
+	if v := target.Get("compute_id"); !v.IsNil() {
 		root, err = dyn.SetByPath(root, dyn.NewPath(dyn.Key("bundle"), dyn.Key("compute_id")), v)
 		if err != nil {
 			return err
@@ -369,7 +369,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 	}
 
 	// Merge `git`.
-	if v := target.Get("git"); v != dyn.NilValue {
+	if v := target.Get("git"); !v.IsNil() {
 		ref, err := dyn.GetByPath(root, dyn.NewPath(dyn.Key("bundle"), dyn.Key("git")))
 		if err != nil {
 			ref = dyn.NewValue(map[string]dyn.Value{}, dyn.Location{})
@@ -382,7 +382,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		}
 
 		// If the branch was overridden, we need to clear the inferred flag.
-		if branch := v.Get("branch"); branch != dyn.NilValue {
+		if branch := v.Get("branch"); !branch.IsNil() {
 			out, err = dyn.SetByPath(out, dyn.NewPath(dyn.Key("inferred")), dyn.NewValue(false, dyn.Location{}))
 			if err != nil {
 				return err
@@ -410,7 +410,7 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 	// For each target, rewrite the variables block.
 	return dyn.Map(v, "targets", dyn.Foreach(func(_ dyn.Path, target dyn.Value) (dyn.Value, error) {
 		// Confirm it has a variables block.
-		if target.Get("variables") == dyn.NilValue {
+		if target.Get("variables").IsNil() {
 			return target, nil
 		}
 
