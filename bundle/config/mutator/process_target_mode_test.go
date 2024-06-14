@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/tags"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -200,6 +201,41 @@ func TestProcessTargetModeDevelopmentTagNormalizationForGcp(t *testing.T) {
 	assert.Equal(t, "Hello_world", b.Config.Resources.Jobs["job1"].Tags["dev"])
 }
 
+func TestValidateDevelopmentMode(t *testing.T) {
+	// Test with a valid development mode bundle
+	b := mockBundle(config.Development)
+	diags := validateDevelopmentMode(b)
+	require.NoError(t, diags.Error())
+
+	// Test with a bundle that has a non-user path
+	b.Config.Workspace.RootPath = "/Shared/.bundle/x/y/state"
+	diags = validateDevelopmentMode(b)
+	require.ErrorContains(t, diags.Error(), "root_path")
+
+	// Test with a bundle that has an unpaused trigger pause status
+	b = mockBundle(config.Development)
+	b.Config.Transform.DefaultTriggerPauseStatus = config.Unpaused
+	diags = validateDevelopmentMode(b)
+	require.ErrorContains(t, diags.Error(), "UNPAUSED")
+
+	// Test with a bundle that has a prefix not containing the username or short name
+	b = mockBundle(config.Development)
+	b.Config.Transform.Prefix = "[prod]"
+	diags = validateDevelopmentMode(b)
+	require.Len(t, diags, 1)
+	assert.Equal(t, diag.Error, diags[0].Severity)
+	assert.Contains(t, diags[0].Summary, "")
+
+	// Test with a bundle that has valid user paths
+	b = mockBundle(config.Development)
+	b.Config.Workspace.RootPath = "/Users/lennart@company.com/.bundle/x/y/state"
+	b.Config.Workspace.StatePath = "/Users/lennart@company.com/.bundle/x/y/state"
+	b.Config.Workspace.FilePath = "/Users/lennart@company.com/.bundle/x/y/files"
+	b.Config.Workspace.ArtifactPath = "/Users/lennart@company.com/.bundle/x/y/artifacts"
+	diags = validateDevelopmentMode(b)
+	require.NoError(t, diags.Error())
+}
+
 func TestProcessTargetModeDefault(t *testing.T) {
 	b := mockBundle("")
 
@@ -337,13 +373,13 @@ func TestDisableLockingDisabled(t *testing.T) {
 
 func TestPrefixAlreadySet(t *testing.T) {
 	b := mockBundle(config.Development)
-	b.Config.Transform.Prefix = "custom_prefix_"
+	b.Config.Transform.Prefix = "custom_lennart_deploy_"
 
 	m := bundle.Seq(ProcessTargetMode(), ApplyTransforms())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
-	assert.Equal(t, "custom_prefix_job1", b.Config.Resources.Jobs["job1"].Name)
+	assert.Equal(t, "custom_lennart_deploy_job1", b.Config.Resources.Jobs["job1"].Name)
 }
 
 func TestTagsAlreadySet(t *testing.T) {
@@ -407,10 +443,7 @@ func TestTriggerPauseStatusWhenUnpaused(t *testing.T) {
 
 	m := bundle.Seq(ProcessTargetMode(), ApplyTransforms())
 	diags := bundle.Apply(context.Background(), b, m)
-	require.NoError(t, diags.Error())
-
-	// Pause status should take the value from the override above
-	assert.Equal(t, jobs.PauseStatusUnpaused, b.Config.Resources.Jobs["job3"].Trigger.PauseStatus)
+	require.ErrorContains(t, diags.Error(), "target with 'mode: development' cannot set trigger pause status to UNPAUSED by default")
 }
 
 func TestPipelinesDevelopmentDisabled(t *testing.T) {

@@ -28,7 +28,7 @@ func (m *processTargetMode) Name() string {
 // Mark all resources as being for 'development' purposes, i.e.
 // changing their their name, adding tags, and (in the future)
 // marking them as 'hidden' in the UI.
-func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) error {
 	if !b.Config.Bundle.Deployment.Lock.IsExplicitlyEnabled() {
 		log.Infof(ctx, "Development mode: disabling deployment lock since bundle.deployment.lock.enabled is not set to true")
 		err := setConfig(b, "bundle.deployment.lock.enabled", false)
@@ -78,14 +78,14 @@ func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	return nil
 }
 
-func setConfig(b *bundle.Bundle, path string, value any) diag.Diagnostics {
+func setConfig(b *bundle.Bundle, path string, value any) error {
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		return dyn.Set(v, path, dyn.V(value))
 	})
-	return diag.FromErr(err)
+	return err
 }
 
-func setConfigMapping(b *bundle.Bundle, path string, key string, value string) diag.Diagnostics {
+func setConfigMapping(b *bundle.Bundle, path string, key string, value string) error {
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		newMapping := dyn.V(map[string]dyn.Value{key: dyn.V(value)})
 
@@ -100,12 +100,32 @@ func setConfigMapping(b *bundle.Bundle, path string, key string, value string) d
 		}
 		return dyn.Set(v, path, merged)
 	})
-	return diag.FromErr(err)
+	return err
 }
 
 func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
+	t := b.Config.Transform
+	u := b.Config.Workspace.CurrentUser
+
+	// Make sure everything is paused by default to avoid surprises
+	if t.DefaultTriggerPauseStatus == config.Unpaused {
+		return diag.Diagnostics{{
+			Severity: diag.Error,
+			Summary:  "target with 'mode: development' cannot set trigger pause status to UNPAUSED by default",
+			Location: b.Config.GetLocation("transform.default_trigger_pause_status"),
+		}}
+	}
+
+	// Make sure this development copy has unique names and paths to avoid conflicts
 	if path := findNonUserPath(b); path != "" {
 		return diag.Errorf("%s must start with '~/' or contain the current username when using 'mode: development'", path)
+	}
+	if t.Prefix != "" && !strings.Contains(t.Prefix, u.ShortName) && !strings.Contains(t.Prefix, u.UserName) {
+		return diag.Diagnostics{{
+			Severity: diag.Error,
+			Summary:  "prefix should contain the current username or ${workspace.current_user.short_name} to ensure uniqueness when using 'mode: development'",
+			Location: b.Config.GetLocation("transform.prefix"),
+		}}
 	}
 	return nil
 }
@@ -163,10 +183,14 @@ func (m *processTargetMode) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 	switch b.Config.Bundle.Mode {
 	case config.Development:
 		diags := validateDevelopmentMode(b)
-		if diags != nil {
+		if diags.HasError() {
 			return diags
 		}
-		return transformDevelopmentMode(ctx, b)
+		err := transformDevelopmentMode(ctx, b)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		return diags
 	case config.Production:
 		isPrincipal := auth.IsServicePrincipal(b.Config.Workspace.CurrentUser.UserName)
 		return validateProductionMode(ctx, b, isPrincipal)
