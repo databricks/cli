@@ -10,19 +10,23 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/internal/testutil"
-	databrickscfg "github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
+	"github.com/databricks/cli/libs/fileset"
+	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
-func TestStateUpdate(t *testing.T) {
-	s := &stateUpdate{}
+func setupBundleForStateUpdate(t *testing.T) *bundle.Bundle {
+	tmpDir := t.TempDir()
 
-	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+	testutil.Touch(t, tmpDir, "test1.py")
+	testutil.TouchNotebook(t, tmpDir, "test2.py")
+
+	files, err := fileset.New(vfs.MustNew(tmpDir)).All()
+	require.NoError(t, err)
+
+	return &bundle.Bundle{
+		RootPath: tmpDir,
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "default",
@@ -37,22 +41,14 @@ func TestStateUpdate(t *testing.T) {
 				},
 			},
 		},
+		SyncedFiles: files,
 	}
+}
 
-	testutil.Touch(t, b.RootPath, "test1.py")
-	testutil.Touch(t, b.RootPath, "test2.py")
+func TestStateUpdate(t *testing.T) {
+	s := &stateUpdate{}
 
-	m := mocks.NewMockWorkspaceClient(t)
-	m.WorkspaceClient.Config = &databrickscfg.Config{
-		Host: "https://test.com",
-	}
-	b.SetWorkpaceClient(m.WorkspaceClient)
-
-	wsApi := m.GetMockWorkspaceAPI()
-	wsApi.EXPECT().GetStatusByPath(mock.Anything, "/files").Return(&workspace.ObjectInfo{
-		ObjectType: "DIRECTORY",
-	}, nil)
-
+	b := setupBundleForStateUpdate(t)
 	ctx := context.Background()
 
 	diags := bundle.Apply(ctx, b, s)
@@ -63,7 +59,15 @@ func TestStateUpdate(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, int64(1), state.Seq)
-	require.Len(t, state.Files, 3)
+	require.Equal(t, state.Files, Filelist{
+		{
+			LocalPath: "test1.py",
+		},
+		{
+			LocalPath:  "test2.py",
+			IsNotebook: true,
+		},
+	})
 	require.Equal(t, build.GetInfo().Version, state.CliVersion)
 
 	diags = bundle.Apply(ctx, b, s)
@@ -74,45 +78,22 @@ func TestStateUpdate(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, int64(2), state.Seq)
-	require.Len(t, state.Files, 3)
+	require.Equal(t, state.Files, Filelist{
+		{
+			LocalPath: "test1.py",
+		},
+		{
+			LocalPath:  "test2.py",
+			IsNotebook: true,
+		},
+	})
 	require.Equal(t, build.GetInfo().Version, state.CliVersion)
 }
 
 func TestStateUpdateWithExistingState(t *testing.T) {
 	s := &stateUpdate{}
 
-	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
-		Config: config.Root{
-			Bundle: config.Bundle{
-				Target: "default",
-			},
-			Workspace: config.Workspace{
-				StatePath: "/state",
-				FilePath:  "/files",
-				CurrentUser: &config.User{
-					User: &iam.User{
-						UserName: "test-user",
-					},
-				},
-			},
-		},
-	}
-
-	testutil.Touch(t, b.RootPath, "test1.py")
-	testutil.Touch(t, b.RootPath, "test2.py")
-
-	m := mocks.NewMockWorkspaceClient(t)
-	m.WorkspaceClient.Config = &databrickscfg.Config{
-		Host: "https://test.com",
-	}
-	b.SetWorkpaceClient(m.WorkspaceClient)
-
-	wsApi := m.GetMockWorkspaceAPI()
-	wsApi.EXPECT().GetStatusByPath(mock.Anything, "/files").Return(&workspace.ObjectInfo{
-		ObjectType: "DIRECTORY",
-	}, nil)
-
+	b := setupBundleForStateUpdate(t)
 	ctx := context.Background()
 
 	// Create an existing state file.
@@ -144,6 +125,14 @@ func TestStateUpdateWithExistingState(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, int64(11), state.Seq)
-	require.Len(t, state.Files, 3)
+	require.Equal(t, state.Files, Filelist{
+		{
+			LocalPath: "test1.py",
+		},
+		{
+			LocalPath:  "test2.py",
+			IsNotebook: true,
+		},
+	})
 	require.Equal(t, build.GetInfo().Version, state.CliVersion)
 }
