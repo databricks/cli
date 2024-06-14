@@ -31,18 +31,6 @@ func (m *applyTransforms) Name() string {
 	return "ApplyTransforms"
 }
 
-func validatePauseStatus(b *bundle.Bundle) diag.Diagnostics {
-	p := b.Config.Transform.DefaultTriggerPauseStatus
-	if p == "" || p == config.Paused || p == config.Unpaused {
-		return nil
-	}
-	return diag.Diagnostics{{
-		Summary:  "Invalid value for default_trigger_pause_status, should be PAUSED or UNPAUSED",
-		Severity: diag.Error,
-		Location: b.Config.GetLocation("transform.default_trigger_pause_status"),
-	}}
-}
-
 func (m *applyTransforms) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diag := validatePauseStatus(b)
 	if diag != nil {
@@ -152,6 +140,18 @@ func (m *applyTransforms) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 	}
 
 	return nil
+}
+
+func validatePauseStatus(b *bundle.Bundle) diag.Diagnostics {
+	p := b.Config.Transform.DefaultTriggerPauseStatus
+	if p == "" || p == config.Paused || p == config.Unpaused {
+		return nil
+	}
+	return diag.Diagnostics{{
+		Summary:  "Invalid value for default_trigger_pause_status, should be PAUSED or UNPAUSED",
+		Severity: diag.Error,
+		Location: b.Config.GetLocation("transform.default_trigger_pause_status"),
+	}}
 }
 
 // Convert a map of tags to an array of tags.
