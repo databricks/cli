@@ -635,6 +635,7 @@ func TestFromTypedAny(t *testing.T) {
 		Baz: map[string]any{
 			"foo": "foo",
 			"bar": 1234,
+			"qux": 0,
 		},
 	}
 
@@ -648,6 +649,7 @@ func TestFromTypedAny(t *testing.T) {
 		"baz": dyn.V(map[string]dyn.Value{
 			"foo": dyn.V("foo"),
 			"bar": dyn.V(int64(1234)),
+			"qux": dyn.V(int64(0)),
 		}),
 	}), nv)
 }
