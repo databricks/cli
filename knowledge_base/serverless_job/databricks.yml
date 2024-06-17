@@ -1,0 +1,13 @@
+bundle:
+  name: serverless_job
+
+include:
+  - resources/*.yml
+
+workspace:
+  host: https://myworkspace.databricks.com
+
+targets:
+  dev:
+    default: true
+    mode: development

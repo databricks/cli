@@ -1,0 +1,23 @@
+resources:
+  jobs:
+    serverless_job:
+      name: Example serverless job
+
+      tasks:
+        - task_key: task
+          spark_python_task:
+            python_file: ../src/main.py
+
+          # The key that references an environment spec in a job.
+          environment_key: default
+
+      # A list of task execution environment specifications that can be referenced by tasks of this job.
+      environments:
+        - environment_key: default
+
+          # Full documentation of this spec can be found at:
+          # https://docs.databricks.com/api/workspace/jobs/create#environments-spec
+          spec:
+            client: "1"
+            dependencies:
+              - cowsay
