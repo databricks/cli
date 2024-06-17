@@ -103,7 +103,7 @@ func (r *Repository) LatestCommit() (string, error) {
 func (r *Repository) OriginUrl() string {
 	rawUrl := r.config.variables["remote.origin.url"]
 
-	// Remove username and passwork from the URL.
+	// Remove username and password from the URL.
 	parsedUrl, err := url.Parse(rawUrl)
 	if err != nil {
 		// Git supports https URLs and non standard URLs like "ssh://" or "file://".
