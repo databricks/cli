@@ -53,11 +53,10 @@ func NewValue(v any, loc Location) Value {
 	}
 
 	return Value{
-		v:             v,
-		k:             kindOf(v),
-		l:             loc,
-		yamlLocations: []Location{loc},
-	}
+		v: v,
+		k: kindOf(v),
+		l: loc,
+	}.AppendYamlLocation(loc)
 }
 
 // WithLocation returns a new Value with its location set to the given value.
@@ -66,11 +65,15 @@ func (v Value) WithLocation(loc Location) Value {
 		v: v.v,
 		k: v.k,
 		l: loc,
-		yamlLocations: []Location{loc},
-	}
+	}.AppendYamlLocation(loc)
 }
 
 func (v Value) AppendYamlLocation(loc Location) Value {
+	// We only keep track of non-empty locations, that is actual locations in the source YAML.
+	if loc == EmptyLocation {
+		return v
+	}
+
 	if slices.Contains(v.yamlLocations, loc) {
 		return v
 	}
