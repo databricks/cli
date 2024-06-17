@@ -165,7 +165,7 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Quality Monitor 1
 	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
-	assert.Equal(t, catalog.MonitorCronSchedulePauseStatusPaused, b.Config.Resources.QualityMonitors["qualityMonitor2"].Schedule.PauseStatus)
+	assert.Nil(t, b.Config.Resources.QualityMonitors["qualityMonitor2"].Schedule)
 	assert.Equal(t, catalog.MonitorCronSchedulePauseStatusUnpaused, b.Config.Resources.QualityMonitors["qualityMonitor3"].Schedule.PauseStatus)
 }
 

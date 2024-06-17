@@ -107,11 +107,11 @@ func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	}
 
 	for i := range r.QualityMonitors {
-		// Pause each monitor. As an exception, we don't pause monitor that are explicitly
-		// marked as "unpaused". This allows users to override the default behavior
-		// of the development mode.
+		// Remove all schedules from monitors, since they don't support pausing/unpausing.
+		// Quality monitors might support the "pause" property in the future, so at the
+		// CLI level we do respect that property if it is set to "unpaused".
 		if r.QualityMonitors[i].Schedule != nil && r.QualityMonitors[i].Schedule.PauseStatus != catalog.MonitorCronSchedulePauseStatusUnpaused {
-			r.QualityMonitors[i].Schedule.PauseStatus = catalog.MonitorCronSchedulePauseStatusPaused
+			r.QualityMonitors[i].Schedule = nil
 		}
 	}
 
