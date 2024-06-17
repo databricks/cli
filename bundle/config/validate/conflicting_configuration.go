@@ -12,14 +12,14 @@ import (
 
 // This mutator emits warnings if a configuration value is being override by another
 // value in the configuration files, effectively making the configuration useless.
-func DeadConfiguration() bundle.ReadOnlyMutator {
-	return &deadConfiguration{}
+func ConflictingConfiguration() bundle.ReadOnlyMutator {
+	return &conflictingConfiguration{}
 }
 
-type deadConfiguration struct{}
+type conflictingConfiguration struct{}
 
-func (v *deadConfiguration) Name() string {
-	return "validate:dead_configuration"
+func (v *conflictingConfiguration) Name() string {
+	return "validate:conflicting_configuration"
 }
 
 func isKindScalar(v dyn.Value) bool {
@@ -31,7 +31,7 @@ func isKindScalar(v dyn.Value) bool {
 	}
 }
 
-func deadConfigurationWarning(v dyn.Value, p dyn.Path, rb bundle.ReadOnlyBundle) string {
+func conflictingConfigurationWarning(v dyn.Value, p dyn.Path, rb bundle.ReadOnlyBundle) string {
 	loc := v.Location()
 	rel, err := filepath.Rel(rb.RootPath(), loc.File)
 	if err == nil {
@@ -49,8 +49,7 @@ func deadConfigurationWarning(v dyn.Value, p dyn.Path, rb bundle.ReadOnlyBundle)
 	return fmt.Sprintf("Multiple values found for the same configuration %s. Only the value from location %s will be used. Locations found: %s", p.String(), loc, yamlLocations)
 }
 
-// TODO: Did the target override issues have to do with "default" preset?
-func (v *deadConfiguration) Apply(ctx context.Context, rb bundle.ReadOnlyBundle) diag.Diagnostics {
+func (v *conflictingConfiguration) Apply(ctx context.Context, rb bundle.ReadOnlyBundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
 	_, err := dyn.Walk(rb.Config().Value(), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
@@ -61,7 +60,7 @@ func (v *deadConfiguration) Apply(ctx context.Context, rb bundle.ReadOnlyBundle)
 		if len(v.YamlLocations()) >= 2 {
 			diags = diags.Append(diag.Diagnostic{
 				Severity: diag.Warning,
-				Summary:  deadConfigurationWarning(v, p, rb),
+				Summary:  conflictingConfigurationWarning(v, p, rb),
 				Location: v.Location(),
 				Path:     p,
 			})

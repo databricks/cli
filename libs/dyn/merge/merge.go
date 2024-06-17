@@ -21,8 +21,6 @@ func merge(a, b dyn.Value) (dyn.Value, error) {
 	bk := b.Kind()
 
 	// If a is nil, return b.
-	// TODO: Ensure warnings for nil values overrides that are ineffective. Does
-	// this correspond to no value in the YAML configuration?
 	if ak == dyn.KindNil {
 		return b.AppendYamlLocation(a.Location()), nil
 	}

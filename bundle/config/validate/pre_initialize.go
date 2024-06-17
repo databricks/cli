@@ -12,7 +12,7 @@ type preInitialize struct{}
 // Apply implements bundle.Mutator.
 func (v *preInitialize) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	return bundle.ApplyReadOnly(ctx, bundle.ReadOnly(b), bundle.Parallel(
-		DeadConfiguration(),
+		ConflictingConfiguration(),
 	))
 }
 
