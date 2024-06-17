@@ -24,10 +24,10 @@ type Experimental struct {
 	// as a top-level permission in the DAB.
 	UseLegacyRunAs bool `json:"use_legacy_run_as,omitempty"`
 
-	// PyDABs if enabled loads the 'databricks-pydabs' package.
+	// PyDABs determines whether to load the 'databricks-pydabs' package.
 	//
-	// This allows to define bundle configuration using Python. For now, this option has to be used
-	// together with 'venv' configuration.
+	// PyDABs allows to define bundle configuration using Python. For now, this option has to
+	// be used together with 'venv' configuration.
 	PyDABs PyDABs `json:"pydabs,omitempty"`
 
 	// VEnv is the virtual environment configuration for the bundle.

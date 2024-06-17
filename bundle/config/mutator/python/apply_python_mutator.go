@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
+	"runtime"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -23,8 +23,34 @@ import (
 type phase string
 
 const (
+	// ApplyPythonMutatorPhasePreInit is the phase that while bundle configuration is loading.
+	//
+	// At this stage, PyDABs adds statically defined resources to the bundle configuration.
+	// Which resources are added should be deterministic and not depend on the bundle configuration.
+	//
+	// We also open for possibility of appending other sections of bundle configuration,
+	// for example, adding new variables. However, this is not supported yet, and CLI rejects
+	// such changes.
 	ApplyPythonMutatorPhasePreInit phase = "preinit"
-	ApplyPythonMutatorPhaseInit    phase = "init"
+
+	// ApplyPythonMutatorPhaseInit is the phase after bundle configuration was loaded, and
+	// the list of statically declared resources is known.
+	//
+	// At this stage, PyDABs adds resources defined using generators, or mutates existing resources,
+	// including the ones defined using YAML.
+	//
+	// During this process, within generator and mutators, PyDABs can access:
+	// - selected deployment target
+	// - bundle variables values
+	//
+	// The following is not available:
+	// - variables referencing other variables are in unresolved format
+	// - variables provided through CLI arguments
+	//
+	// PyDABs can output YAML containing references to variables, and CLI should resolve them.
+	//
+	// Existing resources can't be removed, and CLI rejects such changes.
+	ApplyPythonMutatorPhaseInit phase = "init"
 )
 
 type applyPythonMutator struct {
@@ -53,22 +79,21 @@ func (m *applyPythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 	experimental := getExperimental(b)
 
 	if !experimental.PyDABs.Enable {
-		log.Debugf(ctx, "'experimental.pydabs.enable' isn't enabled, skipping")
 		return nil
 	}
 
 	if experimental.PyDABs.Enable && experimental.VEnv.Path == "" {
-		return diag.Errorf("'experimental.pydabs.enable' can only be used when 'experimental.venv.path' is set")
+		return diag.Errorf("\"experimental.pydabs.enable\" can only be used when \"experimental.venv.path\" is set")
 	}
 
 	err := b.Config.Mutate(func(leftRoot dyn.Value) (dyn.Value, error) {
-		pythonPath := path.Join(experimental.VEnv.Path, "bin", "python3")
+		pythonPath := interpreterPath(experimental.VEnv.Path)
 
 		if _, err := os.Stat(pythonPath); err != nil {
 			if os.IsNotExist(err) {
-				return dyn.InvalidValue, fmt.Errorf("can't find '%s', check if venv is created", pythonPath)
+				return dyn.InvalidValue, fmt.Errorf("can't find %q, check if venv is created", pythonPath)
 			} else {
-				return dyn.InvalidValue, fmt.Errorf("can't find '%s': %w", pythonPath, err)
+				return dyn.InvalidValue, fmt.Errorf("can't find %q: %w", pythonPath, err)
 			}
 		}
 
@@ -78,7 +103,13 @@ func (m *applyPythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 			return dyn.InvalidValue, err
 		}
 
-		return merge.Override(leftRoot, rightRoot, createOverrideVisitor(ctx, m.phase))
+		visitor, err := createOverrideVisitor(ctx, m.phase)
+
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+
+		return merge.Override(leftRoot, rightRoot, visitor)
 	})
 
 	return diag.FromErr(err)
@@ -117,7 +148,7 @@ func (m *applyPythonMutator) runPythonMutator(ctx context.Context, rootPath stri
 
 	// we need absolute path, or because later parts of pipeline assume all paths are absolute
 	// and this file will be used as location
-	virtualPath, err := filepath.Abs(filepath.Join(rootPath, "__generated__.yml"))
+	virtualPath, err := filepath.Abs(filepath.Join(rootPath, "__generated_by_pydabs__.yml"))
 
 	if err != nil {
 		return dyn.InvalidValue, fmt.Errorf("failed to get absolute path: %w", err)
@@ -135,56 +166,110 @@ func (m *applyPythonMutator) runPythonMutator(ctx context.Context, rootPath stri
 		return dyn.InvalidValue, fmt.Errorf("failed to normalize Python mutator output: %w", diagnostic.Error())
 	}
 
+	// warnings shouldn't happen because output should be already normalized
+	// when it happens, it's a bug in the mutator, and should be treated as an error
+
+	for _, d := range diagnostic.Filter(diag.Warning) {
+		return dyn.InvalidValue, fmt.Errorf("failed to normalize Python mutator output: %s", d.Summary)
+	}
+
 	return normalized, nil
 }
-func createOverrideVisitor(ctx context.Context, phase phase) merge.OverrideVisitor {
+
+func createOverrideVisitor(ctx context.Context, phase phase) (merge.OverrideVisitor, error) {
+	switch phase {
+	case ApplyPythonMutatorPhasePreInit:
+		return createPreInitOverrideVisitor(ctx), nil
+	case ApplyPythonMutatorPhaseInit:
+		return createInitOverrideVisitor(ctx), nil
+	default:
+		return merge.OverrideVisitor{}, fmt.Errorf("unknown phase: %s", phase)
+	}
+}
+
+// createPreInitOverrideVisitor creates an override visitor for the preinit phase.
+//
+// During pre-init it's only possible to create new resources, and not modify or
+// delete existing ones.
+func createPreInitOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
+	jobsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))
+
+	return merge.OverrideVisitor{
+		VisitDelete: func(valuePath dyn.Path, left dyn.Value) error {
+			return fmt.Errorf("unexpected change at %q (delete)", valuePath.String())
+		},
+		VisitInsert: func(valuePath dyn.Path, right dyn.Value) (dyn.Value, error) {
+			if !valuePath.HasPrefix(jobsPath) {
+				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (insert)", valuePath.String())
+			}
+
+			insertResource := len(valuePath) == len(jobsPath)+1
+
+			// adding a property into an existing resource is not allowed, because it changes it
+			if !insertResource {
+				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (insert)", valuePath.String())
+			}
+
+			log.Debugf(ctx, "Insert value at %q", valuePath.String())
+
+			return right, nil
+		},
+		VisitUpdate: func(valuePath dyn.Path, left dyn.Value, right dyn.Value) (dyn.Value, error) {
+			return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (update)", valuePath.String())
+		},
+	}
+}
+
+// createInitOverrideVisitor creates an override visitor for the init phase.
+//
+// During the init phase it's possible to create new resources, modify existing
+// resources, but not delete existing resources.
+func createInitOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
 	jobsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))
 
 	return merge.OverrideVisitor{
 		VisitDelete: func(valuePath dyn.Path, left dyn.Value) error {
 			if !valuePath.HasPrefix(jobsPath) {
-				return fmt.Errorf("unexpected change at '%s' (delete)", valuePath.String())
+				return fmt.Errorf("unexpected change at %q (delete)", valuePath.String())
 			}
 
 			deleteResource := len(valuePath) == len(jobsPath)+1
 
-			if phase == ApplyPythonMutatorPhasePreInit {
-				return fmt.Errorf("unexpected change at '%s' (delete)", valuePath.String())
-			} else if deleteResource && phase == ApplyPythonMutatorPhaseInit {
-				return fmt.Errorf("unexpected change at '%s' (delete)", valuePath.String())
+			if deleteResource {
+				return fmt.Errorf("unexpected change at %q (delete)", valuePath.String())
 			}
 
-			log.Debugf(ctx, "Delete value at '%s'", valuePath.String())
+			// deleting properties is allowed because it only changes an existing resource
+			log.Debugf(ctx, "Delete value at %q", valuePath.String())
 
 			return nil
 		},
 		VisitInsert: func(valuePath dyn.Path, right dyn.Value) (dyn.Value, error) {
 			if !valuePath.HasPrefix(jobsPath) {
-				return dyn.InvalidValue, fmt.Errorf("unexpected change at '%s' (insert)", valuePath.String())
+				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (insert)", valuePath.String())
 			}
 
-			insertResource := len(valuePath) == len(jobsPath)+1
-
-			if phase == ApplyPythonMutatorPhasePreInit && !insertResource {
-				return dyn.InvalidValue, fmt.Errorf("unexpected change at '%s' (insert)", valuePath.String())
-			}
-
-			log.Debugf(ctx, "Insert value at '%s'", valuePath.String())
+			log.Debugf(ctx, "Insert value at %q", valuePath.String())
 
 			return right, nil
 		},
 		VisitUpdate: func(valuePath dyn.Path, left dyn.Value, right dyn.Value) (dyn.Value, error) {
 			if !valuePath.HasPrefix(jobsPath) {
-				return dyn.InvalidValue, fmt.Errorf("unexpected change at '%s' (update)", valuePath.String())
+				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (update)", valuePath.String())
 			}
 
-			if phase == ApplyPythonMutatorPhasePreInit {
-				return dyn.InvalidValue, fmt.Errorf("unexpected change at '%s' (update)", valuePath.String())
-			}
-
-			log.Debugf(ctx, "Update value at '%s'", valuePath.String())
+			log.Debugf(ctx, "Update value at %q", valuePath.String())
 
 			return right, nil
 		},
+	}
+}
+
+// interpreterPath returns platform-specific path to Python interpreter in the virtual environment.
+func interpreterPath(venvPath string) string {
+	if runtime.GOOS == "windows" {
+		return filepath.Join(venvPath, "Scripts", "python3.exe")
+	} else {
+		return filepath.Join(venvPath, "bin", "python3")
 	}
 }
