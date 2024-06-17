@@ -2,6 +2,7 @@ package dyn
 
 import (
 	"fmt"
+	"slices"
 )
 
 type Value struct {
@@ -65,10 +66,15 @@ func (v Value) WithLocation(loc Location) Value {
 		v: v.v,
 		k: v.k,
 		l: loc,
+		yamlLocations: []Location{loc},
 	}
 }
 
 func (v Value) AppendYamlLocation(loc Location) Value {
+	if slices.Contains(v.yamlLocations, loc) {
+		return v
+	}
+
 	v.yamlLocations = append(v.yamlLocations, loc)
 	return v
 }
