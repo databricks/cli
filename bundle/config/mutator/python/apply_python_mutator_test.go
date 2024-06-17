@@ -430,6 +430,7 @@ func loadYaml(name string, content string) *bundle.Bundle {
 
 func withFakeVEnv(t *testing.T, path string) {
 	cwd, err := os.Getwd()
+	interpreterPath := interpreterPath(path)
 
 	if err != nil {
 		panic(err)
@@ -439,13 +440,13 @@ func withFakeVEnv(t *testing.T, path string) {
 		panic(err)
 	}
 
-	err = os.MkdirAll(filepath.Join(path, "bin"), 0755)
+	err = os.MkdirAll(filepath.Dir(interpreterPath), 0755)
 
 	if err != nil {
 		panic(err)
 	}
 
-	err = os.WriteFile(filepath.Join(".venv", "bin/python3"), []byte(""), 0755)
+	err = os.WriteFile(interpreterPath, []byte(""), 0755)
 
 	if err != nil {
 		panic(err)
