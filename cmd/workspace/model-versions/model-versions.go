@@ -288,6 +288,7 @@ func newList() *cobra.Command {
   schema.
   
   There is no guarantee of a specific ordering of the elements in the response.
+  The elements in the response will not contain any aliases or tags.
 
   Arguments:
     FULL_NAME: The full three-level name of the registered model under which to list

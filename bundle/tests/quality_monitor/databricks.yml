@@ -1,0 +1,40 @@
+resources:
+  quality_monitors:
+    my_monitor:
+      table_name: "main.test.thing1"
+      assets_dir: "/Shared/provider-test/databricks_monitoring/main.test.thing1"
+      output_schema_name: "test"
+      inference_log:
+        granularities: ["1 day"]
+        timestamp_col:  "timestamp"
+        prediction_col: "prediction"
+        model_id_col:  "model_id"
+        problem_type: "PROBLEM_TYPE_REGRESSION"
+
+targets:
+  development:
+    mode: development
+    resources:
+      quality_monitors:
+        my_monitor:
+          table_name: "main.test.dev"
+
+  staging:
+    resources:
+      quality_monitors:
+        my_monitor:
+          table_name: "main.test.staging"
+          output_schema_name: "staging"
+
+  production:
+    resources:
+      quality_monitors:
+        my_monitor:
+          table_name: "main.test.prod"
+          output_schema_name: "prod"
+          inference_log:
+            granularities: ["1 hour"]
+            timestamp_col:  "timestamp_prod"
+            prediction_col: "prediction_prod"
+            model_id_col:  "model_id_prod"
+            problem_type: "PROBLEM_TYPE_REGRESSION"

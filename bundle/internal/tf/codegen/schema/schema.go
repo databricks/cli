@@ -2,6 +2,8 @@ package schema
 
 import (
 	"context"
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -41,7 +43,7 @@ func Load(ctx context.Context) (*tfjson.ProviderSchema, error) {
 	}
 
 	// Generate schema file if it doesn't exist.
-	if _, err := os.Stat(s.ProviderSchemaFile); os.IsNotExist(err) {
+	if _, err := os.Stat(s.ProviderSchemaFile); errors.Is(err, fs.ErrNotExist) {
 		err = s.Generate(ctx)
 		if err != nil {
 			return nil, err

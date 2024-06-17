@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -45,9 +46,15 @@ func testFixture(userName string) *bundle.Bundle {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
+						JobSettings: &jobs.JobSettings{
+							Name: "job1",
+						},
 						Permissions: p,
 					},
 					"job2": {
+						JobSettings: &jobs.JobSettings{
+							Name: "job2",
+						},
 						Permissions: p,
 					},
 				},

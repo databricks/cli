@@ -67,6 +67,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
+	cmd.Flags().StringVar(&createReq.StorageRoot, "storage-root", createReq.StorageRoot, `Storage root URL for the share.`)
 
 	cmd.Use = "create NAME"
 	cmd.Short = `Create a share.`
@@ -368,6 +369,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
 	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the share.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of share.`)
+	cmd.Flags().StringVar(&updateReq.StorageRoot, "storage-root", updateReq.StorageRoot, `Storage root URL for the share.`)
 	// TODO: array: updates
 
 	cmd.Use = "update NAME"
@@ -381,6 +383,9 @@ func newUpdate() *cobra.Command {
   
   In the case that the share name is changed, **updateShare** requires that the
   caller is both the share owner and a metastore admin.
+  
+  If there are notebook files in the share, the __storage_root__ field cannot be
+  updated.
   
   For each table that is added through this method, the share owner must also
   have **SELECT** privilege on the table. This privilege must be maintained

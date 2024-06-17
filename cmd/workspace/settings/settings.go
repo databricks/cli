@@ -6,9 +6,9 @@ import (
 	"github.com/spf13/cobra"
 
 	automatic_cluster_update "github.com/databricks/cli/cmd/workspace/automatic-cluster-update"
-	csp_enablement "github.com/databricks/cli/cmd/workspace/csp-enablement"
+	compliance_security_profile "github.com/databricks/cli/cmd/workspace/compliance-security-profile"
 	default_namespace "github.com/databricks/cli/cmd/workspace/default-namespace"
-	esm_enablement "github.com/databricks/cli/cmd/workspace/esm-enablement"
+	enhanced_security_monitoring "github.com/databricks/cli/cmd/workspace/enhanced-security-monitoring"
 	restrict_workspace_admins "github.com/databricks/cli/cmd/workspace/restrict-workspace-admins"
 )
 
@@ -29,9 +29,9 @@ func New() *cobra.Command {
 
 	// Add subservices
 	cmd.AddCommand(automatic_cluster_update.New())
-	cmd.AddCommand(csp_enablement.New())
+	cmd.AddCommand(compliance_security_profile.New())
 	cmd.AddCommand(default_namespace.New())
-	cmd.AddCommand(esm_enablement.New())
+	cmd.AddCommand(enhanced_security_monitoring.New())
 	cmd.AddCommand(restrict_workspace_admins.New())
 
 	// Apply optional overrides to this command.

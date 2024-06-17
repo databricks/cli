@@ -74,9 +74,6 @@ func newAddListingToExchange() *cobra.Command {
   
   Associate an exchange with a listing`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -152,9 +149,6 @@ func newCreate() *cobra.Command {
   
   Create an exchange`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -212,9 +206,6 @@ func newDelete() *cobra.Command {
   
   This removes a listing from marketplace.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -270,9 +261,6 @@ func newDeleteListingFromExchange() *cobra.Command {
   
   Disassociate an exchange with a listing`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -327,9 +315,6 @@ func newGet() *cobra.Command {
 	cmd.Long = `Get an exchange.
   
   Get an exchange.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -389,9 +374,6 @@ func newList() *cobra.Command {
   
   List exchanges visible to provider`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -444,9 +426,6 @@ func newListExchangesForListing() *cobra.Command {
 	cmd.Long = `List exchanges for listing.
   
   List exchanges associated with a listing`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -503,9 +482,6 @@ func newListListingsForExchange() *cobra.Command {
   
   List listings associated with an exchange`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -559,9 +535,6 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Update exchange.
   
   Update an exchange`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 

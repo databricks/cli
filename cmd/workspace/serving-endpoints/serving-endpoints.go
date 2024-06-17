@@ -152,6 +152,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: rate_limits
+	cmd.Flags().BoolVar(&createReq.RouteOptimized, "route-optimized", createReq.RouteOptimized, `Enable route optimization for the serving endpoint.`)
 	// TODO: array: tags
 
 	cmd.Use = "create"
@@ -303,11 +304,12 @@ func newExportMetrics() *cobra.Command {
 
 		exportMetricsReq.Name = args[0]
 
-		err = w.ServingEndpoints.ExportMetrics(ctx, exportMetricsReq)
+		response, err := w.ServingEndpoints.ExportMetrics(ctx, exportMetricsReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		defer response.Contents.Close()
+		return cmdio.Render(ctx, response.Contents)
 	}
 
 	// Disable completions since they are not applicable.

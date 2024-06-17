@@ -1,6 +1,6 @@
 // Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
 
-package lakehouse_monitors
+package quality_monitors
 
 import (
 	"fmt"
@@ -18,7 +18,7 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "lakehouse-monitors",
+		Use:   "quality-monitors",
 		Short: `A monitor computes and monitors data or model quality metrics for a table over time.`,
 		Long: `A monitor computes and monitors data or model quality metrics for a table over
   time. It generates metrics tables and a dashboard that you can use to monitor
@@ -105,7 +105,7 @@ func newCancelRefresh() *cobra.Command {
 		cancelRefreshReq.TableName = args[0]
 		cancelRefreshReq.RefreshId = args[1]
 
-		err = w.LakehouseMonitors.CancelRefresh(ctx, cancelRefreshReq)
+		err = w.QualityMonitors.CancelRefresh(ctx, cancelRefreshReq)
 		if err != nil {
 			return err
 		}
@@ -208,7 +208,7 @@ func newCreate() *cobra.Command {
 			createReq.OutputSchemaName = args[2]
 		}
 
-		response, err := w.LakehouseMonitors.Create(ctx, createReq)
+		response, err := w.QualityMonitors.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
@@ -233,13 +233,13 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*catalog.DeleteLakehouseMonitorRequest,
+	*catalog.DeleteQualityMonitorRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var deleteReq catalog.DeleteLakehouseMonitorRequest
+	var deleteReq catalog.DeleteQualityMonitorRequest
 
 	// TODO: short flags
 
@@ -278,7 +278,7 @@ func newDelete() *cobra.Command {
 
 		deleteReq.TableName = args[0]
 
-		err = w.LakehouseMonitors.Delete(ctx, deleteReq)
+		err = w.QualityMonitors.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
@@ -303,13 +303,13 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*catalog.GetLakehouseMonitorRequest,
+	*catalog.GetQualityMonitorRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getReq catalog.GetLakehouseMonitorRequest
+	var getReq catalog.GetQualityMonitorRequest
 
 	// TODO: short flags
 
@@ -347,7 +347,7 @@ func newGet() *cobra.Command {
 
 		getReq.TableName = args[0]
 
-		response, err := w.LakehouseMonitors.Get(ctx, getReq)
+		response, err := w.QualityMonitors.Get(ctx, getReq)
 		if err != nil {
 			return err
 		}
@@ -416,7 +416,7 @@ func newGetRefresh() *cobra.Command {
 		getRefreshReq.TableName = args[0]
 		getRefreshReq.RefreshId = args[1]
 
-		response, err := w.LakehouseMonitors.GetRefresh(ctx, getRefreshReq)
+		response, err := w.QualityMonitors.GetRefresh(ctx, getRefreshReq)
 		if err != nil {
 			return err
 		}
@@ -484,7 +484,7 @@ func newListRefreshes() *cobra.Command {
 
 		listRefreshesReq.TableName = args[0]
 
-		response, err := w.LakehouseMonitors.ListRefreshes(ctx, listRefreshesReq)
+		response, err := w.QualityMonitors.ListRefreshes(ctx, listRefreshesReq)
 		if err != nil {
 			return err
 		}
@@ -552,7 +552,7 @@ func newRunRefresh() *cobra.Command {
 
 		runRefreshReq.TableName = args[0]
 
-		response, err := w.LakehouseMonitors.RunRefresh(ctx, runRefreshReq)
+		response, err := w.QualityMonitors.RunRefresh(ctx, runRefreshReq)
 		if err != nil {
 			return err
 		}
@@ -591,6 +591,7 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateReq.BaselineTableName, "baseline-table-name", updateReq.BaselineTableName, `Name of the baseline table from which drift metrics are computed from.`)
 	// TODO: array: custom_metrics
+	cmd.Flags().StringVar(&updateReq.DashboardId, "dashboard-id", updateReq.DashboardId, `Id of dashboard that visualizes the computed metrics.`)
 	// TODO: complex arg: data_classification_config
 	// TODO: complex arg: inference_log
 	// TODO: complex arg: notifications
@@ -651,7 +652,7 @@ func newUpdate() *cobra.Command {
 			updateReq.OutputSchemaName = args[1]
 		}
 
-		response, err := w.LakehouseMonitors.Update(ctx, updateReq)
+		response, err := w.QualityMonitors.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
@@ -670,4 +671,4 @@ func newUpdate() *cobra.Command {
 	return cmd
 }
 
-// end service LakehouseMonitors
+// end service QualityMonitors

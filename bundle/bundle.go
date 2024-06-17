@@ -16,12 +16,14 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
+	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/folders"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/cli/libs/terraform"
+	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/hashicorp/terraform-exec/tfexec"
@@ -48,6 +50,9 @@ type Bundle struct {
 	// It can be initialized on demand after loading the configuration.
 	clientOnce sync.Once
 	client     *databricks.WorkspaceClient
+
+	// Files that are synced to the workspace.file_path
+	Files []fileset.File
 
 	// Stores an initialized copy of this bundle's Terraform wrapper.
 	Terraform *tfexec.Terraform
@@ -208,7 +213,7 @@ func (b *Bundle) GitRepository() (*git.Repository, error) {
 		return nil, fmt.Errorf("unable to locate repository root: %w", err)
 	}
 
-	return git.NewRepository(rootPath)
+	return git.NewRepository(vfs.MustNew(rootPath))
 }
 
 // AuthEnv returns a map with environment variables and their values

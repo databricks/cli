@@ -76,9 +76,6 @@ func newCreate() *cobra.Command {
   
   Install payload associated with a Databricks Marketplace listing.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -140,9 +137,6 @@ func newDelete() *cobra.Command {
   
   Uninstall an installation associated with a Databricks Marketplace listing.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -202,9 +196,6 @@ func newList() *cobra.Command {
   
   List all installations across all listings.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -257,9 +248,6 @@ func newListListingInstallations() *cobra.Command {
 	cmd.Long = `List installations for a listing.
   
   List all installations for a particular listing.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -320,9 +308,6 @@ func newUpdate() *cobra.Command {
   fields not included in the installation table 1. the token will be rotate if
   the rotateToken flag is true 2. the token will be forcibly rotate if the
   rotateToken flag is true and the tokenInfo field is empty`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 

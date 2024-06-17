@@ -2,23 +2,25 @@ package git
 
 import (
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/vfs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func testFileSetAll(t *testing.T, path string) {
-	fileSet, err := NewFileSet(path)
+func testFileSetAll(t *testing.T, root string) {
+	fileSet, err := NewFileSet(vfs.MustNew(root))
 	require.NoError(t, err)
 	files, err := fileSet.All()
 	require.NoError(t, err)
 	require.Len(t, files, 3)
-	assert.Equal(t, filepath.Join("a", "b", "world.txt"), files[0].Relative)
-	assert.Equal(t, filepath.Join("a", "hello.txt"), files[1].Relative)
-	assert.Equal(t, filepath.Join("databricks.yml"), files[2].Relative)
+	assert.Equal(t, path.Join("a", "b", "world.txt"), files[0].Relative)
+	assert.Equal(t, path.Join("a", "hello.txt"), files[1].Relative)
+	assert.Equal(t, path.Join("databricks.yml"), files[2].Relative)
 }
 
 func TestFileSetListAllInRepo(t *testing.T) {
@@ -33,7 +35,7 @@ func TestFileSetNonCleanRoot(t *testing.T) {
 	// Test what happens if the root directory can be simplified.
 	// Path simplification is done by most filepath functions.
 	// This should yield the same result as above test.
-	fileSet, err := NewFileSet("./testdata/../testdata")
+	fileSet, err := NewFileSet(vfs.MustNew("./testdata/../testdata"))
 	require.NoError(t, err)
 	files, err := fileSet.All()
 	require.NoError(t, err)
@@ -42,7 +44,7 @@ func TestFileSetNonCleanRoot(t *testing.T) {
 
 func TestFileSetAddsCacheDirToGitIgnore(t *testing.T) {
 	projectDir := t.TempDir()
-	fileSet, err := NewFileSet(projectDir)
+	fileSet, err := NewFileSet(vfs.MustNew(projectDir))
 	require.NoError(t, err)
 	fileSet.EnsureValidGitIgnoreExists()
 
@@ -57,7 +59,7 @@ func TestFileSetDoesNotCacheDirToGitIgnoreIfAlreadyPresent(t *testing.T) {
 	projectDir := t.TempDir()
 	gitIgnorePath := filepath.Join(projectDir, ".gitignore")
 
-	fileSet, err := NewFileSet(projectDir)
+	fileSet, err := NewFileSet(vfs.MustNew(projectDir))
 	require.NoError(t, err)
 	err = os.WriteFile(gitIgnorePath, []byte(".databricks"), 0o644)
 	require.NoError(t, err)

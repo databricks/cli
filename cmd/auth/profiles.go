@@ -2,13 +2,14 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"os"
+	"io/fs"
 	"sync"
 	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -94,8 +95,8 @@ func newProfilesCommand() *cobra.Command {
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		var profiles []*profileMetadata
-		iniFile, err := databrickscfg.Get(cmd.Context())
-		if os.IsNotExist(err) {
+		iniFile, err := profile.DefaultProfiler.Get(cmd.Context())
+		if errors.Is(err, fs.ErrNotExist) {
 			// return empty list for non-configured machines
 			iniFile = &config.File{
 				File: &ini.File{},

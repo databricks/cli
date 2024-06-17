@@ -72,9 +72,6 @@ func newCreate() *cobra.Command {
   Create a file. Currently, only provider icons and attached notebooks are
   supported.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -131,9 +128,6 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete a file.
   
   Delete a file`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -201,9 +195,6 @@ func newGet() *cobra.Command {
 	cmd.Long = `Get a file.
   
   Get a file`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -276,9 +267,6 @@ func newList() *cobra.Command {
 	cmd.Long = `List files.
   
   List files attached to a parent entity.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 

@@ -1,6 +1,6 @@
 // Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
 
-package esm_enablement
+package compliance_security_profile
 
 import (
 	"fmt"
@@ -18,18 +18,13 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "esm-enablement",
-		Short: `Controls whether enhanced security monitoring is enabled for the current workspace.`,
-		Long: `Controls whether enhanced security monitoring is enabled for the current
-  workspace. If the compliance security profile is enabled, this is
-  automatically enabled. By default, it is disabled. However, if the compliance
-  security profile is enabled, this is automatically enabled.
+		Use:   "compliance-security-profile",
+		Short: `Controls whether to enable the compliance security profile for the current workspace.`,
+		Long: `Controls whether to enable the compliance security profile for the current
+  workspace. Enabling it on a workspace is permanent. By default, it is turned
+  off.
   
-  If the compliance security profile is disabled, you can enable or disable this
-  setting and it is not permanent.`,
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
+  This settings can NOT be disabled once it is enabled.`,
 	}
 
 	// Add methods
@@ -50,23 +45,23 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*settings.GetEsmEnablementSettingRequest,
+	*settings.GetComplianceSecurityProfileSettingRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getReq settings.GetEsmEnablementSettingRequest
+	var getReq settings.GetComplianceSecurityProfileSettingRequest
 
 	// TODO: short flags
 
 	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "get"
-	cmd.Short = `Get the enhanced security monitoring setting.`
-	cmd.Long = `Get the enhanced security monitoring setting.
+	cmd.Short = `Get the compliance security profile setting.`
+	cmd.Long = `Get the compliance security profile setting.
   
-  Gets the enhanced security monitoring setting.`
+  Gets the compliance security profile setting.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -80,7 +75,7 @@ func newGet() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.Settings.EsmEnablement().Get(ctx, getReq)
+		response, err := w.Settings.ComplianceSecurityProfile().Get(ctx, getReq)
 		if err != nil {
 			return err
 		}
@@ -105,23 +100,23 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*settings.UpdateEsmEnablementSettingRequest,
+	*settings.UpdateComplianceSecurityProfileSettingRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var updateReq settings.UpdateEsmEnablementSettingRequest
+	var updateReq settings.UpdateComplianceSecurityProfileSettingRequest
 	var updateJson flags.JsonFlag
 
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update"
-	cmd.Short = `Update the enhanced security monitoring setting.`
-	cmd.Long = `Update the enhanced security monitoring setting.
+	cmd.Short = `Update the compliance security profile setting.`
+	cmd.Long = `Update the compliance security profile setting.
   
-  Updates the enhanced security monitoring setting for the workspace. A fresh
+  Updates the compliance security profile setting for the workspace. A fresh
   etag needs to be provided in PATCH requests (as part of the setting field).
   The etag can be retrieved by making a GET request before the PATCH
   request. If the setting is updated concurrently, PATCH fails with 409 and
@@ -143,7 +138,7 @@ func newUpdate() *cobra.Command {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.Settings.EsmEnablement().Update(ctx, updateReq)
+		response, err := w.Settings.ComplianceSecurityProfile().Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
@@ -162,4 +157,4 @@ func newUpdate() *cobra.Command {
 	return cmd
 }
 
-// end service ESMEnablement
+// end service ComplianceSecurityProfile

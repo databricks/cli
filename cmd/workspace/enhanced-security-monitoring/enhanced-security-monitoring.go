@@ -1,6 +1,6 @@
 // Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
 
-package csp_enablement
+package enhanced_security_monitoring
 
 import (
 	"fmt"
@@ -18,16 +18,15 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "csp-enablement",
-		Short: `Controls whether to enable the compliance security profile for the current workspace.`,
-		Long: `Controls whether to enable the compliance security profile for the current
-  workspace. Enabling it on a workspace is permanent. By default, it is turned
-  off.
+		Use:   "enhanced-security-monitoring",
+		Short: `Controls whether enhanced security monitoring is enabled for the current workspace.`,
+		Long: `Controls whether enhanced security monitoring is enabled for the current
+  workspace. If the compliance security profile is enabled, this is
+  automatically enabled. By default, it is disabled. However, if the compliance
+  security profile is enabled, this is automatically enabled.
   
-  This settings can NOT be disabled once it is enabled.`,
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
+  If the compliance security profile is disabled, you can enable or disable this
+  setting and it is not permanent.`,
 	}
 
 	// Add methods
@@ -48,23 +47,23 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*settings.GetCspEnablementSettingRequest,
+	*settings.GetEnhancedSecurityMonitoringSettingRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getReq settings.GetCspEnablementSettingRequest
+	var getReq settings.GetEnhancedSecurityMonitoringSettingRequest
 
 	// TODO: short flags
 
 	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "get"
-	cmd.Short = `Get the compliance security profile setting.`
-	cmd.Long = `Get the compliance security profile setting.
+	cmd.Short = `Get the enhanced security monitoring setting.`
+	cmd.Long = `Get the enhanced security monitoring setting.
   
-  Gets the compliance security profile setting.`
+  Gets the enhanced security monitoring setting.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -78,7 +77,7 @@ func newGet() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.Settings.CspEnablement().Get(ctx, getReq)
+		response, err := w.Settings.EnhancedSecurityMonitoring().Get(ctx, getReq)
 		if err != nil {
 			return err
 		}
@@ -103,23 +102,23 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*settings.UpdateCspEnablementSettingRequest,
+	*settings.UpdateEnhancedSecurityMonitoringSettingRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var updateReq settings.UpdateCspEnablementSettingRequest
+	var updateReq settings.UpdateEnhancedSecurityMonitoringSettingRequest
 	var updateJson flags.JsonFlag
 
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "update"
-	cmd.Short = `Update the compliance security profile setting.`
-	cmd.Long = `Update the compliance security profile setting.
+	cmd.Short = `Update the enhanced security monitoring setting.`
+	cmd.Long = `Update the enhanced security monitoring setting.
   
-  Updates the compliance security profile setting for the workspace. A fresh
+  Updates the enhanced security monitoring setting for the workspace. A fresh
   etag needs to be provided in PATCH requests (as part of the setting field).
   The etag can be retrieved by making a GET request before the PATCH
   request. If the setting is updated concurrently, PATCH fails with 409 and
@@ -141,7 +140,7 @@ func newUpdate() *cobra.Command {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.Settings.CspEnablement().Update(ctx, updateReq)
+		response, err := w.Settings.EnhancedSecurityMonitoring().Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
@@ -160,4 +159,4 @@ func newUpdate() *cobra.Command {
 	return cmd
 }
 
-// end service CSPEnablement
+// end service EnhancedSecurityMonitoring

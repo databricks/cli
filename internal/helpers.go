@@ -559,6 +559,17 @@ func setupWsfsFiler(t *testing.T) (filer.Filer, string) {
 	return f, tmpdir
 }
 
+func setupWsfsExtensionsFiler(t *testing.T) (filer.Filer, string) {
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	w := databricks.Must(databricks.NewWorkspaceClient())
+	tmpdir := TemporaryWorkspaceDir(t, w)
+	f, err := filer.NewWorkspaceFilesExtensionsClient(w, tmpdir)
+	require.NoError(t, err)
+
+	return f, tmpdir
+}
+
 func setupDbfsFiler(t *testing.T) (filer.Filer, string) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 

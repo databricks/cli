@@ -75,9 +75,6 @@ func newCreate() *cobra.Command {
   
   Create a personalization request for a listing.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -142,9 +139,6 @@ func newGet() *cobra.Command {
   Get the personalization request for a listing. Each consumer can make at
   *most* one personalization request for a listing.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -202,9 +196,6 @@ func newList() *cobra.Command {
 	cmd.Long = `List all personalization requests.
   
   List personalization requests for a consumer across all listings.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
