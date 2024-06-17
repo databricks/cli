@@ -6,4 +6,4 @@ include:
 
 variables:
   bar:
-    default: conflicts with non-empty value
+    default: conflicts

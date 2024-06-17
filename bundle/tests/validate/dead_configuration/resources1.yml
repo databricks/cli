@@ -1,6 +1,6 @@
 variables:
   bar:
-    default: conflicts with non-empty value
+    default: conflicts
 
   baz:
-    default: conflicts with non-empty value
+    default: conflicts

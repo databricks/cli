@@ -19,7 +19,7 @@ type Value struct {
 	// All locations in the source YAML files where this value was defined. Some of
 	// these locations may have had no effect on the final value because they were
 	// overridden by other values at other locations.
-	// The ordering of the locations holds no significance.
+	// The ordering of the locations here holds no significance.
 	yamlLocations []Location
 
 	// Whether or not this value is an anchor.
@@ -71,7 +71,7 @@ func (v Value) WithLocation(loc Location) Value {
 
 func (v Value) AppendYamlLocation(loc Location) Value {
 	// We only keep track of non-empty locations, that is actual locations in the source YAML.
-	if loc == EmptyLocation {
+	if loc == (Location{}) {
 		return v
 	}
 
