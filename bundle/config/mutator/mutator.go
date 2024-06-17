@@ -26,10 +26,3 @@ func DefaultMutators() []bundle.Mutator {
 		LoadGitDetails(),
 	}
 }
-
-func DefaultMutatorsForTarget(target string) []bundle.Mutator {
-	return append(
-		DefaultMutators(),
-		SelectTarget(target),
-	)
-}
