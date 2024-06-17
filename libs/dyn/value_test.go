@@ -46,3 +46,22 @@ func TestValueIsValid(t *testing.T) {
 	var intValue = dyn.NewValue(1, dyn.Location{})
 	assert.True(t, intValue.IsValid())
 }
+
+func TestAppendYamlLocation(t *testing.T) {
+	var v dyn.Value
+
+	// Add new locations
+	v = v.AppendYamlLocation(dyn.Location{File: "file1", Line: 1, Column: 2})
+	assert.Len(t, v.YamlLocations(), 1)
+
+	v = v.AppendYamlLocation(dyn.Location{File: "file2", Line: 3, Column: 4})
+	assert.Len(t, v.YamlLocations(), 2)
+
+	// Ignore empty locations
+	v = v.AppendYamlLocation(dyn.Location{})
+	assert.Len(t, v.YamlLocations(), 2)
+
+	// Ignore duplicate locations
+	v = v.AppendYamlLocation(dyn.Location{File: "file1", Line: 1, Column: 2})
+	assert.Len(t, v.YamlLocations(), 2)
+}
