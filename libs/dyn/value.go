@@ -19,6 +19,7 @@ type Value struct {
 	// All locations in the source YAML files where this value was defined. Some of
 	// these locations may have had no effect on the final value because they were
 	// overridden by other values at other locations.
+	// The ordering of the locations holds no significance.
 	yamlLocations []Location
 
 	// Whether or not this value is an anchor.
