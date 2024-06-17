@@ -52,7 +52,7 @@ type Bundle struct {
 	client     *databricks.WorkspaceClient
 
 	// Files that are synced to the workspace.file_path
-	SyncedFiles []fileset.File
+	Files []fileset.File
 
 	// Stores an initialized copy of this bundle's Terraform wrapper.
 	Terraform *tfexec.Terraform

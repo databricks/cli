@@ -41,7 +41,7 @@ func setupBundleForStateUpdate(t *testing.T) *bundle.Bundle {
 				},
 			},
 		},
-		SyncedFiles: files,
+		Files: files,
 	}
 }
 
