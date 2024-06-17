@@ -1,2 +1,3 @@
-bundle:
-  compute_id: bob
+variables:
+  baz:
+    default: conflicts with non-empty value

@@ -16,9 +16,6 @@ func Merge(a, b dyn.Value) (dyn.Value, error) {
 	return merge(a, b)
 }
 
-// TODO: Add check to ensure empty locations are not being added to the yamlLocations.
-// In this case how to account for computed values? How can we consistantly differenciate
-// between computed values (with empty locations) and actual YAML values?
 func merge(a, b dyn.Value) (dyn.Value, error) {
 	ak := a.Kind()
 	bk := b.Kind()
@@ -27,12 +24,12 @@ func merge(a, b dyn.Value) (dyn.Value, error) {
 	// TODO: Ensure warnings for nil values overrides that are ineffective. Does
 	// this correspond to no value in the YAML configuration?
 	if ak == dyn.KindNil {
-		return b, nil
+		return b.AppendYamlLocation(a.Location()), nil
 	}
 
 	// If b is nil, return a.
 	if bk == dyn.KindNil {
-		return a, nil
+		return a.AppendYamlLocation(b.Location()), nil
 	}
 
 	// Call the appropriate merge function based on the kind of a and b.
@@ -81,8 +78,6 @@ func mergeMap(a, b dyn.Value) (dyn.Value, error) {
 	}
 
 	// Preserve the location of the first value.
-	// TODO: Added AppendYamlLocation to the top level merge func. It can be removed
-	// from individual merge functions.
 	return dyn.NewValue(out, a.Location()).AppendYamlLocation(b.Location()), nil
 }
 

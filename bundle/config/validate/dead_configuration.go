@@ -10,7 +10,9 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 )
 
-	func DeadConfiguration() bundle.ReadOnlyMutator {
+// This mutator emits warnings if a configuration value is being override by another
+// value in the configuration files, effectively making the configuration useless.
+func DeadConfiguration() bundle.ReadOnlyMutator {
 	return &deadConfiguration{}
 }
 
@@ -20,10 +22,13 @@ func (v *deadConfiguration) Name() string {
 	return "validate:dead_configuration"
 }
 
-// TODO: Does a key without a value have kind nil? In that case maybe also check for nil values and include a warning.
-
 func isKindScalar(v dyn.Value) bool {
-	return v.Kind() == dyn.KindString || v.Kind() == dyn.KindInt || v.Kind() == dyn.KindBool || v.Kind() == dyn.KindFloat || v.Kind() == dyn.KindTime
+	switch v.Kind() {
+	case dyn.KindString, dyn.KindInt, dyn.KindBool, dyn.KindFloat, dyn.KindTime, dyn.KindNil:
+		return true
+	default:
+		return false
+	}
 }
 
 func deadConfigurationWarning(v dyn.Value, p dyn.Path, rb bundle.ReadOnlyBundle) string {
@@ -44,6 +49,7 @@ func deadConfigurationWarning(v dyn.Value, p dyn.Path, rb bundle.ReadOnlyBundle)
 	return fmt.Sprintf("Multiple values found for the same configuration %s. Only the value from location %s will be used. Locations found: %s", p.String(), loc, yamlLocations)
 }
 
+// TODO: Did the target override issues have to do with "default" preset?
 func (v *deadConfiguration) Apply(ctx context.Context, rb bundle.ReadOnlyBundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
@@ -53,7 +59,6 @@ func (v *deadConfiguration) Apply(ctx context.Context, rb bundle.ReadOnlyBundle)
 		}
 
 		if len(v.YamlLocations()) >= 2 {
-			// TODO: See how this renders in the terminal. Is the configuration key clear?
 			diags = diags.Append(diag.Diagnostic{
 				Severity: diag.Warning,
 				Summary:  deadConfigurationWarning(v, p, rb),

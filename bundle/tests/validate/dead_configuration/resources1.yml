@@ -1,3 +1,6 @@
-bundle:
-  name: bbb
-  compute_id: alice
+variables:
+  bar:
+    default: conflicts with non-empty value
+
+  baz:
+    default: conflicts with non-empty value
