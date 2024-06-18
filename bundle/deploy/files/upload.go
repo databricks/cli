@@ -23,7 +23,7 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return diag.FromErr(err)
 	}
 
-	err = sync.RunOnce(ctx)
+	b.Files, err = sync.RunOnce(ctx)
 	if err != nil {
 		return diag.FromErr(err)
 	}
