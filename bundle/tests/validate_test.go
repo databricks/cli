@@ -2,6 +2,7 @@ package config_tests
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -22,7 +23,7 @@ func TestConflictingConfigurationValidate(t *testing.T) {
 		Severity: diag.Warning,
 		Summary:  "Multiple values found for the same configuration variables.baz.default. Only the value from location resources2.yml:3:14 will be used. Locations found: [resources2.yml:3:14 resources1.yml:9:14]",
 		Location: dyn.Location{
-			File:   "validate/conflicting_configuration/resources2.yml",
+			File:   filepath.FromSlash("validate/conflicting_configuration/resources2.yml"),
 			Line:   3,
 			Column: 14,
 		},
@@ -32,7 +33,7 @@ func TestConflictingConfigurationValidate(t *testing.T) {
 		Severity: diag.Warning,
 		Summary:  "Multiple values found for the same configuration variables.bar.default. Only the value from location resources1.yml:6:14 will be used. Locations found: [resources1.yml:6:14 databricks.yml:9:14]",
 		Location: dyn.Location{
-			File:   "validate/conflicting_configuration/resources1.yml",
+			File:   filepath.FromSlash("validate/conflicting_configuration/resources1.yml"),
 			Line:   6,
 			Column: 14,
 		},
