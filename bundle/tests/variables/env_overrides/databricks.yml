@@ -8,13 +8,11 @@ variables:
 
   d:
     description: variable with lookup
-    lookup:
-      cluster: some-cluster
+    default: ""
 
   e:
     description: variable with lookup
-    lookup:
-      instance_pool: some-pool
+    default: "some-value"
 
 bundle:
   name: test bundle
