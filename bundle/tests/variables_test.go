@@ -128,6 +128,11 @@ func TestVariablesWithTargetLookupOverrides(t *testing.T) {
 		ClusterId: "4321",
 	}, nil)
 
+	clusterPoliciesApi := mockWorkspaceClient.GetMockClusterPoliciesAPI()
+	clusterPoliciesApi.EXPECT().GetByName(mock.Anything, "some-test-cluster-policy").Return(&compute.Policy{
+		PolicyId: "9876",
+	}, nil)
+
 	diags := bundle.Apply(context.Background(), b, bundle.Seq(
 		mutator.SelectTarget("env-overrides-lookup"),
 		mutator.SetVariables(),
@@ -137,6 +142,7 @@ func TestVariablesWithTargetLookupOverrides(t *testing.T) {
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "4321", *b.Config.Variables["d"].Value)
 	assert.Equal(t, "1234", *b.Config.Variables["e"].Value)
+	assert.Equal(t, "9876", *b.Config.Variables["f"].Value)
 }
 
 func TestVariableTargetOverrides(t *testing.T) {

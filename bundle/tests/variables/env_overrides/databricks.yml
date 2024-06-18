@@ -14,6 +14,10 @@ variables:
     description: variable with lookup
     default: "some-value"
 
+  f:
+    description: variable with lookup
+    lookup:
+      cluster_policy: wrong-cluster-policy
 bundle:
   name: test bundle
 
@@ -47,4 +51,7 @@ targets:
       e:
         lookup:
           instance_pool: some-test-instance-pool
+      f:
+        lookup:
+          cluster_policy: some-test-cluster-policy
       b: prod-b

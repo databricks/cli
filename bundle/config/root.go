@@ -321,7 +321,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		return err
 	}
 
-	root, err = normalizeVariableLookupOverrides(root, target)
+	root, err = unsetDefaultForVariableLookupOverrides(root, target)
 	if err != nil {
 		return err
 	}
@@ -466,9 +466,9 @@ func validateVariableOverrides(root, target dyn.Value) (err error) {
 	return nil
 }
 
-// normalizeVariableLookupOverrides makes sure that variables which are overriden in targets with lookup
+// unsetDefaultForVariableLookupOverrides makes sure that variables which are overriden in targets with lookup
 // do not have any default value set because otherwise the lookup will not be performed.
-func normalizeVariableLookupOverrides(root, target dyn.Value) (dyn.Value, error) {
+func unsetDefaultForVariableLookupOverrides(root, target dyn.Value) (dyn.Value, error) {
 	r := root
 	// Collect variables from the root.
 	var rv map[string]*variable.Variable
