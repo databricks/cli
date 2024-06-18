@@ -17,7 +17,7 @@ See https://github.com/databricks/cli/releases for releases and
 ------
 ### Homebrew
 
-We maintain a [homebrew tap](https://github.com/databricks/homebrew-tap) for installing the Databricks CLI. You can find instructions for how to install, upgrade and downgrade the CLI using homebrew [here](https://github.com/databricks/homebrew-tap/blob/main/README.md).
+We maintain a [Homebrew tap](https://github.com/databricks/homebrew-tap) for installing the Databricks CLI. You can find instructions for how to install, upgrade and downgrade the CLI using Homebrew [here](https://github.com/databricks/homebrew-tap/blob/main/README.md).
 
 ------
 ### Docker
