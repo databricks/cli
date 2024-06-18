@@ -37,8 +37,12 @@ var NilValue = Value{
 	k: KindNil,
 }
 
+// Whether a value is nil or empty. A value with a non empty metadata (like location)
+// is considered non-nil. Values with KindNil but non-empty metadata could for example
+// denote a YAML field that explictly set to null / no value.
+// TODO: Add tests for this method.
 func (v Value) IsNil() bool {
-	return v.k == KindNil && v.v == nil
+	return v.k == KindNil && v.v == nil && v.l == (Location{}) && len(v.yamlLocations) == 0 && !v.anchor
 }
 
 // V constructs a new Value with the given value.
