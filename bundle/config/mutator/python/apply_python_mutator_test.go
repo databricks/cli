@@ -101,7 +101,7 @@ func TestApplyPythonMutator_preinit_disallowed(t *testing.T) {
 
 	ctx := withProcessStub(
 		[]string{
-			".venv/bin/python3",
+			interpreterPath(".venv"),
 			"-m",
 			"databricks.bundles.build",
 			"--phase",
