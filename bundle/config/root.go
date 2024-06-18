@@ -321,11 +321,6 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		return err
 	}
 
-	root, err = unsetDefaultForVariableLookupOverrides(root, target)
-	if err != nil {
-		return err
-	}
-
 	// Merge fields that can be merged 1:1.
 	for _, f := range []string{
 		"bundle",
@@ -464,37 +459,6 @@ func validateVariableOverrides(root, target dyn.Value) (err error) {
 	}
 
 	return nil
-}
-
-// unsetDefaultForVariableLookupOverrides makes sure that variables which are overriden in targets with lookup
-// do not have any default value set because otherwise the lookup will not be performed.
-func unsetDefaultForVariableLookupOverrides(root, target dyn.Value) (dyn.Value, error) {
-	r := root
-	// Collect variables from the root.
-	var rv map[string]*variable.Variable
-	err := convert.ToTyped(&rv, root.Get("variables"))
-	if err != nil {
-		return dyn.InvalidValue, fmt.Errorf("unable to collect variables from root: %w", err)
-	}
-
-	// Collect variables from the target.
-	var tv map[string]*variable.Variable
-	err = convert.ToTyped(&tv, target.Get("variables"))
-	if err != nil {
-		return dyn.InvalidValue, fmt.Errorf("unable to collect variables from target: %w", err)
-	}
-
-	// Check that all variables in the target exist in the root.
-	for k, v := range tv {
-		if rv[k].Default != nil && v.Lookup != nil {
-			r, err = dyn.SetByPath(r, dyn.NewPath(dyn.Key("variables"), dyn.Key(k), dyn.Key("default")), dyn.NilValue)
-			if err != nil {
-				return dyn.InvalidValue, err
-			}
-		}
-	}
-
-	return r, nil
 }
 
 // Best effort to get the location of configuration value at the specified path.
