@@ -65,3 +65,14 @@ func TestAppendYamlLocation(t *testing.T) {
 	v = v.AppendYamlLocation(dyn.Location{File: "file1", Line: 1, Column: 2})
 	assert.Len(t, v.YamlLocations(), 2)
 }
+
+func TestValueIsNil(t *testing.T) {
+	assert.True(t, dyn.NilValue.IsNil())
+
+	assert.False(t, dyn.V(1).IsNil())
+	assert.False(t, dyn.V("foo").IsNil())
+	assert.False(t, dyn.V(map[string]dyn.Value{}).IsNil())
+	assert.False(t, dyn.NilValue.WithLocation(dyn.Location{File: "file", Line: 1, Column: 2}).IsNil())
+	assert.False(t, dyn.NilValue.MarkAnchor().IsNil())
+	assert.False(t, dyn.NilValue.AppendYamlLocation(dyn.Location{File: "file", Line: 1, Column: 2}).IsNil())
+}
