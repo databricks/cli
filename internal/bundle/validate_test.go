@@ -16,7 +16,7 @@ func TestAccBundleValidate(t *testing.T) {
 	testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 
 	tmpDir := t.TempDir()
-	testutil.TouchWithContent(t,
+	testutil.WriteFile(t,
 		`
 bundle:
   name: "foobar"
@@ -41,6 +41,7 @@ resources:
 
 	config := make(map[string]any)
 	err = json.Unmarshal(stdout, &config)
+	require.NoError(t, err)
 
 	getValue := func(key string) any {
 		v, err := convert.FromTyped(config, dyn.NilValue)
@@ -49,7 +50,7 @@ resources:
 		require.NoError(t, err)
 		return v.AsAny()
 	}
-	require.NoError(t, err)
+
 
 	assert.Equal(t, "foobar", getValue("bundle.name"))
 	assert.Equal(t, "outer loop", getValue("resources.jobs.outer_loop.name"))

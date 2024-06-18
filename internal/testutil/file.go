@@ -25,7 +25,7 @@ func Touch(t *testing.T, elems ...string) string {
 	return path
 }
 
-func TouchWithContent(t *testing.T, content string, elems ...string) string {
+func WriteFile(t *testing.T, content string, elems ...string) string {
 	path := filepath.Join(elems...)
 	os.MkdirAll(filepath.Dir(path), 0755)
 	f, err := os.Create(path)
