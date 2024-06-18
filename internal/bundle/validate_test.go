@@ -51,7 +51,6 @@ resources:
 		return v.AsAny()
 	}
 
-
 	assert.Equal(t, "foobar", getValue("bundle.name"))
 	assert.Equal(t, "outer loop", getValue("resources.jobs.outer_loop.name"))
 	assert.Equal(t, "inner loop", getValue("resources.jobs.inner_loop.name"))
