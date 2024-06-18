@@ -471,7 +471,3 @@ func (r Root) GetLocation(path string) dyn.Location {
 	}
 	return v.Location()
 }
-
-func (r Root) Value() dyn.Value {
-	return r.value
-}
