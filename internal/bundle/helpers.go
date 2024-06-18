@@ -51,6 +51,13 @@ func writeConfigFile(t *testing.T, config map[string]any) (string, error) {
 	return filepath, err
 }
 
+func validateBundle(t *testing.T, ctx context.Context, path string) ([]byte, error) {
+	t.Setenv("BUNDLE_ROOT", path)
+	c := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "validate", "--output", "json")
+	stdout, _, err := c.Run()
+	return stdout.Bytes(), err
+}
+
 func deployBundle(t *testing.T, ctx context.Context, path string) error {
 	t.Setenv("BUNDLE_ROOT", path)
 	c := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "deploy", "--force-lock")
