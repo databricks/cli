@@ -176,7 +176,7 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 		}
 	}
 
-	// Cannot interpret as a strcut.
+	// Cannot interpret as a struct.
 	return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindMap, src, path))
 }
 
