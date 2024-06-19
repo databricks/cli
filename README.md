@@ -12,7 +12,7 @@ Documentation is available at https://docs.databricks.com/dev-tools/cli/databric
 
 This CLI is packaged as a dependency-free binary executable and may be located in any directory.
 See https://github.com/databricks/cli/releases for releases and
-[the docs pages](https://docs.databricks.com/en/dev-tools/cli/install.html) for supported methods to install the CLI and the corresponding instructions.
+the [Databricks documentation](https://docs.databricks.com/en/dev-tools/cli/install.html) for detailed information about installing the CLI.
 
 ------
 ### Homebrew
