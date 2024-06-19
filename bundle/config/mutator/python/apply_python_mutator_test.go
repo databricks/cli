@@ -3,13 +3,14 @@ package python
 import (
 	"context"
 	"fmt"
-	"golang.org/x/exp/maps"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"reflect"
 	"runtime"
 	"testing"
+
+	"golang.org/x/exp/maps"
 
 	"github.com/databricks/cli/libs/dyn"
 
