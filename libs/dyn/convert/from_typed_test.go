@@ -636,6 +636,7 @@ func TestFromTypedAny(t *testing.T) {
 			"foo": "foo",
 			"bar": 1234,
 			"qux": 0,
+			"nil": nil,
 		},
 	}
 
@@ -650,6 +651,7 @@ func TestFromTypedAny(t *testing.T) {
 			"foo": dyn.V("foo"),
 			"bar": dyn.V(int64(1234)),
 			"qux": dyn.V(int64(0)),
+			"nil": dyn.V(nil),
 		}),
 	}), nv)
 }

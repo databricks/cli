@@ -194,22 +194,15 @@ func TestResolveLookupVariableReferencesInVariableLookups(t *testing.T) {
 }
 
 func TestNoResolveLookupIfVariableSetWithEnvVariable(t *testing.T) {
-	s := func(s string) *string {
-		return &s
-	}
-
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "dev",
 			},
 			Variables: map[string]*variable.Variable{
-				"foo": {
-					Value: s("bar"),
-				},
 				"lookup": {
 					Lookup: &variable.Lookup{
-						Cluster: "cluster-${var.foo}-${bundle.target}",
+						Cluster: "cluster-${bundle.target}",
 					},
 				},
 			},
@@ -224,5 +217,5 @@ func TestNoResolveLookupIfVariableSetWithEnvVariable(t *testing.T) {
 
 	diags := bundle.Apply(ctx, b, bundle.Seq(SetVariables(), ResolveVariableReferencesInLookup(), ResolveResourceReferences()))
 	require.NoError(t, diags.Error())
-	require.Equal(t, "1234-5678-abcd", *b.Config.Variables["lookup"].Value)
+	require.Equal(t, "1234-5678-abcd", b.Config.Variables["lookup"].Value)
 }

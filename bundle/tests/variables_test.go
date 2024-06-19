@@ -140,9 +140,9 @@ func TestVariablesWithTargetLookupOverrides(t *testing.T) {
 	))
 
 	require.NoError(t, diags.Error())
-	assert.Equal(t, "4321", *b.Config.Variables["d"].Value)
-	assert.Equal(t, "1234", *b.Config.Variables["e"].Value)
-	assert.Equal(t, "9876", *b.Config.Variables["f"].Value)
+	assert.Equal(t, "4321", b.Config.Variables["d"].Value)
+	assert.Equal(t, "1234", b.Config.Variables["e"].Value)
+	assert.Equal(t, "9876", b.Config.Variables["f"].Value)
 }
 
 func TestVariableTargetOverrides(t *testing.T) {

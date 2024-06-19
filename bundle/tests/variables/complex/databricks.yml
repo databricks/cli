@@ -10,6 +10,7 @@ resources:
       tasks:
       - task_key: test
         job_cluster_key: key
+        libraries: ${var.libraries}
 
 variables:
   cluster:
@@ -22,6 +23,14 @@ variables:
       spark_conf:
         spark.speculation: true
         spark.databricks.delta.retentionDurationCheck.enabled: false
+  libraries:
+    type: complex
+    description: "A libraries definition"
+    default:
+      - jar: "/path/to/jar"
+      - egg: "/path/to/egg"
+      - whl: "/path/to/whl"
+
 
 targets:
   default:
