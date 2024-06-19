@@ -28,22 +28,22 @@ func (m *environmentsToTargets) Apply(ctx context.Context, b *bundle.Bundle) dia
 
 	// The "environments" key is set; validate and rewrite it to "targets".
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		environments := v.Get("environments")
-		targets := v.Get("targets")
+		environments := v.GetTODO("environments")
+		targets := v.GetTODO("targets")
 
 		// Return an error if both "environments" and "targets" are set.
-		if environments != dyn.NilValue && targets != dyn.NilValue {
-			return dyn.NilValue, fmt.Errorf(
+		if environments != dyn.InvalidValue && targets != dyn.InvalidValue {
+			return dyn.InvalidValue, fmt.Errorf(
 				"both 'environments' and 'targets' are specified; only 'targets' should be used: %s",
 				environments.Location().String(),
 			)
 		}
 
 		// Rewrite "environments" to "targets".
-		if environments != dyn.NilValue && targets == dyn.NilValue {
+		if environments != dyn.InvalidValue && targets == dyn.InvalidValue {
 			nv, err := dyn.Set(v, "targets", environments)
 			if err != nil {
-				return dyn.NilValue, err
+				return dyn.InvalidValue, err
 			}
 			// Drop the "environments" key.
 			return dyn.Walk(nv, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {

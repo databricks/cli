@@ -8,15 +8,15 @@ import (
 )
 
 func convertGrantsResource(ctx context.Context, vin dyn.Value) *schema.ResourceGrants {
-	grants, ok := vin.Get("grants").AsSequence()
+	grants, ok := vin.GetTODO("grants").AsSequence()
 	if !ok || len(grants) == 0 {
 		return nil
 	}
 
 	resource := &schema.ResourceGrants{}
 	for _, permission := range grants {
-		principal, _ := permission.Get("principal").AsString()
-		v, _ := permission.Get("privileges").AsSequence()
+		principal, _ := permission.GetTODO("principal").AsString()
+		v, _ := permission.GetTODO("privileges").AsSequence()
 
 		// Turn privileges into a slice of strings.
 		var privileges []string

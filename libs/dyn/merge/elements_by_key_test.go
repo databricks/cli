@@ -36,14 +36,14 @@ func TestElementByKey(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, vout.MustSequence(), 2)
 	assert.Equal(t,
-		vout.Index(0).AsAny(),
+		vout.IndexTODO(0).AsAny(),
 		map[string]any{
 			"key":   "foo",
 			"value": 44,
 		},
 	)
 	assert.Equal(t,
-		vout.Index(1).AsAny(),
+		vout.IndexTODO(1).AsAny(),
 		map[string]any{
 			"key":   "bar",
 			"value": 43,

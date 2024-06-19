@@ -22,7 +22,7 @@ func (m *mergePipelineClusters) Name() string {
 
 func (m *mergePipelineClusters) clusterLabel(v dyn.Value) string {
 	switch v.Kind() {
-	case dyn.KindNil:
+	case dyn.KindInvalid, dyn.KindNil:
 		// Note: the cluster label is optional and defaults to 'default'.
 		// We therefore ALSO merge all clusters without a label.
 		return "default"

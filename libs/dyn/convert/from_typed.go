@@ -172,7 +172,7 @@ func fromTypedSlice(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 	out := make([]dyn.Value, src.Len())
 	for i := 0; i < src.Len(); i++ {
 		v := src.Index(i)
-		refv := ref.Index(i)
+		refv := ref.IndexTODO(i)
 
 		// Use nil reference if there is no reference for this index.
 		if refv == dyn.InvalidValue {
