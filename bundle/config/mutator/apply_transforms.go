@@ -3,6 +3,7 @@ package mutator
 import (
 	"context"
 	"path"
+	"slices"
 	"sort"
 	"strings"
 
@@ -88,14 +89,11 @@ func (m *applyTransforms) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 	for i := range r.Models {
 		r.Models[i].Name = prefix + r.Models[i].Name
 		for _, t := range tags {
-			exists := false
-			for _, modelTag := range r.Models[i].Tags {
-				if modelTag.Key == t.Key {
-					exists = true
-					break
-				}
-			}
+			exists := slices.ContainsFunc(r.Models[i].Tags, func(modelTag ml.ModelTag) bool {
+				return modelTag.Key == t.Key
+			})
 			if !exists {
+				// Only add this tag if the resource didn't include any tag that overrides its value.
 				r.Models[i].Tags = append(r.Models[i].Tags, ml.ModelTag{Key: t.Key, Value: t.Value})
 			}
 		}

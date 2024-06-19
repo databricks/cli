@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestTransformPrefix(t *testing.T) {
@@ -63,9 +64,7 @@ func TestTransformPrefix(t *testing.T) {
 				t.Fatalf("unexpected error: %v", diag)
 			}
 
-			if got := b.Config.Resources.Jobs["job1"].Name; got != tt.want {
-				t.Errorf("got %v, want %v", got, tt.want)
-			}
+			require.Equal(t, tt.want, b.Config.Resources.Jobs["job1"].Name)
 		})
 	}
 }
@@ -134,12 +133,8 @@ func TestTransformTags(t *testing.T) {
 				t.Fatalf("unexpected error: %v", diag)
 			}
 
-			got := b.Config.Resources.Jobs["job1"].Tags
-			for k, v := range tt.want {
-				if got[k] != v {
-					t.Errorf("tag %v: got %v, want %v", k, got[k], v)
-				}
-			}
+			tags := b.Config.Resources.Jobs["job1"].Tags
+			require.Equal(t, tt.want, tags)
 		})
 	}
 }
@@ -197,9 +192,7 @@ func TestTransformJobsMaxConcurrentRuns(t *testing.T) {
 				t.Fatalf("unexpected error: %v", diag)
 			}
 
-			if got := b.Config.Resources.Jobs["job1"].MaxConcurrentRuns; got != tt.want {
-				t.Errorf("got %v, want %v", got, tt.want)
-			}
+			require.Equal(t, tt.want, b.Config.Resources.Jobs["job1"].MaxConcurrentRuns)
 		})
 	}
 }
