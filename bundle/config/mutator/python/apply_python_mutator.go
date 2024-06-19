@@ -23,7 +23,7 @@ import (
 type phase string
 
 const (
-	// ApplyPythonMutatorPhasePreInit is the phase that while bundle configuration is loading.
+	// ApplyPythonMutatorPhaseLoad is the phase in which bundle configuration is loaded.
 	//
 	// At this stage, PyDABs adds statically defined resources to the bundle configuration.
 	// Which resources are added should be deterministic and not depend on the bundle configuration.
@@ -31,7 +31,7 @@ const (
 	// We also open for possibility of appending other sections of bundle configuration,
 	// for example, adding new variables. However, this is not supported yet, and CLI rejects
 	// such changes.
-	ApplyPythonMutatorPhasePreInit phase = "preinit"
+	ApplyPythonMutatorPhaseLoad phase = "load"
 
 	// ApplyPythonMutatorPhaseInit is the phase after bundle configuration was loaded, and
 	// the list of statically declared resources is known.
@@ -42,10 +42,10 @@ const (
 	// During this process, within generator and mutators, PyDABs can access:
 	// - selected deployment target
 	// - bundle variables values
+	// - variables provided through CLI arguments or environment variables
 	//
 	// The following is not available:
 	// - variables referencing other variables are in unresolved format
-	// - variables provided through CLI arguments
 	//
 	// PyDABs can output YAML containing references to variables, and CLI should resolve them.
 	//
@@ -78,16 +78,16 @@ func getExperimental(b *bundle.Bundle) config.Experimental {
 func (m *applyPythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	experimental := getExperimental(b)
 
-	if !experimental.PyDABs.Enable {
+	if !experimental.PyDABs.Enabled {
 		return nil
 	}
 
-	if experimental.PyDABs.Enable && experimental.VEnv.Path == "" {
-		return diag.Errorf("\"experimental.pydabs.enable\" can only be used when \"experimental.venv.path\" is set")
+	if experimental.PyDABs.VEnvPath == "" {
+		return diag.Errorf("\"experimental.pydabs.enabled\" can only be used when \"experimental.pydabs.venv_path\" is set")
 	}
 
 	err := b.Config.Mutate(func(leftRoot dyn.Value) (dyn.Value, error) {
-		pythonPath := interpreterPath(experimental.VEnv.Path)
+		pythonPath := interpreterPath(experimental.PyDABs.VEnvPath)
 
 		if _, err := os.Stat(pythonPath); err != nil {
 			if os.IsNotExist(err) {
@@ -98,13 +98,11 @@ func (m *applyPythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 		}
 
 		rightRoot, err := m.runPythonMutator(ctx, b.RootPath, pythonPath, leftRoot)
-
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
 
 		visitor, err := createOverrideVisitor(ctx, m.phase)
-
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
@@ -127,7 +125,6 @@ func (m *applyPythonMutator) runPythonMutator(ctx context.Context, rootPath stri
 	// we need to marshal dyn.Value instead of bundle.Config to JSON to support
 	// non-string fields assigned with bundle variables
 	rootConfigJson, err := json.Marshal(root.AsAny())
-
 	if err != nil {
 		return dyn.InvalidValue, fmt.Errorf("failed to marshal root config: %w", err)
 	}
@@ -141,7 +138,6 @@ func (m *applyPythonMutator) runPythonMutator(ctx context.Context, rootPath stri
 		process.WithStderrWriter(logWriter),
 		process.WithStdinReader(bytes.NewBuffer(rootConfigJson)),
 	)
-
 	if err != nil {
 		return dyn.InvalidValue, fmt.Errorf("python mutator process failed: %w", err)
 	}
@@ -149,19 +145,16 @@ func (m *applyPythonMutator) runPythonMutator(ctx context.Context, rootPath stri
 	// we need absolute path, or because later parts of pipeline assume all paths are absolute
 	// and this file will be used as location
 	virtualPath, err := filepath.Abs(filepath.Join(rootPath, "__generated_by_pydabs__.yml"))
-
 	if err != nil {
 		return dyn.InvalidValue, fmt.Errorf("failed to get absolute path: %w", err)
 	}
 
 	generated, err := yamlloader.LoadYAML(virtualPath, bytes.NewReader([]byte(stdout)))
-
 	if err != nil {
 		return dyn.InvalidValue, fmt.Errorf("failed to parse Python mutator output: %w", err)
 	}
 
 	normalized, diagnostic := convert.Normalize(config.Root{}, generated)
-
 	if diagnostic.Error() != nil {
 		return dyn.InvalidValue, fmt.Errorf("failed to normalize Python mutator output: %w", diagnostic.Error())
 	}
@@ -178,8 +171,8 @@ func (m *applyPythonMutator) runPythonMutator(ctx context.Context, rootPath stri
 
 func createOverrideVisitor(ctx context.Context, phase phase) (merge.OverrideVisitor, error) {
 	switch phase {
-	case ApplyPythonMutatorPhasePreInit:
-		return createPreInitOverrideVisitor(ctx), nil
+	case ApplyPythonMutatorPhaseLoad:
+		return createLoadOverrideVisitor(ctx), nil
 	case ApplyPythonMutatorPhaseInit:
 		return createInitOverrideVisitor(ctx), nil
 	default:
@@ -187,11 +180,11 @@ func createOverrideVisitor(ctx context.Context, phase phase) (merge.OverrideVisi
 	}
 }
 
-// createPreInitOverrideVisitor creates an override visitor for the preinit phase.
+// createLoadOverrideVisitor creates an override visitor for the load phase.
 //
-// During pre-init it's only possible to create new resources, and not modify or
+// During load, it's only possible to create new resources, and not modify or
 // delete existing ones.
-func createPreInitOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
+func createLoadOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
 	jobsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))
 
 	return merge.OverrideVisitor{

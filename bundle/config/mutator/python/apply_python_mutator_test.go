@@ -3,6 +3,7 @@ package python
 import (
 	"context"
 	"fmt"
+	"golang.org/x/exp/maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -18,10 +19,10 @@ import (
 	"github.com/databricks/cli/libs/process"
 )
 
-func TestApplyPythonMutator_Name_preinit(t *testing.T) {
-	mutator := ApplyPythonMutator(ApplyPythonMutatorPhasePreInit)
+func TestApplyPythonMutator_Name_load(t *testing.T) {
+	mutator := ApplyPythonMutator(ApplyPythonMutatorPhaseLoad)
 
-	assert.Equal(t, "ApplyPythonMutator(preinit)", mutator.Name())
+	assert.Equal(t, "ApplyPythonMutator(load)", mutator.Name())
 }
 
 func TestApplyPythonMutator_Name_init(t *testing.T) {
@@ -30,15 +31,14 @@ func TestApplyPythonMutator_Name_init(t *testing.T) {
 	assert.Equal(t, "ApplyPythonMutator(init)", mutator.Name())
 }
 
-func TestApplyPythonMutator_preinit(t *testing.T) {
+func TestApplyPythonMutator_load(t *testing.T) {
 	withFakeVEnv(t, ".venv")
 
 	b := loadYaml("databricks.yml", `
       experimental:
         pydabs:
-          enable: true
-        venv:
-          path: .venv
+          enabled: true
+          venv_path: .venv
       resources:
         jobs:
           job0:
@@ -50,12 +50,14 @@ func TestApplyPythonMutator_preinit(t *testing.T) {
 			"-m",
 			"databricks.bundles.build",
 			"--phase",
-			"preinit",
+			"load",
 		},
 		`{
 			"experimental": {
-				"pydabs": { "enable": true },
-				"venv": { "path": ".venv" }
+				"pydabs": {
+					"enabled": true,
+					"venv_path": ".venv"
+				}
 			},
 			"resources": {
 				"jobs": {
@@ -69,12 +71,12 @@ func TestApplyPythonMutator_preinit(t *testing.T) {
 			}
 		}`)
 
-	mutator := ApplyPythonMutator(ApplyPythonMutatorPhasePreInit)
+	mutator := ApplyPythonMutator(ApplyPythonMutatorPhaseLoad)
 	diag := bundle.Apply(ctx, b, mutator)
 
 	assert.NoError(t, diag.Error())
 
-	assert.ElementsMatch(t, []string{"job0", "job1"}, keys(b.Config.Resources.Jobs))
+	assert.ElementsMatch(t, []string{"job0", "job1"}, maps.Keys(b.Config.Resources.Jobs))
 
 	if job0, ok := b.Config.Resources.Jobs["job0"]; ok {
 		assert.Equal(t, "job_0", job0.Name)
@@ -85,15 +87,14 @@ func TestApplyPythonMutator_preinit(t *testing.T) {
 	}
 }
 
-func TestApplyPythonMutator_preinit_disallowed(t *testing.T) {
+func TestApplyPythonMutator_load_disallowed(t *testing.T) {
 	withFakeVEnv(t, ".venv")
 
 	b := loadYaml("databricks.yml", `
       experimental:
         pydabs:
-          enable: true
-        venv:
-          path: .venv
+          enabled: true
+          venv_path: .venv
       resources:
         jobs:
           job0:
@@ -105,12 +106,14 @@ func TestApplyPythonMutator_preinit_disallowed(t *testing.T) {
 			"-m",
 			"databricks.bundles.build",
 			"--phase",
-			"preinit",
+			"load",
 		},
 		`{
 			"experimental": {
-				"pydabs": { "enable": true },
-				"venv": { "path": ".venv" }
+				"pydabs": {
+					"enabled": true,
+					"venv_path": ".venv"
+				}
 			},
 			"resources": {
 				"jobs": {
@@ -122,7 +125,7 @@ func TestApplyPythonMutator_preinit_disallowed(t *testing.T) {
 			}
 		}`)
 
-	mutator := ApplyPythonMutator(ApplyPythonMutatorPhasePreInit)
+	mutator := ApplyPythonMutator(ApplyPythonMutatorPhaseLoad)
 	diag := bundle.Apply(ctx, b, mutator)
 
 	assert.EqualError(t, diag.Error(), "unexpected change at \"resources.jobs.job0.description\" (insert)")
@@ -134,9 +137,8 @@ func TestApplyPythonMutator_init(t *testing.T) {
 	b := loadYaml("databricks.yml", `
       experimental:
         pydabs:
-          enable: true
-        venv:
-          path: .venv
+          enabled: true
+          venv_path: .venv
       resources:
         jobs:
           job0:
@@ -152,8 +154,10 @@ func TestApplyPythonMutator_init(t *testing.T) {
 		},
 		`{
 			"experimental": {
-				"pydabs": { "enable": true },
-				"venv": { "path": ".venv" }
+				"pydabs": {
+					"enabled": true,
+					"venv_path": ".venv"
+				}
 			},
 			"resources": {
 				"jobs": {
@@ -170,7 +174,7 @@ func TestApplyPythonMutator_init(t *testing.T) {
 
 	assert.NoError(t, diag.Error())
 
-	assert.ElementsMatch(t, []string{"job0"}, keys(b.Config.Resources.Jobs))
+	assert.ElementsMatch(t, []string{"job0"}, maps.Keys(b.Config.Resources.Jobs))
 	assert.Equal(t, "job_0", b.Config.Resources.Jobs["job0"].Name)
 	assert.Equal(t, "my job", b.Config.Resources.Jobs["job0"].Description)
 }
@@ -181,9 +185,8 @@ func TestApplyPythonMutator_badOutput(t *testing.T) {
 	b := loadYaml("databricks.yml", `
       experimental:
         pydabs:
-          enable: true
-        venv:
-          path: .venv
+          enabled: true
+          venv_path: .venv
       resources:
         jobs:
           job0:
@@ -195,7 +198,7 @@ func TestApplyPythonMutator_badOutput(t *testing.T) {
 			"-m",
 			"databricks.bundles.build",
 			"--phase",
-			"preinit",
+			"load",
 		},
 		`{
 			"resources": {
@@ -207,7 +210,7 @@ func TestApplyPythonMutator_badOutput(t *testing.T) {
 			}
 		}`)
 
-	mutator := ApplyPythonMutator(ApplyPythonMutatorPhasePreInit)
+	mutator := ApplyPythonMutator(ApplyPythonMutatorPhaseLoad)
 	diag := bundle.Apply(ctx, b, mutator)
 
 	assert.EqualError(t, diag.Error(), "failed to normalize Python mutator output: unknown field: unknown_property")
@@ -217,7 +220,7 @@ func TestApplyPythonMutator_disabled(t *testing.T) {
 	b := loadYaml("databricks.yml", ``)
 
 	ctx := context.Background()
-	mutator := ApplyPythonMutator(ApplyPythonMutatorPhasePreInit)
+	mutator := ApplyPythonMutator(ApplyPythonMutatorPhaseLoad)
 	diag := bundle.Apply(ctx, b, mutator)
 
 	assert.NoError(t, diag.Error())
@@ -227,10 +230,10 @@ func TestApplyPythonMutator_venvRequired(t *testing.T) {
 	b := loadYaml("databricks.yml", `
       experimental:
         pydabs:
-          enable: true`)
+          enabled: true`)
 
 	ctx := context.Background()
-	mutator := ApplyPythonMutator(ApplyPythonMutatorPhasePreInit)
+	mutator := ApplyPythonMutator(ApplyPythonMutatorPhaseLoad)
 	diag := bundle.Apply(ctx, b, mutator)
 
 	assert.Error(t, diag.Error(), "\"experimental.enable_pydabs\" is enabled, but \"experimental.venv.path\" is not set")
@@ -242,9 +245,8 @@ func TestApplyPythonMutator_venvNotFound(t *testing.T) {
 	b := loadYaml("databricks.yml", `
       experimental:
         pydabs:
-          enable: true
-        venv:
-          path: bad_path`)
+          enabled: true
+          venv_path: bad_path`)
 
 	mutator := ApplyPythonMutator(ApplyPythonMutatorPhaseInit)
 	diag := bundle.Apply(context.Background(), b, mutator)
@@ -269,8 +271,8 @@ func TestCreateOverrideVisitor(t *testing.T) {
 
 	testCases := []createOverrideVisitorTestCase{
 		{
-			name:        "preinit: can't change an existing job",
-			phase:       ApplyPythonMutatorPhasePreInit,
+			name:        "load: can't change an existing job",
+			phase:       ApplyPythonMutatorPhaseLoad,
 			updatePath:  dyn.MustPathFromString("resources.jobs.job0.name"),
 			deletePath:  dyn.MustPathFromString("resources.jobs.job0.name"),
 			insertPath:  dyn.MustPathFromString("resources.jobs.job0.name"),
@@ -279,20 +281,20 @@ func TestCreateOverrideVisitor(t *testing.T) {
 			updateError: fmt.Errorf("unexpected change at \"resources.jobs.job0.name\" (update)"),
 		},
 		{
-			name:        "preinit: can't delete an existing job",
-			phase:       ApplyPythonMutatorPhasePreInit,
+			name:        "load: can't delete an existing job",
+			phase:       ApplyPythonMutatorPhaseLoad,
 			deletePath:  dyn.MustPathFromString("resources.jobs.job0"),
 			deleteError: fmt.Errorf("unexpected change at \"resources.jobs.job0\" (delete)"),
 		},
 		{
-			name:        "preinit: can insert a job",
-			phase:       ApplyPythonMutatorPhasePreInit,
+			name:        "load: can insert a job",
+			phase:       ApplyPythonMutatorPhaseLoad,
 			insertPath:  dyn.MustPathFromString("resources.jobs.job0"),
 			insertError: nil,
 		},
 		{
-			name:        "preinit: can't change include",
-			phase:       ApplyPythonMutatorPhasePreInit,
+			name:        "load: can't change include",
+			phase:       ApplyPythonMutatorPhaseLoad,
 			deletePath:  dyn.MustPathFromString("include[0]"),
 			insertPath:  dyn.MustPathFromString("include[0]"),
 			updatePath:  dyn.MustPathFromString("include[0]"),
@@ -301,7 +303,7 @@ func TestCreateOverrideVisitor(t *testing.T) {
 			updateError: fmt.Errorf("unexpected change at \"include[0]\" (update)"),
 		},
 		{
-			name:        "preinit: can change an existing job",
+			name:        "init: can change an existing job",
 			phase:       ApplyPythonMutatorPhaseInit,
 			updatePath:  dyn.MustPathFromString("resources.jobs.job0.name"),
 			deletePath:  dyn.MustPathFromString("resources.jobs.job0.name"),
@@ -336,7 +338,6 @@ func TestCreateOverrideVisitor(t *testing.T) {
 
 	for _, tc := range testCases {
 		visitor, err := createOverrideVisitor(context.Background(), tc.phase)
-
 		if err != nil {
 			t.Fatalf("create visitor failed: %v", err)
 		}
@@ -406,16 +407,6 @@ func withProcessStub(args []string, stdout string) context.Context {
 	return ctx
 }
 
-func keys[T any](value map[string]T) []string {
-	keys := make([]string, 0, len(value))
-
-	for k := range value {
-		keys = append(keys, k)
-	}
-
-	return keys
-}
-
 func loadYaml(name string, content string) *bundle.Bundle {
 	v, diag := config.LoadFromBytes(name, []byte(content))
 
@@ -429,9 +420,9 @@ func loadYaml(name string, content string) *bundle.Bundle {
 }
 
 func withFakeVEnv(t *testing.T, path string) {
-	cwd, err := os.Getwd()
 	interpreterPath := interpreterPath(path)
 
+	cwd, err := os.Getwd()
 	if err != nil {
 		panic(err)
 	}
@@ -441,13 +432,11 @@ func withFakeVEnv(t *testing.T, path string) {
 	}
 
 	err = os.MkdirAll(filepath.Dir(interpreterPath), 0755)
-
 	if err != nil {
 		panic(err)
 	}
 
 	err = os.WriteFile(interpreterPath, []byte(""), 0755)
-
 	if err != nil {
 		panic(err)
 	}
