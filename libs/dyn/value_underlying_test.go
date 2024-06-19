@@ -18,7 +18,7 @@ func TestValueUnderlyingMap(t *testing.T) {
 	vv1, ok := v.AsMap()
 	assert.True(t, ok)
 
-	_, ok = dyn.NilValue.AsMap()
+	_, ok = dyn.InvalidValue.AsMap()
 	assert.False(t, ok)
 
 	vv2 := v.MustMap()
@@ -26,7 +26,7 @@ func TestValueUnderlyingMap(t *testing.T) {
 
 	// Test panic.
 	assert.PanicsWithValue(t, "expected kind map, got nil", func() {
-		dyn.NilValue.MustMap()
+		dyn.InvalidValue.MustMap()
 	})
 }
 
@@ -40,7 +40,7 @@ func TestValueUnderlyingSequence(t *testing.T) {
 	vv1, ok := v.AsSequence()
 	assert.True(t, ok)
 
-	_, ok = dyn.NilValue.AsSequence()
+	_, ok = dyn.InvalidValue.AsSequence()
 	assert.False(t, ok)
 
 	vv2 := v.MustSequence()
@@ -48,7 +48,7 @@ func TestValueUnderlyingSequence(t *testing.T) {
 
 	// Test panic.
 	assert.PanicsWithValue(t, "expected kind sequence, got nil", func() {
-		dyn.NilValue.MustSequence()
+		dyn.InvalidValue.MustSequence()
 	})
 }
 
@@ -58,7 +58,7 @@ func TestValueUnderlyingString(t *testing.T) {
 	vv1, ok := v.AsString()
 	assert.True(t, ok)
 
-	_, ok = dyn.NilValue.AsString()
+	_, ok = dyn.InvalidValue.AsString()
 	assert.False(t, ok)
 
 	vv2 := v.MustString()
@@ -66,7 +66,7 @@ func TestValueUnderlyingString(t *testing.T) {
 
 	// Test panic.
 	assert.PanicsWithValue(t, "expected kind string, got nil", func() {
-		dyn.NilValue.MustString()
+		dyn.InvalidValue.MustString()
 	})
 }
 
@@ -76,7 +76,7 @@ func TestValueUnderlyingBool(t *testing.T) {
 	vv1, ok := v.AsBool()
 	assert.True(t, ok)
 
-	_, ok = dyn.NilValue.AsBool()
+	_, ok = dyn.InvalidValue.AsBool()
 	assert.False(t, ok)
 
 	vv2 := v.MustBool()
@@ -84,7 +84,7 @@ func TestValueUnderlyingBool(t *testing.T) {
 
 	// Test panic.
 	assert.PanicsWithValue(t, "expected kind bool, got nil", func() {
-		dyn.NilValue.MustBool()
+		dyn.InvalidValue.MustBool()
 	})
 }
 
@@ -94,7 +94,7 @@ func TestValueUnderlyingInt(t *testing.T) {
 	vv1, ok := v.AsInt()
 	assert.True(t, ok)
 
-	_, ok = dyn.NilValue.AsInt()
+	_, ok = dyn.InvalidValue.AsInt()
 	assert.False(t, ok)
 
 	vv2 := v.MustInt()
@@ -102,7 +102,7 @@ func TestValueUnderlyingInt(t *testing.T) {
 
 	// Test panic.
 	assert.PanicsWithValue(t, "expected kind int, got nil", func() {
-		dyn.NilValue.MustInt()
+		dyn.InvalidValue.MustInt()
 	})
 
 	// Test int32 type specifically.
@@ -124,7 +124,7 @@ func TestValueUnderlyingFloat(t *testing.T) {
 	vv1, ok := v.AsFloat()
 	assert.True(t, ok)
 
-	_, ok = dyn.NilValue.AsFloat()
+	_, ok = dyn.InvalidValue.AsFloat()
 	assert.False(t, ok)
 
 	vv2 := v.MustFloat()
@@ -132,7 +132,7 @@ func TestValueUnderlyingFloat(t *testing.T) {
 
 	// Test panic.
 	assert.PanicsWithValue(t, "expected kind float, got nil", func() {
-		dyn.NilValue.MustFloat()
+		dyn.InvalidValue.MustFloat()
 	})
 
 	// Test float64 type specifically.
@@ -148,7 +148,7 @@ func TestValueUnderlyingTime(t *testing.T) {
 	vv1, ok := v.AsTime()
 	assert.True(t, ok)
 
-	_, ok = dyn.NilValue.AsTime()
+	_, ok = dyn.InvalidValue.AsTime()
 	assert.False(t, ok)
 
 	vv2 := v.MustTime()
@@ -156,6 +156,6 @@ func TestValueUnderlyingTime(t *testing.T) {
 
 	// Test panic.
 	assert.PanicsWithValue(t, "expected kind time, got nil", func() {
-		dyn.NilValue.MustTime()
+		dyn.InvalidValue.MustTime()
 	})
 }
