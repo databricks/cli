@@ -2,6 +2,7 @@ package filer
 
 import (
 	"context"
+	"errors"
 	"io"
 	"io/fs"
 	"os"
@@ -35,7 +36,7 @@ func (w *LocalClient) Write(ctx context.Context, name string, reader io.Reader, 
 	}
 
 	f, err := os.OpenFile(absPath, flags, 0644)
-	if os.IsNotExist(err) && slices.Contains(mode, CreateParentDirectories) {
+	if errors.Is(err, fs.ErrNotExist) && slices.Contains(mode, CreateParentDirectories) {
 		// Create parent directories if they don't exist.
 		err = os.MkdirAll(filepath.Dir(absPath), 0755)
 		if err != nil {
@@ -47,9 +48,9 @@ func (w *LocalClient) Write(ctx context.Context, name string, reader io.Reader, 
 
 	if err != nil {
 		switch {
-		case os.IsNotExist(err):
+		case errors.Is(err, fs.ErrNotExist):
 			return NoSuchDirectoryError{path: absPath}
-		case os.IsExist(err):
+		case errors.Is(err, fs.ErrExist):
 			return FileAlreadyExistsError{path: absPath}
 		default:
 			return err
@@ -77,7 +78,7 @@ func (w *LocalClient) Read(ctx context.Context, name string) (io.ReadCloser, err
 	// 2. Allows us to error out if the path is a directory
 	stat, err := os.Stat(absPath)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return nil, FileDoesNotExistError{path: absPath}
 		}
 		return nil, err
@@ -108,11 +109,11 @@ func (w *LocalClient) Delete(ctx context.Context, name string, mode ...DeleteMod
 		return nil
 	}
 
-	if os.IsNotExist(err) {
+	if errors.Is(err, fs.ErrNotExist) {
 		return FileDoesNotExistError{path: absPath}
 	}
 
-	if os.IsExist(err) {
+	if errors.Is(err, fs.ErrExist) {
 		if slices.Contains(mode, DeleteRecursively) {
 			return os.RemoveAll(absPath)
 		}
@@ -130,7 +131,7 @@ func (w *LocalClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, 
 
 	stat, err := os.Stat(absPath)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return nil, NoSuchDirectoryError{path: absPath}
 		}
 		return nil, err
@@ -159,7 +160,7 @@ func (w *LocalClient) Stat(ctx context.Context, name string) (fs.FileInfo, error
 	}
 
 	stat, err := os.Stat(absPath)
-	if os.IsNotExist(err) {
+	if errors.Is(err, fs.ErrNotExist) {
 		return nil, FileDoesNotExistError{path: absPath}
 	}
 	return stat, err

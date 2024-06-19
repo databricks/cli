@@ -491,3 +491,9 @@ func (r Root) GetLocation(path string) dyn.Location {
 	}
 	return v.Location()
 }
+
+// Value returns the dynamic configuration value of the root object. This value
+// is the source of truth and is kept in sync with values in the typed configuration.
+func (r Root) Value() dyn.Value {
+	return r.value
+}

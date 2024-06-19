@@ -3,7 +3,9 @@ package sync
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"time"
@@ -33,7 +35,7 @@ const LatestSnapshotVersion = "v1"
 type Snapshot struct {
 	// Path where this snapshot was loaded from and will be saved to.
 	// Intentionally not part of the snapshot state because it may be moved by the user.
-	SnapshotPath string `json:"-"`
+	snapshotPath string
 
 	// New indicates if this is a fresh snapshot or if it was loaded from disk.
 	New bool `json:"-"`
@@ -68,7 +70,7 @@ func NewSnapshot(localFiles []fileset.File, opts *SyncOptions) (*Snapshot, error
 	snapshotState.ResetLastModifiedTimes()
 
 	return &Snapshot{
-		SnapshotPath:  snapshotPath,
+		snapshotPath:  snapshotPath,
 		New:           true,
 		Version:       LatestSnapshotVersion,
 		Host:          opts.Host,
@@ -88,7 +90,7 @@ func GetFileName(host, remotePath string) string {
 // precisely it's the first 16 characters of md5(concat(host, remotePath))
 func SnapshotPath(opts *SyncOptions) (string, error) {
 	snapshotDir := filepath.Join(opts.SnapshotBasePath, syncSnapshotDirName)
-	if _, err := os.Stat(snapshotDir); os.IsNotExist(err) {
+	if _, err := os.Stat(snapshotDir); errors.Is(err, fs.ErrNotExist) {
 		err = os.MkdirAll(snapshotDir, 0755)
 		if err != nil {
 			return "", fmt.Errorf("failed to create config directory: %s", err)
@@ -105,7 +107,7 @@ func newSnapshot(ctx context.Context, opts *SyncOptions) (*Snapshot, error) {
 	}
 
 	return &Snapshot{
-		SnapshotPath: path,
+		snapshotPath: path,
 		New:          true,
 
 		Version:    LatestSnapshotVersion,
@@ -120,7 +122,7 @@ func newSnapshot(ctx context.Context, opts *SyncOptions) (*Snapshot, error) {
 }
 
 func (s *Snapshot) Save(ctx context.Context) error {
-	f, err := os.OpenFile(s.SnapshotPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	f, err := os.OpenFile(s.snapshotPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to create/open persisted sync snapshot file: %s", err)
 	}
@@ -145,11 +147,11 @@ func loadOrNewSnapshot(ctx context.Context, opts *SyncOptions) (*Snapshot, error
 	}
 
 	// Snapshot file not found. We return the new copy.
-	if _, err := os.Stat(snapshot.SnapshotPath); os.IsNotExist(err) {
+	if _, err := os.Stat(snapshot.snapshotPath); errors.Is(err, fs.ErrNotExist) {
 		return snapshot, nil
 	}
 
-	bytes, err := os.ReadFile(snapshot.SnapshotPath)
+	bytes, err := os.ReadFile(snapshot.snapshotPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read sync snapshot from disk: %s", err)
 	}
@@ -189,7 +191,7 @@ func (s *Snapshot) diff(ctx context.Context, all []fileset.File) (diff, error) {
 
 	currentState := s.SnapshotState
 	if err := currentState.validate(); err != nil {
-		return diff{}, fmt.Errorf("error parsing existing sync state. Please delete your existing sync snapshot file (%s) and retry: %w", s.SnapshotPath, err)
+		return diff{}, fmt.Errorf("error parsing existing sync state. Please delete your existing sync snapshot file (%s) and retry: %w", s.snapshotPath, err)
 	}
 
 	// Compute diff to apply to get from current state to new target state.

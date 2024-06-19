@@ -1,8 +1,8 @@
 package git
 
 import (
+	"errors"
 	"io/fs"
-	"os"
 	"strings"
 	"time"
 
@@ -74,7 +74,7 @@ func (f *ignoreFile) load() error {
 	// If it doesn't exist, treat it as an empty file.
 	stat, err := fs.Stat(f.root, f.path)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return nil
 		}
 		return err
