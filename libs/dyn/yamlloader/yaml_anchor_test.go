@@ -12,11 +12,11 @@ func TestYAMLAnchor01(t *testing.T) {
 	self := loadYAML(t, file)
 	assert.NotEqual(t, dyn.NilValue, self)
 
-	assert.True(t, self.GetTODO("defaults").IsAnchor())
-	assert.False(t, self.GetTODO("shirt1").IsAnchor())
-	assert.False(t, self.GetTODO("shirt2").IsAnchor())
+	assert.True(t, self.Get("defaults").IsAnchor())
+	assert.False(t, self.Get("shirt1").IsAnchor())
+	assert.False(t, self.Get("shirt2").IsAnchor())
 
-	pattern := self.GetTODO("shirt1").GetTODO("pattern")
+	pattern := self.Get("shirt1").Get("pattern")
 	assert.Equal(t, "striped", pattern.AsAny())
 	assert.Equal(t, dyn.Location{File: file, Line: 8, Column: 12}, pattern.Location())
 }
@@ -26,15 +26,15 @@ func TestYAMLAnchor02(t *testing.T) {
 	self := loadYAML(t, file)
 	assert.NotEqual(t, dyn.NilValue, self)
 
-	color := self.GetTODO("shirt").GetTODO("color")
+	color := self.Get("shirt").Get("color")
 	assert.Equal(t, "red", color.AsAny())
 	assert.Equal(t, dyn.Location{File: file, Line: 4, Column: 10}, color.Location())
 
-	primary := self.GetTODO("shirt").GetTODO("primary")
+	primary := self.Get("shirt").Get("primary")
 	assert.Equal(t, "cotton", primary.AsAny())
 	assert.Equal(t, dyn.Location{File: file, Line: 8, Column: 12}, primary.Location())
 
-	pattern := self.GetTODO("shirt").GetTODO("pattern")
+	pattern := self.Get("shirt").Get("pattern")
 	assert.Equal(t, "striped", pattern.AsAny())
 	assert.Equal(t, dyn.Location{File: file, Line: 13, Column: 12}, pattern.Location())
 }
@@ -45,7 +45,7 @@ func TestYAMLAnchor03(t *testing.T) {
 	assert.NotEqual(t, dyn.NilValue, self)
 
 	// Assert the override took place.
-	blue := self.GetTODO("shirt").GetTODO("color")
+	blue := self.Get("shirt").Get("color")
 	assert.Equal(t, "blue", blue.AsAny())
 	assert.Equal(t, file, blue.Location().File)
 	assert.Equal(t, 10, blue.Location().Line)
@@ -57,11 +57,11 @@ func TestYAMLAnchor04(t *testing.T) {
 	self := loadYAML(t, file)
 	assert.NotEqual(t, dyn.NilValue, self)
 
-	p1 := self.GetTODO("person1").GetTODO("address").GetTODO("city")
+	p1 := self.Get("person1").Get("address").Get("city")
 	assert.Equal(t, "San Francisco", p1.AsAny())
 	assert.Equal(t, dyn.Location{File: file, Line: 4, Column: 9}, p1.Location())
 
-	p2 := self.GetTODO("person2").GetTODO("address").GetTODO("city")
+	p2 := self.Get("person2").Get("address").Get("city")
 	assert.Equal(t, "Los Angeles", p2.AsAny())
 	assert.Equal(t, dyn.Location{File: file, Line: 16, Column: 11}, p2.Location())
 }
@@ -71,11 +71,11 @@ func TestYAMLAnchor05(t *testing.T) {
 	self := loadYAML(t, file)
 	assert.NotEqual(t, dyn.NilValue, self)
 
-	features := self.GetTODO("phone1").GetTODO("features")
-	assert.Equal(t, "wifi", features.IndexTODO(0).AsAny())
-	assert.Equal(t, dyn.Location{File: file, Line: 4, Column: 5}, features.IndexTODO(0).Location())
-	assert.Equal(t, "bluetooth", features.IndexTODO(1).AsAny())
-	assert.Equal(t, dyn.Location{File: file, Line: 5, Column: 5}, features.IndexTODO(1).Location())
+	features := self.Get("phone1").Get("features")
+	assert.Equal(t, "wifi", features.Index(0).AsAny())
+	assert.Equal(t, dyn.Location{File: file, Line: 4, Column: 5}, features.Index(0).Location())
+	assert.Equal(t, "bluetooth", features.Index(1).AsAny())
+	assert.Equal(t, dyn.Location{File: file, Line: 5, Column: 5}, features.Index(1).Location())
 }
 
 func TestYAMLAnchor06(t *testing.T) {
@@ -83,7 +83,7 @@ func TestYAMLAnchor06(t *testing.T) {
 	self := loadYAML(t, file)
 	assert.NotEqual(t, dyn.NilValue, self)
 
-	greeting := self.GetTODO("greeting1")
+	greeting := self.Get("greeting1")
 	assert.Equal(t, "Hello, World!", greeting.AsAny())
 	assert.Equal(t, dyn.Location{File: file, Line: 2, Column: 16}, greeting.Location())
 }
@@ -93,11 +93,11 @@ func TestYAMLAnchor07(t *testing.T) {
 	self := loadYAML(t, file)
 	assert.NotEqual(t, dyn.NilValue, self)
 
-	name := self.GetTODO("person1").GetTODO("name")
+	name := self.Get("person1").Get("name")
 	assert.Equal(t, "Alice", name.AsAny())
 	assert.Equal(t, dyn.Location{File: file, Line: 5, Column: 9}, name.Location())
 
-	age := self.GetTODO("person1").GetTODO("age")
+	age := self.Get("person1").Get("age")
 	assert.Equal(t, 25, age.AsAny())
 	assert.Equal(t, dyn.Location{File: file, Line: 2, Column: 13}, age.Location())
 }
@@ -107,11 +107,11 @@ func TestYAMLAnchor08(t *testing.T) {
 	self := loadYAML(t, file)
 	assert.NotEqual(t, dyn.NilValue, self)
 
-	username := self.GetTODO("user1").GetTODO("username")
+	username := self.Get("user1").Get("username")
 	assert.Equal(t, "user1", username.AsAny())
 	assert.Equal(t, dyn.Location{File: file, Line: 5, Column: 13}, username.Location())
 
-	active := self.GetTODO("user1").GetTODO("active")
+	active := self.Get("user1").Get("active")
 	assert.Equal(t, true, active.AsAny())
 	assert.Equal(t, dyn.Location{File: file, Line: 2, Column: 11}, active.Location())
 }

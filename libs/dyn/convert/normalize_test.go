@@ -68,7 +68,7 @@ func TestNormalizeStructUnknownField(t *testing.T) {
 	assert.Equal(t, diag.Diagnostic{
 		Severity: diag.Warning,
 		Summary:  `unknown field: bar`,
-		Location: vin.GetTODO("foo").Location(),
+		Location: vin.Get("foo").Location(),
 		Path:     dyn.EmptyPath,
 	}, err[0])
 
@@ -102,7 +102,7 @@ func TestNormalizeStructError(t *testing.T) {
 	assert.Equal(t, diag.Diagnostic{
 		Severity: diag.Warning,
 		Summary:  `expected map, found string`,
-		Location: vin.GetTODO("foo").Location(),
+		Location: vin.Get("foo").Location(),
 		Path:     dyn.EmptyPath,
 	}, err[0])
 }

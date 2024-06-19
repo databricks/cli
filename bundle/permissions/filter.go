@@ -44,13 +44,13 @@ func filter(currentUser string) dyn.WalkValueFunc {
 		}
 
 		// Filter if the user_name matches the current user
-		userName, ok := v.GetTODO("user_name").AsString()
+		userName, ok := v.Get("user_name").AsString()
 		if ok && userName == currentUser {
 			return v, dyn.ErrDrop
 		}
 
 		// Filter if the service_principal_name matches the current user
-		servicePrincipalName, ok := v.GetTODO("service_principal_name").AsString()
+		servicePrincipalName, ok := v.Get("service_principal_name").AsString()
 		if ok && servicePrincipalName == currentUser {
 			return v, dyn.ErrDrop
 		}

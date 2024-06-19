@@ -12,8 +12,8 @@ func TestYAMLMix01(t *testing.T) {
 	self := loadYAML(t, file)
 	assert.NotEqual(t, dyn.NilValue, self)
 
-	assert.True(t, self.GetTODO("base_address").IsAnchor())
-	assert.False(t, self.GetTODO("office_address").IsAnchor())
+	assert.True(t, self.Get("base_address").IsAnchor())
+	assert.False(t, self.Get("office_address").IsAnchor())
 }
 
 func TestYAMLMix02(t *testing.T) {
@@ -21,6 +21,6 @@ func TestYAMLMix02(t *testing.T) {
 	self := loadYAML(t, file)
 	assert.NotEqual(t, dyn.NilValue, self)
 
-	assert.True(t, self.GetTODO("base_colors").IsAnchor())
-	assert.False(t, self.GetTODO("theme").IsAnchor())
+	assert.True(t, self.Get("base_colors").IsAnchor())
+	assert.False(t, self.Get("theme").IsAnchor())
 }

@@ -107,7 +107,7 @@ func (v Value) AsAny() any {
 	}
 }
 
-func (v Value) GetTODO(key string) Value {
+func (v Value) Get(key string) Value {
 	m, ok := v.AsMap()
 	if !ok {
 		return InvalidValue
@@ -121,7 +121,7 @@ func (v Value) GetTODO(key string) Value {
 	return vv
 }
 
-func (v Value) IndexTODO(i int) Value {
+func (v Value) Index(i int) Value {
 	s, ok := v.v.([]Value)
 	if !ok {
 		return InvalidValue

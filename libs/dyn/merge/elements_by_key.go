@@ -21,7 +21,7 @@ func (e elementsByKey) Map(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 	// Iterate in natural order. For a given key, we first see the
 	// base definition and merge instances that come after it.
 	for i := range elements {
-		kv := elements[i].GetTODO(e.key)
+		kv := elements[i].Get(e.key)
 		key := e.keyFunc(kv)
 
 		// Register element with key if not yet seen before.

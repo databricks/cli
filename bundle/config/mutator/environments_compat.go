@@ -28,8 +28,8 @@ func (m *environmentsToTargets) Apply(ctx context.Context, b *bundle.Bundle) dia
 
 	// The "environments" key is set; validate and rewrite it to "targets".
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		environments := v.GetTODO("environments")
-		targets := v.GetTODO("targets")
+		environments := v.Get("environments")
+		targets := v.Get("targets")
 
 		// Return an error if both "environments" and "targets" are set.
 		if environments != dyn.InvalidValue && targets != dyn.InvalidValue {

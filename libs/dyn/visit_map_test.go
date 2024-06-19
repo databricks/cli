@@ -94,7 +94,7 @@ func TestMapFuncOnMapWithEmptySequence(t *testing.T) {
 				return variants[j], nil
 			})
 			assert.NoError(t, err)
-			assert.Equal(t, variants[j], vout.GetTODO("key"))
+			assert.Equal(t, variants[j], vout.Get("key"))
 		}
 	}
 }
@@ -160,7 +160,7 @@ func TestMapFuncOnSequenceWithEmptySequence(t *testing.T) {
 				return variants[j], nil
 			})
 			assert.NoError(t, err)
-			assert.Equal(t, variants[j], vout.IndexTODO(0))
+			assert.Equal(t, variants[j], vout.Index(0))
 		}
 	}
 }
