@@ -4,9 +4,9 @@ bundle:
 resources:
   quality_monitors:
     my_monitor:
-      table_name: "numbers"
+      table_name: "main.test.dev"
       assets_dir: "/Shared/provider-test/databricks_monitoring/main.test.thing1"
-      output_schema_name: "main.test"
+      output_schema_name: "main.dev"
       inference_log:
         granularities: ["1 day"]
         timestamp_col:  "timestamp"
@@ -31,14 +31,14 @@ targets:
       quality_monitors:
         my_monitor:
           table_name: "main.test.staging"
-          output_schema_name: "main.test"
+          output_schema_name: "main.staging"
 
   production:
     resources:
       quality_monitors:
         my_monitor:
           table_name: "main.test.prod"
-          output_schema_name: "main.test"
+          output_schema_name: "main.prod"
           inference_log:
             granularities: ["1 hour"]
             timestamp_col:  "timestamp_prod"

@@ -24,7 +24,7 @@ func TestMonitorTableNames(t *testing.T) {
 	p := b.Config.Resources.QualityMonitors["my_monitor"]
 	assert.Equal(t, "main.test.dev", p.TableName)
 	assert.Equal(t, "/Shared/provider-test/databricks_monitoring/main.test.thing1", p.AssetsDir)
-	assert.Equal(t, "main.test", p.OutputSchemaName)
+	assert.Equal(t, "main.dev", p.OutputSchemaName)
 
 	assertExpectedMonitor(t, p)
 }
@@ -36,7 +36,7 @@ func TestMonitorStaging(t *testing.T) {
 	p := b.Config.Resources.QualityMonitors["my_monitor"]
 	assert.Equal(t, "main.test.staging", p.TableName)
 	assert.Equal(t, "/Shared/provider-test/databricks_monitoring/main.test.thing1", p.AssetsDir)
-	assert.Equal(t, "main.test", p.OutputSchemaName)
+	assert.Equal(t, "main.staging", p.OutputSchemaName)
 
 	assertExpectedMonitor(t, p)
 }
@@ -48,7 +48,7 @@ func TestMonitorProduction(t *testing.T) {
 	p := b.Config.Resources.QualityMonitors["my_monitor"]
 	assert.Equal(t, "main.test.prod", p.TableName)
 	assert.Equal(t, "/Shared/provider-test/databricks_monitoring/main.test.thing1", p.AssetsDir)
-	assert.Equal(t, "main.test", p.OutputSchemaName)
+	assert.Equal(t, "main.prod", p.OutputSchemaName)
 
 	inferenceLog := p.InferenceLog
 	assert.Equal(t, []string{"1 day", "1 hour"}, inferenceLog.Granularities)
