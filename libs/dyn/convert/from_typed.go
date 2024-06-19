@@ -172,9 +172,15 @@ func fromTypedSlice(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 	out := make([]dyn.Value, src.Len())
 	for i := 0; i < src.Len(); i++ {
 		v := src.Index(i)
+		refv := ref.Index(i)
+
+		// Use nil reference if there is no reference for this index.
+		if refv == dyn.InvalidValue {
+			refv = dyn.NilValue
+		}
 
 		// Convert entry taking into account the reference value (may be equal to dyn.NilValue).
-		nv, err := fromTyped(v.Interface(), ref.Index(i), includeZeroValuedScalars)
+		nv, err := fromTyped(v.Interface(), refv, includeZeroValuedScalars)
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
