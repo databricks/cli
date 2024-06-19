@@ -4,8 +4,6 @@
 
 This project is in Public Preview.
 
-Documentation about the full REST API coverage is available in the [docs folder](docs/commands.md).
-
 Documentation is available at https://docs.databricks.com/dev-tools/cli/databricks-cli.html.
 
 ## Installation
