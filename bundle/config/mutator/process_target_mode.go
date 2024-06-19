@@ -8,8 +8,6 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -31,76 +29,37 @@ func (m *processTargetMode) Name() string {
 func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) error {
 	if !b.Config.Bundle.Deployment.Lock.IsExplicitlyEnabled() {
 		log.Infof(ctx, "Development mode: disabling deployment lock since bundle.deployment.lock.enabled is not set to true")
-		err := setConfig(b, "bundle.deployment.lock.enabled", false)
-		if err != nil {
-			return err
-		}
+		disabled := false
+		b.Config.Bundle.Deployment.Lock.Enabled = &disabled
 	}
 
-	t := b.Config.Transform
+	t := &b.Config.Transform
 	shortName := b.Config.Workspace.CurrentUser.ShortName
 
 	if t.Prefix == "" {
-		err := setConfig(b, "transform.prefix", "[dev "+shortName+"] ")
-		if err != nil {
-			return err
-		}
+		b.Config.Transform.Prefix = "[dev " + shortName + "] "
 	}
 
 	if t.Tags == nil {
-		err := setConfigMapping(b, "transform.tags", "dev", b.Tagging.NormalizeValue(shortName))
-		if err != nil {
-			return err
+		b.Config.Transform.Tags = &map[string]string{
+			"dev": b.Tagging.NormalizeValue(shortName),
 		}
 	}
 
 	if t.DefaultJobsMaxConcurrentRuns == 0 {
-		err := setConfig(b, "transform.default_jobs_max_concurrent_runs", developmentConcurrentRuns)
-		if err != nil {
-			return err
-		}
+		t.DefaultJobsMaxConcurrentRuns = developmentConcurrentRuns
 	}
 
 	if t.DefaultTriggerPauseStatus == "" {
-		err := setConfig(b, "transform.default_trigger_pause_status", config.Paused)
-		if err != nil {
-			return err
-		}
+		t.DefaultTriggerPauseStatus = config.Paused
 	}
 
 	if !config.IsExplicitlyDisabled(t.DefaultPipelinesDevelopment) {
-		err := setConfig(b, "transform.default_pipelines_development", true)
-		if err != nil {
-			return err
-		}
+		enabled := true
+		t.DefaultPipelinesDevelopment = &enabled
 	}
 
 	return nil
-}
-
-func setConfig(b *bundle.Bundle, path string, value any) error {
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		return dyn.Set(v, path, dyn.V(value))
-	})
-	return err
-}
-
-func setConfigMapping(b *bundle.Bundle, path string, key string, value string) error {
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		newMapping := dyn.V(map[string]dyn.Value{key: dyn.V(value)})
-
-		existingMapping, err := dyn.Get(v, path)
-		if err != nil {
-			return dyn.Set(v, path, newMapping)
-		}
-
-		merged, err := merge.Merge(newMapping, existingMapping)
-		if err != nil {
-			return dyn.InvalidValue, err
-		}
-		return dyn.Set(v, path, merged)
-	})
-	return err
 }
 
 func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
