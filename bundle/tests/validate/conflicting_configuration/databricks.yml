@@ -1,0 +1,9 @@
+bundle:
+  name: test warnings for conflicting configuration
+
+include:
+  - "*.yml"
+
+variables:
+  bar:
+    default: conflicts

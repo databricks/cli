@@ -1,0 +1,6 @@
+variables:
+  bar:
+    default: conflicts
+
+  baz:
+    default: conflicts
