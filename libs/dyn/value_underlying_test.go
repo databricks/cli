@@ -25,7 +25,7 @@ func TestValueUnderlyingMap(t *testing.T) {
 	assert.Equal(t, vv1, vv2)
 
 	// Test panic.
-	assert.PanicsWithValue(t, "expected kind map, got nil", func() {
+	assert.PanicsWithValue(t, "expected kind map, got invalid", func() {
 		dyn.InvalidValue.MustMap()
 	})
 }
@@ -47,7 +47,7 @@ func TestValueUnderlyingSequence(t *testing.T) {
 	assert.Equal(t, vv1, vv2)
 
 	// Test panic.
-	assert.PanicsWithValue(t, "expected kind sequence, got nil", func() {
+	assert.PanicsWithValue(t, "expected kind sequence, got invalid", func() {
 		dyn.InvalidValue.MustSequence()
 	})
 }
@@ -65,7 +65,7 @@ func TestValueUnderlyingString(t *testing.T) {
 	assert.Equal(t, vv1, vv2)
 
 	// Test panic.
-	assert.PanicsWithValue(t, "expected kind string, got nil", func() {
+	assert.PanicsWithValue(t, "expected kind string, got invalid", func() {
 		dyn.InvalidValue.MustString()
 	})
 }
@@ -83,7 +83,7 @@ func TestValueUnderlyingBool(t *testing.T) {
 	assert.Equal(t, vv1, vv2)
 
 	// Test panic.
-	assert.PanicsWithValue(t, "expected kind bool, got nil", func() {
+	assert.PanicsWithValue(t, "expected kind bool, got invalid", func() {
 		dyn.InvalidValue.MustBool()
 	})
 }
@@ -101,7 +101,7 @@ func TestValueUnderlyingInt(t *testing.T) {
 	assert.Equal(t, vv1, vv2)
 
 	// Test panic.
-	assert.PanicsWithValue(t, "expected kind int, got nil", func() {
+	assert.PanicsWithValue(t, "expected kind int, got invalid", func() {
 		dyn.InvalidValue.MustInt()
 	})
 
@@ -131,7 +131,7 @@ func TestValueUnderlyingFloat(t *testing.T) {
 	assert.Equal(t, vv1, vv2)
 
 	// Test panic.
-	assert.PanicsWithValue(t, "expected kind float, got nil", func() {
+	assert.PanicsWithValue(t, "expected kind float, got invalid", func() {
 		dyn.InvalidValue.MustFloat()
 	})
 
@@ -155,7 +155,7 @@ func TestValueUnderlyingTime(t *testing.T) {
 	assert.Equal(t, vv1, vv2)
 
 	// Test panic.
-	assert.PanicsWithValue(t, "expected kind time, got nil", func() {
+	assert.PanicsWithValue(t, "expected kind time, got invalid", func() {
 		dyn.InvalidValue.MustTime()
 	})
 }
