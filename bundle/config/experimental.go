@@ -29,21 +29,17 @@ type Experimental struct {
 	// PyDABs allows to define bundle configuration using Python. For now, this option has to
 	// be used together with 'venv' configuration.
 	PyDABs PyDABs `json:"pydabs,omitempty"`
-
-	// VEnv is the virtual environment configuration for the bundle.
-	//
-	// When enabled, the bundle will use Python interpreter from the virtual environment.
-	VEnv VEnv `json:"venv,omitempty"`
-}
-
-type VEnv struct {
-	// Path to the virtual environment.
-	Path string `json:"path,omitempty"`
 }
 
 type PyDABs struct {
-	// Enable is a flag to enable the feature.
-	Enable bool `json:"enable,omitempty"`
+	// Enabled is a flag to enable the feature.
+	Enabled bool `json:"enabled,omitempty"`
+
+	// VEnvPath is path to the virtual environment.
+	//
+	// Required if PyDABs is enabled. PyDABs will load the code in the specified
+	// environment.
+	VEnvPath string `json:"venv_path,omitempty"`
 }
 
 type Command string
