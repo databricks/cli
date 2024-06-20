@@ -25,79 +25,79 @@ func TestOverride_Primitive(t *testing.T) {
 		{
 			name:     "string (updated)",
 			state:    visitorState{updated: []string{"root"}},
-			left:     dyn.NewValue("a", leftLocation),
-			right:    dyn.NewValue("b", rightLocation),
-			expected: dyn.NewValue("b", rightLocation),
+			left:     dyn.NewValue("a", []dyn.Location{leftLocation}),
+			right:    dyn.NewValue("b", []dyn.Location{rightLocation}),
+			expected: dyn.NewValue("b", []dyn.Location{rightLocation}),
 		},
 		{
 			name:     "string (not updated)",
 			state:    visitorState{},
-			left:     dyn.NewValue("a", leftLocation),
-			right:    dyn.NewValue("a", rightLocation),
-			expected: dyn.NewValue("a", leftLocation),
+			left:     dyn.NewValue("a", []dyn.Location{leftLocation}),
+			right:    dyn.NewValue("a", []dyn.Location{rightLocation}),
+			expected: dyn.NewValue("a", []dyn.Location{leftLocation}),
 		},
 		{
 			name:     "bool (updated)",
 			state:    visitorState{updated: []string{"root"}},
-			left:     dyn.NewValue(true, leftLocation),
-			right:    dyn.NewValue(false, rightLocation),
-			expected: dyn.NewValue(false, rightLocation),
+			left:     dyn.NewValue(true, []dyn.Location{leftLocation}),
+			right:    dyn.NewValue(false, []dyn.Location{rightLocation}),
+			expected: dyn.NewValue(false, []dyn.Location{rightLocation}),
 		},
 		{
 			name:     "bool (not updated)",
 			state:    visitorState{},
-			left:     dyn.NewValue(true, leftLocation),
-			right:    dyn.NewValue(true, rightLocation),
-			expected: dyn.NewValue(true, leftLocation),
+			left:     dyn.NewValue(true, []dyn.Location{leftLocation}),
+			right:    dyn.NewValue(true, []dyn.Location{rightLocation}),
+			expected: dyn.NewValue(true, []dyn.Location{leftLocation}),
 		},
 		{
 			name:     "int (updated)",
 			state:    visitorState{updated: []string{"root"}},
-			left:     dyn.NewValue(1, leftLocation),
-			right:    dyn.NewValue(2, rightLocation),
-			expected: dyn.NewValue(2, rightLocation),
+			left:     dyn.NewValue(1, []dyn.Location{leftLocation}),
+			right:    dyn.NewValue(2, []dyn.Location{rightLocation}),
+			expected: dyn.NewValue(2, []dyn.Location{rightLocation}),
 		},
 		{
 			name:     "int (not updated)",
 			state:    visitorState{},
-			left:     dyn.NewValue(int32(1), leftLocation),
-			right:    dyn.NewValue(int64(1), rightLocation),
-			expected: dyn.NewValue(int32(1), leftLocation),
+			left:     dyn.NewValue(int32(1), []dyn.Location{leftLocation}),
+			right:    dyn.NewValue(int64(1), []dyn.Location{rightLocation}),
+			expected: dyn.NewValue(int32(1), []dyn.Location{leftLocation}),
 		},
 		{
 			name:     "float (updated)",
 			state:    visitorState{updated: []string{"root"}},
-			left:     dyn.NewValue(1.0, leftLocation),
-			right:    dyn.NewValue(2.0, rightLocation),
-			expected: dyn.NewValue(2.0, rightLocation),
+			left:     dyn.NewValue(1.0, []dyn.Location{leftLocation}),
+			right:    dyn.NewValue(2.0, []dyn.Location{rightLocation}),
+			expected: dyn.NewValue(2.0, []dyn.Location{rightLocation}),
 		},
 		{
 			name:     "float (not updated)",
 			state:    visitorState{},
-			left:     dyn.NewValue(float32(1.0), leftLocation),
-			right:    dyn.NewValue(float64(1.0), rightLocation),
-			expected: dyn.NewValue(float32(1.0), leftLocation),
+			left:     dyn.NewValue(float32(1.0), []dyn.Location{leftLocation}),
+			right:    dyn.NewValue(float64(1.0), []dyn.Location{rightLocation}),
+			expected: dyn.NewValue(float32(1.0), []dyn.Location{leftLocation}),
 		},
 		{
 			name:     "time (updated)",
 			state:    visitorState{updated: []string{"root"}},
-			left:     dyn.NewValue(time.UnixMilli(10000), leftLocation),
-			right:    dyn.NewValue(time.UnixMilli(10001), rightLocation),
-			expected: dyn.NewValue(time.UnixMilli(10001), rightLocation),
+			left:     dyn.NewValue(time.UnixMilli(10000), []dyn.Location{leftLocation}),
+			right:    dyn.NewValue(time.UnixMilli(10001), []dyn.Location{rightLocation}),
+			expected: dyn.NewValue(time.UnixMilli(10001), []dyn.Location{rightLocation}),
 		},
 		{
 			name:     "time (not updated)",
 			state:    visitorState{},
-			left:     dyn.NewValue(time.UnixMilli(10000), leftLocation),
-			right:    dyn.NewValue(time.UnixMilli(10000), rightLocation),
-			expected: dyn.NewValue(time.UnixMilli(10000), leftLocation),
+			left:     dyn.NewValue(time.UnixMilli(10000), []dyn.Location{leftLocation}),
+			right:    dyn.NewValue(time.UnixMilli(10000), []dyn.Location{rightLocation}),
+			expected: dyn.NewValue(time.UnixMilli(10000), []dyn.Location{leftLocation}),
 		},
 		{
 			name:     "different types (updated)",
 			state:    visitorState{updated: []string{"root"}},
-			left:     dyn.NewValue("a", leftLocation),
-			right:    dyn.NewValue(42, rightLocation),
-			expected: dyn.NewValue(42, rightLocation),
+			left:     dyn.NewValue("a", []dyn.Location{leftLocation}),
+			right:    dyn.NewValue(42, []dyn.Location{rightLocation}),
+			expected: dyn.NewValue(42, []dyn.Location{rightLocation}),
 		},
 		{
 			name: "map - remove 'a', update 'b'",
@@ -105,227 +105,89 @@ func TestOverride_Primitive(t *testing.T) {
 				removed: []string{"root.a"},
 				updated: []string{"root.b"},
 			},
-			left: dyn.NewValue(
-				map[string]dyn.Value{
-					"a": dyn.NewValue(42, leftLocation),
-					"b": dyn.NewValue(10, leftLocation),
-				},
-				leftLocation,
-			),
-			right: dyn.NewValue(
-				map[string]dyn.Value{
-					"b": dyn.NewValue(20, rightLocation),
-				},
-				rightLocation,
-			),
-			expected: dyn.NewValue(
-				map[string]dyn.Value{
-					"b": dyn.NewValue(20, rightLocation),
-				},
-				leftLocation,
-			),
+			left: dyn.NewValue(map[string]dyn.Value{"a": dyn.NewValue(42, []dyn.Location{leftLocation}), "b": dyn.NewValue(10, []dyn.Location{leftLocation})}, []dyn.Location{leftLocation}),
+
+			right: dyn.NewValue(map[string]dyn.Value{"b": dyn.NewValue(20, []dyn.Location{rightLocation})}, []dyn.Location{rightLocation}),
+
+			expected: dyn.NewValue(map[string]dyn.Value{"b": dyn.NewValue(20, []dyn.Location{rightLocation})}, []dyn.Location{leftLocation}),
 		},
 		{
 			name: "map - add 'a'",
 			state: visitorState{
 				added: []string{"root.a"},
 			},
-			left: dyn.NewValue(
-				map[string]dyn.Value{
-					"b": dyn.NewValue(10, leftLocation),
-				},
-				leftLocation,
-			),
-			right: dyn.NewValue(
-				map[string]dyn.Value{
-					"a": dyn.NewValue(42, rightLocation),
-					"b": dyn.NewValue(10, rightLocation),
-				},
-				leftLocation,
-			),
-			expected: dyn.NewValue(
-				map[string]dyn.Value{
-					"a": dyn.NewValue(42, rightLocation),
-					// location hasn't changed because value hasn't changed
-					"b": dyn.NewValue(10, leftLocation),
-				},
-				leftLocation,
-			),
+			left: dyn.NewValue(map[string]dyn.Value{"b": dyn.NewValue(10, []dyn.Location{leftLocation})}, []dyn.Location{leftLocation}),
+
+			right: dyn.NewValue(map[string]dyn.Value{"a": dyn.NewValue(42, []dyn.Location{rightLocation}), "b": dyn.NewValue(10, []dyn.Location{rightLocation})}, []dyn.Location{leftLocation}),
+
+			expected: dyn.NewValue(map[string]dyn.Value{"a": dyn.NewValue(42, []dyn.Location{rightLocation}), "b": dyn.NewValue(10, []dyn.Location{leftLocation})}, []dyn.Location{leftLocation}),
+
+			// location hasn't changed because value hasn't changed
+
 		},
 		{
 			name: "map - remove 'a'",
 			state: visitorState{
 				removed: []string{"root.a"},
 			},
-			left: dyn.NewValue(
-				map[string]dyn.Value{
-					"a": dyn.NewValue(42, leftLocation),
-					"b": dyn.NewValue(10, leftLocation),
-				},
-				leftLocation,
-			),
-			right: dyn.NewValue(
-				map[string]dyn.Value{
-					"b": dyn.NewValue(10, rightLocation),
-				},
-				leftLocation,
-			),
-			expected: dyn.NewValue(
-				map[string]dyn.Value{
-					// location hasn't changed because value hasn't changed
-					"b": dyn.NewValue(10, leftLocation),
-				},
-				leftLocation,
-			),
+			left: dyn.NewValue(map[string]dyn.Value{"a": dyn.NewValue(42, []dyn.Location{leftLocation}), "b": dyn.NewValue(10, []dyn.Location{leftLocation})}, []dyn.Location{leftLocation}),
+
+			right: dyn.NewValue(map[string]dyn.Value{"b": dyn.NewValue(10, []dyn.Location{rightLocation})}, []dyn.Location{leftLocation}),
+
+			expected: dyn.NewValue(map[string]dyn.Value{"b": dyn.NewValue(10, []dyn.Location{leftLocation})}, []dyn.Location{leftLocation}),
+
+			// location hasn't changed because value hasn't changed
+
 		},
 		{
 			name: "map - add 'jobs.job_1'",
 			state: visitorState{
 				added: []string{"root.jobs.job_1"},
 			},
-			left: dyn.NewValue(
-				map[string]dyn.Value{
-					"jobs": dyn.NewValue(
-						map[string]dyn.Value{
-							"job_0": dyn.NewValue(42, leftLocation),
-						},
-						leftLocation,
-					),
-				},
-				leftLocation,
-			),
-			right: dyn.NewValue(
-				map[string]dyn.Value{
-					"jobs": dyn.NewValue(
-						map[string]dyn.Value{
-							"job_0": dyn.NewValue(42, rightLocation),
-							"job_1": dyn.NewValue(1337, rightLocation),
-						},
-						rightLocation,
-					),
-				},
-				rightLocation,
-			),
-			expected: dyn.NewValue(
-				map[string]dyn.Value{
-					"jobs": dyn.NewValue(
-						map[string]dyn.Value{
-							"job_0": dyn.NewValue(42, leftLocation),
-							"job_1": dyn.NewValue(1337, rightLocation),
-						},
-						leftLocation,
-					),
-				},
-				leftLocation,
-			),
+			left: dyn.NewValue(map[string]dyn.Value{"jobs": dyn.NewValue(map[string]dyn.Value{"job_0": dyn.NewValue(42, []dyn.Location{leftLocation})}, []dyn.Location{leftLocation})}, []dyn.Location{leftLocation}),
+
+			right: dyn.NewValue(map[string]dyn.Value{"jobs": dyn.NewValue(map[string]dyn.Value{"job_0": dyn.NewValue(42, []dyn.Location{rightLocation}), "job_1": dyn.NewValue(1337, []dyn.Location{rightLocation})}, []dyn.Location{rightLocation})}, []dyn.Location{rightLocation}),
+
+			expected: dyn.NewValue(map[string]dyn.Value{"jobs": dyn.NewValue(map[string]dyn.Value{"job_0": dyn.NewValue(42, []dyn.Location{leftLocation}), "job_1": dyn.NewValue(1337, []dyn.Location{rightLocation})}, []dyn.Location{leftLocation})}, []dyn.Location{leftLocation}),
 		},
 		{
 			name:  "map - remove nested key",
 			state: visitorState{removed: []string{"root.jobs.job_1"}},
-			left: dyn.NewValue(
-				map[string]dyn.Value{
-					"jobs": dyn.NewValue(
-						map[string]dyn.Value{
-							"job_0": dyn.NewValue(42, leftLocation),
-							"job_1": dyn.NewValue(1337, rightLocation),
-						},
-						leftLocation,
-					),
-				},
-				leftLocation,
-			),
-			right: dyn.NewValue(
-				map[string]dyn.Value{
-					"jobs": dyn.NewValue(
-						map[string]dyn.Value{
-							"job_0": dyn.NewValue(42, rightLocation),
-						},
-						rightLocation,
-					),
-				},
-				rightLocation,
-			),
-			expected: dyn.NewValue(
-				map[string]dyn.Value{
-					"jobs": dyn.NewValue(
-						map[string]dyn.Value{
-							"job_0": dyn.NewValue(42, leftLocation),
-						},
-						leftLocation,
-					),
-				},
-				leftLocation,
-			),
+			left:  dyn.NewValue(map[string]dyn.Value{"jobs": dyn.NewValue(map[string]dyn.Value{"job_0": dyn.NewValue(42, []dyn.Location{leftLocation}), "job_1": dyn.NewValue(1337, []dyn.Location{rightLocation})}, []dyn.Location{leftLocation})}, []dyn.Location{leftLocation}),
+
+			right: dyn.NewValue(map[string]dyn.Value{"jobs": dyn.NewValue(map[string]dyn.Value{"job_0": dyn.NewValue(42, []dyn.Location{rightLocation})}, []dyn.Location{rightLocation})}, []dyn.Location{rightLocation}),
+
+			expected: dyn.NewValue(map[string]dyn.Value{"jobs": dyn.NewValue(map[string]dyn.Value{"job_0": dyn.NewValue(42, []dyn.Location{leftLocation})}, []dyn.Location{leftLocation})}, []dyn.Location{leftLocation}),
 		},
 		{
 			name:  "sequence - add",
 			state: visitorState{added: []string{"root[1]"}},
-			left: dyn.NewValue(
-				[]dyn.Value{
-					dyn.NewValue(42, leftLocation),
-				},
-				leftLocation,
-			),
-			right: dyn.NewValue(
-				[]dyn.Value{
-					dyn.NewValue(42, rightLocation),
-					dyn.NewValue(10, rightLocation),
-				},
-				rightLocation,
-			),
-			expected: dyn.NewValue(
-				[]dyn.Value{
-					dyn.NewValue(42, leftLocation),
-					dyn.NewValue(10, rightLocation),
-				},
-				leftLocation,
-			),
+			left:  dyn.NewValue([]dyn.Value{dyn.NewValue(42, []dyn.Location{leftLocation})}, []dyn.Location{leftLocation}),
+
+			right: dyn.NewValue([]dyn.Value{dyn.NewValue(42, []dyn.Location{rightLocation}), dyn.NewValue(10, []dyn.Location{rightLocation})}, []dyn.Location{rightLocation}),
+
+			expected: dyn.NewValue([]dyn.Value{dyn.NewValue(42, []dyn.Location{leftLocation}), dyn.NewValue(10, []dyn.Location{rightLocation})}, []dyn.Location{leftLocation}),
 		},
 		{
 			name:  "sequence - remove",
 			state: visitorState{removed: []string{"root[1]"}},
-			left: dyn.NewValue(
-				[]dyn.Value{
-					dyn.NewValue(42, leftLocation),
-					dyn.NewValue(10, leftLocation),
-				},
-				leftLocation,
-			),
-			right: dyn.NewValue(
-				[]dyn.Value{
-					dyn.NewValue(42, rightLocation),
-				},
-				rightLocation,
-			),
-			expected: dyn.NewValue(
-				[]dyn.Value{
-					// location hasn't changed because value hasn't changed
-					dyn.NewValue(42, leftLocation),
-				},
-				leftLocation,
-			),
+			left:  dyn.NewValue([]dyn.Value{dyn.NewValue(42, []dyn.Location{leftLocation}), dyn.NewValue(10, []dyn.Location{leftLocation})}, []dyn.Location{leftLocation}),
+
+			right: dyn.NewValue([]dyn.Value{dyn.NewValue(42, []dyn.Location{rightLocation})}, []dyn.Location{rightLocation}),
+
+			expected: dyn.NewValue([]dyn.Value{dyn.NewValue(42, []dyn.Location{leftLocation})}, []dyn.Location{leftLocation}),
+
+			// location hasn't changed because value hasn't changed
+
 		},
 		{
 			name:  "sequence (not updated)",
 			state: visitorState{},
-			left: dyn.NewValue(
-				[]dyn.Value{
-					dyn.NewValue(42, leftLocation),
-				},
-				leftLocation,
-			),
-			right: dyn.NewValue(
-				[]dyn.Value{
-					dyn.NewValue(42, rightLocation),
-				},
-				rightLocation,
-			),
-			expected: dyn.NewValue(
-				[]dyn.Value{
-					dyn.NewValue(42, leftLocation),
-				},
-				leftLocation,
-			),
+			left:  dyn.NewValue([]dyn.Value{dyn.NewValue(42, []dyn.Location{leftLocation})}, []dyn.Location{leftLocation}),
+
+			right: dyn.NewValue([]dyn.Value{dyn.NewValue(42, []dyn.Location{rightLocation})}, []dyn.Location{rightLocation}),
+
+			expected: dyn.NewValue([]dyn.Value{dyn.NewValue(42, []dyn.Location{leftLocation})}, []dyn.Location{leftLocation}),
 		},
 		{
 			name:     "nil (not updated)",
@@ -338,15 +200,15 @@ func TestOverride_Primitive(t *testing.T) {
 			name:     "nil (updated)",
 			state:    visitorState{updated: []string{"root"}},
 			left:     dyn.NilValue,
-			right:    dyn.NewValue(42, rightLocation),
-			expected: dyn.NewValue(42, rightLocation),
+			right:    dyn.NewValue(42, []dyn.Location{rightLocation}),
+			expected: dyn.NewValue(42, []dyn.Location{rightLocation}),
 		},
 		{
 			name:     "change kind (updated)",
 			state:    visitorState{updated: []string{"root"}},
-			left:     dyn.NewValue(42.0, leftLocation),
-			right:    dyn.NewValue(42, rightLocation),
-			expected: dyn.NewValue(42, rightLocation),
+			left:     dyn.NewValue(42.0, []dyn.Location{leftLocation}),
+			right:    dyn.NewValue(42, []dyn.Location{rightLocation}),
+			expected: dyn.NewValue(42, []dyn.Location{rightLocation}),
 		},
 	}
 
@@ -373,7 +235,7 @@ func TestOverride_Primitive(t *testing.T) {
 			})
 
 			t.Run(tc.name+" - visitor overrides value", func(t *testing.T) {
-				expected := dyn.NewValue("return value", dyn.Location{})
+				expected := dyn.V("return value")
 				s, visitor := createVisitor(visitorOpts{returnValue: &expected})
 				out, err := override(dyn.EmptyPath, tc.left, tc.right, visitor)
 
@@ -407,17 +269,17 @@ func TestOverride_PreserveMappingKeys(t *testing.T) {
 	rightValueLocation := dyn.Location{File: "right.yml", Line: 3, Column: 1}
 
 	left := dyn.NewMapping()
-	left.Set(dyn.NewValue("a", leftKeyLocation), dyn.NewValue(42, leftValueLocation))
+	left.Set(dyn.NewValue("a", []dyn.Location{leftKeyLocation}), dyn.NewValue(42, []dyn.Location{leftValueLocation}))
 
 	right := dyn.NewMapping()
-	right.Set(dyn.NewValue("a", rightKeyLocation), dyn.NewValue(7, rightValueLocation))
+	right.Set(dyn.NewValue("a", []dyn.Location{rightKeyLocation}), dyn.NewValue(7, []dyn.Location{rightValueLocation}))
 
 	state, visitor := createVisitor(visitorOpts{})
 
 	out, err := override(
 		dyn.EmptyPath,
-		dyn.NewValue(left, leftLocation),
-		dyn.NewValue(right, rightLocation),
+		dyn.NewValue(left, []dyn.Location{leftLocation}),
+		dyn.NewValue(right, []dyn.Location{rightLocation}),
 		visitor,
 	)
 

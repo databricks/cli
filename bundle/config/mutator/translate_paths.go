@@ -173,7 +173,7 @@ func (m *translatePaths) rewriteValue(b *bundle.Bundle, p dyn.Path, v dyn.Value,
 		return dyn.InvalidValue, err
 	}
 
-	return dyn.NewValue(out, v.Location()), nil
+	return dyn.NewValue(out, v.Locations()), nil
 }
 
 func (m *translatePaths) rewriteRelativeTo(b *bundle.Bundle, p dyn.Path, v dyn.Value, fn rewriteFunc, dir, fallback string) (dyn.Value, error) {

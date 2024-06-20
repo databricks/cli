@@ -118,7 +118,7 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 
 		// Return the normalized value if missing fields are not included.
 		if !n.includeMissingFields {
-			return dyn.NewValue(out, src.Location()), diags
+			return dyn.NewValue(out, src.Locations()), diags
 		}
 
 		// Populate missing fields with their zero values.
@@ -163,7 +163,7 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 			}
 		}
 
-		return dyn.NewValue(out, src.Location()), diags
+		return dyn.NewValue(out, src.Locations()), diags
 	case dyn.KindNil:
 		return src, diags
 	}
@@ -194,7 +194,7 @@ func (n normalizeOptions) normalizeMap(typ reflect.Type, src dyn.Value, seen []r
 			out.Set(pk, nv)
 		}
 
-		return dyn.NewValue(out, src.Location()), diags
+		return dyn.NewValue(out, src.Locations()), diags
 	case dyn.KindNil:
 		return src, diags
 	}
@@ -222,7 +222,7 @@ func (n normalizeOptions) normalizeSlice(typ reflect.Type, src dyn.Value, seen [
 			out = append(out, v)
 		}
 
-		return dyn.NewValue(out, src.Location()), diags
+		return dyn.NewValue(out, src.Locations()), diags
 	case dyn.KindNil:
 		return src, diags
 	}
@@ -250,7 +250,7 @@ func (n normalizeOptions) normalizeString(typ reflect.Type, src dyn.Value, path 
 		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindString, src, path))
 	}
 
-	return dyn.NewValue(out, src.Location()), diags
+	return dyn.NewValue(out, src.Locations()), diags
 }
 
 func (n normalizeOptions) normalizeBool(typ reflect.Type, src dyn.Value, path dyn.Path) (dyn.Value, diag.Diagnostics) {
@@ -283,7 +283,7 @@ func (n normalizeOptions) normalizeBool(typ reflect.Type, src dyn.Value, path dy
 		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindBool, src, path))
 	}
 
-	return dyn.NewValue(out, src.Location()), diags
+	return dyn.NewValue(out, src.Locations()), diags
 }
 
 func (n normalizeOptions) normalizeInt(typ reflect.Type, src dyn.Value, path dyn.Path) (dyn.Value, diag.Diagnostics) {
@@ -326,7 +326,7 @@ func (n normalizeOptions) normalizeInt(typ reflect.Type, src dyn.Value, path dyn
 		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindInt, src, path))
 	}
 
-	return dyn.NewValue(out, src.Location()), diags
+	return dyn.NewValue(out, src.Locations()), diags
 }
 
 func (n normalizeOptions) normalizeFloat(typ reflect.Type, src dyn.Value, path dyn.Path) (dyn.Value, diag.Diagnostics) {
@@ -369,5 +369,5 @@ func (n normalizeOptions) normalizeFloat(typ reflect.Type, src dyn.Value, path d
 		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindFloat, src, path))
 	}
 
-	return dyn.NewValue(out, src.Location()), diags
+	return dyn.NewValue(out, src.Locations()), diags
 }

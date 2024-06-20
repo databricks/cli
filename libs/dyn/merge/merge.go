@@ -76,7 +76,7 @@ func mergeMap(a, b dyn.Value) (dyn.Value, error) {
 	}
 
 	// Preserve the location of the first value.
-	return dyn.NewValue(out, a.Location()), nil
+	return dyn.NewValue(out, a.Locations()), nil
 }
 
 func mergeSequence(a, b dyn.Value) (dyn.Value, error) {
@@ -89,7 +89,7 @@ func mergeSequence(a, b dyn.Value) (dyn.Value, error) {
 	copy(out[len(as):], bs)
 
 	// Preserve the location of the first value.
-	return dyn.NewValue(out, a.Location()), nil
+	return dyn.NewValue(out, a.Locations()), nil
 }
 
 func mergePrimitive(a, b dyn.Value) (dyn.Value, error) {

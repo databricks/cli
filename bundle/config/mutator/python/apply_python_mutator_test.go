@@ -267,8 +267,8 @@ type createOverrideVisitorTestCase struct {
 }
 
 func TestCreateOverrideVisitor(t *testing.T) {
-	left := dyn.NewValue(42, dyn.Location{})
-	right := dyn.NewValue(1337, dyn.Location{})
+	left := dyn.V(42)
+	right := dyn.V(1337)
 
 	testCases := []createOverrideVisitorTestCase{
 		{

@@ -155,7 +155,7 @@ func (r *resolver) resolveRef(ref ref, seen []string) (dyn.Value, error) {
 		// of where it is used. This also means that relative path resolution is done
 		// relative to where a variable is used, not where it is defined.
 		//
-		return dyn.NewValue(resolved[0].Value(), ref.value.Location()), nil
+		return dyn.NewValue(resolved[0].Value(), ref.value.Locations()), nil
 	}
 
 	// Not pure; perform string interpolation.
@@ -178,7 +178,7 @@ func (r *resolver) resolveRef(ref ref, seen []string) (dyn.Value, error) {
 		ref.str = strings.Replace(ref.str, ref.matches[j][0], s, 1)
 	}
 
-	return dyn.NewValue(ref.str, ref.value.Location()), nil
+	return dyn.NewValue(ref.str, ref.value.Locations()), nil
 }
 
 func (r *resolver) resolveKey(key string, seen []string) (dyn.Value, error) {

@@ -410,7 +410,7 @@ func TestNormalizeString(t *testing.T) {
 
 func TestNormalizeStringNil(t *testing.T) {
 	var typ string
-	vin := dyn.NewValue(nil, dyn.Location{File: "file", Line: 1, Column: 1})
+	vin := dyn.NewValue(nil, []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
@@ -423,26 +423,26 @@ func TestNormalizeStringNil(t *testing.T) {
 
 func TestNormalizeStringFromBool(t *testing.T) {
 	var typ string
-	vin := dyn.NewValue(true, dyn.Location{File: "file", Line: 1, Column: 1})
+	vin := dyn.NewValue(true, []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
-	assert.Equal(t, dyn.NewValue("true", vin.Location()), vout)
+	assert.Equal(t, dyn.NewValue("true", vin.Locations()), vout)
 }
 
 func TestNormalizeStringFromInt(t *testing.T) {
 	var typ string
-	vin := dyn.NewValue(123, dyn.Location{File: "file", Line: 1, Column: 1})
+	vin := dyn.NewValue(123, []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
-	assert.Equal(t, dyn.NewValue("123", vin.Location()), vout)
+	assert.Equal(t, dyn.NewValue("123", vin.Locations()), vout)
 }
 
 func TestNormalizeStringFromFloat(t *testing.T) {
 	var typ string
-	vin := dyn.NewValue(1.20, dyn.Location{File: "file", Line: 1, Column: 1})
+	vin := dyn.NewValue(1.20, []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
-	assert.Equal(t, dyn.NewValue("1.2", vin.Location()), vout)
+	assert.Equal(t, dyn.NewValue("1.2", vin.Locations()), vout)
 }
 
 func TestNormalizeStringError(t *testing.T) {
@@ -468,7 +468,7 @@ func TestNormalizeBool(t *testing.T) {
 
 func TestNormalizeBoolNil(t *testing.T) {
 	var typ bool
-	vin := dyn.NewValue(nil, dyn.Location{File: "file", Line: 1, Column: 1})
+	vin := dyn.NewValue(nil, []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
@@ -544,7 +544,7 @@ func TestNormalizeInt(t *testing.T) {
 
 func TestNormalizeIntNil(t *testing.T) {
 	var typ int
-	vin := dyn.NewValue(nil, dyn.Location{File: "file", Line: 1, Column: 1})
+	vin := dyn.NewValue(nil, []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
@@ -628,7 +628,7 @@ func TestNormalizeFloat(t *testing.T) {
 
 func TestNormalizeFloatNil(t *testing.T) {
 	var typ float64
-	vin := dyn.NewValue(nil, dyn.Location{File: "file", Line: 1, Column: 1})
+	vin := dyn.NewValue(nil, []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	_, err := Normalize(&typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{

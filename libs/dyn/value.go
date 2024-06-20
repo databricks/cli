@@ -2,13 +2,16 @@ package dyn
 
 import (
 	"fmt"
+	"slices"
 )
 
 type Value struct {
 	v any
 
 	k Kind
-	l Location
+	// TODO: Add comment about semantics of l.
+	// TODO: Format ugly pieces of patched code.
+	l []Location
 
 	// Whether or not this value is an anchor.
 	// If this node doesn't map to a type, we don't need to warn about it.
@@ -27,11 +30,11 @@ var NilValue = Value{
 
 // V constructs a new Value with the given value.
 func V(v any) Value {
-	return NewValue(v, Location{})
+	return NewValue(v, []Location{})
 }
 
 // NewValue constructs a new Value with the given value and location.
-func NewValue(v any, loc Location) Value {
+func NewValue(v any, loc []Location) Value {
 	switch vin := v.(type) {
 	case map[string]Value:
 		v = newMappingFromGoMap(vin)
@@ -44,8 +47,9 @@ func NewValue(v any, loc Location) Value {
 	}
 }
 
-// WithLocation returns a new Value with its location set to the given value.
-func (v Value) WithLocation(loc Location) Value {
+// WithLocations returns a new Value with its location set to the given value.
+// Useful for testing.
+func (v Value) WithLocations(loc []Location) Value {
 	return Value{
 		v: v.v,
 		k: v.k,
@@ -61,8 +65,16 @@ func (v Value) Value() any {
 	return v.v
 }
 
-func (v Value) Location() Location {
+func (v Value) Locations() []Location {
 	return v.l
+}
+
+func (v Value) Location() Location {
+	if len(v.l) == 0 {
+		return Location{}
+	}
+
+	return v.l[len(v.l)-1]
 }
 
 func (v Value) IsValid() bool {
@@ -153,7 +165,10 @@ func (v Value) IsAnchor() bool {
 // We need a custom implementation because maps and slices
 // cannot be compared with the regular == operator.
 func (v Value) eq(w Value) bool {
-	if v.k != w.k || v.l != w.l {
+	if v.k != w.k {
+		return false
+	}
+	if !slices.Equal(v.l, w.l) {
 		return false
 	}
 

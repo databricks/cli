@@ -38,7 +38,7 @@ func (m *rewriteSyncPaths) makeRelativeTo(root string) dyn.MapFunc {
 			return dyn.NilValue, err
 		}
 
-		return dyn.NewValue(filepath.Join(rel, v.MustString()), v.Location()), nil
+		return dyn.NewValue(filepath.Join(rel, v.MustString()), v.Locations()), nil
 	}
 }
 

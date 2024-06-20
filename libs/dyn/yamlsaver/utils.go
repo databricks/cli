@@ -44,7 +44,7 @@ func skipAndOrder(mv dyn.Value, order *Order, skipFields []string, dst map[strin
 			continue
 		}
 
-		dst[k] = dyn.NewValue(v.Value(), dyn.Location{Line: order.Get(k)})
+		dst[k] = dyn.NewValue(v.Value(), []dyn.Location{{Line: order.Get(k)}})
 	}
 
 	return dyn.V(dst), nil

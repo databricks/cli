@@ -33,16 +33,15 @@ func TestConvertToMapValueWithOrder(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, dyn.V(map[string]dyn.Value{
-		"list": dyn.NewValue([]dyn.Value{
-			dyn.V("a"),
-			dyn.V("b"),
-			dyn.V("c"),
-		}, dyn.Location{Line: -3}),
-		"name": dyn.NewValue("test", dyn.Location{Line: -2}),
-		"map": dyn.NewValue(map[string]dyn.Value{
-			"key1": dyn.V("value1"),
-			"key2": dyn.V("value2"),
-		}, dyn.Location{Line: -1}),
-		"long_name_field": dyn.NewValue("long name goes here", dyn.Location{Line: 1}),
+		"list": dyn.NewValue([]dyn.Value{dyn.V("a"), dyn.V("b"), dyn.V("c")}, []dyn.Location{{
+
+			Line: -3}}),
+
+		"name": dyn.NewValue("test", []dyn.Location{{Line: -2}}),
+		"map": dyn.NewValue(map[string]dyn.Value{"key1": dyn.V("value1"), "key2": dyn.V("value2")}, []dyn.Location{{
+
+			Line: -1}}),
+
+		"long_name_field": dyn.NewValue("long name goes here", []dyn.Location{{Line: 1}}),
 	}), result)
 }

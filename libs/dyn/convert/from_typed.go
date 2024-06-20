@@ -105,12 +105,12 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 			return dyn.InvalidValue, err
 		}
 
-		if nv != dyn.NilValue {
+		if nv.Kind() != dyn.KindNil {
 			out.Set(refk, nv)
 		}
 	}
 
-	return dyn.NewValue(out, ref.Location()), nil
+	return dyn.NewValue(out, ref.Locations()), nil
 }
 
 func fromTypedMap(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
@@ -153,7 +153,7 @@ func fromTypedMap(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 		out.Set(refk, nv)
 	}
 
-	return dyn.NewValue(out, ref.Location()), nil
+	return dyn.NewValue(out, ref.Locations()), nil
 }
 
 func fromTypedSlice(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
@@ -175,7 +175,7 @@ func fromTypedSlice(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 		refv := ref.Index(i)
 
 		// Use nil reference if there is no reference for this index.
-		if refv == dyn.InvalidValue {
+		if refv.Kind() == dyn.KindInvalid {
 			refv = dyn.NilValue
 		}
 
@@ -188,7 +188,7 @@ func fromTypedSlice(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 		out[i] = nv
 	}
 
-	return dyn.NewValue(out, ref.Location()), nil
+	return dyn.NewValue(out, ref.Locations()), nil
 }
 
 func fromTypedString(src reflect.Value, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, error) {

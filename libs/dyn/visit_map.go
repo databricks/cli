@@ -24,7 +24,7 @@ func Foreach(fn MapFunc) MapFunc {
 				}
 				m.Set(pk, nv)
 			}
-			return NewValue(m, v.Location()), nil
+			return NewValue(m, v.Locations()), nil
 		case KindSequence:
 			s := slices.Clone(v.MustSequence())
 			for i, value := range s {
@@ -34,7 +34,7 @@ func Foreach(fn MapFunc) MapFunc {
 					return InvalidValue, err
 				}
 			}
-			return NewValue(s, v.Location()), nil
+			return NewValue(s, v.Locations()), nil
 		default:
 			return InvalidValue, fmt.Errorf("expected a map or sequence, found %s", v.Kind())
 		}

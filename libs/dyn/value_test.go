@@ -25,16 +25,14 @@ func TestValueAsMap(t *testing.T) {
 	_, ok := zeroValue.AsMap()
 	assert.False(t, ok)
 
-	var intValue = dyn.NewValue(1, dyn.Location{})
+	var intValue = dyn.V(1)
 	_, ok = intValue.AsMap()
 	assert.False(t, ok)
 
-	var mapValue = dyn.NewValue(
-		map[string]dyn.Value{
-			"key": dyn.NewValue("value", dyn.Location{File: "file", Line: 1, Column: 2}),
-		},
-		dyn.Location{File: "file", Line: 1, Column: 2},
-	)
+	var mapValue = dyn.NewValue(map[string]dyn.Value{"key": dyn.NewValue("value", []dyn.Location{{File: "file", Line: 1, Column: 2}})}, []dyn.Location{{
+
+		File: "file", Line: 1, Column: 2}})
+
 	m, ok := mapValue.AsMap()
 	assert.True(t, ok)
 	assert.Equal(t, 1, m.Len())
@@ -43,6 +41,6 @@ func TestValueAsMap(t *testing.T) {
 func TestValueIsValid(t *testing.T) {
 	var zeroValue dyn.Value
 	assert.False(t, zeroValue.IsValid())
-	var intValue = dyn.NewValue(1, dyn.Location{})
+	var intValue = dyn.V(1)
 	assert.True(t, intValue.IsValid())
 }
