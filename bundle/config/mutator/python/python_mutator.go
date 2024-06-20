@@ -185,6 +185,10 @@ func (m *pythonMutator) runPythonMutator(ctx context.Context, cacheDir string, r
 		return dyn.InvalidValue, fmt.Errorf("failed to open Python mutator output: %w", err)
 	}
 
+	defer func() {
+		_ = outputFile.Close()
+	}()
+
 	// we need absolute path because later parts of pipeline assume all paths are absolute
 	// and this file will be used as location to resolve relative paths.
 	//
