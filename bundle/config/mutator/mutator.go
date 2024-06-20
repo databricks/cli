@@ -28,10 +28,3 @@ func DefaultMutators() []bundle.Mutator {
 		pythonmutator.ApplyPythonMutator(pythonmutator.ApplyPythonMutatorPhaseLoad),
 	}
 }
-
-func DefaultMutatorsForTarget(target string) []bundle.Mutator {
-	return append(
-		DefaultMutators(),
-		SelectTarget(target),
-	)
-}

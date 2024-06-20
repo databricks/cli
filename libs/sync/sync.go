@@ -223,10 +223,6 @@ func (s *Sync) GetFileList(ctx context.Context) ([]fileset.File, error) {
 	return all.Iter(), nil
 }
 
-func (s *Sync) SnapshotPath() string {
-	return s.snapshot.SnapshotPath
-}
-
 func (s *Sync) RunContinuous(ctx context.Context) error {
 	ticker := time.NewTicker(s.PollInterval)
 	defer ticker.Stop()
