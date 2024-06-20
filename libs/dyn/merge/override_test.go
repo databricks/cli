@@ -392,6 +392,13 @@ func TestOverride_Primitive(t *testing.T) {
 					assert.NoError(t, err)
 					assert.Equal(t, expected, actual)
 				}
+
+				for _, removed := range s.removed {
+					actual, err := dyn.GetByPath(out, dyn.MustPathFromString(removed))
+
+					assert.NoError(t, err)
+					assert.Equal(t, expected, actual)
+				}
 			})
 		}
 	}
@@ -467,10 +474,16 @@ func createVisitor(opts visitorOpts) (*visitorState, OverrideVisitor) {
 				return right, nil
 			}
 		},
-		VisitDelete: func(valuePath dyn.Path, left dyn.Value) error {
+		VisitDelete: func(valuePath dyn.Path, left dyn.Value) (dyn.Value, error) {
 			s.removed = append(s.removed, valuePath.String())
 
-			return opts.error
+			if opts.error != nil {
+				return dyn.InvalidValue, opts.error
+			} else if opts.returnValue != nil {
+				return *opts.returnValue, nil
+			} else {
+				return dyn.NilValue, nil
+			}
 		},
 		VisitInsert: func(valuePath dyn.Path, right dyn.Value) (dyn.Value, error) {
 			s.added = append(s.added, valuePath.String())

@@ -13,11 +13,17 @@ import (
 // For instance, it can disallow changes outside the specific path(s), or update
 // the location of the effective value.
 //
+// Values returned by 'VisitDelete', 'VisitInsert' and 'VisitUpdate' are used as
+// the final value of the node. 'VisitDelete' should return dyn.NilValue to
+// do the delete, or can return 'left' to undo it.
+//
+// TODO 'VisitDelete' and 'VisitInsert' should support dyn.NilValue as well
+//
 // 'VisitDelete' is called when a value is removed from mapping or sequence
 // 'VisitInsert' is called when a new value is added to mapping or sequence
 // 'VisitUpdate' is called when a leaf value is updated
 type OverrideVisitor struct {
-	VisitDelete func(valuePath dyn.Path, left dyn.Value) error
+	VisitDelete func(valuePath dyn.Path, left dyn.Value) (dyn.Value, error)
 	VisitInsert func(valuePath dyn.Path, right dyn.Value) (dyn.Value, error)
 	VisitUpdate func(valuePath dyn.Path, left dyn.Value, right dyn.Value) (dyn.Value, error)
 }
@@ -111,10 +117,15 @@ func overrideMapping(basePath dyn.Path, leftMapping dyn.Mapping, rightMapping dy
 		if _, ok := rightMapping.GetPair(leftPair.Key); !ok {
 			path := basePath.Append(dyn.Key(leftPair.Key.MustString()))
 
-			err := visitor.VisitDelete(path, leftPair.Value)
+			deleteOut, err := visitor.VisitDelete(path, leftPair.Value)
 
 			if err != nil {
 				return dyn.NewMapping(), err
+			}
+
+			// if 'delete' was undone, add it back
+			if deleteOut != dyn.NilValue {
+				out.Set(leftPair.Key, deleteOut)
 			}
 		}
 	}
@@ -186,10 +197,15 @@ func overrideSequence(basePath dyn.Path, left []dyn.Value, right []dyn.Value, vi
 	} else if len(left) > len(right) {
 		for i := minLen; i < len(left); i++ {
 			path := basePath.Append(dyn.Index(i))
-			err := visitor.VisitDelete(path, left[i])
+			out, err := visitor.VisitDelete(path, left[i])
 
 			if err != nil {
 				return nil, err
+			}
+
+			// if 'delete' was undone, add it back
+			if out != dyn.NilValue {
+				values = append(values, out)
 			}
 		}
 	}

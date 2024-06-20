@@ -241,8 +241,12 @@ func createLoadOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
 	jobsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))
 
 	return merge.OverrideVisitor{
-		VisitDelete: func(valuePath dyn.Path, left dyn.Value) error {
-			return fmt.Errorf("unexpected change at %q (delete)", valuePath.String())
+		VisitDelete: func(valuePath dyn.Path, left dyn.Value) (dyn.Value, error) {
+			if isOmitemptyDelete(left) {
+				return left, nil
+			}
+
+			return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (delete)", valuePath.String())
 		},
 		VisitInsert: func(valuePath dyn.Path, right dyn.Value) (dyn.Value, error) {
 			if !valuePath.HasPrefix(jobsPath) {
@@ -274,21 +278,25 @@ func createInitOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
 	jobsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))
 
 	return merge.OverrideVisitor{
-		VisitDelete: func(valuePath dyn.Path, left dyn.Value) error {
+		VisitDelete: func(valuePath dyn.Path, left dyn.Value) (dyn.Value, error) {
+			if isOmitemptyDelete(left) {
+				return left, nil
+			}
+
 			if !valuePath.HasPrefix(jobsPath) {
-				return fmt.Errorf("unexpected change at %q (delete)", valuePath.String())
+				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (delete)", valuePath.String())
 			}
 
 			deleteResource := len(valuePath) == len(jobsPath)+1
 
 			if deleteResource {
-				return fmt.Errorf("unexpected change at %q (delete)", valuePath.String())
+				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (delete)", valuePath.String())
 			}
 
 			// deleting properties is allowed because it only changes an existing resource
 			log.Debugf(ctx, "Delete value at %q", valuePath.String())
 
-			return nil
+			return dyn.NilValue, nil
 		},
 		VisitInsert: func(valuePath dyn.Path, right dyn.Value) (dyn.Value, error) {
 			if !valuePath.HasPrefix(jobsPath) {
@@ -309,6 +317,21 @@ func createInitOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
 			return right, nil
 		},
 	}
+}
+
+func isOmitemptyDelete(left dyn.Value) bool {
+	// PyDABs output can omit empty sequences/mappings, because we don't track them as optional,
+	// there is no semantic difference between empty and missing, so we keep them as they were before.
+
+	if left.Kind() == dyn.KindMap && left.MustMap().Len() == 0 {
+		return true
+	}
+
+	if left.Kind() == dyn.KindSequence && len(left.MustSequence()) == 0 {
+		return true
+	}
+
+	return false
 }
 
 // interpreterPath returns platform-specific path to Python interpreter in the virtual environment.
