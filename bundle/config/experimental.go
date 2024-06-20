@@ -26,8 +26,7 @@ type Experimental struct {
 
 	// PyDABs determines whether to load the 'databricks-pydabs' package.
 	//
-	// PyDABs allows to define bundle configuration using Python. For now, this option has to
-	// be used together with 'venv' configuration.
+	// PyDABs allows to define bundle configuration using Python.
 	PyDABs PyDABs `json:"pydabs,omitempty"`
 }
 
