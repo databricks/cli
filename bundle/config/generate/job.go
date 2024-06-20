@@ -17,7 +17,7 @@ func ConvertJobToValue(job *jobs.Job) (dyn.Value, error) {
 		for _, task := range job.Settings.Tasks {
 			v, err := convertTaskToValue(task, taskOrder)
 			if err != nil {
-				return dyn.NilValue, err
+				return dyn.InvalidValue, err
 			}
 			tasks = append(tasks, v)
 		}
