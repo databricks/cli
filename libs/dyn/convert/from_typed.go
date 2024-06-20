@@ -59,7 +59,7 @@ func fromTyped(src any, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, 
 
 	switch srcv.Kind() {
 	case reflect.Struct:
-		return fromTypedStruct(srcv, ref)
+		return fromTypedStruct(srcv, ref, options...)
 	case reflect.Map:
 		return fromTypedMap(srcv, ref)
 	case reflect.Slice:
@@ -77,7 +77,7 @@ func fromTyped(src any, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, 
 	return dyn.InvalidValue, fmt.Errorf("unsupported type: %s", srcv.Kind())
 }
 
-func fromTypedStruct(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
+func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, error) {
 	// Check that the reference value is compatible or nil.
 	switch ref.Kind() {
 	case dyn.KindMap, dyn.KindNil:
@@ -105,12 +105,22 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 			return dyn.InvalidValue, err
 		}
 
-		if nv != dyn.NilValue {
+		// Either if the key was set in the reference or the field is not zero-valued, we include it.
+		if ok || nv != dyn.NilValue {
 			out.Set(refk, nv)
 		}
 	}
 
-	return dyn.NewValue(out, ref.Location()), nil
+	// Return the new mapping if:
+	// 1. The mapping has entries (i.e. the struct was not empty).
+	// 2. The reference is a map (i.e. the struct was and still is empty).
+	// 3. The "includeZeroValuedScalars" option is set (i.e. the struct is a non-nil pointer).
+	if out.Len() > 0 || ref.Kind() == dyn.KindMap || slices.Contains(options, includeZeroValuedScalars) {
+		return dyn.NewValue(out, ref.Location()), nil
+	}
+
+	// Otherwise, return nil.
+	return dyn.NilValue, nil
 }
 
 func fromTypedMap(src reflect.Value, ref dyn.Value) (dyn.Value, error) {

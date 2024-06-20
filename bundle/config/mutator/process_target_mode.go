@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -34,10 +33,8 @@ func (m *processTargetMode) Name() string {
 func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if !b.Config.Bundle.Deployment.Lock.IsExplicitlyEnabled() {
 		log.Infof(ctx, "Development mode: disabling deployment lock since bundle.deployment.lock.enabled is not set to true")
-		err := disableDeploymentLock(b)
-		if err != nil {
-			return diag.FromErr(err)
-		}
+		disable := false
+		b.Config.Bundle.Deployment.Lock.Enabled = &disable
 	}
 
 	r := b.Config.Resources
@@ -116,14 +113,6 @@ func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	}
 
 	return nil
-}
-
-func disableDeploymentLock(b *bundle.Bundle) error {
-	return b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		return dyn.Map(v, "bundle.deployment.lock", func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
-			return dyn.Set(v, "enabled", dyn.V(false))
-		})
-	})
 }
 
 func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
