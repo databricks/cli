@@ -74,6 +74,10 @@ func Load(path string) (*Root, diag.Diagnostics) {
 		return nil, diag.FromErr(err)
 	}
 
+	return LoadFromBytes(path, raw)
+}
+
+func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 	r := Root{}
 
 	// Load configuration tree from YAML.
