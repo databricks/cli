@@ -4,6 +4,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/loader"
+	pythonmutator "github.com/databricks/cli/bundle/config/mutator/python"
 	"github.com/databricks/cli/bundle/scripts"
 )
 
@@ -24,12 +25,6 @@ func DefaultMutators() []bundle.Mutator {
 		InitializeVariables(),
 		DefineDefaultTarget(),
 		LoadGitDetails(),
+		pythonmutator.ApplyPythonMutator(pythonmutator.ApplyPythonMutatorPhaseLoad),
 	}
-}
-
-func DefaultMutatorsForTarget(target string) []bundle.Mutator {
-	return append(
-		DefaultMutators(),
-		SelectTarget(target),
-	)
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
@@ -103,6 +104,15 @@ func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		prefix = "dev_" + b.Config.Workspace.CurrentUser.ShortName + "_"
 		r.RegisteredModels[i].Name = prefix + r.RegisteredModels[i].Name
 		// (registered models in Unity Catalog don't yet support tags)
+	}
+
+	for i := range r.QualityMonitors {
+		// Remove all schedules from monitors, since they don't support pausing/unpausing.
+		// Quality monitors might support the "pause" property in the future, so at the
+		// CLI level we do respect that property if it is set to "unpaused".
+		if r.QualityMonitors[i].Schedule != nil && r.QualityMonitors[i].Schedule.PauseStatus != catalog.MonitorCronSchedulePauseStatusUnpaused {
+			r.QualityMonitors[i].Schedule = nil
+		}
 	}
 
 	return nil

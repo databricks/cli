@@ -21,7 +21,7 @@ func (m *mergeJobClusters) Name() string {
 
 func (m *mergeJobClusters) jobClusterKey(v dyn.Value) string {
 	switch v.Kind() {
-	case dyn.KindNil:
+	case dyn.KindInvalid, dyn.KindNil:
 		return ""
 	case dyn.KindString:
 		return v.MustString()
