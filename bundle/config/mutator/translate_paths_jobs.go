@@ -51,6 +51,11 @@ func rewritePatterns(base dyn.Pattern) []jobRewritePattern {
 			translateNoOp,
 			noSkipRewrite,
 		},
+		{
+			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("requirements")),
+			translateFilePath,
+			noSkipRewrite,
+		},
 	}
 }
 
