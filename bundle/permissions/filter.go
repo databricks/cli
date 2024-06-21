@@ -66,6 +66,11 @@ func (m *filterCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		rv, err := dyn.Get(v, "resources")
 		if err != nil {
+			// If the resources key is not found, we can skip this mutator.
+			if dyn.IsNoSuchKeyError(err) {
+				return v, nil
+			}
+
 			return dyn.InvalidValue, err
 		}
 
