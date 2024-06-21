@@ -12,22 +12,15 @@ import (
 type fromTypedOptions int
 
 const (
-	// If this flag is set, zero values for scalars (strings, bools, ints, floats)
-	// would resolve to corresponding zero values in the dynamic representation.
-	// Otherwise, zero values for scalars resolve to dyn.NilValue.
+	// If this flag is set, zero values in the typed representation are resolved to
+	// the equivalent zero value in the dynamic representation.
+	// If it is not set, zero values resolve to [dyn.NilValue].
 	//
-	// This flag exists to reconcile the default values for scalars in a Go struct
-	// being zero values with zero values in a dynamic representation. In a Go struct,
-	// zero values are the same as the values not being set at all. This is not the case
-	// in the dynamic representation.
-	//
-	// If a scalar value in a typed Go struct is zero, in the dynamic representation
-	// we would set it to dyn.NilValue, i.e. equivalent to the value not being set at all.
-	//
-	// If a scalar value in a Go map, slice or pointer is set to zero, we will set it
-	// to the zero value in the dynamic representation, and not dyn.NilValue. This is
-	// equivalent to the value being intentionally set to zero.
-	includeZeroValuedScalars fromTypedOptions = 1 << iota
+	// This flag exists to reconcile default values in Go being zero values with values
+	// being intentionally set to their zero value. We capture zero values in the dynamic
+	// configuration if they are 1) behind a pointer, 2) a map value, 3) a slice element,
+	// in the typed configuration.
+	includeZeroValues fromTypedOptions = 1 << iota
 )
 
 // FromTyped converts changes made in the typed structure w.r.t. the configuration value
@@ -48,12 +41,12 @@ func fromTyped(src any, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, 
 		}
 		srcv = srcv.Elem()
 
-		// If a pointer to a scalar type points to a zero value, we should include
+		// If a pointer to a type points to a zero value, we should include
 		// that zero value in the dynamic representation.
 		// This is because by default a pointer is nil in Go, and it not being nil
 		// indicates its value was intentionally set to zero.
-		if !slices.Contains(options, includeZeroValuedScalars) {
-			options = append(options, includeZeroValuedScalars)
+		if !slices.Contains(options, includeZeroValues) {
+			options = append(options, includeZeroValues)
 		}
 	}
 
@@ -115,7 +108,7 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 	// 1. The mapping has entries (i.e. the struct was not empty).
 	// 2. The reference is a map (i.e. the struct was and still is empty).
 	// 3. The "includeZeroValuedScalars" option is set (i.e. the struct is a non-nil pointer).
-	if out.Len() > 0 || ref.Kind() == dyn.KindMap || slices.Contains(options, includeZeroValuedScalars) {
+	if out.Len() > 0 || ref.Kind() == dyn.KindMap || slices.Contains(options, includeZeroValues) {
 		return dyn.NewValue(out, ref.Location()), nil
 	}
 
@@ -153,7 +146,7 @@ func fromTypedMap(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 		}
 
 		// Convert entry taking into account the reference value (may be equal to dyn.NilValue).
-		nv, err := fromTyped(v.Interface(), refv, includeZeroValuedScalars)
+		nv, err := fromTyped(v.Interface(), refv, includeZeroValues)
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
@@ -190,7 +183,7 @@ func fromTypedSlice(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 		}
 
 		// Convert entry taking into account the reference value (may be equal to dyn.NilValue).
-		nv, err := fromTyped(v.Interface(), refv, includeZeroValuedScalars)
+		nv, err := fromTyped(v.Interface(), refv, includeZeroValues)
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
@@ -213,7 +206,7 @@ func fromTypedString(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 	case dyn.KindNil:
 		// This field is not set in the reference. We set it to nil if it's zero
 		// valued in the typed representation and the includeZeroValues option is not set.
-		if src.IsZero() && !slices.Contains(options, includeZeroValuedScalars) {
+		if src.IsZero() && !slices.Contains(options, includeZeroValues) {
 			return dyn.NilValue, nil
 		}
 		return dyn.V(src.String()), nil
@@ -233,7 +226,7 @@ func fromTypedBool(src reflect.Value, ref dyn.Value, options ...fromTypedOptions
 	case dyn.KindNil:
 		// This field is not set in the reference. We set it to nil if it's zero
 		// valued in the typed representation and the includeZeroValues option is not set.
-		if src.IsZero() && !slices.Contains(options, includeZeroValuedScalars) {
+		if src.IsZero() && !slices.Contains(options, includeZeroValues) {
 			return dyn.NilValue, nil
 		}
 		return dyn.V(src.Bool()), nil
@@ -258,7 +251,7 @@ func fromTypedInt(src reflect.Value, ref dyn.Value, options ...fromTypedOptions)
 	case dyn.KindNil:
 		// This field is not set in the reference. We set it to nil if it's zero
 		// valued in the typed representation and the includeZeroValues option is not set.
-		if src.IsZero() && !slices.Contains(options, includeZeroValuedScalars) {
+		if src.IsZero() && !slices.Contains(options, includeZeroValues) {
 			return dyn.NilValue, nil
 		}
 		return dyn.V(src.Int()), nil
@@ -283,7 +276,7 @@ func fromTypedFloat(src reflect.Value, ref dyn.Value, options ...fromTypedOption
 	case dyn.KindNil:
 		// This field is not set in the reference. We set it to nil if it's zero
 		// valued in the typed representation and the includeZeroValues option is not set.
-		if src.IsZero() && !slices.Contains(options, includeZeroValuedScalars) {
+		if src.IsZero() && !slices.Contains(options, includeZeroValues) {
 			return dyn.NilValue, nil
 		}
 		return dyn.V(src.Float()), nil
