@@ -53,14 +53,17 @@ func (e errBothSpAndUserSpecified) Error() string {
 }
 
 func validateRunAs(b *bundle.Bundle) error {
-	runAs := b.Config.RunAs
-
-	// Error if neither service_principal_name nor user_name are specified
-	if runAs.ServicePrincipalName == "" && runAs.UserName == "" {
+	// Error if neither service_principal_name nor user_name are specified, but the
+	// run_as section is present.
+	// TODO: Track location for nil values. This is likely to be a separate PR.
+	// TODO: Change comparision from directly comparing the dyn.Values to
+	// checking the kind instead.``
+	if b.Config.Value().Get("run_as").Kind() == dyn.KindNil {
 		return fmt.Errorf("run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at %s", b.Config.GetLocation("run_as"))
 	}
 
 	// Error if both service_principal_name and user_name are specified
+	runAs := b.Config.RunAs
 	if runAs.UserName != "" && runAs.ServicePrincipalName != "" {
 		return errBothSpAndUserSpecified{
 			spName:   runAs.ServicePrincipalName,
@@ -163,8 +166,7 @@ func setPipelineOwnersToRunAsIdentity(b *bundle.Bundle) {
 
 func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Mutator is a no-op if run_as is not specified in the bundle
-	runAs := b.Config.RunAs
-	if runAs == nil {
+	if b.Config.Value().Get("run_as").Kind() == dyn.KindInvalid {
 		return nil
 	}
 
