@@ -33,8 +33,8 @@ func (m *processTargetMode) Name() string {
 func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if !b.Config.Bundle.Deployment.Lock.IsExplicitlyEnabled() {
 		log.Infof(ctx, "Development mode: disabling deployment lock since bundle.deployment.lock.enabled is not set to true")
-		disable := false
-		b.Config.Bundle.Deployment.Lock.Enabled = &disable
+		disabled := false
+		b.Config.Bundle.Deployment.Lock.Enabled = &disabled
 	}
 
 	r := b.Config.Resources
