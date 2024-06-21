@@ -25,6 +25,11 @@ const (
 
 // FromTyped converts changes made in the typed structure w.r.t. the configuration value
 // back to the configuration value, retaining existing location information where possible.
+//
+// It uses the reference value both for location information and to determine if the typed
+// value was changed or not. For example, if a struct-by-value field is nil in the reference
+// it will be zero-valued in the typed configuration. If it remains zero-valued, this
+// this function will still emit a nil value in the dynamic representation.
 func FromTyped(src any, ref dyn.Value) (dyn.Value, error) {
 	return fromTyped(src, ref)
 }
@@ -110,7 +115,7 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 	// Return the new mapping if:
 	// 1. The mapping has entries (i.e. the struct was not empty).
 	// 2. The reference is a map (i.e. the struct was and still is empty).
-	// 3. The "includeZeroValuedScalars" option is set (i.e. the struct is a non-nil pointer).
+	// 3. The "includeZeroValues" option is set (i.e. the struct is a non-nil pointer).
 	if out.Len() > 0 || ref.Kind() == dyn.KindMap || slices.Contains(options, includeZeroValues) {
 		return dyn.NewValue(out, ref.Location()), nil
 	}
