@@ -15,7 +15,7 @@ func ConvertToMapValue(strct any, order *Order, skipFields []string, dst map[str
 	ref := dyn.NilValue
 	mv, err := convert.FromTyped(strct, ref)
 	if err != nil {
-		return dyn.NilValue, err
+		return dyn.InvalidValue, err
 	}
 
 	if mv.Kind() != dyn.KindMap {
