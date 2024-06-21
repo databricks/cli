@@ -107,7 +107,7 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 		}
 
 		// Either if the key was set in the reference or the field is not zero-valued, we include it.
-		if ok || nv != dyn.NilValue {
+		if ok || nv.Kind() != dyn.KindNil {
 			out.Set(refk, nv)
 		}
 	}
@@ -186,7 +186,7 @@ func fromTypedSlice(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 		refv := ref.Index(i)
 
 		// Use nil reference if there is no reference for this index.
-		if refv == dyn.InvalidValue {
+		if refv.Kind() == dyn.KindInvalid {
 			refv = dyn.NilValue
 		}
 

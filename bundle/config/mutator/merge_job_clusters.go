@@ -32,7 +32,7 @@ func (m *mergeJobClusters) jobClusterKey(v dyn.Value) string {
 
 func (m *mergeJobClusters) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		if v == dyn.NilValue {
+		if v.Kind() == dyn.KindNil {
 			return v, nil
 		}
 
