@@ -72,6 +72,9 @@ func fromTyped(src any, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, 
 		return fromTypedInt(srcv, ref, options...)
 	case reflect.Float32, reflect.Float64:
 		return fromTypedFloat(srcv, ref, options...)
+	case reflect.Invalid:
+		// If the value is untyped and not set (e.g. any type with nil value), we return nil.
+		return dyn.NilValue, nil
 	}
 
 	return dyn.InvalidValue, fmt.Errorf("unsupported type: %s", srcv.Kind())

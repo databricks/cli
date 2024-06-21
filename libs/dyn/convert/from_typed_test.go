@@ -619,3 +619,11 @@ func TestFromTypedFloatTypeError(t *testing.T) {
 	_, err := FromTyped(src, ref)
 	require.Error(t, err)
 }
+
+func TestFromTypedAnyNil(t *testing.T) {
+	var src any = nil
+	var ref = dyn.NilValue
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.NilValue, nv)
+}
