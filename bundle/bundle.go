@@ -36,6 +36,10 @@ type Bundle struct {
 	// It is set when we instantiate a new bundle instance.
 	RootPath string
 
+	// BundleRoot is a virtual filesystem path to the root of the bundle.
+	// Exclusively use this field for filesystem operations.
+	BundleRoot vfs.Path
+
 	Config config.Root
 
 	// Metadata about the bundle deployment. This is the interface Databricks services
@@ -73,7 +77,8 @@ type Bundle struct {
 
 func Load(ctx context.Context, path string) (*Bundle, error) {
 	b := &Bundle{
-		RootPath: filepath.Clean(path),
+		RootPath:   filepath.Clean(path),
+		BundleRoot: vfs.MustNew(path),
 	}
 	configFile, err := config.FileNames.FindInPath(path)
 	if err != nil {
