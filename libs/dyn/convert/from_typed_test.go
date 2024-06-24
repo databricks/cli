@@ -49,7 +49,7 @@ func TestFromTypedStructPointerZeroFields(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, dyn.NilValue, nv)
 
-	// For an initialized pointer with a nil reference we expect a nil.
+	// For an initialized pointer with a nil reference we expect an empty map.
 	src = &Tmp{}
 	nv, err = FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
