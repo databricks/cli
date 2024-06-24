@@ -293,3 +293,17 @@ func TestResolveMapFieldFromIndexedRefs(t *testing.T) {
 
 	assert.Equal(t, "a: a", getByPath(t, out, "a").MustString())
 }
+
+func TestResolveNestedIndexedRefs(t *testing.T) {
+	in := dyn.V(map[string]dyn.Value{
+		"slice": dyn.V([]dyn.Value{
+			dyn.V([]dyn.Value{dyn.V("a")}),
+		}),
+		"a": dyn.V("a: ${slice[0][0]}"),
+	})
+
+	out, err := dynvar.Resolve(in, dynvar.DefaultLookup(in))
+	require.NoError(t, err)
+
+	assert.Equal(t, "a: a", getByPath(t, out, "a").MustString())
+}

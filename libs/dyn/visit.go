@@ -68,7 +68,7 @@ func (component pathComponent) visit(v Value, prefix Path, suffix Pattern, opts 
 	path := append(prefix, component)
 
 	switch {
-	case component.IsKey():
+	case component.isKey():
 		// Expect a map to be set if this is a key.
 		m, ok := v.AsMap()
 		if !ok {
@@ -101,7 +101,7 @@ func (component pathComponent) visit(v Value, prefix Path, suffix Pattern, opts 
 			l: v.l,
 		}, nil
 
-	case component.IsIndex():
+	case component.isIndex():
 		// Expect a sequence to be set if this is an index.
 		s, ok := v.AsSequence()
 		if !ok {
