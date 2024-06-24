@@ -38,6 +38,8 @@ func TestComplexVariables(t *testing.T) {
 	require.Contains(t, b.Config.Resources.Jobs["my_job"].Tasks[0].Libraries, compute.Library{
 		Whl: "/path/to/whl",
 	})
+
+	require.Equal(t, "task with spark version 13.2.x-scala2.11 and jar /path/to/jar", b.Config.Resources.Jobs["my_job"].Tasks[0].TaskKey)
 }
 
 func TestComplexVariablesOverride(t *testing.T) {

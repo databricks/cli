@@ -32,7 +32,7 @@ func SetByPath(v Value, p Path, nv Value) (Value, error) {
 			path := append(prefix, component)
 
 			switch {
-			case component.isKey():
+			case component.IsKey():
 				// Expect a map to be set if this is a key.
 				m, ok := v.AsMap()
 				if !ok {
@@ -48,7 +48,7 @@ func SetByPath(v Value, p Path, nv Value) (Value, error) {
 					l: v.l,
 				}, nil
 
-			case component.isIndex():
+			case component.IsIndex():
 				// Expect a sequence to be set if this is an index.
 				s, ok := v.AsSequence()
 				if !ok {

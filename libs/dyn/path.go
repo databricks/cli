@@ -18,11 +18,11 @@ func (c pathComponent) Index() int {
 	return c.index
 }
 
-func (c pathComponent) isKey() bool {
+func (c pathComponent) IsKey() bool {
 	return c.key != ""
 }
 
-func (c pathComponent) isIndex() bool {
+func (c pathComponent) IsIndex() bool {
 	return c.key == ""
 }
 

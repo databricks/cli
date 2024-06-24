@@ -37,10 +37,6 @@ func FromTyped(src any, ref dyn.Value) (dyn.Value, error) {
 // Private implementation of FromTyped that allows for additional options not exposed
 // in the public API.
 func fromTyped(src any, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, error) {
-	if src == nil {
-		return dyn.NilValue, nil
-	}
-
 	srcv := reflect.ValueOf(src)
 
 	// Dereference pointer if necessary

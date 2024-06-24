@@ -10,7 +10,8 @@ resources:
       tasks:
       - task_key: test
         job_cluster_key: key
-        libraries: ${var.libraries}
+        libraries: ${variables.libraries.value}
+        task_key: "task with spark version ${var.cluster.spark_version} and jar ${var.libraries[0].jar}"
 
 variables:
   node_type:
