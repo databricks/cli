@@ -35,6 +35,17 @@ func (entry wsfsDirEntry) Info() (fs.FileInfo, error) {
 	return entry.wsfsFileInfo, nil
 }
 
+func wsfsDirEntriesFromObjectInfos(objects []workspace.ObjectInfo) []fs.DirEntry {
+	info := make([]fs.DirEntry, len(objects))
+	for i, v := range objects {
+		info[i] = wsfsDirEntry{wsfsFileInfo{oi: v}}
+	}
+
+	// Sort by name for parity with os.ReadDir.
+	sort.Slice(info, func(i, j int) bool { return info[i].Name() < info[j].Name() })
+	return info
+}
+
 // Type that implements fs.FileInfo for WSFS.
 type wsfsFileInfo struct {
 	oi workspace.ObjectInfo
@@ -50,7 +61,7 @@ func (info wsfsFileInfo) Size() int64 {
 
 func (info wsfsFileInfo) Mode() fs.FileMode {
 	switch info.oi.ObjectType {
-	case workspace.ObjectTypeDirectory:
+	case workspace.ObjectTypeDirectory, workspace.ObjectTypeRepo:
 		return fs.ModeDir
 	default:
 		return fs.ModePerm
@@ -62,7 +73,7 @@ func (info wsfsFileInfo) ModTime() time.Time {
 }
 
 func (info wsfsFileInfo) IsDir() bool {
-	return info.oi.ObjectType == workspace.ObjectTypeDirectory
+	return info.Mode() == fs.ModeDir
 }
 
 func (info wsfsFileInfo) Sys() any {
@@ -262,14 +273,8 @@ func (w *WorkspaceFilesClient) ReadDir(ctx context.Context, name string) ([]fs.D
 		return nil, err
 	}
 
-	info := make([]fs.DirEntry, len(objects))
-	for i, v := range objects {
-		info[i] = wsfsDirEntry{wsfsFileInfo{oi: v}}
-	}
-
-	// Sort by name for parity with os.ReadDir.
-	sort.Slice(info, func(i, j int) bool { return info[i].Name() < info[j].Name() })
-	return info, nil
+	// Convert to fs.DirEntry.
+	return wsfsDirEntriesFromObjectInfos(objects), nil
 }
 
 func (w *WorkspaceFilesClient) Mkdir(ctx context.Context, name string) error {
