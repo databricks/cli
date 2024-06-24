@@ -28,7 +28,7 @@ func renameKeys(v dyn.Value, rename map[string]string) (dyn.Value, error) {
 			p[0] = dyn.Key(newKey)
 			acc, err = dyn.SetByPath(acc, p, v)
 			if err != nil {
-				return dyn.NilValue, err
+				return dyn.InvalidValue, err
 			}
 			return dyn.InvalidValue, dyn.ErrDrop
 		}

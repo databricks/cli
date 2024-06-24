@@ -15,9 +15,14 @@ func TestFromTypedStructZeroFields(t *testing.T) {
 	}
 
 	src := Tmp{}
-	ref := dyn.NilValue
 
-	nv, err := FromTyped(src, ref)
+	// For an empty struct with a nil reference we expect a nil.
+	nv, err := FromTyped(src, dyn.NilValue)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.NilValue, nv)
+
+	// For an empty struct with a non-nil reference we expect an empty map.
+	nv, err = FromTyped(src, dyn.V(map[string]dyn.Value{}))
 	require.NoError(t, err)
 	assert.Equal(t, dyn.V(map[string]dyn.Value{}), nv)
 }
@@ -28,17 +33,54 @@ func TestFromTypedStructPointerZeroFields(t *testing.T) {
 		Bar string `json:"bar"`
 	}
 
-	// For an initialized pointer we expect an empty map.
-	src := &Tmp{}
-	nv, err := FromTyped(src, dyn.NilValue)
-	require.NoError(t, err)
-	assert.Equal(t, dyn.V(map[string]dyn.Value{}), nv)
+	var src *Tmp
+	var nv dyn.Value
+	var err error
 
-	// For a nil pointer we expect nil.
+	// For a nil pointer with a nil reference we expect a nil.
 	src = nil
 	nv, err = FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 	assert.Equal(t, dyn.NilValue, nv)
+
+	// For a nil pointer with a non-nil reference we expect a nil.
+	src = nil
+	nv, err = FromTyped(src, dyn.V(map[string]dyn.Value{}))
+	require.NoError(t, err)
+	assert.Equal(t, dyn.NilValue, nv)
+
+	// For an initialized pointer with a nil reference we expect a nil.
+	src = &Tmp{}
+	nv, err = FromTyped(src, dyn.NilValue)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.V(map[string]dyn.Value{}), nv)
+
+	// For an initialized pointer with a non-nil reference we expect an empty map.
+	src = &Tmp{}
+	nv, err = FromTyped(src, dyn.V(map[string]dyn.Value{}))
+	require.NoError(t, err)
+	assert.Equal(t, dyn.V(map[string]dyn.Value{}), nv)
+}
+
+func TestFromTypedStructNilFields(t *testing.T) {
+	type Tmp struct {
+		Foo string `json:"foo"`
+		Bar string `json:"bar"`
+	}
+
+	// For a zero value struct with a reference containing nil fields we expect the nils to be retained.
+	src := Tmp{}
+	ref := dyn.V(map[string]dyn.Value{
+		"foo": dyn.NilValue,
+		"bar": dyn.NilValue,
+	})
+
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.V(map[string]dyn.Value{
+		"foo": dyn.NilValue,
+		"bar": dyn.NilValue,
+	}), nv)
 }
 
 func TestFromTypedStructSetFields(t *testing.T) {
@@ -654,4 +696,12 @@ func TestFromTypedAny(t *testing.T) {
 			"nil": dyn.V(nil),
 		}),
 	}), nv)
+}
+
+func TestFromTypedAnyNil(t *testing.T) {
+	var src any = nil
+	var ref = dyn.NilValue
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.NilValue, nv)
 }

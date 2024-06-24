@@ -21,7 +21,7 @@ func (m *mergeJobTasks) Name() string {
 
 func (m *mergeJobTasks) taskKeyString(v dyn.Value) string {
 	switch v.Kind() {
-	case dyn.KindNil:
+	case dyn.KindInvalid, dyn.KindNil:
 		return ""
 	case dyn.KindString:
 		return v.MustString()

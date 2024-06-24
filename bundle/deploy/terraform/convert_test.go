@@ -455,6 +455,24 @@ func TestBundleToTerraformModelServingPermissions(t *testing.T) {
 	var src = resources.ModelServingEndpoint{
 		CreateServingEndpoint: &serving.CreateServingEndpoint{
 			Name: "name",
+
+			// Need to specify this to satisfy the equivalence test:
+			// The previous method of generation includes the "create" field
+			// because it is required (not marked as `omitempty`).
+			// The previous method used [json.Marshal] from the standard library
+			// and as such observed the `omitempty` tag.
+			// The new method leverages [dyn.Value] where any field that is not
+			// explicitly set is not part of the value.
+			Config: serving.EndpointCoreConfigInput{
+				ServedModels: []serving.ServedModelInput{
+					{
+						ModelName:          "model_name",
+						ModelVersion:       "1",
+						ScaleToZeroEnabled: true,
+						WorkloadSize:       "Small",
+					},
+				},
+			},
 		},
 		Permissions: []resources.Permission{
 			{
