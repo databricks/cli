@@ -81,6 +81,9 @@ func fromTyped(src any, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, 
 
 	// Ensure the location metadata is retained.
 	// TODO: Make sure all locations are tracked once added in https://github.com/databricks/cli/pull/1510.
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
 	return v.WithLocation(ref.Location()), err
 }
 
