@@ -30,8 +30,8 @@ func Initialize() bundle.Mutator {
 			mutator.DefineDefaultWorkspacePaths(),
 			mutator.SetVariables(),
 			// Intentionally placed before ResolveVariableReferencesInLookup, ResolveResourceReferences
-			// and ResolveVariableReferences. See what is expected in ApplyPythonMutatorPhaseInit doc
-			pythonmutator.ApplyPythonMutator(pythonmutator.ApplyPythonMutatorPhaseInit),
+			// and ResolveVariableReferences. See what is expected in PythonMutatorPhaseInit doc
+			pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseInit),
 			mutator.ResolveVariableReferencesInLookup(),
 			mutator.ResolveResourceReferences(),
 			mutator.ResolveVariableReferences(
