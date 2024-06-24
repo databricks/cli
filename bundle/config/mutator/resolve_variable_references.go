@@ -31,6 +31,14 @@ func ResolveVariableReferencesInLookup() bundle.Mutator {
 	}, pattern: dyn.NewPattern(dyn.Key("variables"), dyn.AnyKey(), dyn.Key("lookup")), lookupFn: lookupForVariables}
 }
 
+func ResolveVariableReferencesInComplexVariables() bundle.Mutator {
+	return &resolveVariableReferences{prefixes: []string{
+		"bundle",
+		"workspace",
+		"variables",
+	}, pattern: dyn.NewPattern(dyn.Key("variables"), dyn.AnyKey(), dyn.Key("value")), lookupFn: lookupForVariables}
+}
+
 func lookup(v dyn.Value, path dyn.Path) (dyn.Value, error) {
 	// Future opportunity: if we lookup this path in both the given root
 	// and the synthesized root, we know if it was explicitly set or implied to be empty.

@@ -111,7 +111,7 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 
 		var options []fromTypedOptions
 		if v.Kind() == reflect.Interface {
-			options = append(options, includeZeroValuedScalars)
+			options = append(options, includeZeroValues)
 		}
 
 		// Convert the field taking into account the reference value (may be equal to config.NilValue).

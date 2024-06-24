@@ -16,6 +16,7 @@ func TestComplexVariables(t *testing.T) {
 
 	diags = bundle.Apply(context.Background(), b, bundle.Seq(
 		mutator.SetVariables(),
+		mutator.ResolveVariableReferencesInComplexVariables(),
 		mutator.ResolveVariableReferences(
 			"variables",
 		),
@@ -23,6 +24,7 @@ func TestComplexVariables(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	require.Equal(t, "13.2.x-scala2.11", b.Config.Resources.Jobs["my_job"].JobClusters[0].NewCluster.SparkVersion)
+	require.Equal(t, "Standard_DS3_v2", b.Config.Resources.Jobs["my_job"].JobClusters[0].NewCluster.NodeTypeId)
 	require.Equal(t, 2, b.Config.Resources.Jobs["my_job"].JobClusters[0].NewCluster.NumWorkers)
 	require.Equal(t, "true", b.Config.Resources.Jobs["my_job"].JobClusters[0].NewCluster.SparkConf["spark.speculation"])
 
@@ -44,6 +46,7 @@ func TestComplexVariablesOverride(t *testing.T) {
 
 	diags = bundle.Apply(context.Background(), b, bundle.Seq(
 		mutator.SetVariables(),
+		mutator.ResolveVariableReferencesInComplexVariables(),
 		mutator.ResolveVariableReferences(
 			"variables",
 		),
@@ -51,6 +54,7 @@ func TestComplexVariablesOverride(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	require.Equal(t, "14.2.x-scala2.11", b.Config.Resources.Jobs["my_job"].JobClusters[0].NewCluster.SparkVersion)
+	require.Equal(t, "Standard_DS3_v3", b.Config.Resources.Jobs["my_job"].JobClusters[0].NewCluster.NodeTypeId)
 	require.Equal(t, 4, b.Config.Resources.Jobs["my_job"].JobClusters[0].NewCluster.NumWorkers)
 	require.Equal(t, "false", b.Config.Resources.Jobs["my_job"].JobClusters[0].NewCluster.SparkConf["spark.speculation"])
 }

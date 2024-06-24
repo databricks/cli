@@ -13,12 +13,14 @@ resources:
         libraries: ${var.libraries}
 
 variables:
+  node_type:
+    default: "Standard_DS3_v2"
   cluster:
     type: complex
     description: "A cluster definition"
     default:
       spark_version: "13.2.x-scala2.11"
-      node_type_id: "Standard_DS3_v2"
+      node_type_id: ${var.node_type}
       num_workers: 2
       spark_conf:
         spark.speculation: true
@@ -36,9 +38,10 @@ targets:
   default:
   dev:
     variables:
+      node_type: "Standard_DS3_v3"
       cluster:
         spark_version: "14.2.x-scala2.11"
-        node_type_id: "Standard_DS3_v2"
+        node_type_id: ${var.node_type}
         num_workers: 4
         spark_conf:
           spark.speculation: false
