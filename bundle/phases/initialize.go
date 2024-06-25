@@ -34,8 +34,8 @@ func Initialize() bundle.Mutator {
 			// See what is expected in PythonMutatorPhaseInit doc
 			pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseInit),
 			mutator.ResolveVariableReferencesInLookup(),
-			mutator.ResolveVariableReferencesInComplexVariables(),
 			mutator.ResolveResourceReferences(),
+			mutator.ResolveVariableReferencesInComplexVariables(),
 			mutator.ResolveVariableReferences(
 				"bundle",
 				"workspace",
