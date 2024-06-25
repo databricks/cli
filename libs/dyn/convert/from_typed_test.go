@@ -103,7 +103,7 @@ func TestFromTypedStructSetFields(t *testing.T) {
 	}), nv)
 }
 
-func TestFromTypedStructSetFieldsRetainLocationIfUnchanged(t *testing.T) {
+func TestFromTypedStructSetFieldsRetainLocation(t *testing.T) {
 	type Tmp struct {
 		Foo string `json:"foo"`
 		Bar string `json:"bar"`
@@ -122,11 +122,9 @@ func TestFromTypedStructSetFieldsRetainLocationIfUnchanged(t *testing.T) {
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
 
-	// Assert foo has retained its location.
+	// Assert foo and bar have retained their location.
 	assert.Equal(t, dyn.NewValue("bar", dyn.Location{File: "foo"}), nv.Get("foo"))
-
-	// Assert bar lost its location (because it was overwritten).
-	assert.Equal(t, dyn.NewValue("qux", dyn.Location{}), nv.Get("bar"))
+	assert.Equal(t, dyn.NewValue("qux", dyn.Location{File: "bar"}), nv.Get("bar"))
 }
 
 func TestFromTypedStringMapWithZeroValue(t *testing.T) {
@@ -354,7 +352,7 @@ func TestFromTypedMapNonEmpty(t *testing.T) {
 	}), nv)
 }
 
-func TestFromTypedMapNonEmptyRetainLocationIfUnchanged(t *testing.T) {
+func TestFromTypedMapNonEmptyRetainLocation(t *testing.T) {
 	var src = map[string]string{
 		"foo": "bar",
 		"bar": "qux",
@@ -368,11 +366,9 @@ func TestFromTypedMapNonEmptyRetainLocationIfUnchanged(t *testing.T) {
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
 
-	// Assert foo has retained its location.
+	// Assert foo and bar have retained their locations.
 	assert.Equal(t, dyn.NewValue("bar", dyn.Location{File: "foo"}), nv.Get("foo"))
-
-	// Assert bar lost its location (because it was overwritten).
-	assert.Equal(t, dyn.NewValue("qux", dyn.Location{}), nv.Get("bar"))
+	assert.Equal(t, dyn.NewValue("qux", dyn.Location{File: "bar"}), nv.Get("bar"))
 }
 
 func TestFromTypedMapFieldWithZeroValue(t *testing.T) {
@@ -429,7 +425,7 @@ func TestFromTypedSliceNonEmpty(t *testing.T) {
 	}), nv)
 }
 
-func TestFromTypedSliceNonEmptyRetainLocationIfUnchanged(t *testing.T) {
+func TestFromTypedSliceNonEmptyRetainLocation(t *testing.T) {
 	var src = []string{
 		"foo",
 		"bar",
@@ -437,17 +433,15 @@ func TestFromTypedSliceNonEmptyRetainLocationIfUnchanged(t *testing.T) {
 
 	ref := dyn.V([]dyn.Value{
 		dyn.NewValue("foo", dyn.Location{File: "foo"}),
-		dyn.NewValue("baz", dyn.Location{File: "baz"}),
+		dyn.NewValue("bar", dyn.Location{File: "bar"}),
 	})
 
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
 
-	// Assert foo has retained its location.
+	// Assert foo and bar have retained their locations.
 	assert.Equal(t, dyn.NewValue("foo", dyn.Location{File: "foo"}), nv.Index(0))
-
-	// Assert bar lost its location (because it was overwritten).
-	assert.Equal(t, dyn.NewValue("bar", dyn.Location{}), nv.Index(1))
+	assert.Equal(t, dyn.NewValue("bar", dyn.Location{File: "bar"}), nv.Index(1))
 }
 
 func TestFromTypedStringEmpty(t *testing.T) {
