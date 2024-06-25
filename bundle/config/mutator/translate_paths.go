@@ -104,10 +104,6 @@ func (t *translateContext) rewritePath(
 		return fmt.Errorf("path %s is not contained in bundle root path", localPath)
 	}
 
-	// Convert platform-native paths back to slash-separated paths.
-	localPath = filepath.ToSlash(localPath)
-	localRelPath = filepath.ToSlash(localRelPath)
-
 	// Prefix remote path with its remote root path.
 	remotePath := path.Join(t.b.Config.Workspace.FilePath, localRelPath)
 
