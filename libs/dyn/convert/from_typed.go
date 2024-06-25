@@ -42,7 +42,7 @@ func fromTyped(src any, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, 
 	// Dereference pointer if necessary
 	for srcv.Kind() == reflect.Pointer {
 		if srcv.IsNil() {
-			return dyn.NilValue, nil
+			return dyn.NilValue.WithLocation(ref.Location()), nil
 		}
 		srcv = srcv.Elem()
 

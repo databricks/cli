@@ -663,3 +663,35 @@ func TestFromTypedAnyNil(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, dyn.NilValue, nv)
 }
+
+func TestFromTypedNilPointerRetainsLocations(t *testing.T) {
+	type Tmp struct {
+		Foo string `json:"foo"`
+		Bar string `json:"bar"`
+	}
+
+	var src *Tmp
+	ref := dyn.NewValue(nil, dyn.Location{File: "foobar"})
+
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.NewValue(nil, dyn.Location{File: "foobar"}), nv)
+}
+
+func TestFromTypedNilMapRetainsLocation(t *testing.T) {
+	var src map[string]string
+	ref := dyn.NewValue(nil, dyn.Location{File: "foobar"})
+
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.NewValue(nil, dyn.Location{File: "foobar"}), nv)
+}
+
+func TestFromTypedNilSliceRetainsLocation(t *testing.T) {
+	var src []string
+	ref := dyn.NewValue(nil, dyn.Location{File: "foobar"})
+
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.NewValue(nil, dyn.Location{File: "foobar"}), nv)
+}
