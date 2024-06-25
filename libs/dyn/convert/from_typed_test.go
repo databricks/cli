@@ -476,12 +476,20 @@ func TestFromTypedStringNonEmptyOverwrite(t *testing.T) {
 	assert.Equal(t, dyn.V("new"), nv)
 }
 
-func TestFromTypedStringRetainsLocationsIfUnchanged(t *testing.T) {
-	var src string = "foo"
+func TestFromTypedStringRetainsLocations(t *testing.T) {
 	var ref = dyn.NewValue("foo", dyn.Location{File: "foo"})
+
+	// case: value has not been changed
+	var src string = "foo"
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
 	assert.Equal(t, dyn.NewValue("foo", dyn.Location{File: "foo"}), nv)
+
+	// case: value has been changed
+	src = "bar"
+	nv, err = FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.NewValue("bar", dyn.Location{File: "foo"}), nv)
 }
 
 func TestFromTypedStringTypeError(t *testing.T) {
@@ -523,12 +531,20 @@ func TestFromTypedBoolNonEmptyOverwrite(t *testing.T) {
 	assert.Equal(t, dyn.V(true), nv)
 }
 
-func TestFromTypedBoolRetainsLocationsIfUnchanged(t *testing.T) {
-	var src bool = true
+func TestFromTypedBoolRetainsLocations(t *testing.T) {
 	var ref = dyn.NewValue(true, dyn.Location{File: "foo"})
+
+	// case: value has not been changed
+	var src bool = true
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
 	assert.Equal(t, dyn.NewValue(true, dyn.Location{File: "foo"}), nv)
+
+	// case: value has been changed
+	src = false
+	nv, err = FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.NewValue(false, dyn.Location{File: "foo"}), nv)
 }
 
 func TestFromTypedBoolVariableReference(t *testing.T) {
@@ -578,12 +594,20 @@ func TestFromTypedIntNonEmptyOverwrite(t *testing.T) {
 	assert.Equal(t, dyn.V(int64(1234)), nv)
 }
 
-func TestFromTypedIntRetainsLocationsIfUnchanged(t *testing.T) {
-	var src int = 1234
+func TestFromTypedIntRetainsLocations(t *testing.T) {
 	var ref = dyn.NewValue(1234, dyn.Location{File: "foo"})
+
+	// case: value has not been changed
+	var src int = 1234
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
 	assert.Equal(t, dyn.NewValue(1234, dyn.Location{File: "foo"}), nv)
+
+	// case: value has been changed
+	src = 1235
+	nv, err = FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.NewValue(int64(1235), dyn.Location{File: "foo"}), nv)
 }
 
 func TestFromTypedIntVariableReference(t *testing.T) {
@@ -633,12 +657,21 @@ func TestFromTypedFloatNonEmptyOverwrite(t *testing.T) {
 	assert.Equal(t, dyn.V(1.23), nv)
 }
 
-func TestFromTypedFloatRetainsLocationsIfUnchanged(t *testing.T) {
-	var src float64 = 1.23
+func TestFromTypedFloatRetainsLocations(t *testing.T) {
+	var src float64
 	var ref = dyn.NewValue(1.23, dyn.Location{File: "foo"})
+
+	// case: value has not been changed
+	src = 1.23
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
 	assert.Equal(t, dyn.NewValue(1.23, dyn.Location{File: "foo"}), nv)
+
+	// case: value has been changed
+	src = 1.24
+	nv, err = FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.NewValue(1.24, dyn.Location{File: "foo"}), nv)
 }
 
 func TestFromTypedFloatVariableReference(t *testing.T) {
