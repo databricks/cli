@@ -55,9 +55,6 @@ func (e errBothSpAndUserSpecified) Error() string {
 func validateRunAs(b *bundle.Bundle) error {
 	// Error if neither service_principal_name nor user_name are specified, but the
 	// run_as section is present.
-	// TODO: Track location for nil values. This is likely to be a separate PR.
-	// TODO: Change comparision from directly comparing the dyn.Values to
-	// checking the kind instead.``
 	if b.Config.Value().Get("run_as").Kind() == dyn.KindNil {
 		return fmt.Errorf("run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at %s", b.Config.GetLocation("run_as"))
 	}
