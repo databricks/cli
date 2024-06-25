@@ -8,7 +8,7 @@ jobs:
     runs-on: windows-latest
     environment: release
     steps:
-      - uses: vedantmgoyal2009/winget-releaser@7a56fc3d01522b4b993668d2eaf933b666658a67 # Latest commit on June 24, 2024
+      - uses: vedantmgoyal2009/winget-releaser@3659f24b3c6cafe2c0eb0f926d849a4888d2958b # Latest commit on June 25, 2024
         with:
           identifier: Databricks.DatabricksCLI
           installers-regex: 'windows_.*-signed\.zip$' # Only signed Windows releases
