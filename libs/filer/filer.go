@@ -103,6 +103,18 @@ func (err CannotDeleteRootError) Is(other error) bool {
 	return other == fs.ErrInvalid
 }
 
+type PermissionError struct {
+	path string
+}
+
+func (err PermissionError) Error() string {
+	return fmt.Sprintf("access denied: %s", err.path)
+}
+
+func (err PermissionError) Is(other error) bool {
+	return other == fs.ErrPermission
+}
+
 // Filer is used to access files in a workspace.
 // It has implementations for accessing files in WSFS and in DBFS.
 type Filer interface {

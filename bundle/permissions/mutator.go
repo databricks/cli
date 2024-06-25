@@ -13,6 +13,7 @@ import (
 const CAN_MANAGE = "CAN_MANAGE"
 const CAN_VIEW = "CAN_VIEW"
 const CAN_RUN = "CAN_RUN"
+const IS_OWNER = "IS_OWNER"
 
 var allowedLevels = []string{CAN_MANAGE, CAN_VIEW, CAN_RUN}
 var levelsMap = map[string](map[string]string){

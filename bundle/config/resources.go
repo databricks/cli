@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -23,6 +24,15 @@ type Resources struct {
 type UniqueResourceIdTracker struct {
 	Type       map[string]string
 	ConfigPath map[string]string
+}
+
+type ConfigResource interface {
+	Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error)
+	TerraformResourceName() string
+	Validate() error
+
+	json.Marshaler
+	json.Unmarshaler
 }
 
 // verifies merging is safe by checking no duplicate identifiers exist
@@ -209,12 +219,6 @@ func (r *Resources) ConfigureConfigFilePath() {
 	for _, e := range r.QualityMonitors {
 		e.ConfigureConfigFilePath()
 	}
-}
-
-type ConfigResource interface {
-	Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error)
-	TerraformResourceName() string
-	Validate() error
 }
 
 func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) {

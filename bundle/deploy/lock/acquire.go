@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/locker"
@@ -51,12 +52,11 @@ func (m *acquire) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 	if err != nil {
 		log.Errorf(ctx, "Failed to acquire deployment lock: %v", err)
 
-		notExistsError := filer.NoSuchDirectoryError{}
-		if errors.As(err, &notExistsError) {
-			// If we get a "doesn't exist" error from the API this indicates
-			// we either don't have permissions or the path is invalid.
-			return diag.Errorf("cannot write to deployment root (this can indicate a previous deploy was done with a different identity): %s", b.Config.Workspace.RootPath)
+		permissionError := filer.PermissionError{}
+		if errors.As(err, &permissionError) {
+			return permissions.ReportPermissionDenied(ctx, b, b.Config.Workspace.StatePath)
 		}
+
 		return diag.FromErr(err)
 	}
 
