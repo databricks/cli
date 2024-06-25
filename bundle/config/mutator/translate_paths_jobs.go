@@ -18,7 +18,7 @@ func noSkipRewrite(string) bool {
 	return false
 }
 
-func perTaskRewritePatterns(t *translateContext, base dyn.Pattern) []jobRewritePattern {
+func rewritePatterns(t *translateContext, base dyn.Pattern) []jobRewritePattern {
 	return []jobRewritePattern{
 		{
 			base.Append(dyn.Key("notebook_task"), dyn.Key("notebook_path")),
@@ -83,8 +83,8 @@ func (t *translateContext) jobRewritePatterns() []jobRewritePattern {
 		},
 	}
 
-	taskPatterns := perTaskRewritePatterns(t, base)
-	forEachPatterns := perTaskRewritePatterns(t, base.Append(dyn.Key("for_each_task"), dyn.Key("task")))
+	taskPatterns := rewritePatterns(t, base)
+	forEachPatterns := rewritePatterns(t, base.Append(dyn.Key("for_each_task"), dyn.Key("task")))
 	allPatterns := append(taskPatterns, jobEnvironmentsPatterns...)
 	allPatterns = append(allPatterns, forEachPatterns...)
 	return allPatterns
