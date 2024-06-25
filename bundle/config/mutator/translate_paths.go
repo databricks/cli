@@ -94,7 +94,7 @@ func (t *translateContext) rewritePath(
 		return nil
 	}
 
-	// Local path must be contained in the sync root.
+	// Local path must be contained in the bundle root.
 	// If it isn't, it won't be synchronized into the workspace.
 	localRelPath, err := filepath.Rel(t.b.RootPath, localPath)
 	if err != nil {
@@ -209,7 +209,7 @@ func (t *translateContext) rewriteRelativeTo(p dyn.Path, v dyn.Value, fn rewrite
 }
 
 func (m *translatePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
-	r := &translateContext{
+	t := &translateContext{
 		b:    b,
 		seen: make(map[string]string),
 	}
@@ -217,9 +217,9 @@ func (m *translatePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		var err error
 		for _, fn := range []func(dyn.Value) (dyn.Value, error){
-			r.applyJobTranslations,
-			r.applyPipelineTranslations,
-			r.applyArtifactTranslations,
+			t.applyJobTranslations,
+			t.applyPipelineTranslations,
+			t.applyArtifactTranslations,
 		} {
 			v, err = fn(v)
 			if err != nil {
