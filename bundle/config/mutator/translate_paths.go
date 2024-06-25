@@ -105,7 +105,7 @@ func (t *translateContext) rewritePath(
 	}
 
 	// Prefix remote path with its remote root path.
-	remotePath := path.Join(t.b.Config.Workspace.FilePath, localRelPath)
+	remotePath := path.Join(t.b.Config.Workspace.FilePath, filepath.ToSlash(localRelPath))
 
 	// Convert local path into workspace path via specified function.
 	interp, err := fn(*p, localPath, localRelPath, remotePath)
