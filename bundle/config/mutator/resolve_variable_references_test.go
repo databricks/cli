@@ -43,10 +43,6 @@ func TestResolveVariableReferences(t *testing.T) {
 }
 
 func TestResolveVariableReferencesToBundleVariables(t *testing.T) {
-	s := func(s string) *string {
-		return &s
-	}
-
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Bundle: config.Bundle{
@@ -57,7 +53,7 @@ func TestResolveVariableReferencesToBundleVariables(t *testing.T) {
 			},
 			Variables: map[string]*variable.Variable{
 				"foo": {
-					Value: s("bar"),
+					Value: "bar",
 				},
 			},
 		},
@@ -194,4 +190,183 @@ func TestResolveVariableReferencesForPrimitiveNonStringFields(t *testing.T) {
 	assert.Equal(t, 1, b.Config.Resources.Jobs["job1"].JobSettings.Tasks[0].NewCluster.Autoscale.MinWorkers)
 	assert.Equal(t, 2, b.Config.Resources.Jobs["job1"].JobSettings.Tasks[0].NewCluster.Autoscale.MaxWorkers)
 	assert.Equal(t, 0.5, b.Config.Resources.Jobs["job1"].JobSettings.Tasks[0].NewCluster.AzureAttributes.SpotBidMaxPrice)
+}
+
+func TestResolveComplexVariable(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Bundle: config.Bundle{
+				Name: "example",
+			},
+			Variables: map[string]*variable.Variable{
+				"cluster": {
+					Value: map[string]any{
+						"node_type_id": "Standard_DS3_v2",
+						"num_workers":  2,
+					},
+					Type: variable.VariableTypeComplex,
+				},
+			},
+
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job1": {
+						JobSettings: &jobs.JobSettings{
+							JobClusters: []jobs.JobCluster{
+								{
+									NewCluster: compute.ClusterSpec{
+										NodeTypeId: "random",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ctx := context.Background()
+
+	// Assign the variables to the dynamic configuration.
+	diags := bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+		err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+			var p dyn.Path
+			var err error
+
+			p = dyn.MustPathFromString("resources.jobs.job1.job_clusters[0]")
+			v, err = dyn.SetByPath(v, p.Append(dyn.Key("new_cluster")), dyn.V("${var.cluster}"))
+			require.NoError(t, err)
+
+			return v, nil
+		})
+		return diag.FromErr(err)
+	})
+	require.NoError(t, diags.Error())
+
+	diags = bundle.Apply(ctx, b, ResolveVariableReferences("bundle", "workspace", "variables"))
+	require.NoError(t, diags.Error())
+	require.Equal(t, "Standard_DS3_v2", b.Config.Resources.Jobs["job1"].JobSettings.JobClusters[0].NewCluster.NodeTypeId)
+	require.Equal(t, 2, b.Config.Resources.Jobs["job1"].JobSettings.JobClusters[0].NewCluster.NumWorkers)
+}
+
+func TestResolveComplexVariableReferencesToFields(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Bundle: config.Bundle{
+				Name: "example",
+			},
+			Variables: map[string]*variable.Variable{
+				"cluster": {
+					Value: map[string]any{
+						"node_type_id": "Standard_DS3_v2",
+						"num_workers":  2,
+					},
+					Type: variable.VariableTypeComplex,
+				},
+			},
+
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job1": {
+						JobSettings: &jobs.JobSettings{
+							JobClusters: []jobs.JobCluster{
+								{
+									NewCluster: compute.ClusterSpec{
+										NodeTypeId: "random",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ctx := context.Background()
+
+	// Assign the variables to the dynamic configuration.
+	diags := bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+		err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+			var p dyn.Path
+			var err error
+
+			p = dyn.MustPathFromString("resources.jobs.job1.job_clusters[0].new_cluster")
+			v, err = dyn.SetByPath(v, p.Append(dyn.Key("node_type_id")), dyn.V("${var.cluster.node_type_id}"))
+			require.NoError(t, err)
+
+			return v, nil
+		})
+		return diag.FromErr(err)
+	})
+	require.NoError(t, diags.Error())
+
+	diags = bundle.Apply(ctx, b, ResolveVariableReferences("bundle", "workspace", "variables"))
+	require.NoError(t, diags.Error())
+	require.Equal(t, "Standard_DS3_v2", b.Config.Resources.Jobs["job1"].JobSettings.JobClusters[0].NewCluster.NodeTypeId)
+}
+
+func TestResolveComplexVariableReferencesWithComplexVariablesError(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Bundle: config.Bundle{
+				Name: "example",
+			},
+			Variables: map[string]*variable.Variable{
+				"cluster": {
+					Value: map[string]any{
+						"node_type_id": "Standard_DS3_v2",
+						"num_workers":  2,
+						"spark_conf":   "${var.spark_conf}",
+					},
+					Type: variable.VariableTypeComplex,
+				},
+				"spark_conf": {
+					Value: map[string]any{
+						"spark.executor.memory": "4g",
+						"spark.executor.cores":  "2",
+					},
+					Type: variable.VariableTypeComplex,
+				},
+			},
+
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job1": {
+						JobSettings: &jobs.JobSettings{
+							JobClusters: []jobs.JobCluster{
+								{
+									NewCluster: compute.ClusterSpec{
+										NodeTypeId: "random",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ctx := context.Background()
+
+	// Assign the variables to the dynamic configuration.
+	diags := bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+		err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+			var p dyn.Path
+			var err error
+
+			p = dyn.MustPathFromString("resources.jobs.job1.job_clusters[0]")
+			v, err = dyn.SetByPath(v, p.Append(dyn.Key("new_cluster")), dyn.V("${var.cluster}"))
+			require.NoError(t, err)
+
+			return v, nil
+		})
+		return diag.FromErr(err)
+	})
+	require.NoError(t, diags.Error())
+
+	diags = bundle.Apply(ctx, b, bundle.Seq(ResolveVariableReferencesInComplexVariables(), ResolveVariableReferences("bundle", "workspace", "variables")))
+	require.ErrorContains(t, diags.Error(), "complex variables cannot contain references to another complex variables")
 }
