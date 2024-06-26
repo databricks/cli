@@ -42,6 +42,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newGetEnvironment())
 	cmd.AddCommand(newList())
 	cmd.AddCommand(newListDeployments())
+	cmd.AddCommand(newStart())
 	cmd.AddCommand(newStop())
 	cmd.AddCommand(newUpdate())
 
@@ -610,6 +611,64 @@ func newListDeployments() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range listDeploymentsOverrides {
 		fn(cmd, &listDeploymentsReq)
+	}
+
+	return cmd
+}
+
+// start start command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var startOverrides []func(
+	*cobra.Command,
+	*serving.StartAppRequest,
+)
+
+func newStart() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var startReq serving.StartAppRequest
+
+	// TODO: short flags
+
+	cmd.Use = "start NAME"
+	cmd.Short = `Start an app.`
+	cmd.Long = `Start an app.
+  
+  Start the last active deployment of the app in the workspace.
+
+  Arguments:
+    NAME: The name of the app.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		startReq.Name = args[0]
+
+		response, err := w.Apps.Start(ctx, startReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range startOverrides {
+		fn(cmd, &startReq)
 	}
 
 	return cmd

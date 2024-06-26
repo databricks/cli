@@ -25,6 +25,6 @@ func DefaultMutators() []bundle.Mutator {
 		InitializeVariables(),
 		DefineDefaultTarget(),
 		LoadGitDetails(),
-		pythonmutator.ApplyPythonMutator(pythonmutator.ApplyPythonMutatorPhaseLoad),
+		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseLoad),
 	}
 }
