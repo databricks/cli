@@ -114,3 +114,18 @@ func TestSetVariablesMutator(t *testing.T) {
 	assert.Equal(t, "env-var-b", b.Config.Variables["b"].Value)
 	assert.Equal(t, "assigned-val-c", b.Config.Variables["c"].Value)
 }
+
+func TestSetComplexVariablesViaEnvVariablesIsNotAllowed(t *testing.T) {
+	defaultVal := "default"
+	variable := variable.Variable{
+		Description: "a test variable",
+		Default:     defaultVal,
+		Type:        variable.VariableTypeComplex,
+	}
+
+	// set value for variable as an environment variable
+	t.Setenv("BUNDLE_VAR_foo", "process-env")
+
+	diags := setVariable(context.Background(), &variable, "foo")
+	assert.ErrorContains(t, diags.Error(), "setting via environment variables (BUNDLE_VAR_foo) is not supported for complex variable foo")
+}

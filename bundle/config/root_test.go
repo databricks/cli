@@ -119,3 +119,16 @@ func TestRootMergeTargetOverridesWithMode(t *testing.T) {
 	require.NoError(t, root.MergeTargetOverrides("development"))
 	assert.Equal(t, Development, root.Bundle.Mode)
 }
+
+func TestInitializeComplexVariablesViaFlagIsNotAllowed(t *testing.T) {
+	root := &Root{
+		Variables: map[string]*variable.Variable{
+			"foo": {
+				Type: variable.VariableTypeComplex,
+			},
+		},
+	}
+
+	err := root.InitializeVariables([]string{"foo=123"})
+	assert.ErrorContains(t, err, "setting variables of complex type via --var flag is not supported: foo")
+}
