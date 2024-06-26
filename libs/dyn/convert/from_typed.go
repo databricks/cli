@@ -42,7 +42,7 @@ func fromTyped(src any, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, 
 	// Dereference pointer if necessary
 	for srcv.Kind() == reflect.Pointer {
 		if srcv.IsNil() {
-			return dyn.NilValue.WithLocation(ref.Location()), nil
+			return dyn.NilValue, nil
 		}
 		srcv = srcv.Elem()
 
@@ -55,35 +55,27 @@ func fromTyped(src any, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, 
 		}
 	}
 
-	var v dyn.Value
-	var err error
 	switch srcv.Kind() {
 	case reflect.Struct:
-		v, err = fromTypedStruct(srcv, ref, options...)
+		return fromTypedStruct(srcv, ref, options...)
 	case reflect.Map:
-		v, err = fromTypedMap(srcv, ref)
+		return fromTypedMap(srcv, ref)
 	case reflect.Slice:
-		v, err = fromTypedSlice(srcv, ref)
+		return fromTypedSlice(srcv, ref)
 	case reflect.String:
-		v, err = fromTypedString(srcv, ref, options...)
+		return fromTypedString(srcv, ref, options...)
 	case reflect.Bool:
-		v, err = fromTypedBool(srcv, ref, options...)
+		return fromTypedBool(srcv, ref, options...)
 	case reflect.Int, reflect.Int32, reflect.Int64:
-		v, err = fromTypedInt(srcv, ref, options...)
+		return fromTypedInt(srcv, ref, options...)
 	case reflect.Float32, reflect.Float64:
-		v, err = fromTypedFloat(srcv, ref, options...)
+		return fromTypedFloat(srcv, ref, options...)
 	case reflect.Invalid:
 		// If the value is untyped and not set (e.g. any type with nil value), we return nil.
-		v, err = dyn.NilValue, nil
-	default:
-		return dyn.InvalidValue, fmt.Errorf("unsupported type: %s", srcv.Kind())
+		return dyn.NilValue, nil
 	}
 
-	// Ensure the location metadata is retained.
-	if err != nil {
-		return dyn.InvalidValue, err
-	}
-	return v.WithLocation(ref.Location()), err
+	return dyn.InvalidValue, fmt.Errorf("unsupported type: %s", srcv.Kind())
 }
 
 func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, error) {
@@ -125,7 +117,7 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 	// 2. The reference is a map (i.e. the struct was and still is empty).
 	// 3. The "includeZeroValues" option is set (i.e. the struct is a non-nil pointer).
 	if out.Len() > 0 || ref.Kind() == dyn.KindMap || slices.Contains(options, includeZeroValues) {
-		return dyn.V(out), nil
+		return dyn.NewValue(out, ref.Location()), nil
 	}
 
 	// Otherwise, return nil.
@@ -172,7 +164,7 @@ func fromTypedMap(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 		out.Set(refk, nv)
 	}
 
-	return dyn.V(out), nil
+	return dyn.NewValue(out, ref.Location()), nil
 }
 
 func fromTypedSlice(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
@@ -207,7 +199,7 @@ func fromTypedSlice(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 		out[i] = nv
 	}
 
-	return dyn.V(out), nil
+	return dyn.NewValue(out, ref.Location()), nil
 }
 
 func fromTypedString(src reflect.Value, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, error) {
