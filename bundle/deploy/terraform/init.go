@@ -218,6 +218,24 @@ func setProxyEnvVars(ctx context.Context, environ map[string]string, b *bundle.B
 	return nil
 }
 
+func setUserAgentExtraEnvVar(environ map[string]string, b *bundle.Bundle) error {
+	var products []string
+
+	if experimental := b.Config.Experimental; experimental != nil {
+		if experimental.PyDABs.Enabled {
+			products = append(products, "databricks-pydabs/0.0.0")
+		}
+	}
+
+	userAgentExtra := strings.Join(products, " ")
+
+	if userAgentExtra != "" {
+		environ["DATABRICKS_USER_AGENT_EXTRA"] = userAgentExtra
+	}
+
+	return nil
+}
+
 func (m *initialize) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	tfConfig := b.Config.Bundle.Terraform
 	if tfConfig == nil {
@@ -258,6 +276,11 @@ func (m *initialize) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 
 	// Set the proxy related environment variables
 	err = setProxyEnvVars(ctx, environ, b)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	err = setUserAgentExtraEnvVar(environ, b)
 	if err != nil {
 		return diag.FromErr(err)
 	}
