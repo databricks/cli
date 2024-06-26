@@ -1,0 +1,24 @@
+bundle:
+  name: job_with_multiple_wheels
+
+include:
+  - ./resources/job.yml
+
+workspace:
+  host: https://myworkspace.cloud.databricks.com
+
+artifacts:
+  my_custom_wheel1:
+    type: whl
+    build: poetry build
+    path: ./my_custom_wheel1
+
+  my_custom_wheel2:
+    type: whl
+    build: poetry build
+    path: ./my_custom_wheel2
+
+targets:
+  dev:
+    default: true
+    mode: development

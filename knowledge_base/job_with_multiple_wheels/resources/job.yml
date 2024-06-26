@@ -1,0 +1,23 @@
+resources:
+  jobs:
+    example_job:
+      name: "Example with multiple wheels"
+      tasks:
+        - task_key: task
+
+          spark_python_task:
+            python_file: ../src/call_wheel.py
+
+          libraries:
+            - whl: ../my_custom_wheel1/dist/*.whl
+            - whl: ../my_custom_wheel2/dist/*.whl
+
+          new_cluster:
+            node_type_id: i3.xlarge
+            num_workers: 0
+            spark_version: 14.3.x-scala2.12
+            spark_conf:
+                "spark.databricks.cluster.profile": "singleNode"
+                "spark.master": "local[*, 4]"
+            custom_tags:
+                "ResourceClass": "SingleNode"

@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "my_custom_wheel2"
+version = "0.0.1"
+description = "Example package to demonstrate custom wheel dependencies."
+authors = ["Pieter Noordhuis <pieter.noordhuis@databricks.com>"]
+packages = [{ include = "my_custom_wheel2", from = "src" }]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+my_custom_wheel1 = "0.0.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
