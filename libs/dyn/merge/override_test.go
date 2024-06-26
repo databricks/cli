@@ -330,9 +330,9 @@ func TestOverride_Primitive(t *testing.T) {
 		{
 			name:     "nil (not updated)",
 			state:    visitorState{},
-			left:     dyn.NilValue,
-			right:    dyn.NilValue,
-			expected: dyn.NilValue,
+			left:     dyn.NilValue.WithLocation(leftLocation),
+			right:    dyn.NilValue.WithLocation(rightLocation),
+			expected: dyn.NilValue.WithLocation(leftLocation),
 		},
 		{
 			name:     "nil (updated)",
