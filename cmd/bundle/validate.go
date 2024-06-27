@@ -59,7 +59,7 @@ func newValidateCommand() *cobra.Command {
 			}
 
 			if diags.HasError() {
-				return root.AlreadyPrintedErr
+				return root.ErrAlreadyPrinted
 			}
 
 			return nil
