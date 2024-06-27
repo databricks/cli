@@ -202,19 +202,19 @@ func TestRunAsErrorNeitherUserOrSpSpecified(t *testing.T) {
 	}{
 		{
 			name: "empty_run_as",
-			err:  "run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at run_as/not_allowed/neither_sp_nor_user/empty_run_as/databricks.yml:4:8",
+			err:  fmt.Sprintf("run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at %s:4:8", filepath.FromSlash("run_as/not_allowed/neither_sp_nor_user/empty_run_as/databricks.yml")),
 		},
 		{
 			name: "empty_sp",
-			err:  "run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at run_as/not_allowed/neither_sp_nor_user/empty_sp/databricks.yml:5:3",
+			err:  fmt.Sprintf("run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at %s:5:3", filepath.FromSlash("run_as/not_allowed/neither_sp_nor_user/empty_sp/databricks.yml")),
 		},
 		{
 			name: "empty_user",
-			err:  "run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at run_as/not_allowed/neither_sp_nor_user/empty_user/databricks.yml:5:3",
+			err:  fmt.Sprintf("run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at %s:5:3", filepath.FromSlash("run_as/not_allowed/neither_sp_nor_user/empty_user/databricks.yml")),
 		},
 		{
 			name: "empty_user_and_sp",
-			err:  "run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at run_as/not_allowed/neither_sp_nor_user/empty_user_and_sp/databricks.yml:5:3",
+			err:  fmt.Sprintf("run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at %s:5:3", filepath.FromSlash("run_as/not_allowed/neither_sp_nor_user/empty_user_and_sp/databricks.yml")),
 		},
 	}
 
