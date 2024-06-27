@@ -168,9 +168,8 @@ func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*jsonschem
 	}
 	jsonSchema := &jsonschema.Schema{Type: rootJavascriptType}
 
-	// If the type is a non-string primitive, then we allow it to be a string
-	// provided it's a pure variable reference (ie only a single variable reference).
-	if rootJavascriptType == jsonschema.BooleanType || rootJavascriptType == jsonschema.NumberType {
+	// Variables can be set as the value at any node in the configuration tree.
+	if rootJavascriptType != jsonschema.StringType {
 		jsonSchema = &jsonschema.Schema{
 			AnyOf: []*jsonschema.Schema{
 				{

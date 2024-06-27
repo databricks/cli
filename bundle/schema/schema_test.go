@@ -114,7 +114,6 @@ func TestStructOfPrimitivesSchema(t *testing.T) {
 
 	expected :=
 		`{
-			"type": "object",
 			"properties": {
 				"bool_val": {
 					"anyOf": [
@@ -279,6 +278,15 @@ func TestStructOfPrimitivesSchema(t *testing.T) {
 				"float64_val",
 				"string_val",
 				"bool_val"
+			],
+			"anyOf": [
+				{
+					"type": "object"
+				},
+				{
+					"type": "string",
+					"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+				}
 			]
 		}`
 
@@ -311,13 +319,10 @@ func TestStructOfStructsSchema(t *testing.T) {
 
 	expected :=
 		`{
-			"type": "object",
 			"properties": {
 				"foo": {
-					"type": "object",
 					"properties": {
 						"bar": {
-							"type": "object",
 							"properties": {
 								"a": {
 									"anyOf": [
@@ -338,18 +343,45 @@ func TestStructOfStructsSchema(t *testing.T) {
 							"required": [
 								"a",
 								"b"
+							],
+							"anyOf": [
+								{
+									"type": "object"
+								},
+								{
+									"type": "string",
+									"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+								}
 							]
 						}
 					},
 					"additionalProperties": false,
 					"required": [
 						"bar"
+					],
+					"anyOf": [
+						{
+							"type": "object"
+						},
+						{
+							"type": "string",
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+						}
 					]
 				}
 			},
 			"additionalProperties": false,
 			"required": [
 				"foo"
+			],
+			"anyOf": [
+				{
+					"type": "object"
+				},
+				{
+					"type": "string",
+					"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+				}
 			]
 		}`
 
@@ -377,13 +409,10 @@ func TestStructOfMapsSchema(t *testing.T) {
 
 	expected :=
 		`{
-			"type": "object",
 			"properties": {
 				"bar": {
-					"type": "object",
 					"properties": {
 						"my_map": {
-							"type": "object",
 							"additionalProperties": {
 								"anyOf": [
 									{
@@ -394,18 +423,45 @@ func TestStructOfMapsSchema(t *testing.T) {
 										"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 									}
 								]
-							}
+							},
+							"anyOf": [
+								{
+									"type": "object"
+								},
+								{
+									"type": "string",
+									"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+								}
+							]
 						}
 					},
 					"additionalProperties": false,
 					"required": [
 						"my_map"
+					],
+					"anyOf": [
+						{
+							"type": "object"
+						},
+						{
+							"type": "string",
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+						}
 					]
 				}
 			},
 			"additionalProperties": false,
 			"required": [
 				"bar"
+			],
+			"anyOf": [
+				{
+					"type": "object"
+				},
+				{
+					"type": "string",
+					"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+				}
 			]
 		}`
 
@@ -433,27 +489,51 @@ func TestStructOfSliceSchema(t *testing.T) {
 
 	expected :=
 		`{
-			"type": "object",
 			"properties": {
 				"bar": {
-					"type": "object",
 					"properties": {
 						"my_slice": {
-							"type": "array",
 							"items": {
 								"type": "string"
-							}
+							},
+							"anyOf": [
+								{
+									"type": "array"
+								},
+								{
+									"type": "string",
+									"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+								}
+							]
 						}
 					},
 					"additionalProperties": false,
 					"required": [
 						"my_slice"
+					],
+					"anyOf": [
+						{
+							"type": "object"
+						},
+						{
+							"type": "string",
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+						}
 					]
 				}
 			},
 			"additionalProperties": false,
 			"required": [
 				"bar"
+			],
+			"anyOf": [
+				{
+					"type": "object"
+				},
+				{
+					"type": "string",
+					"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+				}
 			]
 		}`
 
@@ -473,7 +553,6 @@ func TestMapOfPrimitivesSchema(t *testing.T) {
 
 	expected :=
 		`{
-			"type": "object",
 			"additionalProperties": {
 				"anyOf": [
 					{
@@ -484,7 +563,16 @@ func TestMapOfPrimitivesSchema(t *testing.T) {
 						"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 					}
 				]
-			}
+			},
+			"anyOf": [
+				{
+					"type": "object"
+				},
+				{
+					"type": "string",
+					"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+				}
+			]
 		}`
 
 	t.Log("[DEBUG] actual: ", string(jsonSchema))
@@ -507,9 +595,7 @@ func TestMapOfStructSchema(t *testing.T) {
 
 	expected :=
 		`{
-			"type": "object",
 			"additionalProperties": {
-				"type": "object",
 				"properties": {
 					"my_int": {
 						"anyOf": [
@@ -526,8 +612,26 @@ func TestMapOfStructSchema(t *testing.T) {
 				"additionalProperties": false,
 				"required": [
 					"my_int"
+				],
+				"anyOf": [
+					{
+						"type": "object"
+					},
+					{
+						"type": "string",
+						"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+					}
 				]
-			}
+			},
+			"anyOf": [
+				{
+					"type": "object"
+				},
+				{
+					"type": "string",
+					"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+				}
+			]
 		}`
 
 	t.Log("[DEBUG] actual: ", string(jsonSchema))
@@ -546,9 +650,7 @@ func TestMapOfMapSchema(t *testing.T) {
 
 	expected :=
 		`{
-			"type": "object",
 			"additionalProperties": {
-				"type": "object",
 				"additionalProperties": {
 					"anyOf": [
 						{
@@ -559,8 +661,26 @@ func TestMapOfMapSchema(t *testing.T) {
 							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 						}
 					]
+				},
+				"anyOf": [
+					{
+						"type": "object"
+					},
+					{
+						"type": "string",
+						"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+					}
+				]
+			},
+			"anyOf": [
+				{
+					"type": "object"
+				},
+				{
+					"type": "string",
+					"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 				}
-			}
+			]
 		}`
 
 	t.Log("[DEBUG] actual: ", string(jsonSchema))
@@ -579,13 +699,29 @@ func TestMapOfSliceSchema(t *testing.T) {
 
 	expected :=
 		`{
-			"type": "object",
 			"additionalProperties": {
-				"type": "array",
 				"items": {
 					"type": "string"
+				},
+				"anyOf": [
+					{
+						"type": "array"
+					},
+					{
+						"type": "string",
+						"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+					}
+				]
+			},
+			"anyOf": [
+				{
+					"type": "object"
+				},
+				{
+					"type": "string",
+					"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 				}
-			}
+			]
 		}`
 
 	t.Log("[DEBUG] actual: ", string(jsonSchema))
@@ -604,10 +740,29 @@ func TestSliceOfPrimitivesSchema(t *testing.T) {
 
 	expected :=
 		`{
-			"type": "array",
-			"items": {
-				"type": "number"
-			}
+			"additionalProperties": {
+				"items": {
+					"type": "string"
+				},
+				"anyOf": [
+					{
+						"type": "array"
+					},
+					{
+						"type": "string",
+						"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+					}
+				]
+			},
+			"anyOf": [
+				{
+					"type": "object"
+				},
+				{
+					"type": "string",
+					"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+				}
+			]
 		}`
 
 	t.Log("[DEBUG] actual: ", string(jsonSchema))
@@ -626,13 +781,21 @@ func TestSliceOfSliceSchema(t *testing.T) {
 
 	expected :=
 		`{
-			"type": "array",
 			"items": {
 				"type": "array",
 				"items": {
 					"type": "string"
 				}
-			}
+			},
+			"anyOf": [
+				{
+					"type": "array"
+				},
+				{
+					"type": "string",
+					"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+				}
+			]
 		}`
 
 	t.Log("[DEBUG] actual: ", string(jsonSchema))
@@ -651,7 +814,6 @@ func TestSliceOfMapSchema(t *testing.T) {
 
 	expected :=
 		`{
-			"type": "array",
 			"items": {
 				"type": "object",
 				"additionalProperties": {
@@ -665,7 +827,16 @@ func TestSliceOfMapSchema(t *testing.T) {
 						}
 					]
 				}
-			}
+			},
+			"anyOf": [
+				{
+					"type": "array"
+				},
+				{
+					"type": "string",
+					"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+				}
+			]
 		}`
 
 	t.Log("[DEBUG] actual: ", string(jsonSchema))
@@ -688,7 +859,6 @@ func TestSliceOfStructSchema(t *testing.T) {
 
 	expected :=
 		`{
-			"type": "array",
 			"items": {
 				"type": "object",
 				"properties": {
@@ -708,7 +878,16 @@ func TestSliceOfStructSchema(t *testing.T) {
 				"required": [
 					"my_int"
 				]
-			}
+			},
+			"anyOf": [
+				{
+					"type": "array"
+				},
+				{
+					"type": "string",
+					"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+				}
+			]
 		}`
 
 	t.Log("[DEBUG] actual: ", string(jsonSchema))
@@ -748,7 +927,6 @@ func TestEmbeddedStructSchema(t *testing.T) {
 
 	expected :=
 		`{
-			"type": "object",
 			"properties": {
 				"age": {
 					"anyOf": [
@@ -765,7 +943,6 @@ func TestEmbeddedStructSchema(t *testing.T) {
 					"type": "string"
 				},
 				"home": {
-					"type": "object",
 					"properties": {
 						"country": {
 							"type": "string"
@@ -777,18 +954,24 @@ func TestEmbeddedStructSchema(t *testing.T) {
 					"additionalProperties": false,
 					"required": [
 						"country"
+					],
+					"anyOf": [
+						{
+							"type": "object"
+						},
+						{
+							"type": "string",
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+						}
 					]
 				},
 				"name": {
 					"type": "string"
 				},
 				"plot": {
-					"type": "object",
 					"properties": {
 						"events": {
-							"type": "object",
 							"additionalProperties": {
-								"type": "object",
 								"properties": {
 									"age": {
 										"anyOf": [
@@ -802,7 +985,6 @@ func TestEmbeddedStructSchema(t *testing.T) {
 										]
 									},
 									"home": {
-										"type": "object",
 										"properties": {
 											"country": {
 												"type": "string"
@@ -814,6 +996,15 @@ func TestEmbeddedStructSchema(t *testing.T) {
 										"additionalProperties": false,
 										"required": [
 											"country"
+										],
+										"anyOf": [
+											{
+												"type": "object"
+											},
+											{
+												"type": "string",
+												"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+											}
 										]
 									},
 									"name": {
@@ -824,13 +1015,40 @@ func TestEmbeddedStructSchema(t *testing.T) {
 								"required": [
 									"name",
 									"home"
+								],
+								"anyOf": [
+									{
+										"type": "object"
+									},
+									{
+										"type": "string",
+										"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+									}
 								]
-							}
+							},
+							"anyOf": [
+								{
+									"type": "object"
+								},
+								{
+									"type": "string",
+									"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+								}
+							]
 						}
 					},
 					"additionalProperties": false,
 					"required": [
 						"events"
+					],
+					"anyOf": [
+						{
+							"type": "object"
+						},
+						{
+							"type": "string",
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+						}
 					]
 				},
 				"state": {
@@ -843,6 +1061,15 @@ func TestEmbeddedStructSchema(t *testing.T) {
 				"name",
 				"home",
 				"country"
+			],
+			"anyOf": [
+				{
+					"type": "object"
+				},
+				{
+					"type": "string",
+					"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+				}
 			]
 		}`
 
@@ -883,7 +1110,6 @@ func TestNonAnnotatedFieldsAreSkipped(t *testing.T) {
 
 	expectedSchema :=
 		`{
-			"type": "object",
 			"properties": {
 				"bar": {
 					"anyOf": [
@@ -900,6 +1126,15 @@ func TestNonAnnotatedFieldsAreSkipped(t *testing.T) {
 			"additionalProperties": false,
 			"required": [
 				"bar"
+			],
+			"anyOf": [
+				{
+					"type": "object"
+				},
+				{
+					"type": "string",
+					"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+				}
 			]
 		}`
 
@@ -925,7 +1160,6 @@ func TestDashFieldsAreSkipped(t *testing.T) {
 
 	expectedSchema :=
 		`{
-			"type": "object",
 			"properties": {
 				"bar": {
 					"anyOf": [
@@ -942,6 +1176,15 @@ func TestDashFieldsAreSkipped(t *testing.T) {
 			"additionalProperties": false,
 			"required": [
 				"bar"
+			],
+			"anyOf": [
+				{
+					"type": "object"
+				},
+				{
+					"type": "string",
+					"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+				}
 			]
 		}`
 
@@ -975,10 +1218,8 @@ func TestPointerInStructSchema(t *testing.T) {
 
 	expectedSchema :=
 		`{
-			"type": "object",
 			"properties": {
 				"bar": {
-					"type": "object",
 					"properties": {
 						"ptr_val2": {
 							"anyOf": [
@@ -995,6 +1236,15 @@ func TestPointerInStructSchema(t *testing.T) {
 					"additionalProperties": false,
 					"required": [
 						"ptr_val2"
+					],
+					"anyOf": [
+						{
+							"type": "object"
+						},
+						{
+							"type": "string",
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+						}
 					]
 				},
 				"float_val": {
@@ -1009,7 +1259,6 @@ func TestPointerInStructSchema(t *testing.T) {
 					]
 				},
 				"ptr_bar": {
-					"type": "object",
 					"properties": {
 						"ptr_val2": {
 							"anyOf": [
@@ -1026,6 +1275,15 @@ func TestPointerInStructSchema(t *testing.T) {
 					"additionalProperties": false,
 					"required": [
 						"ptr_val2"
+					],
+					"anyOf": [
+						{
+							"type": "object"
+						},
+						{
+							"type": "string",
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+						}
 					]
 				},
 				"ptr_int": {
@@ -1050,6 +1308,15 @@ func TestPointerInStructSchema(t *testing.T) {
 				"float_val",
 				"ptr_bar",
 				"bar"
+			],
+			"anyOf": [
+				{
+					"type": "object"
+				},
+				{
+					"type": "string",
+					"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+				}
 			]
 		}`
 
@@ -1094,10 +1361,8 @@ func TestGenericSchema(t *testing.T) {
 
 	expected :=
 		`{
-			"type": "object",
 			"properties": {
 				"hero": {
-					"type": "object",
 					"properties": {
 						"age": {
 							"anyOf": [
@@ -1117,10 +1382,18 @@ func TestGenericSchema(t *testing.T) {
 					"additionalProperties": false,
 					"required": [
 						"name"
+					],
+					"anyOf": [
+						{
+							"type": "object"
+						},
+						{
+							"type": "string",
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+						}
 					]
 				},
 				"villian": {
-					"type": "object",
 					"properties": {
 						"age": {
 							"anyOf": [
@@ -1140,15 +1413,22 @@ func TestGenericSchema(t *testing.T) {
 					"additionalProperties": false,
 					"required": [
 						"name"
+					],
+					"anyOf": [
+						{
+							"type": "object"
+						},
+						{
+							"type": "string",
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+						}
 					]
 				},
 				"weddings": {
-					"type": "array",
 					"items": {
 						"type": "object",
 						"properties": {
 							"bride": {
-								"type": "object",
 								"properties": {
 									"age": {
 										"anyOf": [
@@ -1168,10 +1448,18 @@ func TestGenericSchema(t *testing.T) {
 								"additionalProperties": false,
 								"required": [
 									"name"
+								],
+								"anyOf": [
+									{
+										"type": "object"
+									},
+									{
+										"type": "string",
+										"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+									}
 								]
 							},
 							"groom": {
-								"type": "object",
 								"properties": {
 									"age": {
 										"anyOf": [
@@ -1191,15 +1479,22 @@ func TestGenericSchema(t *testing.T) {
 								"additionalProperties": false,
 								"required": [
 									"name"
+								],
+								"anyOf": [
+									{
+										"type": "object"
+									},
+									{
+										"type": "string",
+										"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+									}
 								]
 							},
 							"plots": {
-								"type": "array",
 								"items": {
 									"type": "object",
 									"properties": {
 										"deaths": {
-											"type": "array",
 											"items": {
 												"type": "object",
 												"properties": {
@@ -1222,12 +1517,19 @@ func TestGenericSchema(t *testing.T) {
 												"required": [
 													"name"
 												]
-											}
+											},
+											"anyOf": [
+												{
+													"type": "array"
+												},
+												{
+													"type": "string",
+													"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+												}
+											]
 										},
 										"murders": {
-											"type": "object",
 											"additionalProperties": {
-												"type": "object",
 												"properties": {
 													"age": {
 														"anyOf": [
@@ -1247,14 +1549,40 @@ func TestGenericSchema(t *testing.T) {
 												"additionalProperties": false,
 												"required": [
 													"name"
+												],
+												"anyOf": [
+													{
+														"type": "object"
+													},
+													{
+														"type": "string",
+														"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+													}
 												]
-											}
+											},
+											"anyOf": [
+												{
+													"type": "object"
+												},
+												{
+													"type": "string",
+													"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+												}
+											]
 										},
 										"stakes": {
-											"type": "array",
 											"items": {
 												"type": "string"
-											}
+											},
+											"anyOf": [
+												{
+													"type": "array"
+												},
+												{
+													"type": "string",
+													"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+												}
+											]
 										}
 									},
 									"additionalProperties": false,
@@ -1263,7 +1591,16 @@ func TestGenericSchema(t *testing.T) {
 										"deaths",
 										"murders"
 									]
-								}
+								},
+								"anyOf": [
+									{
+										"type": "array"
+									},
+									{
+										"type": "string",
+										"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+									}
+								]
 							}
 						},
 						"additionalProperties": false,
@@ -1272,13 +1609,31 @@ func TestGenericSchema(t *testing.T) {
 							"bride",
 							"plots"
 						]
-					}
+					},
+					"anyOf": [
+						{
+							"type": "array"
+						},
+						{
+							"type": "string",
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+						}
+					]
 				}
 			},
 			"additionalProperties": false,
 			"required": [
 				"hero",
 				"weddings"
+			],
+			"anyOf": [
+				{
+					"type": "object"
+				},
+				{
+					"type": "string",
+					"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+				}
 			]
 		}`
 
@@ -1313,7 +1668,6 @@ func TestFieldsWithoutOmitEmptyAreRequired(t *testing.T) {
 
 	expectedSchema :=
 		`{
-			"type": "object",
 			"properties": {
 				"apple": {
 					"anyOf": [
@@ -1338,7 +1692,6 @@ func TestFieldsWithoutOmitEmptyAreRequired(t *testing.T) {
 					]
 				},
 				"papaya": {
-					"type": "object",
 					"properties": {
 						"a": {
 							"anyOf": [
@@ -1358,6 +1711,15 @@ func TestFieldsWithoutOmitEmptyAreRequired(t *testing.T) {
 					"additionalProperties": false,
 					"required": [
 						"b"
+					],
+					"anyOf": [
+						{
+							"type": "object"
+						},
+						{
+							"type": "string",
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+						}
 					]
 				}
 			},
@@ -1365,6 +1727,15 @@ func TestFieldsWithoutOmitEmptyAreRequired(t *testing.T) {
 			"required": [
 				"bar",
 				"papaya"
+			],
+			"anyOf": [
+				{
+					"type": "object"
+				},
+				{
+					"type": "string",
+					"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+				}
 			]
 		}`
 
@@ -1411,11 +1782,9 @@ func TestDocIngestionForObject(t *testing.T) {
 
 	expectedSchema :=
 		`{
-			"type": "object",
 			"description": "docs for root",
 			"properties": {
 				"my_struct": {
-					"type": "object",
 					"description": "docs for my struct",
 					"properties": {
 						"a": {
@@ -1438,12 +1807,30 @@ func TestDocIngestionForObject(t *testing.T) {
 					"required": [
 						"a",
 						"b"
+					],
+					"anyOf": [
+						{
+							"type": "object"
+						},
+						{
+							"type": "string",
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+						}
 					]
 				}
 			},
 			"additionalProperties": false,
 			"required": [
 				"my_struct"
+			],
+			"anyOf": [
+				{
+					"type": "object"
+				},
+				{
+					"type": "string",
+					"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+				}
 			]
 		}`
 
@@ -1495,11 +1882,9 @@ func TestDocIngestionForSlice(t *testing.T) {
 
 	expectedSchema :=
 		`{
-			"type": "object",
 			"description": "docs for root",
 			"properties": {
 				"my_slice": {
-					"type": "array",
 					"description": "docs for my slice",
 					"items": {
 						"type": "object",
@@ -1534,12 +1919,30 @@ func TestDocIngestionForSlice(t *testing.T) {
 							"guava",
 							"pineapple"
 						]
-					}
+					},
+					"anyOf": [
+						{
+							"type": "array"
+						},
+						{
+							"type": "string",
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+						}
+					]
 				}
 			},
 			"additionalProperties": false,
 			"required": [
 				"my_slice"
+			],
+			"anyOf": [
+				{
+					"type": "object"
+				},
+				{
+					"type": "string",
+					"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+				}
 			]
 		}`
 
@@ -1594,14 +1997,11 @@ func TestDocIngestionForMap(t *testing.T) {
 
 	expectedSchema :=
 		`{
-			"type": "object",
 			"description": "docs for root",
 			"properties": {
 				"my_map": {
-					"type": "object",
 					"description": "docs for my map",
 					"additionalProperties": {
-						"type": "object",
 						"properties": {
 							"apple": {
 								"description": "docs for apple",
@@ -1632,13 +2032,40 @@ func TestDocIngestionForMap(t *testing.T) {
 						"required": [
 							"apple",
 							"mango"
+						],
+						"anyOf": [
+							{
+								"type": "object"
+							},
+							{
+								"type": "string",
+								"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+							}
 						]
-					}
+					},
+					"anyOf": [
+						{
+							"type": "object"
+						},
+						{
+							"type": "string",
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+						}
+					]
 				}
 			},
 			"additionalProperties": false,
 			"required": [
 				"my_map"
+			],
+			"anyOf": [
+				{
+					"type": "object"
+				},
+				{
+					"type": "string",
+					"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+				}
 			]
 		}`
 
@@ -1672,7 +2099,6 @@ func TestDocIngestionForTopLevelPrimitive(t *testing.T) {
 
 	expectedSchema :=
 		`{
-			"type": "object",
 			"description": "docs for root",
 			"properties": {
 				"my_val": {
@@ -1691,6 +2117,15 @@ func TestDocIngestionForTopLevelPrimitive(t *testing.T) {
 			"additionalProperties": false,
 			"required": [
 				"my_val"
+			],
+			"anyOf": [
+				{
+					"type": "object"
+				},
+				{
+					"type": "string",
+					"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+				}
 			]
 		}`
 
@@ -1752,7 +2187,6 @@ func TestInterfaceGeneratesEmptySchema(t *testing.T) {
 
 	expected :=
 		`{
-			"type": "object",
 			"properties": {
 				"apple": {
 					"anyOf": [
@@ -1771,6 +2205,15 @@ func TestInterfaceGeneratesEmptySchema(t *testing.T) {
 			"required": [
 				"apple",
 				"mango"
+			],
+			"anyOf": [
+				{
+					"type": "object"
+				},
+				{
+					"type": "string",
+					"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+				}
 			]
 		}`
 
@@ -1801,7 +2244,6 @@ func TestBundleReadOnlytag(t *testing.T) {
 
 	expected :=
 		`{
-			"type": "object",
 			"properties": {
 				"apple": {
 					"anyOf": [
@@ -1815,7 +2257,6 @@ func TestBundleReadOnlytag(t *testing.T) {
 					]
 				},
 				"pokemon": {
-					"type": "object",
 					"properties": {
 						"raichu": {
 							"type": "string"
@@ -1824,6 +2265,15 @@ func TestBundleReadOnlytag(t *testing.T) {
 					"additionalProperties": false,
 					"required": [
 						"raichu"
+					],
+					"anyOf": [
+						{
+							"type": "object"
+						},
+						{
+							"type": "string",
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+						}
 					]
 				}
 			},
@@ -1831,6 +2281,15 @@ func TestBundleReadOnlytag(t *testing.T) {
 			"required": [
 				"pokemon",
 				"apple"
+			],
+			"anyOf": [
+				{
+					"type": "object"
+				},
+				{
+					"type": "string",
+					"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+				}
 			]
 		}`
 
@@ -1861,7 +2320,6 @@ func TestBundleInternalTag(t *testing.T) {
 
 	expected :=
 		`{
-			"type": "object",
 			"properties": {
 				"apple": {
 					"anyOf": [
@@ -1875,7 +2333,6 @@ func TestBundleInternalTag(t *testing.T) {
 					]
 				},
 				"pokemon": {
-					"type": "object",
 					"properties": {
 						"raichu": {
 							"type": "string"
@@ -1884,6 +2341,15 @@ func TestBundleInternalTag(t *testing.T) {
 					"additionalProperties": false,
 					"required": [
 						"raichu"
+					],
+					"anyOf": [
+						{
+							"type": "object"
+						},
+						{
+							"type": "string",
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+						}
 					]
 				}
 			},
@@ -1891,6 +2357,15 @@ func TestBundleInternalTag(t *testing.T) {
 			"required": [
 				"pokemon",
 				"apple"
+			],
+			"anyOf": [
+				{
+					"type": "object"
+				},
+				{
+					"type": "string",
+					"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+				}
 			]
 		}`
 
