@@ -118,6 +118,5 @@ jobs:
 
           # Valid configuration should pass schema validation.
           for file in ./bundle/tests/jsonschema/allowed/*.yml; do
-            echo "validating $file"
             ajv -s schema.json -d $file
           done
