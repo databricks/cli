@@ -51,7 +51,60 @@ func TestRenderTextOutput(t *testing.T) {
 				"Name: test-bundle\n" +
 				"Target: test-target\n" +
 				"\n" +
-				"Found 1 error\n",
+				"Found 1 warning\n",
+		},
+		{
+			name:   "bundle during 'load' and 2 warnings",
+			bundle: loadingBundle,
+			diags:  diag.Warningf("warning (1)").Extend(diag.Warningf("warning (2)")),
+			expected: "Warning: warning (1)\n" +
+				"\n" +
+				"Warning: warning (2)\n" +
+				"\n" +
+				"Name: test-bundle\n" +
+				"Target: test-target\n" +
+				"\n" +
+				"Found 2 warnings\n",
+		},
+		{
+			name:   "bundle during 'load' and 2 errors with details",
+			bundle: loadingBundle,
+			diags: diag.Diagnostics{
+				diag.Diagnostic{
+					Severity: diag.Error,
+					Summary:  "error (1)",
+					Detail:   "detail (1)",
+					Location: dyn.Location{
+						File:   "foo.py",
+						Line:   1,
+						Column: 1,
+					},
+				},
+				diag.Diagnostic{
+					Severity: diag.Error,
+					Summary:  "error (2)",
+					Detail:   "detail (2)",
+					Location: dyn.Location{
+						File:   "foo.py",
+						Line:   2,
+						Column: 1,
+					},
+				},
+			},
+			expected: "Error: error (1)\n" +
+				"  in foo.py:1:1\n" +
+				"\n" +
+				"detail (1)\n" +
+				"\n" +
+				"Error: error (2)\n" +
+				"  in foo.py:2:1\n" +
+				"\n" +
+				"detail (2)\n" +
+				"\n" +
+				"Name: test-bundle\n" +
+				"Target: test-target\n" +
+				"\n" +
+				"Found 2 errors\n",
 		},
 		{
 			name: "bundle during 'init'",
@@ -73,8 +126,7 @@ func TestRenderTextOutput(t *testing.T) {
 				},
 			},
 			diags: nil,
-			expected: "\n" +
-				"Name: test-bundle\n" +
+			expected: "Name: test-bundle\n" +
 				"Target: test-target\n" +
 				"Workspace:\n" +
 				"  Host: https://localhost/\n" +
@@ -127,7 +179,7 @@ func TestRenderDiagnostics(t *testing.T) {
 				},
 			},
 			expected: "Error: failed to load xxx\n" +
-				"  in foo.yaml:1:2\n" +
+				"  in foo.yaml:1:2\n\n" +
 				"'name' is required\n\n",
 		},
 		{
@@ -142,6 +194,7 @@ func TestRenderDiagnostics(t *testing.T) {
 			},
 			expected: "Error: failed to load xxx\n" +
 				"  at resources.jobs.xxx\n" +
+				"\n" +
 				"'name' is required\n\n",
 		},
 	}

@@ -39,6 +39,7 @@ const errorTemplate = `{{ "Error" | red }}: {{ .Summary }}
 
 {{ .Detail }}
 {{- end }}
+
 `
 
 const warningTemplate = `{{ "Warning" | yellow }}: {{ .Summary }}
@@ -48,9 +49,10 @@ const warningTemplate = `{{ "Warning" | yellow }}: {{ .Summary }}
 {{- if .Location.File }}
   {{ "in " }}{{ .Location.String | cyan }}
 {{- end }}
+
 `
 
-const summaryTemplate = `{{- if .Name }}
+const summaryTemplate = `{{- if .Name -}}
 Name: {{ .Name | bold }}
 {{- end }}
 {{- if .Target }}
