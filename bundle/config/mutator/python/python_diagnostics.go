@@ -1,7 +1,6 @@
 package python
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -33,20 +32,13 @@ const (
 //
 // diagnostics file is newline-separated JSON objects with pythonDiagnostic structure.
 func parsePythonDiagnostics(input io.Reader) (diag.Diagnostics, error) {
-	// the default limit is 64 Kb which should be enough for diagnostics
-	scanner := bufio.NewScanner(input)
 	diagnostics := diag.Diagnostics{}
+	decoder := json.NewDecoder(input)
 
-	for scanner.Scan() {
-		line := scanner.Text()
+	for decoder.More() {
+		var parsedLine pythonDiagnostic
 
-		if line == "" {
-			continue
-		}
-
-		parsedLine := pythonDiagnostic{}
-
-		err := json.Unmarshal([]byte(line), &parsedLine)
+		err := decoder.Decode(&parsedLine)
 
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse diagnostics: %s", err)
