@@ -228,7 +228,6 @@ func setUserAgentExtraEnvVar(environ map[string]string, b *bundle.Bundle) error 
 	}
 
 	userAgentExtra := strings.Join(products, " ")
-
 	if userAgentExtra != "" {
 		environ["DATABRICKS_USER_AGENT_EXTRA"] = userAgentExtra
 	}
