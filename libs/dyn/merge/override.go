@@ -30,10 +30,6 @@ func Override(leftRoot dyn.Value, rightRoot dyn.Value, visitor OverrideVisitor) 
 }
 
 func override(basePath dyn.Path, left dyn.Value, right dyn.Value, visitor OverrideVisitor) (dyn.Value, error) {
-	if left.Kind() == dyn.KindNil && right.Kind() == dyn.KindNil {
-		return dyn.NilValue, nil
-	}
-
 	if left.Kind() != right.Kind() {
 		return visitor.VisitUpdate(basePath, left, right)
 	}
@@ -98,9 +94,11 @@ func override(basePath dyn.Path, left dyn.Value, right dyn.Value, visitor Overri
 		} else {
 			return visitor.VisitUpdate(basePath, left, right)
 		}
+	case dyn.KindNil:
+		return left, nil
 	}
 
-	return dyn.InvalidValue, fmt.Errorf("unexpected kind %s", left.Kind())
+	return dyn.InvalidValue, fmt.Errorf("unexpected kind %s at %s", left.Kind(), basePath.String())
 }
 
 func overrideMapping(basePath dyn.Path, leftMapping dyn.Mapping, rightMapping dyn.Mapping, visitor OverrideVisitor) (dyn.Mapping, error) {
