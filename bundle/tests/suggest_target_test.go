@@ -1,10 +1,11 @@
 package config_tests
 
 import (
-	"github.com/databricks/cli/cmd/root"
-	assert "github.com/databricks/cli/libs/dyn/dynassert"
 	"path/filepath"
 	"testing"
+
+	"github.com/databricks/cli/cmd/root"
+	assert "github.com/databricks/cli/libs/dyn/dynassert"
 
 	"github.com/databricks/cli/internal"
 )
