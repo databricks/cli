@@ -54,7 +54,6 @@ const warningTemplate = `{{ "Warning" | yellow }}: {{ .Summary }}
 
 const summaryTemplate = `{{- if .Name -}}
 Name: {{ .Name | bold }}
-{{- end }}
 {{- if .Target }}
 Target: {{ .Target | bold }}
 {{- end }}
@@ -70,6 +69,8 @@ Workspace:
   Path: {{ .Path | bold }}
 {{- end }}
 {{- end }}
+
+{{ end -}}
 
 {{ .Trailer }}
 `
@@ -97,6 +98,10 @@ func buildTrailer(diags diag.Diagnostics) string {
 }
 
 func renderSummaryTemplate(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics) error {
+	if b == nil {
+		return renderSummaryTemplate(out, &bundle.Bundle{}, diags)
+	}
+
 	var currentUser = &iam.User{}
 
 	if b.Config.Workspace.CurrentUser != nil {

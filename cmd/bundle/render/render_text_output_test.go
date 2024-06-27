@@ -32,6 +32,18 @@ func TestRenderTextOutput(t *testing.T) {
 
 	testCases := []renderTestOutputTestCase{
 		{
+			name: "nil bundle and 1 error",
+			diags: diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "failed to load xxx",
+				},
+			},
+			expected: "Error: failed to load xxx\n" +
+				"\n" +
+				"Found 1 error\n",
+		},
+		{
 			name:   "bundle during 'load' and 1 error",
 			bundle: loadingBundle,
 			diags:  diag.Errorf("failed to load bundle"),
@@ -165,6 +177,16 @@ func TestRenderDiagnostics(t *testing.T) {
 			expected: "",
 		},
 		{
+			name: "error with short summary",
+			diags: diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "failed to load xxx",
+				},
+			},
+			expected: "Error: failed to load xxx\n\n",
+		},
+		{
 			name: "error with source location",
 			diags: diag.Diagnostics{
 				{
@@ -209,4 +231,13 @@ func TestRenderDiagnostics(t *testing.T) {
 			assert.Equal(t, tc.expected, writer.String())
 		})
 	}
+}
+
+func TestRenderSummaryTemplate_nilBundle(t *testing.T) {
+	writer := &bytes.Buffer{}
+
+	err := renderSummaryTemplate(writer, nil, nil)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Validation OK!\n", writer.String())
 }
