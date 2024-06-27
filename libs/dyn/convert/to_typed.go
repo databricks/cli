@@ -16,7 +16,7 @@ func ToTyped(dst any, src dyn.Value) error {
 	for dstv.Kind() == reflect.Pointer {
 		// If the source value is nil and the destination is a settable pointer,
 		// set the destination to nil. Also see `end_to_end_test.go`.
-		if dstv.CanSet() && src == dyn.NilValue {
+		if dstv.CanSet() && src.Kind() == dyn.KindNil {
 			dstv.SetZero()
 			return nil
 		}
