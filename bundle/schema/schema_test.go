@@ -20,7 +20,7 @@ func TestIntSchema(t *testing.T) {
 				},
 				{
 					"type": "string",
-					"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+					"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 				}
 			]
 		}`
@@ -47,7 +47,7 @@ func TestBooleanSchema(t *testing.T) {
 				},
 				{
 					"type": "string",
-					"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+					"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 				}
 			]
 		}`
@@ -123,7 +123,7 @@ func TestStructOfPrimitivesSchema(t *testing.T) {
 						},
 						{
 							"type": "string",
-							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 						}
 					]
 				},
@@ -134,7 +134,7 @@ func TestStructOfPrimitivesSchema(t *testing.T) {
 						},
 						{
 							"type": "string",
-							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 						}
 					]
 				},
@@ -145,7 +145,7 @@ func TestStructOfPrimitivesSchema(t *testing.T) {
 						},
 						{
 							"type": "string",
-							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 						}
 					]
 				},
@@ -156,7 +156,7 @@ func TestStructOfPrimitivesSchema(t *testing.T) {
 						},
 						{
 							"type": "string",
-							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 						}
 					]
 				},
@@ -167,7 +167,7 @@ func TestStructOfPrimitivesSchema(t *testing.T) {
 						},
 						{
 							"type": "string",
-							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 						}
 					]
 				},
@@ -178,7 +178,7 @@ func TestStructOfPrimitivesSchema(t *testing.T) {
 						},
 						{
 							"type": "string",
-							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 						}
 					]
 				},
@@ -189,7 +189,7 @@ func TestStructOfPrimitivesSchema(t *testing.T) {
 						},
 						{
 							"type": "string",
-							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 						}
 					]
 				},
@@ -200,7 +200,7 @@ func TestStructOfPrimitivesSchema(t *testing.T) {
 						},
 						{
 							"type": "string",
-							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 						}
 					]
 				},
@@ -214,7 +214,7 @@ func TestStructOfPrimitivesSchema(t *testing.T) {
 						},
 						{
 							"type": "string",
-							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 						}
 					]
 				},
@@ -225,7 +225,7 @@ func TestStructOfPrimitivesSchema(t *testing.T) {
 						},
 						{
 							"type": "string",
-							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 						}
 					]
 				},
@@ -236,7 +236,7 @@ func TestStructOfPrimitivesSchema(t *testing.T) {
 						},
 						{
 							"type": "string",
-							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 						}
 					]
 				},
@@ -247,7 +247,7 @@ func TestStructOfPrimitivesSchema(t *testing.T) {
 						},
 						{
 							"type": "string",
-							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 						}
 					]
 				},
@@ -258,7 +258,7 @@ func TestStructOfPrimitivesSchema(t *testing.T) {
 						},
 						{
 							"type": "string",
-							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 						}
 					]
 				}
@@ -326,7 +326,7 @@ func TestStructOfStructsSchema(t *testing.T) {
 										},
 										{
 											"type": "string",
-											"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+											"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 										}
 									]
 								},
@@ -391,7 +391,7 @@ func TestStructOfMapsSchema(t *testing.T) {
 									},
 									{
 										"type": "string",
-										"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+										"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 									}
 								]
 							}
@@ -481,7 +481,7 @@ func TestMapOfPrimitivesSchema(t *testing.T) {
 					},
 					{
 						"type": "string",
-						"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+						"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 					}
 				]
 			}
@@ -518,7 +518,7 @@ func TestMapOfStructSchema(t *testing.T) {
 							},
 							{
 								"type": "string",
-								"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+								"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 							}
 						]
 					}
@@ -556,7 +556,7 @@ func TestMapOfMapSchema(t *testing.T) {
 						},
 						{
 							"type": "string",
-							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 						}
 					]
 				}
@@ -661,7 +661,7 @@ func TestSliceOfMapSchema(t *testing.T) {
 						},
 						{
 							"type": "string",
-							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 						}
 					]
 				}
@@ -699,7 +699,7 @@ func TestSliceOfStructSchema(t *testing.T) {
 							},
 							{
 								"type": "string",
-								"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+								"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 							}
 						]
 					}
@@ -757,7 +757,7 @@ func TestEmbeddedStructSchema(t *testing.T) {
 						},
 						{
 							"type": "string",
-							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 						}
 					]
 				},
@@ -797,7 +797,7 @@ func TestEmbeddedStructSchema(t *testing.T) {
 											},
 											{
 												"type": "string",
-												"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+												"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 											}
 										]
 									},
@@ -892,7 +892,7 @@ func TestNonAnnotatedFieldsAreSkipped(t *testing.T) {
 						},
 						{
 							"type": "string",
-							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 						}
 					]
 				}
@@ -934,7 +934,7 @@ func TestDashFieldsAreSkipped(t *testing.T) {
 						},
 						{
 							"type": "string",
-							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 						}
 					]
 				}
@@ -987,7 +987,7 @@ func TestPointerInStructSchema(t *testing.T) {
 								},
 								{
 									"type": "string",
-									"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+									"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 								}
 							]
 						}
@@ -1004,7 +1004,7 @@ func TestPointerInStructSchema(t *testing.T) {
 						},
 						{
 							"type": "string",
-							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 						}
 					]
 				},
@@ -1018,7 +1018,7 @@ func TestPointerInStructSchema(t *testing.T) {
 								},
 								{
 									"type": "string",
-									"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+									"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 								}
 							]
 						}
@@ -1035,7 +1035,7 @@ func TestPointerInStructSchema(t *testing.T) {
 						},
 						{
 							"type": "string",
-							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 						}
 					]
 				},
@@ -1106,7 +1106,7 @@ func TestGenericSchema(t *testing.T) {
 								},
 								{
 									"type": "string",
-									"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+									"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 								}
 							]
 						},
@@ -1129,7 +1129,7 @@ func TestGenericSchema(t *testing.T) {
 								},
 								{
 									"type": "string",
-									"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+									"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 								}
 							]
 						},
@@ -1157,7 +1157,7 @@ func TestGenericSchema(t *testing.T) {
 											},
 											{
 												"type": "string",
-												"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+												"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 											}
 										]
 									},
@@ -1180,7 +1180,7 @@ func TestGenericSchema(t *testing.T) {
 											},
 											{
 												"type": "string",
-												"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+												"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 											}
 										]
 									},
@@ -1210,7 +1210,7 @@ func TestGenericSchema(t *testing.T) {
 															},
 															{
 																"type": "string",
-																"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+																"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 															}
 														]
 													},
@@ -1236,7 +1236,7 @@ func TestGenericSchema(t *testing.T) {
 															},
 															{
 																"type": "string",
-																"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+																"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 															}
 														]
 													},
@@ -1322,7 +1322,7 @@ func TestFieldsWithoutOmitEmptyAreRequired(t *testing.T) {
 						},
 						{
 							"type": "string",
-							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 						}
 					]
 				},
@@ -1333,7 +1333,7 @@ func TestFieldsWithoutOmitEmptyAreRequired(t *testing.T) {
 						},
 						{
 							"type": "string",
-							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 						}
 					]
 				},
@@ -1347,7 +1347,7 @@ func TestFieldsWithoutOmitEmptyAreRequired(t *testing.T) {
 								},
 								{
 									"type": "string",
-									"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+									"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 								}
 							]
 						},
@@ -1429,7 +1429,7 @@ func TestDocIngestionForObject(t *testing.T) {
 								},
 								{
 									"type": "string",
-									"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+									"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 								}
 							]
 						}
@@ -1512,7 +1512,7 @@ func TestDocIngestionForSlice(t *testing.T) {
 									},
 									{
 										"type": "string",
-										"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+										"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 									}
 								]
 							},
@@ -1524,7 +1524,7 @@ func TestDocIngestionForSlice(t *testing.T) {
 									},
 									{
 										"type": "string",
-										"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+										"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 									}
 								]
 							}
@@ -1611,7 +1611,7 @@ func TestDocIngestionForMap(t *testing.T) {
 									},
 									{
 										"type": "string",
-										"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+										"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 									}
 								]
 							},
@@ -1623,7 +1623,7 @@ func TestDocIngestionForMap(t *testing.T) {
 									},
 									{
 										"type": "string",
-										"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+										"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 									}
 								]
 							}
@@ -1683,7 +1683,7 @@ func TestDocIngestionForTopLevelPrimitive(t *testing.T) {
 						},
 						{
 							"type": "string",
-							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 						}
 					]
 				}
@@ -1761,7 +1761,7 @@ func TestInterfaceGeneratesEmptySchema(t *testing.T) {
 						},
 						{
 							"type": "string",
-							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 						}
 					]
 				},
@@ -1810,7 +1810,7 @@ func TestBundleReadOnlytag(t *testing.T) {
 						},
 						{
 							"type": "string",
-							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 						}
 					]
 				},
@@ -1870,7 +1870,7 @@ func TestBundleInternalTag(t *testing.T) {
 						},
 						{
 							"type": "string",
-							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\\}"
+							"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
 						}
 					]
 				},

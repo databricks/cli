@@ -28,6 +28,7 @@ type Config struct {
 	Profile                  string `json:"profile,omitempty"`
 	RateLimit                int    `json:"rate_limit,omitempty"`
 	RetryTimeoutSeconds      int    `json:"retry_timeout_seconds,omitempty"`
+	ServerlessComputeId      string `json:"serverless_compute_id,omitempty"`
 	SkipVerify               bool   `json:"skip_verify,omitempty"`
 	Token                    string `json:"token,omitempty"`
 	Username                 string `json:"username,omitempty"`
