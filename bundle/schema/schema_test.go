@@ -740,23 +740,12 @@ func TestSliceOfPrimitivesSchema(t *testing.T) {
 
 	expected :=
 		`{
-			"additionalProperties": {
-				"items": {
-					"type": "string"
-				},
-				"anyOf": [
-					{
-						"type": "array"
-					},
-					{
-						"type": "string",
-						"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-					}
-				]
+			"items": {
+				"type": "number"
 			},
 			"anyOf": [
 				{
-					"type": "object"
+					"type": "array"
 				},
 				{
 					"type": "string",
