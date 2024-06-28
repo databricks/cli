@@ -119,7 +119,7 @@ func renderTextOutput(cmd *cobra.Command, b *bundle.Bundle, diags diag.Diagnosti
 }
 
 func renderJsonOutput(cmd *cobra.Command, b *bundle.Bundle, diags diag.Diagnostics) error {
-	buf, err := json.MarshalIndent(b.Config, "", "  ")
+	buf, err := json.MarshalIndent(b.Config.Value().AsAny(), "", "  ")
 	if err != nil {
 		return err
 	}

@@ -6,7 +6,10 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/databricks-sdk-go/experimental/mocks"
+	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -106,19 +109,40 @@ func TestVariablesWithoutDefinition(t *testing.T) {
 	require.NoError(t, diags.Error())
 	require.True(t, b.Config.Variables["a"].HasValue())
 	require.True(t, b.Config.Variables["b"].HasValue())
-	assert.Equal(t, "foo", *b.Config.Variables["a"].Value)
-	assert.Equal(t, "bar", *b.Config.Variables["b"].Value)
+	assert.Equal(t, "foo", b.Config.Variables["a"].Value)
+	assert.Equal(t, "bar", b.Config.Variables["b"].Value)
 }
 
 func TestVariablesWithTargetLookupOverrides(t *testing.T) {
 	b := load(t, "./variables/env_overrides")
+
+	mockWorkspaceClient := mocks.NewMockWorkspaceClient(t)
+	b.SetWorkpaceClient(mockWorkspaceClient.WorkspaceClient)
+	instancePoolApi := mockWorkspaceClient.GetMockInstancePoolsAPI()
+	instancePoolApi.EXPECT().GetByInstancePoolName(mock.Anything, "some-test-instance-pool").Return(&compute.InstancePoolAndStats{
+		InstancePoolId: "1234",
+	}, nil)
+
+	clustersApi := mockWorkspaceClient.GetMockClustersAPI()
+	clustersApi.EXPECT().GetByClusterName(mock.Anything, "some-test-cluster").Return(&compute.ClusterDetails{
+		ClusterId: "4321",
+	}, nil)
+
+	clusterPoliciesApi := mockWorkspaceClient.GetMockClusterPoliciesAPI()
+	clusterPoliciesApi.EXPECT().GetByName(mock.Anything, "some-test-cluster-policy").Return(&compute.Policy{
+		PolicyId: "9876",
+	}, nil)
+
 	diags := bundle.Apply(context.Background(), b, bundle.Seq(
 		mutator.SelectTarget("env-overrides-lookup"),
 		mutator.SetVariables(),
+		mutator.ResolveResourceReferences(),
 	))
+
 	require.NoError(t, diags.Error())
-	assert.Equal(t, "cluster: some-test-cluster", b.Config.Variables["d"].Lookup.String())
-	assert.Equal(t, "instance-pool: some-test-instance-pool", b.Config.Variables["e"].Lookup.String())
+	assert.Equal(t, "4321", b.Config.Variables["d"].Value)
+	assert.Equal(t, "1234", b.Config.Variables["e"].Value)
+	assert.Equal(t, "9876", b.Config.Variables["f"].Value)
 }
 
 func TestVariableTargetOverrides(t *testing.T) {

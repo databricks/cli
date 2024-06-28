@@ -21,7 +21,7 @@ func (m *mergeJobTasks) Name() string {
 
 func (m *mergeJobTasks) taskKeyString(v dyn.Value) string {
 	switch v.Kind() {
-	case dyn.KindNil:
+	case dyn.KindInvalid, dyn.KindNil:
 		return ""
 	case dyn.KindString:
 		return v.MustString()
@@ -32,7 +32,7 @@ func (m *mergeJobTasks) taskKeyString(v dyn.Value) string {
 
 func (m *mergeJobTasks) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		if v == dyn.NilValue {
+		if v.Kind() == dyn.KindNil {
 			return v, nil
 		}
 

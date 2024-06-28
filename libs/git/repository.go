@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"net/url"
 	"path"
 	"path/filepath"
 	"strings"
@@ -100,7 +101,22 @@ func (r *Repository) LatestCommit() (string, error) {
 
 // return origin url if it's defined, otherwise an empty string
 func (r *Repository) OriginUrl() string {
-	return r.config.variables["remote.origin.url"]
+	rawUrl := r.config.variables["remote.origin.url"]
+
+	// Remove username and password from the URL.
+	parsedUrl, err := url.Parse(rawUrl)
+	if err != nil {
+		// Git supports https URLs and non standard URLs like "ssh://" or "file://".
+		// Parsing these URLs is not supported by the Go standard library. In case
+		// of an error, we return the raw URL. This is okay because for ssh URLs
+		// because passwords cannot be included in the URL.
+		return rawUrl
+	}
+	// Setting User to nil removes the username and password from the URL when
+	// .String() is called.
+	// See: https://pkg.go.dev/net/url#URL.String
+	parsedUrl.User = nil
+	return parsedUrl.String()
 }
 
 // loadConfig loads and combines user specific and repository specific configuration files.

@@ -4,6 +4,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
+	pythonmutator "github.com/databricks/cli/bundle/config/mutator/python"
 	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/permissions"
@@ -28,8 +29,13 @@ func Initialize() bundle.Mutator {
 			mutator.ExpandWorkspaceRoot(),
 			mutator.DefineDefaultWorkspacePaths(),
 			mutator.SetVariables(),
+			// Intentionally placed before ResolveVariableReferencesInLookup, ResolveResourceReferences,
+			// ResolveVariableReferencesInComplexVariables and ResolveVariableReferences.
+			// See what is expected in PythonMutatorPhaseInit doc
+			pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseInit),
 			mutator.ResolveVariableReferencesInLookup(),
 			mutator.ResolveResourceReferences(),
+			mutator.ResolveVariableReferencesInComplexVariables(),
 			mutator.ResolveVariableReferences(
 				"bundle",
 				"workspace",
