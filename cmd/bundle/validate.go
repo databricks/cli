@@ -39,7 +39,7 @@ func newValidateCommand() *cobra.Command {
 			if err := diags.Error(); err != nil {
 				return diags.Error()
 			} else {
-				panic("failed to load bundle")
+				return fmt.Errorf("invariant failed: returned bundle is nil")
 			}
 		}
 
