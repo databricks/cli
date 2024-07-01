@@ -83,7 +83,7 @@ func fromTyped(src any, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, 
 	if err != nil {
 		return dyn.InvalidValue, err
 	}
-	return v.WithLocation(ref.Location()), err
+	return v.WithLocation(ref.Locations()), err
 }
 
 func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, error) {
