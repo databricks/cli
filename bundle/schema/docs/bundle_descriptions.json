@@ -79,6 +79,17 @@
     "experimental": {
       "description": "",
       "properties": {
+        "pydabs": {
+          "description": "",
+          "properties": {
+            "enabled": {
+              "description": ""
+            },
+            "venv_path": {
+              "description": ""
+            }
+          }
+        },
         "python_wheel_wrapper": {
           "description": ""
         },
@@ -232,6 +243,12 @@
                   },
                   "on_start": {
                     "description": "A list of email addresses to be notified when a run begins. If not specified on job creation, reset, or update, the list is empty, and notifications are not sent.",
+                    "items": {
+                      "description": ""
+                    }
+                  },
+                  "on_streaming_backlog_exceeded": {
+                    "description": "A list of email addresses to notify when any streaming backlog thresholds are exceeded for any stream.\nStreaming backlog thresholds can be set in the `health` field using the following metrics: `STREAMING_BACKLOG_BYTES`, `STREAMING_BACKLOG_RECORDS`, `STREAMING_BACKLOG_SECONDS`, or `STREAMING_BACKLOG_FILES`.\nAlerting is based on the 10-minute average of these metrics. If the issue persists, notifications are resent every 30 minutes.",
                     "items": {
                       "description": ""
                     }
@@ -849,6 +866,12 @@
                         },
                         "on_start": {
                           "description": "A list of email addresses to be notified when a run begins. If not specified on job creation, reset, or update, the list is empty, and notifications are not sent.",
+                          "items": {
+                            "description": ""
+                          }
+                        },
+                        "on_streaming_backlog_exceeded": {
+                          "description": "A list of email addresses to notify when any streaming backlog thresholds are exceeded for any stream.\nStreaming backlog thresholds can be set in the `health` field using the following metrics: `STREAMING_BACKLOG_BYTES`, `STREAMING_BACKLOG_RECORDS`, `STREAMING_BACKLOG_SECONDS`, or `STREAMING_BACKLOG_FILES`.\nAlerting is based on the 10-minute average of these metrics. If the issue persists, notifications are resent every 30 minutes.",
                           "items": {
                             "description": ""
                           }
@@ -1595,6 +1618,17 @@
                             }
                           }
                         },
+                        "on_streaming_backlog_exceeded": {
+                          "description": "An optional list of system notification IDs to call when any streaming backlog thresholds are exceeded for any stream.\nStreaming backlog thresholds can be set in the `health` field using the following metrics: `STREAMING_BACKLOG_BYTES`, `STREAMING_BACKLOG_RECORDS`, `STREAMING_BACKLOG_SECONDS`, or `STREAMING_BACKLOG_FILES`.\nAlerting is based on the 10-minute average of these metrics. If the issue persists, notifications are resent every 30 minutes.\nA maximum of 3 destinations can be specified for the `on_streaming_backlog_exceeded` property.",
+                          "items": {
+                            "description": "",
+                            "properties": {
+                              "id": {
+                                "description": ""
+                              }
+                            }
+                          }
+                        },
                         "on_success": {
                           "description": "An optional list of system notification IDs to call when the run completes successfully. A maximum of 3 destinations can be specified for the `on_success` property.",
                           "items": {
@@ -1633,6 +1667,17 @@
                   },
                   "pause_status": {
                     "description": "Whether this trigger is paused or not."
+                  },
+                  "periodic": {
+                    "description": "Periodic trigger settings.",
+                    "properties": {
+                      "interval": {
+                        "description": "The interval at which the trigger should run."
+                      },
+                      "unit": {
+                        "description": "The unit of time for the interval."
+                      }
+                    }
                   },
                   "table": {
                     "description": "Old table trigger settings name. Deprecated in favor of `table_update`.",
@@ -1712,6 +1757,17 @@
                       }
                     }
                   },
+                  "on_streaming_backlog_exceeded": {
+                    "description": "An optional list of system notification IDs to call when any streaming backlog thresholds are exceeded for any stream.\nStreaming backlog thresholds can be set in the `health` field using the following metrics: `STREAMING_BACKLOG_BYTES`, `STREAMING_BACKLOG_RECORDS`, `STREAMING_BACKLOG_SECONDS`, or `STREAMING_BACKLOG_FILES`.\nAlerting is based on the 10-minute average of these metrics. If the issue persists, notifications are resent every 30 minutes.\nA maximum of 3 destinations can be specified for the `on_streaming_backlog_exceeded` property.",
+                    "items": {
+                      "description": "",
+                      "properties": {
+                        "id": {
+                          "description": ""
+                        }
+                      }
+                    }
+                  },
                   "on_success": {
                     "description": "An optional list of system notification IDs to call when the run completes successfully. A maximum of 3 destinations can be specified for the `on_success` property.",
                     "items": {
@@ -1740,16 +1796,16 @@
                     "description": "Configuration for Inference Tables which automatically logs requests and responses to Unity Catalog.",
                     "properties": {
                       "catalog_name": {
-                        "description": "The name of the catalog in Unity Catalog. NOTE: On update, you cannot change the catalog name if it was already set."
+                        "description": "The name of the catalog in Unity Catalog. NOTE: On update, you cannot change the catalog name if the inference table is already enabled."
                       },
                       "enabled": {
-                        "description": "If inference tables are enabled or not. NOTE: If you have already disabled payload logging once, you cannot enable again."
+                        "description": "Indicates whether the inference table is enabled."
                       },
                       "schema_name": {
-                        "description": "The name of the schema in Unity Catalog. NOTE: On update, you cannot change the schema name if it was already set."
+                        "description": "The name of the schema in Unity Catalog. NOTE: On update, you cannot change the schema name if the inference table is already enabled."
                       },
                       "table_name_prefix": {
-                        "description": "The prefix of the table in Unity Catalog. NOTE: On update, you cannot change the prefix name if it was already set."
+                        "description": "The prefix of the table in Unity Catalog. NOTE: On update, you cannot change the prefix name if the inference table is already enabled."
                       }
                     }
                   },
@@ -2623,7 +2679,7 @@
                       }
                     },
                     "notebook": {
-                      "description": "The path to a notebook that defines a pipeline and is stored in the \u003cDatabricks\u003e workspace.\n",
+                      "description": "The path to a notebook that defines a pipeline and is stored in the Databricks workspace.\n",
                       "properties": {
                         "path": {
                           "description": "The absolute path of the notebook."
@@ -3163,6 +3219,12 @@
                         },
                         "on_start": {
                           "description": "A list of email addresses to be notified when a run begins. If not specified on job creation, reset, or update, the list is empty, and notifications are not sent.",
+                          "items": {
+                            "description": ""
+                          }
+                        },
+                        "on_streaming_backlog_exceeded": {
+                          "description": "A list of email addresses to notify when any streaming backlog thresholds are exceeded for any stream.\nStreaming backlog thresholds can be set in the `health` field using the following metrics: `STREAMING_BACKLOG_BYTES`, `STREAMING_BACKLOG_RECORDS`, `STREAMING_BACKLOG_SECONDS`, or `STREAMING_BACKLOG_FILES`.\nAlerting is based on the 10-minute average of these metrics. If the issue persists, notifications are resent every 30 minutes.",
                           "items": {
                             "description": ""
                           }
@@ -3780,6 +3842,12 @@
                               },
                               "on_start": {
                                 "description": "A list of email addresses to be notified when a run begins. If not specified on job creation, reset, or update, the list is empty, and notifications are not sent.",
+                                "items": {
+                                  "description": ""
+                                }
+                              },
+                              "on_streaming_backlog_exceeded": {
+                                "description": "A list of email addresses to notify when any streaming backlog thresholds are exceeded for any stream.\nStreaming backlog thresholds can be set in the `health` field using the following metrics: `STREAMING_BACKLOG_BYTES`, `STREAMING_BACKLOG_RECORDS`, `STREAMING_BACKLOG_SECONDS`, or `STREAMING_BACKLOG_FILES`.\nAlerting is based on the 10-minute average of these metrics. If the issue persists, notifications are resent every 30 minutes.",
                                 "items": {
                                   "description": ""
                                 }
@@ -4526,6 +4594,17 @@
                                   }
                                 }
                               },
+                              "on_streaming_backlog_exceeded": {
+                                "description": "An optional list of system notification IDs to call when any streaming backlog thresholds are exceeded for any stream.\nStreaming backlog thresholds can be set in the `health` field using the following metrics: `STREAMING_BACKLOG_BYTES`, `STREAMING_BACKLOG_RECORDS`, `STREAMING_BACKLOG_SECONDS`, or `STREAMING_BACKLOG_FILES`.\nAlerting is based on the 10-minute average of these metrics. If the issue persists, notifications are resent every 30 minutes.\nA maximum of 3 destinations can be specified for the `on_streaming_backlog_exceeded` property.",
+                                "items": {
+                                  "description": "",
+                                  "properties": {
+                                    "id": {
+                                      "description": ""
+                                    }
+                                  }
+                                }
+                              },
                               "on_success": {
                                 "description": "An optional list of system notification IDs to call when the run completes successfully. A maximum of 3 destinations can be specified for the `on_success` property.",
                                 "items": {
@@ -4564,6 +4643,17 @@
                         },
                         "pause_status": {
                           "description": "Whether this trigger is paused or not."
+                        },
+                        "periodic": {
+                          "description": "Periodic trigger settings.",
+                          "properties": {
+                            "interval": {
+                              "description": "The interval at which the trigger should run."
+                            },
+                            "unit": {
+                              "description": "The unit of time for the interval."
+                            }
+                          }
                         },
                         "table": {
                           "description": "Old table trigger settings name. Deprecated in favor of `table_update`.",
@@ -4643,6 +4733,17 @@
                             }
                           }
                         },
+                        "on_streaming_backlog_exceeded": {
+                          "description": "An optional list of system notification IDs to call when any streaming backlog thresholds are exceeded for any stream.\nStreaming backlog thresholds can be set in the `health` field using the following metrics: `STREAMING_BACKLOG_BYTES`, `STREAMING_BACKLOG_RECORDS`, `STREAMING_BACKLOG_SECONDS`, or `STREAMING_BACKLOG_FILES`.\nAlerting is based on the 10-minute average of these metrics. If the issue persists, notifications are resent every 30 minutes.\nA maximum of 3 destinations can be specified for the `on_streaming_backlog_exceeded` property.",
+                          "items": {
+                            "description": "",
+                            "properties": {
+                              "id": {
+                                "description": ""
+                              }
+                            }
+                          }
+                        },
                         "on_success": {
                           "description": "An optional list of system notification IDs to call when the run completes successfully. A maximum of 3 destinations can be specified for the `on_success` property.",
                           "items": {
@@ -4671,16 +4772,16 @@
                           "description": "Configuration for Inference Tables which automatically logs requests and responses to Unity Catalog.",
                           "properties": {
                             "catalog_name": {
-                              "description": "The name of the catalog in Unity Catalog. NOTE: On update, you cannot change the catalog name if it was already set."
+                              "description": "The name of the catalog in Unity Catalog. NOTE: On update, you cannot change the catalog name if the inference table is already enabled."
                             },
                             "enabled": {
-                              "description": "If inference tables are enabled or not. NOTE: If you have already disabled payload logging once, you cannot enable again."
+                              "description": "Indicates whether the inference table is enabled."
                             },
                             "schema_name": {
-                              "description": "The name of the schema in Unity Catalog. NOTE: On update, you cannot change the schema name if it was already set."
+                              "description": "The name of the schema in Unity Catalog. NOTE: On update, you cannot change the schema name if the inference table is already enabled."
                             },
                             "table_name_prefix": {
-                              "description": "The prefix of the table in Unity Catalog. NOTE: On update, you cannot change the prefix name if it was already set."
+                              "description": "The prefix of the table in Unity Catalog. NOTE: On update, you cannot change the prefix name if the inference table is already enabled."
                             }
                           }
                         },
@@ -5554,7 +5655,7 @@
                             }
                           },
                           "notebook": {
-                            "description": "The path to a notebook that defines a pipeline and is stored in the \u003cDatabricks\u003e workspace.\n",
+                            "description": "The path to a notebook that defines a pipeline and is stored in the Databricks workspace.\n",
                             "properties": {
                               "path": {
                                 "description": "The absolute path of the notebook."

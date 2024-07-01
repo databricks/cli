@@ -42,6 +42,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newGetIndex())
 	cmd.AddCommand(newListIndexes())
 	cmd.AddCommand(newQueryIndex())
+	cmd.AddCommand(newQueryNextPage())
 	cmd.AddCommand(newScanIndex())
 	cmd.AddCommand(newSyncIndex())
 	cmd.AddCommand(newUpsertDataVectorIndex())
@@ -416,6 +417,7 @@ func newQueryIndex() *cobra.Command {
 	cmd.Flags().StringVar(&queryIndexReq.FiltersJson, "filters-json", queryIndexReq.FiltersJson, `JSON string representing query filters.`)
 	cmd.Flags().IntVar(&queryIndexReq.NumResults, "num-results", queryIndexReq.NumResults, `Number of results to return.`)
 	cmd.Flags().StringVar(&queryIndexReq.QueryText, "query-text", queryIndexReq.QueryText, `Query text.`)
+	cmd.Flags().StringVar(&queryIndexReq.QueryType, "query-type", queryIndexReq.QueryType, `The query type to use.`)
 	// TODO: array: query_vector
 	cmd.Flags().Float64Var(&queryIndexReq.ScoreThreshold, "score-threshold", queryIndexReq.ScoreThreshold, `Threshold for the approximate nearest neighbor search.`)
 
@@ -464,6 +466,76 @@ func newQueryIndex() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range queryIndexOverrides {
 		fn(cmd, &queryIndexReq)
+	}
+
+	return cmd
+}
+
+// start query-next-page command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var queryNextPageOverrides []func(
+	*cobra.Command,
+	*vectorsearch.QueryVectorIndexNextPageRequest,
+)
+
+func newQueryNextPage() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var queryNextPageReq vectorsearch.QueryVectorIndexNextPageRequest
+	var queryNextPageJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&queryNextPageJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&queryNextPageReq.EndpointName, "endpoint-name", queryNextPageReq.EndpointName, `Name of the endpoint.`)
+	cmd.Flags().StringVar(&queryNextPageReq.PageToken, "page-token", queryNextPageReq.PageToken, `Page token returned from previous QueryVectorIndex or QueryVectorIndexNextPage API.`)
+
+	cmd.Use = "query-next-page INDEX_NAME"
+	cmd.Short = `Query next page.`
+	cmd.Long = `Query next page.
+  
+  Use next_page_token returned from previous QueryVectorIndex or
+  QueryVectorIndexNextPage request to fetch next page of results.
+
+  Arguments:
+    INDEX_NAME: Name of the vector index to query.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = queryNextPageJson.Unmarshal(&queryNextPageReq)
+			if err != nil {
+				return err
+			}
+		}
+		queryNextPageReq.IndexName = args[0]
+
+		response, err := w.VectorSearchIndexes.QueryNextPage(ctx, queryNextPageReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range queryNextPageOverrides {
+		fn(cmd, &queryNextPageReq)
 	}
 
 	return cmd

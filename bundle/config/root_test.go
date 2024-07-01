@@ -51,7 +51,7 @@ func TestInitializeVariables(t *testing.T) {
 	root := &Root{
 		Variables: map[string]*variable.Variable{
 			"foo": {
-				Default:     &fooDefault,
+				Default:     fooDefault,
 				Description: "an optional variable since default is defined",
 			},
 			"bar": {
@@ -62,8 +62,8 @@ func TestInitializeVariables(t *testing.T) {
 
 	err := root.InitializeVariables([]string{"foo=123", "bar=456"})
 	assert.NoError(t, err)
-	assert.Equal(t, "123", *(root.Variables["foo"].Value))
-	assert.Equal(t, "456", *(root.Variables["bar"].Value))
+	assert.Equal(t, "123", (root.Variables["foo"].Value))
+	assert.Equal(t, "456", (root.Variables["bar"].Value))
 }
 
 func TestInitializeVariablesWithAnEqualSignInValue(t *testing.T) {
@@ -77,7 +77,7 @@ func TestInitializeVariablesWithAnEqualSignInValue(t *testing.T) {
 
 	err := root.InitializeVariables([]string{"foo=123=567"})
 	assert.NoError(t, err)
-	assert.Equal(t, "123=567", *(root.Variables["foo"].Value))
+	assert.Equal(t, "123=567", (root.Variables["foo"].Value))
 }
 
 func TestInitializeVariablesInvalidFormat(t *testing.T) {
@@ -118,4 +118,17 @@ func TestRootMergeTargetOverridesWithMode(t *testing.T) {
 	root.initializeDynamicValue()
 	require.NoError(t, root.MergeTargetOverrides("development"))
 	assert.Equal(t, Development, root.Bundle.Mode)
+}
+
+func TestInitializeComplexVariablesViaFlagIsNotAllowed(t *testing.T) {
+	root := &Root{
+		Variables: map[string]*variable.Variable{
+			"foo": {
+				Type: variable.VariableTypeComplex,
+			},
+		},
+	}
+
+	err := root.InitializeVariables([]string{"foo=123"})
+	assert.ErrorContains(t, err, "setting variables of complex type via --var flag is not supported: foo")
 }
