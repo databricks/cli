@@ -10,16 +10,9 @@ type Value struct {
 
 	k Kind
 
-	// List of locations that this value was defined at or derived from.
-	// This metadata is maintained across merging of configuration trees, which, for example
-	// could be due to includes or target overrides in the YAML configuration.
-	//
-	// The last location in the list is the "effective" location for the value.
-	// For scalar values this will correspond to the location the value was defined at
-	// in the original YAML configuration (if any).
-	//
-	// For maps and sequences, merge is additive and can override existing values.
-	// so there are no particular semantics associated with the effective location.
+	// List of locations this value is defined at. The first location in the slice
+	// is the location returned by the `.Location()` method and is typically used
+	// for reporting errors and warnings associated with the value.
 	l []Location
 
 	// Whether or not this value is an anchor.
@@ -65,6 +58,14 @@ func (v Value) WithLocations(loc []Location) Value {
 	}
 }
 
+func (v Value) AppendLocationsFromValue(w Value) Value {
+	return Value{
+		v: v.v,
+		k: v.k,
+		l: append(v.l, w.l...),
+	}
+}
+
 func (v Value) Kind() Kind {
 	return v.k
 }
@@ -82,7 +83,7 @@ func (v Value) Location() Location {
 		return Location{}
 	}
 
-	return v.l[len(v.l)-1]
+	return v.l[0]
 }
 
 func (v Value) IsValid() bool {

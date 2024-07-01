@@ -16,6 +16,19 @@ import (
 // Merging retains and accumulates the locations metadata associated with the values.
 // This allows users of the module to track the provenance of values across merging of
 // configuration trees, which is useful for reporting errors and warnings.
+//
+// Semantics for location metadata in the merged value are similar to the semantics
+// for the values themselves:
+//
+//   - When merging x with nil or nil with x, the location of x is retained.
+//
+//   - When merging maps or sequences, the combined value retains the location of a and
+//     accumulates the location of b. The individual elements of the map or sequence retain
+//     their original locations.
+//
+//   - Merging primitive values means using the incoming value `b`. The location of the
+//     incoming value is retained and the location of the existing value `a` is accumulated.
+//     This is because the incoming value overwrites the existing value.
 func Merge(a, b dyn.Value) (dyn.Value, error) {
 	return merge(a, b)
 }
@@ -26,12 +39,12 @@ func merge(a, b dyn.Value) (dyn.Value, error) {
 
 	// If a is nil, return b.
 	if ak == dyn.KindNil {
-		return mergeLocations(b, a), nil
+		return b.AppendLocationsFromValue(a), nil
 	}
 
 	// If b is nil, return a.
 	if bk == dyn.KindNil {
-		return mergeLocations(a, b), nil
+		return a.AppendLocationsFromValue(b), nil
 	}
 
 	// Call the appropriate merge function based on the kind of a and b.
@@ -80,7 +93,7 @@ func mergeMap(a, b dyn.Value) (dyn.Value, error) {
 	}
 
 	// Preserve the location of the first value. Accumulate the locations of the second value.
-	return mergeLocations(dyn.NewValue(out, a.Locations()), b), nil
+	return dyn.NewValue(out, a.Locations()).AppendLocationsFromValue(b), nil
 }
 
 func mergeSequence(a, b dyn.Value) (dyn.Value, error) {
@@ -93,18 +106,9 @@ func mergeSequence(a, b dyn.Value) (dyn.Value, error) {
 	copy(out[len(as):], bs)
 
 	// Preserve the location of the first value. Accumulate the locations of the second value.
-	return mergeLocations(dyn.NewValue(out, a.Locations()), b), nil
+	return dyn.NewValue(out, a.Locations()).AppendLocationsFromValue(b), nil
 }
-
 func mergePrimitive(a, b dyn.Value) (dyn.Value, error) {
-	// Merging primitive values means using the incoming value. Preserve the
-	// location of the first value. Accumulate the locations of the second value.
-	return mergeLocations(b, a), nil
-}
-
-// This function adds locations associated with the second value to the locations
-// associated with the first value. The locations are prepended to preserve the
-// "effective" location associated with the first value.
-func mergeLocations(v, w dyn.Value) dyn.Value {
-	return v.WithLocations(append(w.Locations(), v.Locations()...))
+	// Merging primitive values means using the incoming value.
+	return b.AppendLocationsFromValue(a), nil
 }
