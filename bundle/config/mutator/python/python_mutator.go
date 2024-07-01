@@ -3,6 +3,7 @@ package python
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -87,8 +88,9 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		return diag.Errorf("\"experimental.pydabs.enabled\" can only be used when \"experimental.pydabs.venv_path\" is set")
 	}
 
-	// mutateDiagnostics is used because Mutate returns 'error' instead of 'diag.Diagnostics'
-	var mutateDiagnostics diag.Diagnostics
+	// mutateDiags is used because Mutate returns 'error' instead of 'diag.Diagnostics'
+	var mutateDiags diag.Diagnostics
+	var mutateDiagsHasError = errors.New("unexpected error")
 
 	err := b.Config.Mutate(func(leftRoot dyn.Value) (dyn.Value, error) {
 		pythonPath := interpreterPath(experimental.PyDABs.VEnvPath)
@@ -106,10 +108,10 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 			return dyn.InvalidValue, fmt.Errorf("failed to create cache dir: %w", err)
 		}
 
-		rightRoot, diagnostics := m.runPythonMutator(ctx, cacheDir, b.RootPath, pythonPath, leftRoot)
-		mutateDiagnostics = diagnostics
-		if diagnostics.HasError() {
-			return dyn.InvalidValue, diagnostics.Error()
+		rightRoot, diags := m.runPythonMutator(ctx, cacheDir, b.RootPath, pythonPath, leftRoot)
+		mutateDiags = diags
+		if diags.HasError() {
+			return dyn.InvalidValue, mutateDiagsHasError
 		}
 
 		visitor, err := createOverrideVisitor(ctx, m.phase)
@@ -120,11 +122,15 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		return merge.Override(leftRoot, rightRoot, visitor)
 	})
 
-	if len(mutateDiagnostics) != 0 {
-		return mutateDiagnostics
-	} else {
-		return diag.FromErr(err)
+	if err == mutateDiagsHasError {
+		if !mutateDiags.HasError() {
+			panic("mutateDiags has no error, but error is expected")
+		}
+
+		return mutateDiags
 	}
+
+	return mutateDiags.Extend(diag.FromErr(err))
 }
 
 func createCacheDir(ctx context.Context) (string, error) {

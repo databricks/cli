@@ -75,7 +75,7 @@ func TestPythonMutator_load(t *testing.T) {
 				}
 			}
 		}`,
-		`{"severity": "warning", "summary": "job doesn't have any tasks", "location": "file.py:1:2"}`,
+		`{"severity": "warning", "summary": "job doesn't have any tasks", "location": {"file": "src/examples/file.py", "line": 10, "column": 5}}`,
 	)
 
 	mutator := PythonMutator(PythonMutatorPhaseLoad)
@@ -95,6 +95,11 @@ func TestPythonMutator_load(t *testing.T) {
 
 	assert.Equal(t, 1, len(diagnostics))
 	assert.Equal(t, "job doesn't have any tasks", diagnostics[0].Summary)
+	assert.Equal(t, dyn.Location{
+		File:   "src/examples/file.py",
+		Line:   10,
+		Column: 5,
+	}, diagnostics[0].Location)
 }
 
 func TestPythonMutator_load_disallowed(t *testing.T) {

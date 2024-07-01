@@ -10,11 +10,14 @@ import (
 )
 
 func TestConvertPythonLocation(t *testing.T) {
-	location, err := convertPythonLocation("my:file.py:1:2")
+	location := convertPythonLocation(pythonDiagnosticLocation{
+		File:   "src/examples/file.py",
+		Line:   1,
+		Column: 2,
+	})
 
-	assert.NoError(t, err)
 	assert.Equal(t, dyn.Location{
-		File:   "my:file.py",
+		File:   "src/examples/file.py",
 		Line:   1,
 		Column: 2,
 	}, location)
@@ -31,7 +34,7 @@ func TestParsePythonDiagnostics(t *testing.T) {
 	testCases := []parsePythonDiagnosticsTest{
 		{
 			name:  "short error with location",
-			input: `{"severity": "error", "summary": "error summary", "location": "src/examples/file.py:1:2"}`,
+			input: `{"severity": "error", "summary": "error summary", "location": {"file": "src/examples/file.py", "line": 1, "column": 2}}`,
 			expected: diag.Diagnostics{
 				{
 					Severity: diag.Error,
@@ -95,10 +98,10 @@ func TestParsePythonDiagnostics(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			diagnostics, err := parsePythonDiagnostics(bytes.NewReader([]byte(tc.input)))
+			diags, err := parsePythonDiagnostics(bytes.NewReader([]byte(tc.input)))
 
 			assert.NoError(t, err)
-			assert.Equal(t, tc.expected, diagnostics)
+			assert.Equal(t, tc.expected, diags)
 		})
 	}
 }
