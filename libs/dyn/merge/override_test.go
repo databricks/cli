@@ -147,13 +147,11 @@ func TestOverride_Primitive(t *testing.T) {
 			expected: dyn.NewValue(
 				map[string]dyn.Value{
 					"a": dyn.NewValue(42, []dyn.Location{rightLocation}),
+					// location hasn't changed because value hasn't changed
 					"b": dyn.NewValue(10, []dyn.Location{leftLocation}),
 				},
 				[]dyn.Location{leftLocation},
 			),
-
-			// location hasn't changed because value hasn't changed
-
 		},
 		{
 			name: "map - remove 'a'",
@@ -177,13 +175,11 @@ func TestOverride_Primitive(t *testing.T) {
 
 			expected: dyn.NewValue(
 				map[string]dyn.Value{
+					// location hasn't changed because value hasn't changed
 					"b": dyn.NewValue(10, []dyn.Location{leftLocation}),
 				},
 				[]dyn.Location{leftLocation},
 			),
-
-			// location hasn't changed because value hasn't changed
-
 		},
 		{
 			name: "map - add 'jobs.job_1'",
@@ -339,9 +335,9 @@ func TestOverride_Primitive(t *testing.T) {
 		{
 			name:     "nil (not updated)",
 			state:    visitorState{},
-			left:     dyn.NilValue.WithLocation(leftLocation),
-			right:    dyn.NilValue.WithLocation(rightLocation),
-			expected: dyn.NilValue.WithLocation(leftLocation),
+			left:     dyn.NilValue.WithLocations([]dyn.Location{leftLocation}),
+			right:    dyn.NilValue.WithLocations([]dyn.Location{rightLocation}),
+			expected: dyn.NilValue.WithLocations([]dyn.Location{leftLocation}),
 		},
 		{
 			name:     "nil (updated)",
