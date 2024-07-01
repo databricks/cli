@@ -431,7 +431,9 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 				// Rewrite the variable to a map with a single key called "default".
 				// This conforms to the variable type. Normalization back to the typed
 				// configuration will convert this to a string if necessary.
-				return dyn.NewValue(map[string]dyn.Value{"default": variable}, variable.Locations()), nil
+				return dyn.NewValue(map[string]dyn.Value{
+					"default": variable,
+				}, variable.Locations()), nil
 
 			case dyn.KindMap, dyn.KindSequence:
 				// Check if the original definition of variable has a type field.
@@ -441,9 +443,9 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 				}
 
 				if typeV.MustString() == "complex" {
-					return dyn.NewValue(map[string]dyn.Value{"default": variable}, variable.Locations()),
-
-						nil
+					return dyn.NewValue(map[string]dyn.Value{
+						"default": variable,
+					}, variable.Locations()), nil
 				}
 
 				return variable, nil

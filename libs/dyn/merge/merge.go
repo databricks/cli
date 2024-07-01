@@ -14,8 +14,8 @@ import (
 // * Merging sequences a and b means concatenating them.
 //
 // Merging retains and accumulates the locations metadata associated with the values.
-// This allows users of the module to track the provenance of values across configuration
-// trees, which is useful for reporting errors and warnings.
+// This allows users of the module to track the provenance of values across merging of
+// configuration trees, which is useful for reporting errors and warnings.
 func Merge(a, b dyn.Value) (dyn.Value, error) {
 	return merge(a, b)
 }
