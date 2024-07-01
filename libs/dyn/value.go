@@ -9,21 +9,17 @@ type Value struct {
 	v any
 
 	k Kind
-	// TODO: Format ugly pieces of patched code.
 
-	// Locations is a list of locations that this value was defined at or derived from.
+	// List of locations that this value was defined at or derived from.
 	// This metadata is maintained across merging of configuration trees, which, for example
 	// could be due to includes or target overrides in the YAML configuration.
 	//
 	// The last location in the list is the "effective" location for the value.
 	// For scalar values this will correspond to the location the value was defined at
 	// in the original YAML configuration (if any).
+	//
 	// For maps and sequences, merge is additive and can override existing values.
 	// so there are no particular semantics associated with the effective location.
-
-	// List of locations that is associated as metadata with the value. The last value
-	// in the list is the "effective" location for the value, and is the location that
-	// the .Location() method will return.
 	l []Location
 
 	// Whether or not this value is an anchor.
