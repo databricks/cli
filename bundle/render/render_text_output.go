@@ -49,6 +49,10 @@ const warningTemplate = `{{ "Warning" | yellow }}: {{ .Summary }}
 {{- if .Location.File }}
   {{ "in " }}{{ .Location.String | cyan }}
 {{- end }}
+{{- if .Detail }}
+
+{{ .Detail }}
+{{- end }}
 
 `
 
@@ -157,9 +161,6 @@ func renderDiagnostics(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics) 
 }
 
 // RenderTextOutput renders the diagnostics in a human-readable format.
-//
-// It prints errors and returns root.AlreadyPrintedErr if there are any errors.
-// If there are unexpected errors during rendering, it returns an error different from root.AlreadyPrintedErr.
 func RenderTextOutput(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics) error {
 	err := renderDiagnostics(out, b, diags)
 	if err != nil {

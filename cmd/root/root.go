@@ -2,6 +2,7 @@ package root
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -97,7 +98,7 @@ func Execute(cmd *cobra.Command) {
 
 	// Run the command
 	cmd, err := cmd.ExecuteContextC(ctx)
-	if err != nil && err != ErrAlreadyPrinted {
+	if err != nil && errors.Is(err, ErrAlreadyPrinted) {
 		// If cmdio logger initialization succeeds, then this function logs with the
 		// initialized cmdio logger, otherwise with the default cmdio logger
 		cmdio.LogError(cmd.Context(), err)

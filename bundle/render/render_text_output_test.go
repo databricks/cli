@@ -79,7 +79,7 @@ func TestRenderTextOutput(t *testing.T) {
 				"Found 2 warnings\n",
 		},
 		{
-			name:   "bundle during 'load' and 2 errors with details",
+			name:   "bundle during 'load' and 2 errors, 1 warning with details",
 			bundle: loadingBundle,
 			diags: diag.Diagnostics{
 				diag.Diagnostic{
@@ -102,6 +102,16 @@ func TestRenderTextOutput(t *testing.T) {
 						Column: 1,
 					},
 				},
+				diag.Diagnostic{
+					Severity: diag.Warning,
+					Summary:  "warning (3)",
+					Detail:   "detail (3)",
+					Location: dyn.Location{
+						File:   "foo.py",
+						Line:   3,
+						Column: 1,
+					},
+				},
 			},
 			expected: "Error: error (1)\n" +
 				"  in foo.py:1:1\n" +
@@ -113,10 +123,15 @@ func TestRenderTextOutput(t *testing.T) {
 				"\n" +
 				"detail (2)\n" +
 				"\n" +
+				"Warning: warning (3)\n" +
+				"  in foo.py:3:1\n" +
+				"\n" +
+				"detail (3)\n" +
+				"\n" +
 				"Name: test-bundle\n" +
 				"Target: test-target\n" +
 				"\n" +
-				"Found 2 errors\n",
+				"Found 2 errors and 1 warning\n",
 		},
 		{
 			name: "bundle during 'init'",
