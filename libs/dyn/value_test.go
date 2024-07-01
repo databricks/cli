@@ -29,9 +29,12 @@ func TestValueAsMap(t *testing.T) {
 	_, ok = intValue.AsMap()
 	assert.False(t, ok)
 
-	var mapValue = dyn.NewValue(map[string]dyn.Value{"key": dyn.NewValue("value", []dyn.Location{{File: "file", Line: 1, Column: 2}})}, []dyn.Location{{
-
-		File: "file", Line: 1, Column: 2}})
+	var mapValue = dyn.NewValue(
+		map[string]dyn.Value{
+			"key": dyn.NewValue(
+				"value", []dyn.Location{{File: "file", Line: 1, Column: 2}})},
+		[]dyn.Location{{File: "file", Line: 1, Column: 2}},
+	)
 
 	m, ok := mapValue.AsMap()
 	assert.True(t, ok)

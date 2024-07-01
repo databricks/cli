@@ -55,10 +55,13 @@ func TestMarshalTimeValue(t *testing.T) {
 
 func TestMarshalSequenceValue(t *testing.T) {
 	s := NewSaver()
-	var sequenceValue = dyn.NewValue([]dyn.Value{dyn.NewValue("value1", []dyn.Location{{File: "file", Line: 1, Column: 2}}), dyn.NewValue("value2", []dyn.Location{{File: "file", Line: 2, Column: 2}})}, []dyn.Location{{
-
-		File: "file", Line: 1, Column: 2}})
-
+	var sequenceValue = dyn.NewValue(
+		[]dyn.Value{
+			dyn.NewValue("value1", []dyn.Location{{File: "file", Line: 1, Column: 2}}),
+			dyn.NewValue("value2", []dyn.Location{{File: "file", Line: 2, Column: 2}}),
+		},
+		[]dyn.Location{{File: "file", Line: 1, Column: 2}},
+	)
 	v, err := s.toYamlNode(sequenceValue)
 	assert.NoError(t, err)
 	assert.Equal(t, yaml.SequenceNode, v.Kind)
@@ -77,9 +80,14 @@ func TestMarshalStringValue(t *testing.T) {
 
 func TestMarshalMapValue(t *testing.T) {
 	s := NewSaver()
-	var mapValue = dyn.NewValue(map[string]dyn.Value{"key3": dyn.NewValue("value3", []dyn.Location{{File: "file", Line: 3, Column: 2}}), "key2": dyn.NewValue("value2", []dyn.Location{{File: "file", Line: 2, Column: 2}}), "key1": dyn.NewValue("value1", []dyn.Location{{File: "file", Line: 1, Column: 2}})}, []dyn.Location{{
-
-		File: "file", Line: 1, Column: 2}})
+	var mapValue = dyn.NewValue(
+		map[string]dyn.Value{
+			"key3": dyn.NewValue("value3", []dyn.Location{{File: "file", Line: 3, Column: 2}}),
+			"key2": dyn.NewValue("value2", []dyn.Location{{File: "file", Line: 2, Column: 2}}),
+			"key1": dyn.NewValue("value1", []dyn.Location{{File: "file", Line: 1, Column: 2}}),
+		},
+		[]dyn.Location{{File: "file", Line: 1, Column: 2}},
+	)
 
 	v, err := s.toYamlNode(mapValue)
 	assert.NoError(t, err)
@@ -96,10 +104,17 @@ func TestMarshalMapValue(t *testing.T) {
 
 func TestMarshalNestedValues(t *testing.T) {
 	s := NewSaver()
-	var mapValue = dyn.NewValue(map[string]dyn.Value{"key1": dyn.NewValue(map[string]dyn.Value{"key2": dyn.NewValue("value", []dyn.Location{{File: "file", Line: 1, Column: 2}})}, []dyn.Location{{File: "file", Line: 1, Column: 2}})}, []dyn.Location{{
-
-		File: "file", Line: 1, Column: 2}})
-
+	var mapValue = dyn.NewValue(
+		map[string]dyn.Value{
+			"key1": dyn.NewValue(
+				map[string]dyn.Value{
+					"key2": dyn.NewValue("value", []dyn.Location{{File: "file", Line: 1, Column: 2}}),
+				},
+				[]dyn.Location{{File: "file", Line: 1, Column: 2}},
+			),
+		},
+		[]dyn.Location{{File: "file", Line: 1, Column: 2}},
+	)
 	v, err := s.toYamlNode(mapValue)
 	assert.NoError(t, err)
 	assert.Equal(t, yaml.MappingNode, v.Kind)
@@ -199,17 +214,29 @@ func TestCustomStylingWithNestedMap(t *testing.T) {
 		"styled": yaml.DoubleQuotedStyle,
 	})
 
-	var styledMap = dyn.NewValue(map[string]dyn.Value{"key1": dyn.NewValue("value1", []dyn.Location{{File: "file", Line: 1, Column: 2}}), "key2": dyn.NewValue("value2", []dyn.Location{{File: "file", Line: 2, Column: 2}})}, []dyn.Location{{
+	var styledMap = dyn.NewValue(
+		map[string]dyn.Value{
+			"key1": dyn.NewValue("value1", []dyn.Location{{File: "file", Line: 1, Column: 2}}),
+			"key2": dyn.NewValue("value2", []dyn.Location{{File: "file", Line: 2, Column: 2}}),
+		},
+		[]dyn.Location{{File: "file", Line: -2, Column: 2}},
+	)
 
-		File: "file", Line: -2, Column: 2}})
+	var unstyledMap = dyn.NewValue(
+		map[string]dyn.Value{
+			"key3": dyn.NewValue("value3", []dyn.Location{{File: "file", Line: 1, Column: 2}}),
+			"key4": dyn.NewValue("value4", []dyn.Location{{File: "file", Line: 2, Column: 2}}),
+		},
+		[]dyn.Location{{File: "file", Line: -1, Column: 2}},
+	)
 
-	var unstyledMap = dyn.NewValue(map[string]dyn.Value{"key3": dyn.NewValue("value3", []dyn.Location{{File: "file", Line: 1, Column: 2}}), "key4": dyn.NewValue("value4", []dyn.Location{{File: "file", Line: 2, Column: 2}})}, []dyn.Location{{
-
-		File: "file", Line: -1, Column: 2}})
-
-	var val = dyn.NewValue(map[string]dyn.Value{"styled": styledMap, "unstyled": unstyledMap}, []dyn.Location{{
-
-		File: "file", Line: 1, Column: 2}})
+	var val = dyn.NewValue(
+		map[string]dyn.Value{
+			"styled":   styledMap,
+			"unstyled": unstyledMap,
+		},
+		[]dyn.Location{{File: "file", Line: 1, Column: 2}},
+	)
 
 	mv, err := s.toYamlNode(val)
 	assert.NoError(t, err)
