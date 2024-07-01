@@ -42,7 +42,7 @@ func fromTyped(src any, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, 
 	// Dereference pointer if necessary
 	for srcv.Kind() == reflect.Pointer {
 		if srcv.IsNil() {
-			return dyn.NilValue.WithLocation(ref.Location()), nil
+			return dyn.NilValue.WithLocations(ref.Locations()), nil
 		}
 		srcv = srcv.Elem()
 
@@ -83,7 +83,7 @@ func fromTyped(src any, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, 
 	if err != nil {
 		return dyn.InvalidValue, err
 	}
-	return v.WithLocation(ref.Locations()), err
+	return v.WithLocations(ref.Locations()), err
 }
 
 func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, error) {
