@@ -79,9 +79,9 @@ func TestPythonMutator_load(t *testing.T) {
 	)
 
 	mutator := PythonMutator(PythonMutatorPhaseLoad)
-	diagnostics := bundle.Apply(ctx, b, mutator)
+	diags := bundle.Apply(ctx, b, mutator)
 
-	assert.NoError(t, diagnostics.Error())
+	assert.NoError(t, diags.Error())
 
 	assert.ElementsMatch(t, []string{"job0", "job1"}, maps.Keys(b.Config.Resources.Jobs))
 
@@ -93,13 +93,13 @@ func TestPythonMutator_load(t *testing.T) {
 		assert.Equal(t, "job_1", job1.Name)
 	}
 
-	assert.Equal(t, 1, len(diagnostics))
-	assert.Equal(t, "job doesn't have any tasks", diagnostics[0].Summary)
+	assert.Equal(t, 1, len(diags))
+	assert.Equal(t, "job doesn't have any tasks", diags[0].Summary)
 	assert.Equal(t, dyn.Location{
 		File:   "src/examples/file.py",
 		Line:   10,
 		Column: 5,
-	}, diagnostics[0].Location)
+	}, diags[0].Location)
 }
 
 func TestPythonMutator_load_disallowed(t *testing.T) {

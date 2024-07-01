@@ -41,7 +41,6 @@ func parsePythonDiagnostics(input io.Reader) (diag.Diagnostics, error) {
 		var parsedLine pythonDiagnostic
 
 		err := decoder.Decode(&parsedLine)
-
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse diags: %s", err)
 		}

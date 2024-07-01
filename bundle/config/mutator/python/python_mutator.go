@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/databricks/databricks-sdk-go/logger"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -185,8 +186,14 @@ func (m *pythonMutator) runPythonMutator(ctx context.Context, cacheDir string, r
 		process.WithStderrWriter(stderrWriter),
 		process.WithStdoutWriter(stdoutWriter),
 	)
+	if processErr != nil {
+		logger.Debugf(ctx, "python mutator process failed: %s", processErr)
+	}
 
 	pythonDiagnostics, pythonDiagnosticsErr := loadDiagnosticsFile(diagnosticsPath)
+	if pythonDiagnosticsErr != nil {
+		logger.Debugf(ctx, "failed to load diagnostics: %s", pythonDiagnosticsErr)
+	}
 
 	// if diagnostics file exists, it gives the most descriptive errors
 	// if there is any error, we treat it as fatal error, and stop processing
