@@ -13,6 +13,7 @@ import (
 )
 
 const gitIgnoreFileName = ".gitignore"
+const dataBricksIgnoreFileName = ".databricksignore"
 
 var GitDirectoryName = ".git"
 
@@ -255,7 +256,9 @@ func NewRepository(path vfs.Path) (*Repository, error) {
 		// Load repository-wide excludes file.
 		repo.newIgnoreFile(".git/info/excludes"),
 		// Load root gitignore file.
-		repo.newIgnoreFile(".gitignore"),
+		repo.newIgnoreFile(gitIgnoreFileName),
+		// Load root databricksignore file.
+		repo.newIgnoreFile(dataBricksIgnoreFileName),
 	}
 
 	return repo, nil
