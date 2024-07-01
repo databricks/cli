@@ -441,9 +441,9 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 				}
 
 				if typeV.MustString() == "complex" {
-					return dyn.NewValue(map[string]dyn.Value{
-						"default": variable,
-					}, variable.Location()), nil
+					return dyn.NewValue(map[string]dyn.Value{"default": variable}, variable.Locations()),
+
+						nil
 				}
 
 				return variable, nil
