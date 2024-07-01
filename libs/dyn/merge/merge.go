@@ -24,7 +24,10 @@ import (
 //
 //   - When merging maps or sequences, the combined value retains the location of a and
 //     accumulates the location of b. The individual elements of the map or sequence retain
-//     their original locations.
+//     their original locations i.e whether they were originally defined in a or b.
+//
+//     The rationale for retaining location of a is that we would like to return
+//     the first location a bit of configuration showed up when reporting errors and warnings.
 //
 //   - Merging primitive values means using the incoming value `b`. The location of the
 //     incoming value is retained and the location of the existing value `a` is accumulated.
