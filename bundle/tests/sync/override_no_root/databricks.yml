@@ -1,0 +1,22 @@
+bundle:
+  name: sync_override_no_root
+
+workspace:
+  host: https://acme.cloud.databricks.com/
+
+targets:
+  development:
+    sync:
+      include:
+        - tests/*
+      exclude:
+        - dist
+
+  staging:
+    sync:
+      include:
+        - fixtures/*
+
+  prod:
+    workspace:
+      host: https://acme-prod.cloud.databricks.com/

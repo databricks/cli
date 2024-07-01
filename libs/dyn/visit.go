@@ -6,6 +6,28 @@ import (
 	"slices"
 )
 
+// This error is returned if the path indicates that a map or sequence is expected, but the value is nil.
+type cannotTraverseNilError struct {
+	p Path
+}
+
+func (e cannotTraverseNilError) Error() string {
+	component := e.p[len(e.p)-1]
+	switch {
+	case component.isKey():
+		return fmt.Sprintf("expected a map to index %q, found nil", e.p)
+	case component.isIndex():
+		return fmt.Sprintf("expected a sequence to index %q, found nil", e.p)
+	default:
+		panic("invalid component")
+	}
+}
+
+func IsCannotTraverseNilError(err error) bool {
+	var target cannotTraverseNilError
+	return errors.As(err, &target)
+}
+
 type noSuchKeyError struct {
 	p Path
 }
@@ -70,10 +92,16 @@ func (component pathComponent) visit(v Value, prefix Path, suffix Pattern, opts 
 	switch {
 	case component.isKey():
 		// Expect a map to be set if this is a key.
-		m, ok := v.AsMap()
-		if !ok {
+		switch v.Kind() {
+		case KindMap:
+			// OK
+		case KindNil:
+			return InvalidValue, cannotTraverseNilError{path}
+		default:
 			return InvalidValue, fmt.Errorf("expected a map to index %q, found %s", path, v.Kind())
 		}
+
+		m := v.MustMap()
 
 		// Lookup current value in the map.
 		ev, ok := m.GetByString(component.key)
@@ -103,10 +131,16 @@ func (component pathComponent) visit(v Value, prefix Path, suffix Pattern, opts 
 
 	case component.isIndex():
 		// Expect a sequence to be set if this is an index.
-		s, ok := v.AsSequence()
-		if !ok {
+		switch v.Kind() {
+		case KindSequence:
+			// OK
+		case KindNil:
+			return InvalidValue, cannotTraverseNilError{path}
+		default:
 			return InvalidValue, fmt.Errorf("expected a sequence to index %q, found %s", path, v.Kind())
 		}
+
+		s := v.MustSequence()
 
 		// Lookup current value in the sequence.
 		if component.index < 0 || component.index >= len(s) {

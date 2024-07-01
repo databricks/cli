@@ -7,7 +7,7 @@ models:
     columns:
       - name: customer_name
         description: "The name of a customer"
-        tests:
+        data_tests:
           - unique
           - not_null
 
@@ -16,6 +16,6 @@ models:
     columns:
       - name: order_date
         description: "The date on which orders took place"
-        tests:
+        data_tests:
           - unique
           - not_null

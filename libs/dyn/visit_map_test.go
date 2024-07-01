@@ -20,11 +20,14 @@ func TestMapWithEmptyPath(t *testing.T) {
 }
 
 func TestMapOnNilValue(t *testing.T) {
+	var nv dyn.Value
 	var err error
-	_, err = dyn.MapByPath(dyn.NilValue, dyn.NewPath(dyn.Key("foo")), nil)
-	assert.ErrorContains(t, err, `expected a map to index "foo", found nil`)
-	_, err = dyn.MapByPath(dyn.NilValue, dyn.NewPath(dyn.Index(42)), nil)
-	assert.ErrorContains(t, err, `expected a sequence to index "[42]", found nil`)
+	nv, err = dyn.MapByPath(dyn.NilValue, dyn.NewPath(dyn.Key("foo")), nil)
+	assert.NoError(t, err)
+	assert.Equal(t, dyn.NilValue, nv)
+	nv, err = dyn.MapByPath(dyn.NilValue, dyn.NewPath(dyn.Index(42)), nil)
+	assert.NoError(t, err)
+	assert.Equal(t, dyn.NilValue, nv)
 }
 
 func TestMapFuncOnMap(t *testing.T) {
@@ -267,6 +270,17 @@ func TestMapForeachOnOtherError(t *testing.T) {
 		return dyn.InvalidValue, nil
 	}))
 	assert.ErrorContains(t, err, "expected a map or sequence, found int")
+}
+
+func TestMapForeachOnNil(t *testing.T) {
+	vin := dyn.NilValue
+
+	// Check that if foreach is applied to nil, it returns nil.
+	vout, err := dyn.Map(vin, ".", dyn.Foreach(func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
+		return dyn.InvalidValue, nil
+	}))
+	assert.NoError(t, err)
+	assert.Equal(t, dyn.NilValue, vout)
 }
 
 func TestMapByPatternOnNilValue(t *testing.T) {

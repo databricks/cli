@@ -13,7 +13,7 @@ import (
 )
 
 func TestSyncIncludeExcludeNoMatchesTest(t *testing.T) {
-	b := loadTarget(t, "./override_sync", "development")
+	b := loadTarget(t, "./sync/override", "development")
 
 	diags := bundle.ApplyReadOnly(context.Background(), bundle.ReadOnly(b), validate.ValidateSyncPatterns())
 	require.Len(t, diags, 3)
@@ -21,7 +21,7 @@ func TestSyncIncludeExcludeNoMatchesTest(t *testing.T) {
 
 	require.Equal(t, diags[0].Severity, diag.Warning)
 	require.Equal(t, diags[0].Summary, "Pattern dist does not match any files")
-	require.Equal(t, diags[0].Location.File, filepath.Join("override_sync", "databricks.yml"))
+	require.Equal(t, diags[0].Location.File, filepath.Join("sync", "override", "databricks.yml"))
 	require.Equal(t, diags[0].Location.Line, 17)
 	require.Equal(t, diags[0].Location.Column, 11)
 	require.Equal(t, diags[0].Path.String(), "sync.exclude[0]")

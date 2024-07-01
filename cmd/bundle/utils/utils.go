@@ -20,19 +20,16 @@ func ConfigureBundleWithVariables(cmd *cobra.Command) (*bundle.Bundle, diag.Diag
 	// Load bundle config and apply target
 	b, diags := root.MustConfigureBundle(cmd)
 	if diags.HasError() {
-		return nil, diags
+		return b, diags
 	}
 
 	variables, err := cmd.Flags().GetStringSlice("var")
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return b, diag.FromErr(err)
 	}
 
 	// Initialize variables by assigning them values passed as command line flags
 	diags = diags.Extend(configureVariables(cmd, b, variables))
-	if diags.HasError() {
-		return nil, diags
-	}
 
 	return b, diags
 }

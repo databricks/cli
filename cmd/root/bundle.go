@@ -76,15 +76,11 @@ func configureBundle(cmd *cobra.Command, b *bundle.Bundle) (*bundle.Bundle, diag
 	ctx := cmd.Context()
 	diags := bundle.Apply(ctx, b, m)
 	if diags.HasError() {
-		return nil, diags
+		return b, diags
 	}
 
 	// Configure the workspace profile if the flag has been set.
 	diags = diags.Extend(configureProfile(cmd, b))
-	if diags.HasError() {
-		return nil, diags
-	}
-
 	return b, diags
 }
 
