@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/databricks/databricks-sdk-go/logger"
 	"os"
 	"path/filepath"
 	"runtime"
+
+	"github.com/databricks/databricks-sdk-go/logger"
 
 	"github.com/databricks/cli/bundle/env"
 
