@@ -267,6 +267,11 @@ func (r *Root) InitializeVariables(vars []string) error {
 		if _, ok := r.Variables[name]; !ok {
 			return fmt.Errorf("variable %s has not been defined", name)
 		}
+
+		if r.Variables[name].IsComplex() {
+			return fmt.Errorf("setting variables of complex type via --var flag is not supported: %s", name)
+		}
+
 		err := r.Variables[name].Set(val)
 		if err != nil {
 			return fmt.Errorf("failed to assign %s to %s: %s", val, name, err)
@@ -419,7 +424,7 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 		}
 
 		// For each variable, normalize its contents if it is a single string.
-		return dyn.Map(target, "variables", dyn.Foreach(func(_ dyn.Path, variable dyn.Value) (dyn.Value, error) {
+		return dyn.Map(target, "variables", dyn.Foreach(func(p dyn.Path, variable dyn.Value) (dyn.Value, error) {
 			switch variable.Kind() {
 
 			case dyn.KindString, dyn.KindBool, dyn.KindFloat, dyn.KindInt:
@@ -427,6 +432,21 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 				// This conforms to the variable type. Normalization back to the typed
 				// configuration will convert this to a string if necessary.
 				return dyn.NewValue(map[string]dyn.Value{"default": variable}, variable.Locations()), nil
+
+			case dyn.KindMap, dyn.KindSequence:
+				// Check if the original definition of variable has a type field.
+				typeV, err := dyn.GetByPath(v, p.Append(dyn.Key("type")))
+				if err != nil {
+					return variable, nil
+				}
+
+				if typeV.MustString() == "complex" {
+					return dyn.NewValue(map[string]dyn.Value{
+						"default": variable,
+					}, variable.Location()), nil
+				}
+
+				return variable, nil
 
 			default:
 				return variable, nil

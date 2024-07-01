@@ -35,7 +35,7 @@ func (m *rewriteSyncPaths) makeRelativeTo(root string) dyn.MapFunc {
 		dir := filepath.Dir(v.Location().File)
 		rel, err := filepath.Rel(root, dir)
 		if err != nil {
-			return dyn.NilValue, err
+			return dyn.InvalidValue, err
 		}
 
 		return dyn.NewValue(filepath.Join(rel, v.MustString()), v.Locations()), nil
@@ -47,11 +47,11 @@ func (m *rewriteSyncPaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 		return dyn.Map(v, "sync", func(_ dyn.Path, v dyn.Value) (nv dyn.Value, err error) {
 			v, err = dyn.Map(v, "include", dyn.Foreach(m.makeRelativeTo(b.RootPath)))
 			if err != nil {
-				return dyn.NilValue, err
+				return dyn.InvalidValue, err
 			}
 			v, err = dyn.Map(v, "exclude", dyn.Foreach(m.makeRelativeTo(b.RootPath)))
 			if err != nil {
-				return dyn.NilValue, err
+				return dyn.InvalidValue, err
 			}
 			return v, nil
 		})

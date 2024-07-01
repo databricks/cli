@@ -97,7 +97,7 @@ func TestMergeMapsError(t *testing.T) {
 	{
 		out, err := Merge(v, other)
 		assert.EqualError(t, err, "cannot merge map with string")
-		assert.Equal(t, dyn.NilValue, out)
+		assert.Equal(t, dyn.InvalidValue, out)
 	}
 }
 
@@ -187,7 +187,7 @@ func TestMergeSequencesError(t *testing.T) {
 	{
 		out, err := Merge(v, other)
 		assert.EqualError(t, err, "cannot merge sequence with string")
-		assert.Equal(t, dyn.NilValue, out)
+		assert.Equal(t, dyn.InvalidValue, out)
 	}
 }
 
@@ -252,6 +252,6 @@ func TestMergePrimitivesError(t *testing.T) {
 	{
 		out, err := Merge(v, other)
 		assert.EqualError(t, err, "cannot merge string with map")
-		assert.Equal(t, dyn.NilValue, out)
+		assert.Equal(t, dyn.InvalidValue, out)
 	}
 }

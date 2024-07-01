@@ -56,6 +56,8 @@ func (n normalizeOptions) normalizeType(typ reflect.Type, src dyn.Value, seen []
 		return n.normalizeInt(typ, src, path)
 	case reflect.Float32, reflect.Float64:
 		return n.normalizeFloat(typ, src, path)
+	case reflect.Interface:
+		return n.normalizeInterface(typ, src, path)
 	}
 
 	return dyn.InvalidValue, diag.Errorf("unsupported type: %s", typ.Kind())
@@ -166,8 +168,15 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 		return dyn.NewValue(out, src.Locations()), diags
 	case dyn.KindNil:
 		return src, diags
+
+	case dyn.KindString:
+		// Return verbatim if it's a pure variable reference.
+		if dynvar.IsPureVariableReference(src.MustString()) {
+			return src, nil
+		}
 	}
 
+	// Cannot interpret as a struct.
 	return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindMap, src, path))
 }
 
@@ -197,8 +206,15 @@ func (n normalizeOptions) normalizeMap(typ reflect.Type, src dyn.Value, seen []r
 		return dyn.NewValue(out, src.Locations()), diags
 	case dyn.KindNil:
 		return src, diags
+
+	case dyn.KindString:
+		// Return verbatim if it's a pure variable reference.
+		if dynvar.IsPureVariableReference(src.MustString()) {
+			return src, nil
+		}
 	}
 
+	// Cannot interpret as a map.
 	return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindMap, src, path))
 }
 
@@ -225,8 +241,15 @@ func (n normalizeOptions) normalizeSlice(typ reflect.Type, src dyn.Value, seen [
 		return dyn.NewValue(out, src.Locations()), diags
 	case dyn.KindNil:
 		return src, diags
+
+	case dyn.KindString:
+		// Return verbatim if it's a pure variable reference.
+		if dynvar.IsPureVariableReference(src.MustString()) {
+			return src, nil
+		}
 	}
 
+	// Cannot interpret as a slice.
 	return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindSequence, src, path))
 }
 
@@ -370,4 +393,8 @@ func (n normalizeOptions) normalizeFloat(typ reflect.Type, src dyn.Value, path d
 	}
 
 	return dyn.NewValue(out, src.Locations()), diags
+}
+
+func (n normalizeOptions) normalizeInterface(typ reflect.Type, src dyn.Value, path dyn.Path) (dyn.Value, diag.Diagnostics) {
+	return src, nil
 }

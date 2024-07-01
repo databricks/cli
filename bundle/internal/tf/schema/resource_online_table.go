@@ -19,8 +19,9 @@ type ResourceOnlineTableSpec struct {
 }
 
 type ResourceOnlineTable struct {
-	Id     string                   `json:"id,omitempty"`
-	Name   string                   `json:"name"`
-	Status []any                    `json:"status,omitempty"`
-	Spec   *ResourceOnlineTableSpec `json:"spec,omitempty"`
+	Id              string                   `json:"id,omitempty"`
+	Name            string                   `json:"name"`
+	Status          []any                    `json:"status,omitempty"`
+	TableServingUrl string                   `json:"table_serving_url,omitempty"`
+	Spec            *ResourceOnlineTableSpec `json:"spec,omitempty"`
 }

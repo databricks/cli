@@ -196,27 +196,53 @@ func TestRunAsErrorWhenBothUserAndSpSpecified(t *testing.T) {
 }
 
 func TestRunAsErrorNeitherUserOrSpSpecified(t *testing.T) {
-	b := load(t, "./run_as/not_allowed/neither_sp_nor_user")
+	tcases := []struct {
+		name string
+		err  string
+	}{
+		{
+			name: "empty_run_as",
+			err:  fmt.Sprintf("run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at %s:4:8", filepath.FromSlash("run_as/not_allowed/neither_sp_nor_user/empty_run_as/databricks.yml")),
+		},
+		{
+			name: "empty_sp",
+			err:  fmt.Sprintf("run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at %s:5:3", filepath.FromSlash("run_as/not_allowed/neither_sp_nor_user/empty_sp/databricks.yml")),
+		},
+		{
+			name: "empty_user",
+			err:  fmt.Sprintf("run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at %s:5:3", filepath.FromSlash("run_as/not_allowed/neither_sp_nor_user/empty_user/databricks.yml")),
+		},
+		{
+			name: "empty_user_and_sp",
+			err:  fmt.Sprintf("run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at %s:5:3", filepath.FromSlash("run_as/not_allowed/neither_sp_nor_user/empty_user_and_sp/databricks.yml")),
+		},
+	}
 
-	ctx := context.Background()
-	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-		b.Config.Workspace.CurrentUser = &config.User{
-			User: &iam.User{
-				UserName: "my_service_principal",
-			},
-		}
-		return nil
-	})
+	for _, tc := range tcases {
+		t.Run(tc.name, func(t *testing.T) {
 
-	diags := bundle.Apply(ctx, b, mutator.SetRunAs())
-	err := diags.Error()
+			bundlePath := fmt.Sprintf("./run_as/not_allowed/neither_sp_nor_user/%s", tc.name)
+			b := load(t, bundlePath)
 
-	configPath := filepath.FromSlash("run_as/not_allowed/neither_sp_nor_user/databricks.yml")
-	assert.EqualError(t, err, fmt.Sprintf("run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at %s:4:8", configPath))
+			ctx := context.Background()
+			bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+				b.Config.Workspace.CurrentUser = &config.User{
+					User: &iam.User{
+						UserName: "my_service_principal",
+					},
+				}
+				return nil
+			})
+
+			diags := bundle.Apply(ctx, b, mutator.SetRunAs())
+			err := diags.Error()
+			assert.EqualError(t, err, tc.err)
+		})
+	}
 }
 
 func TestRunAsErrorNeitherUserOrSpSpecifiedAtTargetOverride(t *testing.T) {
-	b := loadTarget(t, "./run_as/not_allowed/neither_sp_nor_user_override", "development")
+	b := loadTarget(t, "./run_as/not_allowed/neither_sp_nor_user/override", "development")
 
 	ctx := context.Background()
 	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
@@ -231,7 +257,7 @@ func TestRunAsErrorNeitherUserOrSpSpecifiedAtTargetOverride(t *testing.T) {
 	diags := bundle.Apply(ctx, b, mutator.SetRunAs())
 	err := diags.Error()
 
-	configPath := filepath.FromSlash("run_as/not_allowed/neither_sp_nor_user_override/override.yml")
+	configPath := filepath.FromSlash("run_as/not_allowed/neither_sp_nor_user/override/override.yml")
 	assert.EqualError(t, err, fmt.Sprintf("run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at %s:4:12", configPath))
 }
 
