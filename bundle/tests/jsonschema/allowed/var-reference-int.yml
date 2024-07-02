@@ -1,0 +1,22 @@
+bundle:
+  name: variable reference int
+
+variables:
+  my_var:
+    description: does not matter
+    default: 1234
+
+resources:
+  jobs:
+    foo:
+      name: def
+      tasks:
+        - task_key: abcd
+          run_job_task:
+            job_id: ${var.my_var}
+
+targets:
+  staging:
+    default: true
+    variables:
+      my_var: 7890
