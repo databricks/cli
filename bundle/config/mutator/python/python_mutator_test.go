@@ -430,8 +430,9 @@ type overrideVisitorOmitemptyTestCase struct {
 }
 
 func TestCreateOverrideVisitor_omitempty(t *testing.T) {
-	// PyDABs output can omit empty sequences/mappings, because we don't track them as optional,
-	// there is no semantic difference between empty and missing, so we keep them as they were before.
+	// PyDABs can omit empty sequences/mappings in output, because we don't track them as optional,
+	// there is no semantic difference between empty and missing, so we keep them as they were before
+	// PyDABs deleted them.
 
 	allPhases := []phase{PythonMutatorPhaseLoad, PythonMutatorPhaseInit}
 	location := dyn.Location{
@@ -481,6 +482,13 @@ func TestCreateOverrideVisitor_omitempty(t *testing.T) {
 			expectedErr: nil,
 			// deletions aren't allowed in 'load' phase
 			phases: []phase{PythonMutatorPhaseInit},
+		},
+		{
+			name:        "undo delete of nil",
+			path:        dyn.MustPathFromString("resources.jobs.job0.tags"),
+			left:        dyn.NilValue.WithLocation(location),
+			expectedErr: merge.ErrOverrideUndoDelete,
+			phases:      allPhases,
 		},
 	}
 

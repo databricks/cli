@@ -391,14 +391,20 @@ func createInitOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
 }
 
 func isOmitemptyDelete(left dyn.Value) bool {
-	// PyDABs output can omit empty sequences/mappings, because we don't track them as optional,
-	// there is no semantic difference between empty and missing, so we keep them as they were before.
+	// PyDABs can omit empty sequences/mappings in output, because we don't track them as optional,
+	// there is no semantic difference between empty and missing, so we keep them as they were before
+	// PyDABs deleted them.
 
 	if left.Kind() == dyn.KindMap && left.MustMap().Len() == 0 {
 		return true
 	}
 
 	if left.Kind() == dyn.KindSequence && len(left.MustSequence()) == 0 {
+		return true
+	}
+
+	// map/sequence can be nil, for instance, bad YAML like: `foo:<eof>`
+	if left.Kind() == dyn.KindNil {
 		return true
 	}
 
