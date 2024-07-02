@@ -193,3 +193,9 @@ func TestVariableTargetOverrides(t *testing.T) {
 		})
 	}
 }
+
+func TestBundleWithEmptyVariableLoads(t *testing.T) {
+	b := load(t, "./variables/empty")
+	diags := bundle.Apply(context.Background(), b, mutator.SetVariables())
+	require.ErrorContains(t, diags.Error(), "no value assigned to required variable a")
+}
