@@ -45,7 +45,7 @@ func override(basePath dyn.Path, left dyn.Value, right dyn.Value, visitor Overri
 			return dyn.InvalidValue, err
 		}
 
-		return dyn.NewValue(merged, left.Location()), nil
+		return dyn.NewValue(merged, left.Locations()), nil
 
 	case dyn.KindSequence:
 		// some sequences are keyed, and we can detect which elements are added/removed/updated,
@@ -56,7 +56,7 @@ func override(basePath dyn.Path, left dyn.Value, right dyn.Value, visitor Overri
 			return dyn.InvalidValue, err
 		}
 
-		return dyn.NewValue(merged, left.Location()), nil
+		return dyn.NewValue(merged, left.Locations()), nil
 
 	case dyn.KindString:
 		if left.MustString() == right.MustString() {
