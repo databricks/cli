@@ -419,6 +419,13 @@ func TestCreateOverrideVisitor(t *testing.T) {
 	}
 }
 
+func TestLoadDiagnosticsFile_nonExistent(t *testing.T) {
+	// this is an important behaviour, see loadDiagnosticsFile docstring
+	_, err := loadDiagnosticsFile("non_existent_file.json")
+
+	assert.Error(t, err)
+}
+
 func TestInterpreterPath(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		assert.Equal(t, "venv\\Scripts\\python3.exe", interpreterPath("venv"))

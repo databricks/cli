@@ -277,6 +277,11 @@ func loadOutputFile(rootPath string, outputPath string) (dyn.Value, error) {
 // loadDiagnosticsFile loads diagnostics from a file.
 //
 // It contains a list of warnings and errors that we should print to users.
+//
+// If the file doesn't exist, we return an error. We expect the file to always be
+// created by the Python mutator, and it's absence means there are integration problems,
+// and the diagnostics file was lost. If we treat non-existence as an empty diag.Diagnostics
+// we risk loosing errors and warnings.
 func loadDiagnosticsFile(path string) (diag.Diagnostics, error) {
 	file, err := os.Open(path)
 	if err != nil {
