@@ -105,6 +105,7 @@ func TestTranslatePaths(t *testing.T) {
 	touchNotebookFile(t, filepath.Join(dir, "my_pipeline_notebook.py"))
 	touchEmptyFile(t, filepath.Join(dir, "my_python_file.py"))
 	touchEmptyFile(t, filepath.Join(dir, "dist", "task.jar"))
+	touchEmptyFile(t, filepath.Join(dir, "my_requirements.txt"))
 
 	b := &bundle.Bundle{
 		RootPath: dir,
@@ -159,6 +160,14 @@ func TestTranslatePaths(t *testing.T) {
 									},
 									Libraries: []compute.Library{
 										{Jar: "dbfs:/bundle/dist/task_remote.jar"},
+									},
+								},
+								{
+									SparkPythonTask: &jobs.SparkPythonTask{
+										PythonFile: "./my_python_file.py",
+									},
+									Libraries: []compute.Library{
+										{Requirements: "./my_requirements.txt"},
 									},
 								},
 							},
@@ -240,6 +249,11 @@ func TestTranslatePaths(t *testing.T) {
 		t,
 		"dbfs:/bundle/dist/task_remote.jar",
 		b.Config.Resources.Jobs["job"].Tasks[6].Libraries[0].Jar,
+	)
+	assert.Equal(
+		t,
+		"/bundle/my_requirements.txt",
+		b.Config.Resources.Jobs["job"].Tasks[7].Libraries[0].Requirements,
 	)
 
 	// Assert that the path in the libraries now refer to the artifact.
