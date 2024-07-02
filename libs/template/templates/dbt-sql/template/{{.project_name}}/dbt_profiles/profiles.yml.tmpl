@@ -3,7 +3,7 @@
 {{- $catalog = "\"\" # workspace default"}}
 {{- end}}
 # This file defines dbt profiles for deployed dbt jobs.
-my_dbt_project:
+{{.project_name}}:
    target: dev # default target
    outputs:
 

@@ -32,7 +32,7 @@ func (m *environmentsToTargets) Apply(ctx context.Context, b *bundle.Bundle) dia
 		targets := v.Get("targets")
 
 		// Return an error if both "environments" and "targets" are set.
-		if environments != dyn.InvalidValue && targets != dyn.InvalidValue {
+		if environments.Kind() != dyn.KindInvalid && targets.Kind() != dyn.KindInvalid {
 			return dyn.InvalidValue, fmt.Errorf(
 				"both 'environments' and 'targets' are specified; only 'targets' should be used: %s",
 				environments.Location().String(),
@@ -40,7 +40,7 @@ func (m *environmentsToTargets) Apply(ctx context.Context, b *bundle.Bundle) dia
 		}
 
 		// Rewrite "environments" to "targets".
-		if environments != dyn.InvalidValue && targets == dyn.InvalidValue {
+		if environments.Kind() != dyn.KindInvalid && targets.Kind() == dyn.KindInvalid {
 			nv, err := dyn.Set(v, "targets", environments)
 			if err != nil {
 				return dyn.InvalidValue, err
