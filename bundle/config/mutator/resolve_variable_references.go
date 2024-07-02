@@ -75,9 +75,12 @@ func lookupForComplexVariables(v dyn.Value, path dyn.Path) (dyn.Value, error) {
 }
 
 func skipResolvingInNonComplexVariables(v dyn.Value) bool {
-	_, okMap := v.AsMap()
-	_, okSeq := v.AsSequence()
-	return !okMap && !okSeq
+	switch v.Kind() {
+	case dyn.KindMap, dyn.KindSequence:
+		return false
+	default:
+		return true
+	}
 }
 
 func lookupForVariables(v dyn.Value, path dyn.Path) (dyn.Value, error) {
