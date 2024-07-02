@@ -17,6 +17,7 @@ type resolveVariableReferences struct {
 	prefixes []string
 	pattern  dyn.Pattern
 	lookupFn func(dyn.Value, dyn.Path) (dyn.Value, error)
+	skipFn   func(dyn.Value) bool
 }
 
 func ResolveVariableReferences(prefixes ...string) bundle.Mutator {
@@ -31,11 +32,55 @@ func ResolveVariableReferencesInLookup() bundle.Mutator {
 	}, pattern: dyn.NewPattern(dyn.Key("variables"), dyn.AnyKey(), dyn.Key("lookup")), lookupFn: lookupForVariables}
 }
 
+func ResolveVariableReferencesInComplexVariables() bundle.Mutator {
+	return &resolveVariableReferences{prefixes: []string{
+		"bundle",
+		"workspace",
+		"variables",
+	},
+		pattern:  dyn.NewPattern(dyn.Key("variables"), dyn.AnyKey(), dyn.Key("value")),
+		lookupFn: lookupForComplexVariables,
+		skipFn:   skipResolvingInNonComplexVariables,
+	}
+}
+
 func lookup(v dyn.Value, path dyn.Path) (dyn.Value, error) {
 	// Future opportunity: if we lookup this path in both the given root
 	// and the synthesized root, we know if it was explicitly set or implied to be empty.
 	// Then we can emit a warning if it was not explicitly set.
 	return dyn.GetByPath(v, path)
+}
+
+func lookupForComplexVariables(v dyn.Value, path dyn.Path) (dyn.Value, error) {
+	if path[0].Key() != "variables" {
+		return lookup(v, path)
+	}
+
+	varV, err := dyn.GetByPath(v, path[:len(path)-1])
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
+
+	var vv variable.Variable
+	err = convert.ToTyped(&vv, varV)
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
+
+	if vv.Type == variable.VariableTypeComplex {
+		return dyn.InvalidValue, fmt.Errorf("complex variables cannot contain references to another complex variables")
+	}
+
+	return lookup(v, path)
+}
+
+func skipResolvingInNonComplexVariables(v dyn.Value) bool {
+	switch v.Kind() {
+	case dyn.KindMap, dyn.KindSequence:
+		return false
+	default:
+		return true
+	}
 }
 
 func lookupForVariables(v dyn.Value, path dyn.Path) (dyn.Value, error) {
@@ -100,17 +145,27 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 			// Resolve variable references in all values.
 			return dynvar.Resolve(v, func(path dyn.Path) (dyn.Value, error) {
 				// Rewrite the shorthand path ${var.foo} into ${variables.foo.value}.
-				if path.HasPrefix(varPath) && len(path) == 2 {
-					path = dyn.NewPath(
+				if path.HasPrefix(varPath) {
+					newPath := dyn.NewPath(
 						dyn.Key("variables"),
 						path[1],
 						dyn.Key("value"),
 					)
+
+					if len(path) > 2 {
+						newPath = newPath.Append(path[2:]...)
+					}
+
+					path = newPath
 				}
 
 				// Perform resolution only if the path starts with one of the specified prefixes.
 				for _, prefix := range prefixes {
 					if path.HasPrefix(prefix) {
+						// Skip resolution if there is a skip function and it returns true.
+						if m.skipFn != nil && m.skipFn(v) {
+							return dyn.InvalidValue, dynvar.ErrSkipResolution
+						}
 						return m.lookupFn(normalized, path)
 					}
 				}

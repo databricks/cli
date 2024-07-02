@@ -109,8 +109,8 @@ func TestVariablesWithoutDefinition(t *testing.T) {
 	require.NoError(t, diags.Error())
 	require.True(t, b.Config.Variables["a"].HasValue())
 	require.True(t, b.Config.Variables["b"].HasValue())
-	assert.Equal(t, "foo", *b.Config.Variables["a"].Value)
-	assert.Equal(t, "bar", *b.Config.Variables["b"].Value)
+	assert.Equal(t, "foo", b.Config.Variables["a"].Value)
+	assert.Equal(t, "bar", b.Config.Variables["b"].Value)
 }
 
 func TestVariablesWithTargetLookupOverrides(t *testing.T) {
@@ -140,9 +140,9 @@ func TestVariablesWithTargetLookupOverrides(t *testing.T) {
 	))
 
 	require.NoError(t, diags.Error())
-	assert.Equal(t, "4321", *b.Config.Variables["d"].Value)
-	assert.Equal(t, "1234", *b.Config.Variables["e"].Value)
-	assert.Equal(t, "9876", *b.Config.Variables["f"].Value)
+	assert.Equal(t, "4321", b.Config.Variables["d"].Value)
+	assert.Equal(t, "1234", b.Config.Variables["e"].Value)
+	assert.Equal(t, "9876", b.Config.Variables["f"].Value)
 }
 
 func TestVariableTargetOverrides(t *testing.T) {
@@ -192,4 +192,10 @@ func TestVariableTargetOverrides(t *testing.T) {
 			assert.Equal(t, tcase.pipelineNumWorkers, b.Config.Resources.Pipelines["my_pipeline"].Clusters[0].NumWorkers)
 		})
 	}
+}
+
+func TestBundleWithEmptyVariableLoads(t *testing.T) {
+	b := load(t, "./variables/empty")
+	diags := bundle.Apply(context.Background(), b, mutator.SetVariables())
+	require.ErrorContains(t, diags.Error(), "no value assigned to required variable a")
 }

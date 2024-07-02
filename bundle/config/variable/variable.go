@@ -2,12 +2,27 @@ package variable
 
 import (
 	"fmt"
+	"reflect"
+)
+
+// We are using `any` because since introduction of complex variables,
+// variables can be of any type.
+// Type alias is used to make it easier to understand the code.
+type VariableValue = any
+
+type VariableType string
+
+const (
+	VariableTypeComplex VariableType = "complex"
 )
 
 // An input variable for the bundle config
 type Variable struct {
+	// A type of the variable. This is used to validate the value of the variable
+	Type VariableType `json:"type,omitempty"`
+
 	// A default value which then makes the variable optional
-	Default *string `json:"default,omitempty"`
+	Default VariableValue `json:"default,omitempty"`
 
 	// Documentation for this input variable
 	Description string `json:"description,omitempty"`
@@ -21,7 +36,7 @@ type Variable struct {
 	// 4. Default value defined in variable definition
 	// 5. Throw error, since if no default value is defined, then the variable
 	//    is required
-	Value *string `json:"value,omitempty" bundle:"readonly"`
+	Value VariableValue `json:"value,omitempty" bundle:"readonly"`
 
 	// The value of this field will be used to lookup the resource by name
 	// And assign the value of the variable to ID of the resource found.
@@ -39,10 +54,24 @@ func (v *Variable) HasValue() bool {
 	return v.Value != nil
 }
 
-func (v *Variable) Set(val string) error {
+func (v *Variable) Set(val VariableValue) error {
 	if v.HasValue() {
-		return fmt.Errorf("variable has already been assigned value: %s", *v.Value)
+		return fmt.Errorf("variable has already been assigned value: %s", v.Value)
 	}
-	v.Value = &val
+
+	rv := reflect.ValueOf(val)
+	switch rv.Kind() {
+	case reflect.Struct, reflect.Array, reflect.Slice, reflect.Map:
+		if v.Type != VariableTypeComplex {
+			return fmt.Errorf("variable type is not complex")
+		}
+	}
+
+	v.Value = val
+
 	return nil
+}
+
+func (v *Variable) IsComplex() bool {
+	return v.Type == VariableTypeComplex
 }

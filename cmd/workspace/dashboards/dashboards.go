@@ -268,8 +268,8 @@ func newList() *cobra.Command {
   
   Fetch a paginated list of dashboard objects.
   
-  ### **Warning: Calling this API concurrently 10 or more times could result in
-  throttling, service degradation, or a temporary ban.**`
+  **Warning**: Calling this API concurrently 10 or more times could result in
+  throttling, service degradation, or a temporary ban.`
 
 	cmd.Annotations = make(map[string]string)
 
