@@ -3,6 +3,7 @@ package python
 import (
 	"context"
 	"fmt"
+	"github.com/databricks/cli/libs/dyn/merge"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -384,13 +385,12 @@ func TestCreateOverrideVisitor(t *testing.T) {
 
 		if tc.deletePath != nil {
 			t.Run(tc.name+"-delete", func(t *testing.T) {
-				out, err := visitor.VisitDelete(tc.deletePath, left)
+				err := visitor.VisitDelete(tc.deletePath, left)
 
 				if tc.deleteError != nil {
 					assert.Equal(t, tc.deleteError, err)
 				} else {
 					assert.NoError(t, err)
-					assert.Equal(t, dyn.NilValue, out)
 				}
 			})
 		}
@@ -411,11 +411,11 @@ func TestCreateOverrideVisitor(t *testing.T) {
 }
 
 type overrideVisitorOmitemptyTestCase struct {
-	name     string
-	path     dyn.Path
-	left     dyn.Value
-	phases   []phase
-	expected dyn.Value
+	name        string
+	path        dyn.Path
+	left        dyn.Value
+	phases      []phase
+	expectedErr error
 }
 
 func TestCreateOverrideVisitor_omitempty(t *testing.T) {
@@ -432,42 +432,42 @@ func TestCreateOverrideVisitor_omitempty(t *testing.T) {
 	testCases := []overrideVisitorOmitemptyTestCase{
 		{
 			// this is not happening, but adding for completeness
-			name:     "empty variables",
-			path:     dyn.MustPathFromString("variables"),
-			left:     dyn.NewValue([]dyn.Value{}, location),
-			expected: dyn.NewValue([]dyn.Value{}, location),
-			phases:   allPhases,
+			name:        "undo delete of empty variables",
+			path:        dyn.MustPathFromString("variables"),
+			left:        dyn.NewValue([]dyn.Value{}, location),
+			expectedErr: merge.ErrOverrideUndoDelete,
+			phases:      allPhases,
 		},
 		{
-			name:     "empty job clusters",
-			path:     dyn.MustPathFromString("resources.jobs.job0.job_clusters"),
-			left:     dyn.NewValue([]dyn.Value{}, location),
-			expected: dyn.NewValue([]dyn.Value{}, location),
-			phases:   allPhases,
+			name:        "undo delete of empty job clusters",
+			path:        dyn.MustPathFromString("resources.jobs.job0.job_clusters"),
+			left:        dyn.NewValue([]dyn.Value{}, location),
+			expectedErr: merge.ErrOverrideUndoDelete,
+			phases:      allPhases,
 		},
 		{
-			name:     "non-empty job clusters",
-			path:     dyn.MustPathFromString("resources.jobs.job0.job_clusters"),
-			left:     dyn.NewValue([]dyn.Value{dyn.NewValue("abc", location)}, location),
-			expected: dyn.NilValue,
+			name:        "allow delete of non-empty job clusters",
+			path:        dyn.MustPathFromString("resources.jobs.job0.job_clusters"),
+			left:        dyn.NewValue([]dyn.Value{dyn.NewValue("abc", location)}, location),
+			expectedErr: nil,
 			// deletions aren't allowed in 'load' phase
 			phases: []phase{PythonMutatorPhaseInit},
 		},
 		{
-			name:     "empty tags",
-			path:     dyn.MustPathFromString("resources.jobs.job0.tags"),
-			left:     dyn.NewValue(map[string]dyn.Value{}, location),
-			expected: dyn.NewValue(map[string]dyn.Value{}, location),
-			phases:   allPhases,
+			name:        "undo delete of empty tags",
+			path:        dyn.MustPathFromString("resources.jobs.job0.tags"),
+			left:        dyn.NewValue(map[string]dyn.Value{}, location),
+			expectedErr: merge.ErrOverrideUndoDelete,
+			phases:      allPhases,
 		},
 		{
-			name: "non-empty tags",
+			name: "allow delete of non-empty tags",
 			path: dyn.MustPathFromString("resources.jobs.job0.tags"),
 			left: dyn.NewValue(
 				map[string]dyn.Value{"dev": dyn.NewValue("true", location)},
 				location,
 			),
-			expected: dyn.NilValue,
+			expectedErr: nil,
 			// deletions aren't allowed in 'load' phase
 			phases: []phase{PythonMutatorPhaseInit},
 		},
@@ -479,10 +479,9 @@ func TestCreateOverrideVisitor_omitempty(t *testing.T) {
 				visitor, err := createOverrideVisitor(context.Background(), phase)
 				require.NoError(t, err)
 
-				out, err := visitor.VisitDelete(tc.path, tc.left)
+				err = visitor.VisitDelete(tc.path, tc.left)
 
-				assert.NoError(t, err)
-				assert.Equal(t, tc.expected, out)
+				assert.Equal(t, tc.expectedErr, err)
 			})
 		}
 	}
