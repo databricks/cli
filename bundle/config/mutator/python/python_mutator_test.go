@@ -3,13 +3,14 @@ package python
 import (
 	"context"
 	"fmt"
-	"github.com/databricks/cli/libs/dyn/merge"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"reflect"
 	"runtime"
 	"testing"
+
+	"github.com/databricks/cli/libs/dyn/merge"
 
 	"github.com/databricks/cli/bundle/env"
 	"github.com/stretchr/testify/require"
