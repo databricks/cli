@@ -74,12 +74,14 @@ func TestPythonMutator_load(t *testing.T) {
 					},
 				}
 			}
-		}`)
+		}`,
+		`{"severity": "warning", "summary": "job doesn't have any tasks", "location": {"file": "src/examples/file.py", "line": 10, "column": 5}}`,
+	)
 
 	mutator := PythonMutator(PythonMutatorPhaseLoad)
-	diag := bundle.Apply(ctx, b, mutator)
+	diags := bundle.Apply(ctx, b, mutator)
 
-	assert.NoError(t, diag.Error())
+	assert.NoError(t, diags.Error())
 
 	assert.ElementsMatch(t, []string{"job0", "job1"}, maps.Keys(b.Config.Resources.Jobs))
 
@@ -90,6 +92,14 @@ func TestPythonMutator_load(t *testing.T) {
 	if job1, ok := b.Config.Resources.Jobs["job1"]; ok {
 		assert.Equal(t, "job_1", job1.Name)
 	}
+
+	assert.Equal(t, 1, len(diags))
+	assert.Equal(t, "job doesn't have any tasks", diags[0].Summary)
+	assert.Equal(t, dyn.Location{
+		File:   "src/examples/file.py",
+		Line:   10,
+		Column: 5,
+	}, diags[0].Location)
 }
 
 func TestPythonMutator_load_disallowed(t *testing.T) {
@@ -129,7 +139,7 @@ func TestPythonMutator_load_disallowed(t *testing.T) {
 					}
 				}
 			}
-		}`)
+		}`, "")
 
 	mutator := PythonMutator(PythonMutatorPhaseLoad)
 	diag := bundle.Apply(ctx, b, mutator)
@@ -174,7 +184,7 @@ func TestPythonMutator_init(t *testing.T) {
 					}
 				}
 			}
-		}`)
+		}`, "")
 
 	mutator := PythonMutator(PythonMutatorPhaseInit)
 	diag := bundle.Apply(ctx, b, mutator)
@@ -235,12 +245,12 @@ func TestPythonMutator_badOutput(t *testing.T) {
 					}
 				}
 			}
-		}`)
+		}`, "")
 
 	mutator := PythonMutator(PythonMutatorPhaseLoad)
 	diag := bundle.Apply(ctx, b, mutator)
 
-	assert.EqualError(t, diag.Error(), "failed to normalize Python mutator output: unknown field: unknown_property")
+	assert.EqualError(t, diag.Error(), "failed to load Python mutator output: failed to normalize output: unknown field: unknown_property")
 }
 
 func TestPythonMutator_disabled(t *testing.T) {
@@ -409,6 +419,13 @@ func TestCreateOverrideVisitor(t *testing.T) {
 	}
 }
 
+func TestLoadDiagnosticsFile_nonExistent(t *testing.T) {
+	// this is an important behaviour, see loadDiagnosticsFile docstring
+	_, err := loadDiagnosticsFile("non_existent_file.json")
+
+	assert.Error(t, err)
+}
+
 func TestInterpreterPath(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		assert.Equal(t, "venv\\Scripts\\python3.exe", interpreterPath("venv"))
@@ -417,7 +434,7 @@ func TestInterpreterPath(t *testing.T) {
 	}
 }
 
-func withProcessStub(t *testing.T, args []string, stdout string) context.Context {
+func withProcessStub(t *testing.T, args []string, output string, diagnostics string) context.Context {
 	ctx := context.Background()
 	ctx, stub := process.WithStub(ctx)
 
@@ -429,17 +446,24 @@ func withProcessStub(t *testing.T, args []string, stdout string) context.Context
 
 	inputPath := filepath.Join(cacheDir, "input.json")
 	outputPath := filepath.Join(cacheDir, "output.json")
+	diagnosticsPath := filepath.Join(cacheDir, "diagnostics.json")
 
 	args = append(args, "--input", inputPath)
 	args = append(args, "--output", outputPath)
+	args = append(args, "--diagnostics", diagnosticsPath)
 
 	stub.WithCallback(func(actual *exec.Cmd) error {
 		_, err := os.Stat(inputPath)
 		assert.NoError(t, err)
 
 		if reflect.DeepEqual(actual.Args, args) {
-			err := os.WriteFile(outputPath, []byte(stdout), 0600)
-			return err
+			err := os.WriteFile(outputPath, []byte(output), 0600)
+			require.NoError(t, err)
+
+			err = os.WriteFile(diagnosticsPath, []byte(diagnostics), 0600)
+			require.NoError(t, err)
+
+			return nil
 		} else {
 			return fmt.Errorf("unexpected command: %v", actual.Args)
 		}
