@@ -14,9 +14,8 @@ import (
 // For instance, it can disallow changes outside the specific path(s), or update
 // the location of the effective value.
 //
-// Values returned by 'VisitDelete', 'VisitInsert' and 'VisitUpdate' are used as
-// the final value of the node. 'VisitDelete' can return ErrOverrideUndoDelete
-// to undo delete.
+// Values returned by 'VisitInsert' and 'VisitUpdate' are used as the final value
+// of the node. 'VisitDelete' can return ErrOverrideUndoDelete to undo delete.
 //
 // 'VisitDelete' is called when a value is removed from mapping or sequence
 // 'VisitInsert' is called when a new value is added to mapping or sequence
