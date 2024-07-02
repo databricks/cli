@@ -55,7 +55,7 @@ func TestApplyBundlePermissions(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, ApplyBundlePermissions())
+	diags := bundle.Apply(context.Background(), b, ApplyResourcePermissions())
 	require.NoError(t, diags.Error())
 
 	require.Len(t, b.Config.Resources.Jobs["job_1"].Permissions, 3)
@@ -138,7 +138,7 @@ func TestWarningOnOverlapPermission(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, ApplyBundlePermissions())
+	diags := bundle.Apply(context.Background(), b, ApplyResourcePermissions())
 	require.NoError(t, diags.Error())
 
 	require.Contains(t, b.Config.Resources.Jobs["job_1"].Permissions, resources.Permission{Level: "CAN_VIEW", UserName: "TestUser"})
@@ -147,4 +147,63 @@ func TestWarningOnOverlapPermission(t *testing.T) {
 	require.Contains(t, b.Config.Resources.Jobs["job_2"].Permissions, resources.Permission{Level: "CAN_MANAGE", UserName: "TestUser"})
 	require.Contains(t, b.Config.Resources.Jobs["job_2"].Permissions, resources.Permission{Level: "CAN_VIEW", GroupName: "TestGroup"})
 
+}
+
+func TestOwnerLevel(t *testing.T) {
+	// Create a bundle with a run_as configuration
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Permissions: []resources.Permission{
+				{Level: IS_OWNER, UserName: "Alice"},
+			},
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job_1": {
+						Permissions: []resources.Permission{
+							{Level: CAN_MANAGE, UserName: "Bob"},
+						},
+						JobSettings: &jobs.JobSettings{
+							Name: "job_1",
+						},
+					},
+					"job_2": {
+						Permissions: []resources.Permission{
+							{Level: IS_OWNER, UserName: "Bob"},
+						},
+						JobSettings: &jobs.JobSettings{
+							Name: "job_1",
+						},
+					},
+				},
+				Pipelines: map[string]*resources.Pipeline{
+					"pipeline_1": {},
+				},
+				Models: map[string]*resources.MlflowModel{
+					"model_1": {
+						Permissions: []resources.Permission{
+							{Level: CAN_MANAGE, UserName: "Bob"},
+						},
+					},
+				},
+				Experiments: map[string]*resources.MlflowExperiment{
+					"experiment_1": {},
+				},
+				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
+					"endpoint_1": {},
+				},
+			},
+		},
+	}
+
+	diags := bundle.Apply(context.Background(), b, ApplyResourcePermissions())
+	require.NoError(t, diags.Error())
+	require.Contains(t, b.Config.Resources.Jobs["job_1"].Permissions, resources.Permission{Level: "CAN_MANAGE", UserName: "Bob"})
+	require.Contains(t, b.Config.Resources.Jobs["job_1"].Permissions, resources.Permission{Level: "IS_OWNER", UserName: "Alice"})
+	require.Contains(t, b.Config.Resources.Jobs["job_2"].Permissions, resources.Permission{Level: "IS_OWNER", UserName: "Bob"})
+	require.NotContains(t, b.Config.Resources.Jobs["job_2"].Permissions, resources.Permission{Level: "IS_OWNER", UserName: "Alice"})
+	require.Contains(t, b.Config.Resources.Pipelines["pipeline_1"].Permissions, resources.Permission{Level: "IS_OWNER", UserName: "Alice"})
+	require.Contains(t, b.Config.Resources.Experiments["experiment_1"].Permissions, resources.Permission{Level: "CAN_MANAGE", UserName: "Alice"})
+	require.Contains(t, b.Config.Resources.Models["model_1"].Permissions, resources.Permission{Level: "CAN_MANAGE", UserName: "Alice"})
+	require.Contains(t, b.Config.Resources.Models["model_1"].Permissions, resources.Permission{Level: "CAN_MANAGE", UserName: "Bob"})
+	require.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint_1"].Permissions, resources.Permission{Level: "CAN_MANAGE", UserName: "Alice"})
 }
