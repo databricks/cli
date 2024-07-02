@@ -241,12 +241,12 @@ func createLoadOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
 	jobsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))
 
 	return merge.OverrideVisitor{
-		VisitDelete: func(valuePath dyn.Path, left dyn.Value) (dyn.Value, error) {
+		VisitDelete: func(valuePath dyn.Path, left dyn.Value) error {
 			if isOmitemptyDelete(left) {
-				return left, nil
+				return merge.ErrOverrideUndoDelete
 			}
 
-			return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (delete)", valuePath.String())
+			return fmt.Errorf("unexpected change at %q (delete)", valuePath.String())
 		},
 		VisitInsert: func(valuePath dyn.Path, right dyn.Value) (dyn.Value, error) {
 			if !valuePath.HasPrefix(jobsPath) {
@@ -278,25 +278,25 @@ func createInitOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
 	jobsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))
 
 	return merge.OverrideVisitor{
-		VisitDelete: func(valuePath dyn.Path, left dyn.Value) (dyn.Value, error) {
+		VisitDelete: func(valuePath dyn.Path, left dyn.Value) error {
 			if isOmitemptyDelete(left) {
-				return left, nil
+				return merge.ErrOverrideUndoDelete
 			}
 
 			if !valuePath.HasPrefix(jobsPath) {
-				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (delete)", valuePath.String())
+				return fmt.Errorf("unexpected change at %q (delete)", valuePath.String())
 			}
 
 			deleteResource := len(valuePath) == len(jobsPath)+1
 
 			if deleteResource {
-				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (delete)", valuePath.String())
+				return fmt.Errorf("unexpected change at %q (delete)", valuePath.String())
 			}
 
 			// deleting properties is allowed because it only changes an existing resource
 			log.Debugf(ctx, "Delete value at %q", valuePath.String())
 
-			return dyn.NilValue, nil
+			return nil
 		},
 		VisitInsert: func(valuePath dyn.Path, right dyn.Value) (dyn.Value, error) {
 			if !valuePath.HasPrefix(jobsPath) {
