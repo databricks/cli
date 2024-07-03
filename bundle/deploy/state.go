@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"os"
 	"path/filepath"
 	"time"
 
@@ -59,8 +58,8 @@ type entry struct {
 	info fs.FileInfo
 }
 
-func newEntry(path string) *entry {
-	info, err := os.Stat(path)
+func newEntry(root vfs.Path, path string) *entry {
+	info, err := root.Stat(path)
 	if err != nil {
 		return &entry{path, nil}
 	}
@@ -111,11 +110,10 @@ func FromSlice(files []fileset.File) (Filelist, error) {
 	return f, nil
 }
 
-func (f Filelist) ToSlice(basePath string) []fileset.File {
+func (f Filelist) ToSlice(root vfs.Path) []fileset.File {
 	var files []fileset.File
-	root := vfs.MustNew(basePath)
 	for _, file := range f {
-		entry := newEntry(filepath.Join(basePath, file.LocalPath))
+		entry := newEntry(root, filepath.ToSlash(file.LocalPath))
 
 		// Snapshots created with versions <= v0.220.0 use platform-specific
 		// paths (i.e. with backslashes). Files returned by [libs/fileset] always
