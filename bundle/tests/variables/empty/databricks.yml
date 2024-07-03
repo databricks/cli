@@ -1,0 +1,7 @@
+variables:
+  a:
+    description: empty variable
+    default:
+
+bundle:
+  name: empty${var.a}

@@ -3,10 +3,13 @@ package python
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
+
+	"github.com/databricks/databricks-sdk-go/logger"
 
 	"github.com/databricks/cli/bundle/env"
 
@@ -87,6 +90,10 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		return diag.Errorf("\"experimental.pydabs.enabled\" can only be used when \"experimental.pydabs.venv_path\" is set")
 	}
 
+	// mutateDiags is used because Mutate returns 'error' instead of 'diag.Diagnostics'
+	var mutateDiags diag.Diagnostics
+	var mutateDiagsHasError = errors.New("unexpected error")
+
 	err := b.Config.Mutate(func(leftRoot dyn.Value) (dyn.Value, error) {
 		pythonPath := interpreterPath(experimental.PyDABs.VEnvPath)
 
@@ -103,9 +110,10 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 			return dyn.InvalidValue, fmt.Errorf("failed to create cache dir: %w", err)
 		}
 
-		rightRoot, err := m.runPythonMutator(ctx, cacheDir, b.RootPath, pythonPath, leftRoot)
-		if err != nil {
-			return dyn.InvalidValue, err
+		rightRoot, diags := m.runPythonMutator(ctx, cacheDir, b.RootPath, pythonPath, leftRoot)
+		mutateDiags = diags
+		if diags.HasError() {
+			return dyn.InvalidValue, mutateDiagsHasError
 		}
 
 		visitor, err := createOverrideVisitor(ctx, m.phase)
@@ -116,7 +124,15 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		return merge.Override(leftRoot, rightRoot, visitor)
 	})
 
-	return diag.FromErr(err)
+	if err == mutateDiagsHasError {
+		if !mutateDiags.HasError() {
+			panic("mutateDiags has no error, but error is expected")
+		}
+
+		return mutateDiags
+	}
+
+	return mutateDiags.Extend(diag.FromErr(err))
 }
 
 func createCacheDir(ctx context.Context) (string, error) {
@@ -138,9 +154,10 @@ func createCacheDir(ctx context.Context) (string, error) {
 	return os.MkdirTemp("", "-pydabs")
 }
 
-func (m *pythonMutator) runPythonMutator(ctx context.Context, cacheDir string, rootPath string, pythonPath string, root dyn.Value) (dyn.Value, error) {
+func (m *pythonMutator) runPythonMutator(ctx context.Context, cacheDir string, rootPath string, pythonPath string, root dyn.Value) (dyn.Value, diag.Diagnostics) {
 	inputPath := filepath.Join(cacheDir, "input.json")
 	outputPath := filepath.Join(cacheDir, "output.json")
+	diagnosticsPath := filepath.Join(cacheDir, "diagnostics.json")
 
 	args := []string{
 		pythonPath,
@@ -152,42 +169,77 @@ func (m *pythonMutator) runPythonMutator(ctx context.Context, cacheDir string, r
 		inputPath,
 		"--output",
 		outputPath,
+		"--diagnostics",
+		diagnosticsPath,
 	}
 
-	// we need to marshal dyn.Value instead of bundle.Config to JSON to support
-	// non-string fields assigned with bundle variables
-	rootConfigJson, err := json.Marshal(root.AsAny())
-	if err != nil {
-		return dyn.InvalidValue, fmt.Errorf("failed to marshal root config: %w", err)
-	}
-
-	err = os.WriteFile(inputPath, rootConfigJson, 0600)
-	if err != nil {
-		return dyn.InvalidValue, fmt.Errorf("failed to write input file: %w", err)
+	if err := writeInputFile(inputPath, root); err != nil {
+		return dyn.InvalidValue, diag.Errorf("failed to write input file: %s", err)
 	}
 
 	stderrWriter := newLogWriter(ctx, "stderr: ")
 	stdoutWriter := newLogWriter(ctx, "stdout: ")
 
-	_, err = process.Background(
+	_, processErr := process.Background(
 		ctx,
 		args,
 		process.WithDir(rootPath),
 		process.WithStderrWriter(stderrWriter),
 		process.WithStdoutWriter(stdoutWriter),
 	)
-	if err != nil {
-		return dyn.InvalidValue, fmt.Errorf("python mutator process failed: %w", err)
+	if processErr != nil {
+		logger.Debugf(ctx, "python mutator process failed: %s", processErr)
 	}
 
+	pythonDiagnostics, pythonDiagnosticsErr := loadDiagnosticsFile(diagnosticsPath)
+	if pythonDiagnosticsErr != nil {
+		logger.Debugf(ctx, "failed to load diagnostics: %s", pythonDiagnosticsErr)
+	}
+
+	// if diagnostics file exists, it gives the most descriptive errors
+	// if there is any error, we treat it as fatal error, and stop processing
+	if pythonDiagnostics.HasError() {
+		return dyn.InvalidValue, pythonDiagnostics
+	}
+
+	// process can fail without reporting errors in diagnostics file or creating it, for instance,
+	// venv doesn't have PyDABs library installed
+	if processErr != nil {
+		return dyn.InvalidValue, diag.Errorf("python mutator process failed: %sw, use --debug to enable logging", processErr)
+	}
+
+	// or we can fail to read diagnostics file, that should always be created
+	if pythonDiagnosticsErr != nil {
+		return dyn.InvalidValue, diag.Errorf("failed to load diagnostics: %s", pythonDiagnosticsErr)
+	}
+
+	output, err := loadOutputFile(rootPath, outputPath)
+	if err != nil {
+		return dyn.InvalidValue, diag.Errorf("failed to load Python mutator output: %s", err)
+	}
+
+	// we pass through pythonDiagnostic because it contains warnings
+	return output, pythonDiagnostics
+}
+
+func writeInputFile(inputPath string, input dyn.Value) error {
+	// we need to marshal dyn.Value instead of bundle.Config to JSON to support
+	// non-string fields assigned with bundle variables
+	rootConfigJson, err := json.Marshal(input.AsAny())
+	if err != nil {
+		return fmt.Errorf("failed to marshal input: %w", err)
+	}
+
+	return os.WriteFile(inputPath, rootConfigJson, 0600)
+}
+
+func loadOutputFile(rootPath string, outputPath string) (dyn.Value, error) {
 	outputFile, err := os.Open(outputPath)
 	if err != nil {
-		return dyn.InvalidValue, fmt.Errorf("failed to open Python mutator output: %w", err)
+		return dyn.InvalidValue, fmt.Errorf("failed to open output file: %w", err)
 	}
 
-	defer func() {
-		_ = outputFile.Close()
-	}()
+	defer outputFile.Close()
 
 	// we need absolute path because later parts of pipeline assume all paths are absolute
 	// and this file will be used as location to resolve relative paths.
@@ -204,22 +256,41 @@ func (m *pythonMutator) runPythonMutator(ctx context.Context, cacheDir string, r
 
 	generated, err := yamlloader.LoadYAML(virtualPath, outputFile)
 	if err != nil {
-		return dyn.InvalidValue, fmt.Errorf("failed to parse Python mutator output: %w", err)
+		return dyn.InvalidValue, fmt.Errorf("failed to parse output file: %w", err)
 	}
 
 	normalized, diagnostic := convert.Normalize(config.Root{}, generated)
 	if diagnostic.Error() != nil {
-		return dyn.InvalidValue, fmt.Errorf("failed to normalize Python mutator output: %w", diagnostic.Error())
+		return dyn.InvalidValue, fmt.Errorf("failed to normalize output: %w", diagnostic.Error())
 	}
 
 	// warnings shouldn't happen because output should be already normalized
 	// when it happens, it's a bug in the mutator, and should be treated as an error
 
 	for _, d := range diagnostic.Filter(diag.Warning) {
-		return dyn.InvalidValue, fmt.Errorf("failed to normalize Python mutator output: %s", d.Summary)
+		return dyn.InvalidValue, fmt.Errorf("failed to normalize output: %s", d.Summary)
 	}
 
 	return normalized, nil
+}
+
+// loadDiagnosticsFile loads diagnostics from a file.
+//
+// It contains a list of warnings and errors that we should print to users.
+//
+// If the file doesn't exist, we return an error. We expect the file to always be
+// created by the Python mutator, and it's absence means there are integration problems,
+// and the diagnostics file was lost. If we treat non-existence as an empty diag.Diagnostics
+// we risk loosing errors and warnings.
+func loadDiagnosticsFile(path string) (diag.Diagnostics, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open diagnostics file: %w", err)
+	}
+
+	defer file.Close()
+
+	return parsePythonDiagnostics(file)
 }
 
 func createOverrideVisitor(ctx context.Context, phase phase) (merge.OverrideVisitor, error) {
@@ -238,13 +309,23 @@ func createOverrideVisitor(ctx context.Context, phase phase) (merge.OverrideVisi
 // During load, it's only possible to create new resources, and not modify or
 // delete existing ones.
 func createLoadOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
+	resourcesPath := dyn.NewPath(dyn.Key("resources"))
 	jobsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))
 
 	return merge.OverrideVisitor{
 		VisitDelete: func(valuePath dyn.Path, left dyn.Value) error {
+			if isOmitemptyDelete(left) {
+				return merge.ErrOverrideUndoDelete
+			}
+
 			return fmt.Errorf("unexpected change at %q (delete)", valuePath.String())
 		},
 		VisitInsert: func(valuePath dyn.Path, right dyn.Value) (dyn.Value, error) {
+			// insert 'resources' or 'resources.jobs' if it didn't exist before
+			if valuePath.Equal(resourcesPath) || valuePath.Equal(jobsPath) {
+				return right, nil
+			}
+
 			if !valuePath.HasPrefix(jobsPath) {
 				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (insert)", valuePath.String())
 			}
@@ -271,10 +352,15 @@ func createLoadOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
 // During the init phase it's possible to create new resources, modify existing
 // resources, but not delete existing resources.
 func createInitOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
+	resourcesPath := dyn.NewPath(dyn.Key("resources"))
 	jobsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))
 
 	return merge.OverrideVisitor{
 		VisitDelete: func(valuePath dyn.Path, left dyn.Value) error {
+			if isOmitemptyDelete(left) {
+				return merge.ErrOverrideUndoDelete
+			}
+
 			if !valuePath.HasPrefix(jobsPath) {
 				return fmt.Errorf("unexpected change at %q (delete)", valuePath.String())
 			}
@@ -291,6 +377,11 @@ func createInitOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
 			return nil
 		},
 		VisitInsert: func(valuePath dyn.Path, right dyn.Value) (dyn.Value, error) {
+			// insert 'resources' or 'resources.jobs' if it didn't exist before
+			if valuePath.Equal(resourcesPath) || valuePath.Equal(jobsPath) {
+				return right, nil
+			}
+
 			if !valuePath.HasPrefix(jobsPath) {
 				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (insert)", valuePath.String())
 			}
@@ -308,6 +399,27 @@ func createInitOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
 
 			return right, nil
 		},
+	}
+}
+
+func isOmitemptyDelete(left dyn.Value) bool {
+	// PyDABs can omit empty sequences/mappings in output, because we don't track them as optional,
+	// there is no semantic difference between empty and missing, so we keep them as they were before
+	// PyDABs deleted them.
+
+	switch left.Kind() {
+	case dyn.KindMap:
+		return left.MustMap().Len() == 0
+
+	case dyn.KindSequence:
+		return len(left.MustSequence()) == 0
+
+	case dyn.KindNil:
+		// map/sequence can be nil, for instance, bad YAML like: `foo:<eof>`
+		return true
+
+	default:
+		return false
 	}
 }
 
