@@ -313,6 +313,10 @@ func createLoadOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
 
 	return merge.OverrideVisitor{
 		VisitDelete: func(valuePath dyn.Path, left dyn.Value) error {
+			if isOmitemptyDelete(left) {
+				return merge.ErrOverrideUndoDelete
+			}
+
 			return fmt.Errorf("unexpected change at %q (delete)", valuePath.String())
 		},
 		VisitInsert: func(valuePath dyn.Path, right dyn.Value) (dyn.Value, error) {
@@ -346,6 +350,10 @@ func createInitOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
 
 	return merge.OverrideVisitor{
 		VisitDelete: func(valuePath dyn.Path, left dyn.Value) error {
+			if isOmitemptyDelete(left) {
+				return merge.ErrOverrideUndoDelete
+			}
+
 			if !valuePath.HasPrefix(jobsPath) {
 				return fmt.Errorf("unexpected change at %q (delete)", valuePath.String())
 			}
@@ -379,6 +387,27 @@ func createInitOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
 
 			return right, nil
 		},
+	}
+}
+
+func isOmitemptyDelete(left dyn.Value) bool {
+	// PyDABs can omit empty sequences/mappings in output, because we don't track them as optional,
+	// there is no semantic difference between empty and missing, so we keep them as they were before
+	// PyDABs deleted them.
+
+	switch left.Kind() {
+	case dyn.KindMap:
+		return left.MustMap().Len() == 0
+
+	case dyn.KindSequence:
+		return len(left.MustSequence()) == 0
+
+	case dyn.KindNil:
+		// map/sequence can be nil, for instance, bad YAML like: `foo:<eof>`
+		return true
+
+	default:
+		return false
 	}
 }
 
