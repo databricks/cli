@@ -1,9 +1,6 @@
 name: release
 
 on:
-  pull_request:
-    types: [opened, synchronize]
-
   push:
     tags:
       - "v*"
