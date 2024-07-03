@@ -395,20 +395,20 @@ func isOmitemptyDelete(left dyn.Value) bool {
 	// there is no semantic difference between empty and missing, so we keep them as they were before
 	// PyDABs deleted them.
 
-	if left.Kind() == dyn.KindMap && left.MustMap().Len() == 0 {
-		return true
-	}
+	switch left.Kind() {
+	case dyn.KindMap:
+		return left.MustMap().Len() == 0
 
-	if left.Kind() == dyn.KindSequence && len(left.MustSequence()) == 0 {
-		return true
-	}
+	case dyn.KindSequence:
+		return len(left.MustSequence()) == 0
 
-	// map/sequence can be nil, for instance, bad YAML like: `foo:<eof>`
-	if left.Kind() == dyn.KindNil {
+	case dyn.KindNil:
+		// map/sequence can be nil, for instance, bad YAML like: `foo:<eof>`
 		return true
-	}
 
-	return false
+	default:
+		return false
+	}
 }
 
 // interpreterPath returns platform-specific path to Python interpreter in the virtual environment.
