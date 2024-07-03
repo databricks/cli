@@ -1,6 +1,9 @@
 name: release-snapshot
 
 on:
+  pull_request:
+    types: [opened, synchronize]
+
   push:
     branches:
       - "main"
@@ -23,13 +26,21 @@ jobs:
         with:
           go-version: 1.21.x
 
+          # The default cache key for this action considers only the `go.sum` file.
+          # We include .goreleaser.yaml here to differentiate from the cache used by the push action
+          # that runs unit tests. This job produces and uses a different cache.
+          cache-dependency-path: |
+            go.sum
+            .goreleaser.yml
+
       - name: Hide snapshot tag to outsmart GoReleaser
         run: git tag -d snapshot || true
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v4
+        id: releaser
+        uses: goreleaser/goreleaser-action@v6
         with:
-          version: latest
+          version: ~> v2
           args: release --snapshot --skip docker
 
       - name: Upload macOS binaries
