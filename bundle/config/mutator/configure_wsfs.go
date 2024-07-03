@@ -26,7 +26,7 @@ func (m *configureWSFS) Name() string {
 func (m *configureWSFS) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	root := b.BundleRoot.Native()
 
-	// The bundle root must be is located in /Workspace/
+	// The bundle root must be located in /Workspace/
 	if !strings.HasPrefix(root, "/Workspace/") {
 		return nil
 	}
