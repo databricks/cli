@@ -113,7 +113,7 @@ func FromSlice(files []fileset.File) (Filelist, error) {
 func (f Filelist) ToSlice(root vfs.Path) []fileset.File {
 	var files []fileset.File
 	for _, file := range f {
-		entry := newEntry(root, file.LocalPath)
+		entry := newEntry(root, filepath.ToSlash(file.LocalPath))
 
 		// Snapshots created with versions <= v0.220.0 use platform-specific
 		// paths (i.e. with backslashes). Files returned by [libs/fileset] always
