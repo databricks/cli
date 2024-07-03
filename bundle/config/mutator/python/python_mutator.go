@@ -309,6 +309,7 @@ func createOverrideVisitor(ctx context.Context, phase phase) (merge.OverrideVisi
 // During load, it's only possible to create new resources, and not modify or
 // delete existing ones.
 func createLoadOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
+	resourcesPath := dyn.NewPath(dyn.Key("resources"))
 	jobsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))
 
 	return merge.OverrideVisitor{
@@ -320,6 +321,11 @@ func createLoadOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
 			return fmt.Errorf("unexpected change at %q (delete)", valuePath.String())
 		},
 		VisitInsert: func(valuePath dyn.Path, right dyn.Value) (dyn.Value, error) {
+			// insert 'resources' or 'resources.jobs' if it didn't exist before
+			if valuePath.Equal(resourcesPath) || valuePath.Equal(jobsPath) {
+				return right, nil
+			}
+
 			if !valuePath.HasPrefix(jobsPath) {
 				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (insert)", valuePath.String())
 			}
@@ -346,6 +352,7 @@ func createLoadOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
 // During the init phase it's possible to create new resources, modify existing
 // resources, but not delete existing resources.
 func createInitOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
+	resourcesPath := dyn.NewPath(dyn.Key("resources"))
 	jobsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))
 
 	return merge.OverrideVisitor{
@@ -370,6 +377,11 @@ func createInitOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
 			return nil
 		},
 		VisitInsert: func(valuePath dyn.Path, right dyn.Value) (dyn.Value, error) {
+			// insert 'resources' or 'resources.jobs' if it didn't exist before
+			if valuePath.Equal(resourcesPath) || valuePath.Equal(jobsPath) {
+				return right, nil
+			}
+
 			if !valuePath.HasPrefix(jobsPath) {
 				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (insert)", valuePath.String())
 			}
