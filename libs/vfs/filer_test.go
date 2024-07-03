@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io/fs"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -76,5 +75,5 @@ func TestFilerPath(t *testing.T) {
 	// Parent self.
 	pp := p.Parent()
 	require.NotNil(t, pp)
-	assert.Equal(t, path.Join(pp.Native(), "vfs"), p.Native())
+	assert.Equal(t, filepath.Join(pp.Native(), "vfs"), p.Native())
 }
