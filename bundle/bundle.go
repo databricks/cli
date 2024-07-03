@@ -17,7 +17,6 @@ import (
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
 	"github.com/databricks/cli/libs/fileset"
-	"github.com/databricks/cli/libs/folders"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
@@ -213,12 +212,12 @@ func (b *Bundle) GetSyncIncludePatterns(ctx context.Context) ([]string, error) {
 }
 
 func (b *Bundle) GitRepository() (*git.Repository, error) {
-	rootPath, err := folders.FindDirWithLeaf(b.RootPath, ".git")
+	_, err := vfs.FindLeafInTree(b.BundleRoot, ".git")
 	if err != nil {
 		return nil, fmt.Errorf("unable to locate repository root: %w", err)
 	}
 
-	return git.NewRepository(vfs.MustNew(rootPath))
+	return git.NewRepository(b.BundleRoot)
 }
 
 // AuthEnv returns a map with environment variables and their values
