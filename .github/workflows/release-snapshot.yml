@@ -1,9 +1,6 @@
 name: release-snapshot
 
 on:
-  pull_request:
-    types: [opened, synchronize]
-
   push:
     branches:
       - "main"
