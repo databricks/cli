@@ -2,11 +2,15 @@ package main
 
 import (
 	"context"
+	"os"
 
 	"github.com/databricks/cli/cmd"
 	"github.com/databricks/cli/cmd/root"
 )
 
 func main() {
-	root.Execute(cmd.New(context.Background()))
+	ctx := context.Background()
+	code := root.Execute(ctx, cmd.New(ctx))
+
+	os.Exit(code)
 }
