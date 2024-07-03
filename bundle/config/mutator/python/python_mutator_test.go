@@ -326,6 +326,18 @@ func TestCreateOverrideVisitor(t *testing.T) {
 			deleteError: fmt.Errorf("unexpected change at \"resources.jobs.job0\" (delete)"),
 		},
 		{
+			name:        "load: can insert 'resources'",
+			phase:       PythonMutatorPhaseLoad,
+			insertPath:  dyn.MustPathFromString("resources"),
+			insertError: nil,
+		},
+		{
+			name:        "load: can insert 'resources.jobs'",
+			phase:       PythonMutatorPhaseLoad,
+			insertPath:  dyn.MustPathFromString("resources.jobs"),
+			insertError: nil,
+		},
+		{
 			name:        "load: can insert a job",
 			phase:       PythonMutatorPhaseLoad,
 			insertPath:  dyn.MustPathFromString("resources.jobs.job0"),
@@ -356,6 +368,18 @@ func TestCreateOverrideVisitor(t *testing.T) {
 			phase:       PythonMutatorPhaseInit,
 			deletePath:  dyn.MustPathFromString("resources.jobs.job0"),
 			deleteError: fmt.Errorf("unexpected change at \"resources.jobs.job0\" (delete)"),
+		},
+		{
+			name:        "init: can insert 'resources'",
+			phase:       PythonMutatorPhaseInit,
+			insertPath:  dyn.MustPathFromString("resources"),
+			insertError: nil,
+		},
+		{
+			name:        "init: can insert 'resources.jobs'",
+			phase:       PythonMutatorPhaseInit,
+			insertPath:  dyn.MustPathFromString("resources.jobs"),
+			insertError: nil,
 		},
 		{
 			name:        "init: can insert a job",
