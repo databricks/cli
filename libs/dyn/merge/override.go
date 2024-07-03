@@ -120,7 +120,6 @@ func overrideMapping(basePath dyn.Path, leftMapping dyn.Mapping, rightMapping dy
 			// if 'delete' was undone, add it back
 			if errors.Is(err, ErrOverrideUndoDelete) {
 				err := out.Set(leftPair.Key, leftPair.Value)
-
 				if err != nil {
 					return dyn.NewMapping(), err
 				}
