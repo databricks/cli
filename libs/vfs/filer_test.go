@@ -39,7 +39,7 @@ func TestFilerPath(t *testing.T) {
 	buf := make([]byte, 1024)
 	_, err = f.Read(buf)
 	require.NoError(t, err)
-	assert.True(t, strings.HasPrefix(string(buf), "package vfs\n"))
+	assert.True(t, strings.HasPrefix(string(buf), "package vfs"))
 
 	// Open non-existent file.
 	_, err = p.Open("doesntexist_test.go")
@@ -67,7 +67,7 @@ func TestFilerPath(t *testing.T) {
 	// ReadFile self.
 	buf, err = p.ReadFile("filer_test.go")
 	require.NoError(t, err)
-	assert.True(t, strings.HasPrefix(string(buf), "package vfs\n"))
+	assert.True(t, strings.HasPrefix(string(buf), "package vfs"))
 
 	// ReadFile non-existent file.
 	_, err = p.ReadFile("doesntexist_test.go")

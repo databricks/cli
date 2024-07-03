@@ -3,7 +3,7 @@ package vfs
 import (
 	"context"
 	"io/fs"
-	"path"
+	"path/filepath"
 
 	"github.com/databricks/cli/libs/filer"
 )
@@ -52,7 +52,7 @@ func (f filerPath) Parent() Path {
 		return nil
 	}
 
-	dir := path.Dir(f.path)
+	dir := filepath.Dir(f.path)
 	nf, err := NewFilerPath(f.ctx, dir, f.construct)
 	if err != nil {
 		panic(err)
