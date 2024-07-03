@@ -29,7 +29,7 @@ jobs:
           # that runs unit tests. This job produces and uses a different cache.
           cache-dependency-path: |
             go.sum
-            .goreleaser.yml
+            .goreleaser.yaml
 
       # Log into the GitHub Container Registry. The goreleaser action will create
       # the docker images and push them to the GitHub Container Registry.

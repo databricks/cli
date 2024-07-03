@@ -31,7 +31,7 @@ jobs:
           # that runs unit tests. This job produces and uses a different cache.
           cache-dependency-path: |
             go.sum
-            .goreleaser.yml
+            .goreleaser.yaml
 
       - name: Hide snapshot tag to outsmart GoReleaser
         run: git tag -d snapshot || true
