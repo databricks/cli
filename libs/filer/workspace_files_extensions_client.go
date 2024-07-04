@@ -6,22 +6,17 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"net/http"
 	"path"
 	"strings"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/client"
-	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 type workspaceFilesExtensionsClient struct {
 	workspaceClient *databricks.WorkspaceClient
-	apiClient       *client.DatabricksClient
 
 	wsfs Filer
 	root string
@@ -35,64 +30,20 @@ var extensionsToLanguages = map[string]workspace.Language{
 	".ipynb": workspace.LanguagePython,
 }
 
-// workspaceFileStatus defines a custom response body for the "/api/2.0/workspace/get-status" API.
-// The "repos_export_format" field is not exposed by the SDK.
 type workspaceFileStatus struct {
-	*workspace.ObjectInfo
-
-	// The export format of the notebook. This is not exposed by the SDK.
-	ReposExportFormat workspace.ExportFormat `json:"repos_export_format,omitempty"`
+	wsfsFileInfo
 
 	// Name of the file to be used in any API calls made using the workspace files
 	// filer. For notebooks this path does not include the extension.
 	nameForWorkspaceAPI string
 }
 
-// A custom unmarsaller for the workspaceFileStatus struct. This is needed because
-// workspaceFileStatus embeds the workspace.ObjectInfo which itself has a custom
-// unmarshaller.
-// If a custom unmarshaller is not provided extra fields like ReposExportFormat
-// will not have values set.
-func (s *workspaceFileStatus) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s *workspaceFileStatus) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
-}
-
-func (w *workspaceFilesExtensionsClient) stat(ctx context.Context, name string) (*workspaceFileStatus, error) {
-	stat := &workspaceFileStatus{
-		nameForWorkspaceAPI: name,
-	}
-
-	// Perform bespoke API call because "return_export_info" is not exposed by the SDK.
-	// We need "repos_export_format" to determine if the file is a py or a ipynb notebook.
-	// This is not exposed by the SDK so we need to make a direct API call.
-	err := w.apiClient.Do(
-		ctx,
-		http.MethodGet,
-		"/api/2.0/workspace/get-status",
-		nil,
-		map[string]string{
-			"path":               path.Join(w.root, name),
-			"return_export_info": "true",
-		},
-		stat,
-	)
+func (w *workspaceFilesExtensionsClient) stat(ctx context.Context, name string) (wsfsFileInfo, error) {
+	info, err := w.wsfs.Stat(ctx, name)
 	if err != nil {
-		// If we got an API error we deal with it below.
-		var aerr *apierr.APIError
-		if !errors.As(err, &aerr) {
-			return nil, err
-		}
-
-		// This API returns a 404 if the specified path does not exist.
-		if aerr.StatusCode == http.StatusNotFound {
-			return nil, FileDoesNotExistError{path.Join(w.root, name)}
-		}
+		return wsfsFileInfo{}, err
 	}
-	return stat, err
+	return info.(wsfsFileInfo), err
 }
 
 // This function returns the stat for the provided notebook. The stat object itself contains the path
@@ -146,7 +97,10 @@ func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithExt(ctx contex
 	// Modify the stat object path to include the extension. This stat object will be used
 	// to return the fs.FileInfo object in the stat method.
 	stat.Path = stat.Path + ext
-	return stat, nil
+	return &workspaceFileStatus{
+		wsfsFileInfo:        stat,
+		nameForWorkspaceAPI: nameWithoutExt,
+	}, nil
 }
 
 func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithoutExt(ctx context.Context, name string) (*workspaceFileStatus, error) {
@@ -162,7 +116,7 @@ func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithoutExt(ctx con
 	}
 
 	// Get the extension for the notebook.
-	ext := notebook.GetExtensionByLanguage(stat.ObjectInfo)
+	ext := notebook.GetExtensionByLanguage(&stat.ObjectInfo)
 
 	// If the notebook was exported as a Jupyter notebook, the extension should be .ipynb.
 	if stat.Language == workspace.LanguagePython && stat.ReposExportFormat == workspace.ExportFormatJupyter {
@@ -172,7 +126,10 @@ func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithoutExt(ctx con
 	// Modify the stat object path to include the extension. This stat object will be used
 	// to return the fs.DirEntry object in the ReadDir method.
 	stat.Path = stat.Path + ext
-	return stat, nil
+	return &workspaceFileStatus{
+		wsfsFileInfo:        stat,
+		nameForWorkspaceAPI: name,
+	}, nil
 }
 
 type DuplicatePathError struct {
@@ -200,11 +157,6 @@ func (e DuplicatePathError) Error() string {
 // errors for namespace clashes (e.g. a file and a notebook or a directory and a notebook).
 // Thus users of these methods should be careful to avoid such clashes.
 func NewWorkspaceFilesExtensionsClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
-	apiClient, err := client.New(w.Config)
-	if err != nil {
-		return nil, err
-	}
-
 	filer, err := NewWorkspaceFilesClient(w, root)
 	if err != nil {
 		return nil, err
@@ -212,7 +164,6 @@ func NewWorkspaceFilesExtensionsClient(w *databricks.WorkspaceClient, root strin
 
 	return &workspaceFilesExtensionsClient{
 		workspaceClient: w,
-		apiClient:       apiClient,
 
 		wsfs: filer,
 		root: root,
@@ -240,7 +191,7 @@ func (w *workspaceFilesExtensionsClient) ReadDir(ctx context.Context, name strin
 				return nil, err
 			}
 			// Replace the entry with the new entry that includes the extension.
-			entries[i] = wsfsDirEntry{wsfsFileInfo{oi: *stat.ObjectInfo}}
+			entries[i] = wsfsDirEntry{wsfsFileInfo{ObjectInfo: stat.ObjectInfo}}
 		}
 
 		// Error if we have seen this path before in the current directory.
@@ -331,7 +282,7 @@ func (w *workspaceFilesExtensionsClient) Stat(ctx context.Context, name string) 
 			return nil, err
 		}
 
-		return wsfsFileInfo{oi: *stat.ObjectInfo}, nil
+		return wsfsFileInfo{ObjectInfo: stat.ObjectInfo}, nil
 	}
 
 	return info, err
