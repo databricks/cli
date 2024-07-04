@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"os"
 	"os/exec"
 	"strings"
 	"testing"
@@ -26,8 +25,8 @@ func splitLines(b []byte) (lines []string) {
 
 func TestBackgroundUnwrapsNotFound(t *testing.T) {
 	ctx := context.Background()
-	_, err := Background(ctx, []string{"/bin/meeecho", "1"})
-	assert.ErrorIs(t, err, os.ErrNotExist)
+	_, err := Background(ctx, []string{"meeecho", "1"})
+	assert.ErrorIs(t, err, exec.ErrNotFound)
 }
 
 func TestBackground(t *testing.T) {
