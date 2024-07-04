@@ -138,13 +138,16 @@ func TestRootMergeTargetOverridesWithVariables(t *testing.T) {
 		Bundle: Bundle{},
 		Variables: map[string]*variable.Variable{
 			"foo": {
-				Default: "foo",
+				Default:     "foo",
+				Description: "foo var",
 			},
 			"foo2": {
-				Default: "foo2",
+				Default:     "foo2",
+				Description: "foo2 var",
 			},
 			"complex": {
-				Type: variable.VariableTypeComplex,
+				Type:        variable.VariableTypeComplex,
+				Description: "complex var",
 				Default: map[string]interface{}{
 					"key": "value",
 				},
@@ -154,10 +157,12 @@ func TestRootMergeTargetOverridesWithVariables(t *testing.T) {
 			"development": {
 				Variables: map[string]*variable.Variable{
 					"foo": {
-						Default: "bar",
+						Default:     "bar",
+						Description: "wrong",
 					},
 					"complex": {
-						Type: variable.VariableTypeComplex,
+						Type:        "wrong",
+						Description: "wrong",
 						Default: map[string]interface{}{
 							"key1": "value1",
 						},
@@ -169,9 +174,14 @@ func TestRootMergeTargetOverridesWithVariables(t *testing.T) {
 	root.initializeDynamicValue()
 	require.NoError(t, root.MergeTargetOverrides("development"))
 	assert.Equal(t, "bar", root.Variables["foo"].Default)
+	assert.Equal(t, "foo var", root.Variables["foo"].Description)
+
 	assert.Equal(t, "foo2", root.Variables["foo2"].Default)
+	assert.Equal(t, "foo2 var", root.Variables["foo2"].Description)
+
 	assert.Equal(t, map[string]interface{}{
 		"key1": "value1",
 	}, root.Variables["complex"].Default)
+	assert.Equal(t, "complex var", root.Variables["complex"].Description)
 
 }

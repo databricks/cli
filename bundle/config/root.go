@@ -347,7 +347,8 @@ func (r *Root) MergeTargetOverrides(name string) error {
 	// Merge `variables`. This field must be overwritten if set, not merged.
 	if v := target.Get("variables"); v.Kind() != dyn.KindInvalid {
 		_, err = dyn.Map(v, ".", dyn.Foreach(func(p dyn.Path, variable dyn.Value) (dyn.Value, error) {
-			root, err = dyn.SetByPath(root, dyn.MustPathFromString("variables").Append(p...), variable)
+			path := dyn.MustPathFromString("variables").Append(p...).Append(dyn.Key("default"))
+			root, err = dyn.SetByPath(root, path, variable.Get("default"))
 			return root, err
 		}))
 		if err != nil {
