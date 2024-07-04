@@ -132,3 +132,46 @@ func TestInitializeComplexVariablesViaFlagIsNotAllowed(t *testing.T) {
 	err := root.InitializeVariables([]string{"foo=123"})
 	assert.ErrorContains(t, err, "setting variables of complex type via --var flag is not supported: foo")
 }
+
+func TestRootMergeTargetOverridesWithVariables(t *testing.T) {
+	root := &Root{
+		Bundle: Bundle{},
+		Variables: map[string]*variable.Variable{
+			"foo": {
+				Default: "foo",
+			},
+			"foo2": {
+				Default: "foo2",
+			},
+			"complex": {
+				Type: variable.VariableTypeComplex,
+				Default: map[string]interface{}{
+					"key": "value",
+				},
+			},
+		},
+		Targets: map[string]*Target{
+			"development": {
+				Variables: map[string]*variable.Variable{
+					"foo": {
+						Default: "bar",
+					},
+					"complex": {
+						Type: variable.VariableTypeComplex,
+						Default: map[string]interface{}{
+							"key1": "value1",
+						},
+					},
+				},
+			},
+		},
+	}
+	root.initializeDynamicValue()
+	require.NoError(t, root.MergeTargetOverrides("development"))
+	assert.Equal(t, "bar", root.Variables["foo"].Default)
+	assert.Equal(t, "foo2", root.Variables["foo2"].Default)
+	assert.Equal(t, map[string]interface{}{
+		"key1": "value1",
+	}, root.Variables["complex"].Default)
+
+}
