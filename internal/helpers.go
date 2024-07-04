@@ -19,6 +19,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/flags"
+
 	"github.com/databricks/cli/cmd"
 	_ "github.com/databricks/cli/cmd/version"
 	"github.com/databricks/cli/libs/cmdio"
@@ -105,7 +108,12 @@ func (t *cobraTestRunner) registerFlagCleanup(c *cobra.Command) {
 	// Find target command that will be run. Example: if the command run is `databricks fs cp`,
 	// target command corresponds to `cp`
 	targetCmd, _, err := c.Find(t.args)
-	require.NoError(t, err)
+	if err != nil && strings.HasPrefix(err.Error(), "unknown command") {
+		// even if command is unknown, we can proceed
+		require.NotNil(t, targetCmd)
+	} else {
+		require.NoError(t, err)
+	}
 
 	// Force initialization of default flags.
 	// These are initialized by cobra at execution time and would otherwise
@@ -169,22 +177,28 @@ func (t *cobraTestRunner) RunBackground() {
 	var stdoutW, stderrW io.WriteCloser
 	stdoutR, stdoutW = io.Pipe()
 	stderrR, stderrW = io.Pipe()
-	root := cmd.New(t.ctx)
-	root.SetOut(stdoutW)
-	root.SetErr(stderrW)
-	root.SetArgs(t.args)
+	ctx := cmdio.NewContext(t.ctx, &cmdio.Logger{
+		Mode:   flags.ModeAppend,
+		Reader: bufio.Reader{},
+		Writer: stderrW,
+	})
+
+	cli := cmd.New(ctx)
+	cli.SetOut(stdoutW)
+	cli.SetErr(stderrW)
+	cli.SetArgs(t.args)
 	if t.stdinW != nil {
-		root.SetIn(t.stdinR)
+		cli.SetIn(t.stdinR)
 	}
 
 	// Register cleanup function to restore flags to their original values
 	// once test has been executed. This is needed because flag values reside
 	// in a global singleton data-structure, and thus subsequent tests might
 	// otherwise interfere with each other
-	t.registerFlagCleanup(root)
+	t.registerFlagCleanup(cli)
 
 	errch := make(chan error)
-	ctx, cancel := context.WithCancel(t.ctx)
+	ctx, cancel := context.WithCancel(ctx)
 
 	// Tee stdout/stderr to buffers.
 	stdoutR = io.TeeReader(stdoutR, &t.stdout)
@@ -197,7 +211,7 @@ func (t *cobraTestRunner) RunBackground() {
 
 	// Run command in background.
 	go func() {
-		cmd, err := root.ExecuteContextC(ctx)
+		err := root.Execute(ctx, cli)
 		if err != nil {
 			t.Logf("Error running command: %s", err)
 		}
@@ -230,7 +244,7 @@ func (t *cobraTestRunner) RunBackground() {
 		// These commands are globals so we have to clean up to the best of our ability after each run.
 		// See https://github.com/spf13/cobra/blob/a6f198b635c4b18fff81930c40d464904e55b161/command.go#L1062-L1066
 		//lint:ignore SA1012 cobra sets the context and doesn't clear it
-		cmd.SetContext(nil)
+		cli.SetContext(nil)
 
 		// Make caller aware of error.
 		errch <- err

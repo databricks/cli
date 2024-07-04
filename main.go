@@ -10,7 +10,8 @@ import (
 
 func main() {
 	ctx := context.Background()
-	code := root.Execute(ctx, cmd.New(ctx))
-
-	os.Exit(code)
+	err := root.Execute(ctx, cmd.New(ctx))
+	if err != nil {
+		os.Exit(1)
+	}
 }

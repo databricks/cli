@@ -1,4 +1,5 @@
-package root_test // using 'root' will create circular import
+package root_test
+
 import (
 	"bufio"
 	"bytes"

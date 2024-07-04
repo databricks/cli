@@ -92,9 +92,7 @@ func flagErrorFunc(c *cobra.Command, err error) error {
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-//
-// Returns exit code for os.Exit.
-func Execute(ctx context.Context, cmd *cobra.Command) int {
+func Execute(ctx context.Context, cmd *cobra.Command) error {
 	// TODO: deferred panic recovery
 
 	// Run the command
@@ -119,9 +117,5 @@ func Execute(ctx context.Context, cmd *cobra.Command) int {
 		}
 	}
 
-	if err != nil {
-		return 1
-	} else {
-		return 0
-	}
+	return err
 }
