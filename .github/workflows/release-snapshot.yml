@@ -33,21 +33,21 @@ jobs:
           args: release --snapshot --skip docker
 
       - name: Upload macOS binaries
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cli_darwin_snapshot
           path: |
             dist/*_darwin_*/
 
       - name: Upload Linux binaries
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cli_linux_snapshot
           path: |
             dist/*_linux_*/
 
       - name: Upload Windows binaries
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cli_windows_snapshot
           path: |
