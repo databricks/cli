@@ -23,9 +23,11 @@ variables:
       spark_version: "13.2.x-scala2.11"
       node_type_id: ${var.node_type}
       num_workers: 2
+      policy_id: "some-policy-id"
       spark_conf:
         spark.speculation: true
         spark.databricks.delta.retentionDurationCheck.enabled: false
+        spark.random: true
   libraries:
     type: complex
     description: "A libraries definition"
