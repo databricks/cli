@@ -11,7 +11,10 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/bundle/internal/bundletest"
+	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -707,4 +710,71 @@ func TestTranslatePathJobEnvironments(t *testing.T) {
 	assert.Equal(t, strings.Join([]string{".", "dist", "env2.whl"}, string(os.PathSeparator)), b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[1])
 	assert.Equal(t, "simplejson", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[2])
 	assert.Equal(t, "/Workspace/Users/foo@bar.com/test.whl", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[3])
+}
+
+func TestTranslatePathWithComplexVariables(t *testing.T) {
+	dir := t.TempDir()
+	b := &bundle.Bundle{
+		RootPath:   dir,
+		BundleRoot: vfs.MustNew(dir),
+		Config: config.Root{
+			Variables: map[string]*variable.Variable{
+				"cluster_libraries": {
+					Type: variable.VariableTypeComplex,
+					Default: [](map[string]string){
+						{
+							"whl": "./local/whl.whl",
+						},
+					},
+				},
+			},
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job": {
+						JobSettings: &jobs.JobSettings{
+							Tasks: []jobs.Task{
+								{
+									TaskKey: "test",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	bundletest.SetLocation(b, "variables", filepath.Join(dir, "variables/variables.yml"))
+	bundletest.SetLocation(b, "resources.jobs", filepath.Join(dir, "job/resource.yml"))
+
+	ctx := context.Background()
+	// Assign the variables to the dynamic configuration.
+	diags := bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+		err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+			var p dyn.Path
+			var err error
+
+			p = dyn.MustPathFromString("resources.jobs.job.tasks[0]")
+			v, err = dyn.SetByPath(v, p.Append(dyn.Key("libraries")), dyn.V("${var.cluster_libraries}"))
+			require.NoError(t, err)
+
+			return v, nil
+		})
+		return diag.FromErr(err)
+	})
+	require.NoError(t, diags.Error())
+
+	diags = bundle.Apply(ctx, b,
+		bundle.Seq(
+			mutator.SetVariables(),
+			mutator.ResolveVariableReferences("variables"),
+			mutator.TranslatePaths(),
+		))
+	require.NoError(t, diags.Error())
+
+	assert.Equal(
+		t,
+		filepath.Join("variables", "local", "whl.whl"),
+		b.Config.Resources.Jobs["job"].Tasks[0].Libraries[0].Whl,
+	)
 }
