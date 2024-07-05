@@ -1,5 +1,36 @@
 # Version changelog
 
+## 0.223.1
+
+This bugfix release fixes missing error messages in v0.223.0.
+
+CLI:
+ * Fix logic error in [#1532](https://github.com/databricks/cli/pull/1532) ([#1564](https://github.com/databricks/cli/pull/1564)).
+
+
+## 0.223.0
+
+Bundles:
+
+As of this release you can interact with bundles when running the CLI on DBR (e.g. via the Web Terminal).
+
+ * Fix non-default project names not working in dbt-sql template ([#1500](https://github.com/databricks/cli/pull/1500)).
+ * Improve `bundle validate` output ([#1532](https://github.com/databricks/cli/pull/1532)).
+ * Fixed resolving variable references inside slice variable ([#1550](https://github.com/databricks/cli/pull/1550)).
+ * Fixed bundle not loading when empty variable is defined ([#1552](https://github.com/databricks/cli/pull/1552)).
+ * Use `vfs.Path` for filesystem interaction ([#1554](https://github.com/databricks/cli/pull/1554)).
+ * Replace `vfs.Path` with extension-aware filer when running on DBR ([#1556](https://github.com/databricks/cli/pull/1556)).
+
+Internal:
+ * merge.Override: Fix handling of dyn.NilValue ([#1530](https://github.com/databricks/cli/pull/1530)).
+ * Compare `.Kind()` instead of direct equality checks on a `dyn.Value` ([#1520](https://github.com/databricks/cli/pull/1520)).
+ * PythonMutator: register product in user agent extra ([#1533](https://github.com/databricks/cli/pull/1533)).
+ * Ignore `dyn.NilValue` when traversing value from `dyn.Map` ([#1547](https://github.com/databricks/cli/pull/1547)).
+ * Add extra tests for the sync block ([#1548](https://github.com/databricks/cli/pull/1548)).
+ * PythonMutator: add diagnostics ([#1531](https://github.com/databricks/cli/pull/1531)).
+ * PythonMutator: support omitempty in PyDABs ([#1513](https://github.com/databricks/cli/pull/1513)).
+ * PythonMutator: allow insert 'resources' and 'resources.jobs' ([#1555](https://github.com/databricks/cli/pull/1555)).
+
 ## 0.222.0
 
 CLI:

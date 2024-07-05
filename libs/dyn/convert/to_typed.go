@@ -282,6 +282,11 @@ func toTypedFloat(dst reflect.Value, src dyn.Value) error {
 }
 
 func toTypedInterface(dst reflect.Value, src dyn.Value) error {
+	if src.Kind() == dyn.KindNil {
+		dst.Set(reflect.Zero(dst.Type()))
+		return nil
+	}
+
 	dst.Set(reflect.ValueOf(src.AsAny()))
 	return nil
 }

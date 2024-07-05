@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/databricks/cli/libs/dyn"
 	assert "github.com/databricks/cli/libs/dyn/dynassert"
 )
@@ -398,6 +400,24 @@ func TestOverride_Primitive(t *testing.T) {
 					assert.Equal(t, expected, actual)
 				}
 			})
+
+			if len(tc.state.removed) > 0 {
+				t.Run(tc.name+" - visitor can undo delete", func(t *testing.T) {
+					s, visitor := createVisitor(visitorOpts{deleteError: ErrOverrideUndoDelete})
+					out, err := override(dyn.EmptyPath, tc.left, tc.right, visitor)
+					require.NoError(t, err)
+
+					for _, removed := range s.removed {
+						expected, err := dyn.GetByPath(tc.left, dyn.MustPathFromString(removed))
+						require.NoError(t, err)
+
+						actual, err := dyn.GetByPath(out, dyn.MustPathFromString(removed))
+
+						assert.NoError(t, err)
+						assert.Equal(t, expected, actual)
+					}
+				})
+			}
 		}
 	}
 }
@@ -454,6 +474,7 @@ type visitorState struct {
 
 type visitorOpts struct {
 	error       error
+	deleteError error
 	returnValue *dyn.Value
 }
 
@@ -475,7 +496,13 @@ func createVisitor(opts visitorOpts) (*visitorState, OverrideVisitor) {
 		VisitDelete: func(valuePath dyn.Path, left dyn.Value) error {
 			s.removed = append(s.removed, valuePath.String())
 
-			return opts.error
+			if opts.error != nil {
+				return opts.error
+			} else if opts.deleteError != nil {
+				return opts.deleteError
+			} else {
+				return nil
+			}
 		},
 		VisitInsert: func(valuePath dyn.Path, right dyn.Value) (dyn.Value, error) {
 			s.added = append(s.added, valuePath.String())

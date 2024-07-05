@@ -370,3 +370,67 @@ func TestResolveComplexVariableReferencesWithComplexVariablesError(t *testing.T)
 	diags = bundle.Apply(ctx, b, bundle.Seq(ResolveVariableReferencesInComplexVariables(), ResolveVariableReferences("bundle", "workspace", "variables")))
 	require.ErrorContains(t, diags.Error(), "complex variables cannot contain references to another complex variables")
 }
+
+func TestResolveComplexVariableWithVarReference(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Bundle: config.Bundle{
+				Name: "example",
+			},
+			Variables: map[string]*variable.Variable{
+				"package_version": {
+					Value: "1.0.0",
+				},
+				"cluster_libraries": {
+					Value: [](map[string]any){
+						{
+							"pypi": map[string]string{
+								"package": "cicd_template==${var.package_version}",
+							},
+						},
+					},
+					Type: variable.VariableTypeComplex,
+				},
+			},
+
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job1": {
+						JobSettings: &jobs.JobSettings{
+							Tasks: []jobs.Task{
+								{
+									Libraries: []compute.Library{},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ctx := context.Background()
+
+	// Assign the variables to the dynamic configuration.
+	diags := bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+		err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+			var p dyn.Path
+			var err error
+
+			p = dyn.MustPathFromString("resources.jobs.job1.tasks[0]")
+			v, err = dyn.SetByPath(v, p.Append(dyn.Key("libraries")), dyn.V("${var.cluster_libraries}"))
+			require.NoError(t, err)
+
+			return v, nil
+		})
+		return diag.FromErr(err)
+	})
+	require.NoError(t, diags.Error())
+
+	diags = bundle.Apply(ctx, b, bundle.Seq(
+		ResolveVariableReferencesInComplexVariables(),
+		ResolveVariableReferences("bundle", "workspace", "variables"),
+	))
+	require.NoError(t, diags.Error())
+	require.Equal(t, "cicd_template==1.0.0", b.Config.Resources.Jobs["job1"].JobSettings.Tasks[0].Libraries[0].Pypi.Package)
+}

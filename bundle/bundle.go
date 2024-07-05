@@ -17,7 +17,6 @@ import (
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
 	"github.com/databricks/cli/libs/fileset"
-	"github.com/databricks/cli/libs/folders"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
@@ -35,6 +34,10 @@ type Bundle struct {
 	// RootPath contains the directory path to the root of the bundle.
 	// It is set when we instantiate a new bundle instance.
 	RootPath string
+
+	// BundleRoot is a virtual filesystem path to the root of the bundle.
+	// Exclusively use this field for filesystem operations.
+	BundleRoot vfs.Path
 
 	Config config.Root
 
@@ -73,7 +76,8 @@ type Bundle struct {
 
 func Load(ctx context.Context, path string) (*Bundle, error) {
 	b := &Bundle{
-		RootPath: filepath.Clean(path),
+		RootPath:   filepath.Clean(path),
+		BundleRoot: vfs.MustNew(path),
 	}
 	configFile, err := config.FileNames.FindInPath(path)
 	if err != nil {
@@ -208,12 +212,12 @@ func (b *Bundle) GetSyncIncludePatterns(ctx context.Context) ([]string, error) {
 }
 
 func (b *Bundle) GitRepository() (*git.Repository, error) {
-	rootPath, err := folders.FindDirWithLeaf(b.RootPath, ".git")
+	_, err := vfs.FindLeafInTree(b.BundleRoot, ".git")
 	if err != nil {
 		return nil, fmt.Errorf("unable to locate repository root: %w", err)
 	}
 
-	return git.NewRepository(vfs.MustNew(rootPath))
+	return git.NewRepository(b.BundleRoot)
 }
 
 // AuthEnv returns a map with environment variables and their values

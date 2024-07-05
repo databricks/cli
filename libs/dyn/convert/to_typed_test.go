@@ -533,3 +533,10 @@ func TestToTypedAnyWithMap(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{"foo": "bar", "bar": "baz"}, out)
 }
+
+func TestToTypedAnyWithNil(t *testing.T) {
+	var out any
+	err := ToTyped(&out, dyn.NilValue)
+	require.NoError(t, err)
+	assert.Equal(t, nil, out)
+}

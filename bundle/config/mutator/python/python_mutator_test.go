@@ -10,6 +10,8 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/databricks/cli/libs/dyn/merge"
+
 	"github.com/databricks/cli/bundle/env"
 	"github.com/stretchr/testify/require"
 
@@ -74,12 +76,14 @@ func TestPythonMutator_load(t *testing.T) {
 					},
 				}
 			}
-		}`)
+		}`,
+		`{"severity": "warning", "summary": "job doesn't have any tasks", "location": {"file": "src/examples/file.py", "line": 10, "column": 5}}`,
+	)
 
 	mutator := PythonMutator(PythonMutatorPhaseLoad)
-	diag := bundle.Apply(ctx, b, mutator)
+	diags := bundle.Apply(ctx, b, mutator)
 
-	assert.NoError(t, diag.Error())
+	assert.NoError(t, diags.Error())
 
 	assert.ElementsMatch(t, []string{"job0", "job1"}, maps.Keys(b.Config.Resources.Jobs))
 
@@ -90,6 +94,14 @@ func TestPythonMutator_load(t *testing.T) {
 	if job1, ok := b.Config.Resources.Jobs["job1"]; ok {
 		assert.Equal(t, "job_1", job1.Name)
 	}
+
+	assert.Equal(t, 1, len(diags))
+	assert.Equal(t, "job doesn't have any tasks", diags[0].Summary)
+	assert.Equal(t, dyn.Location{
+		File:   "src/examples/file.py",
+		Line:   10,
+		Column: 5,
+	}, diags[0].Location)
 }
 
 func TestPythonMutator_load_disallowed(t *testing.T) {
@@ -129,7 +141,7 @@ func TestPythonMutator_load_disallowed(t *testing.T) {
 					}
 				}
 			}
-		}`)
+		}`, "")
 
 	mutator := PythonMutator(PythonMutatorPhaseLoad)
 	diag := bundle.Apply(ctx, b, mutator)
@@ -174,7 +186,7 @@ func TestPythonMutator_init(t *testing.T) {
 					}
 				}
 			}
-		}`)
+		}`, "")
 
 	mutator := PythonMutator(PythonMutatorPhaseInit)
 	diag := bundle.Apply(ctx, b, mutator)
@@ -235,12 +247,12 @@ func TestPythonMutator_badOutput(t *testing.T) {
 					}
 				}
 			}
-		}`)
+		}`, "")
 
 	mutator := PythonMutator(PythonMutatorPhaseLoad)
 	diag := bundle.Apply(ctx, b, mutator)
 
-	assert.EqualError(t, diag.Error(), "failed to normalize Python mutator output: unknown field: unknown_property")
+	assert.EqualError(t, diag.Error(), "failed to load Python mutator output: failed to normalize output: unknown field: unknown_property")
 }
 
 func TestPythonMutator_disabled(t *testing.T) {
@@ -314,6 +326,18 @@ func TestCreateOverrideVisitor(t *testing.T) {
 			deleteError: fmt.Errorf("unexpected change at \"resources.jobs.job0\" (delete)"),
 		},
 		{
+			name:        "load: can insert 'resources'",
+			phase:       PythonMutatorPhaseLoad,
+			insertPath:  dyn.MustPathFromString("resources"),
+			insertError: nil,
+		},
+		{
+			name:        "load: can insert 'resources.jobs'",
+			phase:       PythonMutatorPhaseLoad,
+			insertPath:  dyn.MustPathFromString("resources.jobs"),
+			insertError: nil,
+		},
+		{
 			name:        "load: can insert a job",
 			phase:       PythonMutatorPhaseLoad,
 			insertPath:  dyn.MustPathFromString("resources.jobs.job0"),
@@ -344,6 +368,18 @@ func TestCreateOverrideVisitor(t *testing.T) {
 			phase:       PythonMutatorPhaseInit,
 			deletePath:  dyn.MustPathFromString("resources.jobs.job0"),
 			deleteError: fmt.Errorf("unexpected change at \"resources.jobs.job0\" (delete)"),
+		},
+		{
+			name:        "init: can insert 'resources'",
+			phase:       PythonMutatorPhaseInit,
+			insertPath:  dyn.MustPathFromString("resources"),
+			insertError: nil,
+		},
+		{
+			name:        "init: can insert 'resources.jobs'",
+			phase:       PythonMutatorPhaseInit,
+			insertPath:  dyn.MustPathFromString("resources.jobs"),
+			insertError: nil,
 		},
 		{
 			name:        "init: can insert a job",
@@ -409,6 +445,98 @@ func TestCreateOverrideVisitor(t *testing.T) {
 	}
 }
 
+type overrideVisitorOmitemptyTestCase struct {
+	name        string
+	path        dyn.Path
+	left        dyn.Value
+	phases      []phase
+	expectedErr error
+}
+
+func TestCreateOverrideVisitor_omitempty(t *testing.T) {
+	// PyDABs can omit empty sequences/mappings in output, because we don't track them as optional,
+	// there is no semantic difference between empty and missing, so we keep them as they were before
+	// PyDABs deleted them.
+
+	allPhases := []phase{PythonMutatorPhaseLoad, PythonMutatorPhaseInit}
+	location := dyn.Location{
+		File:   "databricks.yml",
+		Line:   10,
+		Column: 20,
+	}
+
+	testCases := []overrideVisitorOmitemptyTestCase{
+		{
+			// this is not happening, but adding for completeness
+			name:        "undo delete of empty variables",
+			path:        dyn.MustPathFromString("variables"),
+			left:        dyn.NewValue([]dyn.Value{}, location),
+			expectedErr: merge.ErrOverrideUndoDelete,
+			phases:      allPhases,
+		},
+		{
+			name:        "undo delete of empty job clusters",
+			path:        dyn.MustPathFromString("resources.jobs.job0.job_clusters"),
+			left:        dyn.NewValue([]dyn.Value{}, location),
+			expectedErr: merge.ErrOverrideUndoDelete,
+			phases:      allPhases,
+		},
+		{
+			name:        "allow delete of non-empty job clusters",
+			path:        dyn.MustPathFromString("resources.jobs.job0.job_clusters"),
+			left:        dyn.NewValue([]dyn.Value{dyn.NewValue("abc", location)}, location),
+			expectedErr: nil,
+			// deletions aren't allowed in 'load' phase
+			phases: []phase{PythonMutatorPhaseInit},
+		},
+		{
+			name:        "undo delete of empty tags",
+			path:        dyn.MustPathFromString("resources.jobs.job0.tags"),
+			left:        dyn.NewValue(map[string]dyn.Value{}, location),
+			expectedErr: merge.ErrOverrideUndoDelete,
+			phases:      allPhases,
+		},
+		{
+			name: "allow delete of non-empty tags",
+			path: dyn.MustPathFromString("resources.jobs.job0.tags"),
+			left: dyn.NewValue(
+				map[string]dyn.Value{"dev": dyn.NewValue("true", location)},
+				location,
+			),
+			expectedErr: nil,
+			// deletions aren't allowed in 'load' phase
+			phases: []phase{PythonMutatorPhaseInit},
+		},
+		{
+			name:        "undo delete of nil",
+			path:        dyn.MustPathFromString("resources.jobs.job0.tags"),
+			left:        dyn.NilValue.WithLocation(location),
+			expectedErr: merge.ErrOverrideUndoDelete,
+			phases:      allPhases,
+		},
+	}
+
+	for _, tc := range testCases {
+		for _, phase := range tc.phases {
+			t.Run(tc.name+"-"+string(phase), func(t *testing.T) {
+				visitor, err := createOverrideVisitor(context.Background(), phase)
+				require.NoError(t, err)
+
+				err = visitor.VisitDelete(tc.path, tc.left)
+
+				assert.Equal(t, tc.expectedErr, err)
+			})
+		}
+	}
+}
+
+func TestLoadDiagnosticsFile_nonExistent(t *testing.T) {
+	// this is an important behaviour, see loadDiagnosticsFile docstring
+	_, err := loadDiagnosticsFile("non_existent_file.json")
+
+	assert.Error(t, err)
+}
+
 func TestInterpreterPath(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		assert.Equal(t, "venv\\Scripts\\python3.exe", interpreterPath("venv"))
@@ -417,7 +545,7 @@ func TestInterpreterPath(t *testing.T) {
 	}
 }
 
-func withProcessStub(t *testing.T, args []string, stdout string) context.Context {
+func withProcessStub(t *testing.T, args []string, output string, diagnostics string) context.Context {
 	ctx := context.Background()
 	ctx, stub := process.WithStub(ctx)
 
@@ -429,17 +557,24 @@ func withProcessStub(t *testing.T, args []string, stdout string) context.Context
 
 	inputPath := filepath.Join(cacheDir, "input.json")
 	outputPath := filepath.Join(cacheDir, "output.json")
+	diagnosticsPath := filepath.Join(cacheDir, "diagnostics.json")
 
 	args = append(args, "--input", inputPath)
 	args = append(args, "--output", outputPath)
+	args = append(args, "--diagnostics", diagnosticsPath)
 
 	stub.WithCallback(func(actual *exec.Cmd) error {
 		_, err := os.Stat(inputPath)
 		assert.NoError(t, err)
 
 		if reflect.DeepEqual(actual.Args, args) {
-			err := os.WriteFile(outputPath, []byte(stdout), 0600)
-			return err
+			err := os.WriteFile(outputPath, []byte(output), 0600)
+			require.NoError(t, err)
+
+			err = os.WriteFile(diagnosticsPath, []byte(diagnostics), 0600)
+			require.NoError(t, err)
+
+			return nil
 		} else {
 			return fmt.Errorf("unexpected command: %v", actual.Args)
 		}
