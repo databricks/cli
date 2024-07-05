@@ -1,4 +1,4 @@
-package notebook_test
+package notebook
 
 import (
 	"fmt"
