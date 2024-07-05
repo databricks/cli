@@ -232,7 +232,7 @@ func TestMergePrimitives(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "baz", out.AsAny())
 
-		// Locations of both values should be preserved. 
+		// Locations of both values should be preserved.
 		assert.Equal(t, []dyn.Location{l2, l1}, out.Locations())
 
 		// Location of the merged value should be the location of v2, the second value.
