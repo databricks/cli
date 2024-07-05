@@ -26,7 +26,7 @@ func (m *processTargetMode) Name() string {
 // Mark all resources as being for 'development' purposes, i.e.
 // changing their their name, adding tags, and (in the future)
 // marking them as 'hidden' in the UI.
-func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) error {
+func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) {
 	if !b.Config.Bundle.Deployment.Lock.IsExplicitlyEnabled() {
 		log.Infof(ctx, "Development mode: disabling deployment lock since bundle.deployment.lock.enabled is not set to true")
 		disabled := false
@@ -37,11 +37,11 @@ func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) error {
 	shortName := b.Config.Workspace.CurrentUser.ShortName
 
 	if t.Prefix == "" {
-		b.Config.Transform.Prefix = "[dev " + shortName + "] "
+		t.Prefix = "[dev " + shortName + "] "
 	}
 
 	if t.Tags == nil {
-		b.Config.Transform.Tags = &map[string]string{
+		t.Tags = &map[string]string{
 			"dev": b.Tagging.NormalizeValue(shortName),
 		}
 	}
@@ -58,8 +58,6 @@ func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) error {
 		enabled := true
 		t.DefaultPipelinesDevelopment = &enabled
 	}
-
-	return nil
 }
 
 func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
@@ -145,10 +143,7 @@ func (m *processTargetMode) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 		if diags.HasError() {
 			return diags
 		}
-		err := transformDevelopmentMode(ctx, b)
-		if err != nil {
-			return diag.FromErr(err)
-		}
+		transformDevelopmentMode(ctx, b)
 		return diags
 	case config.Production:
 		isPrincipal := auth.IsServicePrincipal(b.Config.Workspace.CurrentUser.UserName)

@@ -44,18 +44,18 @@ func (m *applyTransforms) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 	tags := toTagArray(t.Tags)
 
 	// Jobs transforms: Prefix, Tags, JobsMaxConcurrentRuns, TriggerPauseStatus
-	for i := range r.Jobs {
-		r.Jobs[i].Name = prefix + r.Jobs[i].Name
-		if r.Jobs[i].Tags == nil {
-			r.Jobs[i].Tags = make(map[string]string)
+	for _, j := range r.Jobs {
+		j.Name = prefix + j.Name
+		if j.Tags == nil {
+			j.Tags = make(map[string]string)
 		}
 		for _, tag := range tags {
-			if r.Jobs[i].Tags[tag.Key] == "" {
-				r.Jobs[i].Tags[tag.Key] = tag.Value
+			if j.Tags[tag.Key] == "" {
+				j.Tags[tag.Key] = tag.Value
 			}
 		}
-		if r.Jobs[i].MaxConcurrentRuns == 0 {
-			r.Jobs[i].MaxConcurrentRuns = t.DefaultJobsMaxConcurrentRuns
+		if j.MaxConcurrentRuns == 0 {
+			j.MaxConcurrentRuns = t.DefaultJobsMaxConcurrentRuns
 		}
 		if t.DefaultTriggerPauseStatus != "" {
 			paused := jobs.PauseStatusPaused
@@ -63,14 +63,14 @@ func (m *applyTransforms) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 				paused = jobs.PauseStatusUnpaused
 			}
 
-			if r.Jobs[i].Schedule != nil && r.Jobs[i].Schedule.PauseStatus == "" {
-				r.Jobs[i].Schedule.PauseStatus = paused
+			if j.Schedule != nil && j.Schedule.PauseStatus == "" {
+				j.Schedule.PauseStatus = paused
 			}
-			if r.Jobs[i].Continuous != nil && r.Jobs[i].Continuous.PauseStatus == "" {
-				r.Jobs[i].Continuous.PauseStatus = paused
+			if j.Continuous != nil && j.Continuous.PauseStatus == "" {
+				j.Continuous.PauseStatus = paused
 			}
-			if r.Jobs[i].Trigger != nil && r.Jobs[i].Trigger.PauseStatus == "" {
-				r.Jobs[i].Trigger.PauseStatus = paused
+			if j.Trigger != nil && j.Trigger.PauseStatus == "" {
+				j.Trigger.PauseStatus = paused
 			}
 		}
 	}
@@ -86,39 +86,39 @@ func (m *applyTransforms) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 	}
 
 	// Models transforms: Prefix, Tags
-	for i := range r.Models {
-		r.Models[i].Name = prefix + r.Models[i].Name
+	for _, m := range r.Models {
+		m.Name = prefix + m.Name
 		for _, t := range tags {
-			exists := slices.ContainsFunc(r.Models[i].Tags, func(modelTag ml.ModelTag) bool {
+			exists := slices.ContainsFunc(m.Tags, func(modelTag ml.ModelTag) bool {
 				return modelTag.Key == t.Key
 			})
 			if !exists {
 				// Only add this tag if the resource didn't include any tag that overrides its value.
-				r.Models[i].Tags = append(r.Models[i].Tags, ml.ModelTag{Key: t.Key, Value: t.Value})
+				m.Tags = append(m.Tags, ml.ModelTag{Key: t.Key, Value: t.Value})
 			}
 		}
 	}
 
 	// Experiments transforms: Prefix, Tags
-	for i := range r.Experiments {
-		filepath := r.Experiments[i].Name
+	for _, e := range r.Experiments {
+		filepath := e.Name
 		dir := path.Dir(filepath)
 		base := path.Base(filepath)
 		if dir == "." {
-			r.Experiments[i].Name = prefix + base
+			e.Name = prefix + base
 		} else {
-			r.Experiments[i].Name = dir + "/" + prefix + base
+			e.Name = dir + "/" + prefix + base
 		}
 		for _, t := range tags {
 			exists := false
-			for _, experimentTag := range r.Experiments[i].Tags {
+			for _, experimentTag := range e.Tags {
 				if experimentTag.Key == t.Key {
 					exists = true
 					break
 				}
 			}
 			if !exists {
-				r.Experiments[i].Tags = append(r.Experiments[i].Tags, ml.ExperimentTag{Key: t.Key, Value: t.Value})
+				e.Tags = append(e.Tags, ml.ExperimentTag{Key: t.Key, Value: t.Value})
 			}
 		}
 	}
@@ -152,8 +152,8 @@ func validatePauseStatus(b *bundle.Bundle) diag.Diagnostics {
 	}}
 }
 
-// Convert a map of tags to an array of tags.
-// We sort tags so we always produce a consistent list of tags.
+// toTagArray converts a map of tags to an array of tags.
+// We sort tags so ensure stable ordering.
 func toTagArray(tags *map[string]string) []Tag {
 	var tagArray []Tag
 	if tags == nil {
@@ -168,7 +168,7 @@ func toTagArray(tags *map[string]string) []Tag {
 	return tagArray
 }
 
-// Normalize prefix strings like '[dev lennart] ' to 'dev_lennart_'.
+// normalizePrefix prefixes strings like '[dev lennart] ' to 'dev_lennart_'.
 // We leave unicode letters and numbers but remove all "special characters."
 func normalizePrefix(prefix string) string {
 	prefix = strings.ReplaceAll(prefix, "[", "")

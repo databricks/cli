@@ -355,8 +355,7 @@ func TestDisableLocking(t *testing.T) {
 	ctx := context.Background()
 	b := mockBundle(config.Development)
 
-	err := transformDevelopmentMode(ctx, b)
-	require.Nil(t, err)
+	transformDevelopmentMode(ctx, b)
 	assert.False(t, b.Config.Bundle.Deployment.Lock.IsEnabled())
 }
 
@@ -366,8 +365,7 @@ func TestDisableLockingDisabled(t *testing.T) {
 	explicitlyEnabled := true
 	b.Config.Bundle.Deployment.Lock.Enabled = &explicitlyEnabled
 
-	err := transformDevelopmentMode(ctx, b)
-	require.Nil(t, err)
+	transformDevelopmentMode(ctx, b)
 	assert.True(t, b.Config.Bundle.Deployment.Lock.IsEnabled(), "Deployment lock should remain enabled in development mode when explicitly enabled")
 }
 
