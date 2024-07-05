@@ -42,29 +42,25 @@ func NewValue(v any, loc []Location) Value {
 		v = newMappingFromGoMap(vin)
 	}
 
-	// create a copy of the locations, so that mutations to the original slice
-	// don't affect new value.
-	nl := make([]Location, len(loc))
-	copy(nl, loc)
-
 	return Value{
 		v: v,
 		k: kindOf(v),
-		l: loc,
+
+		// create a copy of the locations, so that mutations to the original slice
+		// don't affect new value.
+		l: slices.Clone(loc),
 	}
 }
 
 // WithLocations returns a new Value with its location set to the given value.
 func (v Value) WithLocations(loc []Location) Value {
-	// create a copy of the locations, so that mutations to the original slice
-	// don't affect new value.
-	nl := make([]Location, len(loc))
-	copy(nl, loc)
-
 	return Value{
 		v: v.v,
 		k: v.k,
-		l: nl,
+
+		// create a copy of the locations, so that mutations to the original slice
+		// don't affect new value.
+		l: slices.Clone(loc),
 	}
 }
 
