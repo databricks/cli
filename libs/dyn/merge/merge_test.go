@@ -78,28 +78,43 @@ func TestMergeMaps(t *testing.T) {
 
 }
 
-// TODO: write a test for location preservation in the merge nil case.
 func TestMergeMapsNil(t *testing.T) {
-	v := dyn.V(map[string]dyn.Value{
+	l := dyn.Location{File: "file", Line: 1, Column: 2}
+	v := dyn.NewValue(map[string]dyn.Value{
 		"foo": dyn.V("bar"),
-	})
+	}, []dyn.Location{l})
+
+	nilL := dyn.Location{File: "file", Line: 3, Column: 4}
+	nilV := dyn.NewValue(nil, []dyn.Location{nilL})
 
 	// Merge nil into v.
 	{
-		out, err := Merge(v, dyn.NilValue)
+		out, err := Merge(v, nilV)
 		assert.NoError(t, err)
 		assert.Equal(t, map[string]any{
 			"foo": "bar",
 		}, out.AsAny())
+
+		// Locations of both values should be preserved.
+		assert.Equal(t, []dyn.Location{l, nilL}, out.Locations())
+
+		// Location of the non-nil value should be returned by .Location().
+		assert.Equal(t, l, out.Location())
 	}
 
 	// Merge v into nil.
 	{
-		out, err := Merge(dyn.NilValue, v)
+		out, err := Merge(nilV, v)
 		assert.NoError(t, err)
 		assert.Equal(t, map[string]any{
 			"foo": "bar",
 		}, out.AsAny())
+
+		// Locations of both values should be preserved.
+		assert.Equal(t, []dyn.Location{l, nilL}, out.Locations())
+
+		// Location of the non-nil value should be returned by .Location().
+		assert.Equal(t, l, out.Location())
 	}
 }
 
