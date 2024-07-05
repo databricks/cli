@@ -16,7 +16,7 @@ func ToTyped(dst any, src dyn.Value) error {
 	for dstv.Kind() == reflect.Pointer {
 		// If the source value is nil and the destination is a settable pointer,
 		// set the destination to nil. Also see `end_to_end_test.go`.
-		if dstv.CanSet() && src == dyn.NilValue {
+		if dstv.CanSet() && src.Kind() == dyn.KindNil {
 			dstv.SetZero()
 			return nil
 		}
@@ -282,6 +282,11 @@ func toTypedFloat(dst reflect.Value, src dyn.Value) error {
 }
 
 func toTypedInterface(dst reflect.Value, src dyn.Value) error {
+	if src.Kind() == dyn.KindNil {
+		dst.Set(reflect.Zero(dst.Type()))
+		return nil
+	}
+
 	dst.Set(reflect.ValueOf(src.AsAny()))
 	return nil
 }

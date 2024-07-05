@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/fs"
 	"net/url"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -119,7 +118,7 @@ func (t *translateContext) rewritePath(
 }
 
 func (t *translateContext) translateNotebookPath(literal, localFullPath, localRelPath, remotePath string) (string, error) {
-	nb, _, err := notebook.Detect(localFullPath)
+	nb, _, err := notebook.DetectWithFS(t.b.BundleRoot, filepath.ToSlash(localRelPath))
 	if errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("notebook %s not found", literal)
 	}
@@ -135,7 +134,7 @@ func (t *translateContext) translateNotebookPath(literal, localFullPath, localRe
 }
 
 func (t *translateContext) translateFilePath(literal, localFullPath, localRelPath, remotePath string) (string, error) {
-	nb, _, err := notebook.Detect(localFullPath)
+	nb, _, err := notebook.DetectWithFS(t.b.BundleRoot, filepath.ToSlash(localRelPath))
 	if errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("file %s not found", literal)
 	}
@@ -149,7 +148,7 @@ func (t *translateContext) translateFilePath(literal, localFullPath, localRelPat
 }
 
 func (t *translateContext) translateDirectoryPath(literal, localFullPath, localRelPath, remotePath string) (string, error) {
-	info, err := os.Stat(localFullPath)
+	info, err := t.b.BundleRoot.Stat(filepath.ToSlash(localRelPath))
 	if err != nil {
 		return "", err
 	}

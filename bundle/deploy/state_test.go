@@ -32,7 +32,8 @@ func TestFromSlice(t *testing.T) {
 
 func TestToSlice(t *testing.T) {
 	tmpDir := t.TempDir()
-	fileset := fileset.New(vfs.MustNew(tmpDir))
+	root := vfs.MustNew(tmpDir)
+	fileset := fileset.New(root)
 	testutil.Touch(t, tmpDir, "test1.py")
 	testutil.Touch(t, tmpDir, "test2.py")
 	testutil.Touch(t, tmpDir, "test3.py")
@@ -44,7 +45,7 @@ func TestToSlice(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, f, 3)
 
-	s := f.ToSlice(tmpDir)
+	s := f.ToSlice(root)
 	require.Len(t, s, 3)
 
 	for _, file := range s {
