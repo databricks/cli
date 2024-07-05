@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
@@ -38,7 +39,7 @@ func (entry wsfsDirEntry) Info() (fs.FileInfo, error) {
 func wsfsDirEntriesFromObjectInfos(objects []workspace.ObjectInfo) []fs.DirEntry {
 	info := make([]fs.DirEntry, len(objects))
 	for i, v := range objects {
-		info[i] = wsfsDirEntry{wsfsFileInfo{oi: v}}
+		info[i] = wsfsDirEntry{wsfsFileInfo{ObjectInfo: v}}
 	}
 
 	// Sort by name for parity with os.ReadDir.
@@ -48,19 +49,22 @@ func wsfsDirEntriesFromObjectInfos(objects []workspace.ObjectInfo) []fs.DirEntry
 
 // Type that implements fs.FileInfo for WSFS.
 type wsfsFileInfo struct {
-	oi workspace.ObjectInfo
+	workspace.ObjectInfo
+
+	// The export format of a notebook. This is not exposed by the SDK.
+	ReposExportFormat workspace.ExportFormat `json:"repos_export_format,omitempty"`
 }
 
 func (info wsfsFileInfo) Name() string {
-	return path.Base(info.oi.Path)
+	return path.Base(info.ObjectInfo.Path)
 }
 
 func (info wsfsFileInfo) Size() int64 {
-	return info.oi.Size
+	return info.ObjectInfo.Size
 }
 
 func (info wsfsFileInfo) Mode() fs.FileMode {
-	switch info.oi.ObjectType {
+	switch info.ObjectInfo.ObjectType {
 	case workspace.ObjectTypeDirectory, workspace.ObjectTypeRepo:
 		return fs.ModeDir
 	default:
@@ -69,7 +73,7 @@ func (info wsfsFileInfo) Mode() fs.FileMode {
 }
 
 func (info wsfsFileInfo) ModTime() time.Time {
-	return time.UnixMilli(info.oi.ModifiedAt)
+	return time.UnixMilli(info.ObjectInfo.ModifiedAt)
 }
 
 func (info wsfsFileInfo) IsDir() bool {
@@ -77,7 +81,21 @@ func (info wsfsFileInfo) IsDir() bool {
 }
 
 func (info wsfsFileInfo) Sys() any {
-	return info.oi
+	return info.ObjectInfo
+}
+
+// UnmarshalJSON is a custom unmarshaller for the wsfsFileInfo struct.
+// It must be defined for this type because otherwise the implementation
+// of the embedded ObjectInfo type will be used.
+func (info *wsfsFileInfo) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, info)
+}
+
+// MarshalJSON is a custom marshaller for the wsfsFileInfo struct.
+// It must be defined for this type because otherwise the implementation
+// of the embedded ObjectInfo type will be used.
+func (info *wsfsFileInfo) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(info)
 }
 
 // WorkspaceFilesClient implements the files-in-workspace API.
@@ -293,7 +311,22 @@ func (w *WorkspaceFilesClient) Stat(ctx context.Context, name string) (fs.FileIn
 		return nil, err
 	}
 
-	info, err := w.workspaceClient.Workspace.GetStatusByPath(ctx, absPath)
+	var stat wsfsFileInfo
+
+	// Perform bespoke API call because "return_export_info" is not exposed by the SDK.
+	// We need "repos_export_format" to determine if the file is a py or a ipynb notebook.
+	// This is not exposed by the SDK so we need to make a direct API call.
+	err = w.apiClient.Do(
+		ctx,
+		http.MethodGet,
+		"/api/2.0/workspace/get-status",
+		nil,
+		map[string]string{
+			"path":               absPath,
+			"return_export_info": "true",
+		},
+		&stat,
+	)
 	if err != nil {
 		// If we got an API error we deal with it below.
 		var aerr *apierr.APIError
@@ -307,5 +340,5 @@ func (w *WorkspaceFilesClient) Stat(ctx context.Context, name string) (fs.FileIn
 		}
 	}
 
-	return wsfsFileInfo{*info}, nil
+	return stat, nil
 }
