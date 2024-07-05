@@ -470,21 +470,21 @@ func TestCreateOverrideVisitor_omitempty(t *testing.T) {
 			// this is not happening, but adding for completeness
 			name:        "undo delete of empty variables",
 			path:        dyn.MustPathFromString("variables"),
-			left:        dyn.NewValue([]dyn.Value{}, location),
+			left:        dyn.NewValue([]dyn.Value{}, []dyn.Location{location}),
 			expectedErr: merge.ErrOverrideUndoDelete,
 			phases:      allPhases,
 		},
 		{
 			name:        "undo delete of empty job clusters",
 			path:        dyn.MustPathFromString("resources.jobs.job0.job_clusters"),
-			left:        dyn.NewValue([]dyn.Value{}, location),
+			left:        dyn.NewValue([]dyn.Value{}, []dyn.Location{location}),
 			expectedErr: merge.ErrOverrideUndoDelete,
 			phases:      allPhases,
 		},
 		{
 			name:        "allow delete of non-empty job clusters",
 			path:        dyn.MustPathFromString("resources.jobs.job0.job_clusters"),
-			left:        dyn.NewValue([]dyn.Value{dyn.NewValue("abc", location)}, location),
+			left:        dyn.NewValue([]dyn.Value{dyn.NewValue("abc", location)}, []dyn.Location{location}),
 			expectedErr: nil,
 			// deletions aren't allowed in 'load' phase
 			phases: []phase{PythonMutatorPhaseInit},
@@ -492,17 +492,15 @@ func TestCreateOverrideVisitor_omitempty(t *testing.T) {
 		{
 			name:        "undo delete of empty tags",
 			path:        dyn.MustPathFromString("resources.jobs.job0.tags"),
-			left:        dyn.NewValue(map[string]dyn.Value{}, location),
+			left:        dyn.NewValue(map[string]dyn.Value{}, []dyn.Location{location}),
 			expectedErr: merge.ErrOverrideUndoDelete,
 			phases:      allPhases,
 		},
 		{
 			name: "allow delete of non-empty tags",
 			path: dyn.MustPathFromString("resources.jobs.job0.tags"),
-			left: dyn.NewValue(
-				map[string]dyn.Value{"dev": dyn.NewValue("true", location)},
-				location,
-			),
+			left: dyn.NewValue(map[string]dyn.Value{"dev": dyn.NewValue("true", location)}, []dyn.Location{location}),
+
 			expectedErr: nil,
 			// deletions aren't allowed in 'load' phase
 			phases: []phase{PythonMutatorPhaseInit},
@@ -510,7 +508,7 @@ func TestCreateOverrideVisitor_omitempty(t *testing.T) {
 		{
 			name:        "undo delete of nil",
 			path:        dyn.MustPathFromString("resources.jobs.job0.tags"),
-			left:        dyn.NilValue.WithLocation(location),
+			left:        dyn.NilValue.WithLocations([]dyn.Location{location}),
 			expectedErr: merge.ErrOverrideUndoDelete,
 			phases:      allPhases,
 		},
