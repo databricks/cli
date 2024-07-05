@@ -31,13 +31,21 @@ func TestMergeMaps(t *testing.T) {
 		}, out.AsAny())
 
 		// Locations of both values should be preserved.
-		assert.Equal(t, []dyn.Location{l2, l1}, out.Locations())
-		assert.Equal(t, []dyn.Location{l1, l2}, out.Get("bar").Locations())
+		assert.Equal(t, []dyn.Location{l1, l2}, out.Locations())
+		assert.Equal(t, []dyn.Location{l2, l1}, out.Get("bar").Locations())
 		assert.Equal(t, []dyn.Location{l1}, out.Get("foo").Locations())
 		assert.Equal(t, []dyn.Location{l2}, out.Get("qux").Locations())
 
 		// Location of the merged value should be the location of v1.
 		assert.Equal(t, l1, out.Location())
+
+		// Value of bar is "qux" which comes from v2. This .Location() should
+		// return the location of v2.
+		assert.Equal(t, l2, out.Get("bar").Location())
+
+		// Original locations of keys that were not overwritten should be preserved.
+		assert.Equal(t, l1, out.Get("foo").Location())
+		assert.Equal(t, l2, out.Get("qux").Location())
 	}
 
 	// Merge v1 into v2.
@@ -51,17 +59,26 @@ func TestMergeMaps(t *testing.T) {
 		}, out.AsAny())
 
 		// Locations of both values should be preserved.
-		assert.Equal(t, []dyn.Location{l1, l2}, out.Locations())
-		assert.Equal(t, []dyn.Location{l2, l1}, out.Get("bar").Locations())
+		assert.Equal(t, []dyn.Location{l2, l1}, out.Locations())
+		assert.Equal(t, []dyn.Location{l1, l2}, out.Get("bar").Locations())
 		assert.Equal(t, []dyn.Location{l1}, out.Get("foo").Locations())
 		assert.Equal(t, []dyn.Location{l2}, out.Get("qux").Locations())
 
 		// Location of the merged value should be the location of v2.
 		assert.Equal(t, l2, out.Location())
+
+		// Value of bar is "baz" which comes from v1. This .Location() should
+		// return the location of v1.
+		assert.Equal(t, l1, out.Get("bar").Location())
+
+		// Original locations of keys that were not overwritten should be preserved.
+		assert.Equal(t, l1, out.Get("foo").Location())
+		assert.Equal(t, l2, out.Get("qux").Location())
 	}
 
 }
 
+// TODO: write a test for location preservation in the merge nil case.
 func TestMergeMapsNil(t *testing.T) {
 	v := dyn.V(map[string]dyn.Value{
 		"foo": dyn.V("bar"),
@@ -127,10 +144,16 @@ func TestMergeSequences(t *testing.T) {
 		}, out.AsAny())
 
 		// Locations of both values should be preserved.
-		assert.Equal(t, []dyn.Location{l2, l3, l1}, out.Locations())
+		assert.Equal(t, []dyn.Location{l1, l2, l3}, out.Locations())
 
 		// Location of the merged value should be the location of v1.
 		assert.Equal(t, l1, out.Location())
+
+		// Location of the individual values should be preserved.
+		assert.Equal(t, l1, out.Index(0).Location()) // "bar"
+		assert.Equal(t, l1, out.Index(1).Location()) // "baz"
+		assert.Equal(t, l2, out.Index(2).Location()) // "qux"
+		assert.Equal(t, l3, out.Index(3).Location()) // "foo"
 	}
 
 	// Merge v1 into v2.
@@ -145,10 +168,16 @@ func TestMergeSequences(t *testing.T) {
 		}, out.AsAny())
 
 		// Locations of both values should be preserved.
-		assert.Equal(t, []dyn.Location{l1, l2, l3}, out.Locations())
+		assert.Equal(t, []dyn.Location{l2, l3, l1}, out.Locations())
 
 		// Location of the merged value should be the location of v2.
-		assert.Equal(t, l3, out.Location())
+		assert.Equal(t, l2, out.Location())
+
+		// Location of the individual values should be preserved.
+		assert.Equal(t, l2, out.Index(0).Location()) // "qux"
+		assert.Equal(t, l3, out.Index(1).Location()) // "foo"
+		assert.Equal(t, l1, out.Index(2).Location()) // "bar"
+		assert.Equal(t, l1, out.Index(3).Location()) // "baz"
 	}
 }
 
@@ -203,8 +232,8 @@ func TestMergePrimitives(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "baz", out.AsAny())
 
-		// Locations of both values should be preserved.
-		assert.Equal(t, []dyn.Location{l1, l2}, out.Locations())
+		// Locations of both values should be preserved. 
+		assert.Equal(t, []dyn.Location{l2, l1}, out.Locations())
 
 		// Location of the merged value should be the location of v2, the second value.
 		assert.Equal(t, l2, out.Location())
@@ -217,7 +246,7 @@ func TestMergePrimitives(t *testing.T) {
 		assert.Equal(t, "bar", out.AsAny())
 
 		// Locations of both values should be preserved.
-		assert.Equal(t, []dyn.Location{l2, l1}, out.Locations())
+		assert.Equal(t, []dyn.Location{l1, l2}, out.Locations())
 
 		// Location of the merged value should be the location of v1, the second value.
 		assert.Equal(t, l1, out.Location())
