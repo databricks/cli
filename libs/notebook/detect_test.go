@@ -99,3 +99,21 @@ func TestDetectFileWithLongHeader(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, nb)
 }
+
+func TestDetectWithObjectInfo(t *testing.T) {
+	fakeFS := &fakeFS{
+		fakeFile{
+			fakeFileInfo{
+				workspace.ObjectInfo{
+					ObjectType: workspace.ObjectTypeNotebook,
+					Language:   workspace.LanguagePython,
+				},
+			},
+		},
+	}
+
+	nb, lang, err := DetectWithFS(fakeFS, "doesntmatter")
+	require.NoError(t, err)
+	assert.True(t, nb)
+	assert.Equal(t, workspace.LanguagePython, lang)
+}
