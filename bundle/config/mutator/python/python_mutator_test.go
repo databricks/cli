@@ -484,7 +484,7 @@ func TestCreateOverrideVisitor_omitempty(t *testing.T) {
 		{
 			name:        "allow delete of non-empty job clusters",
 			path:        dyn.MustPathFromString("resources.jobs.job0.job_clusters"),
-			left:        dyn.NewValue([]dyn.Value{dyn.NewValue("abc", location)}, []dyn.Location{location}),
+			left:        dyn.NewValue([]dyn.Value{dyn.NewValue("abc", []dyn.Location{location})}, []dyn.Location{location}),
 			expectedErr: nil,
 			// deletions aren't allowed in 'load' phase
 			phases: []phase{PythonMutatorPhaseInit},
@@ -499,7 +499,7 @@ func TestCreateOverrideVisitor_omitempty(t *testing.T) {
 		{
 			name: "allow delete of non-empty tags",
 			path: dyn.MustPathFromString("resources.jobs.job0.tags"),
-			left: dyn.NewValue(map[string]dyn.Value{"dev": dyn.NewValue("true", location)}, []dyn.Location{location}),
+			left: dyn.NewValue(map[string]dyn.Value{"dev": dyn.NewValue("true", []dyn.Location{location})}, []dyn.Location{location}),
 
 			expectedErr: nil,
 			// deletions aren't allowed in 'load' phase
