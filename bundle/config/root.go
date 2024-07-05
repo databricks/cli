@@ -338,9 +338,32 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		"resources",
 		"sync",
 		"permissions",
-		"variables",
 	} {
 		if root, err = mergeField(root, target, f); err != nil {
+			return err
+		}
+	}
+
+	// Merge `variables`. This field must be overwritten if set, not merged.
+	if v := target.Get("variables"); v.Kind() != dyn.KindInvalid {
+		_, err = dyn.Map(v, ".", dyn.Foreach(func(p dyn.Path, variable dyn.Value) (dyn.Value, error) {
+			varPath := dyn.MustPathFromString("variables").Append(p...)
+
+			vDefault := variable.Get("default")
+			if vDefault.Kind() != dyn.KindInvalid {
+				defaultPath := varPath.Append(dyn.Key("default"))
+				root, err = dyn.SetByPath(root, defaultPath, vDefault)
+			}
+
+			vLookup := variable.Get("lookup")
+			if vLookup.Kind() != dyn.KindInvalid {
+				lookupPath := varPath.Append(dyn.Key("lookup"))
+				root, err = dyn.SetByPath(root, lookupPath, vLookup)
+			}
+
+			return root, err
+		}))
+		if err != nil {
 			return err
 		}
 	}
@@ -444,6 +467,7 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 
 				if typeV.MustString() == "complex" {
 					return dyn.NewValue(map[string]dyn.Value{
+						"type":    typeV,
 						"default": variable,
 					}, variable.Location()), nil
 				}
