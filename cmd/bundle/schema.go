@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/schema"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/spf13/cobra"
 )
 
@@ -26,6 +27,13 @@ func newSchemaCommand() *cobra.Command {
 
 		// Generate the JSON schema from the bundle configuration struct in Go.
 		schema, err := schema.New(reflect.TypeOf(config.Root{}), docs)
+		if err != nil {
+			return err
+		}
+
+		// Target variable value overrides can be primitives, maps or sequences.
+		// Set an empty schema for them.
+		err = schema.SetByPath("targets.*.variables.*", jsonschema.Schema{})
 		if err != nil {
 			return err
 		}
