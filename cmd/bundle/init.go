@@ -38,12 +38,10 @@ var nativeTemplates = []nativeTemplate{
 	{
 		name:        "default-sql",
 		description: "The default SQL template for .sql files that run with Databricks SQL",
-		hidden:      true,
 	},
 	{
 		name:        "dbt-sql",
-		description: "The dbt SQL template (https://www.databricks.com/blog/delivering-cost-effective-data-real-time-dbt-and-databricks)",
-		hidden:      true,
+		description: "The dbt SQL template (databricks.com/blog/delivering-cost-effective-data-real-time-dbt-and-databricks)",
 	},
 	{
 		name:        "mlops-stacks",

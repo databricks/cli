@@ -42,14 +42,26 @@ func reportRunAsNotSupported(resourceType string, location dyn.Location, current
 
 func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
-	runAs := b.Config.RunAs
 
-	// Error if neither service_principal_name nor user_name are specified
-	if runAs.ServicePrincipalName == "" && runAs.UserName == "" {
-		diags = diags.Extend(diag.Errorf("run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at %s", b.Config.GetLocation("run_as")))
+	neitherSpecifiedErr := diag.Diagnostics{{
+		Summary:  "run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified",
+		Location: b.Config.GetLocation("run_as"),
+		Severity: diag.Error,
+	}}
+
+	// Fail fast if neither service_principal_name nor user_name are specified, but the
+	// run_as section is present.
+	if b.Config.Value().Get("run_as").Kind() == dyn.KindNil {
+		return neitherSpecifiedErr
 	}
 
-	// Error if both service_principal_name and user_name are specified
+	// Fail fast if one or both of service_principal_name and user_name are specified,
+	// but with empty values.
+	runAs := b.Config.RunAs
+	if runAs.ServicePrincipalName == "" && runAs.UserName == "" {
+		return neitherSpecifiedErr
+	}
+
 	if runAs.UserName != "" && runAs.ServicePrincipalName != "" {
 		diags = diags.Extend(diag.Diagnostics{{
 			Summary:  "run_as section cannot specify both user_name and service_principal_name",
@@ -151,8 +163,7 @@ func setPipelineOwnersToRunAsIdentity(b *bundle.Bundle) {
 
 func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Mutator is a no-op if run_as is not specified in the bundle
-	runAs := b.Config.RunAs
-	if runAs == nil {
+	if b.Config.Value().Get("run_as").Kind() == dyn.KindInvalid {
 		return nil
 	}
 

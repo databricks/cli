@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
+	"io/fs"
 	"strings"
 
 	"github.com/databricks/cli/libs/log"
@@ -68,7 +68,7 @@ func (l profileFromHostLoader) Configure(cfg *config.Config) error {
 	ctx := context.Background()
 	configFile, err := config.LoadFile(cfg.ConfigFile)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return nil
 		}
 		return fmt.Errorf("cannot parse config file: %w", err)

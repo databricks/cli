@@ -15,7 +15,7 @@ func LoadYAML(path string, r io.Reader) (dyn.Value, error) {
 		if err == io.EOF {
 			return dyn.NilValue, nil
 		}
-		return dyn.NilValue, err
+		return dyn.InvalidValue, err
 	}
 
 	return newLoader(path).load(&node)

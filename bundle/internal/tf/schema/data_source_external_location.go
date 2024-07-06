@@ -19,6 +19,7 @@ type DataSourceExternalLocationExternalLocationInfo struct {
 	CreatedBy         string                                                           `json:"created_by,omitempty"`
 	CredentialId      string                                                           `json:"credential_id,omitempty"`
 	CredentialName    string                                                           `json:"credential_name,omitempty"`
+	IsolationMode     string                                                           `json:"isolation_mode,omitempty"`
 	MetastoreId       string                                                           `json:"metastore_id,omitempty"`
 	Name              string                                                           `json:"name,omitempty"`
 	Owner             string                                                           `json:"owner,omitempty"`

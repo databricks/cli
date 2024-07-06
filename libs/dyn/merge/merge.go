@@ -34,17 +34,17 @@ func merge(a, b dyn.Value) (dyn.Value, error) {
 	switch ak {
 	case dyn.KindMap:
 		if bk != dyn.KindMap {
-			return dyn.NilValue, fmt.Errorf("cannot merge map with %s", bk)
+			return dyn.InvalidValue, fmt.Errorf("cannot merge map with %s", bk)
 		}
 		return mergeMap(a, b)
 	case dyn.KindSequence:
 		if bk != dyn.KindSequence {
-			return dyn.NilValue, fmt.Errorf("cannot merge sequence with %s", bk)
+			return dyn.InvalidValue, fmt.Errorf("cannot merge sequence with %s", bk)
 		}
 		return mergeSequence(a, b)
 	default:
 		if ak != bk {
-			return dyn.NilValue, fmt.Errorf("cannot merge %s with %s", ak, bk)
+			return dyn.InvalidValue, fmt.Errorf("cannot merge %s with %s", ak, bk)
 		}
 		return mergePrimitive(a, b)
 	}
@@ -66,7 +66,7 @@ func mergeMap(a, b dyn.Value) (dyn.Value, error) {
 			// If the key already exists, merge the values.
 			merged, err := merge(ov, pv)
 			if err != nil {
-				return dyn.NilValue, err
+				return dyn.InvalidValue, err
 			}
 			out.Set(pk, merged)
 		} else {

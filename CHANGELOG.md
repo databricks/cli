@@ -1,5 +1,127 @@
 # Version changelog
 
+## 0.223.1
+
+This bugfix release fixes missing error messages in v0.223.0.
+
+CLI:
+ * Fix logic error in [#1532](https://github.com/databricks/cli/pull/1532) ([#1564](https://github.com/databricks/cli/pull/1564)).
+
+
+## 0.223.0
+
+Bundles:
+
+As of this release you can interact with bundles when running the CLI on DBR (e.g. via the Web Terminal).
+
+ * Fix non-default project names not working in dbt-sql template ([#1500](https://github.com/databricks/cli/pull/1500)).
+ * Improve `bundle validate` output ([#1532](https://github.com/databricks/cli/pull/1532)).
+ * Fixed resolving variable references inside slice variable ([#1550](https://github.com/databricks/cli/pull/1550)).
+ * Fixed bundle not loading when empty variable is defined ([#1552](https://github.com/databricks/cli/pull/1552)).
+ * Use `vfs.Path` for filesystem interaction ([#1554](https://github.com/databricks/cli/pull/1554)).
+ * Replace `vfs.Path` with extension-aware filer when running on DBR ([#1556](https://github.com/databricks/cli/pull/1556)).
+
+Internal:
+ * merge.Override: Fix handling of dyn.NilValue ([#1530](https://github.com/databricks/cli/pull/1530)).
+ * Compare `.Kind()` instead of direct equality checks on a `dyn.Value` ([#1520](https://github.com/databricks/cli/pull/1520)).
+ * PythonMutator: register product in user agent extra ([#1533](https://github.com/databricks/cli/pull/1533)).
+ * Ignore `dyn.NilValue` when traversing value from `dyn.Map` ([#1547](https://github.com/databricks/cli/pull/1547)).
+ * Add extra tests for the sync block ([#1548](https://github.com/databricks/cli/pull/1548)).
+ * PythonMutator: add diagnostics ([#1531](https://github.com/databricks/cli/pull/1531)).
+ * PythonMutator: support omitempty in PyDABs ([#1513](https://github.com/databricks/cli/pull/1513)).
+ * PythonMutator: allow insert 'resources' and 'resources.jobs' ([#1555](https://github.com/databricks/cli/pull/1555)).
+
+## 0.222.0
+
+CLI:
+ * Add link to documentation for Homebrew installation to README ([#1505](https://github.com/databricks/cli/pull/1505)).
+ * Fix `databricks configure` to use `DATABRICKS_CONFIG_FILE` environment variable if exists as config file ([#1325](https://github.com/databricks/cli/pull/1325)).
+
+Bundles:
+
+The Terraform upgrade to v1.48.0 includes a fix for library order not being respected.
+
+ * Fix conditional in query in `default-sql` template ([#1479](https://github.com/databricks/cli/pull/1479)).
+ * Remove user credentials specified in the Git origin URL ([#1494](https://github.com/databricks/cli/pull/1494)).
+ * Serialize dynamic value for `bundle validate` output ([#1499](https://github.com/databricks/cli/pull/1499)).
+ * Override variables with lookup value even if values has default value set ([#1504](https://github.com/databricks/cli/pull/1504)).
+ * Pause quality monitors when "mode: development" is used ([#1481](https://github.com/databricks/cli/pull/1481)).
+ * Return `fs.ModeDir` for Git folders in the workspace ([#1521](https://github.com/databricks/cli/pull/1521)).
+ * Upgrade TF provider to 1.48.0 ([#1527](https://github.com/databricks/cli/pull/1527)).
+ * Added support for complex variables ([#1467](https://github.com/databricks/cli/pull/1467)).
+
+Internal:
+ * Add randIntn function ([#1475](https://github.com/databricks/cli/pull/1475)).
+ * Avoid multiple file tree traversals on bundle deploy ([#1493](https://github.com/databricks/cli/pull/1493)).
+ * Clean up unused code ([#1502](https://github.com/databricks/cli/pull/1502)).
+ * Use `dyn.InvalidValue` to indicate absence ([#1507](https://github.com/databricks/cli/pull/1507)).
+ * Add ApplyPythonMutator ([#1430](https://github.com/databricks/cli/pull/1430)).
+ * Set bool pointer to disable lock ([#1516](https://github.com/databricks/cli/pull/1516)).
+ * Allow the any type to be set to nil in `convert.FromTyped` ([#1518](https://github.com/databricks/cli/pull/1518)).
+ * Properly deal with nil values in `convert.FromTyped` ([#1511](https://github.com/databricks/cli/pull/1511)).
+ * Return `dyn.InvalidValue` instead of `dyn.NilValue` when errors happen ([#1514](https://github.com/databricks/cli/pull/1514)).
+ * PythonMutator: replace stdin/stdout with files ([#1512](https://github.com/databricks/cli/pull/1512)).
+ * Add context type and value to path rewriting ([#1525](https://github.com/databricks/cli/pull/1525)).
+
+API Changes:
+ * Added schedule CRUD commands to `databricks lakeview`.
+ * Added subscription CRUD commands to `databricks lakeview`.
+ * Added `databricks apps start` command.
+
+OpenAPI commit 7437dabb9dadee402c1fc060df4c1ce8cc5369f0 (2024-06-24)
+
+Dependency updates:
+ * Bump golang.org/x/text from 0.15.0 to 0.16.0 ([#1482](https://github.com/databricks/cli/pull/1482)).
+ * Bump golang.org/x/term from 0.20.0 to 0.21.0 ([#1483](https://github.com/databricks/cli/pull/1483)).
+ * Bump golang.org/x/mod from 0.17.0 to 0.18.0 ([#1484](https://github.com/databricks/cli/pull/1484)).
+ * Bump golang.org/x/oauth2 from 0.20.0 to 0.21.0 ([#1485](https://github.com/databricks/cli/pull/1485)).
+ * Bump github.com/briandowns/spinner from 1.23.0 to 1.23.1 ([#1495](https://github.com/databricks/cli/pull/1495)).
+ * Bump github.com/spf13/cobra from 1.8.0 to 1.8.1 ([#1496](https://github.com/databricks/cli/pull/1496)).
+ * Bump github.com/databricks/databricks-sdk-go from 0.42.0 to 0.43.0 ([#1522](https://github.com/databricks/cli/pull/1522)).
+
+## 0.221.1
+
+Bundles:
+
+This releases fixes an issue introduced in v0.221.0 where managing jobs with a single-node cluster would fail.
+
+ * Fix SQL schema selection in default-sql template ([#1471](https://github.com/databricks/cli/pull/1471)).
+ * Copy-editing for SQL templates ([#1474](https://github.com/databricks/cli/pull/1474)).
+ * Upgrade TF provider to 1.47.0 ([#1476](https://github.com/databricks/cli/pull/1476)).
+
+Internal:
+ * Use latest version of goreleaser action ([#1477](https://github.com/databricks/cli/pull/1477)).
+
+
+
+## 0.221.0
+
+CLI:
+ * Update OpenAPI spec ([#1466](https://github.com/databricks/cli/pull/1466)).
+
+Bundles:
+ * Upgrade TF provider to 1.46.0 ([#1460](https://github.com/databricks/cli/pull/1460)).
+ * Add support for Lakehouse monitoring ([#1307](https://github.com/databricks/cli/pull/1307)).
+ * Make dbt-sql and default-sql templates public ([#1463](https://github.com/databricks/cli/pull/1463)).
+
+Internal:
+ * Abstract over filesystem interaction with libs/vfs ([#1452](https://github.com/databricks/cli/pull/1452)).
+ * Add `filer.Filer` to read notebooks from WSFS without omitting their extension ([#1457](https://github.com/databricks/cli/pull/1457)).
+ * Fix listing notebooks in a subdirectory ([#1468](https://github.com/databricks/cli/pull/1468)).
+
+API Changes:
+ * Changed `databricks account storage-credentials list` command to return .
+ * Added `databricks consumer-listings batch-get` command.
+ * Added `databricks consumer-providers batch-get` command.
+ * Removed `databricks apps create-deployment` command.
+ * Added `databricks apps deploy` command.
+
+OpenAPI commit 37b925eba37dfb3d7e05b6ba2d458454ce62d3a0 (2024-06-03)
+
+Dependency updates:
+ * Bump github.com/hashicorp/go-version from 1.6.0 to 1.7.0 ([#1454](https://github.com/databricks/cli/pull/1454)).
+ * Bump github.com/hashicorp/hc-install from 0.6.4 to 0.7.0 ([#1453](https://github.com/databricks/cli/pull/1453)).
+
 ## 0.220.0
 
 CLI:

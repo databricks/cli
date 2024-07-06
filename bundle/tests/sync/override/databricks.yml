@@ -1,5 +1,5 @@
 bundle:
-  name: override_sync
+  name: sync_override
 
 workspace:
   host: https://acme.cloud.databricks.com/

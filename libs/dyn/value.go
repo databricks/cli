@@ -110,12 +110,12 @@ func (v Value) AsAny() any {
 func (v Value) Get(key string) Value {
 	m, ok := v.AsMap()
 	if !ok {
-		return NilValue
+		return InvalidValue
 	}
 
 	vv, ok := m.GetByString(key)
 	if !ok {
-		return NilValue
+		return InvalidValue
 	}
 
 	return vv
@@ -124,11 +124,11 @@ func (v Value) Get(key string) Value {
 func (v Value) Index(i int) Value {
 	s, ok := v.v.([]Value)
 	if !ok {
-		return NilValue
+		return InvalidValue
 	}
 
 	if i < 0 || i >= len(s) {
-		return NilValue
+		return InvalidValue
 	}
 
 	return s[i]

@@ -18,7 +18,7 @@ import (
 
 func allResourceTypes(t *testing.T) []string {
 	// Compute supported resource types based on the `Resources{}` struct.
-	r := config.Resources{}
+	r := &config.Resources{}
 	rv, err := convert.FromTyped(r, dyn.NilValue)
 	require.NoError(t, err)
 	normalized, _ := convert.Normalize(r, rv, convert.IncludeMissingFields)
@@ -152,6 +152,11 @@ func TestRunAsErrorForUnsupportedResources(t *testing.T) {
 	}
 
 	v, err := convert.FromTyped(base, dyn.NilValue)
+	require.NoError(t, err)
+
+	// Define top level resources key in the bundle configuration.
+	// This is not part of the typed configuration, so we need to add it manually.
+	v, err = dyn.Set(v, "resources", dyn.V(map[string]dyn.Value{}))
 	require.NoError(t, err)
 
 	for _, rt := range allResourceTypes(t) {

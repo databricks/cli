@@ -26,6 +26,7 @@ type ResourceJobEmailNotifications struct {
 	OnDurationWarningThresholdExceeded []string `json:"on_duration_warning_threshold_exceeded,omitempty"`
 	OnFailure                          []string `json:"on_failure,omitempty"`
 	OnStart                            []string `json:"on_start,omitempty"`
+	OnStreamingBacklogExceeded         []string `json:"on_streaming_backlog_exceeded,omitempty"`
 	OnSuccess                          []string `json:"on_success,omitempty"`
 }
 
@@ -573,6 +574,7 @@ type ResourceJobTaskEmailNotifications struct {
 	OnDurationWarningThresholdExceeded []string `json:"on_duration_warning_threshold_exceeded,omitempty"`
 	OnFailure                          []string `json:"on_failure,omitempty"`
 	OnStart                            []string `json:"on_start,omitempty"`
+	OnStreamingBacklogExceeded         []string `json:"on_streaming_backlog_exceeded,omitempty"`
 	OnSuccess                          []string `json:"on_success,omitempty"`
 }
 
@@ -602,6 +604,7 @@ type ResourceJobTaskForEachTaskTaskEmailNotifications struct {
 	OnDurationWarningThresholdExceeded []string `json:"on_duration_warning_threshold_exceeded,omitempty"`
 	OnFailure                          []string `json:"on_failure,omitempty"`
 	OnStart                            []string `json:"on_start,omitempty"`
+	OnStreamingBacklogExceeded         []string `json:"on_streaming_backlog_exceeded,omitempty"`
 	OnSuccess                          []string `json:"on_success,omitempty"`
 }
 
@@ -943,6 +946,10 @@ type ResourceJobTaskForEachTaskTaskWebhookNotificationsOnStart struct {
 	Id string `json:"id"`
 }
 
+type ResourceJobTaskForEachTaskTaskWebhookNotificationsOnStreamingBacklogExceeded struct {
+	Id string `json:"id"`
+}
+
 type ResourceJobTaskForEachTaskTaskWebhookNotificationsOnSuccess struct {
 	Id string `json:"id"`
 }
@@ -951,6 +958,7 @@ type ResourceJobTaskForEachTaskTaskWebhookNotifications struct {
 	OnDurationWarningThresholdExceeded []ResourceJobTaskForEachTaskTaskWebhookNotificationsOnDurationWarningThresholdExceeded `json:"on_duration_warning_threshold_exceeded,omitempty"`
 	OnFailure                          []ResourceJobTaskForEachTaskTaskWebhookNotificationsOnFailure                          `json:"on_failure,omitempty"`
 	OnStart                            []ResourceJobTaskForEachTaskTaskWebhookNotificationsOnStart                            `json:"on_start,omitempty"`
+	OnStreamingBacklogExceeded         []ResourceJobTaskForEachTaskTaskWebhookNotificationsOnStreamingBacklogExceeded         `json:"on_streaming_backlog_exceeded,omitempty"`
 	OnSuccess                          []ResourceJobTaskForEachTaskTaskWebhookNotificationsOnSuccess                          `json:"on_success,omitempty"`
 }
 
@@ -1329,6 +1337,10 @@ type ResourceJobTaskWebhookNotificationsOnStart struct {
 	Id string `json:"id"`
 }
 
+type ResourceJobTaskWebhookNotificationsOnStreamingBacklogExceeded struct {
+	Id string `json:"id"`
+}
+
 type ResourceJobTaskWebhookNotificationsOnSuccess struct {
 	Id string `json:"id"`
 }
@@ -1337,6 +1349,7 @@ type ResourceJobTaskWebhookNotifications struct {
 	OnDurationWarningThresholdExceeded []ResourceJobTaskWebhookNotificationsOnDurationWarningThresholdExceeded `json:"on_duration_warning_threshold_exceeded,omitempty"`
 	OnFailure                          []ResourceJobTaskWebhookNotificationsOnFailure                          `json:"on_failure,omitempty"`
 	OnStart                            []ResourceJobTaskWebhookNotificationsOnStart                            `json:"on_start,omitempty"`
+	OnStreamingBacklogExceeded         []ResourceJobTaskWebhookNotificationsOnStreamingBacklogExceeded         `json:"on_streaming_backlog_exceeded,omitempty"`
 	OnSuccess                          []ResourceJobTaskWebhookNotificationsOnSuccess                          `json:"on_success,omitempty"`
 }
 
@@ -1378,6 +1391,11 @@ type ResourceJobTriggerFileArrival struct {
 	WaitAfterLastChangeSeconds    int    `json:"wait_after_last_change_seconds,omitempty"`
 }
 
+type ResourceJobTriggerPeriodic struct {
+	Interval int    `json:"interval"`
+	Unit     string `json:"unit"`
+}
+
 type ResourceJobTriggerTable struct {
 	Condition                     string   `json:"condition,omitempty"`
 	MinTimeBetweenTriggersSeconds int      `json:"min_time_between_triggers_seconds,omitempty"`
@@ -1395,6 +1413,7 @@ type ResourceJobTriggerTableUpdate struct {
 type ResourceJobTrigger struct {
 	PauseStatus string                         `json:"pause_status,omitempty"`
 	FileArrival *ResourceJobTriggerFileArrival `json:"file_arrival,omitempty"`
+	Periodic    *ResourceJobTriggerPeriodic    `json:"periodic,omitempty"`
 	Table       *ResourceJobTriggerTable       `json:"table,omitempty"`
 	TableUpdate *ResourceJobTriggerTableUpdate `json:"table_update,omitempty"`
 }
@@ -1411,6 +1430,10 @@ type ResourceJobWebhookNotificationsOnStart struct {
 	Id string `json:"id"`
 }
 
+type ResourceJobWebhookNotificationsOnStreamingBacklogExceeded struct {
+	Id string `json:"id"`
+}
+
 type ResourceJobWebhookNotificationsOnSuccess struct {
 	Id string `json:"id"`
 }
@@ -1419,6 +1442,7 @@ type ResourceJobWebhookNotifications struct {
 	OnDurationWarningThresholdExceeded []ResourceJobWebhookNotificationsOnDurationWarningThresholdExceeded `json:"on_duration_warning_threshold_exceeded,omitempty"`
 	OnFailure                          []ResourceJobWebhookNotificationsOnFailure                          `json:"on_failure,omitempty"`
 	OnStart                            []ResourceJobWebhookNotificationsOnStart                            `json:"on_start,omitempty"`
+	OnStreamingBacklogExceeded         []ResourceJobWebhookNotificationsOnStreamingBacklogExceeded         `json:"on_streaming_backlog_exceeded,omitempty"`
 	OnSuccess                          []ResourceJobWebhookNotificationsOnSuccess                          `json:"on_success,omitempty"`
 }
 

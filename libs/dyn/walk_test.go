@@ -39,7 +39,7 @@ func (w *walkCallTracker) returnSkip(path string) {
 }
 
 func (w *walkCallTracker) returnDrop(path string) {
-	w.on(path, func(v Value) Value { return NilValue }, ErrDrop)
+	w.on(path, func(v Value) Value { return InvalidValue }, ErrDrop)
 }
 
 func (w *walkCallTracker) track(p Path, v Value) (Value, error) {
@@ -148,7 +148,7 @@ func TestWalkMapError(t *testing.T) {
 	})
 	out, err := Walk(value, tracker.track)
 	assert.Equal(t, cerr, err)
-	assert.Equal(t, NilValue, out)
+	assert.Equal(t, InvalidValue, out)
 
 	// The callback should have been called twice.
 	assert.Len(t, tracker.calls, 2)
@@ -239,7 +239,7 @@ func TestWalkSequenceError(t *testing.T) {
 	})
 	out, err := Walk(value, tracker.track)
 	assert.Equal(t, cerr, err)
-	assert.Equal(t, NilValue, out)
+	assert.Equal(t, InvalidValue, out)
 
 	// The callback should have been called three times.
 	assert.Len(t, tracker.calls, 3)

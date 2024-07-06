@@ -26,7 +26,7 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return diag.FromErr(err)
 	}
 
-	err = sync.RunOnce(ctx)
+	b.Files, err = sync.RunOnce(ctx)
 	if err != nil {
 		if errors.Is(err, fs.ErrPermission) {
 			return permissions.ReportPermissionDenied(ctx, b, b.Config.Workspace.StatePath)
