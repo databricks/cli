@@ -4,6 +4,7 @@ bundle:
 presets:
   tags:
     prod: true
+    team: finance
   pipelines_development: true
 
 targets:
@@ -15,6 +16,7 @@ targets:
       jobs_max_concurrent_runs: 10
       tags:
         dev: true
+        prod: false
   prod:
     presets:
       pipelines_development: false

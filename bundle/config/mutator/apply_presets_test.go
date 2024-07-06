@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -121,7 +120,7 @@ func TestApplyPresetsTags(t *testing.T) {
 						},
 					},
 					Presets: config.Presets{
-						Tags: &tt.tags,
+						Tags: tt.tags,
 					},
 				},
 			}
@@ -205,8 +204,17 @@ func TestApplyPresetsValidation(t *testing.T) {
 			},
 		},
 	}
-
 	mutator := mutator.ApplyPresets()
 	diag := mutator.Apply(context.Background(), b)
-	assert.Equal(t, "Invalid value for trigger_pause_status, should be PAUSED or UNPAUSED", diag[0].Summary)
+	require.Equal(t, "Invalid value for trigger_pause_status, should be PAUSED or UNPAUSED", diag[0].Summary)
+
+	b = &bundle.Bundle{
+		Config: config.Root{
+			Presets: config.Presets{
+				Tags: map[string]string{"~tilde": "tag"},
+			},
+		},
+	}
+	diag = mutator.Apply(context.Background(), b)
+	require.Contains(t, diag[0].Summary, "Invalid tag key")
 }

@@ -41,9 +41,11 @@ func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) {
 	}
 
 	if t.Tags == nil {
-		t.Tags = &map[string]string{
-			"dev": b.Tagging.NormalizeValue(shortName),
-		}
+		t.Tags = map[string]string{}
+	}
+	_, exists := t.Tags["dev"]
+	if !exists {
+		t.Tags["dev"] = b.Tagging.NormalizeValue(shortName)
 	}
 
 	if t.JobsMaxConcurrentRuns == 0 {

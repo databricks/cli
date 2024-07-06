@@ -398,13 +398,17 @@ func TestPrefixAlreadySet(t *testing.T) {
 
 func TestTagsAlreadySet(t *testing.T) {
 	b := mockBundle(config.Development)
-	b.Config.Presets.Tags = &map[string]string{"custom": "tag"}
+	b.Config.Presets.Tags = map[string]string{
+		"custom": "tag",
+		"dev":    "foo",
+	}
 
 	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, "tag", b.Config.Resources.Jobs["job1"].Tags["custom"])
+	assert.Equal(t, "foo", b.Config.Resources.Jobs["job1"].Tags["dev"])
 }
 
 func TestTagsNil(t *testing.T) {
@@ -420,7 +424,7 @@ func TestTagsNil(t *testing.T) {
 
 func TestTagsEmptySet(t *testing.T) {
 	b := mockBundle(config.Development)
-	b.Config.Presets.Tags = &map[string]string{}
+	b.Config.Presets.Tags = map[string]string{}
 
 	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
 	diags := bundle.Apply(context.Background(), b, m)

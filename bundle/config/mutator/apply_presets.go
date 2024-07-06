@@ -34,9 +34,11 @@ func (m *applyPresets) Name() string {
 }
 
 func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	diag := validatePauseStatus(b)
-	if diag != nil {
-		return diag
+	if d := validatePauseStatus(b); d != nil {
+		return d
+	}
+	if d := validateTags(b); d != nil {
+		return d
 	}
 
 	r := b.Config.Resources
@@ -165,14 +167,30 @@ func validatePauseStatus(b *bundle.Bundle) diag.Diagnostics {
 	}}
 }
 
+func validateTags(b *bundle.Bundle) diag.Diagnostics {
+	tags := b.Config.Presets.Tags
+	for key := range tags {
+		// Tags keys starting with a "~" are reserved.
+		// They may someday be used to indicate that a tag should be removed.
+		// For example {"~dev:": nil} could indicate that the "dev" tag should be removed.
+		if strings.HasPrefix(key, "~") {
+			return diag.Diagnostics{{
+				Summary:  "Invalid tag key: " + key,
+				Severity: diag.Error,
+			}}
+		}
+	}
+	return nil
+}
+
 // toTagArray converts a map of tags to an array of tags.
 // We sort tags so ensure stable ordering.
-func toTagArray(tags *map[string]string) []Tag {
+func toTagArray(tags map[string]string) []Tag {
 	var tagArray []Tag
 	if tags == nil {
 		return tagArray
 	}
-	for key, value := range *tags {
+	for key, value := range tags {
 		tagArray = append(tagArray, Tag{Key: key, Value: value})
 	}
 	sort.Slice(tagArray, func(i, j int) bool {

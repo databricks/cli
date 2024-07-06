@@ -378,14 +378,6 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		root, err = dyn.Set(root, "run_as", v)
 	}
 
-	// Merge `presets.tags`. This field must be overwritten if set, not merged.
-	if v, _ := dyn.Get(target, "presets.tags"); v != dyn.InvalidValue {
-		root, err = dyn.Set(root, "presets.tags", v)
-		if err != nil {
-			return err
-		}
-	}
-
 	// Below, we're setting fields on the bundle key, so make sure it exists.
 	if root.Get("bundle").Kind() == dyn.KindInvalid {
 		root, err = dyn.Set(root, "bundle", dyn.NewValue(map[string]dyn.Value{}, dyn.Location{}))

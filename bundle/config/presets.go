@@ -18,7 +18,7 @@ type Presets struct {
 	JobsMaxConcurrentRuns int `json:"jobs_max_concurrent_runs,omitempty"`
 
 	// Tags to add to all resources.
-	Tags *map[string]string `json:"tags,omitempty"`
+	Tags map[string]string `json:"tags,omitempty"`
 }
 
 // IsExplicitlyEnabled tests whether this feature is explicitly enabled.
