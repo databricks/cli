@@ -2,7 +2,9 @@ package files
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 
 	"github.com/databricks/cli/bundle"
@@ -67,7 +69,7 @@ func deleteSnapshotFile(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 	err = os.Remove(sp)
-	if err != nil && !os.IsNotExist(err) {
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("failed to destroy sync snapshot file: %s", err)
 	}
 	return nil

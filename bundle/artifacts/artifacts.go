@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts/whl"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
@@ -135,36 +136,57 @@ func uploadArtifact(ctx context.Context, b *bundle.Bundle, a *config.Artifact, u
 		remotePath := path.Join(wsfsBase, f.RemotePath)
 
 		for _, job := range b.Config.Resources.Jobs {
-			for i := range job.Tasks {
-				task := &job.Tasks[i]
-				for j := range task.Libraries {
-					lib := &task.Libraries[j]
-					if lib.Whl != "" && isArtifactMatchLibrary(f, lib.Whl, b) {
-						lib.Whl = remotePath
-					}
-					if lib.Jar != "" && isArtifactMatchLibrary(f, lib.Jar, b) {
-						lib.Jar = remotePath
-					}
-				}
+			rewriteArtifactPath(b, f, job, remotePath)
+
+		}
+	}
+
+	return nil
+}
+
+func rewriteArtifactPath(b *bundle.Bundle, f *config.ArtifactFile, job *resources.Job, remotePath string) {
+	// Rewrite artifact path in job task libraries
+	for i := range job.Tasks {
+		task := &job.Tasks[i]
+		for j := range task.Libraries {
+			lib := &task.Libraries[j]
+			if lib.Whl != "" && isArtifactMatchLibrary(f, lib.Whl, b) {
+				lib.Whl = remotePath
 			}
+			if lib.Jar != "" && isArtifactMatchLibrary(f, lib.Jar, b) {
+				lib.Jar = remotePath
+			}
+		}
 
-			for i := range job.Environments {
-				env := &job.Environments[i]
-				if env.Spec == nil {
-					continue
+		// Rewrite artifact path in job task libraries for ForEachTask
+		if task.ForEachTask != nil {
+			forEachTask := task.ForEachTask
+			for j := range forEachTask.Task.Libraries {
+				lib := &forEachTask.Task.Libraries[j]
+				if lib.Whl != "" && isArtifactMatchLibrary(f, lib.Whl, b) {
+					lib.Whl = remotePath
 				}
-
-				for j := range env.Spec.Dependencies {
-					lib := env.Spec.Dependencies[j]
-					if isArtifactMatchLibrary(f, lib, b) {
-						env.Spec.Dependencies[j] = remotePath
-					}
+				if lib.Jar != "" && isArtifactMatchLibrary(f, lib.Jar, b) {
+					lib.Jar = remotePath
 				}
 			}
 		}
 	}
 
-	return nil
+	// Rewrite artifact path in job environments
+	for i := range job.Environments {
+		env := &job.Environments[i]
+		if env.Spec == nil {
+			continue
+		}
+
+		for j := range env.Spec.Dependencies {
+			lib := env.Spec.Dependencies[j]
+			if isArtifactMatchLibrary(f, lib, b) {
+				env.Spec.Dependencies[j] = remotePath
+			}
+		}
+	}
 }
 
 func isArtifactMatchLibrary(f *config.ArtifactFile, libPath string, b *bundle.Bundle) bool {

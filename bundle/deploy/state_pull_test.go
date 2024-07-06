@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
+	"io/fs"
 	"os"
 	"testing"
 
@@ -15,6 +17,7 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/sync"
+	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -57,8 +60,10 @@ func testStatePull(t *testing.T, opts statePullOpts) {
 		return f, nil
 	}}
 
+	tmpDir := t.TempDir()
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		RootPath:   tmpDir,
+		BundleRoot: vfs.MustNew(tmpDir),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "default",
@@ -270,7 +275,7 @@ func TestStatePullNoState(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = os.Stat(statePath)
-	require.True(t, os.IsNotExist(err))
+	require.True(t, errors.Is(err, fs.ErrNotExist))
 }
 
 func TestStatePullOlderState(t *testing.T) {

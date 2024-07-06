@@ -28,7 +28,7 @@ func walk(v Value, p Path, fn func(p Path, v Value) (Value, error)) (Value, erro
 		if err == ErrSkip {
 			return v, nil
 		}
-		return NilValue, err
+		return InvalidValue, err
 	}
 
 	switch v.Kind() {
@@ -43,7 +43,7 @@ func walk(v Value, p Path, fn func(p Path, v Value) (Value, error)) (Value, erro
 				continue
 			}
 			if err != nil {
-				return NilValue, err
+				return InvalidValue, err
 			}
 			out.Set(pk, nv)
 		}
@@ -57,7 +57,7 @@ func walk(v Value, p Path, fn func(p Path, v Value) (Value, error)) (Value, erro
 				continue
 			}
 			if err != nil {
-				return NilValue, err
+				return InvalidValue, err
 			}
 			out = append(out, nv)
 		}

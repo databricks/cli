@@ -22,7 +22,7 @@ func (m *mergePipelineClusters) Name() string {
 
 func (m *mergePipelineClusters) clusterLabel(v dyn.Value) string {
 	switch v.Kind() {
-	case dyn.KindNil:
+	case dyn.KindInvalid, dyn.KindNil:
 		// Note: the cluster label is optional and defaults to 'default'.
 		// We therefore ALSO merge all clusters without a label.
 		return "default"
@@ -35,7 +35,7 @@ func (m *mergePipelineClusters) clusterLabel(v dyn.Value) string {
 
 func (m *mergePipelineClusters) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		if v == dyn.NilValue {
+		if v.Kind() == dyn.KindNil {
 			return v, nil
 		}
 

@@ -135,7 +135,7 @@ func New() *cobra.Command {
 		if f.watch {
 			err = s.RunContinuous(ctx)
 		} else {
-			err = s.RunOnce(ctx)
+			_, err = s.RunOnce(ctx)
 		}
 
 		s.Close()

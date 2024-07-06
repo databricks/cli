@@ -1,5 +1,5 @@
 {
-    "welcome_message": "\nWelcome to the (EXPERIMENTAL) default SQL template for Databricks Asset Bundles!",
+    "welcome_message": "\nWelcome to the default SQL template for Databricks Asset Bundles!\n\nA workspace was selected based on your current profile. For information about how to change this, see https://docs.databricks.com/dev-tools/cli/profiles.html.\nworkspace_host: {{workspace_host}}",
     "properties": {
         "project_name": {
             "type": "string",

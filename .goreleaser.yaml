@@ -1,6 +1,9 @@
+version: 2
+
 before:
   hooks:
-    - go mod tidy
+    - go mod download
+
 builds:
 - env:
     - CGO_ENABLED=0
@@ -36,6 +39,7 @@ builds:
     - amd64
     - arm64
   binary: databricks
+
 archives:
 - format: zip
 
@@ -89,8 +93,10 @@ docker_manifests:
 checksum:
   name_template: 'databricks_cli_{{ .Version }}_SHA256SUMS'
   algorithm: sha256
+
 snapshot:
   name_template: '{{ incpatch .Version }}-dev+{{ .ShortCommit }}'
+
 changelog:
   sort: asc
   filters:

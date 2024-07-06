@@ -511,6 +511,7 @@ func TestAccFilerWorkspaceFilesExtensionsReadDir(t *testing.T) {
 		content string
 	}{
 		{"dir1/dir2/dir3/file.txt", "file content"},
+		{"dir1/notebook.py", "# Databricks notebook source\nprint('first upload'))"},
 		{"foo.py", "print('foo')"},
 		{"foo.r", "print('foo')"},
 		{"foo.scala", "println('foo')"},
@@ -521,6 +522,16 @@ func TestAccFilerWorkspaceFilesExtensionsReadDir(t *testing.T) {
 		{"rNb.r", "# Databricks notebook source\nprint('first upload'))"},
 		{"scalaNb.scala", "// Databricks notebook source\n println(\"first upload\"))"},
 		{"sqlNb.sql", "-- Databricks notebook source\n SELECT \"first upload\""},
+	}
+
+	// Assert that every file has a unique basename
+	basenames := map[string]struct{}{}
+	for _, f := range files {
+		basename := path.Base(f.name)
+		if _, ok := basenames[basename]; ok {
+			t.Fatalf("basename %s is not unique", basename)
+		}
+		basenames[basename] = struct{}{}
 	}
 
 	ctx := context.Background()
@@ -534,7 +545,6 @@ func TestAccFilerWorkspaceFilesExtensionsReadDir(t *testing.T) {
 	// Read entries
 	entries, err := wf.ReadDir(ctx, ".")
 	require.NoError(t, err)
-	assert.Len(t, entries, len(files))
 	names := []string{}
 	for _, e := range entries {
 		names = append(names, e.Name())
@@ -551,6 +561,18 @@ func TestAccFilerWorkspaceFilesExtensionsReadDir(t *testing.T) {
 		"rNb.r",
 		"scalaNb.scala",
 		"sqlNb.sql",
+	}, names)
+
+	// Read entries in subdirectory
+	entries, err = wf.ReadDir(ctx, "dir1")
+	require.NoError(t, err)
+	names = []string{}
+	for _, e := range entries {
+		names = append(names, e.Name())
+	}
+	assert.Equal(t, []string{
+		"dir2",
+		"notebook.py",
 	}, names)
 }
 
