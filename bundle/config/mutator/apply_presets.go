@@ -16,12 +16,12 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
-type applyTransforms struct{}
+type applyPresets struct{}
 
-// Apply all transforms, e.g. the prefix transform that
+// Apply all presets, e.g. the prefix presets that
 // adds a prefix to all names of all resources.
-func ApplyTransforms() *applyTransforms {
-	return &applyTransforms{}
+func ApplyPresets() *applyPresets {
+	return &applyPresets{}
 }
 
 type Tag struct {
@@ -29,22 +29,22 @@ type Tag struct {
 	Value string
 }
 
-func (m *applyTransforms) Name() string {
-	return "ApplyTransforms"
+func (m *applyPresets) Name() string {
+	return "ApplyPresets"
 }
 
-func (m *applyTransforms) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diag := validatePauseStatus(b)
 	if diag != nil {
 		return diag
 	}
 
 	r := b.Config.Resources
-	t := b.Config.Transform
+	t := b.Config.Presets
 	prefix := t.Prefix
 	tags := toTagArray(t.Tags)
 
-	// Jobs transforms: Prefix, Tags, JobsMaxConcurrentRuns, TriggerPauseStatus
+	// Jobs presets: Prefix, Tags, JobsMaxConcurrentRuns, TriggerPauseStatus
 	for _, j := range r.Jobs {
 		j.Name = prefix + j.Name
 		if j.Tags == nil {
@@ -56,11 +56,11 @@ func (m *applyTransforms) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 			}
 		}
 		if j.MaxConcurrentRuns == 0 {
-			j.MaxConcurrentRuns = t.DefaultJobsMaxConcurrentRuns
+			j.MaxConcurrentRuns = t.JobsMaxConcurrentRuns
 		}
-		if t.DefaultTriggerPauseStatus != "" {
+		if t.TriggerPauseStatus != "" {
 			paused := jobs.PauseStatusPaused
-			if t.DefaultTriggerPauseStatus == config.Unpaused {
+			if t.TriggerPauseStatus == config.Unpaused {
 				paused = jobs.PauseStatusUnpaused
 			}
 
@@ -76,17 +76,17 @@ func (m *applyTransforms) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 		}
 	}
 
-	// Pipelines transforms: Prefix, PipelinesDevelopment
+	// Pipelines presets: Prefix, PipelinesDevelopment
 	for i := range r.Pipelines {
 		r.Pipelines[i].Name = prefix + r.Pipelines[i].Name
-		if config.IsExplicitlyEnabled(t.DefaultPipelinesDevelopment) {
+		if config.IsExplicitlyEnabled(t.PipelinesDevelopment) {
 			r.Pipelines[i].Development = true
 		}
 
 		// As of 2024-06, pipelines don't yet support tags
 	}
 
-	// Models transforms: Prefix, Tags
+	// Models presets: Prefix, Tags
 	for _, m := range r.Models {
 		m.Name = prefix + m.Name
 		for _, t := range tags {
@@ -100,7 +100,7 @@ func (m *applyTransforms) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 		}
 	}
 
-	// Experiments transforms: Prefix, Tags
+	// Experiments presets: Prefix, Tags
 	for _, e := range r.Experiments {
 		filepath := e.Name
 		dir := path.Dir(filepath)
@@ -124,22 +124,22 @@ func (m *applyTransforms) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 		}
 	}
 
-	// Model serving endpoint transforms: Prefix
+	// Model serving endpoint presets: Prefix
 	for i := range r.ModelServingEndpoints {
 		r.ModelServingEndpoints[i].Name = normalizePrefix(prefix) + r.ModelServingEndpoints[i].Name
 
 		// As of 2024-06, model serving endpoints don't yet support tags
 	}
 
-	// Registered models transforms: Prefix
+	// Registered models presets: Prefix
 	for i := range r.RegisteredModels {
 		r.RegisteredModels[i].Name = normalizePrefix(prefix) + r.RegisteredModels[i].Name
 
 		// As of 2024-06, registered models don't yet support tags
 	}
 
-	// Quality monitors transforms: Prefix
-	if t.DefaultTriggerPauseStatus == config.Paused {
+	// Quality monitors presets: Prefix
+	if t.TriggerPauseStatus == config.Paused {
 		for i := range r.QualityMonitors {
 			// Remove all schedules from monitors, since they don't support pausing/unpausing.
 			// Quality monitors might support the "pause" property in the future, so at the
@@ -154,14 +154,14 @@ func (m *applyTransforms) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 }
 
 func validatePauseStatus(b *bundle.Bundle) diag.Diagnostics {
-	p := b.Config.Transform.DefaultTriggerPauseStatus
+	p := b.Config.Presets.TriggerPauseStatus
 	if p == "" || p == config.Paused || p == config.Unpaused {
 		return nil
 	}
 	return diag.Diagnostics{{
-		Summary:  "Invalid value for default_trigger_pause_status, should be PAUSED or UNPAUSED",
+		Summary:  "Invalid value for trigger_pause_status, should be PAUSED or UNPAUSED",
 		Severity: diag.Error,
-		Location: b.Config.GetLocation("transform.default_trigger_pause_status"),
+		Location: b.Config.GetLocation("presets.trigger_pause_status"),
 	}}
 }
 

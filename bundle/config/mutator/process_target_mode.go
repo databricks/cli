@@ -33,7 +33,7 @@ func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) {
 		b.Config.Bundle.Deployment.Lock.Enabled = &disabled
 	}
 
-	t := &b.Config.Transform
+	t := &b.Config.Presets
 	shortName := b.Config.Workspace.CurrentUser.ShortName
 
 	if t.Prefix == "" {
@@ -46,26 +46,26 @@ func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) {
 		}
 	}
 
-	if t.DefaultJobsMaxConcurrentRuns == 0 {
-		t.DefaultJobsMaxConcurrentRuns = developmentConcurrentRuns
+	if t.JobsMaxConcurrentRuns == 0 {
+		t.JobsMaxConcurrentRuns = developmentConcurrentRuns
 	}
 
-	if t.DefaultTriggerPauseStatus == "" {
-		t.DefaultTriggerPauseStatus = config.Paused
+	if t.TriggerPauseStatus == "" {
+		t.TriggerPauseStatus = config.Paused
 	}
 
-	if !config.IsExplicitlyDisabled(t.DefaultPipelinesDevelopment) {
+	if !config.IsExplicitlyDisabled(t.PipelinesDevelopment) {
 		enabled := true
-		t.DefaultPipelinesDevelopment = &enabled
+		t.PipelinesDevelopment = &enabled
 	}
 }
 
 func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
-	t := b.Config.Transform
+	t := b.Config.Presets
 	u := b.Config.Workspace.CurrentUser
 
 	// Make sure everything is paused by default to avoid surprises
-	if t.DefaultTriggerPauseStatus == config.Unpaused {
+	if t.TriggerPauseStatus == config.Unpaused {
 		return diag.Diagnostics{{
 			Severity: diag.Error,
 			Summary:  "target with 'mode: development' cannot set trigger pause status to UNPAUSED by default",

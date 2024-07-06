@@ -128,7 +128,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 func TestProcessTargetModeDevelopment(t *testing.T) {
 	b := mockBundle(config.Development)
 
-	m := bundle.Seq(ProcessTargetMode(), ApplyTransforms())
+	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -179,7 +179,7 @@ func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	m := bundle.Seq(ProcessTargetMode(), ApplyTransforms())
+	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -194,7 +194,7 @@ func TestProcessTargetModeDevelopmentTagNormalizationForAzure(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	m := bundle.Seq(ProcessTargetMode(), ApplyTransforms())
+	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -209,7 +209,7 @@ func TestProcessTargetModeDevelopmentTagNormalizationForGcp(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	m := bundle.Seq(ProcessTargetMode(), ApplyTransforms())
+	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -230,13 +230,13 @@ func TestValidateDevelopmentMode(t *testing.T) {
 
 	// Test with a bundle that has an unpaused trigger pause status
 	b = mockBundle(config.Development)
-	b.Config.Transform.DefaultTriggerPauseStatus = config.Unpaused
+	b.Config.Presets.TriggerPauseStatus = config.Unpaused
 	diags = validateDevelopmentMode(b)
 	require.ErrorContains(t, diags.Error(), "UNPAUSED")
 
 	// Test with a bundle that has a prefix not containing the username or short name
 	b = mockBundle(config.Development)
-	b.Config.Transform.Prefix = "[prod]"
+	b.Config.Presets.Prefix = "[prod]"
 	diags = validateDevelopmentMode(b)
 	require.Len(t, diags, 1)
 	assert.Equal(t, diag.Error, diags[0].Severity)
@@ -255,7 +255,7 @@ func TestValidateDevelopmentMode(t *testing.T) {
 func TestProcessTargetModeDefault(t *testing.T) {
 	b := mockBundle("")
 
-	m := bundle.Seq(ProcessTargetMode(), ApplyTransforms())
+	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
@@ -341,7 +341,7 @@ func TestAllResourcesMocked(t *testing.T) {
 func TestAllResourcesRenamed(t *testing.T) {
 	b := mockBundle(config.Development)
 
-	m := bundle.Seq(ProcessTargetMode(), ApplyTransforms())
+	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -387,9 +387,9 @@ func TestDisableLockingDisabled(t *testing.T) {
 
 func TestPrefixAlreadySet(t *testing.T) {
 	b := mockBundle(config.Development)
-	b.Config.Transform.Prefix = "custom_lennart_deploy_"
+	b.Config.Presets.Prefix = "custom_lennart_deploy_"
 
-	m := bundle.Seq(ProcessTargetMode(), ApplyTransforms())
+	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -398,9 +398,9 @@ func TestPrefixAlreadySet(t *testing.T) {
 
 func TestTagsAlreadySet(t *testing.T) {
 	b := mockBundle(config.Development)
-	b.Config.Transform.Tags = &map[string]string{"custom": "tag"}
+	b.Config.Presets.Tags = &map[string]string{"custom": "tag"}
 
-	m := bundle.Seq(ProcessTargetMode(), ApplyTransforms())
+	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -409,9 +409,9 @@ func TestTagsAlreadySet(t *testing.T) {
 
 func TestTagsNil(t *testing.T) {
 	b := mockBundle(config.Development)
-	b.Config.Transform.Tags = nil
+	b.Config.Presets.Tags = nil
 
-	m := bundle.Seq(ProcessTargetMode(), ApplyTransforms())
+	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -420,9 +420,9 @@ func TestTagsNil(t *testing.T) {
 
 func TestTagsEmptySet(t *testing.T) {
 	b := mockBundle(config.Development)
-	b.Config.Transform.Tags = &map[string]string{}
+	b.Config.Presets.Tags = &map[string]string{}
 
-	m := bundle.Seq(ProcessTargetMode(), ApplyTransforms())
+	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -431,9 +431,9 @@ func TestTagsEmptySet(t *testing.T) {
 
 func TestJobsMaxConcurrentRunsAlreadySet(t *testing.T) {
 	b := mockBundle(config.Development)
-	b.Config.Transform.DefaultJobsMaxConcurrentRuns = 10
+	b.Config.Presets.JobsMaxConcurrentRuns = 10
 
-	m := bundle.Seq(ProcessTargetMode(), ApplyTransforms())
+	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -442,9 +442,9 @@ func TestJobsMaxConcurrentRunsAlreadySet(t *testing.T) {
 
 func TestJobsMaxConcurrentRunsDisabled(t *testing.T) {
 	b := mockBundle(config.Development)
-	b.Config.Transform.DefaultJobsMaxConcurrentRuns = 1
+	b.Config.Presets.JobsMaxConcurrentRuns = 1
 
-	m := bundle.Seq(ProcessTargetMode(), ApplyTransforms())
+	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
@@ -453,9 +453,9 @@ func TestJobsMaxConcurrentRunsDisabled(t *testing.T) {
 
 func TestTriggerPauseStatusWhenUnpaused(t *testing.T) {
 	b := mockBundle(config.Development)
-	b.Config.Transform.DefaultTriggerPauseStatus = config.Unpaused
+	b.Config.Presets.TriggerPauseStatus = config.Unpaused
 
-	m := bundle.Seq(ProcessTargetMode(), ApplyTransforms())
+	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.ErrorContains(t, diags.Error(), "target with 'mode: development' cannot set trigger pause status to UNPAUSED by default")
 }
@@ -463,9 +463,9 @@ func TestTriggerPauseStatusWhenUnpaused(t *testing.T) {
 func TestPipelinesDevelopmentDisabled(t *testing.T) {
 	b := mockBundle(config.Development)
 	notEnabled := false
-	b.Config.Transform.DefaultPipelinesDevelopment = &notEnabled
+	b.Config.Presets.PipelinesDevelopment = &notEnabled
 
-	m := bundle.Seq(ProcessTargetMode(), ApplyTransforms())
+	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 

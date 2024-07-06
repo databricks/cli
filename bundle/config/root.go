@@ -60,9 +60,9 @@ type Root struct {
 	// RunAs section allows to define an execution identity for jobs and pipelines runs
 	RunAs *jobs.JobRunAs `json:"run_as,omitempty"`
 
-	// Transform applies transformations throughout the bundle, e.g.
+	// Presets applies preset transformations throughout the bundle, e.g.
 	// adding a name prefix to deployed resources.
-	Transform Transforms `json:"transform,omitempty"`
+	Presets Presets `json:"presets,omitempty"`
 
 	Experimental *Experimental `json:"experimental,omitempty"`
 
@@ -342,7 +342,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		"resources",
 		"sync",
 		"permissions",
-		"transform",
+		"presets",
 	} {
 		if root, err = mergeField(root, target, f); err != nil {
 			return err
@@ -378,9 +378,9 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		root, err = dyn.Set(root, "run_as", v)
 	}
 
-	// Merge `transform.tags`. This field must be overwritten if set, not merged.
-	if v, _ := dyn.Get(target, "transform.tags"); v != dyn.InvalidValue {
-		root, err = dyn.Set(root, "transform.tags", v)
+	// Merge `presets.tags`. This field must be overwritten if set, not merged.
+	if v, _ := dyn.Get(target, "presets.tags"); v != dyn.InvalidValue {
+		root, err = dyn.Set(root, "presets.tags", v)
 		if err != nil {
 			return err
 		}

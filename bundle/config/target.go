@@ -22,7 +22,7 @@ type Target struct {
 
 	// Mutator configurations that e.g. change the
 	// name prefix of deployed resources.
-	Transform Transforms `json:"transform,omitempty"`
+	Presets Presets `json:"presets,omitempty"`
 
 	// Overrides the compute used for jobs and other supported assets.
 	ComputeID string `json:"compute_id,omitempty"`

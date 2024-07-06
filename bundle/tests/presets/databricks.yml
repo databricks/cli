@@ -1,0 +1,20 @@
+bundle:
+  name: presets
+
+presets:
+  tags:
+    prod: true
+  pipelines_development: true
+
+targets:
+  dev:
+    presets:
+      prefix: "myprefix"
+      pipelines_development: true
+      trigger_pause_status: PAUSED
+      jobs_max_concurrent_runs: 10
+      tags:
+        dev: true
+  prod:
+    presets:
+      pipelines_development: false
