@@ -33,13 +33,13 @@ func TestApplyFail(t *testing.T) {
 	require.Contains(t, diags[0].Summary, "testuser@databricks.com")
 }
 
-func TestApplySuccesWithOwner(t *testing.T) {
+func TestApplySuccessWithOwner(t *testing.T) {
 	b := mockBundle([]resources.Permission{
 		{Level: "IS_OWNER", UserName: "testuser@databricks.com"},
 	})
 
 	diags := PermissionDiagnostics().Apply(context.Background(), b)
-	require.Equal(t, len(diags), 0)
+	require.Empty(t, diags)
 }
 
 func TestPermissionDeniedWithPermission(t *testing.T) {

@@ -104,7 +104,7 @@ func (ds Diagnostics) Error() error {
 				message = d.Summary
 			}
 			if d.ID != "" {
-				message = fmt.Sprintf("%s: %s", d.ID, message)
+				message = string(d.ID) + ": " + message
 			}
 			return fmt.Errorf(message)
 		}

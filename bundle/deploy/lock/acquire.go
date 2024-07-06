@@ -3,11 +3,11 @@ package lock
 import (
 	"context"
 	"errors"
+	"io/fs"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
 )
@@ -52,8 +52,7 @@ func (m *acquire) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 	if err != nil {
 		log.Errorf(ctx, "Failed to acquire deployment lock: %v", err)
 
-		permissionError := filer.PermissionError{}
-		if errors.As(err, &permissionError) {
+		if errors.Is(err, fs.ErrPermission) {
 			return permissions.ReportPermissionDenied(ctx, b, b.Config.Workspace.StatePath)
 		}
 

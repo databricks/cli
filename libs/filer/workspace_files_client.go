@@ -145,9 +145,8 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 
 		// Retry without CreateParentDirectories mode flag.
 		err = w.Write(ctx, name, bytes.NewReader(body), sliceWithout(mode, CreateParentDirectories)...)
-		notExistsError := NoSuchDirectoryError{}
-		if errors.As(err, &notExistsError) {
-			// If we still get a 404 error after the succesful mkdir,
+		if errors.Is(err, fs.ErrNotExist) {
+			// If we still get a 404 error when the dir exists,
 			// the problem is a permission error.
 			return PermissionError{absPath}
 		}

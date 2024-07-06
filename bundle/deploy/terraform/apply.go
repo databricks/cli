@@ -32,9 +32,9 @@ func (w *apply) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 	err = tf.Apply(ctx)
 	if err != nil {
-		diagnosis := permissions.TryExtendTerraformPermissionError(ctx, b, err)
-		if diagnosis != nil {
-			return diagnosis
+		diags := permissions.TryExtendTerraformPermissionError(ctx, b, err)
+		if diags != nil {
+			return diags
 		}
 		return diag.Errorf("terraform apply: %v", err)
 	}

@@ -36,24 +36,26 @@ func reportRunAsNotSupported(resourceType string, location dyn.Location, current
 			"Current identity: %s. Run as identity: %s.\n"+
 			"See https://docs.databricks.com/dev-tools/bundles/run-as.html to learn more about the run_as property.", resourceType, currentUser, runAsUser),
 		Location: location,
+		Severity: diag.Error,
 	}}
 }
 
 func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
+	diags := diag.Diagnostics{}
 	runAs := b.Config.RunAs
 
 	// Error if neither service_principal_name nor user_name are specified
 	if runAs.ServicePrincipalName == "" && runAs.UserName == "" {
-		return diag.Errorf("run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at %s", b.Config.GetLocation("run_as"))
+		diags = diags.Extend(diag.Errorf("run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at %s", b.Config.GetLocation("run_as")))
 	}
 
 	// Error if both service_principal_name and user_name are specified
 	if runAs.UserName != "" && runAs.ServicePrincipalName != "" {
-		return diag.Diagnostics{{
+		diags = diags.Extend(diag.Diagnostics{{
 			Summary:  "run_as section cannot specify both user_name and service_principal_name",
 			Location: b.Config.GetLocation("run_as"),
 			Severity: diag.Error,
-		}}
+		}})
 	}
 
 	identity := runAs.ServicePrincipalName
@@ -63,40 +65,40 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 
 	// All resources are supported if the run_as identity is the same as the current deployment identity.
 	if identity == b.Config.Workspace.CurrentUser.UserName {
-		return nil
+		return diags
 	}
 
 	// DLT pipelines do not support run_as in the API.
 	if len(b.Config.Resources.Pipelines) > 0 {
-		return reportRunAsNotSupported(
+		diags = diags.Extend(reportRunAsNotSupported(
 			"pipelines",
 			b.Config.GetLocation("resources.pipelines"),
 			b.Config.Workspace.CurrentUser.UserName,
 			identity,
-		)
+		))
 	}
 
 	// Model serving endpoints do not support run_as in the API.
 	if len(b.Config.Resources.ModelServingEndpoints) > 0 {
-		return reportRunAsNotSupported(
+		diags = diags.Extend(reportRunAsNotSupported(
 			"model_serving_endpoints",
 			b.Config.GetLocation("resources.model_serving_endpoints"),
 			b.Config.Workspace.CurrentUser.UserName,
 			identity,
-		)
+		))
 	}
 
 	// Monitors do not support run_as in the API.
 	if len(b.Config.Resources.QualityMonitors) > 0 {
-		return reportRunAsNotSupported(
+		diags = diags.Extend(reportRunAsNotSupported(
 			"quality_monitors",
 			b.Config.GetLocation("resources.quality_monitors"),
 			b.Config.Workspace.CurrentUser.UserName,
 			identity,
-		)
+		))
 	}
 
-	return nil
+	return diags
 }
 
 func setRunAsForJobs(b *bundle.Bundle) {
@@ -168,8 +170,9 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	}
 
 	// Assert the run_as configuration is valid in the context of the bundle
-	if err := validateRunAs(b); err != nil {
-		return err
+	diags := validateRunAs(b)
+	if diags.HasError() {
+		return diags
 	}
 
 	setRunAsForJobs(b)
