@@ -430,7 +430,7 @@ func TestTagsEmptySet(t *testing.T) {
 	diags := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, diags.Error())
 
-	assert.Empty(t, b.Config.Resources.Jobs["job2"].Tags)
+	assert.Equal(t, "lennart", b.Config.Resources.Jobs["job2"].Tags["dev"])
 }
 
 func TestJobsMaxConcurrentRunsAlreadySet(t *testing.T) {
