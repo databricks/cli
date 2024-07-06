@@ -207,3 +207,9 @@ func TestRepositoryGitConfigWhenNotARepo(t *testing.T) {
 	originUrl := repo.OriginUrl()
 	assert.Equal(t, "", originUrl)
 }
+
+func TestRepositoryOriginUrlRemovesUserCreds(t *testing.T) {
+	repo := newTestRepository(t)
+	repo.addOriginUrl("https://username:token@github.com/databricks/foobar.git")
+	repo.assertOriginUrl("https://github.com/databricks/foobar.git")
+}

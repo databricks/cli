@@ -1,6 +1,7 @@
 package merge
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/libs/dyn"
@@ -13,6 +14,9 @@ import (
 // For instance, it can disallow changes outside the specific path(s), or update
 // the location of the effective value.
 //
+// Values returned by 'VisitInsert' and 'VisitUpdate' are used as the final value
+// of the node. 'VisitDelete' can return ErrOverrideUndoDelete to undo delete.
+//
 // 'VisitDelete' is called when a value is removed from mapping or sequence
 // 'VisitInsert' is called when a new value is added to mapping or sequence
 // 'VisitUpdate' is called when a leaf value is updated
@@ -22,6 +26,8 @@ type OverrideVisitor struct {
 	VisitUpdate func(valuePath dyn.Path, left dyn.Value, right dyn.Value) (dyn.Value, error)
 }
 
+var ErrOverrideUndoDelete = errors.New("undo delete operation")
+
 // Override overrides value 'leftRoot' with 'rightRoot', keeping 'location' if values
 // haven't changed. Preserving 'location' is important to preserve the original source of the value
 // for error reporting.
@@ -30,10 +36,6 @@ func Override(leftRoot dyn.Value, rightRoot dyn.Value, visitor OverrideVisitor) 
 }
 
 func override(basePath dyn.Path, left dyn.Value, right dyn.Value, visitor OverrideVisitor) (dyn.Value, error) {
-	if left == dyn.NilValue && right == dyn.NilValue {
-		return dyn.NilValue, nil
-	}
-
 	if left.Kind() != right.Kind() {
 		return visitor.VisitUpdate(basePath, left, right)
 	}
@@ -98,9 +100,11 @@ func override(basePath dyn.Path, left dyn.Value, right dyn.Value, visitor Overri
 		} else {
 			return visitor.VisitUpdate(basePath, left, right)
 		}
+	case dyn.KindNil:
+		return left, nil
 	}
 
-	return dyn.InvalidValue, fmt.Errorf("unexpected kind %s", left.Kind())
+	return dyn.InvalidValue, fmt.Errorf("unexpected kind %s at %s", left.Kind(), basePath.String())
 }
 
 func overrideMapping(basePath dyn.Path, leftMapping dyn.Mapping, rightMapping dyn.Mapping, visitor OverrideVisitor) (dyn.Mapping, error) {
@@ -113,7 +117,13 @@ func overrideMapping(basePath dyn.Path, leftMapping dyn.Mapping, rightMapping dy
 
 			err := visitor.VisitDelete(path, leftPair.Value)
 
-			if err != nil {
+			// if 'delete' was undone, add it back
+			if errors.Is(err, ErrOverrideUndoDelete) {
+				err := out.Set(leftPair.Key, leftPair.Value)
+				if err != nil {
+					return dyn.NewMapping(), err
+				}
+			} else if err != nil {
 				return dyn.NewMapping(), err
 			}
 		}
@@ -188,7 +198,10 @@ func overrideSequence(basePath dyn.Path, left []dyn.Value, right []dyn.Value, vi
 			path := basePath.Append(dyn.Index(i))
 			err := visitor.VisitDelete(path, left[i])
 
-			if err != nil {
+			// if 'delete' was undone, add it back
+			if errors.Is(err, ErrOverrideUndoDelete) {
+				values = append(values, left[i])
+			} else if err != nil {
 				return nil, err
 			}
 		}

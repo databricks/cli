@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/vfs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -16,7 +17,8 @@ import (
 func TestSyncOptionsFromBundle(t *testing.T) {
 	tempDir := t.TempDir()
 	b := &bundle.Bundle{
-		RootPath: tempDir,
+		RootPath:   tempDir,
+		BundleRoot: vfs.MustNew(tempDir),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "default",

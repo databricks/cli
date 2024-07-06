@@ -101,6 +101,20 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				},
 				QualityMonitors: map[string]*resources.QualityMonitor{
 					"qualityMonitor1": {CreateMonitor: &catalog.CreateMonitor{TableName: "qualityMonitor1"}},
+					"qualityMonitor2": {
+						CreateMonitor: &catalog.CreateMonitor{
+							TableName: "qualityMonitor2",
+							Schedule:  &catalog.MonitorCronSchedule{},
+						},
+					},
+					"qualityMonitor3": {
+						CreateMonitor: &catalog.CreateMonitor{
+							TableName: "qualityMonitor3",
+							Schedule: &catalog.MonitorCronSchedule{
+								PauseStatus: catalog.MonitorCronSchedulePauseStatusUnpaused,
+							},
+						},
+					},
 				},
 			},
 		},
@@ -154,6 +168,8 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Quality Monitor 1
 	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
+	assert.Nil(t, b.Config.Resources.QualityMonitors["qualityMonitor2"].Schedule)
+	assert.Equal(t, catalog.MonitorCronSchedulePauseStatusUnpaused, b.Config.Resources.QualityMonitors["qualityMonitor3"].Schedule.PauseStatus)
 }
 
 func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {

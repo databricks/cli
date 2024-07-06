@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/sync"
+	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -59,8 +60,10 @@ func testStatePull(t *testing.T, opts statePullOpts) {
 		return f, nil
 	}}
 
+	tmpDir := t.TempDir()
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		RootPath:   tmpDir,
+		BundleRoot: vfs.MustNew(tmpDir),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "default",
