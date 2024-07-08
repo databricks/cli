@@ -93,6 +93,16 @@ func (p *terraformPlan) Path() string {
 func (p *terraformPlan) ActionsByTypes(query ...ActionType) []Action {
 	actions := make([]Action, 0)
 	for _, rc := range p.tfPlan.ResourceChanges {
+		if rc.Type == "databricks_permissions" {
+			// We don't need to print permissions changes.
+			continue
+		}
+
+		if rc.Type == "databricks_grants" {
+			// We don't need to print grants changes.
+			continue
+		}
+
 		tfActions := rc.Change.Actions
 		switch {
 		case slices.Contains(query, ActionTypeDelete) && tfActions.Delete():
