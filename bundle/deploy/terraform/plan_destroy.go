@@ -47,6 +47,8 @@ func (p *planDestroy) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 		for _, a := range deleteActions {
 			cmdio.Log(ctx, a)
 		}
+		// Log new line for better presentation.
+		cmdio.LogString(ctx, "")
 	}
 
 	// TODO: write e2e integration tests / unit tests to check this property.
@@ -57,8 +59,11 @@ func (p *planDestroy) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 	}
 
 	// If the root path exists, show warning.
-	if _, err := f.Stat(ctx, ""); err == nil {
+	_, err = f.Stat(ctx, "")
+	if err == nil {
 		cmdio.LogString(ctx, fmt.Sprintf("All files and directories at %s will be deleted.", b.Config.Workspace.RootPath))
+		// Log new line for better presentation.
+		cmdio.LogString(ctx, "")
 	}
 
 	// If the `--auto-approve` flag is set, we don't need to ask for approval.
@@ -73,7 +78,8 @@ func (p *planDestroy) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 
 	// TODO: Remove the previous flag for deployment in the bundle tree?
 	if !approved {
-		return diag.Errorf("destroy terminated. No changes were made.")
+		cmdio.LogString(ctx, "No changes are being made...")
+		return diag.FromErr(bundle.ErrorBreakSequence)
 	}
 
 	return nil

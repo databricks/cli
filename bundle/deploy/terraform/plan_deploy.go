@@ -65,7 +65,8 @@ func (p *planDeploy) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 	if !approved {
 		// We error here to terminate the control flow and prevent the current
 		// process from modifying any deployment state.
-		return diag.Errorf("deployment terminated. No changes were made.")
+		cmdio.LogString(ctx, "No changes are being made...")
+		return diag.FromErr(bundle.ErrorBreakSequence)
 	}
 
 	return nil
