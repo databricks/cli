@@ -5,12 +5,13 @@ import (
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/terraform"
+	"github.com/databricks/cli/bundle/destroy"
 )
 
 // The destroy phase deletes artifacts and resources.
 func Destroy() bundle.Mutator {
-
 	destroyMutator := bundle.Seq(
+		destroy.AssertRootPathExists(),
 		lock.Acquire(),
 		bundle.Defer(
 			bundle.Seq(
