@@ -89,6 +89,7 @@ func Destroy() bundle.Mutator {
 	)
 
 	destroyMutator := bundle.Seq(
+		destroy.AssertRootPathExists(),
 		lock.Acquire(),
 		bundle.Defer(
 			bundle.Seq(

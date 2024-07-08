@@ -112,3 +112,24 @@ func (ds Diagnostics) Filter(severity Severity) Diagnostics {
 	}
 	return out
 }
+
+// Returns true if the diagnostics contain the specified error
+func (ds Diagnostics) ContainsError(err error) bool {
+	for _, d := range ds {
+		if d.Severity == Error && d.Summary == err.Error() {
+			return true
+		}
+	}
+	return false
+}
+
+// Filter returns a new list of diagnostics that do not contain the specified error
+func (ds Diagnostics) FilterError(err error) Diagnostics {
+	var out Diagnostics
+	for _, d := range ds {
+		if d.Severity != Error || d.Summary != err.Error() {
+			out = append(out, d)
+		}
+	}
+	return out
+}
