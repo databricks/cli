@@ -27,7 +27,7 @@ func (s *seqMutator) Apply(ctx context.Context, b *Bundle) diag.Diagnostics {
 		// Break out of the sequence. Filter the ErrorBreakSequence error so that
 		// it does not show up to the user.
 		if nd.ContainsError(ErrorBreakSequence) {
-			diags.Extend(nd.FilterError(ErrorBreakSequence))
+			diags.Extend(nd.RemoveError(ErrorBreakSequence))
 			break
 		}
 
@@ -42,4 +42,3 @@ func (s *seqMutator) Apply(ctx context.Context, b *Bundle) diag.Diagnostics {
 func Seq(ms ...Mutator) Mutator {
 	return &seqMutator{mutators: ms}
 }
-

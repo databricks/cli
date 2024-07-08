@@ -29,7 +29,7 @@ func (m *assertRootPathExists) Apply(ctx context.Context, b *bundle.Bundle) diag
 	if err != nil {
 		var aerr *apierr.APIError
 		if errors.As(err, &aerr) && aerr.StatusCode == http.StatusNotFound {
-			log.Debugf(ctx, "No active deployment found. %s does not exist. Skipping destroy.", b.Config.Workspace.RootPath)
+			log.Infof(ctx, "No active deployment found. %s does not exist. Skipping destroy.", b.Config.Workspace.RootPath)
 			cmdio.LogString(ctx, "No active deployment found to destroy!")
 			return bundle.DiagnosticBreakSequence
 		}
