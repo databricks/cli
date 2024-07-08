@@ -162,10 +162,11 @@ func NewWorkspaceFilesExtensionsClient(w *databricks.WorkspaceClient, root strin
 		return nil, err
 	}
 
+	cache := newCache(filer)
 	return &workspaceFilesExtensionsClient{
 		workspaceClient: w,
 
-		wsfs: filer,
+		wsfs: cache,
 		root: root,
 	}, nil
 }
