@@ -1,8 +1,10 @@
 package filer
 
 import (
+	"encoding/json"
 	"io/fs"
 	"testing"
+	"time"
 
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
@@ -53,4 +55,41 @@ func TestWorkspaceFilesDirEntry(t *testing.T) {
 	assert.True(t, i0.IsDir())
 	assert.False(t, i1.IsDir())
 	assert.True(t, i2.IsDir())
+}
+
+func TestWorkspaceFilesClient_wsfsUnmarshal(t *testing.T) {
+	payload := `
+		{
+			"created_at": 1671030805916,
+			"language": "PYTHON",
+			"modified_at": 1671032235392,
+			"object_id": 795822750063438,
+			"object_type": "NOTEBOOK",
+			"path": "/some/path/to/a/notebook",
+			"repos_export_format": "SOURCE",
+			"resource_id": "795822750063438"
+		}
+	`
+
+	var info wsfsFileInfo
+	err := json.Unmarshal([]byte(payload), &info)
+	require.NoError(t, err)
+
+	// Fields in the object info.
+	assert.Equal(t, int64(1671030805916), info.CreatedAt)
+	assert.Equal(t, workspace.LanguagePython, info.Language)
+	assert.Equal(t, int64(1671032235392), info.ModifiedAt)
+	assert.Equal(t, int64(795822750063438), info.ObjectId)
+	assert.Equal(t, workspace.ObjectTypeNotebook, info.ObjectType)
+	assert.Equal(t, "/some/path/to/a/notebook", info.Path)
+	assert.Equal(t, workspace.ExportFormatSource, info.ReposExportFormat)
+	assert.Equal(t, "795822750063438", info.ResourceId)
+
+	// Functions for fs.FileInfo.
+	assert.Equal(t, "notebook", info.Name())
+	assert.Equal(t, int64(0), info.Size())
+	assert.Equal(t, fs.ModePerm, info.Mode())
+	assert.Equal(t, time.UnixMilli(1671032235392), info.ModTime())
+	assert.False(t, info.IsDir())
+	assert.NotNil(t, info.Sys())
 }

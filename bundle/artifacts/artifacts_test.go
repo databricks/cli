@@ -52,6 +52,20 @@ func TestArtifactUpload(t *testing.T) {
 										},
 									},
 								},
+								{
+									ForEachTask: &jobs.ForEachTask{
+										Task: jobs.Task{
+											Libraries: []compute.Library{
+												{
+													Whl: filepath.Join("whl", "*.whl"),
+												},
+												{
+													Whl: "/Workspace/Users/foo@bar.com/mywheel.whl",
+												},
+											},
+										},
+									},
+								},
 							},
 							Environments: []jobs.JobEnvironment{
 								{
@@ -88,4 +102,6 @@ func TestArtifactUpload(t *testing.T) {
 	require.Equal(t, "/Workspace/Users/foo@bar.com/mywheel.whl", b.Config.Resources.Jobs["job"].JobSettings.Tasks[0].Libraries[1].Whl)
 	require.Equal(t, "/Workspace/foo/bar/artifacts/source.whl", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[0])
 	require.Equal(t, "/Workspace/Users/foo@bar.com/mywheel.whl", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[1])
+	require.Equal(t, "/Workspace/foo/bar/artifacts/source.whl", b.Config.Resources.Jobs["job"].JobSettings.Tasks[1].ForEachTask.Task.Libraries[0].Whl)
+	require.Equal(t, "/Workspace/Users/foo@bar.com/mywheel.whl", b.Config.Resources.Jobs["job"].JobSettings.Tasks[1].ForEachTask.Task.Libraries[1].Whl)
 }
