@@ -32,7 +32,7 @@ type fakeFileInfo struct {
 	oi workspace.ObjectInfo
 }
 
-func (f fakeFileInfo) ObjectInfo() workspace.ObjectInfo {
+func (f fakeFileInfo) WorkspaceObjectInfo() workspace.ObjectInfo {
 	return f.oi
 }
 

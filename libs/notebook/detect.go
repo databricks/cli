@@ -12,14 +12,14 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
-// FileInfoWithObjectInfo is an interface implemented by [fs.FileInfo] values that
+// FileInfoWithWorkspaceObjectInfo is an interface implemented by [fs.FileInfo] values that
 // contain a file's underlying [workspace.ObjectInfo].
 //
 // This may be the case when working with a [filer.Filer] backed by the workspace API.
 // For these files we do not need to read a file's header to know if it is a notebook;
 // we can use the [workspace.ObjectInfo] value directly.
-type FileInfoWithObjectInfo interface {
-	ObjectInfo() workspace.ObjectInfo
+type FileInfoWithWorkspaceObjectInfo interface {
+	WorkspaceObjectInfo() workspace.ObjectInfo
 }
 
 // Maximum length in bytes of the notebook header.
@@ -70,8 +70,8 @@ func (f file) getObjectInfo() (oi workspace.ObjectInfo, ok bool, err error) {
 	}
 
 	// Use object info if available.
-	if i, ok := stat.(FileInfoWithObjectInfo); ok {
-		return i.ObjectInfo(), true, nil
+	if i, ok := stat.(FileInfoWithWorkspaceObjectInfo); ok {
+		return i.WorkspaceObjectInfo(), true, nil
 	}
 
 	return workspace.ObjectInfo{}, false, nil
