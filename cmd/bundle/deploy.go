@@ -2,9 +2,11 @@ package bundle
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/bundle/render"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/diag"
@@ -30,32 +32,38 @@ func newDeployCommand() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		b, diags := utils.ConfigureBundleWithVariables(cmd)
-		if err := diags.Error(); err != nil {
-			return diags.Error()
+
+		if !diags.HasError() {
+			bundle.ApplyFunc(ctx, b, func(context.Context, *bundle.Bundle) diag.Diagnostics {
+				b.Config.Bundle.Force = force
+				b.Config.Bundle.Deployment.Lock.Force = forceLock
+				if cmd.Flag("compute-id").Changed {
+					b.Config.Bundle.ComputeID = computeID
+				}
+
+				if cmd.Flag("fail-on-active-runs").Changed {
+					b.Config.Bundle.Deployment.FailOnActiveRuns = failOnActiveRuns
+				}
+
+				return nil
+			})
+
+			diags = bundle.Apply(ctx, b, bundle.Seq(
+				phases.Initialize(),
+				phases.Build(),
+				phases.Deploy(),
+			))
 		}
 
-		bundle.ApplyFunc(ctx, b, func(context.Context, *bundle.Bundle) diag.Diagnostics {
-			b.Config.Bundle.Force = force
-			b.Config.Bundle.Deployment.Lock.Force = forceLock
-			if cmd.Flag("compute-id").Changed {
-				b.Config.Bundle.ComputeID = computeID
-			}
-
-			if cmd.Flag("fail-on-active-runs").Changed {
-				b.Config.Bundle.Deployment.FailOnActiveRuns = failOnActiveRuns
-			}
-
-			return nil
-		})
-
-		diags = bundle.Apply(ctx, b, bundle.Seq(
-			phases.Initialize(),
-			phases.Build(),
-			phases.Deploy(),
-		))
-		if err := diags.Error(); err != nil {
-			return err
+		err := render.RenderTextOutput(cmd.OutOrStdout(), b, diags)
+		if err != nil {
+			return fmt.Errorf("failed to render output: %w", err)
 		}
+
+		if diags.HasError() {
+			return root.ErrAlreadyPrinted
+		}
+
 		return nil
 	}
 
