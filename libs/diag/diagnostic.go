@@ -124,7 +124,7 @@ func (ds Diagnostics) ContainsError(err error) bool {
 }
 
 // Filter returns a new list of diagnostics that do not contain the specified error
-func (ds Diagnostics) FilterError(err error) Diagnostics {
+func (ds Diagnostics) RemoveError(err error) Diagnostics {
 	var out Diagnostics
 	for _, d := range ds {
 		if d.Severity != Error || d.Summary != err.Error() {
