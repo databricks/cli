@@ -69,11 +69,6 @@ type Bundle struct {
 	// files
 	AutoApprove bool
 
-	// If true, we require user approval to deploy. This is
-	// TODO: On both destroy and deploy, error with suggesting `--auto-approve`
-	// if operating from a non-tty.
-	RequireApprovalForDeploy bool
-
 	// Tagging is used to normalize tag keys and values.
 	// The implementation depends on the cloud being targeted.
 	Tagging tags.Cloud
