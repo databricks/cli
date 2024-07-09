@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/terraform"
@@ -50,7 +49,7 @@ func Destroy() bundle.Mutator {
 		"destroy",
 		[]bundle.Mutator{
 			// Only run deploy mutator if root path exists.
-			mutator.If(
+			bundle.If(
 				assertRootPathExists,
 				destroyMutator,
 				bundle.LogString("No active deployment found to destroy!"),

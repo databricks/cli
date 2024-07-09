@@ -64,7 +64,7 @@ dbutils.notebook.exit(s)
 // which installs uploaded wheels using %pip and then calling corresponding
 // entry point.
 func TransformWheelTask() bundle.Mutator {
-	return mutator.If(
+	return bundle.If(
 		func(_ context.Context, b *bundle.Bundle) (bool, error) {
 			res := b.Config.Experimental != nil && b.Config.Experimental.PythonWheelWrapper
 			return res, nil
