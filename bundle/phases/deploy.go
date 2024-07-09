@@ -59,8 +59,6 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 		}
 	}
 
-	// TODO: Add error for when approval is required from a non-tty console.
-
 	// No need for approval if the plan does not include any destructive actions.
 	if len(deleteActions) == 0 && len(recreateActions) == 0 {
 		return true, nil
@@ -81,6 +79,10 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 			cmdio.Log(ctx, a)
 		}
 		cmdio.LogString(ctx, "")
+	}
+
+	if !cmdio.IsPromptSupported(ctx) {
+		return false, fmt.Errorf("the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
 	}
 
 	cmdio.LogString(ctx, "")
