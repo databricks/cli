@@ -7,10 +7,11 @@ import (
 	"github.com/databricks/cli/libs/diag"
 )
 
-// Control signal error that can be used to break out of a sequence of mutators.
-// TODO: Are better names possible?
-var ErrorBreakSequence = errors.New("break sequence")
-var DiagnosticBreakSequence = diag.FromErr(ErrorBreakSequence)
+// Control signal error that can be returned by a mutator to break out of a sequence.
+var ErrorSequenceBreak = errors.New("break sequence")
+
+// Convenient diagnostic that wraps ErrorSequenceBreak.
+var DiagnosticSequenceBreak = diag.FromErr(ErrorSequenceBreak)
 
 type seqMutator struct {
 	mutators []Mutator
@@ -26,10 +27,10 @@ func (s *seqMutator) Apply(ctx context.Context, b *Bundle) diag.Diagnostics {
 		nd := Apply(ctx, b, m)
 		hasError := nd.HasError()
 
-		// Remove the ErrorBreakSequence error from the diagnostics. It's a control
+		// Remove the ErrorSequenceBreak error from the diagnostics. It's a control
 		// signal and should not be shown to the user.
-		if nd.ContainsError(ErrorBreakSequence) {
-			nd.RemoveError(ErrorBreakSequence)
+		if nd.ContainsError(ErrorSequenceBreak) {
+			nd.RemoveError(ErrorSequenceBreak)
 		}
 
 		// Extend the diagnostics with the diagnostics from the current mutator.
