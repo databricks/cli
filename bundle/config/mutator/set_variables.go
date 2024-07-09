@@ -69,7 +69,6 @@ func setVariable(ctx context.Context, v dyn.Value, variable *variable.Variable, 
 }
 
 func (m *setVariables) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	// Updating variable "value" locaiton to its variable "default" locaiton
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		return dyn.Map(v, "variables", dyn.Foreach(func(p dyn.Path, variable dyn.Value) (dyn.Value, error) {
 			name := p[1].Key()
