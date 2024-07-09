@@ -30,5 +30,5 @@ func TestAssertRootPathExists(t *testing.T) {
 	})
 
 	diags := bundle.Apply(context.Background(), b, AssertRootPathExists())
-	assert.Equal(t, bundle.DiagnosticBreakSequence, diags)
+	assert.Equal(t, bundle.DiagnosticSequenceBreak, diags)
 }
