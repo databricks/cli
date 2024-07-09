@@ -8,13 +8,13 @@ import (
 )
 
 type ifMutator struct {
-	condition      func(*bundle.Bundle) bool
+	condition      func(context.Context, *bundle.Bundle) (bool, error)
 	onTrueMutator  bundle.Mutator
 	onFalseMutator bundle.Mutator
 }
 
 func If(
-	condition func(*bundle.Bundle) bool,
+	condition func(context.Context, *bundle.Bundle) (bool, error),
 	onTrueMutator bundle.Mutator,
 	onFalseMutator bundle.Mutator,
 ) bundle.Mutator {
@@ -24,7 +24,12 @@ func If(
 }
 
 func (m *ifMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	if m.condition(b) {
+	v, err := m.condition(ctx, b)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	if v {
 		return bundle.Apply(ctx, b, m.onTrueMutator)
 	} else {
 		return bundle.Apply(ctx, b, m.onFalseMutator)
