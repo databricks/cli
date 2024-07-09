@@ -22,10 +22,12 @@ func newDeployCommand() *cobra.Command {
 	var forceLock bool
 	var failOnActiveRuns bool
 	var computeID string
+	var autoApprove bool
 	cmd.Flags().BoolVar(&force, "force", false, "Force-override Git branch validation.")
 	cmd.Flags().BoolVar(&forceLock, "force-lock", false, "Force acquisition of deployment lock.")
 	cmd.Flags().BoolVar(&failOnActiveRuns, "fail-on-active-runs", false, "Fail if there are running jobs or pipelines in the deployment.")
 	cmd.Flags().StringVarP(&computeID, "compute-id", "c", "", "Override compute in the deployment with the given compute ID.")
+	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive approvals for deleting or recreating resources")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -37,6 +39,8 @@ func newDeployCommand() *cobra.Command {
 		bundle.ApplyFunc(ctx, b, func(context.Context, *bundle.Bundle) diag.Diagnostics {
 			b.Config.Bundle.Force = force
 			b.Config.Bundle.Deployment.Lock.Force = forceLock
+			b.AutoApprove = autoApprove
+
 			if cmd.Flag("compute-id").Changed {
 				b.Config.Bundle.ComputeID = computeID
 			}
