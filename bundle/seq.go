@@ -8,6 +8,7 @@ import (
 )
 
 // Control signal error that can be used to break out of a sequence of mutators.
+// TODO: Are better names possible?
 var ErrorBreakSequence = errors.New("break sequence")
 var DiagnosticBreakSequence = diag.FromErr(ErrorBreakSequence)
 
@@ -23,16 +24,19 @@ func (s *seqMutator) Apply(ctx context.Context, b *Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
 	for _, m := range s.mutators {
 		nd := Apply(ctx, b, m)
+		hasError := nd.HasError()
 
-		// Break out of the sequence. Filter the ErrorBreakSequence error so that
-		// it does not show up to the user.
+		// Remove the ErrorBreakSequence error from the diagnostics. It's a control
+		// signal and should not be shown to the user.
 		if nd.ContainsError(ErrorBreakSequence) {
-			diags.Extend(nd.RemoveError(ErrorBreakSequence))
-			break
+			nd.RemoveError(ErrorBreakSequence)
 		}
 
-		if diags.HasError() {
-			diags.Extend(nd)
+		// Extend the diagnostics with the diagnostics from the current mutator.
+		diags = diags.Extend(nd)
+
+		// Break out of the sequence if there is an error.
+		if hasError {
 			break
 		}
 	}
