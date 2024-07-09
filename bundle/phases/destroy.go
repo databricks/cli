@@ -13,8 +13,6 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 
-	// TODO: Rename the module itself?
-
 	"github.com/databricks/cli/libs/log"
 	terraformlib "github.com/databricks/cli/libs/terraform"
 	"github.com/databricks/databricks-sdk-go/apierr"
