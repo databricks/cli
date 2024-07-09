@@ -30,7 +30,7 @@ func (s *seqMutator) Apply(ctx context.Context, b *Bundle) diag.Diagnostics {
 		// Remove the ErrorSequenceBreak error from the diagnostics. It's a control
 		// signal and should not be shown to the user.
 		if nd.ContainsError(ErrorSequenceBreak) {
-			nd.RemoveError(ErrorSequenceBreak)
+			nd = nd.RemoveError(ErrorSequenceBreak)
 		}
 
 		// Extend the diagnostics with the diagnostics from the current mutator.
