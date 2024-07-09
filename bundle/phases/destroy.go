@@ -12,10 +12,10 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/log"
 
 	// TODO: Rename the module itself?
 
+	"github.com/databricks/cli/libs/log"
 	terraformlib "github.com/databricks/cli/libs/terraform"
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
