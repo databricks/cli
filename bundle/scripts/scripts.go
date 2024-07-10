@@ -37,7 +37,7 @@ func (m *script) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 	cmd, out, err := executeHook(ctx, executor, b, m.scriptHook)
 	if err != nil {
-		return diag.FromErr(err)
+		return diag.FromErr(fmt.Errorf("failed to execute script: %w", err))
 	}
 	if cmd == nil {
 		log.Debugf(ctx, "No script defined for %s, skipping", m.scriptHook)
@@ -53,7 +53,12 @@ func (m *script) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		line, err = reader.ReadString('\n')
 	}
 
-	return diag.FromErr(cmd.Wait())
+	err = cmd.Wait()
+	if err != nil {
+		return diag.FromErr(fmt.Errorf("failed to execute script: %w", err))
+	}
+
+	return nil
 }
 
 func executeHook(ctx context.Context, executor *exec.Executor, b *bundle.Bundle, hook config.ScriptHook) (exec.Command, io.Reader, error) {
