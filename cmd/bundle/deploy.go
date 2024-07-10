@@ -48,11 +48,13 @@ func newDeployCommand() *cobra.Command {
 				return nil
 			})
 
-			diags = bundle.Apply(ctx, b, bundle.Seq(
-				phases.Initialize(),
-				phases.Build(),
-				phases.Deploy(),
-			))
+			diags = diags.Extend(
+				bundle.Apply(ctx, b, bundle.Seq(
+					phases.Initialize(),
+					phases.Build(),
+					phases.Deploy(),
+				)),
+			)
 		}
 
 		err := render.RenderTextOutput(cmd.OutOrStdout(), b, diags)
