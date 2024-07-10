@@ -57,7 +57,8 @@ func newDeployCommand() *cobra.Command {
 			)
 		}
 
-		err := render.RenderTextOutput(cmd.OutOrStdout(), b, diags)
+		renderOpts := render.RenderOptions{RenderSummaryTable: false}
+		err := render.RenderTextOutput(cmd.OutOrStdout(), b, diags, renderOpts)
 		if err != nil {
 			return fmt.Errorf("failed to render output: %w", err)
 		}
