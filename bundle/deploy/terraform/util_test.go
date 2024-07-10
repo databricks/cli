@@ -11,48 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// func TestLocalStateIsNewer(t *testing.T) {
-// 	local := strings.NewReader(`{"serial": 5}`)
-// 	remote := strings.NewReader(`{"serial": 4}`)
-// 	assert.False(t, IsLocalStateStale(local, remote))
-// }
-
-// func TestLocalStateIsOlder(t *testing.T) {
-// 	local := strings.NewReader(`{"serial": 5}`)
-// 	remote := strings.NewReader(`{"serial": 6}`)
-// 	assert.True(t, IsLocalStateStale(local, remote))
-// }
-
-// func TestLocalStateIsTheSame(t *testing.T) {
-// 	local := strings.NewReader(`{"serial": 5}`)
-// 	remote := strings.NewReader(`{"serial": 5}`)
-// 	assert.False(t, IsLocalStateStale(local, remote))
-// }
-
-// func TestLocalStateMarkStaleWhenFailsToLoad(t *testing.T) {
-// 	local := iotest.ErrReader(fmt.Errorf("Random error"))
-// 	remote := strings.NewReader(`{"serial": 5}`)
-// 	assert.True(t, IsLocalStateStale(local, remote))
-// }
-
-// func TestLocalStateMarkNonStaleWhenRemoteFailsToLoad(t *testing.T) {
-// 	local := strings.NewReader(`{"serial": 5}`)
-// 	remote := iotest.ErrReader(fmt.Errorf("Random error"))
-// 	assert.False(t, IsLocalStateStale(local, remote))
-// }
-
-// func TestLocalStateIsFromAnotherDeployment(t *testing.T) {
-// 	local := strings.NewReader(`{"serial": 5, "lineage": "alice"}`)
-// 	remote := strings.NewReader(`{"serial": 5, "lineage": "bob"}`)
-// 	assert.True(t, IsLocalStateStale(local, remote))
-// }
-
-// func TestLocalStateIsFromTheSameDeployment(t *testing.T) {
-// 	local := strings.NewReader(`{"serial": 5, "lineage": "alice"}`)
-// 	remote := strings.NewReader(`{"serial": 5, "lineage": "alice"}`)
-// 	assert.False(t, IsLocalStateStale(local, remote))
-// }
-
 func TestParseResourcesStateWithNoFile(t *testing.T) {
 	b := &bundle.Bundle{
 		RootPath: t.TempDir(),
