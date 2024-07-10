@@ -60,7 +60,7 @@ func validateBundle(t *testing.T, ctx context.Context, path string) ([]byte, err
 
 func deployBundle(t *testing.T, ctx context.Context, path string) error {
 	t.Setenv("BUNDLE_ROOT", path)
-	c := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "deploy", "--force-lock")
+	c := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "deploy", "--force-lock", "--auto-approve")
 	_, _, err := c.Run()
 	return err
 }
