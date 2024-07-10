@@ -40,7 +40,7 @@ func newDeployCommand() *cobra.Command {
 				b.Config.Bundle.Force = force
 				b.Config.Bundle.Deployment.Lock.Force = forceLock
 				b.AutoApprove = autoApprove
-				
+
 				if cmd.Flag("compute-id").Changed {
 					b.Config.Bundle.ComputeID = computeID
 				}
