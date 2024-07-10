@@ -1,8 +1,8 @@
 package terraform
 
 import (
-	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"io/fs"
@@ -12,9 +12,13 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 )
+
+type tfState struct {
+	Serial  int    `json:"serial"`
+	Lineage string `json:"lineage"`
+}
 
 type statePull struct {
 	filerFactory deploy.FilerFactory
@@ -24,71 +28,102 @@ func (l *statePull) Name() string {
 	return "terraform:state-pull"
 }
 
-func (l *statePull) remoteState(ctx context.Context, f filer.Filer) (*bytes.Buffer, error) {
-	// Download state file from filer to local cache directory.
+func (l *statePull) remoteState(ctx context.Context, b *bundle.Bundle) (*tfState, []byte, error) {
+	f, err := l.filerFactory(b)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	remote, err := f.Read(ctx, TerraformStateFileName)
 	if err != nil {
-		// On first deploy this state file doesn't yet exist.
-		if errors.Is(err, fs.ErrNotExist) {
-			return nil, nil
-		}
-		return nil, err
+		return nil, nil, err
 	}
-
 	defer remote.Close()
 
-	var buf bytes.Buffer
-	_, err = io.Copy(&buf, remote)
+	remoteContent, err := io.ReadAll(remote)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	remoteState := &tfState{}
+	err = json.Unmarshal(remoteContent, remoteState)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return remoteState, remoteContent, nil
+}
+
+func (l *statePull) localState(ctx context.Context, b *bundle.Bundle) (*tfState, error) {
+	dir, err := Dir(ctx, b)
 	if err != nil {
 		return nil, err
 	}
 
-	return &buf, nil
+	localStatePath := filepath.Join(dir, TerraformStateFileName)
+	local, err := os.Open(localStatePath)
+	if err != nil {
+		return nil, err
+	}
+	defer local.Close()
+
+	localContent, err := io.ReadAll(local)
+	if err != nil {
+		return nil, err
+	}
+
+	localState := &tfState{}
+	err = json.Unmarshal(localContent, localState)
+	if err != nil {
+		return nil, err
+	}
+
+	return localState, nil
 }
 
 func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	f, err := l.filerFactory(b)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
 	dir, err := Dir(ctx, b)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	// Download state file from filer to local cache directory.
-	log.Infof(ctx, "Opening remote state file")
-	remote, err := l.remoteState(ctx, f)
-	if err != nil {
-		log.Infof(ctx, "Unable to open remote state file: %s", err)
-		return diag.FromErr(err)
-	}
-	if remote == nil {
-		log.Infof(ctx, "Remote state file does not exist")
+	localStatePath := filepath.Join(dir, TerraformStateFileName)
+
+	// Case: remote state file does not exist. In this case we should not use the
+	// local state file because we cannot guarantee it corresponds to the same deployment,
+	// that is the same root_path and workspace host.
+	remoteState, remoteContent, err := l.remoteState(ctx, b)
+	if errors.Is(err, fs.ErrNotExist) {
+		log.Infof(ctx, "Remote state file does not exist. Invalidating local terraform state.")
+		os.Remove(localStatePath)
 		return nil
 	}
-
-	// Expect the state file to live under dir.
-	local, err := os.OpenFile(filepath.Join(dir, TerraformStateFileName), os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
+		return diag.Errorf("failed to read remote state file: %v", err)
+	}
+
+	// Case: Local host does not exist. In this case we should rely on the remote state file.
+	localState, err := l.localState(ctx, b)
+	if errors.Is(err, fs.ErrNotExist) {
+		log.Infof(ctx, "Local state file does not exist. Using remote terraform state. Invalidating local terraform state.")
+		err := os.WriteFile(localStatePath, remoteContent, 0600)
 		return diag.FromErr(err)
 	}
-	defer local.Close()
-
-	if !IsLocalStateStale(local, bytes.NewReader(remote.Bytes())) {
-		log.Infof(ctx, "Local state is the same or newer, ignoring remote state")
-		return nil
+	if err != nil {
+		return diag.Errorf("failed to read local state file: %v", err)
 	}
 
-	// Truncating the file before writing
-	local.Truncate(0)
-	local.Seek(0, 0)
+	// If the lineages do not match, the terraform state files do not correspond to the same deployment.
+	if localState.Lineage != remoteState.Lineage {
+		log.Infof(ctx, "Remote and local state lineages do not match. Using remote terraform state. Invalidating local terraform state.")
+		err := os.WriteFile(localStatePath, remoteContent, 0600)
+		return diag.FromErr(err)
+	}
 
-	// Write file to disk.
-	log.Infof(ctx, "Writing remote state file to local cache directory")
-	_, err = io.Copy(local, bytes.NewReader(remote.Bytes()))
-	if err != nil {
+	// If the remote state is newer than the local state, we should use the remote state.
+	if remoteState.Serial > localState.Serial {
+		log.Infof(ctx, "Remote state is newer than local state. Using remote terraform state.")
+		err := os.WriteFile(localStatePath, remoteContent, 0600)
 		return diag.FromErr(err)
 	}
 

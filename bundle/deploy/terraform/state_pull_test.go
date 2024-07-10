@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func mockStateFilerForPull(t *testing.T, contents map[string]int, merr error) filer.Filer {
+func mockStateFilerForPull(t *testing.T, contents map[string]any, merr error) filer.Filer {
 	buf, err := json.Marshal(contents)
 	assert.NoError(t, err)
 
@@ -41,86 +41,104 @@ func statePullTestBundle(t *testing.T) *bundle.Bundle {
 	}
 }
 
-func TestStatePullLocalMissingRemoteMissing(t *testing.T) {
-	m := &statePull{
-		identityFiler(mockStateFilerForPull(t, nil, os.ErrNotExist)),
+func TestStatePullLocal(t *testing.T) {
+	tcases := []struct {
+		name string
+
+		// remote state before applying the pull mutators
+		remote map[string]any
+
+		// local state before applying the pull mutators
+		local map[string]any
+
+		// expected local state after applying the pull mutators
+		expected map[string]any
+	}{
+		{
+			name:     "local missing, remote missing",
+			remote:   nil,
+			local:    nil,
+			expected: nil,
+		},
+		{
+			name:     "local missing, remote present",
+			remote:   map[string]any{"serial": 5},
+			local:    nil,
+			expected: map[string]any{"serial": float64(5)},
+		},
+		{
+			name:     "local stale",
+			remote:   map[string]any{"serial": 5},
+			local:    map[string]any{"serial": 4},
+			expected: map[string]any{"serial": float64(5)},
+		},
+		{
+			name:     "local equal",
+			remote:   map[string]any{"serial": 5, "some_other_key": 123},
+			local:    map[string]any{"serial": 5},
+			expected: map[string]any{"serial": float64(5)},
+		},
+		{
+			name:     "local newer",
+			remote:   map[string]any{"serial": 5, "some_other_key": 123},
+			local:    map[string]any{"serial": 6},
+			expected: map[string]any{"serial": float64(6)},
+		},
+		{
+			name:   "remote missing, local present",
+			remote: nil,
+			local:  map[string]any{"serial": 5, "some_other_key": 123},
+			// local state should be invalidated if remote state is missing.
+			expected: nil,
+		},
+		{
+			name:     "remote and local have different lineages",
+			remote:   map[string]any{"serial": 5, "lineage": "aaaa"},
+			local:    map[string]any{"serial": 10, "lineage": "bbbb"},
+			expected: map[string]any{"serial": float64(5), "lineage": "aaaa"},
+		},
+		{
+			name:     "remote and local have the same lineage, local newer",
+			remote:   map[string]any{"serial": 5, "lineage": "aaaa", "some_other_key": 123},
+			local:    map[string]any{"serial": 10, "lineage": "aaaa"},
+			expected: map[string]any{"serial": float64(10), "lineage": "aaaa"},
+		},
+		{
+			name:     "remote and local have the same lineage, remote newer",
+			remote:   map[string]any{"serial": 10, "lineage": "aaaa", "some_other_key": 123},
+			local:    map[string]any{"serial": 5, "lineage": "aaaa"},
+			expected: map[string]any{"serial": float64(10), "lineage": "aaaa", "some_other_key": float64(123)},
+		},
 	}
 
-	ctx := context.Background()
-	b := statePullTestBundle(t)
-	diags := bundle.Apply(ctx, b, m)
-	assert.NoError(t, diags.Error())
+	for _, tc := range tcases {
+		t.Run(tc.name, func(t *testing.T) {
+			m := &statePull{}
+			if tc.remote == nil {
+				// nil represents no remote state file.
+				m.filerFactory = identityFiler(mockStateFilerForPull(t, nil, os.ErrNotExist))
+			} else {
+				m.filerFactory = identityFiler(mockStateFilerForPull(t, tc.remote, nil))
+			}
 
-	// Confirm that no local state file has been written.
-	_, err := os.Stat(localStateFile(t, ctx, b))
-	assert.ErrorIs(t, err, fs.ErrNotExist)
-}
+			ctx := context.Background()
+			b := statePullTestBundle(t)
+			if tc.local != nil {
+				writeLocalState(t, ctx, b, tc.local)
+			}
 
-func TestStatePullLocalMissingRemotePresent(t *testing.T) {
-	m := &statePull{
-		identityFiler(mockStateFilerForPull(t, map[string]int{"serial": 5}, nil)),
+			diags := bundle.Apply(ctx, b, m)
+			assert.NoError(t, diags.Error())
+
+			if tc.expected == nil {
+				// nil represents no local state file is expected.
+				_, err := os.Stat(localStateFile(t, ctx, b))
+				assert.ErrorIs(t, err, fs.ErrNotExist)
+			} else {
+				localState := readLocalState(t, ctx, b)
+				assert.Equal(t, tc.expected, localState)
+
+			}
+		})
 	}
-
-	ctx := context.Background()
-	b := statePullTestBundle(t)
-	diags := bundle.Apply(ctx, b, m)
-	assert.NoError(t, diags.Error())
-
-	// Confirm that the local state file has been updated.
-	localState := readLocalState(t, ctx, b)
-	assert.Equal(t, map[string]int{"serial": 5}, localState)
-}
-
-func TestStatePullLocalStale(t *testing.T) {
-	m := &statePull{
-		identityFiler(mockStateFilerForPull(t, map[string]int{"serial": 5}, nil)),
-	}
-
-	ctx := context.Background()
-	b := statePullTestBundle(t)
-
-	// Write a stale local state file.
-	writeLocalState(t, ctx, b, map[string]int{"serial": 4})
-	diags := bundle.Apply(ctx, b, m)
-	assert.NoError(t, diags.Error())
-
-	// Confirm that the local state file has been updated.
-	localState := readLocalState(t, ctx, b)
-	assert.Equal(t, map[string]int{"serial": 5}, localState)
-}
-
-func TestStatePullLocalEqual(t *testing.T) {
-	m := &statePull{
-		identityFiler(mockStateFilerForPull(t, map[string]int{"serial": 5, "some_other_key": 123}, nil)),
-	}
-
-	ctx := context.Background()
-	b := statePullTestBundle(t)
-
-	// Write a local state file with the same serial as the remote.
-	writeLocalState(t, ctx, b, map[string]int{"serial": 5})
-	diags := bundle.Apply(ctx, b, m)
-	assert.NoError(t, diags.Error())
-
-	// Confirm that the local state file has not been updated.
-	localState := readLocalState(t, ctx, b)
-	assert.Equal(t, map[string]int{"serial": 5}, localState)
-}
-
-func TestStatePullLocalNewer(t *testing.T) {
-	m := &statePull{
-		identityFiler(mockStateFilerForPull(t, map[string]int{"serial": 5, "some_other_key": 123}, nil)),
-	}
-
-	ctx := context.Background()
-	b := statePullTestBundle(t)
-
-	// Write a local state file with a newer serial as the remote.
-	writeLocalState(t, ctx, b, map[string]int{"serial": 6})
-	diags := bundle.Apply(ctx, b, m)
-	assert.NoError(t, diags.Error())
-
-	// Confirm that the local state file has not been updated.
-	localState := readLocalState(t, ctx, b)
-	assert.Equal(t, map[string]int{"serial": 6}, localState)
 }
