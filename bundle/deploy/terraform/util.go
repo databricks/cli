@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io"
 	"os"
 	"path/filepath"
 
@@ -35,20 +34,6 @@ type stateResourceInstance struct {
 
 type stateInstanceAttributes struct {
 	ID string `json:"id"`
-}
-
-func loadState(input io.Reader) (*tfState, error) {
-	content, err := io.ReadAll(input)
-	if err != nil {
-		return nil, err
-	}
-	var s tfState
-	err = json.Unmarshal(content, &s)
-	if err != nil {
-		return nil, err
-	}
-
-	return &s, nil
 }
 
 func ParseResourcesState(ctx context.Context, b *bundle.Bundle) (*resourcesState, error) {
