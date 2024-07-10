@@ -142,7 +142,7 @@ func renderDiagnostics(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics) 
 		}
 
 		// Make file relative to bundle root
-		if d.Location.File != "" {
+		if d.Location.File != "" && b != nil {
 			out, err := filepath.Rel(b.RootPath, d.Location.File)
 			// if we can't relativize the path, just use path as-is
 			if err == nil {
@@ -160,16 +160,25 @@ func renderDiagnostics(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics) 
 	return nil
 }
 
+// RenderOptions contains options for rendering diagnostics.
+type RenderOptions struct {
+	// variable to include leading new line
+
+	RenderSummaryTable bool
+}
+
 // RenderTextOutput renders the diagnostics in a human-readable format.
-func RenderTextOutput(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics) error {
+func RenderTextOutput(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics, opts RenderOptions) error {
 	err := renderDiagnostics(out, b, diags)
 	if err != nil {
 		return fmt.Errorf("failed to render diagnostics: %w", err)
 	}
 
-	err = renderSummaryTemplate(out, b, diags)
-	if err != nil {
-		return fmt.Errorf("failed to render summary: %w", err)
+	if opts.RenderSummaryTable {
+		err = renderSummaryTemplate(out, b, diags)
+		if err != nil {
+			return fmt.Errorf("failed to render summary: %w", err)
+		}
 	}
 
 	return nil
