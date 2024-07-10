@@ -34,24 +34,24 @@ func (l *statePull) remoteState(ctx context.Context, b *bundle.Bundle) (*tfState
 		return nil, nil, err
 	}
 
-	remote, err := f.Read(ctx, TerraformStateFileName)
+	r, err := f.Read(ctx, TerraformStateFileName)
 	if err != nil {
 		return nil, nil, err
 	}
-	defer remote.Close()
+	defer r.Close()
 
-	remoteContent, err := io.ReadAll(remote)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	remoteState := &tfState{}
-	err = json.Unmarshal(remoteContent, remoteState)
+	content, err := io.ReadAll(r)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return remoteState, remoteContent, nil
+	state := &tfState{}
+	err = json.Unmarshal(content, state)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return state, content, nil
 }
 
 func (l *statePull) localState(ctx context.Context, b *bundle.Bundle) (*tfState, error) {
@@ -60,25 +60,18 @@ func (l *statePull) localState(ctx context.Context, b *bundle.Bundle) (*tfState,
 		return nil, err
 	}
 
-	localStatePath := filepath.Join(dir, TerraformStateFileName)
-	local, err := os.Open(localStatePath)
-	if err != nil {
-		return nil, err
-	}
-	defer local.Close()
-
-	localContent, err := io.ReadAll(local)
+	content, err := os.ReadFile(filepath.Join(dir, TerraformStateFileName))
 	if err != nil {
 		return nil, err
 	}
 
-	localState := &tfState{}
-	err = json.Unmarshal(localContent, localState)
+	state := &tfState{}
+	err = json.Unmarshal(content, state)
 	if err != nil {
 		return nil, err
 	}
 
-	return localState, nil
+	return state, nil
 }
 
 func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
@@ -102,7 +95,7 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 		return diag.Errorf("failed to read remote state file: %v", err)
 	}
 
-	// Case: Local host does not exist. In this case we should rely on the remote state file.
+	// Case: Local state file does not exist. In this case we should rely on the remote state file.
 	localState, err := l.localState(ctx, b)
 	if errors.Is(err, fs.ErrNotExist) {
 		log.Infof(ctx, "Local state file does not exist. Using remote terraform state. Invalidating local terraform state.")
