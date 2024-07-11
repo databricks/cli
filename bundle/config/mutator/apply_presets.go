@@ -84,6 +84,9 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if config.IsExplicitlyEnabled(t.PipelinesDevelopment) {
 			r.Pipelines[i].Development = true
 		}
+		if t.TriggerPauseStatus == config.Paused {
+			r.Pipelines[i].Continuous = false
+		}
 
 		// As of 2024-06, pipelines don't yet support tags
 	}
