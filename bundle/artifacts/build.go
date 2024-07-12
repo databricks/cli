@@ -44,27 +44,6 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		}
 	}
 
-	// Expand any glob reference in files source path
-	files := make([]config.ArtifactFile, 0, len(artifact.Files))
-	for _, f := range artifact.Files {
-		matches, err := filepath.Glob(f.Source)
-		if err != nil {
-			return diag.Errorf("unable to find files for %s: %v", f.Source, err)
-		}
-
-		if len(matches) == 0 {
-			return diag.Errorf("no files found for %s", f.Source)
-		}
-
-		for _, match := range matches {
-			files = append(files, config.ArtifactFile{
-				Source: match,
-			})
-		}
-	}
-
-	artifact.Files = files
-
 	// Skip building if build command is not specified or infered
 	if artifact.BuildCommand == "" {
 		// If no build command was specified or infered and there is no
@@ -85,5 +64,30 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		artifact.Path = filepath.Join(dirPath, artifact.Path)
 	}
 
-	return bundle.Apply(ctx, b, getBuildMutator(artifact.Type, m.name))
+	diags := bundle.Apply(ctx, b, getBuildMutator(artifact.Type, m.name))
+	if diags.HasError() {
+		return diags
+	}
+
+	// Expand any glob reference in files source path
+	files := make([]config.ArtifactFile, 0, len(artifact.Files))
+	for _, f := range artifact.Files {
+		matches, err := filepath.Glob(f.Source)
+		if err != nil {
+			return diags.Extend(diag.Errorf("unable to find files for %s: %v", f.Source, err))
+		}
+
+		if len(matches) == 0 {
+			return diags.Extend(diag.Errorf("no files found for %s", f.Source))
+		}
+
+		for _, match := range matches {
+			files = append(files, config.ArtifactFile{
+				Source: match,
+			})
+		}
+	}
+
+	artifact.Files = files
+	return diags
 }

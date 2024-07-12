@@ -20,6 +20,10 @@
         "root": {
             "type": "string",
             "description": "Path to the root of the template"
+        },
+        "artifact_path": {
+            "type": "string",
+            "description": "Path to the remote base path for artifacts"
         }
     }
 }

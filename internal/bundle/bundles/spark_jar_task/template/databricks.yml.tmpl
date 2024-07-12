@@ -3,13 +3,14 @@ bundle:
 
 workspace:
   root_path: "~/.bundle/{{.unique_id}}"
+  artifact_path: {{.artifact_path}}
 
 artifacts:
   my_java_code:
     path: ./{{.project_name}}
     build: "javac PrintArgs.java && jar cvfm PrintArgs.jar META-INF/MANIFEST.MF PrintArgs.class"
     files:
-      - source: {{.root}}/{{.project_name}}/PrintArgs.jar
+      - source: ./{{.project_name}}/PrintArgs.jar
 
 resources:
   jobs:
