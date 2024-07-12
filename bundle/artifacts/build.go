@@ -51,7 +51,7 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		if len(artifact.Files) == 0 {
 			return diag.Errorf("misconfigured artifact: please specify 'build' or 'files' property")
 		}
-		return nil
+		return expandGlobReference(artifact)
 	}
 
 	// If artifact path is not provided, use bundle root dir
@@ -68,6 +68,12 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if diags.HasError() {
 		return diags
 	}
+
+	return diags.Extend(expandGlobReference(artifact))
+}
+
+func expandGlobReference(artifact *config.Artifact) diag.Diagnostics {
+	var diags diag.Diagnostics
 
 	// Expand any glob reference in files source path
 	files := make([]config.ArtifactFile, 0, len(artifact.Files))
