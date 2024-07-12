@@ -5,7 +5,7 @@ go 1.22
 require (
 	github.com/Masterminds/semver/v3 v3.2.1 // MIT
 	github.com/briandowns/spinner v1.23.1 // Apache 2.0
-	github.com/databricks/databricks-sdk-go v0.43.3-0.20240712182131-69a9c987dab4 // Apache 2.0
+	github.com/databricks/databricks-sdk-go v0.43.3-0.20240712183344-7add1709e497 // Apache 2.0
 	github.com/fatih/color v1.17.0 // MIT
 	github.com/ghodss/yaml v1.0.0 // MIT + NOTICE
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
