@@ -44,13 +44,27 @@ func statePullTestBundle(t *testing.T) *bundle.Bundle {
 func TestStatePullLocalErrorWhenRemoteListFails(t *testing.T) {
 	m := &statePull{}
 
-	// setup remote state.
-	m.filerFactory = identityFiler(mockStateFilerForPull(t, map[string]any{"serial": 5}, nil))
+	t.Run("no local state", func(t *testing.T) {
+		// setup remote state.
+		m.filerFactory = identityFiler(mockStateFilerForPull(t, map[string]any{"serial": 5}, nil))
 
-	ctx := context.Background()
-	b := statePullTestBundle(t)
-	diags := bundle.Apply(ctx, b, m)
-	assert.EqualError(t, diags.Error(), "remote state file does not have a lineage")
+		ctx := context.Background()
+		b := statePullTestBundle(t)
+		diags := bundle.Apply(ctx, b, m)
+		assert.EqualError(t, diags.Error(), "remote state file does not have a lineage")
+	})
+
+	t.Run("local state with lineage", func(t *testing.T) {
+		// setup remote state.
+		m.filerFactory = identityFiler(mockStateFilerForPull(t, map[string]any{"serial": 5}, nil))
+
+		ctx := context.Background()
+		b := statePullTestBundle(t)
+		writeLocalState(t, ctx, b, map[string]any{"serial": 5, "lineage": "aaaa"})
+
+		diags := bundle.Apply(ctx, b, m)
+		assert.EqualError(t, diags.Error(), "remote state file does not have a lineage")
+	})
 }
 
 func TestStatePullLocal(t *testing.T) {
@@ -67,16 +81,10 @@ func TestStatePullLocal(t *testing.T) {
 		expected map[string]any
 	}{
 		{
-			name:     "local missing, remote missing",
+			name:     "remote missing, local missing",
 			remote:   nil,
 			local:    nil,
 			expected: nil,
-		},
-		{
-			name:     "local missing, remote present",
-			remote:   map[string]any{"serial": 5},
-			local:    nil,
-			expected: map[string]any{"serial": float64(5)},
 		},
 		{
 			name:   "remote missing, local present",
