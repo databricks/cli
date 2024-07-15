@@ -1,5 +1,27 @@
 # Version changelog
 
+## 0.223.2
+
+Bundles:
+ * Override complex variables with target overrides instead of merging ([#1567](https://github.com/databricks/cli/pull/1567)).
+ * Rewrite local path for libraries in foreach tasks ([#1569](https://github.com/databricks/cli/pull/1569)).
+ * Change SetVariables mutator to mutate dynamic configuration instead ([#1573](https://github.com/databricks/cli/pull/1573)).
+ * Return early in bundle destroy if no deployment exists ([#1581](https://github.com/databricks/cli/pull/1581)).
+ * Let notebook detection code use underlying metadata if available ([#1574](https://github.com/databricks/cli/pull/1574)).
+ * Remove schema override for variable default value ([#1536](https://github.com/databricks/cli/pull/1536)).
+ * Print diagnostics in 'bundle deploy' ([#1579](https://github.com/databricks/cli/pull/1579)).
+
+Internal:
+ * Update actions/upload-artifact to v4 ([#1559](https://github.com/databricks/cli/pull/1559)).
+ * Use Go 1.22 to build and test ([#1562](https://github.com/databricks/cli/pull/1562)).
+ * Move bespoke status call to main workspace files filer ([#1570](https://github.com/databricks/cli/pull/1570)).
+ * Add new template ([#1578](https://github.com/databricks/cli/pull/1578)).
+ * Add regression tests for CLI error output ([#1566](https://github.com/databricks/cli/pull/1566)).
+
+Dependency updates:
+ * Bump golang.org/x/mod from 0.18.0 to 0.19.0 ([#1576](https://github.com/databricks/cli/pull/1576)).
+ * Bump golang.org/x/term from 0.21.0 to 0.22.0 ([#1577](https://github.com/databricks/cli/pull/1577)).
+
 ## 0.223.1
 
 This bugfix release fixes missing error messages in v0.223.0.
