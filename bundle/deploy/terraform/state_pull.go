@@ -98,7 +98,7 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	// Case: Local state file does not exist. In this case we should rely on the remote state file.
 	localState, err := l.localState(ctx, b)
 	if errors.Is(err, fs.ErrNotExist) {
-		log.Infof(ctx, "Local state file does not exist. Using remote terraform state. Invalidating local terraform state.")
+		log.Infof(ctx, "Local state file does not exist. Using remote terraform state.")
 		err := os.WriteFile(localStatePath, remoteContent, 0600)
 		return diag.FromErr(err)
 	}
