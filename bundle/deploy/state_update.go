@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
+	"github.com/google/uuid"
 )
 
 type stateUpdate struct {
@@ -45,6 +46,11 @@ func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 		return diag.FromErr(err)
 	}
 	state.Files = fl
+
+	// Generate a UUID for the deployment, if one does not already exist
+	if state.Id == uuid.Nil {
+		state.Id = uuid.New()
+	}
 
 	statePath, err := getPathToStateFile(ctx, b)
 	if err != nil {
