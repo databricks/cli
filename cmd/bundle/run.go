@@ -45,8 +45,10 @@ task or a Python wheel task, the second example applies.
 
 	var noWait bool
 	var restart bool
+	var logResults bool
 	cmd.Flags().BoolVar(&noWait, "no-wait", false, "Don't wait for the run to complete.")
 	cmd.Flags().BoolVar(&restart, "restart", false, "Restart the run if it is already running.")
+	cmd.Flags().BoolVar(&logResults, "log-results", false, "Log notebook cell results.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -96,6 +98,7 @@ task or a Python wheel task, the second example applies.
 		}
 
 		runOptions.NoWait = noWait
+		runOptions.LogResults = logResults
 		if restart {
 			s := cmdio.Spinner(ctx)
 			s <- "Cancelling all runs"

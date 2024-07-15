@@ -3,13 +3,11 @@ package root
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
 )
 
 const envProgressFormat = "DATABRICKS_CLI_PROGRESS_FORMAT"
@@ -21,10 +19,11 @@ type progressLoggerFlag struct {
 }
 
 func (f *progressLoggerFlag) resolveModeDefault(format flags.ProgressLogFormat) flags.ProgressLogFormat {
-	if (f.log.level.String() == "disabled" || f.log.file.String() != "stderr") &&
-		term.IsTerminal(int(os.Stderr.Fd())) {
-		return flags.ModeInplace
-	}
+	// Disable ModeInplace for now to not mess with notebook formatting
+	// if (f.log.level.String() == "disabled" || f.log.file.String() != "stderr") &&
+	// 	term.IsTerminal(int(os.Stderr.Fd())) {
+	// 	return flags.ModeInplace
+	// }
 	return flags.ModeAppend
 }
 

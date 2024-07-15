@@ -6,9 +6,10 @@ import (
 )
 
 type Options struct {
-	Job      JobOptions
-	Pipeline PipelineOptions
-	NoWait   bool
+	Job        JobOptions
+	Pipeline   PipelineOptions
+	NoWait     bool
+	LogResults bool
 }
 
 func (o *Options) Define(cmd *cobra.Command) {
