@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/log"
 )
 
 func UploadAll() bundle.Mutator {
@@ -62,10 +63,13 @@ func (m *cleanUp) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		return diag.FromErr(err)
 	}
 
-	// We interntionally ignore the error because it is not critical to the deployment
-	client.Delete(ctx, "", filer.DeleteRecursively)
+	// We intentionally ignore the error because it is not critical to the deployment
+	err = client.Delete(ctx, ".", filer.DeleteRecursively)
+	if err != nil {
+		log.Errorf(ctx, "failed to delete %s: %v", uploadPath, err)
+	}
 
-	err = client.Mkdir(ctx, "")
+	err = client.Mkdir(ctx, ".")
 	if err != nil {
 		return diag.Errorf("unable to create directory for %s: %v", uploadPath, err)
 	}
