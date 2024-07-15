@@ -95,6 +95,11 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 		return diag.Errorf("failed to read remote state file: %v", err)
 	}
 
+	// Invariant: remote state file has a lineage UUID.
+	if remoteState.Lineage == "" {
+		return diag.Errorf("remote state file does not have a lineage")
+	}
+
 	// Case: Local state file does not exist. In this case we should rely on the remote state file.
 	localState, err := l.localState(ctx, b)
 	if errors.Is(err, fs.ErrNotExist) {
