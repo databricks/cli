@@ -14,7 +14,44 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
-const kMaxQueueSize = 10_000
+// This readahead cache is designed to optimize file system operations by caching the results of
+// directory reads (ReadDir) and file/directory metadata reads (Stat). This cache aims to eliminate
+// redundant operations and improve performance by storing the results of these operations and
+// reusing them when possible. Additionally, the cache performs readahead on ReadDir calls,
+// proactively caching information about files and subdirectories to speed up future access.
+//
+// The cache maintains two primary maps: one for ReadDir results and another for Stat results.
+// When a directory read or a stat operation is requested, the cache first checks if the result
+// is already available. If it is, the cached result is returned immediately. If not, the
+// operation is queued for execution, and the result is stored in the cache once the operation
+// completes. In cases where the result is not immediately available, the caller may need to wait
+// for the cache entry to be populated. However, because the queue is processed in order by a
+// fixed number of worker goroutines, we are guaranteed that the required cache entry will be
+// populated and available once the queue processes the corresponding task.
+//
+// The cache uses a worker pool to process the queued operations concurrently. This is
+// implemented using a fixed number of worker goroutines that continually pull tasks from a
+// queue and execute them. The queue itself is logically unbounded in the sense that it needs to
+// accommodate all the new tasks that may be generated dynamically during the execution of ReadDir
+// calls. Specifically, a single ReadDir call can add an unknown number of new Stat and ReadDir
+// tasks to the queue because each directory entry may represent a file or subdirectory that
+// requires further processing.
+//
+// For practical reasons, we are not using an unbounded queue but a channel with a maximum size
+// of 10,000. This helps prevent excessive memory usage and ensures that the system remains
+// responsive under load. If we encounter real examples of subtrees with more than 10,000
+// elements, we can consider addressing this limitation in the future. For now, this approach
+// balances the need for readahead efficiency with practical constraints.
+//
+// It is crucial to note that each ReadDir and Stat call is executed only once. The result of a
+// Stat call can be served from the cache if the information was already returned by an earlier
+// ReadDir call. This helps to avoid redundant operations and ensures that the system remains
+// efficient even under high load.
+
+const (
+	kMaxQueueSize    = 10_000
+	kNumCacheWorkers = 10
+)
 
 // queueFullError is returned when the queue is at capacity.
 type queueFullError struct {
@@ -154,7 +191,7 @@ type cache struct {
 	wg sync.WaitGroup
 }
 
-func newCache(f Filer) *cache {
+func newWorkspaceFilesReadaheadCache(f Filer) *cache {
 	c := &cache{
 		f: f,
 
@@ -165,7 +202,7 @@ func newCache(f Filer) *cache {
 	}
 
 	ctx := context.Background()
-	for range 10 {
+	for range kNumCacheWorkers {
 		c.wg.Add(1)
 		go c.work(ctx)
 	}
