@@ -50,6 +50,12 @@ var nativeTemplates = []nativeTemplate{
 		aliases:     []string{"mlops-stack"},
 	},
 	{
+		name:        "default-pydabs",
+		gitUrl:      "https://databricks.github.io/workflows-authoring-toolkit/pydabs-template.git",
+		hidden:      true,
+		description: "The default PyDABs template",
+	},
+	{
 		name:        customTemplate,
 		description: "Bring your own template",
 	},
