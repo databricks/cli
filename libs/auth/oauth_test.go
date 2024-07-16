@@ -5,14 +5,14 @@ import (
 	"crypto/tls"
 	_ "embed"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/databricks-sdk-go/httpclient"
+	"github.com/databricks/databricks-sdk-go/httpclient/fixtures"
 	"github.com/databricks/databricks-sdk-go/qa"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"
@@ -24,34 +24,29 @@ func TestOidcEndpointsForAccounts(t *testing.T) {
 		AccountID: "xyz",
 	}
 	defer p.Close()
-	s, err := p.oidcEndpoints()
+	s, err := p.oidcEndpoints(context.Background())
 	assert.NoError(t, err)
 	assert.Equal(t, "https://abc/oidc/accounts/xyz/v1/authorize", s.AuthorizationEndpoint)
 	assert.Equal(t, "https://abc/oidc/accounts/xyz/v1/token", s.TokenEndpoint)
 }
 
-type mockGet func(url string) (*http.Response, error)
-
-func (m mockGet) Get(url string) (*http.Response, error) {
-	return m(url)
-}
-
 func TestOidcForWorkspace(t *testing.T) {
 	p := &PersistentAuth{
 		Host: "abc",
-		http: mockGet(func(url string) (*http.Response, error) {
-			assert.Equal(t, "https://abc/oidc/.well-known/oauth-authorization-server", url)
-			return &http.Response{
-				StatusCode: 200,
-				Body: io.NopCloser(strings.NewReader(`{
-					"authorization_endpoint": "a",
-					"token_endpoint": "b"
-				}`)),
-			}, nil
+		http: httpclient.NewApiClient(httpclient.ClientConfig{
+			Transport: fixtures.MappingTransport{
+				"GET /oidc/.well-known/oauth-authorization-server": {
+					Status: 200,
+					Response: map[string]string{
+						"authorization_endpoint": "a",
+						"token_endpoint":         "b",
+					},
+				},
+			},
 		}),
 	}
 	defer p.Close()
-	endpoints, err := p.oidcEndpoints()
+	endpoints, err := p.oidcEndpoints(context.Background())
 	assert.NoError(t, err)
 	assert.Equal(t, "a", endpoints.AuthorizationEndpoint)
 	assert.Equal(t, "b", endpoints.TokenEndpoint)

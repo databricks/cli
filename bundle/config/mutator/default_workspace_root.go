@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/diag"
 )
 
 type defineDefaultWorkspaceRoot struct{}
@@ -18,17 +19,17 @@ func (m *defineDefaultWorkspaceRoot) Name() string {
 	return "DefineDefaultWorkspaceRoot"
 }
 
-func (m *defineDefaultWorkspaceRoot) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *defineDefaultWorkspaceRoot) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if b.Config.Workspace.RootPath != "" {
 		return nil
 	}
 
 	if b.Config.Bundle.Name == "" {
-		return fmt.Errorf("unable to define default workspace root: bundle name not defined")
+		return diag.Errorf("unable to define default workspace root: bundle name not defined")
 	}
 
 	if b.Config.Bundle.Target == "" {
-		return fmt.Errorf("unable to define default workspace root: bundle target not selected")
+		return diag.Errorf("unable to define default workspace root: bundle target not selected")
 	}
 
 	b.Config.Workspace.RootPath = fmt.Sprintf(

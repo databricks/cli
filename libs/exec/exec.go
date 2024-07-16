@@ -90,18 +90,25 @@ func NewCommandExecutorWithExecutable(dir string, execType ExecutableType) (*Exe
 	}, nil
 }
 
-func (e *Executor) StartCommand(ctx context.Context, command string) (Command, error) {
+func (e *Executor) prepareCommand(ctx context.Context, command string) (*osexec.Cmd, *execContext, error) {
 	ec, err := e.shell.prepare(command)
+	if err != nil {
+		return nil, nil, err
+	}
+	cmd := osexec.CommandContext(ctx, ec.executable, ec.args...)
+	cmd.Dir = e.dir
+	return cmd, ec, nil
+}
+
+func (e *Executor) StartCommand(ctx context.Context, command string) (Command, error) {
+	cmd, ec, err := e.prepareCommand(ctx, command)
 	if err != nil {
 		return nil, err
 	}
-	return e.start(ctx, ec)
+	return e.start(ctx, cmd, ec)
 }
 
-func (e *Executor) start(ctx context.Context, ec *execContext) (Command, error) {
-	cmd := osexec.CommandContext(ctx, ec.executable, ec.args...)
-	cmd.Dir = e.dir
-
+func (e *Executor) start(ctx context.Context, cmd *osexec.Cmd, ec *execContext) (Command, error) {
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, err
@@ -116,17 +123,12 @@ func (e *Executor) start(ctx context.Context, ec *execContext) (Command, error) 
 }
 
 func (e *Executor) Exec(ctx context.Context, command string) ([]byte, error) {
-	cmd, err := e.StartCommand(ctx, command)
+	cmd, ec, err := e.prepareCommand(ctx, command)
 	if err != nil {
 		return nil, err
 	}
-
-	res, err := io.ReadAll(io.MultiReader(cmd.Stdout(), cmd.Stderr()))
-	if err != nil {
-		return nil, err
-	}
-
-	return res, cmd.Wait()
+	defer os.Remove(ec.scriptFile)
+	return cmd.CombinedOutput()
 }
 
 func (e *Executor) ShellType() ExecutableType {

@@ -2,25 +2,28 @@ package bundle
 
 import (
 	"context"
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle/env"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestLoadNotExists(t *testing.T) {
 	b, err := Load(context.Background(), "/doesntexist")
-	assert.True(t, os.IsNotExist(err))
+	assert.True(t, errors.Is(err, fs.ErrNotExist))
 	assert.Nil(t, b)
 }
 
 func TestLoadExists(t *testing.T) {
 	b, err := Load(context.Background(), "./tests/basic")
-	require.Nil(t, err)
-	assert.Equal(t, "basic", b.Config.Bundle.Name)
+	assert.NoError(t, err)
+	assert.NotNil(t, b)
 }
 
 func TestBundleCacheDir(t *testing.T) {
@@ -76,7 +79,7 @@ func TestBundleMustLoadSuccess(t *testing.T) {
 	t.Setenv(env.RootVariable, "./tests/basic")
 	b, err := MustLoad(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, "tests/basic", filepath.ToSlash(b.Config.Path))
+	assert.Equal(t, "tests/basic", filepath.ToSlash(b.RootPath))
 }
 
 func TestBundleMustLoadFailureWithEnv(t *testing.T) {
@@ -86,7 +89,7 @@ func TestBundleMustLoadFailureWithEnv(t *testing.T) {
 }
 
 func TestBundleMustLoadFailureIfNotFound(t *testing.T) {
-	chdir(t, t.TempDir())
+	testutil.Chdir(t, t.TempDir())
 	_, err := MustLoad(context.Background())
 	require.Error(t, err, "unable to find bundle root")
 }
@@ -95,7 +98,7 @@ func TestBundleTryLoadSuccess(t *testing.T) {
 	t.Setenv(env.RootVariable, "./tests/basic")
 	b, err := TryLoad(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, "tests/basic", filepath.ToSlash(b.Config.Path))
+	assert.Equal(t, "tests/basic", filepath.ToSlash(b.RootPath))
 }
 
 func TestBundleTryLoadFailureWithEnv(t *testing.T) {
@@ -105,7 +108,7 @@ func TestBundleTryLoadFailureWithEnv(t *testing.T) {
 }
 
 func TestBundleTryLoadOkIfNotFound(t *testing.T) {
-	chdir(t, t.TempDir())
+	testutil.Chdir(t, t.TempDir())
 	b, err := TryLoad(context.Background())
 	assert.NoError(t, err)
 	assert.Nil(t, b)

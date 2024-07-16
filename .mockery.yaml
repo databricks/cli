@@ -1,0 +1,10 @@
+with-expecter: true
+filename: "mock_{{.InterfaceName | snakecase}}.go"
+mockname: "Mock{{.InterfaceName}}"
+outpkg: "mock{{.PackageName}}"
+packages:
+  github.com/databricks/cli/libs/filer:
+    interfaces:
+      Filer:
+    config:
+      dir: "internal/mocks/libs/filer"

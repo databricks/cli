@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/jsonschema"
 )
 
@@ -92,6 +93,14 @@ func jsonSchemaType(golangType reflect.Type) (jsonschema.Type, error) {
 //
 //   - tracker: Keeps track of types / traceIds seen during recursive traversal
 func safeToSchema(golangType reflect.Type, docs *Docs, traceId string, tracker *tracker) (*jsonschema.Schema, error) {
+	// HACK to unblock CLI release (13th Feb 2024). This is temporary until proper
+	// support for recursive types is added to the schema generator. PR: https://github.com/databricks/cli/pull/1204
+	if traceId == "for_each_task" {
+		return &jsonschema.Schema{
+			Type: jsonschema.ObjectType,
+		}, nil
+	}
+
 	// WE ERROR OUT IF THERE ARE CYCLES IN THE JSON SCHEMA
 	// There are mechanisms to deal with cycles though recursive identifiers in json
 	// schema. However if we use them, we would need to make sure we are able to detect
@@ -158,6 +167,22 @@ func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*jsonschem
 		return nil, err
 	}
 	jsonSchema := &jsonschema.Schema{Type: rootJavascriptType}
+
+	// If the type is a non-string primitive, then we allow it to be a string
+	// provided it's a pure variable reference (ie only a single variable reference).
+	if rootJavascriptType == jsonschema.BooleanType || rootJavascriptType == jsonschema.NumberType {
+		jsonSchema = &jsonschema.Schema{
+			AnyOf: []*jsonschema.Schema{
+				{
+					Type: rootJavascriptType,
+				},
+				{
+					Type:    jsonschema.StringType,
+					Pattern: dynvar.VariableRegex,
+				},
+			},
+		}
+	}
 
 	if docs != nil {
 		jsonSchema.Description = docs.Description

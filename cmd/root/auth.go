@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/manifoldco/promptui"
@@ -18,10 +17,27 @@ import (
 // Placeholders to use as unique keys in context.Context.
 var workspaceClient int
 var accountClient int
+var configUsed int
+
+type ErrNoWorkspaceProfiles struct {
+	path string
+}
+
+func (e ErrNoWorkspaceProfiles) Error() string {
+	return fmt.Sprintf("%s does not contain workspace profiles; please create one by running 'databricks configure'", e.path)
+}
+
+type ErrNoAccountProfiles struct {
+	path string
+}
+
+func (e ErrNoAccountProfiles) Error() string {
+	return fmt.Sprintf("%s does not contain account profiles", e.path)
+}
 
 func initProfileFlag(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringP("profile", "p", "", "~/.databrickscfg profile")
-	cmd.RegisterFlagCompletionFunc("profile", databrickscfg.ProfileCompletion)
+	cmd.RegisterFlagCompletionFunc("profile", profile.ProfileCompletion)
 }
 
 func profileFlagValue(cmd *cobra.Command) (string, bool) {
@@ -68,27 +84,56 @@ func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt 
 	return a, err
 }
 
+func MustAnyClient(cmd *cobra.Command, args []string) (bool, error) {
+	// Try to create a workspace client
+	werr := MustWorkspaceClient(cmd, args)
+	if werr == nil {
+		return false, nil
+	}
+
+	// If the error is other than "not a workspace client error" or "no workspace profiles",
+	// return it because configuration is for workspace client
+	// and we don't want to try to create an account client.
+	if !errors.Is(werr, databricks.ErrNotWorkspaceClient) && !errors.As(werr, &ErrNoWorkspaceProfiles{}) {
+		return false, werr
+	}
+
+	// Otherwise, the config used is account client one, so try to create an account client
+	aerr := MustAccountClient(cmd, args)
+	if errors.As(aerr, &ErrNoAccountProfiles{}) {
+		return false, aerr
+	}
+
+	return true, aerr
+}
+
 func MustAccountClient(cmd *cobra.Command, args []string) error {
 	cfg := &config.Config{}
 
 	// The command-line profile flag takes precedence over DATABRICKS_CONFIG_PROFILE.
-	profile, hasProfileFlag := profileFlagValue(cmd)
+	pr, hasProfileFlag := profileFlagValue(cmd)
 	if hasProfileFlag {
-		cfg.Profile = profile
+		cfg.Profile = pr
 	}
+
+	ctx := cmd.Context()
+	ctx = context.WithValue(ctx, &configUsed, cfg)
+	cmd.SetContext(ctx)
+
+	profiler := profile.GetProfiler(ctx)
 
 	if cfg.Profile == "" {
 		// account-level CLI was not really done before, so here are the assumptions:
 		// 1. only admins will have account configured
 		// 2. 99% of admins will have access to just one account
 		// hence, we don't need to create a special "DEFAULT_ACCOUNT" profile yet
-		_, profiles, err := databrickscfg.LoadProfiles(cmd.Context(), databrickscfg.MatchAccountProfiles)
+		profiles, err := profiler.LoadProfiles(cmd.Context(), profile.MatchAccountProfiles)
 		if err == nil && len(profiles) == 1 {
 			cfg.Profile = profiles[0].Name
 		}
 
 		// if there is no config file, we don't want to fail and instead just skip it
-		if err != nil && !errors.Is(err, databrickscfg.ErrNoConfiguration) {
+		if err != nil && !errors.Is(err, profile.ErrNoConfiguration) {
 			return err
 		}
 	}
@@ -99,7 +144,8 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	cmd.SetContext(context.WithValue(cmd.Context(), &accountClient, a))
+	ctx = context.WithValue(ctx, &accountClient, a)
+	cmd.SetContext(ctx)
 	return nil
 }
 
@@ -147,13 +193,20 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		cfg.Profile = profile
 	}
 
+	ctx := cmd.Context()
+	ctx = context.WithValue(ctx, &configUsed, cfg)
+	cmd.SetContext(ctx)
+
 	// Try to load a bundle configuration if we're allowed to by the caller (see `./auth_options.go`).
 	if !shouldSkipLoadBundle(cmd.Context()) {
-		err := TryConfigureBundle(cmd, args)
-		if err != nil {
+		b, diags := TryConfigureBundle(cmd)
+		if err := diags.Error(); err != nil {
 			return err
 		}
-		if b := bundle.GetOrNil(cmd.Context()); b != nil {
+
+		if b != nil {
+			ctx = context.WithValue(ctx, &configUsed, b.Config.Workspace.Config())
+			cmd.SetContext(ctx)
 			client, err := b.InitializeWorkspaceClient()
 			if err != nil {
 				return err
@@ -168,7 +221,6 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	ctx := cmd.Context()
 	ctx = context.WithValue(ctx, &workspaceClient, w)
 	cmd.SetContext(ctx)
 	return nil
@@ -178,23 +230,28 @@ func SetWorkspaceClient(ctx context.Context, w *databricks.WorkspaceClient) cont
 	return context.WithValue(ctx, &workspaceClient, w)
 }
 
+func SetAccountClient(ctx context.Context, a *databricks.AccountClient) context.Context {
+	return context.WithValue(ctx, &accountClient, a)
+}
+
 func AskForWorkspaceProfile(ctx context.Context) (string, error) {
-	path, err := databrickscfg.GetPath(ctx)
+	profiler := profile.GetProfiler(ctx)
+	path, err := profiler.GetPath(ctx)
 	if err != nil {
 		return "", fmt.Errorf("cannot determine Databricks config file path: %w", err)
 	}
-	file, profiles, err := databrickscfg.LoadProfiles(ctx, databrickscfg.MatchWorkspaceProfiles)
+	profiles, err := profiler.LoadProfiles(ctx, profile.MatchWorkspaceProfiles)
 	if err != nil {
 		return "", err
 	}
 	switch len(profiles) {
 	case 0:
-		return "", fmt.Errorf("%s does not contain workspace profiles; please create one first", path)
+		return "", ErrNoWorkspaceProfiles{path: path}
 	case 1:
 		return profiles[0].Name, nil
 	}
 	i, _, err := cmdio.RunSelect(ctx, &promptui.Select{
-		Label:             fmt.Sprintf("Workspace profiles defined in %s", file),
+		Label:             fmt.Sprintf("Workspace profiles defined in %s", path),
 		Items:             profiles,
 		Searcher:          profiles.SearchCaseInsensitive,
 		StartInSearchMode: true,
@@ -212,22 +269,23 @@ func AskForWorkspaceProfile(ctx context.Context) (string, error) {
 }
 
 func AskForAccountProfile(ctx context.Context) (string, error) {
-	path, err := databrickscfg.GetPath(ctx)
+	profiler := profile.GetProfiler(ctx)
+	path, err := profiler.GetPath(ctx)
 	if err != nil {
 		return "", fmt.Errorf("cannot determine Databricks config file path: %w", err)
 	}
-	file, profiles, err := databrickscfg.LoadProfiles(ctx, databrickscfg.MatchAccountProfiles)
+	profiles, err := profiler.LoadProfiles(ctx, profile.MatchAccountProfiles)
 	if err != nil {
 		return "", err
 	}
 	switch len(profiles) {
 	case 0:
-		return "", fmt.Errorf("%s does not contain account profiles; please create one first", path)
+		return "", ErrNoAccountProfiles{path}
 	case 1:
 		return profiles[0].Name, nil
 	}
 	i, _, err := cmdio.RunSelect(ctx, &promptui.Select{
-		Label:             fmt.Sprintf("Account profiles defined in %s", file),
+		Label:             fmt.Sprintf("Account profiles defined in %s", path),
 		Items:             profiles,
 		Searcher:          profiles.SearchCaseInsensitive,
 		StartInSearchMode: true,
@@ -269,4 +327,12 @@ func AccountClient(ctx context.Context) *databricks.AccountClient {
 		panic("cannot get *databricks.AccountClient. Please report it as a bug")
 	}
 	return a
+}
+
+func ConfigUsed(ctx context.Context) *config.Config {
+	cfg, ok := ctx.Value(&configUsed).(*config.Config)
+	if !ok {
+		panic("cannot get *config.Config. Please report it as a bug")
+	}
+	return cfg
 }

@@ -1,13 +1,16 @@
 package git
 
 import (
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
+	"github.com/databricks/cli/libs/vfs"
 	"gopkg.in/ini.v1"
 )
 
@@ -87,12 +90,12 @@ func (c config) load(r io.Reader) error {
 	return nil
 }
 
-func (c config) loadFile(path string) error {
-	f, err := os.Open(path)
+func (c config) loadFile(root vfs.Path, path string) error {
+	f, err := root.Open(path)
 	if err != nil {
 		// If the file doesn't exist it is ignored.
 		// This is the case for both global and repository specific config files.
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return nil
 		}
 		return err
@@ -129,7 +132,7 @@ func (c config) coreExcludesFile() (string, error) {
 	// If there are other problems accessing this file we would
 	// run into them at a later point anyway.
 	_, err := os.Stat(path)
-	if err != nil && !os.IsNotExist(err) {
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return "", err
 	}
 
@@ -152,8 +155,8 @@ func globalGitConfig() (*config, error) {
 	// > are missing or unreadable they will be ignored.
 	//
 	// We therefore ignore the error return value for the calls below.
-	config.loadFile(filepath.Join(xdgConfigHome, "git/config"))
-	config.loadFile(filepath.Join(config.home, ".gitconfig"))
+	config.loadFile(vfs.MustNew(xdgConfigHome), "git/config")
+	config.loadFile(vfs.MustNew(config.home), ".gitconfig")
 
 	return config, nil
 }

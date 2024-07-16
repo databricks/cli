@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/stretchr/testify/assert"
+	assert "github.com/databricks/cli/libs/dyn/dynassert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -43,4 +43,11 @@ func TestNewRefInvalidPattern(t *testing.T) {
 		_, ok := newRef(dyn.V(v))
 		require.False(t, ok, "should not match invalid pattern: %s", v)
 	}
+}
+
+func TestIsPureVariableReference(t *testing.T) {
+	assert.False(t, IsPureVariableReference(""))
+	assert.False(t, IsPureVariableReference("${foo.bar} suffix"))
+	assert.False(t, IsPureVariableReference("prefix ${foo.bar}"))
+	assert.True(t, IsPureVariableReference("${foo.bar}"))
 }

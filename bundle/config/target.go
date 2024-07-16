@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
@@ -33,7 +34,7 @@ type Target struct {
 	// Override default values or lookup name for defined variables
 	// Does not permit defining new variables or redefining existing ones
 	// in the scope of an target
-	Variables map[string]any `json:"variables,omitempty"`
+	Variables map[string]*variable.Variable `json:"variables,omitempty"`
 
 	Git Git `json:"git,omitempty"`
 

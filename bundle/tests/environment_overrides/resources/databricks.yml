@@ -28,8 +28,6 @@ environments:
 
       pipelines:
         boolean1:
-          # Note: setting a property to a zero value (in Go) does not have effect.
-          # See the corresponding test for details.
           photon: false
 
         boolean2:

@@ -2,11 +2,12 @@ package metadata
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/metadata"
+	"github.com/databricks/cli/libs/diag"
 )
 
 type compute struct{}
@@ -19,23 +20,28 @@ func (m *compute) Name() string {
 	return "metadata.Compute"
 }
 
-func (m *compute) Apply(_ context.Context, b *bundle.Bundle) error {
+func (m *compute) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	b.Metadata = metadata.Metadata{
 		Version: metadata.Version,
 		Config:  metadata.Config{},
 	}
 
-	// Set git details in metadata
-	b.Metadata.Config.Bundle.Git = b.Config.Bundle.Git
+	// Set Git details in metadata
+	b.Metadata.Config.Bundle.Git = config.Git{
+		Branch:         b.Config.Bundle.Git.Branch,
+		OriginURL:      b.Config.Bundle.Git.OriginURL,
+		Commit:         b.Config.Bundle.Git.Commit,
+		BundleRootPath: b.Config.Bundle.Git.BundleRootPath,
+	}
 
 	// Set job config paths in metadata
 	jobsMetadata := make(map[string]*metadata.Job)
 	for name, job := range b.Config.Resources.Jobs {
 		// Compute config file path the job is defined in, relative to the bundle
 		// root
-		relativePath, err := filepath.Rel(b.Config.Path, job.ConfigFilePath)
+		relativePath, err := filepath.Rel(b.RootPath, job.ConfigFilePath)
 		if err != nil {
-			return fmt.Errorf("failed to compute relative path for job %s: %w", name, err)
+			return diag.Errorf("failed to compute relative path for job %s: %v", name, err)
 		}
 		// Metadata for the job
 		jobsMetadata[name] = &metadata.Job{

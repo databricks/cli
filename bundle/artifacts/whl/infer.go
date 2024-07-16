@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/python"
 )
 
@@ -12,11 +13,11 @@ type infer struct {
 	name string
 }
 
-func (m *infer) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *infer) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	artifact := b.Config.Artifacts[m.name]
 	py, err := python.DetectExecutable(ctx)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	// Note: using --build-number (build tag) flag does not help with re-installing

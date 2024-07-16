@@ -2,7 +2,6 @@ package sync
 
 import (
 	"path"
-	"path/filepath"
 	"sort"
 )
 
@@ -16,8 +15,8 @@ func MakeDirSet(files []string) DirSet {
 
 	// Iterate over all files.
 	for _, f := range files {
-		// Get the directory of the file in /-separated form.
-		dir := filepath.ToSlash(filepath.Dir(f))
+		// Get the directory of the file.
+		dir := path.Dir(f)
 
 		// Add this directory and its parents until it is either "." or already in the set.
 		for dir != "." {

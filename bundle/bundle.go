@@ -16,12 +16,13 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
-	"github.com/databricks/cli/folders"
+	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/cli/libs/terraform"
+	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/hashicorp/terraform-exec/tfexec"
@@ -30,6 +31,14 @@ import (
 const internalFolder = ".internal"
 
 type Bundle struct {
+	// RootPath contains the directory path to the root of the bundle.
+	// It is set when we instantiate a new bundle instance.
+	RootPath string
+
+	// BundleRoot is a virtual filesystem path to the root of the bundle.
+	// Exclusively use this field for filesystem operations.
+	BundleRoot vfs.Path
+
 	Config config.Root
 
 	// Metadata about the bundle deployment. This is the interface Databricks services
@@ -44,6 +53,9 @@ type Bundle struct {
 	// It can be initialized on demand after loading the configuration.
 	clientOnce sync.Once
 	client     *databricks.WorkspaceClient
+
+	// Files that are synced to the workspace.file_path
+	Files []fileset.File
 
 	// Stores an initialized copy of this bundle's Terraform wrapper.
 	Terraform *tfexec.Terraform
@@ -63,33 +75,15 @@ type Bundle struct {
 }
 
 func Load(ctx context.Context, path string) (*Bundle, error) {
-	b := &Bundle{}
-	stat, err := os.Stat(path)
-	if err != nil {
-		return nil, err
+	b := &Bundle{
+		RootPath:   filepath.Clean(path),
+		BundleRoot: vfs.MustNew(path),
 	}
 	configFile, err := config.FileNames.FindInPath(path)
 	if err != nil {
-		_, hasRootEnv := env.Root(ctx)
-		_, hasIncludesEnv := env.Includes(ctx)
-		if hasRootEnv && hasIncludesEnv && stat.IsDir() {
-			log.Debugf(ctx, "No bundle configuration; using bundle root: %s", path)
-			b.Config = config.Root{
-				Path: path,
-				Bundle: config.Bundle{
-					Name: filepath.Base(path),
-				},
-			}
-			return b, nil
-		}
 		return nil, err
 	}
-	log.Debugf(ctx, "Loading bundle configuration from: %s", configFile)
-	root, err := config.Load(configFile)
-	if err != nil {
-		return nil, err
-	}
-	b.Config = *root
+	log.Debugf(ctx, "Found bundle root at %s (file %s)", b.RootPath, configFile)
 	return b, nil
 }
 
@@ -158,7 +152,7 @@ func (b *Bundle) CacheDir(ctx context.Context, paths ...string) (string, error) 
 	if !exists || cacheDirName == "" {
 		cacheDirName = filepath.Join(
 			// Anchor at bundle root directory.
-			b.Config.Path,
+			b.RootPath,
 			// Static cache directory.
 			".databricks",
 			"bundle",
@@ -210,7 +204,7 @@ func (b *Bundle) GetSyncIncludePatterns(ctx context.Context) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	internalDirRel, err := filepath.Rel(b.Config.Path, internalDir)
+	internalDirRel, err := filepath.Rel(b.RootPath, internalDir)
 	if err != nil {
 		return nil, err
 	}
@@ -218,12 +212,12 @@ func (b *Bundle) GetSyncIncludePatterns(ctx context.Context) ([]string, error) {
 }
 
 func (b *Bundle) GitRepository() (*git.Repository, error) {
-	rootPath, err := folders.FindDirWithLeaf(b.Config.Path, ".git")
+	_, err := vfs.FindLeafInTree(b.BundleRoot, ".git")
 	if err != nil {
 		return nil, fmt.Errorf("unable to locate repository root: %w", err)
 	}
 
-	return git.NewRepository(rootPath)
+	return git.NewRepository(b.BundleRoot)
 }
 
 // AuthEnv returns a map with environment variables and their values

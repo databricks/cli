@@ -37,6 +37,13 @@ func New() *cobra.Command {
 		},
 	}
 
+	// Add methods
+	cmd.AddCommand(newCreate())
+	cmd.AddCommand(newDelete())
+	cmd.AddCommand(newGet())
+	cmd.AddCommand(newList())
+	cmd.AddCommand(newUpdate())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -112,12 +119,6 @@ func newCreate() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newCreate())
-	})
-}
-
 // start delete command
 
 // Slice with functions to override default command behavior.
@@ -134,14 +135,14 @@ func newDelete() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Use = "delete NAME_ARG"
+	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a connection.`
 	cmd.Long = `Delete a connection.
   
   Deletes the connection that matches the supplied name.
 
   Arguments:
-    NAME_ARG: The name of the connection to be deleted.`
+    NAME: The name of the connection to be deleted.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -152,8 +153,8 @@ func newDelete() *cobra.Command {
 
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No NAME_ARG argument specified. Loading names for Connections drop-down."
-			names, err := w.Connections.ConnectionInfoNameToFullNameMap(ctx)
+			promptSpinner <- "No NAME argument specified. Loading names for Connections drop-down."
+			names, err := w.Connections.ConnectionInfoNameToFullNameMap(ctx, catalog.ListConnectionsRequest{})
 			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Connections drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -167,7 +168,7 @@ func newDelete() *cobra.Command {
 		if len(args) != 1 {
 			return fmt.Errorf("expected to have the name of the connection to be deleted")
 		}
-		deleteReq.NameArg = args[0]
+		deleteReq.Name = args[0]
 
 		err = w.Connections.Delete(ctx, deleteReq)
 		if err != nil {
@@ -188,12 +189,6 @@ func newDelete() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDelete())
-	})
-}
-
 // start get command
 
 // Slice with functions to override default command behavior.
@@ -210,14 +205,14 @@ func newGet() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Use = "get NAME_ARG"
+	cmd.Use = "get NAME"
 	cmd.Short = `Get a connection.`
 	cmd.Long = `Get a connection.
   
   Gets a connection from it's name.
 
   Arguments:
-    NAME_ARG: Name of the connection.`
+    NAME: Name of the connection.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -228,8 +223,8 @@ func newGet() *cobra.Command {
 
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No NAME_ARG argument specified. Loading names for Connections drop-down."
-			names, err := w.Connections.ConnectionInfoNameToFullNameMap(ctx)
+			promptSpinner <- "No NAME argument specified. Loading names for Connections drop-down."
+			names, err := w.Connections.ConnectionInfoNameToFullNameMap(ctx, catalog.ListConnectionsRequest{})
 			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Connections drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -243,7 +238,7 @@ func newGet() *cobra.Command {
 		if len(args) != 1 {
 			return fmt.Errorf("expected to have name of the connection")
 		}
-		getReq.NameArg = args[0]
+		getReq.Name = args[0]
 
 		response, err := w.Connections.Get(ctx, getReq)
 		if err != nil {
@@ -264,22 +259,24 @@ func newGet() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGet())
-	})
-}
-
 // start list command
 
 // Slice with functions to override default command behavior.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
+	*catalog.ListConnectionsRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+
+	var listReq catalog.ListConnectionsRequest
+
+	// TODO: short flags
+
+	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of connections to return.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List connections.`
@@ -289,15 +286,18 @@ func newList() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		response, err := w.Connections.ListAll(ctx)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+
+		response := w.Connections.List(ctx, listReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -306,16 +306,10 @@ func newList() *cobra.Command {
 
 	// Apply optional overrides to this command.
 	for _, fn := range listOverrides {
-		fn(cmd)
+		fn(cmd, &listReq)
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newList())
-	})
 }
 
 // start update command
@@ -336,23 +330,22 @@ func newUpdate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of the connection.`)
 	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the connection.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of the connection.`)
 
-	cmd.Use = "update NAME_ARG"
+	cmd.Use = "update NAME"
 	cmd.Short = `Update a connection.`
 	cmd.Long = `Update a connection.
   
   Updates the connection that matches the supplied name.
 
   Arguments:
-    NAME_ARG: Name of the connection.`
+    NAME: Name of the connection.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -369,7 +362,7 @@ func newUpdate() *cobra.Command {
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
-		updateReq.NameArg = args[0]
+		updateReq.Name = args[0]
 
 		response, err := w.Connections.Update(ctx, updateReq)
 		if err != nil {
@@ -388,12 +381,6 @@ func newUpdate() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdate())
-	})
 }
 
 // end service Connections

@@ -2,3 +2,4 @@ resources:
   jobs:
     my_job:
       id: 1
+      name: "My Job"

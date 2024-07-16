@@ -1,0 +1,37 @@
+# This file defines prompts with defaults for dbt initializaton.
+# It is used when the `dbt init` command is invoked.
+#
+fixed:
+  type: databricks
+prompts:
+  host:
+    default: {{(regexp "^https?://").ReplaceAllString workspace_host ""}}
+  token:
+    hint: 'personal access token to use, dapiXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+    hide_input: true
+  http_path:
+    hint: 'HTTP path of SQL warehouse to use'
+    default: {{.http_path}}
+  {{- if eq .default_catalog ""}}
+  _choose_unity_catalog:
+    'use the default workspace catalog (or do not use Unity Catalog)':
+      _fixed_catalog: null
+    'specify a default catalog':
+      catalog:
+        hint: 'initial catalog'
+  {{- else}}
+  catalog:
+    hint: 'initial catalog'
+    default: {{.default_catalog}}
+  {{- end}}
+  schema:
+    {{- if (regexp "^yes").MatchString .personal_schemas}}
+    hint: 'personal schema where dbt will build objects during development, example: {{short_name}}'
+    {{- else}}
+    hint: 'default schema where dbt will build objects'
+    default: {{.shared_schema}}
+    {{- end}}
+  threads:
+    hint: 'threads to use during development, 1 or more'
+    type: 'int'
+    default: 4

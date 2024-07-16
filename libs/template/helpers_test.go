@@ -3,6 +3,7 @@ package template
 import (
 	"context"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -48,6 +49,24 @@ func TestTemplateRegexpCompileFunction(t *testing.T) {
 	content := string(r.files[0].(*inMemoryFile).content)
 	assert.Contains(t, content, "0:food")
 	assert.Contains(t, content, "1:fool")
+}
+
+func TestTemplateRandIntFunction(t *testing.T) {
+	ctx := context.Background()
+	tmpDir := t.TempDir()
+
+	ctx = root.SetWorkspaceClient(ctx, nil)
+	helpers := loadHelpers(ctx)
+	r, err := newRenderer(ctx, nil, helpers, "./testdata/random-int/template", "./testdata/random-int/library", tmpDir)
+	require.NoError(t, err)
+
+	err = r.walk()
+	assert.NoError(t, err)
+
+	assert.Len(t, r.files, 1)
+	randInt, err := strconv.Atoi(strings.TrimSpace(string(r.files[0].(*inMemoryFile).content)))
+	assert.Less(t, randInt, 10)
+	assert.Empty(t, err)
 }
 
 func TestTemplateUrlFunction(t *testing.T) {
@@ -111,7 +130,7 @@ func TestWorkspaceHost(t *testing.T) {
 
 func TestWorkspaceHostNotConfigured(t *testing.T) {
 	ctx := context.Background()
-	cmd := cmdio.NewIO(flags.OutputJSON, strings.NewReader(""), os.Stdout, os.Stderr, "template")
+	cmd := cmdio.NewIO(flags.OutputJSON, strings.NewReader(""), os.Stdout, os.Stderr, "", "template")
 	ctx = cmdio.InContext(ctx, cmd)
 	tmpDir := t.TempDir()
 

@@ -17,12 +17,12 @@ func ConvertJobToValue(job *jobs.Job) (dyn.Value, error) {
 		for _, task := range job.Settings.Tasks {
 			v, err := convertTaskToValue(task, taskOrder)
 			if err != nil {
-				return dyn.NilValue, err
+				return dyn.InvalidValue, err
 			}
 			tasks = append(tasks, v)
 		}
 		// We're using location lines to define the order of keys in exported YAML.
-		value["tasks"] = dyn.NewValue(tasks, dyn.Location{Line: jobOrder.Get("tasks")})
+		value["tasks"] = dyn.NewValue(tasks, []dyn.Location{{Line: jobOrder.Get("tasks")}})
 	}
 
 	return yamlsaver.ConvertToMapValue(job.Settings, jobOrder, []string{"format", "new_cluster", "existing_cluster_id"}, value)

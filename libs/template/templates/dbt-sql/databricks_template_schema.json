@@ -1,0 +1,53 @@
+{
+    "welcome_message": "\nWelcome to the dbt template for Databricks Asset Bundles!\n\nA workspace was selected based on your current profile. For information about how to change this, see https://docs.databricks.com/dev-tools/cli/profiles.html.\nworkspace_host: {{workspace_host}}",
+    "properties": {
+        "project_name": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9-_]+$",
+            "pattern_match_failure_message": "Name must consist of letters, numbers, dashes, and underscores.",
+            "default": "dbt_project",
+            "description": "\nPlease provide a unique name for this project.\nproject_name",
+            "order": 1
+        },
+        "http_path": {
+            "type": "string",
+            "pattern": "^/sql/.\\../warehouses/[a-z0-9]+$",
+            "pattern_match_failure_message": "Path must be of the form /sql/1.0/warehouses/<warehouse id>",
+            "description": "\nPlease provide the HTTP Path of the SQL warehouse you would like to use with dbt during development.\nYou can find this path by clicking on \"Connection details\" for your SQL warehouse.\nhttp_path [example: /sql/1.0/warehouses/abcdef1234567890]",
+            "order": 2
+        },
+        "default_catalog": {
+            "type": "string",
+            "default": "{{default_catalog}}",
+            "pattern": "^\\w*$",
+            "pattern_match_failure_message": "Invalid catalog name.",
+            "description": "\nPlease provide an initial catalog{{if eq (default_catalog) \"\"}} (leave blank when not using Unity Catalog){{end}}.\ndefault_catalog",
+            "order": 3
+        },
+        "personal_schemas": {
+            "type": "string",
+            "description": "\nWould you like to use a personal schema for each user working on this project? (e.g., 'catalog.{{short_name}}')\npersonal_schemas",
+            "enum": [
+                "yes, use a schema based on the current user name during development",
+                "no, use a shared schema during development"
+            ],
+            "order": 4
+        },
+        "shared_schema": {
+            "skip_prompt_if": {
+                "properties": {
+                    "personal_schemas": {
+                        "const": "yes, use a schema based on the current user name during development"
+                    }
+                }
+            },
+            "type": "string",
+            "default": "default",
+            "pattern": "^\\w+$",
+            "pattern_match_failure_message": "Invalid schema name.",
+            "description": "\nPlease provide an initial schema during development.\ndefault_schema",
+            "order": 5
+        }
+    },
+    "success_message": "\n📊 Your new project has been created in the '{{.project_name}}' directory!\nIf you already have dbt installed, just type 'cd {{.project_name}}; dbt init' to get started.\nRefer to the README.md file for full \"getting started\" guide and production setup instructions.\n"
+}

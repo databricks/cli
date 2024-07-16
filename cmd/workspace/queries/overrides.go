@@ -8,8 +8,9 @@ import (
 
 func listOverride(listCmd *cobra.Command, listReq *sql.ListQueriesRequest) {
 	// TODO: figure out colored/non-colored headers and colspan shifts
+	listCmd.Annotations["headerTemplate"] = cmdio.Heredoc(`
+	{{header "ID"}}	{{header "Name"}}	{{header "Author"}}`)
 	listCmd.Annotations["template"] = cmdio.Heredoc(`
-	{{header "ID"}}	{{header "Name"}}	{{header "Author"}}
 	{{range .}}{{.Id|green}}	{{.Name|cyan}}	{{.User.Email|cyan}}
 	{{end}}`)
 }

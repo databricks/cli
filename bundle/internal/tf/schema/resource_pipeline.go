@@ -52,7 +52,7 @@ type ResourcePipelineClusterGcpAttributes struct {
 }
 
 type ResourcePipelineClusterInitScriptsAbfss struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type ResourcePipelineClusterInitScriptsDbfs struct {
@@ -60,11 +60,11 @@ type ResourcePipelineClusterInitScriptsDbfs struct {
 }
 
 type ResourcePipelineClusterInitScriptsFile struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type ResourcePipelineClusterInitScriptsGcs struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type ResourcePipelineClusterInitScriptsS3 struct {
@@ -78,11 +78,11 @@ type ResourcePipelineClusterInitScriptsS3 struct {
 }
 
 type ResourcePipelineClusterInitScriptsVolumes struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type ResourcePipelineClusterInitScriptsWorkspace struct {
-	Destination string `json:"destination,omitempty"`
+	Destination string `json:"destination"`
 }
 
 type ResourcePipelineClusterInitScripts struct {
@@ -115,6 +115,11 @@ type ResourcePipelineCluster struct {
 	ClusterLogConf            *ResourcePipelineClusterClusterLogConf  `json:"cluster_log_conf,omitempty"`
 	GcpAttributes             *ResourcePipelineClusterGcpAttributes   `json:"gcp_attributes,omitempty"`
 	InitScripts               []ResourcePipelineClusterInitScripts    `json:"init_scripts,omitempty"`
+}
+
+type ResourcePipelineDeployment struct {
+	Kind             string `json:"kind,omitempty"`
+	MetadataFilePath string `json:"metadata_file_path,omitempty"`
 }
 
 type ResourcePipelineFilters struct {
@@ -165,6 +170,7 @@ type ResourcePipeline struct {
 	Target              string                         `json:"target,omitempty"`
 	Url                 string                         `json:"url,omitempty"`
 	Cluster             []ResourcePipelineCluster      `json:"cluster,omitempty"`
+	Deployment          *ResourcePipelineDeployment    `json:"deployment,omitempty"`
 	Filters             *ResourcePipelineFilters       `json:"filters,omitempty"`
 	Library             []ResourcePipelineLibrary      `json:"library,omitempty"`
 	Notification        []ResourcePipelineNotification `json:"notification,omitempty"`

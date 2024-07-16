@@ -1,6 +1,8 @@
 package notebook
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -50,7 +52,7 @@ func TestDetectCallsDetectJupyter(t *testing.T) {
 
 func TestDetectUnknownExtension(t *testing.T) {
 	_, _, err := Detect("./testdata/doesntexist.foobar")
-	assert.True(t, os.IsNotExist(err))
+	assert.True(t, errors.Is(err, fs.ErrNotExist))
 
 	nb, _, err := Detect("./testdata/unknown_extension.foobar")
 	require.NoError(t, err)
@@ -59,7 +61,7 @@ func TestDetectUnknownExtension(t *testing.T) {
 
 func TestDetectNoExtension(t *testing.T) {
 	_, _, err := Detect("./testdata/doesntexist")
-	assert.True(t, os.IsNotExist(err))
+	assert.True(t, errors.Is(err, fs.ErrNotExist))
 
 	nb, _, err := Detect("./testdata/no_extension")
 	require.NoError(t, err)
@@ -96,4 +98,22 @@ func TestDetectFileWithLongHeader(t *testing.T) {
 	nb, _, err := Detect(path)
 	require.NoError(t, err)
 	assert.False(t, nb)
+}
+
+func TestDetectWithObjectInfo(t *testing.T) {
+	fakeFS := &fakeFS{
+		fakeFile{
+			fakeFileInfo{
+				workspace.ObjectInfo{
+					ObjectType: workspace.ObjectTypeNotebook,
+					Language:   workspace.LanguagePython,
+				},
+			},
+		},
+	}
+
+	nb, lang, err := DetectWithFS(fakeFS, "doesntmatter")
+	require.NoError(t, err)
+	assert.True(t, nb)
+	assert.Equal(t, workspace.LanguagePython, lang)
 }

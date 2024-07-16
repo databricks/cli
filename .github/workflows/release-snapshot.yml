@@ -21,33 +21,41 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.21.x
+          go-version: 1.22.x
+
+          # The default cache key for this action considers only the `go.sum` file.
+          # We include .goreleaser.yaml here to differentiate from the cache used by the push action
+          # that runs unit tests. This job produces and uses a different cache.
+          cache-dependency-path: |
+            go.sum
+            .goreleaser.yaml
 
       - name: Hide snapshot tag to outsmart GoReleaser
         run: git tag -d snapshot || true
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v4
+        id: releaser
+        uses: goreleaser/goreleaser-action@v6
         with:
-          version: latest
-          args: release --snapshot
+          version: ~> v2
+          args: release --snapshot --skip docker
 
       - name: Upload macOS binaries
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cli_darwin_snapshot
           path: |
             dist/*_darwin_*/
 
       - name: Upload Linux binaries
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cli_linux_snapshot
           path: |
             dist/*_linux_*/
 
       - name: Upload Windows binaries
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cli_windows_snapshot
           path: |

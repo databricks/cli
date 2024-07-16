@@ -40,6 +40,24 @@ func New() *cobra.Command {
 		},
 	}
 
+	// Add methods
+	cmd.AddCommand(newBuildLogs())
+	cmd.AddCommand(newCreate())
+	cmd.AddCommand(newDelete())
+	cmd.AddCommand(newExportMetrics())
+	cmd.AddCommand(newGet())
+	cmd.AddCommand(newGetOpenApi())
+	cmd.AddCommand(newGetPermissionLevels())
+	cmd.AddCommand(newGetPermissions())
+	cmd.AddCommand(newList())
+	cmd.AddCommand(newLogs())
+	cmd.AddCommand(newPatch())
+	cmd.AddCommand(newPut())
+	cmd.AddCommand(newQuery())
+	cmd.AddCommand(newSetPermissions())
+	cmd.AddCommand(newUpdateConfig())
+	cmd.AddCommand(newUpdatePermissions())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -65,9 +83,8 @@ func newBuildLogs() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Use = "build-logs NAME SERVED_MODEL_NAME"
-	cmd.Short = `Retrieve the logs associated with building the model's environment for a given serving endpoint's served model.`
-	cmd.Long = `Retrieve the logs associated with building the model's environment for a given
-  serving endpoint's served model.
+	cmd.Short = `Get build logs for a served model.`
+	cmd.Long = `Get build logs for a served model.
   
   Retrieves the build logs associated with the provided served model.
 
@@ -80,7 +97,7 @@ func newBuildLogs() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -111,12 +128,6 @@ func newBuildLogs() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newBuildLogs())
-	})
-}
-
 // start create command
 
 // Slice with functions to override default command behavior.
@@ -141,6 +152,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: rate_limits
+	cmd.Flags().BoolVar(&createReq.RouteOptimized, "route-optimized", createReq.RouteOptimized, `Enable route optimization for the serving endpoint.`)
 	// TODO: array: tags
 
 	cmd.Use = "create"
@@ -195,12 +207,6 @@ func newCreate() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newCreate())
-	})
-}
-
 // start delete command
 
 // Slice with functions to override default command behavior.
@@ -227,7 +233,7 @@ func newDelete() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -257,12 +263,6 @@ func newDelete() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDelete())
-	})
-}
-
 // start export-metrics command
 
 // Slice with functions to override default command behavior.
@@ -280,8 +280,8 @@ func newExportMetrics() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Use = "export-metrics NAME"
-	cmd.Short = `Retrieve the metrics associated with a serving endpoint.`
-	cmd.Long = `Retrieve the metrics associated with a serving endpoint.
+	cmd.Short = `Get metrics of a serving endpoint.`
+	cmd.Long = `Get metrics of a serving endpoint.
   
   Retrieves the metrics associated with the provided serving endpoint in either
   Prometheus or OpenMetrics exposition format.
@@ -293,7 +293,7 @@ func newExportMetrics() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -304,11 +304,12 @@ func newExportMetrics() *cobra.Command {
 
 		exportMetricsReq.Name = args[0]
 
-		err = w.ServingEndpoints.ExportMetrics(ctx, exportMetricsReq)
+		response, err := w.ServingEndpoints.ExportMetrics(ctx, exportMetricsReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		defer response.Contents.Close()
+		return cmdio.Render(ctx, response.Contents)
 	}
 
 	// Disable completions since they are not applicable.
@@ -321,12 +322,6 @@ func newExportMetrics() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newExportMetrics())
-	})
 }
 
 // start get command
@@ -357,7 +352,7 @@ func newGet() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -387,10 +382,65 @@ func newGet() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGet())
-	})
+// start get-open-api command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getOpenApiOverrides []func(
+	*cobra.Command,
+	*serving.GetOpenApiRequest,
+)
+
+func newGetOpenApi() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getOpenApiReq serving.GetOpenApiRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-open-api NAME"
+	cmd.Short = `Get the schema for a serving endpoint.`
+	cmd.Long = `Get the schema for a serving endpoint.
+  
+  Get the query schema of the serving endpoint in OpenAPI format. The schema
+  contains information for the supported paths, input and output format and
+  datatypes.
+
+  Arguments:
+    NAME: The name of the serving endpoint that the served model belongs to. This
+      field is required.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		getOpenApiReq.Name = args[0]
+
+		err = w.ServingEndpoints.GetOpenApi(ctx, getOpenApiReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getOpenApiOverrides {
+		fn(cmd, &getOpenApiReq)
+	}
+
+	return cmd
 }
 
 // start get-permission-levels command
@@ -421,7 +471,7 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -449,12 +499,6 @@ func newGetPermissionLevels() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetPermissionLevels())
-	})
 }
 
 // start get-permissions command
@@ -486,7 +530,7 @@ func newGetPermissions() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -516,12 +560,6 @@ func newGetPermissions() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetPermissions())
-	})
-}
-
 // start list command
 
 // Slice with functions to override default command behavior.
@@ -534,8 +572,8 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	cmd.Use = "list"
-	cmd.Short = `Retrieve all serving endpoints.`
-	cmd.Long = `Retrieve all serving endpoints.`
+	cmd.Short = `Get all serving endpoints.`
+	cmd.Long = `Get all serving endpoints.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -543,11 +581,8 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		response, err := w.ServingEndpoints.ListAll(ctx)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.ServingEndpoints.List(ctx)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -560,12 +595,6 @@ func newList() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newList())
-	})
 }
 
 // start logs command
@@ -585,9 +614,8 @@ func newLogs() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Use = "logs NAME SERVED_MODEL_NAME"
-	cmd.Short = `Retrieve the most recent log lines associated with a given serving endpoint's served model.`
-	cmd.Long = `Retrieve the most recent log lines associated with a given serving endpoint's
-  served model.
+	cmd.Short = `Get the latest logs for a served model.`
+	cmd.Long = `Get the latest logs for a served model.
   
   Retrieves the service logs associated with the provided served model.
 
@@ -600,7 +628,7 @@ func newLogs() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -631,12 +659,6 @@ func newLogs() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newLogs())
-	})
-}
-
 // start patch command
 
 // Slice with functions to override default command behavior.
@@ -659,8 +681,8 @@ func newPatch() *cobra.Command {
 	// TODO: array: delete_tags
 
 	cmd.Use = "patch NAME"
-	cmd.Short = `Patch the tags of a serving endpoint.`
-	cmd.Long = `Patch the tags of a serving endpoint.
+	cmd.Short = `Update tags of a serving endpoint.`
+	cmd.Long = `Update tags of a serving endpoint.
   
   Used to batch add and delete tags from a serving endpoint with a single API
   call.
@@ -672,7 +694,7 @@ func newPatch() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -708,12 +730,6 @@ func newPatch() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newPatch())
-	})
-}
-
 // start put command
 
 // Slice with functions to override default command behavior.
@@ -735,8 +751,8 @@ func newPut() *cobra.Command {
 	// TODO: array: rate_limits
 
 	cmd.Use = "put NAME"
-	cmd.Short = `Update the rate limits of a serving endpoint.`
-	cmd.Long = `Update the rate limits of a serving endpoint.
+	cmd.Short = `Update rate limits of a serving endpoint.`
+	cmd.Long = `Update rate limits of a serving endpoint.
   
   Used to update the rate limits of a serving endpoint. NOTE: only external and
   foundation model endpoints are supported as of now.
@@ -748,7 +764,7 @@ func newPut() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -784,12 +800,6 @@ func newPut() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newPut())
-	})
-}
-
 // start query command
 
 // Slice with functions to override default command behavior.
@@ -823,8 +833,8 @@ func newQuery() *cobra.Command {
 	cmd.Flags().Float64Var(&queryReq.Temperature, "temperature", queryReq.Temperature, `The temperature field used ONLY for __completions__ and __chat external & foundation model__ serving endpoints.`)
 
 	cmd.Use = "query NAME"
-	cmd.Short = `Query a serving endpoint with provided model input.`
-	cmd.Long = `Query a serving endpoint with provided model input.
+	cmd.Short = `Query a serving endpoint.`
+	cmd.Long = `Query a serving endpoint.
 
   Arguments:
     NAME: The name of the serving endpoint. This field is required.`
@@ -832,7 +842,7 @@ func newQuery() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -868,12 +878,6 @@ func newQuery() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newQuery())
-	})
-}
-
 // start set-permissions command
 
 // Slice with functions to override default command behavior.
@@ -907,7 +911,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -943,12 +947,6 @@ func newSetPermissions() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newSetPermissions())
-	})
-}
-
 // start update-config command
 
 // Slice with functions to override default command behavior.
@@ -978,8 +976,8 @@ func newUpdateConfig() *cobra.Command {
 	// TODO: complex arg: traffic_config
 
 	cmd.Use = "update-config NAME"
-	cmd.Short = `Update a serving endpoint with a new config.`
-	cmd.Long = `Update a serving endpoint with a new config.
+	cmd.Short = `Update config of a serving endpoint.`
+	cmd.Long = `Update config of a serving endpoint.
   
   Updates any combination of the serving endpoint's served entities, the compute
   configuration of those served entities, and the endpoint's traffic config. An
@@ -992,7 +990,7 @@ func newUpdateConfig() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -1041,12 +1039,6 @@ func newUpdateConfig() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdateConfig())
-	})
-}
-
 // start update-permissions command
 
 // Slice with functions to override default command behavior.
@@ -1080,7 +1072,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -1114,12 +1106,6 @@ func newUpdatePermissions() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdatePermissions())
-	})
 }
 
 // end service ServingEndpoints

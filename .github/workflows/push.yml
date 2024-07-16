@@ -33,10 +33,10 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.21.x
+          go-version: 1.22.x
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.9'
 
@@ -56,7 +56,7 @@ jobs:
         run: make test
 
       - name: Publish test coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
 
   fmt:
     runs-on: ubuntu-latest
@@ -68,7 +68,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.21.x
+          go-version: 1.22.x
 
           # No need to download cached dependencies when running gofmt.
           cache: false
@@ -89,3 +89,29 @@ jobs:
         run: |
           # Exit with status code 1 if there are differences (i.e. unformatted files)
           git diff --exit-code
+
+  validate-bundle-schema:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.22.x
+
+      # Github repo: https://github.com/ajv-validator/ajv-cli
+      - name: Install ajv-cli
+        run: npm install -g ajv-cli@5.0.0
+
+      # Assert that the generated bundle schema is a valid JSON schema by using
+      # ajv-cli to validate it against a sample configuration file.
+      # By default the ajv-cli runs in strict mode which will fail if the schema
+      # itself is not valid. Strict mode is more strict than the JSON schema
+      # specification. See for details: https://ajv.js.org/options.html#strict-mode-options
+      - name: Validate bundle schema
+        run: |
+          go run main.go bundle schema > schema.json
+          ajv -s schema.json -d ./bundle/tests/basic/databricks.yml

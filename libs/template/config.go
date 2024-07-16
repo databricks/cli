@@ -70,8 +70,14 @@ func validateSchema(schema *jsonschema.Schema) error {
 
 // Reads json file at path and assigns values from the file
 func (c *config) assignValuesFromFile(path string) error {
-	// Load the config file.
+	// It's valid to set additional properties in the config file that are not
+	// defined in the schema. They will be filtered below. Thus for the duration of
+	// the LoadInstance call, we disable the additional properties check,
+	// to allow those properties to be loaded.
+	c.schema.AdditionalProperties = true
 	configFromFile, err := c.schema.LoadInstance(path)
+	c.schema.AdditionalProperties = false
+
 	if err != nil {
 		return fmt.Errorf("failed to load config from file %s: %w", path, err)
 	}
@@ -79,6 +85,11 @@ func (c *config) assignValuesFromFile(path string) error {
 	// Write configs from the file to the input map, not overwriting any existing
 	// configurations.
 	for name, val := range configFromFile {
+		// If a property is not defined in the schema, skip it.
+		if _, ok := c.schema.Properties[name]; !ok {
+			continue
+		}
+		// If a value is already assigned, keep the original value.
 		if _, ok := c.values[name]; ok {
 			continue
 		}
@@ -89,7 +100,10 @@ func (c *config) assignValuesFromFile(path string) error {
 
 // Assigns default values from schema to input config map
 func (c *config) assignDefaultValues(r *renderer) error {
-	for name, property := range c.schema.Properties {
+	for _, p := range c.schema.OrderedProperties() {
+		name := p.Name
+		property := p.Schema
+
 		// Config already has a value assigned
 		if _, ok := c.values[name]; ok {
 			continue

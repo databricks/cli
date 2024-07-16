@@ -55,7 +55,7 @@ func (d *loader) load(node *yaml.Node) (dyn.Value, error) {
 	case yaml.AliasNode:
 		value, err = d.loadAlias(node, loc)
 	default:
-		return dyn.NilValue, errorf(loc, "unknown node kind: %v", node.Kind)
+		return dyn.InvalidValue, errorf(loc, "unknown node kind: %v", node.Kind)
 	}
 
 	if err != nil {
@@ -80,26 +80,26 @@ func (d *loader) loadSequence(node *yaml.Node, loc dyn.Location) (dyn.Value, err
 	for i, n := range node.Content {
 		v, err := d.load(n)
 		if err != nil {
-			return dyn.NilValue, err
+			return dyn.InvalidValue, err
 		}
 
 		acc[i] = v
 	}
 
-	return dyn.NewValue(acc, loc), nil
+	return dyn.NewValue(acc, []dyn.Location{loc}), nil
 }
 
 func (d *loader) loadMapping(node *yaml.Node, loc dyn.Location) (dyn.Value, error) {
 	var merge *yaml.Node
 
-	acc := make(map[string]dyn.Value)
+	acc := dyn.NewMapping()
 	for i := 0; i < len(node.Content); i += 2 {
 		key := node.Content[i]
 		val := node.Content[i+1]
 
 		// Assert that keys are strings
 		if key.Kind != yaml.ScalarNode {
-			return dyn.NilValue, errorf(loc, "key is not a scalar")
+			return dyn.InvalidValue, errorf(loc, "key is not a scalar")
 		}
 
 		st := key.ShortTag()
@@ -113,19 +113,24 @@ func (d *loader) loadMapping(node *yaml.Node, loc dyn.Location) (dyn.Value, erro
 			merge = val
 			continue
 		default:
-			return dyn.NilValue, errorf(loc, "invalid key tag: %v", st)
+			return dyn.InvalidValue, errorf(loc, "invalid key tag: %v", st)
+		}
+
+		k, err := d.load(key)
+		if err != nil {
+			return dyn.InvalidValue, err
 		}
 
 		v, err := d.load(val)
 		if err != nil {
-			return dyn.NilValue, err
+			return dyn.InvalidValue, err
 		}
 
-		acc[key.Value] = v
+		acc.Set(k, v)
 	}
 
 	if merge == nil {
-		return dyn.NewValue(acc, loc), nil
+		return dyn.NewValue(acc, []dyn.Location{loc}), nil
 	}
 
 	// Build location for the merge node.
@@ -146,11 +151,11 @@ func (d *loader) loadMapping(node *yaml.Node, loc dyn.Location) (dyn.Value, erro
 
 	// Build a sequence of values to merge.
 	// The entries that we already accumulated have precedence.
-	var seq []map[string]dyn.Value
+	var seq []dyn.Mapping
 	for _, n := range mnodes {
 		v, err := d.load(n)
 		if err != nil {
-			return dyn.NilValue, err
+			return dyn.InvalidValue, err
 		}
 		m, ok := v.AsMap()
 		if !ok {
@@ -161,48 +166,46 @@ func (d *loader) loadMapping(node *yaml.Node, loc dyn.Location) (dyn.Value, erro
 
 	// Append the accumulated entries to the sequence.
 	seq = append(seq, acc)
-	out := make(map[string]dyn.Value)
+	out := dyn.NewMapping()
 	for _, m := range seq {
-		for k, v := range m {
-			out[k] = v
-		}
+		out.Merge(m)
 	}
 
-	return dyn.NewValue(out, loc), nil
+	return dyn.NewValue(out, []dyn.Location{loc}), nil
 }
 
 func (d *loader) loadScalar(node *yaml.Node, loc dyn.Location) (dyn.Value, error) {
 	st := node.ShortTag()
 	switch st {
 	case "!!str":
-		return dyn.NewValue(node.Value, loc), nil
+		return dyn.NewValue(node.Value, []dyn.Location{loc}), nil
 	case "!!bool":
 		switch strings.ToLower(node.Value) {
 		case "true":
-			return dyn.NewValue(true, loc), nil
+			return dyn.NewValue(true, []dyn.Location{loc}), nil
 		case "false":
-			return dyn.NewValue(false, loc), nil
+			return dyn.NewValue(false, []dyn.Location{loc}), nil
 		default:
-			return dyn.NilValue, errorf(loc, "invalid bool value: %v", node.Value)
+			return dyn.InvalidValue, errorf(loc, "invalid bool value: %v", node.Value)
 		}
 	case "!!int":
 		i64, err := strconv.ParseInt(node.Value, 10, 64)
 		if err != nil {
-			return dyn.NilValue, errorf(loc, "invalid int value: %v", node.Value)
+			return dyn.InvalidValue, errorf(loc, "invalid int value: %v", node.Value)
 		}
 		// Use regular int type instead of int64 if possible.
 		if i64 >= math.MinInt32 && i64 <= math.MaxInt32 {
-			return dyn.NewValue(int(i64), loc), nil
+			return dyn.NewValue(int(i64), []dyn.Location{loc}), nil
 		}
-		return dyn.NewValue(i64, loc), nil
+		return dyn.NewValue(i64, []dyn.Location{loc}), nil
 	case "!!float":
 		f64, err := strconv.ParseFloat(node.Value, 64)
 		if err != nil {
-			return dyn.NilValue, errorf(loc, "invalid float value: %v", node.Value)
+			return dyn.InvalidValue, errorf(loc, "invalid float value: %v", node.Value)
 		}
-		return dyn.NewValue(f64, loc), nil
+		return dyn.NewValue(f64, []dyn.Location{loc}), nil
 	case "!!null":
-		return dyn.NewValue(nil, loc), nil
+		return dyn.NewValue(nil, []dyn.Location{loc}), nil
 	case "!!timestamp":
 		// Try a couple of layouts
 		for _, layout := range []string{
@@ -213,12 +216,12 @@ func (d *loader) loadScalar(node *yaml.Node, loc dyn.Location) (dyn.Value, error
 		} {
 			t, terr := time.Parse(layout, node.Value)
 			if terr == nil {
-				return dyn.NewValue(t, loc), nil
+				return dyn.NewValue(t, []dyn.Location{loc}), nil
 			}
 		}
-		return dyn.NilValue, errorf(loc, "invalid timestamp value: %v", node.Value)
+		return dyn.InvalidValue, errorf(loc, "invalid timestamp value: %v", node.Value)
 	default:
-		return dyn.NilValue, errorf(loc, "unknown tag: %v", st)
+		return dyn.InvalidValue, errorf(loc, "unknown tag: %v", st)
 	}
 }
 

@@ -4,14 +4,14 @@ package schema
 
 type DataSources struct {
 	{{- range .Blocks }}
-	{{ .FieldName }} map[string]*{{ .TypeName }} `json:"{{ .TerraformName }},omitempty"`
+	{{ .FieldName }} map[string]any `json:"{{ .TerraformName }},omitempty"`
 	{{- end }}
 }
 
 func NewDataSources() *DataSources {
 	return &DataSources{
 		{{- range .Blocks }}
-		{{ .FieldName }}: make(map[string]*{{ .TypeName }}),
+		{{ .FieldName }}: make(map[string]any),
 		{{- end }}
 	}
 }

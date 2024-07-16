@@ -11,15 +11,17 @@ func cmdOverride(cmd *cobra.Command) {
 }
 
 func listScopesOverride(listScopesCmd *cobra.Command) {
+	listScopesCmd.Annotations["headerTemplate"] = cmdio.Heredoc(`
+	{{header "Scope"}}	{{header "Backend Type"}}`)
 	listScopesCmd.Annotations["template"] = cmdio.Heredoc(`
-	{{header "Scope"}}	{{header "Backend Type"}}
 	{{range .}}{{.Name|green}}	{{.BackendType}}
 	{{end}}`)
 }
 
 func listSecretsOverride(listSecretsCommand *cobra.Command, _ *workspace.ListSecretsRequest) {
+	listSecretsCommand.Annotations["headerTemplate"] = cmdio.Heredoc(`
+	{{header "Key"}}	{{header "Last Updated Timestamp"}}`)
 	listSecretsCommand.Annotations["template"] = cmdio.Heredoc(`
-	{{header "Key"}}	{{header "Last Updated Timestamp"}}
 	{{range .}}{{.Key|green}}	{{.LastUpdatedTimestamp}}
 	{{end}}`)
 }

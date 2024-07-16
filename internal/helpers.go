@@ -5,10 +5,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math/rand"
+	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -16,11 +19,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/flags"
+
 	"github.com/databricks/cli/cmd"
 	_ "github.com/databricks/cli/cmd/version"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/files"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -100,7 +108,12 @@ func (t *cobraTestRunner) registerFlagCleanup(c *cobra.Command) {
 	// Find target command that will be run. Example: if the command run is `databricks fs cp`,
 	// target command corresponds to `cp`
 	targetCmd, _, err := c.Find(t.args)
-	require.NoError(t, err)
+	if err != nil && strings.HasPrefix(err.Error(), "unknown command") {
+		// even if command is unknown, we can proceed
+		require.NotNil(t, targetCmd)
+	} else {
+		require.NoError(t, err)
+	}
 
 	// Force initialization of default flags.
 	// These are initialized by cobra at execution time and would otherwise
@@ -131,6 +144,14 @@ func (t *cobraTestRunner) WaitForTextPrinted(text string, timeout time.Duration)
 	}, timeout, 50*time.Millisecond)
 }
 
+func (t *cobraTestRunner) WaitForOutput(text string, timeout time.Duration) {
+	require.Eventually(t.T, func() bool {
+		currentStdout := t.stdout.String()
+		currentErrout := t.stderr.String()
+		return strings.Contains(currentStdout, text) || strings.Contains(currentErrout, text)
+	}, timeout, 50*time.Millisecond)
+}
+
 func (t *cobraTestRunner) WithStdin() {
 	reader, writer := io.Pipe()
 	t.stdinR = reader
@@ -156,22 +177,28 @@ func (t *cobraTestRunner) RunBackground() {
 	var stdoutW, stderrW io.WriteCloser
 	stdoutR, stdoutW = io.Pipe()
 	stderrR, stderrW = io.Pipe()
-	root := cmd.New(t.ctx)
-	root.SetOut(stdoutW)
-	root.SetErr(stderrW)
-	root.SetArgs(t.args)
+	ctx := cmdio.NewContext(t.ctx, &cmdio.Logger{
+		Mode:   flags.ModeAppend,
+		Reader: bufio.Reader{},
+		Writer: stderrW,
+	})
+
+	cli := cmd.New(ctx)
+	cli.SetOut(stdoutW)
+	cli.SetErr(stderrW)
+	cli.SetArgs(t.args)
 	if t.stdinW != nil {
-		root.SetIn(t.stdinR)
+		cli.SetIn(t.stdinR)
 	}
 
 	// Register cleanup function to restore flags to their original values
 	// once test has been executed. This is needed because flag values reside
 	// in a global singleton data-structure, and thus subsequent tests might
 	// otherwise interfere with each other
-	t.registerFlagCleanup(root)
+	t.registerFlagCleanup(cli)
 
 	errch := make(chan error)
-	ctx, cancel := context.WithCancel(t.ctx)
+	ctx, cancel := context.WithCancel(ctx)
 
 	// Tee stdout/stderr to buffers.
 	stdoutR = io.TeeReader(stdoutR, &t.stdout)
@@ -184,7 +211,7 @@ func (t *cobraTestRunner) RunBackground() {
 
 	// Run command in background.
 	go func() {
-		cmd, err := root.ExecuteContextC(ctx)
+		err := root.Execute(ctx, cli)
 		if err != nil {
 			t.Logf("Error running command: %s", err)
 		}
@@ -217,7 +244,7 @@ func (t *cobraTestRunner) RunBackground() {
 		// These commands are globals so we have to clean up to the best of our ability after each run.
 		// See https://github.com/spf13/cobra/blob/a6f198b635c4b18fff81930c40d464904e55b161/command.go#L1062-L1066
 		//lint:ignore SA1012 cobra sets the context and doesn't clear it
-		cmd.SetContext(nil)
+		cli.SetContext(nil)
 
 		// Make caller aware of error.
 		errch <- err
@@ -444,6 +471,40 @@ func TemporaryDbfsDir(t *testing.T, w *databricks.WorkspaceClient) string {
 	return path
 }
 
+// Create a new UC volume in a catalog called "main" in the workspace.
+func TemporaryUcVolume(t *testing.T, w *databricks.WorkspaceClient) string {
+	ctx := context.Background()
+
+	// Create a schema
+	schema, err := w.Schemas.Create(ctx, catalog.CreateSchema{
+		CatalogName: "main",
+		Name:        RandomName("test-schema-"),
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		w.Schemas.Delete(ctx, catalog.DeleteSchemaRequest{
+			FullName: schema.FullName,
+		})
+	})
+
+	// Create a volume
+	volume, err := w.Volumes.Create(ctx, catalog.CreateVolumeRequestContent{
+		CatalogName: "main",
+		SchemaName:  schema.Name,
+		Name:        "my-volume",
+		VolumeType:  catalog.VolumeTypeManaged,
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		w.Volumes.Delete(ctx, catalog.DeleteVolumeRequest{
+			Name: volume.FullName,
+		})
+	})
+
+	return path.Join("/Volumes", "main", schema.Name, volume.Name)
+
+}
+
 func TemporaryRepo(t *testing.T, w *databricks.WorkspaceClient) string {
 	ctx := context.Background()
 	me, err := w.CurrentUser.Me(ctx)
@@ -476,8 +537,79 @@ func TemporaryRepo(t *testing.T, w *databricks.WorkspaceClient) string {
 func GetNodeTypeId(env string) string {
 	if env == "gcp" {
 		return "n1-standard-4"
-	} else if env == "aws" {
+	} else if env == "aws" || env == "ucws" {
+		// aws-prod-ucws has CLOUD_ENV set to "ucws"
 		return "i3.xlarge"
 	}
 	return "Standard_DS4_v2"
+}
+
+func setupLocalFiler(t *testing.T) (filer.Filer, string) {
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	tmp := t.TempDir()
+	f, err := filer.NewLocalClient(tmp)
+	require.NoError(t, err)
+
+	return f, path.Join(filepath.ToSlash(tmp))
+}
+
+func setupWsfsFiler(t *testing.T) (filer.Filer, string) {
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	ctx := context.Background()
+	w := databricks.Must(databricks.NewWorkspaceClient())
+	tmpdir := TemporaryWorkspaceDir(t, w)
+	f, err := filer.NewWorkspaceFilesClient(w, tmpdir)
+	require.NoError(t, err)
+
+	// Check if we can use this API here, skip test if we cannot.
+	_, err = f.Read(ctx, "we_use_this_call_to_test_if_this_api_is_enabled")
+	var aerr *apierr.APIError
+	if errors.As(err, &aerr) && aerr.StatusCode == http.StatusBadRequest {
+		t.Skip(aerr.Message)
+	}
+
+	return f, tmpdir
+}
+
+func setupWsfsExtensionsFiler(t *testing.T) (filer.Filer, string) {
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	w := databricks.Must(databricks.NewWorkspaceClient())
+	tmpdir := TemporaryWorkspaceDir(t, w)
+	f, err := filer.NewWorkspaceFilesExtensionsClient(w, tmpdir)
+	require.NoError(t, err)
+
+	return f, tmpdir
+}
+
+func setupDbfsFiler(t *testing.T) (filer.Filer, string) {
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	w, err := databricks.NewWorkspaceClient()
+	require.NoError(t, err)
+
+	tmpDir := TemporaryDbfsDir(t, w)
+	f, err := filer.NewDbfsClient(w, tmpDir)
+	require.NoError(t, err)
+
+	return f, path.Join("dbfs:/", tmpDir)
+}
+
+func setupUcVolumesFiler(t *testing.T) (filer.Filer, string) {
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	if os.Getenv("TEST_METASTORE_ID") == "" {
+		t.Skip("Skipping tests that require a UC Volume when metastore id is not set.")
+	}
+
+	w, err := databricks.NewWorkspaceClient()
+	require.NoError(t, err)
+
+	tmpDir := TemporaryUcVolume(t, w)
+	f, err := filer.NewFilesClient(w, tmpDir)
+	require.NoError(t, err)
+
+	return f, path.Join("dbfs:/", tmpDir)
 }

@@ -8,11 +8,13 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/variable"
+	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 func TestResolveClusterReference(t *testing.T) {
@@ -33,7 +35,7 @@ func TestResolveClusterReference(t *testing.T) {
 					},
 				},
 				"some-variable": {
-					Value: &justString,
+					Value: justString,
 				},
 			},
 		},
@@ -49,10 +51,10 @@ func TestResolveClusterReference(t *testing.T) {
 		ClusterId: "9876-5432-xywz",
 	}, nil)
 
-	err := bundle.Apply(context.Background(), b, ResolveResourceReferences())
-	require.NoError(t, err)
-	require.Equal(t, "1234-5678-abcd", *b.Config.Variables["my-cluster-id-1"].Value)
-	require.Equal(t, "9876-5432-xywz", *b.Config.Variables["my-cluster-id-2"].Value)
+	diags := bundle.Apply(context.Background(), b, ResolveResourceReferences())
+	require.NoError(t, diags.Error())
+	require.Equal(t, "1234-5678-abcd", b.Config.Variables["my-cluster-id-1"].Value)
+	require.Equal(t, "9876-5432-xywz", b.Config.Variables["my-cluster-id-2"].Value)
 }
 
 func TestResolveNonExistentClusterReference(t *testing.T) {
@@ -67,7 +69,7 @@ func TestResolveNonExistentClusterReference(t *testing.T) {
 					},
 				},
 				"some-variable": {
-					Value: &justString,
+					Value: justString,
 				},
 			},
 		},
@@ -78,8 +80,8 @@ func TestResolveNonExistentClusterReference(t *testing.T) {
 	clusterApi := m.GetMockClustersAPI()
 	clusterApi.EXPECT().GetByClusterName(mock.Anything, clusterRef).Return(nil, fmt.Errorf("ClusterDetails named '%s' does not exist", clusterRef))
 
-	err := bundle.Apply(context.Background(), b, ResolveResourceReferences())
-	require.ErrorContains(t, err, "failed to resolve cluster: Random, err: ClusterDetails named 'Random' does not exist")
+	diags := bundle.Apply(context.Background(), b, ResolveResourceReferences())
+	require.ErrorContains(t, diags.Error(), "failed to resolve cluster: Random, err: ClusterDetails named 'Random' does not exist")
 }
 
 func TestNoLookupIfVariableIsSet(t *testing.T) {
@@ -101,7 +103,119 @@ func TestNoLookupIfVariableIsSet(t *testing.T) {
 
 	b.Config.Variables["my-cluster-id"].Set("random value")
 
-	err := bundle.Apply(context.Background(), b, ResolveResourceReferences())
-	require.NoError(t, err)
-	require.Equal(t, "random value", *b.Config.Variables["my-cluster-id"].Value)
+	diags := bundle.Apply(context.Background(), b, ResolveResourceReferences())
+	require.NoError(t, diags.Error())
+	require.Equal(t, "random value", b.Config.Variables["my-cluster-id"].Value)
+}
+
+func TestResolveServicePrincipal(t *testing.T) {
+	spName := "Some SP name"
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Variables: map[string]*variable.Variable{
+				"my-sp": {
+					Lookup: &variable.Lookup{
+						ServicePrincipal: spName,
+					},
+				},
+			},
+		},
+	}
+
+	m := mocks.NewMockWorkspaceClient(t)
+	b.SetWorkpaceClient(m.WorkspaceClient)
+	spApi := m.GetMockServicePrincipalsAPI()
+	spApi.EXPECT().GetByDisplayName(mock.Anything, spName).Return(&iam.ServicePrincipal{
+		Id:            "1234",
+		ApplicationId: "app-1234",
+	}, nil)
+
+	diags := bundle.Apply(context.Background(), b, ResolveResourceReferences())
+	require.NoError(t, diags.Error())
+	require.Equal(t, "app-1234", b.Config.Variables["my-sp"].Value)
+}
+
+func TestResolveVariableReferencesInVariableLookups(t *testing.T) {
+	s := "bar"
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Bundle: config.Bundle{
+				Target: "dev",
+			},
+			Variables: map[string]*variable.Variable{
+				"foo": {
+					Value: s,
+				},
+				"lookup": {
+					Lookup: &variable.Lookup{
+						Cluster: "cluster-${var.foo}-${bundle.target}",
+					},
+				},
+			},
+		},
+	}
+
+	m := mocks.NewMockWorkspaceClient(t)
+	b.SetWorkpaceClient(m.WorkspaceClient)
+	clusterApi := m.GetMockClustersAPI()
+	clusterApi.EXPECT().GetByClusterName(mock.Anything, "cluster-bar-dev").Return(&compute.ClusterDetails{
+		ClusterId: "1234-5678-abcd",
+	}, nil)
+
+	diags := bundle.Apply(context.Background(), b, bundle.Seq(ResolveVariableReferencesInLookup(), ResolveResourceReferences()))
+	require.NoError(t, diags.Error())
+	require.Equal(t, "cluster-bar-dev", b.Config.Variables["lookup"].Lookup.Cluster)
+	require.Equal(t, "1234-5678-abcd", b.Config.Variables["lookup"].Value)
+}
+
+func TestResolveLookupVariableReferencesInVariableLookups(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Variables: map[string]*variable.Variable{
+				"another_lookup": {
+					Lookup: &variable.Lookup{
+						Cluster: "cluster",
+					},
+				},
+				"lookup": {
+					Lookup: &variable.Lookup{
+						Cluster: "cluster-${var.another_lookup}",
+					},
+				},
+			},
+		},
+	}
+
+	m := mocks.NewMockWorkspaceClient(t)
+	b.SetWorkpaceClient(m.WorkspaceClient)
+
+	diags := bundle.Apply(context.Background(), b, bundle.Seq(ResolveVariableReferencesInLookup(), ResolveResourceReferences()))
+	require.ErrorContains(t, diags.Error(), "lookup variables cannot contain references to another lookup variables")
+}
+
+func TestNoResolveLookupIfVariableSetWithEnvVariable(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Bundle: config.Bundle{
+				Target: "dev",
+			},
+			Variables: map[string]*variable.Variable{
+				"lookup": {
+					Lookup: &variable.Lookup{
+						Cluster: "cluster-${bundle.target}",
+					},
+				},
+			},
+		},
+	}
+
+	m := mocks.NewMockWorkspaceClient(t)
+	b.SetWorkpaceClient(m.WorkspaceClient)
+
+	ctx := context.Background()
+	ctx = env.Set(ctx, "BUNDLE_VAR_lookup", "1234-5678-abcd")
+
+	diags := bundle.Apply(ctx, b, bundle.Seq(SetVariables(), ResolveVariableReferencesInLookup(), ResolveResourceReferences()))
+	require.NoError(t, diags.Error())
+	require.Equal(t, "1234-5678-abcd", b.Config.Variables["lookup"].Value)
 }

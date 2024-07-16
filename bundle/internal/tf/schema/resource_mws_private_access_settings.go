@@ -11,5 +11,4 @@ type ResourceMwsPrivateAccessSettings struct {
 	PrivateAccessSettingsName string   `json:"private_access_settings_name"`
 	PublicAccessEnabled       bool     `json:"public_access_enabled,omitempty"`
 	Region                    string   `json:"region"`
-	Status                    string   `json:"status,omitempty"`
 }

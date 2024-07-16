@@ -1,0 +1,41 @@
+targets:
+  development:
+    resources:
+      jobs:
+        my_job:
+          tasks:
+            - task_key: notebook_example
+              notebook_task:
+                notebook_path: ../src/notebook.py
+
+            - task_key: spark_python_example
+              spark_python_task:
+                python_file: ../src/file.py
+
+            - task_key: dbt_example
+              dbt_task:
+                project_directory: ../src/dbt_project
+                commands:
+                  - "dbt run"
+
+            - task_key: sql_example
+              sql_task:
+                file:
+                  path: ../src/sql.sql
+                warehouse_id: cafef00d
+
+            - task_key: python_wheel_example
+              python_wheel_task:
+                package_name: my_package
+
+              # Append library; the path is resolved relative to the job's directory.
+              libraries:
+                - whl: ../dist/wheel2.whl
+
+            - task_key: spark_jar_example
+              spark_jar_task:
+                main_class_name: com.example.Main
+
+              # Append library; the path is resolved relative to the job's directory.
+              libraries:
+                - jar: ../target/jar2.jar

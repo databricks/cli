@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/spf13/cobra"
 )
 
 func filterEventsByUpdateId(events []pipelines.PipelineEvent, updateId string) []pipelines.PipelineEvent {
@@ -165,4 +166,31 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 
 		time.Sleep(time.Second)
 	}
+}
+
+func (r *pipelineRunner) Cancel(ctx context.Context) error {
+	w := r.bundle.WorkspaceClient()
+	wait, err := w.Pipelines.Stop(ctx, pipelines.StopRequest{
+		PipelineId: r.pipeline.ID,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	// Waits for the Idle state of the pipeline
+	_, err = wait.GetWithTimeout(jobRunTimeout)
+	return err
+}
+
+func (r *pipelineRunner) ParseArgs(args []string, opts *Options) error {
+	if len(args) == 0 {
+		return nil
+	}
+
+	return fmt.Errorf("received %d unexpected positional arguments", len(args))
+}
+
+func (r *pipelineRunner) CompleteArgs(args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return nil, cobra.ShellCompDirectiveNoFileComp
 }

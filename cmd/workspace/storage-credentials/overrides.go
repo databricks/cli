@@ -7,8 +7,9 @@ import (
 )
 
 func listOverride(listCmd *cobra.Command, listReq *catalog.ListStorageCredentialsRequest) {
+	listCmd.Annotations["headerTemplate"] = cmdio.Heredoc(`
+	{{header "ID"}}	{{header "Name"}}	{{header "Credentials"}}`)
 	listCmd.Annotations["template"] = cmdio.Heredoc(`
-	{{header "ID"}}	{{header "Name"}}	{{header "Credentials"}}
 	{{range .}}{{.Id|green}}	{{.Name|cyan}}	{{if .AwsIamRole}}{{.AwsIamRole.RoleArn}}{{end}}{{if .AzureServicePrincipal}}{{.AzureServicePrincipal.ApplicationId}}{{end}}{{if .DatabricksGcpServiceAccount}}{{.DatabricksGcpServiceAccount.Email}}{{end}}
 	{{end}}`)
 }

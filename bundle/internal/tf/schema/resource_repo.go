@@ -14,5 +14,6 @@ type ResourceRepo struct {
 	Path           string                      `json:"path,omitempty"`
 	Tag            string                      `json:"tag,omitempty"`
 	Url            string                      `json:"url"`
+	WorkspacePath  string                      `json:"workspace_path,omitempty"`
 	SparseCheckout *ResourceRepoSparseCheckout `json:"sparse_checkout,omitempty"`
 }

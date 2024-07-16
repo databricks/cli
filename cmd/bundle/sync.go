@@ -5,7 +5,10 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/cmd/bundle/utils"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/spf13/cobra"
@@ -18,37 +21,21 @@ type syncFlags struct {
 }
 
 func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) (*sync.SyncOptions, error) {
-	cacheDir, err := b.CacheDir(cmd.Context())
+	opts, err := files.GetSyncOptions(cmd.Context(), bundle.ReadOnly(b))
 	if err != nil {
-		return nil, fmt.Errorf("cannot get bundle cache directory: %w", err)
+		return nil, fmt.Errorf("cannot get sync options: %w", err)
 	}
 
-	includes, err := b.GetSyncIncludePatterns(cmd.Context())
-	if err != nil {
-		return nil, fmt.Errorf("cannot get list of sync includes: %w", err)
-	}
-
-	opts := sync.SyncOptions{
-		LocalPath:    b.Config.Path,
-		RemotePath:   b.Config.Workspace.FilePath,
-		Include:      includes,
-		Exclude:      b.Config.Sync.Exclude,
-		Full:         f.full,
-		PollInterval: f.interval,
-
-		SnapshotBasePath: cacheDir,
-		WorkspaceClient:  b.WorkspaceClient(),
-	}
-	return &opts, nil
+	opts.Full = f.full
+	opts.PollInterval = f.interval
+	return opts, nil
 }
 
 func newSyncCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "sync [flags]",
 		Short: "Synchronize bundle tree to the workspace",
-		Args:  cobra.NoArgs,
-
-		PreRunE: ConfigureBundleWithVariables,
+		Args:  root.NoArgs,
 	}
 
 	var f syncFlags
@@ -57,11 +44,15 @@ func newSyncCommand() *cobra.Command {
 	cmd.Flags().BoolVar(&f.watch, "watch", false, "watch local file system for changes")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		b := bundle.Get(cmd.Context())
+		ctx := cmd.Context()
+		b, diags := utils.ConfigureBundleWithVariables(cmd)
+		if err := diags.Error(); err != nil {
+			return diags.Error()
+		}
 
 		// Run initialize phase to make sure paths are set.
-		err := bundle.Apply(cmd.Context(), b, phases.Initialize())
-		if err != nil {
+		diags = bundle.Apply(ctx, b, phases.Initialize())
+		if err := diags.Error(); err != nil {
 			return err
 		}
 
@@ -70,7 +61,6 @@ func newSyncCommand() *cobra.Command {
 			return err
 		}
 
-		ctx := cmd.Context()
 		s, err := sync.New(ctx, *opts)
 		if err != nil {
 			return err
@@ -82,7 +72,8 @@ func newSyncCommand() *cobra.Command {
 			return s.RunContinuous(ctx)
 		}
 
-		return s.RunOnce(ctx)
+		_, err = s.RunOnce(ctx)
+		return err
 	}
 
 	return cmd

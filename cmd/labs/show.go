@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/cmd/labs/project"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
 )
@@ -11,7 +12,7 @@ import (
 func newShowCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "show NAME",
-		Args:  cobra.ExactArgs(1),
+		Args:  root.ExactArgs(1),
 		Short: "Shows information about the project",
 		Annotations: map[string]string{
 			"template": cmdio.Heredoc(`

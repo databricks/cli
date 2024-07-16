@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/vfs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -16,9 +17,9 @@ import (
 func TestSyncOptionsFromBundle(t *testing.T) {
 	tempDir := t.TempDir()
 	b := &bundle.Bundle{
+		RootPath:   tempDir,
+		BundleRoot: vfs.MustNew(tempDir),
 		Config: config.Root{
-			Path: tempDir,
-
 			Bundle: config.Bundle{
 				Target: "default",
 			},
@@ -32,7 +33,7 @@ func TestSyncOptionsFromBundle(t *testing.T) {
 	f := syncFlags{}
 	opts, err := f.syncOptionsFromBundle(New(), []string{}, b)
 	require.NoError(t, err)
-	assert.Equal(t, tempDir, opts.LocalPath)
+	assert.Equal(t, tempDir, opts.LocalPath.Native())
 	assert.Equal(t, "/Users/jane@doe.com/path", opts.RemotePath)
 	assert.Equal(t, filepath.Join(tempDir, ".databricks", "bundle", "default"), opts.SnapshotBasePath)
 	assert.NotNil(t, opts.WorkspaceClient)
@@ -50,11 +51,14 @@ func TestSyncOptionsFromArgsRequiredTwoArgs(t *testing.T) {
 }
 
 func TestSyncOptionsFromArgs(t *testing.T) {
+	local := t.TempDir()
+	remote := "/remote"
+
 	f := syncFlags{}
 	cmd := New()
 	cmd.SetContext(root.SetWorkspaceClient(context.Background(), nil))
-	opts, err := f.syncOptionsFromArgs(cmd, []string{"/local", "/remote"})
+	opts, err := f.syncOptionsFromArgs(cmd, []string{local, remote})
 	require.NoError(t, err)
-	assert.Equal(t, "/local", opts.LocalPath)
-	assert.Equal(t, "/remote", opts.RemotePath)
+	assert.Equal(t, local, opts.LocalPath.Native())
+	assert.Equal(t, remote, opts.RemotePath)
 }

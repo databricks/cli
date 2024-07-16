@@ -1,9 +1,11 @@
 package config
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/databricks-sdk-go"
 )
 
 // Resources defines Databricks resources associated with the bundle.
@@ -15,6 +17,7 @@ type Resources struct {
 	Experiments           map[string]*resources.MlflowExperiment     `json:"experiments,omitempty"`
 	ModelServingEndpoints map[string]*resources.ModelServingEndpoint `json:"model_serving_endpoints,omitempty"`
 	RegisteredModels      map[string]*resources.RegisteredModel      `json:"registered_models,omitempty"`
+	QualityMonitors       map[string]*resources.QualityMonitor       `json:"quality_monitors,omitempty"`
 }
 
 type UniqueResourceIdTracker struct {
@@ -121,50 +124,123 @@ func (r *Resources) VerifyUniqueResourceIdentifiers() (*UniqueResourceIdTracker,
 		tracker.Type[k] = "registered_model"
 		tracker.ConfigPath[k] = r.RegisteredModels[k].ConfigFilePath
 	}
+	for k := range r.QualityMonitors {
+		if _, ok := tracker.Type[k]; ok {
+			return tracker, fmt.Errorf("multiple resources named %s (%s at %s, %s at %s)",
+				k,
+				tracker.Type[k],
+				tracker.ConfigPath[k],
+				"quality_monitor",
+				r.QualityMonitors[k].ConfigFilePath,
+			)
+		}
+		tracker.Type[k] = "quality_monitor"
+		tracker.ConfigPath[k] = r.QualityMonitors[k].ConfigFilePath
+	}
 	return tracker, nil
 }
 
-// SetConfigFilePath sets the specified path for all resources contained in this instance.
+type resource struct {
+	resource      ConfigResource
+	resource_type string
+	key           string
+}
+
+func (r *Resources) allResources() []resource {
+	all := make([]resource, 0)
+	for k, e := range r.Jobs {
+		all = append(all, resource{resource_type: "job", resource: e, key: k})
+	}
+	for k, e := range r.Pipelines {
+		all = append(all, resource{resource_type: "pipeline", resource: e, key: k})
+	}
+	for k, e := range r.Models {
+		all = append(all, resource{resource_type: "model", resource: e, key: k})
+	}
+	for k, e := range r.Experiments {
+		all = append(all, resource{resource_type: "experiment", resource: e, key: k})
+	}
+	for k, e := range r.ModelServingEndpoints {
+		all = append(all, resource{resource_type: "serving endpoint", resource: e, key: k})
+	}
+	for k, e := range r.RegisteredModels {
+		all = append(all, resource{resource_type: "registered model", resource: e, key: k})
+	}
+	for k, e := range r.QualityMonitors {
+		all = append(all, resource{resource_type: "quality monitor", resource: e, key: k})
+	}
+	return all
+}
+
+func (r *Resources) VerifyAllResourcesDefined() error {
+	all := r.allResources()
+	for _, e := range all {
+		err := e.resource.Validate()
+		if err != nil {
+			return fmt.Errorf("%s %s is not defined", e.resource_type, e.key)
+		}
+	}
+
+	return nil
+}
+
+// ConfigureConfigFilePath sets the specified path for all resources contained in this instance.
 // This property is used to correctly resolve paths relative to the path
 // of the configuration file they were defined in.
-func (r *Resources) SetConfigFilePath(path string) {
+func (r *Resources) ConfigureConfigFilePath() {
 	for _, e := range r.Jobs {
-		e.ConfigFilePath = path
+		e.ConfigureConfigFilePath()
 	}
 	for _, e := range r.Pipelines {
-		e.ConfigFilePath = path
+		e.ConfigureConfigFilePath()
 	}
 	for _, e := range r.Models {
-		e.ConfigFilePath = path
+		e.ConfigureConfigFilePath()
 	}
 	for _, e := range r.Experiments {
-		e.ConfigFilePath = path
+		e.ConfigureConfigFilePath()
 	}
 	for _, e := range r.ModelServingEndpoints {
-		e.ConfigFilePath = path
+		e.ConfigureConfigFilePath()
 	}
 	for _, e := range r.RegisteredModels {
-		e.ConfigFilePath = path
+		e.ConfigureConfigFilePath()
+	}
+	for _, e := range r.QualityMonitors {
+		e.ConfigureConfigFilePath()
 	}
 }
 
-// Merge iterates over all resources and merges chunks of the
-// resource configuration that can be merged. For example, for
-// jobs, this merges job cluster definitions and tasks that
-// use the same `job_cluster_key`, or `task_key`, respectively.
-func (r *Resources) Merge() error {
-	for _, job := range r.Jobs {
-		if err := job.MergeJobClusters(); err != nil {
-			return err
-		}
-		if err := job.MergeTasks(); err != nil {
-			return err
-		}
-	}
-	for _, pipeline := range r.Pipelines {
-		if err := pipeline.MergeClusters(); err != nil {
-			return err
+type ConfigResource interface {
+	Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error)
+	TerraformResourceName() string
+	Validate() error
+}
+
+func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) {
+	found := make([]ConfigResource, 0)
+	for k := range r.Jobs {
+		if k == key {
+			found = append(found, r.Jobs[k])
 		}
 	}
-	return nil
+	for k := range r.Pipelines {
+		if k == key {
+			found = append(found, r.Pipelines[k])
+		}
+	}
+
+	if len(found) == 0 {
+		return nil, fmt.Errorf("no such resource: %s", key)
+	}
+
+	if len(found) > 1 {
+		keys := make([]string, 0, len(found))
+		for _, r := range found {
+			keys = append(keys, fmt.Sprintf("%s:%s", r.TerraformResourceName(), key))
+		}
+		return nil, fmt.Errorf("ambiguous: %s (can resolve to all of %s)", key, keys)
+	}
+
+	return found[0], nil
 }

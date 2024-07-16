@@ -1,0 +1,9 @@
+# Preamble
+
+This file only template directives; it is skipped for the actual output.
+
+{{skip "__preamble"}}
+
+{{if eq .project_name "dbt"}}
+{{fail "Project name 'dbt' is not supported"}}
+{{end}}

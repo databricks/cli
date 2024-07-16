@@ -1,0 +1,13 @@
+targets:
+  development:
+    resources:
+      pipelines:
+        my_pipeline:
+
+          # Append library; the path is resolved relative to the pipeline's directory.
+          libraries:
+            - file:
+                path: ../src/file2.py
+
+            - notebook:
+                path: ../src/notebook2.py

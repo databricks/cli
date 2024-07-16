@@ -19,7 +19,6 @@ func NewLocalRootPath(root string) localRootPath {
 
 func (rp *localRootPath) Join(name string) (string, error) {
 	absPath := filepath.Join(rp.rootPath, name)
-
 	if !strings.HasPrefix(absPath, rp.rootPath) {
 		return "", fmt.Errorf("relative path escapes root: %s", name)
 	}

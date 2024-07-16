@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"golang.org/x/sync/errgroup"
 )
@@ -15,7 +16,7 @@ func ResolveResourceReferences() bundle.Mutator {
 	return &resolveResourceReferences{}
 }
 
-func (m *resolveResourceReferences) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *resolveResourceReferences) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	errs, errCtx := errgroup.WithContext(ctx)
 
 	for k := range b.Config.Variables {
@@ -40,7 +41,7 @@ func (m *resolveResourceReferences) Apply(ctx context.Context, b *bundle.Bundle)
 		})
 	}
 
-	return errs.Wait()
+	return diag.FromErr(errs.Wait())
 }
 
 func (*resolveResourceReferences) Name() string {

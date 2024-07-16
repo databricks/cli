@@ -64,12 +64,21 @@ func New() *cobra.Command {
   For the mapping of the required permissions for specific actions or abilities
   and other important information, see [Access Control].
   
+  Note that to manage access control on service principals, use **[Account
+  Access Control Proxy](:service:accountaccesscontrolproxy)**.
+  
   [Access Control]: https://docs.databricks.com/security/auth-authz/access-control/index.html`,
 		GroupID: "iam",
 		Annotations: map[string]string{
 			"package": "iam",
 		},
 	}
+
+	// Add methods
+	cmd.AddCommand(newGet())
+	cmd.AddCommand(newGetPermissionLevels())
+	cmd.AddCommand(newSet())
+	cmd.AddCommand(newUpdate())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -106,13 +115,13 @@ func newGet() *cobra.Command {
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following:
       authorization, clusters, cluster-policies, directories, experiments,
       files, instance-pools, jobs, notebooks, pipelines, registered-models,
-      repos, serving-endpoints, or sql-warehouses.
+      repos, serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -141,12 +150,6 @@ func newGet() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGet())
-	})
 }
 
 // start get-permission-levels command
@@ -178,7 +181,7 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -207,12 +210,6 @@ func newGetPermissionLevels() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetPermissionLevels())
-	})
 }
 
 // start set command
@@ -246,13 +243,13 @@ func newSet() *cobra.Command {
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following:
       authorization, clusters, cluster-policies, directories, experiments,
       files, instance-pools, jobs, notebooks, pipelines, registered-models,
-      repos, serving-endpoints, or sql-warehouses.
+      repos, serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -289,12 +286,6 @@ func newSet() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newSet())
-	})
-}
-
 // start update command
 
 // Slice with functions to override default command behavior.
@@ -326,13 +317,13 @@ func newUpdate() *cobra.Command {
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following:
       authorization, clusters, cluster-policies, directories, experiments,
       files, instance-pools, jobs, notebooks, pipelines, registered-models,
-      repos, serving-endpoints, or sql-warehouses.
+      repos, serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -367,12 +358,6 @@ func newUpdate() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdate())
-	})
 }
 
 // end service Permissions

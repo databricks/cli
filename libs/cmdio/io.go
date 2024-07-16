@@ -22,27 +22,29 @@ import (
 type cmdIO struct {
 	// states if we are in the interactive mode
 	// e.g. if stdout is a terminal
-	interactive  bool
-	outputFormat flags.Output
-	template     string
-	in           io.Reader
-	out          io.Writer
-	err          io.Writer
+	interactive    bool
+	outputFormat   flags.Output
+	headerTemplate string
+	template       string
+	in             io.Reader
+	out            io.Writer
+	err            io.Writer
 }
 
-func NewIO(outputFormat flags.Output, in io.Reader, out io.Writer, err io.Writer, template string) *cmdIO {
+func NewIO(outputFormat flags.Output, in io.Reader, out io.Writer, err io.Writer, headerTemplate, template string) *cmdIO {
 	// The check below is similar to color.NoColor but uses the specified err writer.
 	dumb := os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb"
 	if f, ok := err.(*os.File); ok && !dumb {
 		dumb = !isatty.IsTerminal(f.Fd()) && !isatty.IsCygwinTerminal(f.Fd())
 	}
 	return &cmdIO{
-		interactive:  !dumb,
-		outputFormat: outputFormat,
-		template:     template,
-		in:           in,
-		out:          out,
-		err:          err,
+		interactive:    !dumb,
+		outputFormat:   outputFormat,
+		headerTemplate: headerTemplate,
+		template:       template,
+		in:             in,
+		out:            out,
+		err:            err,
 	}
 }
 
@@ -111,48 +113,6 @@ func IsGitBash(ctx context.Context) bool {
 	}
 
 	return false
-}
-
-func Render(ctx context.Context, v any) error {
-	c := fromContext(ctx)
-	return RenderWithTemplate(ctx, v, c.template)
-}
-
-func RenderWithTemplate(ctx context.Context, v any, template string) error {
-	// TODO: add terminal width & white/dark theme detection
-	c := fromContext(ctx)
-	switch c.outputFormat {
-	case flags.OutputJSON:
-		return renderJson(c.out, v)
-	case flags.OutputText:
-		if template != "" {
-			return renderTemplate(c.out, template, v)
-		}
-		return renderJson(c.out, v)
-	default:
-		return fmt.Errorf("invalid output format: %s", c.outputFormat)
-	}
-}
-
-func RenderJson(ctx context.Context, v any) error {
-	c := fromContext(ctx)
-	if c.outputFormat == flags.OutputJSON {
-		return renderJson(c.out, v)
-	}
-	return nil
-}
-
-func RenderReader(ctx context.Context, r io.Reader) error {
-	c := fromContext(ctx)
-	switch c.outputFormat {
-	case flags.OutputJSON:
-		return fmt.Errorf("json output not supported")
-	case flags.OutputText:
-		_, err := io.Copy(c.out, r)
-		return err
-	default:
-		return fmt.Errorf("invalid output format: %s", c.outputFormat)
-	}
 }
 
 type Tuple struct{ Name, Id string }

@@ -1,0 +1,71 @@
+# This is a Databricks asset bundle definition for {{.project_name}}.
+# See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
+bundle:
+  name: {{.project_name}}
+
+include:
+  - resources/*.yml
+
+# Variable declarations. These variables are assigned in the dev/prod targets below.
+variables:
+  warehouse_id:
+    description: The warehouse to use
+  catalog:
+    description: The catalog to use
+  schema:
+    description: The schema to use
+
+{{- $dev_schema := .shared_schema }}
+{{- $prod_schema := .shared_schema }}
+{{- if (regexp "^yes").MatchString .personal_schemas}}
+{{- $dev_schema = "${workspace.current_user.short_name}"}}
+{{- $prod_schema = "default"}}
+{{- end}}
+
+# Deployment targets.
+targets:
+  # The 'dev' target, for development purposes. This target is the default.
+  dev:
+    # We use 'mode: development' to indicate this is a personal development copy.
+    # Any job schedules and triggers are paused by default
+    mode: development
+    default: true
+    workspace:
+      host: {{workspace_host}}
+    variables:
+      warehouse_id: {{index ((regexp "[^/]+$").FindStringSubmatch .http_path) 0}}
+      catalog: {{.default_catalog}}
+      schema: {{$dev_schema}}
+
+  ## Optionally, there could be a 'staging' target here.
+  ## (See Databricks docs on CI/CD at https://docs.databricks.com/dev-tools/bundles/ci-cd.html.)
+  #
+  # staging:
+  #   workspace:
+  #     host: {{workspace_host}}
+
+  # The 'prod' target, used for production deployment.
+  prod:
+    # We use 'mode: production' to indicate this is a production deployment.
+    # Doing so enables strict verification of the settings below.
+    mode: production
+    workspace:
+      host: {{workspace_host}}
+      # We always use /Users/{{user_name}} for all resources to make sure we only have a single copy.
+      {{- /*
+      Internal note 2023-12: CLI versions v0.211.0 and before would show an error when using `mode: production`
+      with a path that doesn't say "/Shared". For now, we'll include an extra comment in the template
+      to explain that customers should update if they see this.
+      */}}
+      # If this path results in an error, please make sure you have a recent version of the CLI installed.
+      root_path: /Users/{{user_name}}/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      warehouse_id: {{index ((regexp "[^/]+$").FindStringSubmatch .http_path) 0}}
+      catalog: {{.default_catalog}}
+      schema: {{$prod_schema}}
+    {{- if not is_service_principal}}
+    run_as:
+      # This runs as {{user_name}} in production. We could also use a service principal here
+      # using service_principal_name (see https://docs.databricks.com/en/dev-tools/bundles/permissions.html).
+      user_name: {{user_name}}
+    {{end -}}

@@ -2,132 +2,134 @@ package mutator
 
 import (
 	"fmt"
+	"slices"
 
-	"github.com/databricks/cli/bundle"
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/cli/bundle/libraries"
+	"github.com/databricks/cli/libs/dyn"
 )
 
-func transformNotebookTask(resource any, dir string) *transformer {
-	task, ok := resource.(*jobs.Task)
-	if !ok || task.NotebookTask == nil {
-		return nil
-	}
+type jobRewritePattern struct {
+	pattern     dyn.Pattern
+	fn          rewriteFunc
+	skipRewrite func(string) bool
+}
 
-	return &transformer{
-		dir,
-		&task.NotebookTask.NotebookPath,
-		"tasks.notebook_task.notebook_path",
-		translateNotebookPath,
+func noSkipRewrite(string) bool {
+	return false
+}
+
+func rewritePatterns(t *translateContext, base dyn.Pattern) []jobRewritePattern {
+	return []jobRewritePattern{
+		{
+			base.Append(dyn.Key("notebook_task"), dyn.Key("notebook_path")),
+			t.translateNotebookPath,
+			noSkipRewrite,
+		},
+		{
+			base.Append(dyn.Key("spark_python_task"), dyn.Key("python_file")),
+			t.translateFilePath,
+			noSkipRewrite,
+		},
+		{
+			base.Append(dyn.Key("dbt_task"), dyn.Key("project_directory")),
+			t.translateDirectoryPath,
+			noSkipRewrite,
+		},
+		{
+			base.Append(dyn.Key("sql_task"), dyn.Key("file"), dyn.Key("path")),
+			t.translateFilePath,
+			noSkipRewrite,
+		},
+		{
+			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("whl")),
+			t.translateNoOp,
+			noSkipRewrite,
+		},
+		{
+			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("jar")),
+			t.translateNoOp,
+			noSkipRewrite,
+		},
 	}
 }
 
-func transformSparkTask(resource any, dir string) *transformer {
-	task, ok := resource.(*jobs.Task)
-	if !ok || task.SparkPythonTask == nil {
-		return nil
+func (t *translateContext) jobRewritePatterns() []jobRewritePattern {
+	// Base pattern to match all tasks in all jobs.
+	base := dyn.NewPattern(
+		dyn.Key("resources"),
+		dyn.Key("jobs"),
+		dyn.AnyKey(),
+		dyn.Key("tasks"),
+		dyn.AnyIndex(),
+	)
+
+	// Compile list of patterns and their respective rewrite functions.
+	jobEnvironmentsPatterns := []jobRewritePattern{
+		{
+			dyn.NewPattern(
+				dyn.Key("resources"),
+				dyn.Key("jobs"),
+				dyn.AnyKey(),
+				dyn.Key("environments"),
+				dyn.AnyIndex(),
+				dyn.Key("spec"),
+				dyn.Key("dependencies"),
+				dyn.AnyIndex(),
+			),
+			t.translateNoOpWithPrefix,
+			func(s string) bool {
+				return !libraries.IsEnvironmentDependencyLocal(s)
+			},
+		},
 	}
 
-	return &transformer{
-		dir,
-		&task.SparkPythonTask.PythonFile,
-		"tasks.spark_python_task.python_file",
-		translateFilePath,
-	}
+	taskPatterns := rewritePatterns(t, base)
+	forEachPatterns := rewritePatterns(t, base.Append(dyn.Key("for_each_task"), dyn.Key("task")))
+	allPatterns := append(taskPatterns, jobEnvironmentsPatterns...)
+	allPatterns = append(allPatterns, forEachPatterns...)
+	return allPatterns
 }
 
-func transformWhlLibrary(resource any, dir string) *transformer {
-	library, ok := resource.(*compute.Library)
-	if !ok || library.Whl == "" {
-		return nil
+func (t *translateContext) applyJobTranslations(v dyn.Value) (dyn.Value, error) {
+	var err error
+
+	fallback, err := gatherFallbackPaths(v, "jobs")
+	if err != nil {
+		return dyn.InvalidValue, err
 	}
 
-	return &transformer{
-		dir,
-		&library.Whl,
-		"libraries.whl",
-		translateNoOp, // Does not convert to remote path but makes sure that nested paths resolved correctly
-	}
-}
-
-func transformDbtTask(resource any, dir string) *transformer {
-	task, ok := resource.(*jobs.Task)
-	if !ok || task.DbtTask == nil {
-		return nil
-	}
-
-	return &transformer{
-		dir,
-		&task.DbtTask.ProjectDirectory,
-		"tasks.dbt_task.project_directory",
-		translateDirectoryPath,
-	}
-}
-
-func transformSqlFileTask(resource any, dir string) *transformer {
-	task, ok := resource.(*jobs.Task)
-	if !ok || task.SqlTask == nil || task.SqlTask.File == nil {
-		return nil
-	}
-
-	return &transformer{
-		dir,
-		&task.SqlTask.File.Path,
-		"tasks.sql_task.file.path",
-		translateFilePath,
-	}
-}
-
-func transformJarLibrary(resource any, dir string) *transformer {
-	library, ok := resource.(*compute.Library)
-	if !ok || library.Jar == "" {
-		return nil
-	}
-
-	return &transformer{
-		dir,
-		&library.Jar,
-		"libraries.jar",
-		translateNoOp, // Does not convert to remote path but makes sure that nested paths resolved correctly
-	}
-}
-
-func applyJobTransformers(m *translatePaths, b *bundle.Bundle) error {
-	jobTransformers := []transformFunc{
-		transformNotebookTask,
-		transformSparkTask,
-		transformWhlLibrary,
-		transformJarLibrary,
-		transformDbtTask,
-		transformSqlFileTask,
-	}
-
-	for key, job := range b.Config.Resources.Jobs {
-		dir, err := job.ConfigFileDirectory()
-		if err != nil {
-			return fmt.Errorf("unable to determine directory for job %s: %w", key, err)
-		}
-
-		// Do not translate job task paths if using git source
+	// Do not translate job task paths if using Git source
+	var ignore []string
+	for key, job := range t.b.Config.Resources.Jobs {
 		if job.GitSource != nil {
-			continue
-		}
-
-		for i := 0; i < len(job.Tasks); i++ {
-			task := &job.Tasks[i]
-			err := m.applyTransformers(jobTransformers, b, task, dir)
-			if err != nil {
-				return err
-			}
-			for j := 0; j < len(task.Libraries); j++ {
-				library := &task.Libraries[j]
-				err := m.applyTransformers(jobTransformers, b, library, dir)
-				if err != nil {
-					return err
-				}
-			}
+			ignore = append(ignore, key)
 		}
 	}
 
-	return nil
+	for _, rewritePattern := range t.jobRewritePatterns() {
+		v, err = dyn.MapByPattern(v, rewritePattern.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			key := p[2].Key()
+
+			// Skip path translation if the job is using git source.
+			if slices.Contains(ignore, key) {
+				return v, nil
+			}
+
+			dir, err := v.Location().Directory()
+			if err != nil {
+				return dyn.InvalidValue, fmt.Errorf("unable to determine directory for job %s: %w", key, err)
+			}
+
+			sv := v.MustString()
+			if rewritePattern.skipRewrite(sv) {
+				return v, nil
+			}
+			return t.rewriteRelativeTo(p, v, rewritePattern.fn, dir, fallback[key])
+		})
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+	}
+
+	return v, nil
 }

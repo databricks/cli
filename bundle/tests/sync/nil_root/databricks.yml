@@ -1,0 +1,17 @@
+bundle:
+  name: sync_nil_root
+
+workspace:
+  host: https://acme.cloud.databricks.com/
+
+sync: ~
+
+targets:
+  development:
+
+  staging:
+    sync:
+      include:
+        - tests/*
+      exclude:
+        - dist

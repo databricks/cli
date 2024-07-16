@@ -10,17 +10,21 @@ import (
 )
 
 type OpenapiReader struct {
+	// OpenAPI spec to read schemas from.
 	OpenapiSpec *openapi.Specification
-	Memo        map[string]*jsonschema.Schema
+
+	// In-memory cache of schemas read from the OpenAPI spec.
+	memo map[string]jsonschema.Schema
 }
 
 const SchemaPathPrefix = "#/components/schemas/"
 
-func (reader *OpenapiReader) readOpenapiSchema(path string) (*jsonschema.Schema, error) {
+// Read a schema directly from the OpenAPI spec.
+func (reader *OpenapiReader) readOpenapiSchema(path string) (jsonschema.Schema, error) {
 	schemaKey := strings.TrimPrefix(path, SchemaPathPrefix)
 
 	// return early if we already have a computed schema
-	memoSchema, ok := reader.Memo[schemaKey]
+	memoSchema, ok := reader.memo[schemaKey]
 	if ok {
 		return memoSchema, nil
 	}
@@ -28,18 +32,18 @@ func (reader *OpenapiReader) readOpenapiSchema(path string) (*jsonschema.Schema,
 	// check path is present in openapi spec
 	openapiSchema, ok := reader.OpenapiSpec.Components.Schemas[schemaKey]
 	if !ok {
-		return nil, fmt.Errorf("schema with path %s not found in openapi spec", path)
+		return jsonschema.Schema{}, fmt.Errorf("schema with path %s not found in openapi spec", path)
 	}
 
 	// convert openapi schema to the native schema struct
 	bytes, err := json.Marshal(*openapiSchema)
 	if err != nil {
-		return nil, err
+		return jsonschema.Schema{}, err
 	}
-	jsonSchema := &jsonschema.Schema{}
-	err = json.Unmarshal(bytes, jsonSchema)
+	jsonSchema := jsonschema.Schema{}
+	err = json.Unmarshal(bytes, &jsonSchema)
 	if err != nil {
-		return nil, err
+		return jsonschema.Schema{}, err
 	}
 
 	// A hack to convert a map[string]interface{} to *Schema
@@ -49,28 +53,40 @@ func (reader *OpenapiReader) readOpenapiSchema(path string) (*jsonschema.Schema,
 	if ok {
 		b, err := json.Marshal(jsonSchema.AdditionalProperties)
 		if err != nil {
-			return nil, err
+			return jsonschema.Schema{}, err
 		}
 		additionalProperties := &jsonschema.Schema{}
 		err = json.Unmarshal(b, additionalProperties)
 		if err != nil {
-			return nil, err
+			return jsonschema.Schema{}, err
 		}
 		jsonSchema.AdditionalProperties = additionalProperties
 	}
 
 	// store read schema into memo
-	reader.Memo[schemaKey] = jsonSchema
+	reader.memo[schemaKey] = jsonSchema
 
 	return jsonSchema, nil
 }
 
-// safe againt loops in refs
+// Resolve all nested "$ref" references in the schema. This function unrolls a single
+// level of "$ref" in the schema and calls into traverseSchema to resolve nested references.
+// Thus this function and traverseSchema are mutually recursive.
+//
+// This function is safe against reference loops. If a reference loop is detected, an error
+// is returned.
 func (reader *OpenapiReader) safeResolveRefs(root *jsonschema.Schema, tracker *tracker) (*jsonschema.Schema, error) {
 	if root.Reference == nil {
 		return reader.traverseSchema(root, tracker)
 	}
 	key := *root.Reference
+
+	// HACK to unblock CLI release (13th Feb 2024). This is temporary until proper
+	// support for recursive types is added to the docs generator. PR: https://github.com/databricks/cli/pull/1204
+	if strings.Contains(key, "ForEachTask") {
+		return root, nil
+	}
+
 	if tracker.hasCycle(key) {
 		// self reference loops can be supported however the logic is non-trivial because
 		// cross refernce loops are not allowed (see: http://json-schema.org/understanding-json-schema/structuring.html#recursion)
@@ -84,12 +100,12 @@ func (reader *OpenapiReader) safeResolveRefs(root *jsonschema.Schema, tracker *t
 	// in the memo
 	root.Reference = nil
 
-	// unroll one level of reference
+	// unroll one level of reference.
 	selfRef, err := reader.readOpenapiSchema(ref)
 	if err != nil {
 		return nil, err
 	}
-	root = selfRef
+	root = &selfRef
 	root.Description = description
 
 	// traverse again to find new references
@@ -101,6 +117,8 @@ func (reader *OpenapiReader) safeResolveRefs(root *jsonschema.Schema, tracker *t
 	return root, err
 }
 
+// Traverse the nested properties of the schema to resolve "$ref" references. This function
+// and safeResolveRefs are mutually recursive.
 func (reader *OpenapiReader) traverseSchema(root *jsonschema.Schema, tracker *tracker) (*jsonschema.Schema, error) {
 	// case primitive (or invalid)
 	if root.Type != jsonschema.ObjectType && root.Type != jsonschema.ArrayType {
@@ -147,11 +165,11 @@ func (reader *OpenapiReader) readResolvedSchema(path string) (*jsonschema.Schema
 	}
 	tracker := newTracker()
 	tracker.push(path, path)
-	root, err = reader.safeResolveRefs(root, tracker)
+	resolvedRoot, err := reader.safeResolveRefs(&root, tracker)
 	if err != nil {
 		return nil, tracker.errWithTrace(err.Error(), "")
 	}
-	return root, nil
+	return resolvedRoot, nil
 }
 
 func (reader *OpenapiReader) jobsDocs() (*Docs, error) {

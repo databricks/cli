@@ -8,12 +8,13 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/stretchr/testify/require"
 )
 
-// identityFiler returns a filerFunc that returns the specified filer.
-func identityFiler(f filer.Filer) filerFunc {
+// identityFiler returns a FilerFactory that returns the specified filer.
+func identityFiler(f filer.Filer) deploy.FilerFactory {
 	return func(_ *bundle.Bundle) (filer.Filer, error) {
 		return f, nil
 	}

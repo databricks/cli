@@ -28,13 +28,15 @@ func TestOverrideDevelopment(t *testing.T) {
 						Name: "job1",
 						Tasks: []jobs.Task{
 							{
-								NewCluster: &compute.ClusterSpec{},
+								NewCluster: &compute.ClusterSpec{
+									SparkVersion: "14.2.x-scala2.12",
+								},
 							},
 							{
 								ExistingClusterId: "cluster2",
 							},
 							{
-								ComputeKey: "compute_key",
+								EnvironmentKey: "environment_key",
 							},
 							{
 								JobClusterKey: "cluster_key",
@@ -47,8 +49,8 @@ func TestOverrideDevelopment(t *testing.T) {
 	}
 
 	m := mutator.OverrideCompute()
-	err := bundle.Apply(context.Background(), b, m)
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, m)
+	require.NoError(t, diags.Error())
 	assert.Nil(t, b.Config.Resources.Jobs["job1"].Tasks[0].NewCluster)
 	assert.Equal(t, "newClusterID", b.Config.Resources.Jobs["job1"].Tasks[0].ExistingClusterId)
 	assert.Equal(t, "newClusterID", b.Config.Resources.Jobs["job1"].Tasks[1].ExistingClusterId)
@@ -56,7 +58,7 @@ func TestOverrideDevelopment(t *testing.T) {
 	assert.Equal(t, "newClusterID", b.Config.Resources.Jobs["job1"].Tasks[3].ExistingClusterId)
 
 	assert.Nil(t, b.Config.Resources.Jobs["job1"].Tasks[0].NewCluster)
-	assert.Empty(t, b.Config.Resources.Jobs["job1"].Tasks[2].ComputeKey)
+	assert.Empty(t, b.Config.Resources.Jobs["job1"].Tasks[2].EnvironmentKey)
 	assert.Empty(t, b.Config.Resources.Jobs["job1"].Tasks[3].JobClusterKey)
 }
 
@@ -83,8 +85,8 @@ func TestOverrideDevelopmentEnv(t *testing.T) {
 	}
 
 	m := mutator.OverrideCompute()
-	err := bundle.Apply(context.Background(), b, m)
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, m)
+	require.NoError(t, diags.Error())
 	assert.Equal(t, "cluster2", b.Config.Resources.Jobs["job1"].Tasks[1].ExistingClusterId)
 }
 
@@ -108,9 +110,34 @@ func TestOverridePipelineTask(t *testing.T) {
 	}
 
 	m := mutator.OverrideCompute()
-	err := bundle.Apply(context.Background(), b, m)
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, m)
+	require.NoError(t, diags.Error())
 	assert.Empty(t, b.Config.Resources.Jobs["job1"].Tasks[0].ExistingClusterId)
+}
+
+func TestOverrideForEachTask(t *testing.T) {
+	t.Setenv("DATABRICKS_CLUSTER_ID", "newClusterId")
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job1": {JobSettings: &jobs.JobSettings{
+						Name: "job1",
+						Tasks: []jobs.Task{
+							{
+								ForEachTask: &jobs.ForEachTask{},
+							},
+						},
+					}},
+				},
+			},
+		},
+	}
+
+	m := mutator.OverrideCompute()
+	diags := bundle.Apply(context.Background(), b, m)
+	require.NoError(t, diags.Error())
+	assert.Empty(t, b.Config.Resources.Jobs["job1"].Tasks[0].ForEachTask.Task)
 }
 
 func TestOverrideProduction(t *testing.T) {
@@ -138,8 +165,8 @@ func TestOverrideProduction(t *testing.T) {
 	}
 
 	m := mutator.OverrideCompute()
-	err := bundle.Apply(context.Background(), b, m)
-	require.Error(t, err)
+	diags := bundle.Apply(context.Background(), b, m)
+	require.True(t, diags.HasError())
 }
 
 func TestOverrideProductionEnv(t *testing.T) {
@@ -165,6 +192,6 @@ func TestOverrideProductionEnv(t *testing.T) {
 	}
 
 	m := mutator.OverrideCompute()
-	err := bundle.Apply(context.Background(), b, m)
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, m)
+	require.NoError(t, diags.Error())
 }

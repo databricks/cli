@@ -27,8 +27,11 @@ type JobOptions struct {
 	jobParams map[string]string
 }
 
-func (o *JobOptions) Define(fs *flag.FlagSet) {
-	// Define task parameters flags.
+func (o *JobOptions) DefineJobOptions(fs *flag.FlagSet) {
+	fs.StringToStringVar(&o.jobParams, "params", nil, "comma separated k=v pairs for job parameters")
+}
+
+func (o *JobOptions) DefineTaskOptions(fs *flag.FlagSet) {
 	fs.StringSliceVar(&o.dbtCommands, "dbt-commands", nil, "A list of commands to execute for jobs with DBT tasks.")
 	fs.StringSliceVar(&o.jarParams, "jar-params", nil, "A list of parameters for jobs with Spark JAR tasks.")
 	fs.StringToStringVar(&o.notebookParams, "notebook-params", nil, "A map from keys to values for jobs with notebook tasks.")
@@ -37,9 +40,6 @@ func (o *JobOptions) Define(fs *flag.FlagSet) {
 	fs.StringSliceVar(&o.pythonParams, "python-params", nil, "A list of parameters for jobs with Python tasks.")
 	fs.StringSliceVar(&o.sparkSubmitParams, "spark-submit-params", nil, "A list of parameters for jobs with Spark submit tasks.")
 	fs.StringToStringVar(&o.sqlParams, "sql-params", nil, "A map from keys to values for jobs with SQL tasks.")
-
-	// Define job parameters flag.
-	fs.StringToStringVar(&o.jobParams, "params", nil, "comma separated k=v pairs for job parameters")
 }
 
 func (o *JobOptions) hasTaskParametersConfigured() bool {

@@ -2,7 +2,9 @@ package databrickscfg
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"strings"
 
@@ -29,7 +31,7 @@ func loadOrCreateConfigFile(filename string) (*config.File, error) {
 		filename = fmt.Sprintf("%s%s", homedir, filename[1:])
 	}
 	configFile, err := config.LoadFile(filename)
-	if err != nil && os.IsNotExist(err) {
+	if err != nil && errors.Is(err, fs.ErrNotExist) {
 		file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, fileMode)
 		if err != nil {
 			return nil, fmt.Errorf("create %s: %w", filename, err)

@@ -1,0 +1,24 @@
+bundle:
+  name: pipeline_glob_paths
+
+resources:
+  pipelines:
+    nyc_taxi_pipeline:
+      name: "nyc taxi loader"
+      libraries:
+        - notebook:
+            path: ./dlt/*
+
+targets:
+  default:
+    default: true
+
+  error:
+    default: false
+
+    resources:
+      pipelines:
+        nyc_taxi_pipeline:
+          libraries:
+            - notebook:
+                path: ./non-existent

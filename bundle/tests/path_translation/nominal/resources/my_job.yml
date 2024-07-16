@@ -1,0 +1,48 @@
+resources:
+  jobs:
+    my_job:
+      name: "placeholder"
+      tasks:
+        - task_key: notebook_example
+          notebook_task:
+            notebook_path: "this value is overridden"
+
+        - task_key: spark_python_example
+          spark_python_task:
+            python_file: "this value is overridden"
+
+        - task_key: dbt_example
+          dbt_task:
+            project_directory: "this value is overridden"
+            commands:
+              - "dbt run"
+
+        - task_key: sql_example
+          sql_task:
+            file:
+              path: "this value is overridden"
+            warehouse_id: cafef00d
+
+        - task_key: python_wheel_example
+          python_wheel_task:
+            package_name: my_package
+          libraries:
+            - whl: ../dist/wheel1.whl
+
+        - task_key: spark_jar_example
+          spark_jar_task:
+            main_class_name: com.example.Main
+          libraries:
+            - jar: ../target/jar1.jar
+
+        - task_key: for_each_notebook_example
+          for_each_task:
+            task:
+              notebook_task:
+                notebook_path: "this value is overridden"
+
+        - task_key: for_each_spark_python_example
+          for_each_task:
+            task:
+              spark_python_task:
+                python_file: "this value is overridden"

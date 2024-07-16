@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/stretchr/testify/assert"
+	assert "github.com/databricks/cli/libs/dyn/dynassert"
 )
 
 func TestPathAppend(t *testing.T) {
@@ -19,16 +19,14 @@ func TestPathAppend(t *testing.T) {
 	assert.True(t, p2.Equal(dyn.NewPath(dyn.Key("foo"), dyn.Key("bar"), dyn.Index(1))))
 }
 
-func TestPathJoin(t *testing.T) {
-	p := dyn.NewPath(dyn.Key("foo"))
+func TestPathAppendAlwaysNew(t *testing.T) {
+	p := make(dyn.Path, 0, 2)
+	p = append(p, dyn.Key("foo"))
 
-	// Single arg.
-	p1 := p.Join(dyn.NewPath(dyn.Key("bar")))
-	assert.True(t, p1.Equal(dyn.NewPath(dyn.Key("foo"), dyn.Key("bar"))))
-
-	// Multiple args.
-	p2 := p.Join(dyn.NewPath(dyn.Key("bar")), dyn.NewPath(dyn.Index(1)))
-	assert.True(t, p2.Equal(dyn.NewPath(dyn.Key("foo"), dyn.Key("bar"), dyn.Index(1))))
+	// There is room for a second element in the slice.
+	p1 := p.Append(dyn.Index(1))
+	p2 := p.Append(dyn.Index(2))
+	assert.NotEqual(t, p1, p2)
 }
 
 func TestPathEqualEmpty(t *testing.T) {

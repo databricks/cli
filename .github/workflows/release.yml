@@ -22,13 +22,33 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.21.x
+          go-version: 1.22.x
+
+          # The default cache key for this action considers only the `go.sum` file.
+          # We include .goreleaser.yaml here to differentiate from the cache used by the push action
+          # that runs unit tests. This job produces and uses a different cache.
+          cache-dependency-path: |
+            go.sum
+            .goreleaser.yaml
+
+      # Log into the GitHub Container Registry. The goreleaser action will create
+      # the docker images and push them to the GitHub Container Registry.
+      - uses: "docker/login-action@v3"
+        with:
+          registry: "ghcr.io"
+          username: "${{ github.actor }}"
+          password: "${{ secrets.GITHUB_TOKEN }}"
+
+      # QEMU is required to build cross platform docker images using buildx.
+      # It allows virtualization of the CPU architecture at the application level.
+      - name: Set up QEMU dependency
+        uses: docker/setup-qemu-action@v3
 
       - name: Run GoReleaser
         id: releaser
-        uses: goreleaser/goreleaser-action@v4
+        uses: goreleaser/goreleaser-action@v6
         with:
-          version: latest
+          version: ~> v2
           args: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -71,7 +91,7 @@ jobs:
         with:
           github-token: ${{ secrets.DECO_GITHUB_TOKEN }}
           script: |
-            let artifacts = JSON.parse('${{ needs.goreleaser.outputs.artifacts }}')
+            let artifacts = ${{ needs.goreleaser.outputs.artifacts }}
             artifacts = artifacts.filter(a => a.type == "Archive")
             artifacts = new Map(
               artifacts.map(a => [
@@ -117,14 +137,3 @@ jobs:
                 version: "${{ env.VERSION }}",
               }
             });
-
-  publish-to-winget-pkgs:
-    needs: goreleaser
-    runs-on: windows-latest
-    environment: release
-    steps:
-      - uses: vedantmgoyal2009/winget-releaser@93fd8b606a1672ec3e5c6c3bb19426be68d1a8b0 # https://github.com/vedantmgoyal2009/winget-releaser/releases/tag/v2
-        with:
-          identifier: Databricks.DatabricksCLI
-          installers-regex: 'windows_.*\.zip$' # Only windows releases
-          token: ${{ secrets.ENG_DEV_ECOSYSTEM_BOT_TOKEN }}

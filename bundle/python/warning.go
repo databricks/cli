@@ -2,11 +2,11 @@ package python
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/libraries"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"golang.org/x/mod/semver"
@@ -19,13 +19,13 @@ func WrapperWarning() bundle.Mutator {
 	return &wrapperWarning{}
 }
 
-func (m *wrapperWarning) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *wrapperWarning) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if isPythonWheelWrapperOn(b) {
 		return nil
 	}
 
 	if hasIncompatibleWheelTasks(ctx, b) {
-		return fmt.Errorf("python wheel tasks with local libraries require compute with DBR 13.1+. Please change your cluster configuration or set experimental 'python_wheel_wrapper' setting to 'true'")
+		return diag.Errorf("Python wheel tasks require compute with DBR 13.3+ to include local libraries. Please change your cluster configuration or use the experimental 'python_wheel_wrapper' setting. See https://docs.databricks.com/dev-tools/bundles/python-wheel.html for more information.")
 	}
 	return nil
 }
@@ -46,7 +46,7 @@ func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) bool {
 		if task.JobClusterKey != "" {
 			for _, job := range b.Config.Resources.Jobs {
 				for _, cluster := range job.JobClusters {
-					if task.JobClusterKey == cluster.JobClusterKey && cluster.NewCluster != nil {
+					if task.JobClusterKey == cluster.JobClusterKey && cluster.NewCluster.SparkVersion != "" {
 						if lowerThanExpectedVersion(ctx, cluster.NewCluster.SparkVersion) {
 							return true
 						}

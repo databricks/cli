@@ -15,7 +15,7 @@ func ConvertToMapValue(strct any, order *Order, skipFields []string, dst map[str
 	ref := dyn.NilValue
 	mv, err := convert.FromTyped(strct, ref)
 	if err != nil {
-		return dyn.NilValue, err
+		return dyn.InvalidValue, err
 	}
 
 	if mv.Kind() != dyn.KindMap {
@@ -26,7 +26,9 @@ func ConvertToMapValue(strct any, order *Order, skipFields []string, dst map[str
 }
 
 func skipAndOrder(mv dyn.Value, order *Order, skipFields []string, dst map[string]dyn.Value) (dyn.Value, error) {
-	for k, v := range mv.MustMap() {
+	for _, pair := range mv.MustMap().Pairs() {
+		k := pair.Key.MustString()
+		v := pair.Value
 		if v.Kind() == dyn.KindNil {
 			continue
 		}
@@ -42,7 +44,7 @@ func skipAndOrder(mv dyn.Value, order *Order, skipFields []string, dst map[strin
 			continue
 		}
 
-		dst[k] = dyn.NewValue(v.Value(), dyn.Location{Line: order.Get(k)})
+		dst[k] = dyn.NewValue(v.Value(), []dyn.Location{{Line: order.Get(k)}})
 	}
 
 	return dyn.V(dst), nil

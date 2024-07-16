@@ -1,6 +1,7 @@
 package python
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -8,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/libraries"
+	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
@@ -62,9 +64,10 @@ dbutils.notebook.exit(s)
 // which installs uploaded wheels using %pip and then calling corresponding
 // entry point.
 func TransformWheelTask() bundle.Mutator {
-	return mutator.If(
-		func(b *bundle.Bundle) bool {
-			return b.Config.Experimental != nil && b.Config.Experimental.PythonWheelWrapper
+	return bundle.If(
+		func(_ context.Context, b *bundle.Bundle) (bool, error) {
+			res := b.Config.Experimental != nil && b.Config.Experimental.PythonWheelWrapper
+			return res, nil
 		},
 		mutator.NewTrampoline(
 			"python_wheel",
@@ -79,7 +82,14 @@ type pythonTrampoline struct{}
 
 func (t *pythonTrampoline) CleanUp(task *jobs.Task) error {
 	task.PythonWheelTask = nil
-	task.Libraries = nil
+
+	nonWheelLibraries := make([]compute.Library, 0)
+	for _, l := range task.Libraries {
+		if l.Whl == "" {
+			nonWheelLibraries = append(nonWheelLibraries, l)
+		}
+	}
+	task.Libraries = nonWheelLibraries
 
 	return nil
 }
@@ -96,7 +106,7 @@ func (t *pythonTrampoline) GetTasks(b *bundle.Bundle) []mutator.TaskWithJobKey {
 			// At this point of moment we don't have local paths in Libraries sections anymore
 			// Local paths have been replaced with the remote when the artifacts where uploaded
 			// in artifacts.UploadAll mutator.
-			if task.PythonWheelTask == nil || !needsTrampoline(task) {
+			if task.PythonWheelTask == nil || !needsTrampoline(*task) {
 				continue
 			}
 
@@ -109,18 +119,25 @@ func (t *pythonTrampoline) GetTasks(b *bundle.Bundle) []mutator.TaskWithJobKey {
 	return result
 }
 
-func needsTrampoline(task *jobs.Task) bool {
+func needsTrampoline(task jobs.Task) bool {
 	return libraries.IsTaskWithWorkspaceLibraries(task)
 }
 
 func (t *pythonTrampoline) GetTemplateData(task *jobs.Task) (map[string]any, error) {
 	params, err := t.generateParameters(task.PythonWheelTask)
+	whlLibraries := make([]compute.Library, 0)
+	for _, l := range task.Libraries {
+		if l.Whl != "" {
+			whlLibraries = append(whlLibraries, l)
+		}
+	}
+
 	if err != nil {
 		return nil, err
 	}
 
 	data := map[string]any{
-		"Libraries": task.Libraries,
+		"Libraries": whlLibraries,
 		"Params":    params,
 		"Task":      task.PythonWheelTask,
 	}

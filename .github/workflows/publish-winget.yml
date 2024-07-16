@@ -1,0 +1,16 @@
+name: publish-winget
+
+on:
+  workflow_dispatch:
+
+jobs:
+  publish-to-winget-pkgs:
+    runs-on: windows-latest
+    environment: release
+    steps:
+      - uses: vedantmgoyal2009/winget-releaser@93fd8b606a1672ec3e5c6c3bb19426be68d1a8b0 # https://github.com/vedantmgoyal2009/winget-releaser/releases/tag/v2
+        with:
+          identifier: Databricks.DatabricksCLI
+          installers-regex: 'windows_.*-signed\.zip$' # Only signed Windows releases
+          token: ${{ secrets.ENG_DEV_ECOSYSTEM_BOT_TOKEN }}
+          fork-user: eng-dev-ecosystem-bot

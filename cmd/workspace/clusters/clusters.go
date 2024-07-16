@@ -54,6 +54,28 @@ func New() *cobra.Command {
 		},
 	}
 
+	// Add methods
+	cmd.AddCommand(newChangeOwner())
+	cmd.AddCommand(newCreate())
+	cmd.AddCommand(newDelete())
+	cmd.AddCommand(newEdit())
+	cmd.AddCommand(newEvents())
+	cmd.AddCommand(newGet())
+	cmd.AddCommand(newGetPermissionLevels())
+	cmd.AddCommand(newGetPermissions())
+	cmd.AddCommand(newList())
+	cmd.AddCommand(newListNodeTypes())
+	cmd.AddCommand(newListZones())
+	cmd.AddCommand(newPermanentDelete())
+	cmd.AddCommand(newPin())
+	cmd.AddCommand(newResize())
+	cmd.AddCommand(newRestart())
+	cmd.AddCommand(newSetPermissions())
+	cmd.AddCommand(newSparkVersions())
+	cmd.AddCommand(newStart())
+	cmd.AddCommand(newUnpin())
+	cmd.AddCommand(newUpdatePermissions())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -84,8 +106,9 @@ func newChangeOwner() *cobra.Command {
 	cmd.Short = `Change cluster owner.`
 	cmd.Long = `Change cluster owner.
   
-  Change the owner of the cluster. You must be an admin to perform this
-  operation.
+  Change the owner of the cluster. You must be an admin and the cluster must be
+  terminated to perform this operation. The service principal application ID can
+  be supplied as an argument to owner_username.
 
   Arguments:
     CLUSTER_ID: <needs content added>
@@ -95,13 +118,13 @@ func newChangeOwner() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'cluster_id', 'owner_username' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(2)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -142,12 +165,6 @@ func newChangeOwner() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newChangeOwner())
-	})
-}
-
 // start create command
 
 // Slice with functions to override default command behavior.
@@ -171,26 +188,19 @@ func newCreate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createReq.ApplyPolicyDefaultValues, "apply-policy-default-values", createReq.ApplyPolicyDefaultValues, ``)
+	cmd.Flags().BoolVar(&createReq.ApplyPolicyDefaultValues, "apply-policy-default-values", createReq.ApplyPolicyDefaultValues, `When set to true, fixed and default values from the policy will be used for fields that are omitted.`)
 	// TODO: complex arg: autoscale
 	cmd.Flags().IntVar(&createReq.AutoterminationMinutes, "autotermination-minutes", createReq.AutoterminationMinutes, `Automatically terminates the cluster after it is inactive for this time in minutes.`)
 	// TODO: complex arg: aws_attributes
 	// TODO: complex arg: azure_attributes
+	// TODO: complex arg: clone_from
 	// TODO: complex arg: cluster_log_conf
 	cmd.Flags().StringVar(&createReq.ClusterName, "cluster-name", createReq.ClusterName, `Cluster name requested by the user.`)
-	cmd.Flags().Var(&createReq.ClusterSource, "cluster-source", `Determines whether the cluster was created by a user through the UI, created by the Databricks Jobs Scheduler, or through an API request. Supported values: [
-  API,
-  JOB,
-  MODELS,
-  PIPELINE,
-  PIPELINE_MAINTENANCE,
-  SQL,
-  UI,
-]`)
 	// TODO: map via StringToStringVar: custom_tags
 	cmd.Flags().Var(&createReq.DataSecurityMode, "data-security-mode", `Data security mode decides what data governance model to use when accessing data from a cluster. Supported values: [
   LEGACY_PASSTHROUGH,
   LEGACY_SINGLE_USER,
+  LEGACY_SINGLE_USER_STANDARD,
   LEGACY_TABLE_ACL,
   NONE,
   SINGLE_USER,
@@ -236,13 +246,13 @@ func newCreate() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'spark_version' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -292,12 +302,6 @@ func newCreate() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newCreate())
-	})
-}
-
 // start delete command
 
 // Slice with functions to override default command behavior.
@@ -337,7 +341,7 @@ func newDelete() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'cluster_id' in your JSON input")
 			}
@@ -408,12 +412,6 @@ func newDelete() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDelete())
-	})
-}
-
 // start edit command
 
 // Slice with functions to override default command behavior.
@@ -437,26 +435,18 @@ func newEdit() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&editJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&editReq.ApplyPolicyDefaultValues, "apply-policy-default-values", editReq.ApplyPolicyDefaultValues, ``)
+	cmd.Flags().BoolVar(&editReq.ApplyPolicyDefaultValues, "apply-policy-default-values", editReq.ApplyPolicyDefaultValues, `When set to true, fixed and default values from the policy will be used for fields that are omitted.`)
 	// TODO: complex arg: autoscale
 	cmd.Flags().IntVar(&editReq.AutoterminationMinutes, "autotermination-minutes", editReq.AutoterminationMinutes, `Automatically terminates the cluster after it is inactive for this time in minutes.`)
 	// TODO: complex arg: aws_attributes
 	// TODO: complex arg: azure_attributes
 	// TODO: complex arg: cluster_log_conf
 	cmd.Flags().StringVar(&editReq.ClusterName, "cluster-name", editReq.ClusterName, `Cluster name requested by the user.`)
-	cmd.Flags().Var(&editReq.ClusterSource, "cluster-source", `Determines whether the cluster was created by a user through the UI, created by the Databricks Jobs Scheduler, or through an API request. Supported values: [
-  API,
-  JOB,
-  MODELS,
-  PIPELINE,
-  PIPELINE_MAINTENANCE,
-  SQL,
-  UI,
-]`)
 	// TODO: map via StringToStringVar: custom_tags
 	cmd.Flags().Var(&editReq.DataSecurityMode, "data-security-mode", `Data security mode decides what data governance model to use when accessing data from a cluster. Supported values: [
   LEGACY_PASSTHROUGH,
   LEGACY_SINGLE_USER,
+  LEGACY_SINGLE_USER_STANDARD,
   LEGACY_TABLE_ACL,
   NONE,
   SINGLE_USER,
@@ -507,13 +497,13 @@ func newEdit() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'cluster_id', 'spark_version' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(2)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -566,12 +556,6 @@ func newEdit() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newEdit())
-	})
-}
-
 // start events command
 
 // Slice with functions to override default command behavior.
@@ -612,7 +596,7 @@ func newEvents() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'cluster_id' in your JSON input")
 			}
@@ -652,11 +636,8 @@ func newEvents() *cobra.Command {
 			eventsReq.ClusterId = args[0]
 		}
 
-		response, err := w.Clusters.EventsAll(ctx, eventsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Clusters.Events(ctx, eventsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -669,12 +650,6 @@ func newEvents() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newEvents())
-	})
 }
 
 // start get command
@@ -753,12 +728,6 @@ func newGet() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGet())
-	})
-}
-
 // start get-permission-levels command
 
 // Slice with functions to override default command behavior.
@@ -827,12 +796,6 @@ func newGetPermissionLevels() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetPermissionLevels())
-	})
 }
 
 // start get-permissions command
@@ -906,12 +869,6 @@ func newGetPermissions() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetPermissions())
-	})
-}
-
 // start list command
 
 // Slice with functions to override default command behavior.
@@ -947,7 +904,7 @@ func newList() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(0)
+		check := root.ExactArgs(0)
 		return check(cmd, args)
 	}
 
@@ -956,11 +913,8 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response, err := w.Clusters.ListAll(ctx, listReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.Clusters.List(ctx, listReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -973,12 +927,6 @@ func newList() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newList())
-	})
 }
 
 // start list-node-types command
@@ -1024,12 +972,6 @@ func newListNodeTypes() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newListNodeTypes())
-	})
-}
-
 // start list-zones command
 
 // Slice with functions to override default command behavior.
@@ -1073,12 +1015,6 @@ func newListZones() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newListZones())
-	})
-}
-
 // start permanent-delete command
 
 // Slice with functions to override default command behavior.
@@ -1115,7 +1051,7 @@ func newPermanentDelete() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'cluster_id' in your JSON input")
 			}
@@ -1174,12 +1110,6 @@ func newPermanentDelete() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newPermanentDelete())
-	})
-}
-
 // start pin command
 
 // Slice with functions to override default command behavior.
@@ -1213,7 +1143,7 @@ func newPin() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'cluster_id' in your JSON input")
 			}
@@ -1272,12 +1202,6 @@ func newPin() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newPin())
-	})
-}
-
 // start resize command
 
 // Slice with functions to override default command behavior.
@@ -1318,7 +1242,7 @@ func newResize() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'cluster_id' in your JSON input")
 			}
@@ -1389,12 +1313,6 @@ func newResize() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newResize())
-	})
-}
-
 // start restart command
 
 // Slice with functions to override default command behavior.
@@ -1434,7 +1352,7 @@ func newRestart() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'cluster_id' in your JSON input")
 			}
@@ -1503,12 +1421,6 @@ func newRestart() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newRestart())
-	})
 }
 
 // start set-permissions command
@@ -1592,12 +1504,6 @@ func newSetPermissions() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newSetPermissions())
-	})
-}
-
 // start spark-versions command
 
 // Slice with functions to override default command behavior.
@@ -1639,12 +1545,6 @@ func newSparkVersions() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newSparkVersions())
-	})
 }
 
 // start start command
@@ -1690,7 +1590,7 @@ func newStart() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'cluster_id' in your JSON input")
 			}
@@ -1761,12 +1661,6 @@ func newStart() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newStart())
-	})
-}
-
 // start unpin command
 
 // Slice with functions to override default command behavior.
@@ -1800,7 +1694,7 @@ func newUnpin() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs(0)(cmd, args)
+			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'cluster_id' in your JSON input")
 			}
@@ -1857,12 +1751,6 @@ func newUnpin() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUnpin())
-	})
 }
 
 // start update-permissions command
@@ -1944,12 +1832,6 @@ func newUpdatePermissions() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdatePermissions())
-	})
 }
 
 // end service Clusters

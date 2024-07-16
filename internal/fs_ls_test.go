@@ -11,131 +11,163 @@ import (
 
 	_ "github.com/databricks/cli/cmd/fs"
 	"github.com/databricks/cli/libs/filer"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestAccFsLsForDbfs(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
-	ctx := context.Background()
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
-
-	tmpDir := TemporaryDbfsDir(t, w)
-
-	f, err := filer.NewDbfsClient(w, tmpDir)
-	require.NoError(t, err)
-
-	err = f.Mkdir(ctx, "a")
-	require.NoError(t, err)
-	err = f.Write(ctx, "a/hello.txt", strings.NewReader("abc"), filer.CreateParentDirectories)
-	require.NoError(t, err)
-	err = f.Write(ctx, "bye.txt", strings.NewReader("def"))
-	require.NoError(t, err)
-
-	stdout, stderr := RequireSuccessfulRun(t, "fs", "ls", "dbfs:"+tmpDir, "--output=json")
-	assert.Equal(t, "", stderr.String())
-	var parsedStdout []map[string]any
-	err = json.Unmarshal(stdout.Bytes(), &parsedStdout)
-	require.NoError(t, err)
-
-	// assert on ls output
-	assert.Len(t, parsedStdout, 2)
-	assert.Equal(t, "a", parsedStdout[0]["name"])
-	assert.Equal(t, true, parsedStdout[0]["is_directory"])
-	assert.Equal(t, float64(0), parsedStdout[0]["size"])
-	assert.Equal(t, "bye.txt", parsedStdout[1]["name"])
-	assert.Equal(t, false, parsedStdout[1]["is_directory"])
-	assert.Equal(t, float64(3), parsedStdout[1]["size"])
+type fsTest struct {
+	name       string
+	setupFiler func(t *testing.T) (filer.Filer, string)
 }
 
-func TestAccFsLsForDbfsWithAbsolutePaths(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
-	ctx := context.Background()
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
-
-	tmpDir := TemporaryDbfsDir(t, w)
-
-	f, err := filer.NewDbfsClient(w, tmpDir)
-	require.NoError(t, err)
-
-	err = f.Mkdir(ctx, "a")
-	require.NoError(t, err)
-	err = f.Write(ctx, "a/hello.txt", strings.NewReader("abc"), filer.CreateParentDirectories)
-	require.NoError(t, err)
-	err = f.Write(ctx, "bye.txt", strings.NewReader("def"))
-	require.NoError(t, err)
-
-	stdout, stderr := RequireSuccessfulRun(t, "fs", "ls", "dbfs:"+tmpDir, "--output=json", "--absolute")
-	assert.Equal(t, "", stderr.String())
-	var parsedStdout []map[string]any
-	err = json.Unmarshal(stdout.Bytes(), &parsedStdout)
-	require.NoError(t, err)
-
-	// assert on ls output
-	assert.Len(t, parsedStdout, 2)
-	assert.Equal(t, path.Join("dbfs:", tmpDir, "a"), parsedStdout[0]["name"])
-	assert.Equal(t, true, parsedStdout[0]["is_directory"])
-	assert.Equal(t, float64(0), parsedStdout[0]["size"])
-
-	assert.Equal(t, path.Join("dbfs:", tmpDir, "bye.txt"), parsedStdout[1]["name"])
-	assert.Equal(t, false, parsedStdout[1]["is_directory"])
-	assert.Equal(t, float64(3), parsedStdout[1]["size"])
+var fsTests = []fsTest{
+	{
+		name:       "dbfs",
+		setupFiler: setupDbfsFiler,
+	},
+	{
+		name:       "uc-volumes",
+		setupFiler: setupUcVolumesFiler,
+	},
 }
 
-func TestAccFsLsForDbfsOnFile(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
-	ctx := context.Background()
-	w, err := databricks.NewWorkspaceClient()
+func setupLsFiles(t *testing.T, f filer.Filer) {
+	err := f.Write(context.Background(), "a/hello.txt", strings.NewReader("abc"), filer.CreateParentDirectories)
 	require.NoError(t, err)
-
-	tmpDir := TemporaryDbfsDir(t, w)
-
-	f, err := filer.NewDbfsClient(w, tmpDir)
+	err = f.Write(context.Background(), "bye.txt", strings.NewReader("def"))
 	require.NoError(t, err)
-
-	err = f.Mkdir(ctx, "a")
-	require.NoError(t, err)
-	err = f.Write(ctx, "a/hello.txt", strings.NewReader("abc"), filer.CreateParentDirectories)
-	require.NoError(t, err)
-
-	_, _, err = RequireErrorRun(t, "fs", "ls", "dbfs:"+path.Join(tmpDir, "a", "hello.txt"), "--output=json")
-	assert.Regexp(t, regexp.MustCompile("not a directory: .*/a/hello.txt"), err.Error())
 }
 
-func TestAccFsLsForDbfsOnEmptyDir(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+func TestAccFsLs(t *testing.T) {
+	t.Parallel()
 
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
+	for _, testCase := range fsTests {
+		tc := testCase
 
-	tmpDir := TemporaryDbfsDir(t, w)
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-	stdout, stderr := RequireSuccessfulRun(t, "fs", "ls", "dbfs:"+tmpDir, "--output=json")
-	assert.Equal(t, "", stderr.String())
-	var parsedStdout []map[string]any
-	err = json.Unmarshal(stdout.Bytes(), &parsedStdout)
-	require.NoError(t, err)
+			f, tmpDir := tc.setupFiler(t)
+			setupLsFiles(t, f)
 
-	// assert on ls output
-	assert.Equal(t, 0, len(parsedStdout))
+			stdout, stderr := RequireSuccessfulRun(t, "fs", "ls", tmpDir, "--output=json")
+			assert.Equal(t, "", stderr.String())
+
+			var parsedStdout []map[string]any
+			err := json.Unmarshal(stdout.Bytes(), &parsedStdout)
+			require.NoError(t, err)
+
+			// assert on ls output
+			assert.Len(t, parsedStdout, 2)
+
+			assert.Equal(t, "a", parsedStdout[0]["name"])
+			assert.Equal(t, true, parsedStdout[0]["is_directory"])
+			assert.Equal(t, float64(0), parsedStdout[0]["size"])
+
+			assert.Equal(t, "bye.txt", parsedStdout[1]["name"])
+			assert.Equal(t, false, parsedStdout[1]["is_directory"])
+			assert.Equal(t, float64(3), parsedStdout[1]["size"])
+		})
+	}
 }
 
-func TestAccFsLsForDbfsForNonexistingDir(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+func TestAccFsLsWithAbsolutePaths(t *testing.T) {
+	t.Parallel()
 
-	_, _, err := RequireErrorRun(t, "fs", "ls", "dbfs:/john-cena", "--output=json")
-	assert.ErrorIs(t, err, fs.ErrNotExist)
+	for _, testCase := range fsTests {
+		tc := testCase
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			f, tmpDir := tc.setupFiler(t)
+			setupLsFiles(t, f)
+
+			stdout, stderr := RequireSuccessfulRun(t, "fs", "ls", tmpDir, "--output=json", "--absolute")
+			assert.Equal(t, "", stderr.String())
+
+			var parsedStdout []map[string]any
+			err := json.Unmarshal(stdout.Bytes(), &parsedStdout)
+			require.NoError(t, err)
+
+			// assert on ls output
+			assert.Len(t, parsedStdout, 2)
+
+			assert.Equal(t, path.Join(tmpDir, "a"), parsedStdout[0]["name"])
+			assert.Equal(t, true, parsedStdout[0]["is_directory"])
+			assert.Equal(t, float64(0), parsedStdout[0]["size"])
+
+			assert.Equal(t, path.Join(tmpDir, "bye.txt"), parsedStdout[1]["name"])
+			assert.Equal(t, false, parsedStdout[1]["is_directory"])
+			assert.Equal(t, float64(3), parsedStdout[1]["size"])
+		})
+	}
+}
+
+func TestAccFsLsOnFile(t *testing.T) {
+	t.Parallel()
+
+	for _, testCase := range fsTests {
+		tc := testCase
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			f, tmpDir := tc.setupFiler(t)
+			setupLsFiles(t, f)
+
+			_, _, err := RequireErrorRun(t, "fs", "ls", path.Join(tmpDir, "a", "hello.txt"), "--output=json")
+			assert.Regexp(t, regexp.MustCompile("not a directory: .*/a/hello.txt"), err.Error())
+			assert.ErrorAs(t, err, &filer.NotADirectory{})
+		})
+	}
+}
+
+func TestAccFsLsOnEmptyDir(t *testing.T) {
+	t.Parallel()
+
+	for _, testCase := range fsTests {
+		tc := testCase
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, tmpDir := tc.setupFiler(t)
+
+			stdout, stderr := RequireSuccessfulRun(t, "fs", "ls", tmpDir, "--output=json")
+			assert.Equal(t, "", stderr.String())
+			var parsedStdout []map[string]any
+			err := json.Unmarshal(stdout.Bytes(), &parsedStdout)
+			require.NoError(t, err)
+
+			// assert on ls output
+			assert.Equal(t, 0, len(parsedStdout))
+		})
+	}
+}
+
+func TestAccFsLsForNonexistingDir(t *testing.T) {
+	t.Parallel()
+
+	for _, testCase := range fsTests {
+		tc := testCase
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			_, tmpDir := tc.setupFiler(t)
+
+			_, _, err := RequireErrorRun(t, "fs", "ls", path.Join(tmpDir, "nonexistent"), "--output=json")
+			assert.ErrorIs(t, err, fs.ErrNotExist)
+			assert.Regexp(t, regexp.MustCompile("no such directory: .*/nonexistent"), err.Error())
+		})
+	}
 }
 
 func TestAccFsLsWithoutScheme(t *testing.T) {
+	t.Parallel()
+
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
-	_, _, err := RequireErrorRun(t, "fs", "ls", "/ray-mysterio", "--output=json")
+	_, _, err := RequireErrorRun(t, "fs", "ls", "/path-without-a-dbfs-scheme", "--output=json")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }

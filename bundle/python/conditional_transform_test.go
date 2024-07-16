@@ -18,8 +18,8 @@ func TestNoTransformByDefault(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	b := &bundle.Bundle{
+		RootPath: tmpDir,
 		Config: config.Root{
-			Path: tmpDir,
 			Bundle: config.Bundle{
 				Target: "development",
 			},
@@ -47,8 +47,8 @@ func TestNoTransformByDefault(t *testing.T) {
 	}
 
 	trampoline := TransformWheelTask()
-	err := bundle.Apply(context.Background(), b, trampoline)
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, trampoline)
+	require.NoError(t, diags.Error())
 
 	task := b.Config.Resources.Jobs["job1"].Tasks[0]
 	require.NotNil(t, task.PythonWheelTask)
@@ -63,8 +63,8 @@ func TestTransformWithExperimentalSettingSetToTrue(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	b := &bundle.Bundle{
+		RootPath: tmpDir,
 		Config: config.Root{
-			Path: tmpDir,
 			Bundle: config.Bundle{
 				Target: "development",
 			},
@@ -81,6 +81,7 @@ func TestTransformWithExperimentalSettingSetToTrue(t *testing.T) {
 									},
 									Libraries: []compute.Library{
 										{Whl: "/Workspace/Users/test@test.com/bundle/dist/test.whl"},
+										{Jar: "/Workspace/Users/test@test.com/bundle/dist/test.jar"},
 									},
 								},
 							},
@@ -95,8 +96,8 @@ func TestTransformWithExperimentalSettingSetToTrue(t *testing.T) {
 	}
 
 	trampoline := TransformWheelTask()
-	err := bundle.Apply(context.Background(), b, trampoline)
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, trampoline)
+	require.NoError(t, diags.Error())
 
 	task := b.Config.Resources.Jobs["job1"].Tasks[0]
 	require.Nil(t, task.PythonWheelTask)
@@ -105,10 +106,11 @@ func TestTransformWithExperimentalSettingSetToTrue(t *testing.T) {
 	dir, err := b.InternalDir(context.Background())
 	require.NoError(t, err)
 
-	internalDirRel, err := filepath.Rel(b.Config.Path, dir)
+	internalDirRel, err := filepath.Rel(b.RootPath, dir)
 	require.NoError(t, err)
 
 	require.Equal(t, path.Join(filepath.ToSlash(internalDirRel), "notebook_job1_key1"), task.NotebookTask.NotebookPath)
 
-	require.Empty(t, task.Libraries)
+	require.Len(t, task.Libraries, 1)
+	require.Equal(t, "/Workspace/Users/test@test.com/bundle/dist/test.jar", task.Libraries[0].Jar)
 }

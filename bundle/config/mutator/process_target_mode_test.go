@@ -97,6 +97,23 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				RegisteredModels: map[string]*resources.RegisteredModel{
 					"registeredmodel1": {CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{Name: "registeredmodel1"}},
 				},
+				QualityMonitors: map[string]*resources.QualityMonitor{
+					"qualityMonitor1": {CreateMonitor: &catalog.CreateMonitor{TableName: "qualityMonitor1"}},
+					"qualityMonitor2": {
+						CreateMonitor: &catalog.CreateMonitor{
+							TableName: "qualityMonitor2",
+							Schedule:  &catalog.MonitorCronSchedule{},
+						},
+					},
+					"qualityMonitor3": {
+						CreateMonitor: &catalog.CreateMonitor{
+							TableName: "qualityMonitor3",
+							Schedule: &catalog.MonitorCronSchedule{
+								PauseStatus: catalog.MonitorCronSchedulePauseStatusUnpaused,
+							},
+						},
+					},
+				},
 			},
 		},
 		// Use AWS implementation for testing.
@@ -110,8 +127,8 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	b := mockBundle(config.Development)
 
 	m := ProcessTargetMode()
-	err := bundle.Apply(context.Background(), b, m)
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, m)
+	require.NoError(t, diags.Error())
 
 	// Job 1
 	assert.Equal(t, "[dev lennart] job1", b.Config.Resources.Jobs["job1"].Name)
@@ -138,12 +155,18 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Model 1
 	assert.Equal(t, "[dev lennart] model1", b.Config.Resources.Models["model1"].Name)
+	assert.Contains(t, b.Config.Resources.Models["model1"].Tags, ml.ModelTag{Key: "dev", Value: "lennart"})
 
 	// Model serving endpoint 1
 	assert.Equal(t, "dev_lennart_servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 
 	// Registered model 1
 	assert.Equal(t, "dev_lennart_registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
+
+	// Quality Monitor 1
+	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
+	assert.Nil(t, b.Config.Resources.QualityMonitors["qualityMonitor2"].Schedule)
+	assert.Equal(t, catalog.MonitorCronSchedulePauseStatusUnpaused, b.Config.Resources.QualityMonitors["qualityMonitor3"].Schedule.PauseStatus)
 }
 
 func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {
@@ -153,8 +176,8 @@ func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	err := bundle.Apply(context.Background(), b, ProcessTargetMode())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, ProcessTargetMode())
+	require.NoError(t, diags.Error())
 
 	// Assert that tag normalization took place.
 	assert.Equal(t, "Hello world__", b.Config.Resources.Jobs["job1"].Tags["dev"])
@@ -167,8 +190,8 @@ func TestProcessTargetModeDevelopmentTagNormalizationForAzure(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	err := bundle.Apply(context.Background(), b, ProcessTargetMode())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, ProcessTargetMode())
+	require.NoError(t, diags.Error())
 
 	// Assert that tag normalization took place (Azure allows more characters than AWS).
 	assert.Equal(t, "Héllö wörld?!", b.Config.Resources.Jobs["job1"].Tags["dev"])
@@ -181,8 +204,8 @@ func TestProcessTargetModeDevelopmentTagNormalizationForGcp(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	err := bundle.Apply(context.Background(), b, ProcessTargetMode())
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, ProcessTargetMode())
+	require.NoError(t, diags.Error())
 
 	// Assert that tag normalization took place.
 	assert.Equal(t, "Hello_world", b.Config.Resources.Jobs["job1"].Tags["dev"])
@@ -192,27 +215,28 @@ func TestProcessTargetModeDefault(t *testing.T) {
 	b := mockBundle("")
 
 	m := ProcessTargetMode()
-	err := bundle.Apply(context.Background(), b, m)
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, m)
+	require.NoError(t, diags.Error())
 	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
 	assert.Equal(t, "pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
 	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
+	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
 }
 
 func TestProcessTargetModeProduction(t *testing.T) {
 	b := mockBundle(config.Production)
 
-	err := validateProductionMode(context.Background(), b, false)
-	require.ErrorContains(t, err, "run_as")
+	diags := validateProductionMode(context.Background(), b, false)
+	require.ErrorContains(t, diags.Error(), "run_as")
 
 	b.Config.Workspace.StatePath = "/Shared/.bundle/x/y/state"
 	b.Config.Workspace.ArtifactPath = "/Shared/.bundle/x/y/artifacts"
 	b.Config.Workspace.FilePath = "/Shared/.bundle/x/y/files"
 
-	err = validateProductionMode(context.Background(), b, false)
-	require.ErrorContains(t, err, "production")
+	diags = validateProductionMode(context.Background(), b, false)
+	require.ErrorContains(t, diags.Error(), "production")
 
 	permissions := []resources.Permission{
 		{
@@ -231,26 +255,27 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	b.Config.Resources.Models["model1"].Permissions = permissions
 	b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Permissions = permissions
 
-	err = validateProductionMode(context.Background(), b, false)
-	require.NoError(t, err)
+	diags = validateProductionMode(context.Background(), b, false)
+	require.NoError(t, diags.Error())
 
 	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
 	assert.Equal(t, "pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
 	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
+	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
 }
 
 func TestProcessTargetModeProductionOkForPrincipal(t *testing.T) {
 	b := mockBundle(config.Production)
 
 	// Our target has all kinds of problems when not using service principals ...
-	err := validateProductionMode(context.Background(), b, false)
-	require.Error(t, err)
+	diags := validateProductionMode(context.Background(), b, false)
+	require.Error(t, diags.Error())
 
 	// ... but we're much less strict when a principal is used
-	err = validateProductionMode(context.Background(), b, true)
-	require.NoError(t, err)
+	diags = validateProductionMode(context.Background(), b, true)
+	require.NoError(t, diags.Error())
 }
 
 // Make sure that we have test coverage for all resource types
@@ -274,12 +299,12 @@ func TestAllResourcesMocked(t *testing.T) {
 // Make sure that we at least rename all resources
 func TestAllResourcesRenamed(t *testing.T) {
 	b := mockBundle(config.Development)
-	resources := reflect.ValueOf(b.Config.Resources)
 
 	m := ProcessTargetMode()
-	err := bundle.Apply(context.Background(), b, m)
-	require.NoError(t, err)
+	diags := bundle.Apply(context.Background(), b, m)
+	require.NoError(t, diags.Error())
 
+	resources := reflect.ValueOf(b.Config.Resources)
 	for i := 0; i < resources.NumField(); i++ {
 		field := resources.Field(i)
 
@@ -299,4 +324,24 @@ func TestAllResourcesRenamed(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestDisableLocking(t *testing.T) {
+	ctx := context.Background()
+	b := mockBundle(config.Development)
+
+	err := bundle.Apply(ctx, b, ProcessTargetMode())
+	require.Nil(t, err)
+	assert.False(t, b.Config.Bundle.Deployment.Lock.IsEnabled())
+}
+
+func TestDisableLockingDisabled(t *testing.T) {
+	ctx := context.Background()
+	b := mockBundle(config.Development)
+	explicitlyEnabled := true
+	b.Config.Bundle.Deployment.Lock.Enabled = &explicitlyEnabled
+
+	err := bundle.Apply(ctx, b, ProcessTargetMode())
+	require.Nil(t, err)
+	assert.True(t, b.Config.Bundle.Deployment.Lock.IsEnabled(), "Deployment lock should remain enabled in development mode when explicitly enabled")
 }

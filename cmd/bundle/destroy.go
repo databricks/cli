@@ -1,12 +1,16 @@
 package bundle
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/cmd/bundle/utils"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -16,8 +20,7 @@ func newDestroyCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "destroy",
 		Short: "Destroy deployed bundle resources",
-
-		PreRunE: ConfigureBundleWithVariables,
+		Args:  root.NoArgs,
 	}
 
 	var autoApprove bool
@@ -27,13 +30,20 @@ func newDestroyCommand() *cobra.Command {
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		b := bundle.Get(ctx)
+		b, diags := utils.ConfigureBundleWithVariables(cmd)
+		if err := diags.Error(); err != nil {
+			return diags.Error()
+		}
 
-		// If `--force-lock` is specified, force acquisition of the deployment lock.
-		b.Config.Bundle.Lock.Force = forceDestroy
+		bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+			// If `--force-lock` is specified, force acquisition of the deployment lock.
+			b.Config.Bundle.Deployment.Lock.Force = forceDestroy
 
-		// If `--auto-approve`` is specified, we skip confirmation checks
-		b.AutoApprove = autoApprove
+			// If `--auto-approve`` is specified, we skip confirmation checks
+			b.AutoApprove = autoApprove
+
+			return nil
+		})
 
 		// we require auto-approve for non tty terminals since interactive consent
 		// is not possible
@@ -50,11 +60,15 @@ func newDestroyCommand() *cobra.Command {
 			return fmt.Errorf("please specify --auto-approve since selected logging format is json")
 		}
 
-		return bundle.Apply(ctx, b, bundle.Seq(
+		diags = bundle.Apply(ctx, b, bundle.Seq(
 			phases.Initialize(),
 			phases.Build(),
 			phases.Destroy(),
 		))
+		if err := diags.Error(); err != nil {
+			return err
+		}
+		return nil
 	}
 
 	return cmd

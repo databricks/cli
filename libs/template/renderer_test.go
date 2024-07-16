@@ -14,9 +14,9 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	bundleConfig "github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/databricks-sdk-go"
 	workspaceConfig "github.com/databricks/databricks-sdk-go/config"
@@ -37,10 +37,10 @@ func assertFilePermissions(t *testing.T, path string, perm fs.FileMode) {
 	assert.Equal(t, perm, info.Mode().Perm())
 }
 
-func assertBuiltinTemplateValid(t *testing.T, settings map[string]any, target string, isServicePrincipal bool, build bool, tempDir string) {
+func assertBuiltinTemplateValid(t *testing.T, template string, settings map[string]any, target string, isServicePrincipal bool, build bool, tempDir string) {
 	ctx := context.Background()
 
-	templatePath, err := prepareBuiltinTemplates("default-python", tempDir)
+	templatePath, err := prepareBuiltinTemplates(template, tempDir)
 	require.NoError(t, err)
 	libraryPath := filepath.Join(templatePath, "library")
 
@@ -50,6 +50,9 @@ func assertBuiltinTemplateValid(t *testing.T, settings map[string]any, target st
 
 	// Prepare helpers
 	cachedUser = &iam.User{UserName: "user@domain.com"}
+	if isServicePrincipal {
+		cachedUser.UserName = "1d410060-a513-496f-a197-23cc82e5f46d"
+	}
 	cachedIsServicePrincipal = &isServicePrincipal
 	ctx = root.SetWorkspaceClient(ctx, w)
 	helpers := loadHelpers(ctx)
@@ -62,27 +65,33 @@ func assertBuiltinTemplateValid(t *testing.T, settings map[string]any, target st
 	require.NoError(t, err)
 	err = renderer.persistToDisk()
 	require.NoError(t, err)
+
 	b, err := bundle.Load(ctx, filepath.Join(tempDir, "template", "my_project"))
 	require.NoError(t, err)
+	diags := bundle.Apply(ctx, b, phases.LoadNamedTarget(target))
+	require.NoError(t, diags.Error())
 
 	// Apply initialize / validation mutators
-	b.Config.Workspace.CurrentUser = &bundleConfig.User{User: cachedUser}
+	bundle.ApplyFunc(ctx, b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+		b.Config.Workspace.CurrentUser = &bundleConfig.User{User: cachedUser}
+		b.Config.Bundle.Terraform = &bundleConfig.Terraform{
+			ExecPath: "sh",
+		}
+		return nil
+	})
+
 	b.Tagging = tags.ForCloud(w.Config)
 	b.WorkspaceClient()
-	b.Config.Bundle.Terraform = &bundleConfig.Terraform{
-		ExecPath: "sh",
-	}
-	err = bundle.Apply(ctx, b, bundle.Seq(
-		bundle.Seq(mutator.DefaultMutators()...),
-		mutator.SelectTarget(target),
+
+	diags = bundle.Apply(ctx, b, bundle.Seq(
 		phases.Initialize(),
 	))
-	require.NoError(t, err)
+	require.NoError(t, diags.Error())
 
 	// Apply build mutator
 	if build {
-		err = bundle.Apply(ctx, b, phases.Build())
-		require.NoError(t, err)
+		diags = bundle.Apply(ctx, b, phases.Build())
+		require.NoError(t, diags.Error())
 	}
 }
 
@@ -98,10 +107,12 @@ func TestPrepareBuiltInTemplatesWithRelativePaths(t *testing.T) {
 	assert.Equal(t, "./default-python", dir)
 }
 
-func TestBuiltinTemplateValid(t *testing.T) {
+func TestBuiltinPythonTemplateValid(t *testing.T) {
 	// Test option combinations
 	options := []string{"yes", "no"}
 	isServicePrincipal := false
+	catalog := "hive_metastore"
+	cachedCatalog = &catalog
 	build := false
 	for _, includeNotebook := range options {
 		for _, includeDlt := range options {
@@ -114,7 +125,7 @@ func TestBuiltinTemplateValid(t *testing.T) {
 						"include_python":   includePython,
 					}
 					tempDir := t.TempDir()
-					assertBuiltinTemplateValid(t, config, "dev", isServicePrincipal, build, tempDir)
+					assertBuiltinTemplateValid(t, "default-python", config, "dev", isServicePrincipal, build, tempDir)
 				}
 			}
 		}
@@ -136,8 +147,44 @@ func TestBuiltinTemplateValid(t *testing.T) {
 	require.NoError(t, err)
 	defer os.RemoveAll(tempDir)
 
-	assertBuiltinTemplateValid(t, config, "prod", isServicePrincipal, build, tempDir)
+	assertBuiltinTemplateValid(t, "default-python", config, "prod", isServicePrincipal, build, tempDir)
 	defer os.RemoveAll(tempDir)
+}
+
+func TestBuiltinSQLTemplateValid(t *testing.T) {
+	for _, personal_schemas := range []string{"yes", "no"} {
+		for _, target := range []string{"dev", "prod"} {
+			for _, isServicePrincipal := range []bool{true, false} {
+				config := map[string]any{
+					"project_name":     "my_project",
+					"http_path":        "/sql/1.0/warehouses/123abc",
+					"default_catalog":  "users",
+					"shared_schema":    "lennart",
+					"personal_schemas": personal_schemas,
+				}
+				build := false
+				assertBuiltinTemplateValid(t, "default-sql", config, target, isServicePrincipal, build, t.TempDir())
+			}
+		}
+	}
+}
+
+func TestBuiltinDbtTemplateValid(t *testing.T) {
+	for _, personal_schemas := range []string{"yes", "no"} {
+		for _, target := range []string{"dev", "prod"} {
+			for _, isServicePrincipal := range []bool{true, false} {
+				config := map[string]any{
+					"project_name":     "my_project",
+					"http_path":        "/sql/1.0/warehouses/123",
+					"default_catalog":  "hive_metastore",
+					"personal_schemas": personal_schemas,
+					"shared_schema":    "lennart",
+				}
+				build := false
+				assertBuiltinTemplateValid(t, "dbt-sql", config, target, isServicePrincipal, build, t.TempDir())
+			}
+		}
+	}
 }
 
 func TestRendererWithAssociatedTemplateInLibrary(t *testing.T) {

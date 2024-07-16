@@ -24,12 +24,24 @@ func New() *cobra.Command {
   Databricks SQL object that periodically runs a query, evaluates a condition of
   its result, and notifies one or more users and/or notification destinations if
   the condition was met. Alerts can be scheduled using the sql_task type of
-  the Jobs API, e.g. :method:jobs/create.`,
+  the Jobs API, e.g. :method:jobs/create.
+  
+  **Note**: A new version of the Databricks SQL API will soon be available.
+  [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/whats-coming.html#updates-to-the-databricks-sql-api-for-managing-queries-alerts-and-data-sources`,
 		GroupID: "sql",
 		Annotations: map[string]string{
 			"package": "sql",
 		},
 	}
+
+	// Add methods
+	cmd.AddCommand(newCreate())
+	cmd.AddCommand(newDelete())
+	cmd.AddCommand(newGet())
+	cmd.AddCommand(newList())
+	cmd.AddCommand(newUpdate())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -66,7 +78,12 @@ func newCreate() *cobra.Command {
   
   Creates an alert. An alert is a Databricks SQL object that periodically runs a
   query, evaluates a condition of its result, and notifies users or notification
-  destinations if the condition was met.`
+  destinations if the condition was met.
+  
+  **Note**: A new version of the Databricks SQL API will soon be available.
+  [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/whats-coming.html#updates-to-the-databricks-sql-api-for-managing-queries-alerts-and-data-sources`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -103,12 +120,6 @@ func newCreate() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newCreate())
-	})
-}
-
 // start delete command
 
 // Slice with functions to override default command behavior.
@@ -130,8 +141,13 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete an alert.
   
   Deletes an alert. Deleted alerts are no longer accessible and cannot be
-  restored. **Note:** Unlike queries and dashboards, alerts cannot be moved to
-  the trash.`
+  restored. **Note**: Unlike queries and dashboards, alerts cannot be moved to
+  the trash.
+  
+  **Note**: A new version of the Databricks SQL API will soon be available.
+  [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/whats-coming.html#updates-to-the-databricks-sql-api-for-managing-queries-alerts-and-data-sources`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -178,12 +194,6 @@ func newDelete() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDelete())
-	})
-}
-
 // start get command
 
 // Slice with functions to override default command behavior.
@@ -204,7 +214,12 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get an alert.`
 	cmd.Long = `Get an alert.
   
-  Gets an alert.`
+  Gets an alert.
+  
+  **Note**: A new version of the Databricks SQL API will soon be available.
+  [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/whats-coming.html#updates-to-the-databricks-sql-api-for-managing-queries-alerts-and-data-sources`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -251,12 +266,6 @@ func newGet() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGet())
-	})
-}
-
 // start list command
 
 // Slice with functions to override default command behavior.
@@ -272,7 +281,12 @@ func newList() *cobra.Command {
 	cmd.Short = `Get alerts.`
 	cmd.Long = `Get alerts.
   
-  Gets a list of alerts.`
+  Gets a list of alerts.
+  
+  **Note**: A new version of the Databricks SQL API will soon be available.
+  [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/whats-coming.html#updates-to-the-databricks-sql-api-for-managing-queries-alerts-and-data-sources`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -299,12 +313,6 @@ func newList() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newList())
-	})
-}
-
 // start update command
 
 // Slice with functions to override default command behavior.
@@ -329,12 +337,17 @@ func newUpdate() *cobra.Command {
 	cmd.Short = `Update an alert.`
 	cmd.Long = `Update an alert.
   
-  Updates an alert.`
+  Updates an alert.
+  
+  **Note**: A new version of the Databricks SQL API will soon be available.
+  [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/whats-coming.html#updates-to-the-databricks-sql-api-for-managing-queries-alerts-and-data-sources`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -370,12 +383,6 @@ func newUpdate() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdate())
-	})
 }
 
 // end service Alerts

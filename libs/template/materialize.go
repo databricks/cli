@@ -3,6 +3,7 @@ package template
 import (
 	"context"
 	"embed"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -44,19 +45,13 @@ func Materialize(ctx context.Context, configFilePath, templateRoot, outputDir st
 	schemaPath := filepath.Join(templateRoot, schemaFileName)
 	helpers := loadHelpers(ctx)
 
-	if _, err := os.Stat(schemaPath); os.IsNotExist(err) {
+	if _, err := os.Stat(schemaPath); errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("not a bundle template: expected to find a template schema file at %s", schemaPath)
 	}
 
 	config, err := newConfig(ctx, schemaPath)
 	if err != nil {
 		return err
-	}
-
-	// Print welcome message
-	welcome := config.schema.WelcomeMessage
-	if welcome != "" {
-		cmdio.LogString(ctx, welcome)
 	}
 
 	// Read and assign config values from file
@@ -70,6 +65,16 @@ func Materialize(ctx context.Context, configFilePath, templateRoot, outputDir st
 	r, err := newRenderer(ctx, config.values, helpers, templatePath, libraryPath, outputDir)
 	if err != nil {
 		return err
+	}
+
+	// Print welcome message
+	welcome := config.schema.WelcomeMessage
+	if welcome != "" {
+		welcome, err = r.executeTemplate(welcome)
+		if err != nil {
+			return err
+		}
+		cmdio.LogString(ctx, welcome)
 	}
 
 	// Prompt user for any missing config values. Assign default values if

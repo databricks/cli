@@ -3,7 +3,10 @@
 package lakeview
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/spf13/cobra"
@@ -24,14 +27,872 @@ func New() *cobra.Command {
 		Annotations: map[string]string{
 			"package": "dashboards",
 		},
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
 	}
+
+	// Add methods
+	cmd.AddCommand(newCreate())
+	cmd.AddCommand(newCreateSchedule())
+	cmd.AddCommand(newCreateSubscription())
+	cmd.AddCommand(newDeleteSchedule())
+	cmd.AddCommand(newDeleteSubscription())
+	cmd.AddCommand(newGet())
+	cmd.AddCommand(newGetPublished())
+	cmd.AddCommand(newGetSchedule())
+	cmd.AddCommand(newGetSubscription())
+	cmd.AddCommand(newList())
+	cmd.AddCommand(newListSchedules())
+	cmd.AddCommand(newListSubscriptions())
+	cmd.AddCommand(newMigrate())
+	cmd.AddCommand(newPublish())
+	cmd.AddCommand(newTrash())
+	cmd.AddCommand(newUnpublish())
+	cmd.AddCommand(newUpdate())
+	cmd.AddCommand(newUpdateSchedule())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
+	}
+
+	return cmd
+}
+
+// start create command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createOverrides []func(
+	*cobra.Command,
+	*dashboards.CreateDashboardRequest,
+)
+
+func newCreate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createReq dashboards.CreateDashboardRequest
+	var createJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createReq.ParentPath, "parent-path", createReq.ParentPath, `The workspace path of the folder containing the dashboard.`)
+	cmd.Flags().StringVar(&createReq.SerializedDashboard, "serialized-dashboard", createReq.SerializedDashboard, `The contents of the dashboard in serialized string form.`)
+	cmd.Flags().StringVar(&createReq.WarehouseId, "warehouse-id", createReq.WarehouseId, `The warehouse ID used to run the dashboard.`)
+
+	cmd.Use = "create DISPLAY_NAME"
+	cmd.Short = `Create dashboard.`
+	cmd.Long = `Create dashboard.
+  
+  Create a draft dashboard.
+
+  Arguments:
+    DISPLAY_NAME: The display name of the dashboard.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'display_name' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			createReq.DisplayName = args[0]
+		}
+
+		response, err := w.Lakeview.Create(ctx, createReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createOverrides {
+		fn(cmd, &createReq)
+	}
+
+	return cmd
+}
+
+// start create-schedule command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createScheduleOverrides []func(
+	*cobra.Command,
+	*dashboards.CreateScheduleRequest,
+)
+
+func newCreateSchedule() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createScheduleReq dashboards.CreateScheduleRequest
+	var createScheduleJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&createScheduleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createScheduleReq.DisplayName, "display-name", createScheduleReq.DisplayName, `The display name for schedule.`)
+	cmd.Flags().Var(&createScheduleReq.PauseStatus, "pause-status", `The status indicates whether this schedule is paused or not. Supported values: [PAUSED, UNPAUSED]`)
+
+	cmd.Use = "create-schedule DASHBOARD_ID"
+	cmd.Short = `Create dashboard schedule.`
+	cmd.Long = `Create dashboard schedule.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = createScheduleJson.Unmarshal(&createScheduleReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+		}
+		createScheduleReq.DashboardId = args[0]
+
+		response, err := w.Lakeview.CreateSchedule(ctx, createScheduleReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createScheduleOverrides {
+		fn(cmd, &createScheduleReq)
+	}
+
+	return cmd
+}
+
+// start create-subscription command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createSubscriptionOverrides []func(
+	*cobra.Command,
+	*dashboards.CreateSubscriptionRequest,
+)
+
+func newCreateSubscription() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createSubscriptionReq dashboards.CreateSubscriptionRequest
+	var createSubscriptionJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&createSubscriptionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Use = "create-subscription DASHBOARD_ID SCHEDULE_ID"
+	cmd.Short = `Create schedule subscription.`
+	cmd.Long = `Create schedule subscription.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard to which the subscription belongs.
+    SCHEDULE_ID: UUID identifying the schedule to which the subscription belongs.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = createSubscriptionJson.Unmarshal(&createSubscriptionReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+		}
+		createSubscriptionReq.DashboardId = args[0]
+		createSubscriptionReq.ScheduleId = args[1]
+
+		response, err := w.Lakeview.CreateSubscription(ctx, createSubscriptionReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createSubscriptionOverrides {
+		fn(cmd, &createSubscriptionReq)
+	}
+
+	return cmd
+}
+
+// start delete-schedule command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteScheduleOverrides []func(
+	*cobra.Command,
+	*dashboards.DeleteScheduleRequest,
+)
+
+func newDeleteSchedule() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteScheduleReq dashboards.DeleteScheduleRequest
+
+	// TODO: short flags
+
+	cmd.Flags().StringVar(&deleteScheduleReq.Etag, "etag", deleteScheduleReq.Etag, `The etag for the schedule.`)
+
+	cmd.Use = "delete-schedule DASHBOARD_ID SCHEDULE_ID"
+	cmd.Short = `Delete dashboard schedule.`
+	cmd.Long = `Delete dashboard schedule.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.
+    SCHEDULE_ID: UUID identifying the schedule.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		deleteScheduleReq.DashboardId = args[0]
+		deleteScheduleReq.ScheduleId = args[1]
+
+		err = w.Lakeview.DeleteSchedule(ctx, deleteScheduleReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteScheduleOverrides {
+		fn(cmd, &deleteScheduleReq)
+	}
+
+	return cmd
+}
+
+// start delete-subscription command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteSubscriptionOverrides []func(
+	*cobra.Command,
+	*dashboards.DeleteSubscriptionRequest,
+)
+
+func newDeleteSubscription() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteSubscriptionReq dashboards.DeleteSubscriptionRequest
+
+	// TODO: short flags
+
+	cmd.Flags().StringVar(&deleteSubscriptionReq.Etag, "etag", deleteSubscriptionReq.Etag, `The etag for the subscription.`)
+
+	cmd.Use = "delete-subscription DASHBOARD_ID SCHEDULE_ID SUBSCRIPTION_ID"
+	cmd.Short = `Delete schedule subscription.`
+	cmd.Long = `Delete schedule subscription.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard which the subscription belongs.
+    SCHEDULE_ID: UUID identifying the schedule which the subscription belongs.
+    SUBSCRIPTION_ID: UUID identifying the subscription.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(3)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		deleteSubscriptionReq.DashboardId = args[0]
+		deleteSubscriptionReq.ScheduleId = args[1]
+		deleteSubscriptionReq.SubscriptionId = args[2]
+
+		err = w.Lakeview.DeleteSubscription(ctx, deleteSubscriptionReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteSubscriptionOverrides {
+		fn(cmd, &deleteSubscriptionReq)
+	}
+
+	return cmd
+}
+
+// start get command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getOverrides []func(
+	*cobra.Command,
+	*dashboards.GetDashboardRequest,
+)
+
+func newGet() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getReq dashboards.GetDashboardRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get DASHBOARD_ID"
+	cmd.Short = `Get dashboard.`
+	cmd.Long = `Get dashboard.
+  
+  Get a draft dashboard.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		getReq.DashboardId = args[0]
+
+		response, err := w.Lakeview.Get(ctx, getReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getOverrides {
+		fn(cmd, &getReq)
+	}
+
+	return cmd
+}
+
+// start get-published command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getPublishedOverrides []func(
+	*cobra.Command,
+	*dashboards.GetPublishedDashboardRequest,
+)
+
+func newGetPublished() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getPublishedReq dashboards.GetPublishedDashboardRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-published DASHBOARD_ID"
+	cmd.Short = `Get published dashboard.`
+	cmd.Long = `Get published dashboard.
+  
+  Get the current published dashboard.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard to be published.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		getPublishedReq.DashboardId = args[0]
+
+		response, err := w.Lakeview.GetPublished(ctx, getPublishedReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getPublishedOverrides {
+		fn(cmd, &getPublishedReq)
+	}
+
+	return cmd
+}
+
+// start get-schedule command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getScheduleOverrides []func(
+	*cobra.Command,
+	*dashboards.GetScheduleRequest,
+)
+
+func newGetSchedule() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getScheduleReq dashboards.GetScheduleRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-schedule DASHBOARD_ID SCHEDULE_ID"
+	cmd.Short = `Get dashboard schedule.`
+	cmd.Long = `Get dashboard schedule.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.
+    SCHEDULE_ID: UUID identifying the schedule.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		getScheduleReq.DashboardId = args[0]
+		getScheduleReq.ScheduleId = args[1]
+
+		response, err := w.Lakeview.GetSchedule(ctx, getScheduleReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getScheduleOverrides {
+		fn(cmd, &getScheduleReq)
+	}
+
+	return cmd
+}
+
+// start get-subscription command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getSubscriptionOverrides []func(
+	*cobra.Command,
+	*dashboards.GetSubscriptionRequest,
+)
+
+func newGetSubscription() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getSubscriptionReq dashboards.GetSubscriptionRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-subscription DASHBOARD_ID SCHEDULE_ID SUBSCRIPTION_ID"
+	cmd.Short = `Get schedule subscription.`
+	cmd.Long = `Get schedule subscription.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard which the subscription belongs.
+    SCHEDULE_ID: UUID identifying the schedule which the subscription belongs.
+    SUBSCRIPTION_ID: UUID identifying the subscription.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(3)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		getSubscriptionReq.DashboardId = args[0]
+		getSubscriptionReq.ScheduleId = args[1]
+		getSubscriptionReq.SubscriptionId = args[2]
+
+		response, err := w.Lakeview.GetSubscription(ctx, getSubscriptionReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getSubscriptionOverrides {
+		fn(cmd, &getSubscriptionReq)
+	}
+
+	return cmd
+}
+
+// start list command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listOverrides []func(
+	*cobra.Command,
+	*dashboards.ListDashboardsRequest,
+)
+
+func newList() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listReq dashboards.ListDashboardsRequest
+
+	// TODO: short flags
+
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `The number of dashboards to return per page.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A page token, received from a previous ListDashboards call.`)
+	cmd.Flags().BoolVar(&listReq.ShowTrashed, "show-trashed", listReq.ShowTrashed, `The flag to include dashboards located in the trash.`)
+	cmd.Flags().Var(&listReq.View, "view", `Indicates whether to include all metadata from the dashboard in the response. Supported values: [DASHBOARD_VIEW_BASIC, DASHBOARD_VIEW_FULL]`)
+
+	cmd.Use = "list"
+	cmd.Short = `List dashboards.`
+	cmd.Long = `List dashboards.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		response := w.Lakeview.List(ctx, listReq)
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listOverrides {
+		fn(cmd, &listReq)
+	}
+
+	return cmd
+}
+
+// start list-schedules command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listSchedulesOverrides []func(
+	*cobra.Command,
+	*dashboards.ListSchedulesRequest,
+)
+
+func newListSchedules() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listSchedulesReq dashboards.ListSchedulesRequest
+
+	// TODO: short flags
+
+	cmd.Flags().IntVar(&listSchedulesReq.PageSize, "page-size", listSchedulesReq.PageSize, `The number of schedules to return per page.`)
+	cmd.Flags().StringVar(&listSchedulesReq.PageToken, "page-token", listSchedulesReq.PageToken, `A page token, received from a previous ListSchedules call.`)
+
+	cmd.Use = "list-schedules DASHBOARD_ID"
+	cmd.Short = `List dashboard schedules.`
+	cmd.Long = `List dashboard schedules.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		listSchedulesReq.DashboardId = args[0]
+
+		response := w.Lakeview.ListSchedules(ctx, listSchedulesReq)
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listSchedulesOverrides {
+		fn(cmd, &listSchedulesReq)
+	}
+
+	return cmd
+}
+
+// start list-subscriptions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listSubscriptionsOverrides []func(
+	*cobra.Command,
+	*dashboards.ListSubscriptionsRequest,
+)
+
+func newListSubscriptions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listSubscriptionsReq dashboards.ListSubscriptionsRequest
+
+	// TODO: short flags
+
+	cmd.Flags().IntVar(&listSubscriptionsReq.PageSize, "page-size", listSubscriptionsReq.PageSize, `The number of subscriptions to return per page.`)
+	cmd.Flags().StringVar(&listSubscriptionsReq.PageToken, "page-token", listSubscriptionsReq.PageToken, `A page token, received from a previous ListSubscriptions call.`)
+
+	cmd.Use = "list-subscriptions DASHBOARD_ID SCHEDULE_ID"
+	cmd.Short = `List schedule subscriptions.`
+	cmd.Long = `List schedule subscriptions.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard to which the subscription belongs.
+    SCHEDULE_ID: UUID identifying the schedule to which the subscription belongs.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		listSubscriptionsReq.DashboardId = args[0]
+		listSubscriptionsReq.ScheduleId = args[1]
+
+		response := w.Lakeview.ListSubscriptions(ctx, listSubscriptionsReq)
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listSubscriptionsOverrides {
+		fn(cmd, &listSubscriptionsReq)
+	}
+
+	return cmd
+}
+
+// start migrate command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var migrateOverrides []func(
+	*cobra.Command,
+	*dashboards.MigrateDashboardRequest,
+)
+
+func newMigrate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var migrateReq dashboards.MigrateDashboardRequest
+	var migrateJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&migrateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&migrateReq.DisplayName, "display-name", migrateReq.DisplayName, `Display name for the new Lakeview dashboard.`)
+	cmd.Flags().StringVar(&migrateReq.ParentPath, "parent-path", migrateReq.ParentPath, `The workspace path of the folder to contain the migrated Lakeview dashboard.`)
+
+	cmd.Use = "migrate SOURCE_DASHBOARD_ID"
+	cmd.Short = `Migrate dashboard.`
+	cmd.Long = `Migrate dashboard.
+  
+  Migrates a classic SQL dashboard to Lakeview.
+
+  Arguments:
+    SOURCE_DASHBOARD_ID: UUID of the dashboard to be migrated.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'source_dashboard_id' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = migrateJson.Unmarshal(&migrateReq)
+			if err != nil {
+				return err
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			migrateReq.SourceDashboardId = args[0]
+		}
+
+		response, err := w.Lakeview.Migrate(ctx, migrateReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range migrateOverrides {
+		fn(cmd, &migrateReq)
 	}
 
 	return cmd
@@ -70,7 +931,7 @@ func newPublish() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -87,11 +948,11 @@ func newPublish() *cobra.Command {
 		}
 		publishReq.DashboardId = args[0]
 
-		err = w.Lakeview.Publish(ctx, publishReq)
+		response, err := w.Lakeview.Publish(ctx, publishReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -106,10 +967,266 @@ func newPublish() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newPublish())
-	})
+// start trash command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var trashOverrides []func(
+	*cobra.Command,
+	*dashboards.TrashDashboardRequest,
+)
+
+func newTrash() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var trashReq dashboards.TrashDashboardRequest
+
+	// TODO: short flags
+
+	cmd.Use = "trash DASHBOARD_ID"
+	cmd.Short = `Trash dashboard.`
+	cmd.Long = `Trash dashboard.
+  
+  Trash a dashboard.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		trashReq.DashboardId = args[0]
+
+		err = w.Lakeview.Trash(ctx, trashReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range trashOverrides {
+		fn(cmd, &trashReq)
+	}
+
+	return cmd
+}
+
+// start unpublish command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var unpublishOverrides []func(
+	*cobra.Command,
+	*dashboards.UnpublishDashboardRequest,
+)
+
+func newUnpublish() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var unpublishReq dashboards.UnpublishDashboardRequest
+
+	// TODO: short flags
+
+	cmd.Use = "unpublish DASHBOARD_ID"
+	cmd.Short = `Unpublish dashboard.`
+	cmd.Long = `Unpublish dashboard.
+  
+  Unpublish the dashboard.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard to be published.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		unpublishReq.DashboardId = args[0]
+
+		err = w.Lakeview.Unpublish(ctx, unpublishReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range unpublishOverrides {
+		fn(cmd, &unpublishReq)
+	}
+
+	return cmd
+}
+
+// start update command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateOverrides []func(
+	*cobra.Command,
+	*dashboards.UpdateDashboardRequest,
+)
+
+func newUpdate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateReq dashboards.UpdateDashboardRequest
+	var updateJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `The display name of the dashboard.`)
+	cmd.Flags().StringVar(&updateReq.Etag, "etag", updateReq.Etag, `The etag for the dashboard.`)
+	cmd.Flags().StringVar(&updateReq.SerializedDashboard, "serialized-dashboard", updateReq.SerializedDashboard, `The contents of the dashboard in serialized string form.`)
+	cmd.Flags().StringVar(&updateReq.WarehouseId, "warehouse-id", updateReq.WarehouseId, `The warehouse ID used to run the dashboard.`)
+
+	cmd.Use = "update DASHBOARD_ID"
+	cmd.Short = `Update dashboard.`
+	cmd.Long = `Update dashboard.
+  
+  Update a draft dashboard.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
+			if err != nil {
+				return err
+			}
+		}
+		updateReq.DashboardId = args[0]
+
+		response, err := w.Lakeview.Update(ctx, updateReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateOverrides {
+		fn(cmd, &updateReq)
+	}
+
+	return cmd
+}
+
+// start update-schedule command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateScheduleOverrides []func(
+	*cobra.Command,
+	*dashboards.UpdateScheduleRequest,
+)
+
+func newUpdateSchedule() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateScheduleReq dashboards.UpdateScheduleRequest
+	var updateScheduleJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&updateScheduleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&updateScheduleReq.DisplayName, "display-name", updateScheduleReq.DisplayName, `The display name for schedule.`)
+	cmd.Flags().StringVar(&updateScheduleReq.Etag, "etag", updateScheduleReq.Etag, `The etag for the schedule.`)
+	cmd.Flags().Var(&updateScheduleReq.PauseStatus, "pause-status", `The status indicates whether this schedule is paused or not. Supported values: [PAUSED, UNPAUSED]`)
+
+	cmd.Use = "update-schedule DASHBOARD_ID SCHEDULE_ID"
+	cmd.Short = `Update dashboard schedule.`
+	cmd.Long = `Update dashboard schedule.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.
+    SCHEDULE_ID: UUID identifying the schedule.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = updateScheduleJson.Unmarshal(&updateScheduleReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+		}
+		updateScheduleReq.DashboardId = args[0]
+		updateScheduleReq.ScheduleId = args[1]
+
+		response, err := w.Lakeview.UpdateSchedule(ctx, updateScheduleReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateScheduleOverrides {
+		fn(cmd, &updateScheduleReq)
+	}
+
+	return cmd
 }
 
 // end service Lakeview

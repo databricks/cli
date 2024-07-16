@@ -8,6 +8,10 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/databricks-sdk-go/service/{{.Package.Name}}"
 	"github.com/spf13/cobra"
+
+	{{range .Subservices -}}
+	{{.SnakeName}} "github.com/databricks/cli/cmd/{{ if .ParentService.IsAccounts }}account{{ else }}workspace{{ end }}/{{.KebabName}}"
+	{{end}}
 )
 
 {{ $excludes :=
@@ -18,6 +22,7 @@ import (
 		"dbsql-permissions"
 		"account-access-control-proxy"
 		"files"
+		"serving-endpoints-data-plane"
 }}
 
 {{if not (in $excludes .KebabName) }}
@@ -34,6 +39,9 @@ import (
 ]{{end}}{{end}}
 
 {{define "service"}}
+{{- $excludeMethods := list "put-secret" -}}
+{{- $hideService := .IsPrivatePreview }}
+
 // Slice with functions to override default command behavior.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var cmdOverrides []func(*cobra.Command)
@@ -45,16 +53,35 @@ func New() *cobra.Command {
 		Short: `{{.Summary | without "`"}}`,
 		Long: `{{.Comment  "  " 80 | without "`"}}`,
 		{{- end }}
+		{{- if not .HasParent }}
 		GroupID: "{{ .Package.Name }}",
 		Annotations: map[string]string{
 			"package": "{{ .Package.Name }}",
 		},
-		{{- if .IsPrivatePreview }}
+		{{- end }}
+		{{- if $hideService }}
 
 		// This service is being previewed; hide from help output.
 		Hidden: true,
 		{{- end }}
 	}
+
+	{{ if gt (len .Methods) 0 -}}
+	// Add methods
+	{{- range .Methods}}
+		{{- if in $excludeMethods .KebabName }}
+			{{- continue}}
+		{{- end}}
+		cmd.AddCommand(new{{.PascalName}}())
+	{{- end}}
+	{{- end}}
+
+	{{ if .HasSubservices }}
+	// Add subservices
+	{{- range .Subservices}}
+	cmd.AddCommand({{.SnakeName}}.New())
+	{{- end}}
+	{{- end}}
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -67,8 +94,7 @@ func New() *cobra.Command {
 {{- $serviceName := .KebabName -}}
 {{range .Methods}}
 
-{{- $excludes := list "put-secret" -}}
-{{if in $excludes .KebabName }}
+{{if in $excludeMethods .KebabName }}
 	{{continue}}
 {{end}}
 // start {{.KebabName}} command
@@ -121,7 +147,14 @@ func new{{.PascalName}}() *cobra.Command {
 	{{- end}}
 	{{end}}
 
-	{{- $excludeFromPrompts := list "workspace get-status" -}}
+	{{- $excludeFromPrompts := list
+		"workspace get-status"
+		"provider-exchanges get"
+		"provider-exchanges delete"
+		"provider-exchanges delete-listing-from-exchange"
+		"provider-exchanges list-exchanges-for-listing"
+		"provider-exchanges list-listings-for-exchange"
+		-}}
 	{{- $fullCommandName := (print $serviceName " " .KebabName) -}}
 	{{- $noPrompt := or .IsCrudCreate (in $excludeFromPrompts $fullCommandName) }}
 
@@ -159,7 +192,8 @@ func new{{.PascalName}}() *cobra.Command {
     {{- end -}}
 	`
 	{{- end }}
-	{{- if .IsPrivatePreview }}
+	{{/* Don't hide commands if the service itself is already hidden. */}}
+	{{- if and (not $hideService) .IsPrivatePreview }}
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true
@@ -170,7 +204,7 @@ func new{{.PascalName}}() *cobra.Command {
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		{{- if $hasDifferentArgsWithJsonFlag }}
 		if cmd.Flags().Changed("json") {
-			err := cobra.ExactArgs({{len .Request.RequiredPathFields}})(cmd, args)
+			err := root.ExactArgs({{len .Request.RequiredPathFields}})(cmd, args)
 			if err != nil {
 			{{- if eq 0 (len .Request.RequiredPathFields) }}
 				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide{{- range $index, $field := .Request.RequiredFields}}{{if $index}},{{end}} '{{$field.Name}}'{{end}} in your JSON input")
@@ -182,7 +216,7 @@ func new{{.PascalName}}() *cobra.Command {
 		}
 		{{- end }}
 		{{- if $hasRequiredArgs }}
-		check := cobra.ExactArgs({{len .RequiredPositionalArguments}})
+		check := root.ExactArgs({{len .RequiredPositionalArguments}})
 		return check(cmd, args)
 		{{- else}}
 		return nil
@@ -242,7 +276,7 @@ func new{{.PascalName}}() *cobra.Command {
 			return err
 		}
 		if {{.CamelName}}SkipWait {
-			{{if .Response -}}
+			{{if not .Response.IsEmpty -}}
 			return cmdio.Render(ctx, wait.Response)
 			{{- else -}}
 			return nil
@@ -291,25 +325,34 @@ func new{{.PascalName}}() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(new{{.PascalName}}())
-	})
-}
 {{end}}
 // end service {{.Name}}{{end}}
 
 {{- define "method-call" -}}
-		{{if .Response}}response, err :={{else}}err ={{end}} {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{(.Service.TrimPrefix "account").PascalName}}.{{.PascalName}}{{if .Pagination}}All{{end}}(ctx{{if .Request}}, {{.CamelName}}Req{{end}})
+		{{if not .Response.IsEmpty -}}
+		  response{{ if not .Pagination}}, err{{end}} :=
+		{{- else -}}
+		  err =
+		{{- end}}
+		{{- if .Service.IsAccounts}}a{{else}}w{{end}}.
+		{{- if .Service.HasParent }}
+			{{- (.Service.ParentService.TrimPrefix "account").PascalName }}.
+			{{- (.Service.TrimPrefix "account").PascalName}}().
+		{{- else}}
+			{{- (.Service.TrimPrefix "account").PascalName}}.
+		{{- end}}
+		{{- .PascalName}}(ctx{{if .Request}}, {{.CamelName}}Req{{end}})
+		{{- if not (and .Response .Pagination) }}
 		if err != nil {
 			return err
 		}
-		{{ if .Response -}}
+		{{- end}}
+		{{ if not .Response.IsEmpty -}}
 			{{- if .IsResponseByteStream -}}
 			defer response.{{.ResponseBodyField.PascalName}}.Close()
-			return cmdio.RenderReader(ctx, response.{{.ResponseBodyField.PascalName}})
+			return cmdio.Render{{ if .Pagination}}Iterator{{end}}(ctx, response.{{.ResponseBodyField.PascalName}})
 			{{- else -}}
-			return cmdio.Render(ctx, response)
+			return cmdio.Render{{ if .Pagination}}Iterator{{end}}(ctx, response)
 			{{- end -}}
 		{{ else -}}
 		return nil

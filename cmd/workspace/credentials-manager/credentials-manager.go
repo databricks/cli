@@ -31,6 +31,9 @@ func New() *cobra.Command {
 		Hidden: true,
 	}
 
+	// Add methods
+	cmd.AddCommand(newExchangeToken())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -61,8 +64,8 @@ func newExchangeToken() *cobra.Command {
 	cmd.Short = `Exchange token.`
 	cmd.Long = `Exchange token.
   
-  Exchange tokens with an Identity Provider to get a new access token. It
-  allowes specifying scopes to determine token permissions.`
+  Exchange tokens with an Identity Provider to get a new access token. It allows
+  specifying scopes to determine token permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -97,12 +100,6 @@ func newExchangeToken() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newExchangeToken())
-	})
 }
 
 // end service CredentialsManager

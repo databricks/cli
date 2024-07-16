@@ -7,6 +7,9 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/internal/tf/schema"
+	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 )
 
 type write struct{}
@@ -15,16 +18,24 @@ func (w *write) Name() string {
 	return "terraform.Write"
 }
 
-func (w *write) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (w *write) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	dir, err := Dir(ctx, b)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
-	root := BundleToTerraform(&b.Config)
-	f, err := os.Create(filepath.Join(dir, "bundle.tf.json"))
+	var root *schema.Root
+	err = b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		root, err = BundleToTerraformWithDynValue(ctx, v)
+		return v, err
+	})
 	if err != nil {
-		return err
+		return diag.FromErr(err)
+	}
+
+	f, err := os.Create(filepath.Join(dir, TerraformConfigFileName))
+	if err != nil {
+		return diag.FromErr(err)
 	}
 
 	defer f.Close()
@@ -33,7 +44,7 @@ func (w *write) Apply(ctx context.Context, b *bundle.Bundle) error {
 	enc.SetIndent("", "  ")
 	err = enc.Encode(root)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	return nil

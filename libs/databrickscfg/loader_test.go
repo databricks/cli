@@ -68,7 +68,7 @@ func TestLoaderErrorsOnInvalidFile(t *testing.T) {
 		Loaders: []config.Loader{
 			ResolveProfileFromHost,
 		},
-		ConfigFile: "testdata/badcfg",
+		ConfigFile: "profile/testdata/badcfg",
 		Host:       "https://default",
 	}
 
@@ -81,7 +81,7 @@ func TestLoaderSkipsNoMatchingHost(t *testing.T) {
 		Loaders: []config.Loader{
 			ResolveProfileFromHost,
 		},
-		ConfigFile: "testdata/databrickscfg",
+		ConfigFile: "profile/testdata/databrickscfg",
 		Host:       "https://noneofthehostsmatch",
 	}
 
@@ -95,7 +95,7 @@ func TestLoaderMatchingHost(t *testing.T) {
 		Loaders: []config.Loader{
 			ResolveProfileFromHost,
 		},
-		ConfigFile: "testdata/databrickscfg",
+		ConfigFile: "profile/testdata/databrickscfg",
 		Host:       "https://default",
 	}
 
@@ -110,7 +110,7 @@ func TestLoaderMatchingHostWithQuery(t *testing.T) {
 		Loaders: []config.Loader{
 			ResolveProfileFromHost,
 		},
-		ConfigFile: "testdata/databrickscfg",
+		ConfigFile: "profile/testdata/databrickscfg",
 		Host:       "https://query/?foo=bar",
 	}
 
@@ -125,7 +125,7 @@ func TestLoaderErrorsOnMultipleMatches(t *testing.T) {
 		Loaders: []config.Loader{
 			ResolveProfileFromHost,
 		},
-		ConfigFile: "testdata/databrickscfg",
+		ConfigFile: "profile/testdata/databrickscfg",
 		Host:       "https://foo/bar",
 	}
 

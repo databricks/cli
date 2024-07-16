@@ -41,6 +41,9 @@ func GetCloud(t *testing.T) Cloud {
 		return Azure
 	case "gcp":
 		return GCP
+	// CLOUD_ENV is set to "ucws" in the "aws-prod-ucws" test environment
+	case "ucws":
+		return AWS
 	default:
 		t.Fatalf("Unknown cloud environment: %s", env)
 	}

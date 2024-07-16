@@ -29,6 +29,11 @@ func New() *cobra.Command {
 		},
 	}
 
+	// Add methods
+	cmd.AddCommand(newGetAssignableRolesForResource())
+	cmd.AddCommand(newGetRuleSet())
+	cmd.AddCommand(newUpdateRuleSet())
+
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -67,7 +72,7 @@ func newGetAssignableRolesForResource() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -95,12 +100,6 @@ func newGetAssignableRolesForResource() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetAssignableRolesForResource())
-	})
 }
 
 // start get-rule-set command
@@ -141,7 +140,7 @@ func newGetRuleSet() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -170,12 +169,6 @@ func newGetRuleSet() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGetRuleSet())
-	})
 }
 
 // start update-rule-set command
@@ -237,12 +230,6 @@ func newUpdateRuleSet() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdateRuleSet())
-	})
 }
 
 // end service AccountAccessControl

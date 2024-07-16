@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAnnotateJobsMutator(t *testing.T) {
@@ -34,8 +35,8 @@ func TestAnnotateJobsMutator(t *testing.T) {
 		},
 	}
 
-	err := AnnotateJobs().Apply(context.Background(), b)
-	assert.NoError(t, err)
+	diags := AnnotateJobs().Apply(context.Background(), b)
+	require.NoError(t, diags.Error())
 
 	assert.Equal(t,
 		&jobs.JobDeployment{
@@ -43,7 +44,7 @@ func TestAnnotateJobsMutator(t *testing.T) {
 			MetadataFilePath: "/a/b/c/metadata.json",
 		},
 		b.Config.Resources.Jobs["my-job-1"].JobSettings.Deployment)
-	assert.Equal(t, jobs.JobSettingsEditModeUiLocked, b.Config.Resources.Jobs["my-job-1"].EditMode)
+	assert.Equal(t, jobs.JobEditModeUiLocked, b.Config.Resources.Jobs["my-job-1"].EditMode)
 	assert.Equal(t, jobs.FormatMultiTask, b.Config.Resources.Jobs["my-job-1"].Format)
 
 	assert.Equal(t,
@@ -52,7 +53,7 @@ func TestAnnotateJobsMutator(t *testing.T) {
 			MetadataFilePath: "/a/b/c/metadata.json",
 		},
 		b.Config.Resources.Jobs["my-job-2"].JobSettings.Deployment)
-	assert.Equal(t, jobs.JobSettingsEditModeUiLocked, b.Config.Resources.Jobs["my-job-2"].EditMode)
+	assert.Equal(t, jobs.JobEditModeUiLocked, b.Config.Resources.Jobs["my-job-2"].EditMode)
 	assert.Equal(t, jobs.FormatMultiTask, b.Config.Resources.Jobs["my-job-2"].Format)
 }
 
@@ -67,6 +68,6 @@ func TestAnnotateJobsMutatorJobWithoutSettings(t *testing.T) {
 		},
 	}
 
-	err := AnnotateJobs().Apply(context.Background(), b)
-	assert.NoError(t, err)
+	diags := AnnotateJobs().Apply(context.Background(), b)
+	require.NoError(t, diags.Error())
 }

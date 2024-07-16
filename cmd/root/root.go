@@ -2,6 +2,7 @@ package root
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -91,13 +92,12 @@ func flagErrorFunc(c *cobra.Command, err error) error {
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute(cmd *cobra.Command) {
+func Execute(ctx context.Context, cmd *cobra.Command) error {
 	// TODO: deferred panic recovery
-	ctx := context.Background()
 
 	// Run the command
 	cmd, err := cmd.ExecuteContextC(ctx)
-	if err != nil {
+	if err != nil && !errors.Is(err, ErrAlreadyPrinted) {
 		// If cmdio logger initialization succeeds, then this function logs with the
 		// initialized cmdio logger, otherwise with the default cmdio logger
 		cmdio.LogError(cmd.Context(), err)
@@ -117,7 +117,5 @@ func Execute(cmd *cobra.Command) {
 		}
 	}
 
-	if err != nil {
-		os.Exit(1)
-	}
+	return err
 }

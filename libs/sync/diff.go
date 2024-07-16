@@ -2,7 +2,6 @@ package sync
 
 import (
 	"path"
-	"path/filepath"
 
 	"golang.org/x/exp/maps"
 )
@@ -64,7 +63,7 @@ func (d *diff) addFilesWithRemoteNameChanged(after *SnapshotState, before *Snaps
 func (d *diff) addNewFiles(after *SnapshotState, before *SnapshotState) {
 	for localName := range after.LastModifiedTimes {
 		if _, ok := before.LastModifiedTimes[localName]; !ok {
-			d.put = append(d.put, filepath.ToSlash(localName))
+			d.put = append(d.put, localName)
 		}
 	}
 
@@ -79,7 +78,7 @@ func (d *diff) addUpdatedFiles(after *SnapshotState, before *SnapshotState) {
 	for localName, modTime := range after.LastModifiedTimes {
 		prevModTime, ok := before.LastModifiedTimes[localName]
 		if ok && modTime.After(prevModTime) {
-			d.put = append(d.put, filepath.ToSlash(localName))
+			d.put = append(d.put, localName)
 		}
 	}
 }

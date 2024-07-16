@@ -1,22 +1,26 @@
 package config
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/config/variable"
+	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/cli/libs/dyn/merge"
+	"github.com/databricks/cli/libs/dyn/yamlloader"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/ghodss/yaml"
-	"github.com/imdario/mergo"
 )
 
 type Root struct {
-	// Path contains the directory path to the root of the bundle.
-	// It is set when loading `databricks.yml`.
-	Path string `json:"-" bundle:"readonly"`
+	value dyn.Value
+	depth int
 
 	// Contains user defined variables
 	Variables map[string]*variable.Variable `json:"variables,omitempty"`
@@ -64,54 +68,187 @@ type Root struct {
 }
 
 // Load loads the bundle configuration file at the specified path.
-func Load(path string) (*Root, error) {
+func Load(path string) (*Root, diag.Diagnostics) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return nil, diag.FromErr(err)
 	}
 
-	var r Root
-	err = yaml.Unmarshal(raw, &r)
+	return LoadFromBytes(path, raw)
+}
+
+func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
+	r := Root{}
+
+	// Load configuration tree from YAML.
+	v, err := yamlloader.LoadYAML(path, bytes.NewBuffer(raw))
 	if err != nil {
-		return nil, fmt.Errorf("failed to load %s: %w", path, err)
+		return nil, diag.Errorf("failed to load %s: %v", path, err)
 	}
 
-	if r.Environments != nil && r.Targets != nil {
-		return nil, fmt.Errorf("both 'environments' and 'targets' are specified, only 'targets' should be used: %s", path)
+	// Rewrite configuration tree where necessary.
+	v, err = rewriteShorthands(v)
+	if err != nil {
+		return nil, diag.Errorf("failed to rewrite %s: %v", path, err)
 	}
 
-	if r.Environments != nil {
-		//TODO: add a command line notice that this is a deprecated option.
-		r.Targets = r.Environments
-	}
+	// Normalize dynamic configuration tree according to configuration type.
+	v, diags := convert.Normalize(r, v)
 
-	r.Path = filepath.Dir(path)
-	r.SetConfigFilePath(path)
+	// Convert normalized configuration tree to typed configuration.
+	err = r.updateWithDynamicValue(v)
+	if err != nil {
+		return nil, diag.Errorf("failed to load %s: %v", path, err)
+	}
 
 	_, err = r.Resources.VerifyUniqueResourceIdentifiers()
-	return &r, err
+	if err != nil {
+		diags = diags.Extend(diag.FromErr(err))
+	}
+	return &r, diags
+}
+
+func (r *Root) initializeDynamicValue() error {
+	// Many test cases initialize a config as a Go struct literal.
+	// The value will be invalid and we need to populate it from the typed configuration.
+	if r.value.IsValid() {
+		return nil
+	}
+
+	nv, err := convert.FromTyped(r, dyn.NilValue)
+	if err != nil {
+		return err
+	}
+
+	r.value = nv
+	return nil
+}
+
+func (r *Root) updateWithDynamicValue(nv dyn.Value) error {
+	// Hack: restore state; it may be cleared by [ToTyped] if
+	// the configuration equals nil (happens in tests).
+	depth := r.depth
+
+	defer func() {
+		r.depth = depth
+	}()
+
+	// Convert normalized configuration tree to typed configuration.
+	err := convert.ToTyped(r, nv)
+	if err != nil {
+		return err
+	}
+
+	// Assign the normalized configuration tree.
+	r.value = nv
+
+	// At the moment the check has to be done as part of updateWithDynamicValue
+	// because otherwise ConfigureConfigFilePath will fail with a panic.
+	// In the future, we should move this check to a separate mutator in initialise phase.
+	err = r.Resources.VerifyAllResourcesDefined()
+	if err != nil {
+		return err
+	}
+
+	// Assign config file paths after converting to typed configuration.
+	r.ConfigureConfigFilePath()
+	return nil
+}
+
+// Mutate applies a transformation to the dynamic configuration value of a Root object.
+//
+// Parameters:
+// - fn: A function that mutates a dyn.Value object
+//
+// Example usage, setting bundle.deployment.lock.enabled to false:
+//
+//	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+//	    return dyn.Map(v, "bundle.deployment.lock", func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
+//	        return dyn.Set(v, "enabled", dyn.V(false))
+//	    })
+//	})
+func (r *Root) Mutate(fn func(dyn.Value) (dyn.Value, error)) error {
+	err := r.initializeDynamicValue()
+	if err != nil {
+		return err
+	}
+	nv, err := fn(r.value)
+	if err != nil {
+		return err
+	}
+	err = r.updateWithDynamicValue(nv)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *Root) MarkMutatorEntry(ctx context.Context) error {
+	err := r.initializeDynamicValue()
+	if err != nil {
+		return err
+	}
+
+	r.depth++
+
+	// If we are entering a mutator at depth 1, we need to convert
+	// the dynamic configuration tree to typed configuration.
+	if r.depth == 1 {
+		// Always run ToTyped upon entering a mutator.
+		// Convert normalized configuration tree to typed configuration.
+		err := r.updateWithDynamicValue(r.value)
+		if err != nil {
+			log.Warnf(ctx, "unable to convert dynamic configuration to typed configuration: %v", err)
+			return err
+		}
+
+	} else {
+		nv, err := convert.FromTyped(r, r.value)
+		if err != nil {
+			log.Warnf(ctx, "unable to convert typed configuration to dynamic configuration: %v", err)
+			return err
+		}
+
+		// Re-run ToTyped to ensure that no state is piggybacked
+		err = r.updateWithDynamicValue(nv)
+		if err != nil {
+			log.Warnf(ctx, "unable to convert dynamic configuration to typed configuration: %v", err)
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (r *Root) MarkMutatorExit(ctx context.Context) error {
+	r.depth--
+
+	// If we are exiting a mutator at depth 0, we need to convert
+	// the typed configuration to a dynamic configuration tree.
+	if r.depth == 0 {
+		nv, err := convert.FromTyped(r, r.value)
+		if err != nil {
+			log.Warnf(ctx, "unable to convert typed configuration to dynamic configuration: %v", err)
+			return err
+		}
+
+		// Re-run ToTyped to ensure that no state is piggybacked
+		err = r.updateWithDynamicValue(nv)
+		if err != nil {
+			log.Warnf(ctx, "unable to convert dynamic configuration to typed configuration: %v", err)
+			return err
+		}
+	}
+
+	return nil
 }
 
 // SetConfigFilePath configures the path that its configuration
 // was loaded from in configuration leafs that require it.
-func (r *Root) SetConfigFilePath(path string) {
-	r.Resources.SetConfigFilePath(path)
+func (r *Root) ConfigureConfigFilePath() {
+	r.Resources.ConfigureConfigFilePath()
 	if r.Artifacts != nil {
-		r.Artifacts.SetConfigFilePath(path)
-	}
-
-	if r.Targets != nil {
-		for _, env := range r.Targets {
-			if env == nil {
-				continue
-			}
-			if env.Resources != nil {
-				env.Resources.SetConfigFilePath(path)
-			}
-			if env.Artifacts != nil {
-				env.Artifacts.SetConfigFilePath(path)
-			}
-		}
+		r.Artifacts.ConfigureConfigFilePath()
 	}
 }
 
@@ -130,6 +267,11 @@ func (r *Root) InitializeVariables(vars []string) error {
 		if _, ok := r.Variables[name]; !ok {
 			return fmt.Errorf("variable %s has not been defined", name)
 		}
+
+		if r.Variables[name].IsComplex() {
+			return fmt.Errorf("setting variables of complex type via --var flag is not supported: %s", name)
+		}
+
 		err := r.Variables[name].Set(val)
 		if err != nil {
 			return fmt.Errorf("failed to assign %s to %s: %s", val, name, err)
@@ -139,127 +281,251 @@ func (r *Root) InitializeVariables(vars []string) error {
 }
 
 func (r *Root) Merge(other *Root) error {
-	err := r.Sync.Merge(r, other)
-	if err != nil {
-		return err
-	}
-	other.Sync = Sync{}
-
-	// TODO: when hooking into merge semantics, disallow setting path on the target instance.
-	other.Path = ""
-
 	// Check for safe merge, protecting against duplicate resource identifiers
-	err = r.Resources.VerifySafeMerge(&other.Resources)
+	err := r.Resources.VerifySafeMerge(&other.Resources)
 	if err != nil {
 		return err
 	}
 
-	// TODO: define and test semantics for merging.
-	return mergo.Merge(r, other, mergo.WithOverride)
+	// Merge dynamic configuration values.
+	return r.Mutate(func(root dyn.Value) (dyn.Value, error) {
+		return merge.Merge(root, other.value)
+	})
 }
 
-func (r *Root) MergeTargetOverrides(target *Target) error {
+func mergeField(rv, ov dyn.Value, name string) (dyn.Value, error) {
+	path := dyn.NewPath(dyn.Key(name))
+	reference, _ := dyn.GetByPath(rv, path)
+	override, _ := dyn.GetByPath(ov, path)
+
+	// Merge the override into the reference.
+	var out dyn.Value
 	var err error
-
-	// Target may be nil if it's empty.
-	if target == nil {
-		return nil
+	if reference.IsValid() && override.IsValid() {
+		out, err = merge.Merge(reference, override)
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+	} else if reference.IsValid() {
+		out = reference
+	} else if override.IsValid() {
+		out = override
+	} else {
+		return rv, nil
 	}
 
-	if target.Bundle != nil {
-		err = mergo.Merge(&r.Bundle, target.Bundle, mergo.WithOverride)
-		if err != nil {
+	return dyn.SetByPath(rv, path, out)
+}
+
+func (r *Root) MergeTargetOverrides(name string) error {
+	root := r.value
+	target, err := dyn.GetByPath(root, dyn.NewPath(dyn.Key("targets"), dyn.Key(name)))
+	if err != nil {
+		return err
+	}
+
+	// Confirm validity of variable overrides.
+	err = validateVariableOverrides(root, target)
+	if err != nil {
+		return err
+	}
+
+	// Merge fields that can be merged 1:1.
+	for _, f := range []string{
+		"bundle",
+		"workspace",
+		"artifacts",
+		"resources",
+		"sync",
+		"permissions",
+	} {
+		if root, err = mergeField(root, target, f); err != nil {
 			return err
 		}
 	}
 
-	if target.Workspace != nil {
-		err = mergo.Merge(&r.Workspace, target.Workspace, mergo.WithOverride)
-		if err != nil {
-			return err
-		}
-	}
+	// Merge `variables`. This field must be overwritten if set, not merged.
+	if v := target.Get("variables"); v.Kind() != dyn.KindInvalid {
+		_, err = dyn.Map(v, ".", dyn.Foreach(func(p dyn.Path, variable dyn.Value) (dyn.Value, error) {
+			varPath := dyn.MustPathFromString("variables").Append(p...)
 
-	if target.Artifacts != nil {
-		err = mergo.Merge(&r.Artifacts, target.Artifacts, mergo.WithOverride, mergo.WithAppendSlice)
-		if err != nil {
-			return err
-		}
-	}
-
-	if target.Resources != nil {
-		err = mergo.Merge(&r.Resources, target.Resources, mergo.WithOverride, mergo.WithAppendSlice)
-		if err != nil {
-			return err
-		}
-
-		err = r.Resources.Merge()
-		if err != nil {
-			return err
-		}
-	}
-
-	if target.Variables != nil {
-		for k, v := range target.Variables {
-			rootVariable, ok := r.Variables[k]
-			if !ok {
-				return fmt.Errorf("variable %s is not defined but is assigned a value", k)
+			vDefault := variable.Get("default")
+			if vDefault.Kind() != dyn.KindInvalid {
+				defaultPath := varPath.Append(dyn.Key("default"))
+				root, err = dyn.SetByPath(root, defaultPath, vDefault)
 			}
 
-			if sv, ok := v.(string); ok {
-				// we  allow overrides of the default value for a variable
-				defaultVal := sv
-				rootVariable.Default = &defaultVal
-			} else if vv, ok := v.(map[string]any); ok {
-				// we also allow overrides of the lookup value for a variable
-				lookup, ok := vv["lookup"]
-				if !ok {
-					return fmt.Errorf("variable %s is incorrectly defined lookup override, no 'lookup' key defined", k)
+			vLookup := variable.Get("lookup")
+			if vLookup.Kind() != dyn.KindInvalid {
+				lookupPath := varPath.Append(dyn.Key("lookup"))
+				root, err = dyn.SetByPath(root, lookupPath, vLookup)
+			}
+
+			return root, err
+		}))
+		if err != nil {
+			return err
+		}
+	}
+
+	// Merge `run_as`. This field must be overwritten if set, not merged.
+	if v := target.Get("run_as"); v.Kind() != dyn.KindInvalid {
+		root, err = dyn.Set(root, "run_as", v)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Below, we're setting fields on the bundle key, so make sure it exists.
+	if root.Get("bundle").Kind() == dyn.KindInvalid {
+		root, err = dyn.Set(root, "bundle", dyn.V(map[string]dyn.Value{}))
+		if err != nil {
+			return err
+		}
+	}
+
+	// Merge `mode`. This field must be overwritten if set, not merged.
+	if v := target.Get("mode"); v.Kind() != dyn.KindInvalid {
+		root, err = dyn.SetByPath(root, dyn.NewPath(dyn.Key("bundle"), dyn.Key("mode")), v)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Merge `compute_id`. This field must be overwritten if set, not merged.
+	if v := target.Get("compute_id"); v.Kind() != dyn.KindInvalid {
+		root, err = dyn.SetByPath(root, dyn.NewPath(dyn.Key("bundle"), dyn.Key("compute_id")), v)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Merge `git`.
+	if v := target.Get("git"); v.Kind() != dyn.KindInvalid {
+		ref, err := dyn.GetByPath(root, dyn.NewPath(dyn.Key("bundle"), dyn.Key("git")))
+		if err != nil {
+			ref = dyn.V(map[string]dyn.Value{})
+		}
+
+		// Merge the override into the reference.
+		out, err := merge.Merge(ref, v)
+		if err != nil {
+			return err
+		}
+
+		// If the branch was overridden, we need to clear the inferred flag.
+		if branch := v.Get("branch"); branch.Kind() != dyn.KindInvalid {
+			out, err = dyn.SetByPath(out, dyn.NewPath(dyn.Key("inferred")), dyn.V(false))
+			if err != nil {
+				return err
+			}
+		}
+
+		// Set the merged value.
+		root, err = dyn.SetByPath(root, dyn.NewPath(dyn.Key("bundle"), dyn.Key("git")), out)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Convert normalized configuration tree to typed configuration.
+	return r.updateWithDynamicValue(root)
+}
+
+// rewriteShorthands performs lightweight rewriting of the configuration
+// tree where we allow users to write a shorthand and must rewrite to the full form.
+func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
+	if v.Kind() != dyn.KindMap {
+		return v, nil
+	}
+
+	// For each target, rewrite the variables block.
+	return dyn.Map(v, "targets", dyn.Foreach(func(_ dyn.Path, target dyn.Value) (dyn.Value, error) {
+		// Confirm it has a variables block.
+		if target.Get("variables").Kind() == dyn.KindInvalid {
+			return target, nil
+		}
+
+		// For each variable, normalize its contents if it is a single string.
+		return dyn.Map(target, "variables", dyn.Foreach(func(p dyn.Path, variable dyn.Value) (dyn.Value, error) {
+			switch variable.Kind() {
+
+			case dyn.KindString, dyn.KindBool, dyn.KindFloat, dyn.KindInt:
+				// Rewrite the variable to a map with a single key called "default".
+				// This conforms to the variable type. Normalization back to the typed
+				// configuration will convert this to a string if necessary.
+				return dyn.NewValue(map[string]dyn.Value{
+					"default": variable,
+				}, variable.Locations()), nil
+
+			case dyn.KindMap, dyn.KindSequence:
+				// Check if the original definition of variable has a type field.
+				typeV, err := dyn.GetByPath(v, p.Append(dyn.Key("type")))
+				if err != nil {
+					return variable, nil
 				}
-				rootVariable.Lookup = variable.LookupFromMap(lookup.(map[string]any))
-			} else {
-				return fmt.Errorf("variable %s is incorrectly defined in target override", k)
+
+				if typeV.MustString() == "complex" {
+					return dyn.NewValue(map[string]dyn.Value{
+						"type":    typeV,
+						"default": variable,
+					}, variable.Locations()), nil
+				}
+
+				return variable, nil
+
+			default:
+				return variable, nil
 			}
+		}))
+	}))
+}
+
+// validateVariableOverrides checks that all variables specified
+// in the target override are also defined in the root.
+func validateVariableOverrides(root, target dyn.Value) (err error) {
+	var rv map[string]variable.Variable
+	var tv map[string]variable.Variable
+
+	// Collect variables from the root.
+	if v := root.Get("variables"); v.Kind() != dyn.KindInvalid {
+		err = convert.ToTyped(&rv, v)
+		if err != nil {
+			return fmt.Errorf("unable to collect variables from root: %w", err)
 		}
 	}
 
-	if target.RunAs != nil {
-		r.RunAs = target.RunAs
-	}
-
-	if target.Mode != "" {
-		r.Bundle.Mode = target.Mode
-	}
-
-	if target.ComputeID != "" {
-		r.Bundle.ComputeID = target.ComputeID
-	}
-
-	git := &r.Bundle.Git
-	if target.Git.Branch != "" {
-		git.Branch = target.Git.Branch
-		git.Inferred = false
-	}
-	if target.Git.Commit != "" {
-		git.Commit = target.Git.Commit
-	}
-	if target.Git.OriginURL != "" {
-		git.OriginURL = target.Git.OriginURL
-	}
-
-	if target.Sync != nil {
-		err = mergo.Merge(&r.Sync, target.Sync, mergo.WithAppendSlice)
+	// Collect variables from the target.
+	if v := target.Get("variables"); v.Kind() != dyn.KindInvalid {
+		err = convert.ToTyped(&tv, v)
 		if err != nil {
-			return err
+			return fmt.Errorf("unable to collect variables from target: %w", err)
 		}
 	}
 
-	if target.Permissions != nil {
-		err = mergo.Merge(&r.Permissions, target.Permissions, mergo.WithAppendSlice)
-		if err != nil {
-			return err
+	// Check that all variables in the target exist in the root.
+	for k := range tv {
+		if _, ok := rv[k]; !ok {
+			return fmt.Errorf("variable %s is not defined but is assigned a value", k)
 		}
 	}
 
 	return nil
+}
+
+// Best effort to get the location of configuration value at the specified path.
+// This function is useful to annotate error messages with the location, because
+// we don't want to fail with a different error message if we cannot retrieve the location.
+func (r Root) GetLocation(path string) dyn.Location {
+	v, err := dyn.Get(r.value, path)
+	if err != nil {
+		return dyn.Location{}
+	}
+	return v.Location()
+}
+
+// Value returns the dynamic configuration value of the root object. This value
+// is the source of truth and is kept in sync with values in the typed configuration.
+func (r Root) Value() dyn.Value {
+	return r.value
 }

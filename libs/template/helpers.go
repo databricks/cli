@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 	"net/url"
 	"os"
 	"regexp"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
@@ -29,6 +31,7 @@ type pair struct {
 
 var cachedUser *iam.User
 var cachedIsServicePrincipal *bool
+var cachedCatalog *string
 
 func loadHelpers(ctx context.Context) template.FuncMap {
 	w := root.WorkspaceClient(ctx)
@@ -43,6 +46,10 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 		// Alias for https://pkg.go.dev/regexp#Compile. Allows usage of all methods of regexp.Regexp
 		"regexp": func(expr string) (*regexp.Regexp, error) {
 			return regexp.Compile(expr)
+		},
+		// Alias for https://pkg.go.dev/math/rand#Intn. Returns, as an int, a non-negative pseudo-random number in the half-open interval [0,n).
+		"random_int": func(n int) int {
+			return rand.Intn(n)
 		},
 		// A key value pair. This is used with the map function to generate maps
 		// to use inside a template
@@ -108,6 +115,25 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			}
 			return auth.GetShortUserName(cachedUser.UserName), nil
 		},
+		// Get the default workspace catalog. If there is no default, or if
+		// Unity Catalog is not enabled, return an empty string.
+		"default_catalog": func() (string, error) {
+			if cachedCatalog == nil {
+				metastore, err := w.Metastores.Current(ctx)
+				if err != nil {
+					var aerr *apierr.APIError
+					if errors.As(err, &aerr) && aerr.ErrorCode == "METASTORE_DOES_NOT_EXIST" {
+						// Workspace doesn't have a metastore assigned, ignore error
+						empty_default := ""
+						cachedCatalog = &empty_default
+						return "", nil
+					}
+					return "", err
+				}
+				cachedCatalog = &metastore.DefaultCatalogName
+			}
+			return *cachedCatalog, nil
+		},
 		"is_service_principal": func() (bool, error) {
 			if cachedIsServicePrincipal != nil {
 				return *cachedIsServicePrincipal, nil
@@ -119,7 +145,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 					return false, err
 				}
 			}
-			result := auth.IsServicePrincipal(cachedUser.Id)
+			result := auth.IsServicePrincipal(cachedUser.UserName)
 			cachedIsServicePrincipal = &result
 			return result, nil
 		},

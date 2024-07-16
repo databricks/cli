@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/diag"
 )
 
 type defineDefaultTarget struct {
@@ -24,7 +25,7 @@ func (m *defineDefaultTarget) Name() string {
 	return fmt.Sprintf("DefineDefaultTarget(%s)", m.name)
 }
 
-func (m *defineDefaultTarget) Apply(_ context.Context, b *bundle.Bundle) error {
+func (m *defineDefaultTarget) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Nothing to do if the configuration has at least 1 target.
 	if len(b.Config.Targets) > 0 {
 		return nil

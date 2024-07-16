@@ -11,8 +11,8 @@ import (
 	"github.com/databricks/cli/cmd/labs/github"
 	"github.com/databricks/cli/cmd/labs/unpack"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/process"
 	"github.com/databricks/cli/libs/python"
@@ -89,7 +89,7 @@ func (i *installer) Install(ctx context.Context) error {
 		return err
 	}
 	w, err := i.login(ctx)
-	if err != nil && errors.Is(err, databrickscfg.ErrNoConfiguration) {
+	if err != nil && errors.Is(err, profile.ErrNoConfiguration) {
 		cfg, err := i.Installer.envAwareConfig(ctx)
 		if err != nil {
 			return err
@@ -135,6 +135,10 @@ func (i *installer) Upgrade(ctx context.Context) error {
 	err = i.runInstallHook(ctx)
 	if err != nil {
 		return fmt.Errorf("installer: %w", err)
+	}
+	err = i.installPythonDependencies(ctx, ".")
+	if err != nil {
+		return fmt.Errorf("python dependencies: %w", err)
 	}
 	return nil
 }

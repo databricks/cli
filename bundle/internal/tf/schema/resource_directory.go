@@ -7,4 +7,5 @@ type ResourceDirectory struct {
 	Id              string `json:"id,omitempty"`
 	ObjectId        int    `json:"object_id,omitempty"`
 	Path            string `json:"path"`
+	WorkspacePath   string `json:"workspace_path,omitempty"`
 }

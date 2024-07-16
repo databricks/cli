@@ -2,14 +2,15 @@ package mutator
 
 import (
 	"context"
-	"fmt"
 	"path"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
@@ -29,9 +30,14 @@ func (m *processTargetMode) Name() string {
 // Mark all resources as being for 'development' purposes, i.e.
 // changing their their name, adding tags, and (in the future)
 // marking them as 'hidden' in the UI.
-func transformDevelopmentMode(b *bundle.Bundle) error {
-	r := b.Config.Resources
+func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	if !b.Config.Bundle.Deployment.Lock.IsExplicitlyEnabled() {
+		log.Infof(ctx, "Development mode: disabling deployment lock since bundle.deployment.lock.enabled is not set to true")
+		disabled := false
+		b.Config.Bundle.Deployment.Lock.Enabled = &disabled
+	}
 
+	r := b.Config.Resources
 	shortName := b.Config.Workspace.CurrentUser.ShortName
 	prefix := "[dev " + shortName + "] "
 
@@ -70,7 +76,7 @@ func transformDevelopmentMode(b *bundle.Bundle) error {
 
 	for i := range r.Models {
 		r.Models[i].Name = prefix + r.Models[i].Name
-		r.Models[i].Tags = append(r.Models[i].Tags, ml.ModelTag{Key: "dev", Value: ""})
+		r.Models[i].Tags = append(r.Models[i].Tags, ml.ModelTag{Key: "dev", Value: tagValue})
 	}
 
 	for i := range r.Experiments {
@@ -97,12 +103,21 @@ func transformDevelopmentMode(b *bundle.Bundle) error {
 		// (registered models in Unity Catalog don't yet support tags)
 	}
 
+	for i := range r.QualityMonitors {
+		// Remove all schedules from monitors, since they don't support pausing/unpausing.
+		// Quality monitors might support the "pause" property in the future, so at the
+		// CLI level we do respect that property if it is set to "unpaused".
+		if r.QualityMonitors[i].Schedule != nil && r.QualityMonitors[i].Schedule.PauseStatus != catalog.MonitorCronSchedulePauseStatusUnpaused {
+			r.QualityMonitors[i].Schedule = nil
+		}
+	}
+
 	return nil
 }
 
-func validateDevelopmentMode(b *bundle.Bundle) error {
+func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
 	if path := findNonUserPath(b); path != "" {
-		return fmt.Errorf("%s must start with '~/' or contain the current username when using 'mode: development'", path)
+		return diag.Errorf("%s must start with '~/' or contain the current username when using 'mode: development'", path)
 	}
 	return nil
 }
@@ -125,7 +140,7 @@ func findNonUserPath(b *bundle.Bundle) string {
 	return ""
 }
 
-func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUsed bool) error {
+func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUsed bool) diag.Diagnostics {
 	if b.Config.Bundle.Git.Inferred {
 		env := b.Config.Bundle.Target
 		log.Warnf(ctx, "target with 'mode: production' should specify an explicit 'targets.%s.git' configuration", env)
@@ -134,12 +149,12 @@ func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUs
 	r := b.Config.Resources
 	for i := range r.Pipelines {
 		if r.Pipelines[i].Development {
-			return fmt.Errorf("target with 'mode: production' cannot include a pipeline with 'development: true'")
+			return diag.Errorf("target with 'mode: production' cannot include a pipeline with 'development: true'")
 		}
 	}
 
 	if !isPrincipalUsed && !isRunAsSet(r) {
-		return fmt.Errorf("'run_as' must be set for all jobs when using 'mode: production'")
+		return diag.Errorf("'run_as' must be set for all jobs when using 'mode: production'")
 	}
 	return nil
 }
@@ -156,21 +171,21 @@ func isRunAsSet(r config.Resources) bool {
 	return true
 }
 
-func (m *processTargetMode) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *processTargetMode) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	switch b.Config.Bundle.Mode {
 	case config.Development:
-		err := validateDevelopmentMode(b)
-		if err != nil {
-			return err
+		diags := validateDevelopmentMode(b)
+		if diags != nil {
+			return diags
 		}
-		return transformDevelopmentMode(b)
+		return transformDevelopmentMode(ctx, b)
 	case config.Production:
 		isPrincipal := auth.IsServicePrincipal(b.Config.Workspace.CurrentUser.UserName)
 		return validateProductionMode(ctx, b, isPrincipal)
 	case "":
 		// No action
 	default:
-		return fmt.Errorf("unsupported value '%s' specified for 'mode': must be either 'development' or 'production'", b.Config.Bundle.Mode)
+		return diag.Errorf("unsupported value '%s' specified for 'mode': must be either 'development' or 'production'", b.Config.Bundle.Mode)
 	}
 
 	return nil

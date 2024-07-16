@@ -2,13 +2,18 @@ package dyn
 
 import (
 	"fmt"
+	"slices"
 )
 
 type Value struct {
 	v any
 
 	k Kind
-	l Location
+
+	// List of locations this value is defined at. The first location in the slice
+	// is the location returned by the `.Location()` method and is typically used
+	// for reporting errors and warnings associated with the value.
+	l []Location
 
 	// Whether or not this value is an anchor.
 	// If this node doesn't map to a type, we don't need to warn about it.
@@ -27,18 +32,43 @@ var NilValue = Value{
 
 // V constructs a new Value with the given value.
 func V(v any) Value {
-	return Value{
-		v: v,
-		k: kindOf(v),
-	}
+	return NewValue(v, []Location{})
 }
 
 // NewValue constructs a new Value with the given value and location.
-func NewValue(v any, loc Location) Value {
+func NewValue(v any, loc []Location) Value {
+	switch vin := v.(type) {
+	case map[string]Value:
+		v = newMappingFromGoMap(vin)
+	}
+
 	return Value{
 		v: v,
 		k: kindOf(v),
-		l: loc,
+
+		// create a copy of the locations, so that mutations to the original slice
+		// don't affect new value.
+		l: slices.Clone(loc),
+	}
+}
+
+// WithLocations returns a new Value with its location set to the given value.
+func (v Value) WithLocations(loc []Location) Value {
+	return Value{
+		v: v.v,
+		k: v.k,
+
+		// create a copy of the locations, so that mutations to the original slice
+		// don't affect new value.
+		l: slices.Clone(loc),
+	}
+}
+
+func (v Value) AppendLocationsFromValue(w Value) Value {
+	return Value{
+		v: v.v,
+		k: v.k,
+		l: append(v.l, w.l...),
 	}
 }
 
@@ -50,8 +80,16 @@ func (v Value) Value() any {
 	return v.v
 }
 
-func (v Value) Location() Location {
+func (v Value) Locations() []Location {
 	return v.l
+}
+
+func (v Value) Location() Location {
+	if len(v.l) == 0 {
+		return Location{}
+	}
+
+	return v.l[0]
 }
 
 func (v Value) IsValid() bool {
@@ -63,12 +101,14 @@ func (v Value) AsAny() any {
 	case KindInvalid:
 		panic("invoked AsAny on invalid value")
 	case KindMap:
-		vv := v.v.(map[string]Value)
-		m := make(map[string]any, len(vv))
-		for k, v := range vv {
-			m[k] = v.AsAny()
+		m := v.v.(Mapping)
+		out := make(map[string]any, m.Len())
+		for _, pair := range m.pairs {
+			pk := pair.Key
+			pv := pair.Value
+			out[pk.MustString()] = pv.AsAny()
 		}
-		return m
+		return out
 	case KindSequence:
 		vv := v.v.([]Value)
 		a := make([]any, len(vv))
@@ -97,12 +137,12 @@ func (v Value) AsAny() any {
 func (v Value) Get(key string) Value {
 	m, ok := v.AsMap()
 	if !ok {
-		return NilValue
+		return InvalidValue
 	}
 
-	vv, ok := m[key]
+	vv, ok := m.GetByString(key)
 	if !ok {
-		return NilValue
+		return InvalidValue
 	}
 
 	return vv
@@ -111,11 +151,11 @@ func (v Value) Get(key string) Value {
 func (v Value) Index(i int) Value {
 	s, ok := v.v.([]Value)
 	if !ok {
-		return NilValue
+		return InvalidValue
 	}
 
 	if i < 0 || i >= len(s) {
-		return NilValue
+		return InvalidValue
 	}
 
 	return s[i]
@@ -140,7 +180,10 @@ func (v Value) IsAnchor() bool {
 // We need a custom implementation because maps and slices
 // cannot be compared with the regular == operator.
 func (v Value) eq(w Value) bool {
-	if v.k != w.k || v.l != w.l {
+	if v.k != w.k {
+		return false
+	}
+	if !slices.Equal(v.l, w.l) {
 		return false
 	}
 
@@ -150,11 +193,22 @@ func (v Value) eq(w Value) bool {
 		// This is safe because we don't allow maps to be mutated.
 		return &v.v == &w.v
 	case KindSequence:
-		// Compare pointers to the underlying slice and slice length.
-		// This is safe because we don't allow slices to be mutated.
 		vs := v.v.([]Value)
 		ws := w.v.([]Value)
-		return &vs[0] == &ws[0] && len(vs) == len(ws)
+		lv := len(vs)
+		lw := len(ws)
+		// If both slices are empty, they are equal.
+		if lv == 0 && lw == 0 {
+			return true
+		}
+		// If they have different lengths, they are not equal.
+		if lv != lw {
+			return false
+		}
+		// They are both non-empty and have the same length.
+		// Compare pointers to the underlying slice.
+		// This is safe because we don't allow slices to be mutated.
+		return &vs[0] == &ws[0]
 	default:
 		return v.v == w.v
 	}

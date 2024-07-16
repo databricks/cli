@@ -1,0 +1,45 @@
+{{- $catalog := .default_catalog}}
+{{- if eq .default_catalog ""}}
+{{- $catalog = "\"\" # workspace default"}}
+{{- end}}
+# This file defines dbt profiles for deployed dbt jobs.
+{{.project_name}}:
+   target: dev # default target
+   outputs:
+
+    # Doing local development with the dbt CLI?
+    # Then you should create your own profile in your .dbt/profiles.yml using 'dbt init'
+    # (See README.md)
+
+    # The default target when deployed with the Databricks CLI
+    # N.B. when you use dbt from the command line, it uses the profile from .dbt/profiles.yml
+    dev:
+      type: databricks
+      method: http
+      catalog: {{$catalog}}
+{{- if (regexp "^yes").MatchString .personal_schemas}}
+      schema: "{{"{{"}} var('dev_schema') {{"}}"}}"
+{{- else}}
+      schema: "{{.shared_schema}}"
+{{- end}}
+
+      http_path: {{.http_path}}
+
+      # The workspace host / token are provided by Databricks
+      # see databricks.yml for the workspace host used for 'dev'
+      host: "{{"{{"}} env_var('DBT_HOST') {{"}}"}}"
+      token: "{{"{{"}} env_var('DBT_ACCESS_TOKEN') {{"}}"}}"
+
+    # The production target when deployed with the Databricks CLI
+    prod:
+      type: databricks
+      method: http
+      catalog: {{$catalog}}
+      schema: {{.shared_schema}}
+
+      http_path: {{.http_path}}
+
+      # The workspace host / token are provided by Databricks
+      # see databricks.yml for the workspace host used for 'prod'
+      host: "{{"{{"}} env_var('DBT_HOST') {{"}}"}}"
+      token: "{{"{{"}} env_var('DBT_ACCESS_TOKEN') {{"}}"}}"

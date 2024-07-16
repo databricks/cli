@@ -10,9 +10,11 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/sync"
+	"github.com/databricks/cli/libs/vfs"
 	"github.com/spf13/cobra"
 )
 
@@ -29,28 +31,14 @@ func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, args []string, b *
 		return nil, fmt.Errorf("SRC and DST are not configurable in the context of a bundle")
 	}
 
-	cacheDir, err := b.CacheDir(cmd.Context())
+	opts, err := files.GetSyncOptions(cmd.Context(), bundle.ReadOnly(b))
 	if err != nil {
-		return nil, fmt.Errorf("cannot get bundle cache directory: %w", err)
+		return nil, fmt.Errorf("cannot get sync options: %w", err)
 	}
 
-	includes, err := b.GetSyncIncludePatterns(cmd.Context())
-	if err != nil {
-		return nil, fmt.Errorf("cannot get list of sync includes: %w", err)
-	}
-
-	opts := sync.SyncOptions{
-		LocalPath:    b.Config.Path,
-		RemotePath:   b.Config.Workspace.FilePath,
-		Include:      includes,
-		Exclude:      b.Config.Sync.Exclude,
-		Full:         f.full,
-		PollInterval: f.interval,
-
-		SnapshotBasePath: cacheDir,
-		WorkspaceClient:  b.WorkspaceClient(),
-	}
-	return &opts, nil
+	opts.Full = f.full
+	opts.PollInterval = f.interval
+	return opts, nil
 }
 
 func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*sync.SyncOptions, error) {
@@ -59,7 +47,7 @@ func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*syn
 	}
 
 	opts := sync.SyncOptions{
-		LocalPath:    args[0],
+		LocalPath:    vfs.MustNew(args[0]),
 		RemotePath:   args[1],
 		Full:         f.full,
 		PollInterval: f.interval,
@@ -78,7 +66,7 @@ func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "sync [flags] SRC DST",
 		Short:   "Synchronize a local directory to a workspace directory",
-		Args:    cobra.MaximumNArgs(2),
+		Args:    root.MaximumNArgs(2),
 		GroupID: "development",
 	}
 
@@ -147,7 +135,7 @@ func New() *cobra.Command {
 		if f.watch {
 			err = s.RunContinuous(ctx)
 		} else {
-			err = s.RunOnce(ctx)
+			_, err = s.RunOnce(ctx)
 		}
 
 		s.Close()

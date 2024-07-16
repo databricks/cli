@@ -4,13 +4,14 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/cmd/labs/project"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
 )
 
 func newUninstallCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "uninstall NAME",
-		Args:  cobra.ExactArgs(1),
+		Args:  root.ExactArgs(1),
 		Short: "Uninstalls project",
 		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 			var names []string

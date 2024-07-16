@@ -22,7 +22,7 @@ const (
 
 func kindOf(v any) Kind {
 	switch v.(type) {
-	case map[string]Value:
+	case Mapping:
 		return KindMap
 	case []Value:
 		return KindSequence

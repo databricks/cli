@@ -13,7 +13,8 @@ import (
 func setupJobOptions(t *testing.T) (*flag.FlagSet, *JobOptions) {
 	var fs flag.FlagSet
 	var opts JobOptions
-	opts.Define(&fs)
+	opts.DefineJobOptions(&fs)
+	opts.DefineTaskOptions(&fs)
 	return &fs, &opts
 }
 

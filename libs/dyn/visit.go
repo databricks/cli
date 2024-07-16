@@ -3,9 +3,30 @@ package dyn
 import (
 	"errors"
 	"fmt"
-	"maps"
 	"slices"
 )
+
+// This error is returned if the path indicates that a map or sequence is expected, but the value is nil.
+type cannotTraverseNilError struct {
+	p Path
+}
+
+func (e cannotTraverseNilError) Error() string {
+	component := e.p[len(e.p)-1]
+	switch {
+	case component.isKey():
+		return fmt.Sprintf("expected a map to index %q, found nil", e.p)
+	case component.isIndex():
+		return fmt.Sprintf("expected a sequence to index %q, found nil", e.p)
+	default:
+		panic("invalid component")
+	}
+}
+
+func IsCannotTraverseNilError(err error) bool {
+	var target cannotTraverseNilError
+	return errors.As(err, &target)
+}
 
 type noSuchKeyError struct {
 	p Path
@@ -44,16 +65,12 @@ type visitOptions struct {
 	//
 	// If this function returns an error, the original visit function call
 	// returns this error and the value is left unmodified.
-	fn func(Value) (Value, error)
-
-	// If set, tolerate the absence of the last component in the path.
-	// This option is needed to set a key in a map that is not yet present.
-	allowMissingKeyInMap bool
+	fn func(Path, Value) (Value, error)
 }
 
-func visit(v Value, prefix, suffix Path, opts visitOptions) (Value, error) {
+func visit(v Value, prefix Path, suffix Pattern, opts visitOptions) (Value, error) {
 	if len(suffix) == 0 {
-		return opts.fn(v)
+		return opts.fn(prefix, v)
 	}
 
 	// Initialize prefix if it is empty.
@@ -63,25 +80,37 @@ func visit(v Value, prefix, suffix Path, opts visitOptions) (Value, error) {
 	}
 
 	component := suffix[0]
-	prefix = prefix.Append(component)
 	suffix = suffix[1:]
+
+	// Visit the value with the current component.
+	return component.visit(v, prefix, suffix, opts)
+}
+
+func (component pathComponent) visit(v Value, prefix Path, suffix Pattern, opts visitOptions) (Value, error) {
+	path := append(prefix, component)
 
 	switch {
 	case component.isKey():
 		// Expect a map to be set if this is a key.
-		m, ok := v.AsMap()
-		if !ok {
-			return InvalidValue, fmt.Errorf("expected a map to index %q, found %s", prefix, v.Kind())
+		switch v.Kind() {
+		case KindMap:
+			// OK
+		case KindNil:
+			return InvalidValue, cannotTraverseNilError{path}
+		default:
+			return InvalidValue, fmt.Errorf("expected a map to index %q, found %s", path, v.Kind())
 		}
 
+		m := v.MustMap()
+
 		// Lookup current value in the map.
-		ev, ok := m[component.key]
-		if !ok && !opts.allowMissingKeyInMap {
-			return InvalidValue, noSuchKeyError{prefix}
+		ev, ok := m.GetByString(component.key)
+		if !ok {
+			return InvalidValue, noSuchKeyError{path}
 		}
 
 		// Recursively transform the value.
-		nv, err := visit(ev, prefix, suffix, opts)
+		nv, err := visit(ev, path, suffix, opts)
 		if err != nil {
 			return InvalidValue, err
 		}
@@ -92,8 +121,8 @@ func visit(v Value, prefix, suffix Path, opts visitOptions) (Value, error) {
 		}
 
 		// Return an updated map value.
-		m = maps.Clone(m)
-		m[component.key] = nv
+		m = m.Clone()
+		m.Set(V(component.key), nv)
 		return Value{
 			v: m,
 			k: KindMap,
@@ -102,19 +131,25 @@ func visit(v Value, prefix, suffix Path, opts visitOptions) (Value, error) {
 
 	case component.isIndex():
 		// Expect a sequence to be set if this is an index.
-		s, ok := v.AsSequence()
-		if !ok {
-			return InvalidValue, fmt.Errorf("expected a sequence to index %q, found %s", prefix, v.Kind())
+		switch v.Kind() {
+		case KindSequence:
+			// OK
+		case KindNil:
+			return InvalidValue, cannotTraverseNilError{path}
+		default:
+			return InvalidValue, fmt.Errorf("expected a sequence to index %q, found %s", path, v.Kind())
 		}
+
+		s := v.MustSequence()
 
 		// Lookup current value in the sequence.
 		if component.index < 0 || component.index >= len(s) {
-			return InvalidValue, indexOutOfBoundsError{prefix}
+			return InvalidValue, indexOutOfBoundsError{path}
 		}
 
 		// Recursively transform the value.
 		ev := s[component.index]
-		nv, err := visit(ev, prefix, suffix, opts)
+		nv, err := visit(ev, path, suffix, opts)
 		if err != nil {
 			return InvalidValue, err
 		}

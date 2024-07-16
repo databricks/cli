@@ -16,16 +16,12 @@ go-ini/ini - https://github.com/go-ini/ini
 Copyright ini authors
 License - https://github.com/go-ini/ini/blob/main/LICENSE
 
-uber-go/mock - https://go.uber.org/mock
-Copyright Google Inc.
-License - https://github.com/uber-go/mock/blob/main/LICENSE
-
 —--
 
 This software contains code from the following open source projects, licensed under the MPL 2.0 license:
 
 hashicopr/go-version - https://github.com/hashicorp/go-version
-Copyright 2014 HashiCorp, Inc. 
+Copyright 2014 HashiCorp, Inc.
 License - https://github.com/hashicorp/go-version/blob/main/LICENSE
 
 hashicorp/hc-install - https://github.com/hashicorp/hc-install
@@ -39,6 +35,10 @@ LIcense - https://github.com/hashicorp/terraform-exec/blob/main/LICENSE
 hashicorp/terraform-json - https://github.com/hashicorp/terraform-json
 Copyright 2019 HashiCorp, Inc.
 License - https://github.com/hashicorp/terraform-json/blob/main/LICENSE
+
+hashicorp/terraform - https://github.com/hashicorp/terraform
+Copyright 2014 HashiCorp, Inc.
+License - https://github.com/hashicorp/terraform/blob/v1.5.5/LICENSE
 
 ---
 
@@ -61,11 +61,6 @@ google/uuid - https://github.com/google/uuid
 Copyright (c) 2009,2014 Google Inc. All rights reserved.
 License - https://github.com/google/uuid/blob/master/LICENSE
 
-imdario/mergo - https://github.com/imdario/mergo
-Copyright (c) 2013 Dario Castañé. All rights reserved.
-Copyright (c) 2012 The Go Authors. All rights reserved.
-License - https://github.com/imdario/mergo/blob/master/LICENSE
-
 manifoldco/promptui - https://github.com/manifoldco/promptui
 Copyright (c) 2017, Arigato Machine Inc. All rights reserved.
 License - https://github.com/manifoldco/promptui/blob/master/LICENSE.md
@@ -81,7 +76,11 @@ License - https://github.com/fatih/color/blob/main/LICENSE.md
 ghodss/yaml - https://github.com/ghodss/yaml
 Copyright (c) 2014 Sam Ghods
 License - https://github.com/ghodss/yaml/blob/master/LICENSE
- 
+
+Masterminds/semver - https://github.com/Masterminds/semver
+Copyright (C) 2014-2019, Matt Butcher and Matt Farina
+License - https://github.com/Masterminds/semver/blob/master/LICENSE.txt
+
 mattn/go-isatty - https://github.com/mattn/go-isatty
 Copyright (c) Yasuhiro MATSUMOTO <mattn.jp@gmail.com>
 https://github.com/mattn/go-isatty/blob/master/LICENSE

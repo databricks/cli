@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"runtime"
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
@@ -30,16 +32,61 @@ func configureHost(ctx context.Context, persistentAuth *auth.PersistentAuth, arg
 }
 
 const minimalDbConnectVersion = "13.1"
+const defaultTimeout = 1 * time.Hour
 
 func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
+	defaultConfigPath := "~/.databrickscfg"
+	if runtime.GOOS == "windows" {
+		defaultConfigPath = "%USERPROFILE%\\.databrickscfg"
+	}
 	cmd := &cobra.Command{
 		Use:   "login [HOST]",
-		Short: "Authenticate this machine",
+		Short: "Log into a Databricks workspace or account",
+		Long: fmt.Sprintf(`Log into a Databricks workspace or account.
+This command logs you into the Databricks workspace or account and saves
+the authentication configuration in a profile (in %s by default).
+
+This profile can then be used to authenticate other Databricks CLI commands by
+specifying the --profile flag. This profile can also be used to authenticate
+other Databricks tooling that supports the Databricks Unified Authentication
+Specification. This includes the Databricks Go, Python, and Java SDKs. For more information,
+you can refer to the documentation linked below.
+  AWS: https://docs.databricks.com/dev-tools/auth/index.html
+  Azure: https://learn.microsoft.com/azure/databricks/dev-tools/auth
+  GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html
+
+
+This command requires a Databricks Host URL (using --host or as a positional argument
+or implicitly inferred from the specified profile name)
+and a profile name (using --profile) to be specified. If you don't specify these
+values, you'll be prompted for values at runtime.
+
+While this command always logs you into the specified host, the runtime behaviour
+depends on the existing profiles you have set in your configuration file
+(at %s by default).
+
+1. If a profile with the specified name exists and specifies a host, you'll
+   be logged into the host specified by the profile. The profile will be updated
+   to use "databricks-cli" as the auth type if that was not the case before.
+
+2. If a profile with the specified name exists but does not specify a host,
+   you'll be prompted to specify a host. The profile will be updated to use the
+   specified host. The auth type will be updated to "databricks-cli" if that was
+   not the case before.
+
+3. If a profile with the specified name exists and specifies a host, but you
+   specify a host using --host (or as the [HOST] positional arg), the profile will
+   be updated to use the newly specified host. The auth type will be updated to
+   "databricks-cli" if that was not the case before.
+
+4. If a profile with the specified name does not exist, a new profile will be
+   created with the specified host. The auth type will be set to "databricks-cli".
+`, defaultConfigPath, defaultConfigPath),
 	}
 
 	var loginTimeout time.Duration
 	var configureCluster bool
-	cmd.Flags().DurationVar(&loginTimeout, "timeout", auth.DefaultTimeout,
+	cmd.Flags().DurationVar(&loginTimeout, "timeout", defaultTimeout,
 		"Timeout for completing login challenge in the browser")
 	cmd.Flags().BoolVar(&configureCluster, "configure-cluster", false,
 		"Prompts to configure cluster")
@@ -63,7 +110,7 @@ func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 			profileName = profile
 		}
 
-		err := setHost(ctx, profileName, persistentAuth, args)
+		err := setHostAndAccountId(ctx, profileName, persistentAuth, args)
 		if err != nil {
 			return err
 		}
@@ -72,17 +119,10 @@ func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 		// We need the config without the profile before it's used to initialise new workspace client below.
 		// Otherwise it will complain about non existing profile because it was not yet saved.
 		cfg := config.Config{
-			Host:     persistentAuth.Host,
-			AuthType: "databricks-cli",
+			Host:      persistentAuth.Host,
+			AccountID: persistentAuth.AccountID,
+			AuthType:  "databricks-cli",
 		}
-		if cfg.IsAccountClient() && persistentAuth.AccountID == "" {
-			accountId, err := promptForAccountID(ctx)
-			if err != nil {
-				return err
-			}
-			persistentAuth.AccountID = accountId
-		}
-		cfg.AccountID = persistentAuth.AccountID
 
 		ctx, cancel := context.WithTimeout(ctx, loginTimeout)
 		defer cancel()
@@ -127,20 +167,32 @@ func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 	return cmd
 }
 
-func setHost(ctx context.Context, profileName string, persistentAuth *auth.PersistentAuth, args []string) error {
+func setHostAndAccountId(ctx context.Context, profileName string, persistentAuth *auth.PersistentAuth, args []string) error {
+	profiler := profile.GetProfiler(ctx)
 	// If the chosen profile has a hostname and the user hasn't specified a host, infer the host from the profile.
-	_, profiles, err := databrickscfg.LoadProfiles(ctx, func(p databrickscfg.Profile) bool {
-		return p.Name == profileName
-	})
+	profiles, err := profiler.LoadProfiles(ctx, profile.WithName(profileName))
 	// Tolerate ErrNoConfiguration here, as we will write out a configuration as part of the login flow.
-	if err != nil && !errors.Is(err, databrickscfg.ErrNoConfiguration) {
+	if err != nil && !errors.Is(err, profile.ErrNoConfiguration) {
 		return err
 	}
+
 	if persistentAuth.Host == "" {
 		if len(profiles) > 0 && profiles[0].Host != "" {
 			persistentAuth.Host = profiles[0].Host
 		} else {
 			configureHost(ctx, persistentAuth, args, 0)
+		}
+	}
+	isAccountClient := (&config.Config{Host: persistentAuth.Host}).IsAccountClient()
+	if isAccountClient && persistentAuth.AccountID == "" {
+		if len(profiles) > 0 && profiles[0].AccountID != "" {
+			persistentAuth.AccountID = profiles[0].AccountID
+		} else {
+			accountId, err := promptForAccountID(ctx)
+			if err != nil {
+				return err
+			}
+			persistentAuth.AccountID = accountId
 		}
 	}
 	return nil

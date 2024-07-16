@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/client"
@@ -35,7 +36,7 @@ func makeCommand(method string) *cobra.Command {
 
 	command := &cobra.Command{
 		Use:   strings.ToLower(method),
-		Args:  cobra.ExactArgs(1),
+		Args:  root.ExactArgs(1),
 		Short: fmt.Sprintf("Perform %s request", method),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var path = args[0]

@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts/whl"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/diag"
 )
 
 var inferMutators map[config.ArtifactType]mutatorFactory = map[config.ArtifactType]mutatorFactory{
@@ -41,10 +42,10 @@ func (m *infer) Name() string {
 	return fmt.Sprintf("artifacts.Infer(%s)", m.name)
 }
 
-func (m *infer) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *infer) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	artifact, ok := b.Config.Artifacts[m.name]
 	if !ok {
-		return fmt.Errorf("artifact doesn't exist: %s", m.name)
+		return diag.Errorf("artifact doesn't exist: %s", m.name)
 	}
 
 	// only try to infer command if it's not already defined
