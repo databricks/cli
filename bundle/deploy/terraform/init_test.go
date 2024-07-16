@@ -262,10 +262,9 @@ func TestSetUserAgentExtraEnvVar(t *testing.T) {
 
 	env := make(map[string]string, 0)
 	err := setUserAgentExtraEnvVar(env, b)
-
 	require.NoError(t, err)
 	assert.Equal(t, map[string]string{
-		"DATABRICKS_USER_AGENT_EXTRA": "databricks-pydabs/0.0.0",
+		"DATABRICKS_USER_AGENT_EXTRA": "databricks-dabs/0.0.0-dev databricks-pydabs/0.0.0",
 	}, env)
 }
 

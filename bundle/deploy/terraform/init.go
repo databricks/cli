@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/internal/tf/schema"
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
@@ -219,8 +220,12 @@ func setProxyEnvVars(ctx context.Context, environ map[string]string, b *bundle.B
 }
 
 func setUserAgentExtraEnvVar(environ map[string]string, b *bundle.Bundle) error {
-	var products []string
+	// Add databricks-dabs to the user agent with the version of the CLI. This
+	// allows us to attribute HTTP request made by the Databricks Terraform provider
+	// to DABs.
+	dabsVersion := fmt.Sprintf("databricks-dabs/%s", build.GetInfo().Version)
 
+	products := []string{dabsVersion}
 	if experimental := b.Config.Experimental; experimental != nil {
 		if experimental.PyDABs.Enabled {
 			products = append(products, "databricks-pydabs/0.0.0")
