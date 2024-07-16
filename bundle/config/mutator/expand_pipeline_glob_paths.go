@@ -59,7 +59,7 @@ func (m *expandPipelineGlobPaths) expandLibrary(v dyn.Value) ([]dyn.Value, error
 			if err != nil {
 				return nil, err
 			}
-			nv, err := dyn.SetByPath(v, p, dyn.NewValue(m, pv.Location()))
+			nv, err := dyn.SetByPath(v, p, dyn.NewValue(m, pv.Locations()))
 			if err != nil {
 				return nil, err
 			}
@@ -90,7 +90,7 @@ func (m *expandPipelineGlobPaths) expandSequence(p dyn.Path, v dyn.Value) (dyn.V
 		vs = append(vs, v...)
 	}
 
-	return dyn.NewValue(vs, v.Location()), nil
+	return dyn.NewValue(vs, v.Locations()), nil
 }
 
 func (m *expandPipelineGlobPaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {

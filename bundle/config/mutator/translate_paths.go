@@ -182,7 +182,7 @@ func (t *translateContext) rewriteValue(p dyn.Path, v dyn.Value, fn rewriteFunc,
 		return dyn.InvalidValue, err
 	}
 
-	return dyn.NewValue(out, v.Location()), nil
+	return dyn.NewValue(out, v.Locations()), nil
 }
 
 func (t *translateContext) rewriteRelativeTo(p dyn.Path, v dyn.Value, fn rewriteFunc, dir, fallback string) (dyn.Value, error) {
