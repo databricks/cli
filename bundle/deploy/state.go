@@ -49,7 +49,7 @@ type DeploymentState struct {
 	Files Filelist `json:"files"`
 
 	// UUID uniquely identifying the deployment.
-	Id uuid.UUID `json:"id"`
+	ID uuid.UUID `json:"id"`
 }
 
 // We use this entry type as a proxy to fs.DirEntry.
