@@ -16,7 +16,7 @@ import (
 )
 
 type tfState struct {
-	Serial  int64    `json:"serial"`
+	Serial  int64  `json:"serial"`
 	Lineage string `json:"lineage"`
 }
 
@@ -111,7 +111,7 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 		return diag.Errorf("failed to read local state file: %v", err)
 	}
 
-	// If the lineages do not match, the terraform state files do not correspond to the same deployment.
+	// If the lineage does not match, the terraform state files do not correspond to the same deployment.
 	if localState.Lineage != remoteState.Lineage {
 		log.Infof(ctx, "Remote and local state lineages do not match. Using remote terraform state. Invalidating local terraform state.")
 		err := os.WriteFile(localStatePath, remoteContent, 0600)
