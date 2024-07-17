@@ -28,6 +28,9 @@ func (c Action) IsInplaceSupported() bool {
 	return false
 }
 
+// These enum values correspond to action types defined in the tfjson library.
+// "recreate" maps to the tfjson.Action.Replace() function. source:
+// https://github.com/hashicorp/terraform-json/blob/0104004301ca8e7046d089cdc2e2db2179d225be/action.go#L14
 type ActionType string
 
 const (
