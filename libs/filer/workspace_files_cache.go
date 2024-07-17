@@ -49,8 +49,12 @@ import (
 // efficient even under high load.
 
 const (
-	kMaxQueueSize    = 10_000
-	kNumCacheWorkers = 10
+	kMaxQueueSize = 10_000
+
+	// Number of worker goroutines to process the queue.
+	// These workers share the same HTTP client and therefore the same rate limiter.
+	// If this number is increased, the rate limiter should be modified as well.
+	kNumCacheWorkers = 1
 )
 
 // queueFullError is returned when the queue is at capacity.
