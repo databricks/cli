@@ -16,7 +16,7 @@ import (
 )
 
 type tfState struct {
-	Serial  int    `json:"serial"`
+	Serial  int64    `json:"serial"`
 	Lineage string `json:"lineage"`
 }
 
