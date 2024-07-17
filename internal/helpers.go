@@ -472,7 +472,7 @@ func TemporaryDbfsDir(t *testing.T, w *databricks.WorkspaceClient) string {
 }
 
 // Create a new UC volume in a catalog called "main" in the workspace.
-func temporaryUcVolume(t *testing.T, w *databricks.WorkspaceClient) string {
+func TemporaryUcVolume(t *testing.T, w *databricks.WorkspaceClient) string {
 	ctx := context.Background()
 
 	// Create a schema
@@ -607,7 +607,7 @@ func setupUcVolumesFiler(t *testing.T) (filer.Filer, string) {
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
-	tmpDir := temporaryUcVolume(t, w)
+	tmpDir := TemporaryUcVolume(t, w)
 	f, err := filer.NewFilesClient(w, tmpDir)
 	require.NoError(t, err)
 

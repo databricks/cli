@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -88,6 +89,9 @@ func TestStateUpdate(t *testing.T) {
 		},
 	})
 	require.Equal(t, build.GetInfo().Version, state.CliVersion)
+
+	// Valid non-empty UUID is generated.
+	require.NotEqual(t, uuid.Nil, state.ID)
 }
 
 func TestStateUpdateWithExistingState(t *testing.T) {
@@ -109,6 +113,7 @@ func TestStateUpdateWithExistingState(t *testing.T) {
 				LocalPath: "bar/t1.py",
 			},
 		},
+		ID: uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"),
 	}
 
 	data, err := json.Marshal(state)
@@ -135,4 +140,7 @@ func TestStateUpdateWithExistingState(t *testing.T) {
 		},
 	})
 	require.Equal(t, build.GetInfo().Version, state.CliVersion)
+
+	// Existing UUID is not overwritten.
+	require.Equal(t, uuid.MustParse("123e4567-e89b-12d3-a456-426614174000"), state.ID)
 }

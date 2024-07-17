@@ -153,3 +153,72 @@ func TestAccUploadArtifactFileToCorrectRemotePathWithEnvironments(t *testing.T) 
 		b.Config.Resources.Jobs["test"].JobSettings.Environments[0].Spec.Dependencies[0],
 	)
 }
+
+func TestAccUploadArtifactFileToCorrectRemotePathForVolumes(t *testing.T) {
+	ctx, wt := acc.WorkspaceTest(t)
+	w := wt.W
+
+	if os.Getenv("TEST_METASTORE_ID") == "" {
+		t.Skip("Skipping tests that require a UC Volume when metastore id is not set.")
+	}
+
+	volumePath := internal.TemporaryUcVolume(t, w)
+
+	dir := t.TempDir()
+	whlPath := filepath.Join(dir, "dist", "test.whl")
+	touchEmptyFile(t, whlPath)
+
+	b := &bundle.Bundle{
+		RootPath: dir,
+		Config: config.Root{
+			Bundle: config.Bundle{
+				Target: "whatever",
+			},
+			Workspace: config.Workspace{
+				ArtifactPath: volumePath,
+			},
+			Artifacts: config.Artifacts{
+				"test": &config.Artifact{
+					Type: "whl",
+					Files: []config.ArtifactFile{
+						{
+							Source: whlPath,
+						},
+					},
+				},
+			},
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"test": {
+						JobSettings: &jobs.JobSettings{
+							Tasks: []jobs.Task{
+								{
+									Libraries: []compute.Library{
+										{
+											Whl: "dist/test.whl",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	diags := bundle.Apply(ctx, b, artifacts.BasicUpload("test"))
+	require.NoError(t, diags.Error())
+
+	// The remote path attribute on the artifact file should have been set.
+	require.Regexp(t,
+		regexp.MustCompile(path.Join(regexp.QuoteMeta(volumePath), `.internal/test\.whl`)),
+		b.Config.Artifacts["test"].Files[0].RemotePath,
+	)
+
+	// The task library path should have been updated to the remote path.
+	require.Regexp(t,
+		regexp.MustCompile(path.Join(regexp.QuoteMeta(volumePath), `.internal/test\.whl`)),
+		b.Config.Resources.Jobs["test"].JobSettings.Tasks[0].Libraries[0].Whl,
+	)
+}
