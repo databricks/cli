@@ -94,7 +94,8 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 		return diag.Errorf("failed to read remote state file: %v", err)
 	}
 
-	// Invariant: remote state file has a lineage UUID.
+	// Expected invariant: remote state file should have a lineage UUID. Error
+	// if that's not the case.
 	if remoteState.Lineage == "" {
 		return diag.Errorf("remote state file does not have a lineage")
 	}
@@ -124,6 +125,8 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 		return diag.FromErr(err)
 	}
 
+	// default: local state is newer or equal to remote state in terms of serial sequence.
+	// It is also of the same lineage. Keep using the local state. 
 	return nil
 }
 
