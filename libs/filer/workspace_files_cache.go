@@ -66,7 +66,7 @@ func (e queueFullError) Error() string {
 // Common type for all cacheable calls.
 type cacheEntry struct {
 	// Channel to signal that the operation has completed.
-	ch chan struct{}
+	done chan struct{}
 
 	// The (cleaned) name of the file or directory being operated on.
 	name string
@@ -83,7 +83,7 @@ func (e *cacheEntry) String() string {
 // Mark this entry as errored.
 func (e *cacheEntry) markError(err error) {
 	e.err = err
-	close(e.ch)
+	close(e.done)
 }
 
 // readDirEntry is the cache entry for a [ReadDir] call.
@@ -96,7 +96,7 @@ type readDirEntry struct {
 
 // Create a new readDirEntry.
 func newReadDirEntry(name string) *readDirEntry {
-	return &readDirEntry{cacheEntry: cacheEntry{ch: make(chan struct{}), name: name}}
+	return &readDirEntry{cacheEntry: cacheEntry{done: make(chan struct{}), name: name}}
 }
 
 // Execute the operation and signal completion.
@@ -111,7 +111,7 @@ func (e *readDirEntry) execute(ctx context.Context, c *cache) {
 
 	// Signal that the operation has completed.
 	// The return value can now be used by routines waiting on it.
-	close(e.ch)
+	close(e.done)
 }
 
 // Wait for the operation to complete and return the result.
@@ -119,7 +119,7 @@ func (e *readDirEntry) wait(ctx context.Context) ([]fs.DirEntry, error) {
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
-	case <-e.ch:
+	case <-e.done:
 		// Note: return a copy of the slice to prevent the caller from modifying the cache.
 		// The underlying elements are values (see [wsfsDirEntry]) so a shallow copy is sufficient.
 		return slices.Clone(e.entries), e.err
@@ -136,7 +136,7 @@ type statEntry struct {
 
 // Create a new stat entry.
 func newStatEntry(name string) *statEntry {
-	return &statEntry{cacheEntry: cacheEntry{ch: make(chan struct{}), name: name}}
+	return &statEntry{cacheEntry: cacheEntry{done: make(chan struct{}), name: name}}
 }
 
 // Execute the operation and signal completion.
@@ -148,7 +148,7 @@ func (e *statEntry) execute(ctx context.Context, c *cache) {
 
 	// Signal that the operation has completed.
 	// The return value can now be used by routines waiting on it.
-	close(e.ch)
+	close(e.done)
 }
 
 // Wait for the operation to complete and return the result.
@@ -156,7 +156,7 @@ func (e *statEntry) wait(ctx context.Context) (fs.FileInfo, error) {
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
-	case <-e.ch:
+	case <-e.done:
 		return e.info, e.err
 	}
 }
@@ -165,7 +165,7 @@ func (e *statEntry) wait(ctx context.Context) (fs.FileInfo, error) {
 func (e *statEntry) markDone(info fs.FileInfo, err error) {
 	e.info = info
 	e.err = err
-	close(e.ch)
+	close(e.done)
 }
 
 // executable is the interface all cacheable calls must implement.
@@ -214,11 +214,7 @@ func newWorkspaceFilesReadaheadCache(f Filer) *cache {
 func (c *cache) work(ctx context.Context) {
 	defer c.wg.Done()
 
-	for {
-		e, ok := <-c.queue
-		if !ok {
-			return
-		}
+	for e := range c.queue {
 		e.execute(ctx, c)
 	}
 }
@@ -274,6 +270,9 @@ func (c *cache) completeReadDirForFile(name string, dirEntry fs.DirEntry) {
 	// stat call, or we can use the [fs.DirEntry] info directly.
 	switch dirEntry.(wsfsDirEntry).ObjectType {
 	case workspace.ObjectTypeNotebook:
+		// Note: once the list API returns `repos_export_format` we can avoid this additional stat call.
+		// This is the only (?) case where this implementation is tied to the workspace filer.
+
 		// Queue a [Stat] call for the file.
 		err := c.enqueue(context.Background(), e)
 		if err != nil {
