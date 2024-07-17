@@ -82,13 +82,12 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 
 	localStatePath := filepath.Join(dir, TerraformStateFileName)
 
-	// Case: remote state file does not exist. In this case we should not use the
-	// local state file because we cannot guarantee it corresponds to the same deployment,
-	// that is the same root_path and workspace host.
+	// Case: Remote state file does not exist. In this case we fallback to using the
+	// local Terraform state. This allows users to change the "root_path" their bundle is
+	// configured with.
 	remoteState, remoteContent, err := l.remoteState(ctx, b)
 	if errors.Is(err, fs.ErrNotExist) {
-		log.Infof(ctx, "Remote state file does not exist. Invalidating local Terraform state.")
-		os.Remove(localStatePath)
+		log.Infof(ctx, "Remote state file does not exist. Using local Terraform state.")
 		return nil
 	}
 	if err != nil {

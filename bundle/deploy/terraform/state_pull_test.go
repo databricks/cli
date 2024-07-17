@@ -41,7 +41,7 @@ func statePullTestBundle(t *testing.T) *bundle.Bundle {
 	}
 }
 
-func TestStatePullLocalErrorWhenRemoteListFails(t *testing.T) {
+func TestStatePullLocalErrorWhenRemoteHasNoLineage(t *testing.T) {
 	m := &statePull{}
 
 	t.Run("no local state", func(t *testing.T) {
@@ -90,38 +90,42 @@ func TestStatePullLocal(t *testing.T) {
 			name:   "remote missing, local present",
 			remote: nil,
 			local:  map[string]any{"serial": 5, "lineage": "aaaa"},
-			// local state should be invalidated if remote state is missing.
-			expected: nil,
-		},
-		{
-			name:     "local stale",
-			remote:   map[string]any{"serial": 10, "lineage": "aaaa", "some_other_key": 123},
-			local:    map[string]any{"serial": 5, "lineage": "aaaa"},
-			expected: map[string]any{"serial": float64(10), "lineage": "aaaa", "some_other_key": float64(123)},
-		},
-		{
-			name:     "local equal",
-			remote:   map[string]any{"serial": 5, "lineage": "aaaa", "some_other_key": 123},
-			local:    map[string]any{"serial": 5, "lineage": "aaaa"},
+			// fallback to local state, since remote state is missing.
 			expected: map[string]any{"serial": float64(5), "lineage": "aaaa"},
 		},
 		{
-			name:     "local newer",
-			remote:   map[string]any{"serial": 5, "lineage": "aaaa", "some_other_key": 123},
-			local:    map[string]any{"serial": 6, "lineage": "aaaa"},
+			name:   "local stale",
+			remote: map[string]any{"serial": 10, "lineage": "aaaa", "some_other_key": 123},
+			local:  map[string]any{"serial": 5, "lineage": "aaaa"},
+			// use remote, since remote is newer.
+			expected: map[string]any{"serial": float64(10), "lineage": "aaaa", "some_other_key": float64(123)},
+		},
+		{
+			name:   "local equal",
+			remote: map[string]any{"serial": 5, "lineage": "aaaa", "some_other_key": 123},
+			local:  map[string]any{"serial": 5, "lineage": "aaaa"},
+			// use local state, since they are equal in terms of serial sequence.
+			expected: map[string]any{"serial": float64(5), "lineage": "aaaa"},
+		},
+		{
+			name:   "local newer",
+			remote: map[string]any{"serial": 5, "lineage": "aaaa", "some_other_key": 123},
+			local:  map[string]any{"serial": 6, "lineage": "aaaa"},
+			// use local state, since local is newer.
 			expected: map[string]any{"serial": float64(6), "lineage": "aaaa"},
 		},
 		{
-			name:     "remote and local have different lineages",
-			remote:   map[string]any{"serial": 5, "lineage": "aaaa"},
-			local:    map[string]any{"serial": 10, "lineage": "bbbb"},
+			name:   "remote and local have different lineages",
+			remote: map[string]any{"serial": 5, "lineage": "aaaa"},
+			local:  map[string]any{"serial": 10, "lineage": "bbbb"},
+			// use remote, since lineages do not match.
 			expected: map[string]any{"serial": float64(5), "lineage": "aaaa"},
 		},
 		{
 			name:   "local is missing lineage",
 			remote: map[string]any{"serial": 5, "lineage": "aaaa"},
 			local:  map[string]any{"serial": 10},
-			// use remote, since lineages do not match.
+			// use remote, since local does not have lineage.
 			expected: map[string]any{"serial": float64(5), "lineage": "aaaa"},
 		},
 	}
