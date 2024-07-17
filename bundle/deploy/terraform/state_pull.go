@@ -87,7 +87,7 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	// that is the same root_path and workspace host.
 	remoteState, remoteContent, err := l.remoteState(ctx, b)
 	if errors.Is(err, fs.ErrNotExist) {
-		log.Infof(ctx, "Remote state file does not exist. Invalidating local terraform state.")
+		log.Infof(ctx, "Remote state file does not exist. Invalidating local Terraform state.")
 		os.Remove(localStatePath)
 		return nil
 	}
@@ -103,7 +103,7 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	// Case: Local state file does not exist. In this case we should rely on the remote state file.
 	localState, err := l.localState(ctx, b)
 	if errors.Is(err, fs.ErrNotExist) {
-		log.Infof(ctx, "Local state file does not exist. Using remote terraform state.")
+		log.Infof(ctx, "Local state file does not exist. Using remote Terraform state.")
 		err := os.WriteFile(localStatePath, remoteContent, 0600)
 		return diag.FromErr(err)
 	}
@@ -111,16 +111,16 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 		return diag.Errorf("failed to read local state file: %v", err)
 	}
 
-	// If the lineage does not match, the terraform state files do not correspond to the same deployment.
+	// If the lineage does not match, the Terraform state files do not correspond to the same deployment.
 	if localState.Lineage != remoteState.Lineage {
-		log.Infof(ctx, "Remote and local state lineages do not match. Using remote terraform state. Invalidating local terraform state.")
+		log.Infof(ctx, "Remote and local state lineages do not match. Using remote Terraform state. Invalidating local Terraform state.")
 		err := os.WriteFile(localStatePath, remoteContent, 0600)
 		return diag.FromErr(err)
 	}
 
 	// If the remote state is newer than the local state, we should use the remote state.
 	if remoteState.Serial > localState.Serial {
-		log.Infof(ctx, "Remote state is newer than local state. Using remote terraform state.")
+		log.Infof(ctx, "Remote state is newer than local state. Using remote Terraform state.")
 		err := os.WriteFile(localStatePath, remoteContent, 0600)
 		return diag.FromErr(err)
 	}
