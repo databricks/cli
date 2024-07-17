@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
@@ -37,8 +36,6 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if err != nil {
 		return diag.FromErr(err)
 	}
-
-	log.Debugf(ctx, "Successfully deleted files!")
 	return nil
 }
 

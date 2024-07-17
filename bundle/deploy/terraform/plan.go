@@ -33,8 +33,6 @@ func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return diag.Errorf("terraform not initialized")
 	}
 
-	log.Debugf(ctx, "Starting plan computation")
-
 	err := tf.Init(ctx, tfexec.Upgrade(true))
 	if err != nil {
 		return diag.Errorf("terraform init: %v", err)

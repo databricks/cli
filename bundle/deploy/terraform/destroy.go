@@ -6,7 +6,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/log"
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
@@ -19,7 +18,6 @@ func (w *destroy) Name() string {
 func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// return early if plan is empty
 	if b.Plan.IsEmpty {
-		cmdio.LogString(ctx, "No resources to destroy")
 		return nil
 	}
 
@@ -32,15 +30,11 @@ func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		return diag.Errorf("no plan found")
 	}
 
-	log.Debugf(ctx, "Starting to destroy resources")
-
 	// Apply terraform according to the computed destroy plan
 	err := tf.Apply(ctx, tfexec.DirOrPlan(b.Plan.Path))
 	if err != nil {
 		return diag.Errorf("terraform destroy: %v", err)
 	}
-
-	log.Debugf(ctx, "Successfully destroyed resources!")
 	return nil
 }
 
