@@ -126,7 +126,7 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	}
 
 	// default: local state is newer or equal to remote state in terms of serial sequence.
-	// It is also of the same lineage. Keep using the local state. 
+	// It is also of the same lineage. Keep using the local state.
 	return nil
 }
 
