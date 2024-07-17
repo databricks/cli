@@ -46,6 +46,10 @@ func TestNormalizeString(t *testing.T) {
 		{
 			input:    "TestTestTest",
 			expected: "testtesttest",
+		},
+		{
+			input:    ".test//test..test",
+			expected: "test_test_test",
 		}}
 
 	for _, c := range cases {
