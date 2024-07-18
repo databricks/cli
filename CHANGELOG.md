@@ -15,8 +15,7 @@ Internal:
  * Track multiple locations associated with a `dyn.Value` ([#1510](https://github.com/databricks/cli/pull/1510)).
  * Attribute Terraform API requests the CLI ([#1598](https://github.com/databricks/cli/pull/1598)).
  * Implement readahead cache for Workspace API calls ([#1582](https://github.com/databricks/cli/pull/1582)).
- * Use local Terraform state only when lineage match ([#1588](https://github.com/databricks/cli/pull/1588)).
-
+ * Add read-only mode for extension aware workspace filer ([#1609](https://github.com/databricks/cli/pull/1609)).
 
 Dependency updates:
  * Bump github.com/databricks/databricks-sdk-go from 0.43.0 to 0.43.2 ([#1594](https://github.com/databricks/cli/pull/1594)).
