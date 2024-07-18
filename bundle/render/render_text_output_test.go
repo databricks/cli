@@ -243,6 +243,32 @@ func TestRenderDiagnostics(t *testing.T) {
 				"'name' is required\n\n",
 		},
 		{
+			name: "error with multiple source locations",
+			diags: diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "failed to load xxx",
+					Detail:   "'name' is required",
+					Locations: []dyn.Location{
+						{
+							File:   "foo.yaml",
+							Line:   1,
+							Column: 2,
+						},
+						{
+							File:   "bar.yaml",
+							Line:   3,
+							Column: 4,
+						},
+					},
+				},
+			},
+			expected: "Error: failed to load xxx\n" +
+				"  in foo.yaml:1:2\n" +
+				"     bar.yaml:3:4\n\n" +
+				"'name' is required\n\n",
+		},
+		{
 			name: "error with path",
 			diags: diag.Diagnostics{
 				{

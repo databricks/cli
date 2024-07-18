@@ -46,6 +46,8 @@ func (v *filesToSync) Apply(ctx context.Context, rb bundle.ReadOnlyBundle) diag.
 			Severity:  diag.Warning,
 			Summary:   "There are no files to sync, please check your .gitignore and sync.exclude configuration",
 			Locations: loc.Locations(),
+			// TODO: Highlight in the PR that the semantics have been changed. Also that
+			// for array values, .Location or .Locations does not make a difference.
 			Path:      loc.Path(),
 		})
 	}

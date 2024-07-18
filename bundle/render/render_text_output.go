@@ -9,9 +9,32 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/fatih/color"
 )
+
+func printLocations(locations []dyn.Location) string {
+	res := strings.Builder{}
+
+	first := true
+	for _, loc := range locations {
+		if loc.File == "" {
+			continue
+		}
+
+		res.WriteString("\n")
+		if first {
+			res.WriteString("  in ")
+			first = false
+		} else {
+			res.WriteString("     ")
+		}
+
+		res.WriteString(loc.String())
+	}
+	return res.String()
+}
 
 var renderFuncMap = template.FuncMap{
 	"red":     color.RedString,
@@ -26,15 +49,14 @@ var renderFuncMap = template.FuncMap{
 	"italic": func(format string, a ...interface{}) string {
 		return color.New(color.Italic).Sprintf(format, a...)
 	},
+	"printLocations": printLocations,
 }
 
 const errorTemplate = `{{ "Error" | red }}: {{ .Summary }}
 {{- if .Path.String }}
   {{ "at " }}{{ .Path.String | green }}
 {{- end }}
-{{- if .Location.File }}
-  {{ "in " }}{{ .Location.String | cyan }}
-{{- end }}
+{{- printLocations .Locations -}}
 {{- if .Detail }}
 
 {{ .Detail }}
@@ -46,9 +68,7 @@ const warningTemplate = `{{ "Warning" | yellow }}: {{ .Summary }}
 {{- if .Path.String }}
   {{ "at " }}{{ .Path.String | green }}
 {{- end }}
-{{- if .Location.File }}
-  {{ "in " }}{{ .Location.String | cyan }}
-{{- end }}
+{{- printLocations .Locations -}}
 {{- if .Detail }}
 
 {{ .Detail }}
