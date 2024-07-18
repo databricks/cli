@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestValidateValidateWorkspaceHost(t *testing.T) {
+func TestInitializeWorkspaceClient(t *testing.T) {
 	host := "https://host.databricks.com"
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -21,12 +21,12 @@ func TestValidateValidateWorkspaceHost(t *testing.T) {
 	}
 	t.Setenv(env.HostVariable, host)
 
-	m := ValidateWorkspaceHost()
+	m := InitializeWorkspaceClient()
 	diags := bundle.Apply(context.Background(), b, m)
 	assert.NoError(t, diags.Error())
 }
 
-func TestValidateValidateWorkspaceHostMismatch(t *testing.T) {
+func TestInitializeWorkspaceClientWorkspaceHostMismatch(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
@@ -36,7 +36,7 @@ func TestValidateValidateWorkspaceHostMismatch(t *testing.T) {
 	}
 	t.Setenv(env.HostVariable, "https://env-host.databricks.com")
 
-	m := ValidateWorkspaceHost()
+	m := InitializeWorkspaceClient()
 	diags := bundle.Apply(context.Background(), b, m)
 	expectedError := "target host and DATABRICKS_HOST environment variable mismatch"
 	assert.EqualError(t, diags.Error(), expectedError)
