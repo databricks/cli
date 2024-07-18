@@ -97,10 +97,13 @@ func TestPythonMutator_load(t *testing.T) {
 
 	assert.Equal(t, 1, len(diags))
 	assert.Equal(t, "job doesn't have any tasks", diags[0].Summary)
-	assert.Equal(t, []dyn.Location{{
-		File:   "src/examples/file.py",
-		Line:   10,
-		Column: 5}}, diags[0].Locations)
+	assert.Equal(t, []dyn.Location{
+		{
+			File:   "src/examples/file.py",
+			Line:   10,
+			Column: 5,
+		},
+	}, diags[0].Locations)
 
 }
 
