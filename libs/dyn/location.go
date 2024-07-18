@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 )
 
+type Locations []Location
+
 type Location struct {
 	File   string
 	Line   int

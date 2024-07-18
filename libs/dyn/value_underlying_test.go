@@ -11,7 +11,7 @@ import (
 func TestValueUnderlyingMap(t *testing.T) {
 	v := dyn.V(
 		map[string]dyn.Value{
-			"key": dyn.NewValue("value", []dyn.Location{{File: "file", Line: 1, Column: 2}}),
+			"key": dyn.NewValue("value", dyn.Locations{{File: "file", Line: 1, Column: 2}}),
 		},
 	)
 
@@ -33,7 +33,7 @@ func TestValueUnderlyingMap(t *testing.T) {
 func TestValueUnderlyingSequence(t *testing.T) {
 	v := dyn.V(
 		[]dyn.Value{
-			dyn.NewValue("value", []dyn.Location{{File: "file", Line: 1, Column: 2}}),
+			dyn.NewValue("value", dyn.Locations{{File: "file", Line: 1, Column: 2}}),
 		},
 	)
 

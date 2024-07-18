@@ -39,19 +39,19 @@ func TestConvertToMapValueWithOrder(t *testing.T) {
 				dyn.V("b"),
 				dyn.V("c"),
 			},
-			[]dyn.Location{{Line: -3}},
+			dyn.Locations{{Line: -3}},
 		),
 		"name": dyn.NewValue(
 			"test",
-			[]dyn.Location{{Line: -2}},
+			dyn.Locations{{Line: -2}},
 		),
 		"map": dyn.NewValue(
 			map[string]dyn.Value{
 				"key1": dyn.V("value1"),
 				"key2": dyn.V("value2"),
 			},
-			[]dyn.Location{{Line: -1}},
+			dyn.Locations{{Line: -1}},
 		),
-		"long_name_field": dyn.NewValue("long name goes here", []dyn.Location{{Line: 1}}),
+		"long_name_field": dyn.NewValue("long name goes here", dyn.Locations{{Line: 1}}),
 	}), result)
 }
