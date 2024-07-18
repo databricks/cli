@@ -23,7 +23,7 @@ func (m *validateWorkspaceHost) Apply(ctx context.Context, b *bundle.Bundle) dia
 	target_host := b.Config.Workspace.Host
 
 	if env_host != "" && target_host != "" && env_host != target_host {
-		return diag.Errorf("Target host and DATABRICKS_HOST environment variable mismatch")
+		return diag.Errorf("target host and DATABRICKS_HOST environment variable mismatch")
 	}
 
 	return nil
