@@ -18,8 +18,9 @@ import (
 type workspaceFilesExtensionsClient struct {
 	workspaceClient *databricks.WorkspaceClient
 
-	wsfs Filer
-	root string
+	wsfs     Filer
+	root     string
+	readonly bool
 }
 
 var extensionsToLanguages = map[string]workspace.Language{
@@ -143,6 +144,14 @@ func (e DuplicatePathError) Error() string {
 	return fmt.Sprintf("failed to read files from the workspace file system. Duplicate paths encountered. Both %s at %s and %s at %s resolve to the same name %s. Changing the name of one of these objects will resolve this issue", e.oi1.ObjectType, e.oi1.Path, e.oi2.ObjectType, e.oi2.Path, e.commonName)
 }
 
+type ReadonlyError struct {
+	op string
+}
+
+func (e ReadonlyError) Error() string {
+	return fmt.Sprintf("failed to %s: filer is in read-only mode", e.op)
+}
+
 // This is a filer for the workspace file system that allows you to pretend the
 // workspace file system is a traditional file system. It allows you to list, read, write,
 // delete, and stat notebooks (and files in general) in the workspace, using their paths
@@ -157,17 +166,30 @@ func (e DuplicatePathError) Error() string {
 // errors for namespace clashes (e.g. a file and a notebook or a directory and a notebook).
 // Thus users of these methods should be careful to avoid such clashes.
 func NewWorkspaceFilesExtensionsClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
+	return newWorkspaceFilesExtensionsClient(w, root, false)
+}
+
+func NewReadOnlyWorkspaceFilesExtensionsClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
+	return newWorkspaceFilesExtensionsClient(w, root, true)
+}
+
+func newWorkspaceFilesExtensionsClient(w *databricks.WorkspaceClient, root string, readonly bool) (Filer, error) {
 	filer, err := NewWorkspaceFilesClient(w, root)
 	if err != nil {
 		return nil, err
 	}
 
-	cache := newWorkspaceFilesReadaheadCache(filer)
+	if readonly {
+		// Wrap in a readahead cache to avoid making unnecessary calls to the workspace.
+		filer = newWorkspaceFilesReadaheadCache(filer)
+	}
+
 	return &workspaceFilesExtensionsClient{
 		workspaceClient: w,
 
-		wsfs: cache,
-		root: root,
+		wsfs:     filer,
+		root:     root,
+		readonly: readonly,
 	}, nil
 }
 
@@ -214,6 +236,10 @@ func (w *workspaceFilesExtensionsClient) ReadDir(ctx context.Context, name strin
 // (e.g. a file and a notebook or a directory and a notebook). Thus users of this
 // method should be careful to avoid such clashes.
 func (w *workspaceFilesExtensionsClient) Write(ctx context.Context, name string, reader io.Reader, mode ...WriteMode) error {
+	if w.readonly {
+		return ReadonlyError{"write"}
+	}
+
 	return w.wsfs.Write(ctx, name, reader, mode...)
 }
 
@@ -247,6 +273,10 @@ func (w *workspaceFilesExtensionsClient) Read(ctx context.Context, name string) 
 
 // Try to delete the file as a regular file. If the file is not found, try to delete it as a notebook.
 func (w *workspaceFilesExtensionsClient) Delete(ctx context.Context, name string, mode ...DeleteMode) error {
+	if w.readonly {
+		return ReadonlyError{"delete"}
+	}
+
 	err := w.wsfs.Delete(ctx, name, mode...)
 
 	// If the file is not found, it might be a notebook.
@@ -293,5 +323,9 @@ func (w *workspaceFilesExtensionsClient) Stat(ctx context.Context, name string) 
 // (e.g. a file and a notebook or a directory and a notebook). Thus users of this
 // method should be careful to avoid such clashes.
 func (w *workspaceFilesExtensionsClient) Mkdir(ctx context.Context, name string) error {
+	if w.readonly {
+		return ReadonlyError{"mkdir"}
+	}
+
 	return w.wsfs.Mkdir(ctx, name)
 }
