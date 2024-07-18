@@ -39,7 +39,7 @@ func (m *configureWSFS) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	// If so, swap out vfs.Path instance of the sync root with one that
 	// makes all Workspace File System interactions extension aware.
 	p, err := vfs.NewFilerPath(ctx, root, func(path string) (filer.Filer, error) {
-		return filer.NewWorkspaceFilesExtensionsClient(b.WorkspaceClient(), path)
+		return filer.NewReadOnlyWorkspaceFilesExtensionsClient(b.WorkspaceClient(), path)
 	})
 	if err != nil {
 		return diag.FromErr(err)
