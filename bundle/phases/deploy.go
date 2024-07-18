@@ -25,6 +25,7 @@ func Deploy() bundle.Mutator {
 			bundle.Seq(
 				terraform.StatePull(),
 				deploy.StatePull(),
+				mutator.ValidateWorkspaceHost(),
 				mutator.ValidateGitDetails(),
 				libraries.ValidateLocalLibrariesExist(),
 				artifacts.CleanUp(),
