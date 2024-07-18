@@ -9,7 +9,6 @@ import (
 
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 var errNotImplemented = fmt.Errorf("not implemented")
@@ -88,7 +87,7 @@ func TestWorkspaceFilesCache_ReadDirCache(t *testing.T) {
 	// First read dir should hit the filer, second should hit the cache.
 	for range 2 {
 		fi, err := cache.ReadDir(ctx, "dir1")
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		if assert.Len(t, fi, 2) {
 			assert.Equal(t, "file1", fi[0].Name())
 			assert.Equal(t, "file2", fi[1].Name())
@@ -123,9 +122,10 @@ func TestWorkspaceFilesCache_StatCache(t *testing.T) {
 	// First stat should hit the filer, second should hit the cache.
 	for range 2 {
 		fi, err := cache.Stat(ctx, "file1")
-		require.NoError(t, err)
-		assert.Equal(t, "file1", fi.Name())
-		assert.Equal(t, int64(1), fi.Size())
+		if assert.NoError(t, err) {
+			assert.Equal(t, "file1", fi.Name())
+			assert.Equal(t, int64(1), fi.Size())
+		}
 	}
 
 	// Third stat should hit the filer, fourth should hit the cache.
@@ -190,13 +190,14 @@ func TestWorkspaceFilesCache_ReadDirPopulatesStatCache(t *testing.T) {
 
 	// Issue read dir to populate the stat cache.
 	_, err := cache.ReadDir(ctx, "dir1")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	// Stat on a file in the directory should hit the cache.
 	fi, err := cache.Stat(ctx, "dir1/file1")
-	require.NoError(t, err)
-	assert.Equal(t, "file1", fi.Name())
-	assert.Equal(t, int64(1), fi.Size())
+	if assert.NoError(t, err) {
+		assert.Equal(t, "file1", fi.Name())
+		assert.Equal(t, int64(1), fi.Size())
+	}
 
 	// If the containing directory has been read, absence is also inferred from the cache.
 	_, err = cache.Stat(ctx, "dir1/file3")
@@ -204,10 +205,11 @@ func TestWorkspaceFilesCache_ReadDirPopulatesStatCache(t *testing.T) {
 
 	// Stat on a notebook in the directory should have been performed in the background.
 	fi, err = cache.Stat(ctx, "dir1/notebook1")
-	require.NoError(t, err)
-	assert.Equal(t, "notebook1", fi.Name())
-	assert.Equal(t, int64(1), fi.Size())
-	assert.Equal(t, workspace.ExportFormatJupyter, fi.(wsfsFileInfo).ReposExportFormat)
+	if assert.NoError(t, err) {
+		assert.Equal(t, "notebook1", fi.Name())
+		assert.Equal(t, int64(1), fi.Size())
+		assert.Equal(t, workspace.ExportFormatJupyter, fi.(wsfsFileInfo).ReposExportFormat)
+	}
 
 	// Assert we called the filer twice (once for read dir, once for stat on the notebook).
 	assert.Equal(t, 2, f.calls)
@@ -255,19 +257,21 @@ func TestWorkspaceFilesCache_ReadDirTriggersReadahead(t *testing.T) {
 
 	// Issue read dir to populate the stat cache.
 	_, err := cache.ReadDir(ctx, "a")
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	// Stat on a directory in the directory should hit the cache.
 	fi, err := cache.Stat(ctx, "a/b1")
-	require.NoError(t, err)
-	assert.Equal(t, "b1", fi.Name())
-	assert.True(t, fi.IsDir())
+	if assert.NoError(t, err) {
+		assert.Equal(t, "b1", fi.Name())
+		assert.True(t, fi.IsDir())
+	}
 
 	// Stat on a file in a nested directory should hit the cache.
 	fi, err = cache.Stat(ctx, "a/b1/file1")
-	require.NoError(t, err)
-	assert.Equal(t, "file1", fi.Name())
-	assert.Equal(t, int64(1), fi.Size())
+	if assert.NoError(t, err) {
+		assert.Equal(t, "file1", fi.Name())
+		assert.Equal(t, int64(1), fi.Size())
+	}
 
 	// Stat on a non-existing file in an empty nested directory should hit the cache.
 	_, err = cache.Stat(ctx, "a/b2/file2")
