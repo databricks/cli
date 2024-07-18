@@ -144,11 +144,11 @@ func (e DuplicatePathError) Error() string {
 	return fmt.Sprintf("failed to read files from the workspace file system. Duplicate paths encountered. Both %s at %s and %s at %s resolve to the same name %s. Changing the name of one of these objects will resolve this issue", e.oi1.ObjectType, e.oi1.Path, e.oi2.ObjectType, e.oi2.Path, e.commonName)
 }
 
-type ReadonlyError struct {
+type ReadOnlyError struct {
 	op string
 }
 
-func (e ReadonlyError) Error() string {
+func (e ReadOnlyError) Error() string {
 	return fmt.Sprintf("failed to %s: filer is in read-only mode", e.op)
 }
 
@@ -237,7 +237,7 @@ func (w *workspaceFilesExtensionsClient) ReadDir(ctx context.Context, name strin
 // method should be careful to avoid such clashes.
 func (w *workspaceFilesExtensionsClient) Write(ctx context.Context, name string, reader io.Reader, mode ...WriteMode) error {
 	if w.readonly {
-		return ReadonlyError{"write"}
+		return ReadOnlyError{"write"}
 	}
 
 	return w.wsfs.Write(ctx, name, reader, mode...)
@@ -274,7 +274,7 @@ func (w *workspaceFilesExtensionsClient) Read(ctx context.Context, name string) 
 // Try to delete the file as a regular file. If the file is not found, try to delete it as a notebook.
 func (w *workspaceFilesExtensionsClient) Delete(ctx context.Context, name string, mode ...DeleteMode) error {
 	if w.readonly {
-		return ReadonlyError{"delete"}
+		return ReadOnlyError{"delete"}
 	}
 
 	err := w.wsfs.Delete(ctx, name, mode...)
@@ -324,7 +324,7 @@ func (w *workspaceFilesExtensionsClient) Stat(ctx context.Context, name string) 
 // method should be careful to avoid such clashes.
 func (w *workspaceFilesExtensionsClient) Mkdir(ctx context.Context, name string) error {
 	if w.readonly {
-		return ReadonlyError{"mkdir"}
+		return ReadOnlyError{"mkdir"}
 	}
 
 	return w.wsfs.Mkdir(ctx, name)
