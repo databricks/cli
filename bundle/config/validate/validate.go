@@ -16,6 +16,10 @@ type location struct {
 	rb   bundle.ReadOnlyBundle
 }
 
+func (l location) Location() dyn.Location {
+	return l.rb.Config().GetLocation(l.path)
+}
+
 func (l location) Locations() []dyn.Location {
 	return l.rb.Config().GetLocations(l.path)
 }

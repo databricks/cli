@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 )
 
 func JobClusterKeyDefined() bundle.ReadOnlyMutator {
@@ -39,9 +40,12 @@ func (v *jobClusterKeyDefined) Apply(ctx context.Context, rb bundle.ReadOnlyBund
 					}
 
 					diags = diags.Append(diag.Diagnostic{
-						Severity:  diag.Warning,
-						Summary:   fmt.Sprintf("job_cluster_key %s is not defined", task.JobClusterKey),
-						Locations: loc.Locations(),
+						Severity: diag.Warning,
+						Summary:  fmt.Sprintf("job_cluster_key %s is not defined", task.JobClusterKey),
+						// Show only the location where the job_cluster_key is defined.
+						// Other associated locations are not relevant since they are
+						// overridden during merging.
+						Locations: []dyn.Location{loc.Location()},
 						Path:      loc.Path(),
 					})
 				}
