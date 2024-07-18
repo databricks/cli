@@ -66,7 +66,7 @@ func checkPatterns(patterns []string, path string, rb bundle.ReadOnlyBundle) (di
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Warning,
 					Summary:   fmt.Sprintf("Pattern %s does not match any files", p),
-					Locations: loc.Location(),
+					Locations: loc.Locations(),
 					Path:      loc.Path(),
 				})
 				mu.Unlock()

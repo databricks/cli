@@ -67,7 +67,7 @@ func nullWarning(expected dyn.Kind, src dyn.Value, path dyn.Path) diag.Diagnosti
 	return diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   fmt.Sprintf("expected a %s value, found null", expected),
-		Locations: src.Location(),
+		Locations: []dyn.Location{src.Location()},
 		Path:      path,
 	}
 }
@@ -76,7 +76,7 @@ func typeMismatch(expected dyn.Kind, src dyn.Value, path dyn.Path) diag.Diagnost
 	return diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   fmt.Sprintf("expected %s, found %s", expected, src.Kind()),
-		Locations: src.Location(),
+		Locations: []dyn.Location{src.Location()},
 		Path:      path,
 	}
 }
@@ -98,7 +98,7 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 					diags = diags.Append(diag.Diagnostic{
 						Severity:  diag.Warning,
 						Summary:   fmt.Sprintf("unknown field: %s", pk.MustString()),
-						Locations: pk.Location(),
+						Locations: []dyn.Location{pk.Location()},
 						Path:      path,
 					})
 				}
@@ -322,7 +322,7 @@ func (n normalizeOptions) normalizeInt(typ reflect.Type, src dyn.Value, path dyn
 			return dyn.InvalidValue, diags.Append(diag.Diagnostic{
 				Severity:  diag.Warning,
 				Summary:   fmt.Sprintf(`cannot accurately represent "%g" as integer due to precision loss`, src.MustFloat()),
-				Locations: src.Location(),
+				Locations: []dyn.Location{src.Location()},
 				Path:      path,
 			})
 		}
@@ -338,7 +338,7 @@ func (n normalizeOptions) normalizeInt(typ reflect.Type, src dyn.Value, path dyn
 			return dyn.InvalidValue, diags.Append(diag.Diagnostic{
 				Severity:  diag.Warning,
 				Summary:   fmt.Sprintf("cannot parse %q as an integer", src.MustString()),
-				Locations: src.Location(),
+				Locations: []dyn.Location{src.Location()},
 				Path:      path,
 			})
 		}
@@ -365,7 +365,7 @@ func (n normalizeOptions) normalizeFloat(typ reflect.Type, src dyn.Value, path d
 			return dyn.InvalidValue, diags.Append(diag.Diagnostic{
 				Severity:  diag.Warning,
 				Summary:   fmt.Sprintf(`cannot accurately represent "%d" as floating point number due to precision loss`, src.MustInt()),
-				Locations: src.Location(),
+				Locations: []dyn.Location{src.Location()},
 				Path:      path,
 			})
 		}
@@ -381,7 +381,7 @@ func (n normalizeOptions) normalizeFloat(typ reflect.Type, src dyn.Value, path d
 			return dyn.InvalidValue, diags.Append(diag.Diagnostic{
 				Severity:  diag.Warning,
 				Summary:   fmt.Sprintf("cannot parse %q as a floating point number", src.MustString()),
-				Locations: src.Location(),
+				Locations: []dyn.Location{src.Location()},
 				Path:      path,
 			})
 		}
