@@ -127,6 +127,7 @@ func renderSummaryTemplate(out io.Writer, b *bundle.Bundle, diags diag.Diagnosti
 	return err
 }
 
+// TODO: Write tests when multiple locations are rendered.
 func renderDiagnostics(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics) error {
 	errorT := template.Must(template.New("error").Funcs(renderFuncMap).Parse(errorTemplate))
 	warningT := template.Must(template.New("warning").Funcs(renderFuncMap).Parse(warningTemplate))
@@ -141,12 +142,18 @@ func renderDiagnostics(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics) 
 			t = warningT
 		}
 
-		// Make file relative to bundle root
-		if d.Location.File != "" && b != nil {
-			out, err := filepath.Rel(b.RootPath, d.Location.File)
-			// if we can't relativize the path, just use path as-is
-			if err == nil {
-				d.Location.File = out
+		for i := range d.Locations {
+			if b == nil {
+				break
+			}
+
+			// Make location relative to bundle root
+			if d.Locations[i].File != "" {
+				out, err := filepath.Rel(b.RootPath, d.Locations[i].File)
+				// if we can't relativize the path, just use path as-is
+				if err == nil {
+					d.Locations[i].File = out
+				}
 			}
 		}
 

@@ -91,7 +91,7 @@ func TestRenderTextOutput(t *testing.T) {
 					Severity: diag.Error,
 					Summary:  "error (1)",
 					Detail:   "detail (1)",
-					Location: dyn.Location{
+					Locations: dyn.Location{
 						File:   "foo.py",
 						Line:   1,
 						Column: 1,
@@ -101,7 +101,7 @@ func TestRenderTextOutput(t *testing.T) {
 					Severity: diag.Error,
 					Summary:  "error (2)",
 					Detail:   "detail (2)",
-					Location: dyn.Location{
+					Locations: dyn.Location{
 						File:   "foo.py",
 						Line:   2,
 						Column: 1,
@@ -111,7 +111,7 @@ func TestRenderTextOutput(t *testing.T) {
 					Severity: diag.Warning,
 					Summary:  "warning (3)",
 					Detail:   "detail (3)",
-					Location: dyn.Location{
+					Locations: dyn.Location{
 						File:   "foo.py",
 						Line:   3,
 						Column: 1,
@@ -177,7 +177,7 @@ func TestRenderTextOutput(t *testing.T) {
 					Severity: diag.Error,
 					Summary:  "error (1)",
 					Detail:   "detail (1)",
-					Location: dyn.Location{
+					Locations: dyn.Location{
 						File:   "foo.py",
 						Line:   1,
 						Column: 1,
@@ -187,7 +187,7 @@ func TestRenderTextOutput(t *testing.T) {
 					Severity: diag.Warning,
 					Summary:  "warning (2)",
 					Detail:   "detail (2)",
-					Location: dyn.Location{
+					Locations: dyn.Location{
 						File:   "foo.py",
 						Line:   3,
 						Column: 1,
@@ -252,7 +252,7 @@ func TestRenderDiagnostics(t *testing.T) {
 					Severity: diag.Error,
 					Summary:  "failed to load xxx",
 					Detail:   "'name' is required",
-					Location: dyn.Location{
+					Locations: dyn.Location{
 						File:   "foo.yaml",
 						Line:   1,
 						Column: 2,

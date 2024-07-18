@@ -101,7 +101,7 @@ func TestPythonMutator_load(t *testing.T) {
 		File:   "src/examples/file.py",
 		Line:   10,
 		Column: 5,
-	}, diags[0].Location)
+	}, diags[0].Locations)
 }
 
 func TestPythonMutator_load_disallowed(t *testing.T) {
