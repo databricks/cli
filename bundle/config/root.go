@@ -383,7 +383,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 
 	// Below, we're setting fields on the bundle key, so make sure it exists.
 	if root.Get("bundle").Kind() == dyn.KindInvalid {
-		root, err = dyn.Set(root, "bundle", dyn.NewValue(map[string]dyn.Value{}, dyn.Location{}))
+		root, err = dyn.Set(root, "bundle", dyn.V(map[string]dyn.Value{}))
 		if err != nil {
 			return err
 		}
@@ -409,7 +409,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 	if v := target.Get("git"); v.Kind() != dyn.KindInvalid {
 		ref, err := dyn.GetByPath(root, dyn.NewPath(dyn.Key("bundle"), dyn.Key("git")))
 		if err != nil {
-			ref = dyn.NewValue(map[string]dyn.Value{}, dyn.Location{})
+			ref = dyn.V(map[string]dyn.Value{})
 		}
 
 		// Merge the override into the reference.
@@ -420,7 +420,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 
 		// If the branch was overridden, we need to clear the inferred flag.
 		if branch := v.Get("branch"); branch.Kind() != dyn.KindInvalid {
-			out, err = dyn.SetByPath(out, dyn.NewPath(dyn.Key("inferred")), dyn.NewValue(false, dyn.Location{}))
+			out, err = dyn.SetByPath(out, dyn.NewPath(dyn.Key("inferred")), dyn.V(false))
 			if err != nil {
 				return err
 			}
@@ -461,7 +461,7 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 				// configuration will convert this to a string if necessary.
 				return dyn.NewValue(map[string]dyn.Value{
 					"default": variable,
-				}, variable.Location()), nil
+				}, variable.Locations()), nil
 
 			case dyn.KindMap, dyn.KindSequence:
 				// Check if the original definition of variable has a type field.
@@ -474,7 +474,7 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 					return dyn.NewValue(map[string]dyn.Value{
 						"type":    typeV,
 						"default": variable,
-					}, variable.Location()), nil
+					}, variable.Locations()), nil
 				}
 
 				return variable, nil
