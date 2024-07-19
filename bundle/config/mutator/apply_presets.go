@@ -187,6 +187,14 @@ func toTagArray(tags map[string]string) []Tag {
 // We leave unicode letters and numbers but remove all "special characters."
 func normalizePrefix(prefix string) string {
 	prefix = strings.ReplaceAll(prefix, "[", "")
-	prefix = strings.ReplaceAll(prefix, "] ", "_")
-	return textutil.NormalizeString(prefix)
+	prefix = strings.Trim(prefix, " ")
+
+	// If the prefix ends with a ']', we add an underscore to the end.
+	// This makes sure that we get names like "dev_user_endpoint" instead of "dev_userendpoint"
+	suffix := ""
+	if strings.HasSuffix(prefix, "]") {
+		suffix = "_"
+	}
+
+	return textutil.NormalizeString(prefix) + suffix
 }
