@@ -31,7 +31,7 @@ func printLocations(locations []dyn.Location) string {
 			res.WriteString("     ")
 		}
 
-		res.WriteString(loc.String())
+		res.WriteString(color.CyanString(loc.String()))
 	}
 	return res.String()
 }
@@ -147,7 +147,6 @@ func renderSummaryTemplate(out io.Writer, b *bundle.Bundle, diags diag.Diagnosti
 	return err
 }
 
-// TODO: Write tests when multiple locations are rendered.
 func renderDiagnostics(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics) error {
 	errorT := template.Must(template.New("error").Funcs(renderFuncMap).Parse(errorTemplate))
 	warningT := template.Must(template.New("warning").Funcs(renderFuncMap).Parse(warningTemplate))
