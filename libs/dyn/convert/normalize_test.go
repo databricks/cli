@@ -58,23 +58,33 @@ func TestNormalizeStructUnknownField(t *testing.T) {
 	}
 
 	var typ Tmp
-	vin := dyn.V(map[string]dyn.Value{
-		"foo": dyn.V("bar"),
-		"bar": dyn.V("baz"),
-	})
+
+	m := dyn.NewMapping()
+	m.Set(dyn.V("foo"), dyn.V("val-foo"))
+	// Set the unknown field, with location information.
+	m.Set(dyn.NewValue("bar", []dyn.Location{
+		{File: "hello.yaml", Line: 1, Column: 1},
+		{File: "world.yaml", Line: 2, Column: 2},
+	}), dyn.V("var-bar"))
+
+	vin := dyn.V(m)
 
 	vout, err := Normalize(typ, vin)
 	assert.Len(t, err, 1)
 	assert.Equal(t, diag.Diagnostic{
-		Severity:  diag.Warning,
-		Summary:   `unknown field: bar`,
-		Locations: []dyn.Location{vin.Get("foo").Location()},
-		Path:      dyn.EmptyPath,
+		Severity: diag.Warning,
+		Summary:  `unknown field: bar`,
+		// Assert location of the unknown field is included in the diagnostic.
+		Locations: []dyn.Location{
+			{File: "hello.yaml", Line: 1, Column: 1},
+			{File: "world.yaml", Line: 2, Column: 2},
+		},
+		Path: dyn.EmptyPath,
 	}, err[0])
 
 	// The field that can be mapped to the struct field is retained.
 	assert.Equal(t, map[string]any{
-		"foo": "bar",
+		"foo": "val-foo",
 	}, vout.AsAny())
 }
 
