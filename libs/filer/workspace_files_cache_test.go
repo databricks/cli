@@ -92,10 +92,6 @@ func TestWorkspaceFilesCache_ReadDirCache(t *testing.T) {
 			assert.Equal(t, "file1", fi[0].Name())
 			assert.Equal(t, "file2", fi[1].Name())
 		}
-
-		// Modify the slice to check that mutations are not reflected in the cache.
-		fi[0] = nil
-		fi[1] = nil
 	}
 
 	// Third stat should hit the filer, fourth should hit the cache.
@@ -106,6 +102,47 @@ func TestWorkspaceFilesCache_ReadDirCache(t *testing.T) {
 
 	// Assert we only called the filer twice.
 	assert.Equal(t, 2, f.calls)
+}
+
+func TestWorkspaceFilesCache_ReadDirCacheIsolation(t *testing.T) {
+	f := &cacheTestFiler{
+		readDir: map[string][]fs.DirEntry{
+			"dir": {
+				wsfsDirEntry{
+					wsfsFileInfo{
+						ObjectInfo: workspace.ObjectInfo{
+							Path:       "file",
+							Size:       1,
+							ObjectType: workspace.ObjectTypeFile,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ctx := context.Background()
+	cache := newWorkspaceFilesReadaheadCache(f)
+	defer cache.Cleanup()
+
+	// First read dir should hit the filer, second should hit the cache.
+	entries, err := cache.ReadDir(ctx, "dir")
+	assert.NoError(t, err)
+	assert.Equal(t, "file", entries[0].Name())
+
+	// Modify the entry to check that mutations are not reflected in the cache.
+	entries[0] = wsfsDirEntry{
+		wsfsFileInfo{
+			ObjectInfo: workspace.ObjectInfo{
+				Path: "tainted",
+			},
+		},
+	}
+
+	// Read the directory again to check that the cache is isolated.
+	entries, err = cache.ReadDir(ctx, "dir")
+	assert.NoError(t, err)
+	assert.Equal(t, "file", entries[0].Name())
 }
 
 func TestWorkspaceFilesCache_StatCache(t *testing.T) {
