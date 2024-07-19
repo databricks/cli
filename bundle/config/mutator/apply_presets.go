@@ -37,13 +37,10 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	if d := validatePauseStatus(b); d != nil {
 		return d
 	}
-	if d := validateTags(b); d != nil {
-		return d
-	}
 
 	r := b.Config.Resources
 	t := b.Config.Presets
-	prefix := t.Prefix
+	prefix := t.NamePrefix
 	tags := toTagArray(t.Tags)
 
 	// Jobs presets: Prefix, Tags, JobsMaxConcurrentRuns, TriggerPauseStatus
@@ -168,22 +165,6 @@ func validatePauseStatus(b *bundle.Bundle) diag.Diagnostics {
 		Severity: diag.Error,
 		Location: b.Config.GetLocation("presets.trigger_pause_status"),
 	}}
-}
-
-func validateTags(b *bundle.Bundle) diag.Diagnostics {
-	tags := b.Config.Presets.Tags
-	for key := range tags {
-		// Tags keys starting with a "~" are reserved.
-		// They may someday be used to indicate that a tag should be removed.
-		// For example {"~dev:": nil} could indicate that the "dev" tag should be removed.
-		if strings.HasPrefix(key, "~") {
-			return diag.Diagnostics{{
-				Summary:  "Invalid tag key: " + key,
-				Severity: diag.Error,
-			}}
-		}
-	}
-	return nil
 }
 
 // toTagArray converts a map of tags to an array of tags.

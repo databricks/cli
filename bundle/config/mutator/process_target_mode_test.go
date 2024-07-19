@@ -237,7 +237,7 @@ func TestValidateDevelopmentMode(t *testing.T) {
 
 	// Test with a bundle that has a prefix not containing the username or short name
 	b = mockBundle(config.Development)
-	b.Config.Presets.Prefix = "[prod]"
+	b.Config.Presets.NamePrefix = "[prod]"
 	diags = validateDevelopmentMode(b)
 	require.Len(t, diags, 1)
 	assert.Equal(t, diag.Error, diags[0].Severity)
@@ -388,7 +388,7 @@ func TestDisableLockingDisabled(t *testing.T) {
 
 func TestPrefixAlreadySet(t *testing.T) {
 	b := mockBundle(config.Development)
-	b.Config.Presets.Prefix = "custom_lennart_deploy_"
+	b.Config.Presets.NamePrefix = "custom_lennart_deploy_"
 
 	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
 	diags := bundle.Apply(context.Background(), b, m)

@@ -4,8 +4,8 @@ const Paused = "PAUSED"
 const Unpaused = "UNPAUSED"
 
 type Presets struct {
-	// Prefix to prepend to all resource names.
-	Prefix string `json:"prefix,omitempty"`
+	// NamePrefix to prepend to all resource names.
+	NamePrefix string `json:"name_prefix,omitempty"`
 
 	// PipelinesDevelopment is the default value for the development field of pipelines.
 	PipelinesDevelopment *bool `json:"pipelines_development,omitempty"`

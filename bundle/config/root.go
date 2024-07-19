@@ -376,6 +376,9 @@ func (r *Root) MergeTargetOverrides(name string) error {
 	// Merge `run_as`. This field must be overwritten if set, not merged.
 	if v := target.Get("run_as"); v.Kind() != dyn.KindInvalid {
 		root, err = dyn.Set(root, "run_as", v)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Below, we're setting fields on the bundle key, so make sure it exists.

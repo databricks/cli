@@ -36,8 +36,8 @@ func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) {
 	t := &b.Config.Presets
 	shortName := b.Config.Workspace.CurrentUser.ShortName
 
-	if t.Prefix == "" {
-		t.Prefix = "[dev " + shortName + "] "
+	if t.NamePrefix == "" {
+		t.NamePrefix = "[dev " + shortName + "] "
 	}
 
 	if t.Tags == nil {
@@ -63,15 +63,20 @@ func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) {
 }
 
 func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
-	t := b.Config.Presets
+	p := b.Config.Presets
 	u := b.Config.Workspace.CurrentUser
 
-	// Make sure everything is paused by default to avoid surprises
-	if t.TriggerPauseStatus == config.Unpaused {
+	// Make sure presets don't set the trigger status to UNPAUSED;
+	// this could be surprising since most users (and tools) expect triggers
+	// to be paused in development.
+	// (Note that there still is an exceptional case where users set the trigger
+	// status to UNPAUSED at the level of an individual object, whic hwas
+	// historically allowed.)
+	if p.TriggerPauseStatus == config.Unpaused {
 		return diag.Diagnostics{{
 			Severity: diag.Error,
 			Summary:  "target with 'mode: development' cannot set trigger pause status to UNPAUSED by default",
-			Location: b.Config.GetLocation("transform.default_trigger_pause_status"),
+			Location: b.Config.GetLocation("presets.trigger_pause_status"),
 		}}
 	}
 
@@ -79,11 +84,15 @@ func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
 	if path := findNonUserPath(b); path != "" {
 		return diag.Errorf("%s must start with '~/' or contain the current username when using 'mode: development'", path)
 	}
-	if t.Prefix != "" && !strings.Contains(t.Prefix, u.ShortName) && !strings.Contains(t.Prefix, u.UserName) {
+	if p.NamePrefix != "" && !strings.Contains(p.NamePrefix, u.ShortName) && !strings.Contains(p.NamePrefix, u.UserName) {
+		// Resources such as pipelines require a unique name, e.g. '[dev steve] my_pipeline'.
+		// For this reason we require the name prefix to contain the current username;
+		// it's a pitfall for users if they don't include it and later find out that
+		// only a single user can do development deployments.
 		return diag.Diagnostics{{
 			Severity: diag.Error,
 			Summary:  "prefix should contain the current username or ${workspace.current_user.short_name} to ensure uniqueness when using 'mode: development'",
-			Location: b.Config.GetLocation("transform.prefix"),
+			Location: b.Config.GetLocation("presets.name_prefix"),
 		}}
 	}
 	return nil

@@ -51,7 +51,7 @@ func TestApplyPresetsPrefix(t *testing.T) {
 						},
 					},
 					Presets: config.Presets{
-						Prefix: tt.prefix,
+						NamePrefix: tt.prefix,
 					},
 				},
 			}
@@ -194,27 +194,4 @@ func TestApplyPresetsJobsMaxConcurrentRuns(t *testing.T) {
 			require.Equal(t, tt.want, b.Config.Resources.Jobs["job1"].MaxConcurrentRuns)
 		})
 	}
-}
-
-func TestApplyPresetsValidation(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Presets: config.Presets{
-				TriggerPauseStatus: "invalid",
-			},
-		},
-	}
-	mutator := mutator.ApplyPresets()
-	diag := mutator.Apply(context.Background(), b)
-	require.Equal(t, "Invalid value for trigger_pause_status, should be PAUSED or UNPAUSED", diag[0].Summary)
-
-	b = &bundle.Bundle{
-		Config: config.Root{
-			Presets: config.Presets{
-				Tags: map[string]string{"~tilde": "tag"},
-			},
-		},
-	}
-	diag = mutator.Apply(context.Background(), b)
-	require.Contains(t, diag[0].Summary, "Invalid tag key")
 }

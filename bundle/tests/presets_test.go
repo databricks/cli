@@ -10,7 +10,7 @@ import (
 func TestPresetsDev(t *testing.T) {
 	b := loadTarget(t, "./presets", "dev")
 
-	assert.Equal(t, "myprefix", b.Config.Presets.Prefix)
+	assert.Equal(t, "myprefix", b.Config.Presets.NamePrefix)
 	assert.Equal(t, config.Paused, b.Config.Presets.TriggerPauseStatus)
 	assert.Equal(t, 10, b.Config.Presets.JobsMaxConcurrentRuns)
 	assert.Equal(t, true, *b.Config.Presets.PipelinesDevelopment)

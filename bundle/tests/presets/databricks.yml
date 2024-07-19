@@ -10,7 +10,7 @@ presets:
 targets:
   dev:
     presets:
-      prefix: "myprefix"
+      name_prefix: "myprefix"
       pipelines_development: true
       trigger_pause_status: PAUSED
       jobs_max_concurrent_runs: 10
