@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/fileset"
 	"golang.org/x/sync/errgroup"
 )
@@ -67,7 +68,7 @@ func checkPatterns(patterns []string, path string, rb bundle.ReadOnlyBundle) (di
 					Severity: diag.Warning,
 					Summary:  fmt.Sprintf("Pattern %s does not match any files", p),
 					Location: loc.Location(),
-					Path:     loc.Path(),
+					Paths:    []dyn.Path{loc.Path()},
 				})
 				mu.Unlock()
 			}

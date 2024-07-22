@@ -60,7 +60,7 @@ func parsePythonDiagnostics(input io.Reader) (diag.Diagnostics, error) {
 			Summary:  parsedLine.Summary,
 			Detail:   parsedLine.Detail,
 			Location: convertPythonLocation(parsedLine.Location),
-			Path:     path,
+			Paths:    []dyn.Path{path},
 		}
 
 		diags = diags.Append(diag)

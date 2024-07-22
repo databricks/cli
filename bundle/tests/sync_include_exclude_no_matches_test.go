@@ -24,7 +24,7 @@ func TestSyncIncludeExcludeNoMatchesTest(t *testing.T) {
 	require.Equal(t, diags[0].Location.File, filepath.Join("sync", "override", "databricks.yml"))
 	require.Equal(t, diags[0].Location.Line, 17)
 	require.Equal(t, diags[0].Location.Column, 11)
-	require.Equal(t, diags[0].Path.String(), "sync.exclude[0]")
+	require.Equal(t, diags[0].Paths[0].String(), "sync.exclude[0]")
 
 	summaries := []string{
 		fmt.Sprintf("Pattern %s does not match any files", filepath.Join("src", "*")),

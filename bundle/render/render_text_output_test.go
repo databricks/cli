@@ -270,7 +270,7 @@ func TestRenderDiagnostics(t *testing.T) {
 					Severity: diag.Error,
 					Detail:   "'name' is required",
 					Summary:  "failed to load xxx",
-					Path:     dyn.MustPathFromString("resources.jobs.xxx"),
+					Paths:    []dyn.Path{dyn.MustPathFromString("resources.jobs.xxx")},
 				},
 			},
 			expected: "Error: failed to load xxx\n" +

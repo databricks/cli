@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 )
 
 func JobClusterKeyDefined() bundle.ReadOnlyMutator {
@@ -42,7 +43,7 @@ func (v *jobClusterKeyDefined) Apply(ctx context.Context, rb bundle.ReadOnlyBund
 						Severity: diag.Warning,
 						Summary:  fmt.Sprintf("job_cluster_key %s is not defined", task.JobClusterKey),
 						Location: loc.Location(),
-						Path:     loc.Path(),
+						Paths:    []dyn.Path{loc.Path()},
 					})
 				}
 			}
