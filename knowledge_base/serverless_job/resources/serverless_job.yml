@@ -3,6 +3,12 @@ resources:
     serverless_job:
       name: Example serverless job
 
+      # Run this job once an hour.
+      trigger:
+        periodic:
+          interval: 1
+          unit: HOURS
+
       tasks:
         - task_key: task
           spark_python_task:
