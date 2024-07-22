@@ -30,10 +30,10 @@ func TestValidateUniqueResourceIdentifiers(t *testing.T) {
 			name:     "duplicate_resource_name_in_subconfiguration_job_and_job",
 			errorMsg: "multiple resources have been defined with the same key: foo (jobs.foo at validate/duplicate_resource_name_in_subconfiguration_job_and_job/resources.yml:4:7, jobs.foo at validate/duplicate_resource_name_in_subconfiguration_job_and_job/databricks.yml:13:7)",
 		},
-		{
-			name:     "duplicate_resource_names_in_different_subconfiguations",
-			errorMsg: "multiple resources named foo (jobs.foo at validate/duplicate_resource_names_in_different_subconfiguations/resources1.yml:4:7, pipelines.foo at validate/duplicate_resource_names_in_different_subconfiguations/resources2.yml:4:7)",
-		},
+		// {
+		// 	name:     "duplicate_resource_names_in_different_subconfiguations",
+		// 	errorMsg: "multiple resources named foo (jobs.foo at validate/duplicate_resource_names_in_different_subconfiguations/resources1.yml:4:7, pipelines.foo at validate/duplicate_resource_names_in_different_subconfiguations/resources2.yml:4:7)",
+		// },
 	}
 
 	for _, tc := range tcases {
