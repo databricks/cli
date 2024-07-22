@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/spf13/cobra"
 )
 
 func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, error) {
@@ -46,6 +47,55 @@ func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, er
 	return f, path, err
 }
 
+const DbfsPrefix string = "dbfs:/"
+
 func isDbfsPath(path string) bool {
-	return strings.HasPrefix(path, "dbfs:/")
+	return strings.HasPrefix(path, DbfsPrefix)
+}
+
+func getValidArgsFunction(pathArgCount int) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		cmd.SetContext(root.SkipPrompt(cmd.Context()))
+
+		err := mustWorkspaceClient(cmd, args)
+		if err != nil {
+			return nil, cobra.ShellCompDirectiveError
+		}
+
+		isValidPrefix := isDbfsPath(toComplete)
+
+		if !isValidPrefix {
+			return []string{DbfsPrefix}, cobra.ShellCompDirectiveNoSpace
+		}
+
+		f, path, err := filerForPath(cmd.Context(), toComplete)
+		if err != nil {
+			return nil, cobra.ShellCompDirectiveError
+		}
+
+		wsc := root.WorkspaceClient(cmd.Context())
+		completer := filer.NewCompleter(cmd.Context(), wsc, f)
+
+		if len(args) < pathArgCount {
+			completions, directive := completer.CompleteRemotePath(path)
+
+			// DbfsPrefix without trailing "/"
+			prefix := DbfsPrefix[:len(DbfsPrefix)-1]
+
+			// Add the prefix to the completions
+			for i, completion := range completions {
+				completions[i] = fmt.Sprintf("%s%s", prefix, completion)
+			}
+
+			return completions, directive
+		} else {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+	}
+}
+
+// Wrapper for [root.MustWorkspaceClient] that disables loading authentication configuration from a bundle.
+func mustWorkspaceClient(cmd *cobra.Command, args []string) error {
+	cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
+	return root.MustWorkspaceClient(cmd, args)
 }
