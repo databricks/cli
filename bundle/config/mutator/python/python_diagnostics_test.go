@@ -39,10 +39,12 @@ func TestParsePythonDiagnostics(t *testing.T) {
 				{
 					Severity: diag.Error,
 					Summary:  "error summary",
-					Location: dyn.Location{
-						File:   "src/examples/file.py",
-						Line:   1,
-						Column: 2,
+					Locations: []dyn.Location{
+						{
+							File:   "src/examples/file.py",
+							Line:   1,
+							Column: 2,
+						},
 					},
 				},
 			},
