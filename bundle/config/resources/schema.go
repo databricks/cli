@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"github.com/databricks/cli/bundle/config/paths"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -14,6 +15,10 @@ type Schema struct {
 	ID string `json:"id,omitempty" bundle:"readonly"`
 
 	*catalog.CreateSchema
+
+	// Path to config file where the resource is defined. All bundle resources
+	// include this for interpolation purposes.
+	paths.Paths
 
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
 }
