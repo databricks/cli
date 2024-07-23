@@ -9,28 +9,9 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/fatih/color"
 )
-
-func printPaths(paths []dyn.Path) string {
-	res := strings.Builder{}
-
-	first := true
-	for _, p := range paths {
-		res.WriteString("\n")
-		if first {
-			res.WriteString("  at ")
-			first = false
-		} else {
-			res.WriteString("     ")
-		}
-
-		res.WriteString(color.GreenString(p.String()))
-	}
-	return res.String()
-}
 
 var renderFuncMap = template.FuncMap{
 	"red":     color.RedString,
@@ -45,11 +26,12 @@ var renderFuncMap = template.FuncMap{
 	"italic": func(format string, a ...interface{}) string {
 		return color.New(color.Italic).Sprintf(format, a...)
 	},
-	"printPaths": printPaths,
 }
 
 const errorTemplate = `{{ "Error" | red }}: {{ .Summary }}
-{{- printPaths .Paths -}}
+{{- range $index, $element := .Paths }}
+  {{ if eq $index 0 }}at {{else}}   {{ end}}{{ $element.String | green }}
+{{- end }}
 {{- if .Location.File }}
   {{ "in " }}{{ .Location.String | cyan }}
 {{- end }}
@@ -61,7 +43,9 @@ const errorTemplate = `{{ "Error" | red }}: {{ .Summary }}
 `
 
 const warningTemplate = `{{ "Warning" | yellow }}: {{ .Summary }}
-{{- printPaths .Paths -}}
+{{- range $index, $element := .Paths }}
+  {{ if eq $index 0 }}at {{else}}   {{ end}}{{ $element.String | green }}
+{{- end }}
 {{- if .Location.File }}
   {{ "in " }}{{ .Location.String | cyan }}
 {{- end }}
