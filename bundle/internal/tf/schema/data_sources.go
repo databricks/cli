@@ -36,6 +36,7 @@ type DataSources struct {
 	Notebook                        map[string]any `json:"databricks_notebook,omitempty"`
 	NotebookPaths                   map[string]any `json:"databricks_notebook_paths,omitempty"`
 	Pipelines                       map[string]any `json:"databricks_pipelines,omitempty"`
+	Schema                          map[string]any `json:"databricks_schema,omitempty"`
 	Schemas                         map[string]any `json:"databricks_schemas,omitempty"`
 	ServicePrincipal                map[string]any `json:"databricks_service_principal,omitempty"`
 	ServicePrincipals               map[string]any `json:"databricks_service_principals,omitempty"`
@@ -50,6 +51,7 @@ type DataSources struct {
 	Tables                          map[string]any `json:"databricks_tables,omitempty"`
 	User                            map[string]any `json:"databricks_user,omitempty"`
 	Views                           map[string]any `json:"databricks_views,omitempty"`
+	Volume                          map[string]any `json:"databricks_volume,omitempty"`
 	Volumes                         map[string]any `json:"databricks_volumes,omitempty"`
 	Zones                           map[string]any `json:"databricks_zones,omitempty"`
 }
@@ -89,6 +91,7 @@ func NewDataSources() *DataSources {
 		Notebook:                        make(map[string]any),
 		NotebookPaths:                   make(map[string]any),
 		Pipelines:                       make(map[string]any),
+		Schema:                          make(map[string]any),
 		Schemas:                         make(map[string]any),
 		ServicePrincipal:                make(map[string]any),
 		ServicePrincipals:               make(map[string]any),
@@ -103,6 +106,7 @@ func NewDataSources() *DataSources {
 		Tables:                          make(map[string]any),
 		User:                            make(map[string]any),
 		Views:                           make(map[string]any),
+		Volume:                          make(map[string]any),
 		Volumes:                         make(map[string]any),
 		Zones:                           make(map[string]any),
 	}
