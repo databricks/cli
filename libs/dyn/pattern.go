@@ -72,7 +72,7 @@ func (c anyKeyComponent) visit(v Value, prefix Path, suffix Pattern, opts visitO
 		m.Set(pk, nv)
 	}
 
-	return NewValue(m, v.Location()), nil
+	return NewValue(m, v.Locations()), nil
 }
 
 type anyIndexComponent struct{}
@@ -103,5 +103,5 @@ func (c anyIndexComponent) visit(v Value, prefix Path, suffix Pattern, opts visi
 		s[i] = nv
 	}
 
-	return NewValue(s, v.Location()), nil
+	return NewValue(s, v.Locations()), nil
 }

@@ -1224,6 +1224,11 @@ type DataSourceJobJobSettingsSettingsTriggerFileArrival struct {
 	WaitAfterLastChangeSeconds    int    `json:"wait_after_last_change_seconds,omitempty"`
 }
 
+type DataSourceJobJobSettingsSettingsTriggerPeriodic struct {
+	Interval int    `json:"interval"`
+	Unit     string `json:"unit"`
+}
+
 type DataSourceJobJobSettingsSettingsTriggerTableUpdate struct {
 	Condition                     string   `json:"condition,omitempty"`
 	MinTimeBetweenTriggersSeconds int      `json:"min_time_between_triggers_seconds,omitempty"`
@@ -1234,6 +1239,7 @@ type DataSourceJobJobSettingsSettingsTriggerTableUpdate struct {
 type DataSourceJobJobSettingsSettingsTrigger struct {
 	PauseStatus string                                              `json:"pause_status,omitempty"`
 	FileArrival *DataSourceJobJobSettingsSettingsTriggerFileArrival `json:"file_arrival,omitempty"`
+	Periodic    *DataSourceJobJobSettingsSettingsTriggerPeriodic    `json:"periodic,omitempty"`
 	TableUpdate *DataSourceJobJobSettingsSettingsTriggerTableUpdate `json:"table_update,omitempty"`
 }
 

@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestArtifactUpload(t *testing.T) {
+func TestArtifactUploadForWorkspace(t *testing.T) {
 	tmpDir := t.TempDir()
 	whlFolder := filepath.Join(tmpDir, "whl")
 	testutil.Touch(t, whlFolder, "source.whl")
@@ -104,4 +104,93 @@ func TestArtifactUpload(t *testing.T) {
 	require.Equal(t, "/Workspace/Users/foo@bar.com/mywheel.whl", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[1])
 	require.Equal(t, "/Workspace/foo/bar/artifacts/source.whl", b.Config.Resources.Jobs["job"].JobSettings.Tasks[1].ForEachTask.Task.Libraries[0].Whl)
 	require.Equal(t, "/Workspace/Users/foo@bar.com/mywheel.whl", b.Config.Resources.Jobs["job"].JobSettings.Tasks[1].ForEachTask.Task.Libraries[1].Whl)
+}
+
+func TestArtifactUploadForVolumes(t *testing.T) {
+	tmpDir := t.TempDir()
+	whlFolder := filepath.Join(tmpDir, "whl")
+	testutil.Touch(t, whlFolder, "source.whl")
+	whlLocalPath := filepath.Join(whlFolder, "source.whl")
+
+	b := &bundle.Bundle{
+		RootPath: tmpDir,
+		Config: config.Root{
+			Workspace: config.Workspace{
+				ArtifactPath: "/Volumes/foo/bar/artifacts",
+			},
+			Artifacts: config.Artifacts{
+				"whl": {
+					Type: config.ArtifactPythonWheel,
+					Files: []config.ArtifactFile{
+						{Source: whlLocalPath},
+					},
+				},
+			},
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job": {
+						JobSettings: &jobs.JobSettings{
+							Tasks: []jobs.Task{
+								{
+									Libraries: []compute.Library{
+										{
+											Whl: filepath.Join("whl", "*.whl"),
+										},
+										{
+											Whl: "/Volumes/some/path/mywheel.whl",
+										},
+									},
+								},
+								{
+									ForEachTask: &jobs.ForEachTask{
+										Task: jobs.Task{
+											Libraries: []compute.Library{
+												{
+													Whl: filepath.Join("whl", "*.whl"),
+												},
+												{
+													Whl: "/Volumes/some/path/mywheel.whl",
+												},
+											},
+										},
+									},
+								},
+							},
+							Environments: []jobs.JobEnvironment{
+								{
+									Spec: &compute.Environment{
+										Dependencies: []string{
+											filepath.Join("whl", "source.whl"),
+											"/Volumes/some/path/mywheel.whl",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	artifact := b.Config.Artifacts["whl"]
+	mockFiler := mockfiler.NewMockFiler(t)
+	mockFiler.EXPECT().Write(
+		mock.Anything,
+		filepath.Join("source.whl"),
+		mock.AnythingOfType("*bytes.Reader"),
+		filer.OverwriteIfExists,
+		filer.CreateParentDirectories,
+	).Return(nil)
+
+	err := uploadArtifact(context.Background(), b, artifact, "/Volumes/foo/bar/artifacts", mockFiler)
+	require.NoError(t, err)
+
+	// Test that libraries path is updated
+	require.Equal(t, "/Volumes/foo/bar/artifacts/source.whl", b.Config.Resources.Jobs["job"].JobSettings.Tasks[0].Libraries[0].Whl)
+	require.Equal(t, "/Volumes/some/path/mywheel.whl", b.Config.Resources.Jobs["job"].JobSettings.Tasks[0].Libraries[1].Whl)
+	require.Equal(t, "/Volumes/foo/bar/artifacts/source.whl", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[0])
+	require.Equal(t, "/Volumes/some/path/mywheel.whl", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[1])
+	require.Equal(t, "/Volumes/foo/bar/artifacts/source.whl", b.Config.Resources.Jobs["job"].JobSettings.Tasks[1].ForEachTask.Task.Libraries[0].Whl)
+	require.Equal(t, "/Volumes/some/path/mywheel.whl", b.Config.Resources.Jobs["job"].JobSettings.Tasks[1].ForEachTask.Task.Libraries[1].Whl)
 }

@@ -1,7 +1,6 @@
 package filer
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -179,12 +178,12 @@ func (w *FilesClient) Read(ctx context.Context, name string) (io.ReadCloser, err
 		return nil, err
 	}
 
-	var buf bytes.Buffer
-	err = w.apiClient.Do(ctx, http.MethodGet, urlPath, nil, nil, &buf)
+	var reader io.ReadCloser
+	err = w.apiClient.Do(ctx, http.MethodGet, urlPath, nil, nil, &reader)
 
 	// Return early on success.
 	if err == nil {
-		return io.NopCloser(&buf), nil
+		return reader, nil
 	}
 
 	// Special handling of this error only if it is an API error.

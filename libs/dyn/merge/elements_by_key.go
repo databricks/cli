@@ -52,7 +52,7 @@ func (e elementsByKey) Map(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 		out = append(out, nv)
 	}
 
-	return dyn.NewValue(out, v.Location()), nil
+	return dyn.NewValue(out, v.Locations()), nil
 }
 
 // ElementsByKey returns a [dyn.MapFunc] that operates on a sequence

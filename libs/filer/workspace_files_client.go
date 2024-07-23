@@ -84,6 +84,10 @@ func (info wsfsFileInfo) Sys() any {
 	return info.ObjectInfo
 }
 
+func (info wsfsFileInfo) WorkspaceObjectInfo() workspace.ObjectInfo {
+	return info.ObjectInfo
+}
+
 // UnmarshalJSON is a custom unmarshaller for the wsfsFileInfo struct.
 // It must be defined for this type because otherwise the implementation
 // of the embedded ObjectInfo type will be used.
