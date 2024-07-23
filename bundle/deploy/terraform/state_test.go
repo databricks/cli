@@ -26,19 +26,19 @@ func localStateFile(t *testing.T, ctx context.Context, b *bundle.Bundle) string 
 	return filepath.Join(dir, TerraformStateFileName)
 }
 
-func readLocalState(t *testing.T, ctx context.Context, b *bundle.Bundle) map[string]int {
+func readLocalState(t *testing.T, ctx context.Context, b *bundle.Bundle) map[string]any {
 	f, err := os.Open(localStateFile(t, ctx, b))
 	require.NoError(t, err)
 	defer f.Close()
 
-	var contents map[string]int
+	var contents map[string]any
 	dec := json.NewDecoder(f)
 	err = dec.Decode(&contents)
 	require.NoError(t, err)
 	return contents
 }
 
-func writeLocalState(t *testing.T, ctx context.Context, b *bundle.Bundle, contents map[string]int) {
+func writeLocalState(t *testing.T, ctx context.Context, b *bundle.Bundle, contents map[string]any) {
 	f, err := os.Create(localStateFile(t, ctx, b))
 	require.NoError(t, err)
 	defer f.Close()
