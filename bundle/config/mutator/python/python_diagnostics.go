@@ -54,13 +54,17 @@ func parsePythonDiagnostics(input io.Reader) (diag.Diagnostics, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse path: %s", err)
 		}
+		var paths []dyn.Path
+		if path != nil {
+			paths = []dyn.Path{path}
+		}
 
 		diag := diag.Diagnostic{
 			Severity: severity,
 			Summary:  parsedLine.Summary,
 			Detail:   parsedLine.Detail,
 			Location: convertPythonLocation(parsedLine.Location),
-			Path:     path,
+			Paths:    paths,
 		}
 
 		diags = diags.Append(diag)

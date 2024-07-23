@@ -68,7 +68,7 @@ func nullWarning(expected dyn.Kind, src dyn.Value, path dyn.Path) diag.Diagnosti
 		Severity: diag.Warning,
 		Summary:  fmt.Sprintf("expected a %s value, found null", expected),
 		Location: src.Location(),
-		Path:     path,
+		Paths:    []dyn.Path{path},
 	}
 }
 
@@ -77,7 +77,7 @@ func typeMismatch(expected dyn.Kind, src dyn.Value, path dyn.Path) diag.Diagnost
 		Severity: diag.Warning,
 		Summary:  fmt.Sprintf("expected %s, found %s", expected, src.Kind()),
 		Location: src.Location(),
-		Path:     path,
+		Paths:    []dyn.Path{path},
 	}
 }
 
@@ -99,7 +99,7 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 						Severity: diag.Warning,
 						Summary:  fmt.Sprintf("unknown field: %s", pk.MustString()),
 						Location: pk.Location(),
-						Path:     path,
+						Paths:    []dyn.Path{path},
 					})
 				}
 				continue
@@ -323,7 +323,7 @@ func (n normalizeOptions) normalizeInt(typ reflect.Type, src dyn.Value, path dyn
 				Severity: diag.Warning,
 				Summary:  fmt.Sprintf(`cannot accurately represent "%g" as integer due to precision loss`, src.MustFloat()),
 				Location: src.Location(),
-				Path:     path,
+				Paths:    []dyn.Path{path},
 			})
 		}
 	case dyn.KindString:
@@ -339,7 +339,7 @@ func (n normalizeOptions) normalizeInt(typ reflect.Type, src dyn.Value, path dyn
 				Severity: diag.Warning,
 				Summary:  fmt.Sprintf("cannot parse %q as an integer", src.MustString()),
 				Location: src.Location(),
-				Path:     path,
+				Paths:    []dyn.Path{path},
 			})
 		}
 	case dyn.KindNil:
@@ -366,7 +366,7 @@ func (n normalizeOptions) normalizeFloat(typ reflect.Type, src dyn.Value, path d
 				Severity: diag.Warning,
 				Summary:  fmt.Sprintf(`cannot accurately represent "%d" as floating point number due to precision loss`, src.MustInt()),
 				Location: src.Location(),
-				Path:     path,
+				Paths:    []dyn.Path{path},
 			})
 		}
 	case dyn.KindString:
@@ -382,7 +382,7 @@ func (n normalizeOptions) normalizeFloat(typ reflect.Type, src dyn.Value, path d
 				Severity: diag.Warning,
 				Summary:  fmt.Sprintf("cannot parse %q as a floating point number", src.MustString()),
 				Location: src.Location(),
-				Path:     path,
+				Paths:    []dyn.Path{path},
 			})
 		}
 	case dyn.KindNil:
