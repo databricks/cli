@@ -32,6 +32,28 @@ func printPaths(paths []dyn.Path) string {
 	return res.String()
 }
 
+func printLocations(locations []dyn.Location) string {
+	res := strings.Builder{}
+
+	first := true
+	for _, loc := range locations {
+		if loc.File == "" {
+			continue
+		}
+
+		res.WriteString("\n")
+		if first {
+			res.WriteString("  in ")
+			first = false
+		} else {
+			res.WriteString("     ")
+		}
+
+		res.WriteString(color.CyanString(loc.String()))
+	}
+	return res.String()
+}
+
 var renderFuncMap = template.FuncMap{
 	"red":     color.RedString,
 	"green":   color.GreenString,
@@ -45,14 +67,14 @@ var renderFuncMap = template.FuncMap{
 	"italic": func(format string, a ...interface{}) string {
 		return color.New(color.Italic).Sprintf(format, a...)
 	},
-	"printPaths": printPaths,
+	"printPaths":     printPaths,
+	"printLocations": printLocations,
 }
 
 const errorTemplate = `{{ "Error" | red }}: {{ .Summary }}
 {{- printPaths .Paths -}}
-{{- if .Location.File }}
-  {{ "in " }}{{ .Location.String | cyan }}
-{{- end }}
+{{- printLocations .Locations -}}
+
 {{- if .Detail }}
 
 {{ .Detail }}
@@ -62,9 +84,8 @@ const errorTemplate = `{{ "Error" | red }}: {{ .Summary }}
 
 const warningTemplate = `{{ "Warning" | yellow }}: {{ .Summary }}
 {{- printPaths .Paths -}}
-{{- if .Location.File }}
-  {{ "in " }}{{ .Location.String | cyan }}
-{{- end }}
+{{- printLocations .Locations -}}
+
 {{- if .Detail }}
 
 {{ .Detail }}
@@ -157,12 +178,18 @@ func renderDiagnostics(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics) 
 			t = warningT
 		}
 
-		// Make file relative to bundle root
-		if d.Location.File != "" && b != nil {
-			out, err := filepath.Rel(b.RootPath, d.Location.File)
-			// if we can't relativize the path, just use path as-is
-			if err == nil {
-				d.Location.File = out
+		for i := range d.Locations {
+			if b == nil {
+				break
+			}
+
+			// Make location relative to bundle root
+			if d.Locations[i].File != "" {
+				out, err := filepath.Rel(b.RootPath, d.Locations[i].File)
+				// if we can't relativize the path, just use path as-is
+				if err == nil {
+					d.Locations[i].File = out
+				}
 			}
 		}
 

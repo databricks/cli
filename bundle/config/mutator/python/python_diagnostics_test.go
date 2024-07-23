@@ -39,10 +39,12 @@ func TestParsePythonDiagnostics(t *testing.T) {
 				{
 					Severity: diag.Error,
 					Summary:  "error summary",
-					Location: dyn.Location{
-						File:   "src/examples/file.py",
-						Line:   1,
-						Column: 2,
+					Locations: []dyn.Location{
+						{
+							File:   "src/examples/file.py",
+							Line:   1,
+							Column: 2,
+						},
 					},
 				},
 			},
@@ -55,6 +57,7 @@ func TestParsePythonDiagnostics(t *testing.T) {
 					Severity: diag.Error,
 					Summary:  "error summary",
 					Paths:    []dyn.Path{dyn.MustPathFromString("resources.jobs.job0.name")},
+					Locations: []dyn.Location{{}},
 				},
 			},
 		},
@@ -73,9 +76,10 @@ func TestParsePythonDiagnostics(t *testing.T) {
 			input: `{"severity": "warning", "summary": "warning summary", "detail": "warning detail"}`,
 			expected: diag.Diagnostics{
 				{
-					Severity: diag.Warning,
-					Summary:  "warning summary",
-					Detail:   "warning detail",
+					Severity:  diag.Warning,
+					Summary:   "warning summary",
+					Detail:    "warning detail",
+					Locations: []dyn.Location{{}},
 				},
 			},
 		},
@@ -85,12 +89,14 @@ func TestParsePythonDiagnostics(t *testing.T) {
 				`{"severity": "error", "summary": "error summary (2)"}`,
 			expected: diag.Diagnostics{
 				{
-					Severity: diag.Error,
-					Summary:  "error summary (1)",
+					Severity:  diag.Error,
+					Summary:   "error summary (1)",
+					Locations: []dyn.Location{{}},
 				},
 				{
-					Severity: diag.Error,
-					Summary:  "error summary (2)",
+					Severity:  diag.Error,
+					Summary:   "error summary (2)",
+					Locations: []dyn.Location{{}},
 				},
 			},
 		},

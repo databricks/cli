@@ -513,6 +513,14 @@ func (r Root) GetLocation(path string) dyn.Location {
 	return v.Location()
 }
 
+func (r Root) GetLocations(path string) []dyn.Location {
+	v, err := dyn.Get(r.value, path)
+	if err != nil {
+		return []dyn.Location{}
+	}
+	return v.Locations()
+}
+
 // Value returns the dynamic configuration value of the root object. This value
 // is the source of truth and is kept in sync with values in the typed configuration.
 func (r Root) Value() dyn.Value {

@@ -88,34 +88,22 @@ func TestRenderTextOutput(t *testing.T) {
 			bundle: loadingBundle,
 			diags: diag.Diagnostics{
 				diag.Diagnostic{
-					Severity: diag.Error,
-					Summary:  "error (1)",
-					Detail:   "detail (1)",
-					Location: dyn.Location{
-						File:   "foo.py",
-						Line:   1,
-						Column: 1,
-					},
+					Severity:  diag.Error,
+					Summary:   "error (1)",
+					Detail:    "detail (1)",
+					Locations: []dyn.Location{{File: "foo.py", Line: 1, Column: 1}},
 				},
 				diag.Diagnostic{
-					Severity: diag.Error,
-					Summary:  "error (2)",
-					Detail:   "detail (2)",
-					Location: dyn.Location{
-						File:   "foo.py",
-						Line:   2,
-						Column: 1,
-					},
+					Severity:  diag.Error,
+					Summary:   "error (2)",
+					Detail:    "detail (2)",
+					Locations: []dyn.Location{{File: "foo.py", Line: 2, Column: 1}},
 				},
 				diag.Diagnostic{
-					Severity: diag.Warning,
-					Summary:  "warning (3)",
-					Detail:   "detail (3)",
-					Location: dyn.Location{
-						File:   "foo.py",
-						Line:   3,
-						Column: 1,
-					},
+					Severity:  diag.Warning,
+					Summary:   "warning (3)",
+					Detail:    "detail (3)",
+					Locations: []dyn.Location{{File: "foo.py", Line: 3, Column: 1}},
 				},
 			},
 			opts: RenderOptions{RenderSummaryTable: true},
@@ -174,24 +162,16 @@ func TestRenderTextOutput(t *testing.T) {
 			bundle: nil,
 			diags: diag.Diagnostics{
 				diag.Diagnostic{
-					Severity: diag.Error,
-					Summary:  "error (1)",
-					Detail:   "detail (1)",
-					Location: dyn.Location{
-						File:   "foo.py",
-						Line:   1,
-						Column: 1,
-					},
+					Severity:  diag.Error,
+					Summary:   "error (1)",
+					Detail:    "detail (1)",
+					Locations: []dyn.Location{{File: "foo.py", Line: 1, Column: 1}},
 				},
 				diag.Diagnostic{
-					Severity: diag.Warning,
-					Summary:  "warning (2)",
-					Detail:   "detail (2)",
-					Location: dyn.Location{
-						File:   "foo.py",
-						Line:   3,
-						Column: 1,
-					},
+					Severity:  diag.Warning,
+					Summary:   "warning (2)",
+					Detail:    "detail (2)",
+					Locations: []dyn.Location{{File: "foo.py", Line: 3, Column: 1}},
 				},
 			},
 			opts: RenderOptions{RenderSummaryTable: false},
@@ -252,15 +232,40 @@ func TestRenderDiagnostics(t *testing.T) {
 					Severity: diag.Error,
 					Summary:  "failed to load xxx",
 					Detail:   "'name' is required",
-					Location: dyn.Location{
+					Locations: []dyn.Location{{
 						File:   "foo.yaml",
 						Line:   1,
-						Column: 2,
-					},
+						Column: 2}},
 				},
 			},
 			expected: "Error: failed to load xxx\n" +
 				"  in foo.yaml:1:2\n\n" +
+				"'name' is required\n\n",
+		},
+		{
+			name: "error with multiple source locations",
+			diags: diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "failed to load xxx",
+					Detail:   "'name' is required",
+					Locations: []dyn.Location{
+						{
+							File:   "foo.yaml",
+							Line:   1,
+							Column: 2,
+						},
+						{
+							File:   "bar.yaml",
+							Line:   3,
+							Column: 4,
+						},
+					},
+				},
+			},
+			expected: "Error: failed to load xxx\n" +
+				"  in foo.yaml:1:2\n" +
+				"     bar.yaml:3:4\n\n" +
 				"'name' is required\n\n",
 		},
 		{

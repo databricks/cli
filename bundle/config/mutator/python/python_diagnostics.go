@@ -60,11 +60,11 @@ func parsePythonDiagnostics(input io.Reader) (diag.Diagnostics, error) {
 		}
 
 		diag := diag.Diagnostic{
-			Severity: severity,
-			Summary:  parsedLine.Summary,
-			Detail:   parsedLine.Detail,
-			Location: convertPythonLocation(parsedLine.Location),
-			Paths:    paths,
+			Severity:  severity,
+			Summary:   parsedLine.Summary,
+			Detail:    parsedLine.Detail,
+			Locations: []dyn.Location{convertPythonLocation(parsedLine.Location)},
+			Paths:     paths,
 		}
 
 		diags = diags.Append(diag)
