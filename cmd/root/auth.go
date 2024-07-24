@@ -186,7 +186,6 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 }
 
 func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
-	fmt.Println("MustWorkspaceClient")
 	cfg := &config.Config{}
 
 	// The command-line profile flag takes precedence over DATABRICKS_CONFIG_PROFILE.
@@ -230,6 +229,11 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 
 func SetWorkspaceClient(ctx context.Context, w *databricks.WorkspaceClient) context.Context {
 	return context.WithValue(ctx, &workspaceClient, w)
+}
+
+func HasWorkspaceClient(ctx context.Context) bool {
+	_, ok := ctx.Value(&workspaceClient).(*databricks.WorkspaceClient)
+	return ok
 }
 
 func SetAccountClient(ctx context.Context, a *databricks.AccountClient) context.Context {

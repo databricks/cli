@@ -56,11 +56,10 @@ func isDbfsPath(path string) bool {
 
 func getValidArgsFunction(pathArgCount int, onlyDirs bool, filerForPathFunc func(ctx context.Context, fullPath string) (filer.Filer, string, error)) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		fmt.Println("GetValidArgsFunction")
 		cmd.SetContext(root.SkipPrompt(cmd.Context()))
 
-		wsc := root.WorkspaceClient(cmd.Context())
-		if wsc == nil {
+		err := mustWorkspaceClient(cmd, args) // TODO: Fix this
+		if err != nil {
 			return nil, cobra.ShellCompDirectiveError
 		}
 
@@ -75,6 +74,7 @@ func getValidArgsFunction(pathArgCount int, onlyDirs bool, filerForPathFunc func
 			return nil, cobra.ShellCompDirectiveError
 		}
 
+		wsc := root.WorkspaceClient(cmd.Context())
 		_, err = wsc.CurrentUser.Me(cmd.Context())
 		if err != nil {
 			return nil, cobra.ShellCompDirectiveError
@@ -99,4 +99,14 @@ func getValidArgsFunction(pathArgCount int, onlyDirs bool, filerForPathFunc func
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
 	}
+}
+
+// Wrapper for [root.MustWorkspaceClient] that disables loading authentication configuration from a bundle.
+func mustWorkspaceClient(cmd *cobra.Command, args []string) error {
+	if root.HasWorkspaceClient(cmd.Context()) {
+		return nil
+	}
+
+	cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
+	return root.MustWorkspaceClient(cmd, args)
 }
