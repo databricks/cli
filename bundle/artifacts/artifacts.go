@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts/whl"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
@@ -29,6 +30,10 @@ var buildMutators map[config.ArtifactType]mutatorFactory = map[config.ArtifactTy
 
 var uploadMutators map[config.ArtifactType]mutatorFactory = map[config.ArtifactType]mutatorFactory{}
 
+var prepareMutators map[config.ArtifactType]mutatorFactory = map[config.ArtifactType]mutatorFactory{
+	config.ArtifactPythonWheel: whl.Prepare,
+}
+
 func getBuildMutator(t config.ArtifactType, name string) bundle.Mutator {
 	mutatorFactory, ok := buildMutators[t]
 	if !ok {
@@ -42,6 +47,17 @@ func getUploadMutator(t config.ArtifactType, name string) bundle.Mutator {
 	mutatorFactory, ok := uploadMutators[t]
 	if !ok {
 		mutatorFactory = BasicUpload
+	}
+
+	return mutatorFactory(name)
+}
+
+func getPrepareMutator(t config.ArtifactType, name string) bundle.Mutator {
+	mutatorFactory, ok := prepareMutators[t]
+	if !ok {
+		mutatorFactory = func(_ string) bundle.Mutator {
+			return mutator.NoOp()
+		}
 	}
 
 	return mutatorFactory(name)

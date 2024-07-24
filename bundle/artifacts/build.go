@@ -35,15 +35,6 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return diag.Errorf("artifact doesn't exist: %s", m.name)
 	}
 
-	// Check if source paths are absolute, if not, make them absolute
-	for k := range artifact.Files {
-		f := &artifact.Files[k]
-		if !filepath.IsAbs(f.Source) {
-			dirPath := filepath.Dir(artifact.ConfigFilePath)
-			f.Source = filepath.Join(dirPath, f.Source)
-		}
-	}
-
 	// Skip building if build command is not specified or infered
 	if artifact.BuildCommand == "" {
 		// If no build command was specified or infered and there is no
@@ -56,16 +47,6 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		// But we still need to expand glob references in files source path.
 		diags := expandGlobReference(artifact)
 		return diags
-	}
-
-	// If artifact path is not provided, use bundle root dir
-	if artifact.Path == "" {
-		artifact.Path = b.RootPath
-	}
-
-	if !filepath.IsAbs(artifact.Path) {
-		dirPath := filepath.Dir(artifact.ConfigFilePath)
-		artifact.Path = filepath.Join(dirPath, artifact.Path)
 	}
 
 	diags := bundle.Apply(ctx, b, getBuildMutator(artifact.Type, m.name))

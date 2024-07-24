@@ -524,6 +524,17 @@ func (r Root) GetLocation(path string) dyn.Location {
 	return v.Location()
 }
 
+// Get all locations of the configuration value at the specified path. We need both
+// this function and it's singular version (GetLocation) because some diagnostics just need
+// the primary location and some need all locations associated with a configuration value.
+func (r Root) GetLocations(path string) []dyn.Location {
+	v, err := dyn.Get(r.value, path)
+	if err != nil {
+		return []dyn.Location{}
+	}
+	return v.Locations()
+}
+
 // Value returns the dynamic configuration value of the root object. This value
 // is the source of truth and is kept in sync with values in the typed configuration.
 func (r Root) Value() dyn.Value {
