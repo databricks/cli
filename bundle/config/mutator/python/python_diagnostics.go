@@ -70,7 +70,7 @@ func parsePythonDiagnostics(input io.Reader) (diag.Diagnostics, error) {
 			Summary:   parsedLine.Summary,
 			Detail:    parsedLine.Detail,
 			Locations: locations,
-			Paths:    paths,
+			Paths:     paths,
 		}
 
 		diags = diags.Append(diag)

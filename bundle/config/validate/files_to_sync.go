@@ -49,7 +49,7 @@ func (v *filesToSync) Apply(ctx context.Context, rb bundle.ReadOnlyBundle) diag.
 			// Show all locations where sync.exclude is defined, since merging
 			// sync.exclude is additive.
 			Locations: loc.Locations(),
-			Paths:    []dyn.Path{loc.Path()},
+			Paths:     []dyn.Path{loc.Path()},
 		})
 	}
 

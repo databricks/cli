@@ -46,7 +46,7 @@ func (v *jobClusterKeyDefined) Apply(ctx context.Context, rb bundle.ReadOnlyBund
 						// Other associated locations are not relevant since they are
 						// overridden during merging.
 						Locations: []dyn.Location{loc.Location()},
-						Paths:    []dyn.Path{loc.Path()},
+						Paths:     []dyn.Path{loc.Path()},
 					})
 				}
 			}
