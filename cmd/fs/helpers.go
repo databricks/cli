@@ -48,10 +48,10 @@ func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, er
 	return f, path, err
 }
 
-const DbfsPrefix string = "dbfs:/"
+const dbfsPrefix string = "dbfs:/"
 
 func isDbfsPath(path string) bool {
-	return strings.HasPrefix(path, DbfsPrefix)
+	return strings.HasPrefix(path, dbfsPrefix)
 }
 
 func getValidArgsFunction(pathArgCount int, filerForPathFunc func(ctx context.Context, fullPath string) (filer.Filer, string, error)) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
@@ -67,7 +67,7 @@ func getValidArgsFunction(pathArgCount int, filerForPathFunc func(ctx context.Co
 		isValidPrefix := isDbfsPath(toComplete)
 
 		if !isValidPrefix {
-			return []string{DbfsPrefix}, cobra.ShellCompDirectiveNoSpace
+			return []string{dbfsPrefix}, cobra.ShellCompDirectiveNoSpace
 		}
 
 		filer, path, err := filerForPathFunc(cmd.Context(), toComplete)
@@ -85,8 +85,8 @@ func getValidArgsFunction(pathArgCount int, filerForPathFunc func(ctx context.Co
 		if len(args) < pathArgCount {
 			completions, directive := completer.CompleteRemotePath(path)
 
-			// DbfsPrefix without trailing "/"
-			prefix := DbfsPrefix[:len(DbfsPrefix)-1]
+			// dbfsPrefix without trailing "/"
+			prefix := dbfsPrefix[:len(dbfsPrefix)-1]
 
 			// Add the prefix to the completions
 			for i, completion := range completions {
