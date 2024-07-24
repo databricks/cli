@@ -3,7 +3,6 @@ package whl
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
@@ -36,18 +35,14 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 	cmdio.LogString(ctx, fmt.Sprintf("Building %s...", m.name))
 
-	dir := artifact.Path
-
-	distPath := filepath.Join(dir, "dist")
-	os.RemoveAll(distPath)
-	python.CleanupWheelFolder(dir)
-
 	out, err := artifact.Build(ctx)
 	if err != nil {
 		return diag.Errorf("build failed %s, error: %v, output: %s", m.name, err, out)
 	}
 	log.Infof(ctx, "Build succeeded")
 
+	dir := artifact.Path
+	distPath := filepath.Join(artifact.Path, "dist")
 	wheels := python.FindFilesWithSuffixInPath(distPath, ".whl")
 	if len(wheels) == 0 {
 		return diag.Errorf("cannot find built wheel in %s for package %s", dir, m.name)
