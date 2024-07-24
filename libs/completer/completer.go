@@ -26,18 +26,18 @@ func (c *completer) CompleteRemotePath(remotePath string) ([]string, cobra.Shell
 	// is valid and we should list nested directories.
 	// If the path in `toComplete` is incomplete, however,
 	// then we should list adjacent directories.
-	nested := fetchDirs(c, remotePath)
-	dirs := <-nested
+	nested := fetchCompletions(c, remotePath)
+	completions := <-nested
 
-	if dirs == nil {
-		adjacent := fetchDirs(c, path.Dir(remotePath))
-		dirs = <-adjacent
+	if completions == nil {
+		adjacent := fetchCompletions(c, path.Dir(remotePath))
+		completions = <-adjacent
 	}
 
-	return dirs, cobra.ShellCompDirectiveNoSpace
+	return completions, cobra.ShellCompDirectiveNoSpace
 }
 
-func fetchDirs(
+func fetchCompletions(
 	c *completer,
 	remotePath string,
 ) <-chan []string {
@@ -50,7 +50,7 @@ func fetchDirs(
 			return
 		}
 
-		dirs := []string{}
+		completions := []string{}
 		for _, entry := range entries {
 			if !c.onlyDirs || entry.IsDir() {
 				separator := ""
@@ -63,16 +63,16 @@ func fetchDirs(
 				}
 
 				completion := fmt.Sprintf("%s%s%s", remotePath, separator, entry.Name())
-				dirs = append(dirs, completion)
+				completions = append(completions, completion)
 			}
 		}
 
 		// Sort completions alphabetically
-		sort.Slice(dirs, func(i, j int) bool {
-			return dirs[i] < dirs[j]
+		sort.Slice(completions, func(i, j int) bool {
+			return completions[i] < completions[j]
 		})
 
-		ch <- dirs
+		ch <- completions
 	}()
 
 	return ch

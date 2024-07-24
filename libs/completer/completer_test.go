@@ -56,7 +56,24 @@ func TestFilerCompleterReturnsAdjacentDirs(t *testing.T) {
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 
 	mockFiler.AssertExpectations(t)
+}
 
+func TestFilerCompleterReturnsFileAndDir(t *testing.T) {
+	ctx := setup(t)
+
+	mockFilerForPath := testutil.GetMockFilerForPath(t, []fs.DirEntry{
+		testutil.NewFakeDirEntry("dir", true),
+		testutil.NewFakeDirEntry("file", false),
+	})
+	mockFiler, _, _ := mockFilerForPath(ctx, "dbfs:/")
+
+	// onlyDirs=false so we should get both files and directories
+	completer := NewCompleter(ctx, mockFiler, false)
+
+	completions, directive := completer.CompleteRemotePath("/")
+
+	assert.Equal(t, []string{"/dir", "/file"}, completions)
+	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 }
 
 func TestFilerCompleterRetainsFormatting(t *testing.T) {
