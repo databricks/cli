@@ -100,8 +100,8 @@ func getValidArgsFunction(pathArgCount int, filerForPathFunc func(ctx context.Co
 	}
 }
 
-// Wrapper for [root.MustWorkspaceClient] that disables loading authentication configuration from a bundle.
-func mustWorkspaceClient(cmd *cobra.Command, args []string) error {
-	cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
-	return root.MustWorkspaceClient(cmd, args)
-}
+// // Wrapper for [root.MustWorkspaceClient] that disables loading authentication configuration from a bundle.
+// func mustWorkspaceClient(cmd *cobra.Command, args []string) error {
+// 	cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
+// 	return root.MustWorkspaceClient(cmd, args)
+// }
