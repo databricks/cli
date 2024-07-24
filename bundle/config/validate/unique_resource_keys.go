@@ -21,8 +21,6 @@ import (
 //     across multiple files. Note: This is not applicable to resource configuration
 //     defined in a target override. That is why this mutator MUST run before the target
 //     overrides are merged.
-//
-// TODO: Ensure adequate test coverage.
 func UniqueResourceKeys() bundle.Mutator {
 	return &uniqueResourceKeys{}
 }
