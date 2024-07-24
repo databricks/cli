@@ -6,41 +6,107 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/validate"
+	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestValidateUniqueResourceIdentifiers(t *testing.T) {
 	tcases := []struct {
-		name     string
-		errorMsg string
+		name        string
+		diagnostics diag.Diagnostics
 	}{
-		// {
-		// 	name:     "duplicate_resource_names_in_root_job_and_pipeline",
-		// 	errorMsg: "multiple resources named foo (jobs.foo at validate/duplicate_resource_names_in_root_job_and_pipeline/databricks.yml:10:7, pipelines.foo at validate/duplicate_resource_names_in_root_job_and_pipeline/databricks.yml:13:7)",
-		// },
-		// {
-		// 	name:     "duplicate_resource_names_in_root_job_and_experiment",
-		// 	errorMsg: "multiple resources named foo (experiments.foo at validate/duplicate_resource_names_in_root_job_and_experiment/databricks.yml:18:7, jobs.foo at validate/duplicate_resource_names_in_root_job_and_experiment/databricks.yml:10:7)",
-		// },
-		// {
-		// 	name:     "duplicate_resource_name_in_subconfiguration",
-		// 	errorMsg: "multiple resources named foo (jobs.foo at validate/duplicate_resource_name_in_subconfiguration/databricks.yml:13:7, pipelines.foo at validate/duplicate_resource_name_in_subconfiguration/resources.yml:4:7)",
-		// },
 		{
-			name:     "duplicate_resource_name_in_subconfiguration_job_and_job",
-			errorMsg: "multiple resources have been defined with the same key: foo (jobs.foo at validate/duplicate_resource_name_in_subconfiguration_job_and_job/resources.yml:4:7, jobs.foo at validate/duplicate_resource_name_in_subconfiguration_job_and_job/databricks.yml:13:7)",
+			name: "duplicate_resource_names_in_root_job_and_pipeline",
+			diagnostics: diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "multiple resources have been defined with the same key: foo",
+					Locations: []dyn.Location{
+						{File: "validate/duplicate_resource_names_in_root_job_and_pipeline/databricks.yml", Line: 10, Column: 7},
+						{File: "validate/duplicate_resource_names_in_root_job_and_pipeline/databricks.yml", Line: 13, Column: 7},
+					},
+					Paths: []dyn.Path{
+						dyn.MustPathFromString("jobs.foo"),
+						dyn.MustPathFromString("pipelines.foo"),
+					},
+				},
+			},
 		},
-		// {
-		// 	name:     "duplicate_resource_names_in_different_subconfiguations",
-		// 	errorMsg: "multiple resources named foo (jobs.foo at validate/duplicate_resource_names_in_different_subconfiguations/resources1.yml:4:7, pipelines.foo at validate/duplicate_resource_names_in_different_subconfiguations/resources2.yml:4:7)",
-		// },
+		{
+			name: "duplicate_resource_names_in_root_job_and_experiment",
+			diagnostics: diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "multiple resources have been defined with the same key: foo",
+					Locations: []dyn.Location{
+						{File: "validate/duplicate_resource_names_in_root_job_and_experiment/databricks.yml", Line: 18, Column: 7},
+						{File: "validate/duplicate_resource_names_in_root_job_and_experiment/databricks.yml", Line: 10, Column: 7},
+					},
+					Paths: []dyn.Path{
+						dyn.MustPathFromString("experiments.foo"),
+						dyn.MustPathFromString("jobs.foo"),
+					},
+				},
+			},
+		},
+		{
+			name: "duplicate_resource_name_in_subconfiguration",
+			diagnostics: diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "multiple resources have been defined with the same key: foo",
+					Locations: []dyn.Location{
+						{File: "validate/duplicate_resource_name_in_subconfiguration/databricks.yml", Line: 13, Column: 7},
+						{File: "validate/duplicate_resource_name_in_subconfiguration/resources.yml", Line: 4, Column: 7},
+					},
+					Paths: []dyn.Path{
+						dyn.MustPathFromString("jobs.foo"),
+						dyn.MustPathFromString("pipelines.foo"),
+					},
+				},
+			},
+		},
+		{
+			name: "duplicate_resource_name_in_subconfiguration_job_and_job",
+			diagnostics: diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "multiple resources have been defined with the same key: foo",
+					Locations: []dyn.Location{
+						{File: "validate/duplicate_resource_name_in_subconfiguration_job_and_job/databricks.yml", Line: 13, Column: 7},
+						{File: "validate/duplicate_resource_name_in_subconfiguration_job_and_job/resources.yml", Line: 4, Column: 7},
+					},
+					Paths: []dyn.Path{
+						dyn.MustPathFromString("jobs.foo"),
+					},
+				},
+			},
+		},
+		{
+			name: "duplicate_resource_names_in_different_subconfiguations",
+			diagnostics: diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  "multiple resources have been defined with the same key: foo",
+					Locations: []dyn.Location{
+						{File: "validate/duplicate_resource_names_in_different_subconfiguations/resources1.yml", Line: 4, Column: 7},
+						{File: "validate/duplicate_resource_names_in_different_subconfiguations/resources2.yml", Line: 4, Column: 7},
+					},
+					Paths: []dyn.Path{
+						dyn.MustPathFromString("jobs.foo"),
+						dyn.MustPathFromString("pipelines.foo"),
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range tcases {
 		t.Run(tc.name, func(t *testing.T) {
 			b := load(t, "./validate/"+tc.name)
-			diags := bundle.ApplyReadOnly(context.Background(), bundle.ReadOnly(b), validate.UniqueResourceKeys())
-			assert.ErrorContains(t, diags.Error(), tc.errorMsg)
+			diags := bundle.Apply(context.Background(), b, validate.UniqueResourceKeys())
+			assert.Equal(t, tc.diagnostics, diags)
 		})
 	}
 }

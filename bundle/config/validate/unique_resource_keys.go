@@ -3,70 +3,64 @@ package validate
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
 
-func UniqueResourceKeys() bundle.ReadOnlyMutator {
+func UniqueResourceKeys() bundle.Mutator {
 	return &uniqueResourceKeys{}
 }
 
-// TODO: Might need to enforce sorted walk on dyn.Walk
+// TODO: Comment why this mutator needs to be run before target overrides.
 type uniqueResourceKeys struct{}
 
 func (m *uniqueResourceKeys) Name() string {
 	return "validate:unique_resource_keys"
 }
 
-func (m *uniqueResourceKeys) Apply(ctx context.Context, rb bundle.ReadOnlyBundle) diag.Diagnostics {
+func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
-	// Map of resource key to the paths and locations the resource is defined at.
-	paths := map[string][]dyn.Path{}
-	locations := map[string][]dyn.Location{}
+	// Map of resource key to the pathsByKey and locations the resource is defined at.
+	pathsByKey := map[string][]dyn.Path{}
+	locationsByKey := map[string][]dyn.Location{}
 
-	_, err := dyn.Walk(rb.Config().Value().Get("resources"), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-		// The path is expected to be of length 2, and of the form <resource_type>.<resource_identifier>.
-		// Eg: jobs.my_job, pipelines.my_pipeline, etc.
-		if len(p) < 2 {
+	// Gather the paths and locations of all resources.
+	// TODO: confirm MapByPattern behaves as I expect it to.
+	_, err := dyn.MapByPattern(
+		b.Config.Value().Get("resources"),
+		dyn.NewPattern(dyn.AnyKey(), dyn.AnyKey()),
+		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			// The key for the resource. Eg: "my_job" for jobs.my_job.
+			k := p[1].Key()
+
+			// dyn.Path under the hood is a slice. So, we need to clone it.
+			pathsByKey[k] = append(pathsByKey[k], slices.Clone(p))
+
+			locationsByKey[k] = append(locationsByKey[k], v.Locations()...)
 			return v, nil
-		}
-		if len(p) > 2 {
-			return v, dyn.ErrSkip
-		}
-
-		// The key for the resource. Eg: "my_job" for jobs.my_job.
-		k := p[1].Key()
-
-		paths[k] = append(paths[k], p)
-		locations[k] = append(locations[k], v.Locations()...)
-		return v, nil
-	})
+		},
+	)
 	if err != nil {
-		diags = append(diags, diag.FromErr(err)...)
+		return diag.FromErr(err)
 	}
 
-	for k, ps := range paths {
-		if len(ps) <= 1 {
+	for k, locations := range locationsByKey {
+		if len(locations) <= 1 {
 			continue
 		}
 
-		// TODO: What happens on target overrides? Ensure they do not misbehave.
-		// 1. What was the previous behaviour for target overrides?
-		// 2. What if a completely new resource with a conflicting key is defined
-		// in a target override.
-		//
 		// If there are multiple resources with the same key, report an error.
-		// NOTE: This includes if the same resource is defined in multiple files as
-		// TODO: continue this comment.
 		diags = append(diags, diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   fmt.Sprintf("multiple resources have been defined with the same key: %s", k),
-			Locations: locations[k],
-			Paths:     ps,
+			Locations: locations,
+			Paths:     pathsByKey[k],
 		})
 	}
+
 	return diags
 }
