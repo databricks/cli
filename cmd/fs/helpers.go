@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/completer"
 	"github.com/databricks/cli/libs/filer"
-	"github.com/databricks/cli/libs/filer/completer"
 	"github.com/spf13/cobra"
 )
 
@@ -85,7 +85,8 @@ func getValidArgsFunction(pathArgCount int, filerForPathFunc func(ctx context.Co
 		if len(args) < pathArgCount {
 			completions, directive := completer.CompleteRemotePath(path)
 
-			// dbfsPrefix without trailing "/"
+			// The completions will start with a "/", so we'll prefix
+			// them with the dbfsPrefix without a trailing "/" (dbfs:)
 			prefix := dbfsPrefix[:len(dbfsPrefix)-1]
 
 			// Add the prefix to the completions

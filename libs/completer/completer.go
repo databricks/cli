@@ -55,7 +55,9 @@ func fetchDirs(
 			if entry.IsDir() {
 				separator := ""
 
-				// Ensure the path and name have a "/" separating them
+				// Ensure the path and name have a "/" separating them. We don't use path
+				// utilities to concatenate the path and name because we want to preserve
+				// the formatting of the path the user has typed (e.g. //a/b///c)
 				if remotePath[len(remotePath)-1] != '/' {
 					separator = "/"
 				}
