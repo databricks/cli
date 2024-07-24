@@ -37,8 +37,9 @@ func Deploy() bundle.Mutator {
 				terraform.Interpolate(),
 				terraform.Write(),
 				terraform.CheckRunningResource(),
+				terraform.PlanDeploy(),
 				bundle.Defer(
-					terraform.Apply(),
+					terraform.Deploy(),
 					bundle.Seq(
 						terraform.StatePush(),
 						terraform.Load(),
