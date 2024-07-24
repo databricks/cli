@@ -1,13 +1,40 @@
 package terraform
 
+import "strings"
+
 type Plan struct {
 	// Path to the plan
 	Path string
 
-	// Holds whether the user can consented to destruction. Either by interactive
-	// confirmation or by passing a command line flag
-	ConfirmApply bool
-
 	// If true, the plan is empty and applying it will not do anything
 	IsEmpty bool
 }
+
+type Action struct {
+	// Type and name of the resource
+	ResourceType string `json:"resource_type"`
+	ResourceName string `json:"resource_name"`
+
+	Action ActionType `json:"action"`
+}
+
+func (a Action) String() string {
+	// terraform resources have the databricks_ prefix, which is not needed.
+	rtype := strings.TrimPrefix(a.ResourceType, "databricks_")
+	return strings.Join([]string{" ", string(a.Action), rtype, a.ResourceName}, " ")
+}
+
+func (c Action) IsInplaceSupported() bool {
+	return false
+}
+
+type ActionType string
+
+const (
+	ActionTypeCreate   ActionType = "create"
+	ActionTypeDelete   ActionType = "delete"
+	ActionTypeUpdate   ActionType = "update"
+	ActionTypeNoOp     ActionType = "no-op"
+	ActionTypeRead     ActionType = "read"
+	ActionTypeRecreate ActionType = "recreate"
+)
