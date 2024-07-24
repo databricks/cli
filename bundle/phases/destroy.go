@@ -47,7 +47,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	for _, rc := range plan.ResourceChanges {
 		if rc.Change.Actions.Delete() {
 			deleteActions = append(deleteActions, terraformlib.Action{
-				Action:       "delete",
+				Action:       terraformlib.ActionTypeDelete,
 				ResourceType: rc.Type,
 				ResourceName: rc.Name,
 			})
