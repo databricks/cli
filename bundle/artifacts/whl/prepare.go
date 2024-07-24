@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/python"
 )
 
@@ -34,7 +35,13 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 	dir := artifact.Path
 
 	distPath := filepath.Join(dir, "dist")
-	os.RemoveAll(distPath)
+
+	// If we have multiple artifacts con figured, prepare will be called multiple times
+	// The first time we will remove the folders, other times will be no-op.
+	err := os.RemoveAll(distPath)
+	if err != nil {
+		log.Infof(ctx, "Failed to remove dist folder: %v", err)
+	}
 	python.CleanupWheelFolder(dir)
 
 	return nil
