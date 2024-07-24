@@ -54,12 +54,12 @@ func isDbfsPath(path string) bool {
 	return strings.HasPrefix(path, dbfsPrefix)
 }
 
-func getValidArgsFunction(pathArgCount int, filerForPathFunc func(ctx context.Context, fullPath string) (filer.Filer, string, error)) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+func getValidArgsFunction(pathArgCount int, onlyDirs bool, filerForPathFunc func(ctx context.Context, fullPath string) (filer.Filer, string, error)) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		fmt.Println("GetValidArgsFunction")
 		cmd.SetContext(root.SkipPrompt(cmd.Context()))
 
 		wsc := root.WorkspaceClient(cmd.Context())
-		// err := mustWorkspaceClient(cmd, args) // TODO: Fix this
 		if wsc == nil {
 			return nil, cobra.ShellCompDirectiveError
 		}
@@ -80,7 +80,7 @@ func getValidArgsFunction(pathArgCount int, filerForPathFunc func(ctx context.Co
 			return nil, cobra.ShellCompDirectiveError
 		}
 
-		completer := completer.NewCompleter(cmd.Context(), filer)
+		completer := completer.NewCompleter(cmd.Context(), filer, onlyDirs)
 
 		if len(args) < pathArgCount {
 			completions, directive := completer.CompleteRemotePath(path)
@@ -100,9 +100,3 @@ func getValidArgsFunction(pathArgCount int, filerForPathFunc func(ctx context.Co
 		}
 	}
 }
-
-// // Wrapper for [root.MustWorkspaceClient] that disables loading authentication configuration from a bundle.
-// func mustWorkspaceClient(cmd *cobra.Command, args []string) error {
-// 	cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
-// 	return root.MustWorkspaceClient(cmd, args)
-// }

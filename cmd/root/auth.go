@@ -152,6 +152,7 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 // Helper function to create a workspace client or prompt once if the given configuration is not valid.
 func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt bool) (*databricks.WorkspaceClient, error) {
 	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+
 	if err == nil {
 		err = w.Config.Authenticate(emptyHttpRequest(ctx))
 	}
@@ -185,6 +186,7 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 }
 
 func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
+	fmt.Println("MustWorkspaceClient")
 	cfg := &config.Config{}
 
 	// The command-line profile flag takes precedence over DATABRICKS_CONFIG_PROFILE.

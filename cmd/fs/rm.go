@@ -32,7 +32,7 @@ func newRmCommand() *cobra.Command {
 		return f.Delete(ctx, path)
 	}
 
-	cmd.ValidArgsFunction = getValidArgsFunction(1, filerForPath)
+	cmd.ValidArgsFunction = getValidArgsFunction(1, false, filerForPath)
 
 	return cmd
 }

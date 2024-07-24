@@ -30,7 +30,7 @@ func TestFilerCompleterReturnsNestedDirs(t *testing.T) {
 	})
 	mockFiler, _, _ := mockFilerForPath(ctx, "dbfs:/")
 
-	completer := NewCompleter(ctx, mockFiler)
+	completer := NewCompleter(ctx, mockFiler, true)
 
 	completions, directive := completer.CompleteRemotePath("/")
 
@@ -49,7 +49,7 @@ func TestFilerCompleterReturnsAdjacentDirs(t *testing.T) {
 		testutil.NewFakeDirEntry("adjacent", true),
 	}, nil)
 
-	completer := NewCompleter(ctx, mockFiler)
+	completer := NewCompleter(ctx, mockFiler, true)
 	completions, directive := completer.CompleteRemotePath("/wrong_path")
 
 	assert.Equal(t, []string{"/adjacent"}, completions)
@@ -67,7 +67,7 @@ func TestFilerCompleterRetainsFormatting(t *testing.T) {
 	})
 	mockFiler, _, _ := mockFilerForPath(ctx, "dbfs://dir")
 
-	completer := NewCompleter(ctx, mockFiler)
+	completer := NewCompleter(ctx, mockFiler, true)
 
 	completions, directive := completer.CompleteRemotePath("//dir//")
 
@@ -83,7 +83,7 @@ func TestFilerCompleterAddsSeparator(t *testing.T) {
 	})
 	mockFiler, _, _ := mockFilerForPath(ctx, "dbfs:/dir")
 
-	completer := NewCompleter(ctx, mockFiler)
+	completer := NewCompleter(ctx, mockFiler, true)
 
 	completions, directive := completer.CompleteRemotePath("/dir")
 

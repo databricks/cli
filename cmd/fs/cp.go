@@ -201,7 +201,7 @@ func newCpCommand() *cobra.Command {
 	}
 
 	// The copy command has two paths that can be completed (SOURCE_PATH & TARGET_PATH)
-	cmd.ValidArgsFunction = getValidArgsFunction(2, filerForPath)
+	cmd.ValidArgsFunction = getValidArgsFunction(2, false, filerForPath)
 
 	return cmd
 }

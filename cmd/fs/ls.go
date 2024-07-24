@@ -89,7 +89,7 @@ func newLsCommand() *cobra.Command {
 		`))
 	}
 
-	cmd.ValidArgsFunction = getValidArgsFunction(1, filerForPath)
+	cmd.ValidArgsFunction = getValidArgsFunction(1, true, filerForPath)
 
 	return cmd
 }

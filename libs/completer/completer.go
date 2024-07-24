@@ -11,13 +11,14 @@ import (
 )
 
 type completer struct {
-	ctx   context.Context
-	filer filer.Filer
+	ctx      context.Context
+	filer    filer.Filer
+	onlyDirs bool
 }
 
 // General completer that takes a Filer to complete remote paths when TAB-ing through a path.
-func NewCompleter(ctx context.Context, filer filer.Filer) *completer {
-	return &completer{ctx: ctx, filer: filer}
+func NewCompleter(ctx context.Context, filer filer.Filer, onlyDirs bool) *completer {
+	return &completer{ctx: ctx, filer: filer, onlyDirs: onlyDirs}
 }
 
 func (c *completer) CompleteRemotePath(remotePath string) ([]string, cobra.ShellCompDirective) {
@@ -25,11 +26,11 @@ func (c *completer) CompleteRemotePath(remotePath string) ([]string, cobra.Shell
 	// is valid and we should list nested directories.
 	// If the path in `toComplete` is incomplete, however,
 	// then we should list adjacent directories.
-	nested := fetchDirs(c.ctx, c.filer, remotePath)
+	nested := fetchDirs(c, remotePath)
 	dirs := <-nested
 
 	if dirs == nil {
-		adjacent := fetchDirs(c.ctx, c.filer, path.Dir(remotePath))
+		adjacent := fetchDirs(c, path.Dir(remotePath))
 		dirs = <-adjacent
 	}
 
@@ -37,22 +38,21 @@ func (c *completer) CompleteRemotePath(remotePath string) ([]string, cobra.Shell
 }
 
 func fetchDirs(
-	ctx context.Context,
-	filer filer.Filer,
+	c *completer,
 	remotePath string,
 ) <-chan []string {
 	ch := make(chan []string, 1)
 	go func() {
 		defer close(ch)
 
-		entries, err := filer.ReadDir(ctx, remotePath)
+		entries, err := c.filer.ReadDir(c.ctx, remotePath)
 		if err != nil {
 			return
 		}
 
 		dirs := []string{}
 		for _, entry := range entries {
-			if entry.IsDir() {
+			if !c.onlyDirs || entry.IsDir() {
 				separator := ""
 
 				// Ensure the path and name have a "/" separating them. We don't use path

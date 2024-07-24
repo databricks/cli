@@ -6,7 +6,7 @@ import (
 
 type skipPrompt int
 
-var skipPromptKey skipPrompt
+var SkipPromptKey skipPrompt
 
 // SkipPrompt allows to skip prompt for profile configuration in MustWorkspaceClient.
 //
@@ -16,12 +16,12 @@ var skipPromptKey skipPrompt
 // thus the Context object seems to be the only viable option for us to configure prompt behaviour based on
 // the context it's executed from.
 func SkipPrompt(ctx context.Context) context.Context {
-	return context.WithValue(ctx, skipPromptKey, true)
+	return context.WithValue(ctx, SkipPromptKey, true)
 }
 
 // shouldSkipPrompt returns whether or not [SkipPrompt] has been set on the specified context.
 func shouldSkipPrompt(ctx context.Context) bool {
-	skipPrompt, ok := ctx.Value(skipPromptKey).(bool)
+	skipPrompt, ok := ctx.Value(SkipPromptKey).(bool)
 	return ok && skipPrompt
 }
 
