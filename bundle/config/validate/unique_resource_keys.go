@@ -10,11 +10,23 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 )
 
+// This mutator validates that:
+//
+//  1. Each resource key is unique across different resource types. No two resources
+//     of the same type can have the same key. This is because command like "bundle run"
+//     rely on the resource key to identify the resource to run.
+//     Eg: jobs.foo and pipelines.foo are not allowed simultaneously.
+//
+//  2. Each resource definition is contained within a single file, and is not spread
+//     across multiple files. Note: This is not applicable to resource configuration
+//     defined in a target override. That is why this mutator MUST run before the target
+//     overrides are merged.
+//
+// TODO: Ensure adequate test coverage.
 func UniqueResourceKeys() bundle.Mutator {
 	return &uniqueResourceKeys{}
 }
 
-// TODO: Comment why this mutator needs to be run before target overrides.
 type uniqueResourceKeys struct{}
 
 func (m *uniqueResourceKeys) Name() string {
@@ -29,7 +41,6 @@ func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 	locationsByKey := map[string][]dyn.Location{}
 
 	// Gather the paths and locations of all resources.
-	// TODO: confirm MapByPattern behaves as I expect it to.
 	_, err := dyn.MapByPattern(
 		b.Config.Value().Get("resources"),
 		dyn.NewPattern(dyn.AnyKey(), dyn.AnyKey()),
