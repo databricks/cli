@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/filer/completer"
 	"github.com/spf13/cobra"
 )
 
@@ -53,12 +54,13 @@ func isDbfsPath(path string) bool {
 	return strings.HasPrefix(path, DbfsPrefix)
 }
 
-func getValidArgsFunction(pathArgCount int) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+func getValidArgsFunction(pathArgCount int, filerForPathFunc func(ctx context.Context, fullPath string) (filer.Filer, string, error)) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		cmd.SetContext(root.SkipPrompt(cmd.Context()))
 
-		err := mustWorkspaceClient(cmd, args)
-		if err != nil {
+		wsc := root.WorkspaceClient(cmd.Context())
+		// err := mustWorkspaceClient(cmd, args) // TODO: Fix this
+		if wsc == nil {
 			return nil, cobra.ShellCompDirectiveError
 		}
 
@@ -68,13 +70,17 @@ func getValidArgsFunction(pathArgCount int) func(cmd *cobra.Command, args []stri
 			return []string{DbfsPrefix}, cobra.ShellCompDirectiveNoSpace
 		}
 
-		f, path, err := filerForPath(cmd.Context(), toComplete)
+		filer, path, err := filerForPathFunc(cmd.Context(), toComplete)
 		if err != nil {
 			return nil, cobra.ShellCompDirectiveError
 		}
 
-		wsc := root.WorkspaceClient(cmd.Context())
-		completer := filer.NewCompleter(cmd.Context(), wsc, f)
+		_, err = wsc.CurrentUser.Me(cmd.Context())
+		if err != nil {
+			return nil, cobra.ShellCompDirectiveError
+		}
+
+		completer := completer.NewCompleter(cmd.Context(), filer)
 
 		if len(args) < pathArgCount {
 			completions, directive := completer.CompleteRemotePath(path)

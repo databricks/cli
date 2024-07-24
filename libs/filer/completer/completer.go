@@ -1,4 +1,4 @@
-package filer
+package completer
 
 import (
 	"context"
@@ -6,27 +6,21 @@ import (
 	"path"
 	"sort"
 
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/libs/filer"
 	"github.com/spf13/cobra"
 )
 
 type completer struct {
 	ctx   context.Context
-	wsc   *databricks.WorkspaceClient
-	filer Filer
+	filer filer.Filer
 }
 
 // General completer that takes a Filer to complete remote paths when TAB-ing through a path.
-func NewCompleter(ctx context.Context, wsc *databricks.WorkspaceClient, filer Filer) *completer {
-	return &completer{ctx: ctx, wsc: wsc, filer: filer}
+func NewCompleter(ctx context.Context, filer filer.Filer) *completer {
+	return &completer{ctx: ctx, filer: filer}
 }
 
 func (c *completer) CompleteRemotePath(remotePath string) ([]string, cobra.ShellCompDirective) {
-	_, err := c.wsc.CurrentUser.Me(c.ctx)
-	if err != nil {
-		return nil, cobra.ShellCompDirectiveError
-	}
-
 	// If the user is TAB-ing their way through a path, the path in `toComplete`
 	// is valid and we should list nested directories.
 	// If the path in `toComplete` is incomplete, however,
@@ -44,7 +38,7 @@ func (c *completer) CompleteRemotePath(remotePath string) ([]string, cobra.Shell
 
 func fetchDirs(
 	ctx context.Context,
-	filer Filer,
+	filer filer.Filer,
 	remotePath string,
 ) <-chan []string {
 	ch := make(chan []string, 1)
@@ -61,7 +55,7 @@ func fetchDirs(
 			if entry.IsDir() {
 				separator := ""
 
-				// Ensure that the path and name have a "/" separating them
+				// Ensure the path and name have a "/" separating them
 				if remotePath[len(remotePath)-1] != '/' {
 					separator = "/"
 				}

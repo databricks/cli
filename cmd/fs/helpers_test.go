@@ -2,11 +2,19 @@ package fs
 
 import (
 	"context"
+	"errors"
+	"io/fs"
 	"runtime"
 	"testing"
 
+	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/databricks-sdk-go/experimental/mocks"
+	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -59,4 +67,75 @@ func TestFilerForWindowsLocalPaths(t *testing.T) {
 	testWindowsFilerForPath(t, ctx, `d:\abc`)
 	testWindowsFilerForPath(t, ctx, `d:\abc`)
 	testWindowsFilerForPath(t, ctx, `f:\abc\ef`)
+}
+
+func mockCurrentUserApi(m *mocks.MockWorkspaceClient, u *iam.User, e error) {
+	currentUserApi := m.GetMockCurrentUserAPI()
+	currentUserApi.EXPECT().Me(mock.AnythingOfType("*context.valueCtx")).Return(u, e)
+}
+
+func setupValidArgsFunctionTest(t *testing.T) (*mocks.MockWorkspaceClient, *cobra.Command) {
+	m := mocks.NewMockWorkspaceClient(t)
+	ctx := context.Background()
+	ctx = root.SetWorkspaceClient(ctx, m.WorkspaceClient)
+
+	cmd := &cobra.Command{}
+	cmd.SetContext(ctx)
+
+	return m, cmd
+}
+
+func TestGetValidArgsFunctionCompletion(t *testing.T) {
+	m, cmd := setupValidArgsFunctionTest(t)
+
+	mockCurrentUserApi(m, nil, nil)
+
+	mockFilerForPath := testutil.GetMockFilerForPath(t, []fs.DirEntry{
+		testutil.NewFakeDirEntry("dir", true),
+	})
+
+	validArgsFunction := getValidArgsFunction(1, mockFilerForPath)
+	completions, directive := validArgsFunction(cmd, []string{}, "dbfs:/")
+
+	assert.Equal(t, []string{"dbfs:/dir"}, completions)
+	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
+}
+
+func TestGetValidArgsFunctionNoDbfsPath(t *testing.T) {
+	_, cmd := setupValidArgsFunctionTest(t)
+
+	mockFilerForPath := testutil.GetMockFilerForPath(t, nil)
+
+	validArgsFunction := getValidArgsFunction(1, mockFilerForPath)
+	completions, directive := validArgsFunction(cmd, []string{}, "/")
+
+	assert.Equal(t, []string{"dbfs:/"}, completions)
+	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
+}
+
+func TestGetValidArgsFunctionNoCurrentUser(t *testing.T) {
+	m, cmd := setupValidArgsFunctionTest(t)
+
+	mockCurrentUserApi(m, nil, errors.New("Current User Error"))
+	mockFilerForPath := testutil.GetMockFilerForPath(t, nil)
+
+	validArgsFunction := getValidArgsFunction(1, mockFilerForPath)
+	completions, directive := validArgsFunction(cmd, []string{}, "dbfs:/")
+
+	assert.Nil(t, completions)
+	assert.Equal(t, cobra.ShellCompDirectiveError, directive)
+}
+
+func TestGetValidArgsFunctionNotCompletedArgument(t *testing.T) {
+	m, cmd := setupValidArgsFunctionTest(t)
+
+	mockCurrentUserApi(m, nil, nil)
+	mockFilerForPath := testutil.GetMockFilerForPath(t, nil)
+
+	// 0 here means we don't complete any arguments
+	validArgsFunction := getValidArgsFunction(0, mockFilerForPath)
+	completions, directive := validArgsFunction(cmd, []string{}, "dbfs:/")
+
+	assert.Nil(t, completions)
+	assert.Equal(t, cobra.ShellCompDirectiveNoFileComp, directive)
 }
