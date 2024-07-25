@@ -54,9 +54,9 @@ func TestParsePythonDiagnostics(t *testing.T) {
 			input: `{"severity": "error", "summary": "error summary", "path": "resources.jobs.job0.name"}`,
 			expected: diag.Diagnostics{
 				{
-					Severity: diag.Error,
-					Summary:  "error summary",
-					Paths:    []dyn.Path{dyn.MustPathFromString("resources.jobs.job0.name")},
+					Severity:  diag.Error,
+					Summary:   "error summary",
+					Paths:     []dyn.Path{dyn.MustPathFromString("resources.jobs.job0.name")},
 					Locations: []dyn.Location{{}},
 				},
 			},
