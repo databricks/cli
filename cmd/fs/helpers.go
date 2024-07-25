@@ -56,7 +56,8 @@ func isDbfsPath(path string) bool {
 
 func getValidArgsFunction(pathArgCount int, onlyDirs bool, filerForPathFunc func(ctx context.Context, fullPath string) (filer.Filer, string, error)) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		cmd.SetContext(root.SkipPrompt(cmd.Context()))
+		ctx := cmd.Context()
+		cmd.SetContext(root.SkipPrompt(ctx))
 
 		err := mustWorkspaceClient(cmd, args) // TODO: Fix this
 		if err != nil {
@@ -69,35 +70,35 @@ func getValidArgsFunction(pathArgCount int, onlyDirs bool, filerForPathFunc func
 			return []string{dbfsPrefix}, cobra.ShellCompDirectiveNoSpace
 		}
 
-		filer, path, err := filerForPathFunc(cmd.Context(), toComplete)
+		filer, path, err := filerForPathFunc(ctx, toComplete)
 		if err != nil {
 			return nil, cobra.ShellCompDirectiveError
 		}
 
-		wsc := root.WorkspaceClient(cmd.Context())
-		_, err = wsc.CurrentUser.Me(cmd.Context())
+		wsc := root.WorkspaceClient(ctx)
+		_, err = wsc.CurrentUser.Me(ctx)
 		if err != nil {
 			return nil, cobra.ShellCompDirectiveError
 		}
 
-		completer := completer.NewCompleter(cmd.Context(), filer, onlyDirs)
+		completer := completer.NewCompleter(ctx, filer, onlyDirs)
 
-		if len(args) < pathArgCount {
-			completions, directive := completer.CompleteRemotePath(path)
-
-			// The completions will start with a "/", so we'll prefix
-			// them with the dbfsPrefix without a trailing "/" (dbfs:)
-			prefix := dbfsPrefix[:len(dbfsPrefix)-1]
-
-			// Add the prefix to the completions
-			for i, completion := range completions {
-				completions[i] = fmt.Sprintf("%s%s", prefix, completion)
-			}
-
-			return completions, directive
-		} else {
+		if len(args) >= -pathArgCount {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
+
+		completions, directive := completer.CompleteRemotePath(path)
+
+		// The completions will start with a "/", so we'll prefix
+		// them with the dbfsPrefix without a trailing "/" (dbfs:)
+		prefix := dbfsPrefix[:len(dbfsPrefix)-1]
+
+		// Add the prefix to the completions
+		for i, completion := range completions {
+			completions[i] = fmt.Sprintf("%s%s", prefix, completion)
+		}
+
+		return completions, directive
 	}
 }
 

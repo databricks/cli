@@ -58,6 +58,21 @@ func TestFilerCompleterReturnsAdjacentDirs(t *testing.T) {
 	mockFiler.AssertExpectations(t)
 }
 
+func TestFilerCompleterReadDirError(t *testing.T) {
+	ctx := setup(t)
+
+	mockFiler := mockfiler.NewMockFiler(t)
+	mockFiler.On("ReadDir", mock.AnythingOfType("*context.valueCtx"), mock.Anything).Return(nil, errors.New("error"))
+
+	completer := NewCompleter(ctx, mockFiler, true)
+	completions, directive := completer.CompleteRemotePath("/dir")
+
+	assert.Nil(t, completions)
+	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
+
+	mockFiler.AssertExpectations(t)
+}
+
 func TestFilerCompleterReturnsFileAndDir(t *testing.T) {
 	ctx := setup(t)
 
