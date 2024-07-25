@@ -98,7 +98,8 @@ func TestGetValidArgsFunctionCompletion(t *testing.T) {
 	validArgsFunction := getValidArgsFunction(1, false, mockFilerForPath)
 	completions, directive := validArgsFunction(cmd, []string{}, "dbfs:/")
 
-	assert.Equal(t, []string{"dbfs:/dir", "dbfs:/file"}, completions)
+	// dbfs:/Volumes is programmatically added to the completions
+	assert.Equal(t, []string{"dbfs:/dir", "dbfs:/file", "dbfs:/Volumes"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 }
 
@@ -115,19 +116,37 @@ func TestGetValidArgsFunctionCompletionOnlyDirs(t *testing.T) {
 	validArgsFunction := getValidArgsFunction(1, true, mockFilerForPath)
 	completions, directive := validArgsFunction(cmd, []string{}, "dbfs:/")
 
-	assert.Equal(t, []string{"dbfs:/dir"}, completions)
+	assert.Equal(t, []string{"dbfs:/dir", "dbfs:/Volumes"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 }
 
-func TestGetValidArgsFunctionNoDbfsPath(t *testing.T) {
+func TestGetValidArgsFunctionNoPath(t *testing.T) {
 	_, cmd := setupValidArgsFunctionTest(t)
 
 	mockFilerForPath := testutil.GetMockFilerForPath(t, nil)
 
 	validArgsFunction := getValidArgsFunction(1, true, mockFilerForPath)
+	completions, directive := validArgsFunction(cmd, []string{}, "")
+
+	// Suggest both dbfs and local paths at beginning of completion
+	assert.Equal(t, []string{"dbfs:/", "/"}, completions)
+	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
+}
+
+func TestGetValidArgsFunctionLocalPath(t *testing.T) {
+	m, cmd := setupValidArgsFunctionTest(t)
+
+	mockCurrentUserApi(m, nil, nil)
+
+	mockFilerForPath := testutil.GetMockFilerForPath(t, []fs.DirEntry{
+		testutil.NewFakeDirEntry("dir", true),
+		testutil.NewFakeDirEntry("file", false),
+	})
+
+	validArgsFunction := getValidArgsFunction(1, false, mockFilerForPath)
 	completions, directive := validArgsFunction(cmd, []string{}, "/")
 
-	assert.Equal(t, []string{"dbfs:/"}, completions)
+	assert.Equal(t, []string{"/dir", "/file"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 }
 

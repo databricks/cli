@@ -49,6 +49,7 @@ func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, er
 }
 
 const dbfsPrefix string = "dbfs:/"
+const volumesPefix string = "dbfs:/Volumes"
 
 func isDbfsPath(path string) bool {
 	return strings.HasPrefix(path, dbfsPrefix)
@@ -56,46 +57,60 @@ func isDbfsPath(path string) bool {
 
 func getValidArgsFunction(pathArgCount int, onlyDirs bool, filerForPathFunc func(ctx context.Context, fullPath string) (filer.Filer, string, error)) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		ctx := cmd.Context()
-		cmd.SetContext(root.SkipPrompt(ctx))
+		cmd.SetContext(root.SkipPrompt(cmd.Context()))
 
 		err := mustWorkspaceClient(cmd, args) // TODO: Fix this
 		if err != nil {
 			return nil, cobra.ShellCompDirectiveError
 		}
 
-		isValidPrefix := isDbfsPath(toComplete)
-
-		if !isValidPrefix {
-			return []string{dbfsPrefix}, cobra.ShellCompDirectiveNoSpace
+		prefixes := []string{
+			dbfsPrefix,
+			"/",
 		}
 
-		filer, path, err := filerForPathFunc(ctx, toComplete)
+		selectedPrefix := ""
+		for _, p := range prefixes {
+			if strings.HasPrefix(toComplete, p) {
+				selectedPrefix = p
+			}
+		}
+
+		if selectedPrefix == "" {
+			return prefixes, cobra.ShellCompDirectiveNoSpace
+		}
+
+		filer, path, err := filerForPathFunc(cmd.Context(), toComplete)
 		if err != nil {
 			return nil, cobra.ShellCompDirectiveError
 		}
 
-		wsc := root.WorkspaceClient(ctx)
-		_, err = wsc.CurrentUser.Me(ctx)
+		wsc := root.WorkspaceClient(cmd.Context())
+		_, err = wsc.CurrentUser.Me(cmd.Context())
 		if err != nil {
 			return nil, cobra.ShellCompDirectiveError
 		}
 
-		completer := completer.NewCompleter(ctx, filer, onlyDirs)
+		completer := completer.NewCompleter(cmd.Context(), filer, onlyDirs)
 
-		if len(args) >= -pathArgCount {
+		if len(args) >= pathArgCount {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
 
 		completions, directive := completer.CompleteRemotePath(path)
 
 		// The completions will start with a "/", so we'll prefix
-		// them with the dbfsPrefix without a trailing "/" (dbfs:)
-		prefix := dbfsPrefix[:len(dbfsPrefix)-1]
+		// them with the selectedPrefix without a trailing "/"
+		prefix := selectedPrefix[:len(selectedPrefix)-1]
 
 		// Add the prefix to the completions
 		for i, completion := range completions {
 			completions[i] = fmt.Sprintf("%s%s", prefix, completion)
+		}
+
+		// If the path is a dbfs path, we should also add the Volumes prefix
+		if strings.HasPrefix(volumesPefix, toComplete) {
+			completions = append(completions, volumesPefix)
 		}
 
 		return completions, directive
