@@ -29,8 +29,8 @@ var renderFuncMap = template.FuncMap{
 }
 
 const errorTemplate = `{{ "Error" | red }}: {{ .Summary }}
-{{- if .Path.String }}
-  {{ "at " }}{{ .Path.String | green }}
+{{- range $index, $element := .Paths }}
+  {{ if eq $index 0 }}at {{else}}   {{ end}}{{ $element.String | green }}
 {{- end }}
 {{- range $index, $element := .Locations }}
   {{ if eq $index 0 }}in {{else}}   {{ end}}{{ $element.String | cyan }}
@@ -43,8 +43,8 @@ const errorTemplate = `{{ "Error" | red }}: {{ .Summary }}
 `
 
 const warningTemplate = `{{ "Warning" | yellow }}: {{ .Summary }}
-{{- if .Path.String }}
-  {{ "at " }}{{ .Path.String | green }}
+{{- range $index, $element := .Paths }}
+  {{ if eq $index 0 }}at {{else}}   {{ end}}{{ $element.String | green }}
 {{- end }}
 {{- range $index, $element := .Locations }}
   {{ if eq $index 0 }}in {{else}}   {{ end}}{{ $element.String | cyan }}

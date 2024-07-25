@@ -275,11 +275,32 @@ func TestRenderDiagnostics(t *testing.T) {
 					Severity: diag.Error,
 					Detail:   "'name' is required",
 					Summary:  "failed to load xxx",
-					Path:     dyn.MustPathFromString("resources.jobs.xxx"),
+					Paths:    []dyn.Path{dyn.MustPathFromString("resources.jobs.xxx")},
 				},
 			},
 			expected: "Error: failed to load xxx\n" +
 				"  at resources.jobs.xxx\n" +
+				"\n" +
+				"'name' is required\n\n",
+		},
+		{
+			name: "error with multiple paths",
+			diags: diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Detail:   "'name' is required",
+					Summary:  "failed to load xxx",
+					Paths: []dyn.Path{
+						dyn.MustPathFromString("resources.jobs.xxx"),
+						dyn.MustPathFromString("resources.jobs.yyy"),
+						dyn.MustPathFromString("resources.jobs.zzz"),
+					},
+				},
+			},
+			expected: "Error: failed to load xxx\n" +
+				"  at resources.jobs.xxx\n" +
+				"     resources.jobs.yyy\n" +
+				"     resources.jobs.zzz\n" +
 				"\n" +
 				"'name' is required\n\n",
 		},
