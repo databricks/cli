@@ -37,7 +37,6 @@ type ResourceMetastoreDataAccess struct {
 	ForceUpdate                 bool                                                    `json:"force_update,omitempty"`
 	Id                          string                                                  `json:"id,omitempty"`
 	IsDefault                   bool                                                    `json:"is_default,omitempty"`
-	IsolationMode               string                                                  `json:"isolation_mode,omitempty"`
 	MetastoreId                 string                                                  `json:"metastore_id,omitempty"`
 	Name                        string                                                  `json:"name"`
 	Owner                       string                                                  `json:"owner,omitempty"`
