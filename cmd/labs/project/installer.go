@@ -132,13 +132,13 @@ func (i *installer) Upgrade(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("record version: %w", err)
 	}
-	err = i.runInstallHook(ctx)
-	if err != nil {
-		return fmt.Errorf("installer: %w", err)
-	}
 	err = i.installPythonDependencies(ctx, ".")
 	if err != nil {
 		return fmt.Errorf("python dependencies: %w", err)
+	}
+	err = i.runInstallHook(ctx)
+	if err != nil {
+		return fmt.Errorf("installer: %w", err)
 	}
 	return nil
 }
