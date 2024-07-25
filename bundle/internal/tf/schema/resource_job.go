@@ -26,7 +26,6 @@ type ResourceJobEmailNotifications struct {
 	OnDurationWarningThresholdExceeded []string `json:"on_duration_warning_threshold_exceeded,omitempty"`
 	OnFailure                          []string `json:"on_failure,omitempty"`
 	OnStart                            []string `json:"on_start,omitempty"`
-	OnStreamingBacklogExceeded         []string `json:"on_streaming_backlog_exceeded,omitempty"`
 	OnSuccess                          []string `json:"on_success,omitempty"`
 }
 
@@ -61,9 +60,9 @@ type ResourceJobGitSource struct {
 }
 
 type ResourceJobHealthRules struct {
-	Metric string `json:"metric"`
-	Op     string `json:"op"`
-	Value  int    `json:"value"`
+	Metric string `json:"metric,omitempty"`
+	Op     string `json:"op,omitempty"`
+	Value  int    `json:"value,omitempty"`
 }
 
 type ResourceJobHealth struct {
@@ -230,6 +229,7 @@ type ResourceJobJobClusterNewClusterWorkloadType struct {
 
 type ResourceJobJobClusterNewCluster struct {
 	ApplyPolicyDefaultValues  bool                                              `json:"apply_policy_default_values,omitempty"`
+	AutoterminationMinutes    int                                               `json:"autotermination_minutes,omitempty"`
 	ClusterId                 string                                            `json:"cluster_id,omitempty"`
 	ClusterName               string                                            `json:"cluster_name,omitempty"`
 	CustomTags                map[string]string                                 `json:"custom_tags,omitempty"`
@@ -262,7 +262,7 @@ type ResourceJobJobClusterNewCluster struct {
 }
 
 type ResourceJobJobCluster struct {
-	JobClusterKey string                           `json:"job_cluster_key"`
+	JobClusterKey string                           `json:"job_cluster_key,omitempty"`
 	NewCluster    *ResourceJobJobClusterNewCluster `json:"new_cluster,omitempty"`
 }
 
@@ -452,6 +452,7 @@ type ResourceJobNewClusterWorkloadType struct {
 
 type ResourceJobNewCluster struct {
 	ApplyPolicyDefaultValues  bool                                    `json:"apply_policy_default_values,omitempty"`
+	AutoterminationMinutes    int                                     `json:"autotermination_minutes,omitempty"`
 	ClusterId                 string                                  `json:"cluster_id,omitempty"`
 	ClusterName               string                                  `json:"cluster_name,omitempty"`
 	CustomTags                map[string]string                       `json:"custom_tags,omitempty"`
@@ -574,7 +575,6 @@ type ResourceJobTaskEmailNotifications struct {
 	OnDurationWarningThresholdExceeded []string `json:"on_duration_warning_threshold_exceeded,omitempty"`
 	OnFailure                          []string `json:"on_failure,omitempty"`
 	OnStart                            []string `json:"on_start,omitempty"`
-	OnStreamingBacklogExceeded         []string `json:"on_streaming_backlog_exceeded,omitempty"`
 	OnSuccess                          []string `json:"on_success,omitempty"`
 }
 
@@ -604,14 +604,13 @@ type ResourceJobTaskForEachTaskTaskEmailNotifications struct {
 	OnDurationWarningThresholdExceeded []string `json:"on_duration_warning_threshold_exceeded,omitempty"`
 	OnFailure                          []string `json:"on_failure,omitempty"`
 	OnStart                            []string `json:"on_start,omitempty"`
-	OnStreamingBacklogExceeded         []string `json:"on_streaming_backlog_exceeded,omitempty"`
 	OnSuccess                          []string `json:"on_success,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskHealthRules struct {
-	Metric string `json:"metric"`
-	Op     string `json:"op"`
-	Value  int    `json:"value"`
+	Metric string `json:"metric,omitempty"`
+	Op     string `json:"op,omitempty"`
+	Value  int    `json:"value,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskHealth struct {
@@ -804,6 +803,7 @@ type ResourceJobTaskForEachTaskTaskNewClusterWorkloadType struct {
 
 type ResourceJobTaskForEachTaskTaskNewCluster struct {
 	ApplyPolicyDefaultValues  bool                                                       `json:"apply_policy_default_values,omitempty"`
+	AutoterminationMinutes    int                                                        `json:"autotermination_minutes,omitempty"`
 	ClusterId                 string                                                     `json:"cluster_id,omitempty"`
 	ClusterName               string                                                     `json:"cluster_name,omitempty"`
 	CustomTags                map[string]string                                          `json:"custom_tags,omitempty"`
@@ -927,7 +927,7 @@ type ResourceJobTaskForEachTaskTaskSqlTaskQuery struct {
 
 type ResourceJobTaskForEachTaskTaskSqlTask struct {
 	Parameters  map[string]string                               `json:"parameters,omitempty"`
-	WarehouseId string                                          `json:"warehouse_id"`
+	WarehouseId string                                          `json:"warehouse_id,omitempty"`
 	Alert       *ResourceJobTaskForEachTaskTaskSqlTaskAlert     `json:"alert,omitempty"`
 	Dashboard   *ResourceJobTaskForEachTaskTaskSqlTaskDashboard `json:"dashboard,omitempty"`
 	File        *ResourceJobTaskForEachTaskTaskSqlTaskFile      `json:"file,omitempty"`
@@ -946,10 +946,6 @@ type ResourceJobTaskForEachTaskTaskWebhookNotificationsOnStart struct {
 	Id string `json:"id"`
 }
 
-type ResourceJobTaskForEachTaskTaskWebhookNotificationsOnStreamingBacklogExceeded struct {
-	Id string `json:"id"`
-}
-
 type ResourceJobTaskForEachTaskTaskWebhookNotificationsOnSuccess struct {
 	Id string `json:"id"`
 }
@@ -958,7 +954,6 @@ type ResourceJobTaskForEachTaskTaskWebhookNotifications struct {
 	OnDurationWarningThresholdExceeded []ResourceJobTaskForEachTaskTaskWebhookNotificationsOnDurationWarningThresholdExceeded `json:"on_duration_warning_threshold_exceeded,omitempty"`
 	OnFailure                          []ResourceJobTaskForEachTaskTaskWebhookNotificationsOnFailure                          `json:"on_failure,omitempty"`
 	OnStart                            []ResourceJobTaskForEachTaskTaskWebhookNotificationsOnStart                            `json:"on_start,omitempty"`
-	OnStreamingBacklogExceeded         []ResourceJobTaskForEachTaskTaskWebhookNotificationsOnStreamingBacklogExceeded         `json:"on_streaming_backlog_exceeded,omitempty"`
 	OnSuccess                          []ResourceJobTaskForEachTaskTaskWebhookNotificationsOnSuccess                          `json:"on_success,omitempty"`
 }
 
@@ -972,7 +967,7 @@ type ResourceJobTaskForEachTaskTask struct {
 	MinRetryIntervalMillis  int                                                 `json:"min_retry_interval_millis,omitempty"`
 	RetryOnTimeout          bool                                                `json:"retry_on_timeout,omitempty"`
 	RunIf                   string                                              `json:"run_if,omitempty"`
-	TaskKey                 string                                              `json:"task_key"`
+	TaskKey                 string                                              `json:"task_key,omitempty"`
 	TimeoutSeconds          int                                                 `json:"timeout_seconds,omitempty"`
 	ConditionTask           *ResourceJobTaskForEachTaskTaskConditionTask        `json:"condition_task,omitempty"`
 	DbtTask                 *ResourceJobTaskForEachTaskTaskDbtTask              `json:"dbt_task,omitempty"`
@@ -1000,9 +995,9 @@ type ResourceJobTaskForEachTask struct {
 }
 
 type ResourceJobTaskHealthRules struct {
-	Metric string `json:"metric"`
-	Op     string `json:"op"`
-	Value  int    `json:"value"`
+	Metric string `json:"metric,omitempty"`
+	Op     string `json:"op,omitempty"`
+	Value  int    `json:"value,omitempty"`
 }
 
 type ResourceJobTaskHealth struct {
@@ -1195,6 +1190,7 @@ type ResourceJobTaskNewClusterWorkloadType struct {
 
 type ResourceJobTaskNewCluster struct {
 	ApplyPolicyDefaultValues  bool                                        `json:"apply_policy_default_values,omitempty"`
+	AutoterminationMinutes    int                                         `json:"autotermination_minutes,omitempty"`
 	ClusterId                 string                                      `json:"cluster_id,omitempty"`
 	ClusterName               string                                      `json:"cluster_name,omitempty"`
 	CustomTags                map[string]string                           `json:"custom_tags,omitempty"`
@@ -1318,7 +1314,7 @@ type ResourceJobTaskSqlTaskQuery struct {
 
 type ResourceJobTaskSqlTask struct {
 	Parameters  map[string]string                `json:"parameters,omitempty"`
-	WarehouseId string                           `json:"warehouse_id"`
+	WarehouseId string                           `json:"warehouse_id,omitempty"`
 	Alert       *ResourceJobTaskSqlTaskAlert     `json:"alert,omitempty"`
 	Dashboard   *ResourceJobTaskSqlTaskDashboard `json:"dashboard,omitempty"`
 	File        *ResourceJobTaskSqlTaskFile      `json:"file,omitempty"`
@@ -1337,10 +1333,6 @@ type ResourceJobTaskWebhookNotificationsOnStart struct {
 	Id string `json:"id"`
 }
 
-type ResourceJobTaskWebhookNotificationsOnStreamingBacklogExceeded struct {
-	Id string `json:"id"`
-}
-
 type ResourceJobTaskWebhookNotificationsOnSuccess struct {
 	Id string `json:"id"`
 }
@@ -1349,7 +1341,6 @@ type ResourceJobTaskWebhookNotifications struct {
 	OnDurationWarningThresholdExceeded []ResourceJobTaskWebhookNotificationsOnDurationWarningThresholdExceeded `json:"on_duration_warning_threshold_exceeded,omitempty"`
 	OnFailure                          []ResourceJobTaskWebhookNotificationsOnFailure                          `json:"on_failure,omitempty"`
 	OnStart                            []ResourceJobTaskWebhookNotificationsOnStart                            `json:"on_start,omitempty"`
-	OnStreamingBacklogExceeded         []ResourceJobTaskWebhookNotificationsOnStreamingBacklogExceeded         `json:"on_streaming_backlog_exceeded,omitempty"`
 	OnSuccess                          []ResourceJobTaskWebhookNotificationsOnSuccess                          `json:"on_success,omitempty"`
 }
 
@@ -1363,7 +1354,7 @@ type ResourceJobTask struct {
 	MinRetryIntervalMillis  int                                  `json:"min_retry_interval_millis,omitempty"`
 	RetryOnTimeout          bool                                 `json:"retry_on_timeout,omitempty"`
 	RunIf                   string                               `json:"run_if,omitempty"`
-	TaskKey                 string                               `json:"task_key"`
+	TaskKey                 string                               `json:"task_key,omitempty"`
 	TimeoutSeconds          int                                  `json:"timeout_seconds,omitempty"`
 	ConditionTask           *ResourceJobTaskConditionTask        `json:"condition_task,omitempty"`
 	DbtTask                 *ResourceJobTaskDbtTask              `json:"dbt_task,omitempty"`
@@ -1391,11 +1382,6 @@ type ResourceJobTriggerFileArrival struct {
 	WaitAfterLastChangeSeconds    int    `json:"wait_after_last_change_seconds,omitempty"`
 }
 
-type ResourceJobTriggerPeriodic struct {
-	Interval int    `json:"interval"`
-	Unit     string `json:"unit"`
-}
-
 type ResourceJobTriggerTable struct {
 	Condition                     string   `json:"condition,omitempty"`
 	MinTimeBetweenTriggersSeconds int      `json:"min_time_between_triggers_seconds,omitempty"`
@@ -1413,7 +1399,6 @@ type ResourceJobTriggerTableUpdate struct {
 type ResourceJobTrigger struct {
 	PauseStatus string                         `json:"pause_status,omitempty"`
 	FileArrival *ResourceJobTriggerFileArrival `json:"file_arrival,omitempty"`
-	Periodic    *ResourceJobTriggerPeriodic    `json:"periodic,omitempty"`
 	Table       *ResourceJobTriggerTable       `json:"table,omitempty"`
 	TableUpdate *ResourceJobTriggerTableUpdate `json:"table_update,omitempty"`
 }
@@ -1430,10 +1415,6 @@ type ResourceJobWebhookNotificationsOnStart struct {
 	Id string `json:"id"`
 }
 
-type ResourceJobWebhookNotificationsOnStreamingBacklogExceeded struct {
-	Id string `json:"id"`
-}
-
 type ResourceJobWebhookNotificationsOnSuccess struct {
 	Id string `json:"id"`
 }
@@ -1442,7 +1423,6 @@ type ResourceJobWebhookNotifications struct {
 	OnDurationWarningThresholdExceeded []ResourceJobWebhookNotificationsOnDurationWarningThresholdExceeded `json:"on_duration_warning_threshold_exceeded,omitempty"`
 	OnFailure                          []ResourceJobWebhookNotificationsOnFailure                          `json:"on_failure,omitempty"`
 	OnStart                            []ResourceJobWebhookNotificationsOnStart                            `json:"on_start,omitempty"`
-	OnStreamingBacklogExceeded         []ResourceJobWebhookNotificationsOnStreamingBacklogExceeded         `json:"on_streaming_backlog_exceeded,omitempty"`
 	OnSuccess                          []ResourceJobWebhookNotificationsOnSuccess                          `json:"on_success,omitempty"`
 }
 
