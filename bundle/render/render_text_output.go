@@ -9,50 +9,9 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/fatih/color"
 )
-
-func printPaths(paths []dyn.Path) string {
-	res := strings.Builder{}
-
-	first := true
-	for _, p := range paths {
-		res.WriteString("\n")
-		if first {
-			res.WriteString("  at ")
-			first = false
-		} else {
-			res.WriteString("     ")
-		}
-
-		res.WriteString(color.GreenString(p.String()))
-	}
-	return res.String()
-}
-
-func printLocations(locations []dyn.Location) string {
-	res := strings.Builder{}
-
-	first := true
-	for _, loc := range locations {
-		if loc.File == "" {
-			continue
-		}
-
-		res.WriteString("\n")
-		if first {
-			res.WriteString("  in ")
-			first = false
-		} else {
-			res.WriteString("     ")
-		}
-
-		res.WriteString(color.CyanString(loc.String()))
-	}
-	return res.String()
-}
 
 var renderFuncMap = template.FuncMap{
 	"red":     color.RedString,
@@ -67,14 +26,15 @@ var renderFuncMap = template.FuncMap{
 	"italic": func(format string, a ...interface{}) string {
 		return color.New(color.Italic).Sprintf(format, a...)
 	},
-	"printPaths":     printPaths,
-	"printLocations": printLocations,
 }
 
 const errorTemplate = `{{ "Error" | red }}: {{ .Summary }}
-{{- printPaths .Paths -}}
-{{- printLocations .Locations -}}
-
+{{- range $index, $element := .Paths }}
+  {{ if eq $index 0 }}at {{else}}   {{ end}}{{ $element.String | green }}
+{{- end }}
+{{- range $index, $element := .Locations }}
+  {{ if eq $index 0 }}in {{else}}   {{ end}}{{ $element.String | cyan }}
+{{- end }}
 {{- if .Detail }}
 
 {{ .Detail }}
@@ -83,9 +43,12 @@ const errorTemplate = `{{ "Error" | red }}: {{ .Summary }}
 `
 
 const warningTemplate = `{{ "Warning" | yellow }}: {{ .Summary }}
-{{- printPaths .Paths -}}
-{{- printLocations .Locations -}}
-
+{{- range $index, $element := .Paths }}
+  {{ if eq $index 0 }}at {{else}}   {{ end}}{{ $element.String | green }}
+{{- end }}
+{{- range $index, $element := .Locations }}
+  {{ if eq $index 0 }}in {{else}}   {{ end}}{{ $element.String | cyan }}
+{{- end }}
 {{- if .Detail }}
 
 {{ .Detail }}

@@ -513,6 +513,9 @@ func (r Root) GetLocation(path string) dyn.Location {
 	return v.Location()
 }
 
+// Get all locations of the configuration value at the specified path. We need both
+// this function and it's singular version (GetLocation) because some diagnostics just need
+// the primary location and some need all locations associated with a configuration value.
 func (r Root) GetLocations(path string) []dyn.Location {
 	v, err := dyn.Get(r.value, path)
 	if err != nil {

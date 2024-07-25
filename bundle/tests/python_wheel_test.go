@@ -96,3 +96,20 @@ func TestPythonWheelBuildWithEnvironmentKey(t *testing.T) {
 	diags = bundle.Apply(ctx, b, match)
 	require.NoError(t, diags.Error())
 }
+
+func TestPythonWheelBuildMultiple(t *testing.T) {
+	ctx := context.Background()
+	b, err := bundle.Load(ctx, "./python_wheel/python_wheel_multiple")
+	require.NoError(t, err)
+
+	diags := bundle.Apply(ctx, b, bundle.Seq(phases.Load(), phases.Build()))
+	require.NoError(t, diags.Error())
+
+	matches, err := filepath.Glob("./python_wheel/python_wheel_multiple/my_test_code/dist/my_test_code*.whl")
+	require.NoError(t, err)
+	require.Equal(t, 2, len(matches))
+
+	match := libraries.ValidateLocalLibrariesExist()
+	diags = bundle.Apply(ctx, b, match)
+	require.NoError(t, diags.Error())
+}
