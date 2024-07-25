@@ -1,8 +1,6 @@
 package dyn
 
-import (
-	"errors"
-)
+import "errors"
 
 // WalkValueFunc is the type of the function called by Walk to traverse the configuration tree.
 type WalkValueFunc func(p Path, v Value) (Value, error)
