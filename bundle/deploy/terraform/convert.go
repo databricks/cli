@@ -239,7 +239,6 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 
 		// Configure permissions for this resource.
 		if rp := convGrants(src.Grants); rp != nil {
-			// TODO: test that this works to allocate grants.
 			rp.Schema = fmt.Sprintf("${databricks_schema.%s.id}", k)
 			tfroot.Resource.Grants["schema_"+k] = rp
 		}
@@ -452,7 +451,6 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 			src.ModifiedStatus = resources.ModifiedStatusCreated
 		}
 	}
-	// TODO: Add test for this.
 	for _, src := range config.Resources.Schemas {
 		if src.ModifiedStatus == "" && src.ID == "" {
 			src.ModifiedStatus = resources.ModifiedStatusCreated

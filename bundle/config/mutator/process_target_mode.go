@@ -112,7 +112,6 @@ func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		}
 	}
 
-	// TODO: test this manually
 	for i := range r.Schemas {
 		prefix = "dev_" + b.Config.Workspace.CurrentUser.ShortName + "_"
 		r.Schemas[i].Name = prefix + r.Schemas[i].Name
