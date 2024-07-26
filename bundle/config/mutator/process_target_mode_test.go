@@ -113,8 +113,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 							},
 						},
 					},
-				}
-			{
+				},
 				Schemas: map[string]*resources.Schema{
 					"schema1": {CreateSchema: &catalog.CreateSchema{Name: "schema1"}},
 				},
