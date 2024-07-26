@@ -1,4 +1,4 @@
 resources:
   jobs:
     foo:
-      name: pipeline foo
+      name: job foo 2

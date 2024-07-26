@@ -34,7 +34,7 @@ func (m *uniqueResourceKeys) Name() string {
 func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
-	// Map of resource key to the pathsByKey and locations the resource is defined at.
+	// Maps of resource key to the paths and locations the resource is defined at.
 	pathsByKey := map[string][]dyn.Path{}
 	locationsByKey := map[string][]dyn.Location{}
 
