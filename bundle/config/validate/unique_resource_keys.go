@@ -38,9 +38,16 @@ func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 	pathsByKey := map[string][]dyn.Path{}
 	locationsByKey := map[string][]dyn.Location{}
 
+	rv := b.Config.Value().Get("resources")
+
+	// return early if no resources are defined or the resources block is empty.
+	if rv.Kind() == dyn.KindInvalid || rv.Kind() == dyn.KindNil {
+		return diags
+	}
+
 	// Gather the paths and locations of all resources.
 	_, err := dyn.MapByPattern(
-		b.Config.Value().Get("resources"),
+		rv,
 		dyn.NewPattern(dyn.AnyKey(), dyn.AnyKey()),
 		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			// The key for the resource. Eg: "my_job" for jobs.my_job.
