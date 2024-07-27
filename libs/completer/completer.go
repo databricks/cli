@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path"
-	"sort"
+	"strings"
 
 	"github.com/databricks/cli/libs/filer"
 	"github.com/spf13/cobra"
@@ -57,8 +57,8 @@ func fetchCompletions(
 
 				// Ensure the path and name have a "/" separating them. We don't use path
 				// utilities to concatenate the path and name because we want to preserve
-				// the formatting of the path the user has typed (e.g. //a/b///c)
-				if remotePath[len(remotePath)-1] != '/' {
+				// the formatting of whatever path the user has typed (e.g. //a/b///c)
+				if len(remotePath) > 0 && !strings.HasSuffix(remotePath, "/") {
 					separator = "/"
 				}
 
@@ -66,11 +66,6 @@ func fetchCompletions(
 				completions = append(completions, completion)
 			}
 		}
-
-		// Sort completions alphabetically
-		sort.Slice(completions, func(i, j int) bool {
-			return completions[i] < completions[j]
-		})
 
 		ch <- completions
 	}()

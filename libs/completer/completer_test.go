@@ -25,7 +25,7 @@ func setup(t *testing.T) context.Context {
 func TestFilerCompleterReturnsNestedDirs(t *testing.T) {
 	ctx := setup(t)
 
-	mockFilerForPath := testutil.GetMockFilerForPath(t, []fs.DirEntry{
+	mockFilerForPath := testutil.GetMockFilerForPath(t, "/", []fs.DirEntry{
 		testutil.NewFakeDirEntry("dir", true),
 	})
 	mockFiler, _, _ := mockFilerForPath(ctx, "dbfs:/")
@@ -76,7 +76,7 @@ func TestFilerCompleterReadDirError(t *testing.T) {
 func TestFilerCompleterReturnsFileAndDir(t *testing.T) {
 	ctx := setup(t)
 
-	mockFilerForPath := testutil.GetMockFilerForPath(t, []fs.DirEntry{
+	mockFilerForPath := testutil.GetMockFilerForPath(t, "/", []fs.DirEntry{
 		testutil.NewFakeDirEntry("dir", true),
 		testutil.NewFakeDirEntry("file", false),
 	})
@@ -94,7 +94,7 @@ func TestFilerCompleterReturnsFileAndDir(t *testing.T) {
 func TestFilerCompleterRetainsFormatting(t *testing.T) {
 	ctx := setup(t)
 
-	mockFilerForPath := testutil.GetMockFilerForPath(t, []fs.DirEntry{
+	mockFilerForPath := testutil.GetMockFilerForPath(t, "//dir//", []fs.DirEntry{
 		testutil.NewFakeDirEntry("nested_dir", true),
 	})
 	mockFiler, _, _ := mockFilerForPath(ctx, "dbfs://dir")
@@ -110,7 +110,7 @@ func TestFilerCompleterRetainsFormatting(t *testing.T) {
 func TestFilerCompleterAddsSeparator(t *testing.T) {
 	ctx := setup(t)
 
-	mockFilerForPath := testutil.GetMockFilerForPath(t, []fs.DirEntry{
+	mockFilerForPath := testutil.GetMockFilerForPath(t, "/dir", []fs.DirEntry{
 		testutil.NewFakeDirEntry("nested_dir", true),
 	})
 	mockFiler, _, _ := mockFilerForPath(ctx, "dbfs:/dir")

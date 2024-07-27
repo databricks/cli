@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/completer"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -50,40 +51,33 @@ func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, er
 
 const dbfsPrefix string = "dbfs:/"
 const volumesPefix string = "dbfs:/Volumes"
+const localPefix string = "./"
 
 func isDbfsPath(path string) bool {
 	return strings.HasPrefix(path, dbfsPrefix)
 }
 
-func getValidArgsFunction(pathArgCount int, onlyDirs bool, filerForPathFunc func(ctx context.Context, fullPath string) (filer.Filer, string, error)) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+func getValidArgsFunction(
+	pathArgCount int,
+	onlyDirs bool,
+	filerForPathFunc func(ctx context.Context, fullPath string) (filer.Filer, string, error),
+	mustWorkspaceClientFunc func(cmd *cobra.Command, args []string) error,
+) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		cmd.SetContext(root.SkipPrompt(cmd.Context()))
 
-		err := mustWorkspaceClient(cmd, args) // TODO: Fix this
+		err := mustWorkspaceClientFunc(cmd, args)
+
 		if err != nil {
 			return nil, cobra.ShellCompDirectiveError
-		}
-
-		prefixes := []string{
-			dbfsPrefix,
-			"/",
-		}
-
-		selectedPrefix := ""
-		for _, p := range prefixes {
-			if strings.HasPrefix(toComplete, p) {
-				selectedPrefix = p
-			}
-		}
-
-		if selectedPrefix == "" {
-			return prefixes, cobra.ShellCompDirectiveNoSpace
 		}
 
 		filer, path, err := filerForPathFunc(cmd.Context(), toComplete)
 		if err != nil {
 			return nil, cobra.ShellCompDirectiveError
 		}
+
+		isDbfsPath := isDbfsPath(toComplete)
 
 		wsc := root.WorkspaceClient(cmd.Context())
 		_, err = wsc.CurrentUser.Me(cmd.Context())
@@ -99,30 +93,42 @@ func getValidArgsFunction(pathArgCount int, onlyDirs bool, filerForPathFunc func
 
 		completions, directive := completer.CompleteRemotePath(path)
 
-		// The completions will start with a "/", so we'll prefix
-		// them with the selectedPrefix without a trailing "/"
-		prefix := selectedPrefix[:len(selectedPrefix)-1]
-
-		// Add the prefix to the completions
 		for i, completion := range completions {
-			completions[i] = fmt.Sprintf("%s%s", prefix, completion)
+			if isDbfsPath {
+				// The completions will start with a "/", so we'll prefix them with the
+				// selectedPrefix without a trailing "/"
+				prefix := dbfsPrefix[:len(dbfsPrefix)-1]
+				completions[i] = fmt.Sprintf("%s%s", prefix, completion)
+			} else if shouldDropLocalPrefix(toComplete, completion) {
+
+				completions[i] = completion[len(localPefix):]
+			} else {
+				completions[i] = completion
+			}
 		}
 
-		// If the path is a dbfs path, we should also add the Volumes prefix
-		if strings.HasPrefix(volumesPefix, toComplete) {
-			completions = append(completions, volumesPefix)
+		// If the path is a dbfs path, we try to add the dbfs:/Volumes prefix suggestion
+		if isDbfsPath && strings.HasPrefix(volumesPefix, toComplete) {
+			completions = append([]string{highlight(volumesPefix)}, completions...)
+
+		}
+
+		// If the path is local, we try to prepend the dbfs:/ prefix suggestion
+		if !isDbfsPath && strings.HasPrefix(dbfsPrefix, toComplete) {
+			completions = append([]string{highlight(dbfsPrefix)}, completions...)
 		}
 
 		return completions, directive
 	}
 }
 
-// Wrapper for [root.MustWorkspaceClient] that disables loading authentication configuration from a bundle.
-func mustWorkspaceClient(cmd *cobra.Command, args []string) error {
-	if root.HasWorkspaceClient(cmd.Context()) {
-		return nil
-	}
+// Drop the local prefix from completions if the path to complete doesn't
+// start with it. We do this because the local filer returns paths with the
+// local prefix.
+func shouldDropLocalPrefix(toComplete string, completion string) bool {
+	return !strings.HasPrefix(toComplete, localPefix) && strings.HasPrefix(completion, localPefix)
+}
 
-	cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
-	return root.MustWorkspaceClient(cmd, args)
+func highlight(c string) string {
+	return color.New(color.FgCyan, color.Bold).Sprintf(c)
 }

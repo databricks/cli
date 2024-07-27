@@ -74,6 +74,10 @@ func mockCurrentUserApi(m *mocks.MockWorkspaceClient, u *iam.User, e error) {
 	currentUserApi.EXPECT().Me(mock.AnythingOfType("*context.valueCtx")).Return(u, e)
 }
 
+func mockMustWorkspaceClientFunc(cmd *cobra.Command, args []string) error {
+	return nil
+}
+
 func setupValidArgsFunctionTest(t *testing.T) (*mocks.MockWorkspaceClient, *cobra.Command) {
 	m := mocks.NewMockWorkspaceClient(t)
 	ctx := context.Background()
@@ -90,16 +94,16 @@ func TestGetValidArgsFunctionCompletion(t *testing.T) {
 
 	mockCurrentUserApi(m, nil, nil)
 
-	mockFilerForPath := testutil.GetMockFilerForPath(t, []fs.DirEntry{
+	mockFilerForPath := testutil.GetMockFilerForPath(t, "/", []fs.DirEntry{
 		testutil.NewFakeDirEntry("dir", true),
 		testutil.NewFakeDirEntry("file", false),
 	})
 
-	validArgsFunction := getValidArgsFunction(1, false, mockFilerForPath)
+	validArgsFunction := getValidArgsFunction(1, false, mockFilerForPath, mockMustWorkspaceClientFunc)
 	completions, directive := validArgsFunction(cmd, []string{}, "dbfs:/")
 
 	// dbfs:/Volumes is programmatically added to the completions
-	assert.Equal(t, []string{"dbfs:/dir", "dbfs:/file", "dbfs:/Volumes"}, completions)
+	assert.Equal(t, []string{"dbfs:/Volumes", "dbfs:/dir", "dbfs:/file"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 }
 
@@ -108,28 +112,33 @@ func TestGetValidArgsFunctionCompletionOnlyDirs(t *testing.T) {
 
 	mockCurrentUserApi(m, nil, nil)
 
-	mockFilerForPath := testutil.GetMockFilerForPath(t, []fs.DirEntry{
+	mockFilerForPath := testutil.GetMockFilerForPath(t, "/", []fs.DirEntry{
 		testutil.NewFakeDirEntry("dir", true),
 		testutil.NewFakeDirEntry("file", false),
 	})
 
-	validArgsFunction := getValidArgsFunction(1, true, mockFilerForPath)
+	validArgsFunction := getValidArgsFunction(1, true, mockFilerForPath, mockMustWorkspaceClientFunc)
 	completions, directive := validArgsFunction(cmd, []string{}, "dbfs:/")
 
-	assert.Equal(t, []string{"dbfs:/dir", "dbfs:/Volumes"}, completions)
+	assert.Equal(t, []string{"dbfs:/Volumes", "dbfs:/dir"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 }
 
 func TestGetValidArgsFunctionNoPath(t *testing.T) {
-	_, cmd := setupValidArgsFunctionTest(t)
+	m, cmd := setupValidArgsFunctionTest(t)
 
-	mockFilerForPath := testutil.GetMockFilerForPath(t, nil)
+	mockCurrentUserApi(m, nil, nil)
 
-	validArgsFunction := getValidArgsFunction(1, true, mockFilerForPath)
-	completions, directive := validArgsFunction(cmd, []string{}, "")
+	mockFilerForPath := testutil.GetMockFilerForPath(t, "", []fs.DirEntry{
+		testutil.NewFakeDirEntry("dFile1", false),
+		testutil.NewFakeDirEntry("dFile2", false),
+	})
+
+	validArgsFunction := getValidArgsFunction(1, false, mockFilerForPath, mockMustWorkspaceClientFunc)
+	completions, directive := validArgsFunction(cmd, []string{}, "d")
 
 	// Suggest both dbfs and local paths at beginning of completion
-	assert.Equal(t, []string{"dbfs:/", "/"}, completions)
+	assert.Equal(t, []string{"dbfs:/", "dFile1", "dFile2"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 }
 
@@ -138,15 +147,32 @@ func TestGetValidArgsFunctionLocalPath(t *testing.T) {
 
 	mockCurrentUserApi(m, nil, nil)
 
-	mockFilerForPath := testutil.GetMockFilerForPath(t, []fs.DirEntry{
+	mockFilerForPath := testutil.GetMockFilerForPath(t, "", []fs.DirEntry{
 		testutil.NewFakeDirEntry("dir", true),
 		testutil.NewFakeDirEntry("file", false),
 	})
 
-	validArgsFunction := getValidArgsFunction(1, false, mockFilerForPath)
+	validArgsFunction := getValidArgsFunction(1, false, mockFilerForPath, mockMustWorkspaceClientFunc)
+	completions, directive := validArgsFunction(cmd, []string{}, "")
+
+	assert.Equal(t, []string{"dbfs:/", "dir", "file"}, completions)
+	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
+}
+
+func TestGetValidArgsFunctionAbsoluteLocalPath(t *testing.T) {
+	m, cmd := setupValidArgsFunctionTest(t)
+
+	mockCurrentUserApi(m, nil, nil)
+
+	mockFilerForPath := testutil.GetMockFilerForPath(t, "", []fs.DirEntry{
+		testutil.NewFakeDirEntry("dir", true),
+		testutil.NewFakeDirEntry("file", false),
+	})
+
+	validArgsFunction := getValidArgsFunction(1, false, mockFilerForPath, mockMustWorkspaceClientFunc)
 	completions, directive := validArgsFunction(cmd, []string{}, "/")
 
-	assert.Equal(t, []string{"/dir", "/file"}, completions)
+	assert.Equal(t, []string{"dir", "file"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 }
 
@@ -154,9 +180,9 @@ func TestGetValidArgsFunctionNoCurrentUser(t *testing.T) {
 	m, cmd := setupValidArgsFunctionTest(t)
 
 	mockCurrentUserApi(m, nil, errors.New("Current User Error"))
-	mockFilerForPath := testutil.GetMockFilerForPath(t, nil)
+	mockFilerForPath := testutil.GetMockFilerForPath(t, "/", nil)
 
-	validArgsFunction := getValidArgsFunction(1, true, mockFilerForPath)
+	validArgsFunction := getValidArgsFunction(1, true, mockFilerForPath, mockMustWorkspaceClientFunc)
 	completions, directive := validArgsFunction(cmd, []string{}, "dbfs:/")
 
 	assert.Nil(t, completions)
@@ -167,10 +193,10 @@ func TestGetValidArgsFunctionNotCompletedArgument(t *testing.T) {
 	m, cmd := setupValidArgsFunctionTest(t)
 
 	mockCurrentUserApi(m, nil, nil)
-	mockFilerForPath := testutil.GetMockFilerForPath(t, nil)
+	mockFilerForPath := testutil.GetMockFilerForPath(t, "/", nil)
 
 	// 0 here means we don't complete any arguments
-	validArgsFunction := getValidArgsFunction(0, true, mockFilerForPath)
+	validArgsFunction := getValidArgsFunction(0, true, mockFilerForPath, mockMustWorkspaceClientFunc)
 	completions, directive := validArgsFunction(cmd, []string{}, "dbfs:/")
 
 	assert.Nil(t, completions)

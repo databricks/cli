@@ -62,13 +62,13 @@ func NewFakeDirEntry(name string, dir bool) fs.DirEntry {
 	return fakeDirEntry{fakeFileInfo{name: name, dir: dir}}
 }
 
-func GetMockFilerForPath(t *testing.T, entries []fs.DirEntry) func(ctx context.Context, fullPath string) (filer.Filer, string, error) {
+func GetMockFilerForPath(t *testing.T, path string, entries []fs.DirEntry) func(ctx context.Context, fullPath string) (filer.Filer, string, error) {
 	mockFiler := mockfiler.NewMockFiler(t)
 	if entries != nil {
-		mockFiler.EXPECT().ReadDir(mock.AnythingOfType("*context.valueCtx"), mock.Anything).Return(entries, nil)
+		mockFiler.EXPECT().ReadDir(mock.AnythingOfType("*context.valueCtx"), path).Return(entries, nil)
 	}
 	mockFilerForPath := func(ctx context.Context, fullPath string) (filer.Filer, string, error) {
-		return mockFiler, "/", nil
+		return mockFiler, path, nil
 	}
 	return mockFilerForPath
 }
