@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/render"
@@ -64,6 +65,7 @@ func newValidateCommand() *cobra.Command {
 
 			return nil
 		case flags.OutputJSON:
+			bundle.Apply(ctx, b, mutator.CleanupTargets())
 			return renderJsonOutput(cmd, b, diags)
 		default:
 			return fmt.Errorf("unknown output type %s", root.OutputType(cmd))

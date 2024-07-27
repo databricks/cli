@@ -154,11 +154,13 @@ func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUs
 	}
 
 	// We need to verify that there is only a single deployment of the current target.
-	// A good way to enforce this is to explicitly set root_path or run_as.
-	if !isExplicitRootSet(b) && !isRunAsSet(r) {
-		// Only show a warning in case a principal was used for backward compatibility
-		// with projects from before the DABs GA.
-		if isPrincipalUsed {
+	// The best way to enforce this is to explicitly set root_path.
+	if !isExplicitRootSet(b) {
+		if isRunAsSet(r) || isPrincipalUsed {
+			// Just setting run_as is not enough to guarantee a single deployment,
+			// and neither is setting a principal.
+			// We only show a warning for these cases since we didn't historically
+			// report an error for them.
 			return diag.Warningf("target with 'mode: production' should specify explicit 'workspace.root_path' to make sure only one copy is deployed")
 		}
 		return diag.Errorf("target with 'mode: production' must specify explicit 'workspace.root_path' to make sure only one copy is deployed")

@@ -87,7 +87,6 @@ func validateRunAs(b *bundle.Bundle) error {
 	}
 
 	// DLT pipelines do not support run_as in the API.
-	// TODO: maybe oly make this check only fail when owner != runas
 	if len(b.Config.Resources.Pipelines) > 0 {
 		return errUnsupportedResourceTypeForRunAs{
 			resourceType:     "pipelines",
