@@ -8,21 +8,22 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/set"
 )
 
 const CheckPermissionsFilename = "permissions.check"
 
-type reportPermissionErrors struct{}
+type permissionDiagnostics struct{}
 
 func PermissionDiagnostics() bundle.Mutator {
-	return &reportPermissionErrors{}
+	return &permissionDiagnostics{}
 }
 
-func (m *reportPermissionErrors) Name() string {
+func (m *permissionDiagnostics) Name() string {
 	return "CheckPermissions"
 }
 
-func (m *reportPermissionErrors) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *permissionDiagnostics) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if len(b.Config.Permissions) == 0 {
 		// Only warn if there is an explicit top-level permissions section
 		return nil
@@ -50,11 +51,11 @@ func (m *reportPermissionErrors) Apply(ctx context.Context, b *bundle.Bundle) di
 // - assistance: advice on who to contact as to manage this project
 func analyzeBundlePermissions(b *bundle.Bundle) (bool, string) {
 	canManageBundle := false
-	otherManagers := make(map[string]bool)
+	otherManagers := set.NewSet[string]()
 	if b.Config.RunAs != nil && b.Config.RunAs.UserName != "" {
 		// The run_as user is another human that could be contacted
 		// about this bundle.
-		otherManagers[b.Config.RunAs.UserName] = true
+		otherManagers.Add(b.Config.RunAs.UserName)
 	}
 
 	currentUser := b.Config.Workspace.CurrentUser.UserName
@@ -83,17 +84,15 @@ func analyzeBundlePermissions(b *bundle.Bundle) (bool, string) {
 			// Skip service principals
 			continue
 		}
-		otherManagers[otherManager] = true
-	}
-
-	var managersSlice []string
-	for manager := range otherManagers {
-		managersSlice = append(managersSlice, manager)
+		otherManagers.Add(otherManager)
 	}
 
 	assistance := "For assistance, contact the owners of this project."
-	if len(managersSlice) > 0 {
-		assistance = fmt.Sprintf("For assistance, users or groups with appropriate permissions may include: %s.", strings.Join(managersSlice, ", "))
+	if otherManagers.Size() > 0 {
+		assistance = fmt.Sprintf(
+			"For assistance, users or groups with appropriate permissions may include: %s.",
+			strings.Join(otherManagers.Values(), ", "),
+		)
 	}
 	return canManageBundle, assistance
 }
