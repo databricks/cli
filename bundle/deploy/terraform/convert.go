@@ -231,24 +231,6 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 		tfroot.Resource.QualityMonitor[k] = &dst
 	}
 
-	for k, src := range config.Resources.Schemas {
-		noResources = false
-		var dst schema.ResourceSchema
-		conv(src, &dst)
-		tfroot.Resource.Schema[k] = &dst
-
-		// We always set force destroy as it allows DABs to manage the lifecycle
-		// of the schema. It's the responsibility of the CLI to ensure the user
-		// is adequately warned when they try to delete a UC schema.
-		dst.ForceDestroy = true
-
-		// Configure permissions for this resource.
-		if rp := convGrants(src.Grants); rp != nil {
-			rp.Schema = fmt.Sprintf("${databricks_schema.%s.id}", k)
-			tfroot.Resource.Grants["schema_"+k] = rp
-		}
-	}
-
 	// We explicitly set "resource" to nil to omit it from a JSON encoding.
 	// This is required because the terraform CLI requires >= 1 resources defined
 	// if the "resource" property is used in a .tf.json file.

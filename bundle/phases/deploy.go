@@ -126,10 +126,11 @@ func Deploy() bundle.Mutator {
 					deployCore,
 					bundle.LogString("Deployment cancelled!"),
 				),
-				lock.Release(lock.GoalDeploy),
 			),
-			scripts.Execute(config.ScriptPostDeploy),
+			// TODO: Ensure releasing locks and post deploy scripts work as expected.
+			lock.Release(lock.GoalDeploy),
 		),
+		scripts.Execute(config.ScriptPostDeploy),
 	)
 
 	return newPhase(
