@@ -1397,8 +1397,8 @@ type ResourceJobTriggerTableUpdate struct {
 }
 
 type ResourceJobTriggerPeriodic struct {
-	Interval int `json:"interval,omitempty"`
-	Unit string `json:"unit,omitempty"`
+	Interval int    `json:"interval,omitempty"`
+	Unit     string `json:"unit,omitempty"`
 }
 
 type ResourceJobTrigger struct {
