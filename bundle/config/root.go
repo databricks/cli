@@ -100,11 +100,6 @@ func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 	if err != nil {
 		return nil, diag.Errorf("failed to load %s: %v", path, err)
 	}
-
-	_, err = r.Resources.VerifyUniqueResourceIdentifiers()
-	if err != nil {
-		diags = diags.Extend(diag.FromErr(err))
-	}
 	return &r, diags
 }
 
@@ -281,12 +276,6 @@ func (r *Root) InitializeVariables(vars []string) error {
 }
 
 func (r *Root) Merge(other *Root) error {
-	// Check for safe merge, protecting against duplicate resource identifiers
-	err := r.Resources.VerifySafeMerge(&other.Resources)
-	if err != nil {
-		return err
-	}
-
 	// Merge dynamic configuration values.
 	return r.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		return merge.Merge(root, other.value)

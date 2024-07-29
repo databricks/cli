@@ -5,9 +5,9 @@ workspace:
   profile: test
 
 include:
-  - "*.yml"
+  - ./*.yml
 
 resources:
   jobs:
     foo:
-      name: job foo
+      name: job foo 1
