@@ -231,11 +231,6 @@ func SetWorkspaceClient(ctx context.Context, w *databricks.WorkspaceClient) cont
 	return context.WithValue(ctx, &workspaceClient, w)
 }
 
-func HasWorkspaceClient(ctx context.Context) bool {
-	_, ok := ctx.Value(&workspaceClient).(*databricks.WorkspaceClient)
-	return ok
-}
-
 func SetAccountClient(ctx context.Context, a *databricks.AccountClient) context.Context {
 	return context.WithValue(ctx, &accountClient, a)
 }
