@@ -114,7 +114,6 @@ func TestValidateUniqueResourceIdentifiers(t *testing.T) {
 						{File: filepath.FromSlash("validate/duplicate_resource_name_in_multiple_locations/resources1.yml"), Line: 8, Column: 7},
 						{File: filepath.FromSlash("validate/duplicate_resource_name_in_multiple_locations/resources2.yml"), Line: 4, Column: 7},
 						{File: filepath.FromSlash("validate/duplicate_resource_name_in_multiple_locations/resources2.yml"), Line: 8, Column: 7},
-
 					},
 					Paths: []dyn.Path{
 						dyn.MustPathFromString("experiments.foo"),
