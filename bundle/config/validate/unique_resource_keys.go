@@ -4,6 +4,10 @@ import (
 	"context"
 	"fmt"
 	"slices"
+<<<<<<< HEAD
+=======
+	"sort"
+>>>>>>> origin
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
@@ -34,9 +38,13 @@ func (m *uniqueResourceKeys) Name() string {
 func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
+	type metadata struct {
+		locations []dyn.Location
+		paths     []dyn.Path
+	}
+
 	// Maps of resource key to the paths and locations the resource is defined at.
-	pathsByKey := map[string][]dyn.Path{}
-	locationsByKey := map[string][]dyn.Location{}
+	resourceMetadata := map[string]*metadata{}
 
 	rv := b.Config.Value().Get("resources")
 
@@ -53,10 +61,21 @@ func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 			// The key for the resource. Eg: "my_job" for jobs.my_job.
 			k := p[1].Key()
 
-			// dyn.Path under the hood is a slice. So, we need to clone it.
-			pathsByKey[k] = append(pathsByKey[k], slices.Clone(p))
+			m, ok := resourceMetadata[k]
+			if !ok {
+				m = &metadata{
+					paths:     []dyn.Path{},
+					locations: []dyn.Location{},
+				}
+			}
 
-			locationsByKey[k] = append(locationsByKey[k], v.Locations()...)
+			// dyn.Path under the hood is a slice. The code that walks the configuration
+			// tree uses the same underlying slice to track the path as it walks
+			// the tree. So, we need to clone it here.
+			m.paths = append(m.paths, slices.Clone(p))
+			m.locations = append(m.locations, v.Locations()...)
+
+			resourceMetadata[k] = m
 			return v, nil
 		},
 	)
@@ -64,18 +83,36 @@ func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 		return diag.FromErr(err)
 	}
 
-	for k, locations := range locationsByKey {
-		if len(locations) <= 1 {
+	for k, v := range resourceMetadata {
+		if len(v.locations) <= 1 {
 			continue
 		}
+
+		// Sort the locations and paths for consistent error messages. This helps
+		// with unit testing.
+		sort.Slice(v.locations, func(i, j int) bool {
+			l1 := v.locations[i]
+			l2 := v.locations[j]
+
+			if l1.File != l2.File {
+				return l1.File < l2.File
+			}
+			if l1.Line != l2.Line {
+				return l1.Line < l2.Line
+			}
+			return l1.Column < l2.Column
+		})
+		sort.Slice(v.paths, func(i, j int) bool {
+			return v.paths[i].String() < v.paths[j].String()
+		})
 
 		// If there are multiple resources with the same key, report an error.
 		diags = append(diags, diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   fmt.Sprintf("multiple resources have been defined with the same key: %s", k),
-			Locations: locations,
-			Paths:     pathsByKey[k],
-		})
+			Locations: v.locations,
+			Paths:     v.paths,
+gs		})
 	}
 
 	return diags
