@@ -66,7 +66,9 @@ func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 				}
 			}
 
-			// dyn.Path under the hood is a slice. So, we need to clone it.
+			// dyn.Path under the hood is a slice. The code that walks the configuration
+			// tree uses the same underlying slice to track the path as it walks
+			// the tree. So, we need to clone it here.
 			m.paths = append(m.paths, slices.Clone(p))
 			m.locations = append(m.locations, v.Locations()...)
 
