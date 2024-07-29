@@ -50,6 +50,9 @@ func TestArtifactUploadForWorkspace(t *testing.T) {
 										{
 											Whl: "/Workspace/Users/foo@bar.com/mywheel.whl",
 										},
+										{
+											Requirements: "/Workspace/Users/foo@bar.com/requirements.txt",
+										},
 									},
 								},
 								{
@@ -61,6 +64,9 @@ func TestArtifactUploadForWorkspace(t *testing.T) {
 												},
 												{
 													Whl: "/Workspace/Users/foo@bar.com/mywheel.whl",
+												},
+												{
+													Requirements: "/Workspace/Users/foo@bar.com/requirements.txt",
 												},
 											},
 										},
@@ -100,10 +106,12 @@ func TestArtifactUploadForWorkspace(t *testing.T) {
 	// Test that libraries path is updated
 	require.Equal(t, "/Workspace/foo/bar/artifacts/source.whl", b.Config.Resources.Jobs["job"].JobSettings.Tasks[0].Libraries[0].Whl)
 	require.Equal(t, "/Workspace/Users/foo@bar.com/mywheel.whl", b.Config.Resources.Jobs["job"].JobSettings.Tasks[0].Libraries[1].Whl)
+	require.Equal(t, "/Workspace/Users/foo@bar.com/requirements.txt", b.Config.Resources.Jobs["job"].JobSettings.Tasks[0].Libraries[2].Requirements)
 	require.Equal(t, "/Workspace/foo/bar/artifacts/source.whl", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[0])
 	require.Equal(t, "/Workspace/Users/foo@bar.com/mywheel.whl", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[1])
 	require.Equal(t, "/Workspace/foo/bar/artifacts/source.whl", b.Config.Resources.Jobs["job"].JobSettings.Tasks[1].ForEachTask.Task.Libraries[0].Whl)
 	require.Equal(t, "/Workspace/Users/foo@bar.com/mywheel.whl", b.Config.Resources.Jobs["job"].JobSettings.Tasks[1].ForEachTask.Task.Libraries[1].Whl)
+	require.Equal(t, "/Workspace/Users/foo@bar.com/requirements.txt", b.Config.Resources.Jobs["job"].JobSettings.Tasks[1].ForEachTask.Task.Libraries[2].Requirements)
 }
 
 func TestArtifactUploadForVolumes(t *testing.T) {
