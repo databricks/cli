@@ -103,7 +103,7 @@ func TestGetValidArgsFunctionCompletion(t *testing.T) {
 	completions, directive := validArgsFunction(cmd, []string{}, "dbfs:/")
 
 	// dbfs:/Volumes is programmatically added to the completions
-	assert.Equal(t, []string{"dbfs:/Volumes", "dbfs:/dir", "dbfs:/file"}, completions)
+	assert.Equal(t, []string{"dbfs:/dir", "dbfs:/file", "dbfs:/Volumes"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 }
 
@@ -120,7 +120,7 @@ func TestGetValidArgsFunctionCompletionOnlyDirs(t *testing.T) {
 	validArgsFunction := getValidArgsFunction(1, true, mockFilerForPath, mockMustWorkspaceClientFunc)
 	completions, directive := validArgsFunction(cmd, []string{}, "dbfs:/")
 
-	assert.Equal(t, []string{"dbfs:/Volumes", "dbfs:/dir"}, completions)
+	assert.Equal(t, []string{"dbfs:/dir", "dbfs:/Volumes"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 }
 
@@ -138,7 +138,7 @@ func TestGetValidArgsFunctionNoPath(t *testing.T) {
 	completions, directive := validArgsFunction(cmd, []string{}, "d")
 
 	// Suggest both dbfs and local paths at beginning of completion
-	assert.Equal(t, []string{"dbfs:/", "dFile1", "dFile2"}, completions)
+	assert.Equal(t, []string{"dFile1", "dFile2", "dbfs:/"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 }
 
@@ -155,7 +155,7 @@ func TestGetValidArgsFunctionLocalPath(t *testing.T) {
 	validArgsFunction := getValidArgsFunction(1, false, mockFilerForPath, mockMustWorkspaceClientFunc)
 	completions, directive := validArgsFunction(cmd, []string{}, "")
 
-	assert.Equal(t, []string{"dbfs:/", "dir", "file"}, completions)
+	assert.Equal(t, []string{"dir", "file", "dbfs:/"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 }
 

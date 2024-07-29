@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/completer"
 	"github.com/databricks/cli/libs/filer"
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -109,13 +108,13 @@ func getValidArgsFunction(
 
 		// If the path is a dbfs path, we try to add the dbfs:/Volumes prefix suggestion
 		if isDbfsPath && strings.HasPrefix(volumesPefix, toComplete) {
-			completions = append([]string{highlight(volumesPefix)}, completions...)
+			completions = append(completions, volumesPefix)
 
 		}
 
-		// If the path is local, we try to prepend the dbfs:/ prefix suggestion
+		// If the path is local, we try to add the dbfs:/ prefix suggestion
 		if !isDbfsPath && strings.HasPrefix(dbfsPrefix, toComplete) {
-			completions = append([]string{highlight(dbfsPrefix)}, completions...)
+			completions = append(completions, dbfsPrefix)
 		}
 
 		return completions, directive
@@ -127,8 +126,4 @@ func getValidArgsFunction(
 // current folder with the local prefix (./).
 func shouldDropLocalPrefix(toComplete string, completion string) bool {
 	return !strings.HasPrefix(toComplete, localPefix) && strings.HasPrefix(completion, localPefix)
-}
-
-func highlight(c string) string {
-	return color.New(color.FgCyan, color.Bold).Sprintf(c)
 }
