@@ -139,16 +139,15 @@ func applyForModelServiceEndpoints(ctx context.Context, b *bundle.Bundle) {
 	}
 }
 
-func extendPermissions(permissions []resources.Permission, newPermissions []resources.Permission) []resources.Permission {
+func extendPermissions(permissions []resources.Permission, topLevelPermissions []resources.Permission) []resources.Permission {
 	if !includesOwner(permissions) {
 		// Just merge the permissions, don't need to do anything special
-		return append(permissions, newPermissions...)
+		return append(permissions, topLevelPermissions...)
 	}
 
-	// Only apply the owner from top-level permissions if the local resource
-	// didn't have an owner.
-	for _, p := range newPermissions {
+	for _, p := range topLevelPermissions {
 		if p.Level == IS_OWNER {
+			// Prefer the owner from the local permission set
 			continue
 		}
 		permissions = append(permissions, p)
