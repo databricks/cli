@@ -123,8 +123,8 @@ func getValidArgsFunction(
 }
 
 // Drop the local prefix from completions if the path to complete doesn't
-// start with it. We do this because the local filer returns paths with the
-// local prefix.
+// start with it. We do this because the local filer returns paths in the
+// current folder with the local prefix (./).
 func shouldDropLocalPrefix(toComplete string, completion string) bool {
 	return !strings.HasPrefix(toComplete, localPefix) && strings.HasPrefix(completion, localPefix)
 }
