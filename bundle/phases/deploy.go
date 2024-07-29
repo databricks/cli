@@ -2,6 +2,7 @@ package phases
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts"
@@ -16,85 +17,73 @@ import (
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/python"
 	"github.com/databricks/cli/bundle/scripts"
+	"github.com/databricks/cli/libs/cmdio"
+	terraformlib "github.com/databricks/cli/libs/terraform"
 )
 
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
-	// if b.AutoApprove {
-	// 	return true, nil
-	// }
+	if b.AutoApprove {
+		return true, nil
+	}
 
-	// tf := b.Terraform
-	// if tf == nil {
-	// 	return false, fmt.Errorf("terraform not initialized")
-	// }
+	tf := b.Terraform
+	if tf == nil {
+		return false, fmt.Errorf("terraform not initialized")
+	}
 
-	// // read plan file
-	// plan, err := tf.ShowPlanFile(ctx, b.Plan.Path)
-	// if err != nil {
-	// 	return false, err
-	// }
+	// read plan file
+	plan, err := tf.ShowPlanFile(ctx, b.Plan.Path)
+	if err != nil {
+		return false, err
+	}
 
-	// // TODO: Is schema recreation possible? Would that be destructive to the data?
-	// deleteOrRecreateSchema := make([]terraformlib.Action, 0)
-	// for _, rc := range plan.ResourceChanges {
-	// 	if rc.Change.Actions.Delete() && rc.Type == "databricks_schema" {
-	// 		deleteOrRecreateSchema = append(deleteOrRecreateSchema, terraformlib.Action{
-	// 			Action:       "delete",
-	// 			ResourceType: rc.Type,
-	// 			ResourceName: rc.Name,
-	// 		})
-	// 	}
+	actions := make([]terraformlib.Action, 0)
+	for _, rc := range plan.ResourceChanges {
+		var actionType terraformlib.ActionType
 
-	// 	if rc.Change.Actions.Replace() && rc.Type == "databricks_schema" {
-	// 		deleteOrRecreateSchema = append(deleteOrRecreateSchema, terraformlib.Action{
-	// 			Action:       "recreate",
-	// 			ResourceType: rc.Type,
-	// 			ResourceName: rc.Name,
-	// 		})
-	// 	}
-	// }
+		switch {
+		case rc.Change.Actions.Delete():
+			actionType = terraformlib.ActionTypeDelete
+		case rc.Change.Actions.Replace():
+			actionType = terraformlib.ActionTypeRecreate
+		default:
+			// We don't need a prompt for non-destructive actions like creating
+			// or updating a schema.
+			continue
+		}
 
-	// // No need for approval if the plan does not include destroying or recreating
-	// // any schema resources.
-	// if len(deleteOrRecreateSchema) == 0 {
-	// 	return true, nil
-	// }
+		actions = append(actions, terraformlib.Action{
+			Action:       actionType,
+			ResourceType: rc.Type,
+			ResourceName: rc.Name,
+		})
+	}
 
-	// // TODO: Return early with error here if the `--force-schema (or something)` delete
-	// // flag is not specified.
-	// // for _, action := range deleteOrRecreateSchema {
-	// // 	cmdio.LogString(ctx, "The following UC schemas will be deleted or recreated. Any underlying data will be lost:")
-	// // }
+	// No restricted actions planned. No need for approval.
+	if len(actions) == 0 {
+		return true, nil
+	}
 
-	// if len(deleteActions) > 0 {
-	// 	cmdio.LogString(ctx, "")
-	// 	cmdio.LogString(ctx, "The following resources will be deleted:")
-	// 	for _, a := range deleteActions {
-	// 		cmdio.Log(ctx, a)
-	// 	}
-	// }
+	cmdio.LogString(ctx, "The following UC schemas will be deleted or recreated. Any underlying data may be lost:")
+	for _, action := range actions {
+		cmdio.Log(ctx, action)
+	}
 
-	// if len(recreateActions) > 0 {
-	// 	cmdio.LogString(ctx, "")
-	// 	cmdio.LogString(ctx, "The following resources will be recreated. Note that recreation can be lossy and may lead to lost metadata or data:")
-	// 	for _, a := range recreateActions {
-	// 		cmdio.Log(ctx, a)
-	// 	}
-	// 	cmdio.LogString(ctx, "")
-	// }
+	if b.AutoApprove {
+		return true, nil
+	}
 
-	// if !cmdio.IsPromptSupported(ctx) {
-	// 	return false, fmt.Errorf("the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
-	// }
+	if !cmdio.IsPromptSupported(ctx) {
+		return false, fmt.Errorf("the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
+	}
 
-	// cmdio.LogString(ctx, "")
-	// approved, err := cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
-	// if err != nil {
-	// 	return false, err
-	// }
+	cmdio.LogString(ctx, "")
+	approved, err := cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
+	if err != nil {
+		return false, err
+	}
 
-	// return app0roved, nil
-	return true, nil
+	return approved, nil
 }
 
 // The deploy phase deploys artifacts and resources.
@@ -132,7 +121,6 @@ func Deploy() bundle.Mutator {
 				terraform.Write(),
 				terraform.CheckRunningResource(),
 				terraform.Plan(terraform.PlanGoal("deploy")),
-				terraform.Load(),
 				bundle.If(
 					approvalForDeploy,
 					deployCore,

@@ -237,6 +237,11 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 		conv(src, &dst)
 		tfroot.Resource.Schema[k] = &dst
 
+		// We always set force destroy as it allows DABs to manage the lifecycle
+		// of the schema. It's the responsibility of the CLI to ensure the user
+		// is adequately warned when they try to delete a UC schema.
+		dst.ForceDestroy = true
+
 		// Configure permissions for this resource.
 		if rp := convGrants(src.Grants); rp != nil {
 			rp.Schema = fmt.Sprintf("${databricks_schema.%s.id}", k)
