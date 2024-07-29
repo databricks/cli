@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"sort"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
@@ -81,6 +82,24 @@ func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 		if len(v.locations) <= 1 {
 			continue
 		}
+
+		// Sort the locations and paths for consistent error messages. This helps
+		// with unit testing.
+		sort.Slice(v.locations, func(i, j int) bool {
+			l1 := v.locations[i]
+			l2 := v.locations[j]
+
+			if l1.File != l2.File {
+				return l1.File < l2.File
+			}
+			if l1.Line != l2.Line {
+				return l1.Line < l2.Line
+			}
+			return l1.Column < l2.Column
+		})
+		sort.Slice(v.paths, func(i, j int) bool {
+			return v.paths[i].String() < v.paths[j].String()
+		})
 
 		// If there are multiple resources with the same key, report an error.
 		diags = append(diags, diag.Diagnostic{

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"maps"
 	"slices"
-	"sort"
 )
 
 // Pair represents a single key-value pair in a Mapping.
@@ -50,12 +49,7 @@ func newMappingFromGoMap(vin map[string]Value) Mapping {
 // Pairs returns all the key-value pairs in the Mapping. The pairs are sorted by
 // their key in lexicographic order.
 func (m Mapping) Pairs() []Pair {
-	pairs := make([]Pair, len(m.pairs))
-	copy(pairs, m.pairs)
-	sort.Slice(pairs, func(i, j int) bool {
-		return pairs[i].Key.MustString() < pairs[j].Key.MustString()
-	})
-	return pairs
+	return m.pairs
 }
 
 // Len returns the number of key-value pairs in the Mapping.
