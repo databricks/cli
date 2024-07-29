@@ -1396,11 +1396,17 @@ type ResourceJobTriggerTableUpdate struct {
 	WaitAfterLastChangeSeconds    int      `json:"wait_after_last_change_seconds,omitempty"`
 }
 
+type ResourceJobTriggerPeriodic struct {
+	Interval int `json:"interval,omitempty"`
+	Unit string `json:"unit,omitempty"`
+}
+
 type ResourceJobTrigger struct {
 	PauseStatus string                         `json:"pause_status,omitempty"`
 	FileArrival *ResourceJobTriggerFileArrival `json:"file_arrival,omitempty"`
 	Table       *ResourceJobTriggerTable       `json:"table,omitempty"`
 	TableUpdate *ResourceJobTriggerTableUpdate `json:"table_update,omitempty"`
+	Periodic    *ResourceJobTriggerPeriodic    `json:"periodic,omitempty"`
 }
 
 type ResourceJobWebhookNotificationsOnDurationWarningThresholdExceeded struct {
