@@ -22,7 +22,7 @@ func TestGetShortUserName(t *testing.T) {
 		},
 		{
 			email:    "test$.user@example.com",
-			expected: "test__user",
+			expected: "test_user",
 		},
 		{
 			email:    `jöhn.dœ@domain.com`, // Using non-ASCII characters.
@@ -38,7 +38,7 @@ func TestGetShortUserName(t *testing.T) {
 		},
 		{
 			email:    `"_quoted"@domain.com`, // Quoted strings can be part of the local-part.
-			expected: "__quoted_",
+			expected: "quoted",
 		},
 		{
 			email:    `name-o'mally@website.org`, // Single quote in the local-part.

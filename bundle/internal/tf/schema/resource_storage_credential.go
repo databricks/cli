@@ -41,7 +41,6 @@ type ResourceStorageCredential struct {
 	Owner                       string                                                `json:"owner,omitempty"`
 	ReadOnly                    bool                                                  `json:"read_only,omitempty"`
 	SkipValidation              bool                                                  `json:"skip_validation,omitempty"`
-	StorageCredentialId         string                                                `json:"storage_credential_id,omitempty"`
 	AwsIamRole                  *ResourceStorageCredentialAwsIamRole                  `json:"aws_iam_role,omitempty"`
 	AzureManagedIdentity        *ResourceStorageCredentialAzureManagedIdentity        `json:"azure_managed_identity,omitempty"`
 	AzureServicePrincipal       *ResourceStorageCredentialAzureServicePrincipal       `json:"azure_service_principal,omitempty"`

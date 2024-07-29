@@ -178,10 +178,10 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 		setRunAsForJobs(b)
 		return diag.Diagnostics{
 			{
-				Severity: diag.Warning,
-				Summary:  "You are using the legacy mode of run_as. The support for this mode is experimental and might be removed in a future release of the CLI. In order to run the DLT pipelines in your DAB as the run_as user this mode changes the owners of the pipelines to the run_as identity, which requires the user deploying the bundle to be a workspace admin, and also a Metastore admin if the pipeline target is in UC.",
-				Path:     dyn.MustPathFromString("experimental.use_legacy_run_as"),
-				Location: b.Config.GetLocation("experimental.use_legacy_run_as"),
+				Severity:  diag.Warning,
+				Summary:   "You are using the legacy mode of run_as. The support for this mode is experimental and might be removed in a future release of the CLI. In order to run the DLT pipelines in your DAB as the run_as user this mode changes the owners of the pipelines to the run_as identity, which requires the user deploying the bundle to be a workspace admin, and also a Metastore admin if the pipeline target is in UC.",
+				Paths:     []dyn.Path{dyn.MustPathFromString("experimental.use_legacy_run_as")},
+				Locations: b.Config.GetLocations("experimental.use_legacy_run_as"),
 			},
 		}
 	}

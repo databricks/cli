@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/internal/tf/schema"
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
@@ -219,8 +220,10 @@ func setProxyEnvVars(ctx context.Context, environ map[string]string, b *bundle.B
 }
 
 func setUserAgentExtraEnvVar(environ map[string]string, b *bundle.Bundle) error {
-	var products []string
-
+	// Add "cli" to the user agent in set by the Databricks Terraform provider.
+	// This will allow us to attribute downstream requests made by the Databricks
+	// Terraform provider to the CLI.
+	products := []string{fmt.Sprintf("cli/%s", build.GetInfo().Version)}
 	if experimental := b.Config.Experimental; experimental != nil {
 		if experimental.PyDABs.Enabled {
 			products = append(products, "databricks-pydabs/0.0.0")

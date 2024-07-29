@@ -46,7 +46,8 @@ func newMappingFromGoMap(vin map[string]Value) Mapping {
 	return m
 }
 
-// Pairs returns all the key-value pairs in the Mapping.
+// Pairs returns all the key-value pairs in the Mapping. The pairs are sorted by
+// their key in lexicographic order.
 func (m Mapping) Pairs() []Pair {
 	return m.pairs
 }

@@ -8,15 +8,18 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts/whl"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go"
 )
 
 type mutatorFactory = func(name string) bundle.Mutator
@@ -26,6 +29,10 @@ var buildMutators map[config.ArtifactType]mutatorFactory = map[config.ArtifactTy
 }
 
 var uploadMutators map[config.ArtifactType]mutatorFactory = map[config.ArtifactType]mutatorFactory{}
+
+var prepareMutators map[config.ArtifactType]mutatorFactory = map[config.ArtifactType]mutatorFactory{
+	config.ArtifactPythonWheel: whl.Prepare,
+}
 
 func getBuildMutator(t config.ArtifactType, name string) bundle.Mutator {
 	mutatorFactory, ok := buildMutators[t]
@@ -40,6 +47,17 @@ func getUploadMutator(t config.ArtifactType, name string) bundle.Mutator {
 	mutatorFactory, ok := uploadMutators[t]
 	if !ok {
 		mutatorFactory = BasicUpload
+	}
+
+	return mutatorFactory(name)
+}
+
+func getPrepareMutator(t config.ArtifactType, name string) bundle.Mutator {
+	mutatorFactory, ok := prepareMutators[t]
+	if !ok {
+		mutatorFactory = func(_ string) bundle.Mutator {
+			return mutator.NoOp()
+		}
 	}
 
 	return mutatorFactory(name)
@@ -103,7 +121,7 @@ func (m *basicUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 		return diag.FromErr(err)
 	}
 
-	client, err := filer.NewWorkspaceFilesClient(b.WorkspaceClient(), uploadPath)
+	client, err := getFilerForArtifacts(b.WorkspaceClient(), uploadPath)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -114,6 +132,17 @@ func (m *basicUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 	}
 
 	return nil
+}
+
+func getFilerForArtifacts(w *databricks.WorkspaceClient, uploadPath string) (filer.Filer, error) {
+	if isVolumesPath(uploadPath) {
+		return filer.NewFilesClient(w, uploadPath)
+	}
+	return filer.NewWorkspaceFilesClient(w, uploadPath)
+}
+
+func isVolumesPath(path string) bool {
+	return strings.HasPrefix(path, "/Volumes/")
 }
 
 func uploadArtifact(ctx context.Context, b *bundle.Bundle, a *config.Artifact, uploadPath string, client filer.Filer) error {
@@ -130,14 +159,15 @@ func uploadArtifact(ctx context.Context, b *bundle.Bundle, a *config.Artifact, u
 
 		log.Infof(ctx, "Upload succeeded")
 		f.RemotePath = path.Join(uploadPath, filepath.Base(f.Source))
+		remotePath := f.RemotePath
 
-		// TODO: confirm if we still need to update the remote path to start with /Workspace
-		wsfsBase := "/Workspace"
-		remotePath := path.Join(wsfsBase, f.RemotePath)
+		if !strings.HasPrefix(f.RemotePath, "/Workspace/") && !strings.HasPrefix(f.RemotePath, "/Volumes/") {
+			wsfsBase := "/Workspace"
+			remotePath = path.Join(wsfsBase, f.RemotePath)
+		}
 
 		for _, job := range b.Config.Resources.Jobs {
 			rewriteArtifactPath(b, f, job, remotePath)
-
 		}
 	}
 

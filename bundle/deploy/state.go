@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/vfs"
+	"github.com/google/uuid"
 )
 
 const DeploymentStateFileName = "deployment.json"
@@ -46,6 +47,9 @@ type DeploymentState struct {
 
 	// Files is a list of files which has been deployed as part of this deployment.
 	Files Filelist `json:"files"`
+
+	// UUID uniquely identifying the deployment.
+	ID uuid.UUID `json:"id"`
 }
 
 // We use this entry type as a proxy to fs.DirEntry.

@@ -54,7 +54,8 @@ func newValidateCommand() *cobra.Command {
 
 		switch root.OutputType(cmd) {
 		case flags.OutputText:
-			err := render.RenderTextOutput(cmd.OutOrStdout(), b, diags)
+			renderOpts := render.RenderOptions{RenderSummaryTable: true}
+			err := render.RenderTextOutput(cmd.OutOrStdout(), b, diags, renderOpts)
 			if err != nil {
 				return fmt.Errorf("failed to render output: %w", err)
 			}

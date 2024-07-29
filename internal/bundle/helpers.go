@@ -21,9 +21,13 @@ import (
 const defaultSparkVersion = "13.3.x-snapshot-scala2.12"
 
 func initTestTemplate(t *testing.T, ctx context.Context, templateName string, config map[string]any) (string, error) {
+	bundleRoot := t.TempDir()
+	return initTestTemplateWithBundleRoot(t, ctx, templateName, config, bundleRoot)
+}
+
+func initTestTemplateWithBundleRoot(t *testing.T, ctx context.Context, templateName string, config map[string]any, bundleRoot string) (string, error) {
 	templateRoot := filepath.Join("bundles", templateName)
 
-	bundleRoot := t.TempDir()
 	configFilePath, err := writeConfigFile(t, config)
 	if err != nil {
 		return "", err

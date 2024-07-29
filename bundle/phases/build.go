@@ -16,6 +16,7 @@ func Build() bundle.Mutator {
 			scripts.Execute(config.ScriptPreBuild),
 			artifacts.DetectPackages(),
 			artifacts.InferMissingProperties(),
+			artifacts.PrepareAll(),
 			artifacts.BuildAll(),
 			scripts.Execute(config.ScriptPostBuild),
 			mutator.ResolveVariableReferences(
