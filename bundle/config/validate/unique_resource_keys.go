@@ -4,10 +4,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
-<<<<<<< HEAD
-=======
 	"sort"
->>>>>>> origin
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
@@ -112,7 +109,7 @@ func (m *uniqueResourceKeys) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 			Summary:   fmt.Sprintf("multiple resources have been defined with the same key: %s", k),
 			Locations: v.locations,
 			Paths:     v.paths,
-gs		})
+		})
 	}
 
 	return diags
