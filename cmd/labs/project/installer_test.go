@@ -199,7 +199,7 @@ func TestInstallerWorksForReleases(t *testing.T) {
 	stub.WithStdoutFor(`python[\S]+ --version`, "Python 3.10.5")
 	// on Unix, we call `python3`, but on Windows it is `python.exe`
 	stub.WithStderrFor(`python[\S]+ -m venv .*/.databricks/labs/blueprint/state/venv`, "[mock venv create]")
-	stub.WithStderrFor(`python[\S]+ -m pip install .`, "[mock pip install]")
+	stub.WithStderrFor(`python[\S]+ -m pip install --upgrade --upgrade-strategy eager .`, "[mock pip install]")
 	stub.WithStdoutFor(`python[\S]+ install.py`, "setting up important infrastructure")
 
 	// simulate the case of GitHub Actions
@@ -406,7 +406,7 @@ func TestUpgraderWorksForReleases(t *testing.T) {
 	// Install stubs for the python calls we need to ensure were run in the
 	// upgrade process.
 	ctx, stub := process.WithStub(ctx)
-	stub.WithStderrFor(`python[\S]+ -m pip install .`, "[mock pip install]")
+	stub.WithStderrFor(`python[\S]+ -m pip install --upgrade --upgrade-strategy eager .`, "[mock pip install]")
 	stub.WithStdoutFor(`python[\S]+ install.py`, "setting up important infrastructure")
 
 	py, _ := python.DetectExecutable(ctx)
@@ -430,13 +430,13 @@ func TestUpgraderWorksForReleases(t *testing.T) {
 	// Check if the stub was called with the 'python -m pip install' command
 	pi := false
 	for _, call := range stub.Commands() {
-		if strings.HasSuffix(call, "-m pip install .") {
+		if strings.HasSuffix(call, "-m pip install --upgrade --upgrade-strategy eager .") {
 			pi = true
 			break
 		}
 	}
 	if !pi {
-		t.Logf(`Expected stub command 'python[\S]+ -m pip install .' not found`)
+		t.Logf(`Expected stub command 'python[\S]+ -m pip install --upgrade --upgrade-strategy eager .' not found`)
 		t.FailNow()
 	}
 }
