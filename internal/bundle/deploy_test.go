@@ -56,8 +56,8 @@ func setupUcSchemaBundle(t *testing.T, ctx context.Context, w *databricks.Worksp
 	require.Equal(t, catalogName, i.Spec.Catalog)
 	require.Equal(t, strings.Join([]string{catalogName, schemaName}, "."), i.Spec.Target)
 
-	// Create a volume in the schema, and add a file to it. This ensure that the
-	// schema as some data in it and deletion will fail unless the generated
+	// Create a volume in the schema, and add a file to it. This ensures that the
+	// schema has some data in it and deletion will fail unless the generated
 	// terraform configuration has force_destroy set to true.
 	volumeName := "test-volume-" + uniqueId
 	volume, err := w.Volumes.Create(ctx, catalog.CreateVolumeRequestContent{
