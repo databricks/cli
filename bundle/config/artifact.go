@@ -19,7 +19,6 @@ func (artifacts Artifacts) ConfigureConfigFilePath() {
 type ArtifactType string
 
 const ArtifactPythonWheel ArtifactType = `whl`
-const ArtifactPythonRequirementsFile ArtifactType = `requirements`
 
 type ArtifactFile struct {
 	Source     string `json:"source"`

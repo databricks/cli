@@ -23,10 +23,6 @@ func TestArtifactUploadForWorkspace(t *testing.T) {
 	testutil.Touch(t, whlFolder, "source.whl")
 	whlLocalPath := filepath.Join(whlFolder, "source.whl")
 
-	requirementsFolder := filepath.Join(tmpDir, "requirements")
-	testutil.Touch(t, requirementsFolder, "requirements.txt")
-	requirementsLocalPath := filepath.Join(requirementsFolder, "requirements.txt")
-
 	b := &bundle.Bundle{
 		RootPath: tmpDir,
 		Config: config.Root{
@@ -38,12 +34,6 @@ func TestArtifactUploadForWorkspace(t *testing.T) {
 					Type: config.ArtifactPythonWheel,
 					Files: []config.ArtifactFile{
 						{Source: whlLocalPath},
-					},
-				},
-				"requirements": {
-					Type: config.ArtifactPythonRequirementsFile,
-					Files: []config.ArtifactFile{
-						{Source: requirementsLocalPath},
 					},
 				},
 			},
@@ -60,9 +50,6 @@ func TestArtifactUploadForWorkspace(t *testing.T) {
 										{
 											Whl: "/Workspace/Users/foo@bar.com/mywheel.whl",
 										},
-										{
-											Requirements: filepath.Join("requirements", "requirements.txt"),
-										},
 									},
 								},
 								{
@@ -74,9 +61,6 @@ func TestArtifactUploadForWorkspace(t *testing.T) {
 												},
 												{
 													Whl: "/Workspace/Users/foo@bar.com/mywheel.whl",
-												},
-												{
-													Requirements: filepath.Join("requirements", "requirements.txt"),
 												},
 											},
 										},
@@ -100,8 +84,9 @@ func TestArtifactUploadForWorkspace(t *testing.T) {
 		},
 	}
 
-	whlMockFiler := mockfiler.NewMockFiler(t)
-	whlMockFiler.EXPECT().Write(
+	artifact := b.Config.Artifacts["whl"]
+	mockFiler := mockfiler.NewMockFiler(t)
+	mockFiler.EXPECT().Write(
 		mock.Anything,
 		filepath.Join("source.whl"),
 		mock.AnythingOfType("*bytes.Reader"),
@@ -109,30 +94,16 @@ func TestArtifactUploadForWorkspace(t *testing.T) {
 		filer.CreateParentDirectories,
 	).Return(nil)
 
-	whlError := uploadArtifact(context.Background(), b, b.Config.Artifacts["whl"], "/foo/bar/artifacts", whlMockFiler)
-	require.NoError(t, whlError)
-
-	requirementsMockFiler := mockfiler.NewMockFiler(t)
-	requirementsMockFiler.EXPECT().Write(
-		mock.Anything,
-		filepath.Join("requirements.txt"),
-		mock.AnythingOfType("*bytes.Reader"),
-		filer.OverwriteIfExists,
-		filer.CreateParentDirectories,
-	).Return(nil)
-
-	requirementsError := uploadArtifact(context.Background(), b, b.Config.Artifacts["requirements"], "/foo/bar/artifacts", requirementsMockFiler)
-	require.NoError(t, requirementsError)
+	err := uploadArtifact(context.Background(), b, artifact, "/foo/bar/artifacts", mockFiler)
+	require.NoError(t, err)
 
 	// Test that libraries path is updated
 	require.Equal(t, "/Workspace/foo/bar/artifacts/source.whl", b.Config.Resources.Jobs["job"].JobSettings.Tasks[0].Libraries[0].Whl)
 	require.Equal(t, "/Workspace/Users/foo@bar.com/mywheel.whl", b.Config.Resources.Jobs["job"].JobSettings.Tasks[0].Libraries[1].Whl)
-	require.Equal(t, "/Workspace/foo/bar/artifacts/requirements.txt", b.Config.Resources.Jobs["job"].JobSettings.Tasks[0].Libraries[2].Requirements)
 	require.Equal(t, "/Workspace/foo/bar/artifacts/source.whl", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[0])
 	require.Equal(t, "/Workspace/Users/foo@bar.com/mywheel.whl", b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies[1])
 	require.Equal(t, "/Workspace/foo/bar/artifacts/source.whl", b.Config.Resources.Jobs["job"].JobSettings.Tasks[1].ForEachTask.Task.Libraries[0].Whl)
 	require.Equal(t, "/Workspace/Users/foo@bar.com/mywheel.whl", b.Config.Resources.Jobs["job"].JobSettings.Tasks[1].ForEachTask.Task.Libraries[1].Whl)
-	require.Equal(t, "/Workspace/foo/bar/artifacts/requirements.txt", b.Config.Resources.Jobs["job"].JobSettings.Tasks[1].ForEachTask.Task.Libraries[2].Requirements)
 }
 
 func TestArtifactUploadForVolumes(t *testing.T) {

@@ -186,9 +186,6 @@ func rewriteArtifactPath(b *bundle.Bundle, f *config.ArtifactFile, job *resource
 			if lib.Jar != "" && isArtifactMatchLibrary(f, lib.Jar, b) {
 				lib.Jar = remotePath
 			}
-			if lib.Requirements != "" {
-				lib.Requirements = remotePath
-			}
 		}
 
 		// Rewrite artifact path in job task libraries for ForEachTask
@@ -201,9 +198,6 @@ func rewriteArtifactPath(b *bundle.Bundle, f *config.ArtifactFile, job *resource
 				}
 				if lib.Jar != "" && isArtifactMatchLibrary(f, lib.Jar, b) {
 					lib.Jar = remotePath
-				}
-				if lib.Requirements != "" {
-					lib.Requirements = remotePath
 				}
 			}
 		}
