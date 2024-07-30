@@ -54,7 +54,8 @@ func TestConvertSchema(t *testing.T) {
 			"k1": "v1",
 			"k2": "v2",
 		},
-		"storage_root": "root",
+		"force_destroy": true,
+		"storage_root":  "root",
 	}, out.Schema["my_schema"])
 
 	// Assert equality on the grants
