@@ -120,7 +120,7 @@ func TestGetFileSet(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, len(fileList), 2)
 
-	inc, err = fileset.NewGlobSet(root, []string{".databricks/*"})
+	inc, err = fileset.NewGlobSet(root, []string{"./.databricks/*.go"})
 	require.NoError(t, err)
 
 	excl, err = fileset.NewGlobSet(root, []string{})
