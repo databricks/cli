@@ -67,6 +67,9 @@ func setupFiles(t *testing.T) string {
 	err = createFile(sub2, "g.go")
 	require.NoError(t, err)
 
+	err = createFile(sub2, "h.txt")
+	require.NoError(t, err)
+
 	return dir
 }
 
@@ -97,7 +100,7 @@ func TestGetFileSet(t *testing.T) {
 
 	fileList, err := s.GetFileList(ctx)
 	require.NoError(t, err)
-	require.Equal(t, len(fileList), 9)
+	require.Equal(t, len(fileList), 10)
 
 	inc, err = fileset.NewGlobSet(root, []string{})
 	require.NoError(t, err)
@@ -115,7 +118,7 @@ func TestGetFileSet(t *testing.T) {
 
 	fileList, err = s.GetFileList(ctx)
 	require.NoError(t, err)
-	require.Equal(t, len(fileList), 1)
+	require.Equal(t, len(fileList), 2)
 
 	inc, err = fileset.NewGlobSet(root, []string{".databricks/*"})
 	require.NoError(t, err)
@@ -133,7 +136,7 @@ func TestGetFileSet(t *testing.T) {
 
 	fileList, err = s.GetFileList(ctx)
 	require.NoError(t, err)
-	require.Equal(t, len(fileList), 10)
+	require.Equal(t, len(fileList), 11)
 }
 
 func TestRecursiveExclude(t *testing.T) {
@@ -164,4 +167,42 @@ func TestRecursiveExclude(t *testing.T) {
 	fileList, err := s.GetFileList(ctx)
 	require.NoError(t, err)
 	require.Equal(t, len(fileList), 7)
+}
+
+func TestNegateExclude(t *testing.T) {
+	ctx := context.Background()
+
+	dir := setupFiles(t)
+	root := vfs.MustNew(dir)
+	fileSet, err := git.NewFileSet(root)
+	require.NoError(t, err)
+
+	err = fileSet.EnsureValidGitIgnoreExists()
+	require.NoError(t, err)
+
+	inc, err := fileset.NewGlobSet(root, []string{})
+	require.NoError(t, err)
+
+	excl, err := fileset.NewGlobSet(root, []string{"./*", "!*.txt"})
+	require.NoError(t, err)
+
+	s := &Sync{
+		SyncOptions: &SyncOptions{},
+
+		fileSet:        fileSet,
+		includeFileSet: inc,
+		excludeFileSet: excl,
+	}
+
+	fileList, err := s.GetFileList(ctx)
+	require.NoError(t, err)
+	require.Equal(t, len(fileList), 1)
+	found := false
+	for _, f := range fileList {
+		if f.Relative == "test/sub1/sub2/h.txt" {
+			found = true
+			break
+		}
+	}
+	require.True(t, found)
 }

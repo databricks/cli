@@ -3,6 +3,7 @@ package validate
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/databricks/cli/bundle"
@@ -49,7 +50,8 @@ func checkPatterns(patterns []string, path string, rb bundle.ReadOnlyBundle) (di
 
 	for i, pattern := range patterns {
 		index := i
-		p := pattern
+		// If the pattern starts with !, remove it for the check below
+		p := strings.TrimPrefix(pattern, "!")
 		errs.Go(func() error {
 			fs, err := fileset.NewGlobSet(rb.BundleRoot(), []string{p})
 			if err != nil {

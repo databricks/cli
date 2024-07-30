@@ -1,0 +1,12 @@
+bundle:
+  name: sync_negte
+
+workspace:
+  host: https://acme.cloud.databricks.com/
+
+sync:
+  exclude:
+    - ./*
+    - '!./*.txt'
+  include:
+    - ./*.txt

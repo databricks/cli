@@ -42,3 +42,11 @@ func TestSyncIncludeExcludeNoMatchesTest(t *testing.T) {
 	require.Equal(t, diags[2].Severity, diag.Warning)
 	require.Contains(t, summaries, diags[2].Summary)
 }
+
+func TestSyncIncludeWithNegate(t *testing.T) {
+	b := load(t, "./sync/negate")
+
+	diags := bundle.ApplyReadOnly(context.Background(), bundle.ReadOnly(b), validate.ValidateSyncPatterns())
+	require.Len(t, diags, 0)
+	require.NoError(t, diags.Error())
+}
