@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -100,4 +102,24 @@ func TestAccBundleDeployUcSchema(t *testing.T) {
 	apiErr := &apierr.APIError{}
 	assert.True(t, errors.As(err, &apiErr))
 	assert.Equal(t, "SCHEMA_DOES_NOT_EXIST", apiErr.ErrorCode)
+}
+
+func TestAccBundleDeployUcSchemaFailsWithoutAutoApprove(t *testing.T) {
+	ctx, wt := acc.UcWorkspaceTest(t)
+	w := wt.W
+
+	uniqueId := uuid.New().String()
+	bundleRoot := setupUcSchemaBundle(t, ctx, w, uniqueId)
+
+	// Remove the UC schema from the resource configuration.
+	err := os.Remove(filepath.Join(bundleRoot, "schema.yml"))
+	require.NoError(t, err)
+
+	// Redeploy the bundle
+	t.Setenv("BUNDLE_ROOT", bundleRoot)
+	t.Setenv("TERM", "dumb")
+	c := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "deploy", "--force-lock")
+	stdout, _, err := c.Run()
+	assert.EqualError(t, err, root.ErrAlreadyPrinted.Error())
+	assert.Contains(t, stdout.String(), "the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
 }
