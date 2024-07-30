@@ -26,6 +26,7 @@ type DataSourceJobJobSettingsSettingsEmailNotifications struct {
 	OnDurationWarningThresholdExceeded []string `json:"on_duration_warning_threshold_exceeded,omitempty"`
 	OnFailure                          []string `json:"on_failure,omitempty"`
 	OnStart                            []string `json:"on_start,omitempty"`
+	OnStreamingBacklogExceeded         []string `json:"on_streaming_backlog_exceeded,omitempty"`
 	OnSuccess                          []string `json:"on_success,omitempty"`
 }
 
@@ -55,9 +56,9 @@ type DataSourceJobJobSettingsSettingsGitSource struct {
 }
 
 type DataSourceJobJobSettingsSettingsHealthRules struct {
-	Metric string `json:"metric,omitempty"`
-	Op     string `json:"op,omitempty"`
-	Value  int    `json:"value,omitempty"`
+	Metric string `json:"metric"`
+	Op     string `json:"op"`
+	Value  int    `json:"value"`
 }
 
 type DataSourceJobJobSettingsSettingsHealth struct {
@@ -222,7 +223,7 @@ type DataSourceJobJobSettingsSettingsJobClusterNewCluster struct {
 }
 
 type DataSourceJobJobSettingsSettingsJobCluster struct {
-	JobClusterKey string                                                `json:"job_cluster_key,omitempty"`
+	JobClusterKey string                                                `json:"job_cluster_key"`
 	NewCluster    *DataSourceJobJobSettingsSettingsJobClusterNewCluster `json:"new_cluster,omitempty"`
 }
 
@@ -500,6 +501,7 @@ type DataSourceJobJobSettingsSettingsTaskEmailNotifications struct {
 	OnDurationWarningThresholdExceeded []string `json:"on_duration_warning_threshold_exceeded,omitempty"`
 	OnFailure                          []string `json:"on_failure,omitempty"`
 	OnStart                            []string `json:"on_start,omitempty"`
+	OnStreamingBacklogExceeded         []string `json:"on_streaming_backlog_exceeded,omitempty"`
 	OnSuccess                          []string `json:"on_success,omitempty"`
 }
 
@@ -529,13 +531,14 @@ type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskEmailNotifications struc
 	OnDurationWarningThresholdExceeded []string `json:"on_duration_warning_threshold_exceeded,omitempty"`
 	OnFailure                          []string `json:"on_failure,omitempty"`
 	OnStart                            []string `json:"on_start,omitempty"`
+	OnStreamingBacklogExceeded         []string `json:"on_streaming_backlog_exceeded,omitempty"`
 	OnSuccess                          []string `json:"on_success,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskHealthRules struct {
-	Metric string `json:"metric,omitempty"`
-	Op     string `json:"op,omitempty"`
-	Value  int    `json:"value,omitempty"`
+	Metric string `json:"metric"`
+	Op     string `json:"op"`
+	Value  int    `json:"value"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskHealth struct {
@@ -805,7 +808,7 @@ type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSqlTaskQuery struct {
 
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSqlTask struct {
 	Parameters  map[string]string                                                    `json:"parameters,omitempty"`
-	WarehouseId string                                                               `json:"warehouse_id,omitempty"`
+	WarehouseId string                                                               `json:"warehouse_id"`
 	Alert       *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSqlTaskAlert     `json:"alert,omitempty"`
 	Dashboard   *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSqlTaskDashboard `json:"dashboard,omitempty"`
 	File        *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskSqlTaskFile      `json:"file,omitempty"`
@@ -824,6 +827,10 @@ type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskWebhookNotificationsOnSt
 	Id string `json:"id"`
 }
 
+type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskWebhookNotificationsOnStreamingBacklogExceeded struct {
+	Id string `json:"id"`
+}
+
 type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskWebhookNotificationsOnSuccess struct {
 	Id string `json:"id"`
 }
@@ -832,6 +839,7 @@ type DataSourceJobJobSettingsSettingsTaskForEachTaskTaskWebhookNotifications str
 	OnDurationWarningThresholdExceeded []DataSourceJobJobSettingsSettingsTaskForEachTaskTaskWebhookNotificationsOnDurationWarningThresholdExceeded `json:"on_duration_warning_threshold_exceeded,omitempty"`
 	OnFailure                          []DataSourceJobJobSettingsSettingsTaskForEachTaskTaskWebhookNotificationsOnFailure                          `json:"on_failure,omitempty"`
 	OnStart                            []DataSourceJobJobSettingsSettingsTaskForEachTaskTaskWebhookNotificationsOnStart                            `json:"on_start,omitempty"`
+	OnStreamingBacklogExceeded         []DataSourceJobJobSettingsSettingsTaskForEachTaskTaskWebhookNotificationsOnStreamingBacklogExceeded         `json:"on_streaming_backlog_exceeded,omitempty"`
 	OnSuccess                          []DataSourceJobJobSettingsSettingsTaskForEachTaskTaskWebhookNotificationsOnSuccess                          `json:"on_success,omitempty"`
 }
 
@@ -844,7 +852,7 @@ type DataSourceJobJobSettingsSettingsTaskForEachTaskTask struct {
 	MinRetryIntervalMillis int                                                                      `json:"min_retry_interval_millis,omitempty"`
 	RetryOnTimeout         bool                                                                     `json:"retry_on_timeout,omitempty"`
 	RunIf                  string                                                                   `json:"run_if,omitempty"`
-	TaskKey                string                                                                   `json:"task_key,omitempty"`
+	TaskKey                string                                                                   `json:"task_key"`
 	TimeoutSeconds         int                                                                      `json:"timeout_seconds,omitempty"`
 	ConditionTask          *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskConditionTask        `json:"condition_task,omitempty"`
 	DbtTask                *DataSourceJobJobSettingsSettingsTaskForEachTaskTaskDbtTask              `json:"dbt_task,omitempty"`
@@ -872,9 +880,9 @@ type DataSourceJobJobSettingsSettingsTaskForEachTask struct {
 }
 
 type DataSourceJobJobSettingsSettingsTaskHealthRules struct {
-	Metric string `json:"metric,omitempty"`
-	Op     string `json:"op,omitempty"`
-	Value  int    `json:"value,omitempty"`
+	Metric string `json:"metric"`
+	Op     string `json:"op"`
+	Value  int    `json:"value"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskHealth struct {
@@ -1144,7 +1152,7 @@ type DataSourceJobJobSettingsSettingsTaskSqlTaskQuery struct {
 
 type DataSourceJobJobSettingsSettingsTaskSqlTask struct {
 	Parameters  map[string]string                                     `json:"parameters,omitempty"`
-	WarehouseId string                                                `json:"warehouse_id,omitempty"`
+	WarehouseId string                                                `json:"warehouse_id"`
 	Alert       *DataSourceJobJobSettingsSettingsTaskSqlTaskAlert     `json:"alert,omitempty"`
 	Dashboard   *DataSourceJobJobSettingsSettingsTaskSqlTaskDashboard `json:"dashboard,omitempty"`
 	File        *DataSourceJobJobSettingsSettingsTaskSqlTaskFile      `json:"file,omitempty"`
@@ -1163,6 +1171,10 @@ type DataSourceJobJobSettingsSettingsTaskWebhookNotificationsOnStart struct {
 	Id string `json:"id"`
 }
 
+type DataSourceJobJobSettingsSettingsTaskWebhookNotificationsOnStreamingBacklogExceeded struct {
+	Id string `json:"id"`
+}
+
 type DataSourceJobJobSettingsSettingsTaskWebhookNotificationsOnSuccess struct {
 	Id string `json:"id"`
 }
@@ -1171,6 +1183,7 @@ type DataSourceJobJobSettingsSettingsTaskWebhookNotifications struct {
 	OnDurationWarningThresholdExceeded []DataSourceJobJobSettingsSettingsTaskWebhookNotificationsOnDurationWarningThresholdExceeded `json:"on_duration_warning_threshold_exceeded,omitempty"`
 	OnFailure                          []DataSourceJobJobSettingsSettingsTaskWebhookNotificationsOnFailure                          `json:"on_failure,omitempty"`
 	OnStart                            []DataSourceJobJobSettingsSettingsTaskWebhookNotificationsOnStart                            `json:"on_start,omitempty"`
+	OnStreamingBacklogExceeded         []DataSourceJobJobSettingsSettingsTaskWebhookNotificationsOnStreamingBacklogExceeded         `json:"on_streaming_backlog_exceeded,omitempty"`
 	OnSuccess                          []DataSourceJobJobSettingsSettingsTaskWebhookNotificationsOnSuccess                          `json:"on_success,omitempty"`
 }
 
@@ -1183,7 +1196,7 @@ type DataSourceJobJobSettingsSettingsTask struct {
 	MinRetryIntervalMillis int                                                       `json:"min_retry_interval_millis,omitempty"`
 	RetryOnTimeout         bool                                                      `json:"retry_on_timeout,omitempty"`
 	RunIf                  string                                                    `json:"run_if,omitempty"`
-	TaskKey                string                                                    `json:"task_key,omitempty"`
+	TaskKey                string                                                    `json:"task_key"`
 	TimeoutSeconds         int                                                       `json:"timeout_seconds,omitempty"`
 	ConditionTask          *DataSourceJobJobSettingsSettingsTaskConditionTask        `json:"condition_task,omitempty"`
 	DbtTask                *DataSourceJobJobSettingsSettingsTaskDbtTask              `json:"dbt_task,omitempty"`
@@ -1211,6 +1224,11 @@ type DataSourceJobJobSettingsSettingsTriggerFileArrival struct {
 	WaitAfterLastChangeSeconds    int    `json:"wait_after_last_change_seconds,omitempty"`
 }
 
+type DataSourceJobJobSettingsSettingsTriggerPeriodic struct {
+	Interval int    `json:"interval"`
+	Unit     string `json:"unit"`
+}
+
 type DataSourceJobJobSettingsSettingsTriggerTableUpdate struct {
 	Condition                     string   `json:"condition,omitempty"`
 	MinTimeBetweenTriggersSeconds int      `json:"min_time_between_triggers_seconds,omitempty"`
@@ -1221,6 +1239,7 @@ type DataSourceJobJobSettingsSettingsTriggerTableUpdate struct {
 type DataSourceJobJobSettingsSettingsTrigger struct {
 	PauseStatus string                                              `json:"pause_status,omitempty"`
 	FileArrival *DataSourceJobJobSettingsSettingsTriggerFileArrival `json:"file_arrival,omitempty"`
+	Periodic    *DataSourceJobJobSettingsSettingsTriggerPeriodic    `json:"periodic,omitempty"`
 	TableUpdate *DataSourceJobJobSettingsSettingsTriggerTableUpdate `json:"table_update,omitempty"`
 }
 
@@ -1236,6 +1255,10 @@ type DataSourceJobJobSettingsSettingsWebhookNotificationsOnStart struct {
 	Id string `json:"id"`
 }
 
+type DataSourceJobJobSettingsSettingsWebhookNotificationsOnStreamingBacklogExceeded struct {
+	Id string `json:"id"`
+}
+
 type DataSourceJobJobSettingsSettingsWebhookNotificationsOnSuccess struct {
 	Id string `json:"id"`
 }
@@ -1244,6 +1267,7 @@ type DataSourceJobJobSettingsSettingsWebhookNotifications struct {
 	OnDurationWarningThresholdExceeded []DataSourceJobJobSettingsSettingsWebhookNotificationsOnDurationWarningThresholdExceeded `json:"on_duration_warning_threshold_exceeded,omitempty"`
 	OnFailure                          []DataSourceJobJobSettingsSettingsWebhookNotificationsOnFailure                          `json:"on_failure,omitempty"`
 	OnStart                            []DataSourceJobJobSettingsSettingsWebhookNotificationsOnStart                            `json:"on_start,omitempty"`
+	OnStreamingBacklogExceeded         []DataSourceJobJobSettingsSettingsWebhookNotificationsOnStreamingBacklogExceeded         `json:"on_streaming_backlog_exceeded,omitempty"`
 	OnSuccess                          []DataSourceJobJobSettingsSettingsWebhookNotificationsOnSuccess                          `json:"on_success,omitempty"`
 }
 
