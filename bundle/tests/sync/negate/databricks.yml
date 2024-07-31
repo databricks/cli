@@ -1,5 +1,5 @@
 bundle:
-  name: sync_negte
+  name: sync_negate
 
 workspace:
   host: https://acme.cloud.databricks.com/
