@@ -59,5 +59,5 @@ func TestSyncIncludeWithNegateNoMatches(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	require.Equal(t, diags[0].Severity, diag.Warning)
-	require.Equal(t, diags[0].Summary, "Pattern !./*.txt2 does not match any files")
+	require.Equal(t, diags[0].Summary, "Pattern !*.txt2 does not match any files")
 }

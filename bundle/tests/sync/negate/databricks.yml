@@ -7,9 +7,9 @@ workspace:
 sync:
   exclude:
     - ./*
-    - '!./*.txt'
+    - '!*.txt'
   include:
-    - ./*.txt
+    - '*.txt'
 
 targets:
   default:
@@ -17,6 +17,6 @@ targets:
     sync:
       exclude:
         - ./*
-        - '!./*.txt2'
+        - '!*.txt2'
       include:
-        - ./*.txt
+        - '*.txt'
