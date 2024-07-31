@@ -1,5 +1,17 @@
 # Version changelog
 
+## 0.225.0
+
+Bundles:
+ * Add resource for UC schemas to DABs ([#1413](https://github.com/databricks/cli/pull/1413)).
+
+Internal:
+ * Use dynamic walking to validate unique resource keys ([#1614](https://github.com/databricks/cli/pull/1614)).
+ * Regenerate TF schema ([#1635](https://github.com/databricks/cli/pull/1635)).
+ * Add upgrade and upgrade eager flags to pip install call ([#1636](https://github.com/databricks/cli/pull/1636)).
+ * Added test for negation pattern in sync include exclude section ([#1637](https://github.com/databricks/cli/pull/1637)).
+ * Use precomputed terraform plan for `bundle deploy` ([#1640](https://github.com/databricks/cli/pull/1640)).
+
 ## 0.224.1
 
 Bundles:
