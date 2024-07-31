@@ -22,9 +22,6 @@ import (
 )
 
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
-	if b.AutoApprove {
-		return true, nil
-	}
 
 	tf := b.Terraform
 	if tf == nil {
@@ -39,6 +36,11 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 
 	actions := make([]terraformlib.Action, 0)
 	for _, rc := range plan.ResourceChanges {
+		// We only care about destructive actions on UC schema resources.
+		if rc.Type != "databricks_schema" {
+			continue
+		}
+
 		var actionType terraformlib.ActionType
 
 		switch {
