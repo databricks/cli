@@ -272,8 +272,10 @@ func (i *installer) installPythonDependencies(ctx context.Context, spec string) 
 	// - python3 -m ensurepip --default-pip
 	// - curl -o https://bootstrap.pypa.io/get-pip.py | python3
 	var buf bytes.Buffer
+	// Ensure latest version(s) is installed with the `--upgrade` and `--upgrade-strategy eager` flags
+	// https://pip.pypa.io/en/stable/cli/pip_install/#cmdoption-U
 	_, err := process.Background(ctx,
-		[]string{i.virtualEnvPython(ctx), "-m", "pip", "install", spec},
+		[]string{i.virtualEnvPython(ctx), "-m", "pip", "install", "--upgrade", "--upgrade-strategy", "eager", spec},
 		process.WithCombinedOutput(&buf),
 		process.WithDir(libDir))
 	if err != nil {

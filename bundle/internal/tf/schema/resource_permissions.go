@@ -13,6 +13,7 @@ type ResourcePermissions struct {
 	Authorization     string                             `json:"authorization,omitempty"`
 	ClusterId         string                             `json:"cluster_id,omitempty"`
 	ClusterPolicyId   string                             `json:"cluster_policy_id,omitempty"`
+	DashboardId       string                             `json:"dashboard_id,omitempty"`
 	DirectoryId       string                             `json:"directory_id,omitempty"`
 	DirectoryPath     string                             `json:"directory_path,omitempty"`
 	ExperimentId      string                             `json:"experiment_id,omitempty"`
