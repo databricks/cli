@@ -92,7 +92,10 @@ func Deploy() bundle.Mutator {
 	// Core mutators that CRUD resources and modify deployment state. These
 	// mutators need informed consent if they are potentially destructive.
 	deployCore := bundle.Defer(
-		terraform.Apply(),
+		bundle.Seq(
+			bundle.LogString("Deploying resources..."),
+			terraform.Apply(),
+		),
 		bundle.Seq(
 			terraform.StatePush(),
 			terraform.Load(),
