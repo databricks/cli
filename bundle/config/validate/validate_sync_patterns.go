@@ -3,6 +3,7 @@ package validate
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/databricks/cli/bundle"
@@ -49,7 +50,13 @@ func checkPatterns(patterns []string, path string, rb bundle.ReadOnlyBundle) (di
 
 	for i, pattern := range patterns {
 		index := i
-		p := pattern
+		fullPattern := pattern
+		// If the pattern is negated, strip the negation prefix
+		// and check if the pattern matches any files.
+		// Negation in gitignore syntax means "don't look at this path'
+		// So if p matches nothing it's useless negation, but if there are matches,
+		// it means: do not include these files into result set
+		p := strings.TrimPrefix(fullPattern, "!")
 		errs.Go(func() error {
 			fs, err := fileset.NewGlobSet(rb.BundleRoot(), []string{p})
 			if err != nil {
@@ -66,7 +73,7 @@ func checkPatterns(patterns []string, path string, rb bundle.ReadOnlyBundle) (di
 				mu.Lock()
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Warning,
-					Summary:   fmt.Sprintf("Pattern %s does not match any files", p),
+					Summary:   fmt.Sprintf("Pattern %s does not match any files", fullPattern),
 					Locations: []dyn.Location{loc.Location()},
 					Paths:     []dyn.Path{loc.Path()},
 				})

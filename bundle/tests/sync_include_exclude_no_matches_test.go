@@ -42,3 +42,22 @@ func TestSyncIncludeExcludeNoMatchesTest(t *testing.T) {
 	require.Equal(t, diags[2].Severity, diag.Warning)
 	require.Contains(t, summaries, diags[2].Summary)
 }
+
+func TestSyncIncludeWithNegate(t *testing.T) {
+	b := loadTarget(t, "./sync/negate", "default")
+
+	diags := bundle.ApplyReadOnly(context.Background(), bundle.ReadOnly(b), validate.ValidateSyncPatterns())
+	require.Len(t, diags, 0)
+	require.NoError(t, diags.Error())
+}
+
+func TestSyncIncludeWithNegateNoMatches(t *testing.T) {
+	b := loadTarget(t, "./sync/negate", "dev")
+
+	diags := bundle.ApplyReadOnly(context.Background(), bundle.ReadOnly(b), validate.ValidateSyncPatterns())
+	require.Len(t, diags, 1)
+	require.NoError(t, diags.Error())
+
+	require.Equal(t, diags[0].Severity, diag.Warning)
+	require.Equal(t, diags[0].Summary, "Pattern !*.txt2 does not match any files")
+}
