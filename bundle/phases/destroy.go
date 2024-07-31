@@ -82,7 +82,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 func Destroy() bundle.Mutator {
 	// Core destructive mutators for destroy. These require informed user consent.
 	destroyCore := bundle.Seq(
-		terraform.Destroy(),
+		terraform.Apply(),
 		terraform.StatePush(),
 		files.Delete(),
 		bundle.LogString("Destroy complete!"),
