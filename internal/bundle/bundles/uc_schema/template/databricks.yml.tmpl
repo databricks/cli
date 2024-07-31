@@ -1,0 +1,19 @@
+bundle:
+  name: "bundle-playground"
+
+resources:
+  pipelines:
+    foo:
+      name: test-pipeline-{{.unique_id}}
+      libraries:
+        - notebook:
+            path: ./nb.sql
+      development: true
+      catalog: main
+
+include:
+  - "*.yml"
+
+targets:
+  development:
+    default: true

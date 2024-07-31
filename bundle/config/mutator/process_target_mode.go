@@ -112,6 +112,13 @@ func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		}
 	}
 
+	for i := range r.Schemas {
+		prefix = "dev_" + b.Config.Workspace.CurrentUser.ShortName + "_"
+		r.Schemas[i].Name = prefix + r.Schemas[i].Name
+		// HTTP API for schemas doesn't yet support tags. It's only supported in
+		// the Databricks UI and via the SQL API.
+	}
+
 	return nil
 }
 
