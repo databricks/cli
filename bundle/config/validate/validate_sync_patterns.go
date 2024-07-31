@@ -50,8 +50,11 @@ func checkPatterns(patterns []string, path string, rb bundle.ReadOnlyBundle) (di
 
 	for i, pattern := range patterns {
 		index := i
-		// If the pattern starts with !, remove it for the check below
-		p := strings.TrimPrefix(pattern, "!")
+		fullPattern := pattern
+		// If the pattern is negated, strip the negation prefix
+		// and check if the pattern matches any files.
+		// If it doesn't, it means that negation pattern is not matching any files.
+		p := strings.TrimPrefix(fullPattern, "!")
 		errs.Go(func() error {
 			fs, err := fileset.NewGlobSet(rb.BundleRoot(), []string{p})
 			if err != nil {
@@ -68,7 +71,7 @@ func checkPatterns(patterns []string, path string, rb bundle.ReadOnlyBundle) (di
 				mu.Lock()
 				diags = diags.Append(diag.Diagnostic{
 					Severity:  diag.Warning,
-					Summary:   fmt.Sprintf("Pattern %s does not match any files", p),
+					Summary:   fmt.Sprintf("Pattern %s does not match any files", fullPattern),
 					Locations: []dyn.Location{loc.Location()},
 					Paths:     []dyn.Path{loc.Path()},
 				})

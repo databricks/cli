@@ -197,12 +197,5 @@ func TestNegateExclude(t *testing.T) {
 	fileList, err := s.GetFileList(ctx)
 	require.NoError(t, err)
 	require.Equal(t, len(fileList), 1)
-	found := false
-	for _, f := range fileList {
-		if f.Relative == "test/sub1/sub2/h.txt" {
-			found = true
-			break
-		}
-	}
-	require.True(t, found)
+	require.Equal(t, fileList[0].Relative, "test/sub1/sub2/h.txt")
 }
