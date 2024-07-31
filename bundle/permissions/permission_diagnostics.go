@@ -109,7 +109,7 @@ func isGroupOfCurrentUser(b *bundle.Bundle, groupName string) bool {
 }
 
 func ReportPermissionDenied(ctx context.Context, b *bundle.Bundle, path string) diag.Diagnostics {
-	log.Errorf(ctx, "Failed to update %v", path)
+	log.Errorf(ctx, "Failed to update, encountated permission denied error: %v", path)
 
 	user := b.Config.Workspace.CurrentUser.DisplayName
 	canManageBundle, assistance := analyzeBundlePermissions(b)

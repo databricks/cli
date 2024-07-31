@@ -21,7 +21,7 @@ func TryExtendTerraformPermissionError(ctx context.Context, b *bundle.Bundle, er
 	if !strings.Contains(err.Error(), "cannot update permissions") &&
 		!strings.Contains(err.Error(), "permissions on pipeline") &&
 		!strings.Contains(err.Error(), "cannot read permissions") &&
-		!strings.Contains(err.Error(), "annot set run_as to user") {
+		!strings.Contains(err.Error(), "cannot set run_as to user") {
 		return nil
 	}
 
