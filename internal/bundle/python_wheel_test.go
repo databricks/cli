@@ -14,11 +14,13 @@ func runPythonWheelTest(t *testing.T, sparkVersion string, pythonWheelWrapper bo
 	ctx, _ := acc.WorkspaceTest(t)
 
 	nodeTypeId := internal.GetNodeTypeId(env.Get(ctx, "CLOUD_ENV"))
+	instancePoolId := env.Get(ctx, "TEST_INSTANCE_POOL_ID")
 	bundleRoot, err := initTestTemplate(t, ctx, "python_wheel_task", map[string]any{
 		"node_type_id":         nodeTypeId,
 		"unique_id":            uuid.New().String(),
 		"spark_version":        sparkVersion,
 		"python_wheel_wrapper": pythonWheelWrapper,
+		"instance_pool_id":     instancePoolId,
 	})
 	require.NoError(t, err)
 
