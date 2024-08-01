@@ -35,7 +35,7 @@ func isPythonWheelWrapperOn(b *bundle.Bundle) bool {
 }
 
 func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) bool {
-	tasks := libraries.FindAllWheelTasksWithLocalLibraries(b)
+	tasks := libraries.FindTasksWithLocalLibraries(b)
 	for _, task := range tasks {
 		if task.NewCluster != nil {
 			if lowerThanExpectedVersion(ctx, task.NewCluster.SparkVersion) {

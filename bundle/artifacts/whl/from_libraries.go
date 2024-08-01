@@ -27,7 +27,7 @@ func (*fromLibraries) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 		return nil
 	}
 
-	tasks := libraries.FindAllWheelTasksWithLocalLibraries(b)
+	tasks := libraries.FindTasksWithLocalLibraries(b)
 	for _, task := range tasks {
 		for _, lib := range task.Libraries {
 			matchAndAdd(ctx, lib.Whl, b)
