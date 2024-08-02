@@ -209,7 +209,7 @@ func TestGetValidArgsFunctionAddsSeparator(t *testing.T) {
 	completions, directive := validArgsFunction(cmd, []string{}, "foo")
 
 	separator := "/"
-	if runtime.GOOS != "windows" {
+	if runtime.GOOS == "windows" {
 		separator = "\\"
 	}
 
