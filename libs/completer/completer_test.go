@@ -32,9 +32,10 @@ func TestFilerCompleterReturnsNestedDirs(t *testing.T) {
 
 	completer := NewCompleter(ctx, mockFiler, true)
 
-	completions, directive := completer.CompleteRemotePath("/")
+	completions, dirPath, directive := completer.CompletePath("/")
 
-	assert.Equal(t, []string{"/dir"}, completions)
+	assert.Equal(t, []string{"dir"}, completions)
+	assert.Equal(t, "/", dirPath)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 }
 
@@ -50,9 +51,10 @@ func TestFilerCompleterReturnsAdjacentDirs(t *testing.T) {
 	}, nil)
 
 	completer := NewCompleter(ctx, mockFiler, true)
-	completions, directive := completer.CompleteRemotePath("/wrong_path")
+	completions, dirPath, directive := completer.CompletePath("/wrong_path")
 
-	assert.Equal(t, []string{"/adjacent"}, completions)
+	assert.Equal(t, []string{"adjacent"}, completions)
+	assert.Equal(t, "/", dirPath)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 
 	mockFiler.AssertExpectations(t)
@@ -65,9 +67,10 @@ func TestFilerCompleterReadDirError(t *testing.T) {
 	mockFiler.On("ReadDir", mock.AnythingOfType("*context.valueCtx"), mock.Anything).Return(nil, errors.New("error"))
 
 	completer := NewCompleter(ctx, mockFiler, true)
-	completions, directive := completer.CompleteRemotePath("/dir")
+	completions, dirPath, directive := completer.CompletePath("/dir")
 
 	assert.Nil(t, completions)
+	assert.Equal(t, "/", dirPath)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 
 	mockFiler.AssertExpectations(t)
@@ -85,9 +88,10 @@ func TestFilerCompleterReturnsFileAndDir(t *testing.T) {
 	// onlyDirs=false so we should get both files and directories
 	completer := NewCompleter(ctx, mockFiler, false)
 
-	completions, directive := completer.CompleteRemotePath("/")
+	completions, dirPath, directive := completer.CompletePath("/")
 
-	assert.Equal(t, []string{"/dir", "/file"}, completions)
+	assert.Equal(t, []string{"dir", "file"}, completions)
+	assert.Equal(t, "/", dirPath)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 }
 
@@ -101,24 +105,9 @@ func TestFilerCompleterRetainsFormatting(t *testing.T) {
 
 	completer := NewCompleter(ctx, mockFiler, true)
 
-	completions, directive := completer.CompleteRemotePath("//dir//")
+	completions, dirPath, directive := completer.CompletePath("//dir//")
 
-	assert.Equal(t, []string{"//dir//nested_dir"}, completions)
-	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
-}
-
-func TestFilerCompleterAddsSeparator(t *testing.T) {
-	ctx := setup(t)
-
-	mockFilerForPath := testutil.GetMockFilerForPath(t, "/dir", []fs.DirEntry{
-		testutil.NewFakeDirEntry("nested_dir", true),
-	})
-	mockFiler, _, _ := mockFilerForPath(ctx, "dbfs:/dir")
-
-	completer := NewCompleter(ctx, mockFiler, true)
-
-	completions, directive := completer.CompleteRemotePath("/dir")
-
-	assert.Equal(t, []string{"/dir/nested_dir"}, completions)
+	assert.Equal(t, []string{"nested_dir"}, completions)
+	assert.Equal(t, "//dir//", dirPath)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 }

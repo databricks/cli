@@ -89,23 +89,24 @@ func getValidArgsFunction(
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
 
-		completions, directive := completer.CompleteRemotePath(path)
+		completions, dirPath, directive := completer.CompletePath(path)
 
-		for i, completion := range completions {
+		for i := range completions {
+			completions[i] = prependDirPath(dirPath, completions[i], !isDbfsPath)
+
 			if isDbfsPath {
 				// The completions will start with a "/", so we'll prefix them with the
 				// selectedPrefix without a trailing "/"
 				prefix := dbfsPrefix[:len(dbfsPrefix)-1]
-				completions[i] = fmt.Sprintf("%s%s", prefix, completion)
+				completions[i] = fmt.Sprintf("%s%s", prefix, completions[i])
 			} else {
-				completions[i] = handleLocalPrefix(toComplete, completion)
+				completions[i] = handleLocalPrefix(toComplete, completions[i])
 			}
 		}
 
 		// If the path is a dbfs path, we try to add the dbfs:/Volumes prefix suggestion
 		if isDbfsPath && strings.HasPrefix(volumesPefix, toComplete) {
 			completions = append(completions, volumesPefix)
-
 		}
 
 		// If the path is local, we try to add the dbfs:/ prefix suggestion
@@ -115,6 +116,26 @@ func getValidArgsFunction(
 
 		return completions, directive
 	}
+}
+
+// Prepend directory path to completion name:
+// - Don't add a separator if the directory path is empty
+// - Don't add a separator if the dir path already end with a separator
+// - Use \ as separator for local Windows paths
+// Note that we don't use path utilities to concatenate the path and name
+// because we want to preserve the formatting of whatever path the user has
+// typed (e.g. //a/b///c)
+func prependDirPath(dirPath string, completion string, isLocalPath bool) string {
+	pathSeparator := "/"
+	if isLocalPath && runtime.GOOS == "windows" {
+		pathSeparator = "\\"
+	}
+
+	separator := ""
+	if len(dirPath) > 0 && !strings.HasSuffix(dirPath, pathSeparator) {
+		separator = pathSeparator
+	}
+	return fmt.Sprintf("%s%s%s", dirPath, separator, completion)
 }
 
 // Drop the local prefix from completions if the path to complete doesn't

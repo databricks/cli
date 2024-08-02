@@ -2,10 +2,7 @@ package completer
 
 import (
 	"context"
-	"fmt"
 	"path"
-	"runtime"
-	"strings"
 
 	"github.com/databricks/cli/libs/filer"
 	"github.com/spf13/cobra"
@@ -22,55 +19,40 @@ func NewCompleter(ctx context.Context, filer filer.Filer, onlyDirs bool) *comple
 	return &completer{ctx: ctx, filer: filer, onlyDirs: onlyDirs}
 }
 
-func (c *completer) CompleteRemotePath(remotePath string) ([]string, cobra.ShellCompDirective) {
+func (c *completer) CompletePath(p string) ([]string, string, cobra.ShellCompDirective) {
 	// If the user is TAB-ing their way through a path, the path in `toComplete`
 	// is valid and we should list nested directories.
 	// If the path in `toComplete` is incomplete, however,
 	// then we should list adjacent directories.
-	nested := fetchCompletions(c, remotePath)
+	dirPath := p
+	nested := fetchCompletions(c, dirPath)
 	completions := <-nested
-
 	if completions == nil {
-		adjacent := fetchCompletions(c, path.Dir(remotePath))
+		dirPath = path.Dir(p)
+		adjacent := fetchCompletions(c, dirPath)
 		completions = <-adjacent
 	}
 
-	return completions, cobra.ShellCompDirectiveNoSpace
+	return completions, dirPath, cobra.ShellCompDirectiveNoSpace
 }
 
 func fetchCompletions(
 	c *completer,
-	remotePath string,
+	path string,
 ) <-chan []string {
 	ch := make(chan []string, 1)
 	go func() {
 		defer close(ch)
 
-		entries, err := c.filer.ReadDir(c.ctx, remotePath)
+		entries, err := c.filer.ReadDir(c.ctx, path)
 		if err != nil {
 			return
-		}
-
-		pathSeparator := "/"
-
-		if runtime.GOOS == "windows" {
-			pathSeparator = "\\"
 		}
 
 		completions := []string{}
 		for _, entry := range entries {
 			if !c.onlyDirs || entry.IsDir() {
-				separator := ""
-
-				// Ensure the path and name have a "/" separating them. We don't use path
-				// utilities to concatenate the path and name because we want to preserve
-				// the formatting of whatever path the user has typed (e.g. //a/b///c)
-				if len(remotePath) > 0 && !strings.HasSuffix(remotePath, pathSeparator) {
-					separator = pathSeparator
-				}
-
-				completion := fmt.Sprintf("%s%s%s", remotePath, separator, entry.Name())
-				completions = append(completions, completion)
+				completions = append(completions, entry.Name())
 			}
 		}
 
