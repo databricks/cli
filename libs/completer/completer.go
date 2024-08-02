@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"runtime"
 	"strings"
 
 	"github.com/databricks/cli/libs/filer"
@@ -50,6 +51,12 @@ func fetchCompletions(
 			return
 		}
 
+		pathSeparator := "/"
+
+		if runtime.GOOS == "windows" {
+			pathSeparator = "\\"
+		}
+
 		completions := []string{}
 		for _, entry := range entries {
 			if !c.onlyDirs || entry.IsDir() {
@@ -58,8 +65,8 @@ func fetchCompletions(
 				// Ensure the path and name have a "/" separating them. We don't use path
 				// utilities to concatenate the path and name because we want to preserve
 				// the formatting of whatever path the user has typed (e.g. //a/b///c)
-				if len(remotePath) > 0 && !strings.HasSuffix(remotePath, "/") {
-					separator = "/"
+				if len(remotePath) > 0 && !strings.HasSuffix(remotePath, pathSeparator) {
+					separator = pathSeparator
 				}
 
 				completion := fmt.Sprintf("%s%s%s", remotePath, separator, entry.Name())

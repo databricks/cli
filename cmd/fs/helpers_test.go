@@ -176,6 +176,24 @@ func TestGetValidArgsFunctionAbsoluteLocalPath(t *testing.T) {
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 }
 
+func TestGetValidArgsFunctionLocalWindowsPath(t *testing.T) {
+	m, cmd := setupValidArgsFunctionTest(t)
+
+	mockCurrentUserApi(m, nil, nil)
+
+	mockFilerForPath := testutil.GetMockFilerForPath(t, "", []fs.DirEntry{
+		testutil.NewFakeDirEntry(".\\dFile1", false),
+		testutil.NewFakeDirEntry(".\\dFile2", false),
+	})
+
+	validArgsFunction := getValidArgsFunction(1, false, mockFilerForPath, mockMustWorkspaceClientFunc)
+	completions, directive := validArgsFunction(cmd, []string{}, "d")
+
+	// Suggest both dbfs and local paths at beginning of completion
+	assert.Equal(t, []string{"dFile1", "dFile2", "dbfs:/"}, completions)
+	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
+}
+
 func TestGetValidArgsFunctionNoCurrentUser(t *testing.T) {
 	m, cmd := setupValidArgsFunctionTest(t)
 

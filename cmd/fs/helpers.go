@@ -50,7 +50,6 @@ func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, er
 
 const dbfsPrefix string = "dbfs:/"
 const volumesPefix string = "dbfs:/Volumes"
-const localPefix string = "./"
 
 func isDbfsPath(path string) bool {
 	return strings.HasPrefix(path, dbfsPrefix)
@@ -98,11 +97,8 @@ func getValidArgsFunction(
 				// selectedPrefix without a trailing "/"
 				prefix := dbfsPrefix[:len(dbfsPrefix)-1]
 				completions[i] = fmt.Sprintf("%s%s", prefix, completion)
-			} else if shouldDropLocalPrefix(toComplete, completion) {
-
-				completions[i] = completion[len(localPefix):]
 			} else {
-				completions[i] = completion
+				completions[i] = handleLocalPrefix(toComplete, completion)
 			}
 		}
 
@@ -123,7 +119,18 @@ func getValidArgsFunction(
 
 // Drop the local prefix from completions if the path to complete doesn't
 // start with it. We do this because the local filer returns paths in the
-// current folder with the local prefix (./).
-func shouldDropLocalPrefix(toComplete string, completion string) bool {
-	return !strings.HasPrefix(toComplete, localPefix) && strings.HasPrefix(completion, localPefix)
+// current folder with the local prefix (./ (and .\ on windows))
+func handleLocalPrefix(toComplete string, completion string) string {
+	shouldDrop := shouldDropLocalPrefix(toComplete, completion, "./") ||
+		shouldDropLocalPrefix(toComplete, completion, ".\\")
+
+	if shouldDrop {
+		return completion[2:]
+	}
+
+	return completion
+}
+
+func shouldDropLocalPrefix(toComplete string, completion string, localPrefix string) bool {
+	return !strings.HasPrefix(toComplete, localPrefix) && strings.HasPrefix(completion, localPrefix)
 }
