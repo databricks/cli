@@ -3,6 +3,7 @@ package fs
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/fs"
 	"runtime"
 	"testing"
@@ -207,7 +208,12 @@ func TestGetValidArgsFunctionAddsSeparator(t *testing.T) {
 
 	completions, directive := validArgsFunction(cmd, []string{}, "foo")
 
-	assert.Equal(t, []string{"foo/nested_dir"}, completions)
+	separator := "/"
+	if runtime.GOOS != "windows" {
+		separator = "\\"
+	}
+
+	assert.Equal(t, []string{fmt.Sprintf("%s%s%s", "foo", separator, "nested_dir")}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 }
 
