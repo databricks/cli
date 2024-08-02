@@ -232,6 +232,27 @@ func TestGetValidArgsFunctionAddsWindowsSeparator(t *testing.T) {
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 }
 
+func TestGetValidArgsFunctionAddsDefaultSeparatorOnWindows(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.SkipNow()
+	}
+
+	m, cmd := setupValidArgsFunctionTest(t)
+
+	mockCurrentUserApi(m, nil, nil)
+
+	mockFilerForPath := testutil.GetMockFilerForPath(t, "foo/", []fs.DirEntry{
+		testutil.NewFakeDirEntry("nested_dir", true),
+	})
+
+	validArgsFunction := getValidArgsFunction(1, true, mockFilerForPath, mockMustWorkspaceClientFunc)
+
+	completions, directive := validArgsFunction(cmd, []string{}, "foo/")
+
+	assert.Equal(t, []string{"foo/nested_dir"}, completions)
+	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
+}
+
 func TestGetValidArgsFunctionNoCurrentUser(t *testing.T) {
 	m, cmd := setupValidArgsFunctionTest(t)
 
