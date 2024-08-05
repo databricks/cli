@@ -28,7 +28,9 @@ func newMkdirCommand() *cobra.Command {
 		return f.Mkdir(ctx, path)
 	}
 
-	cmd.ValidArgsFunction = getValidArgsFunction(1, true, filerForPath, root.MustWorkspaceClient)
+	v := NewValidArgs()
+	v.onlyDirs = true
+	cmd.ValidArgsFunction = v.Validate
 
 	return cmd
 }

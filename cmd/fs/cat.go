@@ -30,7 +30,8 @@ func newCatCommand() *cobra.Command {
 		return cmdio.Render(ctx, r)
 	}
 
-	cmd.ValidArgsFunction = getValidArgsFunction(1, false, filerForPath, root.MustWorkspaceClient)
+	v := NewValidArgs()
+	cmd.ValidArgsFunction = v.Validate
 
 	return cmd
 }

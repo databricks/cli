@@ -200,8 +200,10 @@ func newCpCommand() *cobra.Command {
 		return c.cpFileToFile(sourcePath, targetPath)
 	}
 
+	v := NewValidArgs()
 	// The copy command has two paths that can be completed (SOURCE_PATH & TARGET_PATH)
-	cmd.ValidArgsFunction = getValidArgsFunction(2, false, filerForPath, root.MustWorkspaceClient)
+	v.pathArgCount = 2
+	cmd.ValidArgsFunction = v.Validate
 
 	return cmd
 }

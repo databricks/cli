@@ -57,64 +57,73 @@ func isDbfsPath(path string) bool {
 	return strings.HasPrefix(path, dbfsPrefix)
 }
 
-func getValidArgsFunction(
-	pathArgCount int,
-	onlyDirs bool,
-	filerForPathFunc func(ctx context.Context, fullPath string) (filer.Filer, string, error),
-	mustWorkspaceClientFunc func(cmd *cobra.Command, args []string) error,
-) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	return func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		cmd.SetContext(root.SkipPrompt(cmd.Context()))
+type ValidArgs struct {
+	mustWorkspaceClientFunc func(cmd *cobra.Command, args []string) error
+	filerForPathFunc        func(ctx context.Context, fullPath string) (filer.Filer, string, error)
+	pathArgCount            int
+	onlyDirs                bool
+}
 
-		err := mustWorkspaceClientFunc(cmd, args)
-
-		if err != nil {
-			return nil, cobra.ShellCompDirectiveError
-		}
-
-		filer, toCompletePath, err := filerForPathFunc(cmd.Context(), toComplete)
-		if err != nil {
-			return nil, cobra.ShellCompDirectiveError
-		}
-
-		wsc := root.WorkspaceClient(cmd.Context())
-		_, err = wsc.CurrentUser.Me(cmd.Context())
-		if err != nil {
-			return nil, cobra.ShellCompDirectiveError
-		}
-
-		completer := completer.New(cmd.Context(), filer, onlyDirs)
-
-		if len(args) >= pathArgCount {
-			return nil, cobra.ShellCompDirectiveNoFileComp
-		}
-
-		completions, dirPath, directive := completer.CompletePath(toCompletePath)
-
-		isDbfsPath := isDbfsPath(toComplete)
-
-		for i := range completions {
-			completions[i] = filepath.Join(dirPath, completions[i])
-
-			if isDbfsPath {
-				// Add dbfs:/ prefix to completions
-				completions[i] = path.Join(dbfsPrefix, completions[i])
-			} else {
-				// Clean up ./ (and .\ on Windows) from local completions
-				completions[i] = filepath.Clean(completions[i])
-			}
-		}
-
-		// If the path is a dbfs path, we try to add the dbfs:/Volumes prefix suggestion
-		if isDbfsPath && strings.HasPrefix(volumesPefix, toComplete) {
-			completions = append(completions, volumesPefix)
-		}
-
-		// If the path is local, we try to add the dbfs:/ prefix suggestion
-		if !isDbfsPath && strings.HasPrefix(dbfsPrefix, toComplete) {
-			completions = append(completions, dbfsPrefix)
-		}
-
-		return completions, directive
+func NewValidArgs() *ValidArgs {
+	return &ValidArgs{
+		mustWorkspaceClientFunc: root.MustWorkspaceClient,
+		filerForPathFunc:        filerForPath,
+		pathArgCount:            1,
+		onlyDirs:                false,
 	}
+}
+
+func (v *ValidArgs) Validate(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	cmd.SetContext(root.SkipPrompt(cmd.Context()))
+
+	err := v.mustWorkspaceClientFunc(cmd, args)
+
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveError
+	}
+
+	filer, toCompletePath, err := v.filerForPathFunc(cmd.Context(), toComplete)
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveError
+	}
+
+	wsc := root.WorkspaceClient(cmd.Context())
+	_, err = wsc.CurrentUser.Me(cmd.Context())
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveError
+	}
+
+	completer := completer.New(cmd.Context(), filer, v.onlyDirs)
+
+	if len(args) >= v.pathArgCount {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	completions, dirPath, directive := completer.CompletePath(toCompletePath)
+
+	isDbfsPath := isDbfsPath(toComplete)
+
+	for i := range completions {
+		completions[i] = filepath.Join(dirPath, completions[i])
+
+		if isDbfsPath {
+			// Add dbfs:/ prefix to completions
+			completions[i] = path.Join(dbfsPrefix, completions[i])
+		} else {
+			// Clean up ./ (and .\ on Windows) from local completions
+			completions[i] = filepath.Clean(completions[i])
+		}
+	}
+
+	// If the path is a dbfs path, we try to add the dbfs:/Volumes prefix suggestion
+	if isDbfsPath && strings.HasPrefix(volumesPefix, toComplete) {
+		completions = append(completions, volumesPefix)
+	}
+
+	// If the path is local, we try to add the dbfs:/ prefix suggestion
+	if !isDbfsPath && strings.HasPrefix(dbfsPrefix, toComplete) {
+		completions = append(completions, dbfsPrefix)
+	}
+
+	return completions, directive
 }
