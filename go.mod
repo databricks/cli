@@ -22,7 +22,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // BSD-3-Clause
 	github.com/stretchr/testify v1.9.0 // MIT
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225
-	golang.org/x/mod v0.19.0
+	golang.org/x/mod v0.20.0
 	golang.org/x/oauth2 v0.21.0
 	golang.org/x/sync v0.7.0
 	golang.org/x/term v0.22.0
