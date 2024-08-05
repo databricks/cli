@@ -25,12 +25,10 @@ func (c *completer) CompletePath(p string) ([]string, string, cobra.ShellCompDir
 	// If the path in `toComplete` is incomplete, however,
 	// then we should list adjacent directories.
 	dirPath := p
-	nested := fetchCompletions(c, dirPath)
-	completions := <-nested
+	completions := fetchCompletions(c, dirPath)
 	if completions == nil {
 		dirPath = path.Dir(p)
-		adjacent := fetchCompletions(c, dirPath)
-		completions = <-adjacent
+		completions = fetchCompletions(c, dirPath)
 	}
 
 	return completions, dirPath, cobra.ShellCompDirectiveNoSpace
@@ -41,27 +39,20 @@ func (c *completer) CompletePath(p string) ([]string, string, cobra.ShellCompDir
 func fetchCompletions(
 	c *completer,
 	path string,
-) <-chan []string {
-	ch := make(chan []string, 1)
-	go func() {
-		defer close(ch)
+) []string {
+	entries, err := c.filer.ReadDir(c.ctx, path)
+	if err != nil {
+		return nil
+	}
 
-		entries, err := c.filer.ReadDir(c.ctx, path)
-		if err != nil {
-			return
+	completions := []string{}
+	for _, entry := range entries {
+		if c.onlyDirs && !entry.IsDir() {
+			continue
 		}
 
-		completions := []string{}
-		for _, entry := range entries {
-			if c.onlyDirs && !entry.IsDir() {
-				continue
-			}
+		completions = append(completions, entry.Name())
+	}
 
-			completions = append(completions, entry.Name())
-		}
-
-		ch <- completions
-	}()
-
-	return ch
+	return completions
 }
