@@ -29,6 +29,11 @@ func (*fromLibraries) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 
 	tasks := libraries.FindTasksWithLocalLibraries(b)
 	for _, task := range tasks {
+		// Skip tasks that are not PythonWheelTasks for now, we can later support Jars too
+		if task.PythonWheelTask == nil {
+			continue
+		}
+
 		for _, lib := range task.Libraries {
 			matchAndAdd(ctx, lib.Whl, b)
 		}

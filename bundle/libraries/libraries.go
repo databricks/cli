@@ -48,21 +48,21 @@ func FindTasksWithLocalLibraries(b *bundle.Bundle) []*jobs.Task {
 	tasks := findAllTasks(b)
 	envs := FindAllEnvironments(b)
 
-	wheelTasks := make([]*jobs.Task, 0)
+	allTasks := make([]*jobs.Task, 0)
 	for k, jobTasks := range tasks {
 		for i := range jobTasks {
 			task := &jobTasks[i]
 			if isTaskWithLocalLibraries(*task) {
-				wheelTasks = append(wheelTasks, task)
+				allTasks = append(allTasks, task)
 			}
 
 			if envs[k] != nil && isEnvsWithLocalLibraries(envs[k]) {
-				wheelTasks = append(wheelTasks, task)
+				allTasks = append(allTasks, task)
 			}
 		}
 	}
 
-	return wheelTasks
+	return allTasks
 }
 
 func isTaskWithLocalLibraries(task jobs.Task) bool {
