@@ -9,12 +9,16 @@ import (
 )
 
 type completer struct {
-	ctx      context.Context
-	filer    filer.Filer
+	ctx context.Context
+
+	// The filer to use for completing remote or local paths.
+	filer filer.Filer
+
+	// CompletePath will only return directories when onlyDirs is true.
 	onlyDirs bool
 }
 
-// General completer that takes a Filer to complete remote paths when TAB-ing through a path.
+// General completer that takes a filer to complete remote paths when TAB-ing through a path.
 func New(ctx context.Context, filer filer.Filer, onlyDirs bool) *completer {
 	return &completer{ctx: ctx, filer: filer, onlyDirs: onlyDirs}
 }
