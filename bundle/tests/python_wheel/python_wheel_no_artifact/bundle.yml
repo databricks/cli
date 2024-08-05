@@ -8,7 +8,8 @@ resources:
       tasks:
         - task_key: TestTask
           existing_cluster_id: "0717-aaaaa-bbbbbb"
-          notebook_task:
-            notebook_path: "/notebook.py"
+          python_wheel_task:
+            package_name: "my_test_code"
+            entry_point: "run"
           libraries:
           - whl: ./dist/*.whl
