@@ -178,6 +178,10 @@ func TestGetValidArgsFunctionAbsoluteLocalPath(t *testing.T) {
 }
 
 func TestGetValidArgsFunctionLocalWindowsPath(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.SkipNow()
+	}
+
 	m, cmd := setupValidArgsFunctionTest(t)
 
 	mockCurrentUserApi(m, nil, nil)

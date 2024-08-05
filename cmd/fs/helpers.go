@@ -3,6 +3,8 @@ package fs
 import (
 	"context"
 	"fmt"
+	"path"
+	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -70,7 +72,7 @@ func getValidArgsFunction(
 			return nil, cobra.ShellCompDirectiveError
 		}
 
-		filer, path, err := filerForPathFunc(cmd.Context(), toComplete)
+		filer, toCompletePath, err := filerForPathFunc(cmd.Context(), toComplete)
 		if err != nil {
 			return nil, cobra.ShellCompDirectiveError
 		}
@@ -87,20 +89,19 @@ func getValidArgsFunction(
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
 
-		completions, dirPath, directive := completer.CompletePath(path)
+		completions, dirPath, directive := completer.CompletePath(toCompletePath)
 
 		isDbfsPath := isDbfsPath(toComplete)
 
 		for i := range completions {
-			completions[i] = prependDirPath(dirPath, completions[i], !isDbfsPath)
+			completions[i] = filepath.Join(dirPath, completions[i])
 
 			if isDbfsPath {
-				// The dirPath will start with a "/", so we'll prefix the completions with
-				// the selectedPrefix without a trailing "/"
-				prefix := dbfsPrefix[:len(dbfsPrefix)-1]
-				completions[i] = fmt.Sprintf("%s%s", prefix, completions[i])
+				// Add dbfs:/ prefix to completions
+				completions[i] = path.Join(dbfsPrefix, completions[i])
 			} else {
-				completions[i] = handleLocalPrefix(toComplete, completions[i])
+				// Clean up ./ (and .\ on Windows) from local completions
+				completions[i] = filepath.Clean(completions[i])
 			}
 		}
 
@@ -116,48 +117,4 @@ func getValidArgsFunction(
 
 		return completions, directive
 	}
-}
-
-// Prepend directory path to completion name:
-// - Don't add a separator if the directory path is empty
-// - Don't add a separator if the dir path already ends with a separator
-// - Support \ as separator for local Windows paths
-// Note that we don't use path utilities to concatenate the path and name
-// because we want to preserve the formatting of whatever path the user has
-// typed (e.g. //a/b///c)
-func prependDirPath(dirPath string, completion string, isLocalPath bool) string {
-	defaultSeparator := "/"
-	windowsSeparator := "\\"
-
-	isLocalWindowsPath := isLocalPath && runtime.GOOS == "windows"
-
-	separator := ""
-	if isLocalWindowsPath && len(dirPath) > 0 &&
-		!strings.HasSuffix(dirPath, defaultSeparator) &&
-		!strings.HasSuffix(dirPath, windowsSeparator) {
-		separator = windowsSeparator
-	} else if !isLocalWindowsPath && len(dirPath) > 0 &&
-		!strings.HasSuffix(dirPath, defaultSeparator) {
-		separator = defaultSeparator
-	}
-
-	return fmt.Sprintf("%s%s%s", dirPath, separator, completion)
-}
-
-// Drop the local prefix from completions if the path to complete doesn't
-// start with it. We do this because the local filer returns paths in the
-// current folder with the local prefix (./ (and .\ on windows))
-func handleLocalPrefix(toComplete string, completion string) string {
-	shouldDrop := shouldDropLocalPrefix(toComplete, completion, "./") ||
-		shouldDropLocalPrefix(toComplete, completion, ".\\")
-
-	if shouldDrop {
-		return completion[2:]
-	}
-
-	return completion
-}
-
-func shouldDropLocalPrefix(toComplete string, completion string, localPrefix string) bool {
-	return !strings.HasPrefix(toComplete, localPrefix) && strings.HasPrefix(completion, localPrefix)
 }
