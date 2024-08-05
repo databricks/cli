@@ -44,21 +44,21 @@ func isEnvsWithLocalLibraries(envs []jobs.JobEnvironment) bool {
 	return false
 }
 
-func FindTasksWithLocalLibraries(b *bundle.Bundle) []*jobs.Task {
+func FindTasksWithLocalLibraries(b *bundle.Bundle) []jobs.Task {
 	tasks := findAllTasks(b)
 	envs := FindAllEnvironments(b)
 
-	allTasks := make([]*jobs.Task, 0)
+	allTasks := make([]jobs.Task, 0)
 	for k, jobTasks := range tasks {
 		for i := range jobTasks {
-			task := &jobTasks[i]
-			if isTaskWithLocalLibraries(*task) {
+			task := jobTasks[i]
+			if isTaskWithLocalLibraries(task) {
 				allTasks = append(allTasks, task)
 			}
+		}
 
-			if envs[k] != nil && isEnvsWithLocalLibraries(envs[k]) {
-				allTasks = append(allTasks, task)
-			}
+		if envs[k] != nil && isEnvsWithLocalLibraries(envs[k]) {
+			allTasks = append(allTasks, jobTasks...)
 		}
 	}
 
