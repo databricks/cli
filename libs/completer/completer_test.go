@@ -30,7 +30,7 @@ func TestFilerCompleterReturnsNestedDirs(t *testing.T) {
 	})
 	mockFiler, _, _ := mockFilerForPath(ctx, "dbfs:/")
 
-	completer := NewCompleter(ctx, mockFiler, true)
+	completer := New(ctx, mockFiler, true)
 
 	completions, dirPath, directive := completer.CompletePath("/")
 
@@ -50,7 +50,7 @@ func TestFilerCompleterReturnsAdjacentDirs(t *testing.T) {
 		testutil.NewFakeDirEntry("adjacent", true),
 	}, nil)
 
-	completer := NewCompleter(ctx, mockFiler, true)
+	completer := New(ctx, mockFiler, true)
 	completions, dirPath, directive := completer.CompletePath("/wrong_path")
 
 	assert.Equal(t, []string{"adjacent"}, completions)
@@ -66,7 +66,7 @@ func TestFilerCompleterReadDirError(t *testing.T) {
 	mockFiler := mockfiler.NewMockFiler(t)
 	mockFiler.On("ReadDir", mock.AnythingOfType("*context.valueCtx"), mock.Anything).Return(nil, errors.New("error"))
 
-	completer := NewCompleter(ctx, mockFiler, true)
+	completer := New(ctx, mockFiler, true)
 	completions, dirPath, directive := completer.CompletePath("/dir")
 
 	assert.Nil(t, completions)
@@ -86,7 +86,7 @@ func TestFilerCompleterReturnsFileAndDir(t *testing.T) {
 	mockFiler, _, _ := mockFilerForPath(ctx, "dbfs:/")
 
 	// onlyDirs=false so we should get both files and directories
-	completer := NewCompleter(ctx, mockFiler, false)
+	completer := New(ctx, mockFiler, false)
 
 	completions, dirPath, directive := completer.CompletePath("/")
 
@@ -103,7 +103,7 @@ func TestFilerCompleterRetainsFormatting(t *testing.T) {
 	})
 	mockFiler, _, _ := mockFilerForPath(ctx, "dbfs://dir")
 
-	completer := NewCompleter(ctx, mockFiler, true)
+	completer := New(ctx, mockFiler, true)
 
 	completions, dirPath, directive := completer.CompletePath("//dir//")
 

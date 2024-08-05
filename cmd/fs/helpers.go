@@ -75,21 +75,21 @@ func getValidArgsFunction(
 			return nil, cobra.ShellCompDirectiveError
 		}
 
-		isDbfsPath := isDbfsPath(toComplete)
-
 		wsc := root.WorkspaceClient(cmd.Context())
 		_, err = wsc.CurrentUser.Me(cmd.Context())
 		if err != nil {
 			return nil, cobra.ShellCompDirectiveError
 		}
 
-		completer := completer.NewCompleter(cmd.Context(), filer, onlyDirs)
+		completer := completer.New(cmd.Context(), filer, onlyDirs)
 
 		if len(args) >= pathArgCount {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
 
 		completions, dirPath, directive := completer.CompletePath(path)
+
+		isDbfsPath := isDbfsPath(toComplete)
 
 		for i := range completions {
 			completions[i] = prependDirPath(dirPath, completions[i], !isDbfsPath)

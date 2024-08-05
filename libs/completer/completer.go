@@ -15,7 +15,7 @@ type completer struct {
 }
 
 // General completer that takes a Filer to complete remote paths when TAB-ing through a path.
-func NewCompleter(ctx context.Context, filer filer.Filer, onlyDirs bool) *completer {
+func New(ctx context.Context, filer filer.Filer, onlyDirs bool) *completer {
 	return &completer{ctx: ctx, filer: filer, onlyDirs: onlyDirs}
 }
 
@@ -36,6 +36,8 @@ func (c *completer) CompletePath(p string) ([]string, string, cobra.ShellCompDir
 	return completions, dirPath, cobra.ShellCompDirectiveNoSpace
 }
 
+// List files and directories under the specified path.
+// Returns a channel such that we can list multiple paths in parallel.
 func fetchCompletions(
 	c *completer,
 	path string,
@@ -51,9 +53,11 @@ func fetchCompletions(
 
 		completions := []string{}
 		for _, entry := range entries {
-			if !c.onlyDirs || entry.IsDir() {
-				completions = append(completions, entry.Name())
+			if c.onlyDirs && !entry.IsDir() {
+				continue
 			}
+
+			completions = append(completions, entry.Name())
 		}
 
 		ch <- completions
