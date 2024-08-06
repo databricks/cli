@@ -32,6 +32,11 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		return diag.Errorf("artifact doesn't exist: %s", m.name)
 	}
 
+	// If there is no build command for the artifact, we don't need to cleanup the dist folder before
+	if artifact.BuildCommand == "" {
+		return nil
+	}
+
 	dir := artifact.Path
 
 	distPath := filepath.Join(dir, "dist")

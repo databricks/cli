@@ -130,3 +130,16 @@ func TestPythonWheelBuildMultiple(t *testing.T) {
 	diags = bundle.Apply(ctx, b, match)
 	require.NoError(t, diags.Error())
 }
+
+func TestPythonWheelNoBuild(t *testing.T) {
+	ctx := context.Background()
+	b, err := bundle.Load(ctx, "./python_wheel/python_wheel_no_build")
+	require.NoError(t, err)
+
+	diags := bundle.Apply(ctx, b, bundle.Seq(phases.Load(), phases.Build()))
+	require.NoError(t, diags.Error())
+
+	match := libraries.ValidateLocalLibrariesExist()
+	diags = bundle.Apply(ctx, b, match)
+	require.NoError(t, diags.Error())
+}
