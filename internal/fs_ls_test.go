@@ -124,10 +124,8 @@ func TestAccFsLsOnFile(t *testing.T) {
 
 func TestAccFsLsOnEmptyDir(t *testing.T) {
 	t.Parallel()
-
 	for _, testCase := range fsTests {
 		tc := testCase
-
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 

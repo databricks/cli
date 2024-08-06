@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -11,26 +12,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func setupCompletionFiles(t *testing.T, f filer.Filer) {
-	err := f.Write(context.Background(), "a/hello.txt", strings.NewReader("abc"), filer.CreateParentDirectories)
-	require.NoError(t, err)
-	err = f.Write(context.Background(), "bye.txt", strings.NewReader("def"))
+func setupCompletionFile(t *testing.T, f filer.Filer) {
+	err := f.Write(context.Background(), "dir1/file1.txt", strings.NewReader("abc"), filer.CreateParentDirectories)
 	require.NoError(t, err)
 }
 
 func TestAccFsCompletion(t *testing.T) {
-	t.Parallel()
-
 	f, tmpDir := setupDbfsFiler(t)
-	setupCompletionFiles(t, f)
+	setupCompletionFile(t, f)
 
-	stdout, stderr := RequireSuccessfulRun(t, "__complete", "fs", "cat", tmpDir, "--output=json")
-	assert.Equal(t, "", stderr.String())
-
-	// var parsedStdout []map[string]any
-	// err := json.Unmarshal(stdout.Bytes(), &parsedStdout)
-	// require.NoError(t, err)
-
-	// assert.Len(t, parsedStdout, 2)
-	assert.Equal(t, "a", stdout)
+	stdout, _ := RequireSuccessfulRun(t, "__complete", "fs", "ls", tmpDir)
+	expectedOutput := fmt.Sprintf("%s/dir1\n:2\n", tmpDir)
+	assert.Equal(t, expectedOutput, stdout.String())
 }

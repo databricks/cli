@@ -36,10 +36,10 @@ func TestFsDirImplementsFsReadDirFile(t *testing.T) {
 
 func fakeFS() fs.FS {
 	fakeFiler := NewFakeFiler(map[string]FakeFileInfo{
-		".":     {name: "root", dir: true},
-		"dirA":  {dir: true},
-		"dirB":  {dir: true},
-		"fileA": {size: 3},
+		".":     {FakeName: "root", FakeDir: true},
+		"dirA":  {FakeDir: true},
+		"dirB":  {FakeDir: true},
+		"fileA": {FakeSize: 3},
 	})
 
 	return NewFS(context.Background(), fakeFiler)
