@@ -87,19 +87,17 @@ func (v *validArgs) Validate(cmd *cobra.Command, args []string, toComplete strin
 		return nil, cobra.ShellCompDirectiveError
 	}
 
-	wsc := root.WorkspaceClient(cmd.Context())
-	_, err = wsc.CurrentUser.Me(cmd.Context())
-	if err != nil {
-		return nil, cobra.ShellCompDirectiveError
-	}
-
 	completer := completer.New(cmd.Context(), filer, v.onlyDirs)
 
 	if len(args) >= v.pathArgCount {
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
 
-	completions, dirPath, directive := completer.CompletePath(toCompletePath)
+	completions, dirPath, directive, err := completer.CompletePath(toCompletePath)
+
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveError
+	}
 
 	isDbfsPath := isDbfsPath(toComplete)
 
@@ -109,9 +107,6 @@ func (v *validArgs) Validate(cmd *cobra.Command, args []string, toComplete strin
 		if isDbfsPath {
 			// Add dbfs:/ prefix to completions
 			completions[i] = path.Join(dbfsPrefix, completions[i])
-		} else {
-			// Clean up ./ (and .\ on Windows) from local completions
-			completions[i] = filepath.Clean(completions[i])
 		}
 	}
 

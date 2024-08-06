@@ -23,19 +23,19 @@ func New(ctx context.Context, filer filer.Filer, onlyDirs bool) *completer {
 	return &completer{ctx: ctx, filer: filer, onlyDirs: onlyDirs}
 }
 
-func (c *completer) CompletePath(p string) ([]string, string, cobra.ShellCompDirective) {
+func (c *completer) CompletePath(p string) ([]string, string, cobra.ShellCompDirective, error) {
 	// If the user is TAB-ing their way through a path, the path in `toComplete`
 	// is valid and we should list nested directories.
 	// If the path in `toComplete` is incomplete, however,
 	// then we should list adjacent directories.
 	dirPath := p
-	completions := fetchCompletions(c, dirPath)
-	if completions == nil {
+	completions, err := fetchCompletions(c, dirPath)
+	if completions == nil && err == nil {
 		dirPath = path.Dir(p)
-		completions = fetchCompletions(c, dirPath)
+		completions, err = fetchCompletions(c, dirPath)
 	}
 
-	return completions, dirPath, cobra.ShellCompDirectiveNoSpace
+	return completions, dirPath, cobra.ShellCompDirectiveNoSpace, err
 }
 
 // List files and directories under the specified path.
@@ -43,10 +43,14 @@ func (c *completer) CompletePath(p string) ([]string, string, cobra.ShellCompDir
 func fetchCompletions(
 	c *completer,
 	path string,
-) []string {
+) ([]string, error) {
 	entries, err := c.filer.ReadDir(c.ctx, path)
 	if err != nil {
-		return nil
+		if _, ok := err.(filer.NoSuchDirectoryError); ok {
+			return nil, nil
+		} else {
+			return nil, err
+		}
 	}
 
 	completions := []string{}
@@ -58,5 +62,5 @@ func fetchCompletions(
 		completions = append(completions, entry.Name())
 	}
 
-	return completions
+	return completions, nil
 }

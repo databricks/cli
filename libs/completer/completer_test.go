@@ -28,38 +28,42 @@ func setupCompleter(t *testing.T, onlyDirs bool) *completer {
 
 func TestFilerCompleterReturnsNestedDirs(t *testing.T) {
 	completer := setupCompleter(t, true)
-	completions, dirPath, directive := completer.CompletePath("dir")
+	completions, dirPath, directive, err := completer.CompletePath("dir")
 
 	assert.Equal(t, []string{"dirA", "dirB"}, completions)
 	assert.Equal(t, "dir", dirPath)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
+	assert.Nil(t, err)
 }
 
 func TestFilerCompleterReturnsAdjacentDirs(t *testing.T) {
 	completer := setupCompleter(t, true)
-	completions, dirPath, directive := completer.CompletePath("dir/wrong_dir")
+	completions, dirPath, directive, err := completer.CompletePath("dir/wrong_dir")
 
 	assert.Equal(t, []string{"dirA", "dirB"}, completions)
 	assert.Equal(t, "dir", dirPath)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
+	assert.Nil(t, err)
 }
 
 func TestFilerCompleterReturnsNestedDirsAndFiles(t *testing.T) {
 	completer := setupCompleter(t, false)
-	completions, dirPath, directive := completer.CompletePath("dir")
+	completions, dirPath, directive, err := completer.CompletePath("dir")
 
 	assert.Equal(t, []string{"dirA", "dirB", "fileA"}, completions)
 	assert.Equal(t, "dir", dirPath)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
+	assert.Nil(t, err)
 }
 
 func TestFilerCompleterNoCompletions(t *testing.T) {
 	completer := setupCompleter(t, true)
-	completions, dirPath, directive := completer.CompletePath("wrong_dir/wrong_dir")
+	completions, dirPath, directive, err := completer.CompletePath("wrong_dir/wrong_dir")
 
 	assert.Nil(t, completions)
 	assert.Equal(t, "wrong_dir", dirPath)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
+	assert.Nil(t, err)
 }
 
 // func TestFilerCompleterReadDirError(t *testing.T) {

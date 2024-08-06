@@ -2,17 +2,14 @@ package fs
 
 import (
 	"context"
-	"errors"
 	"runtime"
 	"testing"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -67,11 +64,6 @@ func TestFilerForWindowsLocalPaths(t *testing.T) {
 	testWindowsFilerForPath(t, ctx, `f:\abc\ef`)
 }
 
-func mockCurrentUserApi(m *mocks.MockWorkspaceClient, u *iam.User, e error) {
-	currentUserApi := m.GetMockCurrentUserAPI()
-	currentUserApi.EXPECT().Me(mock.AnythingOfType("*context.valueCtx")).Return(u, e)
-}
-
 func mockMustWorkspaceClientFunc(cmd *cobra.Command, args []string) error {
 	return nil
 }
@@ -89,8 +81,6 @@ func setupCommand(t *testing.T) (*cobra.Command, *mocks.MockWorkspaceClient) {
 
 func setupTest(t *testing.T) (*validArgs, *cobra.Command, *mocks.MockWorkspaceClient) {
 	cmd, m := setupCommand(t)
-
-	mockCurrentUserApi(m, nil, nil)
 
 	fakeFilerForPath := func(ctx context.Context, fullPath string) (filer.Filer, string, error) {
 		fakeFiler := filer.NewFakeFiler(map[string]filer.FakeFileInfo{
@@ -142,24 +132,8 @@ func TestGetValidArgsFunctionVolumesPath(t *testing.T) {
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 }
 
-func TestGetValidArgsFunctionNoCurrentUser(t *testing.T) {
-	cmd, m := setupCommand(t)
-
-	mockCurrentUserApi(m, nil, errors.New("Current User Error"))
-
-	v := newValidArgs()
-	v.mustWorkspaceClientFunc = mockMustWorkspaceClientFunc
-
-	completions, directive := v.Validate(cmd, []string{}, "dbfs:/")
-
-	assert.Nil(t, completions)
-	assert.Equal(t, cobra.ShellCompDirectiveError, directive)
-}
-
 func TestGetValidArgsFunctionNotCompletedArgument(t *testing.T) {
-	cmd, m := setupCommand(t)
-
-	mockCurrentUserApi(m, nil, nil)
+	cmd, _ := setupCommand(t)
 
 	v := newValidArgs()
 	v.pathArgCount = 0

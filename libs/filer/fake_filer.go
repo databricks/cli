@@ -82,7 +82,7 @@ func (f *FakeFiler) Delete(ctx context.Context, p string, mode ...DeleteMode) er
 func (f *FakeFiler) ReadDir(ctx context.Context, p string) ([]fs.DirEntry, error) {
 	entry, ok := f.entries[p]
 	if !ok {
-		return nil, fs.ErrNotExist
+		return nil, NoSuchDirectoryError{p}
 	}
 
 	if !entry.FakeDir {
