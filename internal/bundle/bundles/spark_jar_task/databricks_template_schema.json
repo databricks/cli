@@ -24,6 +24,10 @@
         "artifact_path": {
             "type": "string",
             "description": "Path to the remote base path for artifacts"
+        },
+        "instance_pool_id": {
+            "type": "string",
+            "description": "Instance pool id for job cluster"
         }
     }
 }

@@ -22,6 +22,7 @@ resources:
             num_workers: 1
             spark_version: "{{.spark_version}}"
             node_type_id: "{{.node_type_id}}"
+            instance_pool_id: "{{.instance_pool_id}}"
           spark_jar_task:
             main_class_name: PrintArgs
           libraries:
