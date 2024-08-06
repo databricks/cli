@@ -37,6 +37,7 @@ func loadTargetWithDiags(path, env string) (*bundle.Bundle, diag.Diagnostics) {
 		phases.LoadNamedTarget(env),
 		mutator.RewriteSyncPaths(),
 		mutator.MergeJobClusters(),
+		mutator.MergeJobParameters(),
 		mutator.MergeJobTasks(),
 		mutator.MergePipelineClusters(),
 	))
