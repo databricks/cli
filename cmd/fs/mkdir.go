@@ -28,7 +28,7 @@ func newMkdirCommand() *cobra.Command {
 		return f.Mkdir(ctx, path)
 	}
 
-	v := NewValidArgs()
+	v := newValidArgs()
 	v.onlyDirs = true
 	cmd.ValidArgsFunction = v.Validate
 

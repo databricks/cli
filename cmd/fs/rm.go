@@ -32,7 +32,7 @@ func newRmCommand() *cobra.Command {
 		return f.Delete(ctx, path)
 	}
 
-	v := NewValidArgs()
+	v := newValidArgs()
 	cmd.ValidArgsFunction = v.Validate
 
 	return cmd

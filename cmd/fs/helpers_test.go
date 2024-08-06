@@ -100,7 +100,7 @@ func TestGetValidArgsFunctionCompletion(t *testing.T) {
 		testutil.NewFakeDirEntry("file", false),
 	})
 
-	v := NewValidArgs()
+	v := newValidArgs()
 	v.filerForPathFunc = mockFilerForPath
 	v.mustWorkspaceClientFunc = mockMustWorkspaceClientFunc
 
@@ -121,7 +121,7 @@ func TestGetValidArgsFunctionCompletionOnlyDirs(t *testing.T) {
 		testutil.NewFakeDirEntry("file", false),
 	})
 
-	v := NewValidArgs()
+	v := newValidArgs()
 	v.onlyDirs = true
 	v.filerForPathFunc = mockFilerForPath
 	v.mustWorkspaceClientFunc = mockMustWorkspaceClientFunc
@@ -142,7 +142,7 @@ func TestGetValidArgsFunctionNoPath(t *testing.T) {
 		testutil.NewFakeDirEntry("dFile2", false),
 	})
 
-	v := NewValidArgs()
+	v := newValidArgs()
 	v.filerForPathFunc = mockFilerForPath
 	v.mustWorkspaceClientFunc = mockMustWorkspaceClientFunc
 
@@ -163,7 +163,7 @@ func TestGetValidArgsFunctionLocalPath(t *testing.T) {
 		testutil.NewFakeDirEntry("file", false),
 	})
 
-	v := NewValidArgs()
+	v := newValidArgs()
 	v.filerForPathFunc = mockFilerForPath
 	v.mustWorkspaceClientFunc = mockMustWorkspaceClientFunc
 
@@ -183,7 +183,7 @@ func TestGetValidArgsFunctionAbsoluteLocalPath(t *testing.T) {
 		testutil.NewFakeDirEntry("file", false),
 	})
 
-	v := NewValidArgs()
+	v := newValidArgs()
 	v.filerForPathFunc = mockFilerForPath
 	v.mustWorkspaceClientFunc = mockMustWorkspaceClientFunc
 
@@ -207,7 +207,7 @@ func TestGetValidArgsFunctionLocalWindowsPath(t *testing.T) {
 		testutil.NewFakeDirEntry(".\\dFile2", false),
 	})
 
-	v := NewValidArgs()
+	v := newValidArgs()
 	v.filerForPathFunc = mockFilerForPath
 	v.mustWorkspaceClientFunc = mockMustWorkspaceClientFunc
 
@@ -227,7 +227,7 @@ func TestGetValidArgsFunctionAddsSeparator(t *testing.T) {
 		testutil.NewFakeDirEntry("nested_dir", true),
 	})
 
-	v := NewValidArgs()
+	v := newValidArgs()
 	v.onlyDirs = true
 	v.filerForPathFunc = mockFilerForPath
 	v.mustWorkspaceClientFunc = mockMustWorkspaceClientFunc
@@ -256,7 +256,7 @@ func TestGetValidArgsFunctionAddsWindowsSeparator(t *testing.T) {
 		testutil.NewFakeDirEntry("nested_dir", true),
 	})
 
-	v := NewValidArgs()
+	v := newValidArgs()
 	v.onlyDirs = true
 	v.filerForPathFunc = mockFilerForPath
 	v.mustWorkspaceClientFunc = mockMustWorkspaceClientFunc
@@ -280,7 +280,7 @@ func TestGetValidArgsFunctionAddsDefaultSeparatorOnWindows(t *testing.T) {
 		testutil.NewFakeDirEntry("nested_dir", true),
 	})
 
-	v := NewValidArgs()
+	v := newValidArgs()
 	v.onlyDirs = true
 	v.filerForPathFunc = mockFilerForPath
 	v.mustWorkspaceClientFunc = mockMustWorkspaceClientFunc
@@ -297,7 +297,7 @@ func TestGetValidArgsFunctionNoCurrentUser(t *testing.T) {
 	mockCurrentUserApi(m, nil, errors.New("Current User Error"))
 	mockFilerForPath := testutil.GetMockFilerForPath(t, "/", nil)
 
-	v := NewValidArgs()
+	v := newValidArgs()
 	v.onlyDirs = true
 	v.filerForPathFunc = mockFilerForPath
 	v.mustWorkspaceClientFunc = mockMustWorkspaceClientFunc
@@ -314,7 +314,7 @@ func TestGetValidArgsFunctionNotCompletedArgument(t *testing.T) {
 	mockCurrentUserApi(m, nil, nil)
 	mockFilerForPath := testutil.GetMockFilerForPath(t, "/", nil)
 
-	v := NewValidArgs()
+	v := newValidArgs()
 	// 0 here means we don't complete any arguments
 	v.pathArgCount = 0
 	v.filerForPathFunc = mockFilerForPath

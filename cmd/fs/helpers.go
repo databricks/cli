@@ -57,15 +57,15 @@ func isDbfsPath(path string) bool {
 	return strings.HasPrefix(path, dbfsPrefix)
 }
 
-type ValidArgs struct {
+type validArgs struct {
 	mustWorkspaceClientFunc func(cmd *cobra.Command, args []string) error
 	filerForPathFunc        func(ctx context.Context, fullPath string) (filer.Filer, string, error)
 	pathArgCount            int
 	onlyDirs                bool
 }
 
-func NewValidArgs() *ValidArgs {
-	return &ValidArgs{
+func newValidArgs() *validArgs {
+	return &validArgs{
 		mustWorkspaceClientFunc: root.MustWorkspaceClient,
 		filerForPathFunc:        filerForPath,
 		pathArgCount:            1,
@@ -73,7 +73,7 @@ func NewValidArgs() *ValidArgs {
 	}
 }
 
-func (v *ValidArgs) Validate(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+func (v *validArgs) Validate(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	cmd.SetContext(root.SkipPrompt(cmd.Context()))
 
 	err := v.mustWorkspaceClientFunc(cmd, args)
