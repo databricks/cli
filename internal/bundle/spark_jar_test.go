@@ -6,15 +6,14 @@ import (
 
 	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/libs/env"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
 func runSparkJarTest(t *testing.T, sparkVersion string) {
-	t.Skip("Temporarily skipping the test until auth / permission issues for UC volumes are resolved.")
-
-	env := internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
-	t.Log(env)
+	cloudEnv := internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
+	t.Log(cloudEnv)
 
 	if os.Getenv("TEST_METASTORE_ID") == "" {
 		t.Skip("Skipping tests that require a UC Volume when metastore id is not set.")
@@ -24,14 +23,16 @@ func runSparkJarTest(t *testing.T, sparkVersion string) {
 	w := wt.W
 	volumePath := internal.TemporaryUcVolume(t, w)
 
-	nodeTypeId := internal.GetNodeTypeId(env)
+	nodeTypeId := internal.GetNodeTypeId(cloudEnv)
 	tmpDir := t.TempDir()
+	instancePoolId := env.Get(ctx, "TEST_INSTANCE_POOL_ID")
 	bundleRoot, err := initTestTemplateWithBundleRoot(t, ctx, "spark_jar_task", map[string]any{
-		"node_type_id":  nodeTypeId,
-		"unique_id":     uuid.New().String(),
-		"spark_version": sparkVersion,
-		"root":          tmpDir,
-		"artifact_path": volumePath,
+		"node_type_id":     nodeTypeId,
+		"unique_id":        uuid.New().String(),
+		"spark_version":    sparkVersion,
+		"root":             tmpDir,
+		"artifact_path":    volumePath,
+		"instance_pool_id": instancePoolId,
 	}, tmpDir)
 	require.NoError(t, err)
 
