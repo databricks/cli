@@ -29,7 +29,7 @@ func TestAccFsCompletion(t *testing.T) {
 
 	// var parsedStdout []map[string]any
 	// err := json.Unmarshal(stdout.Bytes(), &parsedStdout)
-	require.NoError(t, err)
+	// require.NoError(t, err)
 
 	// assert.Len(t, parsedStdout, 2)
 	assert.Equal(t, "a", stdout)
