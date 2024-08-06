@@ -1,0 +1,32 @@
+bundle:
+  name: override_job_parameters
+
+workspace:
+  host: https://acme.cloud.databricks.com/
+
+resources:
+  jobs:
+    foo:
+      name: job
+      parameters:
+        - name: foo
+          default: v1
+        - name: bar
+          default: v1
+
+targets:
+  development:
+    resources:
+      jobs:
+        foo:
+          parameters:
+            - name: foo
+              default: v2
+
+  staging:
+    resources:
+      jobs:
+        foo:
+          parameters:
+            - name: bar
+              default: v2

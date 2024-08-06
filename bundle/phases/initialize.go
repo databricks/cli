@@ -21,6 +21,7 @@ func Initialize() bundle.Mutator {
 		[]bundle.Mutator{
 			mutator.RewriteSyncPaths(),
 			mutator.MergeJobClusters(),
+			mutator.MergeJobParameters(),
 			mutator.MergeJobTasks(),
 			mutator.MergePipelineClusters(),
 			mutator.InitializeWorkspaceClient(),
