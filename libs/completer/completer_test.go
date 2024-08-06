@@ -16,7 +16,12 @@ func setupCompleter(t *testing.T, onlyDirs bool) *completer {
 	// Needed to make type context.valueCtx for mockFilerForPath
 	ctx = root.SetWorkspaceClient(ctx, mocks.NewMockWorkspaceClient(t).WorkspaceClient)
 
-	fakeFiler := filer.PrepFakeFiler()
+	fakeFiler := filer.NewFakeFiler(map[string]filer.FakeFileInfo{
+		"dir":       {FakeName: "root", FakeDir: true},
+		"dir/dirA":  {FakeDir: true},
+		"dir/dirB":  {FakeDir: true},
+		"dir/fileA": {},
+	})
 
 	return New(ctx, fakeFiler, onlyDirs)
 }

@@ -17,7 +17,7 @@ type FakeDirEntry struct {
 
 func (entry FakeDirEntry) Type() fs.FileMode {
 	typ := fs.ModePerm
-	if entry.dir {
+	if entry.FakeDir {
 		typ |= fs.ModeDir
 	}
 	return typ
@@ -28,22 +28,22 @@ func (entry FakeDirEntry) Info() (fs.FileInfo, error) {
 }
 
 type FakeFileInfo struct {
-	name string
-	size int64
-	dir  bool
-	mode fs.FileMode
+	FakeName string
+	FakeSize int64
+	FakeDir  bool
+	FakeMode fs.FileMode
 }
 
 func (info FakeFileInfo) Name() string {
-	return info.name
+	return info.FakeName
 }
 
 func (info FakeFileInfo) Size() int64 {
-	return info.size
+	return info.FakeSize
 }
 
 func (info FakeFileInfo) Mode() fs.FileMode {
-	return info.mode
+	return info.FakeMode
 }
 
 func (info FakeFileInfo) ModTime() time.Time {
@@ -51,7 +51,7 @@ func (info FakeFileInfo) ModTime() time.Time {
 }
 
 func (info FakeFileInfo) IsDir() bool {
-	return info.dir
+	return info.FakeDir
 }
 
 func (info FakeFileInfo) Sys() any {
@@ -85,7 +85,7 @@ func (f *FakeFiler) ReadDir(ctx context.Context, p string) ([]fs.DirEntry, error
 		return nil, fs.ErrNotExist
 	}
 
-	if !entry.dir {
+	if !entry.FakeDir {
 		return nil, fs.ErrInvalid
 	}
 
@@ -122,26 +122,12 @@ func NewFakeFiler(entries map[string]FakeFileInfo) *FakeFiler {
 	}
 
 	for k, v := range fakeFiler.entries {
-		if v.name != "" {
+		if v.FakeName != "" {
 			continue
 		}
-		v.name = path.Base(k)
+		v.FakeName = path.Base(k)
 		fakeFiler.entries[k] = v
 	}
 
 	return fakeFiler
-}
-
-// TODO: Remove this function
-func PrepFakeFiler() *FakeFiler {
-	return NewFakeFiler(map[string]FakeFileInfo{
-		"dir":       {name: "root", dir: true},
-		"dir/dirA":  {dir: true},
-		"dir/dirB":  {dir: true},
-		"dir/fileA": {size: 3},
-	})
-}
-
-func NewFakeFileInfo(dir bool) FakeFileInfo {
-	return FakeFileInfo{dir: dir}
 }

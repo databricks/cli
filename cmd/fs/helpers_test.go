@@ -94,9 +94,9 @@ func setupTest(t *testing.T) (*validArgs, *cobra.Command, *mocks.MockWorkspaceCl
 
 	fakeFilerForPath := func(ctx context.Context, fullPath string) (filer.Filer, string, error) {
 		fakeFiler := filer.NewFakeFiler(map[string]filer.FakeFileInfo{
-			"dir":       {name: "root", dir: true},
-			"dir/dirA":  {dir: true},
-			"dir/dirB":  {dir: true},
+			"dir":       {FakeName: "root", FakeDir: true},
+			"dir/dirA":  {FakeDir: true},
+			"dir/dirB":  {FakeDir: true},
 			"dir/fileA": {},
 		})
 		return fakeFiler, fullPath, nil
