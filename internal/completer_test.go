@@ -22,6 +22,6 @@ func TestAccFsCompletion(t *testing.T) {
 	setupCompletionFile(t, f)
 
 	stdout, _ := RequireSuccessfulRun(t, "__complete", "fs", "ls", tmpDir)
-	expectedOutput := fmt.Sprintf("%s/dir1\n:2\n", tmpDir)
+	expectedOutput := fmt.Sprintf("%s/dir1/\n:2\n", tmpDir)
 	assert.Equal(t, expectedOutput, stdout.String())
 }

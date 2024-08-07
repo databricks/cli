@@ -89,6 +89,11 @@ func setupTest(t *testing.T) (*validArgs, *cobra.Command, *mocks.MockWorkspaceCl
 			"dir/dirB":  {FakeDir: true},
 			"dir/fileA": {},
 		})
+
+		if isDbfsPath(fullPath) {
+			return fakeFiler, "dir", nil
+		}
+
 		return fakeFiler, fullPath, nil
 	}
 
@@ -99,36 +104,27 @@ func setupTest(t *testing.T) (*validArgs, *cobra.Command, *mocks.MockWorkspaceCl
 	return v, cmd, m
 }
 
-func TestGetValidArgsFunctionCompletion(t *testing.T) {
+func TestGetValidArgsFunctionDbfsCompletion(t *testing.T) {
+	v, cmd, _ := setupTest(t)
+
+	completions, directive := v.Validate(cmd, []string{}, "dbfs:/dir")
+
+	assert.Equal(t, []string{"dbfs:/dir/dirA/", "dbfs:/dir/dirB/", "dbfs:/dir/fileA"}, completions)
+	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
+}
+
+func TestGetValidArgsFunctionLocalCompletion(t *testing.T) {
 	v, cmd, _ := setupTest(t)
 	completions, directive := v.Validate(cmd, []string{}, "dir")
-	assert.Equal(t, []string{"dir/dirA", "dir/dirB", "dir/fileA"}, completions)
+	assert.Equal(t, []string{"dir/dirA/", "dir/dirB/", "dir/fileA", "dbfs:/"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 }
 
 func TestGetValidArgsFunctionCompletionOnlyDirs(t *testing.T) {
 	v, cmd, _ := setupTest(t)
 	v.onlyDirs = true
-	completions, directive := v.Validate(cmd, []string{}, "dir")
-	assert.Equal(t, []string{"dir/dirA", "dir/dirB"}, completions)
-	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
-}
-
-func TestGetValidArgsFunctionDbfsPath(t *testing.T) {
-	v, cmd, _ := setupTest(t)
-
-	completions, directive := v.Validate(cmd, []string{}, "")
-
-	assert.Equal(t, []string{"dbfs:/"}, completions)
-	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
-}
-
-func TestGetValidArgsFunctionVolumesPath(t *testing.T) {
-	v, cmd, _ := setupTest(t)
-
-	completions, directive := v.Validate(cmd, []string{}, "dbfs:/")
-
-	assert.Equal(t, []string{"dbfs:/Volumes"}, completions)
+	completions, directive := v.Validate(cmd, []string{}, "dbfs:/dir")
+	assert.Equal(t, []string{"dbfs:/dir/dirA/", "dbfs:/dir/dirB/"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 }
 
