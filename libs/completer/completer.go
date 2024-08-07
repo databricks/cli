@@ -19,8 +19,11 @@ type completer struct {
 	// CompletePath will only return directories when onlyDirs is true.
 	onlyDirs bool
 
+	// Prefix to prepend to completions.
 	prefix string
 
+	// Whether the path is local or remote. If the path is local we use the `filepath`
+	// package for path manipulation. Otherwise we use the `path` package.
 	isLocalPath bool
 }
 
