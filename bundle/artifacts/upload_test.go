@@ -110,5 +110,5 @@ func TestExpandGlobFilesSourceWithNoMatches(t *testing.T) {
 	}
 
 	diags := bundle.Apply(context.Background(), b, bundle.Seq(bm, u))
-	require.ErrorContains(t, diags.Error(), "no files found for")
+	require.ErrorContains(t, diags.Error(), "no matching files")
 }
