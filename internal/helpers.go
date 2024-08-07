@@ -455,6 +455,7 @@ func TemporaryDbfsDir(t *testing.T, w *databricks.WorkspaceClient) string {
 	t.Logf("Creating DBFS folder:%s", path)
 	err := w.Dbfs.MkdirsByPath(ctx, path)
 	require.NoError(t, err)
+
 	t.Cleanup(func() {
 		t.Logf("Removing DBFS folder:%s", path)
 		err := w.Dbfs.Delete(ctx, files.Delete{
@@ -590,7 +591,6 @@ func setupDbfsFiler(t *testing.T) (filer.Filer, string) {
 	require.NoError(t, err)
 
 	tmpDir := TemporaryDbfsDir(t, w)
-
 	f, err := filer.NewDbfsClient(w, tmpDir)
 	require.NoError(t, err)
 
