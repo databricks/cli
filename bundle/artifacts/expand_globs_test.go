@@ -2,6 +2,7 @@ package artifacts
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -86,16 +87,16 @@ func TestExpandGlobs_InvalidPattern(t *testing.T) {
 	))
 
 	assert.Len(t, diags, 4)
-	assert.Equal(t, "a[.txt: syntax error in pattern", diags[0].Summary)
+	assert.Equal(t, fmt.Sprintf("%s: syntax error in pattern", filepath.Clean("a[.txt")), diags[0].Summary)
 	assert.Equal(t, filepath.Join(tmpDir, "databricks.yml"), diags[0].Locations[0].File)
 	assert.Equal(t, "artifacts.test.files[0].source", diags[0].Paths[0].String())
-	assert.Equal(t, "a[.txt: syntax error in pattern", diags[1].Summary)
+	assert.Equal(t, fmt.Sprintf("%s: syntax error in pattern", filepath.Clean("a[.txt")), diags[1].Summary)
 	assert.Equal(t, filepath.Join(tmpDir, "databricks.yml"), diags[1].Locations[0].File)
 	assert.Equal(t, "artifacts.test.files[1].source", diags[1].Paths[0].String())
-	assert.Equal(t, "../a[.txt: syntax error in pattern", diags[2].Summary)
+	assert.Equal(t, fmt.Sprintf("%s: syntax error in pattern", filepath.Clean("../a[.txt")), diags[2].Summary)
 	assert.Equal(t, filepath.Join(tmpDir, "databricks.yml"), diags[2].Locations[0].File)
 	assert.Equal(t, "artifacts.test.files[2].source", diags[2].Paths[0].String())
-	assert.Equal(t, "subdir/a[.txt: syntax error in pattern", diags[3].Summary)
+	assert.Equal(t, fmt.Sprintf("%s: syntax error in pattern", filepath.Clean("subdir/a[.txt")), diags[3].Summary)
 	assert.Equal(t, filepath.Join(tmpDir, "databricks.yml"), diags[3].Locations[0].File)
 	assert.Equal(t, "artifacts.test.files[3].source", diags[3].Paths[0].String())
 }
