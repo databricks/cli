@@ -108,9 +108,24 @@ func TestGetValidArgsFunctionDbfsCompletion(t *testing.T) {
 }
 
 func TestGetValidArgsFunctionLocalCompletion(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip()
+	}
+
 	v, cmd, _ := setupTest(t)
 	completions, directive := v.Validate(cmd, []string{}, "dir/")
 	assert.Equal(t, []string{"dir/dirA/", "dir/dirB/", "dir/fileA", "dbfs:/"}, completions)
+	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
+}
+
+func TestGetValidArgsFunctionLocalCompletionWindows(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip()
+	}
+
+	v, cmd, _ := setupTest(t)
+	completions, directive := v.Validate(cmd, []string{}, "dir/")
+	assert.Equal(t, []string{"dir\\dirA\\", "dir\\dirB\\", "dir\\fileA", "dbfs:/"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 }
 
