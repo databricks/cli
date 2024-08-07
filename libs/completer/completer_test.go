@@ -32,7 +32,7 @@ func setupCompleter(t *testing.T, onlyDirs bool) *completer {
 func TestFilerCompleterSetsPrefix(t *testing.T) {
 	completer := setupCompleter(t, true)
 	completer.SetPrefix("dbfs:")
-	completions, directive, err := completer.CompletePath("dir")
+	completions, directive, err := completer.CompletePath("dir/")
 
 	assert.Equal(t, []string{"dbfs:/dir/dirA/", "dbfs:/dir/dirB/"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
@@ -41,7 +41,7 @@ func TestFilerCompleterSetsPrefix(t *testing.T) {
 
 func TestFilerCompleterReturnsNestedDirs(t *testing.T) {
 	completer := setupCompleter(t, true)
-	completions, directive, err := completer.CompletePath("dir")
+	completions, directive, err := completer.CompletePath("dir/")
 
 	assert.Equal(t, []string{"dir/dirA/", "dir/dirB/"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
@@ -50,7 +50,7 @@ func TestFilerCompleterReturnsNestedDirs(t *testing.T) {
 
 func TestFilerCompleterReturnsAdjacentDirs(t *testing.T) {
 	completer := setupCompleter(t, true)
-	completions, directive, err := completer.CompletePath("dir/wrong_dir")
+	completions, directive, err := completer.CompletePath("dir/wrong_path")
 
 	assert.Equal(t, []string{"dir/dirA/", "dir/dirB/"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
@@ -59,7 +59,7 @@ func TestFilerCompleterReturnsAdjacentDirs(t *testing.T) {
 
 func TestFilerCompleterReturnsNestedDirsAndFiles(t *testing.T) {
 	completer := setupCompleter(t, false)
-	completions, directive, err := completer.CompletePath("dir")
+	completions, directive, err := completer.CompletePath("dir/")
 
 	assert.Equal(t, []string{"dir/dirA/", "dir/dirB/", "dir/fileA"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
@@ -73,7 +73,7 @@ func TestFilerCompleterAddsDbfsPath(t *testing.T) {
 
 	completer := setupCompleter(t, true)
 	completer.SetIsLocalPath(true)
-	completions, directive, err := completer.CompletePath("dir")
+	completions, directive, err := completer.CompletePath("dir/")
 
 	assert.Equal(t, []string{"dir/dirA/", "dir/dirB/", "dbfs:/"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
@@ -87,7 +87,7 @@ func TestFilerCompleterWindowsSeparator(t *testing.T) {
 
 	completer := setupCompleter(t, true)
 	completer.SetIsLocalPath(true)
-	completions, directive, err := completer.CompletePath("dir")
+	completions, directive, err := completer.CompletePath("dir/")
 
 	assert.Equal(t, []string{"dir\\dirA\\", "dir\\dirB\\", "dbfs:/"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
@@ -99,8 +99,6 @@ func TestFilerCompleterNoCompletions(t *testing.T) {
 	completions, directive, err := completer.CompletePath("wrong_dir/wrong_dir")
 
 	assert.Nil(t, completions)
-	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
-	assert.Nil(t, err)
+	assert.Equal(t, cobra.ShellCompDirectiveError, directive)
+	assert.Error(t, err)
 }
-
-// func TestFilerCompleterReadDirError(t *testing.T) {

@@ -3,6 +3,7 @@ package fs
 import (
 	"context"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/cmd/root"
@@ -89,12 +90,7 @@ func setupTest(t *testing.T) (*validArgs, *cobra.Command, *mocks.MockWorkspaceCl
 			"dir/dirB":  {FakeDir: true},
 			"dir/fileA": {},
 		})
-
-		if isDbfsPath(fullPath) {
-			return fakeFiler, "dir", nil
-		}
-
-		return fakeFiler, fullPath, nil
+		return fakeFiler, strings.TrimPrefix(fullPath, "dbfs:/"), nil
 	}
 
 	v := newValidArgs()
@@ -106,16 +102,14 @@ func setupTest(t *testing.T) (*validArgs, *cobra.Command, *mocks.MockWorkspaceCl
 
 func TestGetValidArgsFunctionDbfsCompletion(t *testing.T) {
 	v, cmd, _ := setupTest(t)
-
-	completions, directive := v.Validate(cmd, []string{}, "dbfs:/dir")
-
+	completions, directive := v.Validate(cmd, []string{}, "dbfs:/dir/")
 	assert.Equal(t, []string{"dbfs:/dir/dirA/", "dbfs:/dir/dirB/", "dbfs:/dir/fileA"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 }
 
 func TestGetValidArgsFunctionLocalCompletion(t *testing.T) {
 	v, cmd, _ := setupTest(t)
-	completions, directive := v.Validate(cmd, []string{}, "dir")
+	completions, directive := v.Validate(cmd, []string{}, "dir/")
 	assert.Equal(t, []string{"dir/dirA/", "dir/dirB/", "dir/fileA", "dbfs:/"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 }
@@ -123,7 +117,7 @@ func TestGetValidArgsFunctionLocalCompletion(t *testing.T) {
 func TestGetValidArgsFunctionCompletionOnlyDirs(t *testing.T) {
 	v, cmd, _ := setupTest(t)
 	v.onlyDirs = true
-	completions, directive := v.Validate(cmd, []string{}, "dbfs:/dir")
+	completions, directive := v.Validate(cmd, []string{}, "dbfs:/dir/")
 	assert.Equal(t, []string{"dbfs:/dir/dirA/", "dbfs:/dir/dirB/"}, completions)
 	assert.Equal(t, cobra.ShellCompDirectiveNoSpace, directive)
 }

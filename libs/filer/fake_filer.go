@@ -80,6 +80,7 @@ func (f *FakeFiler) Delete(ctx context.Context, p string, mode ...DeleteMode) er
 }
 
 func (f *FakeFiler) ReadDir(ctx context.Context, p string) ([]fs.DirEntry, error) {
+	p = strings.TrimSuffix(p, "/")
 	entry, ok := f.entries[p]
 	if !ok {
 		return nil, NoSuchDirectoryError{p}

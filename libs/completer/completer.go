@@ -4,6 +4,7 @@ import (
 	"context"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/databricks/cli/libs/filer"
 	"github.com/spf13/cobra"
@@ -37,35 +38,6 @@ func (c *completer) SetIsLocalPath(i bool) {
 }
 
 func (c *completer) CompletePath(p string) ([]string, cobra.ShellCompDirective, error) {
-	// If the user is TAB-ing their way through a path, the path in `toComplete`
-	// is valid and we should list nested directories.
-	// If the path in `toComplete` is incomplete, however,
-	// then we should list adjacent directories.
-	dirPath := p
-	completions, err := fetchCompletions(c, dirPath)
-	if completions == nil && err == nil && dirPath != path.Dir(p) {
-		dirPath = path.Dir(p)
-		completions, err = fetchCompletions(c, dirPath)
-	}
-
-	return completions, cobra.ShellCompDirectiveNoSpace, err
-}
-
-// List files and directories under the specified path.
-// Returns a channel such that we can list multiple paths in parallel.
-func fetchCompletions(
-	c *completer,
-	dirPath string,
-) ([]string, error) {
-	entries, err := c.filer.ReadDir(c.ctx, dirPath)
-	if err != nil {
-		if _, ok := err.(filer.NoSuchDirectoryError); ok {
-			return nil, nil
-		} else {
-			return nil, err
-		}
-	}
-
 	trailingSeparator := "/"
 	joinFunc := path.Join
 
@@ -75,12 +47,27 @@ func fetchCompletions(
 		trailingSeparator = string(filepath.Separator)
 	}
 
+	// If the user is TAB-ing their way through a path and the
+	// path ends in a trailing slash, we should list nested directories.
+	// If the path is incomplete, however, then we should list adjacent
+	// directories.
+	dirPath := p
+	if !strings.HasSuffix(p, trailingSeparator) {
+		dirPath = path.Dir(p)
+	}
+
+	entries, err := c.filer.ReadDir(c.ctx, dirPath)
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveError, err
+	}
+
 	completions := []string{}
 	for _, entry := range entries {
 		if c.onlyDirs && !entry.IsDir() {
 			continue
 		}
 
+		// Join directory path and entry name
 		completion := joinFunc(dirPath, entry.Name())
 
 		// Prepend prefix if it has been set
@@ -101,5 +88,5 @@ func fetchCompletions(
 		completions = append(completions, "dbfs:/")
 	}
 
-	return completions, nil
+	return completions, cobra.ShellCompDirectiveNoSpace, err
 }
