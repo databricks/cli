@@ -96,8 +96,6 @@ func fetchCompletions(
 		completions = append(completions, completion)
 	}
 
-	print("frooop", c.isLocalPath)
-
 	// If the path is local, we add the dbfs:/ prefix suggestion as an option
 	if c.isLocalPath {
 		completions = append(completions, "dbfs:/")
