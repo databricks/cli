@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
@@ -13,13 +14,14 @@ import (
 type expand struct {
 }
 
-func matchWarning(p dyn.Path, message string) diag.Diagnostic {
+func matchWarning(p dyn.Path, l []dyn.Location, message string) diag.Diagnostic {
 	return diag.Diagnostic{
 		Severity: diag.Warning,
 		Summary:  message,
 		Paths: []dyn.Path{
 			p.Append(),
 		},
+		Locations: l,
 	}
 }
 
@@ -45,10 +47,20 @@ func findMatches(b *bundle.Bundle, path string) ([]string, error) {
 	}
 
 	if len(matches) == 0 {
-		return nil, fmt.Errorf("no matching files for %s", path)
+		if isGlobPattern(path) {
+			return nil, fmt.Errorf("no files match pattern: %s", path)
+		} else {
+			return nil, fmt.Errorf("file doesn't exist %s", path)
+		}
 	}
 
 	return matches, nil
+}
+
+// Checks if the path is a glob pattern
+// It can contain *, [] or ? characters
+func isGlobPattern(path string) bool {
+	return strings.ContainsAny(path, "*?[")
 }
 
 func expandLibraries(b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diagnostics, []dyn.Value) {
@@ -68,7 +80,7 @@ func expandLibraries(b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diagnostic
 
 		matches, err := findMatches(b, path)
 		if err != nil {
-			diags = diags.Append(matchWarning(lp, err.Error()))
+			diags = diags.Append(matchWarning(lp, v.Locations(), err.Error()))
 			continue
 		}
 
@@ -97,7 +109,7 @@ func expandEnvironmentDeps(b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diag
 
 		matches, err := findMatches(b, path)
 		if err != nil {
-			diags = diags.Append(matchWarning(lp, err.Error()))
+			diags = diags.Append(matchWarning(lp, v.Locations(), err.Error()))
 			continue
 		}
 
@@ -114,48 +126,48 @@ type expandPattern struct {
 	fn      func(b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diagnostics, []dyn.Value)
 }
 
+var taskLibrariesPattern = dyn.NewPattern(
+	dyn.Key("resources"),
+	dyn.Key("jobs"),
+	dyn.AnyKey(),
+	dyn.Key("tasks"),
+	dyn.AnyIndex(),
+	dyn.Key("libraries"),
+)
+
+var forEachTaskLibrariesPattern = dyn.NewPattern(
+	dyn.Key("resources"),
+	dyn.Key("jobs"),
+	dyn.AnyKey(),
+	dyn.Key("tasks"),
+	dyn.AnyIndex(),
+	dyn.Key("for_each_task"),
+	dyn.Key("task"),
+	dyn.Key("libraries"),
+)
+
+var envDepsPattern = dyn.NewPattern(
+	dyn.Key("resources"),
+	dyn.Key("jobs"),
+	dyn.AnyKey(),
+	dyn.Key("environments"),
+	dyn.AnyIndex(),
+	dyn.Key("spec"),
+	dyn.Key("dependencies"),
+)
+
 func (e *expand) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	taskLibraries := dyn.NewPattern(
-		dyn.Key("resources"),
-		dyn.Key("jobs"),
-		dyn.AnyKey(),
-		dyn.Key("tasks"),
-		dyn.AnyIndex(),
-		dyn.Key("libraries"),
-	)
-
-	forEachTaskLibraries := dyn.NewPattern(
-		dyn.Key("resources"),
-		dyn.Key("jobs"),
-		dyn.AnyKey(),
-		dyn.Key("tasks"),
-		dyn.AnyIndex(),
-		dyn.Key("for_each_task"),
-		dyn.Key("task"),
-		dyn.Key("libraries"),
-	)
-
-	envDeps := dyn.NewPattern(
-		dyn.Key("resources"),
-		dyn.Key("jobs"),
-		dyn.AnyKey(),
-		dyn.Key("environments"),
-		dyn.AnyIndex(),
-		dyn.Key("spec"),
-		dyn.Key("dependencies"),
-	)
-
 	expanders := []expandPattern{
 		{
-			pattern: taskLibraries,
+			pattern: taskLibrariesPattern,
 			fn:      expandLibraries,
 		},
 		{
-			pattern: forEachTaskLibraries,
+			pattern: forEachTaskLibrariesPattern,
 			fn:      expandLibraries,
 		},
 		{
-			pattern: envDeps,
+			pattern: envDepsPattern,
 			fn:      expandEnvironmentDeps,
 		},
 	}

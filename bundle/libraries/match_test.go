@@ -76,7 +76,7 @@ func TestValidateEnvironmentsNoFile(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, ExpandGlobReferences())
 	require.Len(t, diags, 1)
-	require.Equal(t, "no matching files for ./wheel.whl", diags[0].Summary)
+	require.Equal(t, "file doesn't exist ./wheel.whl", diags[0].Summary)
 }
 
 func TestValidateTaskLibraries(t *testing.T) {
@@ -144,5 +144,5 @@ func TestValidateTaskLibrariesNoFile(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, ExpandGlobReferences())
 	require.Len(t, diags, 1)
-	require.Equal(t, "no matching files for ./wheel.whl", diags[0].Summary)
+	require.Equal(t, "file doesn't exist ./wheel.whl", diags[0].Summary)
 }

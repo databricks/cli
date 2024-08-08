@@ -22,6 +22,11 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// The Files API backend has a rate limit of 10 concurrent
+// requests and 100 QPS. We limit the number of concurrent requests to 5 to
+// avoid hitting the rate limit.
+var maxFilesRequestsInFlight = 5
+
 func Upload() bundle.Mutator {
 	return &upload{}
 }
@@ -41,129 +46,75 @@ type configLocation struct {
 	location   dyn.Location
 }
 
-type libsLocations = map[string]([]configLocation)
-
 // Collect all libraries from the bundle configuration and their config paths.
 // By this stage all glob references are expanded and we have a list of all libraries that need to be uploaded.
 // We collect them from task libraries, foreach task libraries  environment dependencies and artifacts.
 // We return a map of library source to a list of config paths and locations where the library is used.
 // We use map so we don't upload the same library multiple times.
 // Instead we upload it once and update all the config paths to point to the uploaded location.
-func collectLocalLibraries(b *bundle.Bundle) libsLocations {
+func collectLocalLibraries(b *bundle.Bundle) (map[string][]configLocation, error) {
 	libs := make(map[string]([]configLocation))
 
-	for i, job := range b.Config.Resources.Jobs {
-		for j, task := range job.Tasks {
-			for k, lib := range task.Libraries {
-				if !IsLibraryLocal(libraryPath(&lib)) {
-					continue
+	patterns := []dyn.Pattern{
+		taskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
+		taskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
+		forEachTaskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
+		forEachTaskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
+		envDepsPattern.Append(dyn.AnyIndex()),
+	}
+
+	for _, pattern := range patterns {
+		err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+			return dyn.MapByPattern(v, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+				source := v.MustString()
+				if !IsLibraryLocal(source) {
+					return v, nil
 				}
 
-				p := dyn.NewPath(
-					dyn.Key("resources"),
-					dyn.Key("jobs"),
-					dyn.Key(i),
-					dyn.Key("tasks"),
-					dyn.Index(j),
-					dyn.Key("libraries"),
-					dyn.Index(k),
-				)
-				if lib.Whl != "" {
-					libs[lib.Whl] = append(libs[lib.Whl], configLocation{
-						configPath: p.Append(dyn.Key("whl")),
-						location:   b.Config.GetLocation(p.String()),
-					})
-				}
-
-				if lib.Jar != "" {
-					libs[lib.Jar] = append(libs[lib.Jar], configLocation{
-						configPath: p.Append(dyn.Key("jar")),
-						location:   b.Config.GetLocation(p.String()),
-					})
-				}
-			}
-
-			if task.ForEachTask != nil {
-				for l, lib := range task.ForEachTask.Task.Libraries {
-					if !IsLibraryLocal(libraryPath(&lib)) {
-						continue
-					}
-
-					p := dyn.NewPath(
-						dyn.Key("resources"),
-						dyn.Key("jobs"),
-						dyn.Key(i),
-						dyn.Key("tasks"),
-						dyn.Index(j),
-						dyn.Key("for_each_task"),
-						dyn.Key("task"),
-						dyn.Key("libraries"),
-						dyn.Index(l),
-					)
-
-					if lib.Whl != "" {
-						libs[lib.Whl] = append(libs[lib.Whl], configLocation{
-							configPath: p.Append(dyn.Key("whl")),
-							location:   b.Config.GetLocation(p.String()),
-						})
-					}
-
-					if lib.Jar != "" {
-						libs[lib.Jar] = append(libs[lib.Jar], configLocation{
-							configPath: p.Append(dyn.Key("jar")),
-							location:   b.Config.GetLocation(p.String()),
-						})
-					}
-				}
-			}
-		}
-
-		for j, env := range job.Environments {
-			if env.Spec == nil {
-				continue
-			}
-
-			for k, dep := range env.Spec.Dependencies {
-				if !IsLibraryLocal(dep) {
-					continue
-				}
-
-				p := dyn.NewPath(
-					dyn.Key("resources"),
-					dyn.Key("jobs"),
-					dyn.Key(i),
-					dyn.Key("environments"),
-					dyn.Index(j),
-					dyn.Key("spec"),
-					dyn.Key("dependencies"),
-					dyn.Index(k),
-				)
-
-				libs[dep] = append(libs[dep], configLocation{
-					configPath: p,
-					location:   b.Config.GetLocation(p.String()),
+				libs[source] = append(libs[source], configLocation{
+					configPath: p.Append(), // Hack to get the copy of path
+					location:   v.Location(),
 				})
-			}
-		}
-	}
 
-	for key, artifact := range b.Config.Artifacts {
-		for i, file := range artifact.Files {
-			p := dyn.NewPath(
-				dyn.Key("artifacts"),
-				dyn.Key(key),
-				dyn.Key("files"),
-				dyn.Index(i),
-			)
-
-			libs[file.Source] = append(libs[file.Source], configLocation{
-				configPath: p.Append(dyn.Key("remote_path")),
-				location:   b.Config.GetLocation(p.String()),
+				return v, nil
 			})
+		})
+
+		if err != nil {
+			return nil, err
 		}
 	}
 
-	return libs
+	artifactPattern := dyn.NewPattern(
+		dyn.Key("artifacts"),
+		dyn.AnyKey(),
+		dyn.Key("files"),
+		dyn.AnyIndex(),
+	)
+
+	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		return dyn.MapByPattern(v, artifactPattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			file := v.MustMap()
+			sv, ok := file.GetByString("source")
+			if !ok {
+				return v, nil
+			}
+
+			source := sv.MustString()
+			libs[source] = append(libs[source], configLocation{
+				configPath: p.Append(dyn.Key("remote_path")),
+				location:   v.Location(),
+			})
+
+			return v, nil
+		})
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return libs, nil
 }
 
 func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
@@ -185,8 +136,14 @@ func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 	var diags diag.Diagnostics
 
-	libs := collectLocalLibraries(b)
+	libs, err := collectLocalLibraries(b)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	errs, errCtx := errgroup.WithContext(ctx)
+	errs.SetLimit(maxFilesRequestsInFlight)
+
 	for source := range libs {
 		errs.Go(func() error {
 			return UploadFile(errCtx, source, u.client)
