@@ -100,7 +100,7 @@ func TestPythonWheelBuildNoBuildJustUpload(t *testing.T) {
 
 	require.Len(t, diags, 1)
 
-	require.Equal(t, "/foo/bar/.internal/my_test_code-0.0.1-py3-none-any.whl", b.Config.Resources.Jobs["test_job"].JobSettings.Tasks[0].Libraries[0].Whl)
+	require.Equal(t, "/Workspace/foo/bar/.internal/my_test_code-0.0.1-py3-none-any.whl", b.Config.Resources.Jobs["test_job"].JobSettings.Tasks[0].Libraries[0].Whl)
 }
 
 func TestPythonWheelBuildWithEnvironmentKey(t *testing.T) {

@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/filer"
@@ -239,17 +240,20 @@ func isVolumesPath(path string) bool {
 
 // Function to upload file (a library, artifact and etc) to Workspace or UC volume
 func UploadFile(ctx context.Context, file string, client filer.Filer) error {
+	filename := filepath.Base(file)
+	cmdio.LogString(ctx, fmt.Sprintf("Uploading %s...", filename))
+
 	raw, err := os.ReadFile(file)
 	if err != nil {
 		return fmt.Errorf("unable to read %s: %w", file, errors.Unwrap(err))
 	}
 
-	filename := filepath.Base(file)
 	err = client.Write(ctx, filename, bytes.NewReader(raw), filer.OverwriteIfExists, filer.CreateParentDirectories)
 	if err != nil {
 		return fmt.Errorf("unable to import %s: %w", filename, err)
 	}
 
+	cmdio.LogString(ctx, "Upload succeeded")
 	return nil
 }
 
