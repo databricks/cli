@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/log"
 
 	"github.com/databricks/databricks-sdk-go"
 
@@ -253,7 +254,7 @@ func UploadFile(ctx context.Context, file string, client filer.Filer) error {
 		return fmt.Errorf("unable to import %s: %w", filename, err)
 	}
 
-	cmdio.LogString(ctx, "Upload succeeded")
+	log.Infof(ctx, "Upload succeeded")
 	return nil
 }
 

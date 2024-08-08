@@ -113,7 +113,6 @@ func Deploy() bundle.Mutator {
 				terraform.StatePull(),
 				deploy.StatePull(),
 				mutator.ValidateGitDetails(),
-				libraries.ExpandGlobReferences(),
 				artifacts.CleanUp(),
 				libraries.ExpandGlobReferences(),
 				libraries.Upload(),
