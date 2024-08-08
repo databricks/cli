@@ -55,7 +55,7 @@ func collectLocalLibraries(b *bundle.Bundle) libsLocations {
 	for i, job := range b.Config.Resources.Jobs {
 		for j, task := range job.Tasks {
 			for k, lib := range task.Libraries {
-				if !IsLocalLibrary(&lib) {
+				if !IsLibraryLocal(libraryPath(&lib)) {
 					continue
 				}
 
@@ -85,7 +85,7 @@ func collectLocalLibraries(b *bundle.Bundle) libsLocations {
 
 			if task.ForEachTask != nil {
 				for l, lib := range task.ForEachTask.Task.Libraries {
-					if !IsLocalLibrary(&lib) {
+					if !IsLibraryLocal(libraryPath(&lib)) {
 						continue
 					}
 

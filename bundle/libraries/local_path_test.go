@@ -3,7 +3,6 @@ package libraries
 import (
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -14,13 +13,14 @@ func TestIsLocalPath(t *testing.T) {
 	assert.True(t, IsLocalPath("./some/local/path"))
 	assert.True(t, IsLocalPath("file://path/to/package"))
 	assert.True(t, IsLocalPath("C:\\path\\to\\package"))
-	assert.True(t, IsLocalPath("/some/full/path"))
+
 	assert.True(t, IsLocalPath("myfile.txt"))
 	assert.True(t, IsLocalPath("./myfile.txt"))
 	assert.True(t, IsLocalPath("../myfile.txt"))
 	assert.True(t, IsLocalPath("file:///foo/bar/myfile.txt"))
 
 	// Remote paths.
+	assert.False(t, IsLocalPath("/some/full/path"))
 	assert.False(t, IsLocalPath("/Workspace/path/to/package"))
 	assert.False(t, IsLocalPath("/Users/path/to/package"))
 
@@ -31,17 +31,31 @@ func TestIsLocalPath(t *testing.T) {
 	assert.False(t, IsLocalPath("abfss://path/to/package"))
 }
 
-func TestIsLocalLibrary(t *testing.T) {
-	// Local paths.
-	assert.True(t, IsLocalLibrary(&compute.Library{Whl: "./file.whl"}))
-	assert.True(t, IsLocalLibrary(&compute.Library{Jar: "../target/some.jar"}))
+func TestIsRemotePath(t *testing.T) {
+	// Paths with schemes.
+	assert.True(t, IsRemotePath("dbfs://path/to/package"))
+	assert.True(t, IsRemotePath("dbfs:/path/to/package"))
+	assert.True(t, IsRemotePath("s3://path/to/package"))
+	assert.True(t, IsRemotePath("abfss://path/to/package"))
 
-	// Non-local paths.
-	assert.False(t, IsLocalLibrary(&compute.Library{Whl: "/Workspace/path/to/file.whl"}))
-	assert.False(t, IsLocalLibrary(&compute.Library{Jar: "s3:/bucket/path/some.jar"}))
+	// Remote paths.
+	assert.True(t, IsRemotePath("/Workspace/path/to/package"))
+	assert.True(t, IsRemotePath("/Users/path/to/package"))
 
-	// Empty.
-	assert.False(t, IsLocalLibrary(&compute.Library{}))
+	// Relative paths, paths with the file scheme, and Windows paths.
+	assert.False(t, IsRemotePath("some/local/path"))
+	assert.False(t, IsRemotePath("./some/local/path"))
+	assert.False(t, IsRemotePath("file://path/to/package"))
+
+	assert.False(t, IsRemotePath("myfile.txt"))
+	assert.False(t, IsRemotePath("./myfile.txt"))
+	assert.False(t, IsRemotePath("../myfile.txt"))
+
+	// Local absolute paths.
+	assert.False(t, IsRemotePath("/some/full/path"))
+	assert.False(t, IsRemotePath("file:///foo/bar/myfile.txt"))
+	assert.False(t, IsRemotePath("C:\\path\\to\\package"))
+
 }
 
 func TestIsEnvironmentDependencyLocal(t *testing.T) {

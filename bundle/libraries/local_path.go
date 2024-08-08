@@ -4,8 +4,6 @@ import (
 	"net/url"
 	"path"
 	"strings"
-
-	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
 // IsLocalPath returns true if the specified path indicates that
@@ -29,31 +27,41 @@ func IsLocalPath(p string) bool {
 		return true
 	}
 
-	// If the path has another scheme, it's a remote path.
-	if isRemoteStorageScheme(p) {
+	if IsRemotePath(p) {
 		return false
 	}
 
-	// if path starts with . or .., it's a local path
-	if strings.HasPrefix(p, ".") || strings.HasPrefix(p, "..") {
+	// If the path is absolute, it's a remote path.
+	return !path.IsAbs(p)
+}
+
+func IsRemotePath(p string) bool {
+	if isRemoteStorageScheme(p) {
 		return true
 	}
 
-	// If the path is absolute, it's might be a remote path.
-	if path.IsAbs(p) {
-		possiblePrefixes := []string{
-			"/Workspace", "/Users", "/mnt", "/dbfs",
-			"/Volumes", "/Shared",
-		}
+	// if the path is not absolute, it's not a remote path
+	if !path.IsAbs(p) {
+		return false
+	}
 
-		for _, prefix := range possiblePrefixes {
-			if strings.HasPrefix(p, prefix) {
-				return false
-			}
+	// If the path is absolute, it's might be a remote path.
+	possiblePrefixes := []string{
+		"/Workspace",
+		"/Users",
+		"/Volumes",
+		"/Shared",
+		"/mnt",
+		"/dbfs",
+	}
+
+	for _, prefix := range possiblePrefixes {
+		if strings.HasPrefix(p, prefix) {
+			return true
 		}
 	}
 
-	return true
+	return false
 }
 
 // IsLibraryLocal returns true if the specified library or environment dependency
@@ -63,7 +71,7 @@ func IsLocalPath(p string) bool {
 // a pypi package name which can be misinterpreted as a local path by IsLocalPath.
 func IsLibraryLocal(dep string) bool {
 	possiblePrefixes := []string{
-		".", "..",
+		".",
 	}
 
 	for _, prefix := range possiblePrefixes {
@@ -78,11 +86,20 @@ func IsLibraryLocal(dep string) bool {
 	}
 
 	// If the dependency has no extension, it's a PyPi package name
-	if path.Ext(dep) == "" {
+	if isPackage(dep) {
 		return false
 	}
 
-	return IsLocalPath(dep)
+	if IsRemotePath(dep) {
+		return false
+	}
+
+	return true
+}
+
+func isPackage(name string) bool {
+	// If the dependency has no extension, it's a PyPi package name
+	return path.Ext(name) == ""
 }
 
 func isRemoteStorageScheme(path string) bool {
@@ -95,16 +112,6 @@ func isRemoteStorageScheme(path string) bool {
 		return false
 	}
 
-	// If the path starts with scheme:/ format, it's a correct remote storage scheme
-	return strings.HasPrefix(path, url.Scheme+":/")
-}
-
-// IsLocalLibrary returns true if the specified library refers to a local path.
-func IsLocalLibrary(library *compute.Library) bool {
-	path := libraryPath(library)
-	if path == "" {
-		return false
-	}
-
-	return IsLocalPath(path)
+	// If the path starts with scheme:/ format (not file), it's a correct remote storage scheme
+	return strings.HasPrefix(path, url.Scheme+":/") && url.Scheme != "file"
 }

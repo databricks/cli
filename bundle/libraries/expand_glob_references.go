@@ -59,15 +59,12 @@ func expandLibraries(b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diagnostic
 	for i, lib := range libs {
 		lp := p.Append(dyn.Index(i))
 		path, libType, supported := getLibDetails(lib)
-		if !supported {
+		if !supported || !IsLibraryLocal(path) {
 			output = append(output, lib)
 			continue
 		}
 
-		if !IsLibraryLocal(path) {
-			output = append(output, lib)
-			continue
-		}
+		lp = lp.Append(dyn.Key(libType))
 
 		matches, err := findMatches(b, path)
 		if err != nil {
@@ -138,7 +135,7 @@ func (e *expand) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		dyn.Key("libraries"),
 	)
 
-	envDepsPattern := dyn.NewPattern(
+	envDeps := dyn.NewPattern(
 		dyn.Key("resources"),
 		dyn.Key("jobs"),
 		dyn.AnyKey(),
@@ -158,7 +155,7 @@ func (e *expand) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 			fn:      expandLibraries,
 		},
 		{
-			pattern: envDepsPattern,
+			pattern: envDeps,
 			fn:      expandEnvironmentDeps,
 		},
 	}
@@ -171,7 +168,7 @@ func (e *expand) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 			v, err = dyn.MapByPattern(v, expander.pattern, func(p dyn.Path, lv dyn.Value) (dyn.Value, error) {
 				d, output := expander.fn(b, p, lv)
 				diags = diags.Extend(d)
-				return dyn.V(output), err
+				return dyn.V(output), nil
 			})
 
 			if err != nil {
