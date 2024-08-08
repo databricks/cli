@@ -10,16 +10,17 @@ import (
 
 func TestIsLocalPath(t *testing.T) {
 	// Relative paths, paths with the file scheme, and Windows paths.
+	assert.True(t, IsLocalPath("some/local/path"))
 	assert.True(t, IsLocalPath("./some/local/path"))
 	assert.True(t, IsLocalPath("file://path/to/package"))
 	assert.True(t, IsLocalPath("C:\\path\\to\\package"))
+	assert.True(t, IsLocalPath("/some/full/path"))
 	assert.True(t, IsLocalPath("myfile.txt"))
 	assert.True(t, IsLocalPath("./myfile.txt"))
 	assert.True(t, IsLocalPath("../myfile.txt"))
 	assert.True(t, IsLocalPath("file:///foo/bar/myfile.txt"))
 
-	// Absolute paths.
-	assert.False(t, IsLocalPath("/some/full/path"))
+	// Remote paths.
 	assert.False(t, IsLocalPath("/Workspace/path/to/package"))
 	assert.False(t, IsLocalPath("/Users/path/to/package"))
 
@@ -48,6 +49,8 @@ func TestIsEnvironmentDependencyLocal(t *testing.T) {
 		path     string
 		expected bool
 	}){
+		{path: "local/*.whl", expected: true},
+		{path: "local/test.whl", expected: true},
 		{path: "./local/*.whl", expected: true},
 		{path: ".\\local\\*.whl", expected: true},
 		{path: "./local/mypath.whl", expected: true},
@@ -59,14 +62,12 @@ func TestIsEnvironmentDependencyLocal(t *testing.T) {
 		{path: "../../local/*.whl", expected: true},
 		{path: "..\\..\\local\\*.whl", expected: true},
 		{path: "pypipackage", expected: false},
-		{path: "pypipackage/test.whl", expected: false},
-		{path: "pypipackage/*.whl", expected: false},
 		{path: "/Volumes/catalog/schema/volume/path.whl", expected: false},
 		{path: "/Workspace/my_project/dist.whl", expected: false},
 		{path: "-r /Workspace/my_project/requirements.txt", expected: false},
 	}
 
-	for _, tc := range testCases {
-		require.Equal(t, IsEnvironmentDependencyLocal(tc.path), tc.expected)
+	for i, tc := range testCases {
+		require.Equalf(t, tc.expected, IsLibraryLocal(tc.path), "failed case: %d, path: %s", i, tc.path)
 	}
 }

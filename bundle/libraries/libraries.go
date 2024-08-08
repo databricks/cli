@@ -35,7 +35,7 @@ func isEnvsWithLocalLibraries(envs []jobs.JobEnvironment) bool {
 		}
 
 		for _, l := range e.Spec.Dependencies {
-			if IsEnvironmentDependencyLocal(l) {
+			if IsLibraryLocal(l) {
 				return true
 			}
 		}

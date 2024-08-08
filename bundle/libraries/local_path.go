@@ -34,18 +34,36 @@ func IsLocalPath(p string) bool {
 		return false
 	}
 
-	// If path starts with /, it's a remote absolute path
-	return !path.IsAbs(p)
+	// if path starts with . or .., it's a local path
+	if strings.HasPrefix(p, ".") || strings.HasPrefix(p, "..") {
+		return true
+	}
+
+	// If the path is absolute, it's might be a remote path.
+	if path.IsAbs(p) {
+		possiblePrefixes := []string{
+			"/Workspace", "/Users", "/mnt", "/dbfs",
+			"/Volumes", "/Shared",
+		}
+
+		for _, prefix := range possiblePrefixes {
+			if strings.HasPrefix(p, prefix) {
+				return false
+			}
+		}
+	}
+
+	return true
 }
 
-// IsEnvironmentDependencyLocal returns true if the specified dependency
+// IsLibraryLocal returns true if the specified library or environment dependency
 // should be interpreted as a local path.
-// We use this to check if the dependency in environment spec is local.
+// We use this to check if the dependency in environment spec is local or that library is local.
 // We can't use IsLocalPath beacuse environment dependencies can be
 // a pypi package name which can be misinterpreted as a local path by IsLocalPath.
-func IsEnvironmentDependencyLocal(dep string) bool {
+func IsLibraryLocal(dep string) bool {
 	possiblePrefixes := []string{
-		".",
+		".", "..",
 	}
 
 	for _, prefix := range possiblePrefixes {
@@ -54,7 +72,17 @@ func IsEnvironmentDependencyLocal(dep string) bool {
 		}
 	}
 
-	return false
+	// If the dependency is a requirements file, it's not a valid local path
+	if strings.HasPrefix(dep, "-r") {
+		return false
+	}
+
+	// If the dependency has no extension, it's a PyPi package name
+	if path.Ext(dep) == "" {
+		return false
+	}
+
+	return IsLocalPath(dep)
 }
 
 func isRemoteStorageScheme(path string) bool {
