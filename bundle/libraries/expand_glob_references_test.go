@@ -45,6 +45,12 @@ func TestGlobReferencesExpandedForTaskLibraries(t *testing.T) {
 										{
 											Egg: "egg/*.egg",
 										},
+										{
+											Jar: "/Workspace/path/to/jar/*.jar",
+										},
+										{
+											Whl: "/some/full/path/to/whl/*.whl",
+										},
 									},
 								},
 							},
@@ -81,6 +87,12 @@ func TestGlobReferencesExpandedForTaskLibraries(t *testing.T) {
 		{
 			Egg: "egg/*.egg",
 		},
+		{
+			Jar: "/Workspace/path/to/jar/*.jar",
+		},
+		{
+			Whl: "/some/full/path/to/whl/*.whl",
+		},
 	}, task.Libraries)
 }
 
@@ -112,6 +124,7 @@ func TestGlobReferencesExpandedForEnvironmentsDeps(t *testing.T) {
 											"./whl/*.whl",
 											"/Workspace/path/to/whl/my.whl",
 											"./jar/*.jar",
+											"/some/local/path/to/whl/*.whl",
 										},
 									},
 								},
@@ -136,6 +149,6 @@ func TestGlobReferencesExpandedForEnvironmentsDeps(t *testing.T) {
 		"/Workspace/path/to/whl/my.whl",
 		filepath.Join(dir, "jar", "my1.jar"),
 		filepath.Join(dir, "jar", "my2.jar"),
+		"/some/local/path/to/whl/*.whl",
 	}, env.Spec.Dependencies)
-
 }

@@ -59,7 +59,7 @@ func expandLibraries(b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diagnostic
 	for i, lib := range libs {
 		lp := p.Append(dyn.Index(i))
 		path, libType, supported := getLibDetails(lib)
-		if !supported || !IsLibraryLocal(path) {
+		if !supported || !IsLocalPath(path) {
 			output = append(output, lib)
 			continue
 		}
@@ -90,7 +90,7 @@ func expandEnvironmentDeps(b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diag
 	for i, dep := range deps {
 		lp := p.Append(dyn.Index(i))
 		path := dep.MustString()
-		if !IsLibraryLocal(path) {
+		if !IsLocalPath(path) || !IsLibraryLocal(path) {
 			output = append(output, dep)
 			continue
 		}
