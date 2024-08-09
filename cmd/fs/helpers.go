@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/completer"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/filer/completer"
 	"github.com/spf13/cobra"
 )
 
@@ -73,6 +73,10 @@ func newValidArgs() *validArgs {
 func (v *validArgs) Validate(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	cmd.SetContext(root.SkipPrompt(cmd.Context()))
 
+	if len(args) >= v.pathArgCount {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+
 	err := v.mustWorkspaceClientFunc(cmd, args)
 	if err != nil {
 		return nil, cobra.ShellCompDirectiveError
@@ -81,10 +85,6 @@ func (v *validArgs) Validate(cmd *cobra.Command, args []string, toComplete strin
 	filer, toCompletePath, err := v.filerForPathFunc(cmd.Context(), toComplete)
 	if err != nil {
 		return nil, cobra.ShellCompDirectiveError
-	}
-
-	if len(args) >= v.pathArgCount {
-		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
 
 	completer := completer.New(cmd.Context(), filer, v.onlyDirs)
