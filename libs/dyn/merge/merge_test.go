@@ -10,15 +10,15 @@ import (
 func TestMergeMaps(t *testing.T) {
 	l1 := dyn.Location{File: "file1", Line: 1, Column: 2}
 	v1 := dyn.NewValue(map[string]dyn.Value{
-		"foo": dyn.NewValue("bar", []dyn.Location{l1}),
-		"bar": dyn.NewValue("baz", []dyn.Location{l1}),
-	}, []dyn.Location{l1})
+		"foo": dyn.NewValue("bar", dyn.Locations{l1}),
+		"bar": dyn.NewValue("baz", dyn.Locations{l1}),
+	}, dyn.Locations{l1})
 
 	l2 := dyn.Location{File: "file2", Line: 3, Column: 4}
 	v2 := dyn.NewValue(map[string]dyn.Value{
-		"bar": dyn.NewValue("qux", []dyn.Location{l2}),
-		"qux": dyn.NewValue("foo", []dyn.Location{l2}),
-	}, []dyn.Location{l2})
+		"bar": dyn.NewValue("qux", dyn.Locations{l2}),
+		"qux": dyn.NewValue("foo", dyn.Locations{l2}),
+	}, dyn.Locations{l2})
 
 	// Merge v2 into v1.
 	{
@@ -31,10 +31,10 @@ func TestMergeMaps(t *testing.T) {
 		}, out.AsAny())
 
 		// Locations of both values should be preserved.
-		assert.Equal(t, []dyn.Location{l1, l2}, out.Locations())
-		assert.Equal(t, []dyn.Location{l2, l1}, out.Get("bar").Locations())
-		assert.Equal(t, []dyn.Location{l1}, out.Get("foo").Locations())
-		assert.Equal(t, []dyn.Location{l2}, out.Get("qux").Locations())
+		assert.Equal(t, dyn.Locations{l1, l2}, out.Locations())
+		assert.Equal(t, dyn.Locations{l2, l1}, out.Get("bar").Locations())
+		assert.Equal(t, dyn.Locations{l1}, out.Get("foo").Locations())
+		assert.Equal(t, dyn.Locations{l2}, out.Get("qux").Locations())
 
 		// Location of the merged value should be the location of v1.
 		assert.Equal(t, l1, out.Location())
@@ -59,10 +59,10 @@ func TestMergeMaps(t *testing.T) {
 		}, out.AsAny())
 
 		// Locations of both values should be preserved.
-		assert.Equal(t, []dyn.Location{l2, l1}, out.Locations())
-		assert.Equal(t, []dyn.Location{l1, l2}, out.Get("bar").Locations())
-		assert.Equal(t, []dyn.Location{l1}, out.Get("foo").Locations())
-		assert.Equal(t, []dyn.Location{l2}, out.Get("qux").Locations())
+		assert.Equal(t, dyn.Locations{l2, l1}, out.Locations())
+		assert.Equal(t, dyn.Locations{l1, l2}, out.Get("bar").Locations())
+		assert.Equal(t, dyn.Locations{l1}, out.Get("foo").Locations())
+		assert.Equal(t, dyn.Locations{l2}, out.Get("qux").Locations())
 
 		// Location of the merged value should be the location of v2.
 		assert.Equal(t, l2, out.Location())
@@ -82,10 +82,10 @@ func TestMergeMapsNil(t *testing.T) {
 	l := dyn.Location{File: "file", Line: 1, Column: 2}
 	v := dyn.NewValue(map[string]dyn.Value{
 		"foo": dyn.V("bar"),
-	}, []dyn.Location{l})
+	}, dyn.Locations{l})
 
 	nilL := dyn.Location{File: "file", Line: 3, Column: 4}
-	nilV := dyn.NewValue(nil, []dyn.Location{nilL})
+	nilV := dyn.NewValue(nil, dyn.Locations{nilL})
 
 	// Merge nil into v.
 	{
@@ -96,7 +96,7 @@ func TestMergeMapsNil(t *testing.T) {
 		}, out.AsAny())
 
 		// Locations of both values should be preserved.
-		assert.Equal(t, []dyn.Location{l, nilL}, out.Locations())
+		assert.Equal(t, dyn.Locations{l, nilL}, out.Locations())
 
 		// Location of the non-nil value should be returned by .Location().
 		assert.Equal(t, l, out.Location())
@@ -111,7 +111,7 @@ func TestMergeMapsNil(t *testing.T) {
 		}, out.AsAny())
 
 		// Locations of both values should be preserved.
-		assert.Equal(t, []dyn.Location{l, nilL}, out.Locations())
+		assert.Equal(t, dyn.Locations{l, nilL}, out.Locations())
 
 		// Location of the non-nil value should be returned by .Location().
 		assert.Equal(t, l, out.Location())
@@ -136,16 +136,16 @@ func TestMergeMapsError(t *testing.T) {
 func TestMergeSequences(t *testing.T) {
 	l1 := dyn.Location{File: "file1", Line: 1, Column: 2}
 	v1 := dyn.NewValue([]dyn.Value{
-		dyn.NewValue("bar", []dyn.Location{l1}),
-		dyn.NewValue("baz", []dyn.Location{l1}),
-	}, []dyn.Location{l1})
+		dyn.NewValue("bar", dyn.Locations{l1}),
+		dyn.NewValue("baz", dyn.Locations{l1}),
+	}, dyn.Locations{l1})
 
 	l2 := dyn.Location{File: "file2", Line: 3, Column: 4}
 	l3 := dyn.Location{File: "file3", Line: 5, Column: 6}
 	v2 := dyn.NewValue([]dyn.Value{
-		dyn.NewValue("qux", []dyn.Location{l2}),
-		dyn.NewValue("foo", []dyn.Location{l3}),
-	}, []dyn.Location{l2, l3})
+		dyn.NewValue("qux", dyn.Locations{l2}),
+		dyn.NewValue("foo", dyn.Locations{l3}),
+	}, dyn.Locations{l2, l3})
 
 	// Merge v2 into v1.
 	{
@@ -159,7 +159,7 @@ func TestMergeSequences(t *testing.T) {
 		}, out.AsAny())
 
 		// Locations of both values should be preserved.
-		assert.Equal(t, []dyn.Location{l1, l2, l3}, out.Locations())
+		assert.Equal(t, dyn.Locations{l1, l2, l3}, out.Locations())
 
 		// Location of the merged value should be the location of v1.
 		assert.Equal(t, l1, out.Location())
@@ -183,7 +183,7 @@ func TestMergeSequences(t *testing.T) {
 		}, out.AsAny())
 
 		// Locations of both values should be preserved.
-		assert.Equal(t, []dyn.Location{l2, l3, l1}, out.Locations())
+		assert.Equal(t, dyn.Locations{l2, l3, l1}, out.Locations())
 
 		// Location of the merged value should be the location of v2.
 		assert.Equal(t, l2, out.Location())
@@ -238,8 +238,8 @@ func TestMergeSequencesError(t *testing.T) {
 func TestMergePrimitives(t *testing.T) {
 	l1 := dyn.Location{File: "file1", Line: 1, Column: 2}
 	l2 := dyn.Location{File: "file2", Line: 3, Column: 4}
-	v1 := dyn.NewValue("bar", []dyn.Location{l1})
-	v2 := dyn.NewValue("baz", []dyn.Location{l2})
+	v1 := dyn.NewValue("bar", dyn.Locations{l1})
+	v2 := dyn.NewValue("baz", dyn.Locations{l2})
 
 	// Merge v2 into v1.
 	{
@@ -248,7 +248,7 @@ func TestMergePrimitives(t *testing.T) {
 		assert.Equal(t, "baz", out.AsAny())
 
 		// Locations of both values should be preserved.
-		assert.Equal(t, []dyn.Location{l2, l1}, out.Locations())
+		assert.Equal(t, dyn.Locations{l2, l1}, out.Locations())
 
 		// Location of the merged value should be the location of v2, the second value.
 		assert.Equal(t, l2, out.Location())
@@ -261,7 +261,7 @@ func TestMergePrimitives(t *testing.T) {
 		assert.Equal(t, "bar", out.AsAny())
 
 		// Locations of both values should be preserved.
-		assert.Equal(t, []dyn.Location{l1, l2}, out.Locations())
+		assert.Equal(t, dyn.Locations{l1, l2}, out.Locations())
 
 		// Location of the merged value should be the location of v1, the second value.
 		assert.Equal(t, l1, out.Location())

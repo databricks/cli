@@ -33,9 +33,9 @@ func TestValueAsMap(t *testing.T) {
 		map[string]dyn.Value{
 			"key": dyn.NewValue(
 				"value",
-				[]dyn.Location{{File: "file", Line: 1, Column: 2}}),
+				dyn.Locations{{File: "file", Line: 1, Column: 2}}),
 		},
-		[]dyn.Location{{File: "file", Line: 1, Column: 2}},
+		dyn.Locations{{File: "file", Line: 1, Column: 2}},
 	)
 
 	m, ok := mapValue.AsMap()
