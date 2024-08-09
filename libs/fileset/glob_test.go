@@ -32,7 +32,8 @@ func TestGlobFileset(t *testing.T) {
 	files, err := g.All()
 	require.NoError(t, err)
 
-	require.Equal(t, len(files), len(entries))
+	// +1 as there's one folder in ../filer
+	require.Equal(t, len(files)+1, len(entries))
 	for _, f := range files {
 		exists := slices.ContainsFunc(entries, func(de fs.DirEntry) bool {
 			return de.Name() == path.Base(f.Relative)
@@ -62,7 +63,8 @@ func TestGlobFilesetWithRelativeRoot(t *testing.T) {
 
 	files, err := g.All()
 	require.NoError(t, err)
-	require.Equal(t, len(files), len(entries))
+	// +1 as there's one folder in ../filer
+	require.Equal(t, len(files)+1, len(entries))
 }
 
 func TestGlobFilesetRecursively(t *testing.T) {
