@@ -1,0 +1,18 @@
+bundle:
+  name: variable reference string
+
+variables:
+  my_var:
+    description: does not matter
+    default: "hello"
+
+resources:
+  jobs:
+    foo:
+      name: ${var.my_var}
+
+targets:
+  staging:
+    default: true
+    variables:
+      my_var: "world"
