@@ -110,6 +110,7 @@ func TestTranslatePaths(t *testing.T) {
 	touchNotebookFile(t, filepath.Join(dir, "my_pipeline_notebook.py"))
 	touchEmptyFile(t, filepath.Join(dir, "my_python_file.py"))
 	touchEmptyFile(t, filepath.Join(dir, "dist", "task.jar"))
+	touchEmptyFile(t, filepath.Join(dir, "requirements.txt"))
 
 	b := &bundle.Bundle{
 		RootPath:   dir,
@@ -139,6 +140,9 @@ func TestTranslatePaths(t *testing.T) {
 								{
 									NotebookTask: &jobs.NotebookTask{
 										NotebookPath: "./my_job_notebook.py",
+									},
+									Libraries: []compute.Library{
+										{Requirements: "./requirements.txt"},
 									},
 								},
 								{
@@ -231,6 +235,11 @@ func TestTranslatePaths(t *testing.T) {
 		t,
 		"/bundle/my_job_notebook",
 		b.Config.Resources.Jobs["job"].Tasks[2].NotebookTask.NotebookPath,
+	)
+	assert.Equal(
+		t,
+		"/bundle/requirements.txt",
+		b.Config.Resources.Jobs["job"].Tasks[2].Libraries[0].Requirements,
 	)
 	assert.Equal(
 		t,

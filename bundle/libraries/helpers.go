@@ -12,5 +12,8 @@ func libraryPath(library *compute.Library) string {
 	if library.Egg != "" {
 		return library.Egg
 	}
+	if library.Requirements != "" {
+		return library.Requirements
+	}
 	return ""
 }

@@ -13,5 +13,6 @@ func TestLibraryPath(t *testing.T) {
 	assert.Equal(t, path, libraryPath(&compute.Library{Whl: path}))
 	assert.Equal(t, path, libraryPath(&compute.Library{Jar: path}))
 	assert.Equal(t, path, libraryPath(&compute.Library{Egg: path}))
+	assert.Equal(t, path, libraryPath(&compute.Library{Requirements: path}))
 	assert.Equal(t, "", libraryPath(&compute.Library{}))
 }
