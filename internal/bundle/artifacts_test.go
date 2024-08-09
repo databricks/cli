@@ -8,9 +8,9 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -74,7 +74,7 @@ func TestAccUploadArtifactFileToCorrectRemotePath(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(ctx, b, artifacts.BasicUpload("test"))
+	diags := bundle.Apply(ctx, b, bundle.Seq(libraries.ExpandGlobReferences(), libraries.Upload()))
 	require.NoError(t, diags.Error())
 
 	// The remote path attribute on the artifact file should have been set.
@@ -138,7 +138,7 @@ func TestAccUploadArtifactFileToCorrectRemotePathWithEnvironments(t *testing.T) 
 		},
 	}
 
-	diags := bundle.Apply(ctx, b, artifacts.BasicUpload("test"))
+	diags := bundle.Apply(ctx, b, bundle.Seq(libraries.ExpandGlobReferences(), libraries.Upload()))
 	require.NoError(t, diags.Error())
 
 	// The remote path attribute on the artifact file should have been set.
@@ -207,7 +207,7 @@ func TestAccUploadArtifactFileToCorrectRemotePathForVolumes(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(ctx, b, artifacts.BasicUpload("test"))
+	diags := bundle.Apply(ctx, b, bundle.Seq(libraries.ExpandGlobReferences(), libraries.Upload()))
 	require.NoError(t, diags.Error())
 
 	// The remote path attribute on the artifact file should have been set.

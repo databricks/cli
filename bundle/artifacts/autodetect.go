@@ -29,6 +29,5 @@ func (m *autodetect) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 
 	return bundle.Apply(ctx, b, bundle.Seq(
 		whl.DetectPackage(),
-		whl.DefineArtifactsFromLibraries(),
 	))
 }
