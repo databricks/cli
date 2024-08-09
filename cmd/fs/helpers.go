@@ -8,6 +8,8 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/filer/completer"
+	"github.com/spf13/cobra"
 )
 
 func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, error) {
@@ -46,6 +48,58 @@ func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, er
 	return f, path, err
 }
 
+const dbfsPrefix string = "dbfs:"
+
 func isDbfsPath(path string) bool {
-	return strings.HasPrefix(path, "dbfs:/")
+	return strings.HasPrefix(path, dbfsPrefix)
+}
+
+type validArgs struct {
+	mustWorkspaceClientFunc func(cmd *cobra.Command, args []string) error
+	filerForPathFunc        func(ctx context.Context, fullPath string) (filer.Filer, string, error)
+	pathArgCount            int
+	onlyDirs                bool
+}
+
+func newValidArgs() *validArgs {
+	return &validArgs{
+		mustWorkspaceClientFunc: root.MustWorkspaceClient,
+		filerForPathFunc:        filerForPath,
+		pathArgCount:            1,
+		onlyDirs:                false,
+	}
+}
+
+func (v *validArgs) Validate(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	cmd.SetContext(root.SkipPrompt(cmd.Context()))
+
+	if len(args) >= v.pathArgCount {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	err := v.mustWorkspaceClientFunc(cmd, args)
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveError
+	}
+
+	filer, toCompletePath, err := v.filerForPathFunc(cmd.Context(), toComplete)
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveError
+	}
+
+	completer := completer.New(cmd.Context(), filer, v.onlyDirs)
+
+	// Dbfs should have a prefix and always use the "/" separator
+	isDbfsPath := isDbfsPath(toComplete)
+	if isDbfsPath {
+		completer.SetPrefix(dbfsPrefix)
+		completer.SetIsLocalPath(false)
+	}
+
+	completions, directive, err := completer.CompletePath(toCompletePath)
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveError
+	}
+
+	return completions, directive
 }

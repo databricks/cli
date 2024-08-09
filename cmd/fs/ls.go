@@ -89,5 +89,9 @@ func newLsCommand() *cobra.Command {
 		`))
 	}
 
+	v := newValidArgs()
+	v.onlyDirs = true
+	cmd.ValidArgsFunction = v.Validate
+
 	return cmd
 }
