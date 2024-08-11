@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/databricks/cli/bundle/config/paths"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -20,10 +19,6 @@ type QualityMonitor struct {
 	// (catalog_name.schema_name.table_name) that can be used
 	// as a reference in other resources. This value is returned by terraform.
 	ID string `json:"id,omitempty" bundle:"readonly"`
-
-	// Path to config file where the resource is defined. All bundle resources
-	// include this for interpolation purposes.
-	paths.Paths
 
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
 }
