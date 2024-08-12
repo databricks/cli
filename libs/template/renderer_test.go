@@ -657,6 +657,9 @@ func TestRendererSubTemplateInPath(t *testing.T) {
 	ctx := context.Background()
 	ctx = root.SetWorkspaceClient(ctx, nil)
 
+	// Copy the template directory to a temporary directory where we can safely include a templated file path.
+	// These paths include characters that are forbidden in Go modules, so we can't use the testdata directory.
+	// Also see https://github.com/databricks/cli/pull/1671.
 	templateDir := t.TempDir()
 	testutil.CopyDirectory(t, "./testdata/template-in-path", templateDir)
 	testutil.Touch(t, filepath.Join(templateDir, `template/{{template "dir_name"}}/{{template "file_name"}}`))
