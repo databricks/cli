@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/databricks/cli/bundle/config/paths"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -12,6 +12,9 @@ import (
 )
 
 type RegisteredModel struct {
+	// dynamic value representation of the resource.
+	v dyn.Value
+
 	// This is a resource agnostic implementation of grants.
 	// Implementation could be different based on the resource type.
 	Grants []Grant `json:"grants,omitempty"`
@@ -20,10 +23,6 @@ type RegisteredModel struct {
 	// (catalog_name.schema_name.model_name) that can be used
 	// as a reference in other resources. This value is returned by terraform.
 	ID string `json:"id,omitempty" bundle:"readonly"`
-
-	// Path to config file where the resource is defined. All bundle resources
-	// include this for interpolation purposes.
-	paths.Paths
 
 	// This represents the input args for terraform, and will get converted
 	// to a HCL representation for CRUD
@@ -56,7 +55,7 @@ func (s *RegisteredModel) TerraformResourceName() string {
 }
 
 func (s *RegisteredModel) Validate() error {
-	if s == nil || !s.DynamicValue.IsValid() {
+	if s == nil || !s.v.IsValid() {
 		return fmt.Errorf("registered model is not defined")
 	}
 

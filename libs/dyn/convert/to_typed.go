@@ -9,6 +9,10 @@ import (
 	"github.com/databricks/cli/libs/dyn/dynvar"
 )
 
+// Populate a destination typed value from a source dynamic value. At any point
+// while walking the destination type tree using reflection, if this function sees a
+// field with type dyn.Value it will populate that field with the appropriate source
+// dynamic value.
 func ToTyped(dst any, src dyn.Value) error {
 	dstv := reflect.ValueOf(dst)
 

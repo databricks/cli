@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -11,6 +12,9 @@ import (
 )
 
 type QualityMonitor struct {
+	// dynamic value representation of the resource.
+	v dyn.Value
+
 	// Represents the Input Arguments for Terraform and will get
 	// converted to a HCL representation for CRUD
 	*catalog.CreateMonitor
@@ -47,7 +51,7 @@ func (s *QualityMonitor) TerraformResourceName() string {
 }
 
 func (s *QualityMonitor) Validate() error {
-	if s == nil || !s.DynamicValue.IsValid() {
+	if s == nil || !s.v.IsValid() {
 		return fmt.Errorf("quality monitor is not defined")
 	}
 

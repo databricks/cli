@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/databricks/cli/bundle/config/paths"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -12,6 +12,9 @@ import (
 )
 
 type ModelServingEndpoint struct {
+	// dynamic value representation of the resource.
+	v dyn.Value
+
 	// This represents the input args for terraform, and will get converted
 	// to a HCL representation for CRUD
 	*serving.CreateServingEndpoint
@@ -19,10 +22,6 @@ type ModelServingEndpoint struct {
 	// This represents the id (ie serving_endpoint_id) that can be used
 	// as a reference in other resources. This value is returned by terraform.
 	ID string `json:"id,omitempty" bundle:"readonly"`
-
-	// Path to config file where the resource is defined. All bundle resources
-	// include this for interpolation purposes.
-	paths.Paths
 
 	// This is a resource agnostic implementation of permissions for ACLs.
 	// Implementation could be different based on the resource type.
@@ -55,7 +54,7 @@ func (s *ModelServingEndpoint) TerraformResourceName() string {
 }
 
 func (s *ModelServingEndpoint) Validate() error {
-	if s == nil || !s.DynamicValue.IsValid() {
+	if s == nil || !s.v.IsValid() {
 		return fmt.Errorf("serving endpoint is not defined")
 	}
 
