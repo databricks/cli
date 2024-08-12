@@ -25,5 +25,3 @@ func (s *Schema) UnmarshalJSON(b []byte) error {
 func (s Schema) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
-
-// TODO: Implement the ConfigResource interface for this resource. Otherwise refactor?
