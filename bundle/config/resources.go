@@ -27,8 +27,6 @@ type resource struct {
 	key           string
 }
 
-// TODO: Add UC schema resource here.
-// TODO: Make this general and not specfix to specific resources?
 func (r *Resources) allResources() []resource {
 	all := make([]resource, 0)
 	for k, e := range r.Jobs {
