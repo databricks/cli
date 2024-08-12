@@ -54,7 +54,6 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		artifact.Path = b.RootPath
 	}
 
-	// Check if artifact path is absolute, if not, make it absolute
 	if !filepath.IsAbs(artifact.Path) {
 		artifact.Path = filepath.Join(dirPath, artifact.Path)
 	}
