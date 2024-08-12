@@ -34,11 +34,6 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		return diag.Errorf("artifact doesn't exist: %s", m.name)
 	}
 
-	// If artifact path is not provided, use bundle root dir
-	if artifact.Path == "" {
-		artifact.Path = b.RootPath
-	}
-
 	// TODO: Do we even need implict dyn value in convert to_typed anymore?
 	// worth asking in the PR.
 
@@ -54,9 +49,13 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		}
 	}
 
+	// If artifact path is not provided, use bundle root dir
+	if artifact.Path == "" {
+		artifact.Path = b.RootPath
+	}
+
 	// Check if artifact path is absolute, if not, make it absolute
 	if !filepath.IsAbs(artifact.Path) {
-		dirPath := filepath.Dir(artifact.DynamicValue.Location().File)
 		artifact.Path = filepath.Join(dirPath, artifact.Path)
 	}
 
