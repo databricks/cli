@@ -21,6 +21,8 @@ type Resources struct {
 	Schemas               map[string]*resources.Schema               `json:"schemas,omitempty"`
 }
 
+// TODO: Add the validation back in for empty resources.
+// TODO: Did we lose coverage? Do I need to add a new test for this?
 type ConfigResource interface {
 	// Function to assert if the resource exists in the workspace configured in
 	// the input workspace client.
