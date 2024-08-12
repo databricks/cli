@@ -3,59 +3,70 @@ package template
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"testing"
 	"text/template"
 
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func testConfig(t *testing.T) *config {
-	c, err := newConfig(context.Background(), "./testdata/config-test-schema/test-schema.json")
-	require.NoError(t, err)
-	return c
-}
-
 func TestTemplateConfigAssignValuesFromFile(t *testing.T) {
-	c := testConfig(t)
+	testDir := "./testdata/config-assign-from-file"
 
-	err := c.assignValuesFromFile("./testdata/config-assign-from-file/config.json")
-	assert.NoError(t, err)
+	ctx := context.Background()
+	c, err := newConfig(ctx, filepath.Join(testDir, "schema.json"))
+	require.NoError(t, err)
 
-	assert.Equal(t, int64(1), c.values["int_val"])
-	assert.Equal(t, float64(2), c.values["float_val"])
-	assert.Equal(t, true, c.values["bool_val"])
-	assert.Equal(t, "hello", c.values["string_val"])
-}
-
-func TestTemplateConfigAssignValuesFromFileForInvalidIntegerValue(t *testing.T) {
-	c := testConfig(t)
-
-	err := c.assignValuesFromFile("./testdata/config-assign-from-file-invalid-int/config.json")
-	assert.EqualError(t, err, "failed to load config from file ./testdata/config-assign-from-file-invalid-int/config.json: failed to parse property int_val: cannot convert \"abc\" to an integer")
+	err = c.assignValuesFromFile(filepath.Join(testDir, "config.json"))
+	if assert.NoError(t, err) {
+		assert.Equal(t, int64(1), c.values["int_val"])
+		assert.Equal(t, float64(2), c.values["float_val"])
+		assert.Equal(t, true, c.values["bool_val"])
+		assert.Equal(t, "hello", c.values["string_val"])
+	}
 }
 
 func TestTemplateConfigAssignValuesFromFileDoesNotOverwriteExistingConfigs(t *testing.T) {
-	c := testConfig(t)
+	testDir := "./testdata/config-assign-from-file"
+
+	ctx := context.Background()
+	c, err := newConfig(ctx, filepath.Join(testDir, "schema.json"))
+	require.NoError(t, err)
+
 	c.values = map[string]any{
 		"string_val": "this-is-not-overwritten",
 	}
 
-	err := c.assignValuesFromFile("./testdata/config-assign-from-file/config.json")
-	assert.NoError(t, err)
+	err = c.assignValuesFromFile(filepath.Join(testDir, "config.json"))
+	if assert.NoError(t, err) {
+		assert.Equal(t, int64(1), c.values["int_val"])
+		assert.Equal(t, float64(2), c.values["float_val"])
+		assert.Equal(t, true, c.values["bool_val"])
+		assert.Equal(t, "this-is-not-overwritten", c.values["string_val"])
+	}
+}
 
-	assert.Equal(t, int64(1), c.values["int_val"])
-	assert.Equal(t, float64(2), c.values["float_val"])
-	assert.Equal(t, true, c.values["bool_val"])
-	assert.Equal(t, "this-is-not-overwritten", c.values["string_val"])
+func TestTemplateConfigAssignValuesFromFileForInvalidIntegerValue(t *testing.T) {
+	testDir := "./testdata/config-assign-from-file-invalid-int"
+
+	ctx := context.Background()
+	c, err := newConfig(ctx, filepath.Join(testDir, "schema.json"))
+	require.NoError(t, err)
+
+	err = c.assignValuesFromFile(filepath.Join(testDir, "config.json"))
+	assert.EqualError(t, err, fmt.Sprintf("failed to load config from file %s: failed to parse property int_val: cannot convert \"abc\" to an integer", filepath.Join(testDir, "config.json")))
 }
 
 func TestTemplateConfigAssignValuesFromFileFiltersPropertiesNotInTheSchema(t *testing.T) {
-	c := testConfig(t)
+	testDir := "./testdata/config-assign-from-file-unknown-property"
 
-	err := c.assignValuesFromFile("./testdata/config-assign-from-file-unknown-property/config.json")
+	ctx := context.Background()
+	c, err := newConfig(ctx, filepath.Join(testDir, "schema.json"))
+	require.NoError(t, err)
+
+	err = c.assignValuesFromFile(filepath.Join(testDir, "config.json"))
 	assert.NoError(t, err)
 
 	// assert only the known property is loaded
@@ -63,37 +74,66 @@ func TestTemplateConfigAssignValuesFromFileFiltersPropertiesNotInTheSchema(t *te
 	assert.Equal(t, "i am a known property", c.values["string_val"])
 }
 
-func TestTemplateConfigAssignDefaultValues(t *testing.T) {
-	c := testConfig(t)
+func TestTemplateConfigAssignValuesFromDefaultValues(t *testing.T) {
+	testDir := "./testdata/config-assign-from-default-value"
 
 	ctx := context.Background()
-	ctx = root.SetWorkspaceClient(ctx, nil)
-	helpers := loadHelpers(ctx)
-	r, err := newRenderer(ctx, nil, helpers, "./testdata/template-in-path/template", "./testdata/template-in-path/library", t.TempDir())
+	c, err := newConfig(ctx, filepath.Join(testDir, "schema.json"))
+	require.NoError(t, err)
+
+	r, err := newRenderer(ctx, nil, nil, "./testdata/empty/template", "./testdata/empty/library", t.TempDir())
 	require.NoError(t, err)
 
 	err = c.assignDefaultValues(r)
-	assert.NoError(t, err)
+	if assert.NoError(t, err) {
+		assert.Equal(t, int64(123), c.values["int_val"])
+		assert.Equal(t, float64(123), c.values["float_val"])
+		assert.Equal(t, true, c.values["bool_val"])
+		assert.Equal(t, "hello", c.values["string_val"])
+	}
+}
 
-	assert.Len(t, c.values, 2)
-	assert.Equal(t, "my_file", c.values["string_val"])
-	assert.Equal(t, int64(123), c.values["int_val"])
+func TestTemplateConfigAssignValuesFromTemplatedDefaultValues(t *testing.T) {
+	testDir := "./testdata/config-assign-from-templated-default-value"
+
+	ctx := context.Background()
+	c, err := newConfig(ctx, filepath.Join(testDir, "schema.json"))
+	require.NoError(t, err)
+
+	r, err := newRenderer(ctx, nil, nil, filepath.Join(testDir, "template/template"), filepath.Join(testDir, "template/library"), t.TempDir())
+	require.NoError(t, err)
+
+	// Note: only the string value is templated.
+	// The JSON schema package doesn't allow using a string default for integer types.
+	err = c.assignDefaultValues(r)
+	if assert.NoError(t, err) {
+		assert.Equal(t, int64(123), c.values["int_val"])
+		assert.Equal(t, float64(123), c.values["float_val"])
+		assert.Equal(t, true, c.values["bool_val"])
+		assert.Equal(t, "world", c.values["string_val"])
+	}
 }
 
 func TestTemplateConfigValidateValuesDefined(t *testing.T) {
-	c := testConfig(t)
+	ctx := context.Background()
+	c, err := newConfig(ctx, "testdata/config-test-schema/test-schema.json")
+	require.NoError(t, err)
+
 	c.values = map[string]any{
 		"int_val":   1,
 		"float_val": 1.0,
 		"bool_val":  false,
 	}
 
-	err := c.validate()
+	err = c.validate()
 	assert.EqualError(t, err, "validation for template input parameters failed. no value provided for required property string_val")
 }
 
 func TestTemplateConfigValidateTypeForValidConfig(t *testing.T) {
-	c := testConfig(t)
+	ctx := context.Background()
+	c, err := newConfig(ctx, "testdata/config-test-schema/test-schema.json")
+	require.NoError(t, err)
+
 	c.values = map[string]any{
 		"int_val":    1,
 		"float_val":  1.1,
@@ -101,12 +141,15 @@ func TestTemplateConfigValidateTypeForValidConfig(t *testing.T) {
 		"string_val": "abcd",
 	}
 
-	err := c.validate()
+	err = c.validate()
 	assert.NoError(t, err)
 }
 
 func TestTemplateConfigValidateTypeForUnknownField(t *testing.T) {
-	c := testConfig(t)
+	ctx := context.Background()
+	c, err := newConfig(ctx, "testdata/config-test-schema/test-schema.json")
+	require.NoError(t, err)
+
 	c.values = map[string]any{
 		"unknown_prop": 1,
 		"int_val":      1,
@@ -115,12 +158,15 @@ func TestTemplateConfigValidateTypeForUnknownField(t *testing.T) {
 		"string_val":   "abcd",
 	}
 
-	err := c.validate()
+	err = c.validate()
 	assert.EqualError(t, err, "validation for template input parameters failed. property unknown_prop is not defined in the schema")
 }
 
 func TestTemplateConfigValidateTypeForInvalidType(t *testing.T) {
-	c := testConfig(t)
+	ctx := context.Background()
+	c, err := newConfig(ctx, "testdata/config-test-schema/test-schema.json")
+	require.NoError(t, err)
+
 	c.values = map[string]any{
 		"int_val":    "this-should-be-an-int",
 		"float_val":  1.1,
@@ -128,7 +174,7 @@ func TestTemplateConfigValidateTypeForInvalidType(t *testing.T) {
 		"string_val": "abcd",
 	}
 
-	err := c.validate()
+	err = c.validate()
 	assert.EqualError(t, err, "validation for template input parameters failed. incorrect type for property int_val: expected type integer, but value is \"this-should-be-an-int\"")
 }
 
@@ -222,19 +268,6 @@ func TestTemplateEnumValidation(t *testing.T) {
 		},
 	}
 	assert.NoError(t, c.validate())
-}
-
-func TestAssignDefaultValuesWithTemplatedDefaults(t *testing.T) {
-	c := testConfig(t)
-	ctx := context.Background()
-	ctx = root.SetWorkspaceClient(ctx, nil)
-	helpers := loadHelpers(ctx)
-	r, err := newRenderer(ctx, nil, helpers, "./testdata/templated-defaults/template", "./testdata/templated-defaults/library", t.TempDir())
-	require.NoError(t, err)
-
-	err = c.assignDefaultValues(r)
-	assert.NoError(t, err)
-	assert.Equal(t, "my_file", c.values["string_val"])
 }
 
 func TestTemplateSchemaErrorsWithEmptyDescription(t *testing.T) {

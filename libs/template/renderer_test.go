@@ -16,6 +16,7 @@ import (
 	bundleConfig "github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/databricks-sdk-go"
@@ -655,15 +656,21 @@ func TestRendererFileTreeRendering(t *testing.T) {
 func TestRendererSubTemplateInPath(t *testing.T) {
 	ctx := context.Background()
 	ctx = root.SetWorkspaceClient(ctx, nil)
-	tmpDir := t.TempDir()
 
-	helpers := loadHelpers(ctx)
-	r, err := newRenderer(ctx, nil, helpers, "./testdata/template-in-path/template", "./testdata/template-in-path/library", tmpDir)
+	templateDir := t.TempDir()
+	testutil.CopyDirectory(t, "./testdata/template-in-path", templateDir)
+	testutil.Touch(t, filepath.Join(templateDir, `template/{{template "dir_name"}}/{{template "file_name"}}`))
+
+	tmpDir := t.TempDir()
+	r, err := newRenderer(ctx, nil, nil, filepath.Join(templateDir, "template"), filepath.Join(templateDir, "library"), tmpDir)
 	require.NoError(t, err)
 
 	err = r.walk()
 	require.NoError(t, err)
 
-	assert.Equal(t, filepath.Join(tmpDir, "my_directory", "my_file"), r.files[0].DstPath().absPath())
-	assert.Equal(t, "my_directory/my_file", r.files[0].DstPath().relPath)
+	if assert.Len(t, r.files, 2) {
+		f := r.files[1]
+		assert.Equal(t, filepath.Join(tmpDir, "my_directory", "my_file"), f.DstPath().absPath())
+		assert.Equal(t, "my_directory/my_file", f.DstPath().relPath)
+	}
 }
