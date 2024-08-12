@@ -14,6 +14,7 @@ import (
 // At any point while walking the destination type tree using
 // reflection, if this function sees an exported field with type dyn.Value it
 // will populate that field with the appropriate source dynamic value.
+// see PR: https://github.com/databricks/cli/pull/1010
 func ToTyped(dst any, src dyn.Value) error {
 	dstv := reflect.ValueOf(dst)
 
