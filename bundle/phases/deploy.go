@@ -50,7 +50,7 @@ func parseTerraformActions(changes []*tfjson.ResourceChange, toInclude func(typ 
 	return res
 }
 
-func approvalForUcSchemaDelete(ctx context.Context, b *bundle.Bundle) (bool, error) {
+func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	tf := b.Terraform
 	if tf == nil {
 		return false, fmt.Errorf("terraform not initialized")
@@ -161,7 +161,7 @@ func Deploy() bundle.Mutator {
 				terraform.CheckRunningResource(),
 				terraform.Plan(terraform.PlanGoal("deploy")),
 				bundle.If(
-					approvalForUcSchemaDelete,
+					approvalForDeploy,
 					deployCore,
 					bundle.LogString("Deployment cancelled!"),
 				),
