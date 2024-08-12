@@ -99,7 +99,7 @@ func approvalForUcSchemaDelete(ctx context.Context, b *bundle.Bundle) (bool, err
 
 	// One or more DLT pipelines is being recreated.
 	if len(dltActions) != 0 {
-		cmdio.LogString(ctx, "The following DLT pipelines will be recreated. Underlying tables will be unavailable for a transient period, until the newly recreated pipeline is run once successfully. History of previous pipeline update runs will be lost as a result of the recreation:")
+		cmdio.LogString(ctx, "The following DLT pipelines will be recreated. Underlying tables will be unavailable for a transient period until the newly recreated pipelines are run once successfully. History of previous pipeline update runs will be lost because of recreation:")
 		for _, action := range dltActions {
 			cmdio.Log(ctx, action)
 		}
