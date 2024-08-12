@@ -13,7 +13,7 @@ import (
 
 type MlflowModel struct {
 	// dynamic value representation of the resource.
-	v dyn.Value
+	DynamicValue dyn.Value
 
 	ID             string         `json:"id,omitempty" bundle:"readonly"`
 	Permissions    []Permission   `json:"permissions,omitempty"`
@@ -46,7 +46,7 @@ func (s *MlflowModel) TerraformResourceName() string {
 }
 
 func (s *MlflowModel) Validate() error {
-	if s == nil || !s.v.IsValid() {
+	if s == nil || !s.DynamicValue.IsValid() {
 		return fmt.Errorf("model is not defined")
 	}
 

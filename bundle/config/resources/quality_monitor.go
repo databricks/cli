@@ -13,7 +13,7 @@ import (
 
 type QualityMonitor struct {
 	// dynamic value representation of the resource.
-	v dyn.Value
+	DynamicValue dyn.Value
 
 	// Represents the Input Arguments for Terraform and will get
 	// converted to a HCL representation for CRUD
@@ -51,7 +51,7 @@ func (s *QualityMonitor) TerraformResourceName() string {
 }
 
 func (s *QualityMonitor) Validate() error {
-	if s == nil || !s.v.IsValid() {
+	if s == nil || !s.DynamicValue.IsValid() {
 		return fmt.Errorf("quality monitor is not defined")
 	}
 

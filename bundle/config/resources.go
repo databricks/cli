@@ -27,6 +27,8 @@ type resource struct {
 	key           string
 }
 
+// TODO: Add UC schema resource here.
+// TODO: Make this general and not specfix to specific resources?
 func (r *Resources) allResources() []resource {
 	all := make([]resource, 0)
 	for k, e := range r.Jobs {
@@ -65,21 +67,16 @@ func (r *Resources) VerifyAllResourcesDefined() error {
 	return nil
 }
 
-// ConfigureConfigFilePath sets the specified path for all resources contained in this instance.
-// This property is used to correctly resolve paths relative to the path
-// of the configuration file they were defined in.
-func (r *Resources) ConfigureConfigFilePath() {
-	for _, e := range r.Jobs {
-		e.ConfigureConfigFilePath()
-	}
-	for _, e := range r.Pipelines {
-		e.ConfigureConfigFilePath()
-	}
-}
-
 type ConfigResource interface {
+	// Function to assert if the resource exists in the workspace configured in
+	// the input workspace client.
 	Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error)
+
+	// Terraform equivalent name of the resource. For example "databricks_job"
+	// for jobs and "databricks_pipeline" for pipelines.
 	TerraformResourceName() string
+
+	// Validate the resource configuration.
 	Validate() error
 }
 

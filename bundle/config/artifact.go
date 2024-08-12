@@ -4,17 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/databricks/cli/bundle/config/paths"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/exec"
 )
 
 type Artifacts map[string]*Artifact
-
-func (artifacts Artifacts) ConfigureConfigFilePath() {
-	for _, artifact := range artifacts {
-		artifact.ConfigureConfigFilePath()
-	}
-}
 
 type ArtifactType string
 
@@ -41,7 +35,8 @@ type Artifact struct {
 
 	Executable exec.ExecutableType `json:"executable,omitempty"`
 
-	paths.Paths
+	// Dynamic value representation of the artifact
+	DynamicValue dyn.Value
 }
 
 func (a *Artifact) Build(ctx context.Context) ([]byte, error) {

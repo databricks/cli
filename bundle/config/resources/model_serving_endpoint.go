@@ -13,7 +13,7 @@ import (
 
 type ModelServingEndpoint struct {
 	// dynamic value representation of the resource.
-	v dyn.Value
+	DynamicValue dyn.Value
 
 	// This represents the input args for terraform, and will get converted
 	// to a HCL representation for CRUD
@@ -54,7 +54,7 @@ func (s *ModelServingEndpoint) TerraformResourceName() string {
 }
 
 func (s *ModelServingEndpoint) Validate() error {
-	if s == nil || !s.v.IsValid() {
+	if s == nil || !s.DynamicValue.IsValid() {
 		return fmt.Errorf("serving endpoint is not defined")
 	}
 

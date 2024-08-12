@@ -13,7 +13,7 @@ import (
 
 type RegisteredModel struct {
 	// dynamic value representation of the resource.
-	v dyn.Value
+	DynamicValue dyn.Value
 
 	// This is a resource agnostic implementation of grants.
 	// Implementation could be different based on the resource type.
@@ -55,7 +55,7 @@ func (s *RegisteredModel) TerraformResourceName() string {
 }
 
 func (s *RegisteredModel) Validate() error {
-	if s == nil || !s.v.IsValid() {
+	if s == nil || !s.DynamicValue.IsValid() {
 		return fmt.Errorf("registered model is not defined")
 	}
 
