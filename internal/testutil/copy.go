@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// CopyDirectory copies the contents of a directory to another directory.
+// The destination directory is created if it does not exist.
 func CopyDirectory(t *testing.T, src, dst string) {
 	err := filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
