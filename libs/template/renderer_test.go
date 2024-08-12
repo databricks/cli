@@ -662,7 +662,10 @@ func TestRendererSubTemplateInPath(t *testing.T) {
 	// Also see https://github.com/databricks/cli/pull/1671.
 	templateDir := t.TempDir()
 	testutil.CopyDirectory(t, "./testdata/template-in-path", templateDir)
-	testutil.Touch(t, filepath.Join(templateDir, `template/{{template "dir_name"}}/{{template "file_name"}}`))
+
+	// Use a backtick-quoted string; double quotes are a reserved character for Windows paths:
+	// https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file.
+	testutil.Touch(t, filepath.Join(templateDir, "template/{{template `dir_name`}}/{{template `file_name`}}"))
 
 	tmpDir := t.TempDir()
 	r, err := newRenderer(ctx, nil, nil, filepath.Join(templateDir, "template"), filepath.Join(templateDir, "library"), tmpDir)
