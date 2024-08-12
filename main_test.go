@@ -2,11 +2,14 @@ package main
 
 import (
 	"context"
+	"io/fs"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/cmd"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/mod/module"
 )
 
 func TestCommandsDontUseUnderscoreInName(t *testing.T) {
@@ -22,4 +25,26 @@ func TestCommandsDontUseUnderscoreInName(t *testing.T) {
 		assert.NotContains(t, cmd.Name(), "_")
 		queue = append(queue[1:], cmd.Commands()...)
 	}
+}
+
+func TestFilePath(t *testing.T) {
+	// To import this repository as a library, all files must match the
+	// file path constraints made by Go. This test ensures that all files
+	// in the repository have a valid file path.
+	//
+	// See https://github.com/databricks/cli/issues/1629
+	//
+	err := filepath.WalkDir(".", func(path string, _ fs.DirEntry, err error) error {
+		switch path {
+		case ".":
+			return nil
+		case ".git":
+			return filepath.SkipDir
+		}
+		if assert.NoError(t, err) {
+			assert.NoError(t, module.CheckFilePath(filepath.ToSlash(path)))
+		}
+		return nil
+	})
+	assert.NoError(t, err)
 }

@@ -16,6 +16,7 @@ import (
 	bundleConfig "github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/databricks-sdk-go"
@@ -655,15 +656,27 @@ func TestRendererFileTreeRendering(t *testing.T) {
 func TestRendererSubTemplateInPath(t *testing.T) {
 	ctx := context.Background()
 	ctx = root.SetWorkspaceClient(ctx, nil)
-	tmpDir := t.TempDir()
 
-	helpers := loadHelpers(ctx)
-	r, err := newRenderer(ctx, nil, helpers, "./testdata/template-in-path/template", "./testdata/template-in-path/library", tmpDir)
+	// Copy the template directory to a temporary directory where we can safely include a templated file path.
+	// These paths include characters that are forbidden in Go modules, so we can't use the testdata directory.
+	// Also see https://github.com/databricks/cli/pull/1671.
+	templateDir := t.TempDir()
+	testutil.CopyDirectory(t, "./testdata/template-in-path", templateDir)
+
+	// Use a backtick-quoted string; double quotes are a reserved character for Windows paths:
+	// https://learn.microsoft.com/en-us/windows/win32/fileio/naming-a-file.
+	testutil.Touch(t, filepath.Join(templateDir, "template/{{template `dir_name`}}/{{template `file_name`}}"))
+
+	tmpDir := t.TempDir()
+	r, err := newRenderer(ctx, nil, nil, filepath.Join(templateDir, "template"), filepath.Join(templateDir, "library"), tmpDir)
 	require.NoError(t, err)
 
 	err = r.walk()
 	require.NoError(t, err)
 
-	assert.Equal(t, filepath.Join(tmpDir, "my_directory", "my_file"), r.files[0].DstPath().absPath())
-	assert.Equal(t, "my_directory/my_file", r.files[0].DstPath().relPath)
+	if assert.Len(t, r.files, 2) {
+		f := r.files[1]
+		assert.Equal(t, filepath.Join(tmpDir, "my_directory", "my_file"), f.DstPath().absPath())
+		assert.Equal(t, "my_directory/my_file", f.DstPath().relPath)
+	}
 }
