@@ -42,7 +42,7 @@ func TestFilePath(t *testing.T) {
 			return filepath.SkipDir
 		}
 		if assert.NoError(t, err) {
-			assert.NoError(t, module.CheckFilePath(path))
+			assert.NoError(t, module.CheckFilePath(filepath.ToSlash(path)))
 		}
 		return nil
 	})
