@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/exec"
 )
 
@@ -34,9 +33,6 @@ type Artifact struct {
 	BuildCommand string         `json:"build,omitempty"`
 
 	Executable exec.ExecutableType `json:"executable,omitempty"`
-
-	// Dynamic value representation of the artifact
-	DynamicValue dyn.Value
 }
 
 func (a *Artifact) Build(ctx context.Context) ([]byte, error) {
