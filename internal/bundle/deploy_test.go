@@ -119,7 +119,43 @@ func TestAccBundleDeployUcSchemaFailsWithoutAutoApprove(t *testing.T) {
 	t.Setenv("BUNDLE_ROOT", bundleRoot)
 	t.Setenv("TERM", "dumb")
 	c := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "deploy", "--force-lock")
-	stdout, _, err := c.Run()
+	stdout, stderr, err := c.Run()
+
 	assert.EqualError(t, err, root.ErrAlreadyPrinted.Error())
+	assert.Contains(t, stderr.String(), "The following UC schemas will be deleted or recreated. Any underlying data may be lost:\n  delete schema bar")
+	assert.Contains(t, stdout.String(), "the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
+}
+
+func TestAccBundlePipelineRecreateWithoutAutoApprove(t *testing.T) {
+	ctx, wt := acc.UcWorkspaceTest(t)
+	w := wt.W
+	uniqueId := uuid.New().String()
+
+	bundleRoot, err := initTestTemplate(t, ctx, "recreate_pipeline", map[string]any{
+		"unique_id": uniqueId,
+	})
+	require.NoError(t, err)
+
+	err = deployBundle(t, ctx, bundleRoot)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		destroyBundle(t, ctx, bundleRoot)
+	})
+
+	// Assert the pipeline is created
+	pipelineName := "test-pipeline-" + uniqueId
+	pipeline, err := w.Pipelines.GetByName(ctx, pipelineName)
+	require.NoError(t, err)
+	require.Equal(t, pipelineName, pipeline.Name)
+
+	// Redeploy the bundle, pointing the DLT pipeline to a different UC catalog.
+	t.Setenv("BUNDLE_ROOT", bundleRoot)
+	t.Setenv("TERM", "dumb")
+	c := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "deploy", "--force-lock", "--var=\"catalog=whatever\"")
+	stdout, stderr, err := c.Run()
+
+	assert.EqualError(t, err, root.ErrAlreadyPrinted.Error())
+	assert.Contains(t, stderr.String(), "The following DLT pipelines will be recreated. Underlying tables will be unavailable for a transient period, until the newly recreated pipeline is run once successfully. History of previous pipeline update runs will be lost as a result of the recreation:\n  recreate pipeline foo")
 	assert.Contains(t, stdout.String(), "the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
 }
