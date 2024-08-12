@@ -2,9 +2,7 @@ package resources
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -12,9 +10,6 @@ import (
 )
 
 type RegisteredModel struct {
-	// dynamic value representation of the resource.
-	DynamicValue dyn.Value
-
 	// This is a resource agnostic implementation of grants.
 	// Implementation could be different based on the resource type.
 	Grants []Grant `json:"grants,omitempty"`
@@ -52,12 +47,4 @@ func (s *RegisteredModel) Exists(ctx context.Context, w *databricks.WorkspaceCli
 
 func (s *RegisteredModel) TerraformResourceName() string {
 	return "databricks_registered_model"
-}
-
-func (s *RegisteredModel) Validate() error {
-	if s == nil || !s.DynamicValue.IsValid() {
-		return fmt.Errorf("registered model is not defined")
-	}
-
-	return nil
 }

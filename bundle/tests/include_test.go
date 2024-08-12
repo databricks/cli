@@ -2,7 +2,6 @@ package config_tests
 
 import (
 	"context"
-	"path/filepath"
 	"sort"
 	"testing"
 
@@ -31,7 +30,6 @@ func TestIncludeWithGlob(t *testing.T) {
 
 	job := b.Config.Resources.Jobs["my_job"]
 	assert.Equal(t, "1", job.ID)
-	assert.Equal(t, "include_with_glob/job.yml", filepath.ToSlash(job.DynamicValue.Location().File))
 }
 
 func TestIncludeDefault(t *testing.T) {
@@ -51,9 +49,7 @@ func TestIncludeForMultipleMatches(t *testing.T) {
 
 	first := b.Config.Resources.Jobs["my_first_job"]
 	assert.Equal(t, "1", first.ID)
-	assert.Equal(t, "include_multiple/my_first_job/resource.yml", filepath.ToSlash(first.DynamicValue.Location().File))
 
 	second := b.Config.Resources.Jobs["my_second_job"]
 	assert.Equal(t, "2", second.ID)
-	assert.Equal(t, "include_multiple/my_second_job/resource.yml", filepath.ToSlash(second.DynamicValue.Location().File))
 }

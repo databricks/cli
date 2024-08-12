@@ -2,9 +2,7 @@ package resources
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -12,9 +10,6 @@ import (
 )
 
 type QualityMonitor struct {
-	// dynamic value representation of the resource.
-	DynamicValue dyn.Value
-
 	// Represents the Input Arguments for Terraform and will get
 	// converted to a HCL representation for CRUD
 	*catalog.CreateMonitor
@@ -48,12 +43,4 @@ func (s *QualityMonitor) Exists(ctx context.Context, w *databricks.WorkspaceClie
 
 func (s *QualityMonitor) TerraformResourceName() string {
 	return "databricks_quality_monitor"
-}
-
-func (s *QualityMonitor) Validate() error {
-	if s == nil || !s.DynamicValue.IsValid() {
-		return fmt.Errorf("quality monitor is not defined")
-	}
-
-	return nil
 }

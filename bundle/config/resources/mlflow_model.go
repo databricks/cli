@@ -2,9 +2,7 @@ package resources
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -12,9 +10,6 @@ import (
 )
 
 type MlflowModel struct {
-	// dynamic value representation of the resource.
-	DynamicValue dyn.Value
-
 	ID             string         `json:"id,omitempty" bundle:"readonly"`
 	Permissions    []Permission   `json:"permissions,omitempty"`
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
@@ -43,12 +38,4 @@ func (s *MlflowModel) Exists(ctx context.Context, w *databricks.WorkspaceClient,
 
 func (s *MlflowModel) TerraformResourceName() string {
 	return "databricks_mlflow_model"
-}
-
-func (s *MlflowModel) Validate() error {
-	if s == nil || !s.DynamicValue.IsValid() {
-		return fmt.Errorf("model is not defined")
-	}
-
-	return nil
 }

@@ -2,9 +2,7 @@ package resources
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -12,9 +10,6 @@ import (
 )
 
 type ModelServingEndpoint struct {
-	// dynamic value representation of the resource.
-	DynamicValue dyn.Value
-
 	// This represents the input args for terraform, and will get converted
 	// to a HCL representation for CRUD
 	*serving.CreateServingEndpoint
@@ -51,12 +46,4 @@ func (s *ModelServingEndpoint) Exists(ctx context.Context, w *databricks.Workspa
 
 func (s *ModelServingEndpoint) TerraformResourceName() string {
 	return "databricks_model_serving"
-}
-
-func (s *ModelServingEndpoint) Validate() error {
-	if s == nil || !s.DynamicValue.IsValid() {
-		return fmt.Errorf("serving endpoint is not defined")
-	}
-
-	return nil
 }

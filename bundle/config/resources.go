@@ -21,50 +21,6 @@ type Resources struct {
 	Schemas               map[string]*resources.Schema               `json:"schemas,omitempty"`
 }
 
-type resource struct {
-	resource      ConfigResource
-	resource_type string
-	key           string
-}
-
-func (r *Resources) allResources() []resource {
-	all := make([]resource, 0)
-	for k, e := range r.Jobs {
-		all = append(all, resource{resource_type: "job", resource: e, key: k})
-	}
-	for k, e := range r.Pipelines {
-		all = append(all, resource{resource_type: "pipeline", resource: e, key: k})
-	}
-	for k, e := range r.Models {
-		all = append(all, resource{resource_type: "model", resource: e, key: k})
-	}
-	for k, e := range r.Experiments {
-		all = append(all, resource{resource_type: "experiment", resource: e, key: k})
-	}
-	for k, e := range r.ModelServingEndpoints {
-		all = append(all, resource{resource_type: "serving endpoint", resource: e, key: k})
-	}
-	for k, e := range r.RegisteredModels {
-		all = append(all, resource{resource_type: "registered model", resource: e, key: k})
-	}
-	for k, e := range r.QualityMonitors {
-		all = append(all, resource{resource_type: "quality monitor", resource: e, key: k})
-	}
-	return all
-}
-
-func (r *Resources) VerifyAllResourcesDefined() error {
-	all := r.allResources()
-	for _, e := range all {
-		err := e.resource.Validate()
-		if err != nil {
-			return fmt.Errorf("%s %s is not defined", e.resource_type, e.key)
-		}
-	}
-
-	return nil
-}
-
 type ConfigResource interface {
 	// Function to assert if the resource exists in the workspace configured in
 	// the input workspace client.
@@ -73,9 +29,6 @@ type ConfigResource interface {
 	// Terraform equivalent name of the resource. For example "databricks_job"
 	// for jobs and "databricks_pipeline" for pipelines.
 	TerraformResourceName() string
-
-	// Validate the resource configuration.
-	Validate() error
 }
 
 func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) {
