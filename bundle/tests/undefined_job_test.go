@@ -14,3 +14,9 @@ func TestUndefinedJobLoadsWithError(t *testing.T) {
 	diags := bundle.Apply(context.Background(), b, validate.AllResourcesHaveValues())
 	assert.ErrorContains(t, diags.Error(), "job undefined is not defined")
 }
+
+func TestUndefinedPipelineLoadsWithError(t *testing.T) {
+	b := load(t, "./undefined_pipeline")
+	diags := bundle.Apply(context.Background(), b, validate.AllResourcesHaveValues())
+	assert.ErrorContains(t, diags.Error(), "pipeline undefined is not defined")
+}
