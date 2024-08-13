@@ -104,9 +104,12 @@ func (a *PersistentAuth) Load(ctx context.Context) (*oauth2.Token, error) {
 	return refreshed, nil
 }
 
-func (a *PersistentAuth) ProfileName() string {
+func (a *PersistentAuth) DefaultProfileName() string {
 	if a.AccountID != "" {
 		return fmt.Sprintf("ACCOUNT-%s", a.AccountID)
+	}
+	if a.Host == "" {
+		return "DEFAULT"
 	}
 	host := strings.TrimPrefix(a.Host, "https://")
 	split := strings.Split(host, ".")

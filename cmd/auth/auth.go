@@ -3,9 +3,11 @@ package auth
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
 
@@ -40,7 +42,13 @@ func promptForHost(ctx context.Context) (string, error) {
 	}
 
 	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Databricks Host (e.g. https://<databricks-instance>.cloud.databricks.com)"
+	prompt.Label = "Databricks host"
+	prompt.Validate = func(host string) error {
+		if !strings.HasPrefix(host, "https://") {
+			return fmt.Errorf("host URL must have a https:// prefix")
+		}
+		return nil
+	}
 	return prompt.Run()
 }
 
@@ -53,5 +61,12 @@ func promptForAccountID(ctx context.Context) (string, error) {
 	prompt.Label = "Databricks account id"
 	prompt.Default = ""
 	prompt.AllowEdit = true
+	prompt.Validate = func(accountID string) error {
+		_, err := uuid.Parse(accountID)
+		if err != nil {
+			return fmt.Errorf("account ID must be a valid UUID: %w", err)
+		}
+		return nil
+	}
 	return prompt.Run()
 }
