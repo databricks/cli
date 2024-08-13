@@ -15,9 +15,14 @@ func TestFromTypedStructZeroFields(t *testing.T) {
 	}
 
 	src := Tmp{}
-	ref := dyn.NilValue
 
-	nv, err := FromTyped(src, ref)
+	// For an empty struct with a nil reference we expect a nil.
+	nv, err := FromTyped(src, dyn.NilValue)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.NilValue, nv)
+
+	// For an empty struct with a non-nil reference we expect an empty map.
+	nv, err = FromTyped(src, dyn.V(map[string]dyn.Value{}))
 	require.NoError(t, err)
 	assert.Equal(t, dyn.V(map[string]dyn.Value{}), nv)
 }
@@ -28,17 +33,54 @@ func TestFromTypedStructPointerZeroFields(t *testing.T) {
 		Bar string `json:"bar"`
 	}
 
-	// For an initialized pointer we expect an empty map.
-	src := &Tmp{}
-	nv, err := FromTyped(src, dyn.NilValue)
-	require.NoError(t, err)
-	assert.Equal(t, dyn.V(map[string]dyn.Value{}), nv)
+	var src *Tmp
+	var nv dyn.Value
+	var err error
 
-	// For a nil pointer we expect nil.
+	// For a nil pointer with a nil reference we expect a nil.
 	src = nil
 	nv, err = FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 	assert.Equal(t, dyn.NilValue, nv)
+
+	// For a nil pointer with a non-nil reference we expect a nil.
+	src = nil
+	nv, err = FromTyped(src, dyn.V(map[string]dyn.Value{}))
+	require.NoError(t, err)
+	assert.Equal(t, dyn.NilValue, nv)
+
+	// For an initialized pointer with a nil reference we expect an empty map.
+	src = &Tmp{}
+	nv, err = FromTyped(src, dyn.NilValue)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.V(map[string]dyn.Value{}), nv)
+
+	// For an initialized pointer with a non-nil reference we expect an empty map.
+	src = &Tmp{}
+	nv, err = FromTyped(src, dyn.V(map[string]dyn.Value{}))
+	require.NoError(t, err)
+	assert.Equal(t, dyn.V(map[string]dyn.Value{}), nv)
+}
+
+func TestFromTypedStructNilFields(t *testing.T) {
+	type Tmp struct {
+		Foo string `json:"foo"`
+		Bar string `json:"bar"`
+	}
+
+	// For a zero value struct with a reference containing nil fields we expect the nils to be retained.
+	src := Tmp{}
+	ref := dyn.V(map[string]dyn.Value{
+		"foo": dyn.NilValue,
+		"bar": dyn.NilValue,
+	})
+
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.V(map[string]dyn.Value{
+		"foo": dyn.NilValue,
+		"bar": dyn.NilValue,
+	}), nv)
 }
 
 func TestFromTypedStructSetFields(t *testing.T) {
@@ -61,7 +103,7 @@ func TestFromTypedStructSetFields(t *testing.T) {
 	}), nv)
 }
 
-func TestFromTypedStructSetFieldsRetainLocationIfUnchanged(t *testing.T) {
+func TestFromTypedStructSetFieldsRetainLocation(t *testing.T) {
 	type Tmp struct {
 		Foo string `json:"foo"`
 		Bar string `json:"bar"`
@@ -73,18 +115,16 @@ func TestFromTypedStructSetFieldsRetainLocationIfUnchanged(t *testing.T) {
 	}
 
 	ref := dyn.V(map[string]dyn.Value{
-		"foo": dyn.NewValue("bar", dyn.Location{File: "foo"}),
-		"bar": dyn.NewValue("baz", dyn.Location{File: "bar"}),
+		"foo": dyn.NewValue("bar", []dyn.Location{{File: "foo"}}),
+		"bar": dyn.NewValue("baz", []dyn.Location{{File: "bar"}}),
 	})
 
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
 
-	// Assert foo has retained its location.
-	assert.Equal(t, dyn.NewValue("bar", dyn.Location{File: "foo"}), nv.Get("foo"))
-
-	// Assert bar lost its location (because it was overwritten).
-	assert.Equal(t, dyn.NewValue("qux", dyn.Location{}), nv.Get("bar"))
+	// Assert foo and bar have retained their location.
+	assert.Equal(t, dyn.NewValue("bar", []dyn.Location{{File: "foo"}}), nv.Get("foo"))
+	assert.Equal(t, dyn.NewValue("qux", []dyn.Location{{File: "bar"}}), nv.Get("bar"))
 }
 
 func TestFromTypedStringMapWithZeroValue(t *testing.T) {
@@ -312,25 +352,23 @@ func TestFromTypedMapNonEmpty(t *testing.T) {
 	}), nv)
 }
 
-func TestFromTypedMapNonEmptyRetainLocationIfUnchanged(t *testing.T) {
+func TestFromTypedMapNonEmptyRetainLocation(t *testing.T) {
 	var src = map[string]string{
 		"foo": "bar",
 		"bar": "qux",
 	}
 
 	ref := dyn.V(map[string]dyn.Value{
-		"foo": dyn.NewValue("bar", dyn.Location{File: "foo"}),
-		"bar": dyn.NewValue("baz", dyn.Location{File: "bar"}),
+		"foo": dyn.NewValue("bar", []dyn.Location{{File: "foo"}}),
+		"bar": dyn.NewValue("baz", []dyn.Location{{File: "bar"}}),
 	})
 
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
 
-	// Assert foo has retained its location.
-	assert.Equal(t, dyn.NewValue("bar", dyn.Location{File: "foo"}), nv.Get("foo"))
-
-	// Assert bar lost its location (because it was overwritten).
-	assert.Equal(t, dyn.NewValue("qux", dyn.Location{}), nv.Get("bar"))
+	// Assert foo and bar have retained their locations.
+	assert.Equal(t, dyn.NewValue("bar", []dyn.Location{{File: "foo"}}), nv.Get("foo"))
+	assert.Equal(t, dyn.NewValue("qux", []dyn.Location{{File: "bar"}}), nv.Get("bar"))
 }
 
 func TestFromTypedMapFieldWithZeroValue(t *testing.T) {
@@ -387,25 +425,23 @@ func TestFromTypedSliceNonEmpty(t *testing.T) {
 	}), nv)
 }
 
-func TestFromTypedSliceNonEmptyRetainLocationIfUnchanged(t *testing.T) {
+func TestFromTypedSliceNonEmptyRetainLocation(t *testing.T) {
 	var src = []string{
 		"foo",
 		"bar",
 	}
 
 	ref := dyn.V([]dyn.Value{
-		dyn.NewValue("foo", dyn.Location{File: "foo"}),
-		dyn.NewValue("baz", dyn.Location{File: "baz"}),
+		dyn.NewValue("foo", []dyn.Location{{File: "foo"}}),
+		dyn.NewValue("bar", []dyn.Location{{File: "bar"}}),
 	})
 
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
 
-	// Assert foo has retained its location.
-	assert.Equal(t, dyn.NewValue("foo", dyn.Location{File: "foo"}), nv.Index(0))
-
-	// Assert bar lost its location (because it was overwritten).
-	assert.Equal(t, dyn.NewValue("bar", dyn.Location{}), nv.Index(1))
+	// Assert foo and bar have retained their locations.
+	assert.Equal(t, dyn.NewValue("foo", []dyn.Location{{File: "foo"}}), nv.Index(0))
+	assert.Equal(t, dyn.NewValue("bar", []dyn.Location{{File: "bar"}}), nv.Index(1))
 }
 
 func TestFromTypedStringEmpty(t *testing.T) {
@@ -440,12 +476,20 @@ func TestFromTypedStringNonEmptyOverwrite(t *testing.T) {
 	assert.Equal(t, dyn.V("new"), nv)
 }
 
-func TestFromTypedStringRetainsLocationsIfUnchanged(t *testing.T) {
+func TestFromTypedStringRetainsLocations(t *testing.T) {
+	var ref = dyn.NewValue("foo", []dyn.Location{{File: "foo"}})
+
+	// case: value has not been changed
 	var src string = "foo"
-	var ref = dyn.NewValue("foo", dyn.Location{File: "foo"})
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	assert.Equal(t, dyn.NewValue("foo", dyn.Location{File: "foo"}), nv)
+	assert.Equal(t, dyn.NewValue("foo", []dyn.Location{{File: "foo"}}), nv)
+
+	// case: value has been changed
+	src = "bar"
+	nv, err = FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.NewValue("bar", []dyn.Location{{File: "foo"}}), nv)
 }
 
 func TestFromTypedStringTypeError(t *testing.T) {
@@ -487,12 +531,20 @@ func TestFromTypedBoolNonEmptyOverwrite(t *testing.T) {
 	assert.Equal(t, dyn.V(true), nv)
 }
 
-func TestFromTypedBoolRetainsLocationsIfUnchanged(t *testing.T) {
+func TestFromTypedBoolRetainsLocations(t *testing.T) {
+	var ref = dyn.NewValue(true, []dyn.Location{{File: "foo"}})
+
+	// case: value has not been changed
 	var src bool = true
-	var ref = dyn.NewValue(true, dyn.Location{File: "foo"})
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	assert.Equal(t, dyn.NewValue(true, dyn.Location{File: "foo"}), nv)
+	assert.Equal(t, dyn.NewValue(true, []dyn.Location{{File: "foo"}}), nv)
+
+	// case: value has been changed
+	src = false
+	nv, err = FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.NewValue(false, []dyn.Location{{File: "foo"}}), nv)
 }
 
 func TestFromTypedBoolVariableReference(t *testing.T) {
@@ -542,12 +594,20 @@ func TestFromTypedIntNonEmptyOverwrite(t *testing.T) {
 	assert.Equal(t, dyn.V(int64(1234)), nv)
 }
 
-func TestFromTypedIntRetainsLocationsIfUnchanged(t *testing.T) {
+func TestFromTypedIntRetainsLocations(t *testing.T) {
+	var ref = dyn.NewValue(1234, []dyn.Location{{File: "foo"}})
+
+	// case: value has not been changed
 	var src int = 1234
-	var ref = dyn.NewValue(1234, dyn.Location{File: "foo"})
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	assert.Equal(t, dyn.NewValue(1234, dyn.Location{File: "foo"}), nv)
+	assert.Equal(t, dyn.NewValue(1234, []dyn.Location{{File: "foo"}}), nv)
+
+	// case: value has been changed
+	src = 1235
+	nv, err = FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.NewValue(int64(1235), []dyn.Location{{File: "foo"}}), nv)
 }
 
 func TestFromTypedIntVariableReference(t *testing.T) {
@@ -597,12 +657,21 @@ func TestFromTypedFloatNonEmptyOverwrite(t *testing.T) {
 	assert.Equal(t, dyn.V(1.23), nv)
 }
 
-func TestFromTypedFloatRetainsLocationsIfUnchanged(t *testing.T) {
-	var src float64 = 1.23
-	var ref = dyn.NewValue(1.23, dyn.Location{File: "foo"})
+func TestFromTypedFloatRetainsLocations(t *testing.T) {
+	var src float64
+	var ref = dyn.NewValue(1.23, []dyn.Location{{File: "foo"}})
+
+	// case: value has not been changed
+	src = 1.23
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	assert.Equal(t, dyn.NewValue(1.23, dyn.Location{File: "foo"}), nv)
+	assert.Equal(t, dyn.NewValue(1.23, []dyn.Location{{File: "foo"}}), nv)
+
+	// case: value has been changed
+	src = 1.24
+	nv, err = FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.NewValue(1.24, []dyn.Location{{File: "foo"}}), nv)
 }
 
 func TestFromTypedFloatVariableReference(t *testing.T) {
@@ -618,4 +687,80 @@ func TestFromTypedFloatTypeError(t *testing.T) {
 	var ref = dyn.V("string")
 	_, err := FromTyped(src, ref)
 	require.Error(t, err)
+}
+
+func TestFromTypedAny(t *testing.T) {
+	type Tmp struct {
+		Foo any `json:"foo"`
+		Bar any `json:"bar"`
+		Foz any `json:"foz"`
+		Baz any `json:"baz"`
+	}
+
+	src := Tmp{
+		Foo: "foo",
+		Bar: false,
+		Foz: 0,
+		Baz: map[string]any{
+			"foo": "foo",
+			"bar": 1234,
+			"qux": 0,
+			"nil": nil,
+		},
+	}
+
+	ref := dyn.NilValue
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.V(map[string]dyn.Value{
+		"foo": dyn.V("foo"),
+		"bar": dyn.V(false),
+		"foz": dyn.V(int64(0)),
+		"baz": dyn.V(map[string]dyn.Value{
+			"foo": dyn.V("foo"),
+			"bar": dyn.V(int64(1234)),
+			"qux": dyn.V(int64(0)),
+			"nil": dyn.V(nil),
+		}),
+	}), nv)
+}
+
+func TestFromTypedAnyNil(t *testing.T) {
+	var src any = nil
+	var ref = dyn.NilValue
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.NilValue, nv)
+}
+
+func TestFromTypedNilPointerRetainsLocations(t *testing.T) {
+	type Tmp struct {
+		Foo string `json:"foo"`
+		Bar string `json:"bar"`
+	}
+
+	var src *Tmp
+	ref := dyn.NewValue(nil, []dyn.Location{{File: "foobar"}})
+
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.NewValue(nil, []dyn.Location{{File: "foobar"}}), nv)
+}
+
+func TestFromTypedNilMapRetainsLocation(t *testing.T) {
+	var src map[string]string
+	ref := dyn.NewValue(nil, []dyn.Location{{File: "foobar"}})
+
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.NewValue(nil, []dyn.Location{{File: "foobar"}}), nv)
+}
+
+func TestFromTypedNilSliceRetainsLocation(t *testing.T) {
+	var src []string
+	ref := dyn.NewValue(nil, []dyn.Location{{File: "foobar"}})
+
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, dyn.NewValue(nil, []dyn.Location{{File: "foobar"}}), nv)
 }

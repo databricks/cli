@@ -1,0 +1,24 @@
+{
+    "properties": {
+        "int_val": {
+            "type": "integer",
+            "description": "This is an integer value",
+            "default": 123
+        },
+        "float_val": {
+            "type": "number",
+            "description": "This is a float value",
+            "default": 123
+        },
+        "bool_val": {
+            "type": "boolean",
+            "description": "This is a boolean value",
+            "default": true
+        },
+        "string_val": {
+            "type": "string",
+            "description": "This is a string value",
+            "default": "hello"
+        }
+    }
+}

@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/sync"
+	"github.com/databricks/cli/libs/vfs"
 	"github.com/spf13/cobra"
 )
 
@@ -46,7 +47,7 @@ func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*syn
 	}
 
 	opts := sync.SyncOptions{
-		LocalPath:    args[0],
+		LocalPath:    vfs.MustNew(args[0]),
 		RemotePath:   args[1],
 		Full:         f.full,
 		PollInterval: f.interval,
@@ -134,7 +135,7 @@ func New() *cobra.Command {
 		if f.watch {
 			err = s.RunContinuous(ctx)
 		} else {
-			err = s.RunOnce(ctx)
+			_, err = s.RunOnce(ctx)
 		}
 
 		s.Close()

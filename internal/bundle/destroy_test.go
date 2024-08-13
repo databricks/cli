@@ -6,7 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -17,9 +19,12 @@ func TestAccBundleDestroy(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	w := wt.W
 
+	nodeTypeId := internal.GetNodeTypeId(env.Get(ctx, "CLOUD_ENV"))
 	uniqueId := uuid.New().String()
 	bundleRoot, err := initTestTemplate(t, ctx, "deploy_then_remove_resources", map[string]any{
-		"unique_id": uniqueId,
+		"unique_id":     uniqueId,
+		"node_type_id":  nodeTypeId,
+		"spark_version": defaultSparkVersion,
 	})
 	require.NoError(t, err)
 
@@ -29,7 +34,7 @@ func TestAccBundleDestroy(t *testing.T) {
 	_, err = os.ReadDir(snapshotsDir)
 	assert.ErrorIs(t, err, os.ErrNotExist)
 
-	// deploy pipeline
+	// deploy resources
 	err = deployBundle(t, ctx, bundleRoot)
 	require.NoError(t, err)
 
@@ -49,12 +54,22 @@ func TestAccBundleDestroy(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, pipeline.Name, pipelineName)
 
+	// assert job is created
+	jobName := "test-bundle-job-" + uniqueId
+	job, err := w.Jobs.GetBySettingsName(ctx, jobName)
+	require.NoError(t, err)
+	assert.Equal(t, job.Settings.Name, jobName)
+
 	// destroy bundle
 	err = destroyBundle(t, ctx, bundleRoot)
 	require.NoError(t, err)
 
 	// assert pipeline is deleted
 	_, err = w.Pipelines.GetByName(ctx, pipelineName)
+	assert.ErrorContains(t, err, "does not exist")
+
+	// assert job is deleted
+	_, err = w.Jobs.GetBySettingsName(ctx, jobName)
 	assert.ErrorContains(t, err, "does not exist")
 
 	// Assert snapshot file is deleted

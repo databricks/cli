@@ -12,7 +12,7 @@ import (
 func TestSetHostDoesNotFailWithNoDatabrickscfg(t *testing.T) {
 	ctx := context.Background()
 	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", "./imaginary-file/databrickscfg")
-	err := setHost(ctx, "foo", &auth.PersistentAuth{Host: "test"}, []string{})
+	err := setHostAndAccountId(ctx, "foo", &auth.PersistentAuth{Host: "test"}, []string{})
 	assert.NoError(t, err)
 }
 

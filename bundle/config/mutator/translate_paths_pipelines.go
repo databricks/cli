@@ -3,25 +3,15 @@ package mutator
 import (
 	"fmt"
 
-	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/dyn"
 )
 
-func (m *translatePaths) applyPipelineTranslations(b *bundle.Bundle, v dyn.Value) (dyn.Value, error) {
-	var fallback = make(map[string]string)
-	var err error
+type pipelineRewritePattern struct {
+	pattern dyn.Pattern
+	fn      rewriteFunc
+}
 
-	for key, pipeline := range b.Config.Resources.Pipelines {
-		dir, err := pipeline.ConfigFileDirectory()
-		if err != nil {
-			return dyn.InvalidValue, fmt.Errorf("unable to determine directory for pipeline %s: %w", key, err)
-		}
-
-		// If we cannot resolve the relative path using the [dyn.Value] location itself,
-		// use the pipeline's location as fallback. This is necessary for backwards compatibility.
-		fallback[key] = dir
-	}
-
+func (t *translateContext) pipelineRewritePatterns() []pipelineRewritePattern {
 	// Base pattern to match all libraries in all pipelines.
 	base := dyn.NewPattern(
 		dyn.Key("resources"),
@@ -31,27 +21,36 @@ func (m *translatePaths) applyPipelineTranslations(b *bundle.Bundle, v dyn.Value
 		dyn.AnyIndex(),
 	)
 
-	for _, t := range []struct {
-		pattern dyn.Pattern
-		fn      rewriteFunc
-	}{
+	// Compile list of configuration paths to rewrite.
+	return []pipelineRewritePattern{
 		{
 			base.Append(dyn.Key("notebook"), dyn.Key("path")),
-			translateNotebookPath,
+			t.translateNotebookPath,
 		},
 		{
 			base.Append(dyn.Key("file"), dyn.Key("path")),
-			translateFilePath,
+			t.translateFilePath,
 		},
-	} {
-		v, err = dyn.MapByPattern(v, t.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+	}
+}
+
+func (t *translateContext) applyPipelineTranslations(v dyn.Value) (dyn.Value, error) {
+	var err error
+
+	fallback, err := gatherFallbackPaths(v, "pipelines")
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
+
+	for _, rewritePattern := range t.pipelineRewritePatterns() {
+		v, err = dyn.MapByPattern(v, rewritePattern.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			key := p[2].Key()
 			dir, err := v.Location().Directory()
 			if err != nil {
 				return dyn.InvalidValue, fmt.Errorf("unable to determine directory for pipeline %s: %w", key, err)
 			}
 
-			return m.rewriteRelativeTo(b, p, v, t.fn, dir, fallback[key])
+			return t.rewriteRelativeTo(p, v, rewritePattern.fn, dir, fallback[key])
 		})
 		if err != nil {
 			return dyn.InvalidValue, err

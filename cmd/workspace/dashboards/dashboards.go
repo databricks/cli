@@ -268,8 +268,8 @@ func newList() *cobra.Command {
   
   Fetch a paginated list of dashboard objects.
   
-  ### **Warning: Calling this API concurrently 10 or more times could result in
-  throttling, service degradation, or a temporary ban.**`
+  **Warning**: Calling this API concurrently 10 or more times could result in
+  throttling, service degradation, or a temporary ban.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -386,6 +386,7 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The title of this dashboard that appears in list views and at the top of the dashboard page.`)
 	cmd.Flags().Var(&updateReq.RunAsRole, "run-as-role", `Sets the **Run as** role for the object. Supported values: [owner, viewer]`)
+	// TODO: array: tags
 
 	cmd.Use = "update DASHBOARD_ID"
 	cmd.Short = `Change a dashboard definition.`

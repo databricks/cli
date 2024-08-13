@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/fileset"
+	"github.com/databricks/cli/libs/vfs"
+	"github.com/google/uuid"
 )
 
 const DeploymentStateFileName = "deployment.json"
@@ -46,6 +47,9 @@ type DeploymentState struct {
 
 	// Files is a list of files which has been deployed as part of this deployment.
 	Files Filelist `json:"files"`
+
+	// UUID uniquely identifying the deployment.
+	ID uuid.UUID `json:"id"`
 }
 
 // We use this entry type as a proxy to fs.DirEntry.
@@ -58,8 +62,8 @@ type entry struct {
 	info fs.FileInfo
 }
 
-func newEntry(path string) *entry {
-	info, err := os.Stat(path)
+func newEntry(root vfs.Path, path string) *entry {
+	info, err := root.Stat(path)
 	if err != nil {
 		return &entry{path, nil}
 	}
@@ -110,14 +114,19 @@ func FromSlice(files []fileset.File) (Filelist, error) {
 	return f, nil
 }
 
-func (f Filelist) ToSlice(basePath string) []fileset.File {
+func (f Filelist) ToSlice(root vfs.Path) []fileset.File {
 	var files []fileset.File
 	for _, file := range f {
-		absPath := filepath.Join(basePath, file.LocalPath)
+		entry := newEntry(root, filepath.ToSlash(file.LocalPath))
+
+		// Snapshots created with versions <= v0.220.0 use platform-specific
+		// paths (i.e. with backslashes). Files returned by [libs/fileset] always
+		// contain forward slashes after this version. Normalize before using.
+		relative := filepath.ToSlash(file.LocalPath)
 		if file.IsNotebook {
-			files = append(files, fileset.NewNotebookFile(newEntry(absPath), absPath, file.LocalPath))
+			files = append(files, fileset.NewNotebookFile(root, entry, relative))
 		} else {
-			files = append(files, fileset.NewSourceFile(newEntry(absPath), absPath, file.LocalPath))
+			files = append(files, fileset.NewSourceFile(root, entry, relative))
 		}
 	}
 	return files

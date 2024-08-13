@@ -3,10 +3,12 @@ package validate
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/fileset"
 	"golang.org/x/sync/errgroup"
 )
@@ -48,9 +50,15 @@ func checkPatterns(patterns []string, path string, rb bundle.ReadOnlyBundle) (di
 
 	for i, pattern := range patterns {
 		index := i
-		p := pattern
+		fullPattern := pattern
+		// If the pattern is negated, strip the negation prefix
+		// and check if the pattern matches any files.
+		// Negation in gitignore syntax means "don't look at this path'
+		// So if p matches nothing it's useless negation, but if there are matches,
+		// it means: do not include these files into result set
+		p := strings.TrimPrefix(fullPattern, "!")
 		errs.Go(func() error {
-			fs, err := fileset.NewGlobSet(rb.RootPath(), []string{p})
+			fs, err := fileset.NewGlobSet(rb.BundleRoot(), []string{p})
 			if err != nil {
 				return err
 			}
@@ -64,10 +72,10 @@ func checkPatterns(patterns []string, path string, rb bundle.ReadOnlyBundle) (di
 				loc := location{path: fmt.Sprintf("%s[%d]", path, index), rb: rb}
 				mu.Lock()
 				diags = diags.Append(diag.Diagnostic{
-					Severity: diag.Warning,
-					Summary:  fmt.Sprintf("Pattern %s does not match any files", p),
-					Location: loc.Location(),
-					Path:     loc.Path(),
+					Severity:  diag.Warning,
+					Summary:   fmt.Sprintf("Pattern %s does not match any files", fullPattern),
+					Locations: []dyn.Location{loc.Location()},
+					Paths:     []dyn.Path{loc.Path()},
 				})
 				mu.Unlock()
 			}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 	"net/url"
 	"os"
 	"regexp"
@@ -13,6 +14,8 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/iam"
+
+	"github.com/google/uuid"
 )
 
 type ErrFail struct {
@@ -45,6 +48,14 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 		// Alias for https://pkg.go.dev/regexp#Compile. Allows usage of all methods of regexp.Regexp
 		"regexp": func(expr string) (*regexp.Regexp, error) {
 			return regexp.Compile(expr)
+		},
+		// Alias for https://pkg.go.dev/math/rand#Intn. Returns, as an int, a non-negative pseudo-random number in the half-open interval [0,n).
+		"random_int": func(n int) int {
+			return rand.Intn(n)
+		},
+		// Alias for https://pkg.go.dev/github.com/google/uuid#New. Returns, as a string, a UUID which is a 128 bit (16 byte) Universal Unique IDentifier as defined in RFC 4122.
+		"uuid": func() string {
+			return uuid.New().String()
 		},
 		// A key value pair. This is used with the map function to generate maps
 		// to use inside a template

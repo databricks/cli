@@ -2,13 +2,18 @@ package dyn
 
 import (
 	"fmt"
+	"slices"
 )
 
 type Value struct {
 	v any
 
 	k Kind
-	l Location
+
+	// List of locations this value is defined at. The first location in the slice
+	// is the location returned by the `.Location()` method and is typically used
+	// for reporting errors and warnings associated with the value.
+	l []Location
 
 	// Whether or not this value is an anchor.
 	// If this node doesn't map to a type, we don't need to warn about it.
@@ -27,11 +32,11 @@ var NilValue = Value{
 
 // V constructs a new Value with the given value.
 func V(v any) Value {
-	return NewValue(v, Location{})
+	return NewValue(v, []Location{})
 }
 
 // NewValue constructs a new Value with the given value and location.
-func NewValue(v any, loc Location) Value {
+func NewValue(v any, loc []Location) Value {
 	switch vin := v.(type) {
 	case map[string]Value:
 		v = newMappingFromGoMap(vin)
@@ -40,16 +45,30 @@ func NewValue(v any, loc Location) Value {
 	return Value{
 		v: v,
 		k: kindOf(v),
-		l: loc,
+
+		// create a copy of the locations, so that mutations to the original slice
+		// don't affect new value.
+		l: slices.Clone(loc),
 	}
 }
 
-// WithLocation returns a new Value with its location set to the given value.
-func (v Value) WithLocation(loc Location) Value {
+// WithLocations returns a new Value with its location set to the given value.
+func (v Value) WithLocations(loc []Location) Value {
 	return Value{
 		v: v.v,
 		k: v.k,
-		l: loc,
+
+		// create a copy of the locations, so that mutations to the original slice
+		// don't affect new value.
+		l: slices.Clone(loc),
+	}
+}
+
+func (v Value) AppendLocationsFromValue(w Value) Value {
+	return Value{
+		v: v.v,
+		k: v.k,
+		l: append(v.l, w.l...),
 	}
 }
 
@@ -61,8 +80,16 @@ func (v Value) Value() any {
 	return v.v
 }
 
-func (v Value) Location() Location {
+func (v Value) Locations() []Location {
 	return v.l
+}
+
+func (v Value) Location() Location {
+	if len(v.l) == 0 {
+		return Location{}
+	}
+
+	return v.l[0]
 }
 
 func (v Value) IsValid() bool {
@@ -110,12 +137,12 @@ func (v Value) AsAny() any {
 func (v Value) Get(key string) Value {
 	m, ok := v.AsMap()
 	if !ok {
-		return NilValue
+		return InvalidValue
 	}
 
 	vv, ok := m.GetByString(key)
 	if !ok {
-		return NilValue
+		return InvalidValue
 	}
 
 	return vv
@@ -124,11 +151,11 @@ func (v Value) Get(key string) Value {
 func (v Value) Index(i int) Value {
 	s, ok := v.v.([]Value)
 	if !ok {
-		return NilValue
+		return InvalidValue
 	}
 
 	if i < 0 || i >= len(s) {
-		return NilValue
+		return InvalidValue
 	}
 
 	return s[i]
@@ -153,7 +180,10 @@ func (v Value) IsAnchor() bool {
 // We need a custom implementation because maps and slices
 // cannot be compared with the regular == operator.
 func (v Value) eq(w Value) bool {
-	if v.k != w.k || v.l != w.l {
+	if v.k != w.k {
+		return false
+	}
+	if !slices.Equal(v.l, w.l) {
 		return false
 	}
 

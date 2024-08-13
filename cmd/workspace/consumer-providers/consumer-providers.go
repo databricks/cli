@@ -30,12 +30,69 @@ func New() *cobra.Command {
 	}
 
 	// Add methods
+	cmd.AddCommand(newBatchGet())
 	cmd.AddCommand(newGet())
 	cmd.AddCommand(newList())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
+	}
+
+	return cmd
+}
+
+// start batch-get command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var batchGetOverrides []func(
+	*cobra.Command,
+	*marketplace.BatchGetProvidersRequest,
+)
+
+func newBatchGet() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var batchGetReq marketplace.BatchGetProvidersRequest
+
+	// TODO: short flags
+
+	// TODO: array: ids
+
+	cmd.Use = "batch-get"
+	cmd.Short = `Get one batch of providers.`
+	cmd.Long = `Get one batch of providers. One may specify up to 50 IDs per request.
+  
+  Batch get a provider in the Databricks Marketplace with at least one visible
+  listing.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		response, err := w.ConsumerProviders.BatchGet(ctx, batchGetReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range batchGetOverrides {
+		fn(cmd, &batchGetReq)
 	}
 
 	return cmd
@@ -63,9 +120,6 @@ func newGet() *cobra.Command {
   
   Get a provider in the Databricks Marketplace with at least one visible
   listing.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -138,9 +192,6 @@ func newList() *cobra.Command {
   
   List all providers in the Databricks Marketplace with at least one visible
   listing.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 

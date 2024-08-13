@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/template"
 	"github.com/databricks/databricks-sdk-go"
@@ -21,9 +22,13 @@ import (
 const defaultSparkVersion = "13.3.x-snapshot-scala2.12"
 
 func initTestTemplate(t *testing.T, ctx context.Context, templateName string, config map[string]any) (string, error) {
+	bundleRoot := t.TempDir()
+	return initTestTemplateWithBundleRoot(t, ctx, templateName, config, bundleRoot)
+}
+
+func initTestTemplateWithBundleRoot(t *testing.T, ctx context.Context, templateName string, config map[string]any, bundleRoot string) (string, error) {
 	templateRoot := filepath.Join("bundles", templateName)
 
-	bundleRoot := t.TempDir()
 	configFilePath, err := writeConfigFile(t, config)
 	if err != nil {
 		return "", err
@@ -51,15 +56,22 @@ func writeConfigFile(t *testing.T, config map[string]any) (string, error) {
 	return filepath, err
 }
 
+func validateBundle(t *testing.T, ctx context.Context, path string) ([]byte, error) {
+	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
+	c := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "validate", "--output", "json")
+	stdout, _, err := c.Run()
+	return stdout.Bytes(), err
+}
+
 func deployBundle(t *testing.T, ctx context.Context, path string) error {
-	t.Setenv("BUNDLE_ROOT", path)
-	c := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "deploy", "--force-lock")
+	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
+	c := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "deploy", "--force-lock", "--auto-approve")
 	_, _, err := c.Run()
 	return err
 }
 
 func deployBundleWithFlags(t *testing.T, ctx context.Context, path string, flags []string) error {
-	t.Setenv("BUNDLE_ROOT", path)
+	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	args := []string{"bundle", "deploy", "--force-lock"}
 	args = append(args, flags...)
 	c := internal.NewCobraTestRunnerWithContext(t, ctx, args...)
@@ -68,6 +80,7 @@ func deployBundleWithFlags(t *testing.T, ctx context.Context, path string, flags
 }
 
 func runResource(t *testing.T, ctx context.Context, path string, key string) (string, error) {
+	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	ctx = cmdio.NewContext(ctx, cmdio.Default())
 
 	c := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "run", key)
@@ -76,6 +89,7 @@ func runResource(t *testing.T, ctx context.Context, path string, key string) (st
 }
 
 func runResourceWithParams(t *testing.T, ctx context.Context, path string, key string, params ...string) (string, error) {
+	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	ctx = cmdio.NewContext(ctx, cmdio.Default())
 
 	args := make([]string, 0)
@@ -87,7 +101,7 @@ func runResourceWithParams(t *testing.T, ctx context.Context, path string, key s
 }
 
 func destroyBundle(t *testing.T, ctx context.Context, path string) error {
-	t.Setenv("BUNDLE_ROOT", path)
+	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	c := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "destroy", "--auto-approve")
 	_, _, err := c.Run()
 	return err

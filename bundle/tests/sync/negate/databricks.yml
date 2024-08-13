@@ -1,0 +1,22 @@
+bundle:
+  name: sync_negate
+
+workspace:
+  host: https://acme.cloud.databricks.com/
+
+sync:
+  exclude:
+    - ./*
+    - '!*.txt'
+  include:
+    - '*.txt'
+
+targets:
+  default:
+  dev:
+    sync:
+      exclude:
+        - ./*
+        - '!*.txt2'
+      include:
+        - '*.txt'

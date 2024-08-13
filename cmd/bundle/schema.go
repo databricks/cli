@@ -11,54 +11,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func overrideVariables(s *jsonschema.Schema) error {
-	// Override schema for default values to allow for multiple primitive types.
-	// These are normalized to strings when converted to the typed representation.
-	err := s.SetByPath("variables.*.default", jsonschema.Schema{
-		AnyOf: []*jsonschema.Schema{
-			{
-				Type: jsonschema.StringType,
-			},
-			{
-				Type: jsonschema.BooleanType,
-			},
-			{
-				Type: jsonschema.NumberType,
-			},
-			{
-				Type: jsonschema.IntegerType,
-			},
-		},
-	})
-	if err != nil {
-		return err
-	}
-
-	// Override schema for variables in targets to allow just specifying the value
-	// along side overriding the variable definition if needed.
-	ns, err := s.GetByPath("variables.*")
-	if err != nil {
-		return err
-	}
-	return s.SetByPath("targets.*.variables.*", jsonschema.Schema{
-		AnyOf: []*jsonschema.Schema{
-			{
-				Type: jsonschema.StringType,
-			},
-			{
-				Type: jsonschema.BooleanType,
-			},
-			{
-				Type: jsonschema.NumberType,
-			},
-			{
-				Type: jsonschema.IntegerType,
-			},
-			&ns,
-		},
-	})
-}
-
 func newSchemaCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "schema",
@@ -79,9 +31,9 @@ func newSchemaCommand() *cobra.Command {
 			return err
 		}
 
-		// Override schema for variables to take into account normalization of default
-		// variable values and variable overrides in a target.
-		err = overrideVariables(schema)
+		// Target variable value overrides can be primitives, maps or sequences.
+		// Set an empty schema for them.
+		err = schema.SetByPath("targets.*.variables.*", jsonschema.Schema{})
 		if err != nil {
 			return err
 		}

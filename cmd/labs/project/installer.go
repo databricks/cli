@@ -11,8 +11,8 @@ import (
 	"github.com/databricks/cli/cmd/labs/github"
 	"github.com/databricks/cli/cmd/labs/unpack"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/process"
 	"github.com/databricks/cli/libs/python"
@@ -89,7 +89,7 @@ func (i *installer) Install(ctx context.Context) error {
 		return err
 	}
 	w, err := i.login(ctx)
-	if err != nil && errors.Is(err, databrickscfg.ErrNoConfiguration) {
+	if err != nil && errors.Is(err, profile.ErrNoConfiguration) {
 		cfg, err := i.Installer.envAwareConfig(ctx)
 		if err != nil {
 			return err
@@ -132,13 +132,13 @@ func (i *installer) Upgrade(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("record version: %w", err)
 	}
-	err = i.runInstallHook(ctx)
-	if err != nil {
-		return fmt.Errorf("installer: %w", err)
-	}
 	err = i.installPythonDependencies(ctx, ".")
 	if err != nil {
 		return fmt.Errorf("python dependencies: %w", err)
+	}
+	err = i.runInstallHook(ctx)
+	if err != nil {
+		return fmt.Errorf("installer: %w", err)
 	}
 	return nil
 }
@@ -272,8 +272,10 @@ func (i *installer) installPythonDependencies(ctx context.Context, spec string) 
 	// - python3 -m ensurepip --default-pip
 	// - curl -o https://bootstrap.pypa.io/get-pip.py | python3
 	var buf bytes.Buffer
+	// Ensure latest version(s) is installed with the `--upgrade` and `--upgrade-strategy eager` flags
+	// https://pip.pypa.io/en/stable/cli/pip_install/#cmdoption-U
 	_, err := process.Background(ctx,
-		[]string{i.virtualEnvPython(ctx), "-m", "pip", "install", spec},
+		[]string{i.virtualEnvPython(ctx), "-m", "pip", "install", "--upgrade", "--upgrade-strategy", "eager", spec},
 		process.WithCombinedOutput(&buf),
 		process.WithDir(libDir))
 	if err != nil {

@@ -1,0 +1,13 @@
+bundle:
+  name: test
+
+workspace:
+  profile: test
+
+include:
+  - ./resources.yml
+
+resources:
+  jobs:
+    foo:
+      name: job foo

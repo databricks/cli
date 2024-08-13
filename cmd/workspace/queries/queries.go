@@ -23,7 +23,12 @@ func New() *cobra.Command {
 		Long: `These endpoints are used for CRUD operations on query definitions. Query
   definitions include the target SQL warehouse, query text, name, description,
   tags, parameters, and visualizations. Queries can be scheduled using the
-  sql_task type of the Jobs API, e.g. :method:jobs/create.`,
+  sql_task type of the Jobs API, e.g. :method:jobs/create.
+  
+  **Note**: A new version of the Databricks SQL API will soon be available.
+  [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/whats-coming.html#updates-to-the-databricks-sql-api-for-managing-queries-alerts-and-data-sources`,
 		GroupID: "sql",
 		Annotations: map[string]string{
 			"package": "sql",
@@ -76,7 +81,12 @@ func newCreate() *cobra.Command {
   available SQL warehouses. Or you can copy the data_source_id from an
   existing query.
   
-  **Note**: You cannot add a visualization until you create the query.`
+  **Note**: You cannot add a visualization until you create the query.
+  
+  **Note**: A new version of the Databricks SQL API will soon be available.
+  [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/whats-coming.html#updates-to-the-databricks-sql-api-for-managing-queries-alerts-and-data-sources`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -135,7 +145,12 @@ func newDelete() *cobra.Command {
   
   Moves a query to the trash. Trashed queries immediately disappear from
   searches and list views, and they cannot be used for alerts. The trash is
-  deleted after 30 days.`
+  deleted after 30 days.
+  
+  **Note**: A new version of the Databricks SQL API will soon be available.
+  [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/whats-coming.html#updates-to-the-databricks-sql-api-for-managing-queries-alerts-and-data-sources`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -203,7 +218,12 @@ func newGet() *cobra.Command {
 	cmd.Long = `Get a query definition.
   
   Retrieve a query object definition along with contextual permissions
-  information about the currently authenticated user.`
+  information about the currently authenticated user.
+  
+  **Note**: A new version of the Databricks SQL API will soon be available.
+  [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/whats-coming.html#updates-to-the-databricks-sql-api-for-managing-queries-alerts-and-data-sources`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -278,8 +298,13 @@ func newList() *cobra.Command {
   Gets a list of queries. Optionally, this list can be filtered by a search
   term.
   
-  ### **Warning: Calling this API concurrently 10 or more times could result in
-  throttling, service degradation, or a temporary ban.**`
+  **Warning**: Calling this API concurrently 10 or more times could result in
+  throttling, service degradation, or a temporary ban.
+  
+  **Note**: A new version of the Databricks SQL API will soon be available.
+  [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/whats-coming.html#updates-to-the-databricks-sql-api-for-managing-queries-alerts-and-data-sources`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -330,7 +355,12 @@ func newRestore() *cobra.Command {
 	cmd.Long = `Restore a query.
   
   Restore a query that has been moved to the trash. A restored query appears in
-  list views and searches. You can use restored queries for alerts.`
+  list views and searches. You can use restored queries for alerts.
+  
+  **Note**: A new version of the Databricks SQL API will soon be available.
+  [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/whats-coming.html#updates-to-the-databricks-sql-api-for-managing-queries-alerts-and-data-sources`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -401,6 +431,7 @@ func newUpdate() *cobra.Command {
 	// TODO: any: options
 	cmd.Flags().StringVar(&updateReq.Query, "query", updateReq.Query, `The text of the query to be run.`)
 	cmd.Flags().Var(&updateReq.RunAsRole, "run-as-role", `Sets the **Run as** role for the object. Supported values: [owner, viewer]`)
+	// TODO: array: tags
 
 	cmd.Use = "update QUERY_ID"
 	cmd.Short = `Change a query definition.`
@@ -408,7 +439,12 @@ func newUpdate() *cobra.Command {
   
   Modify this query definition.
   
-  **Note**: You cannot undo this operation.`
+  **Note**: You cannot undo this operation.
+  
+  **Note**: A new version of the Databricks SQL API will soon be available.
+  [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/whats-coming.html#updates-to-the-databricks-sql-api-for-managing-queries-alerts-and-data-sources`
 
 	cmd.Annotations = make(map[string]string)
 

@@ -1,9 +1,12 @@
 package git
 
 import (
-	"os"
+	"errors"
+	"io/fs"
+	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/vfs"
 	ignore "github.com/sabhiram/go-gitignore"
 )
 
@@ -21,7 +24,8 @@ type ignoreRules interface {
 // ignoreFile represents a gitignore file backed by a path.
 // If the path doesn't exist (yet), it is treated as an empty file.
 type ignoreFile struct {
-	absPath string
+	root vfs.Path
+	path string
 
 	// Signal a reload of this file.
 	// Set this to call [os.Stat] and a potential reload
@@ -35,9 +39,10 @@ type ignoreFile struct {
 	patterns *ignore.GitIgnore
 }
 
-func newIgnoreFile(absPath string) ignoreRules {
+func newIgnoreFile(root vfs.Path, path string) ignoreRules {
 	return &ignoreFile{
-		absPath:        absPath,
+		root:           root,
+		path:           path,
 		checkForReload: true,
 	}
 }
@@ -67,9 +72,9 @@ func (f *ignoreFile) Taint() {
 func (f *ignoreFile) load() error {
 	// The file must be stat-able.
 	// If it doesn't exist, treat it as an empty file.
-	stat, err := os.Stat(f.absPath)
+	stat, err := fs.Stat(f.root, f.path)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return nil
 		}
 		return err
@@ -82,12 +87,22 @@ func (f *ignoreFile) load() error {
 	}
 
 	f.modTime = stat.ModTime()
-	f.patterns, err = ignore.CompileIgnoreFile(f.absPath)
+	f.patterns, err = f.loadGitignore()
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (f *ignoreFile) loadGitignore() (*ignore.GitIgnore, error) {
+	data, err := fs.ReadFile(f.root, f.path)
+	if err != nil {
+		return nil, err
+	}
+
+	lines := strings.Split(string(data), "\n")
+	return ignore.CompileIgnoreLines(lines...), nil
 }
 
 // stringIgnoreRules implements the [ignoreRules] interface

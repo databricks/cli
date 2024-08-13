@@ -9,6 +9,12 @@ import (
 	"github.com/databricks/cli/libs/dyn/dynvar"
 )
 
+// Populate a destination typed value from a source dynamic value.
+//
+// At any point while walking the destination type tree using
+// reflection, if this function sees an exported field with type dyn.Value it
+// will populate that field with the appropriate source dynamic value.
+// see PR: https://github.com/databricks/cli/pull/1010
 func ToTyped(dst any, src dyn.Value) error {
 	dstv := reflect.ValueOf(dst)
 
@@ -16,7 +22,7 @@ func ToTyped(dst any, src dyn.Value) error {
 	for dstv.Kind() == reflect.Pointer {
 		// If the source value is nil and the destination is a settable pointer,
 		// set the destination to nil. Also see `end_to_end_test.go`.
-		if dstv.CanSet() && src == dyn.NilValue {
+		if dstv.CanSet() && src.Kind() == dyn.KindNil {
 			dstv.SetZero()
 			return nil
 		}
@@ -46,6 +52,8 @@ func ToTyped(dst any, src dyn.Value) error {
 		return toTypedInt(dstv, src)
 	case reflect.Float32, reflect.Float64:
 		return toTypedFloat(dstv, src)
+	case reflect.Interface:
+		return toTypedInterface(dstv, src)
 	}
 
 	return fmt.Errorf("unsupported type: %s", dstv.Kind())
@@ -101,6 +109,12 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 	case dyn.KindNil:
 		dst.SetZero()
 		return nil
+	case dyn.KindString:
+		// Ignore pure variable references (e.g. ${var.foo}).
+		if dynvar.IsPureVariableReference(src.MustString()) {
+			dst.SetZero()
+			return nil
+		}
 	}
 
 	return TypeError{
@@ -132,6 +146,12 @@ func toTypedMap(dst reflect.Value, src dyn.Value) error {
 	case dyn.KindNil:
 		dst.SetZero()
 		return nil
+	case dyn.KindString:
+		// Ignore pure variable references (e.g. ${var.foo}).
+		if dynvar.IsPureVariableReference(src.MustString()) {
+			dst.SetZero()
+			return nil
+		}
 	}
 
 	return TypeError{
@@ -157,6 +177,12 @@ func toTypedSlice(dst reflect.Value, src dyn.Value) error {
 	case dyn.KindNil:
 		dst.SetZero()
 		return nil
+	case dyn.KindString:
+		// Ignore pure variable references (e.g. ${var.foo}).
+		if dynvar.IsPureVariableReference(src.MustString()) {
+			dst.SetZero()
+			return nil
+		}
 	}
 
 	return TypeError{
@@ -259,4 +285,14 @@ func toTypedFloat(dst reflect.Value, src dyn.Value) error {
 		value: src,
 		msg:   fmt.Sprintf("expected a float, found a %s", src.Kind()),
 	}
+}
+
+func toTypedInterface(dst reflect.Value, src dyn.Value) error {
+	if src.Kind() == dyn.KindNil {
+		dst.Set(reflect.Zero(dst.Type()))
+		return nil
+	}
+
+	dst.Set(reflect.ValueOf(src.AsAny()))
+	return nil
 }

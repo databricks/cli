@@ -1502,23 +1502,15 @@ func newSubmit() *cobra.Command {
 	cmd.Flags().Var(&submitJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
-	// TODO: complex arg: condition_task
-	// TODO: complex arg: dbt_task
 	// TODO: complex arg: email_notifications
+	// TODO: array: environments
 	// TODO: complex arg: git_source
 	// TODO: complex arg: health
 	cmd.Flags().StringVar(&submitReq.IdempotencyToken, "idempotency-token", submitReq.IdempotencyToken, `An optional token that can be used to guarantee the idempotency of job run requests.`)
-	// TODO: complex arg: notebook_task
 	// TODO: complex arg: notification_settings
-	// TODO: complex arg: pipeline_task
-	// TODO: complex arg: python_wheel_task
 	// TODO: complex arg: queue
-	// TODO: complex arg: run_job_task
+	// TODO: complex arg: run_as
 	cmd.Flags().StringVar(&submitReq.RunName, "run-name", submitReq.RunName, `An optional name for the run.`)
-	// TODO: complex arg: spark_jar_task
-	// TODO: complex arg: spark_python_task
-	// TODO: complex arg: spark_submit_task
-	// TODO: complex arg: sql_task
 	// TODO: array: tasks
 	cmd.Flags().IntVar(&submitReq.TimeoutSeconds, "timeout-seconds", submitReq.TimeoutSeconds, `An optional timeout applied to each run of this job.`)
 	// TODO: complex arg: webhook_notifications

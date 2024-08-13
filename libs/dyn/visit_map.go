@@ -10,9 +10,12 @@ type MapFunc func(Path, Value) (Value, error)
 
 // Foreach returns a [MapFunc] that applies the specified [MapFunc] to each
 // value in a map or sequence and returns the new map or sequence.
+// If the input is nil, it returns nil.
 func Foreach(fn MapFunc) MapFunc {
 	return func(p Path, v Value) (Value, error) {
 		switch v.Kind() {
+		case KindNil:
+			return v, nil
 		case KindMap:
 			m := v.MustMap().Clone()
 			for _, pair := range m.Pairs() {
@@ -24,7 +27,7 @@ func Foreach(fn MapFunc) MapFunc {
 				}
 				m.Set(pk, nv)
 			}
-			return NewValue(m, v.Location()), nil
+			return NewValue(m, v.Locations()), nil
 		case KindSequence:
 			s := slices.Clone(v.MustSequence())
 			for i, value := range s {
@@ -34,7 +37,7 @@ func Foreach(fn MapFunc) MapFunc {
 					return InvalidValue, err
 				}
 			}
-			return NewValue(s, v.Location()), nil
+			return NewValue(s, v.Locations()), nil
 		default:
 			return InvalidValue, fmt.Errorf("expected a map or sequence, found %s", v.Kind())
 		}
@@ -75,8 +78,10 @@ func MapByPattern(v Value, p Pattern, fn MapFunc) (Value, error) {
 		return nv, nil
 	}
 
-	// Return original value if a key or index is missing.
-	if IsNoSuchKeyError(err) || IsIndexOutOfBoundsError(err) {
+	// Return original value if:
+	// - any map or sequence is a nil, or
+	// - a key or index is missing
+	if IsCannotTraverseNilError(err) || IsNoSuchKeyError(err) || IsIndexOutOfBoundsError(err) {
 		return v, nil
 	}
 

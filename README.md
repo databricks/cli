@@ -4,16 +4,31 @@
 
 This project is in Public Preview.
 
-Documentation about the full REST API coverage is available in the [docs folder](docs/commands.md).
-
 Documentation is available at https://docs.databricks.com/dev-tools/cli/databricks-cli.html.
 
 ## Installation
 
 This CLI is packaged as a dependency-free binary executable and may be located in any directory.
 See https://github.com/databricks/cli/releases for releases and
-[the docs pages](https://docs.databricks.com/dev-tools/cli/databricks-cli.html) for
-installation instructions.
+the [Databricks documentation](https://docs.databricks.com/en/dev-tools/cli/install.html) for detailed information about installing the CLI.
+
+------
+### Homebrew
+
+We maintain a [Homebrew tap](https://github.com/databricks/homebrew-tap) for installing the Databricks CLI. You can find instructions for how to install, upgrade and downgrade the CLI using Homebrew [here](https://github.com/databricks/homebrew-tap/blob/main/README.md).
+
+------
+### Docker
+You can use the CLI via a Docker image by pulling the image from `ghcr.io`. You can find all available versions
+at: https://github.com/databricks/cli/pkgs/container/cli.
+```
+docker pull ghcr.io/databricks/cli:latest
+```
+
+Example of how to run the CLI using the Docker image. More documentation is available at https://docs.databricks.com/dev-tools/bundles/airgapped-environment.html.
+```
+docker run -e DATABRICKS_HOST=$YOUR_HOST_URL -e DATABRICKS_TOKEN=$YOUR_TOKEN ghcr.io/databricks/cli:latest current-user me
+```
 
 ## Authentication
 

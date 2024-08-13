@@ -53,14 +53,20 @@ func (e errBothSpAndUserSpecified) Error() string {
 }
 
 func validateRunAs(b *bundle.Bundle) error {
-	runAs := b.Config.RunAs
-
-	// Error if neither service_principal_name nor user_name are specified
-	if runAs.ServicePrincipalName == "" && runAs.UserName == "" {
-		return fmt.Errorf("run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at %s", b.Config.GetLocation("run_as"))
+	neitherSpecifiedErr := fmt.Errorf("run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at %s", b.Config.GetLocation("run_as"))
+	// Error if neither service_principal_name nor user_name are specified, but the
+	// run_as section is present.
+	if b.Config.Value().Get("run_as").Kind() == dyn.KindNil {
+		return neitherSpecifiedErr
+	}
+	// Error if one or both of service_principal_name and user_name are specified,
+	// but with empty values.
+	if b.Config.RunAs.ServicePrincipalName == "" && b.Config.RunAs.UserName == "" {
+		return neitherSpecifiedErr
 	}
 
 	// Error if both service_principal_name and user_name are specified
+	runAs := b.Config.RunAs
 	if runAs.UserName != "" && runAs.ServicePrincipalName != "" {
 		return errBothSpAndUserSpecified{
 			spName:   runAs.ServicePrincipalName,
@@ -95,6 +101,16 @@ func validateRunAs(b *bundle.Bundle) error {
 		return errUnsupportedResourceTypeForRunAs{
 			resourceType:     "model_serving_endpoints",
 			resourceLocation: b.Config.GetLocation("resources.model_serving_endpoints"),
+			currentUser:      b.Config.Workspace.CurrentUser.UserName,
+			runAsUser:        identity,
+		}
+	}
+
+	// Monitors do not support run_as in the API.
+	if len(b.Config.Resources.QualityMonitors) > 0 {
+		return errUnsupportedResourceTypeForRunAs{
+			resourceType:     "quality_monitors",
+			resourceLocation: b.Config.GetLocation("resources.quality_monitors"),
 			currentUser:      b.Config.Workspace.CurrentUser.UserName,
 			runAsUser:        identity,
 		}
@@ -153,8 +169,7 @@ func setPipelineOwnersToRunAsIdentity(b *bundle.Bundle) {
 
 func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Mutator is a no-op if run_as is not specified in the bundle
-	runAs := b.Config.RunAs
-	if runAs == nil {
+	if b.Config.Value().Get("run_as").Kind() == dyn.KindInvalid {
 		return nil
 	}
 
@@ -163,10 +178,10 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 		setRunAsForJobs(b)
 		return diag.Diagnostics{
 			{
-				Severity: diag.Warning,
-				Summary:  "You are using the legacy mode of run_as. The support for this mode is experimental and might be removed in a future release of the CLI. In order to run the DLT pipelines in your DAB as the run_as user this mode changes the owners of the pipelines to the run_as identity, which requires the user deploying the bundle to be a workspace admin, and also a Metastore admin if the pipeline target is in UC.",
-				Path:     dyn.MustPathFromString("experimental.use_legacy_run_as"),
-				Location: b.Config.GetLocation("experimental.use_legacy_run_as"),
+				Severity:  diag.Warning,
+				Summary:   "You are using the legacy mode of run_as. The support for this mode is experimental and might be removed in a future release of the CLI. In order to run the DLT pipelines in your DAB as the run_as user this mode changes the owners of the pipelines to the run_as identity, which requires the user deploying the bundle to be a workspace admin, and also a Metastore admin if the pipeline target is in UC.",
+				Paths:     []dyn.Path{dyn.MustPathFromString("experimental.use_legacy_run_as")},
+				Locations: b.Config.GetLocations("experimental.use_legacy_run_as"),
 			},
 		}
 	}

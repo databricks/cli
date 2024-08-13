@@ -63,7 +63,12 @@ func TestExpandGlobFilesSource(t *testing.T) {
 		return &noop{}
 	}
 
-	diags := bundle.Apply(context.Background(), b, bundle.Seq(bm, u))
+	pm := &prepare{"test"}
+	prepareMutators[config.ArtifactType("custom")] = func(name string) bundle.Mutator {
+		return &noop{}
+	}
+
+	diags := bundle.Apply(context.Background(), b, bundle.Seq(pm, bm, u))
 	require.NoError(t, diags.Error())
 
 	require.Equal(t, 2, len(b.Config.Artifacts["test"].Files))
@@ -105,5 +110,5 @@ func TestExpandGlobFilesSourceWithNoMatches(t *testing.T) {
 	}
 
 	diags := bundle.Apply(context.Background(), b, bundle.Seq(bm, u))
-	require.ErrorContains(t, diags.Error(), "no files found for")
+	require.ErrorContains(t, diags.Error(), "no matching files")
 }

@@ -27,9 +27,9 @@ func (m *detectPkg) Name() string {
 }
 
 func (m *detectPkg) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	wheelTasks := libraries.FindAllWheelTasksWithLocalLibraries(b)
-	if len(wheelTasks) == 0 {
-		log.Infof(ctx, "No local wheel tasks in databricks.yml config, skipping auto detect")
+	tasks := libraries.FindTasksWithLocalLibraries(b)
+	if len(tasks) == 0 {
+		log.Infof(ctx, "No local tasks in databricks.yml config, skipping auto detect")
 		return nil
 	}
 	log.Infof(ctx, "Detecting Python wheel project...")

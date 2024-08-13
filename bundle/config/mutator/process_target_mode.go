@@ -9,8 +9,8 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
@@ -33,10 +33,8 @@ func (m *processTargetMode) Name() string {
 func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if !b.Config.Bundle.Deployment.Lock.IsExplicitlyEnabled() {
 		log.Infof(ctx, "Development mode: disabling deployment lock since bundle.deployment.lock.enabled is not set to true")
-		err := disableDeploymentLock(b)
-		if err != nil {
-			return diag.FromErr(err)
-		}
+		disabled := false
+		b.Config.Bundle.Deployment.Lock.Enabled = &disabled
 	}
 
 	r := b.Config.Resources
@@ -105,15 +103,23 @@ func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		// (registered models in Unity Catalog don't yet support tags)
 	}
 
-	return nil
-}
+	for i := range r.QualityMonitors {
+		// Remove all schedules from monitors, since they don't support pausing/unpausing.
+		// Quality monitors might support the "pause" property in the future, so at the
+		// CLI level we do respect that property if it is set to "unpaused".
+		if r.QualityMonitors[i].Schedule != nil && r.QualityMonitors[i].Schedule.PauseStatus != catalog.MonitorCronSchedulePauseStatusUnpaused {
+			r.QualityMonitors[i].Schedule = nil
+		}
+	}
 
-func disableDeploymentLock(b *bundle.Bundle) error {
-	return b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		return dyn.Map(v, "bundle.deployment.lock", func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
-			return dyn.Set(v, "enabled", dyn.V(false))
-		})
-	})
+	for i := range r.Schemas {
+		prefix = "dev_" + b.Config.Workspace.CurrentUser.ShortName + "_"
+		r.Schemas[i].Name = prefix + r.Schemas[i].Name
+		// HTTP API for schemas doesn't yet support tags. It's only supported in
+		// the Databricks UI and via the SQL API.
+	}
+
+	return nil
 }
 
 func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {

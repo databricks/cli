@@ -97,6 +97,26 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				RegisteredModels: map[string]*resources.RegisteredModel{
 					"registeredmodel1": {CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{Name: "registeredmodel1"}},
 				},
+				QualityMonitors: map[string]*resources.QualityMonitor{
+					"qualityMonitor1": {CreateMonitor: &catalog.CreateMonitor{TableName: "qualityMonitor1"}},
+					"qualityMonitor2": {
+						CreateMonitor: &catalog.CreateMonitor{
+							TableName: "qualityMonitor2",
+							Schedule:  &catalog.MonitorCronSchedule{},
+						},
+					},
+					"qualityMonitor3": {
+						CreateMonitor: &catalog.CreateMonitor{
+							TableName: "qualityMonitor3",
+							Schedule: &catalog.MonitorCronSchedule{
+								PauseStatus: catalog.MonitorCronSchedulePauseStatusUnpaused,
+							},
+						},
+					},
+				},
+				Schemas: map[string]*resources.Schema{
+					"schema1": {CreateSchema: &catalog.CreateSchema{Name: "schema1"}},
+				},
 			},
 		},
 		// Use AWS implementation for testing.
@@ -145,6 +165,14 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Registered model 1
 	assert.Equal(t, "dev_lennart_registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
+
+	// Quality Monitor 1
+	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
+	assert.Nil(t, b.Config.Resources.QualityMonitors["qualityMonitor2"].Schedule)
+	assert.Equal(t, catalog.MonitorCronSchedulePauseStatusUnpaused, b.Config.Resources.QualityMonitors["qualityMonitor3"].Schedule.PauseStatus)
+
+	// Schema 1
+	assert.Equal(t, "dev_lennart_schema1", b.Config.Resources.Schemas["schema1"].Name)
 }
 
 func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {
@@ -200,6 +228,7 @@ func TestProcessTargetModeDefault(t *testing.T) {
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
 	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
+	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
 }
 
 func TestProcessTargetModeProduction(t *testing.T) {
@@ -240,6 +269,7 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
 	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
+	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
 }
 
 func TestProcessTargetModeProductionOkForPrincipal(t *testing.T) {
@@ -306,7 +336,7 @@ func TestDisableLocking(t *testing.T) {
 	ctx := context.Background()
 	b := mockBundle(config.Development)
 
-	err := transformDevelopmentMode(ctx, b)
+	err := bundle.Apply(ctx, b, ProcessTargetMode())
 	require.Nil(t, err)
 	assert.False(t, b.Config.Bundle.Deployment.Lock.IsEnabled())
 }
@@ -317,7 +347,7 @@ func TestDisableLockingDisabled(t *testing.T) {
 	explicitlyEnabled := true
 	b.Config.Bundle.Deployment.Lock.Enabled = &explicitlyEnabled
 
-	err := transformDevelopmentMode(ctx, b)
+	err := bundle.Apply(ctx, b, ProcessTargetMode())
 	require.Nil(t, err)
 	assert.True(t, b.Config.Bundle.Deployment.Lock.IsEnabled(), "Deployment lock should remain enabled in development mode when explicitly enabled")
 }

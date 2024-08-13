@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/dyn"
 )
@@ -19,62 +18,42 @@ func noSkipRewrite(string) bool {
 	return false
 }
 
-func rewritePatterns(base dyn.Pattern) []jobRewritePattern {
+func rewritePatterns(t *translateContext, base dyn.Pattern) []jobRewritePattern {
 	return []jobRewritePattern{
 		{
 			base.Append(dyn.Key("notebook_task"), dyn.Key("notebook_path")),
-			translateNotebookPath,
+			t.translateNotebookPath,
 			noSkipRewrite,
 		},
 		{
 			base.Append(dyn.Key("spark_python_task"), dyn.Key("python_file")),
-			translateFilePath,
+			t.translateFilePath,
 			noSkipRewrite,
 		},
 		{
 			base.Append(dyn.Key("dbt_task"), dyn.Key("project_directory")),
-			translateDirectoryPath,
+			t.translateDirectoryPath,
 			noSkipRewrite,
 		},
 		{
 			base.Append(dyn.Key("sql_task"), dyn.Key("file"), dyn.Key("path")),
-			translateFilePath,
+			t.translateFilePath,
 			noSkipRewrite,
 		},
 		{
 			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("whl")),
-			translateNoOp,
+			t.translateNoOp,
 			noSkipRewrite,
 		},
 		{
 			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("jar")),
-			translateNoOp,
+			t.translateNoOp,
 			noSkipRewrite,
 		},
 	}
 }
 
-func (m *translatePaths) applyJobTranslations(b *bundle.Bundle, v dyn.Value) (dyn.Value, error) {
-	var fallback = make(map[string]string)
-	var ignore []string
-	var err error
-
-	for key, job := range b.Config.Resources.Jobs {
-		dir, err := job.ConfigFileDirectory()
-		if err != nil {
-			return dyn.InvalidValue, fmt.Errorf("unable to determine directory for job %s: %w", key, err)
-		}
-
-		// If we cannot resolve the relative path using the [dyn.Value] location itself,
-		// use the job's location as fallback. This is necessary for backwards compatibility.
-		fallback[key] = dir
-
-		// Do not translate job task paths if using git source
-		if job.GitSource != nil {
-			ignore = append(ignore, key)
-		}
-	}
-
+func (t *translateContext) jobRewritePatterns() []jobRewritePattern {
 	// Base pattern to match all tasks in all jobs.
 	base := dyn.NewPattern(
 		dyn.Key("resources"),
@@ -97,19 +76,38 @@ func (m *translatePaths) applyJobTranslations(b *bundle.Bundle, v dyn.Value) (dy
 				dyn.Key("dependencies"),
 				dyn.AnyIndex(),
 			),
-			translateNoOpWithPrefix,
+			t.translateNoOpWithPrefix,
 			func(s string) bool {
 				return !libraries.IsEnvironmentDependencyLocal(s)
 			},
 		},
 	}
-	taskPatterns := rewritePatterns(base)
-	forEachPatterns := rewritePatterns(base.Append(dyn.Key("for_each_task"), dyn.Key("task")))
+
+	taskPatterns := rewritePatterns(t, base)
+	forEachPatterns := rewritePatterns(t, base.Append(dyn.Key("for_each_task"), dyn.Key("task")))
 	allPatterns := append(taskPatterns, jobEnvironmentsPatterns...)
 	allPatterns = append(allPatterns, forEachPatterns...)
+	return allPatterns
+}
 
-	for _, t := range allPatterns {
-		v, err = dyn.MapByPattern(v, t.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+func (t *translateContext) applyJobTranslations(v dyn.Value) (dyn.Value, error) {
+	var err error
+
+	fallback, err := gatherFallbackPaths(v, "jobs")
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
+
+	// Do not translate job task paths if using Git source
+	var ignore []string
+	for key, job := range t.b.Config.Resources.Jobs {
+		if job.GitSource != nil {
+			ignore = append(ignore, key)
+		}
+	}
+
+	for _, rewritePattern := range t.jobRewritePatterns() {
+		v, err = dyn.MapByPattern(v, rewritePattern.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			key := p[2].Key()
 
 			// Skip path translation if the job is using git source.
@@ -123,10 +121,10 @@ func (m *translatePaths) applyJobTranslations(b *bundle.Bundle, v dyn.Value) (dy
 			}
 
 			sv := v.MustString()
-			if t.skipRewrite(sv) {
+			if rewritePattern.skipRewrite(sv) {
 				return v, nil
 			}
-			return m.rewriteRelativeTo(b, p, v, t.fn, dir, fallback[key])
+			return t.rewriteRelativeTo(p, v, rewritePattern.fn, dir, fallback[key])
 		})
 		if err != nil {
 			return dyn.InvalidValue, err

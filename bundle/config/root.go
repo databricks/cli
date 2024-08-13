@@ -74,6 +74,10 @@ func Load(path string) (*Root, diag.Diagnostics) {
 		return nil, diag.FromErr(err)
 	}
 
+	return LoadFromBytes(path, raw)
+}
+
+func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 	r := Root{}
 
 	// Load configuration tree from YAML.
@@ -95,11 +99,6 @@ func Load(path string) (*Root, diag.Diagnostics) {
 	err = r.updateWithDynamicValue(v)
 	if err != nil {
 		return nil, diag.Errorf("failed to load %s: %v", path, err)
-	}
-
-	_, err = r.Resources.VerifyUniqueResourceIdentifiers()
-	if err != nil {
-		diags = diags.Extend(diag.FromErr(err))
 	}
 	return &r, diags
 }
@@ -137,9 +136,6 @@ func (r *Root) updateWithDynamicValue(nv dyn.Value) error {
 
 	// Assign the normalized configuration tree.
 	r.value = nv
-
-	// Assign config file paths after converting to typed configuration.
-	r.ConfigureConfigFilePath()
 	return nil
 }
 
@@ -231,15 +227,6 @@ func (r *Root) MarkMutatorExit(ctx context.Context) error {
 	return nil
 }
 
-// SetConfigFilePath configures the path that its configuration
-// was loaded from in configuration leafs that require it.
-func (r *Root) ConfigureConfigFilePath() {
-	r.Resources.ConfigureConfigFilePath()
-	if r.Artifacts != nil {
-		r.Artifacts.ConfigureConfigFilePath()
-	}
-}
-
 // Initializes variables using values passed from the command line flag
 // Input has to be a string of the form `foo=bar`. In this case the variable with
 // name `foo` is assigned the value `bar`
@@ -255,6 +242,11 @@ func (r *Root) InitializeVariables(vars []string) error {
 		if _, ok := r.Variables[name]; !ok {
 			return fmt.Errorf("variable %s has not been defined", name)
 		}
+
+		if r.Variables[name].IsComplex() {
+			return fmt.Errorf("setting variables of complex type via --var flag is not supported: %s", name)
+		}
+
 		err := r.Variables[name].Set(val)
 		if err != nil {
 			return fmt.Errorf("failed to assign %s to %s: %s", val, name, err)
@@ -264,12 +256,6 @@ func (r *Root) InitializeVariables(vars []string) error {
 }
 
 func (r *Root) Merge(other *Root) error {
-	// Check for safe merge, protecting against duplicate resource identifiers
-	err := r.Resources.VerifySafeMerge(&other.Resources)
-	if err != nil {
-		return err
-	}
-
 	// Merge dynamic configuration values.
 	return r.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		return merge.Merge(root, other.value)
@@ -321,15 +307,38 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		"resources",
 		"sync",
 		"permissions",
-		"variables",
 	} {
 		if root, err = mergeField(root, target, f); err != nil {
 			return err
 		}
 	}
 
+	// Merge `variables`. This field must be overwritten if set, not merged.
+	if v := target.Get("variables"); v.Kind() != dyn.KindInvalid {
+		_, err = dyn.Map(v, ".", dyn.Foreach(func(p dyn.Path, variable dyn.Value) (dyn.Value, error) {
+			varPath := dyn.MustPathFromString("variables").Append(p...)
+
+			vDefault := variable.Get("default")
+			if vDefault.Kind() != dyn.KindInvalid {
+				defaultPath := varPath.Append(dyn.Key("default"))
+				root, err = dyn.SetByPath(root, defaultPath, vDefault)
+			}
+
+			vLookup := variable.Get("lookup")
+			if vLookup.Kind() != dyn.KindInvalid {
+				lookupPath := varPath.Append(dyn.Key("lookup"))
+				root, err = dyn.SetByPath(root, lookupPath, vLookup)
+			}
+
+			return root, err
+		}))
+		if err != nil {
+			return err
+		}
+	}
+
 	// Merge `run_as`. This field must be overwritten if set, not merged.
-	if v := target.Get("run_as"); v != dyn.NilValue {
+	if v := target.Get("run_as"); v.Kind() != dyn.KindInvalid {
 		root, err = dyn.Set(root, "run_as", v)
 		if err != nil {
 			return err
@@ -337,15 +346,15 @@ func (r *Root) MergeTargetOverrides(name string) error {
 	}
 
 	// Below, we're setting fields on the bundle key, so make sure it exists.
-	if root.Get("bundle") == dyn.NilValue {
-		root, err = dyn.Set(root, "bundle", dyn.NewValue(map[string]dyn.Value{}, dyn.Location{}))
+	if root.Get("bundle").Kind() == dyn.KindInvalid {
+		root, err = dyn.Set(root, "bundle", dyn.V(map[string]dyn.Value{}))
 		if err != nil {
 			return err
 		}
 	}
 
 	// Merge `mode`. This field must be overwritten if set, not merged.
-	if v := target.Get("mode"); v != dyn.NilValue {
+	if v := target.Get("mode"); v.Kind() != dyn.KindInvalid {
 		root, err = dyn.SetByPath(root, dyn.NewPath(dyn.Key("bundle"), dyn.Key("mode")), v)
 		if err != nil {
 			return err
@@ -353,7 +362,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 	}
 
 	// Merge `compute_id`. This field must be overwritten if set, not merged.
-	if v := target.Get("compute_id"); v != dyn.NilValue {
+	if v := target.Get("compute_id"); v.Kind() != dyn.KindInvalid {
 		root, err = dyn.SetByPath(root, dyn.NewPath(dyn.Key("bundle"), dyn.Key("compute_id")), v)
 		if err != nil {
 			return err
@@ -361,10 +370,10 @@ func (r *Root) MergeTargetOverrides(name string) error {
 	}
 
 	// Merge `git`.
-	if v := target.Get("git"); v != dyn.NilValue {
+	if v := target.Get("git"); v.Kind() != dyn.KindInvalid {
 		ref, err := dyn.GetByPath(root, dyn.NewPath(dyn.Key("bundle"), dyn.Key("git")))
 		if err != nil {
-			ref = dyn.NewValue(map[string]dyn.Value{}, dyn.Location{})
+			ref = dyn.V(map[string]dyn.Value{})
 		}
 
 		// Merge the override into the reference.
@@ -374,8 +383,8 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		}
 
 		// If the branch was overridden, we need to clear the inferred flag.
-		if branch := v.Get("branch"); branch != dyn.NilValue {
-			out, err = dyn.SetByPath(out, dyn.NewPath(dyn.Key("inferred")), dyn.NewValue(false, dyn.Location{}))
+		if branch := v.Get("branch"); branch.Kind() != dyn.KindInvalid {
+			out, err = dyn.SetByPath(out, dyn.NewPath(dyn.Key("inferred")), dyn.V(false))
 			if err != nil {
 				return err
 			}
@@ -402,12 +411,12 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 	// For each target, rewrite the variables block.
 	return dyn.Map(v, "targets", dyn.Foreach(func(_ dyn.Path, target dyn.Value) (dyn.Value, error) {
 		// Confirm it has a variables block.
-		if target.Get("variables") == dyn.NilValue {
+		if target.Get("variables").Kind() == dyn.KindInvalid {
 			return target, nil
 		}
 
 		// For each variable, normalize its contents if it is a single string.
-		return dyn.Map(target, "variables", dyn.Foreach(func(_ dyn.Path, variable dyn.Value) (dyn.Value, error) {
+		return dyn.Map(target, "variables", dyn.Foreach(func(p dyn.Path, variable dyn.Value) (dyn.Value, error) {
 			switch variable.Kind() {
 
 			case dyn.KindString, dyn.KindBool, dyn.KindFloat, dyn.KindInt:
@@ -416,7 +425,23 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 				// configuration will convert this to a string if necessary.
 				return dyn.NewValue(map[string]dyn.Value{
 					"default": variable,
-				}, variable.Location()), nil
+				}, variable.Locations()), nil
+
+			case dyn.KindMap, dyn.KindSequence:
+				// Check if the original definition of variable has a type field.
+				typeV, err := dyn.GetByPath(v, p.Append(dyn.Key("type")))
+				if err != nil {
+					return variable, nil
+				}
+
+				if typeV.MustString() == "complex" {
+					return dyn.NewValue(map[string]dyn.Value{
+						"type":    typeV,
+						"default": variable,
+					}, variable.Locations()), nil
+				}
+
+				return variable, nil
 
 			default:
 				return variable, nil
@@ -432,15 +457,19 @@ func validateVariableOverrides(root, target dyn.Value) (err error) {
 	var tv map[string]variable.Variable
 
 	// Collect variables from the root.
-	err = convert.ToTyped(&rv, root.Get("variables"))
-	if err != nil {
-		return fmt.Errorf("unable to collect variables from root: %w", err)
+	if v := root.Get("variables"); v.Kind() != dyn.KindInvalid {
+		err = convert.ToTyped(&rv, v)
+		if err != nil {
+			return fmt.Errorf("unable to collect variables from root: %w", err)
+		}
 	}
 
 	// Collect variables from the target.
-	err = convert.ToTyped(&tv, target.Get("variables"))
-	if err != nil {
-		return fmt.Errorf("unable to collect variables from target: %w", err)
+	if v := target.Get("variables"); v.Kind() != dyn.KindInvalid {
+		err = convert.ToTyped(&tv, v)
+		if err != nil {
+			return fmt.Errorf("unable to collect variables from target: %w", err)
+		}
 	}
 
 	// Check that all variables in the target exist in the root.
@@ -462,4 +491,21 @@ func (r Root) GetLocation(path string) dyn.Location {
 		return dyn.Location{}
 	}
 	return v.Location()
+}
+
+// Get all locations of the configuration value at the specified path. We need both
+// this function and it's singular version (GetLocation) because some diagnostics just need
+// the primary location and some need all locations associated with a configuration value.
+func (r Root) GetLocations(path string) []dyn.Location {
+	v, err := dyn.Get(r.value, path)
+	if err != nil {
+		return []dyn.Location{}
+	}
+	return v.Locations()
+}
+
+// Value returns the dynamic configuration value of the root object. This value
+// is the source of truth and is kept in sync with values in the typed configuration.
+func (r Root) Value() dyn.Value {
+	return r.value
 }

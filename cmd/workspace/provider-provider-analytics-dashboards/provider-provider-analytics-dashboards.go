@@ -60,9 +60,6 @@ func newCreate() *cobra.Command {
   Create provider analytics dashboard. Returns Marketplace specific id. Not to
   be confused with the Lakeview dashboard id.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -105,9 +102,6 @@ func newGet() *cobra.Command {
   
   Get provider analytics dashboard.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -149,9 +143,6 @@ func newGetLatestVersion() *cobra.Command {
 	cmd.Long = `Get latest version of provider analytics dashboard.
   
   Get latest version of provider analytics dashboard.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -206,9 +197,6 @@ func newUpdate() *cobra.Command {
 
   Arguments:
     ID: id is immutable property and can't be updated.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 

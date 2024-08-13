@@ -940,11 +940,14 @@ func newUpdate() *cobra.Command {
 	// TODO: array: clusters
 	// TODO: map via StringToStringVar: configuration
 	cmd.Flags().BoolVar(&updateReq.Continuous, "continuous", updateReq.Continuous, `Whether the pipeline is continuous or triggered.`)
+	// TODO: complex arg: deployment
 	cmd.Flags().BoolVar(&updateReq.Development, "development", updateReq.Development, `Whether the pipeline is in Development mode.`)
 	cmd.Flags().StringVar(&updateReq.Edition, "edition", updateReq.Edition, `Pipeline product edition.`)
 	cmd.Flags().Int64Var(&updateReq.ExpectedLastModified, "expected-last-modified", updateReq.ExpectedLastModified, `If present, the last-modified time of the pipeline settings before the edit.`)
 	// TODO: complex arg: filters
+	// TODO: complex arg: gateway_definition
 	cmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `Unique identifier for this pipeline.`)
+	// TODO: complex arg: ingestion_definition
 	// TODO: array: libraries
 	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Friendly identifier for this pipeline.`)
 	// TODO: array: notifications

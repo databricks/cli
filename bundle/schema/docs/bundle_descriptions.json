@@ -46,6 +46,17 @@
           "properties": {
             "fail_on_active_runs": {
               "description": ""
+            },
+            "lock": {
+              "description": "",
+              "properties": {
+                "enabled": {
+                  "description": ""
+                },
+                "force": {
+                  "description": ""
+                }
+              }
             }
           }
         },
@@ -68,6 +79,17 @@
     "experimental": {
       "description": "",
       "properties": {
+        "pydabs": {
+          "description": "",
+          "properties": {
+            "enabled": {
+              "description": ""
+            },
+            "venv_path": {
+              "description": ""
+            }
+          }
+        },
         "python_wheel_wrapper": {
           "description": ""
         },
@@ -76,6 +98,9 @@
           "additionalproperties": {
             "description": ""
           }
+        },
+        "use_legacy_run_as": {
+          "description": ""
         }
       }
     },
@@ -222,6 +247,12 @@
                       "description": ""
                     }
                   },
+                  "on_streaming_backlog_exceeded": {
+                    "description": "A list of email addresses to notify when any streaming backlog thresholds are exceeded for any stream.\nStreaming backlog thresholds can be set in the `health` field using the following metrics: `STREAMING_BACKLOG_BYTES`, `STREAMING_BACKLOG_RECORDS`, `STREAMING_BACKLOG_SECONDS`, or `STREAMING_BACKLOG_FILES`.\nAlerting is based on the 10-minute average of these metrics. If the issue persists, notifications are resent every 30 minutes.",
+                    "items": {
+                      "description": ""
+                    }
+                  },
                   "on_success": {
                     "description": "A list of email addresses to be notified when a run successfully completes. A run is considered to have completed successfully if it ends with a `TERMINATED` `life_cycle_state` and a `SUCCESS` result_state. If not specified on job creation, reset, or update, the list is empty, and notifications are not sent.",
                     "items": {
@@ -242,7 +273,7 @@
                       "description": "",
                       "properties": {
                         "client": {
-                          "description": "*\nUser-friendly name for the client version: “client”: “1”\nThe version is a string, consisting of the major client version"
+                          "description": "Client version used by the environment\nThe client is the user-facing environment of the runtime.\nEach client comes with a specific set of pre-installed libraries.\nThe version is a string, consisting of the major client version."
                         },
                         "dependencies": {
                           "description": "List of pip dependencies, as supported by the version of pip in this environment.\nEach dependency is a pip requirement file line https://pip.pypa.io/en/stable/reference/requirements-file-format/\nAllowed dependency could be \u003crequirement specifier\u003e, \u003carchive url/path\u003e, \u003clocal project path\u003e(WSFS or Volumes in Databricks), \u003cvcs project url\u003e\nE.g. dependencies: [\"foo==0.0.1\", \"-r /Workspace/test/requirements.txt\"]",
@@ -334,7 +365,7 @@
                       "description": "If new_cluster, a description of a cluster that is created for each task.",
                       "properties": {
                         "apply_policy_default_values": {
-                          "description": ""
+                          "description": "When set to true, fixed and default values from the policy will be used for fields that are omitted. When set to false, only fixed values from the policy will be applied."
                         },
                         "autoscale": {
                           "description": "Parameters needed in order to automatically scale clusters up and down based on load.\nNote: autoscaling works best with DB runtime versions 3.0 or later.",
@@ -410,14 +441,6 @@
                             }
                           }
                         },
-                        "clone_from": {
-                          "description": "When specified, this clones libraries from a source cluster during the creation of a new cluster.",
-                          "properties": {
-                            "source_cluster_id": {
-                              "description": "The cluster that is being cloned."
-                            }
-                          }
-                        },
                         "cluster_log_conf": {
                           "description": "The configuration for delivering spark logs to a long-term storage destination.\nTwo kinds of destinations (dbfs and s3) are supported. Only one destination can be specified\nfor one cluster. If the conf is given, the logs will be delivered to the destination every\n`5 mins`. The destination of driver logs is `$destination/$clusterId/driver`, while\nthe destination of executor logs is `$destination/$clusterId/executor`.",
                           "properties": {
@@ -459,9 +482,6 @@
                         },
                         "cluster_name": {
                           "description": "Cluster name requested by the user. This doesn't have to be unique.\nIf not specified at creation, the cluster name will be an empty string.\n"
-                        },
-                        "cluster_source": {
-                          "description": ""
                         },
                         "custom_tags": {
                           "description": "Additional tags for cluster resources. Databricks will tag all cluster resources (e.g., AWS\ninstances and EBS volumes) with these tags in addition to `default_tags`. Notes:\n\n- Currently, Databricks allows at most 45 custom tags\n\n- Clusters can only reuse cloud resources if the resources' tags are a subset of the cluster tags",
@@ -742,7 +762,7 @@
                 "description": "An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                 "properties": {
                   "pause_status": {
-                    "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
+                    "description": "Indicate whether this schedule is paused or not."
                   },
                   "quartz_cron_expression": {
                     "description": "A Cron expression using Quartz syntax that describes the schedule for a job. See [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html) for details. This field is required."
@@ -799,7 +819,7 @@
                           "description": "Optional schema to write to. This parameter is only used when a warehouse_id is also provided. If not provided, the `default` schema is used."
                         },
                         "source": {
-                          "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved from the local Databricks workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n* `WORKSPACE`: Notebook is located in Databricks workspace.\n* `GIT`: Notebook is located in cloud Git provider."
+                          "description": "Optional location type of the project directory. When set to `WORKSPACE`, the project will be retrieved\nfrom the local Databricks workspace. When set to `GIT`, the project will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Project is located in Databricks workspace.\n* `GIT`: Project is located in cloud Git provider."
                         },
                         "warehouse_id": {
                           "description": "ID of the SQL warehouse to connect to. If provided, we automatically generate and provide the profile and connection details to dbt. It can be overridden on a per-command basis by using the `--profiles-dir` command line argument."
@@ -846,6 +866,12 @@
                         },
                         "on_start": {
                           "description": "A list of email addresses to be notified when a run begins. If not specified on job creation, reset, or update, the list is empty, and notifications are not sent.",
+                          "items": {
+                            "description": ""
+                          }
+                        },
+                        "on_streaming_backlog_exceeded": {
+                          "description": "A list of email addresses to notify when any streaming backlog thresholds are exceeded for any stream.\nStreaming backlog thresholds can be set in the `health` field using the following metrics: `STREAMING_BACKLOG_BYTES`, `STREAMING_BACKLOG_RECORDS`, `STREAMING_BACKLOG_SECONDS`, or `STREAMING_BACKLOG_FILES`.\nAlerting is based on the 10-minute average of these metrics. If the issue persists, notifications are resent every 30 minutes.",
                           "items": {
                             "description": ""
                           }
@@ -909,10 +935,10 @@
                             }
                           },
                           "egg": {
-                            "description": "URI of the egg to be installed. Currently only DBFS and S3 URIs are supported.\nFor example: `{ \"egg\": \"dbfs:/my/egg\" }` or\n`{ \"egg\": \"s3://my-bucket/egg\" }`.\nIf S3 is used, please make sure the cluster has read access on the library. You may need to\nlaunch the cluster with an IAM role to access the S3 URI."
+                            "description": "URI of the egg library to install. Supported URIs include Workspace paths, Unity Catalog Volumes paths, and S3 URIs.\nFor example: `{ \"egg\": \"/Workspace/path/to/library.egg\" }`, `{ \"egg\" : \"/Volumes/path/to/library.egg\" }` or\n`{ \"egg\": \"s3://my-bucket/library.egg\" }`.\nIf S3 is used, please make sure the cluster has read access on the library. You may need to\nlaunch the cluster with an IAM role to access the S3 URI."
                           },
                           "jar": {
-                            "description": "URI of the jar to be installed. Currently only DBFS and S3 URIs are supported.\nFor example: `{ \"jar\": \"dbfs:/mnt/databricks/library.jar\" }` or\n`{ \"jar\": \"s3://my-bucket/library.jar\" }`.\nIf S3 is used, please make sure the cluster has read access on the library. You may need to\nlaunch the cluster with an IAM role to access the S3 URI."
+                            "description": "URI of the JAR library to install. Supported URIs include Workspace paths, Unity Catalog Volumes paths, and S3 URIs.\nFor example: `{ \"jar\": \"/Workspace/path/to/library.jar\" }`, `{ \"jar\" : \"/Volumes/path/to/library.jar\" }` or\n`{ \"jar\": \"s3://my-bucket/library.jar\" }`.\nIf S3 is used, please make sure the cluster has read access on the library. You may need to\nlaunch the cluster with an IAM role to access the S3 URI."
                           },
                           "maven": {
                             "description": "Specification of a maven library to be installed. For example:\n`{ \"coordinates\": \"org.jsoup:jsoup:1.7.2\" }`",
@@ -942,8 +968,11 @@
                               }
                             }
                           },
+                          "requirements": {
+                            "description": "URI of the requirements.txt file to install. Only Workspace paths and Unity Catalog Volumes paths are supported.\nFor example: `{ \"requirements\": \"/Workspace/path/to/requirements.txt\" }` or `{ \"requirements\" : \"/Volumes/path/to/requirements.txt\" }`"
+                          },
                           "whl": {
-                            "description": "URI of the wheel to be installed.\nFor example: `{ \"whl\": \"dbfs:/my/whl\" }` or `{ \"whl\": \"s3://my-bucket/whl\" }`.\nIf S3 is used, please make sure the cluster has read access on the library. You may need to\nlaunch the cluster with an IAM role to access the S3 URI."
+                            "description": "URI of the wheel library to install. Supported URIs include Workspace paths, Unity Catalog Volumes paths, and S3 URIs.\nFor example: `{ \"whl\": \"/Workspace/path/to/library.whl\" }`, `{ \"whl\" : \"/Volumes/path/to/library.whl\" }` or\n`{ \"whl\": \"s3://my-bucket/library.whl\" }`.\nIf S3 is used, please make sure the cluster has read access on the library. You may need to\nlaunch the cluster with an IAM role to access the S3 URI."
                           }
                         }
                       }
@@ -955,10 +984,10 @@
                       "description": "An optional minimal interval in milliseconds between the start of the failed run and the subsequent retry run. The default behavior is that unsuccessful runs are immediately retried."
                     },
                     "new_cluster": {
-                      "description": "If new_cluster, a description of a cluster that is created for each task.",
+                      "description": "If new_cluster, a description of a new cluster that is created for each run.",
                       "properties": {
                         "apply_policy_default_values": {
-                          "description": ""
+                          "description": "When set to true, fixed and default values from the policy will be used for fields that are omitted. When set to false, only fixed values from the policy will be applied."
                         },
                         "autoscale": {
                           "description": "Parameters needed in order to automatically scale clusters up and down based on load.\nNote: autoscaling works best with DB runtime versions 3.0 or later.",
@@ -1034,14 +1063,6 @@
                             }
                           }
                         },
-                        "clone_from": {
-                          "description": "When specified, this clones libraries from a source cluster during the creation of a new cluster.",
-                          "properties": {
-                            "source_cluster_id": {
-                              "description": "The cluster that is being cloned."
-                            }
-                          }
-                        },
                         "cluster_log_conf": {
                           "description": "The configuration for delivering spark logs to a long-term storage destination.\nTwo kinds of destinations (dbfs and s3) are supported. Only one destination can be specified\nfor one cluster. If the conf is given, the logs will be delivered to the destination every\n`5 mins`. The destination of driver logs is `$destination/$clusterId/driver`, while\nthe destination of executor logs is `$destination/$clusterId/executor`.",
                           "properties": {
@@ -1083,9 +1104,6 @@
                         },
                         "cluster_name": {
                           "description": "Cluster name requested by the user. This doesn't have to be unique.\nIf not specified at creation, the cluster name will be an empty string.\n"
-                        },
-                        "cluster_source": {
-                          "description": ""
                         },
                         "custom_tags": {
                           "description": "Additional tags for cluster resources. Databricks will tag all cluster resources (e.g., AWS\ninstances and EBS volumes) with these tags in addition to `default_tags`. Notes:\n\n- Currently, Databricks allows at most 45 custom tags\n\n- Clusters can only reuse cloud resources if the resources' tags are a subset of the cluster tags",
@@ -1303,6 +1321,9 @@
                         },
                         "source": {
                           "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved from the local Databricks workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n* `WORKSPACE`: Notebook is located in Databricks workspace.\n* `GIT`: Notebook is located in cloud Git provider."
+                        },
+                        "warehouse_id": {
+                          "description": "Optional `warehouse_id` to run the notebook on a SQL warehouse. Classic SQL warehouses are NOT supported, please use serverless or pro SQL warehouses.\n\nNote that SQL warehouses only support SQL cells; if the notebook contains non-SQL cells, the run will fail."
                         }
                       }
                     },
@@ -1399,7 +1420,7 @@
                           }
                         },
                         "python_named_params": {
-                          "description": "A map from keys to values for jobs with Python wheel task, for example `\"python_named_params\": {\"name\": \"task\", \"data\": \"dbfs:/path/to/data.json\"}`.",
+                          "description": "",
                           "additionalproperties": {
                             "description": ""
                           }
@@ -1454,7 +1475,7 @@
                           "description": "The Python file to be executed. Cloud file URIs (such as dbfs:/, s3:/, adls:/, gcs:/) and workspace paths are supported. For python files stored in the Databricks workspace, the path must be absolute and begin with `/`. For files stored in a remote repository, the path must be relative. This field is required."
                         },
                         "source": {
-                          "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved from the local Databricks workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n* `WORKSPACE`: Notebook is located in Databricks workspace.\n* `GIT`: Notebook is located in cloud Git provider."
+                          "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved from the local\nDatabricks workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a Databricks workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository."
                         }
                       }
                     },
@@ -1526,13 +1547,13 @@
                           }
                         },
                         "file": {
-                          "description": "If file, indicates that this job runs a SQL file in a remote Git repository. Only one SQL statement is supported in a file. Multiple SQL statements separated by semicolons (;) are not permitted.",
+                          "description": "If file, indicates that this job runs a SQL file in a remote Git repository.",
                           "properties": {
                             "path": {
                               "description": "Path of the SQL file. Must be relative if the source is a remote Git repository and absolute for workspace paths."
                             },
                             "source": {
-                              "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved from the local Databricks workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n* `WORKSPACE`: Notebook is located in Databricks workspace.\n* `GIT`: Notebook is located in cloud Git provider."
+                              "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\nfrom the local Databricks workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in Databricks workspace.\n* `GIT`: SQL file is located in cloud Git provider."
                             }
                           }
                         },
@@ -1597,6 +1618,17 @@
                             }
                           }
                         },
+                        "on_streaming_backlog_exceeded": {
+                          "description": "An optional list of system notification IDs to call when any streaming backlog thresholds are exceeded for any stream.\nStreaming backlog thresholds can be set in the `health` field using the following metrics: `STREAMING_BACKLOG_BYTES`, `STREAMING_BACKLOG_RECORDS`, `STREAMING_BACKLOG_SECONDS`, or `STREAMING_BACKLOG_FILES`.\nAlerting is based on the 10-minute average of these metrics. If the issue persists, notifications are resent every 30 minutes.\nA maximum of 3 destinations can be specified for the `on_streaming_backlog_exceeded` property.",
+                          "items": {
+                            "description": "",
+                            "properties": {
+                              "id": {
+                                "description": ""
+                              }
+                            }
+                          }
+                        },
                         "on_success": {
                           "description": "An optional list of system notification IDs to call when the run completes successfully. A maximum of 3 destinations can be specified for the `on_success` property.",
                           "items": {
@@ -1634,10 +1666,21 @@
                     }
                   },
                   "pause_status": {
-                    "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
+                    "description": "Whether this trigger is paused or not."
+                  },
+                  "periodic": {
+                    "description": "Periodic trigger settings.",
+                    "properties": {
+                      "interval": {
+                        "description": "The interval at which the trigger should run."
+                      },
+                      "unit": {
+                        "description": "The unit of time for the interval."
+                      }
+                    }
                   },
                   "table": {
-                    "description": "",
+                    "description": "Old table trigger settings name. Deprecated in favor of `table_update`.",
                     "properties": {
                       "condition": {
                         "description": "The table(s) condition based on which to trigger a job run."
@@ -1679,7 +1722,7 @@
                 }
               },
               "webhook_notifications": {
-                "description": "A collection of system notification IDs to notify when runs of this task begin or complete. The default behavior is to not send any system notifications.",
+                "description": "A collection of system notification IDs to notify when runs of this job begin or complete.",
                 "properties": {
                   "on_duration_warning_threshold_exceeded": {
                     "description": "An optional list of system notification IDs to call when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. A maximum of 3 destinations can be specified for the `on_duration_warning_threshold_exceeded` property.",
@@ -1705,6 +1748,17 @@
                   },
                   "on_start": {
                     "description": "An optional list of system notification IDs to call when the run starts. A maximum of 3 destinations can be specified for the `on_start` property.",
+                    "items": {
+                      "description": "",
+                      "properties": {
+                        "id": {
+                          "description": ""
+                        }
+                      }
+                    }
+                  },
+                  "on_streaming_backlog_exceeded": {
+                    "description": "An optional list of system notification IDs to call when any streaming backlog thresholds are exceeded for any stream.\nStreaming backlog thresholds can be set in the `health` field using the following metrics: `STREAMING_BACKLOG_BYTES`, `STREAMING_BACKLOG_RECORDS`, `STREAMING_BACKLOG_SECONDS`, or `STREAMING_BACKLOG_FILES`.\nAlerting is based on the 10-minute average of these metrics. If the issue persists, notifications are resent every 30 minutes.\nA maximum of 3 destinations can be specified for the `on_streaming_backlog_exceeded` property.",
                     "items": {
                       "description": "",
                       "properties": {
@@ -1742,16 +1796,16 @@
                     "description": "Configuration for Inference Tables which automatically logs requests and responses to Unity Catalog.",
                     "properties": {
                       "catalog_name": {
-                        "description": "The name of the catalog in Unity Catalog. NOTE: On update, you cannot change the catalog name if it was already set."
+                        "description": "The name of the catalog in Unity Catalog. NOTE: On update, you cannot change the catalog name if the inference table is already enabled."
                       },
                       "enabled": {
-                        "description": "If inference tables are enabled or not. NOTE: If you have already disabled payload logging once, you cannot enable again."
+                        "description": "Indicates whether the inference table is enabled."
                       },
                       "schema_name": {
-                        "description": "The name of the schema in Unity Catalog. NOTE: On update, you cannot change the schema name if it was already set."
+                        "description": "The name of the schema in Unity Catalog. NOTE: On update, you cannot change the schema name if the inference table is already enabled."
                       },
                       "table_name_prefix": {
-                        "description": "The prefix of the table in Unity Catalog. NOTE: On update, you cannot change the prefix name if it was already set."
+                        "description": "The prefix of the table in Unity Catalog. NOTE: On update, you cannot change the prefix name if the inference table is already enabled."
                       }
                     }
                   },
@@ -1833,6 +1887,15 @@
                             "openai_config": {
                               "description": "OpenAI Config. Only required if the provider is 'openai'.",
                               "properties": {
+                                "microsoft_entra_client_id": {
+                                  "description": "This field is only required for Azure AD OpenAI and is the Microsoft Entra Client ID.\n"
+                                },
+                                "microsoft_entra_client_secret": {
+                                  "description": "The Databricks secret key reference for the Microsoft Entra Client Secret that is\nonly required for Azure AD OpenAI.\n"
+                                },
+                                "microsoft_entra_tenant_id": {
+                                  "description": "This field is only required for Azure AD OpenAI and is the Microsoft Entra Tenant ID.\n"
+                                },
                                 "openai_api_base": {
                                   "description": "This is the base URL for the OpenAI API (default: \"https://api.openai.com/v1\").\nFor Azure OpenAI, this field is required, and is the base URL for the Azure OpenAI API service\nprovided by Azure.\n"
                                 },
@@ -1908,7 +1971,7 @@
                           "description": "ARN of the instance profile that the served model will use to access AWS resources."
                         },
                         "model_name": {
-                          "description": "The name of the model in Databricks Model Registry to be served or if the model resides in Unity Catalog, the full name of model, \nin the form of __catalog_name__.__schema_name__.__model_name__.\n"
+                          "description": "The name of the model in Databricks Model Registry to be served or if the model resides in Unity Catalog, the full name of model,\nin the form of __catalog_name__.__schema_name__.__model_name__.\n"
                         },
                         "model_version": {
                           "description": "The version of the model in Databricks Model Registry or Unity Catalog to be served."
@@ -1988,6 +2051,9 @@
                     }
                   }
                 }
+              },
+              "route_optimized": {
+                "description": "Enable route optimization for the serving endpoint."
               },
               "tags": {
                 "description": "Tags to be attached to the serving endpoint and automatically propagated to billing logs.",
@@ -2415,6 +2481,17 @@
               "continuous": {
                 "description": "Whether the pipeline is continuous or triggered. This replaces `trigger`."
               },
+              "deployment": {
+                "description": "Deployment type of this pipeline.",
+                "properties": {
+                  "kind": {
+                    "description": "The deployment method that manages the pipeline."
+                  },
+                  "metadata_file_path": {
+                    "description": "The path to the file containing metadata about the deployment."
+                  }
+                }
+              },
               "development": {
                 "description": "Whether the pipeline is in Development mode. Defaults to false."
               },
@@ -2438,8 +2515,135 @@
                   }
                 }
               },
+              "gateway_definition": {
+                "description": "The definition of a gateway pipeline to support CDC.",
+                "properties": {
+                  "connection_id": {
+                    "description": "Immutable. The Unity Catalog connection this gateway pipeline uses to communicate with the source."
+                  },
+                  "gateway_storage_catalog": {
+                    "description": "Required, Immutable. The name of the catalog for the gateway pipeline's storage location."
+                  },
+                  "gateway_storage_name": {
+                    "description": "Required. The Unity Catalog-compatible naming for the gateway storage location.\nThis is the destination to use for the data that is extracted by the gateway.\nDelta Live Tables system will automatically create the storage location under the catalog and schema.\n"
+                  },
+                  "gateway_storage_schema": {
+                    "description": "Required, Immutable. The name of the schema for the gateway pipelines's storage location."
+                  }
+                }
+              },
               "id": {
                 "description": "Unique identifier for this pipeline."
+              },
+              "ingestion_definition": {
+                "description": "The configuration for a managed ingestion pipeline. These settings cannot be used with the 'libraries', 'target' or 'catalog' settings.",
+                "properties": {
+                  "connection_name": {
+                    "description": "Immutable. The Unity Catalog connection this ingestion pipeline uses to communicate with the source. Specify either ingestion_gateway_id or connection_name."
+                  },
+                  "ingestion_gateway_id": {
+                    "description": "Immutable. Identifier for the ingestion gateway used by this ingestion pipeline to communicate with the source. Specify either ingestion_gateway_id or connection_name."
+                  },
+                  "objects": {
+                    "description": "Required. Settings specifying tables to replicate and the destination for the replicated tables.",
+                    "items": {
+                      "description": "",
+                      "properties": {
+                        "schema": {
+                          "description": "Select tables from a specific source schema.",
+                          "properties": {
+                            "destination_catalog": {
+                              "description": "Required. Destination catalog to store tables."
+                            },
+                            "destination_schema": {
+                              "description": "Required. Destination schema to store tables in. Tables with the same name as the source tables are created in this destination schema. The pipeline fails If a table with the same name already exists."
+                            },
+                            "source_catalog": {
+                              "description": "The source catalog name. Might be optional depending on the type of source."
+                            },
+                            "source_schema": {
+                              "description": "Required. Schema name in the source database."
+                            },
+                            "table_configuration": {
+                              "description": "Configuration settings to control the ingestion of tables. These settings are applied to all tables in this schema and override the table_configuration defined in the ManagedIngestionPipelineDefinition object.",
+                              "properties": {
+                                "primary_keys": {
+                                  "description": "The primary key of the table used to apply changes.",
+                                  "items": {
+                                    "description": ""
+                                  }
+                                },
+                                "salesforce_include_formula_fields": {
+                                  "description": "If true, formula fields defined in the table are included in the ingestion. This setting is only valid for the Salesforce connector"
+                                },
+                                "scd_type": {
+                                  "description": "The SCD type to use to ingest the table."
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "table": {
+                          "description": "Select tables from a specific source table.",
+                          "properties": {
+                            "destination_catalog": {
+                              "description": "Required. Destination catalog to store table."
+                            },
+                            "destination_schema": {
+                              "description": "Required. Destination schema to store table."
+                            },
+                            "destination_table": {
+                              "description": "Optional. Destination table name. The pipeline fails If a table with that name already exists. If not set, the source table name is used."
+                            },
+                            "source_catalog": {
+                              "description": "Source catalog name. Might be optional depending on the type of source."
+                            },
+                            "source_schema": {
+                              "description": "Schema name in the source database. Might be optional depending on the type of source."
+                            },
+                            "source_table": {
+                              "description": "Required. Table name in the source database."
+                            },
+                            "table_configuration": {
+                              "description": "Configuration settings to control the ingestion of tables. These settings override the table_configuration defined in the ManagedIngestionPipelineDefinition object and the SchemaSpec.",
+                              "properties": {
+                                "primary_keys": {
+                                  "description": "The primary key of the table used to apply changes.",
+                                  "items": {
+                                    "description": ""
+                                  }
+                                },
+                                "salesforce_include_formula_fields": {
+                                  "description": "If true, formula fields defined in the table are included in the ingestion. This setting is only valid for the Salesforce connector"
+                                },
+                                "scd_type": {
+                                  "description": "The SCD type to use to ingest the table."
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "table_configuration": {
+                    "description": "Configuration settings to control the ingestion of tables. These settings are applied to all tables in the pipeline.",
+                    "properties": {
+                      "primary_keys": {
+                        "description": "The primary key of the table used to apply changes.",
+                        "items": {
+                          "description": ""
+                        }
+                      },
+                      "salesforce_include_formula_fields": {
+                        "description": "If true, formula fields defined in the table are included in the ingestion. This setting is only valid for the Salesforce connector"
+                      },
+                      "scd_type": {
+                        "description": "The SCD type to use to ingest the table."
+                      }
+                    }
+                  }
+                }
               },
               "libraries": {
                 "description": "Libraries or code needed by this deployment.",
@@ -2475,7 +2679,7 @@
                       }
                     },
                     "notebook": {
-                      "description": "The path to a notebook that defines a pipeline and is stored in the \u003cDatabricks\u003e workspace.\n",
+                      "description": "The path to a notebook that defines a pipeline and is stored in the Databricks workspace.\n",
                       "properties": {
                         "path": {
                           "description": "The absolute path of the notebook."
@@ -2558,6 +2762,156 @@
                     "description": ""
                   }
                 }
+              }
+            }
+          }
+        },
+        "quality_monitors": {
+          "description": "",
+          "additionalproperties": {
+            "description": "",
+            "properties": {
+              "assets_dir": {
+                "description": ""
+              },
+              "baseline_table_name": {
+                "description": ""
+              },
+              "custom_metrics": {
+                "description": "",
+                "items": {
+                  "description": "",
+                  "properties": {
+                    "definition": {
+                      "description": ""
+                    },
+                    "input_columns": {
+                      "description": "",
+                      "items": {
+                        "description": ""
+                      }
+                    },
+                    "name": {
+                      "description": ""
+                    },
+                    "output_data_type": {
+                      "description": ""
+                    },
+                    "type": {
+                      "description": ""
+                    }
+                  }
+                }
+              },
+              "data_classification_config": {
+                "description": "",
+                "properties": {
+                  "enabled": {
+                    "description": ""
+                  }
+                }
+              },
+              "inference_log": {
+                "description": "",
+                "properties": {
+                  "granularities": {
+                    "description": "",
+                    "items": {
+                      "description": ""
+                    }
+                  },
+                  "label_col": {
+                    "description": ""
+                  },
+                  "model_id_col": {
+                    "description": ""
+                  },
+                  "prediction_col": {
+                    "description": ""
+                  },
+                  "prediction_proba_col": {
+                    "description": ""
+                  },
+                  "problem_type": {
+                    "description": ""
+                  },
+                  "timestamp_col": {
+                    "description": ""
+                  }
+                }
+              },
+              "notifications": {
+                "description": "",
+                "properties": {
+                  "on_failure": {
+                    "description": "",
+                    "properties": {
+                      "email_addresses": {
+                        "description": "",
+                        "items": {
+                          "description": ""
+                        }
+                      }
+                    }
+                  },
+                  "on_new_classification_tag_detected": {
+                    "description": "",
+                    "properties": {
+                      "email_addresses": {
+                        "description": "",
+                        "items": {
+                          "description": ""
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "output_schema_name": {
+                "description": ""
+              },
+              "schedule": {
+                "description": "",
+                "properties": {
+                  "pause_status": {
+                    "description": ""
+                  },
+                  "quartz_cron_expression": {
+                    "description": ""
+                  },
+                  "timezone_id": {
+                    "description": ""
+                  }
+                }
+              },
+              "skip_builtin_dashboard": {
+                "description": ""
+              },
+              "slicing_exprs": {
+                "description": "",
+                "items": {
+                  "description": ""
+                }
+              },
+              "snapshot": {
+                "description": ""
+              },
+              "time_series": {
+                "description": "",
+                "properties": {
+                  "granularities": {
+                    "description": "",
+                    "items": {
+                      "description": ""
+                    }
+                  },
+                  "timestamp_col": {
+                    "description": ""
+                  }
+                }
+              },
+              "warehouse_id": {
+                "description": ""
               }
             }
           }
@@ -2682,6 +3036,17 @@
                 "properties": {
                   "fail_on_active_runs": {
                     "description": ""
+                  },
+                  "lock": {
+                    "description": "",
+                    "properties": {
+                      "enabled": {
+                        "description": ""
+                      },
+                      "force": {
+                        "description": ""
+                      }
+                    }
                   }
                 }
               },
@@ -2858,6 +3223,12 @@
                             "description": ""
                           }
                         },
+                        "on_streaming_backlog_exceeded": {
+                          "description": "A list of email addresses to notify when any streaming backlog thresholds are exceeded for any stream.\nStreaming backlog thresholds can be set in the `health` field using the following metrics: `STREAMING_BACKLOG_BYTES`, `STREAMING_BACKLOG_RECORDS`, `STREAMING_BACKLOG_SECONDS`, or `STREAMING_BACKLOG_FILES`.\nAlerting is based on the 10-minute average of these metrics. If the issue persists, notifications are resent every 30 minutes.",
+                          "items": {
+                            "description": ""
+                          }
+                        },
                         "on_success": {
                           "description": "A list of email addresses to be notified when a run successfully completes. A run is considered to have completed successfully if it ends with a `TERMINATED` `life_cycle_state` and a `SUCCESS` result_state. If not specified on job creation, reset, or update, the list is empty, and notifications are not sent.",
                           "items": {
@@ -2878,7 +3249,7 @@
                             "description": "",
                             "properties": {
                               "client": {
-                                "description": "*\nUser-friendly name for the client version: “client”: “1”\nThe version is a string, consisting of the major client version"
+                                "description": "Client version used by the environment\nThe client is the user-facing environment of the runtime.\nEach client comes with a specific set of pre-installed libraries.\nThe version is a string, consisting of the major client version."
                               },
                               "dependencies": {
                                 "description": "List of pip dependencies, as supported by the version of pip in this environment.\nEach dependency is a pip requirement file line https://pip.pypa.io/en/stable/reference/requirements-file-format/\nAllowed dependency could be \u003crequirement specifier\u003e, \u003carchive url/path\u003e, \u003clocal project path\u003e(WSFS or Volumes in Databricks), \u003cvcs project url\u003e\nE.g. dependencies: [\"foo==0.0.1\", \"-r /Workspace/test/requirements.txt\"]",
@@ -2970,7 +3341,7 @@
                             "description": "If new_cluster, a description of a cluster that is created for each task.",
                             "properties": {
                               "apply_policy_default_values": {
-                                "description": ""
+                                "description": "When set to true, fixed and default values from the policy will be used for fields that are omitted. When set to false, only fixed values from the policy will be applied."
                               },
                               "autoscale": {
                                 "description": "Parameters needed in order to automatically scale clusters up and down based on load.\nNote: autoscaling works best with DB runtime versions 3.0 or later.",
@@ -3046,14 +3417,6 @@
                                   }
                                 }
                               },
-                              "clone_from": {
-                                "description": "When specified, this clones libraries from a source cluster during the creation of a new cluster.",
-                                "properties": {
-                                  "source_cluster_id": {
-                                    "description": "The cluster that is being cloned."
-                                  }
-                                }
-                              },
                               "cluster_log_conf": {
                                 "description": "The configuration for delivering spark logs to a long-term storage destination.\nTwo kinds of destinations (dbfs and s3) are supported. Only one destination can be specified\nfor one cluster. If the conf is given, the logs will be delivered to the destination every\n`5 mins`. The destination of driver logs is `$destination/$clusterId/driver`, while\nthe destination of executor logs is `$destination/$clusterId/executor`.",
                                 "properties": {
@@ -3095,9 +3458,6 @@
                               },
                               "cluster_name": {
                                 "description": "Cluster name requested by the user. This doesn't have to be unique.\nIf not specified at creation, the cluster name will be an empty string.\n"
-                              },
-                              "cluster_source": {
-                                "description": ""
                               },
                               "custom_tags": {
                                 "description": "Additional tags for cluster resources. Databricks will tag all cluster resources (e.g., AWS\ninstances and EBS volumes) with these tags in addition to `default_tags`. Notes:\n\n- Currently, Databricks allows at most 45 custom tags\n\n- Clusters can only reuse cloud resources if the resources' tags are a subset of the cluster tags",
@@ -3378,7 +3738,7 @@
                       "description": "An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                       "properties": {
                         "pause_status": {
-                          "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
+                          "description": "Indicate whether this schedule is paused or not."
                         },
                         "quartz_cron_expression": {
                           "description": "A Cron expression using Quartz syntax that describes the schedule for a job. See [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html) for details. This field is required."
@@ -3435,7 +3795,7 @@
                                 "description": "Optional schema to write to. This parameter is only used when a warehouse_id is also provided. If not provided, the `default` schema is used."
                               },
                               "source": {
-                                "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved from the local Databricks workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n* `WORKSPACE`: Notebook is located in Databricks workspace.\n* `GIT`: Notebook is located in cloud Git provider."
+                                "description": "Optional location type of the project directory. When set to `WORKSPACE`, the project will be retrieved\nfrom the local Databricks workspace. When set to `GIT`, the project will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Project is located in Databricks workspace.\n* `GIT`: Project is located in cloud Git provider."
                               },
                               "warehouse_id": {
                                 "description": "ID of the SQL warehouse to connect to. If provided, we automatically generate and provide the profile and connection details to dbt. It can be overridden on a per-command basis by using the `--profiles-dir` command line argument."
@@ -3482,6 +3842,12 @@
                               },
                               "on_start": {
                                 "description": "A list of email addresses to be notified when a run begins. If not specified on job creation, reset, or update, the list is empty, and notifications are not sent.",
+                                "items": {
+                                  "description": ""
+                                }
+                              },
+                              "on_streaming_backlog_exceeded": {
+                                "description": "A list of email addresses to notify when any streaming backlog thresholds are exceeded for any stream.\nStreaming backlog thresholds can be set in the `health` field using the following metrics: `STREAMING_BACKLOG_BYTES`, `STREAMING_BACKLOG_RECORDS`, `STREAMING_BACKLOG_SECONDS`, or `STREAMING_BACKLOG_FILES`.\nAlerting is based on the 10-minute average of these metrics. If the issue persists, notifications are resent every 30 minutes.",
                                 "items": {
                                   "description": ""
                                 }
@@ -3545,10 +3911,10 @@
                                   }
                                 },
                                 "egg": {
-                                  "description": "URI of the egg to be installed. Currently only DBFS and S3 URIs are supported.\nFor example: `{ \"egg\": \"dbfs:/my/egg\" }` or\n`{ \"egg\": \"s3://my-bucket/egg\" }`.\nIf S3 is used, please make sure the cluster has read access on the library. You may need to\nlaunch the cluster with an IAM role to access the S3 URI."
+                                  "description": "URI of the egg library to install. Supported URIs include Workspace paths, Unity Catalog Volumes paths, and S3 URIs.\nFor example: `{ \"egg\": \"/Workspace/path/to/library.egg\" }`, `{ \"egg\" : \"/Volumes/path/to/library.egg\" }` or\n`{ \"egg\": \"s3://my-bucket/library.egg\" }`.\nIf S3 is used, please make sure the cluster has read access on the library. You may need to\nlaunch the cluster with an IAM role to access the S3 URI."
                                 },
                                 "jar": {
-                                  "description": "URI of the jar to be installed. Currently only DBFS and S3 URIs are supported.\nFor example: `{ \"jar\": \"dbfs:/mnt/databricks/library.jar\" }` or\n`{ \"jar\": \"s3://my-bucket/library.jar\" }`.\nIf S3 is used, please make sure the cluster has read access on the library. You may need to\nlaunch the cluster with an IAM role to access the S3 URI."
+                                  "description": "URI of the JAR library to install. Supported URIs include Workspace paths, Unity Catalog Volumes paths, and S3 URIs.\nFor example: `{ \"jar\": \"/Workspace/path/to/library.jar\" }`, `{ \"jar\" : \"/Volumes/path/to/library.jar\" }` or\n`{ \"jar\": \"s3://my-bucket/library.jar\" }`.\nIf S3 is used, please make sure the cluster has read access on the library. You may need to\nlaunch the cluster with an IAM role to access the S3 URI."
                                 },
                                 "maven": {
                                   "description": "Specification of a maven library to be installed. For example:\n`{ \"coordinates\": \"org.jsoup:jsoup:1.7.2\" }`",
@@ -3578,8 +3944,11 @@
                                     }
                                   }
                                 },
+                                "requirements": {
+                                  "description": "URI of the requirements.txt file to install. Only Workspace paths and Unity Catalog Volumes paths are supported.\nFor example: `{ \"requirements\": \"/Workspace/path/to/requirements.txt\" }` or `{ \"requirements\" : \"/Volumes/path/to/requirements.txt\" }`"
+                                },
                                 "whl": {
-                                  "description": "URI of the wheel to be installed.\nFor example: `{ \"whl\": \"dbfs:/my/whl\" }` or `{ \"whl\": \"s3://my-bucket/whl\" }`.\nIf S3 is used, please make sure the cluster has read access on the library. You may need to\nlaunch the cluster with an IAM role to access the S3 URI."
+                                  "description": "URI of the wheel library to install. Supported URIs include Workspace paths, Unity Catalog Volumes paths, and S3 URIs.\nFor example: `{ \"whl\": \"/Workspace/path/to/library.whl\" }`, `{ \"whl\" : \"/Volumes/path/to/library.whl\" }` or\n`{ \"whl\": \"s3://my-bucket/library.whl\" }`.\nIf S3 is used, please make sure the cluster has read access on the library. You may need to\nlaunch the cluster with an IAM role to access the S3 URI."
                                 }
                               }
                             }
@@ -3591,10 +3960,10 @@
                             "description": "An optional minimal interval in milliseconds between the start of the failed run and the subsequent retry run. The default behavior is that unsuccessful runs are immediately retried."
                           },
                           "new_cluster": {
-                            "description": "If new_cluster, a description of a cluster that is created for each task.",
+                            "description": "If new_cluster, a description of a new cluster that is created for each run.",
                             "properties": {
                               "apply_policy_default_values": {
-                                "description": ""
+                                "description": "When set to true, fixed and default values from the policy will be used for fields that are omitted. When set to false, only fixed values from the policy will be applied."
                               },
                               "autoscale": {
                                 "description": "Parameters needed in order to automatically scale clusters up and down based on load.\nNote: autoscaling works best with DB runtime versions 3.0 or later.",
@@ -3670,14 +4039,6 @@
                                   }
                                 }
                               },
-                              "clone_from": {
-                                "description": "When specified, this clones libraries from a source cluster during the creation of a new cluster.",
-                                "properties": {
-                                  "source_cluster_id": {
-                                    "description": "The cluster that is being cloned."
-                                  }
-                                }
-                              },
                               "cluster_log_conf": {
                                 "description": "The configuration for delivering spark logs to a long-term storage destination.\nTwo kinds of destinations (dbfs and s3) are supported. Only one destination can be specified\nfor one cluster. If the conf is given, the logs will be delivered to the destination every\n`5 mins`. The destination of driver logs is `$destination/$clusterId/driver`, while\nthe destination of executor logs is `$destination/$clusterId/executor`.",
                                 "properties": {
@@ -3719,9 +4080,6 @@
                               },
                               "cluster_name": {
                                 "description": "Cluster name requested by the user. This doesn't have to be unique.\nIf not specified at creation, the cluster name will be an empty string.\n"
-                              },
-                              "cluster_source": {
-                                "description": ""
                               },
                               "custom_tags": {
                                 "description": "Additional tags for cluster resources. Databricks will tag all cluster resources (e.g., AWS\ninstances and EBS volumes) with these tags in addition to `default_tags`. Notes:\n\n- Currently, Databricks allows at most 45 custom tags\n\n- Clusters can only reuse cloud resources if the resources' tags are a subset of the cluster tags",
@@ -3939,6 +4297,9 @@
                               },
                               "source": {
                                 "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved from the local Databricks workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n* `WORKSPACE`: Notebook is located in Databricks workspace.\n* `GIT`: Notebook is located in cloud Git provider."
+                              },
+                              "warehouse_id": {
+                                "description": "Optional `warehouse_id` to run the notebook on a SQL warehouse. Classic SQL warehouses are NOT supported, please use serverless or pro SQL warehouses.\n\nNote that SQL warehouses only support SQL cells; if the notebook contains non-SQL cells, the run will fail."
                               }
                             }
                           },
@@ -4035,7 +4396,7 @@
                                 }
                               },
                               "python_named_params": {
-                                "description": "A map from keys to values for jobs with Python wheel task, for example `\"python_named_params\": {\"name\": \"task\", \"data\": \"dbfs:/path/to/data.json\"}`.",
+                                "description": "",
                                 "additionalproperties": {
                                   "description": ""
                                 }
@@ -4090,7 +4451,7 @@
                                 "description": "The Python file to be executed. Cloud file URIs (such as dbfs:/, s3:/, adls:/, gcs:/) and workspace paths are supported. For python files stored in the Databricks workspace, the path must be absolute and begin with `/`. For files stored in a remote repository, the path must be relative. This field is required."
                               },
                               "source": {
-                                "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved from the local Databricks workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n* `WORKSPACE`: Notebook is located in Databricks workspace.\n* `GIT`: Notebook is located in cloud Git provider."
+                                "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved from the local\nDatabricks workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a Databricks workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository."
                               }
                             }
                           },
@@ -4162,13 +4523,13 @@
                                 }
                               },
                               "file": {
-                                "description": "If file, indicates that this job runs a SQL file in a remote Git repository. Only one SQL statement is supported in a file. Multiple SQL statements separated by semicolons (;) are not permitted.",
+                                "description": "If file, indicates that this job runs a SQL file in a remote Git repository.",
                                 "properties": {
                                   "path": {
                                     "description": "Path of the SQL file. Must be relative if the source is a remote Git repository and absolute for workspace paths."
                                   },
                                   "source": {
-                                    "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved from the local Databricks workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n* `WORKSPACE`: Notebook is located in Databricks workspace.\n* `GIT`: Notebook is located in cloud Git provider."
+                                    "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\nfrom the local Databricks workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in Databricks workspace.\n* `GIT`: SQL file is located in cloud Git provider."
                                   }
                                 }
                               },
@@ -4233,6 +4594,17 @@
                                   }
                                 }
                               },
+                              "on_streaming_backlog_exceeded": {
+                                "description": "An optional list of system notification IDs to call when any streaming backlog thresholds are exceeded for any stream.\nStreaming backlog thresholds can be set in the `health` field using the following metrics: `STREAMING_BACKLOG_BYTES`, `STREAMING_BACKLOG_RECORDS`, `STREAMING_BACKLOG_SECONDS`, or `STREAMING_BACKLOG_FILES`.\nAlerting is based on the 10-minute average of these metrics. If the issue persists, notifications are resent every 30 minutes.\nA maximum of 3 destinations can be specified for the `on_streaming_backlog_exceeded` property.",
+                                "items": {
+                                  "description": "",
+                                  "properties": {
+                                    "id": {
+                                      "description": ""
+                                    }
+                                  }
+                                }
+                              },
                               "on_success": {
                                 "description": "An optional list of system notification IDs to call when the run completes successfully. A maximum of 3 destinations can be specified for the `on_success` property.",
                                 "items": {
@@ -4270,10 +4642,21 @@
                           }
                         },
                         "pause_status": {
-                          "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
+                          "description": "Whether this trigger is paused or not."
+                        },
+                        "periodic": {
+                          "description": "Periodic trigger settings.",
+                          "properties": {
+                            "interval": {
+                              "description": "The interval at which the trigger should run."
+                            },
+                            "unit": {
+                              "description": "The unit of time for the interval."
+                            }
+                          }
                         },
                         "table": {
-                          "description": "",
+                          "description": "Old table trigger settings name. Deprecated in favor of `table_update`.",
                           "properties": {
                             "condition": {
                               "description": "The table(s) condition based on which to trigger a job run."
@@ -4315,7 +4698,7 @@
                       }
                     },
                     "webhook_notifications": {
-                      "description": "A collection of system notification IDs to notify when runs of this task begin or complete. The default behavior is to not send any system notifications.",
+                      "description": "A collection of system notification IDs to notify when runs of this job begin or complete.",
                       "properties": {
                         "on_duration_warning_threshold_exceeded": {
                           "description": "An optional list of system notification IDs to call when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. A maximum of 3 destinations can be specified for the `on_duration_warning_threshold_exceeded` property.",
@@ -4341,6 +4724,17 @@
                         },
                         "on_start": {
                           "description": "An optional list of system notification IDs to call when the run starts. A maximum of 3 destinations can be specified for the `on_start` property.",
+                          "items": {
+                            "description": "",
+                            "properties": {
+                              "id": {
+                                "description": ""
+                              }
+                            }
+                          }
+                        },
+                        "on_streaming_backlog_exceeded": {
+                          "description": "An optional list of system notification IDs to call when any streaming backlog thresholds are exceeded for any stream.\nStreaming backlog thresholds can be set in the `health` field using the following metrics: `STREAMING_BACKLOG_BYTES`, `STREAMING_BACKLOG_RECORDS`, `STREAMING_BACKLOG_SECONDS`, or `STREAMING_BACKLOG_FILES`.\nAlerting is based on the 10-minute average of these metrics. If the issue persists, notifications are resent every 30 minutes.\nA maximum of 3 destinations can be specified for the `on_streaming_backlog_exceeded` property.",
                           "items": {
                             "description": "",
                             "properties": {
@@ -4378,16 +4772,16 @@
                           "description": "Configuration for Inference Tables which automatically logs requests and responses to Unity Catalog.",
                           "properties": {
                             "catalog_name": {
-                              "description": "The name of the catalog in Unity Catalog. NOTE: On update, you cannot change the catalog name if it was already set."
+                              "description": "The name of the catalog in Unity Catalog. NOTE: On update, you cannot change the catalog name if the inference table is already enabled."
                             },
                             "enabled": {
-                              "description": "If inference tables are enabled or not. NOTE: If you have already disabled payload logging once, you cannot enable again."
+                              "description": "Indicates whether the inference table is enabled."
                             },
                             "schema_name": {
-                              "description": "The name of the schema in Unity Catalog. NOTE: On update, you cannot change the schema name if it was already set."
+                              "description": "The name of the schema in Unity Catalog. NOTE: On update, you cannot change the schema name if the inference table is already enabled."
                             },
                             "table_name_prefix": {
-                              "description": "The prefix of the table in Unity Catalog. NOTE: On update, you cannot change the prefix name if it was already set."
+                              "description": "The prefix of the table in Unity Catalog. NOTE: On update, you cannot change the prefix name if the inference table is already enabled."
                             }
                           }
                         },
@@ -4469,6 +4863,15 @@
                                   "openai_config": {
                                     "description": "OpenAI Config. Only required if the provider is 'openai'.",
                                     "properties": {
+                                      "microsoft_entra_client_id": {
+                                        "description": "This field is only required for Azure AD OpenAI and is the Microsoft Entra Client ID.\n"
+                                      },
+                                      "microsoft_entra_client_secret": {
+                                        "description": "The Databricks secret key reference for the Microsoft Entra Client Secret that is\nonly required for Azure AD OpenAI.\n"
+                                      },
+                                      "microsoft_entra_tenant_id": {
+                                        "description": "This field is only required for Azure AD OpenAI and is the Microsoft Entra Tenant ID.\n"
+                                      },
                                       "openai_api_base": {
                                         "description": "This is the base URL for the OpenAI API (default: \"https://api.openai.com/v1\").\nFor Azure OpenAI, this field is required, and is the base URL for the Azure OpenAI API service\nprovided by Azure.\n"
                                       },
@@ -4544,7 +4947,7 @@
                                 "description": "ARN of the instance profile that the served model will use to access AWS resources."
                               },
                               "model_name": {
-                                "description": "The name of the model in Databricks Model Registry to be served or if the model resides in Unity Catalog, the full name of model, \nin the form of __catalog_name__.__schema_name__.__model_name__.\n"
+                                "description": "The name of the model in Databricks Model Registry to be served or if the model resides in Unity Catalog, the full name of model,\nin the form of __catalog_name__.__schema_name__.__model_name__.\n"
                               },
                               "model_version": {
                                 "description": "The version of the model in Databricks Model Registry or Unity Catalog to be served."
@@ -4624,6 +5027,9 @@
                           }
                         }
                       }
+                    },
+                    "route_optimized": {
+                      "description": "Enable route optimization for the serving endpoint."
                     },
                     "tags": {
                       "description": "Tags to be attached to the serving endpoint and automatically propagated to billing logs.",
@@ -5051,6 +5457,17 @@
                     "continuous": {
                       "description": "Whether the pipeline is continuous or triggered. This replaces `trigger`."
                     },
+                    "deployment": {
+                      "description": "Deployment type of this pipeline.",
+                      "properties": {
+                        "kind": {
+                          "description": "The deployment method that manages the pipeline."
+                        },
+                        "metadata_file_path": {
+                          "description": "The path to the file containing metadata about the deployment."
+                        }
+                      }
+                    },
                     "development": {
                       "description": "Whether the pipeline is in Development mode. Defaults to false."
                     },
@@ -5074,8 +5491,135 @@
                         }
                       }
                     },
+                    "gateway_definition": {
+                      "description": "The definition of a gateway pipeline to support CDC.",
+                      "properties": {
+                        "connection_id": {
+                          "description": "Immutable. The Unity Catalog connection this gateway pipeline uses to communicate with the source."
+                        },
+                        "gateway_storage_catalog": {
+                          "description": "Required, Immutable. The name of the catalog for the gateway pipeline's storage location."
+                        },
+                        "gateway_storage_name": {
+                          "description": "Required. The Unity Catalog-compatible naming for the gateway storage location.\nThis is the destination to use for the data that is extracted by the gateway.\nDelta Live Tables system will automatically create the storage location under the catalog and schema.\n"
+                        },
+                        "gateway_storage_schema": {
+                          "description": "Required, Immutable. The name of the schema for the gateway pipelines's storage location."
+                        }
+                      }
+                    },
                     "id": {
                       "description": "Unique identifier for this pipeline."
+                    },
+                    "ingestion_definition": {
+                      "description": "The configuration for a managed ingestion pipeline. These settings cannot be used with the 'libraries', 'target' or 'catalog' settings.",
+                      "properties": {
+                        "connection_name": {
+                          "description": "Immutable. The Unity Catalog connection this ingestion pipeline uses to communicate with the source. Specify either ingestion_gateway_id or connection_name."
+                        },
+                        "ingestion_gateway_id": {
+                          "description": "Immutable. Identifier for the ingestion gateway used by this ingestion pipeline to communicate with the source. Specify either ingestion_gateway_id or connection_name."
+                        },
+                        "objects": {
+                          "description": "Required. Settings specifying tables to replicate and the destination for the replicated tables.",
+                          "items": {
+                            "description": "",
+                            "properties": {
+                              "schema": {
+                                "description": "Select tables from a specific source schema.",
+                                "properties": {
+                                  "destination_catalog": {
+                                    "description": "Required. Destination catalog to store tables."
+                                  },
+                                  "destination_schema": {
+                                    "description": "Required. Destination schema to store tables in. Tables with the same name as the source tables are created in this destination schema. The pipeline fails If a table with the same name already exists."
+                                  },
+                                  "source_catalog": {
+                                    "description": "The source catalog name. Might be optional depending on the type of source."
+                                  },
+                                  "source_schema": {
+                                    "description": "Required. Schema name in the source database."
+                                  },
+                                  "table_configuration": {
+                                    "description": "Configuration settings to control the ingestion of tables. These settings are applied to all tables in this schema and override the table_configuration defined in the ManagedIngestionPipelineDefinition object.",
+                                    "properties": {
+                                      "primary_keys": {
+                                        "description": "The primary key of the table used to apply changes.",
+                                        "items": {
+                                          "description": ""
+                                        }
+                                      },
+                                      "salesforce_include_formula_fields": {
+                                        "description": "If true, formula fields defined in the table are included in the ingestion. This setting is only valid for the Salesforce connector"
+                                      },
+                                      "scd_type": {
+                                        "description": "The SCD type to use to ingest the table."
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              "table": {
+                                "description": "Select tables from a specific source table.",
+                                "properties": {
+                                  "destination_catalog": {
+                                    "description": "Required. Destination catalog to store table."
+                                  },
+                                  "destination_schema": {
+                                    "description": "Required. Destination schema to store table."
+                                  },
+                                  "destination_table": {
+                                    "description": "Optional. Destination table name. The pipeline fails If a table with that name already exists. If not set, the source table name is used."
+                                  },
+                                  "source_catalog": {
+                                    "description": "Source catalog name. Might be optional depending on the type of source."
+                                  },
+                                  "source_schema": {
+                                    "description": "Schema name in the source database. Might be optional depending on the type of source."
+                                  },
+                                  "source_table": {
+                                    "description": "Required. Table name in the source database."
+                                  },
+                                  "table_configuration": {
+                                    "description": "Configuration settings to control the ingestion of tables. These settings override the table_configuration defined in the ManagedIngestionPipelineDefinition object and the SchemaSpec.",
+                                    "properties": {
+                                      "primary_keys": {
+                                        "description": "The primary key of the table used to apply changes.",
+                                        "items": {
+                                          "description": ""
+                                        }
+                                      },
+                                      "salesforce_include_formula_fields": {
+                                        "description": "If true, formula fields defined in the table are included in the ingestion. This setting is only valid for the Salesforce connector"
+                                      },
+                                      "scd_type": {
+                                        "description": "The SCD type to use to ingest the table."
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "table_configuration": {
+                          "description": "Configuration settings to control the ingestion of tables. These settings are applied to all tables in the pipeline.",
+                          "properties": {
+                            "primary_keys": {
+                              "description": "The primary key of the table used to apply changes.",
+                              "items": {
+                                "description": ""
+                              }
+                            },
+                            "salesforce_include_formula_fields": {
+                              "description": "If true, formula fields defined in the table are included in the ingestion. This setting is only valid for the Salesforce connector"
+                            },
+                            "scd_type": {
+                              "description": "The SCD type to use to ingest the table."
+                            }
+                          }
+                        }
+                      }
                     },
                     "libraries": {
                       "description": "Libraries or code needed by this deployment.",
@@ -5111,7 +5655,7 @@
                             }
                           },
                           "notebook": {
-                            "description": "The path to a notebook that defines a pipeline and is stored in the \u003cDatabricks\u003e workspace.\n",
+                            "description": "The path to a notebook that defines a pipeline and is stored in the Databricks workspace.\n",
                             "properties": {
                               "path": {
                                 "description": "The absolute path of the notebook."
@@ -5194,6 +5738,156 @@
                           "description": ""
                         }
                       }
+                    }
+                  }
+                }
+              },
+              "quality_monitors": {
+                "description": "",
+                "additionalproperties": {
+                  "description": "",
+                  "properties": {
+                    "assets_dir": {
+                      "description": ""
+                    },
+                    "baseline_table_name": {
+                      "description": ""
+                    },
+                    "custom_metrics": {
+                      "description": "",
+                      "items": {
+                        "description": "",
+                        "properties": {
+                          "definition": {
+                            "description": ""
+                          },
+                          "input_columns": {
+                            "description": "",
+                            "items": {
+                              "description": ""
+                            }
+                          },
+                          "name": {
+                            "description": ""
+                          },
+                          "output_data_type": {
+                            "description": ""
+                          },
+                          "type": {
+                            "description": ""
+                          }
+                        }
+                      }
+                    },
+                    "data_classification_config": {
+                      "description": "",
+                      "properties": {
+                        "enabled": {
+                          "description": ""
+                        }
+                      }
+                    },
+                    "inference_log": {
+                      "description": "",
+                      "properties": {
+                        "granularities": {
+                          "description": "",
+                          "items": {
+                            "description": ""
+                          }
+                        },
+                        "label_col": {
+                          "description": ""
+                        },
+                        "model_id_col": {
+                          "description": ""
+                        },
+                        "prediction_col": {
+                          "description": ""
+                        },
+                        "prediction_proba_col": {
+                          "description": ""
+                        },
+                        "problem_type": {
+                          "description": ""
+                        },
+                        "timestamp_col": {
+                          "description": ""
+                        }
+                      }
+                    },
+                    "notifications": {
+                      "description": "",
+                      "properties": {
+                        "on_failure": {
+                          "description": "",
+                          "properties": {
+                            "email_addresses": {
+                              "description": "",
+                              "items": {
+                                "description": ""
+                              }
+                            }
+                          }
+                        },
+                        "on_new_classification_tag_detected": {
+                          "description": "",
+                          "properties": {
+                            "email_addresses": {
+                              "description": "",
+                              "items": {
+                                "description": ""
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "output_schema_name": {
+                      "description": ""
+                    },
+                    "schedule": {
+                      "description": "",
+                      "properties": {
+                        "pause_status": {
+                          "description": ""
+                        },
+                        "quartz_cron_expression": {
+                          "description": ""
+                        },
+                        "timezone_id": {
+                          "description": ""
+                        }
+                      }
+                    },
+                    "skip_builtin_dashboard": {
+                      "description": ""
+                    },
+                    "slicing_exprs": {
+                      "description": "",
+                      "items": {
+                        "description": ""
+                      }
+                    },
+                    "snapshot": {
+                      "description": ""
+                    },
+                    "time_series": {
+                      "description": "",
+                      "properties": {
+                        "granularities": {
+                          "description": "",
+                          "items": {
+                            "description": ""
+                          }
+                        },
+                        "timestamp_col": {
+                          "description": ""
+                        }
+                      }
+                    },
+                    "warehouse_id": {
+                      "description": ""
                     }
                   }
                 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/databricks/cli/bundle/config/paths"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -15,8 +14,6 @@ type Job struct {
 	ID             string         `json:"id,omitempty" bundle:"readonly"`
 	Permissions    []Permission   `json:"permissions,omitempty"`
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
-
-	paths.Paths
 
 	*jobs.JobSettings
 }

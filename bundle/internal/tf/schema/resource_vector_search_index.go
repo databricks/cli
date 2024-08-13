@@ -13,11 +13,12 @@ type ResourceVectorSearchIndexDeltaSyncIndexSpecEmbeddingVectorColumns struct {
 }
 
 type ResourceVectorSearchIndexDeltaSyncIndexSpec struct {
-	PipelineId             string                                                              `json:"pipeline_id,omitempty"`
-	PipelineType           string                                                              `json:"pipeline_type,omitempty"`
-	SourceTable            string                                                              `json:"source_table,omitempty"`
-	EmbeddingSourceColumns []ResourceVectorSearchIndexDeltaSyncIndexSpecEmbeddingSourceColumns `json:"embedding_source_columns,omitempty"`
-	EmbeddingVectorColumns []ResourceVectorSearchIndexDeltaSyncIndexSpecEmbeddingVectorColumns `json:"embedding_vector_columns,omitempty"`
+	EmbeddingWritebackTable string                                                              `json:"embedding_writeback_table,omitempty"`
+	PipelineId              string                                                              `json:"pipeline_id,omitempty"`
+	PipelineType            string                                                              `json:"pipeline_type,omitempty"`
+	SourceTable             string                                                              `json:"source_table,omitempty"`
+	EmbeddingSourceColumns  []ResourceVectorSearchIndexDeltaSyncIndexSpecEmbeddingSourceColumns `json:"embedding_source_columns,omitempty"`
+	EmbeddingVectorColumns  []ResourceVectorSearchIndexDeltaSyncIndexSpecEmbeddingVectorColumns `json:"embedding_vector_columns,omitempty"`
 }
 
 type ResourceVectorSearchIndexDirectAccessIndexSpecEmbeddingSourceColumns struct {

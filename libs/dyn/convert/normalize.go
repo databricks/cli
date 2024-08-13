@@ -56,6 +56,8 @@ func (n normalizeOptions) normalizeType(typ reflect.Type, src dyn.Value, seen []
 		return n.normalizeInt(typ, src, path)
 	case reflect.Float32, reflect.Float64:
 		return n.normalizeFloat(typ, src, path)
+	case reflect.Interface:
+		return n.normalizeInterface(typ, src, path)
 	}
 
 	return dyn.InvalidValue, diag.Errorf("unsupported type: %s", typ.Kind())
@@ -63,19 +65,19 @@ func (n normalizeOptions) normalizeType(typ reflect.Type, src dyn.Value, seen []
 
 func nullWarning(expected dyn.Kind, src dyn.Value, path dyn.Path) diag.Diagnostic {
 	return diag.Diagnostic{
-		Severity: diag.Warning,
-		Summary:  fmt.Sprintf("expected a %s value, found null", expected),
-		Location: src.Location(),
-		Path:     path,
+		Severity:  diag.Warning,
+		Summary:   fmt.Sprintf("expected a %s value, found null", expected),
+		Locations: []dyn.Location{src.Location()},
+		Paths:     []dyn.Path{path},
 	}
 }
 
 func typeMismatch(expected dyn.Kind, src dyn.Value, path dyn.Path) diag.Diagnostic {
 	return diag.Diagnostic{
-		Severity: diag.Warning,
-		Summary:  fmt.Sprintf("expected %s, found %s", expected, src.Kind()),
-		Location: src.Location(),
-		Path:     path,
+		Severity:  diag.Warning,
+		Summary:   fmt.Sprintf("expected %s, found %s", expected, src.Kind()),
+		Locations: []dyn.Location{src.Location()},
+		Paths:     []dyn.Path{path},
 	}
 }
 
@@ -96,8 +98,9 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 					diags = diags.Append(diag.Diagnostic{
 						Severity: diag.Warning,
 						Summary:  fmt.Sprintf("unknown field: %s", pk.MustString()),
-						Location: pk.Location(),
-						Path:     path,
+						// Show all locations the unknown field is defined at.
+						Locations: pk.Locations(),
+						Paths:     []dyn.Path{path},
 					})
 				}
 				continue
@@ -118,7 +121,7 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 
 		// Return the normalized value if missing fields are not included.
 		if !n.includeMissingFields {
-			return dyn.NewValue(out, src.Location()), diags
+			return dyn.NewValue(out, src.Locations()), diags
 		}
 
 		// Populate missing fields with their zero values.
@@ -163,11 +166,18 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 			}
 		}
 
-		return dyn.NewValue(out, src.Location()), diags
+		return dyn.NewValue(out, src.Locations()), diags
 	case dyn.KindNil:
 		return src, diags
+
+	case dyn.KindString:
+		// Return verbatim if it's a pure variable reference.
+		if dynvar.IsPureVariableReference(src.MustString()) {
+			return src, nil
+		}
 	}
 
+	// Cannot interpret as a struct.
 	return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindMap, src, path))
 }
 
@@ -194,11 +204,18 @@ func (n normalizeOptions) normalizeMap(typ reflect.Type, src dyn.Value, seen []r
 			out.Set(pk, nv)
 		}
 
-		return dyn.NewValue(out, src.Location()), diags
+		return dyn.NewValue(out, src.Locations()), diags
 	case dyn.KindNil:
 		return src, diags
+
+	case dyn.KindString:
+		// Return verbatim if it's a pure variable reference.
+		if dynvar.IsPureVariableReference(src.MustString()) {
+			return src, nil
+		}
 	}
 
+	// Cannot interpret as a map.
 	return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindMap, src, path))
 }
 
@@ -222,11 +239,18 @@ func (n normalizeOptions) normalizeSlice(typ reflect.Type, src dyn.Value, seen [
 			out = append(out, v)
 		}
 
-		return dyn.NewValue(out, src.Location()), diags
+		return dyn.NewValue(out, src.Locations()), diags
 	case dyn.KindNil:
 		return src, diags
+
+	case dyn.KindString:
+		// Return verbatim if it's a pure variable reference.
+		if dynvar.IsPureVariableReference(src.MustString()) {
+			return src, nil
+		}
 	}
 
+	// Cannot interpret as a slice.
 	return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindSequence, src, path))
 }
 
@@ -250,7 +274,7 @@ func (n normalizeOptions) normalizeString(typ reflect.Type, src dyn.Value, path 
 		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindString, src, path))
 	}
 
-	return dyn.NewValue(out, src.Location()), diags
+	return dyn.NewValue(out, src.Locations()), diags
 }
 
 func (n normalizeOptions) normalizeBool(typ reflect.Type, src dyn.Value, path dyn.Path) (dyn.Value, diag.Diagnostics) {
@@ -283,7 +307,7 @@ func (n normalizeOptions) normalizeBool(typ reflect.Type, src dyn.Value, path dy
 		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindBool, src, path))
 	}
 
-	return dyn.NewValue(out, src.Location()), diags
+	return dyn.NewValue(out, src.Locations()), diags
 }
 
 func (n normalizeOptions) normalizeInt(typ reflect.Type, src dyn.Value, path dyn.Path) (dyn.Value, diag.Diagnostics) {
@@ -297,10 +321,10 @@ func (n normalizeOptions) normalizeInt(typ reflect.Type, src dyn.Value, path dyn
 		out = int64(src.MustFloat())
 		if src.MustFloat() != float64(out) {
 			return dyn.InvalidValue, diags.Append(diag.Diagnostic{
-				Severity: diag.Warning,
-				Summary:  fmt.Sprintf(`cannot accurately represent "%g" as integer due to precision loss`, src.MustFloat()),
-				Location: src.Location(),
-				Path:     path,
+				Severity:  diag.Warning,
+				Summary:   fmt.Sprintf(`cannot accurately represent "%g" as integer due to precision loss`, src.MustFloat()),
+				Locations: []dyn.Location{src.Location()},
+				Paths:     []dyn.Path{path},
 			})
 		}
 	case dyn.KindString:
@@ -313,10 +337,10 @@ func (n normalizeOptions) normalizeInt(typ reflect.Type, src dyn.Value, path dyn
 			}
 
 			return dyn.InvalidValue, diags.Append(diag.Diagnostic{
-				Severity: diag.Warning,
-				Summary:  fmt.Sprintf("cannot parse %q as an integer", src.MustString()),
-				Location: src.Location(),
-				Path:     path,
+				Severity:  diag.Warning,
+				Summary:   fmt.Sprintf("cannot parse %q as an integer", src.MustString()),
+				Locations: []dyn.Location{src.Location()},
+				Paths:     []dyn.Path{path},
 			})
 		}
 	case dyn.KindNil:
@@ -326,7 +350,7 @@ func (n normalizeOptions) normalizeInt(typ reflect.Type, src dyn.Value, path dyn
 		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindInt, src, path))
 	}
 
-	return dyn.NewValue(out, src.Location()), diags
+	return dyn.NewValue(out, src.Locations()), diags
 }
 
 func (n normalizeOptions) normalizeFloat(typ reflect.Type, src dyn.Value, path dyn.Path) (dyn.Value, diag.Diagnostics) {
@@ -340,10 +364,10 @@ func (n normalizeOptions) normalizeFloat(typ reflect.Type, src dyn.Value, path d
 		out = float64(src.MustInt())
 		if src.MustInt() != int64(out) {
 			return dyn.InvalidValue, diags.Append(diag.Diagnostic{
-				Severity: diag.Warning,
-				Summary:  fmt.Sprintf(`cannot accurately represent "%d" as floating point number due to precision loss`, src.MustInt()),
-				Location: src.Location(),
-				Path:     path,
+				Severity:  diag.Warning,
+				Summary:   fmt.Sprintf(`cannot accurately represent "%d" as floating point number due to precision loss`, src.MustInt()),
+				Locations: []dyn.Location{src.Location()},
+				Paths:     []dyn.Path{path},
 			})
 		}
 	case dyn.KindString:
@@ -356,10 +380,10 @@ func (n normalizeOptions) normalizeFloat(typ reflect.Type, src dyn.Value, path d
 			}
 
 			return dyn.InvalidValue, diags.Append(diag.Diagnostic{
-				Severity: diag.Warning,
-				Summary:  fmt.Sprintf("cannot parse %q as a floating point number", src.MustString()),
-				Location: src.Location(),
-				Path:     path,
+				Severity:  diag.Warning,
+				Summary:   fmt.Sprintf("cannot parse %q as a floating point number", src.MustString()),
+				Locations: []dyn.Location{src.Location()},
+				Paths:     []dyn.Path{path},
 			})
 		}
 	case dyn.KindNil:
@@ -369,5 +393,9 @@ func (n normalizeOptions) normalizeFloat(typ reflect.Type, src dyn.Value, path d
 		return dyn.InvalidValue, diags.Append(typeMismatch(dyn.KindFloat, src, path))
 	}
 
-	return dyn.NewValue(out, src.Location()), diags
+	return dyn.NewValue(out, src.Locations()), diags
+}
+
+func (n normalizeOptions) normalizeInterface(typ reflect.Type, src dyn.Value, path dyn.Path) (dyn.Value, diag.Diagnostics) {
+	return src, nil
 }

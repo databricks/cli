@@ -2,7 +2,9 @@ package terraform
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,6 +15,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/internal/tf/schema"
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
@@ -59,7 +62,7 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 	// If the execPath already exists, return it.
 	execPath := filepath.Join(binDir, product.Terraform.BinaryName())
 	_, err = os.Stat(execPath)
-	if err != nil && !os.IsNotExist(err) {
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return "", err
 	}
 	if err == nil {
@@ -148,7 +151,7 @@ func getEnvVarWithMatchingVersion(ctx context.Context, envVarName string, versio
 	// If the path does not exist, we return early.
 	_, err := os.Stat(envValue)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			log.Debugf(ctx, "%s at %s does not exist", envVarName, envValue)
 			return "", nil
 		} else {
@@ -216,6 +219,25 @@ func setProxyEnvVars(ctx context.Context, environ map[string]string, b *bundle.B
 	return nil
 }
 
+func setUserAgentExtraEnvVar(environ map[string]string, b *bundle.Bundle) error {
+	// Add "cli" to the user agent in set by the Databricks Terraform provider.
+	// This will allow us to attribute downstream requests made by the Databricks
+	// Terraform provider to the CLI.
+	products := []string{fmt.Sprintf("cli/%s", build.GetInfo().Version)}
+	if experimental := b.Config.Experimental; experimental != nil {
+		if experimental.PyDABs.Enabled {
+			products = append(products, "databricks-pydabs/0.0.0")
+		}
+	}
+
+	userAgentExtra := strings.Join(products, " ")
+	if userAgentExtra != "" {
+		environ["DATABRICKS_USER_AGENT_EXTRA"] = userAgentExtra
+	}
+
+	return nil
+}
+
 func (m *initialize) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	tfConfig := b.Config.Bundle.Terraform
 	if tfConfig == nil {
@@ -256,6 +278,11 @@ func (m *initialize) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 
 	// Set the proxy related environment variables
 	err = setProxyEnvVars(ctx, environ, b)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	err = setUserAgentExtraEnvVar(environ, b)
 	if err != nil {
 		return diag.FromErr(err)
 	}

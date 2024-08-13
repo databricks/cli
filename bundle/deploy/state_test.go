@@ -3,17 +3,17 @@ package deploy
 import (
 	"bytes"
 	"encoding/json"
-	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/fileset"
+	"github.com/databricks/cli/libs/vfs"
 	"github.com/stretchr/testify/require"
 )
 
 func TestFromSlice(t *testing.T) {
 	tmpDir := t.TempDir()
-	fileset := fileset.New(tmpDir)
+	fileset := fileset.New(vfs.MustNew(tmpDir))
 	testutil.Touch(t, tmpDir, "test1.py")
 	testutil.Touch(t, tmpDir, "test2.py")
 	testutil.Touch(t, tmpDir, "test3.py")
@@ -32,7 +32,8 @@ func TestFromSlice(t *testing.T) {
 
 func TestToSlice(t *testing.T) {
 	tmpDir := t.TempDir()
-	fileset := fileset.New(tmpDir)
+	root := vfs.MustNew(tmpDir)
+	fileset := fileset.New(root)
 	testutil.Touch(t, tmpDir, "test1.py")
 	testutil.Touch(t, tmpDir, "test2.py")
 	testutil.Touch(t, tmpDir, "test3.py")
@@ -44,22 +45,15 @@ func TestToSlice(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, f, 3)
 
-	s := f.ToSlice(tmpDir)
+	s := f.ToSlice(root)
 	require.Len(t, s, 3)
 
 	for _, file := range s {
-		require.Contains(t, []string{"test1.py", "test2.py", "test3.py"}, file.Name())
-		require.Contains(t, []string{
-			filepath.Join(tmpDir, "test1.py"),
-			filepath.Join(tmpDir, "test2.py"),
-			filepath.Join(tmpDir, "test3.py"),
-		}, file.Absolute)
-		require.False(t, file.IsDir())
-		require.NotZero(t, file.Type())
-		info, err := file.Info()
-		require.NoError(t, err)
-		require.NotNil(t, info)
-		require.Equal(t, file.Name(), info.Name())
+		require.Contains(t, []string{"test1.py", "test2.py", "test3.py"}, file.Relative)
+
+		// If the mtime is not zero we know we produced a valid fs.DirEntry.
+		ts := file.Modified()
+		require.NotZero(t, ts)
 	}
 }
 

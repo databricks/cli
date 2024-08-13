@@ -1,0 +1,8 @@
+resources:
+  jobs:
+    foo:
+      name: job foo 2
+
+  pipelines:
+    foo:
+      name: pipeline foo

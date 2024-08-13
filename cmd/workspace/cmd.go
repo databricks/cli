@@ -32,7 +32,6 @@ import (
 	instance_profiles "github.com/databricks/cli/cmd/workspace/instance-profiles"
 	ip_access_lists "github.com/databricks/cli/cmd/workspace/ip-access-lists"
 	jobs "github.com/databricks/cli/cmd/workspace/jobs"
-	lakehouse_monitors "github.com/databricks/cli/cmd/workspace/lakehouse-monitors"
 	lakeview "github.com/databricks/cli/cmd/workspace/lakeview"
 	libraries "github.com/databricks/cli/cmd/workspace/libraries"
 	metastores "github.com/databricks/cli/cmd/workspace/metastores"
@@ -51,6 +50,7 @@ import (
 	provider_provider_analytics_dashboards "github.com/databricks/cli/cmd/workspace/provider-provider-analytics-dashboards"
 	provider_providers "github.com/databricks/cli/cmd/workspace/provider-providers"
 	providers "github.com/databricks/cli/cmd/workspace/providers"
+	quality_monitors "github.com/databricks/cli/cmd/workspace/quality-monitors"
 	queries "github.com/databricks/cli/cmd/workspace/queries"
 	query_history "github.com/databricks/cli/cmd/workspace/query-history"
 	query_visualizations "github.com/databricks/cli/cmd/workspace/query-visualizations"
@@ -113,7 +113,6 @@ func All() []*cobra.Command {
 	out = append(out, instance_profiles.New())
 	out = append(out, ip_access_lists.New())
 	out = append(out, jobs.New())
-	out = append(out, lakehouse_monitors.New())
 	out = append(out, lakeview.New())
 	out = append(out, libraries.New())
 	out = append(out, metastores.New())
@@ -132,6 +131,7 @@ func All() []*cobra.Command {
 	out = append(out, provider_provider_analytics_dashboards.New())
 	out = append(out, provider_providers.New())
 	out = append(out, providers.New())
+	out = append(out, quality_monitors.New())
 	out = append(out, queries.New())
 	out = append(out, query_history.New())
 	out = append(out, query_visualizations.New())

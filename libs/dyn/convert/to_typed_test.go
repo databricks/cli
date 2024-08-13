@@ -511,3 +511,32 @@ func TestToTypedWithAliasKeyType(t *testing.T) {
 	assert.Equal(t, "bar", out["foo"])
 	assert.Equal(t, "baz", out["bar"])
 }
+
+func TestToTypedAnyWithBool(t *testing.T) {
+	var out any
+	err := ToTyped(&out, dyn.V(false))
+	require.NoError(t, err)
+	assert.Equal(t, false, out)
+
+	err = ToTyped(&out, dyn.V(true))
+	require.NoError(t, err)
+	assert.Equal(t, true, out)
+}
+
+func TestToTypedAnyWithMap(t *testing.T) {
+	var out any
+	v := dyn.V(map[string]dyn.Value{
+		"foo": dyn.V("bar"),
+		"bar": dyn.V("baz"),
+	})
+	err := ToTyped(&out, v)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{"foo": "bar", "bar": "baz"}, out)
+}
+
+func TestToTypedAnyWithNil(t *testing.T) {
+	var out any
+	err := ToTyped(&out, dyn.NilValue)
+	require.NoError(t, err)
+	assert.Equal(t, nil, out)
+}

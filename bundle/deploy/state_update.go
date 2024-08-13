@@ -4,15 +4,17 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
+	"io/fs"
 	"os"
 	"time"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
+	"github.com/google/uuid"
 )
 
 type stateUpdate struct {
@@ -38,23 +40,17 @@ func (s *stateUpdate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 	state.CliVersion = build.GetInfo().Version
 	state.Version = DeploymentStateVersion
 
-	// Get the current file list.
-	sync, err := files.GetSync(ctx, bundle.ReadOnly(b))
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	files, err := sync.GetFileList(ctx)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	// Update the state with the current file list.
-	fl, err := FromSlice(files)
+	// Update the state with the current list of synced files.
+	fl, err := FromSlice(b.Files)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 	state.Files = fl
+
+	// Generate a UUID for the deployment, if one does not already exist
+	if state.ID == uuid.Nil {
+		state.ID = uuid.New()
+	}
 
 	statePath, err := getPathToStateFile(ctx, b)
 	if err != nil {
@@ -95,7 +91,7 @@ func load(ctx context.Context, b *bundle.Bundle) (*DeploymentState, error) {
 	log.Infof(ctx, "Loading deployment state from %s", statePath)
 	f, err := os.Open(statePath)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			log.Infof(ctx, "No deployment state file found")
 			return &DeploymentState{
 				Version:    DeploymentStateVersion,

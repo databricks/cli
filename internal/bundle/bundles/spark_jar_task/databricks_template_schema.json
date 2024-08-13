@@ -1,0 +1,33 @@
+{
+    "properties": {
+        "project_name": {
+            "type": "string",
+            "default": "my_java_project",
+            "description": "Unique name for this project"
+        },
+        "spark_version": {
+            "type": "string",
+            "description": "Spark version used for job cluster"
+        },
+        "node_type_id": {
+            "type": "string",
+            "description": "Node type id for job cluster"
+        },
+        "unique_id": {
+            "type": "string",
+            "description": "Unique ID for job name"
+        },
+        "root": {
+            "type": "string",
+            "description": "Path to the root of the template"
+        },
+        "artifact_path": {
+            "type": "string",
+            "description": "Path to the remote base path for artifacts"
+        },
+        "instance_pool_id": {
+            "type": "string",
+            "description": "Instance pool id for job cluster"
+        }
+    }
+}

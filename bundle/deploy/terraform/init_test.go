@@ -248,6 +248,26 @@ func TestSetProxyEnvVars(t *testing.T) {
 	assert.ElementsMatch(t, []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}, maps.Keys(env))
 }
 
+func TestSetUserAgentExtraEnvVar(t *testing.T) {
+	b := &bundle.Bundle{
+		RootPath: t.TempDir(),
+		Config: config.Root{
+			Experimental: &config.Experimental{
+				PyDABs: config.PyDABs{
+					Enabled: true,
+				},
+			},
+		},
+	}
+
+	env := make(map[string]string, 0)
+	err := setUserAgentExtraEnvVar(env, b)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{
+		"DATABRICKS_USER_AGENT_EXTRA": "cli/0.0.0-dev databricks-pydabs/0.0.0",
+	}, env)
+}
+
 func TestInheritEnvVars(t *testing.T) {
 	env := map[string]string{}
 

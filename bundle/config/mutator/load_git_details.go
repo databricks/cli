@@ -22,7 +22,7 @@ func (m *loadGitDetails) Name() string {
 
 func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Load relevant git repository
-	repo, err := git.NewRepository(b.RootPath)
+	repo, err := git.NewRepository(b.BundleRoot)
 	if err != nil {
 		return diag.FromErr(err)
 	}
