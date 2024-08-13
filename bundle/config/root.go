@@ -136,17 +136,6 @@ func (r *Root) updateWithDynamicValue(nv dyn.Value) error {
 
 	// Assign the normalized configuration tree.
 	r.value = nv
-
-	// At the moment the check has to be done as part of updateWithDynamicValue
-	// because otherwise ConfigureConfigFilePath will fail with a panic.
-	// In the future, we should move this check to a separate mutator in initialise phase.
-	err = r.Resources.VerifyAllResourcesDefined()
-	if err != nil {
-		return err
-	}
-
-	// Assign config file paths after converting to typed configuration.
-	r.ConfigureConfigFilePath()
 	return nil
 }
 
@@ -236,15 +225,6 @@ func (r *Root) MarkMutatorExit(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-// SetConfigFilePath configures the path that its configuration
-// was loaded from in configuration leafs that require it.
-func (r *Root) ConfigureConfigFilePath() {
-	r.Resources.ConfigureConfigFilePath()
-	if r.Artifacts != nil {
-		r.Artifacts.ConfigureConfigFilePath()
-	}
 }
 
 // Initializes variables using values passed from the command line flag

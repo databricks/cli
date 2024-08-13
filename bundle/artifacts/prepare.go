@@ -34,11 +34,13 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		return diag.Errorf("artifact doesn't exist: %s", m.name)
 	}
 
+	l := b.Config.GetLocation("artifacts." + m.name)
+	dirPath := filepath.Dir(l.File)
+
 	// Check if source paths are absolute, if not, make them absolute
 	for k := range artifact.Files {
 		f := &artifact.Files[k]
 		if !filepath.IsAbs(f.Source) {
-			dirPath := filepath.Dir(artifact.ConfigFilePath)
 			f.Source = filepath.Join(dirPath, f.Source)
 		}
 	}
@@ -49,7 +51,6 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 	}
 
 	if !filepath.IsAbs(artifact.Path) {
-		dirPath := filepath.Dir(artifact.ConfigFilePath)
 		artifact.Path = filepath.Join(dirPath, artifact.Path)
 	}
 

@@ -29,6 +29,4 @@ func SetLocation(b *bundle.Bundle, prefix string, filePath string) {
 			return v, dyn.ErrSkip
 		})
 	})
-
-	b.Config.ConfigureConfigFilePath()
 }

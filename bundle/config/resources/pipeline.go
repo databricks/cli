@@ -2,9 +2,7 @@ package resources
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/databricks/cli/bundle/config/paths"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -15,8 +13,6 @@ type Pipeline struct {
 	ID             string         `json:"id,omitempty" bundle:"readonly"`
 	Permissions    []Permission   `json:"permissions,omitempty"`
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
-
-	paths.Paths
 
 	*pipelines.PipelineSpec
 }
@@ -42,12 +38,4 @@ func (p *Pipeline) Exists(ctx context.Context, w *databricks.WorkspaceClient, id
 
 func (p *Pipeline) TerraformResourceName() string {
 	return "databricks_pipeline"
-}
-
-func (p *Pipeline) Validate() error {
-	if p == nil || !p.DynamicValue.IsValid() {
-		return fmt.Errorf("pipeline is not defined")
-	}
-
-	return nil
 }
