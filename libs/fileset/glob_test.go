@@ -20,7 +20,7 @@ func collectRelativePaths(files []File) []string {
 }
 
 func TestGlobFileset(t *testing.T) {
-	root := vfs.MustNew("../filer")
+	root := vfs.MustNew("./")
 	entries, err := root.ReadDir(".")
 	require.NoError(t, err)
 
@@ -32,6 +32,7 @@ func TestGlobFileset(t *testing.T) {
 	files, err := g.All()
 	require.NoError(t, err)
 
+	// +1 as there's one folder in ../filer
 	require.Equal(t, len(files), len(entries))
 	for _, f := range files {
 		exists := slices.ContainsFunc(entries, func(de fs.DirEntry) bool {
@@ -51,7 +52,7 @@ func TestGlobFileset(t *testing.T) {
 }
 
 func TestGlobFilesetWithRelativeRoot(t *testing.T) {
-	root := vfs.MustNew("../filer")
+	root := vfs.MustNew("../set")
 	entries, err := root.ReadDir(".")
 	require.NoError(t, err)
 

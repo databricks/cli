@@ -2,123 +2,13 @@ package filer
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"io/fs"
-	"path"
-	"sort"
-	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-type fakeDirEntry struct {
-	fakeFileInfo
-}
-
-func (entry fakeDirEntry) Type() fs.FileMode {
-	typ := fs.ModePerm
-	if entry.dir {
-		typ |= fs.ModeDir
-	}
-	return typ
-}
-
-func (entry fakeDirEntry) Info() (fs.FileInfo, error) {
-	return entry.fakeFileInfo, nil
-}
-
-type fakeFileInfo struct {
-	name string
-	size int64
-	dir  bool
-	mode fs.FileMode
-}
-
-func (info fakeFileInfo) Name() string {
-	return info.name
-}
-
-func (info fakeFileInfo) Size() int64 {
-	return info.size
-}
-
-func (info fakeFileInfo) Mode() fs.FileMode {
-	return info.mode
-}
-
-func (info fakeFileInfo) ModTime() time.Time {
-	return time.Now()
-}
-
-func (info fakeFileInfo) IsDir() bool {
-	return info.dir
-}
-
-func (info fakeFileInfo) Sys() any {
-	return nil
-}
-
-type fakeFiler struct {
-	entries map[string]fakeFileInfo
-}
-
-func (f *fakeFiler) Write(ctx context.Context, p string, reader io.Reader, mode ...WriteMode) error {
-	return fmt.Errorf("not implemented")
-}
-
-func (f *fakeFiler) Read(ctx context.Context, p string) (io.ReadCloser, error) {
-	_, ok := f.entries[p]
-	if !ok {
-		return nil, fs.ErrNotExist
-	}
-
-	return io.NopCloser(strings.NewReader("foo")), nil
-}
-
-func (f *fakeFiler) Delete(ctx context.Context, p string, mode ...DeleteMode) error {
-	return fmt.Errorf("not implemented")
-}
-
-func (f *fakeFiler) ReadDir(ctx context.Context, p string) ([]fs.DirEntry, error) {
-	entry, ok := f.entries[p]
-	if !ok {
-		return nil, fs.ErrNotExist
-	}
-
-	if !entry.dir {
-		return nil, fs.ErrInvalid
-	}
-
-	// Find all entries contained in the specified directory `p`.
-	var out []fs.DirEntry
-	for k, v := range f.entries {
-		if k == p || path.Dir(k) != p {
-			continue
-		}
-
-		out = append(out, fakeDirEntry{v})
-	}
-
-	sort.Slice(out, func(i, j int) bool { return out[i].Name() < out[j].Name() })
-	return out, nil
-}
-
-func (f *fakeFiler) Mkdir(ctx context.Context, path string) error {
-	return fmt.Errorf("not implemented")
-}
-
-func (f *fakeFiler) Stat(ctx context.Context, path string) (fs.FileInfo, error) {
-	entry, ok := f.entries[path]
-	if !ok {
-		return nil, fs.ErrNotExist
-	}
-
-	return entry, nil
-}
 
 func TestFsImplementsFS(t *testing.T) {
 	var _ fs.FS = &filerFS{}
@@ -145,22 +35,12 @@ func TestFsDirImplementsFsReadDirFile(t *testing.T) {
 }
 
 func fakeFS() fs.FS {
-	fakeFiler := &fakeFiler{
-		entries: map[string]fakeFileInfo{
-			".":     {name: "root", dir: true},
-			"dirA":  {dir: true},
-			"dirB":  {dir: true},
-			"fileA": {size: 3},
-		},
-	}
-
-	for k, v := range fakeFiler.entries {
-		if v.name != "" {
-			continue
-		}
-		v.name = path.Base(k)
-		fakeFiler.entries[k] = v
-	}
+	fakeFiler := NewFakeFiler(map[string]FakeFileInfo{
+		".":     {FakeName: "root", FakeDir: true},
+		"dirA":  {FakeDir: true},
+		"dirB":  {FakeDir: true},
+		"fileA": {FakeSize: 3},
+	})
 
 	return NewFS(context.Background(), fakeFiler)
 }
