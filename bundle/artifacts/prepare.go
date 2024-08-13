@@ -34,11 +34,7 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		return diag.Errorf("artifact doesn't exist: %s", m.name)
 	}
 
-	// TODO: Do we even need implict dyn value in convert to_typed anymore?
-	// worth asking in the PR.
-
-	// TODO: Is this change covered by unit tessts?
-	l := b.Config.GetLocation("artifacts.%s.")
+	l := b.Config.GetLocation("artifacts." + m.name)
 	dirPath := filepath.Dir(l.File)
 
 	// Check if source paths are absolute, if not, make them absolute
