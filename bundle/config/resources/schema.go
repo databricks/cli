@@ -5,7 +5,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
-// TODO: Do I need to implement configresource for this?
 type Schema struct {
 	// List of grants to apply on this schema.
 	Grants []Grant `json:"grants,omitempty"`
