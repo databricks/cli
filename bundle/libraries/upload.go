@@ -65,7 +65,11 @@ func collectLocalLibraries(b *bundle.Bundle) (map[string][]configLocation, error
 	for _, pattern := range patterns {
 		err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 			return dyn.MapByPattern(v, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-				source := v.MustString()
+				source, ok := v.AsString()
+				if !ok {
+					return v, fmt.Errorf("expected string, got %s", v.Kind())
+				}
+
 				if !IsLibraryLocal(source) {
 					return v, nil
 				}
@@ -94,13 +98,21 @@ func collectLocalLibraries(b *bundle.Bundle) (map[string][]configLocation, error
 
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		return dyn.MapByPattern(v, artifactPattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			file := v.MustMap()
+			file, ok := v.AsMap()
+			if !ok {
+				return v, fmt.Errorf("expected map, got %s", v.Kind())
+			}
+
 			sv, ok := file.GetByString("source")
 			if !ok {
 				return v, nil
 			}
 
-			source := sv.MustString()
+			source, ok := sv.AsString()
+			if !ok {
+				return v, fmt.Errorf("expected string, got %s", v.Kind())
+			}
+
 			libs[source] = append(libs[source], configLocation{
 				configPath: p.Append(dyn.Key("remote_path")),
 				location:   v.Location(),
