@@ -29,22 +29,6 @@ func promptForProfile(ctx context.Context, dv string) (string, error) {
 	return prompt.Run()
 }
 
-func getHostFromProfile(ctx context.Context, profileName string) (string, error) {
-	profiler := profile.GetProfiler(ctx)
-	// If the chosen profile has a hostname and the user hasn't specified a host, infer the host from the profile.
-	profiles, err := profiler.LoadProfiles(ctx, profile.WithName(profileName))
-	// Tolerate ErrNoConfiguration here, as we will write out a configuration as part of the login flow.
-	if err != nil && !errors.Is(err, profile.ErrNoConfiguration) {
-		return "", err
-	}
-
-	// Return host from profile
-	if len(profiles) > 0 && profiles[0].Host != "" {
-		return profiles[0].Host, nil
-	}
-	return "", nil
-}
-
 const minimalDbConnectVersion = "13.1"
 const defaultTimeout = 1 * time.Hour
 
