@@ -1,6 +1,7 @@
 package config_tests
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
@@ -14,6 +15,8 @@ func TestJobAndPipelineDevelopmentWithEnvironment(t *testing.T) {
 	assert.Len(t, b.Config.Resources.Pipelines, 1)
 
 	p := b.Config.Resources.Pipelines["nyc_taxi_pipeline"]
+	l := b.Config.GetLocation("resources.pipelines.nyc_taxi_pipeline")
+	assert.Equal(t, "environments_job_and_pipeline/databricks.yml", filepath.ToSlash(l.File))
 	assert.Equal(t, b.Config.Bundle.Mode, config.Development)
 	assert.True(t, p.Development)
 	require.Len(t, p.Libraries, 1)
@@ -27,6 +30,8 @@ func TestJobAndPipelineStagingWithEnvironment(t *testing.T) {
 	assert.Len(t, b.Config.Resources.Pipelines, 1)
 
 	p := b.Config.Resources.Pipelines["nyc_taxi_pipeline"]
+	l := b.Config.GetLocation("resources.pipelines.nyc_taxi_pipeline")
+	assert.Equal(t, "environments_job_and_pipeline/databricks.yml", filepath.ToSlash(l.File))
 	assert.False(t, p.Development)
 	require.Len(t, p.Libraries, 1)
 	assert.Equal(t, "./dlt/nyc_taxi_loader", p.Libraries[0].Notebook.Path)
@@ -39,12 +44,16 @@ func TestJobAndPipelineProductionWithEnvironment(t *testing.T) {
 	assert.Len(t, b.Config.Resources.Pipelines, 1)
 
 	p := b.Config.Resources.Pipelines["nyc_taxi_pipeline"]
+	pl := b.Config.GetLocation("resources.pipelines.nyc_taxi_pipeline")
+	assert.Equal(t, "environments_job_and_pipeline/databricks.yml", filepath.ToSlash(pl.File))
 	assert.False(t, p.Development)
 	require.Len(t, p.Libraries, 1)
 	assert.Equal(t, "./dlt/nyc_taxi_loader", p.Libraries[0].Notebook.Path)
 	assert.Equal(t, "nyc_taxi_production", p.Target)
 
 	j := b.Config.Resources.Jobs["pipeline_schedule"]
+	jl := b.Config.GetLocation("resources.jobs.pipeline_schedule")
+	assert.Equal(t, "environments_job_and_pipeline/databricks.yml", filepath.ToSlash(jl.File))
 	assert.Equal(t, "Daily refresh of production pipeline", j.Name)
 	require.Len(t, j.Tasks, 1)
 	assert.NotEmpty(t, j.Tasks[0].PipelineTask.PipelineId)
