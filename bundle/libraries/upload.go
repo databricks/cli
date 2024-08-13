@@ -47,7 +47,7 @@ type configLocation struct {
 
 // Collect all libraries from the bundle configuration and their config paths.
 // By this stage all glob references are expanded and we have a list of all libraries that need to be uploaded.
-// We collect them from task libraries, foreach task libraries  environment dependencies and artifacts.
+// We collect them from task libraries, foreach task libraries, environment dependencies, and artifacts.
 // We return a map of library source to a list of config paths and locations where the library is used.
 // We use map so we don't upload the same library multiple times.
 // Instead we upload it once and update all the config paths to point to the uploaded location.
