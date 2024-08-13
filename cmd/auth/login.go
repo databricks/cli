@@ -112,7 +112,7 @@ depends on the existing profiles you have set in your configuration file
 		// If the user has not specified a profile name, prompt for one.
 		if profileName == "" {
 			var err error
-			profileName, err = promptForProfile(ctx, persistentAuth.DefaultProfileName())
+			profileName, err = promptForProfile(ctx, persistentAuth.ProfileName())
 			if err != nil {
 				return err
 			}
