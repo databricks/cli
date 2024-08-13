@@ -27,41 +27,13 @@ func IsLocalPath(p string) bool {
 		return true
 	}
 
-	if IsRemotePath(p) {
-		return false
-	}
-
-	// If the path is absolute, it's a remote path.
-	return !path.IsAbs(p)
-}
-
-func IsRemotePath(p string) bool {
+	// If the path has another scheme, it's a remote path.
 	if isRemoteStorageScheme(p) {
-		return true
-	}
-
-	// if the path is not absolute, it's not a remote path
-	if !path.IsAbs(p) {
 		return false
 	}
 
-	// If the path is absolute, it's might be a remote path.
-	possiblePrefixes := []string{
-		"/Workspace",
-		"/Users",
-		"/Volumes",
-		"/Shared",
-		"/mnt",
-		"/dbfs",
-	}
-
-	for _, prefix := range possiblePrefixes {
-		if strings.HasPrefix(p, prefix) {
-			return true
-		}
-	}
-
-	return false
+	// If path starts with /, it's a remote absolute path
+	return !path.IsAbs(p)
 }
 
 // IsLibraryLocal returns true if the specified library or environment dependency
@@ -90,11 +62,7 @@ func IsLibraryLocal(dep string) bool {
 		return false
 	}
 
-	if IsRemotePath(dep) {
-		return false
-	}
-
-	return true
+	return IsLocalPath(dep)
 }
 
 func isPackage(name string) bool {

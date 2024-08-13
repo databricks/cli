@@ -70,19 +70,19 @@ func TestGlobReferencesExpandedForTaskLibraries(t *testing.T) {
 	task := job.JobSettings.Tasks[0]
 	require.Equal(t, []compute.Library{
 		{
-			Whl: filepath.Join(dir, "whl", "my1.whl"),
+			Whl: filepath.Join("whl", "my1.whl"),
 		},
 		{
-			Whl: filepath.Join(dir, "whl", "my2.whl"),
+			Whl: filepath.Join("whl", "my2.whl"),
 		},
 		{
 			Whl: "/Workspace/path/to/whl/my.whl",
 		},
 		{
-			Jar: filepath.Join(dir, "jar", "my1.jar"),
+			Jar: filepath.Join("jar", "my1.jar"),
 		},
 		{
-			Jar: filepath.Join(dir, "jar", "my2.jar"),
+			Jar: filepath.Join("jar", "my2.jar"),
 		},
 		{
 			Egg: "egg/*.egg",
@@ -144,11 +144,11 @@ func TestGlobReferencesExpandedForEnvironmentsDeps(t *testing.T) {
 	job := b.Config.Resources.Jobs["job"]
 	env := job.JobSettings.Environments[0]
 	require.Equal(t, []string{
-		filepath.Join(dir, "whl", "my1.whl"),
-		filepath.Join(dir, "whl", "my2.whl"),
+		filepath.Join("whl", "my1.whl"),
+		filepath.Join("whl", "my2.whl"),
 		"/Workspace/path/to/whl/my.whl",
-		filepath.Join(dir, "jar", "my1.jar"),
-		filepath.Join(dir, "jar", "my2.jar"),
+		filepath.Join("jar", "my1.jar"),
+		filepath.Join("jar", "my2.jar"),
 		"/some/local/path/to/whl/*.whl",
 	}, env.Spec.Dependencies)
 }

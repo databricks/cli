@@ -14,9 +14,9 @@ import (
 type expand struct {
 }
 
-func matchWarning(p dyn.Path, l []dyn.Location, message string) diag.Diagnostic {
+func matchError(p dyn.Path, l []dyn.Location, message string) diag.Diagnostic {
 	return diag.Diagnostic{
-		Severity: diag.Warning,
+		Severity: diag.Error,
 		Summary:  message,
 		Paths: []dyn.Path{
 			p.Append(),
@@ -54,6 +54,15 @@ func findMatches(b *bundle.Bundle, path string) ([]string, error) {
 		}
 	}
 
+	// We make the matched path relative to the root path before storing it
+	// to allow upload mutator to distinguish between local and remote paths
+	for i, match := range matches {
+		matches[i], err = filepath.Rel(b.RootPath, match)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return matches, nil
 }
 
@@ -71,7 +80,7 @@ func expandLibraries(b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diagnostic
 	for i, lib := range libs {
 		lp := p.Append(dyn.Index(i))
 		path, libType, supported := getLibDetails(lib)
-		if !supported || !IsLocalPath(path) {
+		if !supported || !IsLibraryLocal(path) {
 			output = append(output, lib)
 			continue
 		}
@@ -80,7 +89,7 @@ func expandLibraries(b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diagnostic
 
 		matches, err := findMatches(b, path)
 		if err != nil {
-			diags = diags.Append(matchWarning(lp, v.Locations(), err.Error()))
+			diags = diags.Append(matchError(lp, lib.Locations(), err.Error()))
 			continue
 		}
 
@@ -102,14 +111,14 @@ func expandEnvironmentDeps(b *bundle.Bundle, p dyn.Path, v dyn.Value) (diag.Diag
 	for i, dep := range deps {
 		lp := p.Append(dyn.Index(i))
 		path := dep.MustString()
-		if !IsLocalPath(path) || !IsLibraryLocal(path) {
+		if !IsLibraryLocal(path) {
 			output = append(output, dep)
 			continue
 		}
 
 		matches, err := findMatches(b, path)
 		if err != nil {
-			diags = diags.Append(matchWarning(lp, v.Locations(), err.Error()))
+			diags = diags.Append(matchError(lp, dep.Locations(), err.Error()))
 			continue
 		}
 
@@ -203,7 +212,10 @@ func (e *expand) Name() string {
 }
 
 // ExpandGlobReferences expands any glob references in the libraries or environments section
-// to corresponding local paths
+// to corresponding local paths.
+// We only expand local paths (i.e. paths that are relative to the root path).
+// After expanding we make the paths relative to the root path to allow upload mutator later in the chain to
+// distinguish between local and remote paths.
 func ExpandGlobReferences() bundle.Mutator {
 	return &expand{}
 }

@@ -89,7 +89,7 @@ func TestPythonWheelBuildNoBuildJustUpload(t *testing.T) {
 	mockFiler.EXPECT().Write(
 		mock.Anything,
 		filepath.Join("my_test_code-0.0.1-py3-none-any.whl"),
-		mock.AnythingOfType("*bytes.Reader"),
+		mock.AnythingOfType("*os.File"),
 		filer.OverwriteIfExists,
 		filer.CreateParentDirectories,
 	).Return(nil)
@@ -97,8 +97,7 @@ func TestPythonWheelBuildNoBuildJustUpload(t *testing.T) {
 	u := libraries.UploadWithClient(mockFiler)
 	diags := bundle.Apply(ctx, b, bundle.Seq(phases.Load(), phases.Build(), libraries.ExpandGlobReferences(), u))
 	require.NoError(t, diags.Error())
-
-	require.Len(t, diags, 1)
+	require.Empty(t, diags)
 
 	require.Equal(t, "/Workspace/foo/bar/.internal/my_test_code-0.0.1-py3-none-any.whl", b.Config.Resources.Jobs["test_job"].JobSettings.Tasks[0].Libraries[0].Whl)
 }

@@ -1,7 +1,6 @@
 package libraries
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -71,6 +70,7 @@ func collectLocalLibraries(b *bundle.Bundle) (map[string][]configLocation, error
 					return v, nil
 				}
 
+				source = filepath.Join(b.RootPath, source)
 				libs[source] = append(libs[source], configLocation{
 					configPath: p.Append(), // Hack to get the copy of path
 					location:   v.Location(),
@@ -201,12 +201,13 @@ func UploadFile(ctx context.Context, file string, client filer.Filer) error {
 	filename := filepath.Base(file)
 	cmdio.LogString(ctx, fmt.Sprintf("Uploading %s...", filename))
 
-	raw, err := os.ReadFile(file)
+	f, err := os.Open(file)
 	if err != nil {
-		return fmt.Errorf("unable to read %s: %w", file, errors.Unwrap(err))
+		return fmt.Errorf("unable to open %s: %w", file, errors.Unwrap(err))
 	}
+	defer f.Close()
 
-	err = client.Write(ctx, filename, bytes.NewReader(raw), filer.OverwriteIfExists, filer.CreateParentDirectories)
+	err = client.Write(ctx, filename, f, filer.OverwriteIfExists, filer.CreateParentDirectories)
 	if err != nil {
 		return fmt.Errorf("unable to import %s: %w", filename, err)
 	}

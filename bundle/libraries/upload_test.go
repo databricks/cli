@@ -88,7 +88,7 @@ func TestArtifactUploadForWorkspace(t *testing.T) {
 	mockFiler.EXPECT().Write(
 		mock.Anything,
 		filepath.Join("source.whl"),
-		mock.AnythingOfType("*bytes.Reader"),
+		mock.AnythingOfType("*os.File"),
 		filer.OverwriteIfExists,
 		filer.CreateParentDirectories,
 	).Return(nil)
@@ -176,7 +176,7 @@ func TestArtifactUploadForVolumes(t *testing.T) {
 	mockFiler.EXPECT().Write(
 		mock.Anything,
 		filepath.Join("source.whl"),
-		mock.AnythingOfType("*bytes.Reader"),
+		mock.AnythingOfType("*os.File"),
 		filer.OverwriteIfExists,
 		filer.CreateParentDirectories,
 	).Return(nil)
@@ -220,7 +220,7 @@ func TestArtifactUploadWithNoLibraryReference(t *testing.T) {
 	mockFiler.EXPECT().Write(
 		mock.Anything,
 		filepath.Join("source.whl"),
-		mock.AnythingOfType("*bytes.Reader"),
+		mock.AnythingOfType("*os.File"),
 		filer.OverwriteIfExists,
 		filer.CreateParentDirectories,
 	).Return(nil)
@@ -282,7 +282,7 @@ func TestUploadMultipleLibraries(t *testing.T) {
 	mockFiler.EXPECT().Write(
 		mock.Anything,
 		filepath.Join("source1.whl"),
-		mock.AnythingOfType("*bytes.Reader"),
+		mock.AnythingOfType("*os.File"),
 		filer.OverwriteIfExists,
 		filer.CreateParentDirectories,
 	).Return(nil).Once()
@@ -290,7 +290,7 @@ func TestUploadMultipleLibraries(t *testing.T) {
 	mockFiler.EXPECT().Write(
 		mock.Anything,
 		filepath.Join("source2.whl"),
-		mock.AnythingOfType("*bytes.Reader"),
+		mock.AnythingOfType("*os.File"),
 		filer.OverwriteIfExists,
 		filer.CreateParentDirectories,
 	).Return(nil).Once()
@@ -298,7 +298,7 @@ func TestUploadMultipleLibraries(t *testing.T) {
 	mockFiler.EXPECT().Write(
 		mock.Anything,
 		filepath.Join("source3.whl"),
-		mock.AnythingOfType("*bytes.Reader"),
+		mock.AnythingOfType("*os.File"),
 		filer.OverwriteIfExists,
 		filer.CreateParentDirectories,
 	).Return(nil).Once()
@@ -306,7 +306,7 @@ func TestUploadMultipleLibraries(t *testing.T) {
 	mockFiler.EXPECT().Write(
 		mock.Anything,
 		filepath.Join("source4.whl"),
-		mock.AnythingOfType("*bytes.Reader"),
+		mock.AnythingOfType("*os.File"),
 		filer.OverwriteIfExists,
 		filer.CreateParentDirectories,
 	).Return(nil).Once()
