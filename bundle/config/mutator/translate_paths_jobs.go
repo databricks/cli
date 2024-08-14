@@ -78,7 +78,7 @@ func (t *translateContext) jobRewritePatterns() []jobRewritePattern {
 			),
 			t.translateNoOpWithPrefix,
 			func(s string) bool {
-				return !libraries.IsEnvironmentDependencyLocal(s)
+				return !libraries.IsLibraryLocal(s)
 			},
 		},
 	}
