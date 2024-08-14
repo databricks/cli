@@ -43,11 +43,10 @@ func New() *cobra.Command {
   manually terminate and restart an all-purpose cluster. Multiple users can
   share such clusters to do collaborative interactive analysis.
   
-  IMPORTANT: Databricks retains cluster configuration information for up to 200
-  all-purpose clusters terminated in the last 30 days and up to 30 job clusters
-  recently terminated by the job scheduler. To keep an all-purpose cluster
-  configuration even after it has been terminated for more than 30 days, an
-  administrator can pin a cluster to the cluster list.`,
+  IMPORTANT: Databricks retains cluster configuration information for terminated
+  clusters for 30 days. To keep an all-purpose cluster configuration even after
+  it has been terminated for more than 30 days, an administrator can pin a
+  cluster to the cluster list.`,
 		GroupID: "compute",
 		Annotations: map[string]string{
 			"package": "compute",
@@ -74,6 +73,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newSparkVersions())
 	cmd.AddCommand(newStart())
 	cmd.AddCommand(newUnpin())
+	cmd.AddCommand(newUpdate())
 	cmd.AddCommand(newUpdatePermissions())
 
 	// Apply optional overrides to this command.
@@ -885,21 +885,18 @@ func newList() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Flags().StringVar(&listReq.CanUseClient, "can-use-client", listReq.CanUseClient, `Filter clusters based on what type of client it can be used for.`)
+	// TODO: complex arg: filter_by
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Use this field to specify the maximum number of results to be returned by the server.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Use next_page_token or prev_page_token returned from the previous request to list the next or previous page of clusters respectively.`)
+	// TODO: complex arg: sort_by
 
 	cmd.Use = "list"
-	cmd.Short = `List all clusters.`
-	cmd.Long = `List all clusters.
+	cmd.Short = `List clusters.`
+	cmd.Long = `List clusters.
   
-  Return information about all pinned clusters, active clusters, up to 200 of
-  the most recently terminated all-purpose clusters in the past 30 days, and up
-  to 30 of the most recently terminated job clusters in the past 30 days.
-  
-  For example, if there is 1 pinned cluster, 4 active clusters, 45 terminated
-  all-purpose clusters in the past 30 days, and 50 terminated job clusters in
-  the past 30 days, then this API returns the 1 pinned cluster, 4 active
-  clusters, all 45 terminated all-purpose clusters, and the 30 most recently
-  terminated job clusters.`
+  Return information about all pinned and active clusters, and all clusters
+  terminated within the last 30 days. Clusters terminated prior to this period
+  are not included.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1748,6 +1745,117 @@ func newUnpin() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range unpinOverrides {
 		fn(cmd, &unpinReq)
+	}
+
+	return cmd
+}
+
+// start update command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateOverrides []func(
+	*cobra.Command,
+	*compute.UpdateCluster,
+)
+
+func newUpdate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateReq compute.UpdateCluster
+	var updateJson flags.JsonFlag
+
+	var updateSkipWait bool
+	var updateTimeout time.Duration
+
+	cmd.Flags().BoolVar(&updateSkipWait, "no-wait", updateSkipWait, `do not wait to reach RUNNING state`)
+	cmd.Flags().DurationVar(&updateTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
+	// TODO: short flags
+	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: complex arg: cluster
+
+	cmd.Use = "update CLUSTER_ID UPDATE_MASK"
+	cmd.Short = `Update cluster configuration (partial).`
+	cmd.Long = `Update cluster configuration (partial).
+  
+  Updates the configuration of a cluster to match the partial set of attributes
+  and size. Denote which fields to update using the update_mask field in the
+  request body. A cluster can be updated if it is in a RUNNING or TERMINATED
+  state. If a cluster is updated while in a RUNNING state, it will be
+  restarted so that the new attributes can take effect. If a cluster is updated
+  while in a TERMINATED state, it will remain TERMINATED. The updated
+  attributes will take effect the next time the cluster is started using the
+  clusters/start API. Attempts to update a cluster in any other state will be
+  rejected with an INVALID_STATE error code. Clusters created by the
+  Databricks Jobs service cannot be updated.
+
+  Arguments:
+    CLUSTER_ID: ID of the cluster.
+    UPDATE_MASK: Specifies which fields of the cluster will be updated. This is required in
+      the POST request. The update mask should be supplied as a single string.
+      To specify multiple fields, separate them with commas (no spaces). To
+      delete a field from a cluster configuration, add it to the update_mask
+      string but omit it from the cluster object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'cluster_id', 'update_mask' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
+			if err != nil {
+				return err
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			updateReq.ClusterId = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
+			updateReq.UpdateMask = args[1]
+		}
+
+		wait, err := w.Clusters.Update(ctx, updateReq)
+		if err != nil {
+			return err
+		}
+		if updateSkipWait {
+			return nil
+		}
+		spinner := cmdio.Spinner(ctx)
+		info, err := wait.OnProgress(func(i *compute.ClusterDetails) {
+			statusMessage := i.StateMessage
+			spinner <- statusMessage
+		}).GetWithTimeout(updateTimeout)
+		close(spinner)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, info)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateOverrides {
+		fn(cmd, &updateReq)
 	}
 
 	return cmd

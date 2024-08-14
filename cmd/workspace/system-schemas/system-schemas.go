@@ -177,6 +177,9 @@ func newList() *cobra.Command {
 
 	// TODO: short flags
 
+	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of schemas to return.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+
 	cmd.Use = "list METASTORE_ID"
 	cmd.Short = `List system schemas.`
 	cmd.Long = `List system schemas.

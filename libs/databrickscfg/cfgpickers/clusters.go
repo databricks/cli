@@ -134,9 +134,7 @@ func loadInteractiveClusters(ctx context.Context, w *databricks.WorkspaceClient,
 	promptSpinner := cmdio.Spinner(ctx)
 	promptSpinner <- "Loading list of clusters to select from"
 	defer close(promptSpinner)
-	all, err := w.Clusters.ListAll(ctx, compute.ListClustersRequest{
-		CanUseClient: "NOTEBOOKS",
-	})
+	all, err := w.Clusters.ListAll(ctx, compute.ListClustersRequest{})
 	if err != nil {
 		return nil, fmt.Errorf("list clusters: %w", err)
 	}

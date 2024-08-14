@@ -78,7 +78,7 @@ func (l *UpdateTracker) Events(ctx context.Context) ([]ProgressEvent, error) {
 	}
 
 	// we only check the most recent 100 events for progress
-	response, err := l.w.Pipelines.Impl().ListPipelineEvents(ctx, pipelines.ListPipelineEventsRequest{
+	events, err := l.w.Pipelines.ListPipelineEventsAll(ctx, pipelines.ListPipelineEventsRequest{
 		PipelineId: l.PipelineId,
 		MaxResults: 100,
 		Filter:     filter,
@@ -89,8 +89,8 @@ func (l *UpdateTracker) Events(ctx context.Context) ([]ProgressEvent, error) {
 
 	result := make([]ProgressEvent, 0)
 	// we iterate in reverse to return events in chronological order
-	for i := len(response.Events) - 1; i >= 0; i-- {
-		event := response.Events[i]
+	for i := len(events) - 1; i >= 0; i-- {
+		event := events[i]
 		// filter to only include update_progress and flow_progress events
 		if event.EventType == "flow_progress" || event.EventType == "update_progress" {
 			result = append(result, ProgressEvent(event))

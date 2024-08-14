@@ -19,9 +19,9 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "permission-migration",
-		Short: `This spec contains undocumented permission migration APIs used in https://github.com/databrickslabs/ucx.`,
-		Long: `This spec contains undocumented permission migration APIs used in
-  https://github.com/databrickslabs/ucx.`,
+		Short: `APIs for migrating acl permissions, used only by the ucx tool: https://github.com/databrickslabs/ucx.`,
+		Long: `APIs for migrating acl permissions, used only by the ucx tool:
+  https://github.com/databrickslabs/ucx`,
 		GroupID: "iam",
 		Annotations: map[string]string{
 			"package": "iam",
@@ -48,13 +48,13 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var migratePermissionsOverrides []func(
 	*cobra.Command,
-	*iam.PermissionMigrationRequest,
+	*iam.MigratePermissionsRequest,
 )
 
 func newMigratePermissions() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var migratePermissionsReq iam.PermissionMigrationRequest
+	var migratePermissionsReq iam.MigratePermissionsRequest
 	var migratePermissionsJson flags.JsonFlag
 
 	// TODO: short flags
@@ -65,14 +65,10 @@ func newMigratePermissions() *cobra.Command {
 	cmd.Use = "migrate-permissions WORKSPACE_ID FROM_WORKSPACE_GROUP_NAME TO_ACCOUNT_GROUP_NAME"
 	cmd.Short = `Migrate Permissions.`
 	cmd.Long = `Migrate Permissions.
-  
-  Migrate a batch of permissions from a workspace local group to an account
-  group.
 
   Arguments:
     WORKSPACE_ID: WorkspaceId of the associated workspace where the permission migration
-      will occur. Both workspace group and account group must be in this
-      workspace.
+      will occur.
     FROM_WORKSPACE_GROUP_NAME: The name of the workspace group that permissions will be migrated from.
     TO_ACCOUNT_GROUP_NAME: The name of the account group that permissions will be migrated to.`
 
