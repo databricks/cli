@@ -56,8 +56,8 @@ func TestApplyPresetsPrefix(t *testing.T) {
 				},
 			}
 
-			mutator := mutator.ApplyPresets()
-			diag := mutator.Apply(context.Background(), b)
+			ctx := context.Background()
+			diag := bundle.Apply(ctx, b, mutator.ApplyPresets())
 
 			if diag.HasError() {
 				t.Fatalf("unexpected error: %v", diag)
@@ -125,8 +125,8 @@ func TestApplyPresetsTags(t *testing.T) {
 				},
 			}
 
-			mutator := mutator.ApplyPresets()
-			diag := mutator.Apply(context.Background(), b)
+			ctx := context.Background()
+			diag := bundle.Apply(ctx, b, mutator.ApplyPresets())
 
 			if diag.HasError() {
 				t.Fatalf("unexpected error: %v", diag)
@@ -183,9 +183,8 @@ func TestApplyPresetsJobsMaxConcurrentRuns(t *testing.T) {
 					},
 				},
 			}
-
-			mutator := mutator.ApplyPresets()
-			diag := mutator.Apply(context.Background(), b)
+			ctx := context.Background()
+			diag := bundle.Apply(ctx, b, mutator.ApplyPresets())
 
 			if diag.HasError() {
 				t.Fatalf("unexpected error: %v", diag)
