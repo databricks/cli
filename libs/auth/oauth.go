@@ -105,7 +105,6 @@ func (a *PersistentAuth) Load(ctx context.Context) (*oauth2.Token, error) {
 }
 
 func (a *PersistentAuth) ProfileName() string {
-	// TODO: get profile name from interactive input
 	if a.AccountID != "" {
 		return fmt.Sprintf("ACCOUNT-%s", a.AccountID)
 	}

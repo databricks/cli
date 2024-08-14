@@ -17,18 +17,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func configureHost(ctx context.Context, persistentAuth *auth.PersistentAuth, args []string, argIndex int) error {
-	if len(args) > argIndex {
-		persistentAuth.Host = args[argIndex]
-		return nil
+func promptForProfile(ctx context.Context, defaultValue string) (string, error) {
+	if !cmdio.IsInTTY(ctx) {
+		return "", fmt.Errorf("the command is being run in a non-interactive environment, please specify a profile using --profile")
 	}
 
-	host, err := promptForHost(ctx)
-	if err != nil {
-		return err
-	}
-	persistentAuth.Host = host
-	return nil
+	prompt := cmdio.Prompt(ctx)
+	prompt.Label = "Databricks profile name"
+	prompt.Default = defaultValue
+	prompt.AllowEdit = true
+	return prompt.Run()
 }
 
 const minimalDbConnectVersion = "13.1"
@@ -93,23 +91,18 @@ depends on the existing profiles you have set in your configuration file
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
+		profileName := cmd.Flag("profile").Value.String()
 
-		var profileName string
-		profileFlag := cmd.Flag("profile")
-		if profileFlag != nil && profileFlag.Value.String() != "" {
-			profileName = profileFlag.Value.String()
-		} else if cmdio.IsInTTY(ctx) {
-			prompt := cmdio.Prompt(ctx)
-			prompt.Label = "Databricks Profile Name"
-			prompt.Default = persistentAuth.ProfileName()
-			prompt.AllowEdit = true
-			profile, err := prompt.Run()
+		// If the user has not specified a profile name, prompt for one.
+		if profileName == "" {
+			var err error
+			profileName, err = promptForProfile(ctx, persistentAuth.ProfileName())
 			if err != nil {
 				return err
 			}
-			profileName = profile
 		}
 
+		// Set the host and account-id based on the provided arguments and flags.
 		err := setHostAndAccountId(ctx, profileName, persistentAuth, args)
 		if err != nil {
 			return err
@@ -167,7 +160,23 @@ depends on the existing profiles you have set in your configuration file
 	return cmd
 }
 
+// Sets the host in the persistentAuth object based on the provided arguments and flags.
+// Follows the following precedence:
+// 1. [HOST] (first positional argument) or --host flag. Error if both are specified.
+// 2. Profile host, if available.
+// 3. Prompt the user for the host.
+//
+// Set the account in the persistentAuth object based on the flags.
+// Follows the following precedence:
+// 1. --account-id flag.
+// 2. account-id from the specified profile, if available.
+// 3. Prompt the user for the account-id.
 func setHostAndAccountId(ctx context.Context, profileName string, persistentAuth *auth.PersistentAuth, args []string) error {
+	// If both [HOST] and --host are provided, return an error.
+	if len(args) > 0 && persistentAuth.Host != "" {
+		return fmt.Errorf("please only provide a host as an argument or a flag, not both")
+	}
+
 	profiler := profile.GetProfiler(ctx)
 	// If the chosen profile has a hostname and the user hasn't specified a host, infer the host from the profile.
 	profiles, err := profiler.LoadProfiles(ctx, profile.WithName(profileName))
@@ -177,17 +186,32 @@ func setHostAndAccountId(ctx context.Context, profileName string, persistentAuth
 	}
 
 	if persistentAuth.Host == "" {
-		if len(profiles) > 0 && profiles[0].Host != "" {
+		if len(args) > 0 {
+			// If [HOST] is provided, set the host to the provided positional argument.
+			persistentAuth.Host = args[0]
+		} else if len(profiles) > 0 && profiles[0].Host != "" {
+			// If neither [HOST] nor --host are provided, and the profile has a host, use it.
 			persistentAuth.Host = profiles[0].Host
 		} else {
-			configureHost(ctx, persistentAuth, args, 0)
+			// If neither [HOST] nor --host are provided, and the profile does not have a host,
+			// then prompt the user for a host.
+			hostName, err := promptForHost(ctx)
+			if err != nil {
+				return err
+			}
+			persistentAuth.Host = hostName
 		}
 	}
+
+	// If the account-id was not provided as a cmd line flag, try to read it from
+	// the specified profile.
 	isAccountClient := (&config.Config{Host: persistentAuth.Host}).IsAccountClient()
 	if isAccountClient && persistentAuth.AccountID == "" {
 		if len(profiles) > 0 && profiles[0].AccountID != "" {
 			persistentAuth.AccountID = profiles[0].AccountID
 		} else {
+			// Prompt user for the account-id if it we could not get it from a
+			// profile.
 			accountId, err := promptForAccountID(ctx)
 			if err != nil {
 				return err
