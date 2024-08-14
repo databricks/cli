@@ -94,10 +94,16 @@ func consumeLines(ctx context.Context, wg *sync.WaitGroup, r io.Reader) <-chan s
 		defer wg.Done()
 		scanner := bufio.NewScanner(r)
 		for scanner.Scan() {
+			// We expect to be able to always send these lines into the channel.
+			// If we can't, it means the channel is full and likely there is a problem
+			// in either the test or the code under test.
 			select {
 			case <-ctx.Done():
 				return
 			case ch <- scanner.Text():
+				continue
+			default:
+				panic("line buffer is full")
 			}
 		}
 	}()

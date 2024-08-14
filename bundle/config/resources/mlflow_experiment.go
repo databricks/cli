@@ -2,9 +2,7 @@ package resources
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/databricks/cli/bundle/config/paths"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -15,8 +13,6 @@ type MlflowExperiment struct {
 	ID             string         `json:"id,omitempty" bundle:"readonly"`
 	Permissions    []Permission   `json:"permissions,omitempty"`
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
-
-	paths.Paths
 
 	*ml.Experiment
 }
@@ -42,12 +38,4 @@ func (s *MlflowExperiment) Exists(ctx context.Context, w *databricks.WorkspaceCl
 
 func (s *MlflowExperiment) TerraformResourceName() string {
 	return "databricks_mlflow_experiment"
-}
-
-func (s *MlflowExperiment) Validate() error {
-	if s == nil || !s.DynamicValue.IsValid() {
-		return fmt.Errorf("experiment is not defined")
-	}
-
-	return nil
 }

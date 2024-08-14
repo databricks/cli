@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -152,6 +153,14 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 	}
 
+	// Schemas: Prefix
+	for i := range r.Schemas {
+		prefix = "dev_" + b.Config.Workspace.CurrentUser.ShortName + "_"
+		r.Schemas[i].Name = prefix + r.Schemas[i].Name
+		// HTTP API for schemas doesn't yet support tags. It's only supported in
+		// the Databricks UI and via the SQL API.
+	}
+
 	return nil
 }
 
@@ -161,9 +170,9 @@ func validatePauseStatus(b *bundle.Bundle) diag.Diagnostics {
 		return nil
 	}
 	return diag.Diagnostics{{
-		Summary:  "Invalid value for trigger_pause_status, should be PAUSED or UNPAUSED",
-		Severity: diag.Error,
-		Location: b.Config.GetLocation("presets.trigger_pause_status"),
+		Summary:   "Invalid value for trigger_pause_status, should be PAUSED or UNPAUSED",
+		Severity:  diag.Error,
+		Locations: []dyn.Location{b.Config.GetLocation("presets.trigger_pause_status")},
 	}}
 }
 

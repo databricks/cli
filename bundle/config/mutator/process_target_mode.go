@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -74,9 +75,9 @@ func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
 	// historically allowed.)
 	if p.TriggerPauseStatus == config.Unpaused {
 		return diag.Diagnostics{{
-			Severity: diag.Error,
-			Summary:  "target with 'mode: development' cannot set trigger pause status to UNPAUSED by default",
-			Location: b.Config.GetLocation("presets.trigger_pause_status"),
+			Severity:  diag.Error,
+			Summary:   "target with 'mode: development' cannot set trigger pause status to UNPAUSED by default",
+			Locations: []dyn.Location{b.Config.GetLocation("presets.trigger_pause_status")},
 		}}
 	}
 
@@ -90,9 +91,9 @@ func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
 		// it's a pitfall for users if they don't include it and later find out that
 		// only a single user can do development deployments.
 		return diag.Diagnostics{{
-			Severity: diag.Error,
-			Summary:  "prefix should contain the current username or ${workspace.current_user.short_name} to ensure uniqueness when using 'mode: development'",
-			Location: b.Config.GetLocation("presets.name_prefix"),
+			Severity:  diag.Error,
+			Summary:   "prefix should contain the current username or ${workspace.current_user.short_name} to ensure uniqueness when using 'mode: development'",
+			Locations: []dyn.Location{b.Config.GetLocation("presets.name_prefix")},
 		}}
 	}
 	return nil

@@ -29,11 +29,11 @@ var renderFuncMap = template.FuncMap{
 }
 
 const errorTemplate = `{{ "Error" | red }}: {{ .Summary }}
-{{- if .Path.String }}
-  {{ "at " }}{{ .Path.String | green }}
+{{- range $index, $element := .Paths }}
+  {{ if eq $index 0 }}at {{else}}   {{ end}}{{ $element.String | green }}
 {{- end }}
-{{- if .Location.File }}
-  {{ "in " }}{{ .Location.String | cyan }}
+{{- range $index, $element := .Locations }}
+  {{ if eq $index 0 }}in {{else}}   {{ end}}{{ $element.String | cyan }}
 {{- end }}
 {{- if .Detail }}
 
@@ -43,11 +43,11 @@ const errorTemplate = `{{ "Error" | red }}: {{ .Summary }}
 `
 
 const warningTemplate = `{{ "Warning" | yellow }}: {{ .Summary }}
-{{- if .Path.String }}
-  {{ "at " }}{{ .Path.String | green }}
+{{- range $index, $element := .Paths }}
+  {{ if eq $index 0 }}at {{else}}   {{ end}}{{ $element.String | green }}
 {{- end }}
-{{- if .Location.File }}
-  {{ "in " }}{{ .Location.String | cyan }}
+{{- range $index, $element := .Locations }}
+  {{ if eq $index 0 }}in {{else}}   {{ end}}{{ $element.String | cyan }}
 {{- end }}
 {{- if .Detail }}
 
@@ -141,12 +141,18 @@ func renderDiagnostics(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics) 
 			t = warningT
 		}
 
-		// Make file relative to bundle root
-		if d.Location.File != "" && b != nil {
-			out, err := filepath.Rel(b.RootPath, d.Location.File)
-			// if we can't relativize the path, just use path as-is
-			if err == nil {
-				d.Location.File = out
+		for i := range d.Locations {
+			if b == nil {
+				break
+			}
+
+			// Make location relative to bundle root
+			if d.Locations[i].File != "" {
+				out, err := filepath.Rel(b.RootPath, d.Locations[i].File)
+				// if we can't relativize the path, just use path as-is
+				if err == nil {
+					d.Locations[i].File = out
+				}
 			}
 		}
 

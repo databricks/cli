@@ -3,7 +3,6 @@ bundle:
 
 workspace:
   root_path: "~/.bundle/{{.unique_id}}"
-  artifact_path: {{.artifact_path}}
 
 artifacts:
   my_java_code:
@@ -22,7 +21,35 @@ resources:
             num_workers: 1
             spark_version: "{{.spark_version}}"
             node_type_id: "{{.node_type_id}}"
+            instance_pool_id: "{{.instance_pool_id}}"
           spark_jar_task:
             main_class_name: PrintArgs
           libraries:
             - jar: ./{{.project_name}}/PrintArgs.jar
+
+targets:
+  volume:
+    # Override the artifact path to upload artifacts to a volume path
+    workspace:
+      artifact_path: {{.artifact_path}}
+
+    resources:
+      jobs:
+        jar_job:
+          tasks:
+            - task_key: TestSparkJarTask
+              new_cluster:
+
+                # Force cluster to run in single user mode (force it to be a UC cluster)
+                data_security_mode: SINGLE_USER
+
+  workspace:
+    resources:
+      jobs:
+        jar_job:
+          tasks:
+            - task_key: TestSparkJarTask
+              new_cluster:
+
+                # Force cluster to run in no isolation mode (force it to be a non-UC cluster)
+                data_security_mode: NONE

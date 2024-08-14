@@ -20,6 +20,10 @@
         "python_wheel_wrapper": {
             "type": "boolean",
             "description": "Whether or not to enable python wheel wrapper"
+        },
+        "instance_pool_id": {
+            "type": "string",
+            "description": "Instance pool id for job cluster"
         }
     }
 }

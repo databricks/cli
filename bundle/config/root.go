@@ -104,11 +104,6 @@ func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 	if err != nil {
 		return nil, diag.Errorf("failed to load %s: %v", path, err)
 	}
-
-	_, err = r.Resources.VerifyUniqueResourceIdentifiers()
-	if err != nil {
-		diags = diags.Extend(diag.FromErr(err))
-	}
 	return &r, diags
 }
 
@@ -145,17 +140,6 @@ func (r *Root) updateWithDynamicValue(nv dyn.Value) error {
 
 	// Assign the normalized configuration tree.
 	r.value = nv
-
-	// At the moment the check has to be done as part of updateWithDynamicValue
-	// because otherwise ConfigureConfigFilePath will fail with a panic.
-	// In the future, we should move this check to a separate mutator in initialise phase.
-	err = r.Resources.VerifyAllResourcesDefined()
-	if err != nil {
-		return err
-	}
-
-	// Assign config file paths after converting to typed configuration.
-	r.ConfigureConfigFilePath()
 	return nil
 }
 
@@ -247,15 +231,6 @@ func (r *Root) MarkMutatorExit(ctx context.Context) error {
 	return nil
 }
 
-// SetConfigFilePath configures the path that its configuration
-// was loaded from in configuration leafs that require it.
-func (r *Root) ConfigureConfigFilePath() {
-	r.Resources.ConfigureConfigFilePath()
-	if r.Artifacts != nil {
-		r.Artifacts.ConfigureConfigFilePath()
-	}
-}
-
 // Initializes variables using values passed from the command line flag
 // Input has to be a string of the form `foo=bar`. In this case the variable with
 // name `foo` is assigned the value `bar`
@@ -285,12 +260,6 @@ func (r *Root) InitializeVariables(vars []string) error {
 }
 
 func (r *Root) Merge(other *Root) error {
-	// Check for safe merge, protecting against duplicate resource identifiers
-	err := r.Resources.VerifySafeMerge(&other.Resources)
-	if err != nil {
-		return err
-	}
-
 	// Merge dynamic configuration values.
 	return r.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		return merge.Merge(root, other.value)
@@ -527,6 +496,17 @@ func (r Root) GetLocation(path string) dyn.Location {
 		return dyn.Location{}
 	}
 	return v.Location()
+}
+
+// Get all locations of the configuration value at the specified path. We need both
+// this function and it's singular version (GetLocation) because some diagnostics just need
+// the primary location and some need all locations associated with a configuration value.
+func (r Root) GetLocations(path string) []dyn.Location {
+	v, err := dyn.Get(r.value, path)
+	if err != nil {
+		return []dyn.Location{}
+	}
+	return v.Locations()
 }
 
 // Value returns the dynamic configuration value of the root object. This value

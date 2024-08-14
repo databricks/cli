@@ -116,12 +116,12 @@ func allResolvers() *resolvers {
 	{{range .Services -}}
 	{{- if in $allowlist .KebabName -}}
 	r.{{.Singular.PascalName}} = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
-		entity, err := w.{{.PascalName}}.GetBy{{range .List.NamedIdMap.NamePath}}{{.PascalName}}{{end}}(ctx, name)
+		entity, err := w.{{.PascalName}}.GetBy{{range .NamedIdMap.NamePath}}{{.PascalName}}{{end}}(ctx, name)
 		if err != nil {
 			return "", err
 		}
 
-		return fmt.Sprint(entity.{{ getOrDefault $customField .KebabName ((index .List.NamedIdMap.IdPath 0).PascalName) }}), nil
+		return fmt.Sprint(entity.{{ getOrDefault $customField .KebabName ((index .NamedIdMap.IdPath 0).PascalName) }}), nil
 	}
 	{{end -}}
 	{{- end}}

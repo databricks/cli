@@ -1,37 +1,29 @@
 package bundle
 
 import (
-	"os"
+	"context"
 	"testing"
 
 	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/env"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
-func runSparkJarTest(t *testing.T, sparkVersion string) {
-	t.Skip("Temporarily skipping the test until auth / permission issues for UC volumes are resolved.")
-
-	env := internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
-	t.Log(env)
-
-	if os.Getenv("TEST_METASTORE_ID") == "" {
-		t.Skip("Skipping tests that require a UC Volume when metastore id is not set.")
-	}
-
-	ctx, wt := acc.WorkspaceTest(t)
-	w := wt.W
-	volumePath := internal.TemporaryUcVolume(t, w)
-
-	nodeTypeId := internal.GetNodeTypeId(env)
+func runSparkJarTestCommon(t *testing.T, ctx context.Context, sparkVersion string, artifactPath string) {
+	cloudEnv := internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
+	nodeTypeId := internal.GetNodeTypeId(cloudEnv)
 	tmpDir := t.TempDir()
+	instancePoolId := env.Get(ctx, "TEST_INSTANCE_POOL_ID")
 	bundleRoot, err := initTestTemplateWithBundleRoot(t, ctx, "spark_jar_task", map[string]any{
-		"node_type_id":  nodeTypeId,
-		"unique_id":     uuid.New().String(),
-		"spark_version": sparkVersion,
-		"root":          tmpDir,
-		"artifact_path": volumePath,
+		"node_type_id":     nodeTypeId,
+		"unique_id":        uuid.New().String(),
+		"spark_version":    sparkVersion,
+		"root":             tmpDir,
+		"artifact_path":    artifactPath,
+		"instance_pool_id": instancePoolId,
 	}, tmpDir)
 	require.NoError(t, err)
 
@@ -47,6 +39,62 @@ func runSparkJarTest(t *testing.T, sparkVersion string) {
 	require.Contains(t, out, "Hello from Jar!")
 }
 
+func runSparkJarTestFromVolume(t *testing.T, sparkVersion string) {
+	ctx, wt := acc.UcWorkspaceTest(t)
+	volumePath := internal.TemporaryUcVolume(t, wt.W)
+	ctx = env.Set(ctx, "DATABRICKS_BUNDLE_TARGET", "volume")
+	runSparkJarTestCommon(t, ctx, sparkVersion, volumePath)
+}
+
+func runSparkJarTestFromWorkspace(t *testing.T, sparkVersion string) {
+	ctx, _ := acc.WorkspaceTest(t)
+	ctx = env.Set(ctx, "DATABRICKS_BUNDLE_TARGET", "workspace")
+	runSparkJarTestCommon(t, ctx, sparkVersion, "n/a")
+}
+
 func TestAccSparkJarTaskDeployAndRunOnVolumes(t *testing.T) {
-	runSparkJarTest(t, "14.3.x-scala2.12")
+	internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
+	testutil.RequireJDK(t, context.Background(), "1.8.0")
+
+	// Failure on earlier DBR versions:
+	//
+	//   JAR installation from Volumes is supported on UC Clusters with DBR >= 13.3.
+	//   Denied library is Jar(/Volumes/main/test-schema-ldgaklhcahlg/my-volume/.internal/PrintArgs.jar)
+	//
+
+	versions := []string{
+		"13.3.x-scala2.12", // 13.3 LTS (includes Apache Spark 3.4.1, Scala 2.12)
+		"14.3.x-scala2.12", // 14.3 LTS (includes Apache Spark 3.5.0, Scala 2.12)
+		"15.4.x-scala2.12", // 15.4 LTS Beta (includes Apache Spark 3.5.0, Scala 2.12)
+	}
+
+	for _, version := range versions {
+		t.Run(version, func(t *testing.T) {
+			t.Parallel()
+			runSparkJarTestFromVolume(t, version)
+		})
+	}
+}
+
+func TestAccSparkJarTaskDeployAndRunOnWorkspace(t *testing.T) {
+	internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
+	testutil.RequireJDK(t, context.Background(), "1.8.0")
+
+	// Failure on earlier DBR versions:
+	//
+	//   Library from /Workspace is not allowed on this cluster.
+	//   Please switch to using DBR 14.1+ No Isolation Shared or DBR 13.1+ Shared cluster or 13.2+ Assigned cluster to use /Workspace libraries.
+	//
+
+	versions := []string{
+		"14.3.x-scala2.12", // 14.3 LTS (includes Apache Spark 3.5.0, Scala 2.12)
+		"15.4.x-scala2.12", // 15.4 LTS Beta (includes Apache Spark 3.5.0, Scala 2.12)
+	}
+
+	for _, version := range versions {
+		t.Run(version, func(t *testing.T) {
+			t.Parallel()
+			runSparkJarTestFromWorkspace(t, version)
+		})
+	}
 }

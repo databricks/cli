@@ -1,5 +1,33 @@
 # Version changelog
 
+## 0.225.0
+
+Bundles:
+ * Add resource for UC schemas to DABs ([#1413](https://github.com/databricks/cli/pull/1413)).
+
+Internal:
+ * Use dynamic walking to validate unique resource keys ([#1614](https://github.com/databricks/cli/pull/1614)).
+ * Regenerate TF schema ([#1635](https://github.com/databricks/cli/pull/1635)).
+ * Add upgrade and upgrade eager flags to pip install call ([#1636](https://github.com/databricks/cli/pull/1636)).
+ * Added test for negation pattern in sync include exclude section ([#1637](https://github.com/databricks/cli/pull/1637)).
+ * Use precomputed terraform plan for `bundle deploy` ([#1640](https://github.com/databricks/cli/pull/1640)).
+
+## 0.224.1
+
+Bundles:
+ * Add UUID function to bundle template functions  ([#1612](https://github.com/databricks/cli/pull/1612)).
+ * Upgrade TF provider to 1.49.0 ([#1617](https://github.com/databricks/cli/pull/1617)).
+ * Upgrade TF provider to 1.49.1 ([#1626](https://github.com/databricks/cli/pull/1626)).
+ * Support multiple locations for diagnostics ([#1610](https://github.com/databricks/cli/pull/1610)).
+ * Split artifact cleanup into prepare step before build ([#1618](https://github.com/databricks/cli/pull/1618)).
+ * Move to a single prompt during bundle destroy ([#1583](https://github.com/databricks/cli/pull/1583)).
+
+Internal:
+ * Add tests for the Workspace API readahead cache ([#1605](https://github.com/databricks/cli/pull/1605)).
+ * Update Python dependencies before install when upgrading a labs project ([#1624](https://github.com/databricks/cli/pull/1624)).
+
+
+
 ## 0.224.0
 
 CLI:
