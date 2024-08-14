@@ -6,12 +6,11 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/jsonschema"
-	"github.com/databricks/databricks-sdk-go/openapi"
 )
 
 type OpenapiReader struct {
 	// OpenAPI spec to read schemas from.
-	OpenapiSpec *openapi.Specification
+	OpenapiSpec *Specification
 
 	// In-memory cache of schemas read from the OpenAPI spec.
 	memo map[string]jsonschema.Schema
