@@ -40,7 +40,7 @@ func promptForHost(ctx context.Context) (string, error) {
 	}
 
 	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Databricks Host (e.g. https://<databricks-instance>.cloud.databricks.com)"
+	prompt.Label = "Databricks host (e.g. https://<databricks-instance>.cloud.databricks.com)"
 	return prompt.Run()
 }
 
@@ -50,7 +50,7 @@ func promptForAccountID(ctx context.Context) (string, error) {
 	}
 
 	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Databricks account id"
+	prompt.Label = "Databricks account ID"
 	prompt.Default = ""
 	prompt.AllowEdit = true
 	return prompt.Run()

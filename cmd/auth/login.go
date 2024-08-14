@@ -17,14 +17,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func promptForProfile(ctx context.Context, dv string) (string, error) {
+func promptForProfile(ctx context.Context, defaultValue string) (string, error) {
 	if !cmdio.IsInTTY(ctx) {
 		return "", fmt.Errorf("the command is being run in a non-interactive environment, please specify a profile using --profile")
 	}
 
 	prompt := cmdio.Prompt(ctx)
 	prompt.Label = "Databricks profile name"
-	prompt.Default = dv
+	prompt.Default = defaultValue
 	prompt.AllowEdit = true
 	return prompt.Run()
 }
@@ -185,17 +185,16 @@ func setHostAndAccountId(ctx context.Context, profileName string, persistentAuth
 		return err
 	}
 
-	// If [HOST] is provided, set the host to the provided positional argument.
-	if len(args) > 0 && persistentAuth.Host == "" {
-		persistentAuth.Host = args[0]
-	}
-
-	// If neither [HOST] nor --host are provided, and the profile has a host, use it.
-	// Otherwise, prompt the user for a host.
-	if len(args) == 0 && persistentAuth.Host == "" {
-		if len(profiles) > 0 && profiles[0].Host != "" {
+	if persistentAuth.Host == "" {
+		if len(args) > 0 {
+			// If [HOST] is provided, set the host to the provided positional argument.
+			persistentAuth.Host = args[0]
+		} else if len(profiles) > 0 && profiles[0].Host != "" {
+			// If neither [HOST] nor --host are provided, and the profile has a host, use it.
 			persistentAuth.Host = profiles[0].Host
 		} else {
+			// If neither [HOST] nor --host are provided, and the profile does not have a host,
+			// then prompt the user for a host.
 			hostName, err := promptForHost(ctx)
 			if err != nil {
 				return err
