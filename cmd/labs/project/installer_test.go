@@ -182,7 +182,7 @@ func TestInstallerWorksForReleases(t *testing.T) {
 			w.Write(raw)
 			return
 		}
-		if r.URL.Path == "/api/2.0/clusters/get" {
+		if r.URL.Path == "/api/2.1/clusters/get" {
 			respondWithJSON(t, w, &compute.ClusterDetails{
 				State: compute.StateRunning,
 			})
@@ -249,8 +249,9 @@ func TestInstallerWorksForDevelopment(t *testing.T) {
 			Path: filepath.Dir(t.TempDir()),
 		})
 	}()
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/2.0/clusters/list" {
+		if r.URL.Path == "/api/2.1/clusters/list?" {
 			respondWithJSON(t, w, compute.ListClustersResponse{
 				Clusters: []compute.ClusterDetails{
 					{
@@ -278,7 +279,7 @@ func TestInstallerWorksForDevelopment(t *testing.T) {
 			})
 			return
 		}
-		if r.URL.Path == "/api/2.0/clusters/spark-versions" {
+		if r.URL.Path == "/api/2.1/clusters/spark-versions" {
 			respondWithJSON(t, w, compute.GetSparkVersionsResponse{
 				Versions: []compute.SparkVersion{
 					{
@@ -289,7 +290,7 @@ func TestInstallerWorksForDevelopment(t *testing.T) {
 			})
 			return
 		}
-		if r.URL.Path == "/api/2.0/clusters/get" {
+		if r.URL.Path == "/api/2.1/clusters/get" {
 			respondWithJSON(t, w, &compute.ClusterDetails{
 				State: compute.StateRunning,
 			})
@@ -387,7 +388,7 @@ func TestUpgraderWorksForReleases(t *testing.T) {
 			w.Write(raw)
 			return
 		}
-		if r.URL.Path == "/api/2.0/clusters/get" {
+		if r.URL.Path == "/api/2.1/clusters/get" {
 			respondWithJSON(t, w, &compute.ClusterDetails{
 				State: compute.StateRunning,
 			})
