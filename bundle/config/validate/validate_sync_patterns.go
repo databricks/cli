@@ -63,7 +63,7 @@ func checkPatterns(patterns []string, path string, rb bundle.ReadOnlyBundle) (di
 				return err
 			}
 
-			all, err := fs.All()
+			all, err := fs.Files()
 			if err != nil {
 				return err
 			}

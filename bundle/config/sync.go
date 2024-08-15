@@ -1,6 +1,9 @@
 package config
 
 type Sync struct {
+	// Paths contains a list of globs evaluated relative to the bundle root path
+	Paths []string `json:"paths,omitempty"`
+
 	// Include contains a list of globs evaluated relative to the bundle root path
 	// to explicitly include files that were excluded by the user's gitignore.
 	Include []string `json:"include,omitempty"`

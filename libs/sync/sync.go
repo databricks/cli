@@ -195,14 +195,14 @@ func (s *Sync) GetFileList(ctx context.Context) ([]fileset.File, error) {
 	all := set.NewSetF(func(f fileset.File) string {
 		return f.Relative
 	})
-	gitFiles, err := s.fileSet.All()
+	gitFiles, err := s.fileSet.Files()
 	if err != nil {
 		log.Errorf(ctx, "cannot list files: %s", err)
 		return nil, err
 	}
 	all.Add(gitFiles...)
 
-	include, err := s.includeFileSet.All()
+	include, err := s.includeFileSet.Files()
 	if err != nil {
 		log.Errorf(ctx, "cannot list include files: %s", err)
 		return nil, err
@@ -210,7 +210,7 @@ func (s *Sync) GetFileList(ctx context.Context) ([]fileset.File, error) {
 
 	all.Add(include...)
 
-	exclude, err := s.excludeFileSet.All()
+	exclude, err := s.excludeFileSet.Files()
 	if err != nil {
 		log.Errorf(ctx, "cannot list exclude files: %s", err)
 		return nil, err

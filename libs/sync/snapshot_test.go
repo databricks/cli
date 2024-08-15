@@ -47,7 +47,7 @@ func TestDiff(t *testing.T) {
 	defer f2.Close(t)
 
 	// New files are put
-	files, err := fileSet.All()
+	files, err := fileSet.Files()
 	assert.NoError(t, err)
 	change, err := state.diff(ctx, files)
 	assert.NoError(t, err)
@@ -62,7 +62,7 @@ func TestDiff(t *testing.T) {
 	// world.txt is editted
 	f2.Overwrite(t, "bunnies are cute.")
 	assert.NoError(t, err)
-	files, err = fileSet.All()
+	files, err = fileSet.Files()
 	assert.NoError(t, err)
 	change, err = state.diff(ctx, files)
 	assert.NoError(t, err)
@@ -77,7 +77,7 @@ func TestDiff(t *testing.T) {
 	// hello.txt is deleted
 	f1.Remove(t)
 	assert.NoError(t, err)
-	files, err = fileSet.All()
+	files, err = fileSet.Files()
 	assert.NoError(t, err)
 	change, err = state.diff(ctx, files)
 	assert.NoError(t, err)
@@ -113,7 +113,7 @@ func TestSymlinkDiff(t *testing.T) {
 	err = os.Symlink(filepath.Join(projectDir, "foo"), filepath.Join(projectDir, "bar"))
 	assert.NoError(t, err)
 
-	files, err := fileSet.All()
+	files, err := fileSet.Files()
 	assert.NoError(t, err)
 	change, err := state.diff(ctx, files)
 	assert.NoError(t, err)
@@ -141,7 +141,7 @@ func TestFolderDiff(t *testing.T) {
 	defer f1.Close(t)
 	f1.Overwrite(t, "# Databricks notebook source\nprint(\"abc\")")
 
-	files, err := fileSet.All()
+	files, err := fileSet.Files()
 	assert.NoError(t, err)
 	change, err := state.diff(ctx, files)
 	assert.NoError(t, err)
@@ -153,7 +153,7 @@ func TestFolderDiff(t *testing.T) {
 	assert.Contains(t, change.put, "foo/bar.py")
 
 	f1.Remove(t)
-	files, err = fileSet.All()
+	files, err = fileSet.Files()
 	assert.NoError(t, err)
 	change, err = state.diff(ctx, files)
 	assert.NoError(t, err)
@@ -184,7 +184,7 @@ func TestPythonNotebookDiff(t *testing.T) {
 	defer foo.Close(t)
 
 	// Case 1: notebook foo.py is uploaded
-	files, err := fileSet.All()
+	files, err := fileSet.Files()
 	assert.NoError(t, err)
 	foo.Overwrite(t, "# Databricks notebook source\nprint(\"abc\")")
 	change, err := state.diff(ctx, files)
@@ -199,7 +199,7 @@ func TestPythonNotebookDiff(t *testing.T) {
 	// Case 2: notebook foo.py is converted to python script by removing
 	// magic keyword
 	foo.Overwrite(t, "print(\"abc\")")
-	files, err = fileSet.All()
+	files, err = fileSet.Files()
 	assert.NoError(t, err)
 	change, err = state.diff(ctx, files)
 	assert.NoError(t, err)
@@ -213,7 +213,7 @@ func TestPythonNotebookDiff(t *testing.T) {
 
 	// Case 3: Python script foo.py is converted to a databricks notebook
 	foo.Overwrite(t, "# Databricks notebook source\nprint(\"def\")")
-	files, err = fileSet.All()
+	files, err = fileSet.Files()
 	assert.NoError(t, err)
 	change, err = state.diff(ctx, files)
 	assert.NoError(t, err)
@@ -228,7 +228,7 @@ func TestPythonNotebookDiff(t *testing.T) {
 	// Case 4: Python notebook foo.py is deleted, and its remote name is used in change.delete
 	foo.Remove(t)
 	assert.NoError(t, err)
-	files, err = fileSet.All()
+	files, err = fileSet.Files()
 	assert.NoError(t, err)
 	change, err = state.diff(ctx, files)
 	assert.NoError(t, err)
@@ -260,7 +260,7 @@ func TestErrorWhenIdenticalRemoteName(t *testing.T) {
 	defer pythonFoo.Close(t)
 	vanillaFoo := testfile.CreateFile(t, filepath.Join(projectDir, "foo"))
 	defer vanillaFoo.Close(t)
-	files, err := fileSet.All()
+	files, err := fileSet.Files()
 	assert.NoError(t, err)
 	change, err := state.diff(ctx, files)
 	assert.NoError(t, err)
@@ -271,7 +271,7 @@ func TestErrorWhenIdenticalRemoteName(t *testing.T) {
 
 	// errors out because they point to the same destination
 	pythonFoo.Overwrite(t, "# Databricks notebook source\nprint(\"def\")")
-	files, err = fileSet.All()
+	files, err = fileSet.Files()
 	assert.NoError(t, err)
 	change, err = state.diff(ctx, files)
 	assert.ErrorContains(t, err, "both foo and foo.py point to the same remote file location foo. Please remove one of them from your local project")
@@ -296,7 +296,7 @@ func TestNoErrorRenameWithIdenticalRemoteName(t *testing.T) {
 	pythonFoo := testfile.CreateFile(t, filepath.Join(projectDir, "foo.py"))
 	defer pythonFoo.Close(t)
 	pythonFoo.Overwrite(t, "# Databricks notebook source\n")
-	files, err := fileSet.All()
+	files, err := fileSet.Files()
 	assert.NoError(t, err)
 	change, err := state.diff(ctx, files)
 	assert.NoError(t, err)
@@ -308,7 +308,7 @@ func TestNoErrorRenameWithIdenticalRemoteName(t *testing.T) {
 	sqlFoo := testfile.CreateFile(t, filepath.Join(projectDir, "foo.sql"))
 	defer sqlFoo.Close(t)
 	sqlFoo.Overwrite(t, "-- Databricks notebook source\n")
-	files, err = fileSet.All()
+	files, err = fileSet.Files()
 	assert.NoError(t, err)
 	change, err = state.diff(ctx, files)
 	assert.NoError(t, err)
