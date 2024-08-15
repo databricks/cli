@@ -119,7 +119,7 @@ func newExportDir() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.RenderWithTemplate(ctx, newImportCompletedEvent(opts.targetDir), "", "Exported complete. The files are available at {{.TargetPath}}\n")
+		return cmdio.RenderWithTemplate(ctx, newExportCompletedEvent(opts.targetDir), "", "Exported complete. The files are available at {{.TargetPath}}\n")
 	}
 
 	return cmd
