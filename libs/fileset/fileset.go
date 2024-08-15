@@ -3,9 +3,9 @@ package fileset
 import (
 	"fmt"
 	"io/fs"
-	"os"
 	pathlib "path"
 	"path/filepath"
+	"slices"
 
 	"github.com/databricks/cli/libs/vfs"
 )
@@ -40,6 +40,12 @@ func New(root vfs.Path, args ...[]string) *FileSet {
 		for _, path := range arg {
 			path = filepath.ToSlash(path)
 			path = pathlib.Clean(path)
+
+			// Skip path if it's already in the list.
+			if slices.Contains(paths, path) {
+				continue
+			}
+
 			paths = append(paths, path)
 		}
 	}
@@ -86,16 +92,13 @@ func (w *FileSet) recursiveListFiles(path string, seen map[string]struct{}) (out
 			return err
 		}
 
-		// skip symlinks
 		info, err := d.Info()
 		if err != nil {
 			return err
 		}
-		if info.Mode()&os.ModeSymlink != 0 {
-			return nil
-		}
 
-		if d.IsDir() {
+		switch {
+		case info.Mode().IsDir():
 			ign, err := w.ignore.IgnoreDirectory(name)
 			if err != nil {
 				return fmt.Errorf("cannot check if %s should be ignored: %w", name, err)
@@ -103,24 +106,28 @@ func (w *FileSet) recursiveListFiles(path string, seen map[string]struct{}) (out
 			if ign {
 				return fs.SkipDir
 			}
-			return nil
+
+		case info.Mode().IsRegular():
+			ign, err := w.ignore.IgnoreFile(name)
+			if err != nil {
+				return fmt.Errorf("cannot check if %s should be ignored: %w", name, err)
+			}
+			if ign {
+				return nil
+			}
+
+			// Skip duplicates
+			if _, ok := seen[name]; ok {
+				return nil
+			}
+
+			seen[name] = struct{}{}
+			out = append(out, NewFile(w.root, d, name))
+
+		default:
+			// Skip non-regular files (e.g. symlinks).
 		}
 
-		ign, err := w.ignore.IgnoreFile(name)
-		if err != nil {
-			return fmt.Errorf("cannot check if %s should be ignored: %w", name, err)
-		}
-		if ign {
-			return nil
-		}
-
-		// Skip duplicates
-		if _, ok := seen[name]; ok {
-			return nil
-		}
-
-		seen[name] = struct{}{}
-		out = append(out, NewFile(w.root, d, name))
 		return nil
 	})
 	return
