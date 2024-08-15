@@ -110,7 +110,7 @@ func newExportDir() *cobra.Command {
 		}
 		workspaceFS := filer.NewFS(ctx, workspaceFiler)
 
-		err = cmdio.RenderWithTemplate(ctx, newExportStartedEvent(opts.sourceDir), "", "Exporting files from {{.SourcePath}}")
+		err = cmdio.RenderWithTemplate(ctx, newExportStartedEvent(opts.sourceDir), "", "Exporting files from {{.SourcePath}}\n")
 		if err != nil {
 			return err
 		}

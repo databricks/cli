@@ -134,7 +134,7 @@ Notebooks will have their extensions (one of .scala, .py, .sql, .ipynb, .r) stri
 			return err
 		}
 
-		err = cmdio.RenderWithTemplate(ctx, newImportStartedEvent(opts.sourceDir), "", "Importing files from {{.SourcePath}}")
+		err = cmdio.RenderWithTemplate(ctx, newImportStartedEvent(opts.sourceDir), "", "Importing files from {{.SourcePath}}\n")
 		if err != nil {
 			return err
 		}
