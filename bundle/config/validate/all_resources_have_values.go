@@ -3,6 +3,7 @@ package validate
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -33,20 +34,16 @@ func (m *allResourcesHaveValues) Apply(ctx context.Context, b *bundle.Bundle) di
 
 			// Type of the resource, stripped of the trailing 's' to make it
 			// singular.
-			rType := strings.TrimSuffix(p[0].Key(), "s")
+			rType := strings.TrimSuffix(p[1].Key(), "s")
 
 			// Name of the resource. Eg: "foo" in "jobs.foo".
-			rName := p[1].Key()
-
-			// Prepend "resources" to the path.
-			fullPath := dyn.NewPath(dyn.Key("resources"))
-			fullPath = append(fullPath, p...)
+			rName := p[2].Key()
 
 			diags = append(diags, diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   fmt.Sprintf("%s %s is not defined", rType, rName),
 				Locations: v.Locations(),
-				Paths:     []dyn.Path{fullPath},
+				Paths:     []dyn.Path{slices.Clone(p)},
 			})
 
 			return v, nil
