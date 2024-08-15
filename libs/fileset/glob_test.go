@@ -24,6 +24,11 @@ func TestGlobFileset(t *testing.T) {
 	entries, err := root.ReadDir(".")
 	require.NoError(t, err)
 
+	// Remove testdata folder from entries
+	entries = slices.DeleteFunc(entries, func(de fs.DirEntry) bool {
+		return de.Name() == "testdata"
+	})
+
 	g, err := NewGlobSet(root, []string{
 		"./*.go",
 	})
@@ -32,7 +37,6 @@ func TestGlobFileset(t *testing.T) {
 	files, err := g.Files()
 	require.NoError(t, err)
 
-	// +1 as there's one folder in ../filer
 	require.Equal(t, len(files), len(entries))
 	for _, f := range files {
 		exists := slices.ContainsFunc(entries, func(de fs.DirEntry) bool {
