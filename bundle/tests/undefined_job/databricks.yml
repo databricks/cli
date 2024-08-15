@@ -3,6 +3,12 @@ bundle:
 
 resources:
   jobs:
-    undefined:
+    undefined-job:
     test:
       name: "Test Job"
+
+  experiments:
+    undefined-experiment:
+
+  pipelines:
+    undefined-pipeline:
