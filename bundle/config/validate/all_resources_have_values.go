@@ -25,7 +25,7 @@ func (m *allResourcesHaveValues) Apply(ctx context.Context, b *bundle.Bundle) di
 
 	diags := diag.Diagnostics{}
 
-	dyn.MapByPattern(
+	_, err := dyn.MapByPattern(
 		rv,
 		dyn.NewPattern(dyn.AnyKey(), dyn.AnyKey()),
 		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
@@ -54,6 +54,9 @@ func (m *allResourcesHaveValues) Apply(ctx context.Context, b *bundle.Bundle) di
 			return v, nil
 		},
 	)
+	if err != nil {
+		diags = append(diags, diag.FromErr(err)...)
+	}
 
 	return diags
 }
