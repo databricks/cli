@@ -251,7 +251,7 @@ func TestInstallerWorksForDevelopment(t *testing.T) {
 	}()
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/2.1/clusters/list?" {
+		if r.URL.Path == "/api/2.1/clusters/list" {
 			respondWithJSON(t, w, compute.ListClustersResponse{
 				Clusters: []compute.ClusterDetails{
 					{
