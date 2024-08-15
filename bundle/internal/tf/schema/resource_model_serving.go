@@ -10,43 +10,60 @@ type ResourceModelServingConfigAutoCaptureConfig struct {
 }
 
 type ResourceModelServingConfigServedEntitiesExternalModelAi21LabsConfig struct {
-	Ai21LabsApiKey string `json:"ai21labs_api_key"`
+	Ai21LabsApiKey          string `json:"ai21labs_api_key,omitempty"`
+	Ai21LabsApiKeyPlaintext string `json:"ai21labs_api_key_plaintext,omitempty"`
 }
 
 type ResourceModelServingConfigServedEntitiesExternalModelAmazonBedrockConfig struct {
-	AwsAccessKeyId     string `json:"aws_access_key_id"`
-	AwsRegion          string `json:"aws_region"`
-	AwsSecretAccessKey string `json:"aws_secret_access_key"`
-	BedrockProvider    string `json:"bedrock_provider"`
+	AwsAccessKeyId              string `json:"aws_access_key_id,omitempty"`
+	AwsAccessKeyIdPlaintext     string `json:"aws_access_key_id_plaintext,omitempty"`
+	AwsRegion                   string `json:"aws_region"`
+	AwsSecretAccessKey          string `json:"aws_secret_access_key,omitempty"`
+	AwsSecretAccessKeyPlaintext string `json:"aws_secret_access_key_plaintext,omitempty"`
+	BedrockProvider             string `json:"bedrock_provider"`
 }
 
 type ResourceModelServingConfigServedEntitiesExternalModelAnthropicConfig struct {
-	AnthropicApiKey string `json:"anthropic_api_key"`
+	AnthropicApiKey          string `json:"anthropic_api_key,omitempty"`
+	AnthropicApiKeyPlaintext string `json:"anthropic_api_key_plaintext,omitempty"`
 }
 
 type ResourceModelServingConfigServedEntitiesExternalModelCohereConfig struct {
-	CohereApiKey string `json:"cohere_api_key"`
+	CohereApiBase         string `json:"cohere_api_base,omitempty"`
+	CohereApiKey          string `json:"cohere_api_key,omitempty"`
+	CohereApiKeyPlaintext string `json:"cohere_api_key_plaintext,omitempty"`
 }
 
 type ResourceModelServingConfigServedEntitiesExternalModelDatabricksModelServingConfig struct {
-	DatabricksApiToken     string `json:"databricks_api_token"`
-	DatabricksWorkspaceUrl string `json:"databricks_workspace_url"`
+	DatabricksApiToken          string `json:"databricks_api_token,omitempty"`
+	DatabricksApiTokenPlaintext string `json:"databricks_api_token_plaintext,omitempty"`
+	DatabricksWorkspaceUrl      string `json:"databricks_workspace_url"`
+}
+
+type ResourceModelServingConfigServedEntitiesExternalModelGoogleCloudVertexAiConfig struct {
+	PrivateKey          string `json:"private_key,omitempty"`
+	PrivateKeyPlaintext string `json:"private_key_plaintext,omitempty"`
+	ProjectId           string `json:"project_id,omitempty"`
+	Region              string `json:"region,omitempty"`
 }
 
 type ResourceModelServingConfigServedEntitiesExternalModelOpenaiConfig struct {
-	MicrosoftEntraClientId     string `json:"microsoft_entra_client_id,omitempty"`
-	MicrosoftEntraClientSecret string `json:"microsoft_entra_client_secret,omitempty"`
-	MicrosoftEntraTenantId     string `json:"microsoft_entra_tenant_id,omitempty"`
-	OpenaiApiBase              string `json:"openai_api_base,omitempty"`
-	OpenaiApiKey               string `json:"openai_api_key,omitempty"`
-	OpenaiApiType              string `json:"openai_api_type,omitempty"`
-	OpenaiApiVersion           string `json:"openai_api_version,omitempty"`
-	OpenaiDeploymentName       string `json:"openai_deployment_name,omitempty"`
-	OpenaiOrganization         string `json:"openai_organization,omitempty"`
+	MicrosoftEntraClientId              string `json:"microsoft_entra_client_id,omitempty"`
+	MicrosoftEntraClientSecret          string `json:"microsoft_entra_client_secret,omitempty"`
+	MicrosoftEntraClientSecretPlaintext string `json:"microsoft_entra_client_secret_plaintext,omitempty"`
+	MicrosoftEntraTenantId              string `json:"microsoft_entra_tenant_id,omitempty"`
+	OpenaiApiBase                       string `json:"openai_api_base,omitempty"`
+	OpenaiApiKey                        string `json:"openai_api_key,omitempty"`
+	OpenaiApiKeyPlaintext               string `json:"openai_api_key_plaintext,omitempty"`
+	OpenaiApiType                       string `json:"openai_api_type,omitempty"`
+	OpenaiApiVersion                    string `json:"openai_api_version,omitempty"`
+	OpenaiDeploymentName                string `json:"openai_deployment_name,omitempty"`
+	OpenaiOrganization                  string `json:"openai_organization,omitempty"`
 }
 
 type ResourceModelServingConfigServedEntitiesExternalModelPalmConfig struct {
-	PalmApiKey string `json:"palm_api_key"`
+	PalmApiKey          string `json:"palm_api_key,omitempty"`
+	PalmApiKeyPlaintext string `json:"palm_api_key_plaintext,omitempty"`
 }
 
 type ResourceModelServingConfigServedEntitiesExternalModel struct {
@@ -58,6 +75,7 @@ type ResourceModelServingConfigServedEntitiesExternalModel struct {
 	AnthropicConfig              *ResourceModelServingConfigServedEntitiesExternalModelAnthropicConfig              `json:"anthropic_config,omitempty"`
 	CohereConfig                 *ResourceModelServingConfigServedEntitiesExternalModelCohereConfig                 `json:"cohere_config,omitempty"`
 	DatabricksModelServingConfig *ResourceModelServingConfigServedEntitiesExternalModelDatabricksModelServingConfig `json:"databricks_model_serving_config,omitempty"`
+	GoogleCloudVertexAiConfig    *ResourceModelServingConfigServedEntitiesExternalModelGoogleCloudVertexAiConfig    `json:"google_cloud_vertex_ai_config,omitempty"`
 	OpenaiConfig                 *ResourceModelServingConfigServedEntitiesExternalModelOpenaiConfig                 `json:"openai_config,omitempty"`
 	PalmConfig                   *ResourceModelServingConfigServedEntitiesExternalModelPalmConfig                   `json:"palm_config,omitempty"`
 }

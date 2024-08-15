@@ -59,6 +59,7 @@ type Resources struct {
 	MwsVpcEndpoint                             map[string]any `json:"databricks_mws_vpc_endpoint,omitempty"`
 	MwsWorkspaces                              map[string]any `json:"databricks_mws_workspaces,omitempty"`
 	Notebook                                   map[string]any `json:"databricks_notebook,omitempty"`
+	NotificationDestination                    map[string]any `json:"databricks_notification_destination,omitempty"`
 	OboToken                                   map[string]any `json:"databricks_obo_token,omitempty"`
 	OnlineTable                                map[string]any `json:"databricks_online_table,omitempty"`
 	PermissionAssignment                       map[string]any `json:"databricks_permission_assignment,omitempty"`
@@ -160,6 +161,7 @@ func NewResources() *Resources {
 		MwsVpcEndpoint:                 make(map[string]any),
 		MwsWorkspaces:                  make(map[string]any),
 		Notebook:                       make(map[string]any),
+		NotificationDestination:        make(map[string]any),
 		OboToken:                       make(map[string]any),
 		OnlineTable:                    make(map[string]any),
 		PermissionAssignment:           make(map[string]any),
