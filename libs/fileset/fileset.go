@@ -18,7 +18,7 @@ type FileSet struct {
 
 	// Paths to include in the fileset.
 	// Files are included as-is (if not ignored) and directories are traversed recursively.
-	// Can be equal to [fileset.All] to recursively traverse the root.
+	// Defaults to []string{"."} if not specified.
 	paths []string
 
 	// Ignorer interface to check if a file or directory should be ignored.
