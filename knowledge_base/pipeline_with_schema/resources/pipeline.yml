@@ -1,0 +1,15 @@
+resources:
+  pipelines:
+    example_pipeline:
+      name: "Example of a pipeline with a schema"
+
+      catalog: ${resources.schemas.example_schema.catalog_name}
+      target: ${resources.schemas.example_schema.name}
+
+      libraries:
+        - file:
+            path: ../src/range.sql
+        - file:
+            path: ../src/double.sql
+
+      serverless: true

@@ -1,0 +1,24 @@
+resources:
+  schemas:
+    example_schema:
+      catalog_name: main
+      name: example_schema
+
+      comment: |
+        # Header
+
+        The _schema description_ supports **basic markdown**.
+
+        This schema was created by **${workspace.current_user.displayName}**.
+
+        * Bullet 1
+        * Bullet 2
+
+        > Block quote
+
+        1. Numbered list item 1
+        2. Numbered list item 2
+
+        ```
+        Monospace code block
+        ```

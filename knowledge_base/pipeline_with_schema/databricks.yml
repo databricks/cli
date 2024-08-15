@@ -1,0 +1,13 @@
+bundle:
+  name: pipeline_with_schema
+
+include:
+  - ./resources/*.yml
+
+workspace:
+  host: https://e2-dogfood.staging.cloud.databricks.com
+
+targets:
+  dev:
+    default: true
+    mode: development
