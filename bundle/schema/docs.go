@@ -9,7 +9,6 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/jsonschema"
-	"github.com/databricks/databricks-sdk-go/openapi"
 )
 
 // A subset of Schema struct
@@ -63,7 +62,7 @@ func UpdateBundleDescriptions(openapiSpecPath string) (*Docs, error) {
 	if err != nil {
 		return nil, err
 	}
-	spec := &openapi.Specification{}
+	spec := &Specification{}
 	err = json.Unmarshal(openapiSpec, spec)
 	if err != nil {
 		return nil, err
