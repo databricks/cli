@@ -21,13 +21,11 @@ func (m *allResourcesHaveValues) Name() string {
 }
 
 func (m *allResourcesHaveValues) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	rv := b.Config.Value().Get("resources")
-
 	diags := diag.Diagnostics{}
 
 	_, err := dyn.MapByPattern(
-		rv,
-		dyn.NewPattern(dyn.AnyKey(), dyn.AnyKey()),
+		b.Config.Value(),
+		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
 		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			if v.Kind() != dyn.KindNil {
 				return v, nil
