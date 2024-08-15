@@ -12,7 +12,7 @@ import (
 )
 
 func TestUndefinedResourcesLoadWithError(t *testing.T) {
-	b := load(t, "./undefined_job")
+	b := load(t, "./undefined_resources")
 	diags := bundle.Apply(context.Background(), b, validate.AllResourcesHaveValues())
 
 	assert.Len(t, diags, 3)
@@ -20,7 +20,7 @@ func TestUndefinedResourcesLoadWithError(t *testing.T) {
 		Severity: diag.Error,
 		Summary:  "job undefined-job is not defined",
 		Locations: []dyn.Location{{
-			File:   "undefined_job/databricks.yml",
+			File:   "undefined_resources/databricks.yml",
 			Line:   6,
 			Column: 19,
 		}},
@@ -30,7 +30,7 @@ func TestUndefinedResourcesLoadWithError(t *testing.T) {
 		Severity: diag.Error,
 		Summary:  "experiment undefined-experiment is not defined",
 		Locations: []dyn.Location{{
-			File:   "undefined_job/databricks.yml",
+			File:   "undefined_resources/databricks.yml",
 			Line:   11,
 			Column: 26,
 		}},
@@ -40,7 +40,7 @@ func TestUndefinedResourcesLoadWithError(t *testing.T) {
 		Severity: diag.Error,
 		Summary:  "pipeline undefined-pipeline is not defined",
 		Locations: []dyn.Location{{
-			File:   "undefined_job/databricks.yml",
+			File:   "undefined_resources/databricks.yml",
 			Line:   14,
 			Column: 24,
 		}},
