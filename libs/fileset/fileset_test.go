@@ -22,6 +22,14 @@ func TestFileSet_NoPaths(t *testing.T) {
 	assert.Equal(t, "dir2/b", files[3].Relative)
 }
 
+func TestFileSet_ParentPath(t *testing.T) {
+	fs := New(vfs.MustNew("testdata"), []string{".."})
+	_, err := fs.Files()
+
+	// It is impossible to escape the root directory.
+	assert.Error(t, err)
+}
+
 func TestFileSet_DuplicatePaths(t *testing.T) {
 	fs := New(vfs.MustNew("testdata"), []string{"dir1", "dir1"})
 	files, err := fs.Files()
