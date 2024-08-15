@@ -111,6 +111,10 @@ func TestAccountClientOrPrompt(t *testing.T) {
 		expectPrompts(t, accountPromptFn, &config.Config{
 			Host:      "https://accounts.azuredatabricks.net/",
 			AccountID: "1234",
+
+			// Force SDK to not try and lookup the tenant ID from the host.
+			// The host above is invalid and will not be reachable.
+			AzureTenantID: "nonempty",
 		})
 	})
 
