@@ -110,8 +110,7 @@ func newExportDir() *cobra.Command {
 		}
 		workspaceFS := filer.NewFS(ctx, workspaceFiler)
 
-		// TODO: print progress events on stderr instead: https://github.com/databricks/cli/issues/448
-		err = cmdio.RenderJson(ctx, newExportStartedEvent(opts.sourceDir))
+		err = cmdio.RenderWithTemplate(ctx, newExportStartedEvent(opts.sourceDir), "", "Exporting files from {{.SourcePath}}\n")
 		if err != nil {
 			return err
 		}
@@ -120,7 +119,7 @@ func newExportDir() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.RenderJson(ctx, newExportCompletedEvent(opts.targetDir))
+		return cmdio.RenderWithTemplate(ctx, newExportCompletedEvent(opts.targetDir), "", "Export complete\n")
 	}
 
 	return cmd
