@@ -666,7 +666,7 @@ func newList() *cobra.Command {
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `The number of dashboards to return per page.`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A page token, received from a previous ListDashboards call.`)
 	cmd.Flags().BoolVar(&listReq.ShowTrashed, "show-trashed", listReq.ShowTrashed, `The flag to include dashboards located in the trash.`)
-	cmd.Flags().Var(&listReq.View, "view", `Indicates whether to include all metadata from the dashboard in the response. Supported values: [DASHBOARD_VIEW_BASIC, DASHBOARD_VIEW_FULL]`)
+	cmd.Flags().Var(&listReq.View, "view", `DASHBOARD_VIEW_BASIConly includes summary metadata from the dashboard. Supported values: [DASHBOARD_VIEW_BASIC]`)
 
 	cmd.Use = "list"
 	cmd.Short = `List dashboards.`

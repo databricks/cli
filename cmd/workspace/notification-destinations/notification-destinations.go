@@ -1,14 +1,12 @@
 // Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
 
-package provider_listings
+package notification_destinations
 
 import (
-	"fmt"
-
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/marketplace"
+	"github.com/databricks/databricks-sdk-go/service/settings"
 	"github.com/spf13/cobra"
 )
 
@@ -18,13 +16,16 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "provider-listings",
-		Short: `Listings are the core entities in the Marketplace.`,
-		Long: `Listings are the core entities in the Marketplace. They represent the products
-  that are available for consumption.`,
-		GroupID: "marketplace",
+		Use:   "notification-destinations",
+		Short: `The notification destinations API lets you programmatically manage a workspace's notification destinations.`,
+		Long: `The notification destinations API lets you programmatically manage a
+  workspace's notification destinations. Notification destinations are used to
+  send notifications for query alerts and jobs to destinations outside of
+  Databricks. Only workspace admins can create, update, and delete notification
+  destinations.`,
+		GroupID: "settings",
 		Annotations: map[string]string{
-			"package": "marketplace",
+			"package": "settings",
 		},
 	}
 
@@ -49,25 +50,33 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*marketplace.CreateListingRequest,
+	*settings.CreateNotificationDestinationRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var createReq marketplace.CreateListingRequest
+	var createReq settings.CreateNotificationDestinationRequest
 	var createJson flags.JsonFlag
 
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: config
+	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `The display name for the notification destination.`)
+
 	cmd.Use = "create"
-	cmd.Short = `Create a listing.`
-	cmd.Long = `Create a listing.
+	cmd.Short = `Create a notification destination.`
+	cmd.Long = `Create a notification destination.
   
-  Create a new listing`
+  Creates a notification destination. Requires workspace admin permissions.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -79,11 +88,9 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.ProviderListings.Create(ctx, createReq)
+		response, err := w.NotificationDestinations.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
@@ -108,49 +115,37 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*marketplace.DeleteListingRequest,
+	*settings.DeleteNotificationDestinationRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var deleteReq marketplace.DeleteListingRequest
+	var deleteReq settings.DeleteNotificationDestinationRequest
 
 	// TODO: short flags
 
 	cmd.Use = "delete ID"
-	cmd.Short = `Delete a listing.`
-	cmd.Long = `Delete a listing.
+	cmd.Short = `Delete a notification destination.`
+	cmd.Long = `Delete a notification destination.
   
-  Delete a listing`
+  Deletes a notification destination. Requires workspace admin permissions.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No ID argument specified. Loading names for Provider Listings drop-down."
-			names, err := w.ProviderListings.ListingSummaryNameToIdMap(ctx, marketplace.GetListingsRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Provider Listings drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
-		}
 		deleteReq.Id = args[0]
 
-		err = w.ProviderListings.Delete(ctx, deleteReq)
+		err = w.NotificationDestinations.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
@@ -175,49 +170,37 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*marketplace.GetListingRequest,
+	*settings.GetNotificationDestinationRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getReq marketplace.GetListingRequest
+	var getReq settings.GetNotificationDestinationRequest
 
 	// TODO: short flags
 
 	cmd.Use = "get ID"
-	cmd.Short = `Get a listing.`
-	cmd.Long = `Get a listing.
+	cmd.Short = `Get a notification destination.`
+	cmd.Long = `Get a notification destination.
   
-  Get a listing`
+  Gets a notification destination.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No ID argument specified. Loading names for Provider Listings drop-down."
-			names, err := w.ProviderListings.ListingSummaryNameToIdMap(ctx, marketplace.GetListingsRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Provider Listings drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
-		}
 		getReq.Id = args[0]
 
-		response, err := w.ProviderListings.Get(ctx, getReq)
+		response, err := w.NotificationDestinations.Get(ctx, getReq)
 		if err != nil {
 			return err
 		}
@@ -242,24 +225,24 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*marketplace.GetListingsRequest,
+	*settings.ListNotificationDestinationsRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var listReq marketplace.GetListingsRequest
+	var listReq settings.ListNotificationDestinationsRequest
 
 	// TODO: short flags
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	cmd.Flags().Int64Var(&listReq.PageSize, "page-size", listReq.PageSize, ``)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
 
 	cmd.Use = "list"
-	cmd.Short = `List listings.`
-	cmd.Long = `List listings.
+	cmd.Short = `List notification destinations.`
+	cmd.Long = `List notification destinations.
   
-  List listings owned by this provider`
+  Lists notification destinations.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -273,7 +256,7 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response := w.ProviderListings.List(ctx, listReq)
+		response := w.NotificationDestinations.List(ctx, listReq)
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -295,23 +278,27 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*marketplace.UpdateListingRequest,
+	*settings.UpdateNotificationDestinationRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var updateReq marketplace.UpdateListingRequest
+	var updateReq settings.UpdateNotificationDestinationRequest
 	var updateJson flags.JsonFlag
 
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: config
+	cmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `The display name for the notification destination.`)
+
 	cmd.Use = "update ID"
-	cmd.Short = `Update listing.`
-	cmd.Long = `Update listing.
+	cmd.Short = `Update a notification destination.`
+	cmd.Long = `Update a notification destination.
   
-  Update a listing`
+  Updates a notification destination. Requires workspace admin permissions. At
+  least one field is required in the request body.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -330,12 +317,10 @@ func newUpdate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 		updateReq.Id = args[0]
 
-		response, err := w.ProviderListings.Update(ctx, updateReq)
+		response, err := w.NotificationDestinations.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
@@ -354,4 +339,4 @@ func newUpdate() *cobra.Command {
 	return cmd
 }
 
-// end service ProviderListings
+// end service NotificationDestinations

@@ -53,7 +53,7 @@ func (r *pipelineRunner) logErrorEvent(ctx context.Context, pipelineId string, u
 	// Otherwise for long lived pipelines, there can be a lot of unnecessary
 	// latency due to multiple pagination API calls needed underneath the hood for
 	// ListPipelineEventsAll
-	res, err := w.Pipelines.Impl().ListPipelineEvents(ctx, pipelines.ListPipelineEventsRequest{
+	events, err := w.Pipelines.ListPipelineEventsAll(ctx, pipelines.ListPipelineEventsRequest{
 		Filter:     `level='ERROR'`,
 		MaxResults: 100,
 		PipelineId: pipelineId,
@@ -61,7 +61,7 @@ func (r *pipelineRunner) logErrorEvent(ctx context.Context, pipelineId string, u
 	if err != nil {
 		return err
 	}
-	updateEvents := filterEventsByUpdateId(res.Events, updateId)
+	updateEvents := filterEventsByUpdateId(events, updateId)
 	// The events API returns most recent events first. We iterate in a reverse order
 	// to print the events chronologically
 	for i := len(updateEvents) - 1; i >= 0; i-- {

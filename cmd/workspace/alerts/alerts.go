@@ -24,12 +24,7 @@ func New() *cobra.Command {
   Databricks SQL object that periodically runs a query, evaluates a condition of
   its result, and notifies one or more users and/or notification destinations if
   the condition was met. Alerts can be scheduled using the sql_task type of
-  the Jobs API, e.g. :method:jobs/create.
-  
-  **Note**: A new version of the Databricks SQL API will soon be available.
-  [Learn more]
-  
-  [Learn more]: https://docs.databricks.com/en/whats-coming.html#updates-to-the-databricks-sql-api-for-managing-queries-alerts-and-data-sources`,
+  the Jobs API, e.g. :method:jobs/create.`,
 		GroupID: "sql",
 		Annotations: map[string]string{
 			"package": "sql",
@@ -57,35 +52,32 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*sql.CreateAlert,
+	*sql.CreateAlertRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var createReq sql.CreateAlert
+	var createReq sql.CreateAlertRequest
 	var createJson flags.JsonFlag
 
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Parent, "parent", createReq.Parent, `The identifier of the workspace folder containing the object.`)
-	cmd.Flags().IntVar(&createReq.Rearm, "rearm", createReq.Rearm, `Number of seconds after being triggered before the alert rearms itself and can be triggered again.`)
+	// TODO: complex arg: alert
 
 	cmd.Use = "create"
 	cmd.Short = `Create an alert.`
 	cmd.Long = `Create an alert.
   
-  Creates an alert. An alert is a Databricks SQL object that periodically runs a
-  query, evaluates a condition of its result, and notifies users or notification
-  destinations if the condition was met.
-  
-  **Note**: A new version of the Databricks SQL API will soon be available.
-  [Learn more]
-  
-  [Learn more]: https://docs.databricks.com/en/whats-coming.html#updates-to-the-databricks-sql-api-for-managing-queries-alerts-and-data-sources`
+  Creates an alert.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -97,8 +89,6 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.Alerts.Create(ctx, createReq)
@@ -126,28 +116,23 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*sql.DeleteAlertRequest,
+	*sql.TrashAlertRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var deleteReq sql.DeleteAlertRequest
+	var deleteReq sql.TrashAlertRequest
 
 	// TODO: short flags
 
-	cmd.Use = "delete ALERT_ID"
+	cmd.Use = "delete ID"
 	cmd.Short = `Delete an alert.`
 	cmd.Long = `Delete an alert.
   
-  Deletes an alert. Deleted alerts are no longer accessible and cannot be
-  restored. **Note**: Unlike queries and dashboards, alerts cannot be moved to
-  the trash.
-  
-  **Note**: A new version of the Databricks SQL API will soon be available.
-  [Learn more]
-  
-  [Learn more]: https://docs.databricks.com/en/whats-coming.html#updates-to-the-databricks-sql-api-for-managing-queries-alerts-and-data-sources`
+  Moves an alert to the trash. Trashed alerts immediately disappear from
+  searches and list views, and can no longer trigger. You can restore a trashed
+  alert through the UI. A trashed alert is permanently deleted after 30 days.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -158,8 +143,8 @@ func newDelete() *cobra.Command {
 
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No ALERT_ID argument specified. Loading names for Alerts drop-down."
-			names, err := w.Alerts.AlertNameToIdMap(ctx)
+			promptSpinner <- "No ID argument specified. Loading names for Alerts drop-down."
+			names, err := w.Alerts.ListAlertsResponseAlertDisplayNameToIdMap(ctx, sql.ListAlertsRequest{})
 			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Alerts drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -173,7 +158,7 @@ func newDelete() *cobra.Command {
 		if len(args) != 1 {
 			return fmt.Errorf("expected to have ")
 		}
-		deleteReq.AlertId = args[0]
+		deleteReq.Id = args[0]
 
 		err = w.Alerts.Delete(ctx, deleteReq)
 		if err != nil {
@@ -210,16 +195,11 @@ func newGet() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Use = "get ALERT_ID"
+	cmd.Use = "get ID"
 	cmd.Short = `Get an alert.`
 	cmd.Long = `Get an alert.
   
-  Gets an alert.
-  
-  **Note**: A new version of the Databricks SQL API will soon be available.
-  [Learn more]
-  
-  [Learn more]: https://docs.databricks.com/en/whats-coming.html#updates-to-the-databricks-sql-api-for-managing-queries-alerts-and-data-sources`
+  Gets an alert.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -230,8 +210,8 @@ func newGet() *cobra.Command {
 
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No ALERT_ID argument specified. Loading names for Alerts drop-down."
-			names, err := w.Alerts.AlertNameToIdMap(ctx)
+			promptSpinner <- "No ID argument specified. Loading names for Alerts drop-down."
+			names, err := w.Alerts.ListAlertsResponseAlertDisplayNameToIdMap(ctx, sql.ListAlertsRequest{})
 			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load names for Alerts drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -245,7 +225,7 @@ func newGet() *cobra.Command {
 		if len(args) != 1 {
 			return fmt.Errorf("expected to have ")
 		}
-		getReq.AlertId = args[0]
+		getReq.Id = args[0]
 
 		response, err := w.Alerts.Get(ctx, getReq)
 		if err != nil {
@@ -272,33 +252,41 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
+	*sql.ListAlertsRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
+	var listReq sql.ListAlertsRequest
+
+	// TODO: short flags
+
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
+
 	cmd.Use = "list"
-	cmd.Short = `Get alerts.`
-	cmd.Long = `Get alerts.
+	cmd.Short = `List alerts.`
+	cmd.Long = `List alerts.
   
-  Gets a list of alerts.
-  
-  **Note**: A new version of the Databricks SQL API will soon be available.
-  [Learn more]
-  
-  [Learn more]: https://docs.databricks.com/en/whats-coming.html#updates-to-the-databricks-sql-api-for-managing-queries-alerts-and-data-sources`
+  Gets a list of alerts accessible to the user, ordered by creation time.
+  **Warning:** Calling this API concurrently 10 or more times could result in
+  throttling, service degradation, or a temporary ban.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		response, err := w.Alerts.List(ctx)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+
+		response := w.Alerts.List(ctx, listReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -307,7 +295,7 @@ func newList() *cobra.Command {
 
 	// Apply optional overrides to this command.
 	for _, fn := range listOverrides {
-		fn(cmd)
+		fn(cmd, &listReq)
 	}
 
 	return cmd
@@ -319,35 +307,44 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*sql.EditAlert,
+	*sql.UpdateAlertRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var updateReq sql.EditAlert
+	var updateReq sql.UpdateAlertRequest
 	var updateJson flags.JsonFlag
 
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().IntVar(&updateReq.Rearm, "rearm", updateReq.Rearm, `Number of seconds after being triggered before the alert rearms itself and can be triggered again.`)
+	// TODO: complex arg: alert
 
-	cmd.Use = "update ALERT_ID"
+	cmd.Use = "update ID UPDATE_MASK"
 	cmd.Short = `Update an alert.`
 	cmd.Long = `Update an alert.
   
   Updates an alert.
-  
-  **Note**: A new version of the Databricks SQL API will soon be available.
-  [Learn more]
-  
-  [Learn more]: https://docs.databricks.com/en/whats-coming.html#updates-to-the-databricks-sql-api-for-managing-queries-alerts-and-data-sources`
+
+  Arguments:
+    ID: 
+    UPDATE_MASK: Field mask is required to be passed into the PATCH request. Field mask
+      specifies which fields of the setting payload will be updated. The field
+      mask needs to be supplied as single string. To specify multiple fields in
+      the field mask, use comma as the separator (no space).`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, provide only ID as positional arguments. Provide 'update_mask' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -361,16 +358,17 @@ func newUpdate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
-		updateReq.AlertId = args[0]
+		updateReq.Id = args[0]
+		if !cmd.Flags().Changed("json") {
+			updateReq.UpdateMask = args[1]
+		}
 
-		err = w.Alerts.Update(ctx, updateReq)
+		response, err := w.Alerts.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
