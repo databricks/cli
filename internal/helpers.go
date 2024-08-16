@@ -87,7 +87,7 @@ type cobraTestRunner struct {
 }
 
 func consumeLines(ctx context.Context, wg *sync.WaitGroup, r io.Reader) <-chan string {
-	ch := make(chan string, 1000)
+	ch := make(chan string, 10000)
 	wg.Add(1)
 	go func() {
 		defer close(ch)
