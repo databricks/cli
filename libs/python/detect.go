@@ -3,9 +3,23 @@ package python
 import (
 	"context"
 	"errors"
+	"fmt"
+	"io/fs"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"runtime"
 )
 
+// DetectExecutable looks up the path to the python3 executable from the PATH
+// environment variable.
+//
+// If virtualenv is activated, executable from the virtualenv is returned,
+// because activating virtualenv adds python3 executable on a PATH.
+//
+// If python3 executable is not found on the PATH, the interpreter with the
+// least version that satisfies minimal 3.8 version is returned, e.g.
+// python3.10.
 func DetectExecutable(ctx context.Context) (string, error) {
 	// TODO: add a shortcut if .python-version file is detected somewhere in
 	// the parent directory tree.
@@ -31,4 +45,30 @@ func DetectExecutable(ctx context.Context) (string, error) {
 		return "", err
 	}
 	return interpreter.Path, nil
+}
+
+// DetectVEnvExecutable returns the path to the python3 executable inside venvPath,
+// that is not necessarily activated.
+//
+// If virtualenv is not created, or executable doesn't exist, the error is returned.
+func DetectVEnvExecutable(venvPath string) (string, error) {
+	interpreterPath := filepath.Join(venvPath, "bin", "python3")
+	if runtime.GOOS == "windows" {
+		interpreterPath = filepath.Join(venvPath, "Scripts", "python3.exe")
+	}
+
+	if _, err := os.Stat(interpreterPath); err != nil {
+		if os.IsNotExist(err) {
+			return "", fmt.Errorf("can't find %q, check if virtualenv is created", interpreterPath)
+		} else {
+			return "", fmt.Errorf("can't find %q: %w", interpreterPath, err)
+		}
+	}
+
+	_, err := os.Stat(filepath.Join(venvPath, "pyvenv.cfg"))
+	if errors.Is(err, fs.ErrNotExist) {
+		return "", fmt.Errorf("expected %q to be virtualenv, but pyenv.cfg is missing", venvPath)
+	}
+
+	return interpreterPath, nil
 }
