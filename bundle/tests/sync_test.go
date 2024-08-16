@@ -63,3 +63,41 @@ func TestSyncNilRoot(t *testing.T) {
 	assert.ElementsMatch(t, []string{filepath.FromSlash("tests/*")}, b.Config.Sync.Include)
 	assert.ElementsMatch(t, []string{filepath.FromSlash("dist")}, b.Config.Sync.Exclude)
 }
+
+func TestSyncPaths(t *testing.T) {
+	var b *bundle.Bundle
+
+	b = loadTarget(t, "./sync/paths", "development")
+	assert.ElementsMatch(t, []string{"src", "development"}, b.Config.Sync.Paths)
+
+	b = loadTarget(t, "./sync/paths", "staging")
+	assert.ElementsMatch(t, []string{"src", "staging"}, b.Config.Sync.Paths)
+}
+
+func TestSyncPathsNoRoot(t *testing.T) {
+	var b *bundle.Bundle
+
+	b = loadTarget(t, "./sync/paths_no_root", "development")
+	assert.ElementsMatch(t, []string{"development"}, b.Config.Sync.Paths)
+
+	b = loadTarget(t, "./sync/paths_no_root", "staging")
+	assert.ElementsMatch(t, []string{"staging"}, b.Config.Sync.Paths)
+
+	// If not set at all, it defaults to "."
+	b = loadTarget(t, "./sync/paths_no_root", "nothing")
+	assert.Equal(t, []string{"."}, b.Config.Sync.Paths)
+
+	// If set to nil, it won't sync anything.
+	b = loadTarget(t, "./sync/paths_no_root", "nil")
+	assert.Len(t, b.Config.Sync.Paths, 0)
+
+	// If set to an empty sequence, it won't sync anything.
+	b = loadTarget(t, "./sync/paths_no_root", "empty")
+	assert.Len(t, b.Config.Sync.Paths, 0)
+}
+
+func TestSyncSharedCode(t *testing.T) {
+	b := loadTarget(t, "./sync/shared_code/bundle", "default")
+	assert.Equal(t, filepath.FromSlash("sync/shared_code"), b.SyncRootPath)
+	assert.ElementsMatch(t, []string{"common", "bundle"}, b.Config.Sync.Paths)
+}

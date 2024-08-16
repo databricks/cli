@@ -85,7 +85,7 @@ func (s *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	}
 
 	log.Infof(ctx, "Creating new snapshot")
-	snapshot, err := sync.NewSnapshot(state.Files.ToSlice(b.BundleRoot), opts)
+	snapshot, err := sync.NewSnapshot(state.Files.ToSlice(b.SyncRoot), opts)
 	if err != nil {
 		return diag.FromErr(err)
 	}

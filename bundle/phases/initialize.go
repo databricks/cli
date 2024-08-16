@@ -21,7 +21,18 @@ func Initialize() bundle.Mutator {
 		"initialize",
 		[]bundle.Mutator{
 			validate.AllResourcesHaveValues(),
+
+			// Update all path fields in the sync block to be relative to the bundle root path.
 			mutator.RewriteSyncPaths(),
+
+			// Configure the default sync path to equal the bundle root if not explicitly configured.
+			// By default, this means all files in the bundle root directory are synchronized.
+			mutator.SyncDefaultPath(),
+
+			// Figure out if the sync root path is identical or an ancestor of the bundle root path.
+			// If it is an ancestor, this updates all paths to be relative to the sync root path.
+			mutator.SyncInferRoot(),
+
 			mutator.MergeJobClusters(),
 			mutator.MergeJobParameters(),
 			mutator.MergeJobTasks(),
