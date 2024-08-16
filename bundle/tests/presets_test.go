@@ -23,5 +23,6 @@ func TestPresetsProd(t *testing.T) {
 	b := loadTarget(t, "./presets", "prod")
 
 	assert.Equal(t, false, *b.Config.Presets.PipelinesDevelopment)
+	assert.Equal(t, "finance", b.Config.Presets.Tags["team"])
 	assert.Equal(t, "true", b.Config.Presets.Tags["prod"])
 }
