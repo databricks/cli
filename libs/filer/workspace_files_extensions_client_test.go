@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+// Mocks client.DatabricksClient from the databricks-sdk-go package.
 type mockApiClient struct {
 	mock.Mock
 }
@@ -20,6 +21,7 @@ func (m *mockApiClient) Do(ctx context.Context, method, path string,
 	visitors ...func(*http.Request) error) error {
 	args := m.Called(ctx, method, path, headers, request, response, visitors)
 
+	// Set the http response from a value provided in the mock call.
 	p := response.(*wsfsFileInfo)
 	*p = args.Get(1).(wsfsFileInfo)
 	return args.Error(0)
@@ -100,14 +102,8 @@ func TestFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
 				},
 			}, nil)
 
-			// Mock bespoke API calls to /api/2.0/workspace/get-status.
-			statFile := wsfsFileInfo{
-				ObjectInfo: workspace.ObjectInfo{
-					Path:       tc.filePath,
-					Language:   tc.language,
-					ObjectType: workspace.ObjectTypeFile,
-				},
-			}
+			// Mock bespoke API calls to /api/2.0/workspace/get-status, to figure
+			// out the right file extension for the notebook.
 			statNotebook := wsfsFileInfo{
 				ObjectInfo: workspace.ObjectInfo{
 					Path:       tc.notebookPath,
@@ -116,10 +112,6 @@ func TestFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
 				},
 				ReposExportFormat: tc.notebookExportFormat,
 			}
-			mockedApiClient.On("Do", mock.Anything, http.MethodGet, "/api/2.0/workspace/get-status", map[string]string(nil), map[string]string{
-				"path":               tc.filePath,
-				"return_export_info": "true",
-			}, mock.AnythingOfType("*filer.wsfsFileInfo"), []func(*http.Request) error(nil)).Return(nil, statFile)
 
 			mockedApiClient.On("Do", mock.Anything, http.MethodGet, "/api/2.0/workspace/get-status", map[string]string(nil), map[string]string{
 				"path":               tc.notebookPath,
@@ -146,6 +138,9 @@ func TestFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
 				assert.EqualError(t, err, tc.expectedError)
 			}
 
+			// assert the mocked methods were actually called, as a sanity check.
+			workspaceApi.AssertNumberOfCalls(t, "ListAll", 1)
+			mockedApiClient.AssertNumberOfCalls(t, "Do", 1)
 		})
 	}
 }

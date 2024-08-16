@@ -102,7 +102,7 @@ func (info *wsfsFileInfo) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(info)
 }
 
-// Interface for *client.DatabricksClient in the Databricks Go SDK. Abstracted
+// Interface for *client.DatabricksClient from the Databricks Go SDK. Abstracted
 // as an interface to allow for mocking in tests.
 type apiClient interface {
 	Do(ctx context.Context, method, path string,
