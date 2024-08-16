@@ -3,18 +3,17 @@ package internal
 import (
 	"context"
 	"encoding/base64"
-	"errors"
+	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -63,20 +62,11 @@ func TestAccWorkpaceExportPrintsContents(t *testing.T) {
 }
 
 func setupWorkspaceImportExportTest(t *testing.T) (context.Context, filer.Filer, string) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	ctx, wt := acc.WorkspaceTest(t)
 
-	ctx := context.Background()
-	w := databricks.Must(databricks.NewWorkspaceClient())
-	tmpdir := TemporaryWorkspaceDir(t, w)
-	f, err := filer.NewWorkspaceFilesClient(w, tmpdir)
+	tmpdir := TemporaryWorkspaceDir(t, wt.W)
+	f, err := filer.NewWorkspaceFilesClient(wt.W, tmpdir)
 	require.NoError(t, err)
-
-	// Check if we can use this API here, skip test if we cannot.
-	_, err = f.Read(ctx, "we_use_this_call_to_test_if_this_api_is_enabled")
-	var aerr *apierr.APIError
-	if errors.As(err, &aerr) && aerr.StatusCode == http.StatusBadRequest {
-		t.Skip(aerr.Message)
-	}
 
 	return ctx, f, tmpdir
 }
@@ -122,8 +112,21 @@ func TestAccExportDir(t *testing.T) {
 	err = f.Write(ctx, "a/b/c/file-b", strings.NewReader("def"), filer.CreateParentDirectories)
 	require.NoError(t, err)
 
+	expectedLogs := strings.Join([]string{
+		fmt.Sprintf("Exporting files from %s", sourceDir),
+		fmt.Sprintf("%s -> %s", path.Join(sourceDir, "a/b/c/file-b"), filepath.Join(targetDir, "a/b/c/file-b")),
+		fmt.Sprintf("%s -> %s", path.Join(sourceDir, "file-a"), filepath.Join(targetDir, "file-a")),
+		fmt.Sprintf("%s -> %s", path.Join(sourceDir, "pyNotebook"), filepath.Join(targetDir, "pyNotebook.py")),
+		fmt.Sprintf("%s -> %s", path.Join(sourceDir, "rNotebook"), filepath.Join(targetDir, "rNotebook.r")),
+		fmt.Sprintf("%s -> %s", path.Join(sourceDir, "scalaNotebook"), filepath.Join(targetDir, "scalaNotebook.scala")),
+		fmt.Sprintf("%s -> %s", path.Join(sourceDir, "sqlNotebook"), filepath.Join(targetDir, "sqlNotebook.sql")),
+		"Export complete\n",
+	}, "\n")
+
 	// Run Export
-	RequireSuccessfulRun(t, "workspace", "export-dir", sourceDir, targetDir)
+	stdout, stderr := RequireSuccessfulRun(t, "workspace", "export-dir", sourceDir, targetDir)
+	assert.Equal(t, expectedLogs, stdout.String())
+	assert.Equal(t, "", stderr.String())
 
 	// Assert files were exported
 	assertLocalFileContents(t, filepath.Join(targetDir, "file-a"), "abc")
@@ -176,10 +179,24 @@ func TestAccExportDirWithOverwriteFlag(t *testing.T) {
 	assertLocalFileContents(t, filepath.Join(targetDir, "file-a"), "content from workspace")
 }
 
-// TODO: Add assertions on progress logs for workspace import-dir command. https://github.com/databricks/cli/issues/455
 func TestAccImportDir(t *testing.T) {
 	ctx, workspaceFiler, targetDir := setupWorkspaceImportExportTest(t)
-	RequireSuccessfulRun(t, "workspace", "import-dir", "./testdata/import_dir", targetDir, "--log-level=debug")
+	stdout, stderr := RequireSuccessfulRun(t, "workspace", "import-dir", "./testdata/import_dir", targetDir, "--log-level=debug")
+
+	expectedLogs := strings.Join([]string{
+		fmt.Sprintf("Importing files from %s", "./testdata/import_dir"),
+		fmt.Sprintf("%s -> %s", filepath.FromSlash("a/b/c/file-b"), path.Join(targetDir, "a/b/c/file-b")),
+		fmt.Sprintf("%s -> %s", filepath.FromSlash("file-a"), path.Join(targetDir, "file-a")),
+		fmt.Sprintf("%s -> %s", filepath.FromSlash("jupyterNotebook.ipynb"), path.Join(targetDir, "jupyterNotebook")),
+		fmt.Sprintf("%s -> %s", filepath.FromSlash("pyNotebook.py"), path.Join(targetDir, "pyNotebook")),
+		fmt.Sprintf("%s -> %s", filepath.FromSlash("rNotebook.r"), path.Join(targetDir, "rNotebook")),
+		fmt.Sprintf("%s -> %s", filepath.FromSlash("scalaNotebook.scala"), path.Join(targetDir, "scalaNotebook")),
+		fmt.Sprintf("%s -> %s", filepath.FromSlash("sqlNotebook.sql"), path.Join(targetDir, "sqlNotebook")),
+		"Import complete\n",
+	}, "\n")
+
+	assert.Equal(t, expectedLogs, stdout.String())
+	assert.Equal(t, "", stderr.String())
 
 	// Assert files are imported
 	assertFilerFileContents(t, ctx, workspaceFiler, "file-a", "hello, world")

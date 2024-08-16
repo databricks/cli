@@ -147,6 +147,8 @@ func newDelete() *cobra.Command {
 
 	// TODO: short flags
 
+	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the schema is not empty.`)
+
 	cmd.Use = "delete FULL_NAME"
 	cmd.Short = `Delete a schema.`
 	cmd.Long = `Delete a schema.

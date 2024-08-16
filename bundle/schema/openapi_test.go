@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/jsonschema"
-	"github.com/databricks/databricks-sdk-go/openapi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -45,7 +44,7 @@ func TestReadSchemaForObject(t *testing.T) {
 		}
 	}
 	`
-	spec := &openapi.Specification{}
+	spec := &Specification{}
 	reader := &OpenapiReader{
 		OpenapiSpec: spec,
 		memo:        make(map[string]jsonschema.Schema),
@@ -103,7 +102,7 @@ func TestReadSchemaForArray(t *testing.T) {
 			}
 		}
 	}`
-	spec := &openapi.Specification{}
+	spec := &Specification{}
 	reader := &OpenapiReader{
 		OpenapiSpec: spec,
 		memo:        make(map[string]jsonschema.Schema),
@@ -149,7 +148,7 @@ func TestReadSchemaForMap(t *testing.T) {
 			}
 		}
 	}`
-	spec := &openapi.Specification{}
+	spec := &Specification{}
 	reader := &OpenapiReader{
 		OpenapiSpec: spec,
 		memo:        make(map[string]jsonschema.Schema),
@@ -198,7 +197,7 @@ func TestRootReferenceIsResolved(t *testing.T) {
 			}
 		}
 	}`
-	spec := &openapi.Specification{}
+	spec := &Specification{}
 	reader := &OpenapiReader{
 		OpenapiSpec: spec,
 		memo:        make(map[string]jsonschema.Schema),
@@ -248,7 +247,7 @@ func TestSelfReferenceLoopErrors(t *testing.T) {
 			}
 		}
 	}`
-	spec := &openapi.Specification{}
+	spec := &Specification{}
 	reader := &OpenapiReader{
 		OpenapiSpec: spec,
 		memo:        make(map[string]jsonschema.Schema),
@@ -282,7 +281,7 @@ func TestCrossReferenceLoopErrors(t *testing.T) {
 			}
 		}
 	}`
-	spec := &openapi.Specification{}
+	spec := &Specification{}
 	reader := &OpenapiReader{
 		OpenapiSpec: spec,
 		memo:        make(map[string]jsonschema.Schema),
@@ -327,7 +326,7 @@ func TestReferenceResolutionForMapInObject(t *testing.T) {
 			}
 		}
 	}`
-	spec := &openapi.Specification{}
+	spec := &Specification{}
 	reader := &OpenapiReader{
 		OpenapiSpec: spec,
 		memo:        make(map[string]jsonschema.Schema),
@@ -397,7 +396,7 @@ func TestReferenceResolutionForArrayInObject(t *testing.T) {
 			}
 		}
 	}`
-	spec := &openapi.Specification{}
+	spec := &Specification{}
 	reader := &OpenapiReader{
 		OpenapiSpec: spec,
 		memo:        make(map[string]jsonschema.Schema),
@@ -460,7 +459,7 @@ func TestReferenceResolutionDoesNotOverwriteDescriptions(t *testing.T) {
 			}
 		}
 	}`
-	spec := &openapi.Specification{}
+	spec := &Specification{}
 	reader := &OpenapiReader{
 		OpenapiSpec: spec,
 		memo:        make(map[string]jsonschema.Schema),

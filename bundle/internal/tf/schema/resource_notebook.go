@@ -13,4 +13,5 @@ type ResourceNotebook struct {
 	Path          string `json:"path"`
 	Source        string `json:"source,omitempty"`
 	Url           string `json:"url,omitempty"`
+	WorkspacePath string `json:"workspace_path,omitempty"`
 }

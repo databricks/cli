@@ -3,8 +3,6 @@
 package custom_app_integration
 
 import (
-	"fmt"
-
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -19,8 +17,8 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "custom-app-integration",
-		Short: `These APIs enable administrators to manage custom oauth app integrations, which is required for adding/using Custom OAuth App Integration like Tableau Cloud for Databricks in AWS cloud.`,
-		Long: `These APIs enable administrators to manage custom oauth app integrations,
+		Short: `These APIs enable administrators to manage custom OAuth app integrations, which is required for adding/using Custom OAuth App Integration like Tableau Cloud for Databricks in AWS cloud.`,
+		Long: `These APIs enable administrators to manage custom OAuth app integrations,
   which is required for adding/using Custom OAuth App Integration like Tableau
   Cloud for Databricks in AWS cloud.`,
 		GroupID: "oauth2",
@@ -62,7 +60,9 @@ func newCreate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createReq.Confidential, "confidential", createReq.Confidential, `indicates if an oauth client-secret should be generated.`)
+	cmd.Flags().BoolVar(&createReq.Confidential, "confidential", createReq.Confidential, `This field indicates whether an OAuth client secret is required to authenticate this client.`)
+	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Name of the custom OAuth app.`)
+	// TODO: array: redirect_urls
 	// TODO: array: scopes
 	// TODO: complex arg: token_access_policy
 
@@ -72,10 +72,15 @@ func newCreate() *cobra.Command {
   
   Create Custom OAuth App Integration.
   
-  You can retrieve the custom oauth app integration via
+  You can retrieve the custom OAuth app integration via
   :method:CustomAppIntegration/get.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -87,8 +92,6 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := a.CustomAppIntegration.Create(ctx, createReq)
@@ -131,10 +134,7 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete Custom OAuth App Integration.
   
   Delete an existing Custom OAuth App Integration. You can retrieve the custom
-  oauth app integration via :method:CustomAppIntegration/get.
-
-  Arguments:
-    INTEGRATION_ID: The oauth app integration ID.`
+  OAuth app integration via :method:CustomAppIntegration/get.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -189,10 +189,7 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get OAuth Custom App Integration.`
 	cmd.Long = `Get OAuth Custom App Integration.
   
-  Gets the Custom OAuth App Integration for the given integration id.
-
-  Arguments:
-    INTEGRATION_ID: The oauth app integration ID.`
+  Gets the Custom OAuth App Integration for the given integration id.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -233,25 +230,40 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
+	*oauth2.ListCustomAppIntegrationsRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
+	var listReq oauth2.ListCustomAppIntegrationsRequest
+
+	// TODO: short flags
+
+	cmd.Flags().BoolVar(&listReq.IncludeCreatorUsername, "include-creator-username", listReq.IncludeCreatorUsername, ``)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
+
 	cmd.Use = "list"
 	cmd.Short = `Get custom oauth app integrations.`
 	cmd.Long = `Get custom oauth app integrations.
   
-  Get the list of custom oauth app integrations for the specified Databricks
+  Get the list of custom OAuth app integrations for the specified Databricks
   account`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		response := a.CustomAppIntegration.List(ctx)
+
+		response := a.CustomAppIntegration.List(ctx, listReq)
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -261,7 +273,7 @@ func newList() *cobra.Command {
 
 	// Apply optional overrides to this command.
 	for _, fn := range listOverrides {
-		fn(cmd)
+		fn(cmd, &listReq)
 	}
 
 	return cmd
@@ -293,10 +305,7 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Updates Custom OAuth App Integration.
   
   Updates an existing custom OAuth App Integration. You can retrieve the custom
-  oauth app integration via :method:CustomAppIntegration/get.
-
-  Arguments:
-    INTEGRATION_ID: The oauth app integration ID.`
+  OAuth app integration via :method:CustomAppIntegration/get.`
 
 	cmd.Annotations = make(map[string]string)
 

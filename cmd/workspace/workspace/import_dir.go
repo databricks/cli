@@ -134,8 +134,7 @@ Notebooks will have their extensions (one of .scala, .py, .sql, .ipynb, .r) stri
 			return err
 		}
 
-		// TODO: print progress events on stderr instead: https://github.com/databricks/cli/issues/448
-		err = cmdio.RenderJson(ctx, newImportStartedEvent(opts.sourceDir))
+		err = cmdio.RenderWithTemplate(ctx, newImportStartedEvent(opts.sourceDir), "", "Importing files from {{.SourcePath}}\n")
 		if err != nil {
 			return err
 		}
@@ -145,7 +144,7 @@ Notebooks will have their extensions (one of .scala, .py, .sql, .ipynb, .r) stri
 		if err != nil {
 			return err
 		}
-		return cmdio.RenderJson(ctx, newImportCompletedEvent(opts.targetDir))
+		return cmdio.RenderWithTemplate(ctx, newImportCompletedEvent(opts.targetDir), "", "Import complete\n")
 	}
 
 	return cmd

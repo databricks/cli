@@ -60,11 +60,17 @@ func newGet() *cobra.Command {
 
 	// TODO: short flags
 
+	cmd.Flags().Int64Var(&getReq.Version, "version", getReq.Version, `The version number for the family to fetch.`)
+
 	cmd.Use = "get POLICY_FAMILY_ID"
 	cmd.Short = `Get policy family information.`
 	cmd.Long = `Get policy family information.
   
-  Retrieve the information for an policy family based on its identifier.`
+  Retrieve the information for an policy family based on its identifier and
+  version
+
+  Arguments:
+    POLICY_FAMILY_ID: The family ID about which to retrieve information.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -115,14 +121,15 @@ func newList() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Flags().Int64Var(&listReq.MaxResults, "max-results", listReq.MaxResults, `The max number of policy families to return.`)
+	cmd.Flags().Int64Var(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of policy families to return.`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A token that can be used to get the next page of results.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List policy families.`
 	cmd.Long = `List policy families.
   
-  Retrieve a list of policy families. This API is paginated.`
+  Returns the list of policy definition types available to use at their latest
+  version. This API is paginated.`
 
 	cmd.Annotations = make(map[string]string)
 
