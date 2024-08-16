@@ -102,8 +102,8 @@ func TestFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
 				},
 			}, nil)
 
-			// Mock bespoke API calls to /api/2.0/workspace/get-status, to figure
-			// out the right file extension for the notebook.
+			// Mock bespoke API calls to /api/2.0/workspace/get-status, that are
+			// used to figure out the right file extension for the notebook.
 			statNotebook := wsfsFileInfo{
 				ObjectInfo: workspace.ObjectInfo{
 					Path:       tc.notebookPath,
