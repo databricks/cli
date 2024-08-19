@@ -57,7 +57,7 @@ func (s *Sync) applyMkdir(ctx context.Context, localName string) error {
 func (s *Sync) applyPut(ctx context.Context, localName string) error {
 	s.notifyProgress(ctx, EventActionPut, localName, 0.0)
 
-	localFile, err := s.LocalPath.Open(localName)
+	localFile, err := s.LocalRoot.Open(localName)
 	if err != nil {
 		return err
 	}
