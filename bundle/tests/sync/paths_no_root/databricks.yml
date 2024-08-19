@@ -15,7 +15,7 @@ targets:
       paths:
         - staging
 
-  nothing: ~
+  undefined: ~
 
   nil:
     sync:
