@@ -1,6 +1,6 @@
 // Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
 
-package provider_listings
+package alerts_legacy
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/marketplace"
+	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
 )
 
@@ -18,13 +18,21 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "provider-listings",
-		Short: `Listings are the core entities in the Marketplace.`,
-		Long: `Listings are the core entities in the Marketplace. They represent the products
-  that are available for consumption.`,
-		GroupID: "marketplace",
+		Use:   "alerts-legacy",
+		Short: `The alerts API can be used to perform CRUD operations on alerts.`,
+		Long: `The alerts API can be used to perform CRUD operations on alerts. An alert is a
+  Databricks SQL object that periodically runs a query, evaluates a condition of
+  its result, and notifies one or more users and/or notification destinations if
+  the condition was met. Alerts can be scheduled using the sql_task type of
+  the Jobs API, e.g. :method:jobs/create.
+  
+  **Note**: A new version of the Databricks SQL API is now available. Please see
+  the latest version. [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`,
+		GroupID: "sql",
 		Annotations: map[string]string{
-			"package": "marketplace",
+			"package": "sql",
 		},
 	}
 
@@ -49,23 +57,33 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*marketplace.CreateListingRequest,
+	*sql.CreateAlert,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var createReq marketplace.CreateListingRequest
+	var createReq sql.CreateAlert
 	var createJson flags.JsonFlag
 
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&createReq.Parent, "parent", createReq.Parent, `The identifier of the workspace folder containing the object.`)
+	cmd.Flags().IntVar(&createReq.Rearm, "rearm", createReq.Rearm, `Number of seconds after being triggered before the alert rearms itself and can be triggered again.`)
+
 	cmd.Use = "create"
-	cmd.Short = `Create a listing.`
-	cmd.Long = `Create a listing.
+	cmd.Short = `Create an alert.`
+	cmd.Long = `Create an alert.
   
-  Create a new listing`
+  Creates an alert. An alert is a Databricks SQL object that periodically runs a
+  query, evaluates a condition of its result, and notifies users or notification
+  destinations if the condition was met.
+  
+  **Note**: A new version of the Databricks SQL API is now available. Please use
+  :method:alerts/create instead. [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -83,7 +101,7 @@ func newCreate() *cobra.Command {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.ProviderListings.Create(ctx, createReq)
+		response, err := w.AlertsLegacy.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
@@ -108,21 +126,28 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*marketplace.DeleteListingRequest,
+	*sql.DeleteAlertsLegacyRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var deleteReq marketplace.DeleteListingRequest
+	var deleteReq sql.DeleteAlertsLegacyRequest
 
 	// TODO: short flags
 
-	cmd.Use = "delete ID"
-	cmd.Short = `Delete a listing.`
-	cmd.Long = `Delete a listing.
+	cmd.Use = "delete ALERT_ID"
+	cmd.Short = `Delete an alert.`
+	cmd.Long = `Delete an alert.
   
-  Delete a listing`
+  Deletes an alert. Deleted alerts are no longer accessible and cannot be
+  restored. **Note**: Unlike queries and dashboards, alerts cannot be moved to
+  the trash.
+  
+  **Note**: A new version of the Databricks SQL API is now available. Please use
+  :method:alerts/delete instead. [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -133,11 +158,11 @@ func newDelete() *cobra.Command {
 
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No ID argument specified. Loading names for Provider Listings drop-down."
-			names, err := w.ProviderListings.ListingSummaryNameToIdMap(ctx, marketplace.GetListingsRequest{})
+			promptSpinner <- "No ALERT_ID argument specified. Loading names for Alerts Legacy drop-down."
+			names, err := w.AlertsLegacy.LegacyAlertNameToIdMap(ctx)
 			close(promptSpinner)
 			if err != nil {
-				return fmt.Errorf("failed to load names for Provider Listings drop-down. Please manually specify required arguments. Original error: %w", err)
+				return fmt.Errorf("failed to load names for Alerts Legacy drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
 			id, err := cmdio.Select(ctx, names, "")
 			if err != nil {
@@ -148,9 +173,9 @@ func newDelete() *cobra.Command {
 		if len(args) != 1 {
 			return fmt.Errorf("expected to have ")
 		}
-		deleteReq.Id = args[0]
+		deleteReq.AlertId = args[0]
 
-		err = w.ProviderListings.Delete(ctx, deleteReq)
+		err = w.AlertsLegacy.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
@@ -175,21 +200,26 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*marketplace.GetListingRequest,
+	*sql.GetAlertsLegacyRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getReq marketplace.GetListingRequest
+	var getReq sql.GetAlertsLegacyRequest
 
 	// TODO: short flags
 
-	cmd.Use = "get ID"
-	cmd.Short = `Get a listing.`
-	cmd.Long = `Get a listing.
+	cmd.Use = "get ALERT_ID"
+	cmd.Short = `Get an alert.`
+	cmd.Long = `Get an alert.
   
-  Get a listing`
+  Gets an alert.
+  
+  **Note**: A new version of the Databricks SQL API is now available. Please use
+  :method:alerts/get instead. [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -200,11 +230,11 @@ func newGet() *cobra.Command {
 
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No ID argument specified. Loading names for Provider Listings drop-down."
-			names, err := w.ProviderListings.ListingSummaryNameToIdMap(ctx, marketplace.GetListingsRequest{})
+			promptSpinner <- "No ALERT_ID argument specified. Loading names for Alerts Legacy drop-down."
+			names, err := w.AlertsLegacy.LegacyAlertNameToIdMap(ctx)
 			close(promptSpinner)
 			if err != nil {
-				return fmt.Errorf("failed to load names for Provider Listings drop-down. Please manually specify required arguments. Original error: %w", err)
+				return fmt.Errorf("failed to load names for Alerts Legacy drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
 			id, err := cmdio.Select(ctx, names, "")
 			if err != nil {
@@ -215,9 +245,9 @@ func newGet() *cobra.Command {
 		if len(args) != 1 {
 			return fmt.Errorf("expected to have ")
 		}
-		getReq.Id = args[0]
+		getReq.AlertId = args[0]
 
-		response, err := w.ProviderListings.Get(ctx, getReq)
+		response, err := w.AlertsLegacy.Get(ctx, getReq)
 		if err != nil {
 			return err
 		}
@@ -242,39 +272,33 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*marketplace.GetListingsRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var listReq marketplace.GetListingsRequest
-
-	// TODO: short flags
-
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
-
 	cmd.Use = "list"
-	cmd.Short = `List listings.`
-	cmd.Long = `List listings.
+	cmd.Short = `Get alerts.`
+	cmd.Long = `Get alerts.
   
-  List listings owned by this provider`
+  Gets a list of alerts.
+  
+  **Note**: A new version of the Databricks SQL API is now available. Please use
+  :method:alerts/list instead. [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`
 
 	cmd.Annotations = make(map[string]string)
-
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(0)
-		return check(cmd, args)
-	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-
-		response := w.ProviderListings.List(ctx, listReq)
-		return cmdio.RenderIterator(ctx, response)
+		response, err := w.AlertsLegacy.List(ctx)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -283,7 +307,7 @@ func newList() *cobra.Command {
 
 	// Apply optional overrides to this command.
 	for _, fn := range listOverrides {
-		fn(cmd, &listReq)
+		fn(cmd)
 	}
 
 	return cmd
@@ -295,23 +319,30 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*marketplace.UpdateListingRequest,
+	*sql.EditAlert,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var updateReq marketplace.UpdateListingRequest
+	var updateReq sql.EditAlert
 	var updateJson flags.JsonFlag
 
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Use = "update ID"
-	cmd.Short = `Update listing.`
-	cmd.Long = `Update listing.
+	cmd.Flags().IntVar(&updateReq.Rearm, "rearm", updateReq.Rearm, `Number of seconds after being triggered before the alert rearms itself and can be triggered again.`)
+
+	cmd.Use = "update ALERT_ID"
+	cmd.Short = `Update an alert.`
+	cmd.Long = `Update an alert.
   
-  Update a listing`
+  Updates an alert.
+  
+  **Note**: A new version of the Databricks SQL API is now available. Please use
+  :method:alerts/update instead. [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -333,13 +364,13 @@ func newUpdate() *cobra.Command {
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
-		updateReq.Id = args[0]
+		updateReq.AlertId = args[0]
 
-		response, err := w.ProviderListings.Update(ctx, updateReq)
+		err = w.AlertsLegacy.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -354,4 +385,4 @@ func newUpdate() *cobra.Command {
 	return cmd
 }
 
-// end service ProviderListings
+// end service AlertsLegacy

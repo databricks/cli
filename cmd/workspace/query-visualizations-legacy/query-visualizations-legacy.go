@@ -1,6 +1,6 @@
 // Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
 
-package query_visualizations
+package query_visualizations_legacy
 
 import (
 	"fmt"
@@ -18,11 +18,16 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "query-visualizations",
-		Short: `This is an evolving API that facilitates the addition and removal of visualizations from existing queries in the Databricks Workspace.`,
+		Use:   "query-visualizations-legacy",
+		Short: `This is an evolving API that facilitates the addition and removal of vizualisations from existing queries within the Databricks Workspace.`,
 		Long: `This is an evolving API that facilitates the addition and removal of
-  visualizations from existing queries in the Databricks Workspace. Data
-  structures can change over time.`,
+  vizualisations from existing queries within the Databricks Workspace. Data
+  structures may change over time.
+  
+  **Note**: A new version of the Databricks SQL API is now available. Please see
+  the latest version. [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`,
 		GroupID: "sql",
 		Annotations: map[string]string{
 			"package": "sql",
@@ -51,32 +56,30 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*sql.CreateVisualizationRequest,
+	*sql.CreateQueryVisualizationsLegacyRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var createReq sql.CreateVisualizationRequest
+	var createReq sql.CreateQueryVisualizationsLegacyRequest
 	var createJson flags.JsonFlag
 
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: complex arg: visualization
-
 	cmd.Use = "create"
-	cmd.Short = `Add a visualization to a query.`
-	cmd.Long = `Add a visualization to a query.
+	cmd.Short = `Add visualization to a query.`
+	cmd.Long = `Add visualization to a query.
   
-  Adds a visualization to a query.`
+  Creates visualization in the query.
+  
+  **Note**: A new version of the Databricks SQL API is now available. Please use
+  :method:queryvisualizations/create instead. [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`
 
 	cmd.Annotations = make(map[string]string)
-
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(0)
-		return check(cmd, args)
-	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -88,9 +91,11 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return err
 			}
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.QueryVisualizations.Create(ctx, createReq)
+		response, err := w.QueryVisualizationsLegacy.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
@@ -115,21 +120,29 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*sql.DeleteVisualizationRequest,
+	*sql.DeleteQueryVisualizationsLegacyRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var deleteReq sql.DeleteVisualizationRequest
+	var deleteReq sql.DeleteQueryVisualizationsLegacyRequest
 
 	// TODO: short flags
 
 	cmd.Use = "delete ID"
-	cmd.Short = `Remove a visualization.`
-	cmd.Long = `Remove a visualization.
+	cmd.Short = `Remove visualization.`
+	cmd.Long = `Remove visualization.
   
-  Removes a visualization.`
+  Removes a visualization from the query.
+  
+  **Note**: A new version of the Databricks SQL API is now available. Please use
+  :method:queryvisualizations/delete instead. [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html
+
+  Arguments:
+    ID: Widget ID returned by :method:queryvizualisations/create`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -145,7 +158,7 @@ func newDelete() *cobra.Command {
 
 		deleteReq.Id = args[0]
 
-		err = w.QueryVisualizations.Delete(ctx, deleteReq)
+		err = w.QueryVisualizationsLegacy.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
@@ -170,44 +183,36 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*sql.UpdateVisualizationRequest,
+	*sql.LegacyVisualization,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var updateReq sql.UpdateVisualizationRequest
+	var updateReq sql.LegacyVisualization
 	var updateJson flags.JsonFlag
 
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: complex arg: visualization
-
-	cmd.Use = "update ID UPDATE_MASK"
-	cmd.Short = `Update a visualization.`
-	cmd.Long = `Update a visualization.
+	cmd.Use = "update ID"
+	cmd.Short = `Edit existing visualization.`
+	cmd.Long = `Edit existing visualization.
   
-  Updates a visualization.
+  Updates visualization in the query.
+  
+  **Note**: A new version of the Databricks SQL API is now available. Please use
+  :method:queryvisualizations/update instead. [Learn more]
+  
+  [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html
 
   Arguments:
-    ID: 
-    UPDATE_MASK: Field mask is required to be passed into the PATCH request. Field mask
-      specifies which fields of the setting payload will be updated. The field
-      mask needs to be supplied as single string. To specify multiple fields in
-      the field mask, use comma as the separator (no space).`
+    ID: The UUID for this visualization.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		if cmd.Flags().Changed("json") {
-			err := root.ExactArgs(1)(cmd, args)
-			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only ID as positional arguments. Provide 'update_mask' in your JSON input")
-			}
-			return nil
-		}
-		check := root.ExactArgs(2)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -221,13 +226,12 @@ func newUpdate() *cobra.Command {
 			if err != nil {
 				return err
 			}
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 		updateReq.Id = args[0]
-		if !cmd.Flags().Changed("json") {
-			updateReq.UpdateMask = args[1]
-		}
 
-		response, err := w.QueryVisualizations.Update(ctx, updateReq)
+		response, err := w.QueryVisualizationsLegacy.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
@@ -246,4 +250,4 @@ func newUpdate() *cobra.Command {
 	return cmd
 }
 
-// end service QueryVisualizations
+// end service QueryVisualizationsLegacy

@@ -17,8 +17,8 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "published-app-integration",
-		Short: `These APIs enable administrators to manage published oauth app integrations, which is required for adding/using Published OAuth App Integration like Tableau Desktop for Databricks in AWS cloud.`,
-		Long: `These APIs enable administrators to manage published oauth app integrations,
+		Short: `These APIs enable administrators to manage published OAuth app integrations, which is required for adding/using Published OAuth App Integration like Tableau Desktop for Databricks in AWS cloud.`,
+		Long: `These APIs enable administrators to manage published OAuth app integrations,
   which is required for adding/using Published OAuth App Integration like
   Tableau Desktop for Databricks in AWS cloud.`,
 		GroupID: "oauth2",
@@ -60,7 +60,7 @@ func newCreate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.AppId, "app-id", createReq.AppId, `app_id of the oauth published app integration.`)
+	cmd.Flags().StringVar(&createReq.AppId, "app-id", createReq.AppId, `App id of the OAuth published app integration.`)
 	// TODO: complex arg: token_access_policy
 
 	cmd.Use = "create"
@@ -69,7 +69,7 @@ func newCreate() *cobra.Command {
   
   Create Published OAuth App Integration.
   
-  You can retrieve the published oauth app integration via
+  You can retrieve the published OAuth app integration via
   :method:PublishedAppIntegration/get.`
 
 	cmd.Annotations = make(map[string]string)
@@ -131,10 +131,7 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete Published OAuth App Integration.
   
   Delete an existing Published OAuth App Integration. You can retrieve the
-  published oauth app integration via :method:PublishedAppIntegration/get.
-
-  Arguments:
-    INTEGRATION_ID: The oauth app integration ID.`
+  published OAuth app integration via :method:PublishedAppIntegration/get.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -189,10 +186,7 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get OAuth Published App Integration.`
 	cmd.Long = `Get OAuth Published App Integration.
   
-  Gets the Published OAuth App Integration for the given integration id.
-
-  Arguments:
-    INTEGRATION_ID: The oauth app integration ID.`
+  Gets the Published OAuth App Integration for the given integration id.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -233,25 +227,39 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
+	*oauth2.ListPublishedAppIntegrationsRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
+	var listReq oauth2.ListPublishedAppIntegrationsRequest
+
+	// TODO: short flags
+
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
+
 	cmd.Use = "list"
 	cmd.Short = `Get published oauth app integrations.`
 	cmd.Long = `Get published oauth app integrations.
   
-  Get the list of published oauth app integrations for the specified Databricks
+  Get the list of published OAuth app integrations for the specified Databricks
   account`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		response := a.PublishedAppIntegration.List(ctx)
+
+		response := a.PublishedAppIntegration.List(ctx, listReq)
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -261,7 +269,7 @@ func newList() *cobra.Command {
 
 	// Apply optional overrides to this command.
 	for _, fn := range listOverrides {
-		fn(cmd)
+		fn(cmd, &listReq)
 	}
 
 	return cmd
@@ -292,10 +300,7 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Updates Published OAuth App Integration.
   
   Updates an existing published OAuth App Integration. You can retrieve the
-  published oauth app integration via :method:PublishedAppIntegration/get.
-
-  Arguments:
-    INTEGRATION_ID: The oauth app integration ID.`
+  published OAuth app integration via :method:PublishedAppIntegration/get.`
 
 	cmd.Annotations = make(map[string]string)
 

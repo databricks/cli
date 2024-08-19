@@ -15,9 +15,10 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "query-history",
-		Short:   `Access the history of queries through SQL warehouses.`,
-		Long:    `Access the history of queries through SQL warehouses.`,
+		Use:   "query-history",
+		Short: `A service responsible for storing and retrieving the list of queries run against SQL endpoints, serverless compute, and DLT.`,
+		Long: `A service responsible for storing and retrieving the list of queries run
+  against SQL endpoints, serverless compute, and DLT.`,
 		GroupID: "sql",
 		Annotations: map[string]string{
 			"package": "sql",
@@ -52,7 +53,6 @@ func newList() *cobra.Command {
 	// TODO: short flags
 
 	// TODO: complex arg: filter_by
-	cmd.Flags().BoolVar(&listReq.IncludeMetrics, "include-metrics", listReq.IncludeMetrics, `Whether to include metrics about query.`)
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Limit the number of results returned in one page.`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A token that can be used to get the next page of results.`)
 
@@ -60,9 +60,13 @@ func newList() *cobra.Command {
 	cmd.Short = `List Queries.`
 	cmd.Long = `List Queries.
   
-  List the history of queries through SQL warehouses.
+  List the history of queries through SQL warehouses, serverless compute, and
+  DLT.
   
-  You can filter by user ID, warehouse ID, status, and time range.`
+  You can filter by user ID, warehouse ID, status, and time range. Most recently
+  started queries are returned first (up to max_results in request). The
+  pagination token returned in response can be used to list subsequent query
+  statuses.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -76,8 +80,11 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		response := w.QueryHistory.List(ctx, listReq)
-		return cmdio.RenderIterator(ctx, response)
+		response, err := w.QueryHistory.List(ctx, listReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

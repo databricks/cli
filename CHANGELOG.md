@@ -1,5 +1,96 @@
 # Version changelog
 
+## [Release] Release v0.226.0
+
+CLI:
+ * Add command line autocomplete to the fs commands ([#1622](https://github.com/databricks/cli/pull/1622)).
+ * Add trailing slash to directory to produce completions for ([#1666](https://github.com/databricks/cli/pull/1666)).
+ * Fix ability to import the CLI repository as module ([#1671](https://github.com/databricks/cli/pull/1671)).
+ * Fix host resolution order in `auth login` ([#1370](https://github.com/databricks/cli/pull/1370)).
+ * Print text logs in `import-dir` and `export-dir` commands ([#1682](https://github.com/databricks/cli/pull/1682)).
+
+Bundles:
+ * Expand and upload local wheel libraries for all task types ([#1649](https://github.com/databricks/cli/pull/1649)).
+ * Clarify file format required for the `config-file` flag in `bundle init` ([#1651](https://github.com/databricks/cli/pull/1651)).
+ * Fixed incorrectly cleaning up python wheel dist folder ([#1656](https://github.com/databricks/cli/pull/1656)).
+ * Merge job parameters based on their name ([#1659](https://github.com/databricks/cli/pull/1659)).
+ * Fix glob expansion after running a generic build command ([#1662](https://github.com/databricks/cli/pull/1662)).
+ * Upload local libraries even if they don't have artifact defined ([#1664](https://github.com/databricks/cli/pull/1664)).
+
+Internal:
+ * Fix python wheel task integration tests ([#1648](https://github.com/databricks/cli/pull/1648)).
+ * Skip pushing Terraform state after destroy ([#1667](https://github.com/databricks/cli/pull/1667)).
+ * Enable Spark JAR task test ([#1658](https://github.com/databricks/cli/pull/1658)).
+ * Run Spark JAR task test on multiple DBR versions ([#1665](https://github.com/databricks/cli/pull/1665)).
+ * Stop tracking file path locations in bundle resources ([#1673](https://github.com/databricks/cli/pull/1673)).
+ * Update VS Code settings to match latest value from IDE plugin ([#1677](https://github.com/databricks/cli/pull/1677)).
+ * Use `service.NamedIdMap` to make lookup generation deterministic ([#1678](https://github.com/databricks/cli/pull/1678)).
+ * [Internal] Remove dependency to the `openapi` package of the Go SDK ([#1676](https://github.com/databricks/cli/pull/1676)).
+ * Upgrade TF provider to 1.50.0 ([#1681](https://github.com/databricks/cli/pull/1681)).
+ * Upgrade Go SDK to 0.44.0 ([#1679](https://github.com/databricks/cli/pull/1679)).
+
+API Changes:
+ * Changed `databricks account budgets create` command . New request type is .
+ * Changed `databricks account budgets create` command to return .
+ * Changed `databricks account budgets delete` command . New request type is .
+ * Changed `databricks account budgets delete` command to return .
+ * Changed `databricks account budgets get` command . New request type is .
+ * Changed `databricks account budgets get` command to return .
+ * Changed `databricks account budgets list` command to require request of .
+ * Changed `databricks account budgets list` command to return .
+ * Changed `databricks account budgets update` command . New request type is .
+ * Changed `databricks account budgets update` command to return .
+ * Added `databricks account usage-dashboards` command group.
+ * Changed `databricks model-versions get` command to return .
+ * Changed `databricks cluster-policies create` command with new required argument order.
+ * Changed `databricks cluster-policies edit` command with new required argument order.
+ * Added `databricks clusters update` command.
+ * Added `databricks genie` command group.
+ * Changed `databricks permission-migration migrate-permissions` command . New request type is .
+ * Changed `databricks permission-migration migrate-permissions` command to return .
+ * Changed `databricks account workspace-assignment delete` command to return .
+ * Changed `databricks account workspace-assignment update` command with new required argument order.
+ * Changed `databricks account custom-app-integration create` command with new required argument order.
+ * Changed `databricks account custom-app-integration list` command to require request of .
+ * Changed `databricks account published-app-integration list` command to require request of .
+ * Removed `databricks apps` command group.
+ * Added `databricks notification-destinations` command group.
+ * Changed `databricks shares list` command to require request of .
+ * Changed `databricks alerts create` command . New request type is .
+ * Changed `databricks alerts delete` command . New request type is .
+ * Changed `databricks alerts delete` command to return .
+ * Changed `databricks alerts get` command with new required argument order.
+ * Changed `databricks alerts list` command to require request of .
+ * Changed `databricks alerts list` command to return .
+ * Changed `databricks alerts update` command . New request type is .
+ * Changed `databricks alerts update` command to return .
+ * Changed `databricks queries create` command . New request type is .
+ * Changed `databricks queries delete` command . New request type is .
+ * Changed `databricks queries delete` command to return .
+ * Changed `databricks queries get` command with new required argument order.
+ * Changed `databricks queries list` command to return .
+ * Removed `databricks queries restore` command.
+ * Changed `databricks queries update` command . New request type is .
+ * Added `databricks queries list-visualizations` command.
+ * Changed `databricks query-visualizations create` command . New request type is .
+ * Changed `databricks query-visualizations delete` command . New request type is .
+ * Changed `databricks query-visualizations delete` command to return .
+ * Changed `databricks query-visualizations update` command . New request type is .
+ * Changed `databricks statement-execution execute-statement` command to return .
+ * Changed `databricks statement-execution get-statement` command to return .
+ * Added `databricks alerts-legacy` command group.
+ * Added `databricks queries-legacy` command group.
+ * Added `databricks query-visualizations-legacy` command group.
+
+OpenAPI commit f98c07f9c71f579de65d2587bb0292f83d10e55d (2024-08-12)
+Dependency updates:
+ * Bump github.com/hashicorp/hc-install from 0.7.0 to 0.8.0 ([#1652](https://github.com/databricks/cli/pull/1652)).
+ * Bump golang.org/x/sync from 0.7.0 to 0.8.0 ([#1655](https://github.com/databricks/cli/pull/1655)).
+ * Bump golang.org/x/mod from 0.19.0 to 0.20.0 ([#1654](https://github.com/databricks/cli/pull/1654)).
+ * Bump golang.org/x/oauth2 from 0.21.0 to 0.22.0 ([#1653](https://github.com/databricks/cli/pull/1653)).
+ * Bump golang.org/x/text from 0.16.0 to 0.17.0 ([#1670](https://github.com/databricks/cli/pull/1670)).
+ * Bump golang.org/x/term from 0.22.0 to 0.23.0 ([#1669](https://github.com/databricks/cli/pull/1669)).
+
 ## 0.225.0
 
 Bundles:

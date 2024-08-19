@@ -80,6 +80,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Description about the recipient.`)
 	cmd.Flags().StringVar(&createReq.DataRecipientGlobalMetastoreId, "data-recipient-global-metastore-id", createReq.DataRecipientGlobalMetastoreId, `The global Unity Catalog metastore id provided by the data recipient.`)
+	cmd.Flags().Int64Var(&createReq.ExpirationTime, "expiration-time", createReq.ExpirationTime, `Expiration timestamp of the token, in epoch milliseconds.`)
 	// TODO: complex arg: ip_access_list
 	cmd.Flags().StringVar(&createReq.Owner, "owner", createReq.Owner, `Username of the recipient owner.`)
 	// TODO: complex arg: properties_kvpairs
@@ -311,6 +312,8 @@ func newList() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Flags().StringVar(&listReq.DataRecipientGlobalMetastoreId, "data-recipient-global-metastore-id", listReq.DataRecipientGlobalMetastoreId, `If not provided, all recipients will be returned.`)
+	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of recipients to return.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List share recipients.`
@@ -449,6 +452,9 @@ func newSharePermissions() *cobra.Command {
 
 	// TODO: short flags
 
+	cmd.Flags().IntVar(&sharePermissionsReq.MaxResults, "max-results", sharePermissionsReq.MaxResults, `Maximum number of permissions to return.`)
+	cmd.Flags().StringVar(&sharePermissionsReq.PageToken, "page-token", sharePermissionsReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+
 	cmd.Use = "share-permissions NAME"
 	cmd.Short = `Get recipient share permissions.`
 	cmd.Long = `Get recipient share permissions.
@@ -523,6 +529,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Description about the recipient.`)
+	cmd.Flags().Int64Var(&updateReq.ExpirationTime, "expiration-time", updateReq.ExpirationTime, `Expiration timestamp of the token, in epoch milliseconds.`)
 	// TODO: complex arg: ip_access_list
 	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the recipient.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of the recipient owner.`)

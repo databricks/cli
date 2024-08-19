@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/cmd/sync"
 	"github.com/databricks/cli/cmd/version"
 	"github.com/databricks/cli/cmd/workspace"
+	"github.com/databricks/cli/cmd/workspace/apps"
 	"github.com/spf13/cobra"
 )
 
@@ -67,6 +68,7 @@ func New(ctx context.Context) *cobra.Command {
 
 	// Add other subcommands.
 	cli.AddCommand(api.New())
+	cli.AddCommand(apps.New())
 	cli.AddCommand(auth.New())
 	cli.AddCommand(bundle.New())
 	cli.AddCommand(configure.New())

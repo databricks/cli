@@ -111,6 +111,10 @@ func TestAccountClientOrPrompt(t *testing.T) {
 		expectPrompts(t, accountPromptFn, &config.Config{
 			Host:      "https://accounts.azuredatabricks.net/",
 			AccountID: "1234",
+
+			// Force SDK to not try and lookup the tenant ID from the host.
+			// The host above is invalid and will not be reachable.
+			AzureTenantID: "nonempty",
 		})
 	})
 
@@ -165,6 +169,10 @@ func TestWorkspaceClientOrPrompt(t *testing.T) {
 	t.Run("Prompt if no credential provider can be configured", func(t *testing.T) {
 		expectPrompts(t, workspacePromptFn, &config.Config{
 			Host: "https://adb-1111.11.azuredatabricks.net/",
+
+			// Force SDK to not try and lookup the tenant ID from the host.
+			// The host above is invalid and will not be reachable.
+			AzureTenantID: "nonempty",
 		})
 	})
 
