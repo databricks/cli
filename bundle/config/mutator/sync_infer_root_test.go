@@ -36,7 +36,7 @@ func TestSyncInferRoot_NominalAbsolute(t *testing.T) {
 	ctx := context.Background()
 	diags := bundle.Apply(ctx, b, mutator.SyncInferRoot())
 	assert.NoError(t, diags.Error())
-	assert.Equal(t, b.RootPath, b.SyncRootPath)
+	assert.Equal(t, filepath.FromSlash("/tmp/some/dir"), b.SyncRootPath)
 
 	// Check that the paths are unchanged.
 	assert.Equal(t, []string{"."}, b.Config.Sync.Paths)
@@ -67,7 +67,7 @@ func TestSyncInferRoot_NominalRelative(t *testing.T) {
 	ctx := context.Background()
 	diags := bundle.Apply(ctx, b, mutator.SyncInferRoot())
 	assert.NoError(t, diags.Error())
-	assert.Equal(t, b.RootPath, b.SyncRootPath)
+	assert.Equal(t, filepath.FromSlash("some/dir"), b.SyncRootPath)
 
 	// Check that the paths are unchanged.
 	assert.Equal(t, []string{"."}, b.Config.Sync.Paths)
@@ -161,13 +161,13 @@ func TestSyncInferRoot_MultiplePaths(t *testing.T) {
 	ctx := context.Background()
 	diags := bundle.Apply(ctx, b, mutator.SyncInferRoot())
 	assert.NoError(t, diags.Error())
-	assert.Equal(t, "/tmp/some", filepath.FromSlash(b.SyncRootPath))
+	assert.Equal(t, filepath.FromSlash("/tmp/some"), b.SyncRootPath)
 
 	// Check that the paths are updated.
-	assert.Equal(t, "bundle/root/foo", filepath.FromSlash(b.Config.Sync.Paths[0]))
-	assert.Equal(t, "bundle/common", filepath.FromSlash(b.Config.Sync.Paths[1]))
-	assert.Equal(t, "bundle/root/bar", filepath.FromSlash(b.Config.Sync.Paths[2]))
-	assert.Equal(t, "baz", filepath.FromSlash(b.Config.Sync.Paths[3]))
+	assert.Equal(t, filepath.FromSlash("bundle/root/foo"), b.Config.Sync.Paths[0])
+	assert.Equal(t, filepath.FromSlash("bundle/common"), b.Config.Sync.Paths[1])
+	assert.Equal(t, filepath.FromSlash("bundle/root/bar"), b.Config.Sync.Paths[2])
+	assert.Equal(t, filepath.FromSlash("baz"), b.Config.Sync.Paths[3])
 }
 
 func TestSyncInferRoot_Error(t *testing.T) {
