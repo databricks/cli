@@ -67,9 +67,13 @@ func DetectVEnvExecutable(venvPath string) (string, error) {
 
 	// pyvenv.cfg must be always present in correctly configured virtualenv,
 	// read more in https://snarky.ca/how-virtual-environments-work/
-	_, err := os.Stat(filepath.Join(venvPath, "pyvenv.cfg"))
-	if errors.Is(err, fs.ErrNotExist) {
-		return "", fmt.Errorf("expected %q to be virtualenv, but pyenv.cfg is missing", venvPath)
+	pyvenvPath := filepath.Join(venvPath, "pyvenv.cfg")
+	if _, err := os.Stat(pyvenvPath); err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return "", fmt.Errorf("expected %q to be virtualenv, but pyvenv.cfg is missing", venvPath)
+		} else {
+			return "", fmt.Errorf("can't find %q: %w", pyvenvPath, err)
+		}
 	}
 
 	return interpreterPath, nil
