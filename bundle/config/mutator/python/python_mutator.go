@@ -419,7 +419,6 @@ func isOmitemptyDelete(left dyn.Value) bool {
 func detectExecutable(ctx context.Context, venvPath string) (string, error) {
 	if venvPath == "" {
 		interpreter, err := python.DetectExecutable(ctx)
-
 		if err != nil {
 			return "", err
 		}
