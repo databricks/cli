@@ -47,7 +47,11 @@ func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*syn
 	}
 
 	opts := sync.SyncOptions{
-		LocalPath:    vfs.MustNew(args[0]),
+		LocalRoot: vfs.MustNew(args[0]),
+		Paths:     []string{"."},
+		Include:   nil,
+		Exclude:   nil,
+
 		RemotePath:   args[1],
 		Full:         f.full,
 		PollInterval: f.interval,

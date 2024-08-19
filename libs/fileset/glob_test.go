@@ -24,15 +24,19 @@ func TestGlobFileset(t *testing.T) {
 	entries, err := root.ReadDir(".")
 	require.NoError(t, err)
 
+	// Remove testdata folder from entries
+	entries = slices.DeleteFunc(entries, func(de fs.DirEntry) bool {
+		return de.Name() == "testdata"
+	})
+
 	g, err := NewGlobSet(root, []string{
 		"./*.go",
 	})
 	require.NoError(t, err)
 
-	files, err := g.All()
+	files, err := g.Files()
 	require.NoError(t, err)
 
-	// +1 as there's one folder in ../filer
 	require.Equal(t, len(files), len(entries))
 	for _, f := range files {
 		exists := slices.ContainsFunc(entries, func(de fs.DirEntry) bool {
@@ -46,7 +50,7 @@ func TestGlobFileset(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	files, err = g.All()
+	files, err = g.Files()
 	require.NoError(t, err)
 	require.Equal(t, len(files), 0)
 }
@@ -61,7 +65,7 @@ func TestGlobFilesetWithRelativeRoot(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	files, err := g.All()
+	files, err := g.Files()
 	require.NoError(t, err)
 	require.Equal(t, len(files), len(entries))
 }
@@ -82,7 +86,7 @@ func TestGlobFilesetRecursively(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	files, err := g.All()
+	files, err := g.Files()
 	require.NoError(t, err)
 	require.ElementsMatch(t, entries, collectRelativePaths(files))
 }
@@ -103,7 +107,7 @@ func TestGlobFilesetDir(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	files, err := g.All()
+	files, err := g.Files()
 	require.NoError(t, err)
 	require.ElementsMatch(t, entries, collectRelativePaths(files))
 }
@@ -124,7 +128,7 @@ func TestGlobFilesetDoubleQuotesWithFilePatterns(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	files, err := g.All()
+	files, err := g.Files()
 	require.NoError(t, err)
 	require.ElementsMatch(t, entries, collectRelativePaths(files))
 }
