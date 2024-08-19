@@ -39,6 +39,12 @@ type PyDABs struct {
 	// Required if PyDABs is enabled. PyDABs will load the code in the specified
 	// environment.
 	VEnvPath string `json:"venv_path,omitempty"`
+
+	// Import contains a list Python packages with PyDABs code.
+	//
+	// These packages are imported to discover resources, resource generators, and mutators.
+	// This list can include namespace packages, which causes the import of nested packages.
+	Import []string `json:"import,omitempty"`
 }
 
 type Command string
