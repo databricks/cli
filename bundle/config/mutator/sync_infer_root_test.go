@@ -2,6 +2,7 @@ package mutator_test
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -97,12 +98,12 @@ func TestSyncInferRoot_ParentDirectory(t *testing.T) {
 	ctx := context.Background()
 	diags := bundle.Apply(ctx, b, mutator.SyncInferRoot())
 	assert.NoError(t, diags.Error())
-	assert.Equal(t, "/tmp/some", b.SyncRootPath)
+	assert.Equal(t, filepath.FromSlash("/tmp/some"), b.SyncRootPath)
 
 	// Check that the paths are updated.
 	assert.Equal(t, []string{"common"}, b.Config.Sync.Paths)
-	assert.Equal(t, []string{"dir/foo", "dir/bar"}, b.Config.Sync.Include)
-	assert.Equal(t, []string{"dir/baz", "dir/qux"}, b.Config.Sync.Exclude)
+	assert.Equal(t, []string{filepath.FromSlash("dir/foo"), filepath.FromSlash("dir/bar")}, b.Config.Sync.Include)
+	assert.Equal(t, []string{filepath.FromSlash("dir/baz"), filepath.FromSlash("dir/qux")}, b.Config.Sync.Exclude)
 }
 
 func TestSyncInferRoot_ManyParentDirectories(t *testing.T) {
@@ -128,12 +129,18 @@ func TestSyncInferRoot_ManyParentDirectories(t *testing.T) {
 	ctx := context.Background()
 	diags := bundle.Apply(ctx, b, mutator.SyncInferRoot())
 	assert.NoError(t, diags.Error())
-	assert.Equal(t, "/tmp/some", b.SyncRootPath)
+	assert.Equal(t, filepath.FromSlash("/tmp/some"), b.SyncRootPath)
 
 	// Check that the paths are updated.
 	assert.Equal(t, []string{"common"}, b.Config.Sync.Paths)
-	assert.Equal(t, []string{"dir/that/is/very/deeply/nested/foo", "dir/that/is/very/deeply/nested/bar"}, b.Config.Sync.Include)
-	assert.Equal(t, []string{"dir/that/is/very/deeply/nested/baz", "dir/that/is/very/deeply/nested/qux"}, b.Config.Sync.Exclude)
+	assert.Equal(t, []string{
+		filepath.FromSlash("dir/that/is/very/deeply/nested/foo"),
+		filepath.FromSlash("dir/that/is/very/deeply/nested/bar"),
+	}, b.Config.Sync.Include)
+	assert.Equal(t, []string{
+		filepath.FromSlash("dir/that/is/very/deeply/nested/baz"),
+		filepath.FromSlash("dir/that/is/very/deeply/nested/qux"),
+	}, b.Config.Sync.Exclude)
 }
 
 func TestSyncInferRoot_MultiplePaths(t *testing.T) {
@@ -154,13 +161,13 @@ func TestSyncInferRoot_MultiplePaths(t *testing.T) {
 	ctx := context.Background()
 	diags := bundle.Apply(ctx, b, mutator.SyncInferRoot())
 	assert.NoError(t, diags.Error())
-	assert.Equal(t, "/tmp/some", b.SyncRootPath)
+	assert.Equal(t, "/tmp/some", filepath.FromSlash(b.SyncRootPath))
 
 	// Check that the paths are updated.
-	assert.Equal(t, "bundle/root/foo", b.Config.Sync.Paths[0])
-	assert.Equal(t, "bundle/common", b.Config.Sync.Paths[1])
-	assert.Equal(t, "bundle/root/bar", b.Config.Sync.Paths[2])
-	assert.Equal(t, "baz", b.Config.Sync.Paths[3])
+	assert.Equal(t, "bundle/root/foo", filepath.FromSlash(b.Config.Sync.Paths[0]))
+	assert.Equal(t, "bundle/common", filepath.FromSlash(b.Config.Sync.Paths[1]))
+	assert.Equal(t, "bundle/root/bar", filepath.FromSlash(b.Config.Sync.Paths[2]))
+	assert.Equal(t, "baz", filepath.FromSlash(b.Config.Sync.Paths[3]))
 }
 
 func TestSyncInferRoot_Error(t *testing.T) {

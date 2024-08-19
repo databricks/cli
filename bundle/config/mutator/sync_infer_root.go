@@ -50,7 +50,7 @@ func (m *syncInferRoot) computeRoot(path string, root string) string {
 		root = dir
 	}
 
-	return root
+	return filepath.Clean(root)
 }
 
 func (m *syncInferRoot) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
