@@ -218,7 +218,7 @@
                 }
               },
               "description": {
-                "description": "An optional description for the job. The maximum length is 1024 characters in UTF-8 encoding."
+                "description": "An optional description for the job. The maximum length is 27700 characters in UTF-8 encoding."
               },
               "edit_mode": {
                 "description": "Edit mode of the job.\n\n* `UI_LOCKED`: The job is in a locked UI state and cannot be modified.\n* `EDITABLE`: The job is in an editable state and can be modified."
@@ -935,7 +935,7 @@
                             }
                           },
                           "egg": {
-                            "description": "URI of the egg library to install. Supported URIs include Workspace paths, Unity Catalog Volumes paths, and S3 URIs.\nFor example: `{ \"egg\": \"/Workspace/path/to/library.egg\" }`, `{ \"egg\" : \"/Volumes/path/to/library.egg\" }` or\n`{ \"egg\": \"s3://my-bucket/library.egg\" }`.\nIf S3 is used, please make sure the cluster has read access on the library. You may need to\nlaunch the cluster with an IAM role to access the S3 URI."
+                            "description": "Deprecated. URI of the egg library to install. Installing Python egg files is deprecated and is not supported in Databricks Runtime 14.0 and above."
                           },
                           "jar": {
                             "description": "URI of the JAR library to install. Supported URIs include Workspace paths, Unity Catalog Volumes paths, and S3 URIs.\nFor example: `{ \"jar\": \"/Workspace/path/to/library.jar\" }`, `{ \"jar\" : \"/Volumes/path/to/library.jar\" }` or\n`{ \"jar\": \"s3://my-bucket/library.jar\" }`.\nIf S3 is used, please make sure the cluster has read access on the library. You may need to\nlaunch the cluster with an IAM role to access the S3 URI."
@@ -1827,13 +1827,16 @@
                           }
                         },
                         "external_model": {
-                          "description": "The external model to be served. NOTE: Only one of external_model and (entity_name, entity_version, workload_size, workload_type, and scale_to_zero_enabled)\ncan be specified with the latter set being used for custom model serving for a Databricks registered model. When an external_model is present, the served\nentities list can only have one served_entity object. For an existing endpoint with external_model, it can not be updated to an endpoint without external_model.\nIf the endpoint is created without external_model, users cannot update it to add external_model later.\n",
+                          "description": "The external model to be served. NOTE: Only one of external_model and (entity_name, entity_version, workload_size, workload_type, and scale_to_zero_enabled)\ncan be specified with the latter set being used for custom model serving for a Databricks registered model. For an existing endpoint with external_model,\nit cannot be updated to an endpoint without external_model. If the endpoint is created without external_model, users cannot update it to add external_model later.\nThe task type of all external models within an endpoint must be the same.\n",
                           "properties": {
                             "ai21labs_config": {
                               "description": "AI21Labs Config. Only required if the provider is 'ai21labs'.",
                               "properties": {
                                 "ai21labs_api_key": {
-                                  "description": "The Databricks secret key reference for an AI21Labs API key."
+                                  "description": "The Databricks secret key reference for an AI21 Labs API key. If you prefer to paste your API key directly, see `ai21labs_api_key_plaintext`. You must provide an API key using one of the following fields: `ai21labs_api_key` or `ai21labs_api_key_plaintext`."
+                                },
+                                "ai21labs_api_key_plaintext": {
+                                  "description": "An AI21 Labs API key provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `ai21labs_api_key`. You must provide an API key using one of the following fields: `ai21labs_api_key` or `ai21labs_api_key_plaintext`."
                                 }
                               }
                             },
@@ -1841,13 +1844,19 @@
                               "description": "Amazon Bedrock Config. Only required if the provider is 'amazon-bedrock'.",
                               "properties": {
                                 "aws_access_key_id": {
-                                  "description": "The Databricks secret key reference for an AWS Access Key ID with permissions to interact with Bedrock services."
+                                  "description": "The Databricks secret key reference for an AWS access key ID with permissions to interact with Bedrock services. If you prefer to paste your API key directly, see `aws_access_key_id`. You must provide an API key using one of the following fields: `aws_access_key_id` or `aws_access_key_id_plaintext`."
+                                },
+                                "aws_access_key_id_plaintext": {
+                                  "description": "An AWS access key ID with permissions to interact with Bedrock services provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `aws_access_key_id`. You must provide an API key using one of the following fields: `aws_access_key_id` or `aws_access_key_id_plaintext`."
                                 },
                                 "aws_region": {
                                   "description": "The AWS region to use. Bedrock has to be enabled there."
                                 },
                                 "aws_secret_access_key": {
-                                  "description": "The Databricks secret key reference for an AWS Secret Access Key paired with the access key ID, with permissions to interact with Bedrock services."
+                                  "description": "The Databricks secret key reference for an AWS secret access key paired with the access key ID, with permissions to interact with Bedrock services. If you prefer to paste your API key directly, see `aws_secret_access_key_plaintext`. You must provide an API key using one of the following fields: `aws_secret_access_key` or `aws_secret_access_key_plaintext`."
+                                },
+                                "aws_secret_access_key_plaintext": {
+                                  "description": "An AWS secret access key paired with the access key ID, with permissions to interact with Bedrock services provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `aws_secret_access_key`. You must provide an API key using one of the following fields: `aws_secret_access_key` or `aws_secret_access_key_plaintext`."
                                 },
                                 "bedrock_provider": {
                                   "description": "The underlying provider in Amazon Bedrock. Supported values (case insensitive) include: Anthropic, Cohere, AI21Labs, Amazon."
@@ -1858,15 +1867,24 @@
                               "description": "Anthropic Config. Only required if the provider is 'anthropic'.",
                               "properties": {
                                 "anthropic_api_key": {
-                                  "description": "The Databricks secret key reference for an Anthropic API key."
+                                  "description": "The Databricks secret key reference for an Anthropic API key. If you prefer to paste your API key directly, see `anthropic_api_key_plaintext`. You must provide an API key using one of the following fields: `anthropic_api_key` or `anthropic_api_key_plaintext`."
+                                },
+                                "anthropic_api_key_plaintext": {
+                                  "description": "The Anthropic API key provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `anthropic_api_key`. You must provide an API key using one of the following fields: `anthropic_api_key` or `anthropic_api_key_plaintext`."
                                 }
                               }
                             },
                             "cohere_config": {
                               "description": "Cohere Config. Only required if the provider is 'cohere'.",
                               "properties": {
+                                "cohere_api_base": {
+                                  "description": "This is an optional field to provide a customized base URL for the Cohere API. \nIf left unspecified, the standard Cohere base URL is used.\n"
+                                },
                                 "cohere_api_key": {
-                                  "description": "The Databricks secret key reference for a Cohere API key."
+                                  "description": "The Databricks secret key reference for a Cohere API key. If you prefer to paste your API key directly, see `cohere_api_key_plaintext`. You must provide an API key using one of the following fields: `cohere_api_key` or `cohere_api_key_plaintext`."
+                                },
+                                "cohere_api_key_plaintext": {
+                                  "description": "The Cohere API key provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `cohere_api_key`. You must provide an API key using one of the following fields: `cohere_api_key` or `cohere_api_key_plaintext`."
                                 }
                               }
                             },
@@ -1874,10 +1892,30 @@
                               "description": "Databricks Model Serving Config. Only required if the provider is 'databricks-model-serving'.",
                               "properties": {
                                 "databricks_api_token": {
-                                  "description": "The Databricks secret key reference for a Databricks API token that corresponds to a user or service\nprincipal with Can Query access to the model serving endpoint pointed to by this external model.\n"
+                                  "description": "The Databricks secret key reference for a Databricks API token that corresponds to a user or service\nprincipal with Can Query access to the model serving endpoint pointed to by this external model.\nIf you prefer to paste your API key directly, see `databricks_api_token_plaintext`.\nYou must provide an API key using one of the following fields: `databricks_api_token` or `databricks_api_token_plaintext`.\n"
+                                },
+                                "databricks_api_token_plaintext": {
+                                  "description": "The Databricks API token that corresponds to a user or service\nprincipal with Can Query access to the model serving endpoint pointed to by this external model provided as a plaintext string.\nIf you prefer to reference your key using Databricks Secrets, see `databricks_api_token`.\nYou must provide an API key using one of the following fields: `databricks_api_token` or `databricks_api_token_plaintext`.\n"
                                 },
                                 "databricks_workspace_url": {
                                   "description": "The URL of the Databricks workspace containing the model serving endpoint pointed to by this external model.\n"
+                                }
+                              }
+                            },
+                            "google_cloud_vertex_ai_config": {
+                              "description": "Google Cloud Vertex AI Config. Only required if the provider is 'google-cloud-vertex-ai'.",
+                              "properties": {
+                                "private_key": {
+                                  "description": "The Databricks secret key reference for a private key for the service account which has access to the Google Cloud Vertex AI Service. See [Best practices for managing service account keys](https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys). If you prefer to paste your API key directly, see `private_key_plaintext`. You must provide an API key using one of the following fields: `private_key` or `private_key_plaintext`"
+                                },
+                                "private_key_plaintext": {
+                                  "description": "The private key for the service account which has access to the Google Cloud Vertex AI Service provided as a plaintext secret. See [Best practices for managing service account keys](https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys). If you prefer to reference your key using Databricks Secrets, see `private_key`. You must provide an API key using one of the following fields: `private_key` or `private_key_plaintext`."
+                                },
+                                "project_id": {
+                                  "description": "This is the Google Cloud project id that the service account is associated with."
+                                },
+                                "region": {
+                                  "description": "This is the region for the Google Cloud Vertex AI Service. See [supported regions](https://cloud.google.com/vertex-ai/docs/general/locations) for more details. Some models are only available in specific regions."
                                 }
                               }
                             },
@@ -1891,16 +1929,22 @@
                                   "description": "This field is only required for Azure AD OpenAI and is the Microsoft Entra Client ID.\n"
                                 },
                                 "microsoft_entra_client_secret": {
-                                  "description": "The Databricks secret key reference for the Microsoft Entra Client Secret that is\nonly required for Azure AD OpenAI.\n"
+                                  "description": "The Databricks secret key reference for a client secret used for Microsoft Entra ID authentication.\nIf you prefer to paste your client secret directly, see `microsoft_entra_client_secret_plaintext`.\nYou must provide an API key using one of the following fields: `microsoft_entra_client_secret` or `microsoft_entra_client_secret_plaintext`.\n"
+                                },
+                                "microsoft_entra_client_secret_plaintext": {
+                                  "description": "The client secret used for Microsoft Entra ID authentication provided as a plaintext string.\nIf you prefer to reference your key using Databricks Secrets, see `microsoft_entra_client_secret`.\nYou must provide an API key using one of the following fields: `microsoft_entra_client_secret` or `microsoft_entra_client_secret_plaintext`.\n"
                                 },
                                 "microsoft_entra_tenant_id": {
                                   "description": "This field is only required for Azure AD OpenAI and is the Microsoft Entra Tenant ID.\n"
                                 },
                                 "openai_api_base": {
-                                  "description": "This is the base URL for the OpenAI API (default: \"https://api.openai.com/v1\").\nFor Azure OpenAI, this field is required, and is the base URL for the Azure OpenAI API service\nprovided by Azure.\n"
+                                  "description": "This is a field to provide a customized base URl for the OpenAI API.\nFor Azure OpenAI, this field is required, and is the base URL for the Azure OpenAI API service\nprovided by Azure.\nFor other OpenAI API types, this field is optional, and if left unspecified, the standard OpenAI base URL is used.\n"
                                 },
                                 "openai_api_key": {
-                                  "description": "The Databricks secret key reference for an OpenAI or Azure OpenAI API key."
+                                  "description": "The Databricks secret key reference for an OpenAI API key using the OpenAI or Azure service. If you prefer to paste your API key directly, see `openai_api_key_plaintext`. You must provide an API key using one of the following fields: `openai_api_key` or `openai_api_key_plaintext`."
+                                },
+                                "openai_api_key_plaintext": {
+                                  "description": "The OpenAI API key using the OpenAI or Azure service provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `openai_api_key`. You must provide an API key using one of the following fields: `openai_api_key` or `openai_api_key_plaintext`."
                                 },
                                 "openai_api_type": {
                                   "description": "This is an optional field to specify the type of OpenAI API to use.\nFor Azure OpenAI, this field is required, and adjust this parameter to represent the preferred security\naccess validation protocol. For access token validation, use azure. For authentication using Azure Active\nDirectory (Azure AD) use, azuread.\n"
@@ -1920,12 +1964,15 @@
                               "description": "PaLM Config. Only required if the provider is 'palm'.",
                               "properties": {
                                 "palm_api_key": {
-                                  "description": "The Databricks secret key reference for a PaLM API key."
+                                  "description": "The Databricks secret key reference for a PaLM API key. If you prefer to paste your API key directly, see `palm_api_key_plaintext`. You must provide an API key using one of the following fields: `palm_api_key` or `palm_api_key_plaintext`."
+                                },
+                                "palm_api_key_plaintext": {
+                                  "description": "The PaLM API key provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `palm_api_key`. You must provide an API key using one of the following fields: `palm_api_key` or `palm_api_key_plaintext`."
                                 }
                               }
                             },
                             "provider": {
-                              "description": "The name of the provider for the external model. Currently, the supported providers are 'ai21labs', 'anthropic',\n'amazon-bedrock', 'cohere', 'databricks-model-serving', 'openai', and 'palm'.\",\n"
+                              "description": "The name of the provider for the external model. Currently, the supported providers are 'ai21labs', 'anthropic',\n'amazon-bedrock', 'cohere', 'databricks-model-serving', 'google-cloud-vertex-ai', 'openai', and 'palm'.\",\n"
                             },
                             "task": {
                               "description": "The task type of the external model."
@@ -2331,6 +2378,9 @@
                     "driver_node_type_id": {
                       "description": "The node type of the Spark driver.\nNote that this field is optional; if unset, the driver node type will be set as the same value\nas `node_type_id` defined above."
                     },
+                    "enable_local_disk_encryption": {
+                      "description": "Whether to enable local disk encryption for the cluster."
+                    },
                     "gcp_attributes": {
                       "description": "Attributes related to clusters running on Google Cloud Platform.\nIf not specified at cluster creation, a set of default values will be used.",
                       "properties": {
@@ -2525,7 +2575,7 @@
                     "description": "Required, Immutable. The name of the catalog for the gateway pipeline's storage location."
                   },
                   "gateway_storage_name": {
-                    "description": "Required. The Unity Catalog-compatible naming for the gateway storage location.\nThis is the destination to use for the data that is extracted by the gateway.\nDelta Live Tables system will automatically create the storage location under the catalog and schema.\n"
+                    "description": "Optional. The Unity Catalog-compatible name for the gateway storage location.\nThis is the destination to use for the data that is extracted by the gateway.\nDelta Live Tables system will automatically create the storage location under the catalog and schema.\n"
                   },
                   "gateway_storage_schema": {
                     "description": "Required, Immutable. The name of the schema for the gateway pipelines's storage location."
@@ -2565,7 +2615,7 @@
                               "description": "Required. Schema name in the source database."
                             },
                             "table_configuration": {
-                              "description": "Configuration settings to control the ingestion of tables. These settings are applied to all tables in this schema and override the table_configuration defined in the ManagedIngestionPipelineDefinition object.",
+                              "description": "Configuration settings to control the ingestion of tables. These settings are applied to all tables in this schema and override the table_configuration defined in the IngestionPipelineDefinition object.",
                               "properties": {
                                 "primary_keys": {
                                   "description": "The primary key of the table used to apply changes.",
@@ -2605,7 +2655,7 @@
                               "description": "Required. Table name in the source database."
                             },
                             "table_configuration": {
-                              "description": "Configuration settings to control the ingestion of tables. These settings override the table_configuration defined in the ManagedIngestionPipelineDefinition object and the SchemaSpec.",
+                              "description": "Configuration settings to control the ingestion of tables. These settings override the table_configuration defined in the IngestionPipelineDefinition object and the SchemaSpec.",
                               "properties": {
                                 "primary_keys": {
                                   "description": "The primary key of the table used to apply changes.",
@@ -2685,6 +2735,9 @@
                           "description": "The absolute path of the notebook."
                         }
                       }
+                    },
+                    "whl": {
+                      "description": "URI of the whl to be installed."
                     }
                   }
                 }
@@ -2955,6 +3008,49 @@
               }
             }
           }
+        },
+        "schemas": {
+          "description": "",
+          "additionalproperties": {
+            "description": "",
+            "properties": {
+              "catalog_name": {
+                "description": ""
+              },
+              "comment": {
+                "description": ""
+              },
+              "grants": {
+                "description": "",
+                "items": {
+                  "description": "",
+                  "properties": {
+                    "principal": {
+                      "description": ""
+                    },
+                    "privileges": {
+                      "description": "",
+                      "items": {
+                        "description": ""
+                      }
+                    }
+                  }
+                }
+              },
+              "name": {
+                "description": ""
+              },
+              "properties": {
+                "description": "",
+                "additionalproperties": {
+                  "description": ""
+                }
+              },
+              "storage_root": {
+                "description": ""
+              }
+            }
+          }
         }
       }
     },
@@ -3194,7 +3290,7 @@
                       }
                     },
                     "description": {
-                      "description": "An optional description for the job. The maximum length is 1024 characters in UTF-8 encoding."
+                      "description": "An optional description for the job. The maximum length is 27700 characters in UTF-8 encoding."
                     },
                     "edit_mode": {
                       "description": "Edit mode of the job.\n\n* `UI_LOCKED`: The job is in a locked UI state and cannot be modified.\n* `EDITABLE`: The job is in an editable state and can be modified."
@@ -3911,7 +4007,7 @@
                                   }
                                 },
                                 "egg": {
-                                  "description": "URI of the egg library to install. Supported URIs include Workspace paths, Unity Catalog Volumes paths, and S3 URIs.\nFor example: `{ \"egg\": \"/Workspace/path/to/library.egg\" }`, `{ \"egg\" : \"/Volumes/path/to/library.egg\" }` or\n`{ \"egg\": \"s3://my-bucket/library.egg\" }`.\nIf S3 is used, please make sure the cluster has read access on the library. You may need to\nlaunch the cluster with an IAM role to access the S3 URI."
+                                  "description": "Deprecated. URI of the egg library to install. Installing Python egg files is deprecated and is not supported in Databricks Runtime 14.0 and above."
                                 },
                                 "jar": {
                                   "description": "URI of the JAR library to install. Supported URIs include Workspace paths, Unity Catalog Volumes paths, and S3 URIs.\nFor example: `{ \"jar\": \"/Workspace/path/to/library.jar\" }`, `{ \"jar\" : \"/Volumes/path/to/library.jar\" }` or\n`{ \"jar\": \"s3://my-bucket/library.jar\" }`.\nIf S3 is used, please make sure the cluster has read access on the library. You may need to\nlaunch the cluster with an IAM role to access the S3 URI."
@@ -4803,13 +4899,16 @@
                                 }
                               },
                               "external_model": {
-                                "description": "The external model to be served. NOTE: Only one of external_model and (entity_name, entity_version, workload_size, workload_type, and scale_to_zero_enabled)\ncan be specified with the latter set being used for custom model serving for a Databricks registered model. When an external_model is present, the served\nentities list can only have one served_entity object. For an existing endpoint with external_model, it can not be updated to an endpoint without external_model.\nIf the endpoint is created without external_model, users cannot update it to add external_model later.\n",
+                                "description": "The external model to be served. NOTE: Only one of external_model and (entity_name, entity_version, workload_size, workload_type, and scale_to_zero_enabled)\ncan be specified with the latter set being used for custom model serving for a Databricks registered model. For an existing endpoint with external_model,\nit cannot be updated to an endpoint without external_model. If the endpoint is created without external_model, users cannot update it to add external_model later.\nThe task type of all external models within an endpoint must be the same.\n",
                                 "properties": {
                                   "ai21labs_config": {
                                     "description": "AI21Labs Config. Only required if the provider is 'ai21labs'.",
                                     "properties": {
                                       "ai21labs_api_key": {
-                                        "description": "The Databricks secret key reference for an AI21Labs API key."
+                                        "description": "The Databricks secret key reference for an AI21 Labs API key. If you prefer to paste your API key directly, see `ai21labs_api_key_plaintext`. You must provide an API key using one of the following fields: `ai21labs_api_key` or `ai21labs_api_key_plaintext`."
+                                      },
+                                      "ai21labs_api_key_plaintext": {
+                                        "description": "An AI21 Labs API key provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `ai21labs_api_key`. You must provide an API key using one of the following fields: `ai21labs_api_key` or `ai21labs_api_key_plaintext`."
                                       }
                                     }
                                   },
@@ -4817,13 +4916,19 @@
                                     "description": "Amazon Bedrock Config. Only required if the provider is 'amazon-bedrock'.",
                                     "properties": {
                                       "aws_access_key_id": {
-                                        "description": "The Databricks secret key reference for an AWS Access Key ID with permissions to interact with Bedrock services."
+                                        "description": "The Databricks secret key reference for an AWS access key ID with permissions to interact with Bedrock services. If you prefer to paste your API key directly, see `aws_access_key_id`. You must provide an API key using one of the following fields: `aws_access_key_id` or `aws_access_key_id_plaintext`."
+                                      },
+                                      "aws_access_key_id_plaintext": {
+                                        "description": "An AWS access key ID with permissions to interact with Bedrock services provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `aws_access_key_id`. You must provide an API key using one of the following fields: `aws_access_key_id` or `aws_access_key_id_plaintext`."
                                       },
                                       "aws_region": {
                                         "description": "The AWS region to use. Bedrock has to be enabled there."
                                       },
                                       "aws_secret_access_key": {
-                                        "description": "The Databricks secret key reference for an AWS Secret Access Key paired with the access key ID, with permissions to interact with Bedrock services."
+                                        "description": "The Databricks secret key reference for an AWS secret access key paired with the access key ID, with permissions to interact with Bedrock services. If you prefer to paste your API key directly, see `aws_secret_access_key_plaintext`. You must provide an API key using one of the following fields: `aws_secret_access_key` or `aws_secret_access_key_plaintext`."
+                                      },
+                                      "aws_secret_access_key_plaintext": {
+                                        "description": "An AWS secret access key paired with the access key ID, with permissions to interact with Bedrock services provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `aws_secret_access_key`. You must provide an API key using one of the following fields: `aws_secret_access_key` or `aws_secret_access_key_plaintext`."
                                       },
                                       "bedrock_provider": {
                                         "description": "The underlying provider in Amazon Bedrock. Supported values (case insensitive) include: Anthropic, Cohere, AI21Labs, Amazon."
@@ -4834,15 +4939,24 @@
                                     "description": "Anthropic Config. Only required if the provider is 'anthropic'.",
                                     "properties": {
                                       "anthropic_api_key": {
-                                        "description": "The Databricks secret key reference for an Anthropic API key."
+                                        "description": "The Databricks secret key reference for an Anthropic API key. If you prefer to paste your API key directly, see `anthropic_api_key_plaintext`. You must provide an API key using one of the following fields: `anthropic_api_key` or `anthropic_api_key_plaintext`."
+                                      },
+                                      "anthropic_api_key_plaintext": {
+                                        "description": "The Anthropic API key provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `anthropic_api_key`. You must provide an API key using one of the following fields: `anthropic_api_key` or `anthropic_api_key_plaintext`."
                                       }
                                     }
                                   },
                                   "cohere_config": {
                                     "description": "Cohere Config. Only required if the provider is 'cohere'.",
                                     "properties": {
+                                      "cohere_api_base": {
+                                        "description": "This is an optional field to provide a customized base URL for the Cohere API. \nIf left unspecified, the standard Cohere base URL is used.\n"
+                                      },
                                       "cohere_api_key": {
-                                        "description": "The Databricks secret key reference for a Cohere API key."
+                                        "description": "The Databricks secret key reference for a Cohere API key. If you prefer to paste your API key directly, see `cohere_api_key_plaintext`. You must provide an API key using one of the following fields: `cohere_api_key` or `cohere_api_key_plaintext`."
+                                      },
+                                      "cohere_api_key_plaintext": {
+                                        "description": "The Cohere API key provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `cohere_api_key`. You must provide an API key using one of the following fields: `cohere_api_key` or `cohere_api_key_plaintext`."
                                       }
                                     }
                                   },
@@ -4850,10 +4964,30 @@
                                     "description": "Databricks Model Serving Config. Only required if the provider is 'databricks-model-serving'.",
                                     "properties": {
                                       "databricks_api_token": {
-                                        "description": "The Databricks secret key reference for a Databricks API token that corresponds to a user or service\nprincipal with Can Query access to the model serving endpoint pointed to by this external model.\n"
+                                        "description": "The Databricks secret key reference for a Databricks API token that corresponds to a user or service\nprincipal with Can Query access to the model serving endpoint pointed to by this external model.\nIf you prefer to paste your API key directly, see `databricks_api_token_plaintext`.\nYou must provide an API key using one of the following fields: `databricks_api_token` or `databricks_api_token_plaintext`.\n"
+                                      },
+                                      "databricks_api_token_plaintext": {
+                                        "description": "The Databricks API token that corresponds to a user or service\nprincipal with Can Query access to the model serving endpoint pointed to by this external model provided as a plaintext string.\nIf you prefer to reference your key using Databricks Secrets, see `databricks_api_token`.\nYou must provide an API key using one of the following fields: `databricks_api_token` or `databricks_api_token_plaintext`.\n"
                                       },
                                       "databricks_workspace_url": {
                                         "description": "The URL of the Databricks workspace containing the model serving endpoint pointed to by this external model.\n"
+                                      }
+                                    }
+                                  },
+                                  "google_cloud_vertex_ai_config": {
+                                    "description": "Google Cloud Vertex AI Config. Only required if the provider is 'google-cloud-vertex-ai'.",
+                                    "properties": {
+                                      "private_key": {
+                                        "description": "The Databricks secret key reference for a private key for the service account which has access to the Google Cloud Vertex AI Service. See [Best practices for managing service account keys](https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys). If you prefer to paste your API key directly, see `private_key_plaintext`. You must provide an API key using one of the following fields: `private_key` or `private_key_plaintext`"
+                                      },
+                                      "private_key_plaintext": {
+                                        "description": "The private key for the service account which has access to the Google Cloud Vertex AI Service provided as a plaintext secret. See [Best practices for managing service account keys](https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys). If you prefer to reference your key using Databricks Secrets, see `private_key`. You must provide an API key using one of the following fields: `private_key` or `private_key_plaintext`."
+                                      },
+                                      "project_id": {
+                                        "description": "This is the Google Cloud project id that the service account is associated with."
+                                      },
+                                      "region": {
+                                        "description": "This is the region for the Google Cloud Vertex AI Service. See [supported regions](https://cloud.google.com/vertex-ai/docs/general/locations) for more details. Some models are only available in specific regions."
                                       }
                                     }
                                   },
@@ -4867,16 +5001,22 @@
                                         "description": "This field is only required for Azure AD OpenAI and is the Microsoft Entra Client ID.\n"
                                       },
                                       "microsoft_entra_client_secret": {
-                                        "description": "The Databricks secret key reference for the Microsoft Entra Client Secret that is\nonly required for Azure AD OpenAI.\n"
+                                        "description": "The Databricks secret key reference for a client secret used for Microsoft Entra ID authentication.\nIf you prefer to paste your client secret directly, see `microsoft_entra_client_secret_plaintext`.\nYou must provide an API key using one of the following fields: `microsoft_entra_client_secret` or `microsoft_entra_client_secret_plaintext`.\n"
+                                      },
+                                      "microsoft_entra_client_secret_plaintext": {
+                                        "description": "The client secret used for Microsoft Entra ID authentication provided as a plaintext string.\nIf you prefer to reference your key using Databricks Secrets, see `microsoft_entra_client_secret`.\nYou must provide an API key using one of the following fields: `microsoft_entra_client_secret` or `microsoft_entra_client_secret_plaintext`.\n"
                                       },
                                       "microsoft_entra_tenant_id": {
                                         "description": "This field is only required for Azure AD OpenAI and is the Microsoft Entra Tenant ID.\n"
                                       },
                                       "openai_api_base": {
-                                        "description": "This is the base URL for the OpenAI API (default: \"https://api.openai.com/v1\").\nFor Azure OpenAI, this field is required, and is the base URL for the Azure OpenAI API service\nprovided by Azure.\n"
+                                        "description": "This is a field to provide a customized base URl for the OpenAI API.\nFor Azure OpenAI, this field is required, and is the base URL for the Azure OpenAI API service\nprovided by Azure.\nFor other OpenAI API types, this field is optional, and if left unspecified, the standard OpenAI base URL is used.\n"
                                       },
                                       "openai_api_key": {
-                                        "description": "The Databricks secret key reference for an OpenAI or Azure OpenAI API key."
+                                        "description": "The Databricks secret key reference for an OpenAI API key using the OpenAI or Azure service. If you prefer to paste your API key directly, see `openai_api_key_plaintext`. You must provide an API key using one of the following fields: `openai_api_key` or `openai_api_key_plaintext`."
+                                      },
+                                      "openai_api_key_plaintext": {
+                                        "description": "The OpenAI API key using the OpenAI or Azure service provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `openai_api_key`. You must provide an API key using one of the following fields: `openai_api_key` or `openai_api_key_plaintext`."
                                       },
                                       "openai_api_type": {
                                         "description": "This is an optional field to specify the type of OpenAI API to use.\nFor Azure OpenAI, this field is required, and adjust this parameter to represent the preferred security\naccess validation protocol. For access token validation, use azure. For authentication using Azure Active\nDirectory (Azure AD) use, azuread.\n"
@@ -4896,12 +5036,15 @@
                                     "description": "PaLM Config. Only required if the provider is 'palm'.",
                                     "properties": {
                                       "palm_api_key": {
-                                        "description": "The Databricks secret key reference for a PaLM API key."
+                                        "description": "The Databricks secret key reference for a PaLM API key. If you prefer to paste your API key directly, see `palm_api_key_plaintext`. You must provide an API key using one of the following fields: `palm_api_key` or `palm_api_key_plaintext`."
+                                      },
+                                      "palm_api_key_plaintext": {
+                                        "description": "The PaLM API key provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `palm_api_key`. You must provide an API key using one of the following fields: `palm_api_key` or `palm_api_key_plaintext`."
                                       }
                                     }
                                   },
                                   "provider": {
-                                    "description": "The name of the provider for the external model. Currently, the supported providers are 'ai21labs', 'anthropic',\n'amazon-bedrock', 'cohere', 'databricks-model-serving', 'openai', and 'palm'.\",\n"
+                                    "description": "The name of the provider for the external model. Currently, the supported providers are 'ai21labs', 'anthropic',\n'amazon-bedrock', 'cohere', 'databricks-model-serving', 'google-cloud-vertex-ai', 'openai', and 'palm'.\",\n"
                                   },
                                   "task": {
                                     "description": "The task type of the external model."
@@ -5307,6 +5450,9 @@
                           "driver_node_type_id": {
                             "description": "The node type of the Spark driver.\nNote that this field is optional; if unset, the driver node type will be set as the same value\nas `node_type_id` defined above."
                           },
+                          "enable_local_disk_encryption": {
+                            "description": "Whether to enable local disk encryption for the cluster."
+                          },
                           "gcp_attributes": {
                             "description": "Attributes related to clusters running on Google Cloud Platform.\nIf not specified at cluster creation, a set of default values will be used.",
                             "properties": {
@@ -5501,7 +5647,7 @@
                           "description": "Required, Immutable. The name of the catalog for the gateway pipeline's storage location."
                         },
                         "gateway_storage_name": {
-                          "description": "Required. The Unity Catalog-compatible naming for the gateway storage location.\nThis is the destination to use for the data that is extracted by the gateway.\nDelta Live Tables system will automatically create the storage location under the catalog and schema.\n"
+                          "description": "Optional. The Unity Catalog-compatible name for the gateway storage location.\nThis is the destination to use for the data that is extracted by the gateway.\nDelta Live Tables system will automatically create the storage location under the catalog and schema.\n"
                         },
                         "gateway_storage_schema": {
                           "description": "Required, Immutable. The name of the schema for the gateway pipelines's storage location."
@@ -5541,7 +5687,7 @@
                                     "description": "Required. Schema name in the source database."
                                   },
                                   "table_configuration": {
-                                    "description": "Configuration settings to control the ingestion of tables. These settings are applied to all tables in this schema and override the table_configuration defined in the ManagedIngestionPipelineDefinition object.",
+                                    "description": "Configuration settings to control the ingestion of tables. These settings are applied to all tables in this schema and override the table_configuration defined in the IngestionPipelineDefinition object.",
                                     "properties": {
                                       "primary_keys": {
                                         "description": "The primary key of the table used to apply changes.",
@@ -5581,7 +5727,7 @@
                                     "description": "Required. Table name in the source database."
                                   },
                                   "table_configuration": {
-                                    "description": "Configuration settings to control the ingestion of tables. These settings override the table_configuration defined in the ManagedIngestionPipelineDefinition object and the SchemaSpec.",
+                                    "description": "Configuration settings to control the ingestion of tables. These settings override the table_configuration defined in the IngestionPipelineDefinition object and the SchemaSpec.",
                                     "properties": {
                                       "primary_keys": {
                                         "description": "The primary key of the table used to apply changes.",
@@ -5661,6 +5807,9 @@
                                 "description": "The absolute path of the notebook."
                               }
                             }
+                          },
+                          "whl": {
+                            "description": "URI of the whl to be installed."
                           }
                         }
                       }
@@ -5931,6 +6080,49 @@
                     }
                   }
                 }
+              },
+              "schemas": {
+                "description": "",
+                "additionalproperties": {
+                  "description": "",
+                  "properties": {
+                    "catalog_name": {
+                      "description": ""
+                    },
+                    "comment": {
+                      "description": ""
+                    },
+                    "grants": {
+                      "description": "",
+                      "items": {
+                        "description": "",
+                        "properties": {
+                          "principal": {
+                            "description": ""
+                          },
+                          "privileges": {
+                            "description": "",
+                            "items": {
+                              "description": ""
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "name": {
+                      "description": ""
+                    },
+                    "properties": {
+                      "description": "",
+                      "additionalproperties": {
+                        "description": ""
+                      }
+                    },
+                    "storage_root": {
+                      "description": ""
+                    }
+                  }
+                }
               }
             }
           },
@@ -6010,6 +6202,9 @@
                       "description": ""
                     }
                   }
+                },
+                "type": {
+                  "description": ""
                 }
               }
             }
@@ -6115,6 +6310,9 @@
                 "description": ""
               }
             }
+          },
+          "type": {
+            "description": ""
           }
         }
       }
