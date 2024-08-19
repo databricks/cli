@@ -2,6 +2,7 @@ package config_tests
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -20,7 +21,7 @@ func TestUndefinedResourcesLoadWithError(t *testing.T) {
 		Severity: diag.Error,
 		Summary:  "job undefined-job is not defined",
 		Locations: []dyn.Location{{
-			File:   "undefined_resources/databricks.yml",
+			File:   filepath.FromSlash("undefined_resources/databricks.yml"),
 			Line:   6,
 			Column: 19,
 		}},
@@ -30,7 +31,7 @@ func TestUndefinedResourcesLoadWithError(t *testing.T) {
 		Severity: diag.Error,
 		Summary:  "experiment undefined-experiment is not defined",
 		Locations: []dyn.Location{{
-			File:   "undefined_resources/databricks.yml",
+			File:   filepath.FromSlash("undefined_resources/databricks.yml"),
 			Line:   11,
 			Column: 26,
 		}},
@@ -40,7 +41,7 @@ func TestUndefinedResourcesLoadWithError(t *testing.T) {
 		Severity: diag.Error,
 		Summary:  "pipeline undefined-pipeline is not defined",
 		Locations: []dyn.Location{{
-			File:   "undefined_resources/databricks.yml",
+			File:   filepath.FromSlash("undefined_resources/databricks.yml"),
 			Line:   14,
 			Column: 24,
 		}},
