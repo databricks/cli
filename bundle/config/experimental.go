@@ -44,8 +44,6 @@ type PyDABs struct {
 	//
 	// These packages are imported to discover resources, resource generators, and mutators.
 	// This list can include namespace packages, which causes the import of nested packages.
-	//
-	// VEnvPath option overrides the Python environment for loading these packages.
 	Import []string `json:"import,omitempty"`
 }
 
