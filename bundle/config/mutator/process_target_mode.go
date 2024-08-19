@@ -71,6 +71,7 @@ func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	for i := range r.Pipelines {
 		r.Pipelines[i].Name = prefix + r.Pipelines[i].Name
 		r.Pipelines[i].Development = true
+		r.Pipelines[i].Continuous = false
 		// (pipelines don't yet support tags)
 	}
 

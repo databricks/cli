@@ -82,7 +82,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
-					"pipeline1": {PipelineSpec: &pipelines.PipelineSpec{Name: "pipeline1"}},
+					"pipeline1": {PipelineSpec: &pipelines.PipelineSpec{Name: "pipeline1", Continuous: true}},
 				},
 				Experiments: map[string]*resources.MlflowExperiment{
 					"experiment1": {Experiment: &ml.Experiment{Name: "/Users/lennart.kats@databricks.com/experiment1"}},
@@ -145,6 +145,7 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Pipeline 1
 	assert.Equal(t, "[dev lennart] pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
+	assert.Equal(t, false, b.Config.Resources.Pipelines["pipeline1"].Continuous)
 	assert.True(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
 
 	// Experiment 1
