@@ -2,17 +2,14 @@ package mutator
 
 import (
 	"context"
-	"path"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
 type processTargetMode struct{}
@@ -30,102 +27,74 @@ func (m *processTargetMode) Name() string {
 // Mark all resources as being for 'development' purposes, i.e.
 // changing their their name, adding tags, and (in the future)
 // marking them as 'hidden' in the UI.
-func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) {
 	if !b.Config.Bundle.Deployment.Lock.IsExplicitlyEnabled() {
 		log.Infof(ctx, "Development mode: disabling deployment lock since bundle.deployment.lock.enabled is not set to true")
 		disabled := false
 		b.Config.Bundle.Deployment.Lock.Enabled = &disabled
 	}
 
-	r := b.Config.Resources
+	t := &b.Config.Presets
 	shortName := b.Config.Workspace.CurrentUser.ShortName
-	prefix := "[dev " + shortName + "] "
 
-	// Generate a normalized version of the short name that can be used as a tag value.
-	tagValue := b.Tagging.NormalizeValue(shortName)
-
-	for i := range r.Jobs {
-		r.Jobs[i].Name = prefix + r.Jobs[i].Name
-		if r.Jobs[i].Tags == nil {
-			r.Jobs[i].Tags = make(map[string]string)
-		}
-		r.Jobs[i].Tags["dev"] = tagValue
-		if r.Jobs[i].MaxConcurrentRuns == 0 {
-			r.Jobs[i].MaxConcurrentRuns = developmentConcurrentRuns
-		}
-
-		// Pause each job. As an exception, we don't pause jobs that are explicitly
-		// marked as "unpaused". This allows users to override the default behavior
-		// of the development mode.
-		if r.Jobs[i].Schedule != nil && r.Jobs[i].Schedule.PauseStatus != jobs.PauseStatusUnpaused {
-			r.Jobs[i].Schedule.PauseStatus = jobs.PauseStatusPaused
-		}
-		if r.Jobs[i].Continuous != nil && r.Jobs[i].Continuous.PauseStatus != jobs.PauseStatusUnpaused {
-			r.Jobs[i].Continuous.PauseStatus = jobs.PauseStatusPaused
-		}
-		if r.Jobs[i].Trigger != nil && r.Jobs[i].Trigger.PauseStatus != jobs.PauseStatusUnpaused {
-			r.Jobs[i].Trigger.PauseStatus = jobs.PauseStatusPaused
-		}
+	if t.NamePrefix == "" {
+		t.NamePrefix = "[dev " + shortName + "] "
 	}
 
-	for i := range r.Pipelines {
-		r.Pipelines[i].Name = prefix + r.Pipelines[i].Name
-		r.Pipelines[i].Development = true
-		r.Pipelines[i].Continuous = false
-		// (pipelines don't yet support tags)
+	if t.Tags == nil {
+		t.Tags = map[string]string{}
+	}
+	_, exists := t.Tags["dev"]
+	if !exists {
+		t.Tags["dev"] = b.Tagging.NormalizeValue(shortName)
 	}
 
-	for i := range r.Models {
-		r.Models[i].Name = prefix + r.Models[i].Name
-		r.Models[i].Tags = append(r.Models[i].Tags, ml.ModelTag{Key: "dev", Value: tagValue})
+	if t.JobsMaxConcurrentRuns == 0 {
+		t.JobsMaxConcurrentRuns = developmentConcurrentRuns
 	}
 
-	for i := range r.Experiments {
-		filepath := r.Experiments[i].Name
-		dir := path.Dir(filepath)
-		base := path.Base(filepath)
-		if dir == "." {
-			r.Experiments[i].Name = prefix + base
-		} else {
-			r.Experiments[i].Name = dir + "/" + prefix + base
-		}
-		r.Experiments[i].Tags = append(r.Experiments[i].Tags, ml.ExperimentTag{Key: "dev", Value: tagValue})
+	if t.TriggerPauseStatus == "" {
+		t.TriggerPauseStatus = config.Paused
 	}
 
-	for i := range r.ModelServingEndpoints {
-		prefix = "dev_" + b.Config.Workspace.CurrentUser.ShortName + "_"
-		r.ModelServingEndpoints[i].Name = prefix + r.ModelServingEndpoints[i].Name
-		// (model serving doesn't yet support tags)
+	if !config.IsExplicitlyDisabled(t.PipelinesDevelopment) {
+		enabled := true
+		t.PipelinesDevelopment = &enabled
 	}
-
-	for i := range r.RegisteredModels {
-		prefix = "dev_" + b.Config.Workspace.CurrentUser.ShortName + "_"
-		r.RegisteredModels[i].Name = prefix + r.RegisteredModels[i].Name
-		// (registered models in Unity Catalog don't yet support tags)
-	}
-
-	for i := range r.QualityMonitors {
-		// Remove all schedules from monitors, since they don't support pausing/unpausing.
-		// Quality monitors might support the "pause" property in the future, so at the
-		// CLI level we do respect that property if it is set to "unpaused".
-		if r.QualityMonitors[i].Schedule != nil && r.QualityMonitors[i].Schedule.PauseStatus != catalog.MonitorCronSchedulePauseStatusUnpaused {
-			r.QualityMonitors[i].Schedule = nil
-		}
-	}
-
-	for i := range r.Schemas {
-		prefix = "dev_" + b.Config.Workspace.CurrentUser.ShortName + "_"
-		r.Schemas[i].Name = prefix + r.Schemas[i].Name
-		// HTTP API for schemas doesn't yet support tags. It's only supported in
-		// the Databricks UI and via the SQL API.
-	}
-
-	return nil
 }
 
 func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
+	p := b.Config.Presets
+	u := b.Config.Workspace.CurrentUser
+
+	// Make sure presets don't set the trigger status to UNPAUSED;
+	// this could be surprising since most users (and tools) expect triggers
+	// to be paused in development.
+	// (Note that there still is an exceptional case where users set the trigger
+	// status to UNPAUSED at the level of an individual object, whic hwas
+	// historically allowed.)
+	if p.TriggerPauseStatus == config.Unpaused {
+		return diag.Diagnostics{{
+			Severity:  diag.Error,
+			Summary:   "target with 'mode: development' cannot set trigger pause status to UNPAUSED by default",
+			Locations: []dyn.Location{b.Config.GetLocation("presets.trigger_pause_status")},
+		}}
+	}
+
+	// Make sure this development copy has unique names and paths to avoid conflicts
 	if path := findNonUserPath(b); path != "" {
 		return diag.Errorf("%s must start with '~/' or contain the current username when using 'mode: development'", path)
+	}
+	if p.NamePrefix != "" && !strings.Contains(p.NamePrefix, u.ShortName) && !strings.Contains(p.NamePrefix, u.UserName) {
+		// Resources such as pipelines require a unique name, e.g. '[dev steve] my_pipeline'.
+		// For this reason we require the name prefix to contain the current username;
+		// it's a pitfall for users if they don't include it and later find out that
+		// only a single user can do development deployments.
+		return diag.Diagnostics{{
+			Severity:  diag.Error,
+			Summary:   "prefix should contain the current username or ${workspace.current_user.short_name} to ensure uniqueness when using 'mode: development'",
+			Locations: []dyn.Location{b.Config.GetLocation("presets.name_prefix")},
+		}}
 	}
 	return nil
 }
@@ -183,10 +152,11 @@ func (m *processTargetMode) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 	switch b.Config.Bundle.Mode {
 	case config.Development:
 		diags := validateDevelopmentMode(b)
-		if diags != nil {
+		if diags.HasError() {
 			return diags
 		}
-		return transformDevelopmentMode(ctx, b)
+		transformDevelopmentMode(ctx, b)
+		return diags
 	case config.Production:
 		isPrincipal := auth.IsServicePrincipal(b.Config.Workspace.CurrentUser.UserName)
 		return validateProductionMode(ctx, b, isPrincipal)

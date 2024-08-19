@@ -60,6 +60,10 @@ type Root struct {
 	// RunAs section allows to define an execution identity for jobs and pipelines runs
 	RunAs *jobs.JobRunAs `json:"run_as,omitempty"`
 
+	// Presets applies preset transformations throughout the bundle, e.g.
+	// adding a name prefix to deployed resources.
+	Presets Presets `json:"presets,omitempty"`
+
 	Experimental *Experimental `json:"experimental,omitempty"`
 
 	// Permissions section allows to define permissions which will be
@@ -307,6 +311,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		"resources",
 		"sync",
 		"permissions",
+		"presets",
 	} {
 		if root, err = mergeField(root, target, f); err != nil {
 			return err
