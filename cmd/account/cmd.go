@@ -26,6 +26,7 @@ import (
 	account_settings "github.com/databricks/cli/cmd/account/settings"
 	storage "github.com/databricks/cli/cmd/account/storage"
 	account_storage_credentials "github.com/databricks/cli/cmd/account/storage-credentials"
+	usage_dashboards "github.com/databricks/cli/cmd/account/usage-dashboards"
 	account_users "github.com/databricks/cli/cmd/account/users"
 	vpc_endpoints "github.com/databricks/cli/cmd/account/vpc-endpoints"
 	workspace_assignment "github.com/databricks/cli/cmd/account/workspace-assignment"
@@ -40,7 +41,6 @@ func New() *cobra.Command {
 
 	cmd.AddCommand(account_access_control.New())
 	cmd.AddCommand(billable_usage.New())
-	cmd.AddCommand(budgets.New())
 	cmd.AddCommand(credentials.New())
 	cmd.AddCommand(custom_app_integration.New())
 	cmd.AddCommand(encryption_keys.New())
@@ -59,10 +59,12 @@ func New() *cobra.Command {
 	cmd.AddCommand(account_settings.New())
 	cmd.AddCommand(storage.New())
 	cmd.AddCommand(account_storage_credentials.New())
+	cmd.AddCommand(usage_dashboards.New())
 	cmd.AddCommand(account_users.New())
 	cmd.AddCommand(vpc_endpoints.New())
 	cmd.AddCommand(workspace_assignment.New())
 	cmd.AddCommand(workspaces.New())
+	cmd.AddCommand(budgets.New())
 
 	// Register all groups with the parent command.
 	groups := Groups()

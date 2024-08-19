@@ -90,30 +90,20 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `Additional human-readable description of the cluster policy.`)
 	// TODO: array: libraries
 	cmd.Flags().Int64Var(&createReq.MaxClustersPerUser, "max-clusters-per-user", createReq.MaxClustersPerUser, `Max number of clusters per user that can be active using this policy.`)
+	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Cluster Policy name requested by the user.`)
 	cmd.Flags().StringVar(&createReq.PolicyFamilyDefinitionOverrides, "policy-family-definition-overrides", createReq.PolicyFamilyDefinitionOverrides, `Policy definition JSON document expressed in [Databricks Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).`)
 	cmd.Flags().StringVar(&createReq.PolicyFamilyId, "policy-family-id", createReq.PolicyFamilyId, `ID of the policy family.`)
 
-	cmd.Use = "create NAME"
+	cmd.Use = "create"
 	cmd.Short = `Create a new policy.`
 	cmd.Long = `Create a new policy.
   
-  Creates a new policy with prescribed settings.
-
-  Arguments:
-    NAME: Cluster Policy name requested by the user. This has to be unique. Length
-      must be between 1 and 100 characters.`
+  Creates a new policy with prescribed settings.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		if cmd.Flags().Changed("json") {
-			err := root.ExactArgs(0)(cmd, args)
-			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
-			}
-			return nil
-		}
-		check := root.ExactArgs(1)
+		check := root.ExactArgs(0)
 		return check(cmd, args)
 	}
 
@@ -127,9 +117,6 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		}
-		if !cmd.Flags().Changed("json") {
-			createReq.Name = args[0]
 		}
 
 		response, err := w.ClusterPolicies.Create(ctx, createReq)
@@ -264,10 +251,11 @@ func newEdit() *cobra.Command {
 	cmd.Flags().StringVar(&editReq.Description, "description", editReq.Description, `Additional human-readable description of the cluster policy.`)
 	// TODO: array: libraries
 	cmd.Flags().Int64Var(&editReq.MaxClustersPerUser, "max-clusters-per-user", editReq.MaxClustersPerUser, `Max number of clusters per user that can be active using this policy.`)
+	cmd.Flags().StringVar(&editReq.Name, "name", editReq.Name, `Cluster Policy name requested by the user.`)
 	cmd.Flags().StringVar(&editReq.PolicyFamilyDefinitionOverrides, "policy-family-definition-overrides", editReq.PolicyFamilyDefinitionOverrides, `Policy definition JSON document expressed in [Databricks Policy Definition Language](https://docs.databricks.com/administration-guide/clusters/policy-definition.html).`)
 	cmd.Flags().StringVar(&editReq.PolicyFamilyId, "policy-family-id", editReq.PolicyFamilyId, `ID of the policy family.`)
 
-	cmd.Use = "edit POLICY_ID NAME"
+	cmd.Use = "edit POLICY_ID"
 	cmd.Short = `Update a cluster policy.`
 	cmd.Long = `Update a cluster policy.
   
@@ -275,9 +263,7 @@ func newEdit() *cobra.Command {
   governed by the previous policy invalid.
 
   Arguments:
-    POLICY_ID: The ID of the policy to update.
-    NAME: Cluster Policy name requested by the user. This has to be unique. Length
-      must be between 1 and 100 characters.`
+    POLICY_ID: The ID of the policy to update.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -285,12 +271,11 @@ func newEdit() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'policy_id', 'name' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'policy_id' in your JSON input")
 			}
 			return nil
 		}
-		check := root.ExactArgs(2)
-		return check(cmd, args)
+		return nil
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -303,12 +288,25 @@ func newEdit() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		}
-		if !cmd.Flags().Changed("json") {
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No POLICY_ID argument specified. Loading names for Cluster Policies drop-down."
+				names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The ID of the policy to update")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the id of the policy to update")
+			}
 			editReq.PolicyId = args[0]
-		}
-		if !cmd.Flags().Changed("json") {
-			editReq.Name = args[1]
 		}
 
 		err = w.ClusterPolicies.Edit(ctx, editReq)
@@ -353,7 +351,7 @@ func newGet() *cobra.Command {
   Get a cluster policy entity. Creation and editing is available to admins only.
 
   Arguments:
-    POLICY_ID: Canonical unique identifier for the cluster policy.`
+    POLICY_ID: Canonical unique identifier for the Cluster Policy.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -370,7 +368,7 @@ func newGet() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "Canonical unique identifier for the cluster policy")
+			id, err := cmdio.Select(ctx, names, "Canonical unique identifier for the Cluster Policy")
 			if err != nil {
 				return err
 			}

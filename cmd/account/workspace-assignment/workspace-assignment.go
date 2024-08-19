@@ -66,7 +66,7 @@ func newDelete() *cobra.Command {
   for the specified principal.
 
   Arguments:
-    WORKSPACE_ID: The workspace ID.
+    WORKSPACE_ID: The workspace ID for the account.
     PRINCIPAL_ID: The ID of the user, service principal, or group.`
 
 	cmd.Annotations = make(map[string]string)
@@ -247,6 +247,8 @@ func newUpdate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: array: permissions
+
 	cmd.Use = "update WORKSPACE_ID PRINCIPAL_ID"
 	cmd.Short = `Create or update permissions assignment.`
 	cmd.Long = `Create or update permissions assignment.
@@ -255,7 +257,7 @@ func newUpdate() *cobra.Command {
   workspace for the specified principal.
 
   Arguments:
-    WORKSPACE_ID: The workspace ID.
+    WORKSPACE_ID: The workspace ID for the account.
     PRINCIPAL_ID: The ID of the user, service principal, or group.`
 
 	cmd.Annotations = make(map[string]string)
@@ -275,8 +277,6 @@ func newUpdate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 		_, err = fmt.Sscan(args[0], &updateReq.WorkspaceId)
 		if err != nil {

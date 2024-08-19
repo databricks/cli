@@ -133,6 +133,7 @@ func newGet() *cobra.Command {
 
 	// TODO: short flags
 
+	cmd.Flags().BoolVar(&getReq.IncludeAliases, "include-aliases", getReq.IncludeAliases, `Whether to include aliases associated with the model version in the response.`)
 	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to include model versions in the response for which the principal can only access selective metadata for.`)
 
 	cmd.Use = "get FULL_NAME VERSION"
@@ -202,6 +203,8 @@ func newGetByAlias() *cobra.Command {
 	var getByAliasReq catalog.GetByAliasRequest
 
 	// TODO: short flags
+
+	cmd.Flags().BoolVar(&getByAliasReq.IncludeAliases, "include-aliases", getByAliasReq.IncludeAliases, `Whether to include aliases associated with the model version in the response.`)
 
 	cmd.Use = "get-by-alias FULL_NAME ALIAS"
 	cmd.Short = `Get Model Version By Alias.`
