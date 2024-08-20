@@ -115,7 +115,7 @@ func (c *constructor) walk(typ reflect.Type) (string, error) {
 
 	// Return value directly if it's already been processed.
 	if _, ok := c.definitions[typPath]; ok {
-		return "", nil
+		return typPath, nil
 	}
 
 	var s Schema

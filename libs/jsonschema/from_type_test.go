@@ -1,7 +1,6 @@
 package jsonschema
 
 import (
-	"encoding/json"
 	"reflect"
 	"testing"
 
@@ -130,14 +129,14 @@ func TestFromTypeBasic(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expected, s)
 
-			jsonSchema, err := json.MarshalIndent(s, "		", "	")
-			assert.NoError(t, err)
+			// jsonSchema, err := json.MarshalIndent(s, "		", "	")
+			// assert.NoError(t, err)
 
-			expectedJson, err := json.MarshalIndent(tc.expected, "		", "	")
-			assert.NoError(t, err)
+			// expectedJson, err := json.MarshalIndent(tc.expected, "		", "	")
+			// assert.NoError(t, err)
 
-			t.Log("[DEBUG] actual: ", string(jsonSchema))
-			t.Log("[DEBUG] expected: ", string(expectedJson))
+			// t.Log("[DEBUG] actual: ", string(jsonSchema))
+			// t.Log("[DEBUG] expected: ", string(expectedJson))
 		})
 	}
 }
@@ -158,4 +157,105 @@ func TestGetStructFields(t *testing.T) {
 	assert.Equal(t, "S", fields[0].Name)
 	assert.Equal(t, "I", fields[1].Name)
 	assert.Equal(t, "B", fields[2].Name)
+}
+
+func TestFromTypeNested(t *testing.T) {
+	type Inner struct {
+		S string `json:"s"`
+	}
+
+	type Outer struct {
+		I     string `json:"i"`
+		Inner Inner  `json:"inner"`
+	}
+
+	innerRef := "#/$defs/github.com/databricks/cli/libs/jsonschema.Inner"
+	strRef := "#/$defs/string"
+
+	expectedDefinitions := map[string]any{
+		"github.com": map[string]any{
+			"databricks": map[string]any{
+				"cli": map[string]any{
+					"libs": map[string]any{
+						"jsonschema.Inner": Schema{
+							Type: "object",
+							Properties: map[string]*Schema{
+								"s": {
+									Reference: &strRef,
+								},
+							},
+							AdditionalProperties: false,
+							Required:             []string{"s"},
+						},
+					},
+				},
+			},
+		},
+		"string": Schema{
+			Type: "string",
+		},
+	}
+
+	tcases := []struct {
+		name     string
+		typ      reflect.Type
+		expected Schema
+	}{
+		{
+			name: "struct in struct",
+			typ:  reflect.TypeOf(Outer{}),
+			expected: Schema{
+				Type:        "object",
+				Definitions: expectedDefinitions,
+				Properties: map[string]*Schema{
+					"i": {
+						Reference: &strRef,
+					},
+					"inner": {
+						Reference: &innerRef,
+					},
+				},
+				AdditionalProperties: false,
+				Required:             []string{"i", "inner"},
+			},
+		},
+		{
+			name: "struct as a map value",
+			typ:  reflect.TypeOf(map[string]Inner{}),
+			expected: Schema{
+				Type:        "object",
+				Definitions: expectedDefinitions,
+				AdditionalProperties: &Schema{
+					Reference: &innerRef,
+				},
+			},
+		},
+		{
+			name: "struct as a slice element",
+			typ:  reflect.TypeOf([]Inner{}),
+			expected: Schema{
+				Type:        "array",
+				Definitions: expectedDefinitions,
+				Items: &Schema{
+					Reference: &innerRef,
+				},
+			},
+		},
+	}
+	for _, tc := range tcases {
+		t.Run(tc.name, func(t *testing.T) {
+			s, err := FromType(tc.typ, nil)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expected, s)
+
+			// jsonSchema, err := json.MarshalIndent(s, "		", "	")
+			// assert.NoError(t, err)
+
+			// expectedJson, err := json.MarshalIndent(tc.expected, "		", "	")
+			// assert.NoError(t, err)
+
+			// t.Log("[DEBUG] actual: ", string(jsonSchema))
+			// t.Log("[DEBUG] expected: ", string(expectedJson))
+		})
+	}
 }
