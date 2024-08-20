@@ -58,7 +58,7 @@ func DetectVEnvExecutable(venvPath string) (string, error) {
 	}
 
 	if _, err := os.Stat(interpreterPath); err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return "", fmt.Errorf("can't find %q, check if virtualenv is created", interpreterPath)
 		} else {
 			return "", fmt.Errorf("can't find %q: %w", interpreterPath, err)
