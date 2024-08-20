@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/google/uuid"
@@ -14,6 +15,10 @@ import (
 
 func TestAccDeployBundleWithCluster(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
+
+	if testutil.IsAWSCloud(wt.T) {
+		t.Skip("Skipping test for AWS cloud because it is not permitted to create clusters")
+	}
 
 	nodeTypeId := internal.GetNodeTypeId(env.Get(ctx, "CLOUD_ENV"))
 	uniqueId := uuid.New().String()
