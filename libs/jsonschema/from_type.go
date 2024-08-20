@@ -77,7 +77,7 @@ func FromType(typ reflect.Type, fn func(s Schema) Schema) (Schema, error) {
 		fn:          fn,
 	}
 
-	err := c.walk(typ)
+	_, err := c.walk(typ)
 	if err != nil {
 		return InvalidSchema, err
 	}
@@ -90,6 +90,11 @@ func FromType(typ reflect.Type, fn func(s Schema) Schema) (Schema, error) {
 }
 
 func typePath(typ reflect.Type) string {
+	// typ.Name() resolves to "" for any type.
+	if typ.Kind() == reflect.Interface {
+		return "interface"
+	}
+
 	// For built-in types, return the type name directly.
 	if typ.PkgPath() == "" {
 		return typ.Name()
@@ -100,7 +105,7 @@ func typePath(typ reflect.Type) string {
 
 // TODO: would a worked based model fit better here? Is this internal API not
 // the right fit?
-func (c *constructor) walk(typ reflect.Type) error {
+func (c *constructor) walk(typ reflect.Type) (string, error) {
 	// Dereference pointers if necessary.
 	for typ.Kind() == reflect.Ptr {
 		typ = typ.Elem()
@@ -110,7 +115,7 @@ func (c *constructor) walk(typ reflect.Type) error {
 
 	// Return value directly if it's already been processed.
 	if _, ok := c.definitions[typPath]; ok {
-		return nil
+		return "", nil
 	}
 
 	var s Schema
@@ -139,10 +144,10 @@ func (c *constructor) walk(typ reflect.Type) error {
 		// set to null and disallowed in the schema.
 		s = Schema{Type: NullType}
 	default:
-		return fmt.Errorf("unsupported type: %s", typ.Kind())
+		return "", fmt.Errorf("unsupported type: %s", typ.Kind())
 	}
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if c.fn != nil {
@@ -153,7 +158,7 @@ func (c *constructor) walk(typ reflect.Type) error {
 	// TODO: Apply transformation at the end, to all definitions instead of
 	// during recursive traversal?
 	c.definitions[typPath] = s
-	return nil
+	return typPath, nil
 }
 
 // This function returns all member fields of the provided type.
@@ -230,12 +235,11 @@ func (c *constructor) fromTypeStruct(typ reflect.Type) (Schema, error) {
 
 		// Trigger call to fromType, to recursively generate definitions for
 		// the struct field.
-		err := c.walk(structField.Type)
+		typPath, err := c.walk(structField.Type)
 		if err != nil {
 			return InvalidSchema, err
 		}
 
-		typPath := typePath(structField.Type)
 		refPath := path.Join("#/$defs", typPath)
 		// For non-built-in types, refer to the definition.
 		res.Properties[jsonTags[0]] = &Schema{
@@ -259,12 +263,11 @@ func (c *constructor) fromTypeSlice(typ reflect.Type) (Schema, error) {
 
 	// Trigger call to fromType, to recursively generate definitions for
 	// the slice element.
-	err := c.walk(typ.Elem())
+	typPath, err := c.walk(typ.Elem())
 	if err != nil {
 		return InvalidSchema, err
 	}
 
-	typPath := typePath(typ.Elem())
 	refPath := path.Join("#/$defs", typPath)
 
 	// For non-built-in types, refer to the definition
@@ -289,12 +292,11 @@ func (c *constructor) fromTypeMap(typ reflect.Type) (Schema, error) {
 
 	// Trigger call to fromType, to recursively generate definitions for
 	// the map value.
-	err := c.walk(typ.Elem())
+	typPath, err := c.walk(typ.Elem())
 	if err != nil {
 		return InvalidSchema, err
 	}
 
-	typPath := typePath(typ.Elem())
 	refPath := path.Join("#/$defs", typPath)
 
 	// For non-built-in types, refer to the definition

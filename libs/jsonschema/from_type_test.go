@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	"encoding/json"
 	"reflect"
 	"testing"
 
@@ -9,13 +10,23 @@ import (
 
 func TestFromTypeBasic(t *testing.T) {
 	type myStruct struct {
-		S string `json:"s"`
-		I int    `json:"i"`
+		S string      `json:"s"`
+		I *int        `json:"i,omitempty"`
+		V interface{} `json:"v,omitempty"`
+
+		// These fields should be ignored in the resulting schema.
+		NotAnnotated     string
+		DashedTag        string `json:"-"`
+		notExported      string `json:"not_exported"`
+		InternalTagged   string `json:"internal_tagged" bundle:"internal"`
+		DeprecatedTagged string `json:"deprecated_tagged" bundle:"deprecated"`
+		ReadOnlyTagged   string `json:"readonly_tagged" bundle:"readonly"`
 	}
 
 	strRef := "#/$defs/string"
 	boolRef := "#/$defs/bool"
 	intRef := "#/$defs/int"
+	interfaceRef := "#/$defs/interface"
 
 	tcases := []struct {
 		name     string
@@ -56,6 +67,9 @@ func TestFromTypeBasic(t *testing.T) {
 			expected: Schema{
 				Type: "object",
 				Definitions: map[string]any{
+					"interface": Schema{
+						Type: "null",
+					},
 					"string": Schema{
 						Type: "string",
 					},
@@ -70,9 +84,12 @@ func TestFromTypeBasic(t *testing.T) {
 					"i": {
 						Reference: &intRef,
 					},
+					"v": {
+						Reference: &interfaceRef,
+					},
 				},
 				AdditionalProperties: false,
-				Required:             []string{"s", "i"},
+				Required:             []string{"s"},
 			},
 		},
 		{
@@ -113,14 +130,14 @@ func TestFromTypeBasic(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expected, s)
 
-			// jsonSchema, err := json.MarshalIndent(s, "		", "	")
-			// assert.NoError(t, err)
+			jsonSchema, err := json.MarshalIndent(s, "		", "	")
+			assert.NoError(t, err)
 
-			// expectedJson, err := json.MarshalIndent(tc.expected, "		", "	")
-			// assert.NoError(t, err)
+			expectedJson, err := json.MarshalIndent(tc.expected, "		", "	")
+			assert.NoError(t, err)
 
-			// t.Log("[DEBUG] actual: ", string(jsonSchema))
-			// t.Log("[DEBUG] expected: ", string(expectedJson))
+			t.Log("[DEBUG] actual: ", string(jsonSchema))
+			t.Log("[DEBUG] expected: ", string(expectedJson))
 		})
 	}
 }
