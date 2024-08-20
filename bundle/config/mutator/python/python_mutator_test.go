@@ -282,7 +282,7 @@ func TestPythonMutator_venvRequired(t *testing.T) {
 }
 
 func TestPythonMutator_venvNotFound(t *testing.T) {
-	expectedError := fmt.Sprintf("can't find %q, check if venv is created", interpreterPath("bad_path"))
+	expectedError := fmt.Sprintf("failed to get Python interpreter path: can't find %q, check if virtualenv is created", interpreterPath("bad_path"))
 
 	b := loadYaml("databricks.yml", `
       experimental:
@@ -596,9 +596,7 @@ func loadYaml(name string, content string) *bundle.Bundle {
 	}
 }
 
-func withFakeVEnv(t *testing.T, path string) {
-	interpreterPath := interpreterPath(path)
-
+func withFakeVEnv(t *testing.T, venvPath string) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		panic(err)
@@ -607,6 +605,8 @@ func withFakeVEnv(t *testing.T, path string) {
 	if err := os.Chdir(t.TempDir()); err != nil {
 		panic(err)
 	}
+
+	interpreterPath := interpreterPath(venvPath)
 
 	err = os.MkdirAll(filepath.Dir(interpreterPath), 0755)
 	if err != nil {
@@ -618,9 +618,22 @@ func withFakeVEnv(t *testing.T, path string) {
 		panic(err)
 	}
 
+	err = os.WriteFile(filepath.Join(venvPath, "pyvenv.cfg"), []byte(""), 0755)
+	if err != nil {
+		panic(err)
+	}
+
 	t.Cleanup(func() {
 		if err := os.Chdir(cwd); err != nil {
 			panic(err)
 		}
 	})
+}
+
+func interpreterPath(venvPath string) string {
+	if runtime.GOOS == "windows" {
+		return filepath.Join(venvPath, "Scripts", "python3.exe")
+	} else {
+		return filepath.Join(venvPath, "bin", "python3")
+	}
 }
