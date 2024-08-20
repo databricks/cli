@@ -9,7 +9,8 @@ import (
 
 func TestFromTypeBasic(t *testing.T) {
 	type myStruct struct {
-		V string `json:"v"`
+		S string `json:"s"`
+		I int    `json:"i"`
 	}
 
 	strRef := "#/$defs/string"
@@ -58,14 +59,20 @@ func TestFromTypeBasic(t *testing.T) {
 					"string": Schema{
 						Type: "string",
 					},
+					"int": Schema{
+						Type: "integer",
+					},
 				},
 				Properties: map[string]*Schema{
-					"v": {
+					"s": {
 						Reference: &strRef,
+					},
+					"i": {
+						Reference: &intRef,
 					},
 				},
 				AdditionalProperties: false,
-				Required:             []string{"v"},
+				Required:             []string{"s", "i"},
 			},
 		},
 		{
