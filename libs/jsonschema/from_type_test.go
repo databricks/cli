@@ -1,9 +1,11 @@
 package jsonschema
 
 import (
+	"encoding/json"
 	"reflect"
 	"testing"
 
+	"github.com/databricks/cli/libs/jsonschema/test_types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -258,4 +260,66 @@ func TestFromTypeNested(t *testing.T) {
 			// t.Log("[DEBUG] expected: ", string(expectedJson))
 		})
 	}
+}
+
+// TODO: Call out in the PR description that recursive Go types are supported.
+func TestFromTypeRecursive(t *testing.T) {
+	fooRef := "#/$defs/github.com/databricks/cli/libs/jsonschema/test_types.Foo"
+	barRef := "#/$defs/github.com/databricks/cli/libs/jsonschema/test_types.Bar"
+
+	expected := Schema{
+		Type: "object",
+		Definitions: map[string]any{
+			"github.com": map[string]any{
+				"databricks": map[string]any{
+					"cli": map[string]any{
+						"libs": map[string]any{
+							"jsonschema": map[string]any{
+								"test_types.Bar": Schema{
+									Type: "object",
+									Properties: map[string]*Schema{
+										"foo": {
+											Reference: &fooRef,
+										},
+									},
+									AdditionalProperties: false,
+									Required:             []string{},
+								},
+								"test_types.Foo": Schema{
+									Type: "object",
+									Properties: map[string]*Schema{
+										"bar": {
+											Reference: &barRef,
+										},
+									},
+									AdditionalProperties: false,
+									Required:             []string{},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Properties: map[string]*Schema{
+			"foo": {
+				Reference: &fooRef,
+			},
+		},
+		AdditionalProperties: false,
+		Required:             []string{"foo"},
+	}
+
+	s, err := FromType(reflect.TypeOf(test_types.Outer{}), nil)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, s)
+
+	jsonSchema, err := json.MarshalIndent(s, "		", "	")
+	assert.NoError(t, err)
+
+	expectedJson, err := json.MarshalIndent(expected, "		", "	")
+	assert.NoError(t, err)
+
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", string(expectedJson))
 }
