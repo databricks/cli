@@ -77,9 +77,14 @@ func TestFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
 			filePath:             "/dir/foo.sql",
 			expectedError:        "failed to read files from the workspace file system. Duplicate paths encountered. Both NOTEBOOK at /dir/foo and FILE at /dir/foo.sql resolve to the same name /foo.sql. Changing the name of one of these objects will resolve this issue",
 		},
-		// We don't need to test this for ipynb notebooks and foo.ipynb. The
-		// import API fails when the file extension is .ipynb but the content is
-		// not a valid juptyer notebook.
+		{
+			name:                 "python jupyter notebook and file",
+			language:             workspace.LanguagePython,
+			notebookExportFormat: workspace.ExportFormatJupyter,
+			notebookPath:         "/dir/foo",
+			filePath:             "/dir/foo.ipynb",
+			expectedError:        "failed to read files from the workspace file system. Duplicate paths encountered. Both NOTEBOOK at /dir/foo and FILE at /dir/foo.ipynb resolve to the same name /foo.ipynb. Changing the name of one of these objects will resolve this issue",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			mockedWorkspaceClient := mocks.NewMockWorkspaceClient(t)
