@@ -1,26 +1,23 @@
 package schema
 
 import (
-	"container/list"
-	"fmt"
 	"reflect"
-	"strings"
 
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/jsonschema"
 )
 
-// Fields tagged "readonly" should not be emitted in the schema as they are
-// computed at runtime, and should not be assigned a value by the bundle author.
-const readonlyTag = "readonly"
+// // Fields tagged "readonly" should not be emitted in the schema as they are
+// // computed at runtime, and should not be assigned a value by the bundle author.
+// const readonlyTag = "readonly"
 
-// Annotation for internal bundle fields that should not be exposed to customers.
-// Fields can be tagged as "internal" to remove them from the generated schema.
-const internalTag = "internal"
+// // Annotation for internal bundle fields that should not be exposed to customers.
+// // Fields can be tagged as "internal" to remove them from the generated schema.
+// const internalTag = "internal"
 
-// Annotation for bundle fields that have been deprecated.
-// Fields tagged as "deprecated" are removed/omitted from the generated schema.
-const deprecatedTag = "deprecated"
+// // Annotation for bundle fields that have been deprecated.
+// // Fields tagged as "deprecated" are removed/omitted from the generated schema.
+// const deprecatedTag = "deprecated"
 
 // This function translates golang types into json schema. Here is the mapping
 // between json schema types and golang types
@@ -44,38 +41,61 @@ const deprecatedTag = "deprecated"
 //   - []MyStruct               ->   {type: object, properties: {}, additionalProperties: false}
 //     for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#properties
 func New(golangType reflect.Type, docs *Docs) (*jsonschema.Schema, error) {
-	tracker := newTracker()
-	schema, err := safeToSchema(golangType, docs, "", tracker)
+
+	s, err := jsonschema.FromType(golangType, jsonschema.FromTypeOptions{
+		Transform: func(s jsonschema.Schema) jsonschema.Schema {
+			if s.Type == jsonschema.NumberType || s.Type == jsonschema.BooleanType {
+				s = jsonschema.Schema{
+					AnyOf: []jsonschema.Schema{
+						s,
+						{
+							Type: jsonschema.StringType,
+							// TODO:
+							Pattern: dynvar.VariableRegex,
+						},
+					},
+				}
+			}
+			return s
+		},
+	})
 	if err != nil {
-		return nil, tracker.errWithTrace(err.Error(), "root")
+		return nil, err
 	}
-	return schema, nil
+	return &s, nil
+
+	// tracker := newTracker()
+	// schema, err := safeToSchema(golangType, docs, "", tracker)
+	// if err != nil {
+	// 	return nil, tracker.errWithTrace(err.Error(), "root")
+	// }
+	// return schema, nil
 }
 
-func jsonSchemaType(golangType reflect.Type) (jsonschema.Type, error) {
-	switch golangType.Kind() {
-	case reflect.Bool:
-		return jsonschema.BooleanType, nil
-	case reflect.String:
-		return jsonschema.StringType, nil
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
-		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
-		reflect.Float32, reflect.Float64:
+// func jsonSchemaType(golangType reflect.Type) (jsonschema.Type, error) {
+// 	switch golangType.Kind() {
+// 	case reflect.Bool:
+// 		return jsonschema.BooleanType, nil
+// 	case reflect.String:
+// 		return jsonschema.StringType, nil
+// 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+// 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+// 		reflect.Float32, reflect.Float64:
 
-		return jsonschema.NumberType, nil
-	case reflect.Struct:
-		return jsonschema.ObjectType, nil
-	case reflect.Map:
-		if golangType.Key().Kind() != reflect.String {
-			return jsonschema.InvalidType, fmt.Errorf("only strings map keys are valid. key type: %v", golangType.Key().Kind())
-		}
-		return jsonschema.ObjectType, nil
-	case reflect.Array, reflect.Slice:
-		return jsonschema.ArrayType, nil
-	default:
-		return jsonschema.InvalidType, fmt.Errorf("unhandled golang type: %s", golangType)
-	}
-}
+// 		return jsonschema.NumberType, nil
+// 	case reflect.Struct:
+// 		return jsonschema.ObjectType, nil
+// 	case reflect.Map:
+// 		if golangType.Key().Kind() != reflect.String {
+// 			return jsonschema.InvalidType, fmt.Errorf("only strings map keys are valid. key type: %v", golangType.Key().Kind())
+// 		}
+// 		return jsonschema.ObjectType, nil
+// 	case reflect.Array, reflect.Slice:
+// 		return jsonschema.ArrayType, nil
+// 	default:
+// 		return jsonschema.InvalidType, fmt.Errorf("unhandled golang type: %s", golangType)
+// 	}
+// }
 
 // A wrapper over toSchema function to:
 //  1. Detect cycles in the bundle config struct.
@@ -92,196 +112,196 @@ func jsonSchemaType(golangType reflect.Type) (jsonschema.Type, error) {
 //     like array, map or no json tags
 //
 //   - tracker: Keeps track of types / traceIds seen during recursive traversal
-func safeToSchema(golangType reflect.Type, docs *Docs, traceId string, tracker *tracker) (*jsonschema.Schema, error) {
-	// HACK to unblock CLI release (13th Feb 2024). This is temporary until proper
-	// support for recursive types is added to the schema generator. PR: https://github.com/databricks/cli/pull/1204
-	if traceId == "for_each_task" {
-		return &jsonschema.Schema{
-			Type: jsonschema.ObjectType,
-		}, nil
-	}
+// func safeToSchema(golangType reflect.Type, docs *Docs, traceId string, tracker *tracker) (*jsonschema.Schema, error) {
+// 	// HACK to unblock CLI release (13th Feb 2024). This is temporary until proper
+// 	// support for recursive types is added to the schema generator. PR: https://github.com/databricks/cli/pull/1204
+// 	if traceId == "for_each_task" {
+// 		return &jsonschema.Schema{
+// 			Type: jsonschema.ObjectType,
+// 		}, nil
+// 	}
 
-	// WE ERROR OUT IF THERE ARE CYCLES IN THE JSON SCHEMA
-	// There are mechanisms to deal with cycles though recursive identifiers in json
-	// schema. However if we use them, we would need to make sure we are able to detect
-	// cycles where two properties (directly or indirectly) pointing to each other
-	//
-	// see: https://json-schema.org/understanding-json-schema/structuring.html#recursion
-	// for details
-	if tracker.hasCycle(golangType) {
-		return nil, fmt.Errorf("cycle detected")
-	}
+// 	// WE ERROR OUT IF THERE ARE CYCLES IN THE JSON SCHEMA
+// 	// There are mechanisms to deal with cycles though recursive identifiers in json
+// 	// schema. However if we use them, we would need to make sure we are able to detect
+// 	// cycles where two properties (directly or indirectly) pointing to each other
+// 	//
+// 	// see: https://json-schema.org/understanding-json-schema/structuring.html#recursion
+// 	// for details
+// 	if tracker.hasCycle(golangType) {
+// 		return nil, fmt.Errorf("cycle detected")
+// 	}
 
-	tracker.push(golangType, traceId)
-	props, err := toSchema(golangType, docs, tracker)
-	if err != nil {
-		return nil, err
-	}
-	tracker.pop(golangType)
-	return props, nil
-}
+// 	tracker.push(golangType, traceId)
+// 	props, err := toSchema(golangType, docs, tracker)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	tracker.pop(golangType)
+// 	return props, nil
+// }
 
 // This function returns all member fields of the provided type.
 // If the type has embedded (aka anonymous) fields, this function traverses
 // those in a breadth first manner
-func getStructFields(golangType reflect.Type) []reflect.StructField {
-	fields := []reflect.StructField{}
-	bfsQueue := list.New()
+// func getStructFields(golangType reflect.Type) []reflect.StructField {
+// 	fields := []reflect.StructField{}
+// 	bfsQueue := list.New()
 
-	for i := 0; i < golangType.NumField(); i++ {
-		bfsQueue.PushBack(golangType.Field(i))
-	}
-	for bfsQueue.Len() > 0 {
-		front := bfsQueue.Front()
-		field := front.Value.(reflect.StructField)
-		bfsQueue.Remove(front)
+// 	for i := 0; i < golangType.NumField(); i++ {
+// 		bfsQueue.PushBack(golangType.Field(i))
+// 	}
+// 	for bfsQueue.Len() > 0 {
+// 		front := bfsQueue.Front()
+// 		field := front.Value.(reflect.StructField)
+// 		bfsQueue.Remove(front)
 
-		if !field.Anonymous {
-			fields = append(fields, field)
-			continue
-		}
+// 		if !field.Anonymous {
+// 			fields = append(fields, field)
+// 			continue
+// 		}
 
-		fieldType := field.Type
-		if fieldType.Kind() == reflect.Pointer {
-			fieldType = fieldType.Elem()
-		}
+// 		fieldType := field.Type
+// 		if fieldType.Kind() == reflect.Pointer {
+// 			fieldType = fieldType.Elem()
+// 		}
 
-		for i := 0; i < fieldType.NumField(); i++ {
-			bfsQueue.PushBack(fieldType.Field(i))
-		}
-	}
-	return fields
-}
+// 		for i := 0; i < fieldType.NumField(); i++ {
+// 			bfsQueue.PushBack(fieldType.Field(i))
+// 		}
+// 	}
+// 	return fields
+// }
 
-func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*jsonschema.Schema, error) {
-	// *Struct and Struct generate identical json schemas
-	if golangType.Kind() == reflect.Pointer {
-		return safeToSchema(golangType.Elem(), docs, "", tracker)
-	}
-	if golangType.Kind() == reflect.Interface {
-		return &jsonschema.Schema{}, nil
-	}
+// func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*jsonschema.Schema, error) {
+// 	// *Struct and Struct generate identical json schemas
+// 	if golangType.Kind() == reflect.Pointer {
+// 		return safeToSchema(golangType.Elem(), docs, "", tracker)
+// 	}
+// 	if golangType.Kind() == reflect.Interface {
+// 		return &jsonschema.Schema{}, nil
+// 	}
 
-	rootJavascriptType, err := jsonSchemaType(golangType)
-	if err != nil {
-		return nil, err
-	}
-	jsonSchema := &jsonschema.Schema{Type: rootJavascriptType}
+// 	rootJavascriptType, err := jsonSchemaType(golangType)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	jsonSchema := &jsonschema.Schema{Type: rootJavascriptType}
 
-	// If the type is a non-string primitive, then we allow it to be a string
-	// provided it's a pure variable reference (ie only a single variable reference).
-	if rootJavascriptType == jsonschema.BooleanType || rootJavascriptType == jsonschema.NumberType {
-		jsonSchema = &jsonschema.Schema{
-			AnyOf: []*jsonschema.Schema{
-				{
-					Type: rootJavascriptType,
-				},
-				{
-					Type:    jsonschema.StringType,
-					Pattern: dynvar.VariableRegex,
-				},
-			},
-		}
-	}
+// 	// If the type is a non-string primitive, then we allow it to be a string
+// 	// provided it's a pure variable reference (ie only a single variable reference).
+// 	if rootJavascriptType == jsonschema.BooleanType || rootJavascriptType == jsonschema.NumberType {
+// 		jsonSchema = &jsonschema.Schema{
+// 			AnyOf: []*jsonschema.Schema{
+// 				{
+// 					Type: rootJavascriptType,
+// 				},
+// 				{
+// 					Type:    jsonschema.StringType,
+// 					Pattern: dynvar.VariableRegex,
+// 				},
+// 			},
+// 		}
+// 	}
 
-	if docs != nil {
-		jsonSchema.Description = docs.Description
-	}
+// 	if docs != nil {
+// 		jsonSchema.Description = docs.Description
+// 	}
 
-	// case array/slice
-	if golangType.Kind() == reflect.Array || golangType.Kind() == reflect.Slice {
-		elemGolangType := golangType.Elem()
-		elemJavascriptType, err := jsonSchemaType(elemGolangType)
-		if err != nil {
-			return nil, err
-		}
-		var childDocs *Docs
-		if docs != nil {
-			childDocs = docs.Items
-		}
-		elemProps, err := safeToSchema(elemGolangType, childDocs, "", tracker)
-		if err != nil {
-			return nil, err
-		}
-		jsonSchema.Items = &jsonschema.Schema{
-			Type:                 elemJavascriptType,
-			Properties:           elemProps.Properties,
-			AdditionalProperties: elemProps.AdditionalProperties,
-			Items:                elemProps.Items,
-			Required:             elemProps.Required,
-		}
-	}
+// 	// case array/slice
+// 	if golangType.Kind() == reflect.Array || golangType.Kind() == reflect.Slice {
+// 		elemGolangType := golangType.Elem()
+// 		elemJavascriptType, err := jsonSchemaType(elemGolangType)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		var childDocs *Docs
+// 		if docs != nil {
+// 			childDocs = docs.Items
+// 		}
+// 		elemProps, err := safeToSchema(elemGolangType, childDocs, "", tracker)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		jsonSchema.Items = &jsonschema.Schema{
+// 			Type:                 elemJavascriptType,
+// 			Properties:           elemProps.Properties,
+// 			AdditionalProperties: elemProps.AdditionalProperties,
+// 			Items:                elemProps.Items,
+// 			Required:             elemProps.Required,
+// 		}
+// 	}
 
-	// case map
-	if golangType.Kind() == reflect.Map {
-		if golangType.Key().Kind() != reflect.String {
-			return nil, fmt.Errorf("only string keyed maps allowed")
-		}
-		var childDocs *Docs
-		if docs != nil {
-			childDocs = docs.AdditionalProperties
-		}
-		jsonSchema.AdditionalProperties, err = safeToSchema(golangType.Elem(), childDocs, "", tracker)
-		if err != nil {
-			return nil, err
-		}
-	}
+// 	// case map
+// 	if golangType.Kind() == reflect.Map {
+// 		if golangType.Key().Kind() != reflect.String {
+// 			return nil, fmt.Errorf("only string keyed maps allowed")
+// 		}
+// 		var childDocs *Docs
+// 		if docs != nil {
+// 			childDocs = docs.AdditionalProperties
+// 		}
+// 		jsonSchema.AdditionalProperties, err = safeToSchema(golangType.Elem(), childDocs, "", tracker)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 	}
 
-	// case struct
-	if golangType.Kind() == reflect.Struct {
-		children := getStructFields(golangType)
-		properties := map[string]*jsonschema.Schema{}
-		required := []string{}
-		for _, child := range children {
-			bundleTag := child.Tag.Get("bundle")
-			// Fields marked as "readonly", "internal" or "deprecated" are skipped
-			// while generating the schema
-			if bundleTag == readonlyTag || bundleTag == internalTag || bundleTag == deprecatedTag {
-				continue
-			}
+// 	// case struct
+// 	if golangType.Kind() == reflect.Struct {
+// 		children := getStructFields(golangType)
+// 		properties := map[string]*jsonschema.Schema{}
+// 		required := []string{}
+// 		for _, child := range children {
+// 			bundleTag := child.Tag.Get("bundle")
+// 			// Fields marked as "readonly", "internal" or "deprecated" are skipped
+// 			// while generating the schema
+// 			if bundleTag == readonlyTag || bundleTag == internalTag || bundleTag == deprecatedTag {
+// 				continue
+// 			}
 
-			// get child json tags
-			childJsonTag := strings.Split(child.Tag.Get("json"), ",")
-			childName := childJsonTag[0]
+// 			// get child json tags
+// 			childJsonTag := strings.Split(child.Tag.Get("json"), ",")
+// 			childName := childJsonTag[0]
 
-			// skip children that have no json tags, the first json tag is ""
-			// or the first json tag is "-"
-			if childName == "" || childName == "-" {
-				continue
-			}
+// 			// skip children that have no json tags, the first json tag is ""
+// 			// or the first json tag is "-"
+// 			if childName == "" || childName == "-" {
+// 				continue
+// 			}
 
-			// get docs for the child if they exist
-			var childDocs *Docs
-			if docs != nil {
-				if val, ok := docs.Properties[childName]; ok {
-					childDocs = val
-				}
-			}
+// 			// get docs for the child if they exist
+// 			var childDocs *Docs
+// 			if docs != nil {
+// 				if val, ok := docs.Properties[childName]; ok {
+// 					childDocs = val
+// 				}
+// 			}
 
-			// compute if the child is a required field. Determined by the
-			// presence of "omitempty" in the json tags
-			hasOmitEmptyTag := false
-			for i := 1; i < len(childJsonTag); i++ {
-				if childJsonTag[i] == "omitempty" {
-					hasOmitEmptyTag = true
-				}
-			}
-			if !hasOmitEmptyTag {
-				required = append(required, childName)
-			}
+// 			// compute if the child is a required field. Determined by the
+// 			// presence of "omitempty" in the json tags
+// 			hasOmitEmptyTag := false
+// 			for i := 1; i < len(childJsonTag); i++ {
+// 				if childJsonTag[i] == "omitempty" {
+// 					hasOmitEmptyTag = true
+// 				}
+// 			}
+// 			if !hasOmitEmptyTag {
+// 				required = append(required, childName)
+// 			}
 
-			// compute Schema.Properties for the child recursively
-			fieldProps, err := safeToSchema(child.Type, childDocs, childName, tracker)
-			if err != nil {
-				return nil, err
-			}
-			properties[childName] = fieldProps
-		}
+// 			// compute Schema.Properties for the child recursively
+// 			fieldProps, err := safeToSchema(child.Type, childDocs, childName, tracker)
+// 			if err != nil {
+// 				return nil, err
+// 			}
+// 			properties[childName] = fieldProps
+// 		}
 
-		jsonSchema.AdditionalProperties = false
-		jsonSchema.Properties = properties
-		jsonSchema.Required = required
-	}
+// 		jsonSchema.AdditionalProperties = false
+// 		jsonSchema.Properties = properties
+// 		jsonSchema.Required = required
+// 	}
 
-	return jsonSchema, nil
-}
+// 	return jsonSchema, nil
+// }

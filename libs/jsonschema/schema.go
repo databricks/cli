@@ -13,6 +13,13 @@ import (
 )
 
 // defines schema for a json object
+// TODO: Remove pointers from properties and AnyOf.
+// TODO: Can / should we emulate dyn.V here in having a readonly model for the data
+// structure? Makes it easier to reason about.
+//
+//	Any performance issues can be addressed by storing the schema
+//
+// as an embedded file.
 type Schema struct {
 	// Type of the object
 	Type Type `json:"type,omitempty"`
@@ -23,6 +30,7 @@ type Schema struct {
 
 	// Expected value for the JSON object. The object value must be equal to this
 	// field if it's specified in the schema.
+	// TODO: Generics here? OR maybe a type from the reflection package.
 	Const any `json:"const,omitempty"`
 
 	// Schemas for the fields of an struct. The keys are the first json tag.
@@ -38,7 +46,8 @@ type Schema struct {
 	// A boolean type with value false. Setting false here validates that all
 	// properties in the config have been defined in the json schema as properties
 	//
-	// Its type during runtime will either be *Schema or bool
+	// Its type during runtime will either be Schema or bool
+	// TODO: Generics to represent either a Schema{} or a bool.
 	AdditionalProperties any `json:"additionalProperties,omitempty"`
 
 	// Required properties for the object. Any fields missing the "omitempty"
@@ -63,7 +72,7 @@ type Schema struct {
 	Extension
 
 	// Schema that must match any of the schemas in the array
-	AnyOf []*Schema `json:"anyOf,omitempty"`
+	AnyOf []Schema `json:"anyOf,omitempty"`
 }
 
 // Default value defined in a JSON Schema, represented as a string.
@@ -120,7 +129,10 @@ func (s *Schema) SetByPath(path string, v Schema) error {
 type Type string
 
 const (
+	// Default zero value of a schema. This does not correspond to a type in the
+	// JSON schema spec and is an internal type defined for convenience.
 	InvalidType Type = "invalid"
+	NullType    Type = "null"
 	BooleanType Type = "boolean"
 	StringType  Type = "string"
 	NumberType  Type = "number"
