@@ -54,6 +54,7 @@ func TestIsLibraryLocal(t *testing.T) {
 		{path: "-r /Workspace/my_project/requirements.txt", expected: false},
 		{path: "s3://mybucket/path/to/package", expected: false},
 		{path: "dbfs:/mnt/path/to/package", expected: false},
+		{path: "beautifulsoup4==4.12.3", expected: false},
 	}
 
 	for i, tc := range testCases {

@@ -66,6 +66,11 @@ func IsLibraryLocal(dep string) bool {
 }
 
 func isPackage(name string) bool {
+	// If the dependency has ==, it's a package with version
+	if strings.Contains(name, "==") {
+		return true
+	}
+
 	// If the dependency has no extension, it's a PyPi package name
 	return path.Ext(name) == ""
 }
