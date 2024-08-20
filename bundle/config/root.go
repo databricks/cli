@@ -366,9 +366,9 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		}
 	}
 
-	// Merge `compute_id`. This field must be overwritten if set, not merged.
-	if v := target.Get("compute_id"); v.Kind() != dyn.KindInvalid {
-		root, err = dyn.SetByPath(root, dyn.NewPath(dyn.Key("bundle"), dyn.Key("compute_id")), v)
+	// Merge `cluster_id`. This field must be overwritten if set, not merged.
+	if v := target.Get("cluster_id"); v.Kind() != dyn.KindInvalid {
+		root, err = dyn.SetByPath(root, dyn.NewPath(dyn.Key("bundle"), dyn.Key("cluster_id")), v)
 		if err != nil {
 			return err
 		}
