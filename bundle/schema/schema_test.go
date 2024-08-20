@@ -2,6 +2,7 @@ package schema
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -11,6 +12,11 @@ import (
 
 func TestIntSchema(t *testing.T) {
 	var elemInt int
+
+	type Bae struct{}
+
+	typ := reflect.TypeOf(Bae{})
+	fmt.Println(typ.PkgPath())
 
 	expected :=
 		`{

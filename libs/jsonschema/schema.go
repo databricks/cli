@@ -21,6 +21,9 @@ import (
 //
 // as an embedded file.
 type Schema struct {
+	// TODO: Comments for this field
+	Definitions any `json:"$defs,omitempty"`
+
 	// Type of the object
 	Type Type `json:"type,omitempty"`
 
@@ -55,6 +58,7 @@ type Schema struct {
 	Required []string `json:"required,omitempty"`
 
 	// URI to a json schema
+	// TODO: Would be nice to make items as well as this a non-pointer.
 	Reference *string `json:"$ref,omitempty"`
 
 	// Default value for the property / object

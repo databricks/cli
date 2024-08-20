@@ -42,23 +42,21 @@ import (
 //     for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#properties
 func New(golangType reflect.Type, docs *Docs) (*jsonschema.Schema, error) {
 
-	s, err := jsonschema.FromType(golangType, jsonschema.FromTypeOptions{
-		Transform: func(s jsonschema.Schema) jsonschema.Schema {
-			if s.Type == jsonschema.NumberType || s.Type == jsonschema.BooleanType {
-				s = jsonschema.Schema{
-					AnyOf: []jsonschema.Schema{
-						s,
-						{
-							Type: jsonschema.StringType,
-							// TODO: Narrow down the scope of the regex match.
-							// Also likely need to rename this variable.
-							Pattern: dynvar.VariableRegex,
-						},
+	s, err := jsonschema.FromType(golangType, func(s jsonschema.Schema) jsonschema.Schema {
+		if s.Type == jsonschema.NumberType || s.Type == jsonschema.BooleanType {
+			s = jsonschema.Schema{
+				AnyOf: []jsonschema.Schema{
+					s,
+					{
+						Type: jsonschema.StringType,
+						// TODO: Narrow down the scope of the regex match.
+						// Also likely need to rename this variable.
+						Pattern: dynvar.VariableRegex,
 					},
-				}
+				},
 			}
-			return s
-		},
+		}
+		return s
 	})
 	if err != nil {
 		return nil, err
