@@ -69,6 +69,7 @@ func IsLibraryLocal(dep string) bool {
 // ^[a-zA-Z0-9\-_]+: Matches the package name, allowing alphanumeric characters, dashes (-), and underscores (_).
 // \[.*\])?: Optionally matches any extras specified in square brackets, e.g., [security].
 // ((==|!=|<=|>=|~=|>|<)\d+(\.\d+){0,2}(\.\*)?)?: Optionally matches version specifiers, supporting various operators (==, !=, etc.) followed by a version number (e.g., 2.25.1).
+// Spec for package name and version specifier: https://pip.pypa.io/en/stable/reference/requirement-specifiers/
 const packageRegex = `^[a-zA-Z0-9\-_]+(\[.*\])?\s?((==|!=|<=|>=|~=|==|>|<)\s?\d+(\.\d+){0,2}(\.\*)?)?$`
 
 func isPackage(name string) bool {

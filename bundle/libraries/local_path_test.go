@@ -61,6 +61,7 @@ func TestIsLibraryLocal(t *testing.T) {
 		{path: "beautifulsoup4 ~= 4.12.3", expected: false},
 		{path: "beautifulsoup4[security, tests]", expected: false},
 		{path: "beautifulsoup4[security, tests] ~= 4.12.3", expected: false},
+		{path: "https://github.com/pypa/pip/archive/22.0.2.zip", expected: false},
 	}
 
 	for i, tc := range testCases {
