@@ -3,6 +3,7 @@ package validate
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -21,27 +22,36 @@ func (m *allResourcesHaveValues) Name() string {
 }
 
 func (m *allResourcesHaveValues) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	rv := b.Config.Value().Get("resources")
-
-	// Skip if there are no resources block defined, or the resources block is empty.
-	if rv.Kind() == dyn.KindInvalid || rv.Kind() == dyn.KindNil {
-		return nil
-	}
+	diags := diag.Diagnostics{}
 
 	_, err := dyn.MapByPattern(
-		rv,
-		dyn.NewPattern(dyn.AnyKey(), dyn.AnyKey()),
+		b.Config.Value(),
+		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
 		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			if v.Kind() == dyn.KindInvalid || v.Kind() == dyn.KindNil {
-				// Type of the resource, stripped of the trailing 's' to make it
-				// singular.
-				rType := strings.TrimSuffix(p[0].Key(), "s")
-
-				rName := p[1].Key()
-				return v, fmt.Errorf("%s %s is not defined", rType, rName)
+			if v.Kind() != dyn.KindNil {
+				return v, nil
 			}
+
+			// Type of the resource, stripped of the trailing 's' to make it
+			// singular.
+			rType := strings.TrimSuffix(p[1].Key(), "s")
+
+			// Name of the resource. Eg: "foo" in "jobs.foo".
+			rName := p[2].Key()
+
+			diags = append(diags, diag.Diagnostic{
+				Severity:  diag.Error,
+				Summary:   fmt.Sprintf("%s %s is not defined", rType, rName),
+				Locations: v.Locations(),
+				Paths:     []dyn.Path{slices.Clone(p)},
+			})
+
 			return v, nil
 		},
 	)
-	return diag.FromErr(err)
+	if err != nil {
+		diags = append(diags, diag.FromErr(err)...)
+	}
+
+	return diags
 }

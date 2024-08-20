@@ -1,0 +1,14 @@
+bundle:
+  name: undefined-job
+
+resources:
+  jobs:
+    undefined-job:
+    test:
+      name: "Test Job"
+
+  experiments:
+    undefined-experiment:
+
+  pipelines:
+    undefined-pipeline:

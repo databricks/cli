@@ -1,8 +1,0 @@
-bundle:
-  name: undefined-pipeline
-
-resources:
-  pipelines:
-    undefined:
-    test:
-      name: "Test Pipeline"

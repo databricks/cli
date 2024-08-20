@@ -58,6 +58,7 @@ func Initialize() bundle.Mutator {
 			mutator.SetRunAs(),
 			mutator.OverrideCompute(),
 			mutator.ProcessTargetMode(),
+			mutator.ApplyPresets(),
 			mutator.DefaultQueueing(),
 			mutator.ExpandPipelineGlobPaths(),
 
