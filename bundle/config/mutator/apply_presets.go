@@ -155,10 +155,23 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 
 	// Schemas: Prefix
 	for i := range r.Schemas {
-		prefix = "dev_" + b.Config.Workspace.CurrentUser.ShortName + "_"
-		r.Schemas[i].Name = prefix + r.Schemas[i].Name
+		schemaPrefix := "dev_" + b.Config.Workspace.CurrentUser.ShortName + "_"
+		r.Schemas[i].Name = schemaPrefix + r.Schemas[i].Name
 		// HTTP API for schemas doesn't yet support tags. It's only supported in
 		// the Databricks UI and via the SQL API.
+	}
+
+	// Clusters: Prefix, Tags
+	for _, c := range r.Clusters {
+		c.ClusterName = prefix + c.ClusterName
+		if c.CustomTags == nil {
+			c.CustomTags = make(map[string]string)
+		}
+		for _, tag := range tags {
+			if c.CustomTags[tag.Key] == "" {
+				c.CustomTags[tag.Key] = tag.Value
+			}
+		}
 	}
 
 	return nil
