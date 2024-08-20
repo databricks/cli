@@ -50,7 +50,8 @@ func New(golangType reflect.Type, docs *Docs) (*jsonschema.Schema, error) {
 						s,
 						{
 							Type: jsonschema.StringType,
-							// TODO:
+							// TODO: Narrow down the scope of the regex match.
+							// Also likely need to rename this variable.
 							Pattern: dynvar.VariableRegex,
 						},
 					},

@@ -62,11 +62,10 @@ func FromType(typ reflect.Type, opts FromTypeOptions) (Schema, error) {
 		res = Schema{Type: StringType}
 	case reflect.Bool:
 		res = Schema{Type: BooleanType}
-	// case reflect.Int, reflect.Int32, reflect.Int64:
-	// 	res = Schema{Type: IntegerType}
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
-		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
-		reflect.Float32, reflect.Float64:
+	// TODO: Add comment about reduced coverage of primitive Go types in the code paths here.
+	case reflect.Int:
+		res = Schema{Type: IntegerType}
+	case reflect.Float32, reflect.Float64:
 		res = Schema{Type: NumberType}
 	default:
 		return InvalidSchema, fmt.Errorf("unsupported type: %s", typ.Kind())
@@ -164,6 +163,8 @@ func fromTypeStruct(typ reflect.Type, opts FromTypeOptions) (Schema, error) {
 	return res, nil
 }
 
+// TODO: Add comments explaining the translation between struct, map, slice and
+// the JSON schema representation.
 func fromTypeSlice(typ reflect.Type, opts FromTypeOptions) (Schema, error) {
 	if typ.Kind() != reflect.Slice {
 		return InvalidSchema, fmt.Errorf("expected slice, got %s", typ.Kind())
