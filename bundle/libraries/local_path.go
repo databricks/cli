@@ -3,6 +3,7 @@ package libraries
 import (
 	"net/url"
 	"path"
+	"regexp"
 	"strings"
 )
 
@@ -65,14 +66,14 @@ func IsLibraryLocal(dep string) bool {
 	return IsLocalPath(dep)
 }
 
-func isPackage(name string) bool {
-	// If the dependency has ==, it's a package with version
-	if strings.Contains(name, "==") {
-		return true
-	}
+// ^[a-zA-Z0-9\-_]+: Matches the package name, allowing alphanumeric characters, dashes (-), and underscores (_).
+// \[.*\])?: Optionally matches any extras specified in square brackets, e.g., [security].
+// ((==|!=|<=|>=|~=|>|<)\d+(\.\d+){0,2}(\.\*)?)?: Optionally matches version specifiers, supporting various operators (==, !=, etc.) followed by a version number (e.g., 2.25.1).
+const packageRegex = `^[a-zA-Z0-9\-_]+(\[.*\])?\s?((==|!=|<=|>=|~=|==|>|<)\s?\d+(\.\d+){0,2}(\.\*)?)?$`
 
-	// If the dependency has no extension, it's a PyPi package name
-	return path.Ext(name) == ""
+func isPackage(name string) bool {
+	re := regexp.MustCompile(packageRegex)
+	return re.MatchString(name)
 }
 
 func isRemoteStorageScheme(path string) bool {
