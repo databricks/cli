@@ -2,7 +2,6 @@ package schema
 
 import (
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -187,36 +186,6 @@ func TestStructOfSliceSchema(t *testing.T) {
 	assert.Equal(t, expected, string(jsonSchema))
 }
 
-func TestMapOfPrimitivesSchema(t *testing.T) {
-	var elem map[string]int
-
-	schema, err := New(reflect.TypeOf(elem), nil)
-	assert.NoError(t, err)
-
-	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
-	assert.NoError(t, err)
-
-	expected :=
-		`{
-			"type": "object",
-			"additionalProperties": {
-				"anyOf": [
-					{
-						"type": "number"
-					},
-					{
-						"type": "string",
-						"pattern": "\\$\\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-					}
-				]
-			}
-		}`
-
-	t.Log("[DEBUG] actual: ", string(jsonSchema))
-	t.Log("[DEBUG] expected: ", expected)
-	assert.Equal(t, expected, string(jsonSchema))
-}
-
 func TestMapOfStructSchema(t *testing.T) {
 	type Foo struct {
 		MyInt int `json:"my_int"`
@@ -310,28 +279,6 @@ func TestMapOfSliceSchema(t *testing.T) {
 				"items": {
 					"type": "string"
 				}
-			}
-		}`
-
-	t.Log("[DEBUG] actual: ", string(jsonSchema))
-	t.Log("[DEBUG] expected: ", expected)
-	assert.Equal(t, expected, string(jsonSchema))
-}
-
-func TestSliceOfPrimitivesSchema(t *testing.T) {
-	var elem []float32
-
-	schema, err := New(reflect.TypeOf(elem), nil)
-	assert.NoError(t, err)
-
-	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
-	assert.NoError(t, err)
-
-	expected :=
-		`{
-			"type": "array",
-			"items": {
-				"type": "number"
 			}
 		}`
 

@@ -159,12 +159,12 @@ func (c *constructor) walk(typ reflect.Type) error {
 // This function returns all member fields of the provided type.
 // If the type has embedded (aka anonymous) fields, this function traverses
 // those in a breadth first manner
-func getStructFields(golangType reflect.Type) []reflect.StructField {
+func getStructFields(typ reflect.Type) []reflect.StructField {
 	fields := []reflect.StructField{}
 	bfsQueue := list.New()
 
-	for i := 0; i < golangType.NumField(); i++ {
-		bfsQueue.PushBack(golangType.Field(i))
+	for i := 0; i < typ.NumField(); i++ {
+		bfsQueue.PushBack(typ.Field(i))
 	}
 	for bfsQueue.Len() > 0 {
 		front := bfsQueue.Front()

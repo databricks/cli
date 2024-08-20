@@ -124,3 +124,21 @@ func TestFromTypeBasic(t *testing.T) {
 		})
 	}
 }
+
+func TestGetStructFields(t *testing.T) {
+	type EmbeddedStruct struct {
+		I int
+		B bool
+	}
+
+	type MyStruct struct {
+		S string
+		*EmbeddedStruct
+	}
+
+	fields := getStructFields(reflect.TypeOf(MyStruct{}))
+	assert.Len(t, fields, 3)
+	assert.Equal(t, "S", fields[0].Name)
+	assert.Equal(t, "I", fields[1].Name)
+	assert.Equal(t, "B", fields[2].Name)
+}
