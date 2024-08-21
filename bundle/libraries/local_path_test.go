@@ -54,7 +54,16 @@ func TestIsLibraryLocal(t *testing.T) {
 		{path: "-r /Workspace/my_project/requirements.txt", expected: false},
 		{path: "s3://mybucket/path/to/package", expected: false},
 		{path: "dbfs:/mnt/path/to/package", expected: false},
+		{path: "beautifulsoup4", expected: false},
 		{path: "beautifulsoup4==4.12.3", expected: false},
+		{path: "beautifulsoup4 >= 4.12.3", expected: false},
+		{path: "beautifulsoup4 < 4.12.3", expected: false},
+		{path: "beautifulsoup4 ~= 4.12.3", expected: false},
+		{path: "beautifulsoup4[security, tests]", expected: false},
+		{path: "beautifulsoup4[security, tests] ~= 4.12.3", expected: false},
+		{path: "https://github.com/pypa/pip/archive/22.0.2.zip", expected: false},
+		{path: "pip @ https://github.com/pypa/pip/archive/22.0.2.zip", expected: false},
+		{path: "requests [security] @ https://github.com/psf/requests/archive/refs/heads/main.zip", expected: false},
 	}
 
 	for i, tc := range testCases {
