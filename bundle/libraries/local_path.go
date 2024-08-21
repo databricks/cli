@@ -70,11 +70,10 @@ func IsLibraryLocal(dep string) bool {
 // \[.*\])?: Optionally matches any extras specified in square brackets, e.g., [security].
 // ((==|!=|<=|>=|~=|>|<)\d+(\.\d+){0,2}(\.\*)?)?: Optionally matches version specifiers, supporting various operators (==, !=, etc.) followed by a version number (e.g., 2.25.1).
 // Spec for package name and version specifier: https://pip.pypa.io/en/stable/reference/requirement-specifiers/
-const packageRegex = `^[a-zA-Z0-9\-_]+\s?(\[.*\])?\s?((==|!=|<=|>=|~=|==|>|<)\s?\d+(\.\d+){0,2}(\.\*)?)?$`
+var packageRegex = regexp.MustCompile(`^[a-zA-Z0-9\-_]+\s?(\[.*\])?\s?((==|!=|<=|>=|~=|==|>|<)\s?\d+(\.\d+){0,2}(\.\*)?)?$`)
 
 func isPackage(name string) bool {
-	re := regexp.MustCompile(packageRegex)
-	if re.MatchString(name) {
+	if packageRegex.MatchString(name) {
 		return true
 	}
 
@@ -87,9 +86,7 @@ func isUrlBasedLookup(name string) bool {
 		return false
 	}
 
-	packageRe := regexp.MustCompile(packageRegex)
-	urlRe := regexp.MustCompile(`^https?://`)
-	return packageRe.MatchString(parts[0]) && urlRe.MatchString(parts[1])
+	return packageRegex.MatchString(parts[0]) && isRemoteStorageScheme(parts[1])
 }
 
 func isRemoteStorageScheme(path string) bool {
