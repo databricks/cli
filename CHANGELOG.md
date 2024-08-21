@@ -6,13 +6,13 @@ CLI:
  * Added filtering flags for cluster list commands ([#1703](https://github.com/databricks/cli/pull/1703)).
 
 Bundles:
+ * Allow users to configure paths (including outside of the bundle root) to synchronize to the workspace. ([#1694](https://github.com/databricks/cli/pull/1694)).
+ * Add configurable presets for name prefixes, tags, etc. ([#1490](https://github.com/databricks/cli/pull/1490)).
+ * Add support for requirements libraries in Job Tasks ([#1543](https://github.com/databricks/cli/pull/1543)).
  * Remove reference to "dbt" in the default-sql template ([#1696](https://github.com/databricks/cli/pull/1696)).
  * Pause continuous pipelines when 'mode: development' is used ([#1590](https://github.com/databricks/cli/pull/1590)).
- * Add configurable presets for name prefixes, tags, etc. ([#1490](https://github.com/databricks/cli/pull/1490)).
  * Report all empty resources present in error diagnostic ([#1685](https://github.com/databricks/cli/pull/1685)).
  * Improves detection of PyPI package names in environment dependencies ([#1699](https://github.com/databricks/cli/pull/1699)).
- * [DAB] Add support for requirements libraries in Job Tasks ([#1543](https://github.com/databricks/cli/pull/1543)).
- * Add paths field to bundle sync configuration ([#1694](https://github.com/databricks/cli/pull/1694)).
 
 Internal:
  * Add `import` option for PyDABs ([#1693](https://github.com/databricks/cli/pull/1693)).
