@@ -77,7 +77,7 @@ func TestApplyPresetsPrefixForUcSchema(t *testing.T) {
 		want   string
 	}{
 		{
-			name:   "add prefix to job",
+			name:   "add prefix to schema",
 			prefix: "[prefix]",
 			schema: &resources.Schema{
 				CreateSchema: &catalog.CreateSchema{
@@ -87,7 +87,7 @@ func TestApplyPresetsPrefixForUcSchema(t *testing.T) {
 			want: "prefix_schema1",
 		},
 		{
-			name:   "add empty prefix to job",
+			name:   "add empty prefix to schema",
 			prefix: "",
 			schema: &resources.Schema{
 				CreateSchema: &catalog.CreateSchema{
