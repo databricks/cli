@@ -16,8 +16,6 @@ import (
 
 func TestComputeMetadataMutator(t *testing.T) {
 	b := &bundle.Bundle{
-		RootPath:     "parent/my_bundle",
-		SyncRootPath: "parent",
 		Config: config.Root{
 			Workspace: config.Workspace{
 				RootPath:     "/Users/shreyas.goenka@databricks.com",
@@ -57,9 +55,9 @@ func TestComputeMetadataMutator(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, "resources.jobs.my-job-1", "parent/my_bundle/a/b/c")
-	bundletest.SetLocation(b, "resources.jobs.my-job-2", "parent/my_bundle/d/e/f")
-	bundletest.SetLocation(b, "resources.pipelines.my-pipeline", "parent/my_bundle/abc")
+	bundletest.SetLocation(b, "resources.jobs.my-job-1", "a/b/c")
+	bundletest.SetLocation(b, "resources.jobs.my-job-2", "d/e/f")
+	bundletest.SetLocation(b, "resources.pipelines.my-pipeline", "abc")
 
 	expectedMetadata := metadata.Metadata{
 		Version: metadata.Version,
@@ -81,11 +79,11 @@ func TestComputeMetadataMutator(t *testing.T) {
 			Resources: metadata.Resources{
 				Jobs: map[string]*metadata.Job{
 					"my-job-1": {
-						RelativePath: "my_bundle/a/b/c",
+						RelativePath: "a/b/c",
 						ID:           "1111",
 					},
 					"my-job-2": {
-						RelativePath: "my_bundle/d/e/f",
+						RelativePath: "d/e/f",
 						ID:           "2222",
 					},
 				},
