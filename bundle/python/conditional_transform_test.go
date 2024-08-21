@@ -2,7 +2,6 @@ package python
 
 import (
 	"context"
-	"path"
 	"path/filepath"
 	"testing"
 
@@ -18,10 +17,14 @@ func TestNoTransformByDefault(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	b := &bundle.Bundle{
-		RootPath: tmpDir,
+		RootPath:     filepath.Join(tmpDir, "parent", "my_bundle"),
+		SyncRootPath: filepath.Join(tmpDir, "parent"),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "development",
+			},
+			Workspace: config.Workspace{
+				FilePath: "/Workspace/files",
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -63,10 +66,14 @@ func TestTransformWithExperimentalSettingSetToTrue(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	b := &bundle.Bundle{
-		RootPath: tmpDir,
+		RootPath:     filepath.Join(tmpDir, "parent", "my_bundle"),
+		SyncRootPath: filepath.Join(tmpDir, "parent"),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "development",
+			},
+			Workspace: config.Workspace{
+				FilePath: "/Workspace/files",
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -102,14 +109,7 @@ func TestTransformWithExperimentalSettingSetToTrue(t *testing.T) {
 	task := b.Config.Resources.Jobs["job1"].Tasks[0]
 	require.Nil(t, task.PythonWheelTask)
 	require.NotNil(t, task.NotebookTask)
-
-	dir, err := b.InternalDir(context.Background())
-	require.NoError(t, err)
-
-	internalDirRel, err := filepath.Rel(b.RootPath, dir)
-	require.NoError(t, err)
-
-	require.Equal(t, path.Join(filepath.ToSlash(internalDirRel), "notebook_job1_key1"), task.NotebookTask.NotebookPath)
+	require.Equal(t, "/Workspace/files/my_bundle/.databricks/bundle/development/.internal/notebook_job1_key1", task.NotebookTask.NotebookPath)
 
 	require.Len(t, task.Libraries, 1)
 	require.Equal(t, "/Workspace/Users/test@test.com/bundle/dist/test.jar", task.Libraries[0].Jar)

@@ -93,6 +93,6 @@ func TestGenerateTrampoline(t *testing.T) {
 	require.Equal(t, "Hello from Trampoline", string(bytes))
 
 	task := b.Config.Resources.Jobs["test"].Tasks[0]
-	require.Equal(t, task.NotebookTask.NotebookPath, "/Workspace/files/my_bundle/.databricks/bundle/development/.internal/notebook_test_to_trampoline")
+	require.Equal(t, "/Workspace/files/my_bundle/.databricks/bundle/development/.internal/notebook_test_to_trampoline", task.NotebookTask.NotebookPath)
 	require.Nil(t, task.PythonWheelTask)
 }
