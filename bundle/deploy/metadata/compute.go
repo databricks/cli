@@ -37,10 +37,11 @@ func (m *compute) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Set job config paths in metadata
 	jobsMetadata := make(map[string]*metadata.Job)
 	for name, job := range b.Config.Resources.Jobs {
-		// Compute config file path the job is defined in, relative to the bundle
-		// root
+		// Compute config file path the job is defined in, relative to the sync root.
+		// You can join the file path (below) with this relative path to find the
+		// workspace path containing the YAML file that defines the job.
 		l := b.Config.GetLocation("resources.jobs." + name)
-		relativePath, err := filepath.Rel(b.RootPath, l.File)
+		relativePath, err := filepath.Rel(b.SyncRootPath, l.File)
 		if err != nil {
 			return diag.Errorf("failed to compute relative path for job %s: %v", name, err)
 		}
