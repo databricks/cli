@@ -1,0 +1,26 @@
+bundle:
+  name: sync_paths
+
+workspace:
+  host: https://acme.cloud.databricks.com/
+
+targets:
+  development:
+    sync:
+      paths:
+        - development
+
+  staging:
+    sync:
+      paths:
+        - staging
+
+  undefined: ~
+
+  nil:
+    sync:
+      paths: ~
+
+  empty:
+    sync:
+      paths: []

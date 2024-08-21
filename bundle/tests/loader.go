@@ -40,6 +40,8 @@ func loadTargetWithDiags(path, env string) (*bundle.Bundle, diag.Diagnostics) {
 	diags := bundle.Apply(ctx, b, bundle.Seq(
 		phases.LoadNamedTarget(env),
 		mutator.RewriteSyncPaths(),
+		mutator.SyncDefaultPath(),
+		mutator.SyncInferRoot(),
 		mutator.MergeJobClusters(),
 		mutator.MergeJobParameters(),
 		mutator.MergeJobTasks(),

@@ -39,6 +39,14 @@ type Bundle struct {
 	// Exclusively use this field for filesystem operations.
 	BundleRoot vfs.Path
 
+	// SyncRoot is a virtual filesystem path to the root directory of the files that are synchronized to the workspace.
+	// It can be an ancestor to [BundleRoot], but not a descendant; that is, [SyncRoot] must contain [BundleRoot].
+	SyncRoot vfs.Path
+
+	// SyncRootPath is the local path to the root directory of files that are synchronized to the workspace.
+	// It is equal to `SyncRoot.Native()` and included as dedicated field for convenient access.
+	SyncRootPath string
+
 	Config config.Root
 
 	// Metadata about the bundle deployment. This is the interface Databricks services

@@ -28,8 +28,8 @@ func GetSyncOptions(ctx context.Context, rb bundle.ReadOnlyBundle) (*sync.SyncOp
 	}
 
 	opts := &sync.SyncOptions{
-		LocalRoot: rb.BundleRoot(),
-		Paths:     []string{"."},
+		LocalRoot: rb.SyncRoot(),
+		Paths:     rb.Config().Sync.Paths,
 		Include:   includes,
 		Exclude:   rb.Config().Sync.Exclude,
 
