@@ -57,6 +57,12 @@ func TestSyncInferRootInternal_ComputeRoot(t *testing.T) {
 			root: "/tmp/some/../dir",
 			out:  "/tmp/dir",
 		},
+		{
+			// Test that a relative root path also works.
+			path: "../common",
+			root: "foo/bar",
+			out:  "foo",
+		},
 	}
 
 	for _, tc := range tcases {
