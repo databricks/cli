@@ -56,8 +56,12 @@ func TestGenerateTrampoline(t *testing.T) {
 	}
 
 	b := &bundle.Bundle{
-		RootPath: tmpDir,
+		RootPath:     filepath.Join(tmpDir, "parent", "my_bundle"),
+		SyncRootPath: filepath.Join(tmpDir, "parent"),
 		Config: config.Root{
+			Workspace: config.Workspace{
+				FilePath: "/Workspace/files",
+			},
 			Bundle: config.Bundle{
 				Target: "development",
 			},
@@ -89,6 +93,6 @@ func TestGenerateTrampoline(t *testing.T) {
 	require.Equal(t, "Hello from Trampoline", string(bytes))
 
 	task := b.Config.Resources.Jobs["test"].Tasks[0]
-	require.Equal(t, task.NotebookTask.NotebookPath, ".databricks/bundle/development/.internal/notebook_test_to_trampoline")
+	require.Equal(t, task.NotebookTask.NotebookPath, "/Workspace/files/my_bundle/.databricks/bundle/development/.internal/notebook_test_to_trampoline")
 	require.Nil(t, task.PythonWheelTask)
 }
