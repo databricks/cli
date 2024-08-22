@@ -125,7 +125,7 @@ func TestAccBundleDeployUcSchemaFailsWithoutAutoApprove(t *testing.T) {
 	assert.Contains(t, stdout.String(), "the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
 }
 
-func TestAccDeployEmptyBundle(t *testing.T) {
+func TestAccDeployBasicBundleLogs(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 
 	nodeTypeId := internal.GetNodeTypeId(env.Get(ctx, "CLOUD_ENV"))
