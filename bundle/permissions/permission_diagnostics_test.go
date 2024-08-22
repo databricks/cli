@@ -47,10 +47,9 @@ func TestPermissionDiagnosticsPermissionDeniedWithGroup(t *testing.T) {
 	})
 
 	diags := permissions.ReportPossiblePermissionDenied(context.Background(), b, "testpath")
-	expected := "EPERM1: unable to deploy to testpath as testuser@databricks.com.\n" +
-		"Please make sure the current user or one of their groups is listed under the permissions of this bundle.\n" +
-		"For assistance, users or groups with appropriate permissions may include: testgroup@databricks.com.\n" +
-		"They may need to redeploy the bundle to apply the new permissions.\n" +
+	expected := "EPERM3: access denied while updating deployment permissions as testuser@databricks.com.\n" +
+		"For assistance, contact the owners of this project.\n" +
+		"They can redeploy the project to apply the latest set of permissions.\n" +
 		"Please refer to https://docs.databricks.com/dev-tools/bundles/permissions.html for more on managing permissions."
 	require.ErrorContains(t, diags.Error(), expected)
 }
