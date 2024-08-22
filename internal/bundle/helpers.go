@@ -137,9 +137,6 @@ func blackBoxRun(t *testing.T, root string, args ...string) (stdout string, stde
 	// Run the command
 	err = cmd.Run()
 	require.NoError(t, err)
-	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-	}
 
 	// Get the output
 	stdout = outBuffer.String()
