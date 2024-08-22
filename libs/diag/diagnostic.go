@@ -1,6 +1,7 @@
 package diag
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/libs/dyn"
@@ -106,7 +107,7 @@ func (ds Diagnostics) Error() error {
 			if d.ID != "" {
 				message = string(d.ID) + ": " + message
 			}
-			return fmt.Errorf(message)
+			return errors.New(message)
 		}
 	}
 	return nil
