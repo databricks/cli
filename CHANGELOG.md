@@ -1,5 +1,31 @@
 # Version changelog
 
+## [Release] Release v0.227.0
+
+CLI:
+ * Added filtering flags for cluster list commands ([#1703](https://github.com/databricks/cli/pull/1703)).
+
+Bundles:
+ * Allow users to configure paths (including outside of the bundle root) to synchronize to the workspace. ([#1694](https://github.com/databricks/cli/pull/1694)).
+ * Add configurable presets for name prefixes, tags, etc. ([#1490](https://github.com/databricks/cli/pull/1490)).
+ * Add support for requirements libraries in Job Tasks ([#1543](https://github.com/databricks/cli/pull/1543)).
+ * Remove reference to "dbt" in the default-sql template ([#1696](https://github.com/databricks/cli/pull/1696)).
+ * Pause continuous pipelines when 'mode: development' is used ([#1590](https://github.com/databricks/cli/pull/1590)).
+ * Report all empty resources present in error diagnostic ([#1685](https://github.com/databricks/cli/pull/1685)).
+ * Improves detection of PyPI package names in environment dependencies ([#1699](https://github.com/databricks/cli/pull/1699)).
+
+Internal:
+ * Add `import` option for PyDABs ([#1693](https://github.com/databricks/cli/pull/1693)).
+ * Make fileset take optional list of paths to list ([#1684](https://github.com/databricks/cli/pull/1684)).
+ * Pass through paths argument to libs/sync ([#1689](https://github.com/databricks/cli/pull/1689)).
+ * Correctly mark package names with versions as remote libraries ([#1697](https://github.com/databricks/cli/pull/1697)).
+ * Share test initializer in common helper function ([#1695](https://github.com/databricks/cli/pull/1695)).
+ * Make `pydabs/venv_path` optional ([#1687](https://github.com/databricks/cli/pull/1687)).
+ * Use API mocks for duplicate path errors in workspace files extensions client ([#1690](https://github.com/databricks/cli/pull/1690)).
+ * Fix prefix preset used for UC schemas ([#1704](https://github.com/databricks/cli/pull/1704)).
+
+
+
 ## [Release] Release v0.226.0
 
 CLI:
