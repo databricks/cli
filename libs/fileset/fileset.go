@@ -3,6 +3,7 @@ package fileset
 import (
 	"fmt"
 	"io/fs"
+	"os"
 	pathlib "path"
 	"path/filepath"
 	"slices"
@@ -124,8 +125,39 @@ func (w *FileSet) recursiveListFiles(path string, seen map[string]struct{}) (out
 			seen[name] = struct{}{}
 			out = append(out, NewFile(w.root, d, name))
 
+		// Special case handling for symlinks
+		case info.Mode()&os.ModeSymlink != 0:
+			ign, err := w.ignore.IgnoreFile(name)
+			if err != nil {
+				return fmt.Errorf("cannot check if %s should be ignored: %w", name, err)
+			}
+			if ign {
+				return nil
+			}
+
+			// Skip duplicates
+			if _, ok := seen[name]; ok {
+				return nil
+			}
+
+			linkname, err := filepath.EvalSymlinks(name)
+			if err != nil {
+				// eat this error if it happens since it is most likely to be hit for symlink
+				// that points to another one. Since symlinks were never supported before this
+				// would just keep the same behavior.
+				return nil
+			}
+
+			fileInfo, err := os.Stat(linkname)
+			if err != nil {
+				return fmt.Errorf("error stating symlink %s it will be ignored: %w", linkname, err)
+			}
+
+			seen[name] = struct{}{}
+			out = append(out, NewFile(w.root, fs.FileInfoToDirEntry(fileInfo), name))
+
 		default:
-			// Skip non-regular files (e.g. symlinks).
+			// Skip unsupported file modes
 		}
 
 		return nil
