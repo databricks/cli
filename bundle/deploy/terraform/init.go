@@ -78,7 +78,7 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 		InstallDir: binDir,
 		Timeout:    1 * time.Minute,
 	}
-	execPath, err = installer.Install(ctx)
+	execPath, err = installer.Install(context.Background())
 	if err != nil {
 		return "", fmt.Errorf("error downloading Terraform: %w", err)
 	}
