@@ -53,7 +53,7 @@ func (m *permissionDiagnostics) Apply(ctx context.Context, b *bundle.Bundle) dia
 func analyzeBundlePermissions(b *bundle.Bundle) (bool, string) {
 	canManageBundle := false
 	otherManagers := set.NewSet[string]()
-	if b.Config.RunAs != nil && b.Config.RunAs.UserName != "" {
+	if b.Config.RunAs != nil && b.Config.RunAs.UserName != "" && b.Config.RunAs.UserName != b.Config.Workspace.CurrentUser.UserName {
 		// The run_as user is another human that could be contacted
 		// about this bundle.
 		otherManagers.Add(b.Config.RunAs.UserName)
@@ -117,6 +117,9 @@ func ReportPossiblePermissionDenied(ctx context.Context, b *bundle.Bundle, path 
 	log.Errorf(ctx, "Failed to update, encountered possible permission error: %v", path)
 
 	user := b.Config.Workspace.CurrentUser.DisplayName
+	if user == "" {
+		user = b.Config.Workspace.CurrentUser.UserName
+	}
 	canManageBundle, assistance := analyzeBundlePermissions(b)
 
 	if !canManageBundle {

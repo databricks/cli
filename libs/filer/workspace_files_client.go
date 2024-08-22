@@ -206,6 +206,7 @@ func (w *workspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return FileAlreadyExistsError{absPath}
 	}
 
+	// This API returns StatusForbidden when you have read access but don't have write access to a file
 	if aerr.StatusCode == http.StatusForbidden {
 		return PermissionError{absPath}
 	}
