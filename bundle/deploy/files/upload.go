@@ -29,7 +29,7 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	b.Files, err = sync.RunOnce(ctx)
 	if err != nil {
 		if errors.Is(err, fs.ErrPermission) {
-			return permissions.ReportPermissionDenied(ctx, b, b.Config.Workspace.StatePath)
+			return permissions.ReportPossiblePermissionDenied(ctx, b, b.Config.Workspace.StatePath)
 		}
 		return diag.FromErr(err)
 	}

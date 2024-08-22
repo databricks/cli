@@ -3,7 +3,6 @@ package config_tests
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle"

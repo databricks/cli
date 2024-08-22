@@ -46,7 +46,7 @@ func TestPermissionDiagnosticsPermissionDeniedWithPermission(t *testing.T) {
 		{Level: "CAN_MANAGE", GroupName: "testgroup"},
 	})
 
-	diags := permissions.ReportPermissionDenied(context.Background(), b, "testpath")
+	diags := permissions.ReportPossiblePermissionDenied(context.Background(), b, "testpath")
 	require.ErrorContains(t, diags.Error(), string(diag.CannotChangePathPermissions))
 }
 
@@ -55,14 +55,14 @@ func TestPermissionDiagnosticsPermissionDeniedWithoutPermission(t *testing.T) {
 		{Level: "CAN_VIEW", UserName: "testuser@databricks.com"},
 	})
 
-	diags := permissions.ReportPermissionDenied(context.Background(), b, "testpath")
+	diags := permissions.ReportPossiblePermissionDenied(context.Background(), b, "testpath")
 	require.ErrorContains(t, diags.Error(), string(diag.PathPermissionDenied))
 }
 
 func TestPermissionDiagnosticsPermissionDeniedNilPermission(t *testing.T) {
 	b := mockBundle(nil)
 
-	diags := permissions.ReportPermissionDenied(context.Background(), b, "testpath")
+	diags := permissions.ReportPossiblePermissionDenied(context.Background(), b, "testpath")
 	require.ErrorContains(t, diags.Error(), string(diag.PathPermissionDenied))
 }
 
@@ -72,7 +72,7 @@ func TestPermissionDiagnosticsFindOtherOwners(t *testing.T) {
 		{Level: "CAN_MANAGE", UserName: "alice@databricks.com"},
 	})
 
-	diags := permissions.ReportPermissionDenied(context.Background(), b, "testpath")
+	diags := permissions.ReportPossiblePermissionDenied(context.Background(), b, "testpath")
 	require.ErrorContains(t, diags.Error(), "include: alice@databricks.com")
 }
 
