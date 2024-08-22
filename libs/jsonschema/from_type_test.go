@@ -248,15 +248,6 @@ func TestFromTypeNested(t *testing.T) {
 			s, err := FromType(tc.typ, nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expected, s)
-
-			// jsonSchema, err := json.MarshalIndent(s, "		", "	")
-			// assert.NoError(t, err)
-
-			// expectedJson, err := json.MarshalIndent(tc.expected, "		", "	")
-			// assert.NoError(t, err)
-
-			// t.Log("[DEBUG] actual: ", string(jsonSchema))
-			// t.Log("[DEBUG] expected: ", string(expectedJson))
 		})
 	}
 }
@@ -312,15 +303,6 @@ func TestFromTypeRecursive(t *testing.T) {
 	s, err := FromType(reflect.TypeOf(test_types.Outer{}), nil)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, s)
-
-	// jsonSchema, err := json.MarshalIndent(s, "		", "	")
-	// assert.NoError(t, err)
-
-	// expectedJson, err := json.MarshalIndent(expected, "		", "	")
-	// assert.NoError(t, err)
-
-	// t.Log("[DEBUG] actual: ", string(jsonSchema))
-	// t.Log("[DEBUG] expected: ", string(expectedJson))
 }
 
 func TestFromTypeSelfReferential(t *testing.T) {
@@ -369,15 +351,6 @@ func TestFromTypeSelfReferential(t *testing.T) {
 	s, err := FromType(reflect.TypeOf(test_types.OuterSelf{}), nil)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, s)
-
-	// jsonSchema, err := json.MarshalIndent(s, "		", "	")
-	// assert.NoError(t, err)
-
-	// expectedJson, err := json.MarshalIndent(expected, "		", "	")
-	// assert.NoError(t, err)
-
-	// t.Log("[DEBUG] actual: ", string(jsonSchema))
-	// t.Log("[DEBUG] expected: ", string(expectedJson))
 }
 
 func TestFromTypeError(t *testing.T) {
