@@ -566,22 +566,3 @@ func TestDocIngestionForTopLevelPrimitive(t *testing.T) {
 
 	assert.Equal(t, expectedSchema, string(jsonSchema))
 }
-
-func TestErrorOnMapWithoutStringKey(t *testing.T) {
-	type Foo struct {
-		Bar map[int]string `json:"bar"`
-	}
-	elem := Foo{}
-	_, err := New(reflect.TypeOf(elem), nil)
-	assert.ErrorContains(t, err, "only strings map keys are valid. key type: int")
-}
-
-func TestErrorIfStructRefersToItself(t *testing.T) {
-	type Foo struct {
-		MyFoo *Foo `json:"my_foo"`
-	}
-
-	elem := Foo{}
-	_, err := New(reflect.TypeOf(elem), nil)
-	assert.ErrorContains(t, err, "cycle detected. traversal trace: root -> my_foo")
-}

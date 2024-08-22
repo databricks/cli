@@ -379,3 +379,9 @@ func TestFromTypeSelfReferential(t *testing.T) {
 	// t.Log("[DEBUG] actual: ", string(jsonSchema))
 	// t.Log("[DEBUG] expected: ", string(expectedJson))
 }
+
+func TestFromTypeError(t *testing.T) {
+	type mapOfInts map[int]int
+	_, err := FromType(reflect.TypeOf(mapOfInts{}), nil)
+	assert.EqualError(t, err, "found map with non-string key: int")
+}
