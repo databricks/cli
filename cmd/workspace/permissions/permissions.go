@@ -21,6 +21,9 @@ func New() *cobra.Command {
 		Long: `Permissions API are used to create read, write, edit, update and manage access
   for various users on different objects and endpoints.
   
+  * **[Apps permissions](:service:apps)** — Manage which users can manage or
+  use apps.
+  
   * **[Cluster permissions](:service:clusters)** — Manage which users can
   manage, restart, or attach to clusters.
   
@@ -59,7 +62,8 @@ func New() *cobra.Command {
   create or use tokens.
   
   * **[Workspace object permissions](:service:workspace)** — Manage which
-  users can read, run, edit, or manage directories, files, and notebooks.
+  users can read, run, edit, or manage alerts, dbsql-dashboards, directories,
+  files, notebooks and queries.
   
   For the mapping of the required permissions for specific actions or abilities
   and other important information, see [Access Control].
@@ -112,10 +116,10 @@ func newGet() *cobra.Command {
   parent objects or root object.
 
   Arguments:
-    REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following:
-      authorization, clusters, cluster-policies, directories, experiments,
-      files, instance-pools, jobs, notebooks, pipelines, registered-models,
-      repos, serving-endpoints, or warehouses.
+    REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
+      authorization, clusters, cluster-policies, dbsql-dashboards, directories,
+      experiments, files, instance-pools, jobs, notebooks, pipelines, queries,
+      registered-models, repos, serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
 	cmd.Annotations = make(map[string]string)
@@ -240,10 +244,10 @@ func newSet() *cobra.Command {
   parent objects or root object.
 
   Arguments:
-    REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following:
-      authorization, clusters, cluster-policies, directories, experiments,
-      files, instance-pools, jobs, notebooks, pipelines, registered-models,
-      repos, serving-endpoints, or warehouses.
+    REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
+      authorization, clusters, cluster-policies, dbsql-dashboards, directories,
+      experiments, files, instance-pools, jobs, notebooks, pipelines, queries,
+      registered-models, repos, serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
 	cmd.Annotations = make(map[string]string)
@@ -314,10 +318,10 @@ func newUpdate() *cobra.Command {
   their parent objects or root object.
 
   Arguments:
-    REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following:
-      authorization, clusters, cluster-policies, directories, experiments,
-      files, instance-pools, jobs, notebooks, pipelines, registered-models,
-      repos, serving-endpoints, or warehouses.
+    REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
+      authorization, clusters, cluster-policies, dbsql-dashboards, directories,
+      experiments, files, instance-pools, jobs, notebooks, pipelines, queries,
+      registered-models, repos, serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
 	cmd.Annotations = make(map[string]string)

@@ -30,5 +30,8 @@ func newCatCommand() *cobra.Command {
 		return cmdio.Render(ctx, r)
 	}
 
+	v := newValidArgs()
+	cmd.ValidArgsFunction = v.Validate
+
 	return cmd
 }

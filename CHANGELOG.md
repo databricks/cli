@@ -1,5 +1,192 @@
 # Version changelog
 
+## [Release] Release v0.227.0
+
+CLI:
+ * Added filtering flags for cluster list commands ([#1703](https://github.com/databricks/cli/pull/1703)).
+
+Bundles:
+ * Allow users to configure paths (including outside of the bundle root) to synchronize to the workspace. ([#1694](https://github.com/databricks/cli/pull/1694)).
+ * Add configurable presets for name prefixes, tags, etc. ([#1490](https://github.com/databricks/cli/pull/1490)).
+ * Add support for requirements libraries in Job Tasks ([#1543](https://github.com/databricks/cli/pull/1543)).
+ * Remove reference to "dbt" in the default-sql template ([#1696](https://github.com/databricks/cli/pull/1696)).
+ * Pause continuous pipelines when 'mode: development' is used ([#1590](https://github.com/databricks/cli/pull/1590)).
+ * Report all empty resources present in error diagnostic ([#1685](https://github.com/databricks/cli/pull/1685)).
+ * Improves detection of PyPI package names in environment dependencies ([#1699](https://github.com/databricks/cli/pull/1699)).
+
+Internal:
+ * Add `import` option for PyDABs ([#1693](https://github.com/databricks/cli/pull/1693)).
+ * Make fileset take optional list of paths to list ([#1684](https://github.com/databricks/cli/pull/1684)).
+ * Pass through paths argument to libs/sync ([#1689](https://github.com/databricks/cli/pull/1689)).
+ * Correctly mark package names with versions as remote libraries ([#1697](https://github.com/databricks/cli/pull/1697)).
+ * Share test initializer in common helper function ([#1695](https://github.com/databricks/cli/pull/1695)).
+ * Make `pydabs/venv_path` optional ([#1687](https://github.com/databricks/cli/pull/1687)).
+ * Use API mocks for duplicate path errors in workspace files extensions client ([#1690](https://github.com/databricks/cli/pull/1690)).
+ * Fix prefix preset used for UC schemas ([#1704](https://github.com/databricks/cli/pull/1704)).
+
+
+
+## [Release] Release v0.226.0
+
+CLI:
+ * Add command line autocomplete to the fs commands ([#1622](https://github.com/databricks/cli/pull/1622)).
+ * Add trailing slash to directory to produce completions for ([#1666](https://github.com/databricks/cli/pull/1666)).
+ * Fix ability to import the CLI repository as module ([#1671](https://github.com/databricks/cli/pull/1671)).
+ * Fix host resolution order in `auth login` ([#1370](https://github.com/databricks/cli/pull/1370)).
+ * Print text logs in `import-dir` and `export-dir` commands ([#1682](https://github.com/databricks/cli/pull/1682)).
+
+Bundles:
+ * Expand and upload local wheel libraries for all task types ([#1649](https://github.com/databricks/cli/pull/1649)).
+ * Clarify file format required for the `config-file` flag in `bundle init` ([#1651](https://github.com/databricks/cli/pull/1651)).
+ * Fixed incorrectly cleaning up python wheel dist folder ([#1656](https://github.com/databricks/cli/pull/1656)).
+ * Merge job parameters based on their name ([#1659](https://github.com/databricks/cli/pull/1659)).
+ * Fix glob expansion after running a generic build command ([#1662](https://github.com/databricks/cli/pull/1662)).
+ * Upload local libraries even if they don't have artifact defined ([#1664](https://github.com/databricks/cli/pull/1664)).
+
+Internal:
+ * Fix python wheel task integration tests ([#1648](https://github.com/databricks/cli/pull/1648)).
+ * Skip pushing Terraform state after destroy ([#1667](https://github.com/databricks/cli/pull/1667)).
+ * Enable Spark JAR task test ([#1658](https://github.com/databricks/cli/pull/1658)).
+ * Run Spark JAR task test on multiple DBR versions ([#1665](https://github.com/databricks/cli/pull/1665)).
+ * Stop tracking file path locations in bundle resources ([#1673](https://github.com/databricks/cli/pull/1673)).
+ * Update VS Code settings to match latest value from IDE plugin ([#1677](https://github.com/databricks/cli/pull/1677)).
+ * Use `service.NamedIdMap` to make lookup generation deterministic ([#1678](https://github.com/databricks/cli/pull/1678)).
+ * [Internal] Remove dependency to the `openapi` package of the Go SDK ([#1676](https://github.com/databricks/cli/pull/1676)).
+ * Upgrade TF provider to 1.50.0 ([#1681](https://github.com/databricks/cli/pull/1681)).
+ * Upgrade Go SDK to 0.44.0 ([#1679](https://github.com/databricks/cli/pull/1679)).
+
+API Changes:
+ * Changed `databricks account budgets create` command . New request type is .
+ * Changed `databricks account budgets create` command to return .
+ * Changed `databricks account budgets delete` command . New request type is .
+ * Changed `databricks account budgets delete` command to return .
+ * Changed `databricks account budgets get` command . New request type is .
+ * Changed `databricks account budgets get` command to return .
+ * Changed `databricks account budgets list` command to require request of .
+ * Changed `databricks account budgets list` command to return .
+ * Changed `databricks account budgets update` command . New request type is .
+ * Changed `databricks account budgets update` command to return .
+ * Added `databricks account usage-dashboards` command group.
+ * Changed `databricks model-versions get` command to return .
+ * Changed `databricks cluster-policies create` command with new required argument order.
+ * Changed `databricks cluster-policies edit` command with new required argument order.
+ * Added `databricks clusters update` command.
+ * Added `databricks genie` command group.
+ * Changed `databricks permission-migration migrate-permissions` command . New request type is .
+ * Changed `databricks permission-migration migrate-permissions` command to return .
+ * Changed `databricks account workspace-assignment delete` command to return .
+ * Changed `databricks account workspace-assignment update` command with new required argument order.
+ * Changed `databricks account custom-app-integration create` command with new required argument order.
+ * Changed `databricks account custom-app-integration list` command to require request of .
+ * Changed `databricks account published-app-integration list` command to require request of .
+ * Removed `databricks apps` command group.
+ * Added `databricks notification-destinations` command group.
+ * Changed `databricks shares list` command to require request of .
+ * Changed `databricks alerts create` command . New request type is .
+ * Changed `databricks alerts delete` command . New request type is .
+ * Changed `databricks alerts delete` command to return .
+ * Changed `databricks alerts get` command with new required argument order.
+ * Changed `databricks alerts list` command to require request of .
+ * Changed `databricks alerts list` command to return .
+ * Changed `databricks alerts update` command . New request type is .
+ * Changed `databricks alerts update` command to return .
+ * Changed `databricks queries create` command . New request type is .
+ * Changed `databricks queries delete` command . New request type is .
+ * Changed `databricks queries delete` command to return .
+ * Changed `databricks queries get` command with new required argument order.
+ * Changed `databricks queries list` command to return .
+ * Removed `databricks queries restore` command.
+ * Changed `databricks queries update` command . New request type is .
+ * Added `databricks queries list-visualizations` command.
+ * Changed `databricks query-visualizations create` command . New request type is .
+ * Changed `databricks query-visualizations delete` command . New request type is .
+ * Changed `databricks query-visualizations delete` command to return .
+ * Changed `databricks query-visualizations update` command . New request type is .
+ * Changed `databricks statement-execution execute-statement` command to return .
+ * Changed `databricks statement-execution get-statement` command to return .
+ * Added `databricks alerts-legacy` command group.
+ * Added `databricks queries-legacy` command group.
+ * Added `databricks query-visualizations-legacy` command group.
+
+OpenAPI commit f98c07f9c71f579de65d2587bb0292f83d10e55d (2024-08-12)
+Dependency updates:
+ * Bump github.com/hashicorp/hc-install from 0.7.0 to 0.8.0 ([#1652](https://github.com/databricks/cli/pull/1652)).
+ * Bump golang.org/x/sync from 0.7.0 to 0.8.0 ([#1655](https://github.com/databricks/cli/pull/1655)).
+ * Bump golang.org/x/mod from 0.19.0 to 0.20.0 ([#1654](https://github.com/databricks/cli/pull/1654)).
+ * Bump golang.org/x/oauth2 from 0.21.0 to 0.22.0 ([#1653](https://github.com/databricks/cli/pull/1653)).
+ * Bump golang.org/x/text from 0.16.0 to 0.17.0 ([#1670](https://github.com/databricks/cli/pull/1670)).
+ * Bump golang.org/x/term from 0.22.0 to 0.23.0 ([#1669](https://github.com/databricks/cli/pull/1669)).
+
+## 0.225.0
+
+Bundles:
+ * Add resource for UC schemas to DABs ([#1413](https://github.com/databricks/cli/pull/1413)).
+
+Internal:
+ * Use dynamic walking to validate unique resource keys ([#1614](https://github.com/databricks/cli/pull/1614)).
+ * Regenerate TF schema ([#1635](https://github.com/databricks/cli/pull/1635)).
+ * Add upgrade and upgrade eager flags to pip install call ([#1636](https://github.com/databricks/cli/pull/1636)).
+ * Added test for negation pattern in sync include exclude section ([#1637](https://github.com/databricks/cli/pull/1637)).
+ * Use precomputed terraform plan for `bundle deploy` ([#1640](https://github.com/databricks/cli/pull/1640)).
+
+## 0.224.1
+
+Bundles:
+ * Add UUID function to bundle template functions  ([#1612](https://github.com/databricks/cli/pull/1612)).
+ * Upgrade TF provider to 1.49.0 ([#1617](https://github.com/databricks/cli/pull/1617)).
+ * Upgrade TF provider to 1.49.1 ([#1626](https://github.com/databricks/cli/pull/1626)).
+ * Support multiple locations for diagnostics ([#1610](https://github.com/databricks/cli/pull/1610)).
+ * Split artifact cleanup into prepare step before build ([#1618](https://github.com/databricks/cli/pull/1618)).
+ * Move to a single prompt during bundle destroy ([#1583](https://github.com/databricks/cli/pull/1583)).
+
+Internal:
+ * Add tests for the Workspace API readahead cache ([#1605](https://github.com/databricks/cli/pull/1605)).
+ * Update Python dependencies before install when upgrading a labs project ([#1624](https://github.com/databricks/cli/pull/1624)).
+
+
+
+## 0.224.0
+
+CLI:
+ * Do not buffer files in memory when downloading ([#1599](https://github.com/databricks/cli/pull/1599)).
+
+Bundles:
+ * Allow artifacts (JARs, wheels) to be uploaded to UC Volumes ([#1591](https://github.com/databricks/cli/pull/1591)).
+ * Upgrade TF provider to 1.48.3 ([#1600](https://github.com/databricks/cli/pull/1600)).
+ * Fixed job name normalisation for bundle generate ([#1601](https://github.com/databricks/cli/pull/1601)).
+
+Internal:
+ * Add UUID to uniquely identify a deployment state ([#1595](https://github.com/databricks/cli/pull/1595)).
+ * Track multiple locations associated with a `dyn.Value` ([#1510](https://github.com/databricks/cli/pull/1510)).
+ * Attribute Terraform API requests the CLI ([#1598](https://github.com/databricks/cli/pull/1598)).
+ * Implement readahead cache for Workspace API calls ([#1582](https://github.com/databricks/cli/pull/1582)).
+ * Add read-only mode for extension aware workspace filer ([#1609](https://github.com/databricks/cli/pull/1609)).
+
+Dependency updates:
+ * Bump github.com/databricks/databricks-sdk-go from 0.43.0 to 0.43.2 ([#1594](https://github.com/databricks/cli/pull/1594)).
+
+## 0.223.2
+
+Bundles:
+ * Override complex variables with target overrides instead of merging ([#1567](https://github.com/databricks/cli/pull/1567)).
+ * Rewrite local path for libraries in foreach tasks ([#1569](https://github.com/databricks/cli/pull/1569)).
+ * Change SetVariables mutator to mutate dynamic configuration instead ([#1573](https://github.com/databricks/cli/pull/1573)).
+ * Return early in bundle destroy if no deployment exists ([#1581](https://github.com/databricks/cli/pull/1581)).
+ * Let notebook detection code use underlying metadata if available ([#1574](https://github.com/databricks/cli/pull/1574)).
+ * Remove schema override for variable default value ([#1536](https://github.com/databricks/cli/pull/1536)).
+ * Print diagnostics in 'bundle deploy' ([#1579](https://github.com/databricks/cli/pull/1579)).
+
+Internal:
+ * Update actions/upload-artifact to v4 ([#1559](https://github.com/databricks/cli/pull/1559)).
+ * Use Go 1.22 to build and test ([#1562](https://github.com/databricks/cli/pull/1562)).
+ * Move bespoke status call to main workspace files filer ([#1570](https://github.com/databricks/cli/pull/1570)).
+ * Add new template ([#1578](https://github.com/databricks/cli/pull/1578)).
+ * Add regression tests for CLI error output ([#1566](https://github.com/databricks/cli/pull/1566)).
+
+Dependency updates:
+ * Bump golang.org/x/mod from 0.18.0 to 0.19.0 ([#1576](https://github.com/databricks/cli/pull/1576)).
+ * Bump golang.org/x/term from 0.21.0 to 0.22.0 ([#1577](https://github.com/databricks/cli/pull/1577)).
+
 ## 0.223.1
 
 This bugfix release fixes missing error messages in v0.223.0.

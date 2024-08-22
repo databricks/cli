@@ -3,6 +3,8 @@
 package workspace_bindings
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -35,7 +37,8 @@ func New() *cobra.Command {
   (/api/2.1/unity-catalog/bindings/{securable_type}/{securable_name}) which
   introduces the ability to bind a securable in READ_ONLY mode (catalogs only).
   
-  Securables that support binding: - catalog`,
+  Securable types that support binding: - catalog - storage_credential -
+  external_location`,
 		GroupID: "catalog",
 		Annotations: map[string]string{
 			"package": "catalog",
@@ -131,6 +134,9 @@ func newGetBindings() *cobra.Command {
 
 	// TODO: short flags
 
+	cmd.Flags().IntVar(&getBindingsReq.MaxResults, "max-results", getBindingsReq.MaxResults, `Maximum number of workspace bindings to return.`)
+	cmd.Flags().StringVar(&getBindingsReq.PageToken, "page-token", getBindingsReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+
 	cmd.Use = "get-bindings SECURABLE_TYPE SECURABLE_NAME"
 	cmd.Short = `Get securable workspace bindings.`
 	cmd.Long = `Get securable workspace bindings.
@@ -139,7 +145,7 @@ func newGetBindings() *cobra.Command {
   or an owner of the securable.
 
   Arguments:
-    SECURABLE_TYPE: The type of the securable.
+    SECURABLE_TYPE: The type of the securable to bind to a workspace.
     SECURABLE_NAME: The name of the securable.`
 
 	cmd.Annotations = make(map[string]string)
@@ -154,14 +160,14 @@ func newGetBindings() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		getBindingsReq.SecurableType = args[0]
+		_, err = fmt.Sscan(args[0], &getBindingsReq.SecurableType)
+		if err != nil {
+			return fmt.Errorf("invalid SECURABLE_TYPE: %s", args[0])
+		}
 		getBindingsReq.SecurableName = args[1]
 
-		response, err := w.WorkspaceBindings.GetBindings(ctx, getBindingsReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
+		response := w.WorkspaceBindings.GetBindings(ctx, getBindingsReq)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -275,7 +281,7 @@ func newUpdateBindings() *cobra.Command {
   admin or an owner of the securable.
 
   Arguments:
-    SECURABLE_TYPE: The type of the securable.
+    SECURABLE_TYPE: The type of the securable to bind to a workspace.
     SECURABLE_NAME: The name of the securable.`
 
 	cmd.Annotations = make(map[string]string)
@@ -296,7 +302,10 @@ func newUpdateBindings() *cobra.Command {
 				return err
 			}
 		}
-		updateBindingsReq.SecurableType = args[0]
+		_, err = fmt.Sscan(args[0], &updateBindingsReq.SecurableType)
+		if err != nil {
+			return fmt.Errorf("invalid SECURABLE_TYPE: %s", args[0])
+		}
 		updateBindingsReq.SecurableName = args[1]
 
 		response, err := w.WorkspaceBindings.UpdateBindings(ctx, updateBindingsReq)

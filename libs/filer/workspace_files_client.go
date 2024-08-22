@@ -84,6 +84,10 @@ func (info wsfsFileInfo) Sys() any {
 	return info.ObjectInfo
 }
 
+func (info wsfsFileInfo) WorkspaceObjectInfo() workspace.ObjectInfo {
+	return info.ObjectInfo
+}
+
 // UnmarshalJSON is a custom unmarshaller for the wsfsFileInfo struct.
 // It must be defined for this type because otherwise the implementation
 // of the embedded ObjectInfo type will be used.
@@ -98,13 +102,21 @@ func (info *wsfsFileInfo) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(info)
 }
 
+// Interface for *client.DatabricksClient from the Databricks Go SDK. Abstracted
+// as an interface to allow for mocking in tests.
+type apiClient interface {
+	Do(ctx context.Context, method, path string,
+		headers map[string]string, request, response any,
+		visitors ...func(*http.Request) error) error
+}
+
 // WorkspaceFilesClient implements the files-in-workspace API.
 
 // NOTE: This API is available for files under /Repos if a workspace has files-in-repos enabled.
 // It can access any workspace path if files-in-workspace is enabled.
-type WorkspaceFilesClient struct {
+type workspaceFilesClient struct {
 	workspaceClient *databricks.WorkspaceClient
-	apiClient       *client.DatabricksClient
+	apiClient       apiClient
 
 	// File operations will be relative to this path.
 	root WorkspaceRootPath
@@ -116,7 +128,7 @@ func NewWorkspaceFilesClient(w *databricks.WorkspaceClient, root string) (Filer,
 		return nil, err
 	}
 
-	return &WorkspaceFilesClient{
+	return &workspaceFilesClient{
 		workspaceClient: w,
 		apiClient:       apiClient,
 
@@ -124,7 +136,7 @@ func NewWorkspaceFilesClient(w *databricks.WorkspaceClient, root string) (Filer,
 	}, nil
 }
 
-func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io.Reader, mode ...WriteMode) error {
+func (w *workspaceFilesClient) Write(ctx context.Context, name string, reader io.Reader, mode ...WriteMode) error {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return err
@@ -208,7 +220,7 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 	return err
 }
 
-func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.ReadCloser, error) {
+func (w *workspaceFilesClient) Read(ctx context.Context, name string) (io.ReadCloser, error) {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return nil, err
@@ -232,7 +244,7 @@ func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.ReadCl
 	return w.workspaceClient.Workspace.Download(ctx, absPath)
 }
 
-func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string, mode ...DeleteMode) error {
+func (w *workspaceFilesClient) Delete(ctx context.Context, name string, mode ...DeleteMode) error {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return err
@@ -276,7 +288,7 @@ func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string, mode ...
 	return err
 }
 
-func (w *WorkspaceFilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, error) {
+func (w *workspaceFilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, error) {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return nil, err
@@ -309,7 +321,7 @@ func (w *WorkspaceFilesClient) ReadDir(ctx context.Context, name string) ([]fs.D
 	return wsfsDirEntriesFromObjectInfos(objects), nil
 }
 
-func (w *WorkspaceFilesClient) Mkdir(ctx context.Context, name string) error {
+func (w *workspaceFilesClient) Mkdir(ctx context.Context, name string) error {
 	dirPath, err := w.root.Join(name)
 	if err != nil {
 		return err
@@ -319,7 +331,7 @@ func (w *WorkspaceFilesClient) Mkdir(ctx context.Context, name string) error {
 	})
 }
 
-func (w *WorkspaceFilesClient) Stat(ctx context.Context, name string) (fs.FileInfo, error) {
+func (w *workspaceFilesClient) Stat(ctx context.Context, name string) (fs.FileInfo, error) {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return nil, err

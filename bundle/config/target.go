@@ -20,6 +20,10 @@ type Target struct {
 	// development purposes.
 	Mode Mode `json:"mode,omitempty"`
 
+	// Mutator configurations that e.g. change the
+	// name prefix of deployed resources.
+	Presets Presets `json:"presets,omitempty"`
+
 	// Overrides the compute used for jobs and other supported assets.
 	ComputeID string `json:"compute_id,omitempty"`
 

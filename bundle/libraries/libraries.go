@@ -35,7 +35,7 @@ func isEnvsWithLocalLibraries(envs []jobs.JobEnvironment) bool {
 		}
 
 		for _, l := range e.Spec.Dependencies {
-			if IsEnvironmentDependencyLocal(l) {
+			if IsLibraryLocal(l) {
 				return true
 			}
 		}
@@ -44,34 +44,30 @@ func isEnvsWithLocalLibraries(envs []jobs.JobEnvironment) bool {
 	return false
 }
 
-func FindAllWheelTasksWithLocalLibraries(b *bundle.Bundle) []*jobs.Task {
+func FindTasksWithLocalLibraries(b *bundle.Bundle) []jobs.Task {
 	tasks := findAllTasks(b)
 	envs := FindAllEnvironments(b)
 
-	wheelTasks := make([]*jobs.Task, 0)
+	allTasks := make([]jobs.Task, 0)
 	for k, jobTasks := range tasks {
 		for i := range jobTasks {
-			task := &jobTasks[i]
-			if task.PythonWheelTask == nil {
-				continue
+			task := jobTasks[i]
+			if isTaskWithLocalLibraries(task) {
+				allTasks = append(allTasks, task)
 			}
+		}
 
-			if isTaskWithLocalLibraries(*task) {
-				wheelTasks = append(wheelTasks, task)
-			}
-
-			if envs[k] != nil && isEnvsWithLocalLibraries(envs[k]) {
-				wheelTasks = append(wheelTasks, task)
-			}
+		if envs[k] != nil && isEnvsWithLocalLibraries(envs[k]) {
+			allTasks = append(allTasks, jobTasks...)
 		}
 	}
 
-	return wheelTasks
+	return allTasks
 }
 
 func isTaskWithLocalLibraries(task jobs.Task) bool {
 	for _, l := range task.Libraries {
-		if IsLocalLibrary(&l) {
+		if IsLibraryLocal(libraryPath(&l)) {
 			return true
 		}
 	}

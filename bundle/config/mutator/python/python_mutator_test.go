@@ -97,11 +97,14 @@ func TestPythonMutator_load(t *testing.T) {
 
 	assert.Equal(t, 1, len(diags))
 	assert.Equal(t, "job doesn't have any tasks", diags[0].Summary)
-	assert.Equal(t, dyn.Location{
-		File:   "src/examples/file.py",
-		Line:   10,
-		Column: 5,
-	}, diags[0].Location)
+	assert.Equal(t, []dyn.Location{
+		{
+			File:   "src/examples/file.py",
+			Line:   10,
+			Column: 5,
+		},
+	}, diags[0].Locations)
+
 }
 
 func TestPythonMutator_load_disallowed(t *testing.T) {
@@ -279,7 +282,7 @@ func TestPythonMutator_venvRequired(t *testing.T) {
 }
 
 func TestPythonMutator_venvNotFound(t *testing.T) {
-	expectedError := fmt.Sprintf("can't find %q, check if venv is created", interpreterPath("bad_path"))
+	expectedError := fmt.Sprintf("failed to get Python interpreter path: can't find %q, check if virtualenv is created", interpreterPath("bad_path"))
 
 	b := loadYaml("databricks.yml", `
       experimental:
@@ -305,8 +308,8 @@ type createOverrideVisitorTestCase struct {
 }
 
 func TestCreateOverrideVisitor(t *testing.T) {
-	left := dyn.NewValue(42, dyn.Location{})
-	right := dyn.NewValue(1337, dyn.Location{})
+	left := dyn.V(42)
+	right := dyn.V(1337)
 
 	testCases := []createOverrideVisitorTestCase{
 		{
@@ -470,21 +473,21 @@ func TestCreateOverrideVisitor_omitempty(t *testing.T) {
 			// this is not happening, but adding for completeness
 			name:        "undo delete of empty variables",
 			path:        dyn.MustPathFromString("variables"),
-			left:        dyn.NewValue([]dyn.Value{}, location),
+			left:        dyn.NewValue([]dyn.Value{}, []dyn.Location{location}),
 			expectedErr: merge.ErrOverrideUndoDelete,
 			phases:      allPhases,
 		},
 		{
 			name:        "undo delete of empty job clusters",
 			path:        dyn.MustPathFromString("resources.jobs.job0.job_clusters"),
-			left:        dyn.NewValue([]dyn.Value{}, location),
+			left:        dyn.NewValue([]dyn.Value{}, []dyn.Location{location}),
 			expectedErr: merge.ErrOverrideUndoDelete,
 			phases:      allPhases,
 		},
 		{
 			name:        "allow delete of non-empty job clusters",
 			path:        dyn.MustPathFromString("resources.jobs.job0.job_clusters"),
-			left:        dyn.NewValue([]dyn.Value{dyn.NewValue("abc", location)}, location),
+			left:        dyn.NewValue([]dyn.Value{dyn.NewValue("abc", []dyn.Location{location})}, []dyn.Location{location}),
 			expectedErr: nil,
 			// deletions aren't allowed in 'load' phase
 			phases: []phase{PythonMutatorPhaseInit},
@@ -492,17 +495,15 @@ func TestCreateOverrideVisitor_omitempty(t *testing.T) {
 		{
 			name:        "undo delete of empty tags",
 			path:        dyn.MustPathFromString("resources.jobs.job0.tags"),
-			left:        dyn.NewValue(map[string]dyn.Value{}, location),
+			left:        dyn.NewValue(map[string]dyn.Value{}, []dyn.Location{location}),
 			expectedErr: merge.ErrOverrideUndoDelete,
 			phases:      allPhases,
 		},
 		{
 			name: "allow delete of non-empty tags",
 			path: dyn.MustPathFromString("resources.jobs.job0.tags"),
-			left: dyn.NewValue(
-				map[string]dyn.Value{"dev": dyn.NewValue("true", location)},
-				location,
-			),
+			left: dyn.NewValue(map[string]dyn.Value{"dev": dyn.NewValue("true", []dyn.Location{location})}, []dyn.Location{location}),
+
 			expectedErr: nil,
 			// deletions aren't allowed in 'load' phase
 			phases: []phase{PythonMutatorPhaseInit},
@@ -510,7 +511,7 @@ func TestCreateOverrideVisitor_omitempty(t *testing.T) {
 		{
 			name:        "undo delete of nil",
 			path:        dyn.MustPathFromString("resources.jobs.job0.tags"),
-			left:        dyn.NilValue.WithLocation(location),
+			left:        dyn.NilValue.WithLocations([]dyn.Location{location}),
 			expectedErr: merge.ErrOverrideUndoDelete,
 			phases:      allPhases,
 		},
@@ -595,9 +596,7 @@ func loadYaml(name string, content string) *bundle.Bundle {
 	}
 }
 
-func withFakeVEnv(t *testing.T, path string) {
-	interpreterPath := interpreterPath(path)
-
+func withFakeVEnv(t *testing.T, venvPath string) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		panic(err)
@@ -606,6 +605,8 @@ func withFakeVEnv(t *testing.T, path string) {
 	if err := os.Chdir(t.TempDir()); err != nil {
 		panic(err)
 	}
+
+	interpreterPath := interpreterPath(venvPath)
 
 	err = os.MkdirAll(filepath.Dir(interpreterPath), 0755)
 	if err != nil {
@@ -617,9 +618,22 @@ func withFakeVEnv(t *testing.T, path string) {
 		panic(err)
 	}
 
+	err = os.WriteFile(filepath.Join(venvPath, "pyvenv.cfg"), []byte(""), 0755)
+	if err != nil {
+		panic(err)
+	}
+
 	t.Cleanup(func() {
 		if err := os.Chdir(cwd); err != nil {
 			panic(err)
 		}
 	})
+}
+
+func interpreterPath(venvPath string) string {
+	if runtime.GOOS == "windows" {
+		return filepath.Join(venvPath, "Scripts", "python3.exe")
+	} else {
+		return filepath.Join(venvPath, "bin", "python3")
+	}
 }

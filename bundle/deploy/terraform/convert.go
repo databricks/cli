@@ -66,8 +66,10 @@ func convGrants(acl []resources.Grant) *schema.ResourceGrants {
 // BundleToTerraform converts resources in a bundle configuration
 // to the equivalent Terraform JSON representation.
 //
-// NOTE: THIS IS CURRENTLY A HACK. WE NEED A BETTER WAY TO
-// CONVERT TO/FROM TERRAFORM COMPATIBLE FORMAT.
+// Note: This function is an older implementation of the conversion logic. It is
+// no longer used in any code paths. It is kept around to be used in tests.
+// New resources do not need to modify this function and can instead can define
+// the conversion login in the tfdyn package.
 func BundleToTerraform(config *config.Root) *schema.Root {
 	tfroot := schema.NewRoot()
 	tfroot.Provider = schema.NewProviders()
@@ -382,6 +384,16 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 				}
 				cur.ID = instance.Attributes.ID
 				config.Resources.QualityMonitors[resource.Name] = cur
+			case "databricks_schema":
+				if config.Resources.Schemas == nil {
+					config.Resources.Schemas = make(map[string]*resources.Schema)
+				}
+				cur := config.Resources.Schemas[resource.Name]
+				if cur == nil {
+					cur = &resources.Schema{ModifiedStatus: resources.ModifiedStatusDeleted}
+				}
+				cur.ID = instance.Attributes.ID
+				config.Resources.Schemas[resource.Name] = cur
 			case "databricks_permissions":
 			case "databricks_grants":
 				// Ignore; no need to pull these back into the configuration.
@@ -422,6 +434,11 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 		}
 	}
 	for _, src := range config.Resources.QualityMonitors {
+		if src.ModifiedStatus == "" && src.ID == "" {
+			src.ModifiedStatus = resources.ModifiedStatusCreated
+		}
+	}
+	for _, src := range config.Resources.Schemas {
 		if src.ModifiedStatus == "" && src.ID == "" {
 			src.ModifiedStatus = resources.ModifiedStatusCreated
 		}

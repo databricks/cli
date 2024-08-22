@@ -280,14 +280,6 @@ func RenderIteratorWithTemplate[T any](ctx context.Context, i listing.Iterator[T
 	return renderWithTemplate(newIteratorRenderer(i), ctx, c.outputFormat, c.out, headerTemplate, template)
 }
 
-func RenderJson(ctx context.Context, v any) error {
-	c := fromContext(ctx)
-	if _, ok := v.(listingInterface); ok {
-		panic("use RenderIteratorJson instead")
-	}
-	return renderWithTemplate(newRenderer(v), ctx, flags.OutputJSON, c.out, c.headerTemplate, c.template)
-}
-
 func RenderIteratorJson[T any](ctx context.Context, i listing.Iterator[T]) error {
 	c := fromContext(ctx)
 	return renderWithTemplate(newIteratorRenderer(i), ctx, c.outputFormat, c.out, c.headerTemplate, c.template)

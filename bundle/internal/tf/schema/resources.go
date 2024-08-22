@@ -16,6 +16,7 @@ type Resources struct {
 	ClusterPolicy                              map[string]any `json:"databricks_cluster_policy,omitempty"`
 	ComplianceSecurityProfileWorkspaceSetting  map[string]any `json:"databricks_compliance_security_profile_workspace_setting,omitempty"`
 	Connection                                 map[string]any `json:"databricks_connection,omitempty"`
+	Dashboard                                  map[string]any `json:"databricks_dashboard,omitempty"`
 	DbfsFile                                   map[string]any `json:"databricks_dbfs_file,omitempty"`
 	DefaultNamespaceSetting                    map[string]any `json:"databricks_default_namespace_setting,omitempty"`
 	Directory                                  map[string]any `json:"databricks_directory,omitempty"`
@@ -58,6 +59,7 @@ type Resources struct {
 	MwsVpcEndpoint                             map[string]any `json:"databricks_mws_vpc_endpoint,omitempty"`
 	MwsWorkspaces                              map[string]any `json:"databricks_mws_workspaces,omitempty"`
 	Notebook                                   map[string]any `json:"databricks_notebook,omitempty"`
+	NotificationDestination                    map[string]any `json:"databricks_notification_destination,omitempty"`
 	OboToken                                   map[string]any `json:"databricks_obo_token,omitempty"`
 	OnlineTable                                map[string]any `json:"databricks_online_table,omitempty"`
 	PermissionAssignment                       map[string]any `json:"databricks_permission_assignment,omitempty"`
@@ -96,6 +98,7 @@ type Resources struct {
 	VectorSearchEndpoint                       map[string]any `json:"databricks_vector_search_endpoint,omitempty"`
 	VectorSearchIndex                          map[string]any `json:"databricks_vector_search_index,omitempty"`
 	Volume                                     map[string]any `json:"databricks_volume,omitempty"`
+	WorkspaceBinding                           map[string]any `json:"databricks_workspace_binding,omitempty"`
 	WorkspaceConf                              map[string]any `json:"databricks_workspace_conf,omitempty"`
 	WorkspaceFile                              map[string]any `json:"databricks_workspace_file,omitempty"`
 }
@@ -115,6 +118,7 @@ func NewResources() *Resources {
 		ClusterPolicy:                          make(map[string]any),
 		ComplianceSecurityProfileWorkspaceSetting: make(map[string]any),
 		Connection:              make(map[string]any),
+		Dashboard:               make(map[string]any),
 		DbfsFile:                make(map[string]any),
 		DefaultNamespaceSetting: make(map[string]any),
 		Directory:               make(map[string]any),
@@ -157,6 +161,7 @@ func NewResources() *Resources {
 		MwsVpcEndpoint:                 make(map[string]any),
 		MwsWorkspaces:                  make(map[string]any),
 		Notebook:                       make(map[string]any),
+		NotificationDestination:        make(map[string]any),
 		OboToken:                       make(map[string]any),
 		OnlineTable:                    make(map[string]any),
 		PermissionAssignment:           make(map[string]any),
@@ -195,6 +200,7 @@ func NewResources() *Resources {
 		VectorSearchEndpoint:           make(map[string]any),
 		VectorSearchIndex:              make(map[string]any),
 		Volume:                         make(map[string]any),
+		WorkspaceBinding:               make(map[string]any),
 		WorkspaceConf:                  make(map[string]any),
 		WorkspaceFile:                  make(map[string]any),
 	}

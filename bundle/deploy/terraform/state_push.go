@@ -2,6 +2,8 @@ package terraform
 
 import (
 	"context"
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -34,6 +36,12 @@ func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 
 	// Expect the state file to live under dir.
 	local, err := os.Open(filepath.Join(dir, TerraformStateFileName))
+	if errors.Is(err, fs.ErrNotExist) {
+		// The state file can be absent if terraform apply is skipped because
+		// there are no changes to apply in the plan.
+		log.Debugf(ctx, "Local terraform state file does not exist.")
+		return nil
+	}
 	if err != nil {
 		return diag.FromErr(err)
 	}

@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/set"
 )
@@ -35,10 +36,10 @@ func (m *permissionDiagnostics) Apply(ctx context.Context, b *bundle.Bundle) dia
 	}
 
 	return diag.Diagnostics{{
-		Severity: diag.Warning,
-		Summary:  fmt.Sprintf("permissions section should include %s or one of their groups with CAN_MANAGE permissions", b.Config.Workspace.CurrentUser.UserName),
-		Location: b.Config.GetLocation("permissions"),
-		ID:       diag.PermissionNotIncluded,
+		Severity:  diag.Warning,
+		Summary:   fmt.Sprintf("permissions section should include %s or one of their groups with CAN_MANAGE permissions", b.Config.Workspace.CurrentUser.UserName),
+		Locations: []dyn.Location{b.Config.GetLocation("permissions")},
+		ID:        diag.PermissionNotIncluded,
 	}}
 }
 

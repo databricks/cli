@@ -18,7 +18,7 @@ func TestFromSlice(t *testing.T) {
 	testutil.Touch(t, tmpDir, "test2.py")
 	testutil.Touch(t, tmpDir, "test3.py")
 
-	files, err := fileset.All()
+	files, err := fileset.Files()
 	require.NoError(t, err)
 
 	f, err := FromSlice(files)
@@ -38,7 +38,7 @@ func TestToSlice(t *testing.T) {
 	testutil.Touch(t, tmpDir, "test2.py")
 	testutil.Touch(t, tmpDir, "test3.py")
 
-	files, err := fileset.All()
+	files, err := fileset.Files()
 	require.NoError(t, err)
 
 	f, err := FromSlice(files)

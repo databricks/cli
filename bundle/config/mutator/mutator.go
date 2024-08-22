@@ -5,6 +5,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/loader"
 	pythonmutator "github.com/databricks/cli/bundle/config/mutator/python"
+	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/scripts"
 )
 
@@ -26,5 +27,9 @@ func DefaultMutators() []bundle.Mutator {
 		DefineDefaultTarget(),
 		LoadGitDetails(),
 		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseLoad),
+
+		// Note: This mutator must run before the target overrides are merged.
+		// See the mutator for more details.
+		validate.UniqueResourceKeys(),
 	}
 }

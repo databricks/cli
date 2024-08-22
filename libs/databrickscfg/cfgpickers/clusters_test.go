@@ -70,7 +70,7 @@ func TestFirstCompatibleCluster(t *testing.T) {
 	cfg, server := qa.HTTPFixtures{
 		{
 			Method:   "GET",
-			Resource: "/api/2.0/clusters/list?can_use_client=NOTEBOOKS",
+			Resource: "/api/2.1/clusters/list?",
 			Response: compute.ListClustersResponse{
 				Clusters: []compute.ClusterDetails{
 					{
@@ -100,7 +100,7 @@ func TestFirstCompatibleCluster(t *testing.T) {
 		},
 		{
 			Method:   "GET",
-			Resource: "/api/2.0/clusters/spark-versions",
+			Resource: "/api/2.1/clusters/spark-versions",
 			Response: compute.GetSparkVersionsResponse{
 				Versions: []compute.SparkVersion{
 					{
@@ -125,7 +125,7 @@ func TestNoCompatibleClusters(t *testing.T) {
 	cfg, server := qa.HTTPFixtures{
 		{
 			Method:   "GET",
-			Resource: "/api/2.0/clusters/list?can_use_client=NOTEBOOKS",
+			Resource: "/api/2.1/clusters/list?",
 			Response: compute.ListClustersResponse{
 				Clusters: []compute.ClusterDetails{
 					{
@@ -147,7 +147,7 @@ func TestNoCompatibleClusters(t *testing.T) {
 		},
 		{
 			Method:   "GET",
-			Resource: "/api/2.0/clusters/spark-versions",
+			Resource: "/api/2.1/clusters/spark-versions",
 			Response: compute.GetSparkVersionsResponse{
 				Versions: []compute.SparkVersion{
 					{

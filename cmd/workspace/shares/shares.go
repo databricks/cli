@@ -254,10 +254,18 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
+	*sharing.ListSharesRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
+
+	var listReq sharing.ListSharesRequest
+
+	// TODO: short flags
+
+	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of shares to return.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List shares.`
@@ -269,11 +277,17 @@ func newList() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		response := w.Shares.List(ctx)
+
+		response := w.Shares.List(ctx, listReq)
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -283,7 +297,7 @@ func newList() *cobra.Command {
 
 	// Apply optional overrides to this command.
 	for _, fn := range listOverrides {
-		fn(cmd)
+		fn(cmd, &listReq)
 	}
 
 	return cmd
@@ -304,6 +318,9 @@ func newSharePermissions() *cobra.Command {
 	var sharePermissionsReq sharing.SharePermissionsRequest
 
 	// TODO: short flags
+
+	cmd.Flags().IntVar(&sharePermissionsReq.MaxResults, "max-results", sharePermissionsReq.MaxResults, `Maximum number of permissions to return.`)
+	cmd.Flags().StringVar(&sharePermissionsReq.PageToken, "page-token", sharePermissionsReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
 	cmd.Use = "share-permissions NAME"
 	cmd.Short = `Get permissions.`
@@ -455,6 +472,8 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: changes
+	cmd.Flags().IntVar(&updatePermissionsReq.MaxResults, "max-results", updatePermissionsReq.MaxResults, `Maximum number of permissions to return.`)
+	cmd.Flags().StringVar(&updatePermissionsReq.PageToken, "page-token", updatePermissionsReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
 	cmd.Use = "update-permissions NAME"
 	cmd.Short = `Update permissions.`

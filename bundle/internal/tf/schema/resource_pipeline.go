@@ -3,15 +3,17 @@
 package schema
 
 type ResourcePipelineClusterAutoscale struct {
-	MaxWorkers int    `json:"max_workers,omitempty"`
-	MinWorkers int    `json:"min_workers,omitempty"`
+	MaxWorkers int    `json:"max_workers"`
+	MinWorkers int    `json:"min_workers"`
 	Mode       string `json:"mode,omitempty"`
 }
 
 type ResourcePipelineClusterAwsAttributes struct {
 	Availability        string `json:"availability,omitempty"`
 	EbsVolumeCount      int    `json:"ebs_volume_count,omitempty"`
+	EbsVolumeIops       int    `json:"ebs_volume_iops,omitempty"`
 	EbsVolumeSize       int    `json:"ebs_volume_size,omitempty"`
+	EbsVolumeThroughput int    `json:"ebs_volume_throughput,omitempty"`
 	EbsVolumeType       string `json:"ebs_volume_type,omitempty"`
 	FirstOnDemand       int    `json:"first_on_demand,omitempty"`
 	InstanceProfileArn  string `json:"instance_profile_arn,omitempty"`
@@ -19,10 +21,16 @@ type ResourcePipelineClusterAwsAttributes struct {
 	ZoneId              string `json:"zone_id,omitempty"`
 }
 
+type ResourcePipelineClusterAzureAttributesLogAnalyticsInfo struct {
+	LogAnalyticsPrimaryKey  string `json:"log_analytics_primary_key,omitempty"`
+	LogAnalyticsWorkspaceId string `json:"log_analytics_workspace_id,omitempty"`
+}
+
 type ResourcePipelineClusterAzureAttributes struct {
-	Availability    string `json:"availability,omitempty"`
-	FirstOnDemand   int    `json:"first_on_demand,omitempty"`
-	SpotBidMaxPrice int    `json:"spot_bid_max_price,omitempty"`
+	Availability     string                                                  `json:"availability,omitempty"`
+	FirstOnDemand    int                                                     `json:"first_on_demand,omitempty"`
+	SpotBidMaxPrice  int                                                     `json:"spot_bid_max_price,omitempty"`
+	LogAnalyticsInfo *ResourcePipelineClusterAzureAttributesLogAnalyticsInfo `json:"log_analytics_info,omitempty"`
 }
 
 type ResourcePipelineClusterClusterLogConfDbfs struct {
@@ -127,8 +135,69 @@ type ResourcePipelineFilters struct {
 	Include []string `json:"include,omitempty"`
 }
 
+type ResourcePipelineGatewayDefinition struct {
+	ConnectionId          string `json:"connection_id,omitempty"`
+	GatewayStorageCatalog string `json:"gateway_storage_catalog,omitempty"`
+	GatewayStorageName    string `json:"gateway_storage_name,omitempty"`
+	GatewayStorageSchema  string `json:"gateway_storage_schema,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaTableConfiguration struct {
+	PrimaryKeys                    []string `json:"primary_keys,omitempty"`
+	SalesforceIncludeFormulaFields bool     `json:"salesforce_include_formula_fields,omitempty"`
+	ScdType                        string   `json:"scd_type,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchema struct {
+	DestinationCatalog string                                                              `json:"destination_catalog,omitempty"`
+	DestinationSchema  string                                                              `json:"destination_schema,omitempty"`
+	SourceCatalog      string                                                              `json:"source_catalog,omitempty"`
+	SourceSchema       string                                                              `json:"source_schema,omitempty"`
+	TableConfiguration *ResourcePipelineIngestionDefinitionObjectsSchemaTableConfiguration `json:"table_configuration,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableTableConfiguration struct {
+	PrimaryKeys                    []string `json:"primary_keys,omitempty"`
+	SalesforceIncludeFormulaFields bool     `json:"salesforce_include_formula_fields,omitempty"`
+	ScdType                        string   `json:"scd_type,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTable struct {
+	DestinationCatalog string                                                             `json:"destination_catalog,omitempty"`
+	DestinationSchema  string                                                             `json:"destination_schema,omitempty"`
+	DestinationTable   string                                                             `json:"destination_table,omitempty"`
+	SourceCatalog      string                                                             `json:"source_catalog,omitempty"`
+	SourceSchema       string                                                             `json:"source_schema,omitempty"`
+	SourceTable        string                                                             `json:"source_table,omitempty"`
+	TableConfiguration *ResourcePipelineIngestionDefinitionObjectsTableTableConfiguration `json:"table_configuration,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjects struct {
+	Schema *ResourcePipelineIngestionDefinitionObjectsSchema `json:"schema,omitempty"`
+	Table  *ResourcePipelineIngestionDefinitionObjectsTable  `json:"table,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionTableConfiguration struct {
+	PrimaryKeys                    []string `json:"primary_keys,omitempty"`
+	SalesforceIncludeFormulaFields bool     `json:"salesforce_include_formula_fields,omitempty"`
+	ScdType                        string   `json:"scd_type,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinition struct {
+	ConnectionName     string                                                 `json:"connection_name,omitempty"`
+	IngestionGatewayId string                                                 `json:"ingestion_gateway_id,omitempty"`
+	Objects            []ResourcePipelineIngestionDefinitionObjects           `json:"objects,omitempty"`
+	TableConfiguration *ResourcePipelineIngestionDefinitionTableConfiguration `json:"table_configuration,omitempty"`
+}
+
+type ResourcePipelineLatestUpdates struct {
+	CreationTime string `json:"creation_time,omitempty"`
+	State        string `json:"state,omitempty"`
+	UpdateId     string `json:"update_id,omitempty"`
+}
+
 type ResourcePipelineLibraryFile struct {
-	Path string `json:"path"`
+	Path string `json:"path,omitempty"`
 }
 
 type ResourcePipelineLibraryMaven struct {
@@ -138,7 +207,7 @@ type ResourcePipelineLibraryMaven struct {
 }
 
 type ResourcePipelineLibraryNotebook struct {
-	Path string `json:"path"`
+	Path string `json:"path,omitempty"`
 }
 
 type ResourcePipelineLibrary struct {
@@ -150,28 +219,53 @@ type ResourcePipelineLibrary struct {
 }
 
 type ResourcePipelineNotification struct {
-	Alerts          []string `json:"alerts"`
-	EmailRecipients []string `json:"email_recipients"`
+	Alerts          []string `json:"alerts,omitempty"`
+	EmailRecipients []string `json:"email_recipients,omitempty"`
+}
+
+type ResourcePipelineTriggerCron struct {
+	QuartzCronSchedule string `json:"quartz_cron_schedule,omitempty"`
+	TimezoneId         string `json:"timezone_id,omitempty"`
+}
+
+type ResourcePipelineTriggerManual struct {
+}
+
+type ResourcePipelineTrigger struct {
+	Cron   *ResourcePipelineTriggerCron   `json:"cron,omitempty"`
+	Manual *ResourcePipelineTriggerManual `json:"manual,omitempty"`
 }
 
 type ResourcePipeline struct {
-	AllowDuplicateNames bool                           `json:"allow_duplicate_names,omitempty"`
-	Catalog             string                         `json:"catalog,omitempty"`
-	Channel             string                         `json:"channel,omitempty"`
-	Configuration       map[string]string              `json:"configuration,omitempty"`
-	Continuous          bool                           `json:"continuous,omitempty"`
-	Development         bool                           `json:"development,omitempty"`
-	Edition             string                         `json:"edition,omitempty"`
-	Id                  string                         `json:"id,omitempty"`
-	Name                string                         `json:"name,omitempty"`
-	Photon              bool                           `json:"photon,omitempty"`
-	Serverless          bool                           `json:"serverless,omitempty"`
-	Storage             string                         `json:"storage,omitempty"`
-	Target              string                         `json:"target,omitempty"`
-	Url                 string                         `json:"url,omitempty"`
-	Cluster             []ResourcePipelineCluster      `json:"cluster,omitempty"`
-	Deployment          *ResourcePipelineDeployment    `json:"deployment,omitempty"`
-	Filters             *ResourcePipelineFilters       `json:"filters,omitempty"`
-	Library             []ResourcePipelineLibrary      `json:"library,omitempty"`
-	Notification        []ResourcePipelineNotification `json:"notification,omitempty"`
+	AllowDuplicateNames  bool                                 `json:"allow_duplicate_names,omitempty"`
+	Catalog              string                               `json:"catalog,omitempty"`
+	Cause                string                               `json:"cause,omitempty"`
+	Channel              string                               `json:"channel,omitempty"`
+	ClusterId            string                               `json:"cluster_id,omitempty"`
+	Configuration        map[string]string                    `json:"configuration,omitempty"`
+	Continuous           bool                                 `json:"continuous,omitempty"`
+	CreatorUserName      string                               `json:"creator_user_name,omitempty"`
+	Development          bool                                 `json:"development,omitempty"`
+	Edition              string                               `json:"edition,omitempty"`
+	ExpectedLastModified int                                  `json:"expected_last_modified,omitempty"`
+	Health               string                               `json:"health,omitempty"`
+	Id                   string                               `json:"id,omitempty"`
+	LastModified         int                                  `json:"last_modified,omitempty"`
+	Name                 string                               `json:"name,omitempty"`
+	Photon               bool                                 `json:"photon,omitempty"`
+	RunAsUserName        string                               `json:"run_as_user_name,omitempty"`
+	Serverless           bool                                 `json:"serverless,omitempty"`
+	State                string                               `json:"state,omitempty"`
+	Storage              string                               `json:"storage,omitempty"`
+	Target               string                               `json:"target,omitempty"`
+	Url                  string                               `json:"url,omitempty"`
+	Cluster              []ResourcePipelineCluster            `json:"cluster,omitempty"`
+	Deployment           *ResourcePipelineDeployment          `json:"deployment,omitempty"`
+	Filters              *ResourcePipelineFilters             `json:"filters,omitempty"`
+	GatewayDefinition    *ResourcePipelineGatewayDefinition   `json:"gateway_definition,omitempty"`
+	IngestionDefinition  *ResourcePipelineIngestionDefinition `json:"ingestion_definition,omitempty"`
+	LatestUpdates        []ResourcePipelineLatestUpdates      `json:"latest_updates,omitempty"`
+	Library              []ResourcePipelineLibrary            `json:"library,omitempty"`
+	Notification         []ResourcePipelineNotification       `json:"notification,omitempty"`
+	Trigger              *ResourcePipelineTrigger             `json:"trigger,omitempty"`
 }

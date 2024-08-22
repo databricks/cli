@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/paths"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -124,9 +123,6 @@ func TestNoPanicWithNoPythonWheelTasks(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"test": {
-						Paths: paths.Paths{
-							ConfigFilePath: tmpDir,
-						},
 						JobSettings: &jobs.JobSettings{
 							Tasks: []jobs.Task{
 								{

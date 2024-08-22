@@ -14,9 +14,9 @@ func SetLocation(b *bundle.Bundle, prefix string, filePath string) {
 		return dyn.Walk(root, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			// If the path has the given prefix, set the location.
 			if p.HasPrefix(start) {
-				return v.WithLocation(dyn.Location{
+				return v.WithLocations([]dyn.Location{{
 					File: filePath,
-				}), nil
+				}}), nil
 			}
 
 			// The path is not nested under the given prefix.
@@ -29,6 +29,4 @@ func SetLocation(b *bundle.Bundle, prefix string, filePath string) {
 			return v, dyn.ErrSkip
 		})
 	})
-
-	b.Config.ConfigureConfigFilePath()
 }

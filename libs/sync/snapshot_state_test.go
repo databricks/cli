@@ -13,7 +13,7 @@ import (
 
 func TestSnapshotState(t *testing.T) {
 	fileSet := fileset.New(vfs.MustNew("./testdata/sync-fileset"))
-	files, err := fileSet.All()
+	files, err := fileSet.Files()
 	require.NoError(t, err)
 
 	// Assert initial contents of the fileset

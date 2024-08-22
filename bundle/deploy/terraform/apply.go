@@ -5,7 +5,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/permissions"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/hashicorp/terraform-exec/tfexec"
@@ -18,19 +17,23 @@ func (w *apply) Name() string {
 }
 
 func (w *apply) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	// return early if plan is empty
+	if b.Plan.IsEmpty {
+		log.Debugf(ctx, "No changes in plan. Skipping terraform apply.")
+		return nil
+	}
+
 	tf := b.Terraform
 	if tf == nil {
 		return diag.Errorf("terraform not initialized")
 	}
 
-	cmdio.LogString(ctx, "Deploying resources...")
-
-	err := tf.Init(ctx, tfexec.Upgrade(true))
-	if err != nil {
-		return diag.Errorf("terraform init: %v", err)
+	if b.Plan.Path == "" {
+		return diag.Errorf("no plan found")
 	}
 
-	err = tf.Apply(ctx)
+	// Apply terraform according to the computed plan
+	err := tf.Apply(ctx, tfexec.DirOrPlan(b.Plan.Path))
 	if err != nil {
 		diags := permissions.TryExtendTerraformPermissionError(ctx, b, err)
 		if diags != nil {
@@ -39,11 +42,11 @@ func (w *apply) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return diag.Errorf("terraform apply: %v", err)
 	}
 
-	log.Infof(ctx, "Resource deployment completed")
+	log.Infof(ctx, "terraform apply completed")
 	return nil
 }
 
-// Apply returns a [bundle.Mutator] that runs the equivalent of `terraform apply`
+// Apply returns a [bundle.Mutator] that runs the equivalent of `terraform apply ./plan`
 // from the bundle's ephemeral working directory for Terraform.
 func Apply() bundle.Mutator {
 	return &apply{}

@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
@@ -34,25 +35,23 @@ GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html`,
 }
 
 func promptForHost(ctx context.Context) (string, error) {
-	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Databricks Host (e.g. https://<databricks-instance>.cloud.databricks.com)"
-	// Validate?
-	host, err := prompt.Run()
-	if err != nil {
-		return "", err
+	if !cmdio.IsInTTY(ctx) {
+		return "", fmt.Errorf("the command is being run in a non-interactive environment, please specify a host using --host")
 	}
-	return host, nil
+
+	prompt := cmdio.Prompt(ctx)
+	prompt.Label = "Databricks host (e.g. https://<databricks-instance>.cloud.databricks.com)"
+	return prompt.Run()
 }
 
 func promptForAccountID(ctx context.Context) (string, error) {
+	if !cmdio.IsInTTY(ctx) {
+		return "", fmt.Errorf("the command is being run in a non-interactive environment, please specify an account ID using --account-id")
+	}
+
 	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Databricks Account ID"
+	prompt.Label = "Databricks account ID"
 	prompt.Default = ""
 	prompt.AllowEdit = true
-	// Validate?
-	accountId, err := prompt.Run()
-	if err != nil {
-		return "", err
-	}
-	return accountId, nil
+	return prompt.Run()
 }

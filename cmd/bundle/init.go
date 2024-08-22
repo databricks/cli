@@ -50,6 +50,12 @@ var nativeTemplates = []nativeTemplate{
 		aliases:     []string{"mlops-stack"},
 	},
 	{
+		name:        "default-pydabs",
+		gitUrl:      "https://databricks.github.io/workflows-authoring-toolkit/pydabs-template.git",
+		hidden:      true,
+		description: "The default PyDABs template",
+	},
+	{
 		name:        customTemplate,
 		description: "Bring your own template",
 	},
@@ -142,7 +148,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 	var templateDir string
 	var tag string
 	var branch string
-	cmd.Flags().StringVar(&configFile, "config-file", "", "File containing input parameters for template initialization.")
+	cmd.Flags().StringVar(&configFile, "config-file", "", "JSON file containing key value pairs of input parameters required for template initialization.")
 	cmd.Flags().StringVar(&templateDir, "template-dir", "", "Directory path within a Git repository containing the template.")
 	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the initialized template to.")
 	cmd.Flags().StringVar(&branch, "tag", "", "Git tag to use for template initialization")

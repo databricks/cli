@@ -69,6 +69,23 @@ func TestTemplateRandIntFunction(t *testing.T) {
 	assert.Empty(t, err)
 }
 
+func TestTemplateUuidFunction(t *testing.T) {
+	ctx := context.Background()
+	tmpDir := t.TempDir()
+
+	ctx = root.SetWorkspaceClient(ctx, nil)
+	helpers := loadHelpers(ctx)
+	r, err := newRenderer(ctx, nil, helpers, "./testdata/uuid/template", "./testdata/uuid/library", tmpDir)
+	require.NoError(t, err)
+
+	err = r.walk()
+	assert.NoError(t, err)
+
+	assert.Len(t, r.files, 1)
+	uuid := strings.TrimSpace(string(r.files[0].(*inMemoryFile).content))
+	assert.Regexp(t, "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", uuid)
+}
+
 func TestTemplateUrlFunction(t *testing.T) {
 	ctx := context.Background()
 	tmpDir := t.TempDir()

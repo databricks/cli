@@ -3,9 +3,8 @@ package libraries
 import (
 	"net/url"
 	"path"
+	"regexp"
 	"strings"
-
-	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
 // IsLocalPath returns true if the specified path indicates that
@@ -38,12 +37,12 @@ func IsLocalPath(p string) bool {
 	return !path.IsAbs(p)
 }
 
-// IsEnvironmentDependencyLocal returns true if the specified dependency
+// IsLibraryLocal returns true if the specified library or environment dependency
 // should be interpreted as a local path.
-// We use this to check if the dependency in environment spec is local.
+// We use this to check if the dependency in environment spec is local or that library is local.
 // We can't use IsLocalPath beacuse environment dependencies can be
 // a pypi package name which can be misinterpreted as a local path by IsLocalPath.
-func IsEnvironmentDependencyLocal(dep string) bool {
+func IsLibraryLocal(dep string) bool {
 	possiblePrefixes := []string{
 		".",
 	}
@@ -54,7 +53,40 @@ func IsEnvironmentDependencyLocal(dep string) bool {
 		}
 	}
 
-	return false
+	// If the dependency is a requirements file, it's not a valid local path
+	if strings.HasPrefix(dep, "-r") {
+		return false
+	}
+
+	// If the dependency has no extension, it's a PyPi package name
+	if isPackage(dep) {
+		return false
+	}
+
+	return IsLocalPath(dep)
+}
+
+// ^[a-zA-Z0-9\-_]+: Matches the package name, allowing alphanumeric characters, dashes (-), and underscores (_).
+// \[.*\])?: Optionally matches any extras specified in square brackets, e.g., [security].
+// ((==|!=|<=|>=|~=|>|<)\d+(\.\d+){0,2}(\.\*)?)?: Optionally matches version specifiers, supporting various operators (==, !=, etc.) followed by a version number (e.g., 2.25.1).
+// Spec for package name and version specifier: https://pip.pypa.io/en/stable/reference/requirement-specifiers/
+var packageRegex = regexp.MustCompile(`^[a-zA-Z0-9\-_]+\s?(\[.*\])?\s?((==|!=|<=|>=|~=|==|>|<)\s?\d+(\.\d+){0,2}(\.\*)?)?$`)
+
+func isPackage(name string) bool {
+	if packageRegex.MatchString(name) {
+		return true
+	}
+
+	return isUrlBasedLookup(name)
+}
+
+func isUrlBasedLookup(name string) bool {
+	parts := strings.Split(name, " @ ")
+	if len(parts) != 2 {
+		return false
+	}
+
+	return packageRegex.MatchString(parts[0]) && isRemoteStorageScheme(parts[1])
 }
 
 func isRemoteStorageScheme(path string) bool {
@@ -67,16 +99,6 @@ func isRemoteStorageScheme(path string) bool {
 		return false
 	}
 
-	// If the path starts with scheme:/ format, it's a correct remote storage scheme
-	return strings.HasPrefix(path, url.Scheme+":/")
-}
-
-// IsLocalLibrary returns true if the specified library refers to a local path.
-func IsLocalLibrary(library *compute.Library) bool {
-	path := libraryPath(library)
-	if path == "" {
-		return false
-	}
-
-	return IsLocalPath(path)
+	// If the path starts with scheme:/ format (not file), it's a correct remote storage scheme
+	return strings.HasPrefix(path, url.Scheme+":/") && url.Scheme != "file"
 }

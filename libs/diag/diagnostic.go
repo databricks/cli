@@ -17,13 +17,13 @@ type Diagnostic struct {
 	// This may be multiple lines and may be nil.
 	Detail string
 
-	// Location is a source code location associated with the diagnostic message.
-	// It may be zero if there is no associated location.
-	Location dyn.Location
+	// Locations are the source code locations associated with the diagnostic message.
+	// It may be empty if there are no associated locations.
+	Locations []dyn.Location
 
-	// Path is a path to the value in a configuration tree that the diagnostic is associated with.
-	// It may be nil if there is no associated path.
-	Path dyn.Path
+	// Paths are paths to the values in the configuration tree that the diagnostic is associated with.
+	// It may be nil if there are no associated paths.
+	Paths []dyn.Path
 
 	// A diagnostic ID. Only used for select diagnostic messages.
 	ID ID

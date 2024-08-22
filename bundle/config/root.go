@@ -60,6 +60,10 @@ type Root struct {
 	// RunAs section allows to define an execution identity for jobs and pipelines runs
 	RunAs *jobs.JobRunAs `json:"run_as,omitempty"`
 
+	// Presets applies preset transformations throughout the bundle, e.g.
+	// adding a name prefix to deployed resources.
+	Presets Presets `json:"presets,omitempty"`
+
 	Experimental *Experimental `json:"experimental,omitempty"`
 
 	// Permissions section allows to define permissions which will be
@@ -100,11 +104,6 @@ func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 	if err != nil {
 		return nil, diag.Errorf("failed to load %s: %v", path, err)
 	}
-
-	_, err = r.Resources.VerifyUniqueResourceIdentifiers()
-	if err != nil {
-		diags = diags.Extend(diag.FromErr(err))
-	}
 	return &r, diags
 }
 
@@ -141,17 +140,6 @@ func (r *Root) updateWithDynamicValue(nv dyn.Value) error {
 
 	// Assign the normalized configuration tree.
 	r.value = nv
-
-	// At the moment the check has to be done as part of updateWithDynamicValue
-	// because otherwise ConfigureConfigFilePath will fail with a panic.
-	// In the future, we should move this check to a separate mutator in initialise phase.
-	err = r.Resources.VerifyAllResourcesDefined()
-	if err != nil {
-		return err
-	}
-
-	// Assign config file paths after converting to typed configuration.
-	r.ConfigureConfigFilePath()
 	return nil
 }
 
@@ -243,15 +231,6 @@ func (r *Root) MarkMutatorExit(ctx context.Context) error {
 	return nil
 }
 
-// SetConfigFilePath configures the path that its configuration
-// was loaded from in configuration leafs that require it.
-func (r *Root) ConfigureConfigFilePath() {
-	r.Resources.ConfigureConfigFilePath()
-	if r.Artifacts != nil {
-		r.Artifacts.ConfigureConfigFilePath()
-	}
-}
-
 // Initializes variables using values passed from the command line flag
 // Input has to be a string of the form `foo=bar`. In this case the variable with
 // name `foo` is assigned the value `bar`
@@ -281,12 +260,6 @@ func (r *Root) InitializeVariables(vars []string) error {
 }
 
 func (r *Root) Merge(other *Root) error {
-	// Check for safe merge, protecting against duplicate resource identifiers
-	err := r.Resources.VerifySafeMerge(&other.Resources)
-	if err != nil {
-		return err
-	}
-
 	// Merge dynamic configuration values.
 	return r.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		return merge.Merge(root, other.value)
@@ -338,6 +311,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		"resources",
 		"sync",
 		"permissions",
+		"presets",
 	} {
 		if root, err = mergeField(root, target, f); err != nil {
 			return err
@@ -378,7 +352,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 
 	// Below, we're setting fields on the bundle key, so make sure it exists.
 	if root.Get("bundle").Kind() == dyn.KindInvalid {
-		root, err = dyn.Set(root, "bundle", dyn.NewValue(map[string]dyn.Value{}, dyn.Location{}))
+		root, err = dyn.Set(root, "bundle", dyn.V(map[string]dyn.Value{}))
 		if err != nil {
 			return err
 		}
@@ -404,7 +378,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 	if v := target.Get("git"); v.Kind() != dyn.KindInvalid {
 		ref, err := dyn.GetByPath(root, dyn.NewPath(dyn.Key("bundle"), dyn.Key("git")))
 		if err != nil {
-			ref = dyn.NewValue(map[string]dyn.Value{}, dyn.Location{})
+			ref = dyn.V(map[string]dyn.Value{})
 		}
 
 		// Merge the override into the reference.
@@ -415,7 +389,7 @@ func (r *Root) MergeTargetOverrides(name string) error {
 
 		// If the branch was overridden, we need to clear the inferred flag.
 		if branch := v.Get("branch"); branch.Kind() != dyn.KindInvalid {
-			out, err = dyn.SetByPath(out, dyn.NewPath(dyn.Key("inferred")), dyn.NewValue(false, dyn.Location{}))
+			out, err = dyn.SetByPath(out, dyn.NewPath(dyn.Key("inferred")), dyn.V(false))
 			if err != nil {
 				return err
 			}
@@ -456,7 +430,7 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 				// configuration will convert this to a string if necessary.
 				return dyn.NewValue(map[string]dyn.Value{
 					"default": variable,
-				}, variable.Location()), nil
+				}, variable.Locations()), nil
 
 			case dyn.KindMap, dyn.KindSequence:
 				// Check if the original definition of variable has a type field.
@@ -469,7 +443,7 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 					return dyn.NewValue(map[string]dyn.Value{
 						"type":    typeV,
 						"default": variable,
-					}, variable.Location()), nil
+					}, variable.Locations()), nil
 				}
 
 				return variable, nil
@@ -522,6 +496,17 @@ func (r Root) GetLocation(path string) dyn.Location {
 		return dyn.Location{}
 	}
 	return v.Location()
+}
+
+// Get all locations of the configuration value at the specified path. We need both
+// this function and it's singular version (GetLocation) because some diagnostics just need
+// the primary location and some need all locations associated with a configuration value.
+func (r Root) GetLocations(path string) []dyn.Location {
+	v, err := dyn.Get(r.value, path)
+	if err != nil {
+		return []dyn.Location{}
+	}
+	return v.Locations()
 }
 
 // Value returns the dynamic configuration value of the root object. This value

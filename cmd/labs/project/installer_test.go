@@ -182,7 +182,7 @@ func TestInstallerWorksForReleases(t *testing.T) {
 			w.Write(raw)
 			return
 		}
-		if r.URL.Path == "/api/2.0/clusters/get" {
+		if r.URL.Path == "/api/2.1/clusters/get" {
 			respondWithJSON(t, w, &compute.ClusterDetails{
 				State: compute.StateRunning,
 			})
@@ -199,7 +199,7 @@ func TestInstallerWorksForReleases(t *testing.T) {
 	stub.WithStdoutFor(`python[\S]+ --version`, "Python 3.10.5")
 	// on Unix, we call `python3`, but on Windows it is `python.exe`
 	stub.WithStderrFor(`python[\S]+ -m venv .*/.databricks/labs/blueprint/state/venv`, "[mock venv create]")
-	stub.WithStderrFor(`python[\S]+ -m pip install .`, "[mock pip install]")
+	stub.WithStderrFor(`python[\S]+ -m pip install --upgrade --upgrade-strategy eager .`, "[mock pip install]")
 	stub.WithStdoutFor(`python[\S]+ install.py`, "setting up important infrastructure")
 
 	// simulate the case of GitHub Actions
@@ -249,8 +249,9 @@ func TestInstallerWorksForDevelopment(t *testing.T) {
 			Path: filepath.Dir(t.TempDir()),
 		})
 	}()
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/2.0/clusters/list" {
+		if r.URL.Path == "/api/2.1/clusters/list" {
 			respondWithJSON(t, w, compute.ListClustersResponse{
 				Clusters: []compute.ClusterDetails{
 					{
@@ -278,7 +279,7 @@ func TestInstallerWorksForDevelopment(t *testing.T) {
 			})
 			return
 		}
-		if r.URL.Path == "/api/2.0/clusters/spark-versions" {
+		if r.URL.Path == "/api/2.1/clusters/spark-versions" {
 			respondWithJSON(t, w, compute.GetSparkVersionsResponse{
 				Versions: []compute.SparkVersion{
 					{
@@ -289,7 +290,7 @@ func TestInstallerWorksForDevelopment(t *testing.T) {
 			})
 			return
 		}
-		if r.URL.Path == "/api/2.0/clusters/get" {
+		if r.URL.Path == "/api/2.1/clusters/get" {
 			respondWithJSON(t, w, &compute.ClusterDetails{
 				State: compute.StateRunning,
 			})
@@ -387,7 +388,7 @@ func TestUpgraderWorksForReleases(t *testing.T) {
 			w.Write(raw)
 			return
 		}
-		if r.URL.Path == "/api/2.0/clusters/get" {
+		if r.URL.Path == "/api/2.1/clusters/get" {
 			respondWithJSON(t, w, &compute.ClusterDetails{
 				State: compute.StateRunning,
 			})
@@ -406,7 +407,7 @@ func TestUpgraderWorksForReleases(t *testing.T) {
 	// Install stubs for the python calls we need to ensure were run in the
 	// upgrade process.
 	ctx, stub := process.WithStub(ctx)
-	stub.WithStderrFor(`python[\S]+ -m pip install .`, "[mock pip install]")
+	stub.WithStderrFor(`python[\S]+ -m pip install --upgrade --upgrade-strategy eager .`, "[mock pip install]")
 	stub.WithStdoutFor(`python[\S]+ install.py`, "setting up important infrastructure")
 
 	py, _ := python.DetectExecutable(ctx)
@@ -430,13 +431,13 @@ func TestUpgraderWorksForReleases(t *testing.T) {
 	// Check if the stub was called with the 'python -m pip install' command
 	pi := false
 	for _, call := range stub.Commands() {
-		if strings.HasSuffix(call, "-m pip install .") {
+		if strings.HasSuffix(call, "-m pip install --upgrade --upgrade-strategy eager .") {
 			pi = true
 			break
 		}
 	}
 	if !pi {
-		t.Logf(`Expected stub command 'python[\S]+ -m pip install .' not found`)
+		t.Logf(`Expected stub command 'python[\S]+ -m pip install --upgrade --upgrade-strategy eager .' not found`)
 		t.FailNow()
 	}
 }

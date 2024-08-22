@@ -1,0 +1,55 @@
+bundle:
+  name: spark-jar-task
+
+workspace:
+  root_path: "~/.bundle/{{.unique_id}}"
+
+artifacts:
+  my_java_code:
+    path: ./{{.project_name}}
+    build: "javac PrintArgs.java && jar cvfm PrintArgs.jar META-INF/MANIFEST.MF PrintArgs.class"
+    files:
+      - source: ./{{.project_name}}/PrintArgs.jar
+
+resources:
+  jobs:
+    jar_job:
+      name: "[${bundle.target}] Test Spark Jar Job {{.unique_id}}"
+      tasks:
+        - task_key: TestSparkJarTask
+          new_cluster:
+            num_workers: 1
+            spark_version: "{{.spark_version}}"
+            node_type_id: "{{.node_type_id}}"
+            instance_pool_id: "{{.instance_pool_id}}"
+          spark_jar_task:
+            main_class_name: PrintArgs
+          libraries:
+            - jar: ./{{.project_name}}/PrintArgs.jar
+
+targets:
+  volume:
+    # Override the artifact path to upload artifacts to a volume path
+    workspace:
+      artifact_path: {{.artifact_path}}
+
+    resources:
+      jobs:
+        jar_job:
+          tasks:
+            - task_key: TestSparkJarTask
+              new_cluster:
+
+                # Force cluster to run in single user mode (force it to be a UC cluster)
+                data_security_mode: SINGLE_USER
+
+  workspace:
+    resources:
+      jobs:
+        jar_job:
+          tasks:
+            - task_key: TestSparkJarTask
+              new_cluster:
+
+                # Force cluster to run in no isolation mode (force it to be a non-UC cluster)
+                data_security_mode: NONE

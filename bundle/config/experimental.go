@@ -36,9 +36,15 @@ type PyDABs struct {
 
 	// VEnvPath is path to the virtual environment.
 	//
-	// Required if PyDABs is enabled. PyDABs will load the code in the specified
-	// environment.
+	// If enabled, PyDABs will execute code within this environment. If disabled,
+	// it defaults to using the Python interpreter available in the current shell.
 	VEnvPath string `json:"venv_path,omitempty"`
+
+	// Import contains a list Python packages with PyDABs code.
+	//
+	// These packages are imported to discover resources, resource generators, and mutators.
+	// This list can include namespace packages, which causes the import of nested packages.
+	Import []string `json:"import,omitempty"`
 }
 
 type Command string

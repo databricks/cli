@@ -20,6 +20,12 @@ type ResourceStorageCredentialAzureServicePrincipal struct {
 	DirectoryId   string `json:"directory_id"`
 }
 
+type ResourceStorageCredentialCloudflareApiToken struct {
+	AccessKeyId     string `json:"access_key_id"`
+	AccountId       string `json:"account_id"`
+	SecretAccessKey string `json:"secret_access_key"`
+}
+
 type ResourceStorageCredentialDatabricksGcpServiceAccount struct {
 	CredentialId string `json:"credential_id,omitempty"`
 	Email        string `json:"email,omitempty"`
@@ -36,6 +42,7 @@ type ResourceStorageCredential struct {
 	ForceDestroy                bool                                                  `json:"force_destroy,omitempty"`
 	ForceUpdate                 bool                                                  `json:"force_update,omitempty"`
 	Id                          string                                                `json:"id,omitempty"`
+	IsolationMode               string                                                `json:"isolation_mode,omitempty"`
 	MetastoreId                 string                                                `json:"metastore_id,omitempty"`
 	Name                        string                                                `json:"name"`
 	Owner                       string                                                `json:"owner,omitempty"`
@@ -45,6 +52,7 @@ type ResourceStorageCredential struct {
 	AwsIamRole                  *ResourceStorageCredentialAwsIamRole                  `json:"aws_iam_role,omitempty"`
 	AzureManagedIdentity        *ResourceStorageCredentialAzureManagedIdentity        `json:"azure_managed_identity,omitempty"`
 	AzureServicePrincipal       *ResourceStorageCredentialAzureServicePrincipal       `json:"azure_service_principal,omitempty"`
+	CloudflareApiToken          *ResourceStorageCredentialCloudflareApiToken          `json:"cloudflare_api_token,omitempty"`
 	DatabricksGcpServiceAccount *ResourceStorageCredentialDatabricksGcpServiceAccount `json:"databricks_gcp_service_account,omitempty"`
 	GcpServiceAccountKey        *ResourceStorageCredentialGcpServiceAccountKey        `json:"gcp_service_account_key,omitempty"`
 }

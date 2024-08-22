@@ -20,6 +20,12 @@ type ResourceMetastoreDataAccessAzureServicePrincipal struct {
 	DirectoryId   string `json:"directory_id"`
 }
 
+type ResourceMetastoreDataAccessCloudflareApiToken struct {
+	AccessKeyId     string `json:"access_key_id"`
+	AccountId       string `json:"account_id"`
+	SecretAccessKey string `json:"secret_access_key"`
+}
+
 type ResourceMetastoreDataAccessDatabricksGcpServiceAccount struct {
 	CredentialId string `json:"credential_id,omitempty"`
 	Email        string `json:"email,omitempty"`
@@ -37,6 +43,7 @@ type ResourceMetastoreDataAccess struct {
 	ForceUpdate                 bool                                                    `json:"force_update,omitempty"`
 	Id                          string                                                  `json:"id,omitempty"`
 	IsDefault                   bool                                                    `json:"is_default,omitempty"`
+	IsolationMode               string                                                  `json:"isolation_mode,omitempty"`
 	MetastoreId                 string                                                  `json:"metastore_id,omitempty"`
 	Name                        string                                                  `json:"name"`
 	Owner                       string                                                  `json:"owner,omitempty"`
@@ -45,6 +52,7 @@ type ResourceMetastoreDataAccess struct {
 	AwsIamRole                  *ResourceMetastoreDataAccessAwsIamRole                  `json:"aws_iam_role,omitempty"`
 	AzureManagedIdentity        *ResourceMetastoreDataAccessAzureManagedIdentity        `json:"azure_managed_identity,omitempty"`
 	AzureServicePrincipal       *ResourceMetastoreDataAccessAzureServicePrincipal       `json:"azure_service_principal,omitempty"`
+	CloudflareApiToken          *ResourceMetastoreDataAccessCloudflareApiToken          `json:"cloudflare_api_token,omitempty"`
 	DatabricksGcpServiceAccount *ResourceMetastoreDataAccessDatabricksGcpServiceAccount `json:"databricks_gcp_service_account,omitempty"`
 	GcpServiceAccountKey        *ResourceMetastoreDataAccessGcpServiceAccountKey        `json:"gcp_service_account_key,omitempty"`
 }

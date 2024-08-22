@@ -2,10 +2,8 @@ package resources
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 
-	"github.com/databricks/cli/bundle/config/paths"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -16,8 +14,6 @@ type Job struct {
 	ID             string         `json:"id,omitempty" bundle:"readonly"`
 	Permissions    []Permission   `json:"permissions,omitempty"`
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
-
-	paths.Paths
 
 	*jobs.JobSettings
 }
@@ -47,12 +43,4 @@ func (j *Job) Exists(ctx context.Context, w *databricks.WorkspaceClient, id stri
 
 func (j *Job) TerraformResourceName() string {
 	return "databricks_job"
-}
-
-func (j *Job) Validate() error {
-	if j == nil || !j.DynamicValue.IsValid() || j.JobSettings == nil {
-		return fmt.Errorf("job is not defined")
-	}
-
-	return nil
 }
