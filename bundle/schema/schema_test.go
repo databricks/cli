@@ -9,23 +9,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TODO: Add a test that checks the primitive overrides for reference regexs wor.
+// TODO: Add a test that checks the primitive overrides for reference regexs work.
+// Basically that the custom override for bundle regex works.
 
-func TestErrorWithTrace(t *testing.T) {
-	tracker := newTracker()
-	dummyType := reflect.TypeOf(struct{}{})
-	err := tracker.errWithTrace("with empty trace", "root")
-	assert.ErrorContains(t, err, "with empty trace. traversal trace: root")
-
-	tracker.push(dummyType, "resources")
-	err = tracker.errWithTrace("with depth = 1", "root")
-	assert.ErrorContains(t, err, "with depth = 1. traversal trace: root -> resources")
-
-	tracker.push(dummyType, "pipelines")
-	tracker.push(dummyType, "datasets")
-	err = tracker.errWithTrace("with depth = 4", "root")
-	assert.ErrorContains(t, err, "with depth = 4. traversal trace: root -> resources -> pipelines -> datasets")
-}
 
 func TestGenericSchema(t *testing.T) {
 	type Person struct {
@@ -598,21 +584,4 @@ func TestErrorIfStructRefersToItself(t *testing.T) {
 	elem := Foo{}
 	_, err := New(reflect.TypeOf(elem), nil)
 	assert.ErrorContains(t, err, "cycle detected. traversal trace: root -> my_foo")
-}
-
-func TestErrorIfStructHasLoop(t *testing.T) {
-	type Apple struct {
-		MyVal   int `json:"my_val"`
-		MyMango struct {
-			MyGuava struct {
-				MyPapaya struct {
-					MyApple *Apple `json:"my_apple"`
-				} `json:"my_papaya"`
-			} `json:"my_guava"`
-		} `json:"my_mango"`
-	}
-
-	elem := Apple{}
-	_, err := New(reflect.TypeOf(elem), nil)
-	assert.ErrorContains(t, err, "cycle detected. traversal trace: root -> my_mango -> my_guava -> my_papaya -> my_apple")
 }

@@ -13,3 +13,13 @@ type Bar struct {
 type Outer struct {
 	Foo Foo `json:"foo"`
 }
+
+type Self struct {
+	Self *Self `json:"self,omitempty"`
+
+	S string `json:"s,omitempty"`
+}
+
+type OuterSelf struct {
+	Self Self `json:"self,omitempty"`
+}
