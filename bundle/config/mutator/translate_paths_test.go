@@ -41,8 +41,8 @@ func touchEmptyFile(t *testing.T, path string) {
 func TestTranslatePathsSkippedWithGitSource(t *testing.T) {
 	dir := t.TempDir()
 	b := &bundle.Bundle{
-		RootPath:   dir,
-		BundleRoot: vfs.MustNew(dir),
+		SyncRootPath: dir,
+		SyncRoot:     vfs.MustNew(dir),
 		Config: config.Root{
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
@@ -110,10 +110,11 @@ func TestTranslatePaths(t *testing.T) {
 	touchNotebookFile(t, filepath.Join(dir, "my_pipeline_notebook.py"))
 	touchEmptyFile(t, filepath.Join(dir, "my_python_file.py"))
 	touchEmptyFile(t, filepath.Join(dir, "dist", "task.jar"))
+	touchEmptyFile(t, filepath.Join(dir, "requirements.txt"))
 
 	b := &bundle.Bundle{
-		RootPath:   dir,
-		BundleRoot: vfs.MustNew(dir),
+		SyncRootPath: dir,
+		SyncRoot:     vfs.MustNew(dir),
 		Config: config.Root{
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
@@ -139,6 +140,9 @@ func TestTranslatePaths(t *testing.T) {
 								{
 									NotebookTask: &jobs.NotebookTask{
 										NotebookPath: "./my_job_notebook.py",
+									},
+									Libraries: []compute.Library{
+										{Requirements: "./requirements.txt"},
 									},
 								},
 								{
@@ -234,6 +238,11 @@ func TestTranslatePaths(t *testing.T) {
 	)
 	assert.Equal(
 		t,
+		"/bundle/requirements.txt",
+		b.Config.Resources.Jobs["job"].Tasks[2].Libraries[0].Requirements,
+	)
+	assert.Equal(
+		t,
 		"/bundle/my_python_file.py",
 		b.Config.Resources.Jobs["job"].Tasks[4].SparkPythonTask.PythonFile,
 	)
@@ -280,8 +289,8 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 	touchEmptyFile(t, filepath.Join(dir, "job", "my_dbt_project", "dbt_project.yml"))
 
 	b := &bundle.Bundle{
-		RootPath:   dir,
-		BundleRoot: vfs.MustNew(dir),
+		SyncRootPath: dir,
+		SyncRoot:     vfs.MustNew(dir),
 		Config: config.Root{
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
@@ -371,12 +380,12 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 	)
 }
 
-func TestTranslatePathsOutsideBundleRoot(t *testing.T) {
+func TestTranslatePathsOutsideSyncRoot(t *testing.T) {
 	dir := t.TempDir()
 
 	b := &bundle.Bundle{
-		RootPath:   dir,
-		BundleRoot: vfs.MustNew(dir),
+		SyncRootPath: dir,
+		SyncRoot:     vfs.MustNew(dir),
 		Config: config.Root{
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
@@ -402,15 +411,15 @@ func TestTranslatePathsOutsideBundleRoot(t *testing.T) {
 	bundletest.SetLocation(b, ".", filepath.Join(dir, "../resource.yml"))
 
 	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
-	assert.ErrorContains(t, diags.Error(), "is not contained in bundle root")
+	assert.ErrorContains(t, diags.Error(), "is not contained in sync root path")
 }
 
 func TestJobNotebookDoesNotExistError(t *testing.T) {
 	dir := t.TempDir()
 
 	b := &bundle.Bundle{
-		RootPath:   dir,
-		BundleRoot: vfs.MustNew(dir),
+		SyncRootPath: dir,
+		SyncRoot:     vfs.MustNew(dir),
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -440,8 +449,8 @@ func TestJobFileDoesNotExistError(t *testing.T) {
 	dir := t.TempDir()
 
 	b := &bundle.Bundle{
-		RootPath:   dir,
-		BundleRoot: vfs.MustNew(dir),
+		SyncRootPath: dir,
+		SyncRoot:     vfs.MustNew(dir),
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -471,8 +480,8 @@ func TestPipelineNotebookDoesNotExistError(t *testing.T) {
 	dir := t.TempDir()
 
 	b := &bundle.Bundle{
-		RootPath:   dir,
-		BundleRoot: vfs.MustNew(dir),
+		SyncRootPath: dir,
+		SyncRoot:     vfs.MustNew(dir),
 		Config: config.Root{
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
@@ -502,8 +511,8 @@ func TestPipelineFileDoesNotExistError(t *testing.T) {
 	dir := t.TempDir()
 
 	b := &bundle.Bundle{
-		RootPath:   dir,
-		BundleRoot: vfs.MustNew(dir),
+		SyncRootPath: dir,
+		SyncRoot:     vfs.MustNew(dir),
 		Config: config.Root{
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
@@ -534,8 +543,8 @@ func TestJobSparkPythonTaskWithNotebookSourceError(t *testing.T) {
 	touchNotebookFile(t, filepath.Join(dir, "my_notebook.py"))
 
 	b := &bundle.Bundle{
-		RootPath:   dir,
-		BundleRoot: vfs.MustNew(dir),
+		SyncRootPath: dir,
+		SyncRoot:     vfs.MustNew(dir),
 		Config: config.Root{
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
@@ -569,8 +578,8 @@ func TestJobNotebookTaskWithFileSourceError(t *testing.T) {
 	touchEmptyFile(t, filepath.Join(dir, "my_file.py"))
 
 	b := &bundle.Bundle{
-		RootPath:   dir,
-		BundleRoot: vfs.MustNew(dir),
+		SyncRootPath: dir,
+		SyncRoot:     vfs.MustNew(dir),
 		Config: config.Root{
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
@@ -604,8 +613,8 @@ func TestPipelineNotebookLibraryWithFileSourceError(t *testing.T) {
 	touchEmptyFile(t, filepath.Join(dir, "my_file.py"))
 
 	b := &bundle.Bundle{
-		RootPath:   dir,
-		BundleRoot: vfs.MustNew(dir),
+		SyncRootPath: dir,
+		SyncRoot:     vfs.MustNew(dir),
 		Config: config.Root{
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
@@ -639,8 +648,8 @@ func TestPipelineFileLibraryWithNotebookSourceError(t *testing.T) {
 	touchNotebookFile(t, filepath.Join(dir, "my_notebook.py"))
 
 	b := &bundle.Bundle{
-		RootPath:   dir,
-		BundleRoot: vfs.MustNew(dir),
+		SyncRootPath: dir,
+		SyncRoot:     vfs.MustNew(dir),
 		Config: config.Root{
 			Workspace: config.Workspace{
 				FilePath: "/bundle",
@@ -675,8 +684,8 @@ func TestTranslatePathJobEnvironments(t *testing.T) {
 	touchEmptyFile(t, filepath.Join(dir, "env2.py"))
 
 	b := &bundle.Bundle{
-		RootPath:   dir,
-		BundleRoot: vfs.MustNew(dir),
+		SyncRootPath: dir,
+		SyncRoot:     vfs.MustNew(dir),
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -715,8 +724,8 @@ func TestTranslatePathJobEnvironments(t *testing.T) {
 func TestTranslatePathWithComplexVariables(t *testing.T) {
 	dir := t.TempDir()
 	b := &bundle.Bundle{
-		RootPath:   dir,
-		BundleRoot: vfs.MustNew(dir),
+		SyncRootPath: dir,
+		SyncRoot:     vfs.MustNew(dir),
 		Config: config.Root{
 			Variables: map[string]*variable.Variable{
 				"cluster_libraries": {

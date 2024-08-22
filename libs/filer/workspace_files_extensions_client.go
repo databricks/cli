@@ -133,14 +133,14 @@ func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithoutExt(ctx con
 	}, nil
 }
 
-type DuplicatePathError struct {
+type duplicatePathError struct {
 	oi1 workspace.ObjectInfo
 	oi2 workspace.ObjectInfo
 
 	commonName string
 }
 
-func (e DuplicatePathError) Error() string {
+func (e duplicatePathError) Error() string {
 	return fmt.Sprintf("failed to read files from the workspace file system. Duplicate paths encountered. Both %s at %s and %s at %s resolve to the same name %s. Changing the name of one of these objects will resolve this issue", e.oi1.ObjectType, e.oi1.Path, e.oi2.ObjectType, e.oi2.Path, e.commonName)
 }
 
@@ -157,7 +157,7 @@ func (e ReadOnlyError) Error() string {
 // delete, and stat notebooks (and files in general) in the workspace, using their paths
 // with the extension included.
 //
-// The ReadDir method returns a DuplicatePathError if this traditional file system view is
+// The ReadDir method returns a duplicatePathError if this traditional file system view is
 // not possible. For example, a Python notebook called foo and a Python file called `foo.py`
 // would resolve to the same path `foo.py` in a tradition file system.
 //
@@ -220,7 +220,7 @@ func (w *workspaceFilesExtensionsClient) ReadDir(ctx context.Context, name strin
 		// Error if we have seen this path before in the current directory.
 		// If not seen before, add it to the seen paths.
 		if _, ok := seenPaths[entries[i].Name()]; ok {
-			return nil, DuplicatePathError{
+			return nil, duplicatePathError{
 				oi1:        seenPaths[entries[i].Name()],
 				oi2:        sysInfo,
 				commonName: path.Join(name, entries[i].Name()),

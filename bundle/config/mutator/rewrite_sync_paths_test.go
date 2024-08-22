@@ -17,6 +17,10 @@ func TestRewriteSyncPathsRelative(t *testing.T) {
 		RootPath: ".",
 		Config: config.Root{
 			Sync: config.Sync{
+				Paths: []string{
+					".",
+					"../common",
+				},
 				Include: []string{
 					"foo",
 					"bar",
@@ -29,6 +33,8 @@ func TestRewriteSyncPathsRelative(t *testing.T) {
 		},
 	}
 
+	bundletest.SetLocation(b, "sync.paths[0]", "./databricks.yml")
+	bundletest.SetLocation(b, "sync.paths[1]", "./databricks.yml")
 	bundletest.SetLocation(b, "sync.include[0]", "./file.yml")
 	bundletest.SetLocation(b, "sync.include[1]", "./a/file.yml")
 	bundletest.SetLocation(b, "sync.exclude[0]", "./a/b/file.yml")
@@ -37,6 +43,8 @@ func TestRewriteSyncPathsRelative(t *testing.T) {
 	diags := bundle.Apply(context.Background(), b, mutator.RewriteSyncPaths())
 	assert.NoError(t, diags.Error())
 
+	assert.Equal(t, filepath.Clean("."), b.Config.Sync.Paths[0])
+	assert.Equal(t, filepath.Clean("../common"), b.Config.Sync.Paths[1])
 	assert.Equal(t, filepath.Clean("foo"), b.Config.Sync.Include[0])
 	assert.Equal(t, filepath.Clean("a/bar"), b.Config.Sync.Include[1])
 	assert.Equal(t, filepath.Clean("a/b/baz"), b.Config.Sync.Exclude[0])
@@ -48,6 +56,10 @@ func TestRewriteSyncPathsAbsolute(t *testing.T) {
 		RootPath: "/tmp/dir",
 		Config: config.Root{
 			Sync: config.Sync{
+				Paths: []string{
+					".",
+					"../common",
+				},
 				Include: []string{
 					"foo",
 					"bar",
@@ -60,6 +72,8 @@ func TestRewriteSyncPathsAbsolute(t *testing.T) {
 		},
 	}
 
+	bundletest.SetLocation(b, "sync.paths[0]", "/tmp/dir/databricks.yml")
+	bundletest.SetLocation(b, "sync.paths[1]", "/tmp/dir/databricks.yml")
 	bundletest.SetLocation(b, "sync.include[0]", "/tmp/dir/file.yml")
 	bundletest.SetLocation(b, "sync.include[1]", "/tmp/dir/a/file.yml")
 	bundletest.SetLocation(b, "sync.exclude[0]", "/tmp/dir/a/b/file.yml")
@@ -68,6 +82,8 @@ func TestRewriteSyncPathsAbsolute(t *testing.T) {
 	diags := bundle.Apply(context.Background(), b, mutator.RewriteSyncPaths())
 	assert.NoError(t, diags.Error())
 
+	assert.Equal(t, filepath.Clean("."), b.Config.Sync.Paths[0])
+	assert.Equal(t, filepath.Clean("../common"), b.Config.Sync.Paths[1])
 	assert.Equal(t, filepath.Clean("foo"), b.Config.Sync.Include[0])
 	assert.Equal(t, filepath.Clean("a/bar"), b.Config.Sync.Include[1])
 	assert.Equal(t, filepath.Clean("a/b/baz"), b.Config.Sync.Exclude[0])

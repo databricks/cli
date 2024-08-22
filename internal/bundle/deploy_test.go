@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -122,4 +123,34 @@ func TestAccBundleDeployUcSchemaFailsWithoutAutoApprove(t *testing.T) {
 	stdout, _, err := c.Run()
 	assert.EqualError(t, err, root.ErrAlreadyPrinted.Error())
 	assert.Contains(t, stdout.String(), "the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
+}
+
+func TestAccDeployBasicBundleLogs(t *testing.T) {
+	ctx, wt := acc.WorkspaceTest(t)
+
+	nodeTypeId := internal.GetNodeTypeId(env.Get(ctx, "CLOUD_ENV"))
+	uniqueId := uuid.New().String()
+	root, err := initTestTemplate(t, ctx, "basic", map[string]any{
+		"unique_id":     uniqueId,
+		"node_type_id":  nodeTypeId,
+		"spark_version": defaultSparkVersion,
+	})
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err = destroyBundle(t, ctx, root)
+		require.NoError(t, err)
+	})
+
+	currentUser, err := wt.W.CurrentUser.Me(ctx)
+	require.NoError(t, err)
+
+	stdout, stderr := blackBoxRun(t, root, "bundle", "deploy")
+	assert.Equal(t, strings.Join([]string{
+		fmt.Sprintf("Uploading bundle files to /Users/%s/.bundle/%s/files...", currentUser.UserName, uniqueId),
+		"Deploying resources...",
+		"Updating deployment state...",
+		"Deployment complete!\n",
+	}, "\n"), stderr)
+	assert.Equal(t, "", stdout)
 }

@@ -10,7 +10,7 @@ require (
 	github.com/ghodss/yaml v1.0.0 // MIT + NOTICE
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/hashicorp/go-version v1.7.0 // MPL 2.0
-	github.com/hashicorp/hc-install v0.8.0 // MPL 2.0
+	github.com/hashicorp/hc-install v0.7.0 // MPL 2.0
 	github.com/hashicorp/terraform-exec v0.21.0 // MPL 2.0
 	github.com/hashicorp/terraform-json v0.22.1 // MPL 2.0
 	github.com/manifoldco/promptui v0.9.0 // BSD-3-Clause
@@ -49,7 +49,6 @@ require (
 	github.com/google/s2a-go v0.1.7 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
-	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

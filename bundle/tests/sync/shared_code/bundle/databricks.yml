@@ -1,0 +1,10 @@
+bundle:
+  name: shared_code
+
+workspace:
+  host: https://acme.cloud.databricks.com/
+
+sync:
+  paths:
+    - "../common"
+    - "."
