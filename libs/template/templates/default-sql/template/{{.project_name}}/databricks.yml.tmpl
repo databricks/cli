@@ -49,6 +49,6 @@ targets:
       schema: {{$prod_schema}}
     permissions:
       - {{if is_service_principal}}service_principal{{else}}user{{end}}_name: {{user_name}}
-        level: IS_OWNER
+        level: CAN_MANAGE
     run_as:
       {{if is_service_principal}}service_principal{{else}}user{{end}}_name: {{user_name}}
