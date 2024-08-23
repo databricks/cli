@@ -107,6 +107,11 @@ func TestVerifyCliVersion(t *testing.T) {
 			constraint:     "^0.100",
 			expectedError:  "invalid version constraint \"^0.100\" specified. Please specify the version constraint in the format (>=) 0.0.0(, <= 1.0.0)",
 		},
+		{
+			currentVersion: "0.0.0-dev+06b169284737",
+			constraint:     ">= 0.100.0",
+			expectedError:  "Ignoring Databricks CLI version constraint for development build. Required: >= 0.100.0",
+		},
 	}
 
 	t.Cleanup(func() {
@@ -130,7 +135,7 @@ func TestVerifyCliVersion(t *testing.T) {
 			diags := bundle.Apply(context.Background(), b, VerifyCliVersion())
 			if tc.expectedError != "" {
 				require.NotEmpty(t, diags)
-				require.Equal(t, tc.expectedError, diags.Error().Error())
+				require.Contains(t, diags[0].Summary, tc.expectedError)
 			} else {
 				require.Empty(t, diags)
 			}
