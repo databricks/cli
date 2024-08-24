@@ -13,6 +13,7 @@ type Pipeline struct {
 	ID             string         `json:"id,omitempty" bundle:"readonly"`
 	Permissions    []Permission   `json:"permissions,omitempty"`
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
+	URL            string         `json:"url,omitempty" bundle:"internal"`
 
 	*pipelines.PipelineSpec
 }
@@ -38,4 +39,19 @@ func (p *Pipeline) Exists(ctx context.Context, w *databricks.WorkspaceClient, id
 
 func (p *Pipeline) TerraformResourceName() string {
 	return "databricks_pipeline"
+}
+
+func (p *Pipeline) InitializeURL(urlPrefix string, urlSuffix string) {
+	if p.ID == "" {
+		return
+	}
+	p.URL = urlPrefix + "pipelines/" + p.ID + urlSuffix
+}
+
+func (p *Pipeline) GetName() string {
+	return p.Name
+}
+
+func (s *Pipeline) GetURL() string {
+	return s.URL
 }

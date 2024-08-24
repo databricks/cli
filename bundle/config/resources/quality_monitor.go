@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"strings"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
@@ -20,6 +21,7 @@ type QualityMonitor struct {
 	ID string `json:"id,omitempty" bundle:"readonly"`
 
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
+	URL            string         `json:"url,omitempty" bundle:"internal"`
 }
 
 func (s *QualityMonitor) UnmarshalJSON(b []byte) error {
@@ -43,4 +45,19 @@ func (s *QualityMonitor) Exists(ctx context.Context, w *databricks.WorkspaceClie
 
 func (s *QualityMonitor) TerraformResourceName() string {
 	return "databricks_quality_monitor"
+}
+
+func (s *QualityMonitor) InitializeURL(urlPrefix string, urlSuffix string) {
+	if s.TableName == "" {
+		return
+	}
+	s.URL = urlPrefix + "explore/data/" + strings.ReplaceAll(s.TableName, ".", "/") + urlSuffix
+}
+
+func (s *QualityMonitor) GetName() string {
+	return s.TableName
+}
+
+func (s *QualityMonitor) GetURL() string {
+	return s.URL
 }

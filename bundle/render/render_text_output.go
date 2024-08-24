@@ -1,9 +1,11 @@
 package render
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"path/filepath"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -56,7 +58,7 @@ const warningTemplate = `{{ "Warning" | yellow }}: {{ .Summary }}
 
 `
 
-const summaryTemplate = `{{- if .Name -}}
+const summaryHeaderTemplate = `{{- if .Name -}}
 Name: {{ .Name | bold }}
 {{- if .Target }}
 Target: {{ .Target | bold }}
@@ -73,11 +75,29 @@ Workspace:
   Path: {{ .Path | bold }}
 {{- end }}
 {{- end }}
+{{ end -}}`
 
-{{ end -}}
-
-{{ .Trailer }}
+const resourcesTemplate = `Resources:
+{{- range . }}
+  {{ .GroupName }}:
+  {{- range .Resources }}
+    {{ .Key | bold }}:
+      Name: {{ .Name }}
+      URL:  {{ if .URL }}{{ .URL | cyan }}{{ else }}{{ "(not deployed)" | cyan }}{{ end }}
+  {{- end }}
+{{- end }}
 `
+
+type ResourceGroup struct {
+	GroupName string
+	Resources []ResourceInfo
+}
+
+type ResourceInfo struct {
+	Key  string
+	Name string
+	URL  string
+}
 
 func pluralize(n int, singular, plural string) string {
 	if n == 1 {
@@ -95,15 +115,15 @@ func buildTrailer(diags diag.Diagnostics) string {
 		parts = append(parts, color.YellowString(pluralize(warnings, "warning", "warnings")))
 	}
 	if len(parts) > 0 {
-		return fmt.Sprintf("Found %s", strings.Join(parts, " and "))
+		return fmt.Sprintf("Found %s\n", strings.Join(parts, " and "))
 	} else {
-		return color.GreenString("Validation OK!")
+		return color.GreenString("Validation OK!\n")
 	}
 }
 
-func renderSummaryTemplate(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics) error {
+func renderSummaryHeaderTemplate(out io.Writer, b *bundle.Bundle) error {
 	if b == nil {
-		return renderSummaryTemplate(out, &bundle.Bundle{}, diags)
+		return renderSummaryHeaderTemplate(out, &bundle.Bundle{})
 	}
 
 	var currentUser = &iam.User{}
@@ -114,20 +134,19 @@ func renderSummaryTemplate(out io.Writer, b *bundle.Bundle, diags diag.Diagnosti
 		}
 	}
 
-	t := template.Must(template.New("summary").Funcs(renderFuncMap).Parse(summaryTemplate))
+	t := template.Must(template.New("summary").Funcs(renderFuncMap).Parse(summaryHeaderTemplate))
 	err := t.Execute(out, map[string]any{
-		"Name":    b.Config.Bundle.Name,
-		"Target":  b.Config.Bundle.Target,
-		"User":    currentUser.UserName,
-		"Path":    b.Config.Workspace.RootPath,
-		"Host":    b.Config.Workspace.Host,
-		"Trailer": buildTrailer(diags),
+		"Name":   b.Config.Bundle.Name,
+		"Target": b.Config.Bundle.Target,
+		"User":   currentUser.UserName,
+		"Path":   b.Config.Workspace.RootPath,
+		"Host":   b.Config.Workspace.Host,
 	})
 
 	return err
 }
 
-func renderDiagnostics(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics) error {
+func renderDiagnosticsOnly(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics) error {
 	errorT := template.Must(template.New("error").Funcs(renderFuncMap).Parse(errorTemplate))
 	warningT := template.Must(template.New("warning").Funcs(renderFuncMap).Parse(warningTemplate))
 
@@ -173,19 +192,74 @@ type RenderOptions struct {
 	RenderSummaryTable bool
 }
 
-// RenderTextOutput renders the diagnostics in a human-readable format.
-func RenderTextOutput(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics, opts RenderOptions) error {
-	err := renderDiagnostics(out, b, diags)
+// RenderDiagnostics renders the diagnostics in a human-readable format.
+func RenderDiagnostics(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics, opts RenderOptions) error {
+	err := renderDiagnosticsOnly(out, b, diags)
 	if err != nil {
 		return fmt.Errorf("failed to render diagnostics: %w", err)
 	}
 
 	if opts.RenderSummaryTable {
-		err = renderSummaryTemplate(out, b, diags)
-		if err != nil {
-			return fmt.Errorf("failed to render summary: %w", err)
+		if b != nil {
+			err = renderSummaryHeaderTemplate(out, b)
+			if err != nil {
+				return fmt.Errorf("failed to render summary: %w", err)
+			}
+			io.WriteString(out, "\n")
 		}
+		trailer := buildTrailer(diags)
+		io.WriteString(out, trailer)
 	}
 
 	return nil
+}
+
+func RenderSummary(ctx context.Context, out io.Writer, b *bundle.Bundle) error {
+	if err := renderSummaryHeaderTemplate(out, b); err != nil {
+		return err
+	}
+
+	var resourceGroups []ResourceGroup
+
+	for group, r := range b.Config.Resources.AllResources() {
+		resources := make([]ResourceInfo, 0, len(r))
+		for key, resource := range r {
+			resources = append(resources, ResourceInfo{
+				Key:  key,
+				Name: resource.GetName(),
+				URL:  resource.GetURL(),
+			})
+		}
+
+		if len(resources) > 0 {
+			capitalizedGroup := strings.ToUpper(group[:1]) + group[1:]
+			resourceGroups = append(resourceGroups, ResourceGroup{
+				GroupName: capitalizedGroup,
+				Resources: resources,
+			})
+		}
+	}
+
+	if err := renderResourcesTemplate(out, resourceGroups); err != nil {
+		return fmt.Errorf("failed to render resources template: %w", err)
+	}
+
+	return nil
+}
+
+// Helper function to sort and render resource groups using the template
+func renderResourcesTemplate(out io.Writer, resourceGroups []ResourceGroup) error {
+	// Sort everything to ensure consistent output
+	sort.Slice(resourceGroups, func(i, j int) bool {
+		return resourceGroups[i].GroupName < resourceGroups[j].GroupName
+	})
+	for _, group := range resourceGroups {
+		sort.Slice(group.Resources, func(i, j int) bool {
+			return group.Resources[i].Key < group.Resources[j].Key
+		})
+	}
+
+	t := template.Must(template.New("resources").Funcs(renderFuncMap).Parse(resourcesTemplate))
+
+	return t.Execute(out, resourceGroups)
 }

@@ -23,6 +23,7 @@ type ModelServingEndpoint struct {
 	Permissions []Permission `json:"permissions,omitempty"`
 
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
+	URL            string         `json:"url,omitempty" bundle:"internal"`
 }
 
 func (s *ModelServingEndpoint) UnmarshalJSON(b []byte) error {
@@ -46,4 +47,19 @@ func (s *ModelServingEndpoint) Exists(ctx context.Context, w *databricks.Workspa
 
 func (s *ModelServingEndpoint) TerraformResourceName() string {
 	return "databricks_model_serving"
+}
+
+func (s *ModelServingEndpoint) InitializeURL(urlPrefix string, urlSuffix string) {
+	if s.ID == "" {
+		return
+	}
+	s.URL = urlPrefix + "ml/endpoints/" + s.Name + urlSuffix
+}
+
+func (s *ModelServingEndpoint) GetName() string {
+	return s.Name
+}
+
+func (s *ModelServingEndpoint) GetURL() string {
+	return s.URL
 }

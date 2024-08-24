@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -59,5 +60,24 @@ func TestCustomMarshallerIsImplemented(t *testing.T) {
 		assert.NotPanics(t, func() {
 			json.Unmarshal([]byte("{}"), v)
 		}, "Resource %s does not have a custom unmarshaller", field.Name)
+	}
+}
+
+func TestResourcesAllResourcesCompleteness(t *testing.T) {
+	r := Resources{}
+	rt := reflect.TypeOf(r)
+
+	result := r.AllResources()
+
+	for i := 0; i < rt.NumField(); i++ {
+		field := rt.Field(i)
+		jsonTag := field.Tag.Get("json")
+
+		if idx := strings.Index(jsonTag, ","); idx != -1 {
+			jsonTag = jsonTag[:idx]
+		}
+
+		_, exists := result[jsonTag]
+		assert.True(t, exists, "Field %s is missing in AllResources map", field.Name)
 	}
 }
