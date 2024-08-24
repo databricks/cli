@@ -103,3 +103,29 @@ func TestStoreOnDev(t *testing.T) {
 	// macOS: read-only file system
 	assert.Error(t, err)
 }
+
+func TestStoreAndDeleteKey(t *testing.T) {
+	setup(t)
+	c := &FileTokenCache{}
+	err := c.Store("x", &oauth2.Token{
+		AccessToken: "abc",
+	})
+	require.NoError(t, err)
+
+	err = c.Store("y", &oauth2.Token{
+		AccessToken: "bcd",
+	})
+	require.NoError(t, err)
+
+	l := &FileTokenCache{}
+	err = l.DeleteKey("x")
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(l.Tokens))
+
+	_, err = l.Lookup("x")
+	assert.Equal(t, ErrNotConfigured, err)
+
+	tok, err := l.Lookup("y")
+	require.NoError(t, err)
+	assert.Equal(t, "bcd", tok.AccessToken)
+}

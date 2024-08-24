@@ -73,6 +73,29 @@ func (c *FileTokenCache) Lookup(key string) (*oauth2.Token, error) {
 	return t, nil
 }
 
+func (c *FileTokenCache) DeleteKey(key string) error {
+	err := c.load()
+	if errors.Is(err, fs.ErrNotExist) {
+		return ErrNotConfigured
+	} else if err != nil {
+		return fmt.Errorf("load: %w", err)
+	}
+	c.Version = tokenCacheVersion
+	if c.Tokens == nil {
+		c.Tokens = map[string]*oauth2.Token{}
+	}
+	_, ok := c.Tokens[key]
+	if !ok {
+		return ErrNotConfigured
+	}
+	delete(c.Tokens, key)
+	raw, err := json.MarshalIndent(c, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshal: %w", err)
+	}
+	return os.WriteFile(c.fileLocation, raw, ownerReadWrite)
+}
+
 func (c *FileTokenCache) location() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {

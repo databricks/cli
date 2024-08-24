@@ -53,8 +53,9 @@ func TestOidcForWorkspace(t *testing.T) {
 }
 
 type tokenCacheMock struct {
-	store  func(key string, t *oauth2.Token) error
-	lookup func(key string) (*oauth2.Token, error)
+	store     func(key string, t *oauth2.Token) error
+	lookup    func(key string) (*oauth2.Token, error)
+	deleteKey func(key string) error
 }
 
 func (m *tokenCacheMock) Store(key string, t *oauth2.Token) error {
@@ -69,6 +70,13 @@ func (m *tokenCacheMock) Lookup(key string) (*oauth2.Token, error) {
 		panic("no lookup mock")
 	}
 	return m.lookup(key)
+}
+
+func (m *tokenCacheMock) DeleteKey(key string) error {
+	if m.deleteKey == nil {
+		panic("no deleteKey mock")
+	}
+	return m.deleteKey(key)
 }
 
 func TestLoad(t *testing.T) {
