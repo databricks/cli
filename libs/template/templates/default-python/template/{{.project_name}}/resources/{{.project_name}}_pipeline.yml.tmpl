@@ -3,6 +3,11 @@ resources:
   pipelines:
     {{.project_name}}_pipeline:
       name: {{.project_name}}_pipeline
+      {{- if eq default_catalog ""}}
+      # catalog: catalog_name
+      {{- else}}
+      catalog: {{default_catalog}}
+      {{- end}}
       target: {{.project_name}}_${bundle.environment}
       libraries:
         - notebook:
