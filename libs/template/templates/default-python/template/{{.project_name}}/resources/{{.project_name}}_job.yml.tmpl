@@ -10,10 +10,10 @@ resources:
     {{.project_name}}_job:
       name: {{.project_name}}_job
 
-      schedule:
-        # Run every day at 8:37 AM
-        quartz_cron_expression: '44 37 8 * * ?'
-        timezone_id: Europe/Amsterdam
+      trigger:
+        periodic:
+          interval: 1
+          unit: DAYS
 
       {{- if not is_service_principal}}
 

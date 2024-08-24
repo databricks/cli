@@ -4,10 +4,10 @@ resources:
     {{.project_name}}_sql_job:
       name: {{.project_name}}_sql_job
 
-      schedule:
-        # Run every day at 7:17 AM
-        quartz_cron_expression: '44 17 7 * * ?'
-        timezone_id: Europe/Amsterdam
+      trigger:
+        periodic:
+          interval: 1
+          unit: DAYS
 
       {{- if not is_service_principal}}
 

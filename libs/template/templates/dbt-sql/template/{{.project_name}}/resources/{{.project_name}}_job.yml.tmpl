@@ -3,10 +3,10 @@ resources:
     {{.project_name}}_job:
       name: {{.project_name}}_job
 
-      schedule:
-        # Run every day at 9:27 AM
-        quartz_cron_expression: 21 27 9 * * ?
-        timezone_id: UTC
+      trigger:
+        periodic:
+          interval: 1
+          unit: DAYS
 
       email_notifications:
         on_failure:
