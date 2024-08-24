@@ -106,6 +106,8 @@ func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
 	return diags
 }
 
+// findNonUserPath finds the first workspace path such as root_path that doesn't
+// contain the current username or current user's shortname.
 func findNonUserPath(b *bundle.Bundle) string {
 	containsName := func(path string) bool {
 		username := b.Config.Workspace.CurrentUser.UserName
