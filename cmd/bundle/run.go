@@ -2,7 +2,10 @@ package bundle
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/terraform"
@@ -40,6 +43,9 @@ task or a Python wheel task, the second example applies.
 `,
 	}
 
+	var forcePull bool
+	cmd.Flags().BoolVar(&forcePull, "force-pull", false, "Skip local cache and load the state from the remote workspace")
+
 	var runOptions run.Options
 	runOptions.Define(cmd)
 
@@ -55,15 +61,28 @@ task or a Python wheel task, the second example applies.
 			return diags.Error()
 		}
 
-		diags = bundle.Apply(ctx, b, bundle.Seq(
-			phases.Initialize(),
-			terraform.Interpolate(),
-			terraform.Write(),
-			terraform.StatePull(),
-			terraform.Load(terraform.ErrorOnEmptyState),
-		))
+		diags = bundle.Apply(ctx, b, phases.Initialize())
 		if err := diags.Error(); err != nil {
 			return err
+		}
+
+		cacheDir, err := terraform.Dir(ctx, b)
+		if err != nil {
+			return err
+		}
+		_, stateFileErr := os.Stat(filepath.Join(cacheDir, terraform.TerraformStateFileName))
+		_, configFileErr := os.Stat(filepath.Join(cacheDir, terraform.TerraformConfigFileName))
+		noCache := errors.Is(stateFileErr, os.ErrNotExist) || errors.Is(configFileErr, os.ErrNotExist)
+
+		if forcePull || noCache {
+			diags = bundle.Apply(ctx, b, bundle.Seq(
+				terraform.StatePull(),
+				terraform.Interpolate(),
+				terraform.Write(),
+			))
+			if err := diags.Error(); err != nil {
+				return err
+			}
 		}
 
 		// If no arguments are specified, prompt the user to select something to run.
