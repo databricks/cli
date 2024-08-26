@@ -252,6 +252,46 @@ func TestNoIncompatibleWheelTasks(t *testing.T) {
 	require.False(t, hasIncompatibleWheelTasks(context.Background(), b))
 }
 
+func TestTasksWithPyPiPackageAreCompatible(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job1": {
+						JobSettings: &jobs.JobSettings{
+							JobClusters: []jobs.JobCluster{
+								{
+									JobClusterKey: "cluster1",
+									NewCluster: compute.ClusterSpec{
+										SparkVersion: "12.2.x-scala2.12",
+									},
+								},
+							},
+							Tasks: []jobs.Task{
+								{
+									TaskKey:           "key1",
+									PythonWheelTask:   &jobs.PythonWheelTask{},
+									ExistingClusterId: "test-key-2",
+									Libraries: []compute.Library{
+										{Pypi: &compute.PythonPyPiLibrary{
+											Package: "requests==2.25.1",
+										}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	m := mocks.NewMockWorkspaceClient(t)
+	b.SetWorkpaceClient(m.WorkspaceClient)
+
+	require.False(t, hasIncompatibleWheelTasks(context.Background(), b))
+}
+
 func TestNoWarningWhenPythonWheelWrapperIsOn(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
