@@ -48,6 +48,7 @@ func TestIsLibraryLocal(t *testing.T) {
 		{path: "../../local/*.whl", expected: true},
 		{path: "..\\..\\local\\*.whl", expected: true},
 		{path: "file://path/to/package/whl.whl", expected: true},
+		{path: "", expected: false},
 		{path: "pypipackage", expected: false},
 		{path: "/Volumes/catalog/schema/volume/path.whl", expected: false},
 		{path: "/Workspace/my_project/dist.whl", expected: false},
