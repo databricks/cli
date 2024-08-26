@@ -223,6 +223,17 @@ func TestNoIncompatibleWheelTasks(t *testing.T) {
 										{Whl: "./dist/test.whl"},
 									},
 								},
+								{
+									TaskKey:           "key7",
+									PythonWheelTask:   &jobs.PythonWheelTask{},
+									ExistingClusterId: "test-key-2",
+									Libraries: []compute.Library{
+										{Whl: "signol_lib-0.4.4-20240822+prod-py3-none-any.whl"},
+										{Pypi: &compute.PythonPyPiLibrary{
+											Package: "requests==2.25.1",
+										}},
+									},
+								},
 							},
 						},
 					},
