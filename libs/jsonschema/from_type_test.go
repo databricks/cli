@@ -67,9 +67,7 @@ func TestFromTypeBasic(t *testing.T) {
 			expected: Schema{
 				Type: "object",
 				Definitions: map[string]any{
-					"interface": Schema{
-						Type: "null",
-					},
+					"interface": Schema{},
 					"string": Schema{
 						Type: "string",
 					},
@@ -160,6 +158,8 @@ func TestGetStructFields(t *testing.T) {
 	assert.Equal(t, "B", fields[2].Name)
 }
 
+// TODO: Add other case coverage for all the tests below
+
 func TestFromTypeNested(t *testing.T) {
 	type Inner struct {
 		S string `json:"s"`
@@ -222,7 +222,7 @@ func TestFromTypeNested(t *testing.T) {
 		},
 		{
 			name: "struct as a map value",
-			typ:  reflect.TypeOf(map[string]Inner{}),
+			typ:  reflect.TypeOf(map[string]*Inner{}),
 			expected: Schema{
 				Type:        "object",
 				Definitions: expectedDefinitions,
@@ -252,7 +252,6 @@ func TestFromTypeNested(t *testing.T) {
 	}
 }
 
-// TODO: Call out in the PR description that recursive Go types are supported.
 func TestFromTypeRecursive(t *testing.T) {
 	fooRef := "#/$defs/github.com/databricks/cli/libs/jsonschema/test_types.Foo"
 	barRef := "#/$defs/github.com/databricks/cli/libs/jsonschema/test_types.Bar"
@@ -353,8 +352,76 @@ func TestFromTypeSelfReferential(t *testing.T) {
 	assert.Equal(t, expected, s)
 }
 
+// TODO: Add coverage for all errors returned by FromType.
 func TestFromTypeError(t *testing.T) {
 	type mapOfInts map[int]int
-	_, err := FromType(reflect.TypeOf(mapOfInts{}), nil)
-	assert.EqualError(t, err, "found map with non-string key: int")
+
+	assert.PanicsWithValue(t, "found map with non-string key: int", func() {
+		FromType(reflect.TypeOf(mapOfInts{}), nil)
+	})
+}
+
+// TODO: Add test that the fn argument ot from_type works as expected.
+
+func TestTypePath(t *testing.T) {
+	type myStruct struct{}
+
+	tcases := []struct {
+		typ  reflect.Type
+		path string
+	}{
+		{
+			typ:  reflect.TypeOf(""),
+			path: "string",
+		},
+		{
+			typ:  reflect.TypeOf(int(0)),
+			path: "int",
+		},
+		{
+			typ:  reflect.TypeOf(true),
+			path: "bool",
+		},
+		{
+			typ:  reflect.TypeOf(float64(0)),
+			path: "float64",
+		},
+		{
+			typ:  reflect.TypeOf(myStruct{}),
+			path: "github.com/databricks/cli/libs/jsonschema.myStruct",
+		},
+		{
+			typ:  reflect.TypeOf([]int{}),
+			path: "slice/int",
+		},
+		{
+			typ:  reflect.TypeOf(map[string]int{}),
+			path: "map/int",
+		},
+		{
+			typ:  reflect.TypeOf([]myStruct{}),
+			path: "slice/github.com/databricks/cli/libs/jsonschema.myStruct",
+		},
+		{
+			typ:  reflect.TypeOf([][]map[string]map[string]myStruct{}),
+			path: "slice/slice/map/map/github.com/databricks/cli/libs/jsonschema.myStruct",
+		},
+		{
+			typ:  reflect.TypeOf(map[string]myStruct{}),
+			path: "map/github.com/databricks/cli/libs/jsonschema.myStruct",
+		},
+	}
+
+	// TODO: support arbitary depth of maps and slices. Also add validation
+	// in this function that non-string keys are not allowed.
+	for _, tc := range tcases {
+		t.Run(tc.typ.String(), func(t *testing.T) {
+			assert.Equal(t, tc.path, typePath(tc.typ))
+		})
+	}
+
+	// Maps with non-string keys should panic.
+	assert.PanicsWithValue(t, "found map with non-string key: int", func() {
+		typePath(reflect.TypeOf(map[int]int{}))
+	})
 }

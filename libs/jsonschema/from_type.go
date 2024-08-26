@@ -3,16 +3,12 @@ package jsonschema
 import (
 	"container/list"
 	"fmt"
+	"maps"
 	"path"
 	"reflect"
 	"slices"
 	"strings"
 )
-
-// TODO: Maybe can be removed?
-var InvalidSchema = Schema{
-	Type: InvalidType,
-}
 
 // Fields tagged "readonly" should not be emitted in the schema as they are
 // computed at runtime, and should not be assigned a value by the bundle author.
@@ -26,19 +22,17 @@ const internalTag = "internal"
 // Fields tagged as "deprecated" are removed/omitted from the generated schema.
 const deprecatedTag = "deprecated"
 
-// TODO: Test what happens with invalid cycles? Do integration tests fail?
-// TODO: Call out in the PR description that recursive types like "for_each_task"
-// are now supported.
-
 type constructor struct {
 	// Map of typ.PkgPath() + "." + typ.Name() to the schema for that type.
 	// Example key: github.com/databricks/databricks-sdk-go/service/jobs.JobSettings
 	definitions map[string]Schema
 
-	seen map[string]struct{}
+	// Map of typ.PkgPath() + "." + typ.Name() to the corresponding type. Used to
+	// track types that have been seen to avoid infinite recursion.
+	seen map[string]reflect.Type
 
-	// Transformation function to apply after generating a node in the schema.
-	fn func(s Schema) Schema
+	// The root type for which the schema is being generated.
+	root reflect.Type
 }
 
 // The $defs block in a JSON schema cannot contain "/", otherwise it will not be
@@ -47,13 +41,19 @@ type constructor struct {
 //
 // For example:
 // {"a/b/c": "value"} is converted to {"a": {"b": {"c": "value"}}}
-func (c *constructor) nestedDefinitions() any {
-	if len(c.definitions) == 0 {
+func (c *constructor) Definitions() any {
+	defs := maps.Clone(c.definitions)
+
+	// Remove the root type from the definitions. No need to include it in the
+	// definitions.
+	delete(defs, typePath(c.root))
+
+	if len(defs) == 0 {
 		return nil
 	}
 
 	res := make(map[string]any)
-	for k, v := range c.definitions {
+	for k, v := range defs {
 		parts := strings.Split(k, "/")
 		cur := res
 		for i, p := range parts {
@@ -72,47 +72,74 @@ func (c *constructor) nestedDefinitions() any {
 	return res
 }
 
-// TODO: Skip generating schema for interface fields.
-func FromType(typ reflect.Type, fn func(s Schema) Schema) (Schema, error) {
+// FromType converts a reflect.Type to a jsonschema.Schema. Nodes in the final JSON
+// schema are guaranteed to be one level deep, which is done using defining $defs
+// for every Go type and referring them using $ref in the corresponding node in
+// the JSON schema.
+//
+// fns is a list of transformation functions that will be applied to all $defs
+// in the schema.
+func FromType(typ reflect.Type, fns []func(typ reflect.Type, s Schema) Schema) (Schema, error) {
 	c := constructor{
 		definitions: make(map[string]Schema),
-		seen:        make(map[string]struct{}),
-		fn:          fn,
+		seen:        make(map[string]reflect.Type),
+		root:        typ,
 	}
 
 	err := c.walk(typ)
 	if err != nil {
-		return InvalidSchema, err
+		return Schema{}, err
+	}
+
+	for k, v := range c.definitions {
+		for _, fn := range fns {
+			c.definitions[k] = fn(c.seen[k], v)
+		}
 	}
 
 	res := c.definitions[typePath(typ)]
-	// No need to include the root type in the definitions.
-	delete(c.definitions, typePath(typ))
-	res.Definitions = c.nestedDefinitions()
+	res.Definitions = c.Definitions()
 	return res, nil
 }
 
+// typePath computes a unique string representation of the type. $ref in the generated
+// JSON schema will refer to this path. See TestTypePath for examples outputs.
 func typePath(typ reflect.Type) string {
 	// Pointers have a typ.Name() of "". Dereference them to get the underlying type.
 	for typ.Kind() == reflect.Ptr {
 		typ = typ.Elem()
 	}
 
-	// typ.Name() resolves to "" for any type.
 	if typ.Kind() == reflect.Interface {
 		return "interface"
 	}
 
-	// For built-in types, return the type name directly.
-	if typ.PkgPath() == "" {
-		return typ.Name()
+	// Recursively call typePath, to handle slices of slices / maps.
+	if typ.Kind() == reflect.Slice {
+		return path.Join("slice", typePath(typ.Elem()))
 	}
 
-	return strings.Join([]string{typ.PkgPath(), typ.Name()}, ".")
+	if typ.Kind() == reflect.Map {
+		if typ.Key().Kind() != reflect.String {
+			panic(fmt.Sprintf("found map with non-string key: %v", typ.Key()))
+		}
+
+		// Recursively call typePath, to handle maps of maps / slices.
+		return path.Join("map", typePath(typ.Elem()))
+	}
+
+	switch {
+	case typ.PkgPath() != "" && typ.Name() != "":
+		return typ.PkgPath() + "." + typ.Name()
+	case typ.Name() != "":
+		return typ.Name()
+	default:
+		panic("unexpected empty type name for type: " + typ.String())
+	}
 }
 
-// TODO: would a worked based model fit better here? Is this internal API not
-// the right fit?
+// Walk the Go type, generating $defs for every type encountered, and populating
+// the corresponding $ref in the JSON schema.
 func (c *constructor) walk(typ reflect.Type) error {
 	// Dereference pointers if necessary.
 	for typ.Kind() == reflect.Ptr {
@@ -121,10 +148,11 @@ func (c *constructor) walk(typ reflect.Type) error {
 
 	typPath := typePath(typ)
 
-	// Keep track of seen types to avoid infinite recursion.
-	if _, ok := c.seen[typPath]; !ok {
-		c.seen[typPath] = struct{}{}
+	// Return early if the type has already been seen, to avoid infinite recursion.
+	if _, ok := c.seen[typPath]; ok {
+		return nil
 	}
+	c.seen[typPath] = typ
 
 	// Return early directly if it's already been processed.
 	if _, ok := c.definitions[typPath]; ok {
@@ -134,7 +162,6 @@ func (c *constructor) walk(typ reflect.Type) error {
 	var s Schema
 	var err error
 
-	// TODO: Narrow / widen down the number of Go types handled here.
 	switch typ.Kind() {
 	case reflect.Struct:
 		s, err = c.fromTypeStruct(typ)
@@ -142,20 +169,20 @@ func (c *constructor) walk(typ reflect.Type) error {
 		s, err = c.fromTypeSlice(typ)
 	case reflect.Map:
 		s, err = c.fromTypeMap(typ)
-		// TODO: Should the primitive functions below be inlined?
 	case reflect.String:
 		s = Schema{Type: StringType}
 	case reflect.Bool:
 		s = Schema{Type: BooleanType}
-	// TODO: Add comment about reduced coverage of primitive Go types in the code paths here.
-	case reflect.Int:
+	case reflect.Int, reflect.Int32, reflect.Int64:
 		s = Schema{Type: IntegerType}
 	case reflect.Float32, reflect.Float64:
 		s = Schema{Type: NumberType}
 	case reflect.Interface:
-		// An interface value can never be serialized from text, and thus is explicitly
-		// set to null and disallowed in the schema.
-		s = Schema{Type: NullType}
+		// Interface or any types are not serialized to JSON by the default JSON
+		// unmarshaller (json.Unmarshal). They likely thus are parsed by the
+		// dynamic configuration tree and we should support arbitary values here.
+		// Eg: variables.default can be anything.
+		s = Schema{}
 	default:
 		return fmt.Errorf("unsupported type: %s", typ.Kind())
 	}
@@ -163,13 +190,7 @@ func (c *constructor) walk(typ reflect.Type) error {
 		return err
 	}
 
-	if c.fn != nil {
-		s = c.fn(s)
-	}
-
-	// Store definition for the type if it's part of a Go package and not a built-in type.
-	// TODO: Apply transformation at the end, to all definitions instead of
-	// during recursive traversal?
+	// Store the computed JSON schema for the type.
 	c.definitions[typPath] = s
 	return nil
 }
@@ -206,20 +227,15 @@ func getStructFields(typ reflect.Type) []reflect.StructField {
 	return fields
 }
 
-// TODO: get rid of the errors here and panic instead?
 func (c *constructor) fromTypeStruct(typ reflect.Type) (Schema, error) {
 	if typ.Kind() != reflect.Struct {
-		return InvalidSchema, fmt.Errorf("expected struct, got %s", typ.Kind())
+		return Schema{}, fmt.Errorf("expected struct, got %s", typ.Kind())
 	}
 
 	res := Schema{
-		Type: ObjectType,
-
-		Properties: make(map[string]*Schema),
-
-		// TODO: Confirm that empty arrays are not serialized.
-		Required: []string{},
-
+		Type:                 ObjectType,
+		Properties:           make(map[string]*Schema),
+		Required:             []string{},
 		AdditionalProperties: false,
 	}
 
@@ -240,6 +256,7 @@ func (c *constructor) fromTypeStruct(typ reflect.Type) (Schema, error) {
 		if jsonTags[0] == "" || jsonTags[0] == "-" || !structField.IsExported() {
 			continue
 		}
+
 		// "omitempty" tags in the Go SDK structs represent fields that not are
 		// required to be present in the API payload. Thus its absence in the
 		// tags list indicates that the field is required.
@@ -247,19 +264,16 @@ func (c *constructor) fromTypeStruct(typ reflect.Type) (Schema, error) {
 			res.Required = append(res.Required, jsonTags[0])
 		}
 
+		// Walk the fields of the struct.
 		typPath := typePath(structField.Type)
-		// Only walk if the type has not been seen yet.
-		if _, ok := c.seen[typPath]; !ok {
-			// Trigger call to fromType, to recursively generate definitions for
-			// the struct field.
-			err := c.walk(structField.Type)
-			if err != nil {
-				return InvalidSchema, err
-			}
+		err := c.walk(structField.Type)
+		if err != nil {
+			return Schema{}, err
 		}
 
+		// For every property in the struct, add a $ref to the corresponding
+		// $defs block.
 		refPath := path.Join("#/$defs", typPath)
-		// For non-built-in types, refer to the definition.
 		res.Properties[jsonTags[0]] = &Schema{
 			Reference: &refPath,
 		}
@@ -268,11 +282,9 @@ func (c *constructor) fromTypeStruct(typ reflect.Type) (Schema, error) {
 	return res, nil
 }
 
-// TODO: Add comments explaining the translation between struct, map, slice and
-// the JSON schema representation.
 func (c *constructor) fromTypeSlice(typ reflect.Type) (Schema, error) {
 	if typ.Kind() != reflect.Slice {
-		return InvalidSchema, fmt.Errorf("expected slice, got %s", typ.Kind())
+		return Schema{}, fmt.Errorf("expected slice, got %s", typ.Kind())
 	}
 
 	res := Schema{
@@ -280,19 +292,16 @@ func (c *constructor) fromTypeSlice(typ reflect.Type) (Schema, error) {
 	}
 
 	typPath := typePath(typ.Elem())
-	// Only walk if the type has not been seen yet.
-	if _, ok := c.seen[typPath]; !ok {
-		// Trigger call to fromType, to recursively generate definitions for
-		// the slice element.
-		err := c.walk(typ.Elem())
-		if err != nil {
-			return InvalidSchema, err
-		}
+
+	// Walk the slice element type.
+	err := c.walk(typ.Elem())
+	if err != nil {
+		return Schema{}, err
 	}
 
 	refPath := path.Join("#/$defs", typPath)
 
-	// For non-built-in types, refer to the definition
+	// Add a $ref to the corresponding $defs block for the slice element type.
 	res.Items = &Schema{
 		Reference: &refPath,
 	}
@@ -301,11 +310,11 @@ func (c *constructor) fromTypeSlice(typ reflect.Type) (Schema, error) {
 
 func (c *constructor) fromTypeMap(typ reflect.Type) (Schema, error) {
 	if typ.Kind() != reflect.Map {
-		return InvalidSchema, fmt.Errorf("expected map, got %s", typ.Kind())
+		return Schema{}, fmt.Errorf("expected map, got %s", typ.Kind())
 	}
 
 	if typ.Key().Kind() != reflect.String {
-		return InvalidSchema, fmt.Errorf("found map with non-string key: %v", typ.Key())
+		return Schema{}, fmt.Errorf("found map with non-string key: %v", typ.Key())
 	}
 
 	res := Schema{
@@ -313,19 +322,16 @@ func (c *constructor) fromTypeMap(typ reflect.Type) (Schema, error) {
 	}
 
 	typPath := typePath(typ.Elem())
-	// Only walk if the type has not been seen yet.
-	if _, ok := c.seen[typPath]; !ok {
-		// Trigger call to fromType, to recursively generate definitions for
-		// the map value.
-		err := c.walk(typ.Elem())
-		if err != nil {
-			return InvalidSchema, err
-		}
+
+	// Walk the map value type.
+	err := c.walk(typ.Elem())
+	if err != nil {
+		return Schema{}, err
 	}
 
 	refPath := path.Join("#/$defs", typPath)
 
-	// For non-built-in types, refer to the definition
+	// Add a $ref to the corresponding $defs block for the map value type.
 	res.AdditionalProperties = &Schema{
 		Reference: &refPath,
 	}

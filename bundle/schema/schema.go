@@ -3,7 +3,6 @@ package schema
 import (
 	"reflect"
 
-	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/jsonschema"
 )
 
@@ -42,26 +41,28 @@ import (
 //     for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#properties
 func New(golangType reflect.Type, docs *Docs) (*jsonschema.Schema, error) {
 
-	s, err := jsonschema.FromType(golangType, func(s jsonschema.Schema) jsonschema.Schema {
-		if s.Type == jsonschema.NumberType || s.Type == jsonschema.BooleanType {
-			s = jsonschema.Schema{
-				AnyOf: []jsonschema.Schema{
-					s,
-					{
-						Type: jsonschema.StringType,
-						// TODO: Narrow down the scope of the regex match.
-						// Also likely need to rename this variable.
-						Pattern: dynvar.VariableRegex,
-					},
-				},
-			}
-		}
-		return s
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &s, nil
+	return nil, nil
+
+	// s, err := jsonschema.FromType(golangType, func(s jsonschema.Schema) jsonschema.Schema {
+	// 	if s.Type == jsonschema.NumberType || s.Type == jsonschema.BooleanType {
+	// 		s = jsonschema.Schema{
+	// 			AnyOf: []jsonschema.Schema{
+	// 				s,
+	// 				{
+	// 					Type: jsonschema.StringType,
+	// 					// TODO: Narrow down the scope of the regex match.
+	// 					// Also likely need to rename this variable.
+	// 					Pattern: dynvar.ReferenceRegex,
+	// 				},
+	// 			},
+	// 		}
+	// 	}
+	// 	return s
+	// })
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// return &s, nil
 
 	// tracker := newTracker()
 	// schema, err := safeToSchema(golangType, docs, "", tracker)
