@@ -43,6 +43,10 @@ func IsLocalPath(p string) bool {
 // We can't use IsLocalPath beacuse environment dependencies can be
 // a pypi package name which can be misinterpreted as a local path by IsLocalPath.
 func IsLibraryLocal(dep string) bool {
+	if dep == "" {
+		return false
+	}
+
 	possiblePrefixes := []string{
 		".",
 	}

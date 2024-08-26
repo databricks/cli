@@ -40,6 +40,10 @@ func (v *verifyCliVersion) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 	}
 
 	if !c.Check(version) {
+		if version.Prerelease() == "dev" && version.Major() == 0 {
+			return diag.Warningf("Ignoring Databricks CLI version constraint for development build. Required: %s, current: %s", constraint, currentVersion)
+		}
+
 		return diag.Errorf("Databricks CLI version constraint not satisfied. Required: %s, current: %s", constraint, currentVersion)
 	}
 
