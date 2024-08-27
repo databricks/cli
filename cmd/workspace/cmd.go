@@ -44,6 +44,8 @@ import (
 	permission_migration "github.com/databricks/cli/cmd/workspace/permission-migration"
 	permissions "github.com/databricks/cli/cmd/workspace/permissions"
 	pipelines "github.com/databricks/cli/cmd/workspace/pipelines"
+	policy_compliance_for_clusters "github.com/databricks/cli/cmd/workspace/policy-compliance-for-clusters"
+	policy_compliance_for_jobs "github.com/databricks/cli/cmd/workspace/policy-compliance-for-jobs"
 	policy_families "github.com/databricks/cli/cmd/workspace/policy-families"
 	provider_exchange_filters "github.com/databricks/cli/cmd/workspace/provider-exchange-filters"
 	provider_exchanges "github.com/databricks/cli/cmd/workspace/provider-exchanges"
@@ -63,6 +65,7 @@ import (
 	recipients "github.com/databricks/cli/cmd/workspace/recipients"
 	registered_models "github.com/databricks/cli/cmd/workspace/registered-models"
 	repos "github.com/databricks/cli/cmd/workspace/repos"
+	resource_quotas "github.com/databricks/cli/cmd/workspace/resource-quotas"
 	schemas "github.com/databricks/cli/cmd/workspace/schemas"
 	secrets "github.com/databricks/cli/cmd/workspace/secrets"
 	service_principals "github.com/databricks/cli/cmd/workspace/service-principals"
@@ -130,6 +133,8 @@ func All() []*cobra.Command {
 	out = append(out, permission_migration.New())
 	out = append(out, permissions.New())
 	out = append(out, pipelines.New())
+	out = append(out, policy_compliance_for_clusters.New())
+	out = append(out, policy_compliance_for_jobs.New())
 	out = append(out, policy_families.New())
 	out = append(out, provider_exchange_filters.New())
 	out = append(out, provider_exchanges.New())
@@ -149,6 +154,7 @@ func All() []*cobra.Command {
 	out = append(out, recipients.New())
 	out = append(out, registered_models.New())
 	out = append(out, repos.New())
+	out = append(out, resource_quotas.New())
 	out = append(out, schemas.New())
 	out = append(out, secrets.New())
 	out = append(out, service_principals.New())
