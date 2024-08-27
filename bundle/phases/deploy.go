@@ -99,7 +99,7 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 
 	// One or more DLT pipelines is being recreated.
 	if len(dltActions) != 0 {
-		cmdio.LogString(ctx, "The following DLT pipelines will be recreated. Underlying tables will be unavailable for a transient period until the newly recreated pipelines are run once successfully. History of previous pipeline update runs will be lost because of recreation:")
+		cmdio.LogString(ctx, "The following DLT pipelines will be recreated. This commonly happens when the `catalog` or the `storage` specified for aq DLT pipeline is changed. Underlying tables will be unavailable for a transient period until the newly recreated pipelines are run once successfully. History of previous pipeline update runs will be lost because of recreation:")
 		for _, action := range dltActions {
 			cmdio.Log(ctx, action)
 		}

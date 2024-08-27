@@ -157,7 +157,7 @@ func TestAccBundlePipelineRecreateWithoutAutoApprove(t *testing.T) {
 	stdout, stderr, err := c.Run()
 
 	assert.EqualError(t, err, root.ErrAlreadyPrinted.Error())
-	assert.Contains(t, stderr.String(), "The following DLT pipelines will be recreated. Underlying tables will be unavailable for a transient period, until the newly recreated pipeline is run once successfully. History of previous pipeline update runs will be lost as a result of the recreation:\n  recreate pipeline foo")
+	assert.Contains(t, stderr.String(), "The following DLT pipelines will be recreated. This commonly happens when the `catalog` or the `storage` specified for a DLT pipeline is changed. Underlying tables will be unavailable for a transient period until the newly recreated pipelines are run once successfully. History of previous pipeline update runs will be lost because of recreation:\n  recreate pipeline foo")
 	assert.Contains(t, stdout.String(), "the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
 }
 
