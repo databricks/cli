@@ -305,37 +305,3 @@ func TestValidateSchemaSkippedPropertiesHaveDefaults(t *testing.T) {
 	err = s.validate()
 	assert.NoError(t, err)
 }
-
-func testSchema() *Schema {
-	return &Schema{
-		Type: "object",
-		Properties: map[string]*Schema{
-			"int_val": {
-				Type:    "integer",
-				Default: int64(123),
-			},
-			"string_val": {
-				Type: "string",
-			},
-			"object_val": {
-				Type: "object",
-				Properties: map[string]*Schema{
-					"bar": {
-						Type:    "string",
-						Default: "baz",
-					},
-				},
-				AdditionalProperties: &Schema{
-					Type: "object",
-					Properties: map[string]*Schema{
-						"foo": {
-							Type:    "string",
-							Default: "zab",
-						},
-					},
-				},
-			},
-		},
-	}
-
-}
