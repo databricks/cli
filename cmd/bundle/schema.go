@@ -1,9 +1,14 @@
 package bundle
 
 import (
+	_ "embed"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
 )
+
+//go:embed _generated/jsonschema.json
+var b []byte
 
 func newSchemaCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -13,34 +18,8 @@ func newSchemaCommand() *cobra.Command {
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		// os.ReadFile()
-
-		// // Load embedded schema descriptions.
-		// docs, err := schema.LoadBundleDescriptions()
-		// if err != nil {
-		// 	return err
-		// }
-
-		// // Generate the JSON schema from the bundle configuration struct in Go.
-		// schema, err := schema.New(reflect.TypeOf(config.Root{}), docs)
-		// if err != nil {
-		// 	return err
-		// }
-
-		// // Target variable value overrides can be primitives, maps or sequences.
-		// // Set an empty schema for them.
-		// err = schema.SetByPath("targets.*.variables.*", jsonschema.Schema{})
-		// if err != nil {
-		// 	return err
-		// }
-
-		// // Print the JSON schema to stdout.
-		// result, err := json.MarshalIndent(schema, "", "  ")
-		// if err != nil {
-		// 	return err
-		// }
-		// cmd.OutOrStdout().Write(result)
-		return nil
+		_, err := cmd.OutOrStdout().Write(b)
+		return err
 	}
 
 	return cmd
