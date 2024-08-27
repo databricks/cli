@@ -17,7 +17,6 @@ func TestFromTypeBasic(t *testing.T) {
 		// These fields should be ignored in the resulting schema.
 		NotAnnotated     string
 		DashedTag        string `json:"-"`
-		notExported      string `json:"not_exported"`
 		InternalTagged   string `json:"internal_tagged" bundle:"internal"`
 		DeprecatedTagged string `json:"deprecated_tagged" bundle:"deprecated"`
 		ReadOnlyTagged   string `json:"readonly_tagged" bundle:"readonly"`
