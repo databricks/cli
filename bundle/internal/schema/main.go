@@ -27,7 +27,6 @@ func addInterpolationPatterns(typ reflect.Type, s jsonschema.Schema) jsonschema.
 		return jsonschema.Schema{
 			AnyOf: []jsonschema.Schema{s, {
 				Type: jsonschema.StringType,
-				// TODO: Are multi-level complex variable references supported?
 				Pattern: interpolationPattern("var"),
 			}},
 		}
@@ -36,7 +35,6 @@ func addInterpolationPatterns(typ reflect.Type, s jsonschema.Schema) jsonschema.
 		// or ${workspace.xyz}
 		return jsonschema.Schema{
 			AnyOf: []jsonschema.Schema{s,
-				// TODO: Is it only resource IDs or is it resources in general?
 				{Type: jsonschema.StringType, Pattern: interpolationPattern("resources")},
 				{Type: jsonschema.StringType, Pattern: interpolationPattern("bundle")},
 				{Type: jsonschema.StringType, Pattern: interpolationPattern("workspace")},
