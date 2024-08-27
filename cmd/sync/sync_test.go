@@ -17,8 +17,10 @@ import (
 func TestSyncOptionsFromBundle(t *testing.T) {
 	tempDir := t.TempDir()
 	b := &bundle.Bundle{
-		RootPath:   tempDir,
-		BundleRoot: vfs.MustNew(tempDir),
+		RootPath:     tempDir,
+		BundleRoot:   vfs.MustNew(tempDir),
+		SyncRootPath: tempDir,
+		SyncRoot:     vfs.MustNew(tempDir),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "default",
@@ -33,7 +35,7 @@ func TestSyncOptionsFromBundle(t *testing.T) {
 	f := syncFlags{}
 	opts, err := f.syncOptionsFromBundle(New(), []string{}, b)
 	require.NoError(t, err)
-	assert.Equal(t, tempDir, opts.LocalPath.Native())
+	assert.Equal(t, tempDir, opts.LocalRoot.Native())
 	assert.Equal(t, "/Users/jane@doe.com/path", opts.RemotePath)
 	assert.Equal(t, filepath.Join(tempDir, ".databricks", "bundle", "default"), opts.SnapshotBasePath)
 	assert.NotNil(t, opts.WorkspaceClient)
@@ -59,6 +61,6 @@ func TestSyncOptionsFromArgs(t *testing.T) {
 	cmd.SetContext(root.SetWorkspaceClient(context.Background(), nil))
 	opts, err := f.syncOptionsFromArgs(cmd, []string{local, remote})
 	require.NoError(t, err)
-	assert.Equal(t, local, opts.LocalPath.Native())
+	assert.Equal(t, local, opts.LocalRoot.Native())
 	assert.Equal(t, remote, opts.RemotePath)
 }

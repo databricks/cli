@@ -93,14 +93,14 @@ func (t *translateContext) rewritePath(
 		return nil
 	}
 
-	// Local path must be contained in the bundle root.
+	// Local path must be contained in the sync root.
 	// If it isn't, it won't be synchronized into the workspace.
-	localRelPath, err := filepath.Rel(t.b.RootPath, localPath)
+	localRelPath, err := filepath.Rel(t.b.SyncRootPath, localPath)
 	if err != nil {
 		return err
 	}
 	if strings.HasPrefix(localRelPath, "..") {
-		return fmt.Errorf("path %s is not contained in bundle root path", localPath)
+		return fmt.Errorf("path %s is not contained in sync root path", localPath)
 	}
 
 	// Prefix remote path with its remote root path.
@@ -118,7 +118,7 @@ func (t *translateContext) rewritePath(
 }
 
 func (t *translateContext) translateNotebookPath(literal, localFullPath, localRelPath, remotePath string) (string, error) {
-	nb, _, err := notebook.DetectWithFS(t.b.BundleRoot, filepath.ToSlash(localRelPath))
+	nb, _, err := notebook.DetectWithFS(t.b.SyncRoot, filepath.ToSlash(localRelPath))
 	if errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("notebook %s not found", literal)
 	}
@@ -134,7 +134,7 @@ func (t *translateContext) translateNotebookPath(literal, localFullPath, localRe
 }
 
 func (t *translateContext) translateFilePath(literal, localFullPath, localRelPath, remotePath string) (string, error) {
-	nb, _, err := notebook.DetectWithFS(t.b.BundleRoot, filepath.ToSlash(localRelPath))
+	nb, _, err := notebook.DetectWithFS(t.b.SyncRoot, filepath.ToSlash(localRelPath))
 	if errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("file %s not found", literal)
 	}
@@ -148,7 +148,7 @@ func (t *translateContext) translateFilePath(literal, localFullPath, localRelPat
 }
 
 func (t *translateContext) translateDirectoryPath(literal, localFullPath, localRelPath, remotePath string) (string, error) {
-	info, err := t.b.BundleRoot.Stat(filepath.ToSlash(localRelPath))
+	info, err := t.b.SyncRoot.Stat(filepath.ToSlash(localRelPath))
 	if err != nil {
 		return "", err
 	}

@@ -35,7 +35,7 @@ func isEnvsWithLocalLibraries(envs []jobs.JobEnvironment) bool {
 		}
 
 		for _, l := range e.Spec.Dependencies {
-			if IsEnvironmentDependencyLocal(l) {
+			if IsLibraryLocal(l) {
 				return true
 			}
 		}
@@ -67,7 +67,12 @@ func FindTasksWithLocalLibraries(b *bundle.Bundle) []jobs.Task {
 
 func isTaskWithLocalLibraries(task jobs.Task) bool {
 	for _, l := range task.Libraries {
-		if IsLocalLibrary(&l) {
+		p, err := libraryPath(&l)
+		// If there's an error, skip the library because it's not of supported type
+		if err != nil {
+			continue
+		}
+		if IsLibraryLocal(p) {
 			return true
 		}
 	}

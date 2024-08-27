@@ -50,6 +50,11 @@ func rewritePatterns(t *translateContext, base dyn.Pattern) []jobRewritePattern 
 			t.translateNoOp,
 			noSkipRewrite,
 		},
+		{
+			base.Append(dyn.Key("libraries"), dyn.AnyIndex(), dyn.Key("requirements")),
+			t.translateFilePath,
+			noSkipRewrite,
+		},
 	}
 }
 
@@ -78,7 +83,7 @@ func (t *translateContext) jobRewritePatterns() []jobRewritePattern {
 			),
 			t.translateNoOpWithPrefix,
 			func(s string) bool {
-				return !libraries.IsEnvironmentDependencyLocal(s)
+				return !libraries.IsLibraryLocal(s)
 			},
 		},
 	}

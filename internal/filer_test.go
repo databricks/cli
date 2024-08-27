@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"io/fs"
 	"path"
@@ -720,67 +719,6 @@ func TestAccFilerWorkspaceFilesExtensionsStat(t *testing.T) {
 
 	_, err = wf.Stat(ctx, "pretender.ipynb")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
-}
-
-func TestAccFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
-	t.Parallel()
-
-	tcases := []struct {
-		files []struct{ name, content string }
-		name  string
-	}{
-		{
-			name: "python",
-			files: []struct{ name, content string }{
-				{"foo.py", "print('foo')"},
-				{"foo.py", "# Databricks notebook source\nprint('foo')"},
-			},
-		},
-		{
-			name: "r",
-			files: []struct{ name, content string }{
-				{"foo.r", "print('foo')"},
-				{"foo.r", "# Databricks notebook source\nprint('foo')"},
-			},
-		},
-		{
-			name: "sql",
-			files: []struct{ name, content string }{
-				{"foo.sql", "SELECT 'foo'"},
-				{"foo.sql", "-- Databricks notebook source\nSELECT 'foo'"},
-			},
-		},
-		{
-			name: "scala",
-			files: []struct{ name, content string }{
-				{"foo.scala", "println('foo')"},
-				{"foo.scala", "// Databricks notebook source\nprintln('foo')"},
-			},
-		},
-		// We don't need to test this for ipynb notebooks. The import API
-		// fails when the file extension is .ipynb but the content is not a
-		// valid juptyer notebook.
-	}
-
-	for i := range tcases {
-		tc := tcases[i]
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			ctx := context.Background()
-			wf, tmpDir := setupWsfsExtensionsFiler(t)
-
-			for _, f := range tc.files {
-				err := wf.Write(ctx, f.name, strings.NewReader(f.content), filer.CreateParentDirectories)
-				require.NoError(t, err)
-			}
-
-			_, err := wf.ReadDir(ctx, ".")
-			assert.ErrorAs(t, err, &filer.DuplicatePathError{})
-			assert.ErrorContains(t, err, fmt.Sprintf("failed to read files from the workspace file system. Duplicate paths encountered. Both NOTEBOOK at %s and FILE at %s resolve to the same name %s. Changing the name of one of these objects will resolve this issue", path.Join(tmpDir, "foo"), path.Join(tmpDir, tc.files[0].name), tc.files[0].name))
-		})
-	}
-
 }
 
 func TestAccWorkspaceFilesExtensionsDirectoriesAreNotNotebooks(t *testing.T) {

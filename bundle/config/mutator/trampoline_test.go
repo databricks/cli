@@ -9,7 +9,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/paths"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
@@ -57,17 +56,18 @@ func TestGenerateTrampoline(t *testing.T) {
 	}
 
 	b := &bundle.Bundle{
-		RootPath: tmpDir,
+		RootPath:     filepath.Join(tmpDir, "parent", "my_bundle"),
+		SyncRootPath: filepath.Join(tmpDir, "parent"),
 		Config: config.Root{
+			Workspace: config.Workspace{
+				FilePath: "/Workspace/files",
+			},
 			Bundle: config.Bundle{
 				Target: "development",
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"test": {
-						Paths: paths.Paths{
-							ConfigFilePath: tmpDir,
-						},
 						JobSettings: &jobs.JobSettings{
 							Tasks: tasks,
 						},
@@ -93,6 +93,6 @@ func TestGenerateTrampoline(t *testing.T) {
 	require.Equal(t, "Hello from Trampoline", string(bytes))
 
 	task := b.Config.Resources.Jobs["test"].Tasks[0]
-	require.Equal(t, task.NotebookTask.NotebookPath, ".databricks/bundle/development/.internal/notebook_test_to_trampoline")
+	require.Equal(t, "/Workspace/files/my_bundle/.databricks/bundle/development/.internal/notebook_test_to_trampoline", task.NotebookTask.NotebookPath)
 	require.Nil(t, task.PythonWheelTask)
 }

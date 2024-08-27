@@ -220,7 +220,7 @@ type resolvers struct {
 func allResolvers() *resolvers {
 	r := &resolvers{}
 	r.Alert = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
-		entity, err := w.Alerts.GetByName(ctx, name)
+		entity, err := w.Alerts.GetByDisplayName(ctx, name)
 		if err != nil {
 			return "", err
 		}
@@ -284,7 +284,7 @@ func allResolvers() *resolvers {
 		return fmt.Sprint(entity.PipelineId), nil
 	}
 	r.Query = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
-		entity, err := w.Queries.GetByName(ctx, name)
+		entity, err := w.Queries.GetByDisplayName(ctx, name)
 		if err != nil {
 			return "", err
 		}

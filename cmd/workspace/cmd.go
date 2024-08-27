@@ -4,6 +4,7 @@ package workspace
 
 import (
 	alerts "github.com/databricks/cli/cmd/workspace/alerts"
+	alerts_legacy "github.com/databricks/cli/cmd/workspace/alerts-legacy"
 	apps "github.com/databricks/cli/cmd/workspace/apps"
 	artifact_allowlists "github.com/databricks/cli/cmd/workspace/artifact-allowlists"
 	catalogs "github.com/databricks/cli/cmd/workspace/catalogs"
@@ -24,6 +25,7 @@ import (
 	experiments "github.com/databricks/cli/cmd/workspace/experiments"
 	external_locations "github.com/databricks/cli/cmd/workspace/external-locations"
 	functions "github.com/databricks/cli/cmd/workspace/functions"
+	genie "github.com/databricks/cli/cmd/workspace/genie"
 	git_credentials "github.com/databricks/cli/cmd/workspace/git-credentials"
 	global_init_scripts "github.com/databricks/cli/cmd/workspace/global-init-scripts"
 	grants "github.com/databricks/cli/cmd/workspace/grants"
@@ -37,10 +39,13 @@ import (
 	metastores "github.com/databricks/cli/cmd/workspace/metastores"
 	model_registry "github.com/databricks/cli/cmd/workspace/model-registry"
 	model_versions "github.com/databricks/cli/cmd/workspace/model-versions"
+	notification_destinations "github.com/databricks/cli/cmd/workspace/notification-destinations"
 	online_tables "github.com/databricks/cli/cmd/workspace/online-tables"
 	permission_migration "github.com/databricks/cli/cmd/workspace/permission-migration"
 	permissions "github.com/databricks/cli/cmd/workspace/permissions"
 	pipelines "github.com/databricks/cli/cmd/workspace/pipelines"
+	policy_compliance_for_clusters "github.com/databricks/cli/cmd/workspace/policy-compliance-for-clusters"
+	policy_compliance_for_jobs "github.com/databricks/cli/cmd/workspace/policy-compliance-for-jobs"
 	policy_families "github.com/databricks/cli/cmd/workspace/policy-families"
 	provider_exchange_filters "github.com/databricks/cli/cmd/workspace/provider-exchange-filters"
 	provider_exchanges "github.com/databricks/cli/cmd/workspace/provider-exchanges"
@@ -52,12 +57,15 @@ import (
 	providers "github.com/databricks/cli/cmd/workspace/providers"
 	quality_monitors "github.com/databricks/cli/cmd/workspace/quality-monitors"
 	queries "github.com/databricks/cli/cmd/workspace/queries"
+	queries_legacy "github.com/databricks/cli/cmd/workspace/queries-legacy"
 	query_history "github.com/databricks/cli/cmd/workspace/query-history"
 	query_visualizations "github.com/databricks/cli/cmd/workspace/query-visualizations"
+	query_visualizations_legacy "github.com/databricks/cli/cmd/workspace/query-visualizations-legacy"
 	recipient_activation "github.com/databricks/cli/cmd/workspace/recipient-activation"
 	recipients "github.com/databricks/cli/cmd/workspace/recipients"
 	registered_models "github.com/databricks/cli/cmd/workspace/registered-models"
 	repos "github.com/databricks/cli/cmd/workspace/repos"
+	resource_quotas "github.com/databricks/cli/cmd/workspace/resource-quotas"
 	schemas "github.com/databricks/cli/cmd/workspace/schemas"
 	secrets "github.com/databricks/cli/cmd/workspace/secrets"
 	service_principals "github.com/databricks/cli/cmd/workspace/service-principals"
@@ -85,6 +93,7 @@ func All() []*cobra.Command {
 	var out []*cobra.Command
 
 	out = append(out, alerts.New())
+	out = append(out, alerts_legacy.New())
 	out = append(out, apps.New())
 	out = append(out, artifact_allowlists.New())
 	out = append(out, catalogs.New())
@@ -105,6 +114,7 @@ func All() []*cobra.Command {
 	out = append(out, experiments.New())
 	out = append(out, external_locations.New())
 	out = append(out, functions.New())
+	out = append(out, genie.New())
 	out = append(out, git_credentials.New())
 	out = append(out, global_init_scripts.New())
 	out = append(out, grants.New())
@@ -118,10 +128,13 @@ func All() []*cobra.Command {
 	out = append(out, metastores.New())
 	out = append(out, model_registry.New())
 	out = append(out, model_versions.New())
+	out = append(out, notification_destinations.New())
 	out = append(out, online_tables.New())
 	out = append(out, permission_migration.New())
 	out = append(out, permissions.New())
 	out = append(out, pipelines.New())
+	out = append(out, policy_compliance_for_clusters.New())
+	out = append(out, policy_compliance_for_jobs.New())
 	out = append(out, policy_families.New())
 	out = append(out, provider_exchange_filters.New())
 	out = append(out, provider_exchanges.New())
@@ -133,12 +146,15 @@ func All() []*cobra.Command {
 	out = append(out, providers.New())
 	out = append(out, quality_monitors.New())
 	out = append(out, queries.New())
+	out = append(out, queries_legacy.New())
 	out = append(out, query_history.New())
 	out = append(out, query_visualizations.New())
+	out = append(out, query_visualizations_legacy.New())
 	out = append(out, recipient_activation.New())
 	out = append(out, recipients.New())
 	out = append(out, registered_models.New())
 	out = append(out, repos.New())
+	out = append(out, resource_quotas.New())
 	out = append(out, schemas.New())
 	out = append(out, secrets.New())
 	out = append(out, service_principals.New())

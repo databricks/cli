@@ -15,7 +15,7 @@ import (
 func testFileSetAll(t *testing.T, root string) {
 	fileSet, err := NewFileSet(vfs.MustNew(root))
 	require.NoError(t, err)
-	files, err := fileSet.All()
+	files, err := fileSet.Files()
 	require.NoError(t, err)
 	require.Len(t, files, 3)
 	assert.Equal(t, path.Join("a", "b", "world.txt"), files[0].Relative)
@@ -37,7 +37,7 @@ func TestFileSetNonCleanRoot(t *testing.T) {
 	// This should yield the same result as above test.
 	fileSet, err := NewFileSet(vfs.MustNew("./testdata/../testdata"))
 	require.NoError(t, err)
-	files, err := fileSet.All()
+	files, err := fileSet.Files()
 	require.NoError(t, err)
 	assert.Len(t, files, 3)
 }

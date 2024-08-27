@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 
+	"github.com/databricks/cli/libs/python"
 	"github.com/databricks/databricks-sdk-go/logger"
 
 	"github.com/databricks/cli/bundle/env"
@@ -86,23 +86,15 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		return nil
 	}
 
-	if experimental.PyDABs.VEnvPath == "" {
-		return diag.Errorf("\"experimental.pydabs.enabled\" can only be used when \"experimental.pydabs.venv_path\" is set")
-	}
-
 	// mutateDiags is used because Mutate returns 'error' instead of 'diag.Diagnostics'
 	var mutateDiags diag.Diagnostics
 	var mutateDiagsHasError = errors.New("unexpected error")
 
 	err := b.Config.Mutate(func(leftRoot dyn.Value) (dyn.Value, error) {
-		pythonPath := interpreterPath(experimental.PyDABs.VEnvPath)
+		pythonPath, err := detectExecutable(ctx, experimental.PyDABs.VEnvPath)
 
-		if _, err := os.Stat(pythonPath); err != nil {
-			if os.IsNotExist(err) {
-				return dyn.InvalidValue, fmt.Errorf("can't find %q, check if venv is created", pythonPath)
-			} else {
-				return dyn.InvalidValue, fmt.Errorf("can't find %q: %w", pythonPath, err)
-			}
+		if err != nil {
+			return dyn.InvalidValue, fmt.Errorf("failed to get Python interpreter path: %w", err)
 		}
 
 		cacheDir, err := createCacheDir(ctx)
@@ -423,11 +415,16 @@ func isOmitemptyDelete(left dyn.Value) bool {
 	}
 }
 
-// interpreterPath returns platform-specific path to Python interpreter in the virtual environment.
-func interpreterPath(venvPath string) string {
-	if runtime.GOOS == "windows" {
-		return filepath.Join(venvPath, "Scripts", "python3.exe")
-	} else {
-		return filepath.Join(venvPath, "bin", "python3")
+// detectExecutable lookups Python interpreter in virtual environment, or if not set, in PATH.
+func detectExecutable(ctx context.Context, venvPath string) (string, error) {
+	if venvPath == "" {
+		interpreter, err := python.DetectExecutable(ctx)
+		if err != nil {
+			return "", err
+		}
+
+		return interpreter, nil
 	}
+
+	return python.DetectVEnvExecutable(venvPath)
 }

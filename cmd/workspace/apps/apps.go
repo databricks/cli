@@ -9,7 +9,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/serving"
+	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
 )
 
@@ -24,9 +24,9 @@ func New() *cobra.Command {
 		Long: `Apps run directly on a customer’s Databricks instance, integrate with their
   data, use and extend Databricks services, and enable users to interact through
   single sign-on.`,
-		GroupID: "serving",
+		GroupID: "apps",
 		Annotations: map[string]string{
-			"package": "serving",
+			"package": "apps",
 		},
 
 		// This service is being previewed; hide from help output.
@@ -39,12 +39,15 @@ func New() *cobra.Command {
 	cmd.AddCommand(newDeploy())
 	cmd.AddCommand(newGet())
 	cmd.AddCommand(newGetDeployment())
-	cmd.AddCommand(newGetEnvironment())
+	cmd.AddCommand(newGetPermissionLevels())
+	cmd.AddCommand(newGetPermissions())
 	cmd.AddCommand(newList())
 	cmd.AddCommand(newListDeployments())
+	cmd.AddCommand(newSetPermissions())
 	cmd.AddCommand(newStart())
 	cmd.AddCommand(newStop())
 	cmd.AddCommand(newUpdate())
+	cmd.AddCommand(newUpdatePermissions())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -60,13 +63,13 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*serving.CreateAppRequest,
+	*apps.CreateAppRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var createReq serving.CreateAppRequest
+	var createReq apps.CreateAppRequest
 	var createJson flags.JsonFlag
 
 	var createSkipWait bool
@@ -126,7 +129,7 @@ func newCreate() *cobra.Command {
 			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := wait.OnProgress(func(i *serving.App) {
+		info, err := wait.OnProgress(func(i *apps.App) {
 			if i.Status == nil {
 				return
 			}
@@ -162,13 +165,13 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*serving.DeleteAppRequest,
+	*apps.DeleteAppRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var deleteReq serving.DeleteAppRequest
+	var deleteReq apps.DeleteAppRequest
 
 	// TODO: short flags
 
@@ -220,13 +223,13 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deployOverrides []func(
 	*cobra.Command,
-	*serving.CreateAppDeploymentRequest,
+	*apps.CreateAppDeploymentRequest,
 )
 
 func newDeploy() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var deployReq serving.CreateAppDeploymentRequest
+	var deployReq apps.CreateAppDeploymentRequest
 	var deployJson flags.JsonFlag
 
 	var deploySkipWait bool
@@ -237,7 +240,9 @@ func newDeploy() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&deployJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Use = "deploy APP_NAME SOURCE_CODE_PATH MODE"
+	cmd.Flags().Var(&deployReq.Mode, "mode", `The mode of which the deployment will manage the source code. Supported values: [AUTO_SYNC, SNAPSHOT]`)
+
+	cmd.Use = "deploy APP_NAME SOURCE_CODE_PATH"
 	cmd.Short = `Create an app deployment.`
 	cmd.Long = `Create an app deployment.
   
@@ -251,8 +256,7 @@ func newDeploy() *cobra.Command {
       deployed app. The former refers to the original source code location of
       the app in the workspace during deployment creation, whereas the latter
       provides a system generated stable snapshotted source code path used by
-      the deployment.
-    MODE: The mode of which the deployment will manage the source code.`
+      the deployment.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -260,11 +264,11 @@ func newDeploy() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only APP_NAME as positional arguments. Provide 'source_code_path', 'mode' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, provide only APP_NAME as positional arguments. Provide 'source_code_path' in your JSON input")
 			}
 			return nil
 		}
-		check := root.ExactArgs(3)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -283,12 +287,6 @@ func newDeploy() *cobra.Command {
 		if !cmd.Flags().Changed("json") {
 			deployReq.SourceCodePath = args[1]
 		}
-		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &deployReq.Mode)
-			if err != nil {
-				return fmt.Errorf("invalid MODE: %s", args[2])
-			}
-		}
 
 		wait, err := w.Apps.Deploy(ctx, deployReq)
 		if err != nil {
@@ -298,7 +296,7 @@ func newDeploy() *cobra.Command {
 			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := wait.OnProgress(func(i *serving.AppDeployment) {
+		info, err := wait.OnProgress(func(i *apps.AppDeployment) {
 			if i.Status == nil {
 				return
 			}
@@ -334,13 +332,13 @@ func newDeploy() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*serving.GetAppRequest,
+	*apps.GetAppRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getReq serving.GetAppRequest
+	var getReq apps.GetAppRequest
 
 	// TODO: short flags
 
@@ -392,13 +390,13 @@ func newGet() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getDeploymentOverrides []func(
 	*cobra.Command,
-	*serving.GetAppDeploymentRequest,
+	*apps.GetAppDeploymentRequest,
 )
 
 func newGetDeployment() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getDeploymentReq serving.GetAppDeploymentRequest
+	var getDeploymentReq apps.GetAppDeploymentRequest
 
 	// TODO: short flags
 
@@ -447,30 +445,30 @@ func newGetDeployment() *cobra.Command {
 	return cmd
 }
 
-// start get-environment command
+// start get-permission-levels command
 
 // Slice with functions to override default command behavior.
 // Functions can be added from the `init()` function in manually curated files in this directory.
-var getEnvironmentOverrides []func(
+var getPermissionLevelsOverrides []func(
 	*cobra.Command,
-	*serving.GetAppEnvironmentRequest,
+	*apps.GetAppPermissionLevelsRequest,
 )
 
-func newGetEnvironment() *cobra.Command {
+func newGetPermissionLevels() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getEnvironmentReq serving.GetAppEnvironmentRequest
+	var getPermissionLevelsReq apps.GetAppPermissionLevelsRequest
 
 	// TODO: short flags
 
-	cmd.Use = "get-environment NAME"
-	cmd.Short = `Get app environment.`
-	cmd.Long = `Get app environment.
+	cmd.Use = "get-permission-levels APP_NAME"
+	cmd.Short = `Get app permission levels.`
+	cmd.Long = `Get app permission levels.
   
-  Retrieves app environment.
+  Gets the permission levels that a user can have on an object.
 
   Arguments:
-    NAME: The name of the app.`
+    APP_NAME: The app for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -484,9 +482,9 @@ func newGetEnvironment() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		getEnvironmentReq.Name = args[0]
+		getPermissionLevelsReq.AppName = args[0]
 
-		response, err := w.Apps.GetEnvironment(ctx, getEnvironmentReq)
+		response, err := w.Apps.GetPermissionLevels(ctx, getPermissionLevelsReq)
 		if err != nil {
 			return err
 		}
@@ -498,8 +496,67 @@ func newGetEnvironment() *cobra.Command {
 	cmd.ValidArgsFunction = cobra.NoFileCompletions
 
 	// Apply optional overrides to this command.
-	for _, fn := range getEnvironmentOverrides {
-		fn(cmd, &getEnvironmentReq)
+	for _, fn := range getPermissionLevelsOverrides {
+		fn(cmd, &getPermissionLevelsReq)
+	}
+
+	return cmd
+}
+
+// start get-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getPermissionsOverrides []func(
+	*cobra.Command,
+	*apps.GetAppPermissionsRequest,
+)
+
+func newGetPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getPermissionsReq apps.GetAppPermissionsRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-permissions APP_NAME"
+	cmd.Short = `Get app permissions.`
+	cmd.Long = `Get app permissions.
+  
+  Gets the permissions of an app. Apps can inherit permissions from their root
+  object.
+
+  Arguments:
+    APP_NAME: The app for which to get or manage permissions.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		getPermissionsReq.AppName = args[0]
+
+		response, err := w.Apps.GetPermissions(ctx, getPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getPermissionsOverrides {
+		fn(cmd, &getPermissionsReq)
 	}
 
 	return cmd
@@ -511,13 +568,13 @@ func newGetEnvironment() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listOverrides []func(
 	*cobra.Command,
-	*serving.ListAppsRequest,
+	*apps.ListAppsRequest,
 )
 
 func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var listReq serving.ListAppsRequest
+	var listReq apps.ListAppsRequest
 
 	// TODO: short flags
 
@@ -564,13 +621,13 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var listDeploymentsOverrides []func(
 	*cobra.Command,
-	*serving.ListAppDeploymentsRequest,
+	*apps.ListAppDeploymentsRequest,
 )
 
 func newListDeployments() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var listDeploymentsReq serving.ListAppDeploymentsRequest
+	var listDeploymentsReq apps.ListAppDeploymentsRequest
 
 	// TODO: short flags
 
@@ -616,20 +673,94 @@ func newListDeployments() *cobra.Command {
 	return cmd
 }
 
+// start set-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var setPermissionsOverrides []func(
+	*cobra.Command,
+	*apps.AppPermissionsRequest,
+)
+
+func newSetPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var setPermissionsReq apps.AppPermissionsRequest
+	var setPermissionsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "set-permissions APP_NAME"
+	cmd.Short = `Set app permissions.`
+	cmd.Long = `Set app permissions.
+  
+  Sets permissions on an app. Apps can inherit permissions from their root
+  object.
+
+  Arguments:
+    APP_NAME: The app for which to get or manage permissions.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = setPermissionsJson.Unmarshal(&setPermissionsReq)
+			if err != nil {
+				return err
+			}
+		}
+		setPermissionsReq.AppName = args[0]
+
+		response, err := w.Apps.SetPermissions(ctx, setPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range setPermissionsOverrides {
+		fn(cmd, &setPermissionsReq)
+	}
+
+	return cmd
+}
+
 // start start command
 
 // Slice with functions to override default command behavior.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var startOverrides []func(
 	*cobra.Command,
-	*serving.StartAppRequest,
+	*apps.StartAppRequest,
 )
 
 func newStart() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var startReq serving.StartAppRequest
+	var startReq apps.StartAppRequest
 
+	var startSkipWait bool
+	var startTimeout time.Duration
+
+	cmd.Flags().BoolVar(&startSkipWait, "no-wait", startSkipWait, `do not wait to reach SUCCEEDED state`)
+	cmd.Flags().DurationVar(&startTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach SUCCEEDED state`)
 	// TODO: short flags
 
 	cmd.Use = "start NAME"
@@ -655,11 +786,30 @@ func newStart() *cobra.Command {
 
 		startReq.Name = args[0]
 
-		response, err := w.Apps.Start(ctx, startReq)
+		wait, err := w.Apps.Start(ctx, startReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		if startSkipWait {
+			return cmdio.Render(ctx, wait.Response)
+		}
+		spinner := cmdio.Spinner(ctx)
+		info, err := wait.OnProgress(func(i *apps.AppDeployment) {
+			if i.Status == nil {
+				return
+			}
+			status := i.Status.State
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			if i.Status != nil {
+				statusMessage = i.Status.Message
+			}
+			spinner <- statusMessage
+		}).GetWithTimeout(startTimeout)
+		close(spinner)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, info)
 	}
 
 	// Disable completions since they are not applicable.
@@ -680,13 +830,13 @@ func newStart() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var stopOverrides []func(
 	*cobra.Command,
-	*serving.StopAppRequest,
+	*apps.StopAppRequest,
 )
 
 func newStop() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var stopReq serving.StopAppRequest
+	var stopReq apps.StopAppRequest
 
 	// TODO: short flags
 
@@ -738,13 +888,13 @@ func newStop() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*serving.UpdateAppRequest,
+	*apps.UpdateAppRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var updateReq serving.UpdateAppRequest
+	var updateReq apps.UpdateAppRequest
 	var updateJson flags.JsonFlag
 
 	// TODO: short flags
@@ -796,6 +946,75 @@ func newUpdate() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range updateOverrides {
 		fn(cmd, &updateReq)
+	}
+
+	return cmd
+}
+
+// start update-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updatePermissionsOverrides []func(
+	*cobra.Command,
+	*apps.AppPermissionsRequest,
+)
+
+func newUpdatePermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updatePermissionsReq apps.AppPermissionsRequest
+	var updatePermissionsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "update-permissions APP_NAME"
+	cmd.Short = `Update app permissions.`
+	cmd.Long = `Update app permissions.
+  
+  Updates the permissions on an app. Apps can inherit permissions from their
+  root object.
+
+  Arguments:
+    APP_NAME: The app for which to get or manage permissions.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = updatePermissionsJson.Unmarshal(&updatePermissionsReq)
+			if err != nil {
+				return err
+			}
+		}
+		updatePermissionsReq.AppName = args[0]
+
+		response, err := w.Apps.UpdatePermissions(ctx, updatePermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updatePermissionsOverrides {
+		fn(cmd, &updatePermissionsReq)
 	}
 
 	return cmd

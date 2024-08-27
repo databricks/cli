@@ -23,7 +23,7 @@ func setupBundleForStateUpdate(t *testing.T) *bundle.Bundle {
 	testutil.Touch(t, tmpDir, "test1.py")
 	testutil.TouchNotebook(t, tmpDir, "test2.py")
 
-	files, err := fileset.New(vfs.MustNew(tmpDir)).All()
+	files, err := fileset.New(vfs.MustNew(tmpDir)).Files()
 	require.NoError(t, err)
 
 	return &bundle.Bundle{
