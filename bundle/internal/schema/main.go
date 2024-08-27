@@ -8,6 +8,7 @@ import (
 	"reflect"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/libs/jsonschema"
 )
 
@@ -15,7 +16,11 @@ func interpolationPattern(s string) string {
 	return fmt.Sprintf(`\$\{(%s(\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\[[0-9]+\])*)*(\[[0-9]+\])*)\}`, s)
 }
 
-func addInterpolationPatterns(_ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
+func addInterpolationPatterns(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
+	if typ == reflect.TypeOf(config.Root{}) || typ == reflect.TypeOf(variable.Variable{}) {
+		return s
+	}
+
 	switch s.Type {
 	case jsonschema.ArrayType, jsonschema.ObjectType:
 		// arrays and objects can have complex variable values specified.
@@ -33,7 +38,8 @@ func addInterpolationPatterns(_ reflect.Type, s jsonschema.Schema) jsonschema.Sc
 		// they are of the permitted patterns?
 		return jsonschema.Schema{
 			AnyOf: []jsonschema.Schema{s,
-				// TODO: Add "resources" here
+				// TODO: Is it only resource IDs or is it resources in general?
+				{Type: jsonschema.StringType, Pattern: interpolationPattern("resources")},
 				{Type: jsonschema.StringType, Pattern: interpolationPattern("bundle")},
 				{Type: jsonschema.StringType, Pattern: interpolationPattern("workspace")},
 				{Type: jsonschema.StringType, Pattern: interpolationPattern("var")},
