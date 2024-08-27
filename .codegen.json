@@ -11,10 +11,10 @@
     "toolchain": {
         "required": ["go"],
         "post_generate": [
-            "go run ./bundle/internal/schema/*.go ./bundle/internal/schema/schema.generated.json",
+            "go run ./bundle/internal/schema/*.go ./cmd/bundle/_generated/jsonschema.json",
             "echo 'bundle/internal/tf/schema/\\*.go linguist-generated=true' >> ./.gitattributes",
             "echo 'go.sum linguist-generated=true' >> ./.gitattributes",
-            "echo 'bundle/schema/docs/schema.generated.json linguist-generated=true' >> ./.gitattributes"
+            "echo 'cmd/bundle/_generated linguist-generated=true' >> ./.gitattributes"
         ]
     }
 }

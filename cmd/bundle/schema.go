@@ -13,6 +13,8 @@ func newSchemaCommand() *cobra.Command {
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		// os.ReadFile()
+
 		// // Load embedded schema descriptions.
 		// docs, err := schema.LoadBundleDescriptions()
 		// if err != nil {
