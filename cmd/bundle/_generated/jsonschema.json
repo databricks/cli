@@ -653,27 +653,7 @@
                 "additionalProperties": false
               },
               "variable.VariableType": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "string",
-                    "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                  },
-                  {
-                    "type": "string",
-                    "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                  },
-                  {
-                    "type": "string",
-                    "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                  },
-                  {
-                    "type": "string",
-                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                  }
-                ]
+                "type": "string"
               }
             },
             "config.Artifact": {
@@ -729,27 +709,7 @@
               ]
             },
             "config.ArtifactType": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
-              ]
+              "type": "string"
             },
             "config.Bundle": {
               "anyOf": [
@@ -784,27 +744,7 @@
               ]
             },
             "config.Command": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
-              ]
+              "type": "string"
             },
             "config.Deployment": {
               "anyOf": [
@@ -896,27 +836,7 @@
               ]
             },
             "config.Mode": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
-              ]
+              "type": "string"
             },
             "config.Presets": {
               "anyOf": [
@@ -1146,27 +1066,7 @@
           },
           "libs": {
             "exec.ExecutableType": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
-              ]
+              "type": "string"
             }
           }
         },
@@ -1207,27 +1107,7 @@
               ]
             },
             "catalog.MonitorCronSchedulePauseStatus": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
-              ]
+              "type": "string"
             },
             "catalog.MonitorDataClassificationConfig": {
               "anyOf": [
@@ -1319,27 +1199,7 @@
               ]
             },
             "catalog.MonitorInferenceLogProblemType": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
-              ]
+              "type": "string"
             },
             "catalog.MonitorMetric": {
               "anyOf": [
@@ -1388,27 +1248,7 @@
               ]
             },
             "catalog.MonitorMetricType": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
-              ]
+              "type": "string"
             },
             "catalog.MonitorNotifications": {
               "anyOf": [
@@ -1566,32 +1406,12 @@
               ]
             },
             "compute.AwsAvailability": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "description": "Availability type used for all subsequent nodes past the `first_on_demand` ones.\n\nNote: If `first_on_demand` is zero, this availability type will be used for the entire cluster.\n",
-                  "enum": [
-                    "SPOT",
-                    "ON_DEMAND",
-                    "SPOT_WITH_FALLBACK"
-                  ]
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
+              "type": "string",
+              "description": "Availability type used for all subsequent nodes past the `first_on_demand` ones.\n\nNote: If `first_on_demand` is zero, this availability type will be used for the entire cluster.\n",
+              "enum": [
+                "SPOT",
+                "ON_DEMAND",
+                "SPOT_WITH_FALLBACK"
               ]
             },
             "compute.AzureAttributes": {
@@ -1624,32 +1444,12 @@
               ]
             },
             "compute.AzureAvailability": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "description": "Availability type used for all subsequent nodes past the `first_on_demand` ones.\nNote: If `first_on_demand` is zero (which only happens on pool clusters), this availability\ntype will be used for the entire cluster.",
-                  "enum": [
-                    "SPOT_AZURE",
-                    "ON_DEMAND_AZURE",
-                    "SPOT_WITH_FALLBACK_AZURE"
-                  ]
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
+              "type": "string",
+              "description": "Availability type used for all subsequent nodes past the `first_on_demand` ones.\nNote: If `first_on_demand` is zero (which only happens on pool clusters), this availability\ntype will be used for the entire cluster.",
+              "enum": [
+                "SPOT_AZURE",
+                "ON_DEMAND_AZURE",
+                "SPOT_WITH_FALLBACK_AZURE"
               ]
             },
             "compute.ClientsTypes": {
@@ -1815,36 +1615,16 @@
               ]
             },
             "compute.DataSecurityMode": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "description": "Data security mode decides what data governance model to use when accessing data\nfrom a cluster.\n\n* `NONE`: No security isolation for multiple users sharing the cluster. Data governance features are not available in this mode.\n* `SINGLE_USER`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.\n* `USER_ISOLATION`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other's data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.\n\nThe following modes are deprecated starting with Databricks Runtime 15.0 and\nwill be removed for future Databricks Runtime versions:\n\n* `LEGACY_TABLE_ACL`: This mode is for users migrating from legacy Table ACL clusters.\n* `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.\n* `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.\n* `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.\n",
-                  "enum": [
-                    "NONE",
-                    "SINGLE_USER",
-                    "USER_ISOLATION",
-                    "LEGACY_TABLE_ACL",
-                    "LEGACY_PASSTHROUGH",
-                    "LEGACY_SINGLE_USER",
-                    "LEGACY_SINGLE_USER_STANDARD"
-                  ]
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
+              "type": "string",
+              "description": "Data security mode decides what data governance model to use when accessing data\nfrom a cluster.\n\n* `NONE`: No security isolation for multiple users sharing the cluster. Data governance features are not available in this mode.\n* `SINGLE_USER`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.\n* `USER_ISOLATION`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other's data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.\n\nThe following modes are deprecated starting with Databricks Runtime 15.0 and\nwill be removed for future Databricks Runtime versions:\n\n* `LEGACY_TABLE_ACL`: This mode is for users migrating from legacy Table ACL clusters.\n* `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.\n* `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.\n* `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.\n",
+              "enum": [
+                "NONE",
+                "SINGLE_USER",
+                "USER_ISOLATION",
+                "LEGACY_TABLE_ACL",
+                "LEGACY_PASSTHROUGH",
+                "LEGACY_SINGLE_USER",
+                "LEGACY_SINGLE_USER_STANDARD"
               ]
             },
             "compute.DbfsStorageInfo": {
@@ -1912,31 +1692,11 @@
               ]
             },
             "compute.EbsVolumeType": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "description": "The type of EBS volumes that will be launched with this cluster.",
-                  "enum": [
-                    "GENERAL_PURPOSE_SSD",
-                    "THROUGHPUT_OPTIMIZED_HDD"
-                  ]
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
+              "type": "string",
+              "description": "The type of EBS volumes that will be launched with this cluster.",
+              "enum": [
+                "GENERAL_PURPOSE_SSD",
+                "THROUGHPUT_OPTIMIZED_HDD"
               ]
             },
             "compute.Environment": {
@@ -2003,32 +1763,12 @@
               ]
             },
             "compute.GcpAvailability": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "description": "This field determines whether the instance pool will contain preemptible\nVMs, on-demand VMs, or preemptible VMs with a fallback to on-demand VMs if the former is unavailable.",
-                  "enum": [
-                    "PREEMPTIBLE_GCP",
-                    "ON_DEMAND_GCP",
-                    "PREEMPTIBLE_WITH_FALLBACK_GCP"
-                  ]
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
+              "type": "string",
+              "description": "This field determines whether the instance pool will contain preemptible\nVMs, on-demand VMs, or preemptible VMs with a fallback to on-demand VMs if the former is unavailable.",
+              "enum": [
+                "PREEMPTIBLE_GCP",
+                "ON_DEMAND_GCP",
+                "PREEMPTIBLE_WITH_FALLBACK_GCP"
               ]
             },
             "compute.GcsStorageInfo": {
@@ -2259,32 +1999,12 @@
               ]
             },
             "compute.RuntimeEngine": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "description": "Decides which runtime engine to be use, e.g. Standard vs. Photon. If unspecified, the runtime\nengine is inferred from spark_version.",
-                  "enum": [
-                    "NULL",
-                    "STANDARD",
-                    "PHOTON"
-                  ]
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
+              "type": "string",
+              "description": "Decides which runtime engine to be use, e.g. Standard vs. Photon. If unspecified, the runtime\nengine is inferred from spark_version.",
+              "enum": [
+                "NULL",
+                "STANDARD",
+                "PHOTON"
               ]
             },
             "compute.S3StorageInfo": {
@@ -2396,30 +2116,10 @@
               ]
             },
             "jobs.Condition": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "enum": [
-                    "ANY_UPDATED",
-                    "ALL_UPDATED"
-                  ]
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
+              "type": "string",
+              "enum": [
+                "ANY_UPDATED",
+                "ALL_UPDATED"
               ]
             },
             "jobs.ConditionTask": {
@@ -2454,35 +2154,15 @@
               ]
             },
             "jobs.ConditionTaskOp": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "description": "* `EQUAL_TO`, `NOT_EQUAL` operators perform string comparison of their operands. This means that `“12.0” == “12”` will evaluate to `false`.\n* `GREATER_THAN`, `GREATER_THAN_OR_EQUAL`, `LESS_THAN`, `LESS_THAN_OR_EQUAL` operators perform numeric comparison of their operands. `“12.0” \u003e= “12”` will evaluate to `true`, `“10.0” \u003e= “12”` will evaluate to `false`.\n\nThe boolean comparison to task values can be implemented with operators `EQUAL_TO`, `NOT_EQUAL`. If a task value was set to a boolean value, it will be serialized to `“true”` or `“false”` for the comparison.",
-                  "enum": [
-                    "EQUAL_TO",
-                    "GREATER_THAN",
-                    "GREATER_THAN_OR_EQUAL",
-                    "LESS_THAN",
-                    "LESS_THAN_OR_EQUAL",
-                    "NOT_EQUAL"
-                  ]
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
+              "type": "string",
+              "description": "* `EQUAL_TO`, `NOT_EQUAL` operators perform string comparison of their operands. This means that `“12.0” == “12”` will evaluate to `false`.\n* `GREATER_THAN`, `GREATER_THAN_OR_EQUAL`, `LESS_THAN`, `LESS_THAN_OR_EQUAL` operators perform numeric comparison of their operands. `“12.0” \u003e= “12”` will evaluate to `true`, `“10.0” \u003e= “12”` will evaluate to `false`.\n\nThe boolean comparison to task values can be implemented with operators `EQUAL_TO`, `NOT_EQUAL`. If a task value was set to a boolean value, it will be serialized to `“true”` or `“false”` for the comparison.",
+              "enum": [
+                "EQUAL_TO",
+                "GREATER_THAN",
+                "GREATER_THAN_OR_EQUAL",
+                "LESS_THAN",
+                "LESS_THAN_OR_EQUAL",
+                "NOT_EQUAL"
               ]
             },
             "jobs.Continuous": {
@@ -2638,63 +2318,23 @@
               ]
             },
             "jobs.Format": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "enum": [
-                    "SINGLE_TASK",
-                    "MULTI_TASK"
-                  ]
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
+              "type": "string",
+              "enum": [
+                "SINGLE_TASK",
+                "MULTI_TASK"
               ]
             },
             "jobs.GitProvider": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "enum": [
-                    "gitHub",
-                    "bitbucketCloud",
-                    "azureDevOpsServices",
-                    "gitHubEnterprise",
-                    "bitbucketServer",
-                    "gitLab",
-                    "gitLabEnterpriseEdition",
-                    "awsCodeCommit"
-                  ]
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
+              "type": "string",
+              "enum": [
+                "gitHub",
+                "bitbucketCloud",
+                "azureDevOpsServices",
+                "gitHubEnterprise",
+                "bitbucketServer",
+                "gitLab",
+                "gitLabEnterpriseEdition",
+                "awsCodeCommit"
               ]
             },
             "jobs.GitSnapshot": {
@@ -2814,58 +2454,18 @@
               ]
             },
             "jobs.JobDeploymentKind": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "description": "* `BUNDLE`: The job is managed by Databricks Asset Bundle.",
-                  "enum": [
-                    "BUNDLE"
-                  ]
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
+              "type": "string",
+              "description": "* `BUNDLE`: The job is managed by Databricks Asset Bundle.",
+              "enum": [
+                "BUNDLE"
               ]
             },
             "jobs.JobEditMode": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "description": "Edit mode of the job.\n\n* `UI_LOCKED`: The job is in a locked UI state and cannot be modified.\n* `EDITABLE`: The job is in an editable state and can be modified.",
-                  "enum": [
-                    "UI_LOCKED",
-                    "EDITABLE"
-                  ]
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
+              "type": "string",
+              "description": "Edit mode of the job.\n\n* `UI_LOCKED`: The job is in a locked UI state and cannot be modified.\n* `EDITABLE`: The job is in an editable state and can be modified.",
+              "enum": [
+                "UI_LOCKED",
+                "EDITABLE"
               ]
             },
             "jobs.JobEmailNotifications": {
@@ -3033,89 +2633,29 @@
               ]
             },
             "jobs.JobSourceDirtyState": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "description": "Dirty state indicates the job is not fully synced with the job specification\nin the remote repository.\n\nPossible values are:\n* `NOT_SYNCED`: The job is not yet synced with the remote job specification. Import the remote job specification from UI to make the job fully synced.\n* `DISCONNECTED`: The job is temporary disconnected from the remote job specification and is allowed for live edit. Import the remote job specification again from UI to make the job fully synced.",
-                  "enum": [
-                    "NOT_SYNCED",
-                    "DISCONNECTED"
-                  ]
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
+              "type": "string",
+              "description": "Dirty state indicates the job is not fully synced with the job specification\nin the remote repository.\n\nPossible values are:\n* `NOT_SYNCED`: The job is not yet synced with the remote job specification. Import the remote job specification from UI to make the job fully synced.\n* `DISCONNECTED`: The job is temporary disconnected from the remote job specification and is allowed for live edit. Import the remote job specification again from UI to make the job fully synced.",
+              "enum": [
+                "NOT_SYNCED",
+                "DISCONNECTED"
               ]
             },
             "jobs.JobsHealthMetric": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "description": "Specifies the health metric that is being evaluated for a particular health rule.\n\n* `RUN_DURATION_SECONDS`: Expected total time for a run in seconds.\n* `STREAMING_BACKLOG_BYTES`: An estimate of the maximum bytes of data waiting to be consumed across all streams. This metric is in Private Preview.\n* `STREAMING_BACKLOG_RECORDS`: An estimate of the maximum offset lag across all streams. This metric is in Private Preview.\n* `STREAMING_BACKLOG_SECONDS`: An estimate of the maximum consumer delay across all streams. This metric is in Private Preview.\n* `STREAMING_BACKLOG_FILES`: An estimate of the maximum number of outstanding files across all streams. This metric is in Private Preview.",
-                  "enum": [
-                    "RUN_DURATION_SECONDS",
-                    "STREAMING_BACKLOG_BYTES",
-                    "STREAMING_BACKLOG_RECORDS",
-                    "STREAMING_BACKLOG_SECONDS",
-                    "STREAMING_BACKLOG_FILES"
-                  ]
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
+              "type": "string",
+              "description": "Specifies the health metric that is being evaluated for a particular health rule.\n\n* `RUN_DURATION_SECONDS`: Expected total time for a run in seconds.\n* `STREAMING_BACKLOG_BYTES`: An estimate of the maximum bytes of data waiting to be consumed across all streams. This metric is in Private Preview.\n* `STREAMING_BACKLOG_RECORDS`: An estimate of the maximum offset lag across all streams. This metric is in Private Preview.\n* `STREAMING_BACKLOG_SECONDS`: An estimate of the maximum consumer delay across all streams. This metric is in Private Preview.\n* `STREAMING_BACKLOG_FILES`: An estimate of the maximum number of outstanding files across all streams. This metric is in Private Preview.",
+              "enum": [
+                "RUN_DURATION_SECONDS",
+                "STREAMING_BACKLOG_BYTES",
+                "STREAMING_BACKLOG_RECORDS",
+                "STREAMING_BACKLOG_SECONDS",
+                "STREAMING_BACKLOG_FILES"
               ]
             },
             "jobs.JobsHealthOperator": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "description": "Specifies the operator used to compare the health metric value with the specified threshold.",
-                  "enum": [
-                    "GREATER_THAN"
-                  ]
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
+              "type": "string",
+              "description": "Specifies the operator used to compare the health metric value with the specified threshold.",
+              "enum": [
+                "GREATER_THAN"
               ]
             },
             "jobs.JobsHealthRule": {
@@ -3199,30 +2739,10 @@
               ]
             },
             "jobs.PauseStatus": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "enum": [
-                    "UNPAUSED",
-                    "PAUSED"
-                  ]
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
+              "type": "string",
+              "enum": [
+                "UNPAUSED",
+                "PAUSED"
               ]
             },
             "jobs.PeriodicTriggerConfiguration": {
@@ -3252,31 +2772,11 @@
               ]
             },
             "jobs.PeriodicTriggerConfigurationTimeUnit": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "enum": [
-                    "HOURS",
-                    "DAYS",
-                    "WEEKS"
-                  ]
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
+              "type": "string",
+              "enum": [
+                "HOURS",
+                "DAYS",
+                "WEEKS"
               ]
             },
             "jobs.PipelineParams": {
@@ -3378,35 +2878,15 @@
               ]
             },
             "jobs.RunIf": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "description": "An optional value indicating the condition that determines whether the task should be run once its dependencies have been completed. When omitted, defaults to `ALL_SUCCESS`.\n\nPossible values are:\n* `ALL_SUCCESS`: All dependencies have executed and succeeded\n* `AT_LEAST_ONE_SUCCESS`: At least one dependency has succeeded\n* `NONE_FAILED`: None of the dependencies have failed and at least one was executed\n* `ALL_DONE`: All dependencies have been completed\n* `AT_LEAST_ONE_FAILED`: At least one dependency failed\n* `ALL_FAILED`: ALl dependencies have failed",
-                  "enum": [
-                    "ALL_SUCCESS",
-                    "ALL_DONE",
-                    "NONE_FAILED",
-                    "AT_LEAST_ONE_SUCCESS",
-                    "ALL_FAILED",
-                    "AT_LEAST_ONE_FAILED"
-                  ]
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
+              "type": "string",
+              "description": "An optional value indicating the condition that determines whether the task should be run once its dependencies have been completed. When omitted, defaults to `ALL_SUCCESS`.\n\nPossible values are:\n* `ALL_SUCCESS`: All dependencies have executed and succeeded\n* `AT_LEAST_ONE_SUCCESS`: At least one dependency has succeeded\n* `NONE_FAILED`: None of the dependencies have failed and at least one was executed\n* `ALL_DONE`: All dependencies have been completed\n* `AT_LEAST_ONE_FAILED`: At least one dependency failed\n* `ALL_FAILED`: ALl dependencies have failed",
+              "enum": [
+                "ALL_SUCCESS",
+                "ALL_DONE",
+                "NONE_FAILED",
+                "AT_LEAST_ONE_SUCCESS",
+                "ALL_FAILED",
+                "AT_LEAST_ONE_FAILED"
               ]
             },
             "jobs.RunJobTask": {
@@ -3465,31 +2945,11 @@
               ]
             },
             "jobs.Source": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\\\nfrom the local Databricks workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in Databricks workspace.\n* `GIT`: SQL file is located in cloud Git provider.",
-                  "enum": [
-                    "WORKSPACE",
-                    "GIT"
-                  ]
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
+              "type": "string",
+              "description": "Optional location type of the SQL file. When set to `WORKSPACE`, the SQL file will be retrieved\\\nfrom the local Databricks workspace. When set to `GIT`, the SQL file will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: SQL file is located in Databricks workspace.\n* `GIT`: SQL file is located in cloud Git provider.",
+              "enum": [
+                "WORKSPACE",
+                "GIT"
               ]
             },
             "jobs.SparkJarTask": {
@@ -4190,27 +3650,7 @@
               ]
             },
             "ml.ModelVersionStatus": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
-              ]
+              "type": "string"
             },
             "ml.ModelVersionTag": {
               "anyOf": [
@@ -4255,30 +3695,10 @@
               ]
             },
             "pipelines.DeploymentKind": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "description": "The deployment method that manages the pipeline:\n- BUNDLE: The pipeline is managed by a Databricks Asset Bundle.\n",
-                  "enum": [
-                    "BUNDLE"
-                  ]
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
+              "type": "string",
+              "description": "The deployment method that manages the pipeline:\n- BUNDLE: The pipeline is managed by a Databricks Asset Bundle.\n",
+              "enum": [
+                "BUNDLE"
               ]
             },
             "pipelines.FileLibrary": {
@@ -4580,27 +4000,7 @@
               ]
             },
             "pipelines.PipelineClusterAutoscaleMode": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
-              ]
+              "type": "string"
             },
             "pipelines.PipelineDeployment": {
               "anyOf": [
@@ -4785,27 +4185,7 @@
               ]
             },
             "pipelines.TableSpecificConfigScdType": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
-              ]
+              "type": "string"
             },
             "serving.Ai21LabsConfig": {
               "anyOf": [
@@ -4876,27 +4256,7 @@
               ]
             },
             "serving.AmazonBedrockConfigBedrockProvider": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
-              ]
+              "type": "string"
             },
             "serving.AnthropicConfig": {
               "anyOf": [
@@ -5134,27 +4494,7 @@
               ]
             },
             "serving.ExternalModelProvider": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
-              ]
+              "type": "string"
             },
             "serving.GoogleCloudVertexAiConfig": {
               "anyOf": [
@@ -5287,50 +4627,10 @@
               ]
             },
             "serving.RateLimitKey": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
-              ]
+              "type": "string"
             },
             "serving.RateLimitRenewalPeriod": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
-              ]
+              "type": "string"
             },
             "serving.Route": {
               "anyOf": [
@@ -5481,50 +4781,10 @@
               ]
             },
             "serving.ServedModelInputWorkloadSize": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
-              ]
+              "type": "string"
             },
             "serving.ServedModelInputWorkloadType": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                }
-              ]
+              "type": "string"
             },
             "serving.TrafficConfig": {
               "anyOf": [
@@ -6198,27 +5458,7 @@
       }
     },
     "string": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "string",
-          "pattern": "\\$\\{(resources(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-        },
-        {
-          "type": "string",
-          "pattern": "\\$\\{(bundle(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-        },
-        {
-          "type": "string",
-          "pattern": "\\$\\{(workspace(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-        },
-        {
-          "type": "string",
-          "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-        }
-      ]
+      "type": "string"
     }
   },
   "type": "object",

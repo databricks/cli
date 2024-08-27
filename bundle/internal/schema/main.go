@@ -31,7 +31,7 @@ func addInterpolationPatterns(typ reflect.Type, s jsonschema.Schema) jsonschema.
 				Pattern: interpolationPattern("var"),
 			}},
 		}
-	case jsonschema.StringType, jsonschema.IntegerType, jsonschema.NumberType, jsonschema.BooleanType:
+	case jsonschema.IntegerType, jsonschema.NumberType, jsonschema.BooleanType:
 		// primitives can have variable values, or references like ${bundle.xyz}
 		// or ${workspace.xyz}
 		// TODO: Followup, do not allow references like ${} in the schema unless
