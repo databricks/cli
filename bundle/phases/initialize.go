@@ -39,9 +39,12 @@ func Initialize() bundle.Mutator {
 			mutator.MergePipelineClusters(),
 			mutator.InitializeWorkspaceClient(),
 			mutator.PopulateCurrentUser(),
+
 			mutator.DefineDefaultWorkspaceRoot(),
 			mutator.ExpandWorkspaceRoot(),
 			mutator.DefineDefaultWorkspacePaths(),
+			mutator.PrependWorkspacePrefix(),
+
 			mutator.SetVariables(),
 			// Intentionally placed before ResolveVariableReferencesInLookup, ResolveResourceReferences,
 			// ResolveVariableReferencesInComplexVariables and ResolveVariableReferences.

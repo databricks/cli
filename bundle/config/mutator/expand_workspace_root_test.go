@@ -27,7 +27,7 @@ func TestExpandWorkspaceRoot(t *testing.T) {
 	}
 	diags := bundle.Apply(context.Background(), b, mutator.ExpandWorkspaceRoot())
 	require.NoError(t, diags.Error())
-	assert.Equal(t, "/Users/jane@doe.com/foo", b.Config.Workspace.RootPath)
+	assert.Equal(t, "/Workspace/Users/jane@doe.com/foo", b.Config.Workspace.RootPath)
 }
 
 func TestExpandWorkspaceRootDoesNothing(t *testing.T) {
