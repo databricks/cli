@@ -34,8 +34,6 @@ func addInterpolationPatterns(typ reflect.Type, s jsonschema.Schema) jsonschema.
 	case jsonschema.IntegerType, jsonschema.NumberType, jsonschema.BooleanType:
 		// primitives can have variable values, or references like ${bundle.xyz}
 		// or ${workspace.xyz}
-		// TODO: Followup, do not allow references like ${} in the schema unless
-		// they are of the permitted patterns?
 		return jsonschema.Schema{
 			AnyOf: []jsonschema.Schema{s,
 				// TODO: Is it only resource IDs or is it resources in general?
@@ -50,16 +48,7 @@ func addInterpolationPatterns(typ reflect.Type, s jsonschema.Schema) jsonschema.
 	}
 }
 
-// TODO: Add a couple of end to end tests that the bundle schema generated is
-// correct.
-// TODO: Call out in the PR description that recursive types like "for_each_task"
-// are now supported. Manually test for_each_task.
-// TODO: The bundle_descriptions.json file contains a bunch of custom descriptions
-// as well. Make sure to pull those in.
-// TODO: Add unit tests for all permutations of structs, maps and slices for the FromType
-// method.
-// TODO: Note the minor regression of losing the bundle descriptions.
-// TODO: Ensure descriptions work for target resources section.
+// TODO: Add enum overrides for DABs enum values. Maybe use reflection?
 
 func main() {
 	if len(os.Args) != 2 {
