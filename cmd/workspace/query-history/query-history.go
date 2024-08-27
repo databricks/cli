@@ -16,9 +16,9 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "query-history",
-		Short: `A service responsible for storing and retrieving the list of queries run against SQL endpoints, serverless compute, and DLT.`,
+		Short: `A service responsible for storing and retrieving the list of queries run against SQL endpoints and serverless compute.`,
 		Long: `A service responsible for storing and retrieving the list of queries run
-  against SQL endpoints, serverless compute, and DLT.`,
+  against SQL endpoints and serverless compute.`,
 		GroupID: "sql",
 		Annotations: map[string]string{
 			"package": "sql",
@@ -53,6 +53,7 @@ func newList() *cobra.Command {
 	// TODO: short flags
 
 	// TODO: complex arg: filter_by
+	cmd.Flags().BoolVar(&listReq.IncludeMetrics, "include-metrics", listReq.IncludeMetrics, `Whether to include the query metrics with each query.`)
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Limit the number of results returned in one page.`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A token that can be used to get the next page of results.`)
 
@@ -60,8 +61,7 @@ func newList() *cobra.Command {
 	cmd.Short = `List Queries.`
 	cmd.Long = `List Queries.
   
-  List the history of queries through SQL warehouses, serverless compute, and
-  DLT.
+  List the history of queries through SQL warehouses, and serverless compute.
   
   You can filter by user ID, warehouse ID, status, and time range. Most recently
   started queries are returned first (up to max_results in request). The

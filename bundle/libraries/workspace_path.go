@@ -29,8 +29,8 @@ func IsWorkspacePath(path string) bool {
 
 // IsWorkspaceLibrary returns true if the specified library refers to a workspace path.
 func IsWorkspaceLibrary(library *compute.Library) bool {
-	path := libraryPath(library)
-	if path == "" {
+	path, err := libraryPath(library)
+	if err != nil {
 		return false
 	}
 
