@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestSchemaValidateTypeNames(t *testing.T) {
@@ -339,59 +338,4 @@ func testSchema() *Schema {
 		},
 	}
 
-}
-
-func TestSchemaGetByPath(t *testing.T) {
-	s := testSchema()
-
-	ss, err := s.GetByPath("int_val")
-	require.NoError(t, err)
-	assert.Equal(t, Schema{
-		Type:    IntegerType,
-		Default: int64(123),
-	}, ss)
-
-	ss, err = s.GetByPath("string_val")
-	require.NoError(t, err)
-	assert.Equal(t, Schema{
-		Type: StringType,
-	}, ss)
-
-	ss, err = s.GetByPath("object_val.bar")
-	require.NoError(t, err)
-	assert.Equal(t, Schema{
-		Type:    StringType,
-		Default: "baz",
-	}, ss)
-
-	ss, err = s.GetByPath("object_val.*.foo")
-	require.NoError(t, err)
-	assert.Equal(t, Schema{
-		Type:    StringType,
-		Default: "zab",
-	}, ss)
-}
-
-func TestSchemaSetByPath(t *testing.T) {
-	s := testSchema()
-
-	err := s.SetByPath("int_val", Schema{
-		Type:    IntegerType,
-		Default: int64(456),
-	})
-	require.NoError(t, err)
-	assert.Equal(t, int64(456), s.Properties["int_val"].Default)
-
-	err = s.SetByPath("object_val.*.foo", Schema{
-		Type:    StringType,
-		Default: "zooby",
-	})
-	require.NoError(t, err)
-
-	ns, err := s.GetByPath("object_val.*.foo")
-	require.NoError(t, err)
-	assert.Equal(t, Schema{
-		Type:    StringType,
-		Default: "zooby",
-	}, ns)
 }

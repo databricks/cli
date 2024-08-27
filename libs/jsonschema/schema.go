@@ -6,20 +6,12 @@ import (
 	"os"
 	"regexp"
 	"slices"
-	"strings"
 
 	"github.com/databricks/cli/internal/build"
 	"golang.org/x/mod/semver"
 )
 
 // defines schema for a json object
-// TODO: Remove pointers from properties and AnyOf.
-// TODO: Can / should we emulate dyn.V here in having a readonly model for the data
-// structure? Makes it easier to reason about.
-//
-//	Any performance issues can be addressed by storing the schema
-//
-// as an embedded file.
 type Schema struct {
 	// TODO: Comments for this field
 	Definitions any `json:"$defs,omitempty"`
@@ -38,6 +30,7 @@ type Schema struct {
 
 	// Schemas for the fields of an struct. The keys are the first json tag.
 	// The values are the schema for the type of the field
+	// TODO: Followup: Make this a map[string]Schema
 	Properties map[string]*Schema `json:"properties,omitempty"`
 
 	// The schema for all values of an array
@@ -95,48 +88,12 @@ func (s *Schema) ParseString(v string) (any, error) {
 	return fromString(v, s.Type)
 }
 
-func (s *Schema) getByPath(path string) (*Schema, error) {
-	p := strings.Split(path, ".")
-
-	res := s
-	for _, node := range p {
-		if node == "*" {
-			res = res.AdditionalProperties.(*Schema)
-			continue
-		}
-		var ok bool
-		res, ok = res.Properties[node]
-		if !ok {
-			return nil, fmt.Errorf("property %q not found in schema. Query path: %s", node, path)
-		}
-	}
-	return res, nil
-}
-
-func (s *Schema) GetByPath(path string) (Schema, error) {
-	v, err := s.getByPath(path)
-	if err != nil {
-		return Schema{}, err
-	}
-	return *v, nil
-}
-
-func (s *Schema) SetByPath(path string, v Schema) error {
-	dst, err := s.getByPath(path)
-	if err != nil {
-		return err
-	}
-	*dst = v
-	return nil
-}
-
 type Type string
 
 const (
 	// Default zero value of a schema. This does not correspond to a type in the
 	// JSON schema spec and is an internal type defined for convenience.
 	InvalidType Type = "invalid"
-	NullType    Type = "null"
 	BooleanType Type = "boolean"
 	StringType  Type = "string"
 	NumberType  Type = "number"
