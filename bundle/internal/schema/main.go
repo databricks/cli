@@ -52,6 +52,7 @@ func addInterpolationPatterns(_ reflect.Type, s jsonschema.Schema) jsonschema.Sc
 // as well. Make sure to pull those in.
 // TODO: Add unit tests for all permutations of structs, maps and slices for the FromType
 // method.
+// TODO: Note the minor regression of losing the bundle descriptions
 
 func main() {
 	if len(os.Args) != 2 {
