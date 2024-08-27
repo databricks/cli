@@ -19,7 +19,7 @@ const readonlyTag = "readonly"
 const internalTag = "internal"
 
 // Annotation for bundle fields that have been deprecated.
-// Fields tagged as "deprecated" are removed/omitted from the generated schema.
+// Fields tagged as "deprecated" are omitted from the generated schema.
 const deprecatedTag = "deprecated"
 
 type constructor struct {
@@ -36,8 +36,8 @@ type constructor struct {
 }
 
 // The $defs block in a JSON schema cannot contain "/", otherwise it will not be
-// correctly parsed by a JSON schema validator. So we replace "/" with an additional
-// level of nesting in the output map.
+// correctly parsed by a JSON schema validator (like the Red Hat YAML extension for VSCode).
+// So we replace "/" with an additional level of nesting in the output map.
 //
 // For example:
 // {"a/b/c": "value"} is converted to {"a": {"b": {"c": "value"}}}
@@ -57,11 +57,14 @@ func (c *constructor) Definitions() any {
 		parts := strings.Split(k, "/")
 		cur := res
 		for i, p := range parts {
+			// Set the value for the last part.
 			if i == len(parts)-1 {
 				cur[p] = v
 				break
 			}
 
+			// For all but the last part, create a new map value to add a level
+			// of nesting.
 			if _, ok := cur[p]; !ok {
 				cur[p] = make(map[string]any)
 			}
@@ -77,7 +80,7 @@ func (c *constructor) Definitions() any {
 // for every Go type and referring them using $ref in the corresponding node in
 // the JSON schema.
 //
-// fns is a list of transformation functions that will be applied to all $defs
+// fns is a list of transformation functions that will be applied in order to all $defs
 // in the schema.
 func FromType(typ reflect.Type, fns []func(typ reflect.Type, s Schema) Schema) (Schema, error) {
 	c := constructor{
@@ -155,11 +158,6 @@ func (c *constructor) walk(typ reflect.Type) error {
 		return nil
 	}
 	c.seen[typPath] = typ
-
-	// Return early directly if it's already been processed.
-	if _, ok := c.definitions[typPath]; ok {
-		return nil
-	}
 
 	var s Schema
 	var err error
@@ -313,10 +311,6 @@ func (c *constructor) fromTypeSlice(typ reflect.Type) (Schema, error) {
 func (c *constructor) fromTypeMap(typ reflect.Type) (Schema, error) {
 	if typ.Kind() != reflect.Map {
 		return Schema{}, fmt.Errorf("expected map, got %s", typ.Kind())
-	}
-
-	if typ.Key().Kind() != reflect.String {
-		return Schema{}, fmt.Errorf("found map with non-string key: %v", typ.Key())
 	}
 
 	res := Schema{

@@ -41,7 +41,7 @@ type Schema struct {
 	// A boolean type with value false. Setting false here validates that all
 	// properties in the config have been defined in the json schema as properties
 	//
-	// Its type during runtime will either be Schema or bool
+	// Its type during runtime will either be *Schema or bool
 	AdditionalProperties any `json:"additionalProperties,omitempty"`
 
 	// Required properties for the object. Any fields missing the "omitempty"
@@ -88,8 +88,6 @@ func (s *Schema) ParseString(v string) (any, error) {
 type Type string
 
 const (
-	// Default zero value of a schema. This does not correspond to a type in the
-	// JSON schema spec and is an internal type defined for convenience.
 	InvalidType Type = "invalid"
 	BooleanType Type = "boolean"
 	StringType  Type = "string"

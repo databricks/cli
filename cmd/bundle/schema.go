@@ -8,7 +8,7 @@ import (
 )
 
 //go:embed _generated/jsonschema.json
-var b []byte
+var bundleSchemaBytes []byte
 
 func newSchemaCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -18,7 +18,7 @@ func newSchemaCommand() *cobra.Command {
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		_, err := cmd.OutOrStdout().Write(b)
+		_, err := cmd.OutOrStdout().Write(bundleSchemaBytes)
 		return err
 	}
 

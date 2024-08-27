@@ -14,9 +14,9 @@ type cannotTraverseNilError struct {
 func (e cannotTraverseNilError) Error() string {
 	component := e.p[len(e.p)-1]
 	switch {
-	case component.IsKey():
+	case component.isKey():
 		return fmt.Sprintf("expected a map to index %q, found nil", e.p)
-	case component.IsIndex():
+	case component.isIndex():
 		return fmt.Sprintf("expected a sequence to index %q, found nil", e.p)
 	default:
 		panic("invalid component")
@@ -90,7 +90,7 @@ func (component pathComponent) visit(v Value, prefix Path, suffix Pattern, opts 
 	path := append(prefix, component)
 
 	switch {
-	case component.IsKey():
+	case component.isKey():
 		// Expect a map to be set if this is a key.
 		switch v.Kind() {
 		case KindMap:
@@ -129,7 +129,7 @@ func (component pathComponent) visit(v Value, prefix Path, suffix Pattern, opts 
 			l: v.l,
 		}, nil
 
-	case component.IsIndex():
+	case component.isIndex():
 		// Expect a sequence to be set if this is an index.
 		switch v.Kind() {
 		case KindSequence:

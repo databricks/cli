@@ -40,14 +40,16 @@ func newParser(path string) (*openapiParser, error) {
 	return p, nil
 }
 
-// This function finds any JSON schemas that were defined in the OpenAPI spec
-// that correspond to the given Go SDK type. It looks both at the type itself
-// and any embedded types within it.
+// This function checks if the input type:
+// 1. Is a Databricks Go SDK type.
+// 2. Has a Databricks Go SDK type embedded in it.
+//
+// If the above conditions are met, the function returns the JSON schema
+// corresponding to the Databricks Go SDK type from the OpenAPI spec.
 func (p *openapiParser) findRef(typ reflect.Type) (jsonschema.Schema, bool) {
 	typs := []reflect.Type{typ}
 
-	// If the type is a struct, the corresponding Go SDK struct might be embedded
-	// in it. We need to check for those as well.
+	// Check for embedded Databricks Go SDK types.
 	if typ.Kind() == reflect.Struct {
 		for i := 0; i < typ.NumField(); i++ {
 			if !typ.Field(i).Anonymous {
@@ -94,11 +96,6 @@ func (p *openapiParser) addDescriptions(typ reflect.Type, s jsonschema.Schema) j
 	}
 
 	s.Description = ref.Description
-
-	// Iterate over properties to load descriptions. This is not needed for any
-	// OpenAPI spec generated from protobufs, which are guaranteed to be one level
-	// deep.
-	// Needed for any hand-written OpenAPI specs.
 	for k, v := range s.Properties {
 		if refProp, ok := ref.Properties[k]; ok {
 			v.Description = refProp.Description
@@ -116,11 +113,6 @@ func (p *openapiParser) addEnums(typ reflect.Type, s jsonschema.Schema) jsonsche
 	}
 
 	s.Enum = append(s.Enum, ref.Enum...)
-
-	// Iterate over properties to load enums. This is not needed for any
-	// OpenAPI spec generated from protobufs, which are guaranteed to be one level
-	// deep.
-	// Needed for any hand-written OpenAPI specs.
 	for k, v := range s.Properties {
 		if refProp, ok := ref.Properties[k]; ok {
 			v.Enum = append(v.Enum, refProp.Enum...)
