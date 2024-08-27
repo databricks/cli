@@ -23,10 +23,6 @@ variables:
         - value4
     description: "complexvar description"
 
-# TODO: Include enums for fields that are a part of the bundle config in the generate
-# JSON schema.
-# TODO: No need for pattern overrides for string fields
-
 run_as:
   service_principal_name: myserviceprincipal
 
