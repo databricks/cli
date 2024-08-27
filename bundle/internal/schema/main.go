@@ -26,7 +26,7 @@ func addInterpolationPatterns(typ reflect.Type, s jsonschema.Schema) jsonschema.
 		// arrays and objects can have complex variable values specified.
 		return jsonschema.Schema{
 			AnyOf: []jsonschema.Schema{s, {
-				Type: jsonschema.StringType,
+				Type:    jsonschema.StringType,
 				Pattern: interpolationPattern("var"),
 			}},
 		}
@@ -45,8 +45,6 @@ func addInterpolationPatterns(typ reflect.Type, s jsonschema.Schema) jsonschema.
 		return s
 	}
 }
-
-// TODO: Add enum overrides for DABs enum values. Maybe use reflection?
 
 func main() {
 	if len(os.Args) != 2 {
