@@ -115,10 +115,10 @@ jobs:
         run: |
           go run main.go bundle schema > schema.json
 
-          for file in ./bundle/tests/schema/pass/*.yml; do
+          for file in ./bundle/internal/schema/testdata/pass/*.yml; do
             ajv test -s schema.json -d $file --valid
           done
-          
-          for file in ./bundle/tests/schema/fail/*.yml; do
+
+          for file in ./bundle/internal/schema/testdata/fail/*.yml; do
             ajv test -s schema.json -d $file --invalid
           done
