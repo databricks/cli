@@ -25,12 +25,7 @@ variables:
 
 # TODO: Include enums for fields that are a part of the bundle config in the generate
 # JSON schema.
-# TODO: Are all references allowed for "resources" or just ids?
-# TODO: Ideas for fails:
-# - missing required fields
-# - values of the wrong type
-# - enums with the wrong value
-# - invalid variable references, like not the right format.
+# TODO: No need for pattern overrides for string fields
 
 run_as:
   service_principal_name: myserviceprincipal

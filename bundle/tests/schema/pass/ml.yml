@@ -39,7 +39,7 @@ resources:
   experiments:
     myexperiment:
       artifact_location: /dbfs/myexperiment
-      last_update_time: 123
+      last_update_time: ${var.complexvar.key2}
       lifecycle_stage: ${var.simplevar}
       permissions:
         - service_principal_name: myserviceprincipal

@@ -114,6 +114,11 @@ jobs:
       - name: Validate bundle schema
         run: |
           go run main.go bundle schema > schema.json
+
           for file in ./bundle/tests/schema/pass/*.yml; do
-            ajv -s schema.json -d $file
+            ajv test -s schema.json -d $file --valid
+          done
+          
+          for file in ./bundle/tests/schema/fail/*.yml; do
+            ajv test -s schema.json -d $file --invalid
           done

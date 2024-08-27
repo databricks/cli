@@ -1,0 +1,8 @@
+resources:
+  jobs:
+    outer:
+      name: outer job
+      tasks:
+        - task_key: run job task 1
+          run_job_task:
+            job_id: ${invalid.reference}
