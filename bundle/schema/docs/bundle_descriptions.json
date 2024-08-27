@@ -85,6 +85,12 @@
             "enabled": {
               "description": ""
             },
+            "import": {
+              "description": "",
+              "items": {
+                "description": ""
+              }
+            },
             "venv_path": {
               "description": ""
             }
@@ -127,6 +133,29 @@
           "user_name": {
             "description": ""
           }
+        }
+      }
+    },
+    "presets": {
+      "description": "",
+      "properties": {
+        "jobs_max_concurrent_runs": {
+          "description": ""
+        },
+        "name_prefix": {
+          "description": ""
+        },
+        "pipelines_development": {
+          "description": ""
+        },
+        "tags": {
+          "description": "",
+          "additionalproperties": {
+            "description": ""
+          }
+        },
+        "trigger_pause_status": {
+          "description": ""
         }
       }
     },
@@ -3079,6 +3108,12 @@
           "items": {
             "description": ""
           }
+        },
+        "paths": {
+          "description": "",
+          "items": {
+            "description": ""
+          }
         }
       }
     },
@@ -3199,6 +3234,29 @@
                 "user_name": {
                   "description": ""
                 }
+              }
+            }
+          },
+          "presets": {
+            "description": "",
+            "properties": {
+              "jobs_max_concurrent_runs": {
+                "description": ""
+              },
+              "name_prefix": {
+                "description": ""
+              },
+              "pipelines_development": {
+                "description": ""
+              },
+              "tags": {
+                "description": "",
+                "additionalproperties": {
+                  "description": ""
+                }
+              },
+              "trigger_pause_status": {
+                "description": ""
               }
             }
           },
@@ -6147,6 +6205,12 @@
                 }
               },
               "include": {
+                "description": "",
+                "items": {
+                  "description": ""
+                }
+              },
+              "paths": {
                 "description": "",
                 "items": {
                   "description": ""
