@@ -26,12 +26,10 @@ type Schema struct {
 
 	// Expected value for the JSON object. The object value must be equal to this
 	// field if it's specified in the schema.
-	// TODO: Generics here? OR maybe a type from the reflection package.
 	Const any `json:"const,omitempty"`
 
 	// Schemas for the fields of an struct. The keys are the first json tag.
 	// The values are the schema for the type of the field
-	// TODO: Followup: Make this a map[string]Schema
 	Properties map[string]*Schema `json:"properties,omitempty"`
 
 	// The schema for all values of an array
@@ -44,7 +42,6 @@ type Schema struct {
 	// properties in the config have been defined in the json schema as properties
 	//
 	// Its type during runtime will either be Schema or bool
-	// TODO: Generics to represent either a Schema{} or a bool.
 	AdditionalProperties any `json:"additionalProperties,omitempty"`
 
 	// Required properties for the object. Any fields missing the "omitempty"
@@ -52,7 +49,6 @@ type Schema struct {
 	Required []string `json:"required,omitempty"`
 
 	// URI to a json schema
-	// TODO: Would be nice to make items as well as this a non-pointer.
 	Reference *string `json:"$ref,omitempty"`
 
 	// Default value for the property / object
