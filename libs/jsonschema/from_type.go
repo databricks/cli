@@ -91,8 +91,8 @@ func FromType(typ reflect.Type, fns []func(typ reflect.Type, s Schema) Schema) (
 		return Schema{}, err
 	}
 
-	for k, v := range c.definitions {
-		for _, fn := range fns {
+	for _, fn := range fns {
+		for k, v := range c.definitions {
 			c.definitions[k] = fn(c.seen[k], v)
 		}
 	}
@@ -134,6 +134,8 @@ func typePath(typ reflect.Type) string {
 	case typ.Name() != "":
 		return typ.Name()
 	default:
+		// Invariant. This function should return a non-empty string
+		// for all types.
 		panic("unexpected empty type name for type: " + typ.String())
 	}
 }

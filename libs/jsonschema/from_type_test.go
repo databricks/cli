@@ -127,15 +127,6 @@ func TestFromTypeBasic(t *testing.T) {
 			s, err := FromType(tc.typ, nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expected, s)
-
-			// jsonSchema, err := json.MarshalIndent(s, "		", "	")
-			// assert.NoError(t, err)
-
-			// expectedJson, err := json.MarshalIndent(tc.expected, "		", "	")
-			// assert.NoError(t, err)
-
-			// t.Log("[DEBUG] actual: ", string(jsonSchema))
-			// t.Log("[DEBUG] expected: ", string(expectedJson))
 		})
 	}
 }
@@ -157,8 +148,6 @@ func TestGetStructFields(t *testing.T) {
 	assert.Equal(t, "I", fields[1].Name)
 	assert.Equal(t, "B", fields[2].Name)
 }
-
-// TODO: Add other case coverage for all the tests below
 
 func TestFromTypeNested(t *testing.T) {
 	type Inner struct {
@@ -352,16 +341,65 @@ func TestFromTypeSelfReferential(t *testing.T) {
 	assert.Equal(t, expected, s)
 }
 
-// TODO: Add coverage for all errors returned by FromType.
 func TestFromTypeError(t *testing.T) {
+	// Maps with non-string keys should panic.
 	type mapOfInts map[int]int
-
 	assert.PanicsWithValue(t, "found map with non-string key: int", func() {
 		FromType(reflect.TypeOf(mapOfInts{}), nil)
 	})
+
+	// Unsupported types should return an error.
+	_, err := FromType(reflect.TypeOf(complex64(0)), nil)
+	assert.EqualError(t, err, "unsupported type: complex64")
 }
 
-// TODO: Add test that the fn argument ot from_type works as expected.
+func TestFromTypeFunctionsArg(t *testing.T) {
+	type myStruct struct {
+		S string `json:"s"`
+	}
+
+	strRef := "#/$defs/string"
+	expected := Schema{
+		Type: "object",
+		Definitions: map[string]any{
+			"string": Schema{
+				Type:        "string",
+				Description: "a string",
+				Enum:        []any{"a", "b", "c"},
+			},
+		},
+		Properties: map[string]*Schema{
+			"s": {
+				Reference: &strRef,
+			},
+		},
+		AdditionalProperties: false,
+		Required:             []string{"s"},
+	}
+
+	addDescription := func(typ reflect.Type, s Schema) Schema {
+		if typ.Kind() != reflect.String {
+			return s
+		}
+		s.Description = "a string"
+		return s
+	}
+
+	addEnums := func(typ reflect.Type, s Schema) Schema {
+		if typ.Kind() != reflect.String {
+			return s
+		}
+		s.Enum = []any{"a", "b", "c"}
+		return s
+	}
+
+	s, err := FromType(reflect.TypeOf(myStruct{}), []func(reflect.Type, Schema) Schema{
+		addDescription,
+		addEnums,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, expected, s)
+}
 
 func TestTypePath(t *testing.T) {
 	type myStruct struct{}
@@ -412,8 +450,6 @@ func TestTypePath(t *testing.T) {
 		},
 	}
 
-	// TODO: support arbitary depth of maps and slices. Also add validation
-	// in this function that non-string keys are not allowed.
 	for _, tc := range tcases {
 		t.Run(tc.typ.String(), func(t *testing.T) {
 			assert.Equal(t, tc.path, typePath(tc.typ))
