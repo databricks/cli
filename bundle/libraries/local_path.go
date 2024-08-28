@@ -74,14 +74,9 @@ func IsLibraryLocal(dep string) bool {
 // \[.*\])?: Optionally matches any extras specified in square brackets, e.g., [security].
 // ((==|!=|<=|>=|~=|>|<)\d+(\.\d+){0,2}(\.\*)?)?: Optionally matches version specifiers, supporting various operators (==, !=, etc.) followed by a version number (e.g., 2.25.1).
 // Spec for package name and version specifier: https://pip.pypa.io/en/stable/reference/requirement-specifiers/
-var packageRegex = regexp.MustCompile(`^[a-zA-Z0-9\-_]+\s?(\[.*\])?\s?((==|!=|<=|>=|~=|==|>|<)\s?\d+(\.\d+){0,2}(\.\*)?)?$`)
+var packageRegex = regexp.MustCompile(`^[a-zA-Z0-9\-_]+\s?(\[.*\])?\s?((==|!=|<=|>=|~=|==|>|<)\s?\d+(\.\d+){0,2}(\.\*)?(,)?)*$`)
 
 func isPackage(name string) bool {
-	// If the name contains comma, it's a package name with miultiple version specifiers
-	if strings.Contains(name, ",") {
-		return true
-	}
-
 	if packageRegex.MatchString(name) {
 		return true
 	}
