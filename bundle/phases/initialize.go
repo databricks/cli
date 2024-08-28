@@ -45,6 +45,8 @@ func Initialize() bundle.Mutator {
 			mutator.DefineDefaultWorkspacePaths(),
 			mutator.PrependWorkspacePrefix(),
 
+			validate.NoWorkspacePrefixUsed(),
+
 			mutator.SetVariables(),
 			// Intentionally placed before ResolveVariableReferencesInLookup, ResolveResourceReferences,
 			// ResolveVariableReferencesInComplexVariables and ResolveVariableReferences.

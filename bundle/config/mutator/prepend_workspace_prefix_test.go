@@ -21,7 +21,7 @@ func TestPrependWorkspacePrefix(t *testing.T) {
 		},
 		{
 			path:     "/Shared/test",
-			expected: "/Shared/test",
+			expected: "/Workspace/Shared/test",
 		},
 		{
 			path:     "/Workspace/Users/test",

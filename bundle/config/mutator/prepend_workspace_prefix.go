@@ -24,7 +24,6 @@ func (m *prependWorkspacePrefix) Name() string {
 var skipPrefixes = []string{
 	"/Workspace",
 	"/Volumes",
-	"/Shared",
 }
 
 func (m *prependWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
@@ -42,12 +41,6 @@ func (m *prependWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) di
 				path, ok := pv.AsString()
 				if !ok {
 					return dyn.InvalidValue, fmt.Errorf("expected string, got %s", v.Kind())
-				}
-
-				for _, prefix := range skipPrefixes {
-					if path == prefix {
-						return pv, nil
-					}
 				}
 
 				for _, prefix := range skipPrefixes {
