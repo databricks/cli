@@ -1,5 +1,28 @@
 # Version changelog
 
+## [Release] Release v0.227.1
+
+CLI:
+ * Disable prompt for storage-credentials get command ([#1723](https://github.com/databricks/cli/pull/1723)).
+
+Bundles:
+ * Do not treat empty path as a local path ([#1717](https://github.com/databricks/cli/pull/1717)).
+ * Correctly mark PyPI package name specs with multiple specifiers as remote libraries ([#1725](https://github.com/databricks/cli/pull/1725)).
+ * Improve error handling for /Volumes paths in mode: development ([#1716](https://github.com/databricks/cli/pull/1716)).
+
+Internal:
+ * Revert hc-install version to 0.7.0 ([#1711](https://github.com/databricks/cli/pull/1711)).
+ * Ignore CLI version check on development builds of the CLI ([#1714](https://github.com/databricks/cli/pull/1714)).
+
+API Changes:
+ * Added `databricks resource-quotas` command group.
+ * Added `databricks policy-compliance-for-clusters` command group.
+ * Added `databricks policy-compliance-for-jobs` command group.
+
+OpenAPI commit 3eae49b444cac5a0118a3503e5b7ecef7f96527a (2024-08-21)
+Dependency updates:
+ * Bump github.com/databricks/databricks-sdk-go from 0.44.0 to 0.45.0 ([#1719](https://github.com/databricks/cli/pull/1719)).
+
 ## [Release] Release v0.227.0
 
 CLI:
