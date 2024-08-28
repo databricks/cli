@@ -11,7 +11,6 @@ Bundles:
  * Improve error handling for /Volumes paths in mode: development ([#1716](https://github.com/databricks/cli/pull/1716)).
 
 Internal:
- * Revert hc-install version to 0.7.0 ([#1711](https://github.com/databricks/cli/pull/1711)).
  * Ignore CLI version check on development builds of the CLI ([#1714](https://github.com/databricks/cli/pull/1714)).
 
 API Changes:
@@ -22,6 +21,7 @@ API Changes:
 OpenAPI commit 3eae49b444cac5a0118a3503e5b7ecef7f96527a (2024-08-21)
 Dependency updates:
  * Bump github.com/databricks/databricks-sdk-go from 0.44.0 to 0.45.0 ([#1719](https://github.com/databricks/cli/pull/1719)).
+ * Revert hc-install version to 0.7.0 ([#1711](https://github.com/databricks/cli/pull/1711)).
 
 ## [Release] Release v0.227.0
 
