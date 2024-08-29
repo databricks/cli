@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestIntitializeURLs(t *testing.T) {
+func TestInitializeURLs(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
@@ -100,7 +100,7 @@ func TestIntitializeURLs(t *testing.T) {
 	}
 }
 
-func TestIntitializeURLs_NoOrgId(t *testing.T) {
+func URLs_NoOrgId(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
