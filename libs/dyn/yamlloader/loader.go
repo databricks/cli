@@ -206,8 +206,8 @@ func (d *loader) loadScalar(node *yaml.Node, loc dyn.Location) (dyn.Value, error
 	case "!!null":
 		return dyn.NewValue(nil, []dyn.Location{loc}), nil
 	case "!!timestamp":
-		t, ok := dyn.NewTime(node.Value)
-		if ok {
+		t, err := dyn.NewTime(node.Value)
+		if err == nil {
 			return dyn.NewValue(t, []dyn.Location{loc}), nil
 		}
 		return dyn.InvalidValue, errorf(loc, "invalid timestamp value: %v", node.Value)

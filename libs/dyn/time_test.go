@@ -13,8 +13,8 @@ func TestTimeValid(t *testing.T) {
 		"2024-08-29",
 		"2024-01-15T12:34:56.789012345Z",
 	} {
-		tm, ok := dyn.NewTime(tc)
-		if assert.True(t, ok) {
+		tm, err := dyn.NewTime(tc)
+		if assert.NoError(t, err) {
 			assert.NotEqual(t, time.Time{}, tm.Time())
 			assert.Equal(t, tc, tm.String())
 		}
@@ -22,8 +22,8 @@ func TestTimeValid(t *testing.T) {
 }
 
 func TestTimeInvalid(t *testing.T) {
-	tm, ok := dyn.NewTime("invalid")
-	assert.False(t, ok)
+	tm, err := dyn.NewTime("invalid")
+	assert.Error(t, err)
 	assert.Equal(t, dyn.Time{}, tm)
 }
 
@@ -35,7 +35,7 @@ func TestTimeFromTime(t *testing.T) {
 	assert.Equal(t, tref, t1.Time())
 
 	// Verify that the string representation can be used to construct the same.
-	t2, ok := dyn.NewTime(t1.String())
-	assert.True(t, ok)
+	t2, err := dyn.NewTime(t1.String())
+	assert.NoError(t, err)
 	assert.True(t, t1.Time().Equal(t2.Time()))
 }

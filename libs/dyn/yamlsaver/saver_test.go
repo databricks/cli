@@ -45,8 +45,8 @@ func TestMarshalBoolValue(t *testing.T) {
 }
 
 func TestMarshalTimeValue(t *testing.T) {
-	tm, ok := dyn.NewTime("1970-01-01")
-	require.True(t, ok)
+	tm, err := dyn.NewTime("1970-01-01")
+	require.NoError(t, err)
 
 	s := NewSaver()
 	var timeValue = dyn.V(tm)
