@@ -64,6 +64,7 @@ func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) {
 }
 
 func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
+	var diags diag.Diagnostics
 	p := b.Config.Presets
 	u := b.Config.Workspace.CurrentUser
 
@@ -74,44 +75,56 @@ func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
 	// status to UNPAUSED at the level of an individual object, whic hwas
 	// historically allowed.)
 	if p.TriggerPauseStatus == config.Unpaused {
-		return diag.Diagnostics{{
+		diags = diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   "target with 'mode: development' cannot set trigger pause status to UNPAUSED by default",
 			Locations: []dyn.Location{b.Config.GetLocation("presets.trigger_pause_status")},
-		}}
+		})
 	}
 
 	// Make sure this development copy has unique names and paths to avoid conflicts
 	if path := findNonUserPath(b); path != "" {
-		return diag.Errorf("%s must start with '~/' or contain the current username when using 'mode: development'", path)
+		if path == "artifact_path" && strings.HasPrefix(b.Config.Workspace.ArtifactPath, "/Volumes") {
+			// For Volumes paths we recommend including the current username as a substring
+			diags = diags.Extend(diag.Errorf("%s should contain the current username or ${workspace.current_user.short_name} to ensure uniqueness when using 'mode: development'", path))
+		} else {
+			// For non-Volumes paths recommend simply putting things in the home folder
+			diags = diags.Extend(diag.Errorf("%s must start with '~/' or contain the current username to ensure uniqueness when using 'mode: development'", path))
+		}
 	}
 	if p.NamePrefix != "" && !strings.Contains(p.NamePrefix, u.ShortName) && !strings.Contains(p.NamePrefix, u.UserName) {
 		// Resources such as pipelines require a unique name, e.g. '[dev steve] my_pipeline'.
 		// For this reason we require the name prefix to contain the current username;
 		// it's a pitfall for users if they don't include it and later find out that
 		// only a single user can do development deployments.
-		return diag.Diagnostics{{
+		diags = diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   "prefix should contain the current username or ${workspace.current_user.short_name} to ensure uniqueness when using 'mode: development'",
 			Locations: []dyn.Location{b.Config.GetLocation("presets.name_prefix")},
-		}}
+		})
 	}
-	return nil
+	return diags
 }
 
+// findNonUserPath finds the first workspace path such as root_path that doesn't
+// contain the current username or current user's shortname.
 func findNonUserPath(b *bundle.Bundle) string {
-	username := b.Config.Workspace.CurrentUser.UserName
+	containsName := func(path string) bool {
+		username := b.Config.Workspace.CurrentUser.UserName
+		shortname := b.Config.Workspace.CurrentUser.ShortName
+		return strings.Contains(path, username) || strings.Contains(path, shortname)
+	}
 
-	if b.Config.Workspace.RootPath != "" && !strings.Contains(b.Config.Workspace.RootPath, username) {
+	if b.Config.Workspace.RootPath != "" && !containsName(b.Config.Workspace.RootPath) {
 		return "root_path"
 	}
-	if b.Config.Workspace.StatePath != "" && !strings.Contains(b.Config.Workspace.StatePath, username) {
+	if b.Config.Workspace.StatePath != "" && !containsName(b.Config.Workspace.StatePath) {
 		return "state_path"
 	}
-	if b.Config.Workspace.FilePath != "" && !strings.Contains(b.Config.Workspace.FilePath, username) {
+	if b.Config.Workspace.FilePath != "" && !containsName(b.Config.Workspace.FilePath) {
 		return "file_path"
 	}
-	if b.Config.Workspace.ArtifactPath != "" && !strings.Contains(b.Config.Workspace.ArtifactPath, username) {
+	if b.Config.Workspace.ArtifactPath != "" && !containsName(b.Config.Workspace.ArtifactPath) {
 		return "artifact_path"
 	}
 	return ""
