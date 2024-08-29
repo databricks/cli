@@ -158,7 +158,10 @@ func isRunAsSet(r config.Resources) bool {
 }
 
 func isExplicitRootSet(b *bundle.Bundle) bool {
-	targetConfig := b.Config.Targets[b.Config.Bundle.Target]
+	targetConfig, ok := b.Config.Targets[b.Config.Bundle.Target]
+	if !ok || targetConfig == nil {
+		return false
+	}
 	if targetConfig.Workspace == nil {
 		return false
 	}
