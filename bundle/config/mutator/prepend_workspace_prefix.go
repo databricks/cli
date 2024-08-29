@@ -22,8 +22,8 @@ func (m *prependWorkspacePrefix) Name() string {
 }
 
 var skipPrefixes = []string{
-	"/Workspace",
-	"/Volumes",
+	"/Workspace/",
+	"/Volumes/",
 }
 
 func (m *prependWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
