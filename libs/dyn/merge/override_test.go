@@ -83,16 +83,16 @@ func TestOverride_Primitive(t *testing.T) {
 		{
 			name:     "time (updated)",
 			state:    visitorState{updated: []string{"root"}},
-			left:     dyn.NewValue(time.UnixMilli(10000), []dyn.Location{leftLocation}),
-			right:    dyn.NewValue(time.UnixMilli(10001), []dyn.Location{rightLocation}),
-			expected: dyn.NewValue(time.UnixMilli(10001), []dyn.Location{rightLocation}),
+			left:     dyn.NewValue(dyn.FromTime(time.UnixMilli(10000)), []dyn.Location{leftLocation}),
+			right:    dyn.NewValue(dyn.FromTime(time.UnixMilli(10001)), []dyn.Location{rightLocation}),
+			expected: dyn.NewValue(dyn.FromTime(time.UnixMilli(10001)), []dyn.Location{rightLocation}),
 		},
 		{
 			name:     "time (not updated)",
 			state:    visitorState{},
-			left:     dyn.NewValue(time.UnixMilli(10000), []dyn.Location{leftLocation}),
-			right:    dyn.NewValue(time.UnixMilli(10000), []dyn.Location{rightLocation}),
-			expected: dyn.NewValue(time.UnixMilli(10000), []dyn.Location{leftLocation}),
+			left:     dyn.NewValue(dyn.FromTime(time.UnixMilli(10000)), []dyn.Location{leftLocation}),
+			right:    dyn.NewValue(dyn.FromTime(time.UnixMilli(10000)), []dyn.Location{rightLocation}),
+			expected: dyn.NewValue(dyn.FromTime(time.UnixMilli(10000)), []dyn.Location{leftLocation}),
 		},
 		{
 			name:     "different types (updated)",

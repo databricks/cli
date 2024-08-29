@@ -2,10 +2,10 @@ package yamlsaver
 
 import (
 	"testing"
-	"time"
 
 	"github.com/databricks/cli/libs/dyn"
 	assert "github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 )
 
@@ -45,11 +45,14 @@ func TestMarshalBoolValue(t *testing.T) {
 }
 
 func TestMarshalTimeValue(t *testing.T) {
+	tm, ok := dyn.NewTime("1970-01-01")
+	require.True(t, ok)
+
 	s := NewSaver()
-	var timeValue = dyn.V(time.Unix(0, 0))
+	var timeValue = dyn.V(tm)
 	v, err := s.toYamlNode(timeValue)
 	assert.NoError(t, err)
-	assert.Equal(t, "1970-01-01 00:00:00 +0000 UTC", v.Value)
+	assert.Equal(t, "1970-01-01", v.Value)
 	assert.Equal(t, yaml.ScalarNode, v.Kind)
 }
 
