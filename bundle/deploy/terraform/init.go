@@ -111,6 +111,13 @@ func inheritEnvVars(ctx context.Context, environ map[string]string) error {
 		environ["PATH"] = path
 	}
 
+	// Include $AZURE_CONFIG_FILE in set of environment variables to pass along.
+	// This is set in Azure DevOps by the AzureCLI@2 task.
+	azureConfigFile, ok := env.Lookup(ctx, "AZURE_CONFIG_FILE")
+	if ok {
+		environ["AZURE_CONFIG_FILE"] = azureConfigFile
+	}
+
 	// Include $TF_CLI_CONFIG_FILE to override terraform provider in development.
 	// See: https://developer.hashicorp.com/terraform/cli/config/config-file#explicit-installation-method-configuration
 	devConfigFile, ok := env.Lookup(ctx, "TF_CLI_CONFIG_FILE")
