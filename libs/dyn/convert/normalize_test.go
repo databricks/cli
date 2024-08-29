@@ -569,6 +569,14 @@ func TestNormalizeStringFromFloat(t *testing.T) {
 	assert.Equal(t, dyn.NewValue("1.2", vin.Locations()), vout)
 }
 
+func TestNormalizeStringFromTime(t *testing.T) {
+	var typ string
+	vin := dyn.NewValue(dyn.MustTime("2024-08-29"), []dyn.Location{{File: "file", Line: 1, Column: 1}})
+	vout, err := Normalize(&typ, vin)
+	assert.Empty(t, err)
+	assert.Equal(t, dyn.NewValue("2024-08-29", vin.Locations()), vout)
+}
+
 func TestNormalizeStringError(t *testing.T) {
 	var typ string
 	vin := dyn.V(map[string]dyn.Value{"an": dyn.V("error")})

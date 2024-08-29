@@ -5,7 +5,6 @@ import (
 	"math"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/databricks/cli/libs/dyn"
 	"gopkg.in/yaml.v3"
@@ -207,17 +206,9 @@ func (d *loader) loadScalar(node *yaml.Node, loc dyn.Location) (dyn.Value, error
 	case "!!null":
 		return dyn.NewValue(nil, []dyn.Location{loc}), nil
 	case "!!timestamp":
-		// Try a couple of layouts
-		for _, layout := range []string{
-			"2006-1-2T15:4:5.999999999Z07:00", // RCF3339Nano with short date fields.
-			"2006-1-2t15:4:5.999999999Z07:00", // RFC3339Nano with short date fields and lower-case "t".
-			"2006-1-2 15:4:5.999999999",       // space separated with no time zone
-			"2006-1-2",                        // date only
-		} {
-			t, terr := time.Parse(layout, node.Value)
-			if terr == nil {
-				return dyn.NewValue(t, []dyn.Location{loc}), nil
-			}
+		t, err := dyn.NewTime(node.Value)
+		if err == nil {
+			return dyn.NewValue(t, []dyn.Location{loc}), nil
 		}
 		return dyn.InvalidValue, errorf(loc, "invalid timestamp value: %v", node.Value)
 	default:
