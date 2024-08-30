@@ -160,7 +160,11 @@ func TestAccBundlePipelineRecreateWithoutAutoApprove(t *testing.T) {
 
 	fmt.Println("expected: ", "This action will result in the deletion or recreation of the following DLT Pipelines along with the Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the Pipelines will restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline properties such as the `catalog` or `storage` are changed::\n  recreate pipeline foo")
 	fmt.Println("stderr: ", stderr.String())
-	assert.Contains(t, stderr.String(), "This action will result in the deletion or recreation of the following DLT Pipelines along with the Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the Pipelines will restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline properties such as the `catalog` or `storage` are changed:\n  recreate pipeline foo")
+	assert.Contains(t, stderr.String(), `This action will result in the deletion or recreation of the following DLT Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the Pipelines will
+restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
+properties such as the 'catalog' or 'storage' are changed:
+  recreate pipeline foo`)
 	assert.Contains(t, stdout.String(), "the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
 }
 
