@@ -213,10 +213,8 @@ func (m *pythonMutator) runPythonMutator(ctx context.Context, cacheDir string, r
 		return dyn.InvalidValue, diag.Errorf("failed to load diagnostics: %s", pythonDiagnosticsErr)
 	}
 
-	output, err := loadOutputFile(rootPath, outputPath)
-	if err != nil {
-		return dyn.InvalidValue, diag.Errorf("failed to load Python mutator output: %s", err)
-	}
+	output, outputDiags := loadOutputFile(rootPath, outputPath)
+	pythonDiagnostics = pythonDiagnostics.Extend(outputDiags)
 
 	// we pass through pythonDiagnostic because it contains warnings
 	return output, pythonDiagnostics
@@ -233,10 +231,10 @@ func writeInputFile(inputPath string, input dyn.Value) error {
 	return os.WriteFile(inputPath, rootConfigJson, 0600)
 }
 
-func loadOutputFile(rootPath string, outputPath string) (dyn.Value, error) {
+func loadOutputFile(rootPath string, outputPath string) (dyn.Value, diag.Diagnostics) {
 	outputFile, err := os.Open(outputPath)
 	if err != nil {
-		return dyn.InvalidValue, fmt.Errorf("failed to open output file: %w", err)
+		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to open output file: %w", err))
 	}
 
 	defer outputFile.Close()
@@ -251,27 +249,34 @@ func loadOutputFile(rootPath string, outputPath string) (dyn.Value, error) {
 	// for that, we pass virtualPath instead of outputPath as file location
 	virtualPath, err := filepath.Abs(filepath.Join(rootPath, "__generated_by_pydabs__.yml"))
 	if err != nil {
-		return dyn.InvalidValue, fmt.Errorf("failed to get absolute path: %w", err)
+		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to get absolute path: %w", err))
 	}
 
 	generated, err := yamlloader.LoadYAML(virtualPath, outputFile)
 	if err != nil {
-		return dyn.InvalidValue, fmt.Errorf("failed to parse output file: %w", err)
+		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to parse output file: %w", err))
 	}
 
-	normalized, diagnostic := convert.Normalize(config.Root{}, generated)
-	if diagnostic.Error() != nil {
-		return dyn.InvalidValue, fmt.Errorf("failed to normalize output: %w", diagnostic.Error())
-	}
+	return strictNormalize(config.Root{}, generated)
+}
+
+func strictNormalize(dst any, generated dyn.Value) (dyn.Value, diag.Diagnostics) {
+	normalized, diags := convert.Normalize(dst, generated)
 
 	// warnings shouldn't happen because output should be already normalized
 	// when it happens, it's a bug in the mutator, and should be treated as an error
 
-	for _, d := range diagnostic.Filter(diag.Warning) {
-		return dyn.InvalidValue, fmt.Errorf("failed to normalize output: %s", d.Summary)
+	strictDiags := diag.Diagnostics{}
+
+	for _, d := range diags {
+		if d.Severity == diag.Warning {
+			d.Severity = diag.Error
+		}
+
+		strictDiags = strictDiags.Append(d)
 	}
 
-	return normalized, nil
+	return normalized, strictDiags
 }
 
 // loadDiagnosticsFile loads diagnostics from a file.

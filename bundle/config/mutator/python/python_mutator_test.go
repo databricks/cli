@@ -10,6 +10,8 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/databricks/cli/libs/dyn/convert"
+
 	"github.com/databricks/cli/libs/dyn/merge"
 
 	"github.com/databricks/cli/bundle/env"
@@ -255,7 +257,7 @@ func TestPythonMutator_badOutput(t *testing.T) {
 	mutator := PythonMutator(PythonMutatorPhaseLoad)
 	diag := bundle.Apply(ctx, b, mutator)
 
-	assert.EqualError(t, diag.Error(), "failed to load Python mutator output: failed to normalize output: unknown field: unknown_property")
+	assert.EqualError(t, diag.Error(), "unknown field: unknown_property")
 }
 
 func TestPythonMutator_disabled(t *testing.T) {
@@ -544,6 +546,22 @@ func TestInterpreterPath(t *testing.T) {
 	} else {
 		assert.Equal(t, "venv/bin/python3", interpreterPath("venv"))
 	}
+}
+
+func TestStrictNormalize(t *testing.T) {
+	// NB: there is no way to trigger diag.Error, so we don't test it
+
+	type TestStruct struct {
+		A int `json:"a"`
+	}
+
+	value := dyn.NewValue(map[string]dyn.Value{"A": dyn.NewValue("abc", nil)}, nil)
+
+	_, diags := convert.Normalize(TestStruct{}, value)
+	_, strictDiags := strictNormalize(TestStruct{}, value)
+
+	assert.False(t, diags.HasError())
+	assert.True(t, strictDiags.HasError())
 }
 
 func withProcessStub(t *testing.T, args []string, output string, diagnostics string) context.Context {
