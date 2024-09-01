@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"io/fs"
 
-	"github.com/databricks/cli/libs/auth/cache"
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/auth/cache"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
@@ -31,6 +31,22 @@ func (l *LogoutSession) load(ctx context.Context, profileName string, persistent
 		return fmt.Errorf("cannot parse config file: %w", err)
 	}
 	l.File = *iniFile
+	if err := l.setHostAndAccountIdFromProfile(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (l *LogoutSession) setHostAndAccountIdFromProfile() error {
+	sectionMap, err := l.getConfigSectionMap()
+	if err != nil {
+		return err
+	}
+	if sectionMap["host"] == "" {
+		return fmt.Errorf("no host configured for profile %s", l.Profile)
+	}
+	l.PersistentAuth.Host = sectionMap["host"]
+	l.PersistentAuth.AccountID = sectionMap["account_id"]
 	return nil
 }
 
@@ -74,11 +90,21 @@ func newLogoutCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "logout [PROFILE]",
 		Short: "Logout from specified profile",
+		Long:  "Clears OAuth token from token-cache and any sensitive value in the config file, if they exist.",
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		profileName := cmd.Flag("profile").Value.String()
+		profileNameFromFlag := cmd.Flag("profile").Value.String()
+		// If both [PROFILE] and --profile are provided, return an error.
+		if len(args) > 0 && profileNameFromFlag != "" {
+			return fmt.Errorf("please only provide a profile as an argument or a flag, not both")
+		}
+		// Determine the profile name from either args or the flag.
+		profileName := profileNameFromFlag
+		if len(args) > 0 {
+			profileName = args[0]
+		}
 		// If the user has not specified a profile name, prompt for one.
 		if profileName == "" {
 			var err error
@@ -87,28 +113,23 @@ func newLogoutCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 				return err
 			}
 		}
-		// Set the host and account-id based on the provided arguments and flags.
-		err := setHostAndAccountId(ctx, profileName, persistentAuth, args)
-		if err != nil {
-			return err
-		}
 		defer persistentAuth.Close()
-		LogoutSession := &LogoutSession{}
-		LogoutSession.load(ctx, profileName, persistentAuth)
-		configSectionMap, err := LogoutSession.getConfigSectionMap()
+		logoutSession := &LogoutSession{}
+		logoutSession.load(ctx, profileName, persistentAuth)
+		configSectionMap, err := logoutSession.getConfigSectionMap()
 		if err != nil {
 			return err
 		}
-		err = LogoutSession.clearTokenCache(ctx)
+		err = logoutSession.clearTokenCache(ctx)
 		if err != nil {
 			if errors.Is(err, cache.ErrNotConfigured) {
 				// It is OK to not have OAuth configured. Move on and remove
-				// sensitive values example PAT from config file
+				// sensitive values from config file (Example PAT)
 			} else {
 				return err
 			}
 		}
-		if err := LogoutSession.clearConfigFile(ctx, configSectionMap); err != nil {
+		if err := logoutSession.clearConfigFile(ctx, configSectionMap); err != nil {
 			return err
 		}
 		cmdio.LogString(ctx, fmt.Sprintf("Profile %s was successfully logged out", profileName))
