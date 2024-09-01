@@ -34,7 +34,7 @@ func (l *LogoutSession) load(ctx context.Context, profileName string, persistent
 	return nil
 }
 
-func (l *LogoutSession) getConfigSetionMap() (map[string]string, error) {
+func (l *LogoutSession) getConfigSectionMap() (map[string]string, error) {
 	section, err := l.File.GetSection(l.Profile)
 	if err != nil {
 		return map[string]string{}, fmt.Errorf("profile does not exist in config file: %w", err)
@@ -95,7 +95,7 @@ func newLogoutCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 		defer persistentAuth.Close()
 		LogoutSession := &LogoutSession{}
 		LogoutSession.load(ctx, profileName, persistentAuth)
-		configSectionMap, err := LogoutSession.getConfigSetionMap()
+		configSectionMap, err := LogoutSession.getConfigSectionMap()
 		if err != nil {
 			return err
 		}
