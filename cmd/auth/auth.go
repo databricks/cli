@@ -31,7 +31,7 @@ GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html`,
 	cmd.AddCommand(newProfilesCommand())
 	cmd.AddCommand(newTokenCommand(&perisistentAuth))
 	cmd.AddCommand(newDescribeCommand())
-	cmd.AddCommand(newLogoutCommand())
+	cmd.AddCommand(newLogoutCommand(&perisistentAuth))
 	return cmd
 }
 

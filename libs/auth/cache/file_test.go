@@ -129,3 +129,14 @@ func TestStoreAndDeleteKey(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "bcd", tok.AccessToken)
 }
+
+func TestDeleteKeyNotExist(t *testing.T) {
+	c := &FileTokenCache{
+		Tokens: map[string]*oauth2.Token{},
+	}
+	err := c.DeleteKey("x")
+	assert.Equal(t, ErrNotConfigured, err)
+
+	_, err = c.Lookup("x")
+	assert.Equal(t, ErrNotConfigured, err)
+}

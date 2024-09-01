@@ -143,6 +143,18 @@ func (a *PersistentAuth) Challenge(ctx context.Context) error {
 	return nil
 }
 
+func (a *PersistentAuth) ClearToken(ctx context.Context) error {
+	if a.Host == "" && a.AccountID == "" {
+		return ErrFetchCredentials
+	}
+	if a.cache == nil {
+		a.cache = cache.GetTokenCache(ctx)
+	}
+	// lookup token identified by host (and possibly the account id)
+	key := a.key()
+	return a.cache.DeleteKey(key)
+}
+
 func (a *PersistentAuth) init(ctx context.Context) error {
 	if a.Host == "" && a.AccountID == "" {
 		return ErrFetchCredentials
