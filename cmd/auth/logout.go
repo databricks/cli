@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 
+	"github.com/databricks/cli/libs/auth/cache"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
@@ -98,8 +99,14 @@ func newLogoutCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 		if err != nil {
 			return err
 		}
-		if err := LogoutSession.clearTokenCache(ctx); err != nil {
-			return err
+		err = LogoutSession.clearTokenCache(ctx)
+		if err != nil {
+			if errors.Is(err, cache.ErrNotConfigured) {
+				// It is OK to not have OAuth configured. Move on and remove
+				// sensitive values example PAT from config file
+			} else {
+				return err
+			}
 		}
 		if err := LogoutSession.clearConfigFile(ctx, configSectionMap); err != nil {
 			return err
