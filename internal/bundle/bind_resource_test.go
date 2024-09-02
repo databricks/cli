@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -101,12 +102,15 @@ func TestAccAbortBind(t *testing.T) {
 		destroyBundle(t, ctx, bundleRoot)
 	})
 
+	// Bind should fail because prompting is not possible.
 	t.Setenv("BUNDLE_ROOT", bundleRoot)
+	t.Setenv("TERM", "dumb")
 	c := internal.NewCobraTestRunner(t, "bundle", "deployment", "bind", "foo", fmt.Sprint(jobId))
 
-	// Simulate user aborting the bind. This is done by not providing any input to the prompt in non-interactive mode.
+	// Expect error suggesting to use --auto-approve
 	_, _, err = c.Run()
-	require.ErrorContains(t, err, "failed to bind the resource")
+	assert.ErrorContains(t, err, "failed to bind the resource")
+	assert.ErrorContains(t, err, "This bind operation requires user confirmation, but the current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
 
 	err = deployBundle(t, ctx, bundleRoot)
 	require.NoError(t, err)
