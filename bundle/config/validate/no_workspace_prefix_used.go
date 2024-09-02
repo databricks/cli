@@ -30,7 +30,7 @@ func (m *noWorkspacePrefixUsed) Apply(ctx context.Context, b *bundle.Bundle) dia
 		"/Workspace/${workspace.state_path}",
 	}
 
-	// Walk through the bundle configuration, check all the string leaves and
+	// Walk through the bundle configuration, check all the string leafs and
 	// see if any of the prefixes are used in the remote path.
 	_, err := dyn.Walk(b.Config.Value(), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 		vv, ok := v.AsString()
