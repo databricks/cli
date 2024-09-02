@@ -129,7 +129,7 @@ func (s *saver) toYamlNodeWithStyle(v dyn.Value, style yaml.Style) (*yaml.Node, 
 	case dyn.KindFloat:
 		return &yaml.Node{Kind: yaml.ScalarNode, Value: fmt.Sprint(v.MustFloat()), Style: style}, nil
 	case dyn.KindTime:
-		return &yaml.Node{Kind: yaml.ScalarNode, Value: v.MustTime().UTC().String(), Style: style}, nil
+		return &yaml.Node{Kind: yaml.ScalarNode, Value: v.MustTime().String(), Style: style}, nil
 	default:
 		// Panic because we only want to deal with known types.
 		panic(fmt.Sprintf("invalid kind: %d", v.Kind()))
