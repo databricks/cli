@@ -32,10 +32,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					Branch:    "main",
 				},
 			},
-			Targets: map[string]*config.Target{
-				"": {},
-			},
-			Workspace: config.Workspace{
+		Workspace: config.Workspace{
 				CurrentUser: &config.User{
 					ShortName: "lennart",
 					User: &iam.User{
@@ -337,8 +334,12 @@ func TestProcessTargetModeProductionOkWithRootPath(t *testing.T) {
 	require.Error(t, diags.Error())
 
 	// ... but we're okay if we specify a root path
-	b.Config.Targets[""].Workspace = &config.Workspace{
-		RootPath: "some-root-path",
+	b.Config.Targets = map[string]*config.Target{
+		"": {
+			Workspace: &config.Workspace{
+				RootPath: "some-root-path",
+			},
+		},
 	}
 	diags = validateProductionMode(context.Background(), b, false)
 	require.NoError(t, diags.Error())
