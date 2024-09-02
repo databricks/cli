@@ -564,6 +564,30 @@ func TestStrictNormalize(t *testing.T) {
 	assert.True(t, strictDiags.HasError())
 }
 
+func TestExplainProcessErr(t *testing.T) {
+	stderr := "/home/test/.venv/bin/python3: Error while finding module specification for 'databricks.bundles.build' (ModuleNotFoundError: No module named 'databricks')\n"
+	expected := `/home/test/.venv/bin/python3: Error while finding module specification for 'databricks.bundles.build' (ModuleNotFoundError: No module named 'databricks')
+
+Explanation: 'databricks-pydabs' library is not installed in the Python environment.
+
+If using Python wheels, ensure that 'databricks-pydabs' is included in the dependencies, 
+and that the wheel is installed in the Python environment:
+
+  $ .venv/bin/pip install -e .
+
+If using a virtual environment, ensure it is specified as the venv_path property in databricks.yml, 
+or activate the environment before running CLI commands:
+
+  experimental:
+    pydabs:
+      venv_path: .venv
+`
+
+	out := explainProcessErr(stderr)
+
+	assert.Equal(t, expected, out)
+}
+
 func withProcessStub(t *testing.T, args []string, output string, diagnostics string) context.Context {
 	ctx := context.Background()
 	ctx, stub := process.WithStub(ctx)
