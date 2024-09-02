@@ -1,15 +1,21 @@
 package python
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
-	"github.com/databricks/cli/libs/python"
 	"github.com/databricks/databricks-sdk-go/logger"
+	"github.com/fatih/color"
+
+	"strings"
+
+	"github.com/databricks/cli/libs/python"
 
 	"github.com/databricks/cli/bundle/env"
 
@@ -169,7 +175,11 @@ func (m *pythonMutator) runPythonMutator(ctx context.Context, cacheDir string, r
 		return dyn.InvalidValue, diag.Errorf("failed to write input file: %s", err)
 	}
 
-	stderrWriter := newLogWriter(ctx, "stderr: ")
+	stderrBuf := bytes.Buffer{}
+	stderrWriter := io.MultiWriter(
+		newLogWriter(ctx, "stderr: "),
+		&stderrBuf,
+	)
 	stdoutWriter := newLogWriter(ctx, "stdout: ")
 
 	_, processErr := process.Background(
@@ -197,7 +207,13 @@ func (m *pythonMutator) runPythonMutator(ctx context.Context, cacheDir string, r
 	// process can fail without reporting errors in diagnostics file or creating it, for instance,
 	// venv doesn't have PyDABs library installed
 	if processErr != nil {
-		return dyn.InvalidValue, diag.Errorf("python mutator process failed: %sw, use --debug to enable logging", processErr)
+		diagnostic := diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  fmt.Sprintf("python mutator process failed: %q, use --debug to enable logging", processErr),
+			Detail:   explainProcessErr(stderrBuf.String()),
+		}
+
+		return dyn.InvalidValue, diag.Diagnostics{diagnostic}
 	}
 
 	// or we can fail to read diagnostics file, that should always be created
@@ -210,6 +226,33 @@ func (m *pythonMutator) runPythonMutator(ctx context.Context, cacheDir string, r
 
 	// we pass through pythonDiagnostic because it contains warnings
 	return output, pythonDiagnostics
+}
+
+const installExplanation = `If using Python wheels, ensure that 'databricks-pydabs' is included in the dependencies, 
+and that the wheel is installed in the Python environment:
+
+  $ .venv/bin/pip install -e .
+
+If using a virtual environment, ensure it is specified as the venv_path property in databricks.yml, 
+or activate the environment before running CLI commands:
+
+  experimental:
+    pydabs:
+      venv_path: .venv
+`
+
+// explainProcessErr provides additional explanation for common errors.
+// It's meant to be the best effort, and not all errors are covered.
+// Output should be used only used for error reporting.
+func explainProcessErr(stderr string) string {
+	// implemented in cpython/Lib/runpy.py and portable across Python 3.x, including pypy
+	if strings.Contains(stderr, "Error while finding module specification for 'databricks.bundles.build'") {
+		summary := color.CyanString("Explanation: ") + "'databricks-pydabs' library is not installed in the Python environment.\n"
+
+		return stderr + "\n" + summary + "\n" + installExplanation
+	}
+
+	return stderr
 }
 
 func writeInputFile(inputPath string, input dyn.Value) error {
