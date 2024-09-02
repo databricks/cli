@@ -101,12 +101,12 @@ func TestAccAbortBind(t *testing.T) {
 		destroyBundle(t, ctx, bundleRoot)
 	})
 
-	t.Setenv("BUNDLE_ROOT", bundleRoot)
-	c := internal.NewCobraTestRunner(t, "bundle", "deployment", "bind", "foo", fmt.Sprint(jobId))
-
-	// Simulate user aborting the bind. This is done by not providing any input to the prompt in non-interactive mode.
-	_, _, err = c.Run()
-	require.ErrorContains(t, err, "failed to bind the resource")
+	// Bind should fail because prompting is not possible.
+	stdout, stderr, err := blackBoxRun(t, bundleRoot, "bundle", "deployment", "bind", "foo", fmt.Sprint(jobId))
+	require.Error(t, err)
+	require.Contains(t, stderr, "failed to bind the resource")
+	require.Contains(t, stderr, "This bind operation requires user confirmation, but the current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed.")
+	require.Equal(t, "", stdout)
 
 	err = deployBundle(t, ctx, bundleRoot)
 	require.NoError(t, err)
