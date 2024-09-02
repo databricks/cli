@@ -123,7 +123,7 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 	// We rewrite it here to make the resolution logic simpler.
 	varPath := dyn.NewPath(dyn.Key("var"))
 
-	var allDiags diag.Diagnostics
+	var diags diag.Diagnostics
 	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		// Synthesize a copy of the root that has all fields that are present in the type
 		// but not set in the dynamic value set to their corresponding empty value.
@@ -180,13 +180,13 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 
 		// Normalize the result because variable resolution may have been applied to non-string fields.
 		// For example, a variable reference may have been resolved to a integer.
-		root, diags := convert.Normalize(b.Config, root)
-		allDiags = allDiags.Extend(diags)
+		root, normaliseDiags := convert.Normalize(b.Config, root)
+		diags = diags.Extend(normaliseDiags)
 		return root, nil
 	})
 
 	if err != nil {
-		allDiags = allDiags.Extend(diag.FromErr(err))
+		diags = diags.Extend(diag.FromErr(err))
 	}
-	return allDiags
+	return diags
 }
