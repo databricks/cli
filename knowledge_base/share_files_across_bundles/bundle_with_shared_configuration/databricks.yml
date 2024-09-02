@@ -1,0 +1,31 @@
+bundle:
+  name: bundle_with_shared_configuration
+
+sync:
+  paths:
+    - ../shared
+    - ./src
+
+resources:
+  jobs:
+    example_job_with_notebook:
+      name: Example that uses shared configuration from a notebook
+
+      tasks:
+        - task_key: task
+          notebook_task:
+            notebook_path: src/notebook.ipynb
+
+    example_job_with_python_file:
+      name: Example that uses shared configuration from a Python file
+
+      tasks:
+        - task_key: task
+          environment_key: default
+          spark_python_task:
+            python_file: src/python.py
+
+      environments:
+        - environment_key: default
+          spec:
+            client: "1"
