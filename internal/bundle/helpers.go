@@ -118,7 +118,7 @@ func getBundleRemoteRootPath(w *databricks.WorkspaceClient, t *testing.T, unique
 	return root
 }
 
-func blackBoxRun(t *testing.T, root string, args ...string) (stdout string, stderr string, err error) {
+func blackBoxRun(t *testing.T, root string, args ...string) (stdout string, stderr string) {
 	cwd := vfs.MustNew(".")
 	gitRoot, err := vfs.FindLeafInTree(cwd, ".git")
 	require.NoError(t, err)
@@ -134,8 +134,11 @@ func blackBoxRun(t *testing.T, root string, args ...string) (stdout string, stde
 	cmd.Stdout = &outBuffer
 	cmd.Stderr = &errBuffer
 
-	// Run the command, Get the output
+	// Run the command
 	err = cmd.Run()
+	require.NoError(t, err)
+
+	// Get the output
 	stdout = outBuffer.String()
 	stderr = errBuffer.String()
 	return
