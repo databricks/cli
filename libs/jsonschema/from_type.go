@@ -44,8 +44,8 @@ type constructor struct {
 func (c *constructor) Definitions() any {
 	defs := maps.Clone(c.definitions)
 
-	// Remove the root type from the definitions. No need to include it in the
-	// definitions.
+	// Remove the root type from the definitions. We don't need to include it in
+	// the definitions because it will be inlined as the root of the generated JSON schema.
 	delete(defs, typePath(c.root))
 
 	if len(defs) == 0 {
