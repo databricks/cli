@@ -2,12 +2,16 @@ package template
 
 import (
 	"context"
+	"encoding/base64"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 // Interface representing a file to be materialized from a template into a project
@@ -53,6 +57,10 @@ type copyFile struct {
 	srcPath string
 }
 
+func (f *copyFile) isNotebook() bool {
+	return strings.HasSuffix(f.DstPath().relPath, ".ipynb")
+}
+
 func (f *copyFile) DstPath() *destinationPath {
 	return f.dstPath
 }
@@ -68,13 +76,22 @@ func (f *copyFile) PersistToDisk() error {
 		return err
 	}
 	defer srcFile.Close()
-	dstFile, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, f.perm)
-	if err != nil {
+
+	if runsOnDatabricks() && f.isNotebook() {
+		content, err := io.ReadAll(srcFile)
+		if err != nil {
+			return err
+		}
+		return writeNotebook(path, content)
+	} else {
+		dstFile, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, f.perm)
+		if err != nil {
+			return err
+		}
+		defer dstFile.Close()
+		_, err = io.Copy(dstFile, srcFile)
 		return err
 	}
-	defer dstFile.Close()
-	_, err = io.Copy(dstFile, srcFile)
-	return err
 }
 
 type inMemoryFile struct {
@@ -84,6 +101,10 @@ type inMemoryFile struct {
 
 	// Permissions bits for the destination file
 	perm fs.FileMode
+}
+
+func (f *inMemoryFile) isNotebook() bool {
+	return strings.HasSuffix(f.DstPath().relPath, ".ipynb")
 }
 
 func (f *inMemoryFile) DstPath() *destinationPath {
@@ -97,5 +118,35 @@ func (f *inMemoryFile) PersistToDisk() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, f.content, f.perm)
+
+	if runsOnDatabricks() && f.isNotebook() {
+		return writeNotebook(path, f.content)
+	} else {
+		return os.WriteFile(path, f.content, f.perm)
+	}
+}
+
+func runsOnDatabricks() bool {
+	return os.Getenv("DATABRICKS_RUNTIME_VERSION") != ""
+}
+
+func writeNotebook(path string, content []byte) error {
+	if !strings.HasPrefix(path, "/Workspace/") {
+		return os.WriteFile(path, content, 0644)
+	} else {
+		w, err := databricks.NewWorkspaceClient()
+		if err != nil {
+			return err
+		}
+
+		ctx := context.Background()
+
+		err = w.Workspace.Import(ctx, workspace.Import{
+			Format:    "AUTO",
+			Overwrite: false,
+			Path:      path,
+			Content:   base64.StdEncoding.EncodeToString(content),
+		})
+		return err
+	}
 }
