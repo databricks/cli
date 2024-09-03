@@ -19,6 +19,7 @@ type Resources struct {
 	RegisteredModels      map[string]*resources.RegisteredModel      `json:"registered_models,omitempty"`
 	QualityMonitors       map[string]*resources.QualityMonitor       `json:"quality_monitors,omitempty"`
 	Schemas               map[string]*resources.Schema               `json:"schemas,omitempty"`
+	Dashboards            map[string]*resources.Dashboard            `json:"dashboards,omitempty"`
 }
 
 type ConfigResource interface {
