@@ -69,6 +69,11 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		// Remove output starting from Warning until end of output
 		output = output[:bytes.Index([]byte(output), []byte("Warning:"))]
 		cmdio.LogString(ctx, output)
+
+		if !cmdio.IsPromptSupported(ctx) {
+			return diag.Errorf("This bind operation requires user confirmation, but the current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed.")
+		}
+
 		ans, err := cmdio.AskYesOrNo(ctx, "Confirm import changes? Changes will be remotely applied only after running 'bundle deploy'.")
 		if err != nil {
 			return diag.FromErr(err)

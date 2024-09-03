@@ -1,15 +1,21 @@
 package python
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
-	"github.com/databricks/cli/libs/python"
 	"github.com/databricks/databricks-sdk-go/logger"
+	"github.com/fatih/color"
+
+	"strings"
+
+	"github.com/databricks/cli/libs/python"
 
 	"github.com/databricks/cli/bundle/env"
 
@@ -169,7 +175,11 @@ func (m *pythonMutator) runPythonMutator(ctx context.Context, cacheDir string, r
 		return dyn.InvalidValue, diag.Errorf("failed to write input file: %s", err)
 	}
 
-	stderrWriter := newLogWriter(ctx, "stderr: ")
+	stderrBuf := bytes.Buffer{}
+	stderrWriter := io.MultiWriter(
+		newLogWriter(ctx, "stderr: "),
+		&stderrBuf,
+	)
 	stdoutWriter := newLogWriter(ctx, "stdout: ")
 
 	_, processErr := process.Background(
@@ -197,7 +207,13 @@ func (m *pythonMutator) runPythonMutator(ctx context.Context, cacheDir string, r
 	// process can fail without reporting errors in diagnostics file or creating it, for instance,
 	// venv doesn't have PyDABs library installed
 	if processErr != nil {
-		return dyn.InvalidValue, diag.Errorf("python mutator process failed: %sw, use --debug to enable logging", processErr)
+		diagnostic := diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  fmt.Sprintf("python mutator process failed: %q, use --debug to enable logging", processErr),
+			Detail:   explainProcessErr(stderrBuf.String()),
+		}
+
+		return dyn.InvalidValue, diag.Diagnostics{diagnostic}
 	}
 
 	// or we can fail to read diagnostics file, that should always be created
@@ -205,13 +221,38 @@ func (m *pythonMutator) runPythonMutator(ctx context.Context, cacheDir string, r
 		return dyn.InvalidValue, diag.Errorf("failed to load diagnostics: %s", pythonDiagnosticsErr)
 	}
 
-	output, err := loadOutputFile(rootPath, outputPath)
-	if err != nil {
-		return dyn.InvalidValue, diag.Errorf("failed to load Python mutator output: %s", err)
-	}
+	output, outputDiags := loadOutputFile(rootPath, outputPath)
+	pythonDiagnostics = pythonDiagnostics.Extend(outputDiags)
 
 	// we pass through pythonDiagnostic because it contains warnings
 	return output, pythonDiagnostics
+}
+
+const installExplanation = `If using Python wheels, ensure that 'databricks-pydabs' is included in the dependencies, 
+and that the wheel is installed in the Python environment:
+
+  $ .venv/bin/pip install -e .
+
+If using a virtual environment, ensure it is specified as the venv_path property in databricks.yml, 
+or activate the environment before running CLI commands:
+
+  experimental:
+    pydabs:
+      venv_path: .venv
+`
+
+// explainProcessErr provides additional explanation for common errors.
+// It's meant to be the best effort, and not all errors are covered.
+// Output should be used only used for error reporting.
+func explainProcessErr(stderr string) string {
+	// implemented in cpython/Lib/runpy.py and portable across Python 3.x, including pypy
+	if strings.Contains(stderr, "Error while finding module specification for 'databricks.bundles.build'") {
+		summary := color.CyanString("Explanation: ") + "'databricks-pydabs' library is not installed in the Python environment.\n"
+
+		return stderr + "\n" + summary + "\n" + installExplanation
+	}
+
+	return stderr
 }
 
 func writeInputFile(inputPath string, input dyn.Value) error {
@@ -225,10 +266,10 @@ func writeInputFile(inputPath string, input dyn.Value) error {
 	return os.WriteFile(inputPath, rootConfigJson, 0600)
 }
 
-func loadOutputFile(rootPath string, outputPath string) (dyn.Value, error) {
+func loadOutputFile(rootPath string, outputPath string) (dyn.Value, diag.Diagnostics) {
 	outputFile, err := os.Open(outputPath)
 	if err != nil {
-		return dyn.InvalidValue, fmt.Errorf("failed to open output file: %w", err)
+		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to open output file: %w", err))
 	}
 
 	defer outputFile.Close()
@@ -243,27 +284,34 @@ func loadOutputFile(rootPath string, outputPath string) (dyn.Value, error) {
 	// for that, we pass virtualPath instead of outputPath as file location
 	virtualPath, err := filepath.Abs(filepath.Join(rootPath, "__generated_by_pydabs__.yml"))
 	if err != nil {
-		return dyn.InvalidValue, fmt.Errorf("failed to get absolute path: %w", err)
+		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to get absolute path: %w", err))
 	}
 
 	generated, err := yamlloader.LoadYAML(virtualPath, outputFile)
 	if err != nil {
-		return dyn.InvalidValue, fmt.Errorf("failed to parse output file: %w", err)
+		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to parse output file: %w", err))
 	}
 
-	normalized, diagnostic := convert.Normalize(config.Root{}, generated)
-	if diagnostic.Error() != nil {
-		return dyn.InvalidValue, fmt.Errorf("failed to normalize output: %w", diagnostic.Error())
-	}
+	return strictNormalize(config.Root{}, generated)
+}
+
+func strictNormalize(dst any, generated dyn.Value) (dyn.Value, diag.Diagnostics) {
+	normalized, diags := convert.Normalize(dst, generated)
 
 	// warnings shouldn't happen because output should be already normalized
 	// when it happens, it's a bug in the mutator, and should be treated as an error
 
-	for _, d := range diagnostic.Filter(diag.Warning) {
-		return dyn.InvalidValue, fmt.Errorf("failed to normalize output: %s", d.Summary)
+	strictDiags := diag.Diagnostics{}
+
+	for _, d := range diags {
+		if d.Severity == diag.Warning {
+			d.Severity = diag.Error
+		}
+
+		strictDiags = strictDiags.Append(d)
 	}
 
-	return normalized, nil
+	return normalized, strictDiags
 }
 
 // loadDiagnosticsFile loads diagnostics from a file.
