@@ -995,7 +995,7 @@
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Sync"
                     },
                     "variables": {
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/variable.Variable"
+                      "$ref": "#/$defs/map/interface"
                     },
                     "workspace": {
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Workspace"
@@ -5053,6 +5053,20 @@
             }
           }
         }
+      },
+      "interface": {
+        "anyOf": [
+          {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/$defs/interface"
+            }
+          },
+          {
+            "type": "string",
+            "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+          }
+        ]
       },
       "string": {
         "anyOf": [
