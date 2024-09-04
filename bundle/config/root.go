@@ -408,13 +408,21 @@ func (r *Root) MergeTargetOverrides(name string) error {
 
 var variableKeywords = []string{"default", "lookup"}
 
-// isFullVariableDef checks if the given value is a variable definition.
-// A variable definition is a map with one of the following
-// keys: "default", "value", "lookup".
-func isFullVariableDef(v dyn.Value) bool {
+// isFullVariableOverrideDef checks if the given value is a full syntax varaible override.
+// A full syntax variable override is a map with only one of the following
+// keys: "default", "lookup".
+func isFullVariableOverrideDef(v dyn.Value) bool {
+	mv, ok := v.AsMap()
+	if !ok {
+		return false
+	}
+
+	if mv.Len() != 1 {
+		return false
+	}
+
 	for _, keyword := range variableKeywords {
-		vv, err := dyn.Get(v, keyword)
-		if err == nil && vv.Kind() != dyn.KindInvalid {
+		if _, ok := mv.GetByString(keyword); ok {
 			return true
 		}
 	}
@@ -449,6 +457,11 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 				}, variable.Locations()), nil
 
 			case dyn.KindMap, dyn.KindSequence:
+				// If it's a full variable definition, leave it as is.
+				if isFullVariableOverrideDef(variable) {
+					return variable, nil
+				}
+
 				// Check if the original definition of variable has a type field.
 				// If it has a type field, it means the shorthand is a value of a complex type.
 				// Type might not be found if the variable overriden in a separate file
@@ -461,11 +474,6 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 							"default": variable,
 						}, variable.Locations()), nil
 					}
-				}
-
-				// If it's a full variable definition, leave it as is.
-				if isFullVariableDef(variable) {
-					return variable, nil
 				}
 
 				// If it's a shorthand, rewrite it to a full variable definition.
