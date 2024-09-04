@@ -23,7 +23,7 @@ func addInterpolationPatterns(typ reflect.Type, s jsonschema.Schema) jsonschema.
 
 	// The variables block in a target override allows for directly specifying
 	// the value if it is a primitive type.
-	if typ == reflect.TypeOf(config.TargetVariable{}) {
+	if typ == reflect.TypeOf(variable.TargetVariable{}) {
 		return jsonschema.Schema{
 			AnyOf: []jsonschema.Schema{s,
 				{Type: jsonschema.StringType},

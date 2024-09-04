@@ -8,11 +8,6 @@ import (
 
 type Mode string
 
-// We alias it here to override the JSON schema associated with a variable value
-// in a target override. This is because we allow for directly specifying the value
-// in addition to the variable.Variable struct format in a target override.
-type TargetVariable variable.Variable
-
 // Target defines overrides for a single target.
 // This structure is recursively merged into the root configuration.
 type Target struct {
@@ -62,7 +57,7 @@ type Target struct {
 	//   variables:
 	//     foo:
 	//       lookup: "resource_name"
-	Variables map[string]*TargetVariable `json:"variables,omitempty"`
+	Variables map[string]*variable.TargetVariable `json:"variables,omitempty"`
 
 	Git Git `json:"git,omitempty"`
 
