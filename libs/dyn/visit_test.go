@@ -1,26 +1,27 @@
-package dyn
+package dyn_test
 
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/databricks/cli/libs/dyn"
+	assert "github.com/databricks/cli/libs/dyn/dynassert"
 )
 
 func TestVisitCallbackPathCopy(t *testing.T) {
-	vin := V(map[string]Value{
-		"foo": V(42),
-		"bar": V(43),
+	vin := dyn.V(map[string]dyn.Value{
+		"foo": dyn.V(42),
+		"bar": dyn.V(43),
 	})
 
-	var paths []Path
+	var paths []dyn.Path
 
 	// The callback should receive a copy of the path.
 	// If the same underlying value is used, all collected paths will be the same.
-	_, _ = visit(vin, EmptyPath, NewPattern(AnyKey()), visitOptions{
-		fn: func(p Path, v Value) (Value, error) {
-			paths = append(paths, p)
-			return v, nil
-		},
+	// This test uses `MapByPattern` to collect all paths in the map.
+	// Visit itself doesn't have public functions and we exclusively use black-box testing for this package.
+	_, _ = dyn.MapByPattern(vin, dyn.NewPattern(dyn.AnyKey()), func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		paths = append(paths, p)
+		return v, nil
 	})
 
 	// Verify that the paths retained their original values.
