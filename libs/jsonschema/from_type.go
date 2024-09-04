@@ -35,12 +35,16 @@ type constructor struct {
 	root reflect.Type
 }
 
-// The $defs block in a JSON schema cannot contain "/", otherwise it will not be
-// correctly parsed by a JSON schema validator (like the Red Hat YAML extension for VSCode).
-// So we replace "/" with an additional level of nesting in the output map.
+// JSON pointers use "/" as a delimiter to represent nested objects. This means
+// we would instead need to use "~1" to represent "/" if we wish to refer to a
+// key in a JSON object with a "/" in it. Instead of doing that we replace "/" with an
+// additional level of nesting in the output map. Thus the $refs in the generated
+// JSON schema can contain "/" without any issues.
+// see: https://datatracker.ietf.org/doc/html/rfc6901
 //
 // For example:
 // {"a/b/c": "value"} is converted to {"a": {"b": {"c": "value"}}}
+// the $ref for "value" would be "#/$defs/a/b/c" in the generated JSON schema.
 func (c *constructor) Definitions() any {
 	defs := maps.Clone(c.definitions)
 
