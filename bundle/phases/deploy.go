@@ -19,9 +19,38 @@ import (
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/libs/cmdio"
 	terraformlib "github.com/databricks/cli/libs/terraform"
+	tfjson "github.com/hashicorp/terraform-json"
 )
 
-func approvalForUcSchemaDelete(ctx context.Context, b *bundle.Bundle) (bool, error) {
+func parseTerraformActions(changes []*tfjson.ResourceChange, toInclude func(typ string, actions tfjson.Actions) bool) []terraformlib.Action {
+	res := make([]terraformlib.Action, 0)
+	for _, rc := range changes {
+		if !toInclude(rc.Type, rc.Change.Actions) {
+			continue
+		}
+
+		var actionType terraformlib.ActionType
+		switch {
+		case rc.Change.Actions.Delete():
+			actionType = terraformlib.ActionTypeDelete
+		case rc.Change.Actions.Replace():
+			actionType = terraformlib.ActionTypeRecreate
+		default:
+			// No use case for other action types yet.
+			continue
+		}
+
+		res = append(res, terraformlib.Action{
+			Action:       actionType,
+			ResourceType: rc.Type,
+			ResourceName: rc.Name,
+		})
+	}
+
+	return res
+}
+
+func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	tf := b.Terraform
 	if tf == nil {
 		return false, fmt.Errorf("terraform not initialized")
@@ -33,41 +62,52 @@ func approvalForUcSchemaDelete(ctx context.Context, b *bundle.Bundle) (bool, err
 		return false, err
 	}
 
-	actions := make([]terraformlib.Action, 0)
-	for _, rc := range plan.ResourceChanges {
-		// We only care about destructive actions on UC schema resources.
-		if rc.Type != "databricks_schema" {
-			continue
+	schemaActions := parseTerraformActions(plan.ResourceChanges, func(typ string, actions tfjson.Actions) bool {
+		// Filter in only UC schema resources.
+		if typ != "databricks_schema" {
+			return false
 		}
 
-		var actionType terraformlib.ActionType
+		// We only display prompts for destructive actions like deleting or
+		// recreating a schema.
+		return actions.Delete() || actions.Replace()
+	})
 
-		switch {
-		case rc.Change.Actions.Delete():
-			actionType = terraformlib.ActionTypeDelete
-		case rc.Change.Actions.Replace():
-			actionType = terraformlib.ActionTypeRecreate
-		default:
-			// We don't need a prompt for non-destructive actions like creating
-			// or updating a schema.
-			continue
+	dltActions := parseTerraformActions(plan.ResourceChanges, func(typ string, actions tfjson.Actions) bool {
+		// Filter in only DLT pipeline resources.
+		if typ != "databricks_pipeline" {
+			return false
 		}
 
-		actions = append(actions, terraformlib.Action{
-			Action:       actionType,
-			ResourceType: rc.Type,
-			ResourceName: rc.Name,
-		})
-	}
+		// Recreating DLT pipeline leads to metadata loss and for a transient period
+		// the underling tables will be unavailable.
+		return actions.Replace() || actions.Delete()
+	})
 
-	// No restricted actions planned. No need for approval.
-	if len(actions) == 0 {
+	// We don't need to display any prompts in this case.
+	if len(dltActions) == 0 && len(schemaActions) == 0 {
 		return true, nil
 	}
 
-	cmdio.LogString(ctx, "The following UC schemas will be deleted or recreated. Any underlying data may be lost:")
-	for _, action := range actions {
-		cmdio.Log(ctx, action)
+	// One or more UC schema resources will be deleted or recreated.
+	if len(schemaActions) != 0 {
+		cmdio.LogString(ctx, "The following UC schemas will be deleted or recreated. Any underlying data may be lost:")
+		for _, action := range schemaActions {
+			cmdio.Log(ctx, action)
+		}
+	}
+
+	// One or more DLT pipelines is being recreated.
+	if len(dltActions) != 0 {
+		msg := `
+This action will result in the deletion or recreation of the following DLT Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the Pipelines will
+restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
+properties such as the 'catalog' or 'storage' are changed:`
+		cmdio.LogString(ctx, msg)
+		for _, action := range dltActions {
+			cmdio.Log(ctx, action)
+		}
 	}
 
 	if b.AutoApprove {
@@ -126,7 +166,7 @@ func Deploy() bundle.Mutator {
 				terraform.CheckRunningResource(),
 				terraform.Plan(terraform.PlanGoal("deploy")),
 				bundle.If(
-					approvalForUcSchemaDelete,
+					approvalForDeploy,
 					deployCore,
 					bundle.LogString("Deployment cancelled!"),
 				),

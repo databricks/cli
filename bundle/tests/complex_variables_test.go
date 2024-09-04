@@ -68,3 +68,22 @@ func TestComplexVariablesOverride(t *testing.T) {
 	require.Equal(t, "", b.Config.Resources.Jobs["my_job"].JobClusters[0].NewCluster.SparkConf["spark.random"])
 	require.Equal(t, "", b.Config.Resources.Jobs["my_job"].JobClusters[0].NewCluster.PolicyId)
 }
+
+func TestComplexVariablesOverrideWithMultipleFiles(t *testing.T) {
+	b, diags := loadTargetWithDiags("variables/complex_multiple_files", "dev")
+	require.Empty(t, diags)
+
+	diags = bundle.Apply(context.Background(), b, bundle.Seq(
+		mutator.SetVariables(),
+		mutator.ResolveVariableReferencesInComplexVariables(),
+		mutator.ResolveVariableReferences(
+			"variables",
+		),
+	))
+	require.NoError(t, diags.Error())
+
+	require.Equal(t, "14.2.x-scala2.11", b.Config.Resources.Jobs["my_job"].JobClusters[0].NewCluster.SparkVersion)
+	require.Equal(t, "Standard_DS3_v2", b.Config.Resources.Jobs["my_job"].JobClusters[0].NewCluster.NodeTypeId)
+	require.Equal(t, 4, b.Config.Resources.Jobs["my_job"].JobClusters[0].NewCluster.NumWorkers)
+	require.Equal(t, "false", b.Config.Resources.Jobs["my_job"].JobClusters[0].NewCluster.SparkConf["spark.speculation"])
+}
