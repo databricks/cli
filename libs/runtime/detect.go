@@ -9,6 +9,6 @@ import (
 const envDatabricksRuntimeVersion = "DATABRICKS_RUNTIME_VERSION"
 
 func RunsOnDatabricks(ctx context.Context) bool {
-	_, ok := env.Lookup(ctx, envDatabricksRuntimeVersion)
-	return ok
+	value, ok := env.Lookup(ctx, envDatabricksRuntimeVersion)
+	return value != "" && ok
 }

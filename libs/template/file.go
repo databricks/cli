@@ -115,7 +115,7 @@ func shouldUseImportNotebook(ctx context.Context, path string, content []byte) b
 		if err != nil {
 			log.Debugf(ctx, "Error detecting notebook: %v", err)
 		}
-		return isNotebook && err != nil
+		return isNotebook && err == nil
 	}
 
 	return false
