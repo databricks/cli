@@ -42,14 +42,14 @@ func TestFromTypeBasic(t *testing.T) {
 		},
 		{
 			name: "string",
-			typ:  reflect.TypeOf(""),
+			typ:  reflect.TypeOf(string("")),
 			expected: Schema{
 				Type: "string",
 			},
 		},
 		{
 			name: "bool",
-			typ:  reflect.TypeOf(true),
+			typ:  reflect.TypeOf(bool(true)),
 			expected: Schema{
 				Type: "boolean",
 			},
