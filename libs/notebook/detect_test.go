@@ -117,3 +117,22 @@ func TestDetectWithObjectInfo(t *testing.T) {
 	assert.True(t, nb)
 	assert.Equal(t, workspace.LanguagePython, lang)
 }
+
+func TestInMemoryFiles(t *testing.T) {
+	isNotebook, language, err := DetectWithContent("hello.py", []byte("# Databricks notebook source\n print('hello')"))
+	assert.True(t, isNotebook)
+	assert.Equal(t, workspace.LanguagePython, language)
+	require.NoError(t, err)
+
+	isNotebook, language, err = DetectWithContent("hello.py", []byte("print('hello')"))
+	assert.False(t, isNotebook)
+	assert.Equal(t, workspace.Language(""), language)
+	require.NoError(t, err)
+
+	fileContent, err := os.ReadFile("./testdata/py_ipynb.ipynb")
+	require.NoError(t, err)
+	isNotebook, language, err = DetectWithContent("py_ipynb.ipynb", fileContent)
+	assert.True(t, isNotebook)
+	assert.Equal(t, workspace.LanguagePython, language)
+	require.NoError(t, err)
+}

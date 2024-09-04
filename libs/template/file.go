@@ -11,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/cli/libs/runtime"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
@@ -107,12 +108,17 @@ func (f *inMemoryFile) PersistToDisk() error {
 	return writeFile(f.ctx, path, f.content, f.perm)
 }
 
-func shouldUseImportNotebook(ctx context.Context, path string) bool {
-	return strings.HasPrefix(path, "/Workspace/") && runtime.RunsOnDatabricks(ctx) && strings.HasSuffix(path, ".ipynb")
+func shouldUseImportNotebook(ctx context.Context, path string, content []byte) bool {
+	if strings.HasPrefix(path, "/Workspace/") && runtime.RunsOnDatabricks(ctx) {
+		isNotebook, _, _ := notebook.DetectWithContent(path, content)
+		return isNotebook
+	} else {
+		return false
+	}
 }
 
 func writeFile(ctx context.Context, path string, content []byte, perm fs.FileMode) error {
-	if shouldUseImportNotebook(ctx, path) {
+	if shouldUseImportNotebook(ctx, path, content) {
 		return importNotebook(ctx, path, content)
 	} else {
 		return os.WriteFile(path, content, perm)

@@ -118,16 +118,18 @@ func TestTemplateCopyFilePersistToDiskForWindows(t *testing.T) {
 
 func TestShouldUseImportNotebook(t *testing.T) {
 	ctx := context.Background()
-	assert.False(t, shouldUseImportNotebook(ctx, "./foo/bar"))
-	assert.False(t, shouldUseImportNotebook(ctx, "./foo/bar.ipynb"))
-	assert.False(t, shouldUseImportNotebook(ctx, "/Workspace/foo/bar"))
-	assert.False(t, shouldUseImportNotebook(ctx, "/Workspace/foo/bar.ipynb"))
+	data := []byte("# Databricks notebook source\n print('hello')")
+
+	assert.False(t, shouldUseImportNotebook(ctx, "./foo/bar", data))
+	assert.False(t, shouldUseImportNotebook(ctx, "./foo/bar.ipynb", data))
+	assert.False(t, shouldUseImportNotebook(ctx, "/Workspace/foo/bar", data))
+	assert.False(t, shouldUseImportNotebook(ctx, "/Workspace/foo/bar.ipynb", data))
 
 	t.Setenv("DATABRICKS_RUNTIME_VERSION", "14.3")
-	assert.False(t, shouldUseImportNotebook(ctx, "./foo/bar"))
-	assert.False(t, shouldUseImportNotebook(ctx, "./foo/bar.ipynb"))
-	assert.False(t, shouldUseImportNotebook(ctx, "/Workspace/foo/bar"))
-	assert.True(t, shouldUseImportNotebook(ctx, "/Workspace/foo/bar.ipynb"))
+	assert.False(t, shouldUseImportNotebook(ctx, "./foo/bar", data))
+	assert.False(t, shouldUseImportNotebook(ctx, "./foo/bar.ipynb", data))
+	assert.False(t, shouldUseImportNotebook(ctx, "/Workspace/foo/bar", data))
+	assert.True(t, shouldUseImportNotebook(ctx, "/Workspace/foo/bar.py", data))
 }
 
 func TestImportNotebook(t *testing.T) {
