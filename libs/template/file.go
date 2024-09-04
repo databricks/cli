@@ -23,7 +23,7 @@ type file interface {
 	DstPath() *destinationPath
 
 	// Write file to disk at the destination path.
-	PersistToDisk(ctx context.Context) error
+	PersistToDisk() error
 }
 
 type destinationPath struct {
@@ -62,7 +62,7 @@ func (f *copyFile) DstPath() *destinationPath {
 	return f.dstPath
 }
 
-func (f *copyFile) PersistToDisk(ctx context.Context) error {
+func (f *copyFile) PersistToDisk() error {
 	path := f.DstPath().absPath()
 	err := os.MkdirAll(filepath.Dir(path), 0755)
 	if err != nil {
@@ -78,10 +78,12 @@ func (f *copyFile) PersistToDisk(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return writeFile(ctx, path, content)
+	return writeFile(f.ctx, path, content, f.perm)
 }
 
 type inMemoryFile struct {
+	ctx context.Context
+
 	dstPath *destinationPath
 
 	content []byte
@@ -94,7 +96,7 @@ func (f *inMemoryFile) DstPath() *destinationPath {
 	return f.dstPath
 }
 
-func (f *inMemoryFile) PersistToDisk(ctx context.Context) error {
+func (f *inMemoryFile) PersistToDisk() error {
 	path := f.DstPath().absPath()
 
 	err := os.MkdirAll(filepath.Dir(path), 0755)
@@ -102,7 +104,7 @@ func (f *inMemoryFile) PersistToDisk(ctx context.Context) error {
 		return err
 	}
 
-	return writeFile(ctx, path, f.content)
+	return writeFile(f.ctx, path, f.content, f.perm)
 }
 
 func runsOnDatabricks(ctx context.Context) bool {
@@ -110,11 +112,15 @@ func runsOnDatabricks(ctx context.Context) bool {
 	return ok
 }
 
-func writeFile(ctx context.Context, path string, content []byte) error {
-	if strings.HasPrefix(path, "/Workspace/") && runsOnDatabricks(ctx) && strings.HasSuffix(path, ".ipynb") {
+func shouldUseImportNotebook(ctx context.Context, path string) bool {
+	return strings.HasPrefix(path, "/Workspace/") && runsOnDatabricks(ctx) && strings.HasSuffix(path, ".ipynb")
+}
+
+func writeFile(ctx context.Context, path string, content []byte, perm fs.FileMode) error {
+	if shouldUseImportNotebook(ctx, path) {
 		return importNotebook(ctx, path, content)
 	} else {
-		return os.WriteFile(path, content, 0644)
+		return os.WriteFile(path, content, perm)
 	}
 }
 

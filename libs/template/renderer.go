@@ -194,6 +194,7 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 	}
 
 	return &inMemoryFile{
+		ctx: r.ctx,
 		dstPath: &destinationPath{
 			root:    r.instanceRoot,
 			relPath: relPath,
@@ -320,7 +321,7 @@ func (r *renderer) persistToDisk() error {
 
 	// Persist files to disk
 	for _, file := range filesToPersist {
-		err := file.PersistToDisk(r.ctx)
+		err := file.PersistToDisk()
 		if err != nil {
 			return err
 		}

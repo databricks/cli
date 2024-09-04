@@ -329,6 +329,7 @@ func TestRendererPersistToDisk(t *testing.T) {
 		skipPatterns: []string{"a/b/c", "mn*"},
 		files: []file{
 			&inMemoryFile{
+				ctx: ctx,
 				dstPath: &destinationPath{
 					root:    tmpDir,
 					relPath: "a/b/c",
@@ -337,6 +338,7 @@ func TestRendererPersistToDisk(t *testing.T) {
 				content: nil,
 			},
 			&inMemoryFile{
+				ctx: ctx,
 				dstPath: &destinationPath{
 					root:    tmpDir,
 					relPath: "mno",
@@ -345,6 +347,7 @@ func TestRendererPersistToDisk(t *testing.T) {
 				content: nil,
 			},
 			&inMemoryFile{
+				ctx: ctx,
 				dstPath: &destinationPath{
 					root:    tmpDir,
 					relPath: "a/b/d",
@@ -353,6 +356,7 @@ func TestRendererPersistToDisk(t *testing.T) {
 				content: []byte("123"),
 			},
 			&inMemoryFile{
+				ctx: ctx,
 				dstPath: &destinationPath{
 					root:    tmpDir,
 					relPath: "mmnn",
