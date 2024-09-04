@@ -319,7 +319,8 @@ func (r *renderer) persistToDisk() error {
 		_, err := os.Stat(path)
 		if err == nil {
 			return fmt.Errorf("failed to initialize template, one or more files already exist: %s", path)
-		} else if !errors.Is(err, fs.ErrNotExist) {
+		}
+		if !errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("error while verifying file %s does not already exist: %w", path, err)
 		}
 	}
