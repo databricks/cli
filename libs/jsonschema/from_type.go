@@ -216,6 +216,10 @@ func getStructFields(typ reflect.Type) []reflect.StructField {
 		}
 
 		fieldType := field.Type
+
+		// Embedded types can only be struct{} or pointer to struct{}. Multiple
+		// levels of pointers are not allowed by the Go compiler. So we only
+		// dereference pointers once.
 		if fieldType.Kind() == reflect.Pointer {
 			fieldType = fieldType.Elem()
 		}

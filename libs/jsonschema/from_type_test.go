@@ -10,9 +10,10 @@ import (
 
 func TestFromTypeBasic(t *testing.T) {
 	type myStruct struct {
-		S string      `json:"s"`
-		I *int        `json:"i,omitempty"`
-		V interface{} `json:"v,omitempty"`
+		S             string      `json:"s"`
+		I             *int        `json:"i,omitempty"`
+		V             interface{} `json:"v,omitempty"`
+		TriplePointer ***int      `json:"triple_pointer,omitempty"`
 
 		// These fields should be ignored in the resulting schema.
 		NotAnnotated     string
@@ -84,6 +85,9 @@ func TestFromTypeBasic(t *testing.T) {
 					"v": {
 						Reference: &interfaceRef,
 					},
+					"triple_pointer": {
+						Reference: &intRef,
+					},
 				},
 				AdditionalProperties: false,
 				Required:             []string{"s"},
@@ -131,21 +135,35 @@ func TestFromTypeBasic(t *testing.T) {
 }
 
 func TestGetStructFields(t *testing.T) {
-	type EmbeddedStruct struct {
-		I int
-		B bool
+	type InnerEmbeddedStruct struct {
+		InnerField float64
+	}
+
+	type EmbeddedStructOne struct {
+		FieldOne int
+
+		*InnerEmbeddedStruct
+	}
+
+	type EmbeddedStructTwo struct {
+		FieldTwo bool
 	}
 
 	type MyStruct struct {
-		S string
-		*EmbeddedStruct
+		*EmbeddedStructOne
+		EmbeddedStructTwo
+
+		OuterField string
 	}
 
 	fields := getStructFields(reflect.TypeOf(MyStruct{}))
-	assert.Len(t, fields, 3)
-	assert.Equal(t, "S", fields[0].Name)
-	assert.Equal(t, "I", fields[1].Name)
-	assert.Equal(t, "B", fields[2].Name)
+	assert.Len(t, fields, 4)
+	assert.Equal(t, "OuterField", fields[0].Name)
+	assert.Equal(t, "FieldOne", fields[1].Name)
+
+	// InnerField occurring after FieldTwo ensures BFS as opposed to DFS traversal.
+	assert.Equal(t, "FieldTwo", fields[2].Name)
+	assert.Equal(t, "InnerField", fields[3].Name)
 }
 
 func TestFromTypeNested(t *testing.T) {
