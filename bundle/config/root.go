@@ -406,6 +406,22 @@ func (r *Root) MergeTargetOverrides(name string) error {
 	return r.updateWithDynamicValue(root)
 }
 
+var variableKeywords = []string{"default", "lookup"}
+
+// isFullVariableDef checks if the given value is a variable definition.
+// A variable definition is a map with one of the following
+// keys: "default", "value", "lookup".
+func isFullVariableDef(v dyn.Value) bool {
+	for _, keyword := range variableKeywords {
+		vv, err := dyn.Get(v, keyword)
+		if err == nil && vv.Kind() != dyn.KindInvalid {
+			return true
+		}
+	}
+
+	return false
+}
+
 // rewriteShorthands performs lightweight rewriting of the configuration
 // tree where we allow users to write a shorthand and must rewrite to the full form.
 func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
@@ -433,30 +449,29 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 				}, variable.Locations()), nil
 
 			case dyn.KindMap, dyn.KindSequence:
-				lookup, err := dyn.Get(variable, "lookup")
-				// If lookup is set, we don't want to rewrite the variable and return it as is.
-				if err == nil && lookup.Kind() != dyn.KindInvalid {
-					return variable, nil
-				}
-
 				// Check if the original definition of variable has a type field.
+				// If it has a type  field, it means the shorthand is a value of a complex type.
 				// Type might not be found if the variable overriden in a separate file
 				// and configuration is not merged yet.
 				typeV, err := dyn.GetByPath(v, p.Append(dyn.Key("type")))
-				if err != nil {
-					return dyn.NewValue(map[string]dyn.Value{
-						"default": variable,
-					}, variable.Locations()), nil
+				if err == nil && typeV.MustString() == "complex" {
+					if typeV.MustString() == "complex" {
+						return dyn.NewValue(map[string]dyn.Value{
+							"type":    typeV,
+							"default": variable,
+						}, variable.Locations()), nil
+					}
 				}
 
-				if typeV.MustString() == "complex" {
-					return dyn.NewValue(map[string]dyn.Value{
-						"type":    typeV,
-						"default": variable,
-					}, variable.Locations()), nil
+				// If it's a full variable definition, leave it as is.
+				if isFullVariableDef(variable) {
+					return variable, nil
 				}
 
-				return variable, nil
+				// If it's a shorthand, rewrite it to a full variable definition.
+				return dyn.NewValue(map[string]dyn.Value{
+					"default": variable,
+				}, variable.Locations()), nil
 
 			default:
 				return variable, nil

@@ -5,11 +5,16 @@ resources:
   jobs:
     my_job:
       job_clusters:
-        - job_cluster_key: key
-          new_cluster: ${var.cluster}
+        - job_cluster_key: key§
+          new_cluster: ${var.cluster1}
+        - job_cluster_key: key1
+          new_cluster: ${var.cluster2}
 
 variables:
-  cluster:
+  cluster1:
+    type: complex
+    description: "A cluster definition"
+  cluster2:
     type: complex
     description: "A cluster definition"
 
