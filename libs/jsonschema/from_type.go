@@ -93,7 +93,7 @@ func FromType(typ reflect.Type, fns []func(typ reflect.Type, s Schema) Schema) (
 		root:        typ,
 	}
 
-	err := c.walk(typ)
+	_, err := c.walk(typ)
 	if err != nil {
 		return Schema{}, err
 	}
@@ -149,7 +149,7 @@ func typePath(typ reflect.Type) string {
 
 // Walk the Go type, generating $defs for every type encountered, and populating
 // the corresponding $ref in the JSON schema.
-func (c *constructor) walk(typ reflect.Type) error {
+func (c *constructor) walk(typ reflect.Type) (string, error) {
 	// Dereference pointers if necessary.
 	for typ.Kind() == reflect.Ptr {
 		typ = typ.Elem()
@@ -159,7 +159,7 @@ func (c *constructor) walk(typ reflect.Type) error {
 
 	// Return early if the type has already been seen, to avoid infinite recursion.
 	if _, ok := c.seen[typPath]; ok {
-		return nil
+		return typPath, nil
 	}
 	c.seen[typPath] = typ
 
@@ -187,15 +187,15 @@ func (c *constructor) walk(typ reflect.Type) error {
 		// arbitrary values.
 		s = Schema{}
 	default:
-		return fmt.Errorf("unsupported type: %s", typ.Kind())
+		return "", fmt.Errorf("unsupported type: %s", typ.Kind())
 	}
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// Store the computed JSON schema for the type.
 	c.definitions[typPath] = s
-	return nil
+	return typPath, nil
 }
 
 // This function returns all member fields of the provided type.
@@ -273,8 +273,7 @@ func (c *constructor) fromTypeStruct(typ reflect.Type) (Schema, error) {
 		}
 
 		// Walk the fields of the struct.
-		typPath := typePath(structField.Type)
-		err := c.walk(structField.Type)
+		typPath, err := c.walk(structField.Type)
 		if err != nil {
 			return Schema{}, err
 		}
@@ -299,10 +298,8 @@ func (c *constructor) fromTypeSlice(typ reflect.Type) (Schema, error) {
 		Type: ArrayType,
 	}
 
-	typPath := typePath(typ.Elem())
-
 	// Walk the slice element type.
-	err := c.walk(typ.Elem())
+	typPath, err := c.walk(typ.Elem())
 	if err != nil {
 		return Schema{}, err
 	}
@@ -325,10 +322,8 @@ func (c *constructor) fromTypeMap(typ reflect.Type) (Schema, error) {
 		Type: ObjectType,
 	}
 
-	typPath := typePath(typ.Elem())
-
 	// Walk the map value type.
-	err := c.walk(typ.Elem())
+	typPath, err := c.walk(typ.Elem())
 	if err != nil {
 		return Schema{}, err
 	}
