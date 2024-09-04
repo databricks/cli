@@ -11,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/cli/libs/runtime"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -110,11 +111,14 @@ func (f *inMemoryFile) PersistToDisk() error {
 
 func shouldUseImportNotebook(ctx context.Context, path string, content []byte) bool {
 	if strings.HasPrefix(path, "/Workspace/") && runtime.RunsOnDatabricks(ctx) {
-		isNotebook, _, _ := notebook.DetectWithContent(path, content)
-		return isNotebook
-	} else {
-		return false
+		isNotebook, _, err := notebook.DetectWithContent(path, content)
+		if err != nil {
+			log.Debugf(ctx, "Error detecting notebook: %v", err)
+		}
+		return isNotebook && err != nil
 	}
+
+	return false
 }
 
 func writeFile(ctx context.Context, path string, content []byte, perm fs.FileMode) error {
