@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/filer"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
@@ -119,10 +119,7 @@ func writeFile(ctx context.Context, path string, content []byte) error {
 }
 
 func importNotebook(ctx context.Context, path string, content []byte) error {
-	w, err := databricks.NewWorkspaceClient()
-	if err != nil {
-		return err
-	}
+	w := root.WorkspaceClient(ctx)
 
 	return w.Workspace.Import(ctx, workspace.Import{
 		Format:    "AUTO",

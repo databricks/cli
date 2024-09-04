@@ -24,7 +24,7 @@ func testInMemoryFile(t *testing.T, perm fs.FileMode) {
 		perm:    perm,
 		content: []byte("123"),
 	}
-	err := f.PersistToDisk()
+	err := f.PersistToDisk(context.Background())
 	assert.NoError(t, err)
 
 	assertFileContent(t, filepath.Join(tmpDir, "a/b/c"), "123")
@@ -38,9 +38,10 @@ func testCopyFile(t *testing.T, perm fs.FileMode) {
 	require.NoError(t, err)
 	err = os.WriteFile(filepath.Join(tmpDir, "source"), []byte("qwerty"), perm)
 	require.NoError(t, err)
+	ctx := context.Background()
 
 	f := &copyFile{
-		ctx: context.Background(),
+		ctx: ctx,
 		dstPath: &destinationPath{
 			root:    tmpDir,
 			relPath: "a/b/c",
@@ -49,7 +50,7 @@ func testCopyFile(t *testing.T, perm fs.FileMode) {
 		srcPath:  "source",
 		srcFiler: templateFiler,
 	}
-	err = f.PersistToDisk()
+	err = f.PersistToDisk(ctx)
 	assert.NoError(t, err)
 
 	assertFileContent(t, filepath.Join(tmpDir, "a/b/c"), "qwerty")
