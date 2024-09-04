@@ -143,7 +143,7 @@ func TestValueUnderlyingFloat(t *testing.T) {
 }
 
 func TestValueUnderlyingTime(t *testing.T) {
-	v := dyn.V(time.Now())
+	v := dyn.V(dyn.FromTime(time.Now()))
 
 	vv1, ok := v.AsTime()
 	assert.True(t, ok)

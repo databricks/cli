@@ -2,7 +2,6 @@ package dyn
 
 import (
 	"fmt"
-	"time"
 )
 
 type Kind int
@@ -34,7 +33,7 @@ func kindOf(v any) Kind {
 		return KindInt
 	case float32, float64:
 		return KindFloat
-	case time.Time:
+	case Time:
 		return KindTime
 	case nil:
 		return KindNil
