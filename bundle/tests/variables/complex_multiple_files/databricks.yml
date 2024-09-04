@@ -5,9 +5,9 @@ resources:
   jobs:
     my_job:
       job_clusters:
-        - job_cluster_key: key§
-          new_cluster: ${var.cluster1}
         - job_cluster_key: key1
+          new_cluster: ${var.cluster1}
+        - job_cluster_key: key2
           new_cluster: ${var.cluster2}
 
 variables:
