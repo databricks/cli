@@ -758,10 +758,7 @@
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Lock"
                     }
                   },
-                  "additionalProperties": false,
-                  "required": [
-                    "lock"
-                  ]
+                  "additionalProperties": false
                 },
                 {
                   "type": "string",
