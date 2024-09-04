@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/runtime"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
@@ -107,13 +107,8 @@ func (f *inMemoryFile) PersistToDisk() error {
 	return writeFile(f.ctx, path, f.content, f.perm)
 }
 
-func runsOnDatabricks(ctx context.Context) bool {
-	_, ok := env.Lookup(ctx, "DATABRICKS_RUNTIME_VERSION")
-	return ok
-}
-
 func shouldUseImportNotebook(ctx context.Context, path string) bool {
-	return strings.HasPrefix(path, "/Workspace/") && runsOnDatabricks(ctx) && strings.HasSuffix(path, ".ipynb")
+	return strings.HasPrefix(path, "/Workspace/") && runtime.RunsOnDatabricks(ctx) && strings.HasSuffix(path, ".ipynb")
 }
 
 func writeFile(ctx context.Context, path string, content []byte, perm fs.FileMode) error {
