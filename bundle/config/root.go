@@ -434,9 +434,13 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 
 			case dyn.KindMap, dyn.KindSequence:
 				// Check if the original definition of variable has a type field.
+				// Type might not be found if the variable overriden in a separate file
+				// and configuration is not merged yet.
 				typeV, err := dyn.GetByPath(v, p.Append(dyn.Key("type")))
 				if err != nil {
-					return variable, nil
+					return dyn.NewValue(map[string]dyn.Value{
+						"default": variable,
+					}, variable.Locations()), nil
 				}
 
 				if typeV.MustString() == "complex" {

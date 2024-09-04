@@ -1,0 +1,17 @@
+bundle:
+  name: complex-variables-multiple-files
+
+resources:
+  jobs:
+    my_job:
+      job_clusters:
+        - job_cluster_key: key
+          new_cluster: ${var.cluster}
+
+variables:
+  cluster:
+    type: complex
+    description: "A cluster definition"
+
+include:
+  - ./variables/*.yml
