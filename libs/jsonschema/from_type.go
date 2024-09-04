@@ -255,9 +255,10 @@ func (c *constructor) fromTypeStruct(typ reflect.Type) (Schema, error) {
 		}
 
 		jsonTags := strings.Split(structField.Tag.Get("json"), ",")
+		fieldName := jsonTags[0]
 		// Do not include fields in the schema that will not be serialized during
 		// JSON marshalling.
-		if jsonTags[0] == "" || jsonTags[0] == "-" || !structField.IsExported() {
+		if fieldName == "" || fieldName == "-" || !structField.IsExported() {
 			continue
 		}
 
@@ -265,7 +266,7 @@ func (c *constructor) fromTypeStruct(typ reflect.Type) (Schema, error) {
 		// required to be present in the API payload. Thus its absence in the
 		// tags list indicates that the field is required.
 		if !slices.Contains(jsonTags, "omitempty") {
-			res.Required = append(res.Required, jsonTags[0])
+			res.Required = append(res.Required, fieldName)
 		}
 
 		// Walk the fields of the struct.
@@ -278,7 +279,7 @@ func (c *constructor) fromTypeStruct(typ reflect.Type) (Schema, error) {
 		// For every property in the struct, add a $ref to the corresponding
 		// $defs block.
 		refPath := path.Join("#/$defs", typPath)
-		res.Properties[jsonTags[0]] = &Schema{
+		res.Properties[fieldName] = &Schema{
 			Reference: &refPath,
 		}
 	}
