@@ -120,4 +120,4 @@ cmd/workspace/workspace-conf/workspace-conf.go linguist-generated=true
 cmd/workspace/workspace/workspace.go linguist-generated=true
 bundle/internal/tf/schema/\*.go linguist-generated=true
 go.sum linguist-generated=true
-cmd/bundle/_generated linguist-generated=true
+bundle/internal/schema/generated/jsonschema.json linguist-generated=true
