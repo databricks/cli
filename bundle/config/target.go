@@ -2,10 +2,13 @@ package config
 
 import (
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 type Mode string
+
+type TargetVariable variable.Variable
 
 // Target defines overrides for a single target.
 // This structure is recursively merged into the root configuration.
@@ -56,7 +59,7 @@ type Target struct {
 	//   variables:
 	//     foo:
 	//       lookup: "resource_name"
-	Variables map[string]any `json:"variables,omitempty"`
+	Variables map[string]*TargetVariable `json:"variables,omitempty"`
 
 	Git Git `json:"git,omitempty"`
 

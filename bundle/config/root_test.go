@@ -139,12 +139,12 @@ func TestRootMergeTargetOverridesWithVariables(t *testing.T) {
 		},
 		Targets: map[string]*Target{
 			"development": {
-				Variables: map[string]any{
-					"foo": variable.Variable{
+				Variables: map[string]*TargetVariable{
+					"foo": {
 						Default:     "bar",
 						Description: "wrong",
 					},
-					"complex": variable.Variable{
+					"complex": {
 						Type:        "wrong",
 						Description: "wrong",
 						Default: map[string]interface{}{
