@@ -8,6 +8,8 @@ import (
 
 type Mode string
 
+type TargetVariable variable.Variable
+
 // Target defines overrides for a single target.
 // This structure is recursively merged into the root configuration.
 type Target struct {
