@@ -321,7 +321,7 @@ func (r *renderer) persistToDisk() error {
 
 	// Persist files to disk
 	for _, file := range filesToPersist {
-		err := file.PersistToDisk()
+		err := file.PersistToDisk(r.ctx)
 		if err != nil {
 			return err
 		}

@@ -23,7 +23,7 @@ type file interface {
 	DstPath() *destinationPath
 
 	// Write file to disk at the destination path.
-	PersistToDisk() error
+	PersistToDisk(ctx context.Context) error
 }
 
 type destinationPath struct {
@@ -58,15 +58,11 @@ type copyFile struct {
 	srcPath string
 }
 
-func (f *copyFile) isNotebook() bool {
-	return strings.HasSuffix(f.DstPath().relPath, ".ipynb")
-}
-
 func (f *copyFile) DstPath() *destinationPath {
 	return f.dstPath
 }
 
-func (f *copyFile) PersistToDisk() error {
+func (f *copyFile) PersistToDisk(ctx context.Context) error {
 	path := f.DstPath().absPath()
 	err := os.MkdirAll(filepath.Dir(path), 0755)
 	if err != nil {
@@ -78,23 +74,11 @@ func (f *copyFile) PersistToDisk() error {
 	}
 	defer srcFile.Close()
 
-	ctx := context.Background()
-
-	if runsOnDatabricks(ctx) && f.isNotebook() {
-		content, err := io.ReadAll(srcFile)
-		if err != nil {
-			return err
-		}
-		return writeNotebook(ctx, path, content)
-	} else {
-		dstFile, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, f.perm)
-		if err != nil {
-			return err
-		}
-		defer dstFile.Close()
-		_, err = io.Copy(dstFile, srcFile)
+	content, err := io.ReadAll(srcFile)
+	if err != nil {
 		return err
 	}
+	return writeFile(ctx, path, content)
 }
 
 type inMemoryFile struct {
@@ -106,15 +90,11 @@ type inMemoryFile struct {
 	perm fs.FileMode
 }
 
-func (f *inMemoryFile) isNotebook() bool {
-	return strings.HasSuffix(f.DstPath().relPath, ".ipynb")
-}
-
 func (f *inMemoryFile) DstPath() *destinationPath {
 	return f.dstPath
 }
 
-func (f *inMemoryFile) PersistToDisk() error {
+func (f *inMemoryFile) PersistToDisk(ctx context.Context) error {
 	path := f.DstPath().absPath()
 
 	err := os.MkdirAll(filepath.Dir(path), 0755)
@@ -122,13 +102,7 @@ func (f *inMemoryFile) PersistToDisk() error {
 		return err
 	}
 
-	ctx := context.Background()
-
-	if runsOnDatabricks(ctx) && f.isNotebook() {
-		return writeNotebook(ctx, path, f.content)
-	} else {
-		return os.WriteFile(path, f.content, f.perm)
-	}
+	return writeFile(ctx, path, f.content)
 }
 
 func runsOnDatabricks(ctx context.Context) bool {
@@ -136,21 +110,24 @@ func runsOnDatabricks(ctx context.Context) bool {
 	return ok
 }
 
-func writeNotebook(ctx context.Context, path string, content []byte) error {
-	if !strings.HasPrefix(path, "/Workspace/") {
-		return os.WriteFile(path, content, 0644)
+func writeFile(ctx context.Context, path string, content []byte) error {
+	if strings.HasPrefix(path, "/Workspace/") && runsOnDatabricks(ctx) && strings.HasSuffix(path, ".ipynb") {
+		return importNotebook(ctx, path, content)
 	} else {
-		w, err := databricks.NewWorkspaceClient()
-		if err != nil {
-			return err
-		}
+		return os.WriteFile(path, content, 0644)
+	}
+}
 
-		err = w.Workspace.Import(ctx, workspace.Import{
-			Format:    "AUTO",
-			Overwrite: false,
-			Path:      path,
-			Content:   base64.StdEncoding.EncodeToString(content),
-		})
+func importNotebook(ctx context.Context, path string, content []byte) error {
+	w, err := databricks.NewWorkspaceClient()
+	if err != nil {
 		return err
 	}
+
+	return w.Workspace.Import(ctx, workspace.Import{
+		Format:    "AUTO",
+		Overwrite: false,
+		Path:      path,
+		Content:   base64.StdEncoding.EncodeToString(content),
+	})
 }
