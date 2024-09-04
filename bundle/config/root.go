@@ -450,7 +450,7 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 
 			case dyn.KindMap, dyn.KindSequence:
 				// Check if the original definition of variable has a type field.
-				// If it has a type  field, it means the shorthand is a value of a complex type.
+				// If it has a type field, it means the shorthand is a value of a complex type.
 				// Type might not be found if the variable overriden in a separate file
 				// and configuration is not merged yet.
 				typeV, err := dyn.GetByPath(v, p.Append(dyn.Key("type")))
