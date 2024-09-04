@@ -3,12 +3,10 @@ package bundle
 import (
 	_ "embed"
 
+	"github.com/databricks/cli/bundle/generated"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
 )
-
-//go:embed _generated/jsonschema.json
-var bundleSchemaBytes []byte
 
 func newSchemaCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -18,7 +16,7 @@ func newSchemaCommand() *cobra.Command {
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		_, err := cmd.OutOrStdout().Write(bundleSchemaBytes)
+		_, err := cmd.OutOrStdout().Write(generated.BundleSchema)
 		return err
 	}
 
