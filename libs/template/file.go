@@ -76,6 +76,9 @@ func (f *copyFile) PersistToDisk() error {
 	}
 	defer srcFile.Close()
 
+	// we read the full file into memory because we need to inspect the content
+	// in order to determine if it is a notebook
+	// Once we stop using the workspace API, we can remove this and write in a streaming fashion
 	content, err := io.ReadAll(srcFile)
 	if err != nil {
 		return err
