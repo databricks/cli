@@ -433,6 +433,12 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 				}, variable.Locations()), nil
 
 			case dyn.KindMap, dyn.KindSequence:
+				lookup, err := dyn.Get(variable, "lookup")
+				// If lookup is set, we don't want to rewrite the variable and return it as is.
+				if err == nil && lookup.Kind() != dyn.KindInvalid {
+					return variable, nil
+				}
+
 				// Check if the original definition of variable has a type field.
 				// Type might not be found if the variable overriden in a separate file
 				// and configuration is not merged yet.
