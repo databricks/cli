@@ -182,10 +182,9 @@ func (c *constructor) walk(typ reflect.Type) error {
 	case reflect.Float32, reflect.Float64:
 		s = Schema{Type: NumberType}
 	case reflect.Interface:
-		// Interface or any types are not serialized to JSON by the default JSON
-		// unmarshaller (json.Unmarshal). They likely thus are parsed by the
-		// dynamic configuration tree and we should support arbitary values here.
-		// Eg: variables.default can be anything.
+		// We cannot determine the schema for fields of interface type just based
+		// on the type information. Thus we'll set the empty schema here and allow
+		// arbitrary values.
 		s = Schema{}
 	default:
 		return fmt.Errorf("unsupported type: %s", typ.Kind())
