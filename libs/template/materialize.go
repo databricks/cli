@@ -40,13 +40,6 @@ func Materialize(ctx context.Context, configFilePath, templateRoot, outputDir st
 		return err
 	}
 
-	if outputDir == "" {
-		outputDir, err = os.Getwd()
-		if err != nil {
-			return err
-		}
-	}
-
 	templatePath := filepath.Join(templateRoot, templateDirName)
 	libraryPath := filepath.Join(templateRoot, libraryDirName)
 	schemaPath := filepath.Join(templateRoot, schemaFileName)

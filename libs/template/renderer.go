@@ -153,12 +153,17 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 		return nil, err
 	}
 
+	rootPath, err := filepath.Abs(r.instanceRoot)
+	if err != nil {
+		return nil, err
+	}
+
 	// If file name does not specify the `.tmpl` extension, then it is copied
 	// over as is, without treating it as a template
 	if !strings.HasSuffix(relPathTemplate, templateExtension) {
 		return &copyFile{
 			dstPath: &destinationPath{
-				root:    r.instanceRoot,
+				root:    rootPath,
 				relPath: relPath,
 			},
 			perm:     perm,
@@ -196,7 +201,7 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 	return &inMemoryFile{
 		ctx: r.ctx,
 		dstPath: &destinationPath{
-			root:    r.instanceRoot,
+			root:    rootPath,
 			relPath: relPath,
 		},
 		perm:    perm,
