@@ -19,7 +19,7 @@ import (
 
 func promptForProfile(ctx context.Context, defaultValue string) (string, error) {
 	if !cmdio.IsInTTY(ctx) {
-		return "", fmt.Errorf("the command is being run in a non-interactive environment, please specify a profile using --profile")
+		return "", nil
 	}
 
 	prompt := cmdio.Prompt(ctx)
