@@ -1,0 +1,25 @@
+bundle:
+  name: "bundle-playground"
+
+variables:
+  catalog:
+    description: The catalog the DLT pipeline should use.
+    default: main
+
+
+resources:
+  pipelines:
+    foo:
+      name: test-pipeline-{{.unique_id}}
+      libraries:
+        - notebook:
+            path: ./nb.sql
+      development: true
+      catalog: ${var.catalog}
+
+include:
+  - "*.yml"
+
+targets:
+  development:
+    default: true
