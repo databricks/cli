@@ -468,12 +468,10 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 				// and configuration is not merged yet.
 				typeV, err := dyn.GetByPath(v, p.Append(dyn.Key("type")))
 				if err == nil && typeV.MustString() == "complex" {
-					if typeV.MustString() == "complex" {
-						return dyn.NewValue(map[string]dyn.Value{
-							"type":    typeV,
-							"default": variable,
-						}, variable.Locations()), nil
-					}
+					return dyn.NewValue(map[string]dyn.Value{
+						"type":    typeV,
+						"default": variable,
+					}, variable.Locations()), nil
 				}
 
 				// If it's a shorthand, rewrite it to a full variable definition.
