@@ -45,7 +45,7 @@ type constructor struct {
 // For example:
 // {"a/b/c": "value"} is converted to {"a": {"b": {"c": "value"}}}
 // the $ref for "value" would be "#/$defs/a/b/c" in the generated JSON schema.
-func (c *constructor) Definitions() any {
+func (c *constructor) Definitions() map[string]any {
 	defs := maps.Clone(c.definitions)
 
 	// Remove the root type from the definitions. We don't need to include it in

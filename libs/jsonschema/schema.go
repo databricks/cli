@@ -15,7 +15,7 @@ import (
 type Schema struct {
 	// Definitions that can be reused and referenced throughout the schema. The
 	// syntax for a reference is $ref: #/$defs/<path.to.definition>
-	Definitions any `json:"$defs,omitempty"`
+	Definitions map[string]any `json:"$defs,omitempty"`
 
 	// Type of the object
 	Type Type `json:"type,omitempty"`
