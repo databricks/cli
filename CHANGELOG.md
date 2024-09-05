@@ -1,5 +1,30 @@
 # Version changelog
 
+## [Release] Release v0.228.0
+
+CLI:
+ * Do not error if we cannot prompt for a profile in `auth login` ([#1745](https://github.com/databricks/cli/pull/1745)).
+
+Bundles:
+ * Pass along  to Terraform process ([#1734](https://github.com/databricks/cli/pull/1734)).
+ * Add prompt when a pipeline recreation happens ([#1672](https://github.com/databricks/cli/pull/1672)).
+ * Use materialized views in the default-sql template ([#1709](https://github.com/databricks/cli/pull/1709)).
+ * Update templates to latest LTS DBR ([#1715](https://github.com/databricks/cli/pull/1715)).
+ * Make lock optional in the JSON schema ([#1738](https://github.com/databricks/cli/pull/1738)).
+ * Do not suppress normalisation diagnostics for resolving variables ([#1740](https://github.com/databricks/cli/pull/1740)).
+ * Include a permissions section in all templates ([#1713](https://github.com/databricks/cli/pull/1713)).
+ * Fixed complex variables are not being correctly merged from include files ([#1746](https://github.com/databricks/cli/pull/1746)).
+ * Fixed variable override in target with full variable syntax ([#1749](https://github.com/databricks/cli/pull/1749)).
+
+Internal:
+ * Consider serverless clusters as compatible for Python wheel tasks ([#1733](https://github.com/databricks/cli/pull/1733)).
+ * PythonMutator: explain missing package error ([#1736](https://github.com/databricks/cli/pull/1736)).
+ * Add `dyn.Time` to box a timestamp with its original string value ([#1732](https://github.com/databricks/cli/pull/1732)).
+ * Fix streaming of stdout, stdin, stderr in cobra test runner ([#1742](https://github.com/databricks/cli/pull/1742)).
+
+Dependency updates:
+ * Bump github.com/Masterminds/semver/v3 from 3.2.1 to 3.3.0 ([#1741](https://github.com/databricks/cli/pull/1741)).
+
 ## [Release] Release v0.227.1
 
 CLI:
