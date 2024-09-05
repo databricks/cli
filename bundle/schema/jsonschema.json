@@ -1032,40 +1032,6 @@
                 }
               ]
             },
-            "config.TargetVariable": {
-              "anyOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "default": {
-                      "$ref": "#/$defs/interface"
-                    },
-                    "description": {
-                      "$ref": "#/$defs/string"
-                    },
-                    "lookup": {
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.Lookup"
-                    },
-                    "type": {
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.VariableType"
-                    }
-                  },
-                  "additionalProperties": false
-                },
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "boolean"
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                }
-              ]
-            },
             "config.Workspace": {
               "anyOf": [
                 {
@@ -5064,6 +5030,20 @@
                     }
                   ]
                 },
+                "variable.TargetVariable": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.TargetVariable"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
+                    }
+                  ]
+                },
                 "variable.Variable": {
                   "anyOf": [
                     {
@@ -5118,20 +5098,6 @@
                   {
                     "type": "string",
                     "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
-                  }
-                ]
-              },
-              "config.TargetVariable": {
-                "anyOf": [
-                  {
-                    "type": "object",
-                    "additionalProperties": {
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.TargetVariable"
-                    }
-                  },
-                  {
-                    "type": "string",
-                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
                   }
                 ]
               }
