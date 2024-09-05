@@ -7,8 +7,8 @@ CLI:
 
 Bundles:
 
-As of this release CLI will show a prompt is if there are configuration changes which will lead to a DLT recreation.
-Users can skip the prompt by specifying the `--auto-approve` flag
+As of this release, the CLI will show a prompt if there are configuration changes that lead to DLT pipeline recreation.
+Users can skip the prompt by specifying the `--auto-approve` flag.
 
  * Pass along  to Terraform process ([#1734](https://github.com/databricks/cli/pull/1734)).
  * Add prompt when a pipeline recreation happens ([#1672](https://github.com/databricks/cli/pull/1672)).
