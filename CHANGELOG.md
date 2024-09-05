@@ -6,6 +6,10 @@ CLI:
  * Do not error if we cannot prompt for a profile in `auth login` ([#1745](https://github.com/databricks/cli/pull/1745)).
 
 Bundles:
+
+As of this release CLI will show a prompt is if there are configuration changes which will lead to a DLT recreation.
+Users can skip the prompt by specifying the `--auto-approve` flag
+
  * Pass along  to Terraform process ([#1734](https://github.com/databricks/cli/pull/1734)).
  * Add prompt when a pipeline recreation happens ([#1672](https://github.com/databricks/cli/pull/1672)).
  * Use materialized views in the default-sql template ([#1709](https://github.com/databricks/cli/pull/1709)).
