@@ -47,7 +47,7 @@ func Initialize() bundle.Mutator {
 
 			// This mutator needs to be run before variable interpolation because it
 			// searches for strings with variable references in them.
-			validate.NoWorkspacePrefixUsed(),
+			mutator.RewriteWorkspacePrefix(),
 
 			mutator.SetVariables(),
 			// Intentionally placed before ResolveVariableReferencesInLookup, ResolveResourceReferences,
