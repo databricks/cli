@@ -38,6 +38,7 @@ func addInterpolationPatterns(typ reflect.Type, s jsonschema.Schema) jsonschema.
 				{Type: jsonschema.StringType, Pattern: interpolationPattern("resources")},
 				{Type: jsonschema.StringType, Pattern: interpolationPattern("bundle")},
 				{Type: jsonschema.StringType, Pattern: interpolationPattern("workspace")},
+				{Type: jsonschema.StringType, Pattern: interpolationPattern("artifacts")},
 				{Type: jsonschema.StringType, Pattern: interpolationPattern("var")},
 			},
 		}
