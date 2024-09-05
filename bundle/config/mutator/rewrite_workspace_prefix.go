@@ -44,7 +44,7 @@ func (m *rewriteWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) di
 				if strings.Contains(vv, path) {
 					diags = append(diags, diag.Diagnostic{
 						Severity:  diag.Warning,
-						Summary:   fmt.Sprintf("%s used in the remote path %s. Please change to use %s instead", path, vv, strings.ReplaceAll(vv, "/Workspace/", "")),
+						Summary:   fmt.Sprintf("%s used in the remote path %s. Please change to use %s instead. See more details here: https://github.com/databricks/cli/blob/main/docs/release_notes/workspace_prefix.md", path, vv, strings.ReplaceAll(vv, "/Workspace/", "")),
 						Locations: v.Locations(),
 						Paths:     []dyn.Path{p},
 					})
