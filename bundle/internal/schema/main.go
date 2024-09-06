@@ -25,16 +25,19 @@ func addInterpolationPatterns(typ reflect.Type, s jsonschema.Schema) jsonschema.
 	case jsonschema.ArrayType, jsonschema.ObjectType:
 		// arrays and objects can have complex variable values specified.
 		return jsonschema.Schema{
-			AnyOf: []jsonschema.Schema{s, {
-				Type:    jsonschema.StringType,
-				Pattern: interpolationPattern("var"),
-			}},
+			AnyOf: []jsonschema.Schema{
+				s,
+				{
+					Type:    jsonschema.StringType,
+					Pattern: interpolationPattern("var"),
+				}},
 		}
 	case jsonschema.IntegerType, jsonschema.NumberType, jsonschema.BooleanType:
 		// primitives can have variable values, or references like ${bundle.xyz}
 		// or ${workspace.xyz}
 		return jsonschema.Schema{
-			AnyOf: []jsonschema.Schema{s,
+			AnyOf: []jsonschema.Schema{
+				s,
 				{Type: jsonschema.StringType, Pattern: interpolationPattern("resources")},
 				{Type: jsonschema.StringType, Pattern: interpolationPattern("bundle")},
 				{Type: jsonschema.StringType, Pattern: interpolationPattern("workspace")},

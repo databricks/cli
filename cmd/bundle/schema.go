@@ -3,7 +3,7 @@ package bundle
 import (
 	_ "embed"
 
-	"github.com/databricks/cli/bundle/generated"
+	"github.com/databricks/cli/bundle/schema"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
 )
@@ -16,7 +16,7 @@ func newSchemaCommand() *cobra.Command {
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		_, err := cmd.OutOrStdout().Write(generated.BundleSchema)
+		_, err := cmd.OutOrStdout().Write(schema.Bytes)
 		return err
 	}
 

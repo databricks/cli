@@ -1,6 +1,6 @@
-package generated
+package schema
 
 import _ "embed"
 
 //go:embed jsonschema.json
-var BundleSchema []byte
+var Bytes []byte
