@@ -1,5 +1,83 @@
 # Version changelog
 
+## [Release] Release v0.228.0
+
+CLI:
+ * Do not error if we cannot prompt for a profile in `auth login` ([#1745](https://github.com/databricks/cli/pull/1745)).
+
+Bundles:
+
+As of this release, the CLI will show a prompt if there are configuration changes that lead to DLT pipeline recreation.
+Users can skip the prompt by specifying the `--auto-approve` flag.
+
+ * Pass along  to Terraform process ([#1734](https://github.com/databricks/cli/pull/1734)).
+ * Add prompt when a pipeline recreation happens ([#1672](https://github.com/databricks/cli/pull/1672)).
+ * Use materialized views in the default-sql template ([#1709](https://github.com/databricks/cli/pull/1709)).
+ * Update templates to latest LTS DBR ([#1715](https://github.com/databricks/cli/pull/1715)).
+ * Make lock optional in the JSON schema ([#1738](https://github.com/databricks/cli/pull/1738)).
+ * Do not suppress normalisation diagnostics for resolving variables ([#1740](https://github.com/databricks/cli/pull/1740)).
+ * Include a permissions section in all templates ([#1713](https://github.com/databricks/cli/pull/1713)).
+ * Fixed complex variables are not being correctly merged from include files ([#1746](https://github.com/databricks/cli/pull/1746)).
+ * Fixed variable override in target with full variable syntax ([#1749](https://github.com/databricks/cli/pull/1749)).
+
+Internal:
+ * Consider serverless clusters as compatible for Python wheel tasks ([#1733](https://github.com/databricks/cli/pull/1733)).
+ * PythonMutator: explain missing package error ([#1736](https://github.com/databricks/cli/pull/1736)).
+ * Add `dyn.Time` to box a timestamp with its original string value ([#1732](https://github.com/databricks/cli/pull/1732)).
+ * Fix streaming of stdout, stdin, stderr in cobra test runner ([#1742](https://github.com/databricks/cli/pull/1742)).
+
+Dependency updates:
+ * Bump github.com/Masterminds/semver/v3 from 3.2.1 to 3.3.0 ([#1741](https://github.com/databricks/cli/pull/1741)).
+
+## [Release] Release v0.227.1
+
+CLI:
+ * Disable prompt for storage-credentials get command ([#1723](https://github.com/databricks/cli/pull/1723)).
+
+Bundles:
+ * Do not treat empty path as a local path ([#1717](https://github.com/databricks/cli/pull/1717)).
+ * Correctly mark PyPI package name specs with multiple specifiers as remote libraries ([#1725](https://github.com/databricks/cli/pull/1725)).
+ * Improve error handling for /Volumes paths in mode: development ([#1716](https://github.com/databricks/cli/pull/1716)).
+
+Internal:
+ * Ignore CLI version check on development builds of the CLI ([#1714](https://github.com/databricks/cli/pull/1714)).
+
+API Changes:
+ * Added `databricks resource-quotas` command group.
+ * Added `databricks policy-compliance-for-clusters` command group.
+ * Added `databricks policy-compliance-for-jobs` command group.
+
+OpenAPI commit 3eae49b444cac5a0118a3503e5b7ecef7f96527a (2024-08-21)
+Dependency updates:
+ * Bump github.com/databricks/databricks-sdk-go from 0.44.0 to 0.45.0 ([#1719](https://github.com/databricks/cli/pull/1719)).
+ * Revert hc-install version to 0.7.0 ([#1711](https://github.com/databricks/cli/pull/1711)).
+
+## [Release] Release v0.227.0
+
+CLI:
+ * Added filtering flags for cluster list commands ([#1703](https://github.com/databricks/cli/pull/1703)).
+
+Bundles:
+ * Allow users to configure paths (including outside of the bundle root) to synchronize to the workspace. ([#1694](https://github.com/databricks/cli/pull/1694)).
+ * Add configurable presets for name prefixes, tags, etc. ([#1490](https://github.com/databricks/cli/pull/1490)).
+ * Add support for requirements libraries in Job Tasks ([#1543](https://github.com/databricks/cli/pull/1543)).
+ * Remove reference to "dbt" in the default-sql template ([#1696](https://github.com/databricks/cli/pull/1696)).
+ * Pause continuous pipelines when 'mode: development' is used ([#1590](https://github.com/databricks/cli/pull/1590)).
+ * Report all empty resources present in error diagnostic ([#1685](https://github.com/databricks/cli/pull/1685)).
+ * Improves detection of PyPI package names in environment dependencies ([#1699](https://github.com/databricks/cli/pull/1699)).
+
+Internal:
+ * Add `import` option for PyDABs ([#1693](https://github.com/databricks/cli/pull/1693)).
+ * Make fileset take optional list of paths to list ([#1684](https://github.com/databricks/cli/pull/1684)).
+ * Pass through paths argument to libs/sync ([#1689](https://github.com/databricks/cli/pull/1689)).
+ * Correctly mark package names with versions as remote libraries ([#1697](https://github.com/databricks/cli/pull/1697)).
+ * Share test initializer in common helper function ([#1695](https://github.com/databricks/cli/pull/1695)).
+ * Make `pydabs/venv_path` optional ([#1687](https://github.com/databricks/cli/pull/1687)).
+ * Use API mocks for duplicate path errors in workspace files extensions client ([#1690](https://github.com/databricks/cli/pull/1690)).
+ * Fix prefix preset used for UC schemas ([#1704](https://github.com/databricks/cli/pull/1704)).
+
+
+
 ## [Release] Release v0.226.0
 
 CLI:

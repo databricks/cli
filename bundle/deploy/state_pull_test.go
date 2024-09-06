@@ -64,6 +64,10 @@ func testStatePull(t *testing.T, opts statePullOpts) {
 	b := &bundle.Bundle{
 		RootPath:   tmpDir,
 		BundleRoot: vfs.MustNew(tmpDir),
+
+		SyncRootPath: tmpDir,
+		SyncRoot:     vfs.MustNew(tmpDir),
+
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "default",
@@ -81,11 +85,11 @@ func testStatePull(t *testing.T, opts statePullOpts) {
 	ctx := context.Background()
 
 	for _, file := range opts.localFiles {
-		testutil.Touch(t, b.RootPath, "bar", file)
+		testutil.Touch(t, b.SyncRootPath, "bar", file)
 	}
 
 	for _, file := range opts.localNotebooks {
-		testutil.TouchNotebook(t, b.RootPath, "bar", file)
+		testutil.TouchNotebook(t, b.SyncRootPath, "bar", file)
 	}
 
 	if opts.withExistingSnapshot {

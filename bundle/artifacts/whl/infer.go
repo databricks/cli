@@ -15,6 +15,8 @@ type infer struct {
 
 func (m *infer) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	artifact := b.Config.Artifacts[m.name]
+
+	// TODO use python.DetectVEnvExecutable once bundle has a way to specify venv path
 	py, err := python.DetectExecutable(ctx)
 	if err != nil {
 		return diag.FromErr(err)

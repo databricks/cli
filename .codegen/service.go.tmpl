@@ -154,6 +154,7 @@ func new{{.PascalName}}() *cobra.Command {
 		"provider-exchanges delete-listing-from-exchange"
 		"provider-exchanges list-exchanges-for-listing"
 		"provider-exchanges list-listings-for-exchange"
+		"storage-credentials get"
 		-}}
 	{{- $fullCommandName := (print $serviceName " " .KebabName) -}}
 	{{- $noPrompt := or .IsCrudCreate (in $excludeFromPrompts $fullCommandName) }}

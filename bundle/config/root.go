@@ -406,6 +406,30 @@ func (r *Root) MergeTargetOverrides(name string) error {
 	return r.updateWithDynamicValue(root)
 }
 
+var variableKeywords = []string{"default", "lookup"}
+
+// isFullVariableOverrideDef checks if the given value is a full syntax varaible override.
+// A full syntax variable override is a map with only one of the following
+// keys: "default", "lookup".
+func isFullVariableOverrideDef(v dyn.Value) bool {
+	mv, ok := v.AsMap()
+	if !ok {
+		return false
+	}
+
+	if mv.Len() != 1 {
+		return false
+	}
+
+	for _, keyword := range variableKeywords {
+		if _, ok := mv.GetByString(keyword); ok {
+			return true
+		}
+	}
+
+	return false
+}
+
 // rewriteShorthands performs lightweight rewriting of the configuration
 // tree where we allow users to write a shorthand and must rewrite to the full form.
 func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
@@ -433,20 +457,27 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 				}, variable.Locations()), nil
 
 			case dyn.KindMap, dyn.KindSequence:
-				// Check if the original definition of variable has a type field.
-				typeV, err := dyn.GetByPath(v, p.Append(dyn.Key("type")))
-				if err != nil {
+				// If it's a full variable definition, leave it as is.
+				if isFullVariableOverrideDef(variable) {
 					return variable, nil
 				}
 
-				if typeV.MustString() == "complex" {
+				// Check if the original definition of variable has a type field.
+				// If it has a type field, it means the shorthand is a value of a complex type.
+				// Type might not be found if the variable overriden in a separate file
+				// and configuration is not merged yet.
+				typeV, err := dyn.GetByPath(v, p.Append(dyn.Key("type")))
+				if err == nil && typeV.MustString() == "complex" {
 					return dyn.NewValue(map[string]dyn.Value{
 						"type":    typeV,
 						"default": variable,
 					}, variable.Locations()), nil
 				}
 
-				return variable, nil
+				// If it's a shorthand, rewrite it to a full variable definition.
+				return dyn.NewValue(map[string]dyn.Value{
+					"default": variable,
+				}, variable.Locations()), nil
 
 			default:
 				return variable, nil

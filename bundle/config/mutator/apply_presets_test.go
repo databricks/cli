@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
 )
@@ -64,6 +65,62 @@ func TestApplyPresetsPrefix(t *testing.T) {
 			}
 
 			require.Equal(t, tt.want, b.Config.Resources.Jobs["job1"].Name)
+		})
+	}
+}
+
+func TestApplyPresetsPrefixForUcSchema(t *testing.T) {
+	tests := []struct {
+		name   string
+		prefix string
+		schema *resources.Schema
+		want   string
+	}{
+		{
+			name:   "add prefix to schema",
+			prefix: "[prefix]",
+			schema: &resources.Schema{
+				CreateSchema: &catalog.CreateSchema{
+					Name: "schema1",
+				},
+			},
+			want: "prefix_schema1",
+		},
+		{
+			name:   "add empty prefix to schema",
+			prefix: "",
+			schema: &resources.Schema{
+				CreateSchema: &catalog.CreateSchema{
+					Name: "schema1",
+				},
+			},
+			want: "schema1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := &bundle.Bundle{
+				Config: config.Root{
+					Resources: config.Resources{
+						Schemas: map[string]*resources.Schema{
+							"schema1": tt.schema,
+						},
+					},
+					Presets: config.Presets{
+						NamePrefix: tt.prefix,
+					},
+				},
+			}
+
+			ctx := context.Background()
+			diag := bundle.Apply(ctx, b, mutator.ApplyPresets())
+
+			if diag.HasError() {
+				t.Fatalf("unexpected error: %v", diag)
+			}
+
+			require.Equal(t, tt.want, b.Config.Resources.Schemas["schema1"].Name)
 		})
 	}
 }

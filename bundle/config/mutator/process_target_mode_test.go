@@ -237,10 +237,20 @@ func TestValidateDevelopmentMode(t *testing.T) {
 	diags := validateDevelopmentMode(b)
 	require.NoError(t, diags.Error())
 
+	// Test with /Volumes path
+	b = mockBundle(config.Development)
+	b.Config.Workspace.ArtifactPath = "/Volumes/catalog/schema/lennart/libs"
+	diags = validateDevelopmentMode(b)
+	require.NoError(t, diags.Error())
+	b.Config.Workspace.ArtifactPath = "/Volumes/catalog/schema/libs"
+	diags = validateDevelopmentMode(b)
+	require.ErrorContains(t, diags.Error(), "artifact_path should contain the current username or ${workspace.current_user.short_name} to ensure uniqueness when using 'mode: development'")
+
 	// Test with a bundle that has a non-user path
+	b = mockBundle(config.Development)
 	b.Config.Workspace.RootPath = "/Shared/.bundle/x/y/state"
 	diags = validateDevelopmentMode(b)
-	require.ErrorContains(t, diags.Error(), "root_path")
+	require.ErrorContains(t, diags.Error(), "root_path must start with '~/' or contain the current username to ensure uniqueness when using 'mode: development'")
 
 	// Test with a bundle that has an unpaused trigger pause status
 	b = mockBundle(config.Development)
