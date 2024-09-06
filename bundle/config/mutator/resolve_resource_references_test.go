@@ -2,7 +2,6 @@ package mutator
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -44,11 +43,13 @@ func TestResolveClusterReference(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(m.WorkspaceClient)
 	clusterApi := m.GetMockClustersAPI()
-	clusterApi.EXPECT().GetByClusterName(mock.Anything, clusterRef1).Return(&compute.ClusterDetails{
-		ClusterId: "1234-5678-abcd",
-	}, nil)
-	clusterApi.EXPECT().GetByClusterName(mock.Anything, clusterRef2).Return(&compute.ClusterDetails{
-		ClusterId: "9876-5432-xywz",
+	clusterApi.EXPECT().ListAll(mock.Anything, compute.ListClustersRequest{
+		FilterBy: &compute.ListClustersFilterBy{
+			ClusterSources: []compute.ClusterSource{compute.ClusterSourceApi, compute.ClusterSourceUi},
+		},
+	}).Return([]compute.ClusterDetails{
+		{ClusterId: "1234-5678-abcd", ClusterName: clusterRef1},
+		{ClusterId: "9876-5432-xywz", ClusterName: clusterRef2},
 	}, nil)
 
 	diags := bundle.Apply(context.Background(), b, ResolveResourceReferences())
@@ -78,10 +79,16 @@ func TestResolveNonExistentClusterReference(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(m.WorkspaceClient)
 	clusterApi := m.GetMockClustersAPI()
-	clusterApi.EXPECT().GetByClusterName(mock.Anything, clusterRef).Return(nil, fmt.Errorf("ClusterDetails named '%s' does not exist", clusterRef))
+	clusterApi.EXPECT().ListAll(mock.Anything, compute.ListClustersRequest{
+		FilterBy: &compute.ListClustersFilterBy{
+			ClusterSources: []compute.ClusterSource{compute.ClusterSourceApi, compute.ClusterSourceUi},
+		},
+	}).Return([]compute.ClusterDetails{
+		{ClusterId: "1234-5678-abcd", ClusterName: "some other cluster"},
+	}, nil)
 
 	diags := bundle.Apply(context.Background(), b, ResolveResourceReferences())
-	require.ErrorContains(t, diags.Error(), "failed to resolve cluster: Random, err: ClusterDetails named 'Random' does not exist")
+	require.ErrorContains(t, diags.Error(), "failed to resolve cluster: Random, err: cluster named 'Random' does not exist")
 }
 
 func TestNoLookupIfVariableIsSet(t *testing.T) {
@@ -158,8 +165,14 @@ func TestResolveVariableReferencesInVariableLookups(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(m.WorkspaceClient)
 	clusterApi := m.GetMockClustersAPI()
-	clusterApi.EXPECT().GetByClusterName(mock.Anything, "cluster-bar-dev").Return(&compute.ClusterDetails{
-		ClusterId: "1234-5678-abcd",
+
+	clusterApi.EXPECT().ListAll(mock.Anything, compute.ListClustersRequest{
+		FilterBy: &compute.ListClustersFilterBy{
+			ClusterSources: []compute.ClusterSource{compute.ClusterSourceApi, compute.ClusterSourceUi},
+		},
+	}).Return([]compute.ClusterDetails{
+		{ClusterId: "1234-5678-abcd", ClusterName: "cluster-bar-dev"},
+		{ClusterId: "9876-5432-xywz", ClusterName: "some other cluster"},
 	}, nil)
 
 	diags := bundle.Apply(context.Background(), b, bundle.Seq(ResolveVariableReferencesInLookup(), ResolveResourceReferences()))
