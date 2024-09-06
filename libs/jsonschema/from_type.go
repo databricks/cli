@@ -101,8 +101,8 @@ func FromType(typ reflect.Type, fns []func(typ reflect.Type, s Schema) Schema) (
 	}
 
 	for _, fn := range fns {
-		for k, v := range c.definitions {
-			c.definitions[k] = fn(c.seen[k], v)
+		for k := range c.definitions {
+			c.definitions[k] = fn(c.seen[k], c.definitions[k])
 		}
 	}
 
