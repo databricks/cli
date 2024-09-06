@@ -116,6 +116,10 @@ func allResolvers() *resolvers {
 	{{range .Services -}}
 	{{- if in $allowlist .KebabName -}}
 	r.{{.Singular.PascalName}} = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
+		fn, ok := lookupOverrides["{{.Singular.PascalName}}"]
+		if ok {
+			return fn(ctx, w, name)
+		}
 		entity, err := w.{{.PascalName}}.GetBy{{range .NamedIdMap.NamePath}}{{.PascalName}}{{end}}(ctx, name)
 		if err != nil {
 			return "", err

@@ -220,6 +220,10 @@ type resolvers struct {
 func allResolvers() *resolvers {
 	r := &resolvers{}
 	r.Alert = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
+		fn, ok := lookupOverrides["Alert"]
+		if ok {
+			return fn(ctx, w, name)
+		}
 		entity, err := w.Alerts.GetByDisplayName(ctx, name)
 		if err != nil {
 			return "", err
@@ -228,6 +232,10 @@ func allResolvers() *resolvers {
 		return fmt.Sprint(entity.Id), nil
 	}
 	r.ClusterPolicy = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
+		fn, ok := lookupOverrides["ClusterPolicy"]
+		if ok {
+			return fn(ctx, w, name)
+		}
 		entity, err := w.ClusterPolicies.GetByName(ctx, name)
 		if err != nil {
 			return "", err
@@ -236,6 +244,10 @@ func allResolvers() *resolvers {
 		return fmt.Sprint(entity.PolicyId), nil
 	}
 	r.Cluster = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
+		fn, ok := lookupOverrides["Cluster"]
+		if ok {
+			return fn(ctx, w, name)
+		}
 		entity, err := w.Clusters.GetByClusterName(ctx, name)
 		if err != nil {
 			return "", err
@@ -244,6 +256,10 @@ func allResolvers() *resolvers {
 		return fmt.Sprint(entity.ClusterId), nil
 	}
 	r.Dashboard = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
+		fn, ok := lookupOverrides["Dashboard"]
+		if ok {
+			return fn(ctx, w, name)
+		}
 		entity, err := w.Dashboards.GetByName(ctx, name)
 		if err != nil {
 			return "", err
@@ -252,6 +268,10 @@ func allResolvers() *resolvers {
 		return fmt.Sprint(entity.Id), nil
 	}
 	r.InstancePool = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
+		fn, ok := lookupOverrides["InstancePool"]
+		if ok {
+			return fn(ctx, w, name)
+		}
 		entity, err := w.InstancePools.GetByInstancePoolName(ctx, name)
 		if err != nil {
 			return "", err
@@ -260,6 +280,10 @@ func allResolvers() *resolvers {
 		return fmt.Sprint(entity.InstancePoolId), nil
 	}
 	r.Job = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
+		fn, ok := lookupOverrides["Job"]
+		if ok {
+			return fn(ctx, w, name)
+		}
 		entity, err := w.Jobs.GetBySettingsName(ctx, name)
 		if err != nil {
 			return "", err
@@ -268,6 +292,10 @@ func allResolvers() *resolvers {
 		return fmt.Sprint(entity.JobId), nil
 	}
 	r.Metastore = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
+		fn, ok := lookupOverrides["Metastore"]
+		if ok {
+			return fn(ctx, w, name)
+		}
 		entity, err := w.Metastores.GetByName(ctx, name)
 		if err != nil {
 			return "", err
@@ -276,6 +304,10 @@ func allResolvers() *resolvers {
 		return fmt.Sprint(entity.MetastoreId), nil
 	}
 	r.Pipeline = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
+		fn, ok := lookupOverrides["Pipeline"]
+		if ok {
+			return fn(ctx, w, name)
+		}
 		entity, err := w.Pipelines.GetByName(ctx, name)
 		if err != nil {
 			return "", err
@@ -284,6 +316,10 @@ func allResolvers() *resolvers {
 		return fmt.Sprint(entity.PipelineId), nil
 	}
 	r.Query = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
+		fn, ok := lookupOverrides["Query"]
+		if ok {
+			return fn(ctx, w, name)
+		}
 		entity, err := w.Queries.GetByDisplayName(ctx, name)
 		if err != nil {
 			return "", err
@@ -292,6 +328,10 @@ func allResolvers() *resolvers {
 		return fmt.Sprint(entity.Id), nil
 	}
 	r.ServicePrincipal = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
+		fn, ok := lookupOverrides["ServicePrincipal"]
+		if ok {
+			return fn(ctx, w, name)
+		}
 		entity, err := w.ServicePrincipals.GetByDisplayName(ctx, name)
 		if err != nil {
 			return "", err
@@ -300,6 +340,10 @@ func allResolvers() *resolvers {
 		return fmt.Sprint(entity.ApplicationId), nil
 	}
 	r.Warehouse = func(ctx context.Context, w *databricks.WorkspaceClient, name string) (string, error) {
+		fn, ok := lookupOverrides["Warehouse"]
+		if ok {
+			return fn(ctx, w, name)
+		}
 		entity, err := w.Warehouses.GetByName(ctx, name)
 		if err != nil {
 			return "", err
