@@ -10,17 +10,19 @@ import (
 	"strings"
 )
 
-// Fields tagged "readonly" should not be emitted in the schema as they are
-// computed at runtime, and should not be assigned a value by the bundle author.
-const readonlyTag = "readonly"
+var skipTags = []string{
+	// Fields tagged "readonly" should not be emitted in the schema as they are
+	// computed at runtime, and should not be assigned a value by the bundle author.
+	"readonly",
 
-// Annotation for internal bundle fields that should not be exposed to customers.
-// Fields can be tagged as "internal" to remove them from the generated schema.
-const internalTag = "internal"
+	// Annotation for internal bundle fields that should not be exposed to customers.
+	// Fields can be tagged as "internal" to remove them from the generated schema.
+	"internal",
 
-// Annotation for bundle fields that have been deprecated.
-// Fields tagged as "deprecated" are omitted from the generated schema.
-const deprecatedTag = "deprecated"
+	// Annotation for bundle fields that have been deprecated.
+	// Fields tagged as "deprecated" are omitted from the generated schema.
+	"deprecated",
+}
 
 type constructor struct {
 	// Map of typ.PkgPath() + "." + typ.Name() to the schema for that type.
@@ -251,10 +253,10 @@ func (c *constructor) fromTypeStruct(typ reflect.Type) (Schema, error) {
 		bundleTags := strings.Split(structField.Tag.Get("bundle"), ",")
 		// Fields marked as "readonly", "internal" or "deprecated" are skipped
 		// while generating the schema
-		if slices.Contains(bundleTags, readonlyTag) ||
-			slices.Contains(bundleTags, internalTag) ||
-			slices.Contains(bundleTags, deprecatedTag) {
-			continue
+		for _, tag := range skipTags {
+			if slices.Contains(bundleTags, tag) {
+				continue
+			}
 		}
 
 		jsonTags := strings.Split(structField.Tag.Get("json"), ",")
