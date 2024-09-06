@@ -16,12 +16,10 @@ type expand struct {
 
 func matchError(p dyn.Path, l []dyn.Location, message string) diag.Diagnostic {
 	return diag.Diagnostic{
-		Severity: diag.Error,
-		Summary:  message,
-		Paths: []dyn.Path{
-			p.Append(),
-		},
+		Severity:  diag.Error,
+		Summary:   message,
 		Locations: l,
+		Paths:     []dyn.Path{p},
 	}
 }
 

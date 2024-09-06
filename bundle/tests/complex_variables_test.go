@@ -81,9 +81,10 @@ func TestComplexVariablesOverrideWithMultipleFiles(t *testing.T) {
 		),
 	))
 	require.NoError(t, diags.Error())
-
-	require.Equal(t, "14.2.x-scala2.11", b.Config.Resources.Jobs["my_job"].JobClusters[0].NewCluster.SparkVersion)
-	require.Equal(t, "Standard_DS3_v2", b.Config.Resources.Jobs["my_job"].JobClusters[0].NewCluster.NodeTypeId)
-	require.Equal(t, 4, b.Config.Resources.Jobs["my_job"].JobClusters[0].NewCluster.NumWorkers)
-	require.Equal(t, "false", b.Config.Resources.Jobs["my_job"].JobClusters[0].NewCluster.SparkConf["spark.speculation"])
+	for _, cluster := range b.Config.Resources.Jobs["my_job"].JobClusters {
+		require.Equalf(t, "14.2.x-scala2.11", cluster.NewCluster.SparkVersion, "cluster: %v", cluster.JobClusterKey)
+		require.Equalf(t, "Standard_DS3_v2", cluster.NewCluster.NodeTypeId, "cluster: %v", cluster.JobClusterKey)
+		require.Equalf(t, 4, cluster.NewCluster.NumWorkers, "cluster: %v", cluster.JobClusterKey)
+		require.Equalf(t, "false", cluster.NewCluster.SparkConf["spark.speculation"], "cluster: %v", cluster.JobClusterKey)
+	}
 }
