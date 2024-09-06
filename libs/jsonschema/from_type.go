@@ -81,7 +81,7 @@ func (c *constructor) Definitions() map[string]any {
 	return res
 }
 
-// FromType converts a reflect.Type to a jsonschema.Schema. Nodes in the final JSON
+// FromType converts a [reflect.Type] to a [Schema]. Nodes in the final JSON
 // schema are guaranteed to be one level deep, which is done using defining $defs
 // for every Go type and referring them using $ref in the corresponding node in
 // the JSON schema.
@@ -253,10 +253,15 @@ func (c *constructor) fromTypeStruct(typ reflect.Type) (Schema, error) {
 		bundleTags := strings.Split(structField.Tag.Get("bundle"), ",")
 		// Fields marked as "readonly", "internal" or "deprecated" are skipped
 		// while generating the schema
+		skip := false
 		for _, tag := range skipTags {
 			if slices.Contains(bundleTags, tag) {
-				continue
+				skip = true
+				break
 			}
+		}
+		if skip {
+			continue
 		}
 
 		jsonTags := strings.Split(structField.Tag.Get("json"), ",")
