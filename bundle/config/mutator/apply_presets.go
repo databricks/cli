@@ -168,8 +168,10 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 			c.CustomTags = make(map[string]string)
 		}
 		for _, tag := range tags {
-			if c.CustomTags[tag.Key] == "" {
-				c.CustomTags[tag.Key] = tag.Value
+			normalisedKey := b.Tagging.NormalizeKey(tag.Key)
+			normalisedValue := b.Tagging.NormalizeValue(tag.Value)
+			if c.CustomTags[normalisedKey] == "" {
+				c.CustomTags[normalisedKey] = normalisedValue
 			}
 		}
 	}

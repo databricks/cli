@@ -11,9 +11,6 @@ resources:
       spark_version: "{{.spark_version}}"
       node_type_id: "{{.node_type_id}}"
       num_workers: 2
-      autoscale:
-        min_workers: 2
-        max_workers: 6
       spark_conf:
         "spark.executor.memory": "2g"
 
