@@ -1,0 +1,23 @@
+resources:
+  dashboards:
+    nyc_taxi_trip_analysis:
+      display_name: "NYC Taxi Trip Analysis"
+      parent_path: ${workspace.file_path}
+      warehouse_id: 4fe75792cd0d304c
+      definition_path: ../dashboards/nyc_taxi_trip_analysis.lvdash.json
+
+      # To be implemented when ready in the product:
+      #
+      # catalog: ${var.default_catalog}
+      # schema: ${var.default_schema}
+      # schedules:
+      #   - name: Daily
+      #     # ...
+      permissions:
+        # Allow all users to view the dashboard
+        - group_name: users
+          level: CAN_READ
+
+        # Allow all account users to view the dashboard
+        - group_name: account users
+          level: CAN_READ
