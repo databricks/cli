@@ -1,6 +1,7 @@
 module github.com/databricks/cli
 
 go 1.22
+toolchain go1.22.5
 
 require (
 	github.com/Masterminds/semver/v3 v3.3.0 // MIT
@@ -22,7 +23,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // BSD-3-Clause
 	github.com/stretchr/testify v1.9.0 // MIT
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225
-	golang.org/x/mod v0.20.0
+	golang.org/x/mod v0.21.0
 	golang.org/x/oauth2 v0.23.0
 	golang.org/x/sync v0.8.0
 	golang.org/x/term v0.24.0
