@@ -1,8 +1,6 @@
 package bundle
 
 import (
-	_ "embed"
-
 	"github.com/databricks/cli/bundle/schema"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
