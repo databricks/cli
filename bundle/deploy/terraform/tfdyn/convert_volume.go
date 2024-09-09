@@ -12,6 +12,8 @@ import (
 
 // TODO: Articulate the consequences of deleting a UC volume in the prompt message that
 // is displayed.
+// TODO: What sort of interpolation should be allowed at `artifact_path`? Should it be
+// ${volumes.foo.id} or ${volumes.foo.name} or something else?
 func convertVolumeResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	// Normalize the output value to the target schema.
 	vout, diags := convert.Normalize(schema.ResourceVolume{}, vin)
