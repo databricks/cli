@@ -203,6 +203,10 @@ func (c *constructor) walk(typ reflect.Type) (string, error) {
 // This function returns all member fields of the provided type.
 // If the type has embedded (aka anonymous) fields, this function traverses
 // those in a breadth first manner
+//
+// BFS is important because we want the a field defined at a higher level embedded
+// struct to be given preference over a field with the same name defined at a lower
+// level embedded struct. For example see: TestHigherLevelEmbeddedFieldIsInSchema
 func getStructFields(typ reflect.Type) []reflect.StructField {
 	fields := []reflect.StructField{}
 	bfsQueue := list.New()
