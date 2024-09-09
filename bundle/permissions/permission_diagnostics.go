@@ -12,8 +12,6 @@ import (
 	"github.com/databricks/cli/libs/set"
 )
 
-const CheckPermissionsFilename = "permissions.check"
-
 type permissionDiagnostics struct{}
 
 func PermissionDiagnostics() bundle.Mutator {
