@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/libs/jsonschema/test_types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFromTypeBasic(t *testing.T) {
@@ -164,6 +165,46 @@ func TestGetStructFields(t *testing.T) {
 	// InnerField occurring after FieldTwo ensures BFS as opposed to DFS traversal.
 	assert.Equal(t, "FieldTwo", fields[2].Name)
 	assert.Equal(t, "InnerField", fields[3].Name)
+}
+
+func TestHigherLevelEmbeddedFieldIsInSchema(t *testing.T) {
+	type Inner struct {
+		Override string `json:"override,omitempty"`
+	}
+
+	type EmbeddedOne struct {
+		Inner
+	}
+
+	type EmbeddedTwo struct {
+		Override int `json:"override,omitempty"`
+	}
+
+	type Outer struct {
+		EmbeddedOne
+		EmbeddedTwo
+	}
+
+	intRef := "#/$defs/int"
+	expected := Schema{
+		Type: "object",
+		Definitions: map[string]any{
+			"int": Schema{
+				Type: "integer",
+			},
+		},
+		Properties: map[string]*Schema{
+			"override": {
+				Reference: &intRef,
+			},
+		},
+		AdditionalProperties: false,
+		Required:             []string{},
+	}
+
+	s, err := FromType(reflect.TypeOf(Outer{}), nil)
+	require.NoError(t, err)
+	assert.Equal(t, expected, s)
 }
 
 func TestFromTypeNested(t *testing.T) {

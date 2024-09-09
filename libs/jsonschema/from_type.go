@@ -272,6 +272,13 @@ func (c *constructor) fromTypeStruct(typ reflect.Type) (Schema, error) {
 			continue
 		}
 
+		// Skip property if it is already present in the schema.
+		// This can happen if the same field is defined multiple times across
+		// a tree of embedded structs. For example see: TestHigherLevelEmbeddedFieldIsInSchema
+		if _, ok := res.Properties[fieldName]; ok {
+			continue
+		}
+
 		// "omitempty" tags in the Go SDK structs represent fields that not are
 		// required to be present in the API payload. Thus its absence in the
 		// tags list indicates that the field is required.
