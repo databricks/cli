@@ -18,7 +18,7 @@ func TestValidateEnvironments(t *testing.T) {
 	testutil.Touch(t, tmpDir, "wheel.whl")
 
 	b := &bundle.Bundle{
-		RootPath: tmpDir,
+		SyncRootPath: tmpDir,
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -50,7 +50,7 @@ func TestValidateEnvironmentsNoFile(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	b := &bundle.Bundle{
-		RootPath: tmpDir,
+		SyncRootPath: tmpDir,
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -84,7 +84,7 @@ func TestValidateTaskLibraries(t *testing.T) {
 	testutil.Touch(t, tmpDir, "wheel.whl")
 
 	b := &bundle.Bundle{
-		RootPath: tmpDir,
+		SyncRootPath: tmpDir,
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -117,7 +117,7 @@ func TestValidateTaskLibrariesNoFile(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	b := &bundle.Bundle{
-		RootPath: tmpDir,
+		SyncRootPath: tmpDir,
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
