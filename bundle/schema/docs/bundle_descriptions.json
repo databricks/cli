@@ -2046,6 +2046,12 @@
                         "instance_profile_arn": {
                           "description": "ARN of the instance profile that the served model will use to access AWS resources."
                         },
+                        "max_provisioned_throughput": {
+                          "description": "The maximum tokens per second that the endpoint can scale up to."
+                        },
+                        "min_provisioned_throughput": {
+                          "description": "The minimum tokens per second that the endpoint can scale down to."
+                        },
                         "model_name": {
                           "description": "The name of the model in Databricks Model Registry to be served or if the model resides in Unity Catalog, the full name of model,\nin the form of __catalog_name__.__schema_name__.__model_name__.\n"
                         },
@@ -5146,6 +5152,12 @@
                               },
                               "instance_profile_arn": {
                                 "description": "ARN of the instance profile that the served model will use to access AWS resources."
+                              },
+                              "max_provisioned_throughput": {
+                                "description": "The maximum tokens per second that the endpoint can scale up to."
+                              },
+                              "min_provisioned_throughput": {
+                                "description": "The minimum tokens per second that the endpoint can scale down to."
                               },
                               "model_name": {
                                 "description": "The name of the model in Databricks Model Registry to be served or if the model resides in Unity Catalog, the full name of model,\nin the form of __catalog_name__.__schema_name__.__model_name__.\n"
