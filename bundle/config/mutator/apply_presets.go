@@ -160,6 +160,13 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		// the Databricks UI and via the SQL API.
 	}
 
+	// Apply the prefix to volumes
+	for i := range r.Volumes {
+		r.Volumes[i].Name = normalizePrefix(prefix) + r.Volumes[i].Name
+		// HTTP API for volumes doesn't yet support tags. It's only supported in
+		// the Databricks UI and via the SQL API.
+	}
+
 	return nil
 }
 
