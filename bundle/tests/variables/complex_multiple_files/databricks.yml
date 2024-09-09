@@ -1,0 +1,52 @@
+bundle:
+  name: complex-variables-multiple-files
+
+resources:
+  jobs:
+    my_job:
+      job_clusters:
+        - job_cluster_key: key1
+          new_cluster: ${var.cluster1}
+        - job_cluster_key: key2
+          new_cluster: ${var.cluster2}
+        - job_cluster_key: key3
+          new_cluster: ${var.cluster3}
+        - job_cluster_key: key4
+          new_cluster: ${var.cluster4}
+variables:
+  cluster1:
+    type: complex
+    description: "A cluster definition"
+  cluster2:
+    type: complex
+    description: "A cluster definition"
+  cluster3:
+    type: complex
+    description: "A cluster definition"
+  cluster4:
+    type: complex
+    description: "A cluster definition"
+
+include:
+  - ./variables/*.yml
+
+
+targets:
+  default:
+  dev:
+    variables:
+      cluster3:
+        spark_version: "14.2.x-scala2.11"
+        node_type_id: "Standard_DS3_v2"
+        num_workers: 4
+        spark_conf:
+          spark.speculation: false
+          spark.databricks.delta.retentionDurationCheck.enabled: false
+      cluster4:
+        default:
+          spark_version: "14.2.x-scala2.11"
+          node_type_id: "Standard_DS3_v2"
+          num_workers: 4
+          spark_conf:
+            spark.speculation: false
+            spark.databricks.delta.retentionDurationCheck.enabled: false

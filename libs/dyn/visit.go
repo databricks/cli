@@ -70,7 +70,7 @@ type visitOptions struct {
 
 func visit(v Value, prefix Path, suffix Pattern, opts visitOptions) (Value, error) {
 	if len(suffix) == 0 {
-		return opts.fn(prefix, v)
+		return opts.fn(slices.Clone(prefix), v)
 	}
 
 	// Initialize prefix if it is empty.

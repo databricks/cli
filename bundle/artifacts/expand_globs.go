@@ -33,12 +33,7 @@ func createGlobError(v dyn.Value, p dyn.Path, message string) diag.Diagnostic {
 		Severity:  diag.Error,
 		Summary:   fmt.Sprintf("%s: %s", source, message),
 		Locations: []dyn.Location{v.Location()},
-
-		Paths: []dyn.Path{
-			// Hack to clone the path. This path copy is mutable.
-			// To be addressed in a later PR.
-			p.Append(),
-		},
+		Paths:     []dyn.Path{p},
 	}
 }
 
