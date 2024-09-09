@@ -39,7 +39,7 @@ func getLibDetails(v dyn.Value) (string, string, bool) {
 }
 
 func findMatches(b *bundle.Bundle, path string) ([]string, error) {
-	matches, err := filepath.Glob(filepath.Join(b.RootPath, path))
+	matches, err := filepath.Glob(filepath.Join(b.SyncRootPath, path))
 	if err != nil {
 		return nil, err
 	}
@@ -52,10 +52,10 @@ func findMatches(b *bundle.Bundle, path string) ([]string, error) {
 		}
 	}
 
-	// We make the matched path relative to the root path before storing it
+	// We make the matched path relative to the sync root path before storing it
 	// to allow upload mutator to distinguish between local and remote paths
 	for i, match := range matches {
-		matches[i], err = filepath.Rel(b.RootPath, match)
+		matches[i], err = filepath.Rel(b.SyncRootPath, match)
 		if err != nil {
 			return nil, err
 		}
@@ -211,8 +211,8 @@ func (e *expand) Name() string {
 
 // ExpandGlobReferences expands any glob references in the libraries or environments section
 // to corresponding local paths.
-// We only expand local paths (i.e. paths that are relative to the root path).
-// After expanding we make the paths relative to the root path to allow upload mutator later in the chain to
+// We only expand local paths (i.e. paths that are relative to the sync root path).
+// After expanding we make the paths relative to the sync root path to allow upload mutator later in the chain to
 // distinguish between local and remote paths.
 func ExpandGlobReferences() bundle.Mutator {
 	return &expand{}
