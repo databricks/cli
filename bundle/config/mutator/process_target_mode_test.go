@@ -32,7 +32,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					Branch:    "main",
 				},
 			},
-		Workspace: config.Workspace{
+			Workspace: config.Workspace{
 				CurrentUser: &config.User{
 					ShortName: "lennart",
 					User: &iam.User{
@@ -277,14 +277,14 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	b := mockBundle(config.Production)
 
 	diags := validateProductionMode(context.Background(), b, false)
-	require.ErrorContains(t, diags.Error(), "target with 'mode: production' must specify explicit 'workspace.root_path' to make sure only one copy is deployed")
+	require.ErrorContains(t, diags.Error(), "target with 'mode: production' must set 'workspace.root_path' to make sure only one copy is deployed. A common practice is to use a username or principal name in this path, i.e. root_path: /Users/lennart@company.com/.bundle/${bundle.name}/${bundle.target}")
 
 	b.Config.Workspace.StatePath = "/Shared/.bundle/x/y/state"
 	b.Config.Workspace.ArtifactPath = "/Shared/.bundle/x/y/artifacts"
 	b.Config.Workspace.FilePath = "/Shared/.bundle/x/y/files"
 
 	diags = validateProductionMode(context.Background(), b, false)
-	require.ErrorContains(t, diags.Error(), "target with 'mode: production' must specify explicit 'workspace.root_path' to make sure only one copy is deployed")
+	require.ErrorContains(t, diags.Error(), "target with 'mode: production' must set 'workspace.root_path' to make sure only one copy is deployed. A common practice is to use a username or principal name in this path, i.e. root_path: /Users/lennart@company.com/.bundle/${bundle.name}/${bundle.target}")
 
 	permissions := []resources.Permission{
 		{

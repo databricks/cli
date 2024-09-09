@@ -2,6 +2,7 @@ package mutator
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -132,15 +133,19 @@ func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUs
 
 	// We need to verify that there is only a single deployment of the current target.
 	// The best way to enforce this is to explicitly set root_path.
+	advice := fmt.Sprintf(
+		"set 'workspace.root_path' to make sure only one copy is deployed. A common practice is to use a username or principal name in this path, i.e. root_path: /Users/%s/.bundle/${bundle.name}/${bundle.target}",
+		b.Config.Workspace.CurrentUser.UserName,
+	)
 	if !isExplicitRootSet(b) {
 		if isRunAsSet(r) || isPrincipalUsed {
 			// Just setting run_as is not enough to guarantee a single deployment,
 			// and neither is setting a principal.
 			// We only show a warning for these cases since we didn't historically
 			// report an error for them.
-			return diag.Warningf("target with 'mode: production' should specify explicit 'workspace.root_path' to make sure only one copy is deployed")
+			return diag.Warningf("target with 'mode: production' should " + advice)
 		}
-		return diag.Errorf("target with 'mode: production' must specify explicit 'workspace.root_path' to make sure only one copy is deployed")
+		return diag.Errorf("target with 'mode: production' must " + advice)
 	}
 	return nil
 }
