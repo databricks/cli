@@ -2,10 +2,7 @@ package bundle
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/terraform"
@@ -43,9 +40,6 @@ task or a Python wheel task, the second example applies.
 `,
 	}
 
-	var forcePull bool
-	cmd.Flags().BoolVar(&forcePull, "force-pull", false, "Skip local cache and load the state from the remote workspace")
-
 	var runOptions run.Options
 	runOptions.Define(cmd)
 
@@ -66,25 +60,6 @@ task or a Python wheel task, the second example applies.
 			return err
 		}
 
-		cacheDir, err := terraform.Dir(ctx, b)
-		if err != nil {
-			return err
-		}
-		_, stateFileErr := os.Stat(filepath.Join(cacheDir, terraform.TerraformStateFileName))
-		_, configFileErr := os.Stat(filepath.Join(cacheDir, terraform.TerraformConfigFileName))
-		noCache := errors.Is(stateFileErr, os.ErrNotExist) || errors.Is(configFileErr, os.ErrNotExist)
-
-		if forcePull || noCache {
-			diags = bundle.Apply(ctx, b, bundle.Seq(
-				terraform.StatePull(),
-				terraform.Interpolate(),
-				terraform.Write(),
-			))
-			if err := diags.Error(); err != nil {
-				return err
-			}
-		}
-
 		// If no arguments are specified, prompt the user to select something to run.
 		if len(args) == 0 && cmdio.IsPromptSupported(ctx) {
 			// Invert completions from KEY -> NAME, to NAME -> KEY.
@@ -102,6 +77,14 @@ task or a Python wheel task, the second example applies.
 		if len(args) < 1 {
 			return fmt.Errorf("expected a KEY of the resource to run")
 		}
+
+		diags = bundle.Apply(ctx, b, bundle.Seq(
+			terraform.Interpolate(),
+			terraform.Write(),
+			terraform.StatePull(),
+			terraform.Load(terraform.ErrorOnEmptyState),
+		))
+		return diags.Error()
 
 		runner, err := run.Find(b, args[0])
 		if err != nil {
