@@ -11,7 +11,7 @@ resources:
       name: {{.project_name}}_job
 
       trigger:
-        # Run this job every day; see https://docs.databricks.com/api/workspace/jobs/create
+        # Run this job every day; see https://docs.databricks.com/api/workspace/jobs/create#trigger
         periodic:
           interval: 1
           unit: DAYS
