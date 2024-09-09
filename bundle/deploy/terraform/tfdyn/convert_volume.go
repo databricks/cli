@@ -10,22 +10,13 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
+// TODO: Articulate the consequences of deleting a UC volume in the prompt message that
+// is displayed.
 func convertVolumeResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	// Normalize the output value to the target schema.
-	v, diags := convert.Normalize(schema.ResourceVolume{}, vin)
+	vout, diags := convert.Normalize(schema.ResourceVolume{}, vin)
 	for _, diag := range diags {
 		log.Debugf(ctx, "volume normalization diagnostic: %s", diag.Summary)
-	}
-
-	// TODO: What happens if I try to delete a UC volume that has data in it?
-	// Do I need force destroy functionality here.
-
-	// We always set force destroy as it allows DABs to manage the lifecycle
-	// of the schema. It's the responsibility of the CLI to ensure the user
-	// is adequately warned when they try to delete a UC Volume.
-	vout, err := dyn.SetByPath(v, dyn.MustPathFromString("force_destroy"), dyn.V(true))
-	if err != nil {
-		return dyn.InvalidValue, err
 	}
 
 	return vout, nil
@@ -44,8 +35,8 @@ func (volumeConverter) Convert(ctx context.Context, key string, vin dyn.Value, o
 
 	// Configure grants for this resource.
 	if grants := convertGrantsResource(ctx, vin); grants != nil {
-		grants.Schema = fmt.Sprintf("${databricks_schema.%s.id}", key)
-		out.Grants["schema_"+key] = grants
+		grants.Volume = fmt.Sprintf("${databricks_volume.%s.id}", key)
+		out.Grants["volume_"+key] = grants
 	}
 
 	return nil
