@@ -25,6 +25,20 @@ func ConvertJobToValue(job *jobs.Job) (dyn.Value, error) {
 		value["tasks"] = dyn.NewValue(tasks, []dyn.Location{{Line: jobOrder.Get("tasks")}})
 	}
 
+	// We're processing job.Settings.Parameters separately to retain empty default values.
+	if len(job.Settings.Parameters) > 0 {
+		params := make([]dyn.Value, 0)
+		for _, parameter := range job.Settings.Parameters {
+			p := map[string]dyn.Value{
+				"name":    dyn.NewValue(parameter.Name, []dyn.Location{}),
+				"default": dyn.NewValue(parameter.Default, []dyn.Location{}),
+			}
+			params = append(params, dyn.NewValue(p, []dyn.Location{}))
+		}
+
+		value["parameters"] = dyn.NewValue(params, []dyn.Location{{Line: jobOrder.Get("parameters")}})
+	}
+
 	return yamlsaver.ConvertToMapValue(job.Settings, jobOrder, []string{"format", "new_cluster", "existing_cluster_id"}, value)
 }
 
