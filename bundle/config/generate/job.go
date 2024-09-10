@@ -30,8 +30,8 @@ func ConvertJobToValue(job *jobs.Job) (dyn.Value, error) {
 		params := make([]dyn.Value, 0)
 		for _, parameter := range job.Settings.Parameters {
 			p := map[string]dyn.Value{
-				"name":    dyn.NewValue(parameter.Name, []dyn.Location{}),
-				"default": dyn.NewValue(parameter.Default, []dyn.Location{}),
+				"name":    dyn.NewValue(parameter.Name, []dyn.Location{{Line: 0}}), // We use Line: 0 to ensure that the name goes first.
+				"default": dyn.NewValue(parameter.Default, []dyn.Location{{Line: 1}}),
 			}
 			params = append(params, dyn.NewValue(p, []dyn.Location{}))
 		}
