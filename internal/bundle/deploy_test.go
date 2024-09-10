@@ -243,3 +243,56 @@ func TestAccDeployBasicBundleLogs(t *testing.T) {
 	}, "\n"), stderr)
 	assert.Equal(t, "", stdout)
 }
+
+func TestAccDeployUcVolume(t *testing.T) {
+	ctx, wt := acc.UcWorkspaceTest(t)
+	w := wt.W
+
+	uniqueId := uuid.New().String()
+	bundleRoot, err := initTestTemplate(t, ctx, "uc_volume", map[string]any{
+		"unique_id": uniqueId,
+	})
+	require.NoError(t, err)
+
+	err = deployBundle(t, ctx, bundleRoot)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		destroyBundle(t, ctx, bundleRoot)
+	})
+
+	// Assert the volume is created successfully
+	catalogName := "main"
+	schemaName := "schema1-" + uniqueId
+	volumeName := "my_volume"
+	volume, err := w.Volumes.ReadByName(ctx, fmt.Sprintf("%s.%s.%s", catalogName, schemaName, volumeName))
+	require.NoError(t, err)
+	require.Equal(t, volume.Name, volumeName)
+	require.Equal(t, catalogName, volume.CatalogName)
+	require.Equal(t, schemaName, volume.SchemaName)
+
+	// Recreation of the volume without --auto-approve should fail since prompting is not possible
+	t.Setenv("TERM", "dumb")
+	t.Setenv("BUNDLE_ROOT", bundleRoot)
+	stdout, stderr, err := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "deploy", "--var=schema_name=${resources.schemas.schema2.name}").Run()
+	assert.Error(t, err)
+	assert.Contains(t, stderr.String(), `This action will result in the deletion or recreation of the following Volumes. For managed volumes,
+this typically results in a deletion of the upstream data in the cloud tenant in ~30 days. For external
+volumes the upstream data in the cloud tenant is not affected:
+  recreate volume foo`)
+	assert.Contains(t, stdout.String(), "the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
+
+	// Recreation of the volume without --auto-approve should fail since prompting is not possible
+	t.Setenv("TERM", "dumb")
+	t.Setenv("BUNDLE_ROOT", bundleRoot)
+	_, _, err = internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "deploy", "--var=schema_name=${resources.schemas.schema2.name}", "--auto-approve").Run()
+	assert.NoError(t, err)
+
+	// Assert the volume is updated successfully
+	schemaName = "schema2-" + uniqueId
+	volume, err = w.Volumes.ReadByName(ctx, fmt.Sprintf("%s.%s.%s", catalogName, schemaName, volumeName))
+	require.NoError(t, err)
+	require.Equal(t, volume.Name, volumeName)
+	require.Equal(t, catalogName, volume.CatalogName)
+	require.Equal(t, schemaName, volume.SchemaName)
+}

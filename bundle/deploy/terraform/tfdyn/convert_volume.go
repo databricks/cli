@@ -33,7 +33,7 @@ func (volumeConverter) Convert(ctx context.Context, key string, vin dyn.Value, o
 	}
 
 	// Add the converted resource to the output.
-	out.Schema[key] = vout.AsAny()
+	out.Volume[key] = vout.AsAny()
 
 	// Configure grants for this resource.
 	if grants := convertGrantsResource(ctx, vin); grants != nil {

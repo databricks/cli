@@ -40,7 +40,7 @@ func TestParseTerraformActions(t *testing.T) {
 		},
 	}
 
-	res := parseTerraformActions(changes, func(typ string, actions tfjson.Actions) bool {
+	res := filterDeleteOrRecreateActions(changes, func(typ string, actions tfjson.Actions) bool {
 		if typ != "databricks_pipeline" {
 			return false
 		}
