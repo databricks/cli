@@ -21,6 +21,22 @@ func addInterpolationPatterns(typ reflect.Type, s jsonschema.Schema) jsonschema.
 		return s
 	}
 
+	// The variables block in a target override allows for directly specifying
+	// the value of the variable.
+	if typ == reflect.TypeOf(variable.TargetVariable{}) {
+		return jsonschema.Schema{
+			AnyOf: []jsonschema.Schema{
+				// We keep the original schema so that autocomplete suggestions
+				// continue to work.
+				s,
+				// All values are valid for a variable value, be it primitive types
+				// like string/bool or complex ones like objects/arrays. Thus we override
+				// the schema to allow all valid JSON values.
+				{},
+			},
+		}
+	}
+
 	switch s.Type {
 	case jsonschema.ArrayType, jsonschema.ObjectType:
 		// arrays and objects can have complex variable values specified.
