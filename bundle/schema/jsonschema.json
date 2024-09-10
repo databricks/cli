@@ -5030,20 +5030,6 @@
                     }
                   ]
                 },
-                "variable.TargetVariable": {
-                  "anyOf": [
-                    {
-                      "type": "object",
-                      "additionalProperties": {
-                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.TargetVariable"
-                      }
-                    },
-                    {
-                      "type": "string",
-                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)*(\\[[0-9]+\\])*)\\}"
-                    }
-                  ]
-                },
                 "variable.Variable": {
                   "anyOf": [
                     {
