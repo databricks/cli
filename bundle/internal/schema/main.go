@@ -13,7 +13,7 @@ import (
 )
 
 func interpolationPattern(s string) string {
-	return fmt.Sprintf(`\$\{(%s(\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\[[0-9]+\])*)*(\[[0-9]+\])*)\}`, s)
+	return fmt.Sprintf(`\$\{(%s(\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\[[0-9]+\])*)+)\}`, s)
 }
 
 func addInterpolationPatterns(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
