@@ -65,9 +65,9 @@ func TestNoWorkspacePrefixUsed(t *testing.T) {
 	require.Len(t, diags, 3)
 
 	expectedErrors := map[string]bool{
-		"/Workspace/${workspace.root_path} used in the remote path /Workspace/${workspace.root_path}/file1.py. Please change to use ${workspace.root_path}/file1.py instead. See more details here: https://github.com/databricks/cli/blob/main/docs/release_notes/workspace_prefix.md":             true,
-		"/Workspace/${workspace.file_path} used in the remote path /Workspace/${workspace.file_path}/notebook1. Please change to use ${workspace.file_path}/notebook1 instead. See more details here: https://github.com/databricks/cli/blob/main/docs/release_notes/workspace_prefix.md":           true,
-		"/Workspace/${workspace.artifact_path} used in the remote path /Workspace/${workspace.artifact_path}/jar1.jar. Please change to use ${workspace.artifact_path}/jar1.jar instead. See more details here: https://github.com/databricks/cli/blob/main/docs/release_notes/workspace_prefix.md": true,
+		`substring "/Workspace/${workspace.root_path}" found in "/Workspace/${workspace.root_path}/file1.py". Please update this to "${workspace.root_path}/file1.py". For more information, please refer to: https://github.com/databricks/cli/blob/main/docs/release_notes/workspace_prefix.md`:             true,
+		`substring "/Workspace/${workspace.file_path}" found in "/Workspace/${workspace.file_path}/notebook1". Please update this to "${workspace.file_path}/notebook1". For more information, please refer to: https://github.com/databricks/cli/blob/main/docs/release_notes/workspace_prefix.md`:           true,
+		`substring "/Workspace/${workspace.artifact_path}" found in "/Workspace/${workspace.artifact_path}/jar1.jar". Please update this to "${workspace.artifact_path}/jar1.jar". For more information, please refer to: https://github.com/databricks/cli/blob/main/docs/release_notes/workspace_prefix.md`: true,
 	}
 
 	for _, d := range diags {
