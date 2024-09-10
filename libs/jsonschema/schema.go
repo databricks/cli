@@ -6,7 +6,6 @@ import (
 	"os"
 	"regexp"
 	"slices"
-	"strings"
 
 	"github.com/databricks/cli/internal/build"
 	"golang.org/x/mod/semver"
@@ -14,6 +13,10 @@ import (
 
 // defines schema for a json object
 type Schema struct {
+	// Definitions that can be reused and referenced throughout the schema. The
+	// syntax for a reference is $ref: #/$defs/<path.to.definition>
+	Definitions map[string]any `json:"$defs,omitempty"`
+
 	// Type of the object
 	Type Type `json:"type,omitempty"`
 
@@ -63,7 +66,7 @@ type Schema struct {
 	Extension
 
 	// Schema that must match any of the schemas in the array
-	AnyOf []*Schema `json:"anyOf,omitempty"`
+	AnyOf []Schema `json:"anyOf,omitempty"`
 }
 
 // Default value defined in a JSON Schema, represented as a string.
@@ -80,41 +83,6 @@ func (s *Schema) EnumStringSlice() ([]string, error) {
 // by the type defined in the JSON Schema.
 func (s *Schema) ParseString(v string) (any, error) {
 	return fromString(v, s.Type)
-}
-
-func (s *Schema) getByPath(path string) (*Schema, error) {
-	p := strings.Split(path, ".")
-
-	res := s
-	for _, node := range p {
-		if node == "*" {
-			res = res.AdditionalProperties.(*Schema)
-			continue
-		}
-		var ok bool
-		res, ok = res.Properties[node]
-		if !ok {
-			return nil, fmt.Errorf("property %q not found in schema. Query path: %s", node, path)
-		}
-	}
-	return res, nil
-}
-
-func (s *Schema) GetByPath(path string) (Schema, error) {
-	v, err := s.getByPath(path)
-	if err != nil {
-		return Schema{}, err
-	}
-	return *v, nil
-}
-
-func (s *Schema) SetByPath(path string, v Schema) error {
-	dst, err := s.getByPath(path)
-	if err != nil {
-		return err
-	}
-	*dst = v
-	return nil
 }
 
 type Type string
