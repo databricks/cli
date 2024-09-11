@@ -1,0 +1,24 @@
+bundle:
+  name: basic
+
+variables:
+  complexvar:
+    default:
+      key1: 1234
+      key2: value2
+      key3:
+        - value3
+        - 9999
+    description: complexvar description
+
+resources:
+  schemas:
+    myschema:
+      name: myschema
+      catalog_name: main
+      grants:
+        - ${var.complexvar}
+        - principal: ${workspace.current_user.me}
+          privileges:
+            - ${var.complexvar.key3[0]}
+            - ${var.complexvar.key2}
