@@ -84,7 +84,9 @@ task or a Python wheel task, the second example applies.
 			terraform.StatePull(),
 			terraform.Load(terraform.ErrorOnEmptyState),
 		))
-		return diags.Error()
+		if err := diags.Error(); err != nil {
+			return err
+		}
 
 		runner, err := run.Find(b, args[0])
 		if err != nil {
