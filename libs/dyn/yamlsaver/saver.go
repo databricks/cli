@@ -151,6 +151,8 @@ func isScalarValueInString(v dyn.Value) bool {
 	switch v.MustString() {
 	case "true", "false":
 		return true
+	case "":
+		return true
 	default:
 		_, err := parseNumber(v.MustString())
 		return err == nil
