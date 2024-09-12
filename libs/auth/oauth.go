@@ -46,9 +46,10 @@ const (
 )
 
 var ( // Databricks SDK API: `databricks OAuth is not` will be checked for presence
-	ErrOAuthNotSupported = errors.New("databricks OAuth is not supported for this host")
-	ErrNotConfigured     = errors.New("databricks OAuth is not configured for this host")
-	ErrFetchCredentials  = errors.New("cannot fetch credentials")
+	ErrOAuthNotSupported      = errors.New("databricks OAuth is not supported for this host")
+	ErrNotConfigured          = errors.New("databricks OAuth is not configured for this host")
+	ErrFetchCredentials       = errors.New("cannot fetch credentials")
+	ErrDeviceCodeNotSupported = errors.New("device code flow is not supported for this host")
 )
 
 type PersistentAuth struct {
@@ -128,6 +129,9 @@ func (a *PersistentAuth) DeviceCode(ctx context.Context) error {
 	cfg, err := a.oauth2Config(ctx)
 	if err != nil {
 		return err
+	}
+	if cfg.Endpoint.DeviceAuthURL == "" {
+		return ErrDeviceCodeNotSupported
 	}
 	ctx = a.http.InContextForOAuth2(ctx)
 	deviceAuthResp, err := cfg.DeviceAuth(ctx)
