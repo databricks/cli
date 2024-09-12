@@ -1,0 +1,5 @@
+resources:
+  models:
+    mymodel:
+      latest_versions:
+        - creation_timestamp: ${invalid.reference}

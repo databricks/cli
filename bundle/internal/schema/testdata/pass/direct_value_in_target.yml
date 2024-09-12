@@ -1,0 +1,4 @@
+targets:
+  development:
+    variables:
+      myvar: value

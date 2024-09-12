@@ -1,0 +1,16 @@
+bundle:
+  name: quality_monitor
+
+resources:
+  quality_monitors:
+    myqualitymonitor:
+      inference_log:
+        granularities:
+          - a
+          - b
+        model_id_col: a
+        prediction_col: b
+        timestamp_col: c
+        problem_type: PROBLEM_TYPE_CLASSIFICATION
+      assets_dir: /dbfs/mnt/abc
+      output_schema_name: default
