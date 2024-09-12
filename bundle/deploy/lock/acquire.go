@@ -61,7 +61,7 @@ func (m *acquire) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		if errors.As(err, &notExistsError) {
 			// If we get a "doesn't exist" error from the API this indicates
 			// we either don't have permissions or the path is invalid.
-			return diag.Errorf("cannot write to deployment root (this can indicate a previous deploy was done with a different identity): %s", b.Config.Workspace.RootPath)
+			return permissions.ReportPossiblePermissionDenied(ctx, b, b.Config.Workspace.StatePath)
 		}
 
 		return diag.FromErr(err)
