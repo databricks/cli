@@ -350,7 +350,6 @@ func createOverrideVisitor(ctx context.Context, phase phase) (merge.OverrideVisi
 // delete existing ones.
 func createLoadOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
 	resourcesPath := dyn.NewPath(dyn.Key("resources"))
-	jobsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))
 
 	return merge.OverrideVisitor{
 		VisitDelete: func(valuePath dyn.Path, left dyn.Value) error {
@@ -362,15 +361,15 @@ func createLoadOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
 		},
 		VisitInsert: func(valuePath dyn.Path, right dyn.Value) (dyn.Value, error) {
 			// insert 'resources' or 'resources.jobs' if it didn't exist before
-			if valuePath.Equal(resourcesPath) || valuePath.Equal(jobsPath) {
+			if valuePath.HasPrefix(resourcesPath) || len(valuePath) <= len(resourcesPath)+1 {
 				return right, nil
 			}
 
-			if !valuePath.HasPrefix(jobsPath) {
+			if !valuePath.HasPrefix(resourcesPath) {
 				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (insert)", valuePath.String())
 			}
 
-			insertResource := len(valuePath) == len(jobsPath)+1
+			insertResource := len(valuePath) == len(resourcesPath)+2
 
 			// adding a property into an existing resource is not allowed, because it changes it
 			if !insertResource {
@@ -393,7 +392,6 @@ func createLoadOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
 // resources, but not delete existing resources.
 func createInitOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
 	resourcesPath := dyn.NewPath(dyn.Key("resources"))
-	jobsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))
 
 	return merge.OverrideVisitor{
 		VisitDelete: func(valuePath dyn.Path, left dyn.Value) error {
@@ -401,11 +399,11 @@ func createInitOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
 				return merge.ErrOverrideUndoDelete
 			}
 
-			if !valuePath.HasPrefix(jobsPath) {
+			if !valuePath.HasPrefix(resourcesPath) {
 				return fmt.Errorf("unexpected change at %q (delete)", valuePath.String())
 			}
 
-			deleteResource := len(valuePath) == len(jobsPath)+1
+			deleteResource := len(valuePath) == len(resourcesPath)+2
 
 			if deleteResource {
 				return fmt.Errorf("unexpected change at %q (delete)", valuePath.String())
@@ -418,11 +416,11 @@ func createInitOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
 		},
 		VisitInsert: func(valuePath dyn.Path, right dyn.Value) (dyn.Value, error) {
 			// insert 'resources' or 'resources.jobs' if it didn't exist before
-			if valuePath.Equal(resourcesPath) || valuePath.Equal(jobsPath) {
+			if valuePath.HasPrefix(resourcesPath) || len(valuePath) <= len(resourcesPath)+1 {
 				return right, nil
 			}
 
-			if !valuePath.HasPrefix(jobsPath) {
+			if !valuePath.HasPrefix(resourcesPath) {
 				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (insert)", valuePath.String())
 			}
 
@@ -431,7 +429,7 @@ func createInitOverrideVisitor(ctx context.Context) merge.OverrideVisitor {
 			return right, nil
 		},
 		VisitUpdate: func(valuePath dyn.Path, left dyn.Value, right dyn.Value) (dyn.Value, error) {
-			if !valuePath.HasPrefix(jobsPath) {
+			if !(valuePath.HasPrefix(resourcesPath) && len(valuePath) >= len(resourcesPath)+1) {
 				return dyn.InvalidValue, fmt.Errorf("unexpected change at %q (update)", valuePath.String())
 			}
 
