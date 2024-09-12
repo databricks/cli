@@ -27,9 +27,15 @@ type Dashboard struct {
 	// WarehouseID is the ID of the warehouse to use for the dashboard.
 	WarehouseID string `json:"warehouse_id,omitempty"`
 
+	// SerializedDashboard is the serialized dashboard definition.
+	SerializedDashboard string `json:"serialized_dashboard,omitempty"`
+
 	// ===========================
 	// ==== END OF API FIELDS ====
 	// ===========================
+
+	// Contents can contain an object representing the unmarshalled version of the serialized dashboard.
+	Contents any `json:"contents,omitempty"`
 
 	// DefinitionPath points to the local `.lvdash.json` file containing the dashboard definition.
 	DefinitionPath string `json:"definition_path,omitempty"`

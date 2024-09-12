@@ -24,7 +24,35 @@ resources:
       display_name: "Foobar"
       parent_path: ${workspace.file_path}
       warehouse_id: ${var.warehouse_id}
-      definition_path: ./dashboard.lvdash.json
+      # definition_path: ./dashboard.lvdash.json
+
+      contents:
+        pages:
+          - displayName: New Page
+            layout:
+              - position:
+                  height: 4
+                  width: 6
+                  x: 0
+                  y: 0
+                widget:
+                  name: 82eb9107
+                  textbox_spec: |
+                    # My bundle target: ${bundle.target}
+
+                    I'm running this as ${workspace.current_user.short_name}.
+
+                    The workspace I'm targeting is [${workspace.host}](${workspace.host}).
+
+              - position:
+                  height: 1
+                  width: 3
+                  x: 0
+                  y: 4
+                widget:
+                  name: ffa6de4f
+                  textbox_spec: another widget
+            name: fdd21a3c
 
 
       # # file_path: ./dashboard.lvdash.json

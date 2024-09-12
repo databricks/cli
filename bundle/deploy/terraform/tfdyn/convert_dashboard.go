@@ -2,6 +2,7 @@ package tfdyn
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/databricks/cli/bundle/internal/tf/schema"
@@ -22,6 +23,19 @@ func convertDashboardResource(ctx context.Context, vin dyn.Value) (dyn.Value, er
 	// Include "serialized_dashboard" field if "definition_path" is set.
 	if path, ok := vin.Get("definition_path").AsString(); ok {
 		vout, err = dyn.Set(vout, "serialized_dashboard", dyn.V(fmt.Sprintf("${file(\"%s\")}", path)))
+		if err != nil {
+			return dyn.InvalidValue, fmt.Errorf("failed to set serialized_dashboard: %w", err)
+		}
+	}
+
+	// Include marshalled copy of "contents" if set.
+	contents := vin.Get("contents")
+	if contents.Kind() == dyn.KindMap {
+		buf, err := json.Marshal(contents.AsAny())
+		if err != nil {
+			return dyn.InvalidValue, fmt.Errorf("failed to marshal contents: %w", err)
+		}
+		vout, err = dyn.Set(vout, "serialized_dashboard", dyn.V(string(buf)))
 		if err != nil {
 			return dyn.InvalidValue, fmt.Errorf("failed to set serialized_dashboard: %w", err)
 		}
