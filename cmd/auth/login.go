@@ -84,10 +84,13 @@ depends on the existing profiles you have set in your configuration file
 
 	var loginTimeout time.Duration
 	var configureCluster bool
+	var deviceCode bool
 	cmd.Flags().DurationVar(&loginTimeout, "timeout", defaultTimeout,
 		"Timeout for completing login challenge in the browser")
 	cmd.Flags().BoolVar(&configureCluster, "configure-cluster", false,
 		"Prompts to configure cluster")
+	cmd.Flags().BoolVar(&deviceCode, "device-code", false,
+		"Use device code flow for authentication")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -120,7 +123,11 @@ depends on the existing profiles you have set in your configuration file
 		ctx, cancel := context.WithTimeout(ctx, loginTimeout)
 		defer cancel()
 
-		err = persistentAuth.Challenge(ctx)
+		if deviceCode {
+			err = persistentAuth.DeviceCode(ctx)
+		} else {
+			err = persistentAuth.Challenge(ctx)
+		}
 		if err != nil {
 			return err
 		}

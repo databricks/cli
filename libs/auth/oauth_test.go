@@ -228,3 +228,38 @@ func TestChallengeFailed(t *testing.T) {
 		assert.EqualError(t, err, "authorize: access_denied: Policy evaluation failed for this request")
 	})
 }
+
+func TestDeviceCode_Account(t *testing.T) {
+	qa.HTTPFixtures{
+		{
+			Method:   "POST",
+			Resource: "/oidc/accounts/xyz/v1/device_authorization",
+			Response: `{"device_code":"abc","user_code":"def","verification_uri":"ghi"}`,
+		},
+		{
+			Method:   "POST",
+			Resource: "/oidc/accounts/xyz/v1/token",
+			Response: `access_token=jkl&refresh_token=mnop`,
+		},
+	}.ApplyClient(t, func(ctx context.Context, c *client.DatabricksClient) {
+		ctx = useInsecureOAuthHttpClientForTests(ctx)
+		tokenStored := false
+		p := &PersistentAuth{
+			Host:      c.Config.Host,
+			AccountID: "xyz",
+			cache: &tokenCacheMock{
+				store: func(key string, tok *oauth2.Token) error {
+					assert.Equal(t, fmt.Sprintf("%s/oidc/accounts/xyz", c.Config.Host), key)
+					assert.Equal(t, "mnop", tok.RefreshToken)
+					tokenStored = true
+					return nil
+				},
+			},
+		}
+		defer p.Close()
+
+		err := p.DeviceCode(ctx)
+		assert.NoError(t, err)
+		assert.True(t, tokenStored)
+	})
+}
