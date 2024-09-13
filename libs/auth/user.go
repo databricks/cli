@@ -11,13 +11,9 @@ import (
 // We leave the full range of unicode letters in tact, but remove all "special" characters,
 // including dots, which are not supported in e.g. experiment names.
 func GetShortUserName(user *iam.User) string {
-	var name string
-	if IsServicePrincipal(user.UserName) {
-		// Try use the display name of the principal (if it has one)
+	name := user.UserName
+	if IsServicePrincipal(user.UserName) && user.DisplayName != "" {
 		name = user.DisplayName
-	}
-	if name == "" {
-		name = user.UserName
 	}
 	local, _, _ := strings.Cut(name, "@")
 	return textutil.NormalizeString(local)
