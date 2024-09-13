@@ -461,7 +461,7 @@ func TestPromptIsSkippedAnyOf(t *testing.T) {
 					Default: "hello-world",
 					Extension: jsonschema.Extension{
 						SkipPromptIf: &jsonschema.Schema{
-							AnyOf: []*jsonschema.Schema{
+							AnyOf: []jsonschema.Schema{
 								{
 									Properties: map[string]*jsonschema.Schema{
 										"abc": {

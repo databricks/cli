@@ -29,6 +29,12 @@ func (f *progressLoggerFlag) resolveModeDefault(format flags.ProgressLogFormat) 
 }
 
 func (f *progressLoggerFlag) initializeContext(ctx context.Context) (context.Context, error) {
+	// No need to initialize the logger if it's already set in the context. This
+	// happens in unit tests where the logger is setup as a fixture.
+	if _, ok := cmdio.FromContext(ctx); ok {
+		return ctx, nil
+	}
+
 	if f.log.level.String() != "disabled" && f.log.file.String() == "stderr" &&
 		f.ProgressLogFormat == flags.ModeInplace {
 		return nil, fmt.Errorf("inplace progress logging cannot be used when log-file is stderr")

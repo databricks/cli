@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/dynvar"
-	"github.com/databricks/cli/libs/log"
 )
 
 type resolveVariableReferences struct {
@@ -124,6 +123,7 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 	// We rewrite it here to make the resolution logic simpler.
 	varPath := dyn.NewPath(dyn.Key("var"))
 
+	var diags diag.Diagnostics
 	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		// Synthesize a copy of the root that has all fields that are present in the type
 		// but not set in the dynamic value set to their corresponding empty value.
@@ -180,14 +180,13 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 
 		// Normalize the result because variable resolution may have been applied to non-string fields.
 		// For example, a variable reference may have been resolved to a integer.
-		root, diags := convert.Normalize(b.Config, root)
-		for _, diag := range diags {
-			// This occurs when a variable's resolved value is incompatible with the field's type.
-			// Log a warning until we have a better way to surface these diagnostics to the user.
-			log.Warnf(ctx, "normalization diagnostic: %s", diag.Summary)
-		}
+		root, normaliseDiags := convert.Normalize(b.Config, root)
+		diags = diags.Extend(normaliseDiags)
 		return root, nil
 	})
 
-	return diag.FromErr(err)
+	if err != nil {
+		diags = diags.Extend(diag.FromErr(err))
+	}
+	return diags
 }

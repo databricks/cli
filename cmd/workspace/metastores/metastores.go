@@ -88,7 +88,9 @@ func newAssign() *cobra.Command {
   Arguments:
     WORKSPACE_ID: A workspace ID.
     METASTORE_ID: The unique ID of the metastore.
-    DEFAULT_CATALOG_NAME: The name of the default catalog in the metastore.`
+    DEFAULT_CATALOG_NAME: The name of the default catalog in the metastore. This field is depracted.
+      Please use "Default Namespace API" to configure the default catalog for a
+      Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -665,7 +667,7 @@ func newUpdateAssignment() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateAssignmentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateAssignmentReq.DefaultCatalogName, "default-catalog-name", updateAssignmentReq.DefaultCatalogName, `The name of the default catalog for the metastore.`)
+	cmd.Flags().StringVar(&updateAssignmentReq.DefaultCatalogName, "default-catalog-name", updateAssignmentReq.DefaultCatalogName, `The name of the default catalog in the metastore.`)
 	cmd.Flags().StringVar(&updateAssignmentReq.MetastoreId, "metastore-id", updateAssignmentReq.MetastoreId, `The unique ID of the metastore.`)
 
 	cmd.Use = "update-assignment WORKSPACE_ID"

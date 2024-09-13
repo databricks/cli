@@ -23,7 +23,7 @@ func TestGlobReferencesExpandedForTaskLibraries(t *testing.T) {
 	testutil.Touch(t, dir, "jar", "my2.jar")
 
 	b := &bundle.Bundle{
-		RootPath: dir,
+		SyncRootPath: dir,
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -104,7 +104,7 @@ func TestGlobReferencesExpandedForForeachTaskLibraries(t *testing.T) {
 	testutil.Touch(t, dir, "jar", "my2.jar")
 
 	b := &bundle.Bundle{
-		RootPath: dir,
+		SyncRootPath: dir,
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -189,7 +189,7 @@ func TestGlobReferencesExpandedForEnvironmentsDeps(t *testing.T) {
 	testutil.Touch(t, dir, "jar", "my2.jar")
 
 	b := &bundle.Bundle{
-		RootPath: dir,
+		SyncRootPath: dir,
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{

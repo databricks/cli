@@ -2,6 +2,7 @@ package python
 
 import (
 	"context"
+	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -38,7 +39,7 @@ func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) bool {
 	tasks := libraries.FindTasksWithLocalLibraries(b)
 	for _, task := range tasks {
 		if task.NewCluster != nil {
-			if lowerThanExpectedVersion(ctx, task.NewCluster.SparkVersion) {
+			if lowerThanExpectedVersion(task.NewCluster.SparkVersion) {
 				return true
 			}
 		}
@@ -47,7 +48,7 @@ func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) bool {
 			for _, job := range b.Config.Resources.Jobs {
 				for _, cluster := range job.JobClusters {
 					if task.JobClusterKey == cluster.JobClusterKey && cluster.NewCluster.SparkVersion != "" {
-						if lowerThanExpectedVersion(ctx, cluster.NewCluster.SparkVersion) {
+						if lowerThanExpectedVersion(cluster.NewCluster.SparkVersion) {
 							return true
 						}
 					}
@@ -64,7 +65,7 @@ func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) bool {
 				return false
 			}
 
-			if lowerThanExpectedVersion(ctx, version) {
+			if lowerThanExpectedVersion(version) {
 				return true
 			}
 		}
@@ -73,7 +74,7 @@ func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) bool {
 	return false
 }
 
-func lowerThanExpectedVersion(ctx context.Context, sparkVersion string) bool {
+func lowerThanExpectedVersion(sparkVersion string) bool {
 	parts := strings.Split(sparkVersion, ".")
 	if len(parts) < 2 {
 		return false
@@ -82,6 +83,17 @@ func lowerThanExpectedVersion(ctx context.Context, sparkVersion string) bool {
 	if parts[1][0] == 'x' { // treat versions like 13.x as the very latest minor (13.99)
 		parts[1] = "99"
 	}
+
+	// if any of the version parts are not numbers, we can't compare
+	// so consider it as compatible version
+	if _, err := strconv.Atoi(parts[0]); err != nil {
+		return false
+	}
+
+	if _, err := strconv.Atoi(parts[1]); err != nil {
+		return false
+	}
+
 	v := "v" + parts[0] + "." + parts[1]
 	return semver.Compare(v, "v13.1") < 0
 }
