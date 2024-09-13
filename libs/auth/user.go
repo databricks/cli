@@ -13,6 +13,7 @@ import (
 func GetShortUserName(user *iam.User) string {
 	var name string
 	if IsServicePrincipal(user.UserName) {
+		// Try use the display name of the principal (if it has one)
 		name = user.DisplayName
 	}
 	if name == "" {

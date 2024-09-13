@@ -101,7 +101,7 @@ func TestGetShortUserName(t *testing.T) {
 		{
 			user: &iam.User{
 				UserName: `1706906c-c0a2-4c25-9f57-3a7aa3cb8123`,
-				// No DisplayName
+				// This service princpal has DisplayName (it's an optional property)
 			},
 			expected: "1706906c_c0a2_4c25_9f57_3a7aa3cb8123",
 		},
