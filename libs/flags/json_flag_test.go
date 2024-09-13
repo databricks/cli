@@ -6,6 +6,7 @@ import (
 	"path"
 	"testing"
 
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -52,7 +53,7 @@ func TestJsonFlagFile(t *testing.T) {
 	var request any
 
 	var fpath string
-	var payload = []byte(`"hello world"`)
+	var payload = []byte(`{"hello": "world"}`)
 
 	{
 		f, err := os.Create(path.Join(t.TempDir(), "file"))
@@ -68,5 +69,101 @@ func TestJsonFlagFile(t *testing.T) {
 	err = body.Unmarshal(&request)
 	require.NoError(t, err)
 
-	assert.Equal(t, "hello world", request)
+	assert.Equal(t, map[string]interface{}{"hello": "world"}, request)
+}
+
+const jsonData = `
+{
+    "job_id": 123,
+    "new_settings": {
+        "name": "new job",
+        "email_notifications": {
+            "on_start": [],
+            "on_success": [],
+            "on_failure": []
+        },
+        "notification_settings": {
+            "no_alert_for_skipped_runs": true,
+            "no_alert_for_canceled_runs": true
+        },
+        "timeout_seconds": 0,
+        "max_concurrent_runs": 1,
+        "tasks": [
+            {
+                "task_key": "new task",
+                "email_notifications": {},
+                "notification_settings": {},
+                "timeout_seconds": 0,
+                "max_retries": 0,
+                "min_retry_interval_millis": 0,
+                "retry_on_timeout": "true"
+            }
+        ]
+    }
+}
+`
+
+func TestJsonUnmarshalForRequest(t *testing.T) {
+	var body JsonFlag
+
+	var r jobs.ResetJob
+	err := body.Set(jsonData)
+	require.NoError(t, err)
+
+	err = body.Unmarshal(&r)
+	require.NoError(t, err)
+
+	assert.Equal(t, int64(123), r.JobId)
+	assert.Equal(t, "new job", r.NewSettings.Name)
+	assert.Equal(t, 0, r.NewSettings.TimeoutSeconds)
+	assert.Equal(t, 1, r.NewSettings.MaxConcurrentRuns)
+	assert.Equal(t, 1, len(r.NewSettings.Tasks))
+	assert.Equal(t, "new task", r.NewSettings.Tasks[0].TaskKey)
+	assert.Equal(t, 0, r.NewSettings.Tasks[0].TimeoutSeconds)
+	assert.Equal(t, 0, r.NewSettings.Tasks[0].MaxRetries)
+	assert.Equal(t, 0, r.NewSettings.Tasks[0].MinRetryIntervalMillis)
+	assert.Equal(t, true, r.NewSettings.Tasks[0].RetryOnTimeout)
+}
+
+const incorrectJsonData = `
+{
+    "job_id": 123,
+    "settings": {
+        "name": "new job",
+        "email_notifications": {
+            "on_start": [],
+            "on_success": [],
+            "on_failure": []
+        },
+        "notification_settings": {
+            "no_alert_for_skipped_runs": true,
+            "no_alert_for_canceled_runs": true
+        },
+        "timeout_seconds": {},
+        "max_concurrent_runs": {},
+        "tasks": [
+            {
+                "task_key": "new task",
+                "email_notifications": {},
+                "notification_settings": {},
+                "timeout_seconds": 0,
+                "max_retries": 0,
+                "min_retry_interval_millis": 0,
+                "retry_on_timeout": "true"
+            }
+        ]
+    }
+}
+`
+
+func TestJsonUnmarshalRequestMismatch(t *testing.T) {
+	var body JsonFlag
+
+	var r jobs.ResetJob
+	err := body.Set(incorrectJsonData)
+	require.NoError(t, err)
+
+	err = body.Unmarshal(&r)
+	require.ErrorContains(t, err, `json input error:
+- unknown field: settings`)
 }

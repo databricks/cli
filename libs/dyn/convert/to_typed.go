@@ -221,10 +221,10 @@ func toTypedBool(dst reflect.Value, src dyn.Value) error {
 	case dyn.KindString:
 		// See https://github.com/go-yaml/yaml/blob/f6f7691b1fdeb513f56608cd2c32c51f8194bf51/decode.go#L684-L693.
 		switch src.MustString() {
-		case "y", "Y", "yes", "Yes", "YES", "on", "On", "ON":
+		case "y", "Y", "yes", "Yes", "YES", "on", "On", "ON", "true":
 			dst.SetBool(true)
 			return nil
-		case "n", "N", "no", "No", "NO", "off", "Off", "OFF":
+		case "n", "N", "no", "No", "NO", "off", "Off", "OFF", "false":
 			dst.SetBool(false)
 			return nil
 		}
@@ -246,6 +246,17 @@ func toTypedInt(dst reflect.Value, src dyn.Value) error {
 	case dyn.KindInt:
 		dst.SetInt(src.MustInt())
 		return nil
+	case dyn.KindFloat:
+		v := src.MustFloat()
+		if canConvertToInt(v) {
+			dst.SetInt(int64(src.MustFloat()))
+			return nil
+		}
+
+		return TypeError{
+			value: src,
+			msg:   fmt.Sprintf("expected an int, found a %s", src.Kind()),
+		}
 	case dyn.KindString:
 		if i64, err := strconv.ParseInt(src.MustString(), 10, 64); err == nil {
 			dst.SetInt(i64)
@@ -262,6 +273,10 @@ func toTypedInt(dst reflect.Value, src dyn.Value) error {
 		value: src,
 		msg:   fmt.Sprintf("expected an int, found a %s", src.Kind()),
 	}
+}
+
+func canConvertToInt(v float64) bool {
+	return v == float64(int(v))
 }
 
 func toTypedFloat(dst reflect.Value, src dyn.Value) error {

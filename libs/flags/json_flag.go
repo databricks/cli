@@ -1,9 +1,11 @@
 package flags
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
+
+	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/cli/libs/dyn/jsonloader"
 )
 
 type JsonFlag struct {
@@ -33,7 +35,27 @@ func (j *JsonFlag) Unmarshal(v any) error {
 	if j.raw == nil {
 		return nil
 	}
-	return json.Unmarshal(j.raw, v)
+
+	dv, err := jsonloader.LoadJSON(j.raw)
+	if err != nil {
+		return err
+	}
+
+	err = convert.ToTyped(v, dv)
+	if err != nil {
+		return err
+	}
+
+	_, diags := convert.Normalize(v, dv)
+	if len(diags) > 0 {
+		summary := ""
+		for _, diag := range diags {
+			summary += fmt.Sprintf("- %s\n", diag.Summary)
+		}
+		return fmt.Errorf("json input error:\n%v", summary)
+	}
+
+	return nil
 }
 
 func (j *JsonFlag) Type() string {
