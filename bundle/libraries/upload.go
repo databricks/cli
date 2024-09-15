@@ -204,6 +204,8 @@ func (u *upload) Name() string {
 //
 //	-> exception for when the schema value is fully or partially interpolated.
 //	   In that case only check the catalog name.
+//
+// TODO: Convert to warning? We don't error today if you specify an invalid volume path.
 func GetFilerForLibraries(ctx context.Context, b *bundle.Bundle, uploadPath string) (filer.Filer, diag.Diagnostics) {
 	w := b.WorkspaceClient()
 	isVolumesPath := strings.HasPrefix(uploadPath, "/Volumes/")
@@ -241,8 +243,7 @@ func GetFilerForLibraries(ctx context.Context, b *bundle.Bundle, uploadPath stri
 	}
 
 	// The volume does not exist. Check if the volume is defined in the bundle.
-	// TODO: Does this break? Did it work before if the volume was not defined, but
-	// the schema was?
+	// TODO: Note that this is not a breaking change.
 	l, ok := locationForVolume(b, catalogName, schemaName, volumeName)
 	if !ok {
 		return nil, diag.Errorf("the bundle is configured to upload artifacts to %s but a UC volume at %s does not exist", uploadPath, volumePath)
