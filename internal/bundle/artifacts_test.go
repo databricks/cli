@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -13,6 +14,8 @@ import (
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
@@ -224,4 +227,108 @@ func TestAccUploadArtifactFileToCorrectRemotePathForVolumes(t *testing.T) {
 		regexp.MustCompile(path.Join(regexp.QuoteMeta(volumePath), `.internal/test\.whl`)),
 		b.Config.Resources.Jobs["test"].JobSettings.Tasks[0].Libraries[0].Whl,
 	)
+}
+
+func TestAccUploadArtifactFileToInvalidVolume(t *testing.T) {
+	ctx, wt := acc.UcWorkspaceTest(t)
+	w := wt.W
+
+	schemaName := internal.RandomName("schema-")
+
+	_, err := w.Schemas.Create(ctx, catalog.CreateSchema{
+		CatalogName: "main",
+		Comment:     "test schema",
+		Name:        schemaName,
+	})
+	require.NoError(t, err)
+
+	t.Run("volume not in DAB", func(t *testing.T) {
+		volumePath := fmt.Sprintf("/Volumes/main/%s/doesnotexist", schemaName)
+		dir := t.TempDir()
+
+		b := &bundle.Bundle{
+			RootPath:     dir,
+			SyncRootPath: dir,
+			Config: config.Root{
+				Bundle: config.Bundle{
+					Target: "whatever",
+				},
+				Workspace: config.Workspace{
+					ArtifactPath: volumePath,
+				},
+				Resources: config.Resources{
+					Volumes: map[string]*resources.Volume{
+						"foo": {
+							CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+								CatalogName: "main",
+								Name:        "my_volume",
+								VolumeType:  "MANAGED",
+								SchemaName:  schemaName,
+							},
+						},
+					},
+				},
+			},
+		}
+
+		diags := bundle.Apply(ctx, b, bundle.Seq(libraries.ExpandGlobReferences(), libraries.Upload()))
+		require.EqualError(t, diags.Error(), fmt.Sprintf("the bundle is configured to upload artifacts to %s but a UC volume at %s does not exist", path.Join(volumePath, ".internal"), volumePath))
+	})
+
+	t.Run("volume in DAB config", func(t *testing.T) {
+		volumePath := fmt.Sprintf("/Volumes/main/%s/my_volume", schemaName)
+		dir := t.TempDir()
+
+		b := &bundle.Bundle{
+			RootPath:     dir,
+			SyncRootPath: dir,
+			Config: config.Root{
+				Bundle: config.Bundle{
+					Target: "whatever",
+				},
+				Workspace: config.Workspace{
+					ArtifactPath: volumePath,
+				},
+				Resources: config.Resources{
+					Volumes: map[string]*resources.Volume{
+						"foo": {
+							CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+								CatalogName: "main",
+								Name:        "my_volume",
+								VolumeType:  "MANAGED",
+								SchemaName:  schemaName,
+							},
+						},
+					},
+				},
+			},
+		}
+
+		// set location of volume definition in config.
+		b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+			return dyn.Map(v, "resources.volumes.foo", func(p dyn.Path, volume dyn.Value) (dyn.Value, error) {
+				return volume.WithLocations([]dyn.Location{
+					{
+						File:   filepath.Join(dir, "databricks.yml"),
+						Line:   1,
+						Column: 2,
+					},
+				}), nil
+			})
+		})
+
+		diags := bundle.Apply(ctx, b, bundle.Seq(libraries.ExpandGlobReferences(), libraries.Upload()))
+		require.EqualError(
+			t,
+			diags.Error(),
+			fmt.Sprintf(`the bundle is configured to upload artifacts to %s but a
+UC volume at %s does not exist. Note: We detected that you have a UC volume
+defined that matched the path above at %s. Please deploy the UC volume
+in a separate deployment before using it in as a destination to upload
+artifacts.`, path.Join(volumePath, ".internal"), volumePath, dyn.Location{
+				File:   filepath.Join(dir, "databricks.yml"),
+				Line:   1,
+				Column: 2,
+			}))
+	})
 }
