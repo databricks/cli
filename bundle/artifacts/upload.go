@@ -26,9 +26,9 @@ func (m *cleanUp) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		return diag.FromErr(err)
 	}
 
-	client, err := libraries.GetFilerForLibraries(b.WorkspaceClient(), uploadPath)
-	if err != nil {
-		return diag.FromErr(err)
+	client, diags := libraries.GetFilerForLibraries(ctx, b, uploadPath)
+	if diags.HasError() {
+		return diags
 	}
 
 	// We intentionally ignore the error because it is not critical to the deployment
