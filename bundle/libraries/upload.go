@@ -245,13 +245,14 @@ func GetFilerForLibraries(ctx context.Context, b *bundle.Bundle, uploadPath stri
 	// the schema was?
 	l, ok := locationForVolume(b, catalogName, schemaName, volumeName)
 	if !ok {
-		return nil, diag.Errorf("UC volume %s does not exist", volumePath)
+		return nil, diag.Errorf("the bundle is configured to upload artifacts to %s but a UC volume at %s does not exist", uploadPath, volumePath)
 	}
 
-	return nil, diag.Errorf(`UC volume %s does not exist. Note: We detected that
-you have a UC volume defined that matched the path above at %s.
-Please deploy the UC volume separately before using it in as a
-destination to upload artifacts.`, l, volumePath)
+	return nil, diag.Errorf(`the bundle is configured to upload artifacts to %s but a
+UC volume at %s does not exist. Note: We detected that you have a UC volume
+defined that matched the path above at %s. Please deploy the UC volume
+in a separate deployment before using it in as a destination to upload
+artifacts.`, uploadPath, volumePath, l)
 }
 
 func locationForVolume(b *bundle.Bundle, catalogName, schemaName, volumeName string) (dyn.Location, bool) {

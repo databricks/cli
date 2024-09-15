@@ -40,17 +40,7 @@ func TestParseTerraformActions(t *testing.T) {
 		},
 	}
 
-	res := filterDeleteOrRecreateActions(changes, func(typ string, actions tfjson.Actions) bool {
-		if typ != "databricks_pipeline" {
-			return false
-		}
-
-		if actions.Delete() || actions.Replace() {
-			return true
-		}
-
-		return false
-	})
+	res := filterDeleteOrRecreateActions(changes, "databricks_pipeline")
 
 	assert.Equal(t, []terraformlib.Action{
 		{
