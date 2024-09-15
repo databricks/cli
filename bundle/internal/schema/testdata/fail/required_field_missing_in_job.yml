@@ -1,0 +1,9 @@
+resources:
+  jobs:
+    foo:
+      name: my job
+      tasks:
+        # All tasks need to have a task_key.
+        - notebook_task:
+            notebook_path: /Users/abc/notebooks/inner
+          existing_cluster_id: abcd
