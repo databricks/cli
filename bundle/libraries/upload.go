@@ -244,6 +244,7 @@ func GetFilerForLibraries(ctx context.Context, b *bundle.Bundle, uploadPath stri
 
 	// The volume does not exist. Check if the volume is defined in the bundle.
 	// TODO: Note that this is not a breaking change.
+	// TODO: Include error as well for why the stat call failed. It's more context.
 	l, ok := locationForVolume(b, catalogName, schemaName, volumeName)
 	if !ok {
 		return nil, diag.Errorf("the bundle is configured to upload artifacts to %s but a UC volume at %s does not exist", uploadPath, volumePath)

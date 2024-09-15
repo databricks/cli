@@ -51,7 +51,7 @@ func TestConvertVolume(t *testing.T) {
 		"schema_name":      "schema",
 		"storage_location": "s3://bucket/path",
 		"volume_type":      "EXTERNAL",
-	}, out.Schema["my_volume"])
+	}, out.Volume["my_volume"])
 
 	// Assert equality on the grants
 	assert.Equal(t, &schema.ResourceGrants{
