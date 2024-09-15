@@ -8,11 +8,15 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/internal/bundletest"
 	mockfiler "github.com/databricks/cli/internal/mocks/libs/filer"
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -328,4 +332,47 @@ func TestUploadMultipleLibraries(t *testing.T) {
 	require.Contains(t, b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies, "/Workspace/foo/bar/artifacts/.internal/source3.whl")
 	require.Contains(t, b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies, "/Workspace/foo/bar/artifacts/.internal/source4.whl")
 	require.Contains(t, b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies, "/Workspace/Users/foo@bar.com/mywheel.whl")
+}
+
+func TestLocationOfVolumeInBundle(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Volumes: map[string]*resources.Volume{
+					"foo": {
+						CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+							CatalogName: "main",
+							Name:        "my_volume",
+							SchemaName:  "my_schema",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	bundletest.SetLocation(b, "resources.volumes.foo", "volume.yml")
+
+	// volume is in DAB directly.
+	l, ok := locationOfVolumeInBundle(b, "main", "my_schema", "my_volume")
+	assert.True(t, ok)
+	assert.Equal(t, dyn.Location{
+		File: "volume.yml",
+	}, l)
+
+	// wrong volume name
+	_, ok = locationOfVolumeInBundle(b, "main", "my_schema", "doesnotexist")
+	assert.False(t, ok)
+
+	// wrong schema name
+	_, ok = locationOfVolumeInBundle(b, "main", "doesnotexist", "my_volume")
+	assert.False(t, ok)
+
+	// schema name is interpolated.
+	b.Config.Resources.Volumes["foo"].SchemaName = "${resources.schemas.my_schema}"
+	l, ok = locationOfVolumeInBundle(b, "main", "valuedoesnotmatter", "my_volume")
+	assert.True(t, ok)
+	assert.Equal(t, dyn.Location{
+		File: "volume.yml",
+	}, l)
 }
