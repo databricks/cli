@@ -191,7 +191,6 @@ func (u *upload) Name() string {
 	return "libraries.Upload"
 }
 
-// TODO: As a followup add testing for interactive flows.
 // This function returns the right filer to use, to upload artifacts to the configured locations.
 // Supported locations:
 // 1. WSFS

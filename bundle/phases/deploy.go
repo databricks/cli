@@ -25,8 +25,6 @@ import (
 func filterDeleteOrRecreateActions(changes []*tfjson.ResourceChange, resourceType string) []terraformlib.Action {
 	res := make([]terraformlib.Action, 0)
 	for _, rc := range changes {
-		// TODO: Add end to end integration tests for the interactive prompt UXs.
-		// Good PR to introduce the first one, and make changes more confidently.
 		if rc.Type != resourceType {
 			continue
 		}
