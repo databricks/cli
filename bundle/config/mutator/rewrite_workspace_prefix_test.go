@@ -65,9 +65,9 @@ func TestNoWorkspacePrefixUsed(t *testing.T) {
 	require.Len(t, diags, 3)
 
 	expectedErrors := map[string]bool{
-		`substring "/Workspace/${workspace.root_path}" found in "/Workspace/${workspace.root_path}/file1.py". Please update this to "${workspace.root_path}/file1.py". For more information, please refer to: https://github.com/databricks/cli/blob/main/docs/release_notes/workspace_prefix.md`:             true,
-		`substring "/Workspace/${workspace.file_path}" found in "/Workspace/${workspace.file_path}/notebook1". Please update this to "${workspace.file_path}/notebook1". For more information, please refer to: https://github.com/databricks/cli/blob/main/docs/release_notes/workspace_prefix.md`:           true,
-		`substring "/Workspace/${workspace.artifact_path}" found in "/Workspace/${workspace.artifact_path}/jar1.jar". Please update this to "${workspace.artifact_path}/jar1.jar". For more information, please refer to: https://github.com/databricks/cli/blob/main/docs/release_notes/workspace_prefix.md`: true,
+		`substring "/Workspace/${workspace.root_path}" found in "/Workspace/${workspace.root_path}/file1.py". Please update this to "${workspace.root_path}/file1.py". For more information, please refer to: https://docs.databricks.com/en/release-notes/bundles.html#workspace-paths-will-be-automatically-prefixed`:             true,
+		`substring "/Workspace/${workspace.file_path}" found in "/Workspace/${workspace.file_path}/notebook1". Please update this to "${workspace.file_path}/notebook1". For more information, please refer to: https://docs.databricks.com/en/release-notes/bundles.html#workspace-paths-will-be-automatically-prefixed`:           true,
+		`substring "/Workspace/${workspace.artifact_path}" found in "/Workspace/${workspace.artifact_path}/jar1.jar". Please update this to "${workspace.artifact_path}/jar1.jar". For more information, please refer to: https://docs.databricks.com/en/release-notes/bundles.html#workspace-paths-will-be-automatically-prefixed`: true,
 	}
 
 	for _, d := range diags {
