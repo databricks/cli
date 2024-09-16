@@ -189,6 +189,11 @@ func TestArtifactUploadForVolumes(t *testing.T) {
 		filer.CreateParentDirectories,
 	).Return(nil)
 
+	m := mocks.NewMockWorkspaceClient(t)
+	m.WorkspaceClient.Config = &sdkconfig.Config{}
+	m.GetMockFilesAPI().EXPECT().GetDirectoryMetadataByDirectoryPath(mock.Anything, "/Volumes/foo/bar/artifacts").Return(nil)
+	b.SetWorkpaceClient(m.WorkspaceClient)
+
 	diags := bundle.Apply(context.Background(), b, bundle.Seq(ExpandGlobReferences(), UploadWithClient(mockFiler)))
 	require.NoError(t, diags.Error())
 

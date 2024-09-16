@@ -131,13 +131,15 @@ func collectLocalLibraries(b *bundle.Bundle) (map[string][]configLocation, error
 func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// If the client is not initialized, initialize it
 	// We use client field in mutator to allow for mocking client in testing
-	var uploadPath string
-	var diags diag.Diagnostics
+	client, uploadPath, diags := GetFilerForLibraries(ctx, b)
+	if diags.HasError() {
+		return diags
+	}
+
+	// Only set the filer client if it's not already set. This allows for using
+	// a mock client in tests.
 	if u.client == nil {
-		u.client, uploadPath, diags = GetFilerForLibraries(ctx, b)
-		if diags.HasError() {
-			return diags
-		}
+		u.client = client
 	}
 
 	libs, err := collectLocalLibraries(b)
@@ -189,6 +191,7 @@ func (u *upload) Name() string {
 	return "libraries.Upload"
 }
 
+// TODO: As a followup add testing for interactive flows.
 // This function returns the right filer to use, to upload artifacts to the configured locations.
 // Supported locations:
 // 1. WSFS
