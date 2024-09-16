@@ -499,7 +499,7 @@ func TestGetFilerForLibraries(t *testing.T) {
 
 	t.Run("invalid volume paths", func(t *testing.T) {
 		invalidPaths := []string{
-			"/Volumes",
+			"/Volumes/",
 			"/Volumes/main",
 			"/Volumes/main/",
 			"/Volumes/main//",

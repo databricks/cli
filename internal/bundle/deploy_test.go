@@ -282,7 +282,7 @@ volumes the upstream data in the cloud tenant is not affected:
   recreate volume foo`)
 	assert.Contains(t, stdout.String(), "the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
 
-	// Recreation of the volume without --auto-approve should fail since prompting is not possible
+	// Successfully recreate the volume with --auto-approve
 	t.Setenv("TERM", "dumb")
 	t.Setenv("BUNDLE_ROOT", bundleRoot)
 	_, _, err = internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "deploy", "--var=schema_name=${resources.schemas.schema2.name}", "--auto-approve").Run()
