@@ -14,10 +14,12 @@ import (
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -272,7 +274,7 @@ func TestAccUploadArtifactFileToInvalidVolume(t *testing.T) {
 		}
 
 		diags := bundle.Apply(ctx, b, bundle.Seq(libraries.ExpandGlobReferences(), libraries.Upload()))
-		require.EqualError(t, diags.Error(), fmt.Sprintf("the bundle is configured to upload artifacts to %s but a UC volume at %s does not exist", path.Join(volumePath, ".internal"), volumePath))
+		assert.ErrorContains(t, diags.Error(), fmt.Sprintf("failed to fetch metadata for the UC volume %s that is configured in the artifact_path:", volumePath))
 	})
 
 	t.Run("volume in DAB config", func(t *testing.T) {
@@ -318,17 +320,23 @@ func TestAccUploadArtifactFileToInvalidVolume(t *testing.T) {
 		})
 
 		diags := bundle.Apply(ctx, b, bundle.Seq(libraries.ExpandGlobReferences(), libraries.Upload()))
-		require.EqualError(
-			t,
-			diags.Error(),
-			fmt.Sprintf(`the bundle is configured to upload artifacts to %s but a
-UC volume at %s does not exist. Note: We detected that you have a UC volume
-defined that matched the path above at %s. Please deploy the UC volume
-in a separate deployment before using it in as a destination to upload
-artifacts.`, path.Join(volumePath, ".internal"), volumePath, dyn.Location{
-				File:   filepath.Join(dir, "databricks.yml"),
-				Line:   1,
-				Column: 2,
-			}))
+		assert.Contains(t, diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  fmt.Sprintf("failed to fetch metadata for the UC volume %s that is configured in the artifact_path: Not Found", volumePath),
+		})
+		assert.Contains(t, diags, diag.Diagnostic{
+			Severity: diag.Warning,
+			Summary:  "You might be using a UC volume in your artifact_path that is managed by this bundle but which has not been deployed yet. Please deploy the UC volume in a separate bundle deploy before using it in the artifact_path.",
+			Locations: []dyn.Location{
+				{
+					File:   filepath.Join(dir, "databricks.yml"),
+					Line:   1,
+					Column: 2,
+				},
+			},
+			Paths: []dyn.Path{
+				dyn.MustPathFromString("resources.volumes.foo"),
+			},
+		})
 	})
 }

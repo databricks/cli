@@ -71,7 +71,3 @@ func (v ref) references() []string {
 func IsPureVariableReference(s string) bool {
 	return len(s) > 0 && re.FindString(s) == s
 }
-
-func ContainsVariableReference(s string) bool {
-	return len(s) > 0 && re.FindString(s) != ""
-}

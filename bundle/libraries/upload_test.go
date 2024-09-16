@@ -344,7 +344,7 @@ func TestUploadMultipleLibraries(t *testing.T) {
 	require.Contains(t, b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies, "/Workspace/Users/foo@bar.com/mywheel.whl")
 }
 
-func TestMatchVolumeInBundle(t *testing.T) {
+func TestFindVolumeInBundle(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
@@ -364,7 +364,7 @@ func TestMatchVolumeInBundle(t *testing.T) {
 	bundletest.SetLocation(b, "resources.volumes.foo", "volume.yml")
 
 	// volume is in DAB.
-	path, locations, ok := matchVolumeInBundle(b, "main", "my_schema", "my_volume")
+	path, locations, ok := findVolumeInBundle(b, "main", "my_schema", "my_volume")
 	assert.True(t, ok)
 	assert.Equal(t, []dyn.Location{{
 		File: "volume.yml",
@@ -372,16 +372,20 @@ func TestMatchVolumeInBundle(t *testing.T) {
 	assert.Equal(t, dyn.MustPathFromString("resources.volumes.foo"), path)
 
 	// wrong volume name
-	_, _, ok = matchVolumeInBundle(b, "main", "my_schema", "doesnotexist")
+	_, _, ok = findVolumeInBundle(b, "main", "my_schema", "doesnotexist")
 	assert.False(t, ok)
 
 	// wrong schema name
-	_, _, ok = matchVolumeInBundle(b, "main", "doesnotexist", "my_volume")
+	_, _, ok = findVolumeInBundle(b, "main", "doesnotexist", "my_volume")
+	assert.False(t, ok)
+
+	// wrong catalog name
+	_, _, ok = findVolumeInBundle(b, "doesnotexist", "my_schema", "my_volume")
 	assert.False(t, ok)
 
 	// schema name is interpolated.
 	b.Config.Resources.Volumes["foo"].SchemaName = "${resources.schemas.my_schema}"
-	path, locations, ok = matchVolumeInBundle(b, "main", "valuedoesnotmatter", "my_volume")
+	path, locations, ok = findVolumeInBundle(b, "main", "valuedoesnotmatter", "my_volume")
 	assert.True(t, ok)
 	assert.Equal(t, []dyn.Location{{
 		File: "volume.yml",
@@ -442,7 +446,8 @@ func TestGetFilerForLibraries(t *testing.T) {
 		b.SetWorkpaceClient(m.WorkspaceClient)
 
 		_, _, diags := GetFilerForLibraries(context.Background(), b)
-		require.EqualError(t, diags.Error(), "failed to fetch metadata for the UC volume /Volumes/main/my_schema/doesnotexist that is configured in the artifact_path: error from API")
+		assert.EqualError(t, diags.Error(), "failed to fetch metadata for the UC volume /Volumes/main/my_schema/doesnotexist that is configured in the artifact_path: error from API")
+		assert.Len(t, diags, 1)
 	})
 
 	t.Run("volume in DAB config", func(t *testing.T) {
@@ -477,7 +482,7 @@ func TestGetFilerForLibraries(t *testing.T) {
 		assert.EqualError(t, diags.Error(), "failed to fetch metadata for the UC volume /Volumes/main/my_schema/my_volume that is configured in the artifact_path: error from API")
 		assert.Contains(t, diags, diag.Diagnostic{
 			Severity: diag.Warning,
-			Summary:  "the UC volume that is likely being used in the artifact_path has not been deployed yet. Please deploy the UC volume in a separate bundle deploy before using it in the artifact_path.",
+			Summary:  "You might be using a UC volume in your artifact_path that is managed by this bundle but which has not been deployed yet. Please deploy the UC volume in a separate bundle deploy before using it in the artifact_path.",
 			Locations: []dyn.Location{{
 				File: "volume.yml",
 			}},
@@ -515,7 +520,7 @@ func TestGetFilerForLibraries(t *testing.T) {
 			}
 
 			_, _, diags := GetFilerForLibraries(context.Background(), b)
-			require.EqualError(t, diags.Error(), fmt.Sprintf("expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<path>, got %s", path.Join(p, ".internal")))
+			require.EqualError(t, diags.Error(), fmt.Sprintf("expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got %s", path.Join(p, ".internal")))
 		}
 	})
 }

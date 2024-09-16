@@ -129,15 +129,13 @@ func collectLocalLibraries(b *bundle.Bundle) (map[string][]configLocation, error
 }
 
 func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	// If the client is not initialized, initialize it
-	// We use client field in mutator to allow for mocking client in testing
 	client, uploadPath, diags := GetFilerForLibraries(ctx, b)
 	if diags.HasError() {
 		return diags
 	}
 
-	// Only set the filer client if it's not already set. This allows for using
-	// a mock client in tests.
+	// Only set the filer client if it's not already set. We use client field
+	// in mutator to mock the filer client in testing
 	if u.client == nil {
 		u.client = client
 	}
@@ -191,7 +189,7 @@ func (u *upload) Name() string {
 	return "libraries.Upload"
 }
 
-// This function returns the right filer to use, to upload artifacts to the configured locations.
+// This function returns the right filer to use, to upload artifacts to the configured location.
 // Supported locations:
 // 1. WSFS
 // 2. UC volumes
@@ -200,7 +198,7 @@ func (u *upload) Name() string {
 // Then:
 //  1. If the UC volume existing in the workspace:
 //     Returns a filer for the UC volume.
-//  2. If the UC volume does not exist in the workspace but is very likely to be defined in
+//  2. If the UC volume does not exist in the workspace but is (with high confidence) defined in
 //     the bundle configuration:
 //     Returns a warning along with the error that instructs the user to deploy the
 //     UC volume before using it in the artifact path.
@@ -212,11 +210,11 @@ func GetFilerForLibraries(ctx context.Context, b *bundle.Bundle) (filer.Filer, s
 		return nil, "", diag.Errorf("remote artifact path not configured")
 	}
 
-	// path to upload artifact files to.
-	uploadPath := path.Join(artifactPath, ".internal")
-
 	w := b.WorkspaceClient()
-	isVolumesPath := strings.HasPrefix(uploadPath, "/Volumes/")
+	isVolumesPath := strings.HasPrefix(artifactPath, "/Volumes/")
+
+	// Path to upload artifact files to.
+	uploadPath := path.Join(artifactPath, ".internal")
 
 	// Return early with a WSFS filer if the artifact path is not a UC volume path.
 	if !isVolumesPath {
@@ -225,7 +223,7 @@ func GetFilerForLibraries(ctx context.Context, b *bundle.Bundle) (filer.Filer, s
 	}
 
 	parts := strings.Split(artifactPath, "/")
-	volumeFormatErr := fmt.Errorf("expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<path>, got %s", uploadPath)
+	volumeFormatErr := fmt.Errorf("expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got %s", uploadPath)
 
 	// Incorrect format.
 	if len(parts) < 5 {
@@ -253,21 +251,21 @@ func GetFilerForLibraries(ctx context.Context, b *bundle.Bundle) (filer.Filer, s
 
 	diags := diag.Errorf("failed to fetch metadata for the UC volume %s that is configured in the artifact_path: %s", volumePath, err)
 
-	path, locations, ok := matchVolumeInBundle(b, catalogName, schemaName, volumeName)
+	path, locations, ok := findVolumeInBundle(b, catalogName, schemaName, volumeName)
 	if !ok {
 		return nil, "", diags
 	}
 
 	warning := diag.Diagnostic{
 		Severity:  diag.Warning,
-		Summary:   `the UC volume that is likely being used in the artifact_path has not been deployed yet. Please deploy the UC volume in a separate bundle deploy before using it in the artifact_path.`,
+		Summary:   `You might be using a UC volume in your artifact_path that is managed by this bundle but which has not been deployed yet. Please deploy the UC volume in a separate bundle deploy before using it in the artifact_path.`,
 		Locations: locations,
 		Paths:     []dyn.Path{path},
 	}
 	return nil, "", diags.Append(warning)
 }
 
-func matchVolumeInBundle(b *bundle.Bundle, catalogName, schemaName, volumeName string) (dyn.Path, []dyn.Location, bool) {
+func findVolumeInBundle(b *bundle.Bundle, catalogName, schemaName, volumeName string) (dyn.Path, []dyn.Location, bool) {
 	volumes := b.Config.Resources.Volumes
 	for k, v := range volumes {
 		if v.CatalogName != catalogName || v.Name != volumeName {
@@ -277,7 +275,7 @@ func matchVolumeInBundle(b *bundle.Bundle, catalogName, schemaName, volumeName s
 		// at runtime via the ${resources.schemas.<name>} syntax. Thus we match the volume
 		// definition if the schema name is the same as the one in the bundle, or if the
 		// schema name is interpolated.
-		if v.SchemaName != schemaName && !dynvar.ContainsVariableReference(v.SchemaName) {
+		if v.SchemaName != schemaName && !dynvar.IsPureVariableReference(v.SchemaName) {
 			continue
 		}
 		pathString := fmt.Sprintf("resources.volumes.%s", k)
