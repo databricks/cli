@@ -3,6 +3,7 @@ package libraries
 import (
 	"context"
 	"fmt"
+	"path"
 	"path/filepath"
 	"testing"
 
@@ -504,17 +505,17 @@ func TestGetFilerForLibraries(t *testing.T) {
 			"/Volumes//my_schema/my_volume",
 		}
 
-		for _, path := range invalidPaths {
+		for _, p := range invalidPaths {
 			b := &bundle.Bundle{
 				Config: config.Root{
 					Workspace: config.Workspace{
-						ArtifactPath: path,
+						ArtifactPath: p,
 					},
 				},
 			}
 
 			_, _, diags := GetFilerForLibraries(context.Background(), b)
-			require.EqualError(t, diags.Error(), fmt.Sprintf("expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<path>, got %s", filepath.Join(path, ".internal")))
+			require.EqualError(t, diags.Error(), fmt.Sprintf("expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<path>, got %s", path.Join(p, ".internal")))
 		}
 	})
 }
