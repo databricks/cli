@@ -196,11 +196,11 @@ func (u *upload) Name() string {
 //
 // If a UC Volume is configured, this function checks if the UC volume exists in the workspace.
 // Then:
-//  1. If the UC volume existing in the workspace:
+//  1. If the UC volume exists in the workspace:
 //     Returns a filer for the UC volume.
 //  2. If the UC volume does not exist in the workspace but is (with high confidence) defined in
 //     the bundle configuration:
-//     Returns a warning along with the error that instructs the user to deploy the
+//     Returns an error and a warning that instructs the user to deploy the
 //     UC volume before using it in the artifact path.
 //  3. If the UC volume does not exist in the workspace and is not defined in the bundle configuration:
 //     Returns an error.
