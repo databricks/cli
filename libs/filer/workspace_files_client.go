@@ -114,7 +114,7 @@ type apiClient interface {
 
 // NOTE: This API is available for files under /Repos if a workspace has files-in-repos enabled.
 // It can access any workspace path if files-in-workspace is enabled.
-type workspaceFilesClient struct {
+type WorkspaceFilesClient struct {
 	workspaceClient *databricks.WorkspaceClient
 	apiClient       apiClient
 
@@ -128,7 +128,7 @@ func NewWorkspaceFilesClient(w *databricks.WorkspaceClient, root string) (Filer,
 		return nil, err
 	}
 
-	return &workspaceFilesClient{
+	return &WorkspaceFilesClient{
 		workspaceClient: w,
 		apiClient:       apiClient,
 
@@ -136,7 +136,7 @@ func NewWorkspaceFilesClient(w *databricks.WorkspaceClient, root string) (Filer,
 	}, nil
 }
 
-func (w *workspaceFilesClient) Write(ctx context.Context, name string, reader io.Reader, mode ...WriteMode) error {
+func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io.Reader, mode ...WriteMode) error {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return err
@@ -206,7 +206,7 @@ func (w *workspaceFilesClient) Write(ctx context.Context, name string, reader io
 	return err
 }
 
-func (w *workspaceFilesClient) Read(ctx context.Context, name string) (io.ReadCloser, error) {
+func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.ReadCloser, error) {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return nil, err
@@ -230,7 +230,7 @@ func (w *workspaceFilesClient) Read(ctx context.Context, name string) (io.ReadCl
 	return w.workspaceClient.Workspace.Download(ctx, absPath)
 }
 
-func (w *workspaceFilesClient) Delete(ctx context.Context, name string, mode ...DeleteMode) error {
+func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string, mode ...DeleteMode) error {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return err
@@ -274,7 +274,7 @@ func (w *workspaceFilesClient) Delete(ctx context.Context, name string, mode ...
 	return err
 }
 
-func (w *workspaceFilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, error) {
+func (w *WorkspaceFilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, error) {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return nil, err
@@ -307,7 +307,7 @@ func (w *workspaceFilesClient) ReadDir(ctx context.Context, name string) ([]fs.D
 	return wsfsDirEntriesFromObjectInfos(objects), nil
 }
 
-func (w *workspaceFilesClient) Mkdir(ctx context.Context, name string) error {
+func (w *WorkspaceFilesClient) Mkdir(ctx context.Context, name string) error {
 	dirPath, err := w.root.Join(name)
 	if err != nil {
 		return err
@@ -317,7 +317,7 @@ func (w *workspaceFilesClient) Mkdir(ctx context.Context, name string) error {
 	})
 }
 
-func (w *workspaceFilesClient) Stat(ctx context.Context, name string) (fs.FileInfo, error) {
+func (w *WorkspaceFilesClient) Stat(ctx context.Context, name string) (fs.FileInfo, error) {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return nil, err

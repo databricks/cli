@@ -2,6 +2,7 @@ package libraries
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -11,8 +12,11 @@ import (
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	mockfiler "github.com/databricks/cli/internal/mocks/libs/filer"
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/filer"
+	sdkconfig "github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -334,7 +338,7 @@ func TestUploadMultipleLibraries(t *testing.T) {
 	require.Contains(t, b.Config.Resources.Jobs["job"].JobSettings.Environments[0].Spec.Dependencies, "/Workspace/Users/foo@bar.com/mywheel.whl")
 }
 
-func TestLocationOfVolumeInBundle(t *testing.T) {
+func TestMatchVolumeInBundle(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
@@ -353,26 +357,159 @@ func TestLocationOfVolumeInBundle(t *testing.T) {
 
 	bundletest.SetLocation(b, "resources.volumes.foo", "volume.yml")
 
-	// volume is in DAB directly.
-	l, ok := locationOfVolumeInBundle(b, "main", "my_schema", "my_volume")
+	// volume is in DAB.
+	path, locations, ok := matchVolumeInBundle(b, "main", "my_schema", "my_volume")
 	assert.True(t, ok)
-	assert.Equal(t, dyn.Location{
+	assert.Equal(t, []dyn.Location{{
 		File: "volume.yml",
-	}, l)
+	}}, locations)
+	assert.Equal(t, dyn.MustPathFromString("resources.volumes.foo"), path)
 
 	// wrong volume name
-	_, ok = locationOfVolumeInBundle(b, "main", "my_schema", "doesnotexist")
+	_, _, ok = matchVolumeInBundle(b, "main", "my_schema", "doesnotexist")
 	assert.False(t, ok)
 
 	// wrong schema name
-	_, ok = locationOfVolumeInBundle(b, "main", "doesnotexist", "my_volume")
+	_, _, ok = matchVolumeInBundle(b, "main", "doesnotexist", "my_volume")
 	assert.False(t, ok)
 
 	// schema name is interpolated.
 	b.Config.Resources.Volumes["foo"].SchemaName = "${resources.schemas.my_schema}"
-	l, ok = locationOfVolumeInBundle(b, "main", "valuedoesnotmatter", "my_volume")
+	path, locations, ok = matchVolumeInBundle(b, "main", "valuedoesnotmatter", "my_volume")
 	assert.True(t, ok)
-	assert.Equal(t, dyn.Location{
+	assert.Equal(t, []dyn.Location{{
 		File: "volume.yml",
-	}, l)
+	}}, locations)
+	assert.Equal(t, dyn.MustPathFromString("resources.volumes.foo"), path)
+}
+
+func TestGetFilerForLibraries(t *testing.T) {
+	t.Run("valid wsfs", func(t *testing.T) {
+		b := &bundle.Bundle{
+			Config: config.Root{
+				Workspace: config.Workspace{
+					ArtifactPath: "/foo/bar/artifacts",
+				},
+			},
+		}
+
+		client, uploadPath, diags := GetFilerForLibraries(context.Background(), b)
+		require.NoError(t, diags.Error())
+		assert.Equal(t, "/foo/bar/artifacts/.internal", uploadPath)
+
+		assert.IsType(t, &filer.WorkspaceFilesClient{}, client)
+	})
+
+	t.Run("valid uc volume", func(t *testing.T) {
+		b := &bundle.Bundle{
+			Config: config.Root{
+				Workspace: config.Workspace{
+					ArtifactPath: "/Volumes/main/my_schema/my_volume",
+				},
+			},
+		}
+
+		m := mocks.NewMockWorkspaceClient(t)
+		m.WorkspaceClient.Config = &sdkconfig.Config{}
+		m.GetMockFilesAPI().EXPECT().GetDirectoryMetadataByDirectoryPath(mock.Anything, "/Volumes/main/my_schema/my_volume").Return(nil)
+		b.SetWorkpaceClient(m.WorkspaceClient)
+
+		client, uploadPath, diags := GetFilerForLibraries(context.Background(), b)
+		require.NoError(t, diags.Error())
+		assert.Equal(t, "/Volumes/main/my_schema/my_volume/.internal", uploadPath)
+
+		assert.IsType(t, &filer.FilesClient{}, client)
+	})
+
+	t.Run("volume not in DAB", func(t *testing.T) {
+		b := &bundle.Bundle{
+			Config: config.Root{
+				Workspace: config.Workspace{
+					ArtifactPath: "/Volumes/main/my_schema/doesnotexist",
+				},
+			},
+		}
+
+		m := mocks.NewMockWorkspaceClient(t)
+		m.WorkspaceClient.Config = &sdkconfig.Config{}
+		m.GetMockFilesAPI().EXPECT().GetDirectoryMetadataByDirectoryPath(mock.Anything, "/Volumes/main/my_schema/doesnotexist").Return(fmt.Errorf("error from API"))
+		b.SetWorkpaceClient(m.WorkspaceClient)
+
+		_, _, diags := GetFilerForLibraries(context.Background(), b)
+		require.EqualError(t, diags.Error(), "failed to fetch metadata for the UC volume /Volumes/main/my_schema/doesnotexist that is configured in the artifact_path: error from API")
+	})
+
+	t.Run("volume in DAB config", func(t *testing.T) {
+		b := &bundle.Bundle{
+			Config: config.Root{
+				Workspace: config.Workspace{
+					ArtifactPath: "/Volumes/main/my_schema/my_volume",
+				},
+				Resources: config.Resources{
+					Volumes: map[string]*resources.Volume{
+						"foo": {
+							CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+								CatalogName: "main",
+								Name:        "my_volume",
+								VolumeType:  "MANAGED",
+								SchemaName:  "my_schema",
+							},
+						},
+					},
+				},
+			},
+		}
+
+		bundletest.SetLocation(b, "resources.volumes.foo", "volume.yml")
+
+		m := mocks.NewMockWorkspaceClient(t)
+		m.WorkspaceClient.Config = &sdkconfig.Config{}
+		m.GetMockFilesAPI().EXPECT().GetDirectoryMetadataByDirectoryPath(mock.Anything, "/Volumes/main/my_schema/my_volume").Return(fmt.Errorf("error from API"))
+		b.SetWorkpaceClient(m.WorkspaceClient)
+
+		_, _, diags := GetFilerForLibraries(context.Background(), b)
+		assert.EqualError(t, diags.Error(), "failed to fetch metadata for the UC volume /Volumes/main/my_schema/my_volume that is configured in the artifact_path: error from API")
+		assert.Contains(t, diags, diag.Diagnostic{
+			Severity: diag.Warning,
+			Summary:  "the UC volume that is likely being used in the artifact_path has not been deployed yet. Please deploy the UC volume in a separate bundle deploy before using it in the artifact_path.",
+			Locations: []dyn.Location{{
+				File: "volume.yml",
+			}},
+			Paths: []dyn.Path{dyn.MustPathFromString("resources.volumes.foo")},
+		})
+	})
+
+	t.Run("remote path is not set", func(t *testing.T) {
+		b := &bundle.Bundle{}
+
+		_, _, diags := GetFilerForLibraries(context.Background(), b)
+		require.EqualError(t, diags.Error(), "remote artifact path not configured")
+	})
+
+	t.Run("invalid volume paths", func(t *testing.T) {
+		invalidPaths := []string{
+			"/Volumes",
+			"/Volumes/main",
+			"/Volumes/main/",
+			"/Volumes/main//",
+			"/Volumes/main//my_schema",
+			"/Volumes/main/my_schema",
+			"/Volumes/main/my_schema/",
+			"/Volumes/main/my_schema//",
+			"/Volumes//my_schema/my_volume",
+		}
+
+		for _, path := range invalidPaths {
+			b := &bundle.Bundle{
+				Config: config.Root{
+					Workspace: config.Workspace{
+						ArtifactPath: path,
+					},
+				},
+			}
+
+			_, _, diags := GetFilerForLibraries(context.Background(), b)
+			require.EqualError(t, diags.Error(), fmt.Sprintf("expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<path>, got %s", filepath.Join(path, ".internal")))
+		}
+	})
 }
