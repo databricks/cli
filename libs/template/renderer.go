@@ -153,6 +153,7 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 		return nil, err
 	}
 
+	// we need the absolute path in case we need to write notebooks using the REST API
 	rootPath, err := filepath.Abs(r.instanceRoot)
 	if err != nil {
 		return nil, err

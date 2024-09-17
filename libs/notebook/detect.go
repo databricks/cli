@@ -141,8 +141,7 @@ func Detect(name string) (notebook bool, language workspace.Language, err error)
 }
 
 type inMemoryFile struct {
-	content   []byte
-	readIndex int64
+	buffer bytes.Buffer
 }
 
 type inMemoryFS struct {
@@ -158,20 +157,12 @@ func (f *inMemoryFile) Stat() (fs.FileInfo, error) {
 }
 
 func (f *inMemoryFile) Read(b []byte) (n int, err error) {
-	if f.readIndex >= int64(len(f.content)) {
-		err = io.EOF
-		return
-	}
-
-	n = copy(b, f.content[f.readIndex:])
-	f.readIndex += int64(n)
-	return
+	return f.buffer.Read(b)
 }
 
 func (fs inMemoryFS) Open(name string) (fs.File, error) {
 	return &inMemoryFile{
-		content:   fs.content,
-		readIndex: 0,
+		buffer: *bytes.NewBuffer(fs.content),
 	}, nil
 }
 
