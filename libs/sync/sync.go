@@ -3,6 +3,7 @@ package sync
 import (
 	"context"
 	"fmt"
+	stdsync "sync"
 	"time"
 
 	"github.com/databricks/cli/libs/filer"
@@ -14,6 +15,8 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
+
+type OutputHandler func(context.Context, <-chan Event)
 
 type SyncOptions struct {
 	LocalRoot vfs.Path
@@ -34,6 +37,8 @@ type SyncOptions struct {
 	CurrentUser *iam.User
 
 	Host string
+
+	OutputHandler OutputHandler
 }
 
 type Sync struct {
@@ -47,8 +52,9 @@ type Sync struct {
 	filer    filer.Filer
 
 	// Synchronization progress events are sent to this event notifier.
-	notifier EventNotifier
-	seq      int
+	notifier   EventNotifier
+	notifierWg *stdsync.WaitGroup
+	seq        int
 }
 
 // New initializes and returns a new [Sync] instance.
@@ -106,6 +112,20 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 		return nil, err
 	}
 
+	var notifier EventNotifier
+	var notifierWg = &stdsync.WaitGroup{}
+	if opts.OutputHandler != nil {
+		ch := make(chan Event, MaxRequestsInFlight)
+		notifier = &ChannelNotifier{ch}
+		notifierWg.Add(1)
+		go func() {
+			defer notifierWg.Done()
+			opts.OutputHandler(ctx, ch)
+		}()
+	} else {
+		notifier = &NopNotifier{}
+	}
+
 	return &Sync{
 		SyncOptions: &opts,
 
@@ -114,7 +134,8 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 		excludeFileSet: excludeFileSet,
 		snapshot:       snapshot,
 		filer:          filer,
-		notifier:       &NopNotifier{},
+		notifier:       notifier,
+		notifierWg:     notifierWg,
 		seq:            0,
 	}, nil
 }
@@ -126,6 +147,7 @@ func (s *Sync) Events() <-chan Event {
 }
 
 func (s *Sync) Close() {
+	s.notifierWg.Wait()
 	if s.notifier == nil {
 		return
 	}
