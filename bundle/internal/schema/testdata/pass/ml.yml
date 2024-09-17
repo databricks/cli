@@ -1,0 +1,72 @@
+bundle:
+  name: ML
+
+workspace:
+  host: "https://myworkspace.com"
+  root_path: /abc
+
+presets:
+  name_prefix: "[DEV]"
+  jobs_max_concurrent_runs: 10
+
+variables:
+  simplevar:
+    default: "true"
+    description: "simplevar description"
+
+  complexvar:
+    default:
+      key1: value1
+      key2: value2
+      key3:
+        - value3
+        - value4
+    description: "complexvar description"
+
+resources:
+  models:
+    mymodel:
+      creation_timestamp: 123
+      description: "my model"
+      latest_versions:
+        - creation_timestamp: 123
+          tags: ${var.complexvar.key1}
+          status: READY
+      permissions:
+        - service_principal_name: myserviceprincipal
+          level: CAN_MANAGE
+
+  experiments:
+    myexperiment:
+      artifact_location: /dbfs/myexperiment
+      last_update_time: ${var.complexvar.key2}
+      lifecycle_stage: ${var.simplevar}
+      permissions:
+        - service_principal_name: myserviceprincipal
+          level: CAN_MANAGE
+
+  model_serving_endpoints:
+    myendpoint:
+      config:
+        served_models:
+          - model_name: ${resources.models.mymodel.name}
+            model_version: abc
+            scale_to_zero_enabled: true
+            workload_size: Large
+      name: myendpoint
+
+  schemas:
+    myschema:
+      catalog_name: mycatalog
+      name: myschema
+
+  registered_models:
+    myregisteredmodel:
+      catalog_name: mycatalog
+      name: myregisteredmodel
+      schema_name: ${resources.schemas.myschema.name}
+      grants:
+        - principal: abcd
+          privileges:
+            - SELECT
+            - INSERT

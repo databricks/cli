@@ -24,7 +24,7 @@ func TestArtifactUploadForWorkspace(t *testing.T) {
 	whlLocalPath := filepath.Join(whlFolder, "source.whl")
 
 	b := &bundle.Bundle{
-		RootPath: tmpDir,
+		SyncRootPath: tmpDir,
 		Config: config.Root{
 			Workspace: config.Workspace{
 				ArtifactPath: "/foo/bar/artifacts",
@@ -112,7 +112,7 @@ func TestArtifactUploadForVolumes(t *testing.T) {
 	whlLocalPath := filepath.Join(whlFolder, "source.whl")
 
 	b := &bundle.Bundle{
-		RootPath: tmpDir,
+		SyncRootPath: tmpDir,
 		Config: config.Root{
 			Workspace: config.Workspace{
 				ArtifactPath: "/Volumes/foo/bar/artifacts",
@@ -200,7 +200,7 @@ func TestArtifactUploadWithNoLibraryReference(t *testing.T) {
 	whlLocalPath := filepath.Join(whlFolder, "source.whl")
 
 	b := &bundle.Bundle{
-		RootPath: tmpDir,
+		SyncRootPath: tmpDir,
 		Config: config.Root{
 			Workspace: config.Workspace{
 				ArtifactPath: "/Workspace/foo/bar/artifacts",
@@ -240,7 +240,7 @@ func TestUploadMultipleLibraries(t *testing.T) {
 	testutil.Touch(t, whlFolder, "source4.whl")
 
 	b := &bundle.Bundle{
-		RootPath: tmpDir,
+		SyncRootPath: tmpDir,
 		Config: config.Root{
 			Workspace: config.Workspace{
 				ArtifactPath: "/foo/bar/artifacts",
