@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
@@ -82,6 +83,10 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 		conv(src, &dst)
 
 		if src.JobSettings != nil {
+			sort.Slice(src.JobSettings.Tasks, func(i, j int) bool {
+				return src.JobSettings.Tasks[i].TaskKey < src.JobSettings.Tasks[j].TaskKey
+			})
+
 			for _, v := range src.Tasks {
 				var t schema.ResourceJobTask
 				conv(v, &t)

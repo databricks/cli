@@ -63,6 +63,9 @@ func TestConvertJob(t *testing.T) {
 					TaskKey:       "task_key_c",
 					JobClusterKey: "job_cluster_key_c",
 				},
+				{
+					Description: "missing task key 😱",
+				},
 			},
 		},
 		Permissions: []resources.Permission{
@@ -107,6 +110,9 @@ func TestConvertJob(t *testing.T) {
 			},
 		},
 		"task": []any{
+			map[string]any{
+				"description": "missing task key 😱",
+			},
 			map[string]any{
 				"task_key":        "task_key_a",
 				"job_cluster_key": "job_cluster_key_a",

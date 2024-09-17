@@ -25,15 +25,28 @@ func convertJobResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	// recreates. For more details see the NOTE at
 	// https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/job#example-usage
 	// and https://github.com/databricks/terraform-provider-databricks/issues/4011
-	tasks := vin.Get("tasks").MustSequence()
-	sort.Slice(tasks, func(i, j int) bool {
-		return tasks[i].Get("task_key").MustString() < tasks[j].Get("task_key").MustString()
-	})
-	vout, err := dyn.Map(vin, "tasks", func(_ dyn.Path, _ dyn.Value) (dyn.Value, error) {
-		return dyn.V(tasks), nil
-	})
-	if err != nil {
-		return dyn.InvalidValue, err
+	// TODO: Is this safe for nil values of task key? Empty strings?
+	vout := vin
+	var err error
+	tasks, ok := vin.Get("tasks").AsSequence()
+	if ok {
+		sort.Slice(tasks, func(i, j int) bool {
+			tk1, ok := tasks[i].Get("task_key").AsString()
+			if !ok {
+				return true
+			}
+			tk2, ok := tasks[j].Get("task_key").AsString()
+			if !ok {
+				return false
+			}
+			return tk1 < tk2
+		})
+		vout, err = dyn.Map(vin, "tasks", func(_ dyn.Path, _ dyn.Value) (dyn.Value, error) {
+			return dyn.V(tasks), nil
+		})
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
 	}
 
 	// Modify top-level keys.
