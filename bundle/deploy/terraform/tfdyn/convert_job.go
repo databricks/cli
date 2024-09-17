@@ -25,7 +25,6 @@ func convertJobResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	// recreates. For more details see the NOTE at
 	// https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/job#example-usage
 	// and https://github.com/databricks/terraform-provider-databricks/issues/4011
-	// TODO: Is this safe for nil values of task key? Empty strings?
 	vout := vin
 	var err error
 	tasks, ok := vin.Get("tasks").AsSequence()
