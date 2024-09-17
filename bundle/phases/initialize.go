@@ -62,11 +62,6 @@ func Initialize() bundle.Mutator {
 			mutator.DefaultQueueing(),
 			mutator.ExpandPipelineGlobPaths(),
 
-			// We sort job tasks by their task key to ensure sane diffs by the
-			// Databricks Terraform provider. This is done after variable resolution
-			// to ensure that the task key is fully resolved to what terraform will see.
-			mutator.SortJobTasks(),
-
 			// Configure use of WSFS for reads if the CLI is running on Databricks.
 			mutator.ConfigureWSFS(),
 

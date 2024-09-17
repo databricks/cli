@@ -3,6 +3,7 @@ package tfdyn
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	"github.com/databricks/cli/bundle/internal/tf/schema"
 	"github.com/databricks/cli/libs/dyn"
@@ -19,8 +20,24 @@ func convertJobResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 		log.Debugf(ctx, "job normalization diagnostic: %s", diag.Summary)
 	}
 
+	// Sort the tasks of each job in the bundle by task key. Sorting
+	// the task keys ensures that the diff computed by terraform is correct and avoids
+	// recreates. For more details see the NOTE at
+	// https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/job#example-usage
+	// and https://github.com/databricks/terraform-provider-databricks/issues/4011
+	tasks := vin.Get("tasks").MustSequence()
+	sort.Slice(tasks, func(i, j int) bool {
+		return tasks[i].Get("task_key").MustString() < tasks[j].Get("task_key").MustString()
+	})
+	vout, err := dyn.Map(vin, "tasks", func(_ dyn.Path, _ dyn.Value) (dyn.Value, error) {
+		return dyn.V(tasks), nil
+	})
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
+
 	// Modify top-level keys.
-	vout, err := renameKeys(vin, map[string]string{
+	vout, err = renameKeys(vout, map[string]string{
 		"tasks":        "task",
 		"job_clusters": "job_cluster",
 		"parameters":   "parameter",
