@@ -88,3 +88,21 @@ func TestComplexVariablesOverrideWithMultipleFiles(t *testing.T) {
 		require.Equalf(t, "false", cluster.NewCluster.SparkConf["spark.speculation"], "cluster: %v", cluster.JobClusterKey)
 	}
 }
+
+func TestComplexVariablesOverrideWithFullSyntax(t *testing.T) {
+	b, diags := loadTargetWithDiags("variables/complex", "dev")
+	require.Empty(t, diags)
+
+	diags = bundle.Apply(context.Background(), b, bundle.Seq(
+		mutator.SetVariables(),
+		mutator.ResolveVariableReferencesInComplexVariables(),
+		mutator.ResolveVariableReferences(
+			"variables",
+		),
+	))
+	require.NoError(t, diags.Error())
+	require.Empty(t, diags)
+
+	complexvar := b.Config.Variables["complexvar"].Value
+	require.Equal(t, map[string]interface{}{"key1": "1", "key2": "2", "key3": "3"}, complexvar)
+}
