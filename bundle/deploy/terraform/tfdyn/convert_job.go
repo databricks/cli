@@ -40,9 +40,7 @@ func convertJobResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 			}
 			return tk1 < tk2
 		})
-		vout, err = dyn.Map(vin, "tasks", func(_ dyn.Path, _ dyn.Value) (dyn.Value, error) {
-			return dyn.V(tasks), nil
-		})
+		vout, err = dyn.Set(vin, "tasks", dyn.V(tasks))
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
