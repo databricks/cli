@@ -2,10 +2,8 @@
 
 ## [Release] Release v0.228.1
 
-CLI:
- * Added listing cluster filtering for cluster lookups ([#1754](https://github.com/databricks/cli/pull/1754)).
-
 Bundles:
+ * Added listing cluster filtering for cluster lookups ([#1754](https://github.com/databricks/cli/pull/1754)).
  * Expand library globs relative to the sync root ([#1756](https://github.com/databricks/cli/pull/1756)).
  * Fixed generated YAML missing 'default' for empty values ([#1765](https://github.com/databricks/cli/pull/1765)).
  * Use periodic triggers in all templates ([#1739](https://github.com/databricks/cli/pull/1739)).
