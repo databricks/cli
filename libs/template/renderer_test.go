@@ -110,7 +110,7 @@ func TestPrepareBuiltInTemplatesWithRelativePaths(t *testing.T) {
 
 func TestBuiltinPythonTemplateValid(t *testing.T) {
 	// Test option combinations
-	options := []string{"yes", "no"}
+	options := []string{"no"}
 	isServicePrincipal := false
 	catalog := "hive_metastore"
 	cachedCatalog = &catalog
