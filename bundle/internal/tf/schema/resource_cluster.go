@@ -176,6 +176,7 @@ type ResourceCluster struct {
 	IdempotencyToken          string                            `json:"idempotency_token,omitempty"`
 	InstancePoolId            string                            `json:"instance_pool_id,omitempty"`
 	IsPinned                  bool                              `json:"is_pinned,omitempty"`
+	NoWait                    bool                              `json:"no_wait,omitempty"`
 	NodeTypeId                string                            `json:"node_type_id,omitempty"`
 	NumWorkers                int                               `json:"num_workers,omitempty"`
 	PolicyId                  string                            `json:"policy_id,omitempty"`

@@ -74,7 +74,7 @@ func collectLocalLibraries(b *bundle.Bundle) (map[string][]configLocation, error
 					return v, nil
 				}
 
-				source = filepath.Join(b.RootPath, source)
+				source = filepath.Join(b.SyncRootPath, source)
 				libs[source] = append(libs[source], configLocation{
 					configPath: p,
 					location:   v.Location(),

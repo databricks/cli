@@ -126,7 +126,7 @@ func TestAccBundleInitHelpers(t *testing.T) {
 	}{
 		{
 			funcName: "{{short_name}}",
-			expected: auth.GetShortUserName(me.UserName),
+			expected: auth.GetShortUserName(me),
 		},
 		{
 			funcName: "{{user_name}}",
