@@ -1,0 +1,56 @@
+bundle:
+  name: a run job task
+  databricks_cli_version: 0.200.0
+  compute_id: "mycompute"
+
+
+variables:
+  simplevar:
+    default: 5678
+    description: "simplevar description"
+
+  complexvar:
+    default:
+      key1: 1234
+      key2: value2
+      key3:
+        - value3
+        - 9999
+    description: "complexvar description"
+
+resources:
+  jobs:
+    inner:
+      permissions:
+        - user_name: user1
+          level: CAN_MANAGE
+
+      name: inner job
+      tasks:
+        - task_key: inner notebook task
+          notebook_task:
+            notebook_path: /Users/abc/notebooks/inner
+          existing_cluster_id: abcd
+
+    outer:
+      name: outer job
+      tasks:
+        - task_key: run job task 1
+          run_job_task:
+            job_id: 1234
+
+        - task_key: run job task 2
+          run_job_task:
+            job_id: ${var.complexvar.key1}
+
+        - task_key: run job task 3
+          run_job_task:
+            job_id: ${var.simplevar}
+
+        - task_key: run job task 4
+          run_job_task:
+            job_id: ${resources.inner.id}
+
+        - task_key: run job task 5
+          run_job_task:
+            job_id: ${var.complexvar.key3[1]}

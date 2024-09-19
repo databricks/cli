@@ -1,0 +1,11 @@
+artifacts:
+  abc:
+    path: /Workspace/a/b/c
+    type: wheel
+    files:
+      - source: ./x.whl
+
+resources:
+  jobs:
+    foo:
+      name: ${artifacts.abc.type}
