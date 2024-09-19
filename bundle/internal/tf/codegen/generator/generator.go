@@ -51,9 +51,15 @@ func (r *root) Generate(path string) error {
 }
 
 func Run(ctx context.Context, schema *tfjson.ProviderSchema, path string) error {
-	// Generate types for resources.
+	// Generate types for resources
 	var resources []*namedBlock
 	for _, k := range sortKeys(schema.ResourceSchemas) {
+		// Skipping all plugin framework struct generation.
+		// TODO: This is a temporary fix, generation should be fixed in the future.
+		if strings.HasSuffix(k, "_pluginframework") {
+			continue
+		}
+
 		v := schema.ResourceSchemas[k]
 		b := &namedBlock{
 			filePattern:    "resource_%s.go",
@@ -71,6 +77,12 @@ func Run(ctx context.Context, schema *tfjson.ProviderSchema, path string) error 
 	// Generate types for data sources.
 	var dataSources []*namedBlock
 	for _, k := range sortKeys(schema.DataSourceSchemas) {
+		// Skipping all plugin framework struct generation.
+		// TODO: This is a temporary fix, generation should be fixed in the future.
+		if strings.HasSuffix(k, "_pluginframework") {
+			continue
+		}
+
 		v := schema.DataSourceSchemas[k]
 		b := &namedBlock{
 			filePattern:    "data_source_%s.go",
