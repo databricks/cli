@@ -19,6 +19,8 @@ import (
 // 4. Add unit test that the INFO rendering is correct
 // 5. Manually test the info diag.
 
+// TODO: Should we detect and enforce this convention for .yaml files as well?
+
 // TODO: Since we are skipping environemnts here, we should return a warning
 // if environemnts is used (is that already the case?). And explain in the PR that
 // we are choosing to not gather resources from environments.
