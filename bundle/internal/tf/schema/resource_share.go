@@ -18,20 +18,27 @@ type ResourceShareObject struct {
 	AddedBy                  string                         `json:"added_by,omitempty"`
 	CdfEnabled               bool                           `json:"cdf_enabled,omitempty"`
 	Comment                  string                         `json:"comment,omitempty"`
+	Content                  string                         `json:"content,omitempty"`
 	DataObjectType           string                         `json:"data_object_type"`
 	HistoryDataSharingStatus string                         `json:"history_data_sharing_status,omitempty"`
 	Name                     string                         `json:"name"`
 	SharedAs                 string                         `json:"shared_as,omitempty"`
 	StartVersion             int                            `json:"start_version,omitempty"`
 	Status                   string                         `json:"status,omitempty"`
+	StringSharedAs           string                         `json:"string_shared_as,omitempty"`
 	Partition                []ResourceShareObjectPartition `json:"partition,omitempty"`
 }
 
 type ResourceShare struct {
-	CreatedAt int                   `json:"created_at,omitempty"`
-	CreatedBy string                `json:"created_by,omitempty"`
-	Id        string                `json:"id,omitempty"`
-	Name      string                `json:"name"`
-	Owner     string                `json:"owner,omitempty"`
-	Object    []ResourceShareObject `json:"object,omitempty"`
+	Comment         string                `json:"comment,omitempty"`
+	CreatedAt       int                   `json:"created_at,omitempty"`
+	CreatedBy       string                `json:"created_by,omitempty"`
+	Id              string                `json:"id,omitempty"`
+	Name            string                `json:"name"`
+	Owner           string                `json:"owner,omitempty"`
+	StorageLocation string                `json:"storage_location,omitempty"`
+	StorageRoot     string                `json:"storage_root,omitempty"`
+	UpdatedAt       int                   `json:"updated_at,omitempty"`
+	UpdatedBy       string                `json:"updated_by,omitempty"`
+	Object          []ResourceShareObject `json:"object,omitempty"`
 }

@@ -3,7 +3,7 @@
 package schema
 
 type ResourceEnhancedSecurityMonitoringWorkspaceSettingEnhancedSecurityMonitoringWorkspace struct {
-	IsEnabled bool `json:"is_enabled,omitempty"`
+	IsEnabled bool `json:"is_enabled"`
 }
 
 type ResourceEnhancedSecurityMonitoringWorkspaceSetting struct {
