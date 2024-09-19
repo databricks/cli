@@ -52,9 +52,9 @@ type Sync struct {
 	filer    filer.Filer
 
 	// Synchronization progress events are sent to this event notifier.
-	notifier   EventNotifier
-	notifierWg *stdsync.WaitGroup
-	seq        int
+	notifier        EventNotifier
+	outputWaitGroup *stdsync.WaitGroup
+	seq             int
 }
 
 // New initializes and returns a new [Sync] instance.
@@ -113,13 +113,13 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 	}
 
 	var notifier EventNotifier
-	var notifierWg = &stdsync.WaitGroup{}
+	var outputWaitGroup = &stdsync.WaitGroup{}
 	if opts.OutputHandler != nil {
 		ch := make(chan Event, MaxRequestsInFlight)
 		notifier = &ChannelNotifier{ch}
-		notifierWg.Add(1)
+		outputWaitGroup.Add(1)
 		go func() {
-			defer notifierWg.Done()
+			defer outputWaitGroup.Done()
 			opts.OutputHandler(ctx, ch)
 		}()
 	} else {
@@ -129,14 +129,14 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 	return &Sync{
 		SyncOptions: &opts,
 
-		fileSet:        fileSet,
-		includeFileSet: includeFileSet,
-		excludeFileSet: excludeFileSet,
-		snapshot:       snapshot,
-		filer:          filer,
-		notifier:       notifier,
-		notifierWg:     notifierWg,
-		seq:            0,
+		fileSet:         fileSet,
+		includeFileSet:  includeFileSet,
+		excludeFileSet:  excludeFileSet,
+		snapshot:        snapshot,
+		filer:           filer,
+		notifier:        notifier,
+		outputWaitGroup: outputWaitGroup,
+		seq:             0,
 	}, nil
 }
 
@@ -147,12 +147,12 @@ func (s *Sync) Events() <-chan Event {
 }
 
 func (s *Sync) Close() {
-	s.notifierWg.Wait()
 	if s.notifier == nil {
 		return
 	}
 	s.notifier.Close()
 	s.notifier = nil
+	s.outputWaitGroup.Wait()
 }
 
 func (s *Sync) notifyStart(ctx context.Context, d diff) {

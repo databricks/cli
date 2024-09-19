@@ -26,14 +26,15 @@ func newDeployCommand() *cobra.Command {
 	var failOnActiveRuns bool
 	var computeID string
 	var autoApprove bool
-	var showSyncProgress bool
+	var verbose bool
 	cmd.Flags().BoolVar(&force, "force", false, "Force-override Git branch validation.")
 	cmd.Flags().BoolVar(&forceLock, "force-lock", false, "Force acquisition of deployment lock.")
 	cmd.Flags().BoolVar(&failOnActiveRuns, "fail-on-active-runs", false, "Fail if there are running jobs or pipelines in the deployment.")
 	cmd.Flags().StringVarP(&computeID, "compute-id", "c", "", "Override compute in the deployment with the given compute ID.")
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive approvals that might be required for deployment.")
-	cmd.Flags().BoolVar(&showSyncProgress, "sync-progress", false, "Show file synchronisation progress.")
-	cmd.Flags().MarkHidden("sync-progress")
+	cmd.Flags().BoolVar(&verbose, "verbose", false, "Enable verbose output.")
+	// Verbose flag currently only affects file sync output, it's used by the vscode extension
+	cmd.Flags().MarkHidden("verbose")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -56,7 +57,7 @@ func newDeployCommand() *cobra.Command {
 			})
 
 			var outputHandler sync.OutputHandler
-			if showSyncProgress {
+			if verbose {
 				outputHandler = func(ctx context.Context, c <-chan sync.Event) {
 					sync.TextOutput(ctx, c, cmd.OutOrStdout())
 				}

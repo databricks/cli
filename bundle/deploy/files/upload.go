@@ -37,6 +37,8 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return diag.FromErr(err)
 	}
 
+	sync.Close()
+
 	log.Infof(ctx, "Uploaded bundle files")
 	return nil
 }
