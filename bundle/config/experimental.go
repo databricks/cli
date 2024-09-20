@@ -69,6 +69,12 @@ type PyDABs struct {
 	// These packages are imported to discover resources, resource generators, and mutators.
 	// This list can include namespace packages, which causes the import of nested packages.
 	Import []string `json:"import,omitempty"`
+
+	// LoadLocations is a flag to enable loading Python source locations from the PyDABs.
+	//
+	// Locations are only supported since PyDABs 0.6.0, and because of that,
+	// this flag is disabled by default.
+	LoadLocations bool `json:"load_locations,omitempty"`
 }
 
 type (
