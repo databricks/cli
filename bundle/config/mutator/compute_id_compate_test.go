@@ -29,3 +29,24 @@ func TestComputeIdToClusterId(t *testing.T) {
 	assert.Equal(t, "compute_id is deprecated, please use cluster_id instead", diags[0].Summary)
 	assert.Equal(t, diag.Warning, diags[0].Severity)
 }
+
+func TestComputeIdToClusterIdInTargetOverride(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Targets: map[string]*config.Target{
+				"dev": {
+					ComputeId: "compute-id-dev",
+				},
+			},
+		},
+	}
+
+	diags := bundle.Apply(context.Background(), b, bundle.Seq(mutator.ComputeIdToClusterId(), mutator.SelectTarget("dev")))
+	assert.NoError(t, diags.Error())
+	assert.Equal(t, "compute-id-dev", b.Config.Bundle.ClusterId)
+	assert.Empty(t, b.Config.Bundle.ComputeId)
+
+	assert.Len(t, diags, 1)
+	assert.Equal(t, "compute_id is deprecated, please use cluster_id instead", diags[0].Summary)
+	assert.Equal(t, diag.Warning, diags[0].Severity)
+}

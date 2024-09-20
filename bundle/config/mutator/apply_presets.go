@@ -169,7 +169,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		for _, tag := range tags {
 			normalisedKey := b.Tagging.NormalizeKey(tag.Key)
 			normalisedValue := b.Tagging.NormalizeValue(tag.Value)
-			if c.CustomTags[normalisedKey] == "" {
+			if _, ok := c.CustomTags[normalisedKey]; !ok {
 				c.CustomTags[normalisedKey] = normalisedValue
 			}
 		}
