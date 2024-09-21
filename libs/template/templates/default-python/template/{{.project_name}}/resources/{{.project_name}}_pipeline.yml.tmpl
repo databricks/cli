@@ -4,6 +4,7 @@ resources:
     {{.project_name}}_pipeline:
       name: {{.project_name}}_pipeline
       {{- if eq default_catalog ""}}
+      ## Specify the 'catalog' field to configure this pipeline to make use of Unity Catalog:
       # catalog: catalog_name
       {{- else}}
       catalog: {{default_catalog}}
