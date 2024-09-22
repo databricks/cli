@@ -59,7 +59,7 @@ func analyzeBundlePermissions(b *bundle.Bundle) (bool, string) {
 	currentUser := b.Config.Workspace.CurrentUser.UserName
 	targetPermissions := b.Config.Permissions
 	for _, p := range targetPermissions {
-		if p.Level != CAN_MANAGE && p.Level != IS_OWNER {
+		if p.Level != CAN_MANAGE {
 			continue
 		}
 

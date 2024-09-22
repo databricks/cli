@@ -32,22 +32,14 @@ func TestPermissionDiagnosticsApplyFail(t *testing.T) {
 	require.Contains(t, diags[0].Summary, "permissions section should include testuser@databricks.com or one of their groups with CAN_MANAGE permissions")
 }
 
-func TestPermissionDiagnosticsApplySuccessWithOwner(t *testing.T) {
-	b := mockBundle([]resources.Permission{
-		{Level: "IS_OWNER", UserName: "testuser@databricks.com"},
-	})
-
-	diags := permissions.PermissionDiagnostics().Apply(context.Background(), b)
-	require.Empty(t, diags)
-}
-
 func mockBundle(permissions []resources.Permission) *bundle.Bundle {
 	return &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
 				CurrentUser: &config.User{
 					User: &iam.User{
-						UserName: "testuser@databricks.com",
+						UserName:    "testuser@databricks.com",
+						DisplayName: "Test User",
 						Groups: []iam.ComplexValue{
 							{Display: "testgroup"},
 						},
