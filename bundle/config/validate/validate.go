@@ -34,6 +34,7 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 		JobClusterKeyDefined(),
 		FilesToSync(),
 		ValidateSyncPatterns(),
+		JobTaskClusterSpec(),
 	))
 }
 
