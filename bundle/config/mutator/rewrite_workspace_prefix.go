@@ -44,7 +44,7 @@ func (m *rewriteWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) di
 				if strings.Contains(vv, path) {
 					diags = append(diags, diag.Diagnostic{
 						Severity:  diag.Warning,
-						Summary:   fmt.Sprintf("substring %q found in %q. Please update this to %q. For more information, please refer to: https://docs.databricks.com/release-notes/bundles.html#workspace-paths", path, vv, strings.Replace(vv, "/Workspace/", "", 1)),
+						Summary:   fmt.Sprintf("substring %q found in %q. Please update this to %q. For more information, please refer to: https://docs.databricks.com/en/release-notes/dev-tools/bundles.html#workspace-paths", path, vv, strings.Replace(vv, "/Workspace/", "", 1)),
 						Locations: v.Locations(),
 						Paths:     []dyn.Path{p},
 					})
