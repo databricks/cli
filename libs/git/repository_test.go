@@ -209,7 +209,31 @@ func TestRepositoryGitConfigWhenNotARepo(t *testing.T) {
 }
 
 func TestRepositoryOriginUrlRemovesUserCreds(t *testing.T) {
-	repo := newTestRepository(t)
-	repo.addOriginUrl("https://username:token@github.com/databricks/foobar.git")
-	repo.assertOriginUrl("https://github.com/databricks/foobar.git")
+	tcases := []struct {
+		url      string
+		expected string
+	}{
+		{
+			url:      "https://username:token@github.com/databricks/foobar.git",
+			expected: "https://github.com/databricks/foobar.git",
+		},
+		{
+			url:      "https://token@github.com/databricks/foobar.git",
+			expected: "https://github.com/databricks/foobar.git",
+		},
+		{
+			url:      "https://johndoe:abcdefghijklmnopqrstuvwxyz0123456789@dev.azure.com/mycompany/myproject/_git/myrepo",
+			expected: "https://dev.azure.com/mycompany/myproject/_git/myrepo",
+		},
+		{
+			url:      "https://abcdefghijklmnopqrstuvwxyz0123456789@dev.azure.com/mycompany/myproject/_git/myrepo",
+			expected: "https://dev.azure.com/mycompany/myproject/_git/myrepo",
+		},
+	}
+
+	for _, tc := range tcases {
+		repo := newTestRepository(t)
+		repo.addOriginUrl(tc.url)
+		repo.assertOriginUrl(tc.expected)
+	}
 }
