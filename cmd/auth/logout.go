@@ -15,43 +15,43 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type LogoutSession struct {
-	Profile        string
-	File           config.File
-	PersistentAuth *auth.PersistentAuth
+type logoutSession struct {
+	profile        string
+	file           config.File
+	persistentAuth *auth.PersistentAuth
 }
 
-func (l *LogoutSession) load(ctx context.Context, profileName string, persistentAuth *auth.PersistentAuth) error {
-	l.Profile = profileName
-	l.PersistentAuth = persistentAuth
+func (l *logoutSession) load(ctx context.Context, profileName string, persistentAuth *auth.PersistentAuth) error {
+	l.profile = profileName
+	l.persistentAuth = persistentAuth
 	iniFile, err := profile.DefaultProfiler.Get(ctx)
 	if errors.Is(err, fs.ErrNotExist) {
 		return err
 	} else if err != nil {
 		return fmt.Errorf("cannot parse config file: %w", err)
 	}
-	l.File = *iniFile
+	l.file = *iniFile
 	if err := l.setHostAndAccountIdFromProfile(); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (l *LogoutSession) setHostAndAccountIdFromProfile() error {
+func (l *logoutSession) setHostAndAccountIdFromProfile() error {
 	sectionMap, err := l.getConfigSectionMap()
 	if err != nil {
 		return err
 	}
 	if sectionMap["host"] == "" {
-		return fmt.Errorf("no host configured for profile %s", l.Profile)
+		return fmt.Errorf("no host configured for profile %s", l.profile)
 	}
-	l.PersistentAuth.Host = sectionMap["host"]
-	l.PersistentAuth.AccountID = sectionMap["account_id"]
+	l.persistentAuth.Host = sectionMap["host"]
+	l.persistentAuth.AccountID = sectionMap["account_id"]
 	return nil
 }
 
-func (l *LogoutSession) getConfigSectionMap() (map[string]string, error) {
-	section, err := l.File.GetSection(l.Profile)
+func (l *logoutSession) getConfigSectionMap() (map[string]string, error) {
+	section, err := l.file.GetSection(l.profile)
 	if err != nil {
 		return map[string]string{}, fmt.Errorf("profile does not exist in config file: %w", err)
 	}
@@ -59,16 +59,16 @@ func (l *LogoutSession) getConfigSectionMap() (map[string]string, error) {
 }
 
 // clear token from ~/.databricks/token-cache.json
-func (l *LogoutSession) clearTokenCache(ctx context.Context) error {
-	return l.PersistentAuth.ClearToken(ctx)
+func (l *logoutSession) clearTokenCache(ctx context.Context) error {
+	return l.persistentAuth.ClearToken(ctx)
 }
 
 // Overrewrite profile to .databrickscfg without fields marked as sensitive
 // Other attributes are preserved.
-func (l *LogoutSession) clearConfigFile(ctx context.Context, sectionMap map[string]string) error {
+func (l *logoutSession) clearConfigFile(ctx context.Context, sectionMap map[string]string) error {
 	return databrickscfg.SaveToProfile(ctx, &config.Config{
-		ConfigFile:           l.File.Path(),
-		Profile:              l.Profile,
+		ConfigFile:           l.file.Path(),
+		Profile:              l.profile,
 		Host:                 sectionMap["host"],
 		ClusterID:            sectionMap["cluster_id"],
 		WarehouseID:          sectionMap["warehouse_id"],
@@ -114,7 +114,7 @@ func newLogoutCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 			}
 		}
 		defer persistentAuth.Close()
-		logoutSession := &LogoutSession{}
+		logoutSession := &logoutSession{}
 		logoutSession.load(ctx, profileName, persistentAuth)
 		configSectionMap, err := logoutSession.getConfigSectionMap()
 		if err != nil {

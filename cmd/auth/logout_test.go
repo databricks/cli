@@ -26,11 +26,11 @@ func TestLogout_ClearConfigFile(t *testing.T) {
 	require.NoError(t, err)
 	iniFile, err := config.LoadFile(path)
 	require.NoError(t, err)
-	logout := &LogoutSession{
-		Profile: "abc",
-		File:    *iniFile,
+	logout := &logoutSession{
+		profile: "abc",
+		file:    *iniFile,
 	}
-	section, err := logout.File.GetSection("abc")
+	section, err := logout.file.GetSection("abc")
 	assert.NoError(t, err)
 	sectionMap := section.KeysHash()
 	err = logout.clearConfigFile(ctx, sectionMap)
@@ -62,15 +62,15 @@ func TestLogout_setHostAndAccountIdFromProfile(t *testing.T) {
 	require.NoError(t, err)
 	iniFile, err := config.LoadFile(path)
 	require.NoError(t, err)
-	logout := &LogoutSession{
-		Profile:        "abc",
-		File:           *iniFile,
-		PersistentAuth: &auth.PersistentAuth{},
+	logout := &logoutSession{
+		profile:        "abc",
+		file:           *iniFile,
+		persistentAuth: &auth.PersistentAuth{},
 	}
 	err = logout.setHostAndAccountIdFromProfile()
 	assert.NoError(t, err)
-	assert.Equal(t, logout.PersistentAuth.Host, "https://foo")
-	assert.Empty(t, logout.PersistentAuth.AccountID)
+	assert.Equal(t, logout.persistentAuth.Host, "https://foo")
+	assert.Empty(t, logout.persistentAuth.AccountID)
 }
 
 func TestLogout_getConfigSectionMap(t *testing.T) {
@@ -86,10 +86,10 @@ func TestLogout_getConfigSectionMap(t *testing.T) {
 	require.NoError(t, err)
 	iniFile, err := config.LoadFile(path)
 	require.NoError(t, err)
-	logout := &LogoutSession{
-		Profile:        "abc",
-		File:           *iniFile,
-		PersistentAuth: &auth.PersistentAuth{},
+	logout := &logoutSession{
+		profile:        "abc",
+		file:           *iniFile,
+		persistentAuth: &auth.PersistentAuth{},
 	}
 	configSectionMap, err := logout.getConfigSectionMap()
 	assert.NoError(t, err)
