@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -139,4 +140,28 @@ func TestDeleteKeyNotExist(t *testing.T) {
 
 	_, err = c.Lookup("x")
 	assert.Equal(t, ErrNotConfigured, err)
+}
+
+func TestWrite(t *testing.T) {
+	tempFile := filepath.Join(t.TempDir(), "token-cache.json")
+
+	tokenMap := map[string]*oauth2.Token{}
+	token := &oauth2.Token{
+		AccessToken: "some-access-token",
+	}
+	tokenMap["test"] = token
+
+	cache := &FileTokenCache{
+		fileLocation: tempFile,
+		Tokens:       tokenMap,
+	}
+
+	err := cache.write()
+	assert.NoError(t, err)
+
+	content, err := os.ReadFile(tempFile)
+	require.NoError(t, err)
+
+	expected, _ := json.MarshalIndent(&cache, "", "  ")
+	assert.Equal(t, content, expected)
 }
