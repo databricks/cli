@@ -223,6 +223,17 @@ func TestNoIncompatibleWheelTasks(t *testing.T) {
 										{Whl: "./dist/test.whl"},
 									},
 								},
+								{
+									TaskKey:           "key7",
+									PythonWheelTask:   &jobs.PythonWheelTask{},
+									ExistingClusterId: "test-key-2",
+									Libraries: []compute.Library{
+										{Whl: "signol_lib-0.4.4-20240822+prod-py3-none-any.whl"},
+										{Pypi: &compute.PythonPyPiLibrary{
+											Package: "requests==2.25.1",
+										}},
+									},
+								},
 							},
 						},
 					},
@@ -237,6 +248,46 @@ func TestNoIncompatibleWheelTasks(t *testing.T) {
 	clustersApi.EXPECT().GetByClusterId(mock.Anything, "test-key-2").Return(&compute.ClusterDetails{
 		SparkVersion: "13.2.x-scala2.12",
 	}, nil)
+
+	require.False(t, hasIncompatibleWheelTasks(context.Background(), b))
+}
+
+func TestTasksWithPyPiPackageAreCompatible(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job1": {
+						JobSettings: &jobs.JobSettings{
+							JobClusters: []jobs.JobCluster{
+								{
+									JobClusterKey: "cluster1",
+									NewCluster: compute.ClusterSpec{
+										SparkVersion: "12.2.x-scala2.12",
+									},
+								},
+							},
+							Tasks: []jobs.Task{
+								{
+									TaskKey:           "key1",
+									PythonWheelTask:   &jobs.PythonWheelTask{},
+									ExistingClusterId: "test-key-2",
+									Libraries: []compute.Library{
+										{Pypi: &compute.PythonPyPiLibrary{
+											Package: "requests==2.25.1",
+										}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	m := mocks.NewMockWorkspaceClient(t)
+	b.SetWorkpaceClient(m.WorkspaceClient)
 
 	require.False(t, hasIncompatibleWheelTasks(context.Background(), b))
 }
@@ -293,6 +344,8 @@ func TestSparkVersionLowerThanExpected(t *testing.T) {
 		"14.1.x-scala2.12":                false,
 		"13.x-snapshot-scala-2.12":        false,
 		"13.x-rc-scala-2.12":              false,
+		"client.1.10-scala2.12":           false,
+		"latest-stable-gpu-scala2.11":     false,
 		"10.4.x-aarch64-photon-scala2.12": true,
 		"10.4.x-scala2.12":                true,
 		"13.0.x-scala2.12":                true,
@@ -300,7 +353,7 @@ func TestSparkVersionLowerThanExpected(t *testing.T) {
 	}
 
 	for k, v := range testCases {
-		result := lowerThanExpectedVersion(context.Background(), k)
+		result := lowerThanExpectedVersion(k)
 		require.Equal(t, v, result, k)
 	}
 }

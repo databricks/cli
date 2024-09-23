@@ -269,19 +269,20 @@ func TestSetUserAgentExtraEnvVar(t *testing.T) {
 }
 
 func TestInheritEnvVars(t *testing.T) {
-	env := map[string]string{}
-
 	t.Setenv("HOME", "/home/testuser")
 	t.Setenv("PATH", "/foo:/bar")
 	t.Setenv("TF_CLI_CONFIG_FILE", "/tmp/config.tfrc")
+	t.Setenv("AZURE_CONFIG_FILE", "/tmp/foo/bar")
 
-	err := inheritEnvVars(context.Background(), env)
-
-	require.NoError(t, err)
-
-	require.Equal(t, env["HOME"], "/home/testuser")
-	require.Equal(t, env["PATH"], "/foo:/bar")
-	require.Equal(t, env["TF_CLI_CONFIG_FILE"], "/tmp/config.tfrc")
+	ctx := context.Background()
+	env := map[string]string{}
+	err := inheritEnvVars(ctx, env)
+	if assert.NoError(t, err) {
+		assert.Equal(t, "/home/testuser", env["HOME"])
+		assert.Equal(t, "/foo:/bar", env["PATH"])
+		assert.Equal(t, "/tmp/config.tfrc", env["TF_CLI_CONFIG_FILE"])
+		assert.Equal(t, "/tmp/foo/bar", env["AZURE_CONFIG_FILE"])
+	}
 }
 
 func TestSetUserProfileFromInheritEnvVars(t *testing.T) {

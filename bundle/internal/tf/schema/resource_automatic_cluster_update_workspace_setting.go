@@ -2,20 +2,14 @@
 
 package schema
 
-type ResourceAutomaticClusterUpdateWorkspaceSettingAutomaticClusterUpdateWorkspaceEnablementDetails struct {
-	ForcedForComplianceMode           bool `json:"forced_for_compliance_mode,omitempty"`
-	UnavailableForDisabledEntitlement bool `json:"unavailable_for_disabled_entitlement,omitempty"`
-	UnavailableForNonEnterpriseTier   bool `json:"unavailable_for_non_enterprise_tier,omitempty"`
-}
-
 type ResourceAutomaticClusterUpdateWorkspaceSettingAutomaticClusterUpdateWorkspaceMaintenanceWindowWeekDayBasedScheduleWindowStartTime struct {
-	Hours   int `json:"hours,omitempty"`
-	Minutes int `json:"minutes,omitempty"`
+	Hours   int `json:"hours"`
+	Minutes int `json:"minutes"`
 }
 
 type ResourceAutomaticClusterUpdateWorkspaceSettingAutomaticClusterUpdateWorkspaceMaintenanceWindowWeekDayBasedSchedule struct {
-	DayOfWeek       string                                                                                                                             `json:"day_of_week,omitempty"`
-	Frequency       string                                                                                                                             `json:"frequency,omitempty"`
+	DayOfWeek       string                                                                                                                             `json:"day_of_week"`
+	Frequency       string                                                                                                                             `json:"frequency"`
 	WindowStartTime *ResourceAutomaticClusterUpdateWorkspaceSettingAutomaticClusterUpdateWorkspaceMaintenanceWindowWeekDayBasedScheduleWindowStartTime `json:"window_start_time,omitempty"`
 }
 
@@ -25,9 +19,9 @@ type ResourceAutomaticClusterUpdateWorkspaceSettingAutomaticClusterUpdateWorkspa
 
 type ResourceAutomaticClusterUpdateWorkspaceSettingAutomaticClusterUpdateWorkspace struct {
 	CanToggle                       bool                                                                                            `json:"can_toggle,omitempty"`
-	Enabled                         bool                                                                                            `json:"enabled,omitempty"`
+	Enabled                         bool                                                                                            `json:"enabled"`
+	EnablementDetails               []any                                                                                           `json:"enablement_details,omitempty"`
 	RestartEvenIfNoUpdatesAvailable bool                                                                                            `json:"restart_even_if_no_updates_available,omitempty"`
-	EnablementDetails               *ResourceAutomaticClusterUpdateWorkspaceSettingAutomaticClusterUpdateWorkspaceEnablementDetails `json:"enablement_details,omitempty"`
 	MaintenanceWindow               *ResourceAutomaticClusterUpdateWorkspaceSettingAutomaticClusterUpdateWorkspaceMaintenanceWindow `json:"maintenance_window,omitempty"`
 }
 
