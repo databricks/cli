@@ -80,7 +80,6 @@ func (c *FileTokenCache) Delete(key string) error {
 	} else if err != nil {
 		return fmt.Errorf("load: %w", err)
 	}
-	c.Version = tokenCacheVersion
 	if c.Tokens == nil {
 		c.Tokens = map[string]*oauth2.Token{}
 	}
