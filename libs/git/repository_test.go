@@ -218,6 +218,9 @@ func TestRepositoryOriginUrlRemovesUserCreds(t *testing.T) {
 			expected: "https://github.com/databricks/foobar.git",
 		},
 		{
+			// Note: The token is still considered and parsed as a username here.
+			// However credentials integrations by Git providers like GitHub
+			// allow for setting a PAT token as a username.
 			url:      "https://token@github.com/databricks/foobar.git",
 			expected: "https://github.com/databricks/foobar.git",
 		},
