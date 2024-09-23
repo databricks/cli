@@ -1,0 +1,24 @@
+bundle:
+  name: basic
+
+workspace:
+  root_path: "~/.bundle/{{.unique_id}}"
+
+resources:
+  clusters:
+    test_cluster:
+      cluster_name: "test-cluster-{{.unique_id}}"
+      spark_version: "{{.spark_version}}"
+      node_type_id: "{{.node_type_id}}"
+      num_workers: 2
+      spark_conf:
+        "spark.executor.memory": "2g"
+
+  jobs:
+    foo:
+      name: test-job-with-cluster-{{.unique_id}}
+      tasks:
+        - task_key: my_notebook_task
+          existing_cluster_id: "${resources.clusters.test_cluster.cluster_id}"
+          spark_python_task:
+            python_file: ./hello_world.py

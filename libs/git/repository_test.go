@@ -209,7 +209,26 @@ func TestRepositoryGitConfigWhenNotARepo(t *testing.T) {
 }
 
 func TestRepositoryOriginUrlRemovesUserCreds(t *testing.T) {
-	repo := newTestRepository(t)
-	repo.addOriginUrl("https://username:token@github.com/databricks/foobar.git")
-	repo.assertOriginUrl("https://github.com/databricks/foobar.git")
+	tcases := []struct {
+		url      string
+		expected string
+	}{
+		{
+			url:      "https://username:token@github.com/databricks/foobar.git",
+			expected: "https://github.com/databricks/foobar.git",
+		},
+		{
+			// Note: The token is still considered and parsed as a username here.
+			// However credentials integrations by Git providers like GitHub
+			// allow for setting a PAT token as a username.
+			url:      "https://token@github.com/databricks/foobar.git",
+			expected: "https://github.com/databricks/foobar.git",
+		},
+	}
+
+	for _, tc := range tcases {
+		repo := newTestRepository(t)
+		repo.addOriginUrl(tc.url)
+		repo.assertOriginUrl(tc.expected)
+	}
 }

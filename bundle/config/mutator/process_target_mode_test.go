@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/tags"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -119,6 +120,9 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				Schemas: map[string]*resources.Schema{
 					"schema1": {CreateSchema: &catalog.CreateSchema{Name: "schema1"}},
 				},
+				Clusters: map[string]*resources.Cluster{
+					"cluster1": {ClusterSpec: &compute.ClusterSpec{ClusterName: "cluster1", SparkVersion: "13.2.x", NumWorkers: 1}},
+				},
 			},
 		},
 		// Use AWS implementation for testing.
@@ -177,6 +181,9 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Schema 1
 	assert.Equal(t, "dev_lennart_schema1", b.Config.Resources.Schemas["schema1"].Name)
+
+	// Clusters
+	assert.Equal(t, "[dev lennart] cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
 }
 
 func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {
@@ -281,6 +288,7 @@ func TestProcessTargetModeDefault(t *testing.T) {
 	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
+	assert.Equal(t, "cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
 }
 
 func TestProcessTargetModeProduction(t *testing.T) {
@@ -312,6 +320,7 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	b.Config.Resources.Experiments["experiment2"].Permissions = permissions
 	b.Config.Resources.Models["model1"].Permissions = permissions
 	b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Permissions = permissions
+	b.Config.Resources.Clusters["cluster1"].Permissions = permissions
 
 	diags = validateProductionMode(context.Background(), b, false)
 	require.NoError(t, diags.Error())
@@ -322,6 +331,7 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
+	assert.Equal(t, "cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
 }
 
 func TestProcessTargetModeProductionOkForPrincipal(t *testing.T) {

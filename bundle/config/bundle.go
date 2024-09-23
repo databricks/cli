@@ -38,8 +38,11 @@ type Bundle struct {
 	// Annotated readonly as this should be set at the target level.
 	Mode Mode `json:"mode,omitempty" bundle:"readonly"`
 
-	// Overrides the compute used for jobs and other supported assets.
-	ComputeID string `json:"compute_id,omitempty"`
+	// DEPRECATED: Overrides the compute used for jobs and other supported assets.
+	ComputeId string `json:"compute_id,omitempty"`
+
+	// Overrides the cluster used for jobs and other supported assets.
+	ClusterId string `json:"cluster_id,omitempty"`
 
 	// Deployment section specifies deployment related configuration for bundle
 	Deployment Deployment `json:"deployment,omitempty"`
