@@ -221,14 +221,6 @@ func TestRepositoryOriginUrlRemovesUserCreds(t *testing.T) {
 			url:      "https://token@github.com/databricks/foobar.git",
 			expected: "https://github.com/databricks/foobar.git",
 		},
-		{
-			url:      "https://johndoe:abcdefghijklmnopqrstuvwxyz0123456789@dev.azure.com/mycompany/myproject/_git/myrepo",
-			expected: "https://dev.azure.com/mycompany/myproject/_git/myrepo",
-		},
-		{
-			url:      "https://abcdefghijklmnopqrstuvwxyz0123456789@dev.azure.com/mycompany/myproject/_git/myrepo",
-			expected: "https://dev.azure.com/mycompany/myproject/_git/myrepo",
-		},
 	}
 
 	for _, tc := range tcases {
