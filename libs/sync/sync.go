@@ -52,9 +52,12 @@ type Sync struct {
 	filer    filer.Filer
 
 	// Synchronization progress events are sent to this event notifier.
-	notifier        EventNotifier
+	notifier EventNotifier
+	seq      int
+
+	// WaitGroup is automatically created when an output handler is provided in the SyncOptions.
+	// Close call is required to ensure the output handler goroutine handles all events in time.
 	outputWaitGroup *stdsync.WaitGroup
-	seq             int
 }
 
 // New initializes and returns a new [Sync] instance.
@@ -138,12 +141,6 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 		outputWaitGroup: outputWaitGroup,
 		seq:             0,
 	}, nil
-}
-
-func (s *Sync) Events() <-chan Event {
-	ch := make(chan Event, MaxRequestsInFlight)
-	s.notifier = &ChannelNotifier{ch}
-	return ch
 }
 
 func (s *Sync) Close() {

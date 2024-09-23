@@ -12,7 +12,7 @@ import (
 )
 
 type upload struct {
-	outpuHandler sync.OutputHandler
+	outputHandler sync.OutputHandler
 }
 
 func (m *upload) Name() string {
@@ -26,18 +26,17 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return diag.FromErr(err)
 	}
 
-	opts.OutputHandler = m.outpuHandler
+	opts.OutputHandler = m.outputHandler
 	sync, err := sync.New(ctx, *opts)
 	if err != nil {
 		return diag.FromErr(err)
 	}
+	defer sync.Close()
 
 	b.Files, err = sync.RunOnce(ctx)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-
-	sync.Close()
 
 	log.Infof(ctx, "Uploaded bundle files")
 	return nil
