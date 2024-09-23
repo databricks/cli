@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 )
@@ -16,9 +17,9 @@ import (
 func ReportPossiblePermissionDenied(ctx context.Context, b *bundle.Bundle, path string) diag.Diagnostics {
 	log.Errorf(ctx, "Failed to update, encountered possible permission error: %v", path)
 
-	user := b.Config.Workspace.CurrentUser.DisplayName
-	if user == "" {
-		user = b.Config.Workspace.CurrentUser.UserName
+	user := b.Config.Workspace.CurrentUser.UserName
+	if auth.IsServicePrincipal(user) {
+		user = b.Config.Workspace.CurrentUser.DisplayName
 	}
 	canManageBundle, assistance := analyzeBundlePermissions(b)
 
