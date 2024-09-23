@@ -123,7 +123,7 @@ func TestFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
 				"return_export_info": "true",
 			}, mock.AnythingOfType("*filer.wsfsFileInfo"), []func(*http.Request) error(nil)).Return(nil, statNotebook)
 
-			workspaceFilesClient := workspaceFilesClient{
+			workspaceFilesClient := WorkspaceFilesClient{
 				workspaceClient: mockedWorkspaceClient.WorkspaceClient,
 				apiClient:       &mockedApiClient,
 				root:            NewWorkspaceRootPath("/dir"),

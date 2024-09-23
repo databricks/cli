@@ -58,6 +58,8 @@ func (m *interpolateMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 				path = dyn.NewPath(dyn.Key("databricks_quality_monitor")).Append(path[2:]...)
 			case dyn.Key("schemas"):
 				path = dyn.NewPath(dyn.Key("databricks_schema")).Append(path[2:]...)
+			case dyn.Key("volumes"):
+				path = dyn.NewPath(dyn.Key("databricks_volume")).Append(path[2:]...)
 			default:
 				// Trigger "key not found" for unknown resource types.
 				return dyn.GetByPath(root, path)

@@ -125,6 +125,62 @@ func TestApplyPresetsPrefixForUcSchema(t *testing.T) {
 	}
 }
 
+func TestApplyPresetsPrefixForUcVolumes(t *testing.T) {
+	tests := []struct {
+		name   string
+		prefix string
+		volume *resources.Volume
+		want   string
+	}{
+		{
+			name:   "add prefix to volume",
+			prefix: "[prefix]",
+			volume: &resources.Volume{
+				CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+					Name: "volume1",
+				},
+			},
+			want: "prefix_volume1",
+		},
+		{
+			name:   "add empty prefix to volume",
+			prefix: "",
+			volume: &resources.Volume{
+				CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+					Name: "volume1",
+				},
+			},
+			want: "volume1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := &bundle.Bundle{
+				Config: config.Root{
+					Resources: config.Resources{
+						Volumes: map[string]*resources.Volume{
+							"volume1": tt.volume,
+						},
+					},
+					Presets: config.Presets{
+						NamePrefix: tt.prefix,
+					},
+				},
+			}
+
+			ctx := context.Background()
+			diag := bundle.Apply(ctx, b, mutator.ApplyPresets())
+
+			if diag.HasError() {
+				t.Fatalf("unexpected error: %v", diag)
+			}
+
+			require.Equal(t, tt.want, b.Config.Resources.Volumes["volume1"].Name)
+		})
+	}
+}
+
 func TestApplyPresetsTags(t *testing.T) {
 	tests := []struct {
 		name string
