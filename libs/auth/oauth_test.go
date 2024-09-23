@@ -53,9 +53,9 @@ func TestOidcForWorkspace(t *testing.T) {
 }
 
 type tokenCacheMock struct {
-	store     func(key string, t *oauth2.Token) error
-	lookup    func(key string) (*oauth2.Token, error)
-	deleteKey func(key string) error
+	store  func(key string, t *oauth2.Token) error
+	lookup func(key string) (*oauth2.Token, error)
+	delete func(key string) error
 }
 
 func (m *tokenCacheMock) Store(key string, t *oauth2.Token) error {
@@ -73,10 +73,10 @@ func (m *tokenCacheMock) Lookup(key string) (*oauth2.Token, error) {
 }
 
 func (m *tokenCacheMock) Delete(key string) error {
-	if m.deleteKey == nil {
+	if m.delete == nil {
 		panic("no deleteKey mock")
 	}
-	return m.deleteKey(key)
+	return m.delete(key)
 }
 
 func TestLoad(t *testing.T) {
@@ -246,7 +246,7 @@ func TestClearToken(t *testing.T) {
 				assert.Equal(t, "https://abc/oidc/accounts/xyz", key)
 				return &oauth2.Token{}, ErrNotConfigured
 			},
-			deleteKey: func(key string) error {
+			delete: func(key string) error {
 				assert.Equal(t, "https://abc/oidc/accounts/xyz", key)
 				return nil
 			},
@@ -269,7 +269,7 @@ func TestClearTokenNotExist(t *testing.T) {
 				assert.Equal(t, "https://abc/oidc/accounts/xyz", key)
 				return &oauth2.Token{}, ErrNotConfigured
 			},
-			deleteKey: func(key string) error {
+			delete: func(key string) error {
 				assert.Equal(t, "https://abc/oidc/accounts/xyz", key)
 				return ErrNotConfigured
 			},
