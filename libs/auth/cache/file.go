@@ -73,7 +73,7 @@ func (c *FileTokenCache) Lookup(key string) (*oauth2.Token, error) {
 	return t, nil
 }
 
-func (c *FileTokenCache) DeleteKey(key string) error {
+func (c *FileTokenCache) Delete(key string) error {
 	err := c.load()
 	if errors.Is(err, fs.ErrNotExist) {
 		return ErrNotConfigured

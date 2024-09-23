@@ -9,7 +9,7 @@ import (
 type TokenCache interface {
 	Store(key string, t *oauth2.Token) error
 	Lookup(key string) (*oauth2.Token, error)
-	DeleteKey(key string) error
+	Delete(key string) error
 }
 
 var tokenCache int

@@ -58,7 +58,7 @@ func TestInMemoryDeleteKey(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	err = c.DeleteKey("x")
+	err = c.Delete("x")
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(c.Tokens))
 
@@ -74,7 +74,7 @@ func TestInMemoryDeleteKeyNotExist(t *testing.T) {
 	c := &InMemoryTokenCache{
 		Tokens: map[string]*oauth2.Token{},
 	}
-    err := c.DeleteKey("x")
+    err := c.Delete("x")
 	assert.Equal(t, ErrNotConfigured, err)
 
 	_, err = c.Lookup("x")

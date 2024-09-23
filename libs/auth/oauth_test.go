@@ -72,7 +72,7 @@ func (m *tokenCacheMock) Lookup(key string) (*oauth2.Token, error) {
 	return m.lookup(key)
 }
 
-func (m *tokenCacheMock) DeleteKey(key string) error {
+func (m *tokenCacheMock) Delete(key string) error {
 	if m.deleteKey == nil {
 		panic("no deleteKey mock")
 	}

@@ -152,7 +152,7 @@ func (a *PersistentAuth) ClearToken(ctx context.Context) error {
 	}
 	// lookup token identified by host (and possibly the account id)
 	key := a.key()
-	return a.cache.DeleteKey(key)
+	return a.cache.Delete(key)
 }
 
 func (a *PersistentAuth) init(ctx context.Context) error {
