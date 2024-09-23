@@ -67,7 +67,12 @@ func rewriteComputeIdToClusterId(v dyn.Value, p dyn.Path) (dyn.Value, diag.Diagn
 	// Drop the "compute_id" key.
 	vout, err := dyn.Walk(nv, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 		switch len(p) {
-		case 0, 1:
+		case 0:
+			return v, nil
+		case 1:
+			if p[0] == dyn.Key("compute_id") {
+				return v, dyn.ErrDrop
+			}
 			return v, nil
 		case 2:
 			if p[1] == dyn.Key("compute_id") {

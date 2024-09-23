@@ -41,8 +41,13 @@ func TestComputeIdToClusterIdInTargetOverride(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, bundle.Seq(mutator.ComputeIdToClusterId(), mutator.SelectTarget("dev")))
+	diags := bundle.Apply(context.Background(), b, mutator.ComputeIdToClusterId())
 	assert.NoError(t, diags.Error())
+	assert.Empty(t, b.Config.Targets["dev"].ComputeId)
+
+	diags = diags.Extend(bundle.Apply(context.Background(), b, mutator.SelectTarget("dev")))
+	assert.NoError(t, diags.Error())
+
 	assert.Equal(t, "compute-id-dev", b.Config.Bundle.ClusterId)
 	assert.Empty(t, b.Config.Bundle.ComputeId)
 

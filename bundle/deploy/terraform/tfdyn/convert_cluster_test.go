@@ -71,6 +71,7 @@ func TestConvertCluster(t *testing.T) {
 			"availability": "SPOT",
 		},
 		"data_security_mode": "USER_ISOLATION",
+		"no_wait":            true,
 		"node_type_id":       "m5.xlarge",
 		"autoscale": map[string]any{
 			"min_workers": int64(1),
