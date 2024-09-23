@@ -366,9 +366,9 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		}
 	}
 
-	// Merge `compute_id`. This field must be overwritten if set, not merged.
-	if v := target.Get("compute_id"); v.Kind() != dyn.KindInvalid {
-		root, err = dyn.SetByPath(root, dyn.NewPath(dyn.Key("bundle"), dyn.Key("compute_id")), v)
+	// Merge `cluster_id`. This field must be overwritten if set, not merged.
+	if v := target.Get("cluster_id"); v.Kind() != dyn.KindInvalid {
+		root, err = dyn.SetByPath(root, dyn.NewPath(dyn.Key("bundle"), dyn.Key("cluster_id")), v)
 		if err != nil {
 			return err
 		}
@@ -409,16 +409,31 @@ func (r *Root) MergeTargetOverrides(name string) error {
 var variableKeywords = []string{"default", "lookup"}
 
 // isFullVariableOverrideDef checks if the given value is a full syntax varaible override.
-// A full syntax variable override is a map with only one of the following
-// keys: "default", "lookup".
+// A full syntax variable override is a map with either 1 of 2 keys.
+// If it's 2 keys, the keys should be "default" and "type".
+// If it's 1 key, the key should be one of the following keys: "default", "lookup".
 func isFullVariableOverrideDef(v dyn.Value) bool {
 	mv, ok := v.AsMap()
 	if !ok {
 		return false
 	}
 
-	if mv.Len() != 1 {
+	// If the map has more than 2 keys, it is not a full variable override.
+	if mv.Len() > 2 {
 		return false
+	}
+
+	// If the map has 2 keys, one of them should be "default" and the other is "type"
+	if mv.Len() == 2 {
+		if _, ok := mv.GetByString("type"); !ok {
+			return false
+		}
+
+		if _, ok := mv.GetByString("default"); !ok {
+			return false
+		}
+
+		return true
 	}
 
 	for _, keyword := range variableKeywords {

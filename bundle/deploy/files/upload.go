@@ -8,9 +8,12 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/sync"
 )
 
-type upload struct{}
+type upload struct {
+	outputHandler sync.OutputHandler
+}
 
 func (m *upload) Name() string {
 	return "files.Upload"
@@ -18,10 +21,17 @@ func (m *upload) Name() string {
 
 func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	cmdio.LogString(ctx, fmt.Sprintf("Uploading bundle files to %s...", b.Config.Workspace.FilePath))
-	sync, err := GetSync(ctx, bundle.ReadOnly(b))
+	opts, err := GetSyncOptions(ctx, bundle.ReadOnly(b))
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
+	opts.OutputHandler = m.outputHandler
+	sync, err := sync.New(ctx, *opts)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	defer sync.Close()
 
 	b.Files, err = sync.RunOnce(ctx)
 	if err != nil {
@@ -32,6 +42,6 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	return nil
 }
 
-func Upload() bundle.Mutator {
-	return &upload{}
+func Upload(outputHandler sync.OutputHandler) bundle.Mutator {
+	return &upload{outputHandler}
 }
