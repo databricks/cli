@@ -144,7 +144,7 @@ func TestJobTaskClusterSpec(t *testing.T) {
 				TaskKey:         "my_task",
 			},
 			errorPath:    "resources.jobs.job1.tasks[0]",
-			errorDetail:  "Task \"my_task\" has a task type that requires a cluster, but no cluster is specified",
+			errorDetail:  "Task \"my_task\" has a task type that requires a cluster or environment, but neither is specified",
 			errorSummary: expectedSummary,
 		},
 		{
@@ -158,7 +158,7 @@ func TestJobTaskClusterSpec(t *testing.T) {
 				},
 			},
 			errorPath:    "resources.jobs.job1.tasks[0].for_each_task.task",
-			errorDetail:  "Task \"my_task\" has a task type that requires a cluster, but no cluster is specified",
+			errorDetail:  "Task \"my_task\" has a task type that requires a cluster or environment, but neither is specified",
 			errorSummary: expectedSummary,
 		},
 	}

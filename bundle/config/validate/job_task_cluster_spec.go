@@ -83,7 +83,7 @@ func validateJobTask(rb bundle.ReadOnlyBundle, task jobs.Task, taskPath dyn.Path
 			// notebook tasks without cluster spec will use notebook environment
 		} else {
 			// path might be not very helpful, adding user-specified task key clarifies the context
-			detail := fmt.Sprintf("Task %q has a task type that requires a cluster, but no cluster is specified", task.TaskKey)
+			detail := fmt.Sprintf("Task %q has a task type that requires a cluster or environment, but neither is specified", task.TaskKey)
 
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,
@@ -98,13 +98,15 @@ func validateJobTask(rb bundle.ReadOnlyBundle, task jobs.Task, taskPath dyn.Path
 	return diags
 }
 
-// isComputeTask returns true if the task requires a cluster
+// isComputeTask returns true if the task runs on a cluster or serverless GC
 func isComputeTask(task jobs.Task) bool {
 	if task.NotebookTask != nil {
-		// if warehouse_id is set, it's SQL notebook that doesn't need cluster
+		// if warehouse_id is set, it's SQL notebook that doesn't need cluster or serverless GC
 		if task.NotebookTask.WarehouseId != "" {
 			return false
 		} else {
+			// task settings don't require specifying a cluster/serverless GC, but task itself can run on one
+			// we handle that case separately in validateJobTask
 			return true
 		}
 	}
