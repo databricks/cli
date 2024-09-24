@@ -22,6 +22,7 @@ var resourceTypes = []string{
 	"registered_model",
 	"quality_monitor",
 	"schema",
+	"cluster",
 }
 
 func validateFileFormat(r *config.Root, filePath string) diag.Diagnostics {
