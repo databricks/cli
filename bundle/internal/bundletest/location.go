@@ -8,7 +8,8 @@ import (
 // SetLocation sets the location of all values in the bundle to the given path.
 // This is useful for testing where we need to associate configuration
 // with the path it is loaded from.
-func SetLocation(b *bundle.Bundle, prefix string, locations []dyn.Location) {
+// TODO: Go patch the location.
+func SetLocation(b *bundle.Bundle, prefix string, filePath string) {
 	start := dyn.MustPathFromString(prefix)
 	b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		return dyn.Walk(root, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {

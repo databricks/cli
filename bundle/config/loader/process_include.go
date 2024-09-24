@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"golang.org/x/exp/maps"
 )
 
 // Steps:
@@ -27,6 +26,7 @@ import (
 
 // TODO: Talk in the PR about how this synergizes with the validate all unique
 // keys mutator.
+// Should I add a new abstraction for dyn values here?
 
 var resourceTypes = []string{
 	"job",
@@ -39,16 +39,29 @@ var resourceTypes = []string{
 	"schema",
 }
 
-type resource struct {
-	typ string
-	l   dyn.Location
-	p   dyn.Path
+func validateFileFormat(r *config.Root, filePath string) diag.Diagnostics {
+	for _, typ := range resourceTypes {
+		for _, ext := range []string{fmt.Sprintf(".%s.yml", typ), fmt.Sprintf(".%s.yaml", typ)} {
+			if strings.HasSuffix(filePath, ext) {
+				return validateSingleResourceDefined(r, ext, typ)
+			}
+		}
+	}
+
+	return nil
 }
 
-func gatherResources(r *config.Root) (map[string]resource, error) {
-	res := map[string]resource{}
+func validateSingleResourceDefined(r *config.Root, ext, typ string) diag.Diagnostics {
+	type resource struct {
+		path  dyn.Path
+		value dyn.Value
+		typ   string
+		key   string
+	}
 
-	// Gather all resources defined in the "resources" block.
+	resources := []resource{}
+
+	// Gather all resources defined in the resources block.
 	_, err := dyn.MapByPattern(
 		r.Value(),
 		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
@@ -58,14 +71,11 @@ func gatherResources(r *config.Root) (map[string]resource, error) {
 			// The type of the resource. Eg: "job" for jobs.my_job.
 			typ := strings.TrimSuffix(p[1].Key(), "s")
 
-			// We don't care if duplicate keys are defined across resources. That'll
-			// cause an error that is caught by a separate mutator that validates
-			// unique keys across all resources.
-			res[k] = resource{typ: typ, l: v.Location(), p: p}
+			resources = append(resources, resource{path: p, value: v, typ: typ, key: k})
 			return v, nil
 		})
 	if err != nil {
-		return nil, err
+		return diag.FromErr(err)
 	}
 
 	// Gather all resources defined in a target block.
@@ -73,14 +83,65 @@ func gatherResources(r *config.Root) (map[string]resource, error) {
 		r.Value(),
 		dyn.NewPattern(dyn.Key("targets"), dyn.AnyKey(), dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
 		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			// The key for the resource. Eg: "my_job" for jobs.my_job.
 			k := p[4].Key()
+			// The type of the resource. Eg: "job" for jobs.my_job.
 			typ := strings.TrimSuffix(p[3].Key(), "s")
 
-			res[k] = resource{typ: typ, l: v.Location(), p: p}
+			resources = append(resources, resource{path: p, value: v, typ: typ, key: k})
 			return v, nil
+		})
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	valid := true
+	seenKeys := map[string]struct{}{}
+	for _, rr := range resources {
+		if len(seenKeys) == 0 {
+			seenKeys[rr.key] = struct{}{}
+			continue
+		}
+
+		if _, ok := seenKeys[rr.key]; !ok {
+			valid = false
+			break
+		}
+
+		if rr.typ != typ {
+			valid = false
+			break
+		}
+	}
+
+	// The file only contains one resource defined in its resources or targets block,
+	// and the resource is of the correct type.
+	if valid {
+		return nil
+	}
+
+	msg := strings.Builder{}
+	msg.WriteString(fmt.Sprintf("We recommend only defining a single %s when a file has the %s extension.", typ, ext))
+	msg.WriteString("The following resources are defined or configured in this file:\n")
+	for _, r := range resources {
+		msg.WriteString(fmt.Sprintf("  - %s (%s)\n", r.key, r.typ))
+	}
+
+	locations := []dyn.Location{}
+	paths := []dyn.Path{}
+	for _, rr := range resources {
+		locations = append(locations, rr.value.Locations()...)
+		paths = append(paths, rr.path)
+	}
+
+	return diag.Diagnostics{
+		{
+			Severity:  diag.Info,
+			Summary:   msg.String(),
+			Locations: locations,
+			Paths:     paths,
 		},
-	)
-	return res, err
+	}
 }
 
 type processInclude struct {
@@ -106,48 +167,8 @@ func (m *processInclude) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 		return diags
 	}
 
-	for _, typ := range resourceTypes {
-		ext := fmt.Sprintf("%s.yml", typ)
-
-		// File does not match this resource type. Check the next one.
-		if !strings.HasSuffix(m.relPath, ".yml") {
-			continue
-		}
-
-		resources, err := gatherResources(this)
-		if err != nil {
-			return diag.FromErr(err)
-		}
-
-		// file only has one resource defined, and the resource is of the correct
-		// type. Thus it matches the recommendation we have for extensions like
-		// .job.yml, .pipeline.yml, etc.
-		keys := maps.Keys(resources)
-		if len(resources) == 1 && resources[keys[0]].typ == typ {
-			continue
-		}
-
-		msg := strings.Builder{}
-		msg.WriteString(fmt.Sprintf("We recommend only defining a single %s in a file with the extension %s.\n", typ, ext))
-		msg.WriteString("The following resources are defined or configured in this file:\n")
-		for k, v := range resources {
-			msg.WriteString(fmt.Sprintf("  - %s (%s)\n", k, v.typ))
-		}
-
-		locations := []dyn.Location{}
-		paths := []dyn.Path{}
-		for _, r := range resources {
-			locations = append(locations, []dyn.Location{r.l}...)
-			paths = append(paths, []dyn.Path{r.p}...)
-		}
-
-		diags = append(diags, diag.Diagnostic{
-			Severity:  diag.Info,
-			Summary:   msg.String(),
-			Locations: locations,
-			Paths:     paths,
-		})
-	}
+	// Add any diagnostics associated with the file format.
+	diags = append(diags, validateFileFormat(this, m.relPath)...)
 
 	err := b.Config.Merge(this)
 	if err != nil {
