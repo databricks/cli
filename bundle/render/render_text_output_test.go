@@ -340,7 +340,7 @@ func TestRenderDiagnostics(t *testing.T) {
 				"'name' is required\n\n",
 		},
 		{
-			name: "error with multiple paths and locations",
+			name: "info with multiple paths and locations",
 			diags: diag.Diagnostics{
 				{
 					Severity: diag.Info,
@@ -351,16 +351,8 @@ func TestRenderDiagnostics(t *testing.T) {
 						dyn.MustPathFromString("resources.jobs.yyy"),
 					},
 					Locations: []dyn.Location{
-						{
-							File:   "foo.yaml",
-							Line:   1,
-							Column: 2,
-						},
-						{
-							File:   "bar.yaml",
-							Line:   3,
-							Column: 4,
-						},
+						{File: "foo.yaml", Line: 1, Column: 2},
+						{File: "bar.yaml", Line: 3, Column: 4},
 					},
 				},
 			},

@@ -60,8 +60,8 @@ func TestProcessIncludeValidatesFileFormat(t *testing.T) {
 			Severity: diag.Info,
 			Summary:  "We recommend only defining a single job in a file with the .job.yml extension.\nThe following resources are defined or configured in this file:\n  - bar (job)\n  - foo (job)\n",
 			Locations: []dyn.Location{
-				{File: "testdata/format/foo.job.yml", Line: 4, Column: 7},
-				{File: "testdata/format/foo.job.yml", Line: 7, Column: 7},
+				{File: filepath.FromSlash("testdata/format/foo.job.yml"), Line: 4, Column: 7},
+				{File: filepath.FromSlash("testdata/format/foo.job.yml"), Line: 7, Column: 7},
 			},
 			Paths: []dyn.Path{
 				dyn.MustPathFromString("resources.jobs.bar"),
