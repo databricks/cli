@@ -13,20 +13,6 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-// Steps:
-// 3. Add INFO rendering to the validate command
-// 4. Add unit test that the INFO rendering is correct
-// 5. Manually test the info diag.
-
-
-// TODO: Since we are skipping environemnts here, we should return a warning
-// if environemnts is used (is that already the case?). And explain in the PR that
-// we are choosing to not gather resources from environments.
-
-// TODO: Talk in the PR about how this synergizes with the validate all unique
-// keys mutator.
-// Should I add a new abstraction for dyn values here?
-
 var resourceTypes = []string{
 	"job",
 	"pipeline",
