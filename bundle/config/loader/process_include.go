@@ -14,13 +14,10 @@ import (
 )
 
 // Steps:
-// 1. Return info diag here if convention not followed
-// 2. Add unit test for this mutator that convention is followed. Also add mutators for the dynamic extensions computation.
 // 3. Add INFO rendering to the validate command
 // 4. Add unit test that the INFO rendering is correct
 // 5. Manually test the info diag.
 
-// TODO: Should we detect and enforce this convention for .yaml files as well?
 
 // TODO: Since we are skipping environemnts here, we should return a warning
 // if environemnts is used (is that already the case?). And explain in the PR that
