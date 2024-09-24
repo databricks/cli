@@ -35,7 +35,7 @@ func TestNoWorkspacePrefixUsed(t *testing.T) {
 								},
 								{
 									NotebookTask: &jobs.NotebookTask{
-										NotebookPath: "/Workspace/${workspace.file_path}/notebook1",
+										NotebookPath: "/Workspace${workspace.file_path}/notebook1",
 									},
 									Libraries: []compute.Library{
 										{
@@ -66,7 +66,7 @@ func TestNoWorkspacePrefixUsed(t *testing.T) {
 
 	expectedErrors := map[string]bool{
 		`substring "/Workspace/${workspace.root_path}" found in "/Workspace/${workspace.root_path}/file1.py". Please update this to "${workspace.root_path}/file1.py". For more information, please refer to: https://docs.databricks.com/en/release-notes/dev-tools/bundles.html#workspace-paths`:             true,
-		`substring "/Workspace/${workspace.file_path}" found in "/Workspace/${workspace.file_path}/notebook1". Please update this to "${workspace.file_path}/notebook1". For more information, please refer to: https://docs.databricks.com/en/release-notes/dev-tools/bundles.html#workspace-paths`:           true,
+		`substring "/Workspace${workspace.file_path}" found in "/Workspace${workspace.file_path}/notebook1". Please update this to "${workspace.file_path}/notebook1". For more information, please refer to: https://docs.databricks.com/en/release-notes/dev-tools/bundles.html#workspace-paths`:             true,
 		`substring "/Workspace/${workspace.artifact_path}" found in "/Workspace/${workspace.artifact_path}/jar1.jar". Please update this to "${workspace.artifact_path}/jar1.jar". For more information, please refer to: https://docs.databricks.com/en/release-notes/dev-tools/bundles.html#workspace-paths`: true,
 	}
 

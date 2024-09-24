@@ -24,11 +24,15 @@ func (m *rewriteWorkspacePrefix) Name() string {
 
 func (m *rewriteWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
-	paths := []string{
-		"/Workspace/${workspace.root_path}",
-		"/Workspace/${workspace.file_path}",
-		"/Workspace/${workspace.artifact_path}",
-		"/Workspace/${workspace.state_path}",
+	paths := map[string]string{
+		"/Workspace/${workspace.root_path}":     "${workspace.root_path}",
+		"/Workspace${workspace.root_path}":      "${workspace.root_path}",
+		"/Workspace/${workspace.file_path}":     "${workspace.file_path}",
+		"/Workspace${workspace.file_path}":      "${workspace.file_path}",
+		"/Workspace/${workspace.artifact_path}": "${workspace.artifact_path}",
+		"/Workspace${workspace.artifact_path}":  "${workspace.artifact_path}",
+		"/Workspace/${workspace.state_path}":    "${workspace.state_path}",
+		"/Workspace${workspace.state_path}":     "${workspace.state_path}",
 	}
 
 	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
@@ -40,17 +44,18 @@ func (m *rewriteWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) di
 				return v, nil
 			}
 
-			for _, path := range paths {
+			for path, replacePath := range paths {
 				if strings.Contains(vv, path) {
+					newPath := strings.Replace(vv, path, replacePath, 1)
 					diags = append(diags, diag.Diagnostic{
 						Severity:  diag.Warning,
-						Summary:   fmt.Sprintf("substring %q found in %q. Please update this to %q. For more information, please refer to: https://docs.databricks.com/en/release-notes/dev-tools/bundles.html#workspace-paths", path, vv, strings.Replace(vv, "/Workspace/", "", 1)),
+						Summary:   fmt.Sprintf("substring %q found in %q. Please update this to %q. For more information, please refer to: https://docs.databricks.com/en/release-notes/dev-tools/bundles.html#workspace-paths", path, vv, newPath),
 						Locations: v.Locations(),
 						Paths:     []dyn.Path{p},
 					})
 
 					// Remove the workspace prefix from the string.
-					return dyn.NewValue(strings.Replace(vv, "/Workspace/", "", 1), v.Locations()), nil
+					return dyn.NewValue(newPath, v.Locations()), nil
 				}
 			}
 
