@@ -81,28 +81,21 @@ func validateSingleResourceDefined(r *config.Root, ext, typ string) diag.Diagnos
 		return diag.FromErr(err)
 	}
 
-	valid := true
+	typeMatch := true
 	seenKeys := map[string]struct{}{}
 	for _, rr := range resources {
-		if len(seenKeys) == 0 {
-			seenKeys[rr.key] = struct{}{}
-			continue
-		}
-
-		if _, ok := seenKeys[rr.key]; !ok {
-			valid = false
-			break
-		}
-
+		// case: The resource is not of the correct type.
 		if rr.typ != typ {
-			valid = false
+			typeMatch = false
 			break
 		}
+
+		seenKeys[rr.key] = struct{}{}
 	}
 
-	// The file only contains one resource defined in its resources or targets block,
-	// and the resource is of the correct type.
-	if valid {
+	// Format matches. There's less than or equal to one resource defined in the file.
+	// The resource is also of the correct type.
+	if typeMatch && len(seenKeys) <= 1 {
 		return nil
 	}
 
