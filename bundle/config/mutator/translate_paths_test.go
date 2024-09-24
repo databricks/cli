@@ -82,7 +82,7 @@ func TestTranslatePathsSkippedWithGitSource(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, ".", filepath.Join(dir, "resource.yml"))
+	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "resource.yml")}})
 
 	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	require.NoError(t, diags.Error())
@@ -210,7 +210,7 @@ func TestTranslatePaths(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, ".", filepath.Join(dir, "resource.yml"))
+	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "resource.yml")}})
 
 	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	require.NoError(t, diags.Error())
@@ -346,8 +346,8 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, "resources.jobs", filepath.Join(dir, "job/resource.yml"))
-	bundletest.SetLocation(b, "resources.pipelines", filepath.Join(dir, "pipeline/resource.yml"))
+	bundletest.SetLocation(b, "resources.jobs", []dyn.Location{{File: filepath.Join(dir, "job/resource.yml")}})
+	bundletest.SetLocation(b, "resources.pipelines", []dyn.Location{{File: filepath.Join(dir, "pipeline/resource.yml")}})
 
 	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	require.NoError(t, diags.Error())
@@ -408,7 +408,7 @@ func TestTranslatePathsOutsideSyncRoot(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, ".", filepath.Join(dir, "../resource.yml"))
+	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "../resource.yml")}})
 
 	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.ErrorContains(t, diags.Error(), "is not contained in sync root path")
@@ -439,7 +439,7 @@ func TestJobNotebookDoesNotExistError(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, ".", filepath.Join(dir, "fake.yml"))
+	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "fake.yml")}})
 
 	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.EqualError(t, diags.Error(), "notebook ./doesnt_exist.py not found")
@@ -470,7 +470,7 @@ func TestJobFileDoesNotExistError(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, ".", filepath.Join(dir, "fake.yml"))
+	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "fake.yml")}})
 
 	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.EqualError(t, diags.Error(), "file ./doesnt_exist.py not found")
@@ -501,7 +501,7 @@ func TestPipelineNotebookDoesNotExistError(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, ".", filepath.Join(dir, "fake.yml"))
+	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "fake.yml")}})
 
 	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.EqualError(t, diags.Error(), "notebook ./doesnt_exist.py not found")
@@ -532,7 +532,7 @@ func TestPipelineFileDoesNotExistError(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, ".", filepath.Join(dir, "fake.yml"))
+	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "fake.yml")}})
 
 	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.EqualError(t, diags.Error(), "file ./doesnt_exist.py not found")
@@ -567,7 +567,7 @@ func TestJobSparkPythonTaskWithNotebookSourceError(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, ".", filepath.Join(dir, "resource.yml"))
+	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "resource.yml")}})
 
 	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.ErrorContains(t, diags.Error(), `expected a file for "resources.jobs.job.tasks[0].spark_python_task.python_file" but got a notebook`)
@@ -602,7 +602,7 @@ func TestJobNotebookTaskWithFileSourceError(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, ".", filepath.Join(dir, "resource.yml"))
+	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "resource.yml")}})
 
 	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.ErrorContains(t, diags.Error(), `expected a notebook for "resources.jobs.job.tasks[0].notebook_task.notebook_path" but got a file`)
@@ -637,7 +637,7 @@ func TestPipelineNotebookLibraryWithFileSourceError(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, ".", filepath.Join(dir, "resource.yml"))
+	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "resource.yml")}})
 
 	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.ErrorContains(t, diags.Error(), `expected a notebook for "resources.pipelines.pipeline.libraries[0].notebook.path" but got a file`)
@@ -672,7 +672,7 @@ func TestPipelineFileLibraryWithNotebookSourceError(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, ".", filepath.Join(dir, "resource.yml"))
+	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "resource.yml")}})
 
 	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.ErrorContains(t, diags.Error(), `expected a file for "resources.pipelines.pipeline.libraries[0].file.path" but got a notebook`)
@@ -710,7 +710,7 @@ func TestTranslatePathJobEnvironments(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, "resources.jobs", filepath.Join(dir, "job/resource.yml"))
+	bundletest.SetLocation(b, "resources.jobs", []dyn.Location{{File: filepath.Join(dir, "job/resource.yml")}})
 
 	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	require.NoError(t, diags.Error())
@@ -753,8 +753,8 @@ func TestTranslatePathWithComplexVariables(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, "variables", filepath.Join(dir, "variables/variables.yml"))
-	bundletest.SetLocation(b, "resources.jobs", filepath.Join(dir, "job/resource.yml"))
+	bundletest.SetLocation(b, "variables", []dyn.Location{{File: filepath.Join(dir, "variables/variables.yml")}})
+	bundletest.SetLocation(b, "resources.jobs", []dyn.Location{{File: filepath.Join(dir, "job/resource.yml")}})
 
 	ctx := context.Background()
 	// Assign the variables to the dynamic configuration.
