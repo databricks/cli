@@ -418,22 +418,43 @@ func isFullVariableOverrideDef(v dyn.Value) bool {
 		return false
 	}
 
-	// If the map has more than 2 keys, it is not a full variable override.
-	if mv.Len() > 2 {
+	// If the map has more than 3 keys, it is not a full variable override.
+	if mv.Len() > 3 {
 		return false
 	}
 
-	// If the map has 2 keys, one of them should be "default" and the other is "type"
+	// If the map has 3 keys, they should be "description", "type" and "default" or "lookup"
+	if mv.Len() == 3 {
+		if _, ok := mv.GetByString("type"); ok {
+			if _, ok := mv.GetByString("description"); ok {
+				if _, ok := mv.GetByString("default"); ok {
+					return true
+				}
+			}
+		}
+
+		return false
+	}
+
+	// If the map has 2 keys, one of them should be "default" or "lookup" and the other is "type" or "description"
 	if mv.Len() == 2 {
-		if _, ok := mv.GetByString("type"); !ok {
-			return false
+		if _, ok := mv.GetByString("type"); ok {
+			if _, ok := mv.GetByString("default"); ok {
+				return true
+			}
 		}
 
-		if _, ok := mv.GetByString("default"); !ok {
-			return false
+		if _, ok := mv.GetByString("description"); ok {
+			if _, ok := mv.GetByString("default"); ok {
+				return true
+			}
+
+			if _, ok := mv.GetByString("lookup"); ok {
+				return true
+			}
 		}
 
-		return true
+		return false
 	}
 
 	for _, keyword := range variableKeywords {
