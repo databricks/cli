@@ -173,6 +173,9 @@ func (m *processInclude) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 
 	// Add any diagnostics associated with the file format.
 	diags = append(diags, validateFileFormat(this, m.relPath)...)
+	if diags.HasError() {
+		return diags
+	}
 
 	err := b.Config.Merge(this)
 	if err != nil {
