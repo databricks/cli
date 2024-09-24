@@ -1,0 +1,7 @@
+resources:
+  jobs:
+    foo:
+      name: foo
+
+    bar:
+      name: bar

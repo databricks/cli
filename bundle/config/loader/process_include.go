@@ -3,12 +3,14 @@ package loader
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"golang.org/x/exp/maps"
 )
 
 // Steps:
@@ -121,10 +123,21 @@ func validateSingleResourceDefined(r *config.Root, ext, typ string) diag.Diagnos
 	}
 
 	msg := strings.Builder{}
-	msg.WriteString(fmt.Sprintf("We recommend only defining a single %s when a file has the %s extension.", typ, ext))
+	msg.WriteString(fmt.Sprintf("We recommend only defining a single %s in a file with the %s extension.\n", typ, ext))
+
+	// Dedup the list of resources before adding them the diagnostic message. This
+	// is needed because we do not dedup earlier when gathering the resources and
+	// it's valid to define the same resource in both the resources and targets block.
 	msg.WriteString("The following resources are defined or configured in this file:\n")
+	setOfLines := map[string]struct{}{}
 	for _, r := range resources {
-		msg.WriteString(fmt.Sprintf("  - %s (%s)\n", r.key, r.typ))
+		setOfLines[fmt.Sprintf("  - %s (%s)\n", r.key, r.typ)] = struct{}{}
+	}
+	// Sort the line s to print to make the output deterministic.
+	listOfLines := maps.Keys(setOfLines)
+	sort.Strings(listOfLines)
+	for _, l := range listOfLines {
+		msg.WriteString(l)
 	}
 
 	locations := []dyn.Location{}
@@ -133,6 +146,13 @@ func validateSingleResourceDefined(r *config.Root, ext, typ string) diag.Diagnos
 		locations = append(locations, rr.value.Locations()...)
 		paths = append(paths, rr.path)
 	}
+	// Sort the locations and paths to make the output deterministic.
+	sort.Slice(locations, func(i, j int) bool {
+		return locations[i].String() < locations[j].String()
+	})
+	sort.Slice(paths, func(i, j int) bool {
+		return paths[i].String() < paths[j].String()
+	})
 
 	return diag.Diagnostics{
 		{
