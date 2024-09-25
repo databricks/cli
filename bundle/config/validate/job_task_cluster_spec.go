@@ -84,7 +84,7 @@ func validateJobTask(rb bundle.ReadOnlyBundle, task jobs.Task, taskPath dyn.Path
 		} else {
 			// path might be not very helpful, adding user-specified task key clarifies the context
 			detail := fmt.Sprintf(
-				"Task %q requires a cluster or an environment to run. Specify one of the following fields: %s",
+				"Task %q requires a cluster or an environment to run.\nSpecify one of the following fields: %s.",
 				task.TaskKey,
 				strings.Join(unspecified, ", "),
 			)
