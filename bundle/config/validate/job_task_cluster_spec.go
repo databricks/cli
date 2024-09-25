@@ -83,11 +83,15 @@ func validateJobTask(rb bundle.ReadOnlyBundle, task jobs.Task, taskPath dyn.Path
 			// notebook tasks without cluster spec will use notebook environment
 		} else {
 			// path might be not very helpful, adding user-specified task key clarifies the context
-			detail := fmt.Sprintf("Task %q has a task type that requires a cluster or environment, but neither is specified", task.TaskKey)
+			detail := fmt.Sprintf(
+				"Task %q requires a cluster or an environment to run. Specify one of the following fields: %s",
+				task.TaskKey,
+				strings.Join(unspecified, ", "),
+			)
 
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,
-				Summary:   fmt.Sprintf("One of the following fields must be set: %s", strings.Join(unspecified, ", ")),
+				Summary:   fmt.Sprintf("Missing required cluster or environment settings"),
 				Detail:    detail,
 				Locations: rb.Config().GetLocations(taskPath.String()),
 				Paths:     []dyn.Path{taskPath},

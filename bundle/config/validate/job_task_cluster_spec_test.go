@@ -13,7 +13,7 @@ import (
 )
 
 func TestJobTaskClusterSpec(t *testing.T) {
-	expectedSummary := "One of the following fields must be set: job_cluster_key, environment_key, existing_cluster_id, new_cluster"
+	expectedSummary := "Missing required cluster or environment settings"
 
 	type testCase struct {
 		name         string
@@ -143,8 +143,9 @@ func TestJobTaskClusterSpec(t *testing.T) {
 				PythonWheelTask: &jobs.PythonWheelTask{},
 				TaskKey:         "my_task",
 			},
-			errorPath:    "resources.jobs.job1.tasks[0]",
-			errorDetail:  "Task \"my_task\" has a task type that requires a cluster or environment, but neither is specified",
+			errorPath: "resources.jobs.job1.tasks[0]",
+			errorDetail: "Task \"my_task\" requires a cluster or an environment to run. Specify one of the " +
+				"following fields: job_cluster_key, environment_key, existing_cluster_id, new_cluster",
 			errorSummary: expectedSummary,
 		},
 		{
@@ -157,8 +158,9 @@ func TestJobTaskClusterSpec(t *testing.T) {
 					},
 				},
 			},
-			errorPath:    "resources.jobs.job1.tasks[0].for_each_task.task",
-			errorDetail:  "Task \"my_task\" has a task type that requires a cluster or environment, but neither is specified",
+			errorPath: "resources.jobs.job1.tasks[0].for_each_task.task",
+			errorDetail: "Task \"my_task\" requires a cluster or an environment to run. Specify one of the " +
+				"following fields: job_cluster_key, environment_key, existing_cluster_id, new_cluster",
 			errorSummary: expectedSummary,
 		},
 	}
