@@ -91,7 +91,7 @@ func validateJobTask(rb bundle.ReadOnlyBundle, task jobs.Task, taskPath dyn.Path
 
 			diags = diags.Append(diag.Diagnostic{
 				Severity:  diag.Error,
-				Summary:   fmt.Sprintf("Missing required cluster or environment settings"),
+				Summary:   "Missing required cluster or environment settings",
 				Detail:    detail,
 				Locations: rb.Config().GetLocations(taskPath.String()),
 				Paths:     []dyn.Path{taskPath},
