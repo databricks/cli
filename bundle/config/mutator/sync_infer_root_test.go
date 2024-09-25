@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/internal/bundletest"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -184,7 +185,7 @@ func TestSyncInferRoot_Error(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, "sync.paths", "databricks.yml")
+	bundletest.SetLocation(b, "sync.paths", []dyn.Location{{File: "databricks.yml"}})
 
 	ctx := context.Background()
 	diags := bundle.Apply(ctx, b, mutator.SyncInferRoot())
