@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDataclassNoWheel(t *testing.T) {
+func TestPythonImport_dataclass_no_wheel(t *testing.T) {
 	activateVEnv(t)
 	setPythonPath(t, "python_import/dataclass_no_wheel/src")
 
