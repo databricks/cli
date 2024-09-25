@@ -73,7 +73,7 @@ func activateVEnv(t *testing.T) {
 	venvDir := pathlib.Join(dir, "venv")
 
 	err := exec.Command("python3", "-m", "venv", venvDir).Run()
-	require.NoError(t, err)
+	require.NoError(t, err, "failed to create venv")
 
 	// we don't have shell to activate venv, updating PATH is enough
 
@@ -91,5 +91,5 @@ func activateVEnv(t *testing.T) {
 		"install",
 		"databricks-pydabs==0.5.1",
 	).Run()
-	require.NoError(t, err)
+	require.NoError(t, err, "failed to install databricks-pydabs")
 }
