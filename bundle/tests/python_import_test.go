@@ -78,7 +78,7 @@ func activateVEnv(t *testing.T) {
 	// we don't have shell to activate venv, updating PATH is enough
 
 	var venvBinDir string
-	if runtime.GOOS == "Windows" {
+	if runtime.GOOS == "windows" {
 		venvBinDir = pathlib.Join(venvDir, "Scripts")
 		t.Setenv("PATH", venvBinDir+";"+os.Getenv("PATH"))
 	} else {
