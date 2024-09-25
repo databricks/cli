@@ -1,0 +1,15 @@
+bundle:
+  name: python-import-dataclass-no-wheel
+
+experimental:
+  pydabs:
+    enabled: true
+    import:
+    - "my_job"
+
+variables:
+  default_cluster_spec:
+    type: complex
+    value:
+      num_workers: 1
+      spark_version: "15.4.x-scala2.12"
