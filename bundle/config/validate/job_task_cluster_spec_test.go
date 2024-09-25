@@ -144,8 +144,8 @@ func TestJobTaskClusterSpec(t *testing.T) {
 				TaskKey:         "my_task",
 			},
 			errorPath: "resources.jobs.job1.tasks[0]",
-			errorDetail: "Task \"my_task\" requires a cluster or an environment to run. Specify one of the " +
-				"following fields: job_cluster_key, environment_key, existing_cluster_id, new_cluster",
+			errorDetail: `Task "my_task" requires a cluster or an environment to run.
+Specify one of the following fields: job_cluster_key, environment_key, existing_cluster_id, new_cluster.`,
 			errorSummary: expectedSummary,
 		},
 		{
@@ -159,8 +159,8 @@ func TestJobTaskClusterSpec(t *testing.T) {
 				},
 			},
 			errorPath: "resources.jobs.job1.tasks[0].for_each_task.task",
-			errorDetail: "Task \"my_task\" requires a cluster or an environment to run. Specify one of the " +
-				"following fields: job_cluster_key, environment_key, existing_cluster_id, new_cluster",
+			errorDetail: `Task "my_task" requires a cluster or an environment to run.
+Specify one of the following fields: job_cluster_key, environment_key, existing_cluster_id, new_cluster.`,
 			errorSummary: expectedSummary,
 		},
 	}
