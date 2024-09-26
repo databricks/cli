@@ -1,4 +1,4 @@
-package loader
+package loader_test
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/loader"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
@@ -23,7 +24,7 @@ func TestProcessInclude(t *testing.T) {
 		},
 	}
 
-	m := ProcessInclude(filepath.Join(b.RootPath, "host.yml"), "host.yml")
+	m := loader.ProcessInclude(filepath.Join(b.RootPath, "host.yml"), "host.yml")
 	assert.Equal(t, "ProcessInclude(host.yml)", m.Name())
 
 	// Assert the host value prior to applying the mutator
@@ -52,7 +53,7 @@ func TestProcessIncludeFormatPass(t *testing.T) {
 				},
 			}
 
-			m := ProcessInclude(filepath.Join(b.RootPath, fileName), fileName)
+			m := loader.ProcessInclude(filepath.Join(b.RootPath, fileName), fileName)
 			diags := bundle.Apply(context.Background(), b, m)
 			assert.Empty(t, diags)
 		})
@@ -162,7 +163,7 @@ func TestProcessIncludeFormatFail(t *testing.T) {
 				},
 			}
 
-			m := ProcessInclude(filepath.Join(b.RootPath, fileName), fileName)
+			m := loader.ProcessInclude(filepath.Join(b.RootPath, fileName), fileName)
 			diags := bundle.Apply(context.Background(), b, m)
 			require.Len(t, diags, 1)
 			assert.Equal(t, expectedDiags, diags)
