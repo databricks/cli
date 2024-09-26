@@ -376,7 +376,7 @@ func TestValidateFileFormat(t *testing.T) {
 				bundletest.SetLocation(tc.bundle, k, []dyn.Location{v})
 			}
 
-			diags := validateFileFormat(&tc.bundle.Config, tc.fileName)
+			diags := validateFileFormat(tc.bundle.Config.Value(), tc.fileName)
 			assert.Equal(t, tc.expected, diags)
 		})
 	}

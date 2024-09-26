@@ -25,11 +25,11 @@ var resourceTypes = []string{
 	"cluster",
 }
 
-func validateFileFormat(r *config.Root, filePath string) diag.Diagnostics {
+func validateFileFormat(configRoot dyn.Value, filePath string) diag.Diagnostics {
 	for _, typ := range resourceTypes {
 		for _, ext := range []string{fmt.Sprintf(".%s.yml", typ), fmt.Sprintf(".%s.yaml", typ)} {
 			if strings.HasSuffix(filePath, ext) {
-				return validateSingleResourceDefined(r, ext, typ)
+				return validateSingleResourceDefined(configRoot, ext, typ)
 			}
 		}
 	}
@@ -37,7 +37,7 @@ func validateFileFormat(r *config.Root, filePath string) diag.Diagnostics {
 	return nil
 }
 
-func validateSingleResourceDefined(r *config.Root, ext, typ string) diag.Diagnostics {
+func validateSingleResourceDefined(configRoot dyn.Value, ext, typ string) diag.Diagnostics {
 	type resource struct {
 		path  dyn.Path
 		value dyn.Value
@@ -49,7 +49,7 @@ func validateSingleResourceDefined(r *config.Root, ext, typ string) diag.Diagnos
 
 	// Gather all resources defined in the resources block.
 	_, err := dyn.MapByPattern(
-		r.Value(),
+		configRoot,
 		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
 		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			// The key for the resource. Eg: "my_job" for jobs.my_job.
@@ -66,7 +66,7 @@ func validateSingleResourceDefined(r *config.Root, ext, typ string) diag.Diagnos
 
 	// Gather all resources defined in a target block.
 	_, err = dyn.MapByPattern(
-		r.Value(),
+		configRoot,
 		dyn.NewPattern(dyn.Key("targets"), dyn.AnyKey(), dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
 		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			// The key for the resource. Eg: "my_job" for jobs.my_job.
@@ -164,7 +164,7 @@ func (m *processInclude) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 	}
 
 	// Add any diagnostics associated with the file format.
-	diags = append(diags, validateFileFormat(this, m.relPath)...)
+	diags = append(diags, validateFileFormat(this.Value(), m.relPath)...)
 	if diags.HasError() {
 		return diags
 	}
