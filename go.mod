@@ -1,8 +1,6 @@
 module github.com/databricks/cli
 
-go 1.22.0
-
-toolchain go1.22.5
+go 1.22
 
 require (
 	github.com/Masterminds/semver/v3 v3.3.0 // MIT
