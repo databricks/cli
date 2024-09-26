@@ -3,8 +3,6 @@ package loader
 import (
 	"context"
 	"path/filepath"
-	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -169,24 +167,5 @@ func TestProcessIncludeFormatFail(t *testing.T) {
 			require.Len(t, diags, 1)
 			assert.Equal(t, expectedDiags, diags)
 		})
-	}
-}
-
-func TestResourceNames(t *testing.T) {
-	names := []string{}
-	typ := reflect.TypeOf(config.Resources{})
-	for i := 0; i < typ.NumField(); i++ {
-		field := typ.Field(i)
-		jsonTags := strings.Split(field.Tag.Get("json"), ",")
-		singularName := strings.TrimSuffix(jsonTags[0], "s")
-		names = append(names, singularName)
-	}
-
-	// Assert the contents of the two lists are equal. Please add the singular
-	// name of your resource to resourceNames global if you are adding a new
-	// resource.
-	assert.Equal(t, len(resourceTypes), len(names))
-	for _, name := range names {
-		assert.Contains(t, resourceTypes, name)
 	}
 }

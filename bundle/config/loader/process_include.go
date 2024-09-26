@@ -13,23 +13,12 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 )
 
-var resourceTypes = []string{
-	"job",
-	"pipeline",
-	"model",
-	"experiment",
-	"model_serving_endpoint",
-	"registered_model",
-	"quality_monitor",
-	"schema",
-	"cluster",
-}
-
 func validateFileFormat(configRoot dyn.Value, filePath string) diag.Diagnostics {
-	for _, typ := range resourceTypes {
-		for _, ext := range []string{fmt.Sprintf(".%s.yml", typ), fmt.Sprintf(".%s.yaml", typ)} {
+	for _, resourceDescription := range config.SupportedResources() {
+		singularName := resourceDescription.SingularName
+		for _, ext := range []string{fmt.Sprintf(".%s.yml", singularName), fmt.Sprintf(".%s.yaml", singularName)} {
 			if strings.HasSuffix(filePath, ext) {
-				return validateSingleResourceDefined(configRoot, ext, typ)
+				return validateSingleResourceDefined(configRoot, ext, singularName)
 			}
 		}
 	}
@@ -46,6 +35,7 @@ func validateSingleResourceDefined(configRoot dyn.Value, ext, typ string) diag.D
 	}
 
 	resources := []resource{}
+	supportedResources := config.SupportedResources()
 
 	// Gather all resources defined in the resources block.
 	_, err := dyn.MapByPattern(
@@ -55,7 +45,7 @@ func validateSingleResourceDefined(configRoot dyn.Value, ext, typ string) diag.D
 			// The key for the resource. Eg: "my_job" for jobs.my_job.
 			k := p[2].Key()
 			// The type of the resource. Eg: "job" for jobs.my_job.
-			typ := strings.TrimSuffix(p[1].Key(), "s")
+			typ := supportedResources[p[1].Key()].SingularName
 
 			resources = append(resources, resource{path: p, value: v, typ: typ, key: k})
 			return v, nil
@@ -72,7 +62,7 @@ func validateSingleResourceDefined(configRoot dyn.Value, ext, typ string) diag.D
 			// The key for the resource. Eg: "my_job" for jobs.my_job.
 			k := p[4].Key()
 			// The type of the resource. Eg: "job" for jobs.my_job.
-			typ := strings.TrimSuffix(p[3].Key(), "s")
+			typ := supportedResources[p[3].Key()].SingularName
 
 			resources = append(resources, resource{path: p, value: v, typ: typ, key: k})
 			return v, nil
