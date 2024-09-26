@@ -3,6 +3,7 @@ package loader
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -10,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"golang.org/x/exp/maps"
 )
 
 var resourceTypes = []string{
@@ -99,22 +99,20 @@ func validateSingleResourceDefined(r *config.Root, ext, typ string) diag.Diagnos
 		return nil
 	}
 
-	msg := strings.Builder{}
-	msg.WriteString(fmt.Sprintf("We recommend only defining a single %s in a file with the %s extension.\n", typ, ext))
-
-	// Dedup the list of resources before adding them the diagnostic message. This
-	// is needed because we do not dedup earlier when gathering the resources and
-	// it's valid to define the same resource in both the resources and targets block.
-	msg.WriteString("The following resources are defined or configured in this file:\n")
-	setOfLines := map[string]struct{}{}
+	detail := strings.Builder{}
+	detail.WriteString("The following resources are defined or configured in this file:\n")
+	lines := []string{}
 	for _, r := range resources {
-		setOfLines[fmt.Sprintf("  - %s (%s)\n", r.key, r.typ)] = struct{}{}
+		lines = append(lines, fmt.Sprintf("  - %s (%s)\n", r.key, r.typ))
 	}
 	// Sort the line s to print to make the output deterministic.
-	listOfLines := maps.Keys(setOfLines)
-	sort.Strings(listOfLines)
-	for _, l := range listOfLines {
-		msg.WriteString(l)
+	sort.Strings(lines)
+	// Compact the lines before writing them to the message to remove any duplicate lines.
+	// This is needed because we do not dedup earlier when gathering the resources
+	// and it's valid to define the same resource in both the resources and targets block.
+	lines = slices.Compact(lines)
+	for _, l := range lines {
+		detail.WriteString(l)
 	}
 
 	locations := []dyn.Location{}
@@ -134,7 +132,8 @@ func validateSingleResourceDefined(r *config.Root, ext, typ string) diag.Diagnos
 	return diag.Diagnostics{
 		{
 			Severity:  diag.Info,
-			Summary:   msg.String(),
+			Summary:   fmt.Sprintf("We recommend only defining a single %s in a file with the %s extension.", typ, ext),
+			Detail:    detail.String(),
 			Locations: locations,
 			Paths:     paths,
 		},

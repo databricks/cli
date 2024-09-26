@@ -58,7 +58,8 @@ func TestProcessIncludeValidatesFileFormat(t *testing.T) {
 	assert.Equal(t, diag.Diagnostics{
 		{
 			Severity: diag.Info,
-			Summary:  "We recommend only defining a single job in a file with the .job.yml extension.\nThe following resources are defined or configured in this file:\n  - bar (job)\n  - foo (job)\n",
+			Summary:  "We recommend only defining a single job in a file with the .job.yml extension.",
+			Detail:   "The following resources are defined or configured in this file:\n  - bar (job)\n  - foo (job)\n",
 			Locations: []dyn.Location{
 				{File: filepath.FromSlash("testdata/format/foo.job.yml"), Line: 4, Column: 7},
 				{File: filepath.FromSlash("testdata/format/foo.job.yml"), Line: 7, Column: 7},
@@ -209,7 +210,8 @@ func TestValidateFileFormat(t *testing.T) {
 			expected: diag.Diagnostics{
 				{
 					Severity: diag.Info,
-					Summary:  "We recommend only defining a single pipeline in a file with the .pipeline.yml extension.\nThe following resources are defined or configured in this file:\n  - job1 (job)\n",
+					Summary:  "We recommend only defining a single pipeline in a file with the .pipeline.yml extension.",
+					Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n",
 					Locations: []dyn.Location{
 						{File: "foo.pipeline.yml", Line: 1, Column: 1},
 						{File: "foo.pipeline.yml", Line: 2, Column: 2},
@@ -242,7 +244,8 @@ func TestValidateFileFormat(t *testing.T) {
 			expected: diag.Diagnostics{
 				{
 					Severity: diag.Info,
-					Summary:  "We recommend only defining a single job in a file with the .job.yml extension.\nThe following resources are defined or configured in this file:\n  - job1 (job)\n  - pipeline1 (pipeline)\n",
+					Summary:  "We recommend only defining a single job in a file with the .job.yml extension.",
+					Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n  - pipeline1 (pipeline)\n",
 					Locations: []dyn.Location{
 						{File: "foo.job.yml", Line: 1, Column: 1},
 						{File: "foo.job.yml", Line: 2, Column: 2},
@@ -265,7 +268,8 @@ func TestValidateFileFormat(t *testing.T) {
 			expected: diag.Diagnostics{
 				{
 					Severity: diag.Info,
-					Summary:  "We recommend only defining a single experiment in a file with the .experiment.yml extension.\nThe following resources are defined or configured in this file:\n  - job1 (job)\n  - pipeline1 (pipeline)\n",
+					Summary:  "We recommend only defining a single experiment in a file with the .experiment.yml extension.",
+					Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n  - pipeline1 (pipeline)\n",
 					Locations: []dyn.Location{
 						{File: "foo.experiment.yml", Line: 1, Column: 1},
 						{File: "foo.experiment.yml", Line: 2, Column: 2},
@@ -288,7 +292,8 @@ func TestValidateFileFormat(t *testing.T) {
 			expected: diag.Diagnostics{
 				{
 					Severity: diag.Info,
-					Summary:  "We recommend only defining a single job in a file with the .job.yml extension.\nThe following resources are defined or configured in this file:\n  - job1 (job)\n  - job2 (job)\n",
+					Summary:  "We recommend only defining a single job in a file with the .job.yml extension.",
+					Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n  - job2 (job)\n",
 					Locations: []dyn.Location{
 						{File: "foo.job.yml", Line: 1, Column: 1},
 						{File: "foo.job.yml", Line: 2, Column: 2},
@@ -321,7 +326,8 @@ func TestValidateFileFormat(t *testing.T) {
 			expected: diag.Diagnostics{
 				{
 					Severity: diag.Info,
-					Summary:  "We recommend only defining a single job in a file with the .job.yml extension.\nThe following resources are defined or configured in this file:\n  - job1 (job)\n  - job2 (job)\n",
+					Summary:  "We recommend only defining a single job in a file with the .job.yml extension.",
+					Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n  - job2 (job)\n",
 					Locations: []dyn.Location{
 						{File: "foo.job.yml", Line: 1, Column: 1},
 						{File: "foo.job.yml", Line: 2, Column: 2},
@@ -344,7 +350,8 @@ func TestValidateFileFormat(t *testing.T) {
 			expected: diag.Diagnostics{
 				{
 					Severity: diag.Info,
-					Summary:  "We recommend only defining a single job in a file with the .job.yml extension.\nThe following resources are defined or configured in this file:\n  - job1 (job)\n  - job2 (job)\n",
+					Summary:  "We recommend only defining a single job in a file with the .job.yml extension.",
+					Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n  - job2 (job)\n",
 					Locations: []dyn.Location{
 						{File: "foo.job.yml", Line: 1, Column: 1},
 						{File: "foo.job.yml", Line: 2, Column: 2},
