@@ -111,9 +111,15 @@ func buildTrailer(diags diag.Diagnostics) string {
 	if recommendations := len(diags.Filter(diag.Recommendation)); recommendations > 0 {
 		parts = append(parts, color.BlueString(pluralize(recommendations, "recommendation", "recommendations")))
 	}
-	if len(parts) > 0 {
-		return fmt.Sprintf("Found %s", strings.Join(parts, " and "))
-	} else {
+	switch {
+	case len(parts) >= 2:
+		first := strings.Join(parts[:len(parts)-1], ", ")
+		last := parts[len(parts)-1]
+		return fmt.Sprintf("Found %s and %s", first, last)
+	case len(parts) == 1:
+		return fmt.Sprintf("Found %s", parts[0])
+	default:
+		// No diagnostics to print.
 		return color.GreenString("Validation OK!")
 	}
 }
