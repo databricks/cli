@@ -25,11 +25,15 @@ func convertJobResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	// recreates. For more details see the NOTE at
 	// https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/job#example-usage
 	// and https://github.com/databricks/terraform-provider-databricks/issues/4011
+	// and https://github.com/databricks/cli/pull/1776
 	vout := vin
 	var err error
 	tasks, ok := vin.Get("tasks").AsSequence()
 	if ok {
 		sort.Slice(tasks, func(i, j int) bool {
+			// We sort the tasks by their task key. Tasks without task keys are ordered
+			// before tasks with task keys. We do not error for those tasks
+			// since presence of a task_key is validated for in the Jobs backend.
 			tk1, ok := tasks[i].Get("task_key").AsString()
 			if !ok {
 				return true
