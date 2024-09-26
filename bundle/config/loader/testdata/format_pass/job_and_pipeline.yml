@@ -1,0 +1,11 @@
+resources:
+  pipelines:
+    pipeline1:
+      name: pipeline1
+
+targets:
+  target1:
+    resources:
+      jobs:
+        job1:
+          name: job1

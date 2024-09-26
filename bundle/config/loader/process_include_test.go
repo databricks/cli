@@ -9,8 +9,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
@@ -39,37 +37,137 @@ func TestProcessInclude(t *testing.T) {
 	assert.Equal(t, "bar", b.Config.Workspace.Host)
 }
 
-func TestProcessIncludeValidatesFileFormat(t *testing.T) {
-	b := &bundle.Bundle{
-		RootPath: "testdata/format",
-		Config: config.Root{
-			Bundle: config.Bundle{
-				Name: "format_test",
-			},
-		},
+func TestProcessIncludeFormatPass(t *testing.T) {
+	for _, fileName := range []string{
+		"one_job.job.yml",
+		"one_pipeline.pipeline.yaml",
+		"two_job.yml",
+		"job_and_pipeline.yml",
+	} {
+		t.Run(fileName, func(t *testing.T) {
+			b := &bundle.Bundle{
+				RootPath: "testdata/format_pass",
+				Config: config.Root{
+					Bundle: config.Bundle{
+						Name: "format_test",
+					},
+				},
+			}
+
+			m := ProcessInclude(filepath.Join(b.RootPath, fileName), fileName)
+			diags := bundle.Apply(context.Background(), b, m)
+			assert.Empty(t, diags)
+		})
 	}
+}
 
-	m := ProcessInclude(filepath.Join(b.RootPath, "foo.job.yml"), "foo.job.yml")
-	diags := bundle.Apply(context.Background(), b, m)
-	require.NoError(t, diags.Error())
-
-	// Assert that the diagnostics contain the expected information
-	assert.Len(t, diags, 1)
-	assert.Equal(t, diag.Diagnostics{
-		{
-			Severity: diag.Info,
-			Summary:  "We recommend only defining a single job in a file with the .job.yml extension.",
-			Detail:   "The following resources are defined or configured in this file:\n  - bar (job)\n  - foo (job)\n",
-			Locations: []dyn.Location{
-				{File: filepath.FromSlash("testdata/format/foo.job.yml"), Line: 4, Column: 7},
-				{File: filepath.FromSlash("testdata/format/foo.job.yml"), Line: 7, Column: 7},
-			},
-			Paths: []dyn.Path{
-				dyn.MustPathFromString("resources.jobs.bar"),
-				dyn.MustPathFromString("resources.jobs.foo"),
+func TestProcessIncludeFormatFail(t *testing.T) {
+	for fileName, expectedDiags := range map[string]diag.Diagnostics{
+		"single_job.pipeline.yaml": {
+			{
+				Severity: diag.Info,
+				Summary:  "We recommend only defining a single pipeline in a file with the .pipeline.yaml extension.",
+				Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n",
+				Locations: []dyn.Location{
+					{File: filepath.FromSlash("testdata/format_fail/single_job.pipeline.yaml"), Line: 11, Column: 11},
+					{File: filepath.FromSlash("testdata/format_fail/single_job.pipeline.yaml"), Line: 4, Column: 7},
+				},
+				Paths: []dyn.Path{
+					dyn.MustPathFromString("resources.jobs.job1"),
+					dyn.MustPathFromString("targets.target1.resources.jobs.job1"),
+				},
 			},
 		},
-	}, diags)
+		"job_and_pipeline.job.yml": {
+			{
+				Severity: diag.Info,
+				Summary:  "We recommend only defining a single job in a file with the .job.yml extension.",
+				Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n  - pipeline1 (pipeline)\n",
+				Locations: []dyn.Location{
+					{File: filepath.FromSlash("testdata/format_fail/job_and_pipeline.job.yml"), Line: 12, Column: 11},
+					{File: filepath.FromSlash("testdata/format_fail/job_and_pipeline.job.yml"), Line: 5, Column: 7},
+				},
+				Paths: []dyn.Path{
+					dyn.MustPathFromString("resources.pipelines.pipeline1"),
+					dyn.MustPathFromString("targets.target1.resources.jobs.job1"),
+				},
+			},
+		},
+		"job_and_pipeline.experiment.yml": {
+			{
+				Severity: diag.Info,
+				Summary:  "We recommend only defining a single experiment in a file with the .experiment.yml extension.",
+				Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n  - pipeline1 (pipeline)\n",
+				Locations: []dyn.Location{
+					{File: filepath.FromSlash("testdata/format_fail/job_and_pipeline.experiment.yml"), Line: 12, Column: 11},
+					{File: filepath.FromSlash("testdata/format_fail/job_and_pipeline.experiment.yml"), Line: 5, Column: 7},
+				},
+				Paths: []dyn.Path{
+					dyn.MustPathFromString("resources.pipelines.pipeline1"),
+					dyn.MustPathFromString("targets.target1.resources.jobs.job1"),
+				},
+			},
+		},
+		"two_jobs.job.yml": {
+			{
+				Severity: diag.Info,
+				Summary:  "We recommend only defining a single job in a file with the .job.yml extension.",
+				Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n  - job2 (job)\n",
+				Locations: []dyn.Location{
+					{File: filepath.FromSlash("testdata/format_fail/two_jobs.job.yml"), Line: 5, Column: 7},
+					{File: filepath.FromSlash("testdata/format_fail/two_jobs.job.yml"), Line: 8, Column: 7},
+				},
+				Paths: []dyn.Path{
+					dyn.MustPathFromString("resources.jobs.job1"),
+					dyn.MustPathFromString("resources.jobs.job2"),
+				},
+			},
+		},
+		"second_job_in_target.job.yml": {
+			{
+				Severity: diag.Info,
+				Summary:  "We recommend only defining a single job in a file with the .job.yml extension.",
+				Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n  - job2 (job)\n",
+				Locations: []dyn.Location{
+					{File: filepath.FromSlash("testdata/format_fail/second_job_in_target.job.yml"), Line: 12, Column: 11},
+					{File: filepath.FromSlash("testdata/format_fail/second_job_in_target.job.yml"), Line: 5, Column: 7},
+				},
+				Paths: []dyn.Path{
+					dyn.MustPathFromString("resources.jobs.job1"),
+					dyn.MustPathFromString("targets.target1.resources.jobs.job2"),
+				},
+			},
+		},
+		"two_jobs_in_target.job.yml": {
+			{
+				Severity: diag.Info,
+				Summary:  "We recommend only defining a single job in a file with the .job.yml extension.",
+				Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n  - job2 (job)\n",
+				Locations: []dyn.Location{
+					{File: filepath.FromSlash("testdata/format_fail/two_jobs_in_target.job.yml"), Line: 6, Column: 11},
+					{File: filepath.FromSlash("testdata/format_fail/two_jobs_in_target.job.yml"), Line: 8, Column: 11},
+				},
+				Paths: []dyn.Path{
+					dyn.MustPathFromString("targets.target1.resources.jobs.job1"),
+					dyn.MustPathFromString("targets.target1.resources.jobs.job2"),
+				},
+			},
+		},
+	} {
+		b := &bundle.Bundle{
+			RootPath: "testdata/format_fail",
+			Config: config.Root{
+				Bundle: config.Bundle{
+					Name: "format_test",
+				},
+			},
+		}
+
+		m := ProcessInclude(filepath.Join(b.RootPath, fileName), fileName)
+		diags := bundle.Apply(context.Background(), b, m)
+		require.Len(t, diags, 1)
+		assert.Equal(t, expectedDiags, diags)
+	}
 }
 
 func TestResourceNames(t *testing.T) {
@@ -88,296 +186,5 @@ func TestResourceNames(t *testing.T) {
 	assert.Equal(t, len(resourceTypes), len(names))
 	for _, name := range names {
 		assert.Contains(t, resourceTypes, name)
-	}
-}
-
-func TestValidateFileFormat(t *testing.T) {
-	onlyJob := config.Root{
-		Resources: config.Resources{
-			Jobs: map[string]*resources.Job{
-				"job1": {},
-			},
-		},
-		Targets: map[string]*config.Target{
-			"target1": {
-				Resources: &config.Resources{
-					Jobs: map[string]*resources.Job{
-						"job1": {},
-					},
-				},
-			},
-		},
-	}
-	onlyJobBundle := bundle.Bundle{Config: onlyJob}
-
-	onlyPipeline := config.Root{
-		Resources: config.Resources{
-			Pipelines: map[string]*resources.Pipeline{
-				"pipeline1": {},
-			},
-		},
-	}
-	onlyPipelineBundle := bundle.Bundle{Config: onlyPipeline}
-
-	bothJobAndPipeline := config.Root{
-		Resources: config.Resources{
-			Jobs: map[string]*resources.Job{
-				"job1": {},
-			},
-		},
-		Targets: map[string]*config.Target{
-			"target1": {
-				Resources: &config.Resources{
-					Pipelines: map[string]*resources.Pipeline{
-						"pipeline1": {},
-					},
-				},
-			},
-		},
-	}
-	bothJobAndPipelineBundle := bundle.Bundle{Config: bothJobAndPipeline}
-
-	twoJobs := config.Root{
-		Resources: config.Resources{
-			Jobs: map[string]*resources.Job{
-				"job1": {},
-				"job2": {},
-			},
-		},
-	}
-	twoJobsBundle := bundle.Bundle{Config: twoJobs}
-
-	twoJobsTopLevelAndTarget := config.Root{
-		Resources: config.Resources{
-			Jobs: map[string]*resources.Job{
-				"job1": {},
-			},
-		},
-		Targets: map[string]*config.Target{
-			"target1": {
-				Resources: &config.Resources{
-					Jobs: map[string]*resources.Job{
-						"job2": {},
-					},
-				},
-			},
-		},
-	}
-	twoJobsTopLevelAndTargetBundle := bundle.Bundle{Config: twoJobsTopLevelAndTarget}
-
-	twoJobsInTarget := config.Root{
-		Targets: map[string]*config.Target{
-			"target1": {
-				Resources: &config.Resources{
-					Jobs: map[string]*resources.Job{
-						"job1": {},
-						"job2": {},
-					},
-				},
-			},
-		},
-	}
-	twoJobsInTargetBundle := bundle.Bundle{Config: twoJobsInTarget}
-
-	tcases := []struct {
-		name      string
-		bundle    *bundle.Bundle
-		expected  diag.Diagnostics
-		fileName  string
-		locations map[string]dyn.Location
-	}{
-		{
-			name:     "single job",
-			bundle:   &onlyJobBundle,
-			expected: nil,
-			fileName: "foo.job.yml",
-			locations: map[string]dyn.Location{
-				"resources.jobs.job1": {File: "foo.job.yml", Line: 1, Column: 1},
-			},
-		},
-		{
-			name:     "single pipeline",
-			bundle:   &onlyPipelineBundle,
-			expected: nil,
-			fileName: "foo.pipeline.yml",
-			locations: map[string]dyn.Location{
-				"resources.pipelines.pipeline1": {File: "foo.pipeline.yaml", Line: 1, Column: 1},
-			},
-		},
-		{
-			name:   "single job but extension is pipeline",
-			bundle: &onlyJobBundle,
-			expected: diag.Diagnostics{
-				{
-					Severity: diag.Info,
-					Summary:  "We recommend only defining a single pipeline in a file with the .pipeline.yml extension.",
-					Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n",
-					Locations: []dyn.Location{
-						{File: "foo.pipeline.yml", Line: 1, Column: 1},
-						{File: "foo.pipeline.yml", Line: 2, Column: 2},
-					},
-					Paths: []dyn.Path{
-						dyn.MustPathFromString("resources.jobs.job1"),
-						dyn.MustPathFromString("targets.target1.resources.jobs.job1"),
-					},
-				},
-			},
-			fileName: "foo.pipeline.yml",
-			locations: map[string]dyn.Location{
-				"resources.jobs.job1":                 {File: "foo.pipeline.yml", Line: 1, Column: 1},
-				"targets.target1.resources.jobs.job1": {File: "foo.pipeline.yml", Line: 2, Column: 2},
-			},
-		},
-		{
-			name:     "job and pipeline",
-			bundle:   &bothJobAndPipelineBundle,
-			expected: nil,
-			fileName: "foo.yml",
-			locations: map[string]dyn.Location{
-				"resources.jobs.job1":                           {File: "foo.yml", Line: 1, Column: 1},
-				"targets.target1.resources.pipelines.pipeline1": {File: "foo.yml", Line: 2, Column: 2},
-			},
-		},
-		{
-			name:   "job and pipeline but extension is job",
-			bundle: &bothJobAndPipelineBundle,
-			expected: diag.Diagnostics{
-				{
-					Severity: diag.Info,
-					Summary:  "We recommend only defining a single job in a file with the .job.yml extension.",
-					Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n  - pipeline1 (pipeline)\n",
-					Locations: []dyn.Location{
-						{File: "foo.job.yml", Line: 1, Column: 1},
-						{File: "foo.job.yml", Line: 2, Column: 2},
-					},
-					Paths: []dyn.Path{
-						dyn.MustPathFromString("resources.jobs.job1"),
-						dyn.MustPathFromString("targets.target1.resources.pipelines.pipeline1"),
-					},
-				},
-			},
-			fileName: "foo.job.yml",
-			locations: map[string]dyn.Location{
-				"resources.jobs.job1":                           {File: "foo.job.yml", Line: 1, Column: 1},
-				"targets.target1.resources.pipelines.pipeline1": {File: "foo.job.yml", Line: 2, Column: 2},
-			},
-		},
-		{
-			name:   "job and pipeline but extension is experiment",
-			bundle: &bothJobAndPipelineBundle,
-			expected: diag.Diagnostics{
-				{
-					Severity: diag.Info,
-					Summary:  "We recommend only defining a single experiment in a file with the .experiment.yml extension.",
-					Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n  - pipeline1 (pipeline)\n",
-					Locations: []dyn.Location{
-						{File: "foo.experiment.yml", Line: 1, Column: 1},
-						{File: "foo.experiment.yml", Line: 2, Column: 2},
-					},
-					Paths: []dyn.Path{
-						dyn.MustPathFromString("resources.jobs.job1"),
-						dyn.MustPathFromString("targets.target1.resources.pipelines.pipeline1"),
-					},
-				},
-			},
-			fileName: "foo.experiment.yml",
-			locations: map[string]dyn.Location{
-				"resources.jobs.job1":                           {File: "foo.experiment.yml", Line: 1, Column: 1},
-				"targets.target1.resources.pipelines.pipeline1": {File: "foo.experiment.yml", Line: 2, Column: 2},
-			},
-		},
-		{
-			name:   "two jobs",
-			bundle: &twoJobsBundle,
-			expected: diag.Diagnostics{
-				{
-					Severity: diag.Info,
-					Summary:  "We recommend only defining a single job in a file with the .job.yml extension.",
-					Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n  - job2 (job)\n",
-					Locations: []dyn.Location{
-						{File: "foo.job.yml", Line: 1, Column: 1},
-						{File: "foo.job.yml", Line: 2, Column: 2},
-					},
-					Paths: []dyn.Path{
-						dyn.MustPathFromString("resources.jobs.job1"),
-						dyn.MustPathFromString("resources.jobs.job2"),
-					},
-				},
-			},
-			fileName: "foo.job.yml",
-			locations: map[string]dyn.Location{
-				"resources.jobs.job1": {File: "foo.job.yml", Line: 1, Column: 1},
-				"resources.jobs.job2": {File: "foo.job.yml", Line: 2, Column: 2},
-			},
-		},
-		{
-			name:     "two jobs but extension is simple yaml",
-			bundle:   &twoJobsBundle,
-			expected: nil,
-			fileName: "foo.yml",
-			locations: map[string]dyn.Location{
-				"resources.jobs.job1": {File: "foo.yml", Line: 1, Column: 1},
-				"resources.jobs.job2": {File: "foo.yml", Line: 2, Column: 2},
-			},
-		},
-		{
-			name:   "two jobs in top level and target",
-			bundle: &twoJobsTopLevelAndTargetBundle,
-			expected: diag.Diagnostics{
-				{
-					Severity: diag.Info,
-					Summary:  "We recommend only defining a single job in a file with the .job.yml extension.",
-					Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n  - job2 (job)\n",
-					Locations: []dyn.Location{
-						{File: "foo.job.yml", Line: 1, Column: 1},
-						{File: "foo.job.yml", Line: 2, Column: 2},
-					},
-					Paths: []dyn.Path{
-						dyn.MustPathFromString("resources.jobs.job1"),
-						dyn.MustPathFromString("targets.target1.resources.jobs.job2"),
-					},
-				},
-			},
-			fileName: "foo.job.yml",
-			locations: map[string]dyn.Location{
-				"resources.jobs.job1":                 {File: "foo.job.yml", Line: 1, Column: 1},
-				"targets.target1.resources.jobs.job2": {File: "foo.job.yml", Line: 2, Column: 2},
-			},
-		},
-		{
-			name:   "two jobs in target",
-			bundle: &twoJobsInTargetBundle,
-			expected: diag.Diagnostics{
-				{
-					Severity: diag.Info,
-					Summary:  "We recommend only defining a single job in a file with the .job.yml extension.",
-					Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n  - job2 (job)\n",
-					Locations: []dyn.Location{
-						{File: "foo.job.yml", Line: 1, Column: 1},
-						{File: "foo.job.yml", Line: 2, Column: 2},
-					},
-					Paths: []dyn.Path{
-						dyn.MustPathFromString(("targets.target1.resources.jobs.job1")),
-						dyn.MustPathFromString("targets.target1.resources.jobs.job2"),
-					},
-				},
-			},
-			fileName: "foo.job.yml",
-			locations: map[string]dyn.Location{
-				"targets.target1.resources.jobs.job1": {File: "foo.job.yml", Line: 1, Column: 1},
-				"targets.target1.resources.jobs.job2": {File: "foo.job.yml", Line: 2, Column: 2},
-			},
-		},
-	}
-
-	for _, tc := range tcases {
-		t.Run(tc.name, func(t *testing.T) {
-			for k, v := range tc.locations {
-				bundletest.SetLocation(tc.bundle, k, []dyn.Location{v})
-			}
-
-			diags := validateFileFormat(tc.bundle.Config.Value(), tc.fileName)
-			assert.Equal(t, tc.expected, diags)
-		})
 	}
 }
