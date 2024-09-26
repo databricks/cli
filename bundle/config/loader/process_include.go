@@ -93,7 +93,7 @@ func validateSingleResourceDefined(r *config.Root, ext, typ string) diag.Diagnos
 		seenKeys[rr.key] = struct{}{}
 	}
 
-	// Format matches. There's less than or equal to one resource defined in the file.
+	// Format matches. There's at most one resource defined in the file.
 	// The resource is also of the correct type.
 	if typeMatch && len(seenKeys) <= 1 {
 		return nil
