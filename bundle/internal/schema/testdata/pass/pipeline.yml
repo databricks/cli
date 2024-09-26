@@ -1,0 +1,54 @@
+bundle:
+  name: a pipeline
+
+workspace:
+  host: "https://myworkspace.com"
+  root_path: /abc
+
+presets:
+  name_prefix: "[DEV]"
+  jobs_max_concurrent_runs: 10
+
+variables:
+  simplevar:
+    default: true
+    description: "simplevar description"
+
+  complexvar:
+    default:
+      key1: value1
+      key2: value2
+      key3:
+        - value3
+        - value4
+    description: "complexvar description"
+
+artifacts:
+  mywheel:
+    path: ./mywheel.whl
+    type: WHEEL
+
+run_as:
+  service_principal_name: myserviceprincipal
+
+resources:
+  jobs:
+    myjob:
+      name: myjob
+      tasks:
+        - task_key: ${bundle.name} pipeline trigger
+          pipeline_task:
+            pipeline_id: ${resources.mypipeline.id}
+
+  pipelines:
+    mypipeline:
+      name: mypipeline
+      libraries:
+        - whl: ./mywheel.whl
+      catalog: 3{var.complexvar.key2}
+      development: true
+      clusters:
+        - autoscale:
+            mode: ENHANCED
+            max_workers: 10
+            min_workers: 1

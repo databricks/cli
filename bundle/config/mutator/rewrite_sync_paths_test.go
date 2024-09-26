@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/internal/bundletest"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,12 +34,12 @@ func TestRewriteSyncPathsRelative(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, "sync.paths[0]", "./databricks.yml")
-	bundletest.SetLocation(b, "sync.paths[1]", "./databricks.yml")
-	bundletest.SetLocation(b, "sync.include[0]", "./file.yml")
-	bundletest.SetLocation(b, "sync.include[1]", "./a/file.yml")
-	bundletest.SetLocation(b, "sync.exclude[0]", "./a/b/file.yml")
-	bundletest.SetLocation(b, "sync.exclude[1]", "./a/b/c/file.yml")
+	bundletest.SetLocation(b, "sync.paths[0]", []dyn.Location{{File: "./databricks.yml"}})
+	bundletest.SetLocation(b, "sync.paths[1]", []dyn.Location{{File: "./databricks.yml"}})
+	bundletest.SetLocation(b, "sync.include[0]", []dyn.Location{{File: "./file.yml"}})
+	bundletest.SetLocation(b, "sync.include[1]", []dyn.Location{{File: "./a/file.yml"}})
+	bundletest.SetLocation(b, "sync.exclude[0]", []dyn.Location{{File: "./a/b/file.yml"}})
+	bundletest.SetLocation(b, "sync.exclude[1]", []dyn.Location{{File: "./a/b/c/file.yml"}})
 
 	diags := bundle.Apply(context.Background(), b, mutator.RewriteSyncPaths())
 	assert.NoError(t, diags.Error())
@@ -72,12 +73,12 @@ func TestRewriteSyncPathsAbsolute(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, "sync.paths[0]", "/tmp/dir/databricks.yml")
-	bundletest.SetLocation(b, "sync.paths[1]", "/tmp/dir/databricks.yml")
-	bundletest.SetLocation(b, "sync.include[0]", "/tmp/dir/file.yml")
-	bundletest.SetLocation(b, "sync.include[1]", "/tmp/dir/a/file.yml")
-	bundletest.SetLocation(b, "sync.exclude[0]", "/tmp/dir/a/b/file.yml")
-	bundletest.SetLocation(b, "sync.exclude[1]", "/tmp/dir/a/b/c/file.yml")
+	bundletest.SetLocation(b, "sync.paths[0]", []dyn.Location{{File: "/tmp/dir/databricks.yml"}})
+	bundletest.SetLocation(b, "sync.paths[1]", []dyn.Location{{File: "/tmp/dir/databricks.yml"}})
+	bundletest.SetLocation(b, "sync.include[0]", []dyn.Location{{File: "/tmp/dir/file.yml"}})
+	bundletest.SetLocation(b, "sync.include[1]", []dyn.Location{{File: "/tmp/dir/a/file.yml"}})
+	bundletest.SetLocation(b, "sync.exclude[0]", []dyn.Location{{File: "/tmp/dir/a/b/file.yml"}})
+	bundletest.SetLocation(b, "sync.exclude[1]", []dyn.Location{{File: "/tmp/dir/a/b/c/file.yml"}})
 
 	diags := bundle.Apply(context.Background(), b, mutator.RewriteSyncPaths())
 	assert.NoError(t, diags.Error())

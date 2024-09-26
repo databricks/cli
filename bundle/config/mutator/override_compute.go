@@ -39,22 +39,22 @@ func overrideJobCompute(j *resources.Job, compute string) {
 
 func (m *overrideCompute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if b.Config.Bundle.Mode != config.Development {
-		if b.Config.Bundle.ComputeID != "" {
+		if b.Config.Bundle.ClusterId != "" {
 			return diag.Errorf("cannot override compute for an target that does not use 'mode: development'")
 		}
 		return nil
 	}
 	if v := env.Get(ctx, "DATABRICKS_CLUSTER_ID"); v != "" {
-		b.Config.Bundle.ComputeID = v
+		b.Config.Bundle.ClusterId = v
 	}
 
-	if b.Config.Bundle.ComputeID == "" {
+	if b.Config.Bundle.ClusterId == "" {
 		return nil
 	}
 
 	r := b.Config.Resources
 	for i := range r.Jobs {
-		overrideJobCompute(r.Jobs[i], b.Config.Bundle.ComputeID)
+		overrideJobCompute(r.Jobs[i], b.Config.Bundle.ClusterId)
 	}
 
 	return nil
