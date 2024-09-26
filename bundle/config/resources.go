@@ -64,6 +64,7 @@ type ResourceDescription struct {
 	SingularName string
 }
 
+// The keys of the map corresponds to the resource key in the bundle configuration.
 func SupportedResources() map[string]ResourceDescription {
 	return map[string]ResourceDescription{
 		"jobs":                    {SingularName: "job"},
