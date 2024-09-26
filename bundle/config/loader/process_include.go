@@ -131,7 +131,7 @@ func validateSingleResourceDefined(configRoot dyn.Value, ext, typ string) diag.D
 
 	return diag.Diagnostics{
 		{
-			Severity:  diag.Info,
+			Severity:  diag.Recommendation,
 			Summary:   fmt.Sprintf("We recommend only defining a single %s in a file with the %s extension.", typ, ext),
 			Detail:    detail.String(),
 			Locations: locations,

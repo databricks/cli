@@ -65,7 +65,7 @@ func TestProcessIncludeFormatFail(t *testing.T) {
 	for fileName, expectedDiags := range map[string]diag.Diagnostics{
 		"single_job.pipeline.yaml": {
 			{
-				Severity: diag.Info,
+				Severity: diag.Recommendation,
 				Summary:  "We recommend only defining a single pipeline in a file with the .pipeline.yaml extension.",
 				Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n",
 				Locations: []dyn.Location{
@@ -80,12 +80,12 @@ func TestProcessIncludeFormatFail(t *testing.T) {
 		},
 		"job_and_pipeline.job.yml": {
 			{
-				Severity: diag.Info,
+				Severity: diag.Recommendation,
 				Summary:  "We recommend only defining a single job in a file with the .job.yml extension.",
 				Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n  - pipeline1 (pipeline)\n",
 				Locations: []dyn.Location{
-					{File: filepath.FromSlash("testdata/format_fail/job_and_pipeline.job.yml"), Line: 12, Column: 11},
-					{File: filepath.FromSlash("testdata/format_fail/job_and_pipeline.job.yml"), Line: 5, Column: 7},
+					{File: filepath.FromSlash("testdata/format_fail/job_and_pipeline.job.yml"), Line: 11, Column: 11},
+					{File: filepath.FromSlash("testdata/format_fail/job_and_pipeline.job.yml"), Line: 4, Column: 7},
 				},
 				Paths: []dyn.Path{
 					dyn.MustPathFromString("resources.pipelines.pipeline1"),
@@ -95,12 +95,12 @@ func TestProcessIncludeFormatFail(t *testing.T) {
 		},
 		"job_and_pipeline.experiment.yml": {
 			{
-				Severity: diag.Info,
+				Severity: diag.Recommendation,
 				Summary:  "We recommend only defining a single experiment in a file with the .experiment.yml extension.",
 				Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n  - pipeline1 (pipeline)\n",
 				Locations: []dyn.Location{
-					{File: filepath.FromSlash("testdata/format_fail/job_and_pipeline.experiment.yml"), Line: 12, Column: 11},
-					{File: filepath.FromSlash("testdata/format_fail/job_and_pipeline.experiment.yml"), Line: 5, Column: 7},
+					{File: filepath.FromSlash("testdata/format_fail/job_and_pipeline.experiment.yml"), Line: 11, Column: 11},
+					{File: filepath.FromSlash("testdata/format_fail/job_and_pipeline.experiment.yml"), Line: 4, Column: 7},
 				},
 				Paths: []dyn.Path{
 					dyn.MustPathFromString("resources.pipelines.pipeline1"),
@@ -110,12 +110,12 @@ func TestProcessIncludeFormatFail(t *testing.T) {
 		},
 		"two_jobs.job.yml": {
 			{
-				Severity: diag.Info,
+				Severity: diag.Recommendation,
 				Summary:  "We recommend only defining a single job in a file with the .job.yml extension.",
 				Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n  - job2 (job)\n",
 				Locations: []dyn.Location{
-					{File: filepath.FromSlash("testdata/format_fail/two_jobs.job.yml"), Line: 5, Column: 7},
-					{File: filepath.FromSlash("testdata/format_fail/two_jobs.job.yml"), Line: 8, Column: 7},
+					{File: filepath.FromSlash("testdata/format_fail/two_jobs.job.yml"), Line: 4, Column: 7},
+					{File: filepath.FromSlash("testdata/format_fail/two_jobs.job.yml"), Line: 7, Column: 7},
 				},
 				Paths: []dyn.Path{
 					dyn.MustPathFromString("resources.jobs.job1"),
@@ -125,12 +125,12 @@ func TestProcessIncludeFormatFail(t *testing.T) {
 		},
 		"second_job_in_target.job.yml": {
 			{
-				Severity: diag.Info,
+				Severity: diag.Recommendation,
 				Summary:  "We recommend only defining a single job in a file with the .job.yml extension.",
 				Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n  - job2 (job)\n",
 				Locations: []dyn.Location{
-					{File: filepath.FromSlash("testdata/format_fail/second_job_in_target.job.yml"), Line: 12, Column: 11},
-					{File: filepath.FromSlash("testdata/format_fail/second_job_in_target.job.yml"), Line: 5, Column: 7},
+					{File: filepath.FromSlash("testdata/format_fail/second_job_in_target.job.yml"), Line: 11, Column: 11},
+					{File: filepath.FromSlash("testdata/format_fail/second_job_in_target.job.yml"), Line: 4, Column: 7},
 				},
 				Paths: []dyn.Path{
 					dyn.MustPathFromString("resources.jobs.job1"),
@@ -140,7 +140,7 @@ func TestProcessIncludeFormatFail(t *testing.T) {
 		},
 		"two_jobs_in_target.job.yml": {
 			{
-				Severity: diag.Info,
+				Severity: diag.Recommendation,
 				Summary:  "We recommend only defining a single job in a file with the .job.yml extension.",
 				Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n  - job2 (job)\n",
 				Locations: []dyn.Location{
@@ -154,19 +154,21 @@ func TestProcessIncludeFormatFail(t *testing.T) {
 			},
 		},
 	} {
-		b := &bundle.Bundle{
-			RootPath: "testdata/format_fail",
-			Config: config.Root{
-				Bundle: config.Bundle{
-					Name: "format_test",
+		t.Run(fileName, func(t *testing.T) {
+			b := &bundle.Bundle{
+				RootPath: "testdata/format_fail",
+				Config: config.Root{
+					Bundle: config.Bundle{
+						Name: "format_test",
+					},
 				},
-			},
-		}
+			}
 
-		m := ProcessInclude(filepath.Join(b.RootPath, fileName), fileName)
-		diags := bundle.Apply(context.Background(), b, m)
-		require.Len(t, diags, 1)
-		assert.Equal(t, expectedDiags, diags)
+			m := ProcessInclude(filepath.Join(b.RootPath, fileName), fileName)
+			diags := bundle.Apply(context.Background(), b, m)
+			require.Len(t, diags, 1)
+			assert.Equal(t, expectedDiags, diags)
+		})
 	}
 }
 

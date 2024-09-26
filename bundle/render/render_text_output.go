@@ -56,7 +56,7 @@ const warningTemplate = `{{ "Warning" | yellow }}: {{ .Summary }}
 
 `
 
-const infoTemplate = `{{ "Info" | blue }}: {{ .Summary }}
+const infoTemplate = `{{ "Recommendation" | blue }}: {{ .Summary }}
 {{- range $index, $element := .Paths }}
   {{ if eq $index 0 }}at {{else}}   {{ end}}{{ $element.String | green }}
 {{- end }}
@@ -108,8 +108,8 @@ func buildTrailer(diags diag.Diagnostics) string {
 	if warnings := len(diags.Filter(diag.Warning)); warnings > 0 {
 		parts = append(parts, color.YellowString(pluralize(warnings, "warning", "warnings")))
 	}
-	if infos := len(diags.Filter(diag.Info)); infos > 0 {
-		parts = append(parts, color.BlueString(pluralize(infos, "info", "infos")))
+	if recommendations := len(diags.Filter(diag.Recommendation)); recommendations > 0 {
+		parts = append(parts, color.BlueString(pluralize(recommendations, "recommendation", "recommendations")))
 	}
 	if len(parts) > 0 {
 		return fmt.Sprintf("Found %s", strings.Join(parts, " and "))
@@ -147,7 +147,7 @@ func renderSummaryTemplate(out io.Writer, b *bundle.Bundle, diags diag.Diagnosti
 func renderDiagnostics(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics) error {
 	errorT := template.Must(template.New("error").Funcs(renderFuncMap).Parse(errorTemplate))
 	warningT := template.Must(template.New("warning").Funcs(renderFuncMap).Parse(warningTemplate))
-	infoT := template.Must(template.New("info").Funcs(renderFuncMap).Parse(infoTemplate))
+	recommendationT := template.Must(template.New("info").Funcs(renderFuncMap).Parse(infoTemplate))
 
 	// Print errors and warnings.
 	for _, d := range diags {
@@ -157,8 +157,8 @@ func renderDiagnostics(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics) 
 			t = errorT
 		case diag.Warning:
 			t = warningT
-		case diag.Info:
-			t = infoT
+		case diag.Recommendation:
+			t = recommendationT
 		}
 
 		for i := range d.Locations {

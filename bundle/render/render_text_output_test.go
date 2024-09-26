@@ -49,14 +49,14 @@ func TestRenderTextOutput(t *testing.T) {
 			name: "nil bundle and 1 info",
 			diags: diag.Diagnostics{
 				{
-					Severity: diag.Info,
-					Summary:  "info",
+					Severity: diag.Recommendation,
+					Summary:  "recommendation",
 				},
 			},
 			opts: RenderOptions{RenderSummaryTable: true},
-			expected: "Info: info\n" +
+			expected: "Recommendation: recommendation\n" +
 				"\n" +
-				"Found 1 info\n",
+				"Found 1 recommendation\n",
 		},
 		{
 			name:   "bundle during 'load' and 1 error",
@@ -119,8 +119,8 @@ func TestRenderTextOutput(t *testing.T) {
 					Locations: []dyn.Location{{File: "foo.py", Line: 3, Column: 1}},
 				},
 				diag.Diagnostic{
-					Severity:  diag.Info,
-					Summary:   "info (4)",
+					Severity:  diag.Recommendation,
+					Summary:   "recommendation (4)",
 					Detail:    "detail (4)",
 					Locations: []dyn.Location{{File: "foo.py", Line: 4, Column: 1}},
 				},
@@ -141,7 +141,7 @@ func TestRenderTextOutput(t *testing.T) {
 				"\n" +
 				"detail (3)\n" +
 				"\n" +
-				"Info: info (4)\n" +
+				"Recommendation: recommendation (4)\n" +
 				"  in foo.py:4:1\n" +
 				"\n" +
 				"detail (4)\n" +
@@ -149,7 +149,7 @@ func TestRenderTextOutput(t *testing.T) {
 				"Name: test-bundle\n" +
 				"Target: test-target\n" +
 				"\n" +
-				"Found 2 errors and 1 warning and 1 info\n",
+				"Found 2 errors and 1 warning and 1 recommendation\n",
 		},
 		{
 			name: "bundle during 'init'",
@@ -198,8 +198,8 @@ func TestRenderTextOutput(t *testing.T) {
 					Locations: []dyn.Location{{File: "foo.py", Line: 3, Column: 1}},
 				},
 				diag.Diagnostic{
-					Severity:  diag.Info,
-					Summary:   "info (3)",
+					Severity:  diag.Recommendation,
+					Summary:   "recommendation (3)",
 					Detail:    "detail (3)",
 					Locations: []dyn.Location{{File: "foo.py", Line: 5, Column: 1}},
 				},
@@ -215,7 +215,7 @@ func TestRenderTextOutput(t *testing.T) {
 				"\n" +
 				"detail (2)\n" +
 				"\n" +
-				"Info: info (3)\n" +
+				"Recommendation: recommendation (3)\n" +
 				"  in foo.py:5:1\n" +
 				"\n" +
 				"detail (3)\n" +
@@ -343,7 +343,7 @@ func TestRenderDiagnostics(t *testing.T) {
 			name: "info with multiple paths and locations",
 			diags: diag.Diagnostics{
 				{
-					Severity: diag.Info,
+					Severity: diag.Recommendation,
 					Summary:  "summary",
 					Detail:   "detail",
 					Paths: []dyn.Path{
@@ -356,7 +356,7 @@ func TestRenderDiagnostics(t *testing.T) {
 					},
 				},
 			},
-			expected: "Info: summary\n" +
+			expected: "Recommendation: summary\n" +
 				"  at resources.jobs.xxx\n" +
 				"     resources.jobs.yyy\n" +
 				"  in foo.yaml:1:2\n" +
