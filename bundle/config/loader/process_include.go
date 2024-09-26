@@ -95,7 +95,7 @@ func validateSingleResourceDefined(configRoot dyn.Value, ext, typ string) diag.D
 	for _, r := range resources {
 		lines = append(lines, fmt.Sprintf("  - %s (%s)\n", r.key, r.typ))
 	}
-	// Sort the line s to print to make the output deterministic.
+	// Sort the lines to print to make the output deterministic.
 	sort.Strings(lines)
 	// Compact the lines before writing them to the message to remove any duplicate lines.
 	// This is needed because we do not dedup earlier when gathering the resources
