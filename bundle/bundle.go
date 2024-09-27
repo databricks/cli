@@ -31,22 +31,26 @@ import (
 const internalFolder = ".internal"
 
 type Bundle struct {
-	// BundleRootPath contains the directory path to the root of the bundle.
+	// BundleRootPath is the local path to the root directory of the bundle.
 	// It is set when we instantiate a new bundle instance.
 	BundleRootPath string
 
-	// BundleRoot is a virtual filesystem path to the root of the bundle.
+	// BundleRoot is a virtual filesystem path [BundleRootPath].
 	// Exclusively use this field for filesystem operations.
 	BundleRoot vfs.Path
 
-	// SyncRoot is a virtual filesystem path to the root directory of the files that are synchronized to the workspace.
-	// It can be an ancestor to [BundleRoot], but not a descendant; that is, [SyncRoot] must contain [BundleRoot].
-	SyncRoot vfs.Path
-
 	// SyncRootPath is the local path to the root directory of files that are synchronized to the workspace.
-	// It is equal to `SyncRoot.Native()` and included as dedicated field for convenient access.
+	// By default, it is the same as [BundleRootPath].
+	// If it is different, it must be an ancestor to [BundleRootPath].
+	// That is, [SyncRootPath] must contain [BundleRootPath].
 	SyncRootPath string
 
+	// SyncRoot is a virtual filesystem path to [SyncRootPath].
+	// Exclusively use this field for filesystem operations.
+	SyncRoot vfs.Path
+
+	// Config contains the bundle configuration.
+	// It is loaded from the bundle configuration files and mutators may update it.
 	Config config.Root
 
 	// Metadata about the bundle deployment. This is the interface Databricks services
