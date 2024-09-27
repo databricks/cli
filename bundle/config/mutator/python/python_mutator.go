@@ -108,7 +108,7 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 			return dyn.InvalidValue, fmt.Errorf("failed to create cache dir: %w", err)
 		}
 
-		rightRoot, diags := m.runPythonMutator(ctx, cacheDir, b.RootPath, pythonPath, leftRoot)
+		rightRoot, diags := m.runPythonMutator(ctx, cacheDir, b.BundleRootPath, pythonPath, leftRoot)
 		mutateDiags = diags
 		if diags.HasError() {
 			return dyn.InvalidValue, mutateDiagsHasError

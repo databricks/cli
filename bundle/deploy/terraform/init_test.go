@@ -33,7 +33,7 @@ func TestInitEnvironmentVariables(t *testing.T) {
 	}
 
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "whatever",
@@ -60,7 +60,7 @@ func TestSetTempDirEnvVarsForUnixWithTmpDirSet(t *testing.T) {
 	}
 
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "whatever",
@@ -88,7 +88,7 @@ func TestSetTempDirEnvVarsForUnixWithTmpDirNotSet(t *testing.T) {
 	}
 
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "whatever",
@@ -114,7 +114,7 @@ func TestSetTempDirEnvVarsForWindowWithAllTmpDirEnvVarsSet(t *testing.T) {
 	}
 
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "whatever",
@@ -144,7 +144,7 @@ func TestSetTempDirEnvVarsForWindowWithUserProfileAndTempSet(t *testing.T) {
 	}
 
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "whatever",
@@ -174,7 +174,7 @@ func TestSetTempDirEnvVarsForWindowsWithoutAnyTempDirEnvVarsSet(t *testing.T) {
 	}
 
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "whatever",
@@ -202,7 +202,7 @@ func TestSetTempDirEnvVarsForWindowsWithoutAnyTempDirEnvVarsSet(t *testing.T) {
 
 func TestSetProxyEnvVars(t *testing.T) {
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "whatever",
@@ -250,7 +250,7 @@ func TestSetProxyEnvVars(t *testing.T) {
 
 func TestSetUserAgentExtraEnvVar(t *testing.T) {
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Experimental: &config.Experimental{
 				PyDABs: config.PyDABs{
@@ -333,7 +333,7 @@ func TestFindExecPathFromEnvironmentWithWrongVersion(t *testing.T) {
 	ctx := context.Background()
 	m := &initialize{}
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target:    "whatever",
@@ -357,7 +357,7 @@ func TestFindExecPathFromEnvironmentWithCorrectVersionAndNoBinary(t *testing.T) 
 	ctx := context.Background()
 	m := &initialize{}
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target:    "whatever",
@@ -380,7 +380,7 @@ func TestFindExecPathFromEnvironmentWithCorrectVersionAndBinary(t *testing.T) {
 	ctx := context.Background()
 	m := &initialize{}
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target:    "whatever",

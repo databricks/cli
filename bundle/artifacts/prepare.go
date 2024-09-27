@@ -47,7 +47,7 @@ func (m *prepare) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 
 	// If artifact path is not provided, use bundle root dir
 	if artifact.Path == "" {
-		artifact.Path = b.RootPath
+		artifact.Path = b.BundleRootPath
 	}
 
 	if !filepath.IsAbs(artifact.Path) {

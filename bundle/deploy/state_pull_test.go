@@ -62,8 +62,8 @@ func testStatePull(t *testing.T, opts statePullOpts) {
 
 	tmpDir := t.TempDir()
 	b := &bundle.Bundle{
-		RootPath:   tmpDir,
-		BundleRoot: vfs.MustNew(tmpDir),
+		BundleRootPath: tmpDir,
+		BundleRoot:     vfs.MustNew(tmpDir),
 
 		SyncRootPath: tmpDir,
 		SyncRoot:     vfs.MustNew(tmpDir),
@@ -259,7 +259,7 @@ func TestStatePullNoState(t *testing.T) {
 	}}
 
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "default",
@@ -447,7 +447,7 @@ func TestStatePullNewerDeploymentStateVersion(t *testing.T) {
 	}}
 
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "default",

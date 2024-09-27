@@ -15,8 +15,8 @@ import (
 
 func TestSyncDefaultPath_DefaultIfUnset(t *testing.T) {
 	b := &bundle.Bundle{
-		RootPath: "/tmp/some/dir",
-		Config:   config.Root{},
+		BundleRootPath: "/tmp/some/dir",
+		Config:         config.Root{},
 	}
 
 	ctx := context.Background()
@@ -51,8 +51,8 @@ func TestSyncDefaultPath_SkipIfSet(t *testing.T) {
 	for _, tcase := range tcases {
 		t.Run(tcase.name, func(t *testing.T) {
 			b := &bundle.Bundle{
-				RootPath: "/tmp/some/dir",
-				Config:   config.Root{},
+				BundleRootPath: "/tmp/some/dir",
+				Config:         config.Root{},
 			}
 
 			diags := bundle.ApplyFunc(context.Background(), b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
