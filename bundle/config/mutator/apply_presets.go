@@ -170,7 +170,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	if t.TriggerPauseStatus == config.Paused {
 		for key, q := range r.QualityMonitors {
 			if q.CreateMonitor == nil {
-				diags = diags.Extend(diag.Errorf("quality monitor for %s is not defined", key))
+				diags = diags.Extend(diag.Errorf("quality monitor %s is not defined", key))
 				continue
 			}
 			// Remove all schedules from monitors, since they don't support pausing/unpausing.

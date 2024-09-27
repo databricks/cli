@@ -271,3 +271,96 @@ func TestApplyPresetsPrefixWithoutJobSettings(t *testing.T) {
 
 	require.ErrorContains(t, diags.Error(), "job job1 is not defined")
 }
+
+func TestApplyPresetsResourceNotDefined(t *testing.T) {
+	tests := []struct {
+		resources config.Resources
+		error     string
+	}{
+		{
+			resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job1": {}, // no jobsettings inside
+				},
+			},
+			error: "job job1 is not defined",
+		},
+		{
+			resources: config.Resources{
+				Pipelines: map[string]*resources.Pipeline{
+					"pipeline1": {}, // no pipelinespec inside
+				},
+			},
+			error: "pipeline pipeline1 is not defined",
+		},
+		{
+			resources: config.Resources{
+				Models: map[string]*resources.MlflowModel{
+					"model1": {}, // no model inside
+				},
+			},
+			error: "model model1 is not defined",
+		},
+		{
+			resources: config.Resources{
+				Experiments: map[string]*resources.MlflowExperiment{
+					"experiment1": {}, // no experiment inside
+				},
+			},
+			error: "experiment experiment1 is not defined",
+		},
+		{
+			resources: config.Resources{
+				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
+					"endpoint1": {}, // no CreateServingEndpoint inside
+				},
+				RegisteredModels: map[string]*resources.RegisteredModel{
+					"model1": {}, // no CreateRegisteredModelRequest inside
+				},
+			},
+			error: "model serving endpoint endpoint1 is not defined",
+		},
+		{
+			resources: config.Resources{
+				QualityMonitors: map[string]*resources.QualityMonitor{
+					"monitor1": {}, // no CreateMonitor inside
+				},
+			},
+			error: "quality monitor monitor1 is not defined",
+		},
+		{
+			resources: config.Resources{
+				Schemas: map[string]*resources.Schema{
+					"schema1": {}, // no CreateSchema inside
+				},
+			},
+			error: "schema schema1 is not defined",
+		},
+		{
+			resources: config.Resources{
+				Clusters: map[string]*resources.Cluster{
+					"cluster1": {}, // no ClusterSpec inside
+				},
+			},
+			error: "cluster cluster1 is not defined",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.error, func(t *testing.T) {
+			b := &bundle.Bundle{
+				Config: config.Root{
+					Resources: tt.resources,
+					Presets: config.Presets{
+						TriggerPauseStatus: config.Paused,
+					},
+				},
+			}
+
+			ctx := context.Background()
+			diags := bundle.Apply(ctx, b, mutator.ApplyPresets())
+
+			require.ErrorContains(t, diags.Error(), tt.error)
+		})
+	}
+}
