@@ -66,11 +66,11 @@ func TestProcessIncludeFormatNotMatch(t *testing.T) {
 		"single_job.pipeline.yaml": {
 			{
 				Severity: diag.Recommendation,
-				Summary:  "We recommend only defining a single pipeline in a file with the .pipeline.yaml extension.",
+				Summary:  "define a single pipeline in a file with the .pipeline.yaml extension.",
 				Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n",
 				Locations: []dyn.Location{
-					{File: filepath.FromSlash("testdata/format_fail/single_job.pipeline.yaml"), Line: 11, Column: 11},
-					{File: filepath.FromSlash("testdata/format_fail/single_job.pipeline.yaml"), Line: 4, Column: 7},
+					{File: filepath.FromSlash("testdata/format_not_match/single_job.pipeline.yaml"), Line: 11, Column: 11},
+					{File: filepath.FromSlash("testdata/format_not_match/single_job.pipeline.yaml"), Line: 4, Column: 7},
 				},
 				Paths: []dyn.Path{
 					dyn.MustPathFromString("resources.jobs.job1"),
@@ -81,11 +81,11 @@ func TestProcessIncludeFormatNotMatch(t *testing.T) {
 		"job_and_pipeline.job.yml": {
 			{
 				Severity: diag.Recommendation,
-				Summary:  "We recommend only defining a single job in a file with the .job.yml extension.",
+				Summary:  "define a single job in a file with the .job.yml extension.",
 				Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n  - pipeline1 (pipeline)\n",
 				Locations: []dyn.Location{
-					{File: filepath.FromSlash("testdata/format_fail/job_and_pipeline.job.yml"), Line: 11, Column: 11},
-					{File: filepath.FromSlash("testdata/format_fail/job_and_pipeline.job.yml"), Line: 4, Column: 7},
+					{File: filepath.FromSlash("testdata/format_not_match/job_and_pipeline.job.yml"), Line: 11, Column: 11},
+					{File: filepath.FromSlash("testdata/format_not_match/job_and_pipeline.job.yml"), Line: 4, Column: 7},
 				},
 				Paths: []dyn.Path{
 					dyn.MustPathFromString("resources.pipelines.pipeline1"),
@@ -96,11 +96,11 @@ func TestProcessIncludeFormatNotMatch(t *testing.T) {
 		"job_and_pipeline.experiment.yml": {
 			{
 				Severity: diag.Recommendation,
-				Summary:  "We recommend only defining a single experiment in a file with the .experiment.yml extension.",
+				Summary:  "define a single experiment in a file with the .experiment.yml extension.",
 				Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n  - pipeline1 (pipeline)\n",
 				Locations: []dyn.Location{
-					{File: filepath.FromSlash("testdata/format_fail/job_and_pipeline.experiment.yml"), Line: 11, Column: 11},
-					{File: filepath.FromSlash("testdata/format_fail/job_and_pipeline.experiment.yml"), Line: 4, Column: 7},
+					{File: filepath.FromSlash("testdata/format_not_match/job_and_pipeline.experiment.yml"), Line: 11, Column: 11},
+					{File: filepath.FromSlash("testdata/format_not_match/job_and_pipeline.experiment.yml"), Line: 4, Column: 7},
 				},
 				Paths: []dyn.Path{
 					dyn.MustPathFromString("resources.pipelines.pipeline1"),
@@ -111,11 +111,11 @@ func TestProcessIncludeFormatNotMatch(t *testing.T) {
 		"two_jobs.job.yml": {
 			{
 				Severity: diag.Recommendation,
-				Summary:  "We recommend only defining a single job in a file with the .job.yml extension.",
+				Summary:  "define a single job in a file with the .job.yml extension.",
 				Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n  - job2 (job)\n",
 				Locations: []dyn.Location{
-					{File: filepath.FromSlash("testdata/format_fail/two_jobs.job.yml"), Line: 4, Column: 7},
-					{File: filepath.FromSlash("testdata/format_fail/two_jobs.job.yml"), Line: 7, Column: 7},
+					{File: filepath.FromSlash("testdata/format_not_match/two_jobs.job.yml"), Line: 4, Column: 7},
+					{File: filepath.FromSlash("testdata/format_not_match/two_jobs.job.yml"), Line: 7, Column: 7},
 				},
 				Paths: []dyn.Path{
 					dyn.MustPathFromString("resources.jobs.job1"),
@@ -126,11 +126,11 @@ func TestProcessIncludeFormatNotMatch(t *testing.T) {
 		"second_job_in_target.job.yml": {
 			{
 				Severity: diag.Recommendation,
-				Summary:  "We recommend only defining a single job in a file with the .job.yml extension.",
+				Summary:  "define a single job in a file with the .job.yml extension.",
 				Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n  - job2 (job)\n",
 				Locations: []dyn.Location{
-					{File: filepath.FromSlash("testdata/format_fail/second_job_in_target.job.yml"), Line: 11, Column: 11},
-					{File: filepath.FromSlash("testdata/format_fail/second_job_in_target.job.yml"), Line: 4, Column: 7},
+					{File: filepath.FromSlash("testdata/format_not_match/second_job_in_target.job.yml"), Line: 11, Column: 11},
+					{File: filepath.FromSlash("testdata/format_not_match/second_job_in_target.job.yml"), Line: 4, Column: 7},
 				},
 				Paths: []dyn.Path{
 					dyn.MustPathFromString("resources.jobs.job1"),
@@ -141,11 +141,11 @@ func TestProcessIncludeFormatNotMatch(t *testing.T) {
 		"two_jobs_in_target.job.yml": {
 			{
 				Severity: diag.Recommendation,
-				Summary:  "We recommend only defining a single job in a file with the .job.yml extension.",
+				Summary:  "define a single job in a file with the .job.yml extension.",
 				Detail:   "The following resources are defined or configured in this file:\n  - job1 (job)\n  - job2 (job)\n",
 				Locations: []dyn.Location{
-					{File: filepath.FromSlash("testdata/format_fail/two_jobs_in_target.job.yml"), Line: 6, Column: 11},
-					{File: filepath.FromSlash("testdata/format_fail/two_jobs_in_target.job.yml"), Line: 8, Column: 11},
+					{File: filepath.FromSlash("testdata/format_not_match/two_jobs_in_target.job.yml"), Line: 6, Column: 11},
+					{File: filepath.FromSlash("testdata/format_not_match/two_jobs_in_target.job.yml"), Line: 8, Column: 11},
 				},
 				Paths: []dyn.Path{
 					dyn.MustPathFromString("targets.target1.resources.jobs.job1"),
@@ -156,7 +156,7 @@ func TestProcessIncludeFormatNotMatch(t *testing.T) {
 		"multiple_resources.model_serving_endpoint.yml": {
 			{
 				Severity: diag.Recommendation,
-				Summary:  "We recommend only defining a single model_serving_endpoint in a file with the .model_serving_endpoint.yml extension.",
+				Summary:  "define a single model serving endpoint in a file with the .model_serving_endpoint.yml extension.",
 				Detail: `The following resources are defined or configured in this file:
   - experiment1 (experiment)
   - job1 (job)
@@ -171,17 +171,17 @@ func TestProcessIncludeFormatNotMatch(t *testing.T) {
   - schema1 (schema)
 `,
 				Locations: []dyn.Location{
-					{File: filepath.FromSlash("testdata/format_fail/multiple_resources.model_serving_endpoint.yml"), Line: 12, Column: 7},
-					{File: filepath.FromSlash("testdata/format_fail/multiple_resources.model_serving_endpoint.yml"), Line: 14, Column: 7},
-					{File: filepath.FromSlash("testdata/format_fail/multiple_resources.model_serving_endpoint.yml"), Line: 18, Column: 7},
-					{File: filepath.FromSlash("testdata/format_fail/multiple_resources.model_serving_endpoint.yml"), Line: 22, Column: 7},
-					{File: filepath.FromSlash("testdata/format_fail/multiple_resources.model_serving_endpoint.yml"), Line: 24, Column: 7},
-					{File: filepath.FromSlash("testdata/format_fail/multiple_resources.model_serving_endpoint.yml"), Line: 28, Column: 7},
-					{File: filepath.FromSlash("testdata/format_fail/multiple_resources.model_serving_endpoint.yml"), Line: 35, Column: 11},
-					{File: filepath.FromSlash("testdata/format_fail/multiple_resources.model_serving_endpoint.yml"), Line: 39, Column: 11},
-					{File: filepath.FromSlash("testdata/format_fail/multiple_resources.model_serving_endpoint.yml"), Line: 43, Column: 11},
-					{File: filepath.FromSlash("testdata/format_fail/multiple_resources.model_serving_endpoint.yml"), Line: 4, Column: 7},
-					{File: filepath.FromSlash("testdata/format_fail/multiple_resources.model_serving_endpoint.yml"), Line: 8, Column: 7},
+					{File: filepath.FromSlash("testdata/format_not_match/multiple_resources.model_serving_endpoint.yml"), Line: 12, Column: 7},
+					{File: filepath.FromSlash("testdata/format_not_match/multiple_resources.model_serving_endpoint.yml"), Line: 14, Column: 7},
+					{File: filepath.FromSlash("testdata/format_not_match/multiple_resources.model_serving_endpoint.yml"), Line: 18, Column: 7},
+					{File: filepath.FromSlash("testdata/format_not_match/multiple_resources.model_serving_endpoint.yml"), Line: 22, Column: 7},
+					{File: filepath.FromSlash("testdata/format_not_match/multiple_resources.model_serving_endpoint.yml"), Line: 24, Column: 7},
+					{File: filepath.FromSlash("testdata/format_not_match/multiple_resources.model_serving_endpoint.yml"), Line: 28, Column: 7},
+					{File: filepath.FromSlash("testdata/format_not_match/multiple_resources.model_serving_endpoint.yml"), Line: 35, Column: 11},
+					{File: filepath.FromSlash("testdata/format_not_match/multiple_resources.model_serving_endpoint.yml"), Line: 39, Column: 11},
+					{File: filepath.FromSlash("testdata/format_not_match/multiple_resources.model_serving_endpoint.yml"), Line: 43, Column: 11},
+					{File: filepath.FromSlash("testdata/format_not_match/multiple_resources.model_serving_endpoint.yml"), Line: 4, Column: 7},
+					{File: filepath.FromSlash("testdata/format_not_match/multiple_resources.model_serving_endpoint.yml"), Line: 8, Column: 7},
 				},
 				Paths: []dyn.Path{
 					dyn.MustPathFromString("resources.experiments.experiment1"),
