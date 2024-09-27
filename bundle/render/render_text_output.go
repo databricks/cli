@@ -112,10 +112,12 @@ func buildTrailer(diags diag.Diagnostics) string {
 		parts = append(parts, color.BlueString(pluralize(recommendations, "recommendation", "recommendations")))
 	}
 	switch {
-	case len(parts) >= 2:
+	case len(parts) >= 3:
 		first := strings.Join(parts[:len(parts)-1], ", ")
 		last := parts[len(parts)-1]
-		return fmt.Sprintf("Found %s and %s", first, last)
+		return fmt.Sprintf("Found %s, and %s", first, last)
+	case len(parts) == 2:
+		return fmt.Sprintf("Found %s and %s", parts[0], parts[1])
 	case len(parts) == 1:
 		return fmt.Sprintf("Found %s", parts[0])
 	default:

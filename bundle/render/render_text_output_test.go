@@ -149,7 +149,40 @@ func TestRenderTextOutput(t *testing.T) {
 				"Name: test-bundle\n" +
 				"Target: test-target\n" +
 				"\n" +
-				"Found 2 errors, 1 warning and 1 recommendation\n",
+				"Found 2 errors, 1 warning, and 1 recommendation\n",
+		},
+		{
+			name:   "bundle during 'load' and 1 error and 1 warning",
+			bundle: loadingBundle,
+			diags: diag.Diagnostics{
+				diag.Diagnostic{
+					Severity:  diag.Error,
+					Summary:   "error (1)",
+					Detail:    "detail (1)",
+					Locations: []dyn.Location{{File: "foo.py", Line: 1, Column: 1}},
+				},
+				diag.Diagnostic{
+					Severity:  diag.Warning,
+					Summary:   "warning (2)",
+					Detail:    "detail (2)",
+					Locations: []dyn.Location{{File: "foo.py", Line: 2, Column: 1}},
+				},
+			},
+			opts: RenderOptions{RenderSummaryTable: true},
+			expected: "Error: error (1)\n" +
+				"  in foo.py:1:1\n" +
+				"\n" +
+				"detail (1)\n" +
+				"\n" +
+				"Warning: warning (2)\n" +
+				"  in foo.py:2:1\n" +
+				"\n" +
+				"detail (2)\n" +
+				"\n" +
+				"Name: test-bundle\n" +
+				"Target: test-target\n" +
+				"\n" +
+				"Found 1 error and 1 warning\n",
 		},
 		{
 			name:   "bundle during 'load' and 1 errors, 2 warning and 2 recommendations with details",
@@ -215,7 +248,7 @@ func TestRenderTextOutput(t *testing.T) {
 				"Name: test-bundle\n" +
 				"Target: test-target\n" +
 				"\n" +
-				"Found 1 error, 2 warnings and 2 recommendations\n",
+				"Found 1 error, 2 warnings, and 2 recommendations\n",
 		},
 		{
 			name: "bundle during 'init'",
