@@ -35,7 +35,7 @@ type Bundle struct {
 	// It is set when we instantiate a new bundle instance.
 	BundleRootPath string
 
-	// BundleRoot is a virtual filesystem path [BundleRootPath].
+	// BundleRoot is a virtual filesystem path to [BundleRootPath].
 	// Exclusively use this field for filesystem operations.
 	BundleRoot vfs.Path
 
