@@ -36,8 +36,8 @@ func TestAccUploadArtifactFileToCorrectRemotePath(t *testing.T) {
 	wsDir := internal.TemporaryWorkspaceDir(t, w)
 
 	b := &bundle.Bundle{
-		RootPath:     dir,
-		SyncRootPath: dir,
+		BundleRootPath: dir,
+		SyncRootPath:   dir,
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "whatever",
@@ -101,8 +101,8 @@ func TestAccUploadArtifactFileToCorrectRemotePathWithEnvironments(t *testing.T) 
 	wsDir := internal.TemporaryWorkspaceDir(t, w)
 
 	b := &bundle.Bundle{
-		RootPath:     dir,
-		SyncRootPath: dir,
+		BundleRootPath: dir,
+		SyncRootPath:   dir,
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "whatever",
@@ -171,8 +171,8 @@ func TestAccUploadArtifactFileToCorrectRemotePathForVolumes(t *testing.T) {
 	touchEmptyFile(t, whlPath)
 
 	b := &bundle.Bundle{
-		RootPath:     dir,
-		SyncRootPath: dir,
+		BundleRootPath: dir,
+		SyncRootPath:   dir,
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "whatever",

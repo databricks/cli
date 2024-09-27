@@ -31,9 +31,9 @@ import (
 const internalFolder = ".internal"
 
 type Bundle struct {
-	// RootPath contains the directory path to the root of the bundle.
+	// BundleRootPath contains the directory path to the root of the bundle.
 	// It is set when we instantiate a new bundle instance.
-	RootPath string
+	BundleRootPath string
 
 	// BundleRoot is a virtual filesystem path to the root of the bundle.
 	// Exclusively use this field for filesystem operations.
@@ -84,14 +84,14 @@ type Bundle struct {
 
 func Load(ctx context.Context, path string) (*Bundle, error) {
 	b := &Bundle{
-		RootPath:   filepath.Clean(path),
-		BundleRoot: vfs.MustNew(path),
+		BundleRootPath: filepath.Clean(path),
+		BundleRoot:     vfs.MustNew(path),
 	}
 	configFile, err := config.FileNames.FindInPath(path)
 	if err != nil {
 		return nil, err
 	}
-	log.Debugf(ctx, "Found bundle root at %s (file %s)", b.RootPath, configFile)
+	log.Debugf(ctx, "Found bundle root at %s (file %s)", b.BundleRootPath, configFile)
 	return b, nil
 }
 
@@ -160,7 +160,7 @@ func (b *Bundle) CacheDir(ctx context.Context, paths ...string) (string, error) 
 	if !exists || cacheDirName == "" {
 		cacheDirName = filepath.Join(
 			// Anchor at bundle root directory.
-			b.RootPath,
+			b.BundleRootPath,
 			// Static cache directory.
 			".databricks",
 			"bundle",
@@ -212,7 +212,7 @@ func (b *Bundle) GetSyncIncludePatterns(ctx context.Context) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	internalDirRel, err := filepath.Rel(b.RootPath, internalDir)
+	internalDirRel, err := filepath.Rel(b.BundleRootPath, internalDir)
 	if err != nil {
 		return nil, err
 	}

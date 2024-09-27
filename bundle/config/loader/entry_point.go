@@ -20,7 +20,7 @@ func (m *entryPoint) Name() string {
 }
 
 func (m *entryPoint) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
-	path, err := config.FileNames.FindInPath(b.RootPath)
+	path, err := config.FileNames.FindInPath(b.BundleRootPath)
 	if err != nil {
 		return diag.FromErr(err)
 	}

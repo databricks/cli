@@ -148,7 +148,7 @@ func renderDiagnostics(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics) 
 
 			// Make location relative to bundle root
 			if d.Locations[i].File != "" {
-				out, err := filepath.Rel(b.RootPath, d.Locations[i].File)
+				out, err := filepath.Rel(b.BundleRootPath, d.Locations[i].File)
 				// if we can't relativize the path, just use path as-is
 				if err == nil {
 					d.Locations[i].File = out

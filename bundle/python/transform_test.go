@@ -115,7 +115,7 @@ func TestTransformFiltersWheelTasksOnly(t *testing.T) {
 func TestNoPanicWithNoPythonWheelTasks(t *testing.T) {
 	tmpDir := t.TempDir()
 	b := &bundle.Bundle{
-		RootPath: tmpDir,
+		BundleRootPath: tmpDir,
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "development",

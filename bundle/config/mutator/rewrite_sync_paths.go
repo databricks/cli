@@ -45,15 +45,15 @@ func (m *rewriteSyncPaths) makeRelativeTo(root string) dyn.MapFunc {
 func (m *rewriteSyncPaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		return dyn.Map(v, "sync", func(_ dyn.Path, v dyn.Value) (nv dyn.Value, err error) {
-			v, err = dyn.Map(v, "paths", dyn.Foreach(m.makeRelativeTo(b.RootPath)))
+			v, err = dyn.Map(v, "paths", dyn.Foreach(m.makeRelativeTo(b.BundleRootPath)))
 			if err != nil {
 				return dyn.InvalidValue, err
 			}
-			v, err = dyn.Map(v, "include", dyn.Foreach(m.makeRelativeTo(b.RootPath)))
+			v, err = dyn.Map(v, "include", dyn.Foreach(m.makeRelativeTo(b.BundleRootPath)))
 			if err != nil {
 				return dyn.InvalidValue, err
 			}
-			v, err = dyn.Map(v, "exclude", dyn.Foreach(m.makeRelativeTo(b.RootPath)))
+			v, err = dyn.Map(v, "exclude", dyn.Foreach(m.makeRelativeTo(b.BundleRootPath)))
 			if err != nil {
 				return dyn.InvalidValue, err
 			}
