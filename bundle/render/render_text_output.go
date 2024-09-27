@@ -155,7 +155,7 @@ func renderSummaryTemplate(out io.Writer, b *bundle.Bundle, diags diag.Diagnosti
 func renderDiagnostics(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics) error {
 	errorT := template.Must(template.New("error").Funcs(renderFuncMap).Parse(errorTemplate))
 	warningT := template.Must(template.New("warning").Funcs(renderFuncMap).Parse(warningTemplate))
-	recommendationT := template.Must(template.New("info").Funcs(renderFuncMap).Parse(recommendationTemplate))
+	recommendationT := template.Must(template.New("recommendation").Funcs(renderFuncMap).Parse(recommendationTemplate))
 
 	// Print errors and warnings.
 	for _, d := range diags {
