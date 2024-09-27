@@ -15,8 +15,8 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/permissions"
-	"github.com/databricks/cli/bundle/python"
 	"github.com/databricks/cli/bundle/scripts"
+	"github.com/databricks/cli/bundle/trampoline"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/sync"
 	terraformlib "github.com/databricks/cli/libs/terraform"
@@ -157,7 +157,7 @@ func Deploy(outputHandler sync.OutputHandler) bundle.Mutator {
 				artifacts.CleanUp(),
 				libraries.ExpandGlobReferences(),
 				libraries.Upload(),
-				python.TransformWheelTask(),
+				trampoline.TransformWheelTask(),
 				files.Upload(outputHandler),
 				deploy.StateUpdate(),
 				deploy.StatePush(),

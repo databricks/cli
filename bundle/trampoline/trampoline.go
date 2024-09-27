@@ -1,4 +1,4 @@
-package mutator
+package trampoline
 
 import (
 	"context"
@@ -23,6 +23,7 @@ type TrampolineFunctions interface {
 	GetTasks(b *bundle.Bundle) []TaskWithJobKey
 	CleanUp(task *jobs.Task) error
 }
+
 type trampoline struct {
 	name      string
 	functions TrampolineFunctions

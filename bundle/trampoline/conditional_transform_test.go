@@ -1,4 +1,4 @@
-package python
+package trampoline
 
 import (
 	"context"
