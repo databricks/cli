@@ -37,13 +37,15 @@ func (s *statePush) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	}
 	defer local.Close()
 
-	state, err := local.Stat()
-	if err != nil {
-		return diag.FromErr(err)
-	}
+	if !b.Config.Bundle.Force {
+		state, err := local.Stat()
+		if err != nil {
+			return diag.FromErr(err)
+		}
 
-	if state.Size() > MaxStateFileSize {
-		return diag.Errorf("Deployment state file size exceeds the maximum allowed size of %d bytes. Please reduce the number of resources in your bundle and/or split your bundle into multiple.", MaxStateFileSize)
+		if state.Size() > MaxStateFileSize {
+			return diag.Errorf("Deployment state file size exceeds the maximum allowed size of %d bytes. Please reduce the number of resources in your bundle, split your bundle into multiple or re-run the command with --force flag.", MaxStateFileSize)
+		}
 	}
 
 	log.Infof(ctx, "Writing local deployment state file to remote state directory")
