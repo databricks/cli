@@ -36,7 +36,7 @@ func TestProcessInclude(t *testing.T) {
 	assert.Equal(t, "bar", b.Config.Workspace.Host)
 }
 
-func TestProcessIncludeFormatPass(t *testing.T) {
+func TestProcessIncludeFormatMatch(t *testing.T) {
 	for _, fileName := range []string{
 		"one_job.job.yml",
 		"one_pipeline.pipeline.yaml",
@@ -46,7 +46,7 @@ func TestProcessIncludeFormatPass(t *testing.T) {
 	} {
 		t.Run(fileName, func(t *testing.T) {
 			b := &bundle.Bundle{
-				RootPath: "testdata/format_pass",
+				RootPath: "testdata/format_match",
 				Config: config.Root{
 					Bundle: config.Bundle{
 						Name: "format_test",
@@ -61,7 +61,7 @@ func TestProcessIncludeFormatPass(t *testing.T) {
 	}
 }
 
-func TestProcessIncludeFormatFail(t *testing.T) {
+func TestProcessIncludeFormatNotMatch(t *testing.T) {
 	for fileName, expectedDiags := range map[string]diag.Diagnostics{
 		"single_job.pipeline.yaml": {
 			{
@@ -201,7 +201,7 @@ func TestProcessIncludeFormatFail(t *testing.T) {
 	} {
 		t.Run(fileName, func(t *testing.T) {
 			b := &bundle.Bundle{
-				RootPath: "testdata/format_fail",
+				RootPath: "testdata/format_not_match",
 				Config: config.Root{
 					Bundle: config.Bundle{
 						Name: "format_test",
