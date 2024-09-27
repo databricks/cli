@@ -4,10 +4,11 @@ resources:
     default_python_job:
       name: default_python_job
 
-      schedule:
-        # Run every day at 8:37 AM
-        quartz_cron_expression: '44 37 8 * * ?'
-        timezone_id: Europe/Amsterdam
+      trigger:
+        # Run this job every day, exactly one day from the last run; see https://docs.databricks.com/api/workspace/jobs/create#trigger
+        periodic:
+          interval: 1
+          unit: DAYS
 
       email_notifications:
         on_failure:
@@ -41,7 +42,7 @@ resources:
       job_clusters:
         - job_cluster_key: job_cluster
           new_cluster:
-            spark_version: 13.3.x-scala2.12
+            spark_version: 15.4.x-scala2.12
             # node_type_id is the cluster node type to use.
             # Typical node types on AWS include i3.xlarge; 
             # Standard_D3_v2 on Azure;

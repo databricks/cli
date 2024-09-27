@@ -1,6 +1,6 @@
 
 # This file defines dbt profiles for deployed dbt jobs.
-my_dbt_project:
+dbt_sql:
    target: dev # default target
    outputs:
 

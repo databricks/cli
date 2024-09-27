@@ -4,7 +4,7 @@
 -- See also https://docs.databricks.com/sql/language-manual/sql-ref-syntax-ddl-create-streaming-table.html
 
 USE CATALOG {{catalog}};
-USE {{schema}};
+USE IDENTIFIER({{schema}});
 
 CREATE OR REFRESH STREAMING TABLE
   orders_raw

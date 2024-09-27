@@ -26,4 +26,4 @@ wheel
 ## version of db-connect that corresponds to the Databricks Runtime version used
 ## for this project.
 #
-# databricks-connect>=13.3,<13.4
+# databricks-connect>=15.4,<15.5

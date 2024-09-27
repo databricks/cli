@@ -3,6 +3,7 @@ resources:
   pipelines:
     default_python_pipeline:
       name: default_python_pipeline
+      catalog: main
       target: default_python_${bundle.environment}
       libraries:
         - notebook:

@@ -3,7 +3,7 @@
 USE CATALOG {{catalog}};
 USE IDENTIFIER({{schema}});
 
-CREATE OR REPLACE VIEW
+CREATE OR REPLACE MATERIALIZED VIEW
   orders_daily
 AS SELECT
   order_date, count(*) AS number_of_orders
@@ -11,7 +11,7 @@ FROM
   orders_raw
 
 WHERE if(
-  {{bundle_target}} == "prod",
+  {{bundle_target}} = "prod",
   true,
 
   -- During development, only process a smaller range of data

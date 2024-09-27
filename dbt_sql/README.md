@@ -94,7 +94,7 @@ target-specific settings. Read more about dbt profiles on Databricks at
 https://docs.databricks.com/en/workflows/jobs/how-to/use-dbt-in-workflows.html#advanced-run-dbt-with-a-custom-profile.
 
 The target workspaces for staging and prod are defined in databricks.yml.
-You can manaully deploy based on these configurations (see below).
+You can manually deploy based on these configurations (see below).
 Or you can use CI/CD to automate deployment. See
 https://docs.databricks.com/dev-tools/bundles/ci-cd.html for documentation
 on CI/CD setup.

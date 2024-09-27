@@ -7,35 +7,24 @@ include:
   - resources/*.yml
 
 targets:
-  # The 'dev' target, for development purposes. This target is the default.
   dev:
-    # We use 'mode: development' to indicate this is a personal development copy:
+    # The default target uses 'mode: development' to create a development copy.
     # - Deployed resources get prefixed with '[dev my_user_name]'
-    # - Any job schedules and triggers are paused by default
-    # - The 'development' mode is used for Delta Live Tables pipelines
+    # - Any job schedules and triggers are paused by default.
+    # See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.html.
     mode: development
     default: true
     workspace:
-      host: https://myworkspace.databricks.com
+      host: https://company.databricks.com
 
-  ## Optionally, there could be a 'staging' target here.
-  ## (See Databricks docs on CI/CD at https://docs.databricks.com/dev-tools/bundles/ci-cd.html.)
-  #
-  # staging:
-  #  workspace:
-  #    host: https://myworkspace.databricks.com
-
-  # The 'prod' target, used for production deployment.
   prod:
-    # We use 'mode: production' to indicate this is a production deployment.
-    # Doing so enables strict verification of the settings below.
     mode: production
     workspace:
-      host: https://myworkspace.databricks.com
-      # We always use /Users/user@company.com for all resources to make sure we only have a single copy.
-      # If this path results in an error, please make sure you have a recent version of the CLI installed.
+      host: https://company.databricks.com
+      # We explicitly specify /Users/user@company.com to make sure we only have a single copy.
       root_path: /Users/user@company.com/.bundle/${bundle.name}/${bundle.target}
+    permissions:
+      - user_name: user@company.com
+        level: CAN_MANAGE
     run_as:
-      # This runs as user@company.com in production. We could also use a service principal here,
-      # see https://docs.databricks.com/dev-tools/bundles/permissions.html.
       user_name: user@company.com

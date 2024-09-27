@@ -4,10 +4,11 @@ resources:
     default_sql_sql_job:
       name: default_sql_sql_job
 
-      schedule:
-        # Run every day at 7:17 AM
-        quartz_cron_expression: '44 17 7 * * ?'
-        timezone_id: Europe/Amsterdam
+      trigger:
+        # Run this job every day, exactly one day from the last run; see https://docs.databricks.com/api/workspace/jobs/create#trigger
+        periodic:
+          interval: 1
+          unit: DAYS
 
       email_notifications:
         on_failure:

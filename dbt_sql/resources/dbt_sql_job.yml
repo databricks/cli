@@ -3,10 +3,11 @@ resources:
     dbt_sql_job:
       name: dbt_sql_job
 
-      schedule:
-        # Run every day at 9:27 AM
-        quartz_cron_expression: 21 27 9 * * ?
-        timezone_id: UTC
+      trigger:
+        # Run this job every day, exactly one day from the last run; see https://docs.databricks.com/api/workspace/jobs/create#trigger
+        periodic:
+          interval: 1
+          unit: DAYS
 
       email_notifications:
         on_failure:
@@ -27,10 +28,10 @@ resources:
 
           libraries:
           - pypi:
-              package: dbt-databricks>=1.0.0,<2.0.0
+              package: dbt-databricks>=1.8.0,<2.0.0
 
           new_cluster:
-            spark_version: 13.3.x-scala2.12
+            spark_version: 15.4.x-scala2.12
             node_type_id: i3.xlarge
             data_security_mode: SINGLE_USER
             num_workers: 0
