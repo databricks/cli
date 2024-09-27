@@ -57,7 +57,7 @@ func (m *syncInferRoot) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	var diags diag.Diagnostics
 
 	// Use the bundle root path as the starting point for inferring the sync root path.
-	bundleRootPath := filepath.Clean(b.RootPath)
+	bundleRootPath := filepath.Clean(b.BundleRootPath)
 
 	// Infer the sync root path by looking at each one of the sync paths.
 	// Every sync path must be a descendant of the final sync root path.

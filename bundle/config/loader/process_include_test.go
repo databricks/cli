@@ -14,7 +14,7 @@ import (
 
 func TestProcessInclude(t *testing.T) {
 	b := &bundle.Bundle{
-		RootPath: "testdata",
+		BundleRootPath: "testdata",
 		Config: config.Root{
 			Workspace: config.Workspace{
 				Host: "foo",
@@ -22,7 +22,7 @@ func TestProcessInclude(t *testing.T) {
 		},
 	}
 
-	m := loader.ProcessInclude(filepath.Join(b.RootPath, "host.yml"), "host.yml")
+	m := loader.ProcessInclude(filepath.Join(b.BundleRootPath, "host.yml"), "host.yml")
 	assert.Equal(t, "ProcessInclude(host.yml)", m.Name())
 
 	// Assert the host value prior to applying the mutator

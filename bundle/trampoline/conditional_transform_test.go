@@ -17,8 +17,8 @@ func TestNoTransformByDefault(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	b := &bundle.Bundle{
-		RootPath:     filepath.Join(tmpDir, "parent", "my_bundle"),
-		SyncRootPath: filepath.Join(tmpDir, "parent"),
+		BundleRootPath: filepath.Join(tmpDir, "parent", "my_bundle"),
+		SyncRootPath:   filepath.Join(tmpDir, "parent"),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "development",
@@ -66,8 +66,8 @@ func TestTransformWithExperimentalSettingSetToTrue(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	b := &bundle.Bundle{
-		RootPath:     filepath.Join(tmpDir, "parent", "my_bundle"),
-		SyncRootPath: filepath.Join(tmpDir, "parent"),
+		BundleRootPath: filepath.Join(tmpDir, "parent", "my_bundle"),
+		SyncRootPath:   filepath.Join(tmpDir, "parent"),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "development",

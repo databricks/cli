@@ -45,7 +45,7 @@ func TestStatePush(t *testing.T) {
 	}}
 
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "default",

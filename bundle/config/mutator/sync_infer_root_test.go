@@ -16,7 +16,7 @@ import (
 
 func TestSyncInferRoot_NominalAbsolute(t *testing.T) {
 	b := &bundle.Bundle{
-		RootPath: "/tmp/some/dir",
+		BundleRootPath: "/tmp/some/dir",
 		Config: config.Root{
 			Sync: config.Sync{
 				Paths: []string{
@@ -47,7 +47,7 @@ func TestSyncInferRoot_NominalAbsolute(t *testing.T) {
 
 func TestSyncInferRoot_NominalRelative(t *testing.T) {
 	b := &bundle.Bundle{
-		RootPath: "./some/dir",
+		BundleRootPath: "./some/dir",
 		Config: config.Root{
 			Sync: config.Sync{
 				Paths: []string{
@@ -78,7 +78,7 @@ func TestSyncInferRoot_NominalRelative(t *testing.T) {
 
 func TestSyncInferRoot_ParentDirectory(t *testing.T) {
 	b := &bundle.Bundle{
-		RootPath: "/tmp/some/dir",
+		BundleRootPath: "/tmp/some/dir",
 		Config: config.Root{
 			Sync: config.Sync{
 				Paths: []string{
@@ -109,7 +109,7 @@ func TestSyncInferRoot_ParentDirectory(t *testing.T) {
 
 func TestSyncInferRoot_ManyParentDirectories(t *testing.T) {
 	b := &bundle.Bundle{
-		RootPath: "/tmp/some/dir/that/is/very/deeply/nested",
+		BundleRootPath: "/tmp/some/dir/that/is/very/deeply/nested",
 		Config: config.Root{
 			Sync: config.Sync{
 				Paths: []string{
@@ -146,7 +146,7 @@ func TestSyncInferRoot_ManyParentDirectories(t *testing.T) {
 
 func TestSyncInferRoot_MultiplePaths(t *testing.T) {
 	b := &bundle.Bundle{
-		RootPath: "/tmp/some/bundle/root",
+		BundleRootPath: "/tmp/some/bundle/root",
 		Config: config.Root{
 			Sync: config.Sync{
 				Paths: []string{
@@ -173,7 +173,7 @@ func TestSyncInferRoot_MultiplePaths(t *testing.T) {
 
 func TestSyncInferRoot_Error(t *testing.T) {
 	b := &bundle.Bundle{
-		RootPath: "/tmp/some/dir",
+		BundleRootPath: "/tmp/some/dir",
 		Config: config.Root{
 			Sync: config.Sync{
 				Paths: []string{
