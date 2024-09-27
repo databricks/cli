@@ -406,7 +406,14 @@ func (r *Root) MergeTargetOverrides(name string) error {
 	return r.updateWithDynamicValue(root)
 }
 
-var variableKeywords = []string{"default", "lookup"}
+var allowedVariableDefinitions = []([]string){
+	{"default", "type", "description"},
+	{"default", "type"},
+	{"default", "description"},
+	{"lookup", "description"},
+	{"default"},
+	{"lookup"},
+}
 
 // isFullVariableOverrideDef checks if the given value is a full syntax varaible override.
 // A full syntax variable override is a map with either 1 of 2 keys.
@@ -423,42 +430,21 @@ func isFullVariableOverrideDef(v dyn.Value) bool {
 		return false
 	}
 
-	// If the map has 3 keys, they should be "description", "type" and "default" or "lookup"
-	if mv.Len() == 3 {
-		if _, ok := mv.GetByString("type"); ok {
-			if _, ok := mv.GetByString("description"); ok {
-				if _, ok := mv.GetByString("default"); ok {
-					return true
-				}
+	for _, keys := range allowedVariableDefinitions {
+		if len(keys) != mv.Len() {
+			continue
+		}
+
+		// Check if the keys are the same.
+		match := true
+		for _, key := range keys {
+			if _, ok := mv.GetByString(key); !ok {
+				match = false
+				break
 			}
 		}
 
-		return false
-	}
-
-	// If the map has 2 keys, one of them should be "default" or "lookup" and the other is "type" or "description"
-	if mv.Len() == 2 {
-		if _, ok := mv.GetByString("type"); ok {
-			if _, ok := mv.GetByString("default"); ok {
-				return true
-			}
-		}
-
-		if _, ok := mv.GetByString("description"); ok {
-			if _, ok := mv.GetByString("default"); ok {
-				return true
-			}
-
-			if _, ok := mv.GetByString("lookup"); ok {
-				return true
-			}
-		}
-
-		return false
-	}
-
-	for _, keyword := range variableKeywords {
-		if _, ok := mv.GetByString(keyword); ok {
+		if match {
 			return true
 		}
 	}
