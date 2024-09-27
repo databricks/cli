@@ -17,10 +17,10 @@ import (
 func TestSyncOptionsFromBundle(t *testing.T) {
 	tempDir := t.TempDir()
 	b := &bundle.Bundle{
-		RootPath:     tempDir,
-		BundleRoot:   vfs.MustNew(tempDir),
-		SyncRootPath: tempDir,
-		SyncRoot:     vfs.MustNew(tempDir),
+		BundleRootPath: tempDir,
+		BundleRoot:     vfs.MustNew(tempDir),
+		SyncRootPath:   tempDir,
+		SyncRoot:       vfs.MustNew(tempDir),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "default",

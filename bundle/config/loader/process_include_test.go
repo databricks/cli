@@ -16,7 +16,7 @@ import (
 
 func TestProcessInclude(t *testing.T) {
 	b := &bundle.Bundle{
-		RootPath: "testdata/basic",
+		BundleRootPath: "testdata/basic",
 		Config: config.Root{
 			Workspace: config.Workspace{
 				Host: "foo",
@@ -24,7 +24,7 @@ func TestProcessInclude(t *testing.T) {
 		},
 	}
 
-	m := loader.ProcessInclude(filepath.Join(b.RootPath, "host.yml"), "host.yml")
+	m := loader.ProcessInclude(filepath.Join(b.BundleRootPath, "host.yml"), "host.yml")
 	assert.Equal(t, "ProcessInclude(host.yml)", m.Name())
 
 	// Assert the host value prior to applying the mutator
@@ -46,7 +46,7 @@ func TestProcessIncludeFormatMatch(t *testing.T) {
 	} {
 		t.Run(fileName, func(t *testing.T) {
 			b := &bundle.Bundle{
-				RootPath: "testdata/format_match",
+				BundleRootPath: "testdata/format_match",
 				Config: config.Root{
 					Bundle: config.Bundle{
 						Name: "format_test",
@@ -54,7 +54,7 @@ func TestProcessIncludeFormatMatch(t *testing.T) {
 				},
 			}
 
-			m := loader.ProcessInclude(filepath.Join(b.RootPath, fileName), fileName)
+			m := loader.ProcessInclude(filepath.Join(b.BundleRootPath, fileName), fileName)
 			diags := bundle.Apply(context.Background(), b, m)
 			assert.Empty(t, diags)
 		})
@@ -201,7 +201,7 @@ func TestProcessIncludeFormatNotMatch(t *testing.T) {
 	} {
 		t.Run(fileName, func(t *testing.T) {
 			b := &bundle.Bundle{
-				RootPath: "testdata/format_not_match",
+				BundleRootPath: "testdata/format_not_match",
 				Config: config.Root{
 					Bundle: config.Bundle{
 						Name: "format_test",
@@ -209,7 +209,7 @@ func TestProcessIncludeFormatNotMatch(t *testing.T) {
 				},
 			}
 
-			m := loader.ProcessInclude(filepath.Join(b.RootPath, fileName), fileName)
+			m := loader.ProcessInclude(filepath.Join(b.BundleRootPath, fileName), fileName)
 			diags := bundle.Apply(context.Background(), b, m)
 			require.Len(t, diags, 1)
 			assert.Equal(t, expectedDiags, diags)

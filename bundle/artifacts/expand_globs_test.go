@@ -24,7 +24,7 @@ func TestExpandGlobs_Nominal(t *testing.T) {
 	testutil.Touch(t, tmpDir, "bc.txt")
 
 	b := &bundle.Bundle{
-		RootPath: tmpDir,
+		BundleRootPath: tmpDir,
 		Config: config.Root{
 			Artifacts: config.Artifacts{
 				"test": {
@@ -63,7 +63,7 @@ func TestExpandGlobs_InvalidPattern(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	b := &bundle.Bundle{
-		RootPath: tmpDir,
+		BundleRootPath: tmpDir,
 		Config: config.Root{
 			Artifacts: config.Artifacts{
 				"test": {
@@ -111,7 +111,7 @@ func TestExpandGlobs_NoMatches(t *testing.T) {
 	testutil.Touch(t, tmpDir, "b2.txt")
 
 	b := &bundle.Bundle{
-		RootPath: tmpDir,
+		BundleRootPath: tmpDir,
 		Config: config.Root{
 			Artifacts: config.Artifacts{
 				"test": {
