@@ -42,6 +42,7 @@ func TestProcessIncludeFormatPass(t *testing.T) {
 		"one_pipeline.pipeline.yaml",
 		"two_job.yml",
 		"job_and_pipeline.yml",
+		"multiple_resources.yml",
 	} {
 		t.Run(fileName, func(t *testing.T) {
 			b := &bundle.Bundle{
@@ -149,6 +150,51 @@ func TestProcessIncludeFormatFail(t *testing.T) {
 				Paths: []dyn.Path{
 					dyn.MustPathFromString("targets.target1.resources.jobs.job1"),
 					dyn.MustPathFromString("targets.target1.resources.jobs.job2"),
+				},
+			},
+		},
+		"multiple_resources.model_serving_endpoint.yml": {
+			{
+				Severity: diag.Recommendation,
+				Summary:  "We recommend only defining a single model_serving_endpoint in a file with the .model_serving_endpoint.yml extension.",
+				Detail: `The following resources are defined or configured in this file:
+  - experiment1 (experiment)
+  - job1 (job)
+  - job2 (job)
+  - job3 (job)
+  - model1 (model)
+  - model_serving_endpoint1 (model_serving_endpoint)
+  - pipeline1 (pipeline)
+  - pipeline2 (pipeline)
+  - quality_monitor1 (quality_monitor)
+  - registered_model1 (registered_model)
+  - schema1 (schema)
+`,
+				Locations: []dyn.Location{
+					{File: filepath.FromSlash("testdata/format_fail/multiple_resources.model_serving_endpoint.yml"), Line: 12, Column: 7},
+					{File: filepath.FromSlash("testdata/format_fail/multiple_resources.model_serving_endpoint.yml"), Line: 14, Column: 7},
+					{File: filepath.FromSlash("testdata/format_fail/multiple_resources.model_serving_endpoint.yml"), Line: 18, Column: 7},
+					{File: filepath.FromSlash("testdata/format_fail/multiple_resources.model_serving_endpoint.yml"), Line: 22, Column: 7},
+					{File: filepath.FromSlash("testdata/format_fail/multiple_resources.model_serving_endpoint.yml"), Line: 24, Column: 7},
+					{File: filepath.FromSlash("testdata/format_fail/multiple_resources.model_serving_endpoint.yml"), Line: 28, Column: 7},
+					{File: filepath.FromSlash("testdata/format_fail/multiple_resources.model_serving_endpoint.yml"), Line: 35, Column: 11},
+					{File: filepath.FromSlash("testdata/format_fail/multiple_resources.model_serving_endpoint.yml"), Line: 39, Column: 11},
+					{File: filepath.FromSlash("testdata/format_fail/multiple_resources.model_serving_endpoint.yml"), Line: 43, Column: 11},
+					{File: filepath.FromSlash("testdata/format_fail/multiple_resources.model_serving_endpoint.yml"), Line: 4, Column: 7},
+					{File: filepath.FromSlash("testdata/format_fail/multiple_resources.model_serving_endpoint.yml"), Line: 8, Column: 7},
+				},
+				Paths: []dyn.Path{
+					dyn.MustPathFromString("resources.experiments.experiment1"),
+					dyn.MustPathFromString("resources.jobs.job1"),
+					dyn.MustPathFromString("resources.jobs.job2"),
+					dyn.MustPathFromString("resources.model_serving_endpoints.model_serving_endpoint1"),
+					dyn.MustPathFromString("resources.models.model1"),
+					dyn.MustPathFromString("resources.pipelines.pipeline1"),
+					dyn.MustPathFromString("resources.pipelines.pipeline2"),
+					dyn.MustPathFromString("resources.schemas.schema1"),
+					dyn.MustPathFromString("targets.target1.resources.jobs.job3"),
+					dyn.MustPathFromString("targets.target1.resources.quality_monitors.quality_monitor1"),
+					dyn.MustPathFromString("targets.target1.resources.registered_models.registered_model1"),
 				},
 			},
 		},
