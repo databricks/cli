@@ -18,7 +18,7 @@ This file only template directives; it is skipped for the actual output.
 
 {{if $notDLT}}
   {{skip "{{.project_name}}/src/dlt_pipeline.ipynb"}}
-  {{skip "{{.project_name}}/resources/{{.project_name}}_pipeline.yml"}}
+  {{skip "{{.project_name}}/resources/{{.project_name}}.pipeline.yml"}}
 {{end}}
 
 {{if $notNotebook}}
@@ -26,7 +26,7 @@ This file only template directives; it is skipped for the actual output.
 {{end}}
 
 {{if (and $notDLT $notNotebook $notPython)}}
-  {{skip "{{.project_name}}/resources/{{.project_name}}_job.yml"}}
+  {{skip "{{.project_name}}/resources/{{.project_name}}.job.yml"}}
 {{else}}
   {{skip "{{.project_name}}/resources/.gitkeep"}}
 {{end}}

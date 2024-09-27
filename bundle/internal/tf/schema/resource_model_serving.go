@@ -95,14 +95,16 @@ type ResourceModelServingConfigServedEntities struct {
 }
 
 type ResourceModelServingConfigServedModels struct {
-	EnvironmentVars    map[string]string `json:"environment_vars,omitempty"`
-	InstanceProfileArn string            `json:"instance_profile_arn,omitempty"`
-	ModelName          string            `json:"model_name"`
-	ModelVersion       string            `json:"model_version"`
-	Name               string            `json:"name,omitempty"`
-	ScaleToZeroEnabled bool              `json:"scale_to_zero_enabled,omitempty"`
-	WorkloadSize       string            `json:"workload_size"`
-	WorkloadType       string            `json:"workload_type,omitempty"`
+	EnvironmentVars          map[string]string `json:"environment_vars,omitempty"`
+	InstanceProfileArn       string            `json:"instance_profile_arn,omitempty"`
+	MaxProvisionedThroughput int               `json:"max_provisioned_throughput,omitempty"`
+	MinProvisionedThroughput int               `json:"min_provisioned_throughput,omitempty"`
+	ModelName                string            `json:"model_name"`
+	ModelVersion             string            `json:"model_version"`
+	Name                     string            `json:"name,omitempty"`
+	ScaleToZeroEnabled       bool              `json:"scale_to_zero_enabled,omitempty"`
+	WorkloadSize             string            `json:"workload_size,omitempty"`
+	WorkloadType             string            `json:"workload_type,omitempty"`
 }
 
 type ResourceModelServingConfigTrafficConfigRoutes struct {

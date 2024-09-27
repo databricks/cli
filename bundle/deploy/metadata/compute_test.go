@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/bundle/metadata"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -55,9 +56,9 @@ func TestComputeMetadataMutator(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, "resources.jobs.my-job-1", "a/b/c")
-	bundletest.SetLocation(b, "resources.jobs.my-job-2", "d/e/f")
-	bundletest.SetLocation(b, "resources.pipelines.my-pipeline", "abc")
+	bundletest.SetLocation(b, "resources.jobs.my-job-1", []dyn.Location{{File: "a/b/c"}})
+	bundletest.SetLocation(b, "resources.jobs.my-job-2", []dyn.Location{{File: "d/e/f"}})
+	bundletest.SetLocation(b, "resources.pipelines.my-pipeline", []dyn.Location{{File: "abc"}})
 
 	expectedMetadata := metadata.Metadata{
 		Version: metadata.Version,

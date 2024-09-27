@@ -1,5 +1,32 @@
 # Version changelog
 
+## [Release] Release v0.228.1
+
+Bundles:
+ * Added listing cluster filtering for cluster lookups ([#1754](https://github.com/databricks/cli/pull/1754)).
+ * Expand library globs relative to the sync root ([#1756](https://github.com/databricks/cli/pull/1756)).
+ * Fixed generated YAML missing 'default' for empty values ([#1765](https://github.com/databricks/cli/pull/1765)).
+ * Use periodic triggers in all templates ([#1739](https://github.com/databricks/cli/pull/1739)).
+ * Use the friendly name of service principals when shortening their name ([#1770](https://github.com/databricks/cli/pull/1770)).
+ * Fixed detecting full syntax variable override which includes type field ([#1775](https://github.com/databricks/cli/pull/1775)).
+
+Internal:
+ * Pass copy of `dyn.Path` to callback function ([#1747](https://github.com/databricks/cli/pull/1747)).
+ * Make bundle JSON schema modular with `` ([#1700](https://github.com/databricks/cli/pull/1700)).
+ * Alias variables block in the `Target` struct ([#1748](https://github.com/databricks/cli/pull/1748)).
+ * Add end to end integration tests for bundle JSON schema ([#1726](https://github.com/databricks/cli/pull/1726)).
+ * Fix artifact upload integration tests ([#1767](https://github.com/databricks/cli/pull/1767)).
+
+API Changes:
+ * Added `databricks quality-monitors regenerate-dashboard` command.
+
+OpenAPI commit d05898328669a3f8ab0c2ecee37db2673d3ea3f7 (2024-09-04)
+Dependency updates:
+ * Bump golang.org/x/term from 0.23.0 to 0.24.0 ([#1757](https://github.com/databricks/cli/pull/1757)).
+ * Bump golang.org/x/oauth2 from 0.22.0 to 0.23.0 ([#1761](https://github.com/databricks/cli/pull/1761)).
+ * Bump golang.org/x/text from 0.17.0 to 0.18.0 ([#1759](https://github.com/databricks/cli/pull/1759)).
+ * Bump github.com/databricks/databricks-sdk-go from 0.45.0 to 0.46.0 ([#1760](https://github.com/databricks/cli/pull/1760)).
+
 ## [Release] Release v0.228.0
 
 CLI:

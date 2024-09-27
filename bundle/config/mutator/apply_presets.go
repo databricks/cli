@@ -160,6 +160,21 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		// the Databricks UI and via the SQL API.
 	}
 
+	// Clusters: Prefix, Tags
+	for _, c := range r.Clusters {
+		c.ClusterName = prefix + c.ClusterName
+		if c.CustomTags == nil {
+			c.CustomTags = make(map[string]string)
+		}
+		for _, tag := range tags {
+			normalisedKey := b.Tagging.NormalizeKey(tag.Key)
+			normalisedValue := b.Tagging.NormalizeValue(tag.Value)
+			if _, ok := c.CustomTags[normalisedKey]; !ok {
+				c.CustomTags[normalisedKey] = normalisedValue
+			}
+		}
+	}
+
 	// Dashboards: Prefix
 	for i := range r.Dashboards {
 		r.Dashboards[i].DisplayName = prefix + r.Dashboards[i].DisplayName
