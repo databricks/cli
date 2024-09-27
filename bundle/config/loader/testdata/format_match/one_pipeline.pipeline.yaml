@@ -1,4 +1,3 @@
-# TODO: Remove all the schema inlined references
 resources:
   pipelines:
     pipeline1:
