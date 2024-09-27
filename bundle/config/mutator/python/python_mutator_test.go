@@ -570,12 +570,12 @@ func TestExplainProcessErr(t *testing.T) {
 
 Explanation: 'databricks-pydabs' library is not installed in the Python environment.
 
-If using Python wheels, ensure that 'databricks-pydabs' is included in the dependencies, 
+If using Python wheels, ensure that 'databricks-pydabs' is included in the dependencies,
 and that the wheel is installed in the Python environment:
 
   $ .venv/bin/pip install -e .
 
-If using a virtual environment, ensure it is specified as the venv_path property in databricks.yml, 
+If using a virtual environment, ensure it is specified as the venv_path property in databricks.yml,
 or activate the environment before running CLI commands:
 
   experimental:
