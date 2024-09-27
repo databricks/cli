@@ -251,3 +251,23 @@ func TestApplyPresetsJobsMaxConcurrentRuns(t *testing.T) {
 		})
 	}
 }
+
+func TestApplyPresetsPrefixWithoutJobSettings(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job1": {}, // no jobsettings inside
+				},
+			},
+			Presets: config.Presets{
+				NamePrefix: "prefix-",
+			},
+		},
+	}
+
+	ctx := context.Background()
+	diags := bundle.Apply(ctx, b, mutator.ApplyPresets())
+
+	require.ErrorContains(t, diags.Error(), "job job1 is not defined")
+}
