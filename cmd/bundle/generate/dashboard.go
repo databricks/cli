@@ -175,7 +175,7 @@ func (d *dashboard) watchForChanges(ctx context.Context, b *bundle.Bundle) error
 		return err
 	}
 
-	relPath, err := filepath.Rel(cwd, dash.DefinitionPath)
+	relPath, err := filepath.Rel(cwd, dash.FilePath)
 	if err != nil {
 		return err
 	}
@@ -199,7 +199,7 @@ func (d *dashboard) watchForChanges(ctx context.Context, b *bundle.Bundle) error
 
 		if etag != dashboard.Etag {
 			fmt.Printf("[%s]: Updating dashboard at %s\n", dashboard.UpdateTime, relPath)
-			d.saveSerializedDashboard(ctx, dashboard, dash.DefinitionPath)
+			d.saveSerializedDashboard(ctx, dashboard, dash.FilePath)
 		}
 
 		etag = dashboard.Etag

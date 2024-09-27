@@ -18,21 +18,37 @@ type Dashboard struct {
 	// === BEGIN OF API FIELDS ===
 	// ===========================
 
-	// DisplayName is the name of the dashboard (both as title and as basename in the workspace).
-	DisplayName string `json:"display_name,omitempty"`
+	// DisplayName is the display name of the dashboard (both as title and as basename in the workspace).
+	DisplayName string `json:"display_name"`
 
-	// ParentPath is the path to the parent directory of the dashboard.
+	// WarehouseID is the ID of the SQL Warehouse used to run the dashboard's queries.
+	WarehouseID string `json:"warehouse_id"`
+
+	// SerializedDashboard is the contents of the dashboard in serialized JSON form.
+	// Note: its type is any and not string such that it can be inlined as YAML.
+	// If it is not a string, its contents will be marshalled as JSON.
+	SerializedDashboard any `json:"serialized_dashboard,omitempty"`
+
+	// ParentPath is the workspace path of the folder containing the dashboard.
+	// Includes leading slash and no trailing slash.
+	//
+	// Defaults to ${workspace.resource_path} if not set.
 	ParentPath string `json:"parent_path,omitempty"`
 
-	// WarehouseID is the ID of the warehouse to use for the dashboard.
-	WarehouseID string `json:"warehouse_id,omitempty"`
+	// EmbedCredentials is a flag to indicate if the publisher's credentials should
+	// be embedded in the published dashboard. These embedded credentials will be used
+	// to execute the published dashboard's queries.
+	//
+	// Defaults to false if not set.
+	EmbedCredentials bool `json:"embed_credentials,omitempty"`
 
 	// ===========================
 	// ==== END OF API FIELDS ====
 	// ===========================
 
-	// DefinitionPath points to the local `.lvdash.json` file containing the dashboard definition.
-	DefinitionPath string `json:"definition_path,omitempty"`
+	// FilePath points to the local `.lvdash.json` file containing the dashboard definition.
+	// If specified, it will populate the `SerializedDashboard` field.
+	FilePath string `json:"file_path,omitempty"`
 }
 
 func (s *Dashboard) UnmarshalJSON(b []byte) error {
@@ -43,7 +59,7 @@ func (s Dashboard) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
-func (_ *Dashboard) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
+func (*Dashboard) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
 	_, err := w.Lakeview.Get(ctx, dashboards.GetDashboardRequest{
 		DashboardId: id,
 	})
@@ -54,6 +70,6 @@ func (_ *Dashboard) Exists(ctx context.Context, w *databricks.WorkspaceClient, i
 	return true, nil
 }
 
-func (_ *Dashboard) TerraformResourceName() string {
+func (*Dashboard) TerraformResourceName() string {
 	return "databricks_dashboard"
 }
