@@ -54,6 +54,11 @@ type Workspace struct {
 	// This defaults to "${workspace.root}/files".
 	FilePath string `json:"file_path,omitempty"`
 
+	// Remote workspace path for resources with a presence in the workspace.
+	// These are kept outside [FilePath] to avoid potential naming collisions.
+	// This defaults to "${workspace.root}/resources".
+	ResourcePath string `json:"resource_path,omitempty"`
+
 	// Remote workspace path for build artifacts.
 	// This defaults to "${workspace.root}/artifacts".
 	ArtifactPath string `json:"artifact_path,omitempty"`
