@@ -79,4 +79,10 @@ func TestStatePushLargeState(t *testing.T) {
 	writeLocalState(t, ctx, b, largeState)
 	diags := bundle.Apply(ctx, b, m)
 	assert.ErrorContains(t, diags.Error(), "Terraform state file size exceeds the maximum allowed size of 10485760 bytes. Please reduce the number of resources in your bundle, split your bundle into multiple or re-run the command with --force flag")
+
+	// Force the write.
+	b = statePushTestBundle(t)
+	b.Config.Bundle.Force = true
+	diags = bundle.Apply(ctx, b, m)
+	assert.NoError(t, diags.Error())
 }
