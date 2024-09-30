@@ -22,7 +22,7 @@ func (t *translateContext) dashboardRewritePatterns() []dashboardRewritePattern 
 	// Compile list of configuration paths to rewrite.
 	return []dashboardRewritePattern{
 		{
-			base.Append(dyn.Key("definition_path")),
+			base.Append(dyn.Key("file_path")),
 			t.retainLocalAbsoluteFilePath,
 		},
 	}

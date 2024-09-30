@@ -19,20 +19,48 @@ func convertDashboardResource(ctx context.Context, vin dyn.Value) (dyn.Value, er
 		log.Debugf(ctx, "dashboard normalization diagnostic: %s", diag.Summary)
 	}
 
-	// Include "serialized_dashboard" field if "definition_path" is set.
-	if path, ok := vin.Get("definition_path").AsString(); ok {
+	// Include "serialized_dashboard" field if "file_path" is set.
+	// Note: the Terraform resource supports "file_path" natively, but its
+	// change detection mechanism doesn't work as expected at the time of writing (Sep 30).
+	if path, ok := vout.Get("file_path").AsString(); ok {
 		vout, err = dyn.Set(vout, "serialized_dashboard", dyn.V(fmt.Sprintf("${file(\"%s\")}", path)))
 		if err != nil {
 			return dyn.InvalidValue, fmt.Errorf("failed to set serialized_dashboard: %w", err)
+		}
+		// Drop the "file_path" field. It is mutually exclusive with "serialized_dashboard".
+		vout, err = dyn.Walk(vout, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			switch len(p) {
+			case 0:
+				return v, nil
+			case 1:
+				if p[0] == dyn.Key("file_path") {
+					return v, dyn.ErrDrop
+				}
+			}
+
+			// Skip everything else.
+			return v, dyn.ErrSkip
+		})
+		if err != nil {
+			return dyn.InvalidValue, fmt.Errorf("failed to drop file_path: %w", err)
+		}
+	}
+
+	// Default the "embed_credentials" field to "false", if not already set.
+	// This is different from the behavior in the Terraform provider, so we make it explicit.
+	if _, ok := vout.Get("embed_credentials").AsBool(); !ok {
+		vout, err = dyn.Set(vout, "embed_credentials", dyn.V(false))
+		if err != nil {
+			return dyn.InvalidValue, fmt.Errorf("failed to set embed_credentials: %w", err)
 		}
 	}
 
 	return vout, nil
 }
 
-type DashboardConverter struct{}
+type dashboardConverter struct{}
 
-func (DashboardConverter) Convert(ctx context.Context, key string, vin dyn.Value, out *schema.Resources) error {
+func (dashboardConverter) Convert(ctx context.Context, key string, vin dyn.Value, out *schema.Resources) error {
 	vout, err := convertDashboardResource(ctx, vin)
 	if err != nil {
 		return err
@@ -51,5 +79,5 @@ func (DashboardConverter) Convert(ctx context.Context, key string, vin dyn.Value
 }
 
 func init() {
-	registerConverter("dashboards", DashboardConverter{})
+	registerConverter("dashboards", dashboardConverter{})
 }

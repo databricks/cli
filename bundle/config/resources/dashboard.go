@@ -47,7 +47,6 @@ type Dashboard struct {
 	// ===========================
 
 	// FilePath points to the local `.lvdash.json` file containing the dashboard definition.
-	// If specified, it will populate the `SerializedDashboard` field.
 	FilePath string `json:"file_path,omitempty"`
 }
 
