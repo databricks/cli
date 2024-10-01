@@ -24,7 +24,7 @@ type Dashboard struct {
 	// WarehouseID is the ID of the SQL Warehouse used to run the dashboard's queries.
 	WarehouseID string `json:"warehouse_id"`
 
-	// SerializedDashboard is the contents of the dashboard in serialized JSON form.
+	// SerializedDashboard holds the contents of the dashboard in serialized JSON form.
 	// Note: its type is any and not string such that it can be inlined as YAML.
 	// If it is not a string, its contents will be marshalled as JSON.
 	SerializedDashboard any `json:"serialized_dashboard,omitempty"`
