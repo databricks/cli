@@ -76,6 +76,7 @@ import (
 	system_schemas "github.com/databricks/cli/cmd/workspace/system-schemas"
 	table_constraints "github.com/databricks/cli/cmd/workspace/table-constraints"
 	tables "github.com/databricks/cli/cmd/workspace/tables"
+	temporary_table_credentials "github.com/databricks/cli/cmd/workspace/temporary-table-credentials"
 	token_management "github.com/databricks/cli/cmd/workspace/token-management"
 	tokens "github.com/databricks/cli/cmd/workspace/tokens"
 	users "github.com/databricks/cli/cmd/workspace/users"
@@ -165,6 +166,7 @@ func All() []*cobra.Command {
 	out = append(out, system_schemas.New())
 	out = append(out, table_constraints.New())
 	out = append(out, tables.New())
+	out = append(out, temporary_table_credentials.New())
 	out = append(out, token_management.New())
 	out = append(out, tokens.New())
 	out = append(out, users.New())
