@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	csp_enablement_account "github.com/databricks/cli/cmd/account/csp-enablement-account"
+	disable_legacy_features "github.com/databricks/cli/cmd/account/disable-legacy-features"
 	esm_enablement_account "github.com/databricks/cli/cmd/account/esm-enablement-account"
 	personal_compute "github.com/databricks/cli/cmd/account/personal-compute"
 )
@@ -27,6 +28,7 @@ func New() *cobra.Command {
 
 	// Add subservices
 	cmd.AddCommand(csp_enablement_account.New())
+	cmd.AddCommand(disable_legacy_features.New())
 	cmd.AddCommand(esm_enablement_account.New())
 	cmd.AddCommand(personal_compute.New())
 

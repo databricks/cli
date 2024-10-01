@@ -121,7 +121,7 @@ You can find that job by opening your workpace and clicking on **Workflows**.
 
 You can also deploy to your production target directly from the command-line.
 The warehouse, catalog, and schema for that target are configured in databricks.yml.
-When deploying to this target, note that the default job at resources/{{.project_name}}_job.yml
+When deploying to this target, note that the default job at resources/{{.project_name}}.job.yml
 has a schedule set that runs every day. The schedule is paused when deploying in development mode
 (see https://docs.databricks.com/dev-tools/bundles/deployment-modes.html).
 

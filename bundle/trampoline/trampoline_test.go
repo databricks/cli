@@ -1,4 +1,4 @@
-package mutator
+package trampoline
 
 import (
 	"context"
@@ -56,8 +56,8 @@ func TestGenerateTrampoline(t *testing.T) {
 	}
 
 	b := &bundle.Bundle{
-		RootPath:     filepath.Join(tmpDir, "parent", "my_bundle"),
-		SyncRootPath: filepath.Join(tmpDir, "parent"),
+		BundleRootPath: filepath.Join(tmpDir, "parent", "my_bundle"),
+		SyncRootPath:   filepath.Join(tmpDir, "parent"),
 		Config: config.Root{
 			Workspace: config.Workspace{
 				FilePath: "/Workspace/files",

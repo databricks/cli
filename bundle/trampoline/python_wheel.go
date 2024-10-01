@@ -1,4 +1,4 @@
-package python
+package trampoline
 
 import (
 	"context"
@@ -69,7 +69,7 @@ func TransformWheelTask() bundle.Mutator {
 			res := b.Config.Experimental != nil && b.Config.Experimental.PythonWheelWrapper
 			return res, nil
 		},
-		mutator.NewTrampoline(
+		NewTrampoline(
 			"python_wheel",
 			&pythonTrampoline{},
 			NOTEBOOK_TEMPLATE,
@@ -94,9 +94,9 @@ func (t *pythonTrampoline) CleanUp(task *jobs.Task) error {
 	return nil
 }
 
-func (t *pythonTrampoline) GetTasks(b *bundle.Bundle) []mutator.TaskWithJobKey {
+func (t *pythonTrampoline) GetTasks(b *bundle.Bundle) []TaskWithJobKey {
 	r := b.Config.Resources
-	result := make([]mutator.TaskWithJobKey, 0)
+	result := make([]TaskWithJobKey, 0)
 	for k := range b.Config.Resources.Jobs {
 		tasks := r.Jobs[k].JobSettings.Tasks
 		for i := range tasks {
@@ -110,7 +110,7 @@ func (t *pythonTrampoline) GetTasks(b *bundle.Bundle) []mutator.TaskWithJobKey {
 				continue
 			}
 
-			result = append(result, mutator.TaskWithJobKey{
+			result = append(result, TaskWithJobKey{
 				JobKey: k,
 				Task:   task,
 			})

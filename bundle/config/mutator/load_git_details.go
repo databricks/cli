@@ -56,7 +56,7 @@ func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	}
 
 	// Compute relative path of the bundle root from the Git repo root.
-	absBundlePath, err := filepath.Abs(b.RootPath)
+	absBundlePath, err := filepath.Abs(b.BundleRootPath)
 	if err != nil {
 		return diag.FromErr(err)
 	}

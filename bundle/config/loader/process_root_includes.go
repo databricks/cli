@@ -47,7 +47,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 		}
 
 		// Anchor includes to the bundle root path.
-		matches, err := filepath.Glob(filepath.Join(b.RootPath, entry))
+		matches, err := filepath.Glob(filepath.Join(b.BundleRootPath, entry))
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -61,7 +61,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 		// Filter matches to ones we haven't seen yet.
 		var includes []string
 		for _, match := range matches {
-			rel, err := filepath.Rel(b.RootPath, match)
+			rel, err := filepath.Rel(b.BundleRootPath, match)
 			if err != nil {
 				return diag.FromErr(err)
 			}
@@ -76,7 +76,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 		slices.Sort(includes)
 		files = append(files, includes...)
 		for _, include := range includes {
-			out = append(out, ProcessInclude(filepath.Join(b.RootPath, include), include))
+			out = append(out, ProcessInclude(filepath.Join(b.BundleRootPath, include), include))
 		}
 	}
 

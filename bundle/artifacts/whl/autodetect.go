@@ -35,21 +35,21 @@ func (m *detectPkg) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	log.Infof(ctx, "Detecting Python wheel project...")
 
 	// checking if there is setup.py in the bundle root
-	setupPy := filepath.Join(b.RootPath, "setup.py")
+	setupPy := filepath.Join(b.BundleRootPath, "setup.py")
 	_, err := os.Stat(setupPy)
 	if err != nil {
 		log.Infof(ctx, "No Python wheel project found at bundle root folder")
 		return nil
 	}
 
-	log.Infof(ctx, fmt.Sprintf("Found Python wheel project at %s", b.RootPath))
+	log.Infof(ctx, fmt.Sprintf("Found Python wheel project at %s", b.BundleRootPath))
 	module := extractModuleName(setupPy)
 
 	if b.Config.Artifacts == nil {
 		b.Config.Artifacts = make(map[string]*config.Artifact)
 	}
 
-	pkgPath, err := filepath.Abs(b.RootPath)
+	pkgPath, err := filepath.Abs(b.BundleRootPath)
 	if err != nil {
 		return diag.FromErr(err)
 	}
