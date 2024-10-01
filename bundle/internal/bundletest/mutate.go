@@ -11,9 +11,10 @@ import (
 )
 
 func Mutate(t *testing.T, b *bundle.Bundle, f func(v dyn.Value) (dyn.Value, error)) {
-	bundle.ApplyFunc(context.Background(), b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	diags := bundle.ApplyFunc(context.Background(), b, func(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		err := b.Config.Mutate(f)
 		require.NoError(t, err)
 		return nil
 	})
+	require.NoError(t, diags.Error())
 }
