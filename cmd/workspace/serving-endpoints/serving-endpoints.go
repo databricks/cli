@@ -53,6 +53,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newLogs())
 	cmd.AddCommand(newPatch())
 	cmd.AddCommand(newPut())
+	cmd.AddCommand(newPutAiGateway())
 	cmd.AddCommand(newQuery())
 	cmd.AddCommand(newSetPermissions())
 	cmd.AddCommand(newUpdateConfig())
@@ -151,6 +152,7 @@ func newCreate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: ai_gateway
 	// TODO: array: rate_limits
 	cmd.Flags().BoolVar(&createReq.RouteOptimized, "route-optimized", createReq.RouteOptimized, `Enable route optimization for the serving endpoint.`)
 	// TODO: array: tags
@@ -754,8 +756,9 @@ func newPut() *cobra.Command {
 	cmd.Short = `Update rate limits of a serving endpoint.`
 	cmd.Long = `Update rate limits of a serving endpoint.
   
-  Used to update the rate limits of a serving endpoint. NOTE: only external and
-  foundation model endpoints are supported as of now.
+  Used to update the rate limits of a serving endpoint. NOTE: Only foundation
+  model endpoints are currently supported. For external models, use AI Gateway
+  to manage rate limits.
 
   Arguments:
     NAME: The name of the serving endpoint whose rate limits are being updated. This
@@ -795,6 +798,79 @@ func newPut() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range putOverrides {
 		fn(cmd, &putReq)
+	}
+
+	return cmd
+}
+
+// start put-ai-gateway command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var putAiGatewayOverrides []func(
+	*cobra.Command,
+	*serving.PutAiGatewayRequest,
+)
+
+func newPutAiGateway() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var putAiGatewayReq serving.PutAiGatewayRequest
+	var putAiGatewayJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&putAiGatewayJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: complex arg: guardrails
+	// TODO: complex arg: inference_table_config
+	// TODO: array: rate_limits
+	// TODO: complex arg: usage_tracking_config
+
+	cmd.Use = "put-ai-gateway NAME"
+	cmd.Short = `Update AI Gateway of a serving endpoint.`
+	cmd.Long = `Update AI Gateway of a serving endpoint.
+  
+  Used to update the AI Gateway of a serving endpoint. NOTE: Only external model
+  endpoints are currently supported.
+
+  Arguments:
+    NAME: The name of the serving endpoint whose AI Gateway is being updated. This
+      field is required.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = putAiGatewayJson.Unmarshal(&putAiGatewayReq)
+			if err != nil {
+				return err
+			}
+		}
+		putAiGatewayReq.Name = args[0]
+
+		response, err := w.ServingEndpoints.PutAiGateway(ctx, putAiGatewayReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range putAiGatewayOverrides {
+		fn(cmd, &putAiGatewayReq)
 	}
 
 	return cmd
