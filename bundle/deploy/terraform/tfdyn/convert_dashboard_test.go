@@ -2,7 +2,6 @@ package tfdyn
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -77,39 +76,5 @@ func TestConvertDashboardFilePath(t *testing.T) {
 	// Assert that the "file_path" doesn't carry over.
 	assert.NotSubset(t, out.Dashboard["my_dashboard"], map[string]any{
 		"file_path": "some/path",
-	})
-}
-
-func TestConvertDashboardEmbedCredentialsPassthrough(t *testing.T) {
-	for _, v := range []bool{true, false} {
-		t.Run(fmt.Sprintf("set to %v", v), func(t *testing.T) {
-			vin := dyn.V(map[string]dyn.Value{
-				"embed_credentials": dyn.V(v),
-			})
-
-			ctx := context.Background()
-			out := schema.NewResources()
-			err := dashboardConverter{}.Convert(ctx, "my_dashboard", vin, out)
-			require.NoError(t, err)
-
-			// Assert that the "embed_credentials" is set as configured.
-			assert.Subset(t, out.Dashboard["my_dashboard"], map[string]any{
-				"embed_credentials": v,
-			})
-		})
-	}
-}
-
-func TestConvertDashboardEmbedCredentialsDefault(t *testing.T) {
-	vin := dyn.V(map[string]dyn.Value{})
-
-	ctx := context.Background()
-	out := schema.NewResources()
-	err := dashboardConverter{}.Convert(ctx, "my_dashboard", vin, out)
-	require.NoError(t, err)
-
-	// Assert that the "embed_credentials" is set to false (by default).
-	assert.Subset(t, out.Dashboard["my_dashboard"], map[string]any{
-		"embed_credentials": false,
 	})
 }

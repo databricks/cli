@@ -46,15 +46,6 @@ func convertDashboardResource(ctx context.Context, vin dyn.Value) (dyn.Value, er
 		}
 	}
 
-	// Default the "embed_credentials" field to "false", if not already set.
-	// This is different from the behavior in the Terraform provider, so we make it explicit.
-	if _, ok := vout.Get("embed_credentials").AsBool(); !ok {
-		vout, err = dyn.Set(vout, "embed_credentials", dyn.V(false))
-		if err != nil {
-			return dyn.InvalidValue, fmt.Errorf("failed to set embed_credentials: %w", err)
-		}
-	}
-
 	return vout, nil
 }
 
