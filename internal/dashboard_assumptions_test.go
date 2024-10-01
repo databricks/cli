@@ -1,4 +1,4 @@
-package test
+package internal
 
 import (
 	"encoding/base64"
@@ -17,8 +17,8 @@ import (
 )
 
 // Verify that importing a dashboard through the Workspace API retains the identity of the underying resource,
-// as well as properties exclusively accessible through the  dashboards API.
-func TestDashboardAssumptions_WorkspaceImport(t *testing.T) {
+// as well as properties exclusively accessible through the dashboards API.
+func TestAccDashboardAssumptions_WorkspaceImport(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 
 	t.Parallel()
