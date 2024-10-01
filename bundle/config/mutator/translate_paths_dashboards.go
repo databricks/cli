@@ -6,45 +6,23 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 )
 
-type dashboardRewritePattern struct {
-	pattern dyn.Pattern
-	fn      rewriteFunc
-}
-
-func (t *translateContext) dashboardRewritePatterns() []dashboardRewritePattern {
-	// Base pattern to match all dashboards.
-	base := dyn.NewPattern(
+func (t *translateContext) applyDashboardTranslations(v dyn.Value) (dyn.Value, error) {
+	// Convert the `file_path` field to a local absolute path.
+	// Terraform will load the file at this path and use its contents for the dashboard contents.
+	pattern := dyn.NewPattern(
 		dyn.Key("resources"),
 		dyn.Key("dashboards"),
 		dyn.AnyKey(),
+		dyn.Key("file_path"),
 	)
 
-	// Compile list of configuration paths to rewrite.
-	return []dashboardRewritePattern{
-		{
-			base.Append(dyn.Key("file_path")),
-			t.retainLocalAbsoluteFilePath,
-		},
-	}
-}
-
-func (t *translateContext) applyDashboardTranslations(v dyn.Value) (dyn.Value, error) {
-	var err error
-
-	for _, rewritePattern := range t.dashboardRewritePatterns() {
-		v, err = dyn.MapByPattern(v, rewritePattern.pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			key := p[1].Key()
-			dir, err := v.Location().Directory()
-			if err != nil {
-				return dyn.InvalidValue, fmt.Errorf("unable to determine directory for dashboard %s: %w", key, err)
-			}
-
-			return t.rewriteRelativeTo(p, v, rewritePattern.fn, dir, "")
-		})
+	return dyn.MapByPattern(v, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+		key := p[2].Key()
+		dir, err := v.Location().Directory()
 		if err != nil {
-			return dyn.InvalidValue, err
+			return dyn.InvalidValue, fmt.Errorf("unable to determine directory for dashboard %s: %w", key, err)
 		}
-	}
 
-	return v, nil
+		return t.rewriteRelativeTo(p, v, t.retainLocalAbsoluteFilePath, dir, "")
+	})
 }
