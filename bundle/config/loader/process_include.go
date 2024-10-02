@@ -44,7 +44,7 @@ func validateSingleResourceDefined(configRoot dyn.Value, ext, typ string) diag.D
 		configRoot,
 		dyn.NewPattern(dyn.Key("resources"), dyn.AnyKey(), dyn.AnyKey()),
 		func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-			// The key for the resource. Eg: "my_job" for jobs.my_job.
+			// The key for the resource, e.g. "my_job" for jobs.my_job.
 			k := p[2].Key()
 			// The type of the resource. Eg: "job" for jobs.my_job.
 			typ := supportedResources[p[1].Key()].SingularName
