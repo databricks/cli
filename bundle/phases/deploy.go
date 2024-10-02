@@ -115,6 +115,15 @@ properties such as the 'catalog' or 'storage' are changed:`
 		return true, nil
 	}
 
+	if b.DryRun {
+		cmdio.LogString(ctx, "Following changes would be deployed:")
+		_, err := tf.ShowPlanFile(ctx, b.Plan.Path)
+		if err != nil {
+			return false, err
+		}
+		return false, nil
+	}
+
 	if !cmdio.IsPromptSupported(ctx) {
 		return false, fmt.Errorf("the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
 	}

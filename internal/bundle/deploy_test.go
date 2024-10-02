@@ -127,6 +127,34 @@ func TestAccBundleDeployUcSchemaFailsWithoutAutoApprove(t *testing.T) {
 	assert.Contains(t, stdout.String(), "the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
 }
 
+func TestAccBundleDeployUcSchemaDryRun(t *testing.T) {
+	ctx, wt := acc.UcWorkspaceTest(t)
+	w := wt.W
+
+	uniqueId := uuid.New().String()
+	schemaName := "test-schema-" + uniqueId
+	catalogName := "main"
+
+	bundleRoot := setupUcSchemaBundle(t, ctx, w, uniqueId)
+
+	// Remove the UC schema from the resource configuration.
+	err := os.Remove(filepath.Join(bundleRoot, "schema.yml"))
+	require.NoError(t, err)
+
+	// Redeploy the bundle
+	t.Setenv("BUNDLE_ROOT", bundleRoot)
+	t.Setenv("TERM", "dumb")
+	c := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "deploy", "--dry0run")
+	stdout, _, err := c.Run()
+
+	// Assert the schema is deleted
+	_, err = w.Schemas.GetByFullName(ctx, strings.Join([]string{catalogName, schemaName}, "."))
+	apiErr := &apierr.APIError{}
+	assert.Contains(t, stdout.String(), "Following changes would be deployed:")
+	assert.True(t, errors.As(err, &apiErr))
+	assert.Equal(t, "SCHEMA_DOES_NOT_EXIST", apiErr.ErrorCode)
+}
+
 func TestAccBundlePipelineDeleteWithoutAutoApprove(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	w := wt.W
@@ -236,7 +264,7 @@ func TestAccDeployBasicBundleLogs(t *testing.T) {
 
 	stdout, stderr := blackBoxRun(t, root, "bundle", "deploy")
 	assert.Equal(t, strings.Join([]string{
-		fmt.Sprintf("Uploading bundle files to /Workspace/Users/%s/.bundle/%s/files...", currentUser.UserName, uniqueId),
+		fmt.Sprintf("Uploading bundle files to /Users/%s/.bundle/%s/files...", currentUser.UserName, uniqueId),
 		"Deploying resources...",
 		"Updating deployment state...",
 		"Deployment complete!\n",

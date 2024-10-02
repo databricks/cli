@@ -81,6 +81,9 @@ type Bundle struct {
 	// files
 	AutoApprove bool
 
+	// if true, the deploy changes are presented, but not applied
+	DryRun bool
+
 	// Tagging is used to normalize tag keys and values.
 	// The implementation depends on the cloud being targeted.
 	Tagging tags.Cloud
