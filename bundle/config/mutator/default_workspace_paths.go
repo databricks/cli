@@ -29,6 +29,10 @@ func (m *defineDefaultWorkspacePaths) Apply(ctx context.Context, b *bundle.Bundl
 		b.Config.Workspace.FilePath = path.Join(root, "files")
 	}
 
+	if b.Config.Workspace.ResourcePath == "" {
+		b.Config.Workspace.ResourcePath = path.Join(root, "resources")
+	}
+
 	if b.Config.Workspace.ArtifactPath == "" {
 		b.Config.Workspace.ArtifactPath = path.Join(root, "artifacts")
 	}
