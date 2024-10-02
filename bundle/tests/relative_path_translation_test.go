@@ -12,9 +12,9 @@ func TestRelativePathTranslationDefault(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	t0 := b.Config.Resources.Jobs["job"].Tasks[0]
-	assert.Equal(t, "/remote/src/file1.py", t0.SparkPythonTask.PythonFile)
+	assert.Equal(t, "/Workspace/remote/src/file1.py", t0.SparkPythonTask.PythonFile)
 	t1 := b.Config.Resources.Jobs["job"].Tasks[1]
-	assert.Equal(t, "/remote/src/file1.py", t1.SparkPythonTask.PythonFile)
+	assert.Equal(t, "/Workspace/remote/src/file1.py", t1.SparkPythonTask.PythonFile)
 }
 
 func TestRelativePathTranslationOverride(t *testing.T) {
@@ -22,7 +22,7 @@ func TestRelativePathTranslationOverride(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	t0 := b.Config.Resources.Jobs["job"].Tasks[0]
-	assert.Equal(t, "/remote/src/file2.py", t0.SparkPythonTask.PythonFile)
+	assert.Equal(t, "/Workspace/remote/src/file2.py", t0.SparkPythonTask.PythonFile)
 	t1 := b.Config.Resources.Jobs["job"].Tasks[1]
-	assert.Equal(t, "/remote/src/file2.py", t1.SparkPythonTask.PythonFile)
+	assert.Equal(t, "/Workspace/remote/src/file2.py", t1.SparkPythonTask.PythonFile)
 }
