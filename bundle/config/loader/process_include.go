@@ -16,7 +16,9 @@ import (
 func validateFileFormat(configRoot dyn.Value, filePath string) diag.Diagnostics {
 	for _, resourceDescription := range config.SupportedResources() {
 		singularName := resourceDescription.SingularName
-		for _, ext := range []string{fmt.Sprintf(".%s.yml", singularName), fmt.Sprintf(".%s.yaml", singularName)} {
+
+		for _, yamlExt := range []string{"yml", "yaml"} {
+			ext := fmt.Sprintf(".%s.%s", singularName, yamlExt)
 			if strings.HasSuffix(filePath, ext) {
 				return validateSingleResourceDefined(configRoot, ext, singularName)
 			}
