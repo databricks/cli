@@ -63,6 +63,15 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 		return false, err
 	}
 
+	if b.DryRun {
+		cmdio.LogString(ctx, "Following changes would be deployed:")
+		_, err := tf.ShowPlanFile(ctx, b.Plan.Path)
+		if err != nil {
+			return false, err
+		}
+		return false, nil
+	}
+
 	schemaActions := parseTerraformActions(plan.ResourceChanges, func(typ string, actions tfjson.Actions) bool {
 		// Filter in only UC schema resources.
 		if typ != "databricks_schema" {
@@ -113,15 +122,6 @@ properties such as the 'catalog' or 'storage' are changed:`
 
 	if b.AutoApprove {
 		return true, nil
-	}
-
-	if b.DryRun {
-		cmdio.LogString(ctx, "Following changes would be deployed:")
-		_, err := tf.ShowPlanFile(ctx, b.Plan.Path)
-		if err != nil {
-			return false, err
-		}
-		return false, nil
 	}
 
 	if !cmdio.IsPromptSupported(ctx) {
