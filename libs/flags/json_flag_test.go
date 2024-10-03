@@ -167,3 +167,45 @@ func TestJsonUnmarshalRequestMismatch(t *testing.T) {
 	require.ErrorContains(t, err, `json input error:
 - unknown field: settings`)
 }
+
+const wrontTypeJsonData = `
+{
+    "job_id": 123,
+    "new_settings": {
+        "name": "new job",
+        "email_notifications": {
+            "on_start": [],
+            "on_success": [],
+            "on_failure": []
+        },
+        "notification_settings": {
+            "no_alert_for_skipped_runs": true,
+            "no_alert_for_canceled_runs": true
+        },
+        "timeout_seconds": "wrong_type",
+        "max_concurrent_runs": {},
+        "tasks": [
+            {
+                "task_key": "new task",
+                "email_notifications": {},
+                "notification_settings": {},
+                "timeout_seconds": 0,
+                "max_retries": 0,
+                "min_retry_interval_millis": 0,
+                "retry_on_timeout": "true"
+            }
+        ]
+    }
+}
+`
+
+func TestJsonUnmarshalWrongTypeReportsCorrectLocation(t *testing.T) {
+	var body JsonFlag
+
+	var r jobs.ResetJob
+	err := body.Set(wrontTypeJsonData)
+	require.NoError(t, err)
+
+	err = body.Unmarshal(&r)
+	require.ErrorContains(t, err, `(inline):15:40: expected an int, found a string`)
+}
