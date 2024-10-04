@@ -11,6 +11,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type requestType struct {
+	Foo string `json:"foo"`
+}
+
 func TestJsonFlagEmpty(t *testing.T) {
 	var body JsonFlag
 
@@ -28,12 +32,12 @@ func TestJsonFlagInline(t *testing.T) {
 	err := body.Set(`{"foo": "bar"}`)
 	assert.NoError(t, err)
 
-	var request any
+	var request requestType
 	err = body.Unmarshal(&request)
 	assert.NoError(t, err)
 
 	assert.Equal(t, "JSON (14 bytes)", body.String())
-	assert.Equal(t, map[string]any{"foo": "bar"}, request)
+	assert.Equal(t, requestType{"bar"}, request)
 }
 
 func TestJsonFlagError(t *testing.T) {
@@ -42,7 +46,7 @@ func TestJsonFlagError(t *testing.T) {
 	err := body.Set(`{"foo":`)
 	assert.NoError(t, err)
 
-	var request any
+	var request requestType
 	err = body.Unmarshal(&request)
 	assert.EqualError(t, err, "unexpected end of JSON input")
 	assert.Equal(t, "JSON (7 bytes)", body.String())
@@ -50,10 +54,10 @@ func TestJsonFlagError(t *testing.T) {
 
 func TestJsonFlagFile(t *testing.T) {
 	var body JsonFlag
-	var request any
+	var request requestType
 
 	var fpath string
-	var payload = []byte(`{"hello": "world"}`)
+	var payload = []byte(`{"foo": "bar"}`)
 
 	{
 		f, err := os.Create(path.Join(t.TempDir(), "file"))
@@ -69,7 +73,7 @@ func TestJsonFlagFile(t *testing.T) {
 	err = body.Unmarshal(&request)
 	require.NoError(t, err)
 
-	assert.Equal(t, map[string]interface{}{"hello": "world"}, request)
+	assert.Equal(t, requestType{"bar"}, request)
 }
 
 const jsonData = `
@@ -83,8 +87,7 @@ const jsonData = `
             "on_failure": []
         },
         "notification_settings": {
-            "no_alert_for_skipped_runs": true,
-            "no_alert_for_canceled_runs": true
+            "no_alert_for_canceled_runs": false
         },
         "timeout_seconds": 0,
         "max_concurrent_runs": 1,
@@ -207,5 +210,21 @@ func TestJsonUnmarshalWrongTypeReportsCorrectLocation(t *testing.T) {
 	require.NoError(t, err)
 
 	err = body.Unmarshal(&r)
-	require.ErrorContains(t, err, `(inline):15:40: expected an int, found a string`)
+	require.ErrorContains(t, err, `cannot parse "wrong_type" as an integer`)
+}
+
+func TestJsonUnmarshalForRequestWithForceSendFields(t *testing.T) {
+	var body JsonFlag
+
+	var r jobs.ResetJob
+	err := body.Set(jsonData)
+	require.NoError(t, err)
+
+	err = body.Unmarshal(&r)
+	require.NoError(t, err)
+
+	assert.Equal(t, false, r.NewSettings.NotificationSettings.NoAlertForSkippedRuns)
+	assert.Equal(t, false, r.NewSettings.NotificationSettings.NoAlertForCanceledRuns)
+	assert.NotContains(t, r.NewSettings.NotificationSettings.ForceSendFields, "NoAlertForSkippedRuns")
+	assert.Contains(t, r.NewSettings.NotificationSettings.ForceSendFields, "NoAlertForCanceledRuns")
 }
