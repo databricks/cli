@@ -13,6 +13,7 @@ type MlflowModel struct {
 	ID             string         `json:"id,omitempty" bundle:"readonly"`
 	Permissions    []Permission   `json:"permissions,omitempty"`
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
+	URL            string         `json:"url,omitempty" bundle:"internal"`
 
 	*ml.Model
 }
@@ -38,4 +39,19 @@ func (s *MlflowModel) Exists(ctx context.Context, w *databricks.WorkspaceClient,
 
 func (s *MlflowModel) TerraformResourceName() string {
 	return "databricks_mlflow_model"
+}
+
+func (s *MlflowModel) InitializeURL(urlPrefix string, urlSuffix string) {
+	if s.ID == "" {
+		return
+	}
+	s.URL = urlPrefix + "ml/models/" + s.Name + urlSuffix
+}
+
+func (s *MlflowModel) GetName() string {
+	return s.Name
+}
+
+func (s *MlflowModel) GetURL() string {
+	return s.URL
 }

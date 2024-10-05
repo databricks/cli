@@ -14,6 +14,7 @@ type Job struct {
 	ID             string         `json:"id,omitempty" bundle:"readonly"`
 	Permissions    []Permission   `json:"permissions,omitempty"`
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
+	URL            string         `json:"url,omitempty" bundle:"internal"`
 
 	*jobs.JobSettings
 }
@@ -43,4 +44,19 @@ func (j *Job) Exists(ctx context.Context, w *databricks.WorkspaceClient, id stri
 
 func (j *Job) TerraformResourceName() string {
 	return "databricks_job"
+}
+
+func (j *Job) InitializeURL(urlPrefix string, urlSuffix string) {
+	if j.ID == "" {
+		return
+	}
+	j.URL = urlPrefix + "jobs/" + j.ID + urlSuffix
+}
+
+func (j *Job) GetName() string {
+	return j.Name
+}
+
+func (j *Job) GetURL() string {
+	return j.URL
 }

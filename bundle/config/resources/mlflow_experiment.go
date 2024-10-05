@@ -13,6 +13,7 @@ type MlflowExperiment struct {
 	ID             string         `json:"id,omitempty" bundle:"readonly"`
 	Permissions    []Permission   `json:"permissions,omitempty"`
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
+	URL            string         `json:"url,omitempty" bundle:"internal"`
 
 	*ml.Experiment
 }
@@ -38,4 +39,19 @@ func (s *MlflowExperiment) Exists(ctx context.Context, w *databricks.WorkspaceCl
 
 func (s *MlflowExperiment) TerraformResourceName() string {
 	return "databricks_mlflow_experiment"
+}
+
+func (s *MlflowExperiment) InitializeURL(urlPrefix string, urlSuffix string) {
+	if s.ID == "" {
+		return
+	}
+	s.URL = urlPrefix + "ml/experiments/" + s.ID + urlSuffix
+}
+
+func (s *MlflowExperiment) GetName() string {
+	return s.Name
+}
+
+func (s *MlflowExperiment) GetURL() string {
+	return s.URL
 }
