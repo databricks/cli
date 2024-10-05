@@ -127,7 +127,8 @@ func (v Value) AsAny() any {
 	case KindFloat:
 		return v.v
 	case KindTime:
-		return v.v
+		t := v.v.(Time)
+		return t.Time()
 	default:
 		// Panic because we only want to deal with known types.
 		panic(fmt.Sprintf("invalid kind: %d", v.k))

@@ -1,0 +1,19 @@
+targets:
+  default:
+  dev:
+    variables:
+      cluster1:
+        spark_version: "14.2.x-scala2.11"
+        node_type_id: "Standard_DS3_v2"
+        num_workers: 4
+        spark_conf:
+          spark.speculation: false
+          spark.databricks.delta.retentionDurationCheck.enabled: false
+      cluster2:
+        default:
+          spark_version: "14.2.x-scala2.11"
+          node_type_id: "Standard_DS3_v2"
+          num_workers: 4
+          spark_conf:
+            spark.speculation: false
+            spark.databricks.delta.retentionDurationCheck.enabled: false

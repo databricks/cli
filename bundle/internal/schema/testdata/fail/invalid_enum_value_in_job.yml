@@ -1,0 +1,4 @@
+resources:
+  jobs:
+    myjob:
+      format: INVALID_VALUE

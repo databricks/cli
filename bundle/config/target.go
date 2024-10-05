@@ -38,7 +38,26 @@ type Target struct {
 	// Override default values or lookup name for defined variables
 	// Does not permit defining new variables or redefining existing ones
 	// in the scope of an target
-	Variables map[string]*variable.Variable `json:"variables,omitempty"`
+	//
+	// There are two valid ways to define a variable override in a target:
+	// 1. Direct value override. We normalize this to the variable.Variable
+	//    struct format when loading the configuration YAML:
+	//
+	//   variables:
+	//     foo: "value"
+	//
+	// 2. Override matching the variable.Variable struct.
+	//
+	//   variables:
+	//     foo:
+	//       default: "value"
+	//
+	// OR
+	//
+	//   variables:
+	//     foo:
+	//       lookup: "resource_name"
+	Variables map[string]*variable.TargetVariable `json:"variables,omitempty"`
 
 	Git Git `json:"git,omitempty"`
 

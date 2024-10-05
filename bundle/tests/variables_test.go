@@ -124,8 +124,13 @@ func TestVariablesWithTargetLookupOverrides(t *testing.T) {
 	}, nil)
 
 	clustersApi := mockWorkspaceClient.GetMockClustersAPI()
-	clustersApi.EXPECT().GetByClusterName(mock.Anything, "some-test-cluster").Return(&compute.ClusterDetails{
-		ClusterId: "4321",
+	clustersApi.EXPECT().ListAll(mock.Anything, compute.ListClustersRequest{
+		FilterBy: &compute.ListClustersFilterBy{
+			ClusterSources: []compute.ClusterSource{compute.ClusterSourceApi, compute.ClusterSourceUi},
+		},
+	}).Return([]compute.ClusterDetails{
+		{ClusterId: "4321", ClusterName: "some-test-cluster"},
+		{ClusterId: "9876", ClusterName: "some-other-cluster"},
 	}, nil)
 
 	clusterPoliciesApi := mockWorkspaceClient.GetMockClusterPoliciesAPI()
