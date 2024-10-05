@@ -3,6 +3,7 @@ package permissions
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -87,9 +88,11 @@ func analyzeBundlePermissions(b *bundle.Bundle) (bool, string) {
 
 	assistance := "For assistance, contact the owners of this project."
 	if otherManagers.Size() > 0 {
+		list := otherManagers.Values()
+		sort.Strings(list)
 		assistance = fmt.Sprintf(
 			"For assistance, users or groups with appropriate permissions may include: %s.",
-			strings.Join(otherManagers.Values(), ", "),
+			strings.Join(list, ", "),
 		)
 	}
 	return canManageBundle, assistance
