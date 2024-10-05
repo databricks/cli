@@ -8,6 +8,7 @@ import (
 	automatic_cluster_update "github.com/databricks/cli/cmd/workspace/automatic-cluster-update"
 	compliance_security_profile "github.com/databricks/cli/cmd/workspace/compliance-security-profile"
 	default_namespace "github.com/databricks/cli/cmd/workspace/default-namespace"
+	disable_legacy_access "github.com/databricks/cli/cmd/workspace/disable-legacy-access"
 	enhanced_security_monitoring "github.com/databricks/cli/cmd/workspace/enhanced-security-monitoring"
 	restrict_workspace_admins "github.com/databricks/cli/cmd/workspace/restrict-workspace-admins"
 )
@@ -31,6 +32,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(automatic_cluster_update.New())
 	cmd.AddCommand(compliance_security_profile.New())
 	cmd.AddCommand(default_namespace.New())
+	cmd.AddCommand(disable_legacy_access.New())
 	cmd.AddCommand(enhanced_security_monitoring.New())
 	cmd.AddCommand(restrict_workspace_admins.New())
 

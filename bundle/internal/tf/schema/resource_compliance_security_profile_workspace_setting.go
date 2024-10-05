@@ -3,8 +3,8 @@
 package schema
 
 type ResourceComplianceSecurityProfileWorkspaceSettingComplianceSecurityProfileWorkspace struct {
-	ComplianceStandards []string `json:"compliance_standards,omitempty"`
-	IsEnabled           bool     `json:"is_enabled,omitempty"`
+	ComplianceStandards []string `json:"compliance_standards"`
+	IsEnabled           bool     `json:"is_enabled"`
 }
 
 type ResourceComplianceSecurityProfileWorkspaceSetting struct {

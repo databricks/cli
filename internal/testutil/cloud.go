@@ -49,3 +49,7 @@ func GetCloud(t *testing.T) Cloud {
 	}
 	return -1
 }
+
+func IsAWSCloud(t *testing.T) bool {
+	return GetCloud(t) == AWS
+}

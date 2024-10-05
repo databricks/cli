@@ -663,6 +663,14 @@ func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
 					{Attributes: stateInstanceAttributes{ID: "1"}},
 				},
 			},
+			{
+				Type: "databricks_cluster",
+				Mode: "managed",
+				Name: "test_cluster",
+				Instances: []stateResourceInstance{
+					{Attributes: stateInstanceAttributes{ID: "1"}},
+				},
+			},
 		},
 	}
 	err := TerraformToBundle(&tfState, &config)
@@ -691,6 +699,9 @@ func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
 
 	assert.Equal(t, "1", config.Resources.Schemas["test_schema"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Schemas["test_schema"].ModifiedStatus)
+
+	assert.Equal(t, "1", config.Resources.Clusters["test_cluster"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Clusters["test_cluster"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -754,6 +765,13 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
+			Clusters: map[string]*resources.Cluster{
+				"test_cluster": {
+					ClusterSpec: &compute.ClusterSpec{
+						ClusterName: "test_cluster",
+					},
+				},
+			},
 		},
 	}
 	var tfState = resourcesState{
@@ -785,6 +803,9 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 
 	assert.Equal(t, "", config.Resources.Schemas["test_schema"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Schemas["test_schema"].ModifiedStatus)
+
+	assert.Equal(t, "", config.Resources.Clusters["test_cluster"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Clusters["test_cluster"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -885,6 +906,18 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 				"test_schema_new": {
 					CreateSchema: &catalog.CreateSchema{
 						Name: "test_schema_new",
+					},
+				},
+			},
+			Clusters: map[string]*resources.Cluster{
+				"test_cluster": {
+					ClusterSpec: &compute.ClusterSpec{
+						ClusterName: "test_cluster",
+					},
+				},
+				"test_cluster_new": {
+					ClusterSpec: &compute.ClusterSpec{
+						ClusterName: "test_cluster_new",
 					},
 				},
 			},
@@ -1020,6 +1053,22 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 					{Attributes: stateInstanceAttributes{ID: "2"}},
 				},
 			},
+			{
+				Type: "databricks_cluster",
+				Mode: "managed",
+				Name: "test_cluster",
+				Instances: []stateResourceInstance{
+					{Attributes: stateInstanceAttributes{ID: "1"}},
+				},
+			},
+			{
+				Type: "databricks_cluster",
+				Mode: "managed",
+				Name: "test_cluster_old",
+				Instances: []stateResourceInstance{
+					{Attributes: stateInstanceAttributes{ID: "2"}},
+				},
+			},
 		},
 	}
 	err := TerraformToBundle(&tfState, &config)
@@ -1080,6 +1129,13 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Schemas["test_schema_old"].ModifiedStatus)
 	assert.Equal(t, "", config.Resources.Schemas["test_schema_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Schemas["test_schema_new"].ModifiedStatus)
+
+	assert.Equal(t, "1", config.Resources.Clusters["test_cluster"].ID)
+	assert.Equal(t, "", config.Resources.Clusters["test_cluster"].ModifiedStatus)
+	assert.Equal(t, "2", config.Resources.Clusters["test_cluster_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Clusters["test_cluster_old"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.Clusters["test_cluster_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Clusters["test_cluster_new"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }

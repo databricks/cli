@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
@@ -82,6 +83,10 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 		conv(src, &dst)
 
 		if src.JobSettings != nil {
+			sort.Slice(src.JobSettings.Tasks, func(i, j int) bool {
+				return src.JobSettings.Tasks[i].TaskKey < src.JobSettings.Tasks[j].TaskKey
+			})
+
 			for _, v := range src.Tasks {
 				var t schema.ResourceJobTask
 				conv(v, &t)
@@ -229,6 +234,13 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 		var dst schema.ResourceQualityMonitor
 		conv(src, &dst)
 		tfroot.Resource.QualityMonitor[k] = &dst
+	}
+
+	for k, src := range config.Resources.Clusters {
+		noResources = false
+		var dst schema.ResourceCluster
+		conv(src, &dst)
+		tfroot.Resource.Cluster[k] = &dst
 	}
 
 	// We explicitly set "resource" to nil to omit it from a JSON encoding.
@@ -394,6 +406,16 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 				}
 				cur.ID = instance.Attributes.ID
 				config.Resources.Schemas[resource.Name] = cur
+			case "databricks_cluster":
+				if config.Resources.Clusters == nil {
+					config.Resources.Clusters = make(map[string]*resources.Cluster)
+				}
+				cur := config.Resources.Clusters[resource.Name]
+				if cur == nil {
+					cur = &resources.Cluster{ModifiedStatus: resources.ModifiedStatusDeleted}
+				}
+				cur.ID = instance.Attributes.ID
+				config.Resources.Clusters[resource.Name] = cur
 			case "databricks_permissions":
 			case "databricks_grants":
 				// Ignore; no need to pull these back into the configuration.
@@ -439,6 +461,11 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 		}
 	}
 	for _, src := range config.Resources.Schemas {
+		if src.ModifiedStatus == "" && src.ID == "" {
+			src.ModifiedStatus = resources.ModifiedStatusCreated
+		}
+	}
+	for _, src := range config.Resources.Clusters {
 		if src.ModifiedStatus == "" && src.ID == "" {
 			src.ModifiedStatus = resources.ModifiedStatusCreated
 		}
