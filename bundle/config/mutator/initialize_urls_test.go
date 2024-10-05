@@ -91,7 +91,7 @@ func TestInitializeURLs(t *testing.T) {
 		"schema1":          "https://mycompany.databricks.com/explore/data/catalog/schema?o=123456",
 	}
 
-	configureForOrgId(b, "123456")
+	initializeForWorkspace(b, "123456", "https://mycompany.databricks.com/")
 
 	for _, rs := range b.Config.Resources.AllResources() {
 		for key, r := range rs {
@@ -103,10 +103,6 @@ func TestInitializeURLs(t *testing.T) {
 func URLs_NoOrgId(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
-			Workspace: config.Workspace{
-				// Hostname with org id in URL and no trailing /
-				Host: "https://adb-123456.azuredatabricks.net",
-			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
@@ -118,7 +114,7 @@ func URLs_NoOrgId(t *testing.T) {
 		},
 	}
 
-	configureForOrgId(b, "123456")
+	initializeForWorkspace(b, "123456", "https://adb-123456.azuredatabricks.net/")
 
 	require.Equal(t, "https://adb-123456.azuredatabricks.net/jobs/1", b.Config.Resources.Jobs["job1"].URL)
 }

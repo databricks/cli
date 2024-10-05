@@ -10,7 +10,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 )
 
-type initializeUrls struct {
+type initializeURLs struct {
 	name string
 }
 
@@ -19,30 +19,25 @@ type initializeUrls struct {
 // latency. As such, it should only be used when needed.
 // This URL field is used for the output of the 'bundle summary' CLI command.
 func InitializeURLs() bundle.Mutator {
-	return &initializeUrls{}
+	return &initializeURLs{}
 }
 
-func (m *initializeUrls) Name() string {
-	return fmt.Sprintf("ConfigureURLs(%s)", m.name)
+func (m *initializeURLs) Name() string {
+	return fmt.Sprintf("InitializeURLs(%s)", m.name)
 }
 
-func (m *initializeUrls) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *initializeURLs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	workspaceId, err := b.WorkspaceClient().CurrentWorkspaceID(ctx)
 	orgId := strconv.FormatInt(workspaceId, 10)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	configureForOrgId(b, orgId)
+	urlPrefix := b.WorkspaceClient().Config.CanonicalHostName() + "/"
+	initializeForWorkspace(b, orgId, urlPrefix)
 	return nil
 }
 
-func configureForOrgId(b *bundle.Bundle, orgId string) {
-	urlPrefix := b.Config.Workspace.Host
-	if !strings.HasSuffix(urlPrefix, "/") {
-		urlPrefix += "/"
-	}
-	urlSuffix := ""
-
+func initializeForWorkspace(b *bundle.Bundle, orgId string, urlPrefix string) {
 	// Add ?o=<workspace id> only if <workspace id> wasn't in the subdomain already.
 	// The ?o= is needed when vanity URLs / legacy workspace URLs are used.
 	// If it's not needed we prefer to leave it out since these URLs are rather
@@ -50,6 +45,7 @@ func configureForOrgId(b *bundle.Bundle, orgId string) {
 	//
 	// See https://docs.databricks.com/en/workspace/workspace-details.html for
 	// further reading about the '?o=' suffix.
+	urlSuffix := ""
 	if !strings.Contains(urlPrefix, orgId) {
 		urlSuffix = "?o=" + orgId
 	}
