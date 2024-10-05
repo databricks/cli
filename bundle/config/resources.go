@@ -92,6 +92,12 @@ func (r *Resources) AllResources() map[string]map[string]ConfigResource {
 	}
 	result["schemas"] = schemaResources
 
+	clusterResources := make(map[string]ConfigResource)
+	for key, schema := range r.Clusters {
+		clusterResources[key] = schema
+	}
+	result["clusters"] = clusterResources
+
 	return result
 }
 
