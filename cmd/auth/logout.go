@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/auth/cache"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
@@ -63,34 +62,11 @@ func (l *logoutSession) clearTokenCache(ctx context.Context) error {
 	return l.persistentAuth.ClearToken(ctx)
 }
 
-// Overrewrite profile to .databrickscfg without fields marked as sensitive
-// Other attributes are preserved.
-func (l *logoutSession) clearConfigFile(ctx context.Context, sectionMap map[string]string) error {
-	return databrickscfg.SaveToProfile(ctx, &config.Config{
-		ConfigFile:           l.file.Path(),
-		Profile:              l.profile,
-		Host:                 sectionMap["host"],
-		ClusterID:            sectionMap["cluster_id"],
-		WarehouseID:          sectionMap["warehouse_id"],
-		ServerlessComputeID:  sectionMap["serverless_compute_id"],
-		AccountID:            sectionMap["account_id"],
-		Username:             sectionMap["username"],
-		GoogleServiceAccount: sectionMap["google_service_account"],
-		AzureResourceID:      sectionMap["azure_workspace_resource_id"],
-		AzureClientID:        sectionMap["azure_client_id"],
-		AzureTenantID:        sectionMap["azure_tenant_id"],
-		AzureEnvironment:     sectionMap["azure_environment"],
-		AzureLoginAppID:      sectionMap["azure_login_app_id"],
-		ClientID:             sectionMap["client_id"],
-		AuthType:             sectionMap["auth_type"],
-	})
-}
-
 func newLogoutCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "logout [PROFILE]",
 		Short: "Logout from specified profile",
-		Long:  "Clears OAuth token from token-cache and any sensitive value in the config file, if they exist.",
+		Long:  "Removes the OAuth token from the token-cache",
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -115,24 +91,19 @@ func newLogoutCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 		}
 		defer persistentAuth.Close()
 		logoutSession := &logoutSession{}
-		logoutSession.load(ctx, profileName, persistentAuth)
-		configSectionMap, err := logoutSession.getConfigSectionMap()
+		err := logoutSession.load(ctx, profileName, persistentAuth)
 		if err != nil {
 			return err
 		}
 		err = logoutSession.clearTokenCache(ctx)
 		if err != nil {
 			if errors.Is(err, cache.ErrNotConfigured) {
-				// It is OK to not have OAuth configured. Move on and remove
-				// sensitive values from config file (Example PAT)
+				// It is OK to not have OAuth configured
 			} else {
 				return err
 			}
 		}
-		if err := logoutSession.clearConfigFile(ctx, configSectionMap); err != nil {
-			return err
-		}
-		cmdio.LogString(ctx, fmt.Sprintf("Profile %s was successfully logged out", profileName))
+		cmdio.LogString(ctx, fmt.Sprintf("Profile %s is logged out", profileName))
 		return nil
 	}
 	return cmd
