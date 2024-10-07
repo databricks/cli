@@ -402,6 +402,10 @@
                   {
                     "type": "object",
                     "properties": {
+                      "ai_gateway": {
+                        "description": "The AI Gateway configuration for the serving endpoint. NOTE: only external model endpoints are supported as of now.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayConfig"
+                      },
                       "config": {
                         "description": "The core config of the serving endpoint.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.EndpointCoreConfigInput"
@@ -472,6 +476,10 @@
                   {
                     "type": "object",
                     "properties": {
+                      "budget_policy_id": {
+                        "description": "Budget policy of this pipeline.",
+                        "$ref": "#/$defs/string"
+                      },
                       "catalog": {
                         "description": "A catalog in Unity Catalog to publish data from this pipeline to. If `target` is specified, tables in this pipeline are published to a `target` schema inside `catalog` (for example, `catalog`.`target`.`table`). If `target` is not specified, no data is published to Unity Catalog.",
                         "$ref": "#/$defs/string"
@@ -538,6 +546,10 @@
                       "photon": {
                         "description": "Whether Photon is enabled for this pipeline.",
                         "$ref": "#/$defs/bool"
+                      },
+                      "schema": {
+                        "description": "The default schema (database) where tables are read from or published to. The presence of this field implies that the pipeline is in direct publishing mode.",
+                        "$ref": "#/$defs/string"
                       },
                       "serverless": {
                         "description": "Whether serverless compute is enabled for this pipeline.",
@@ -1204,6 +1216,9 @@
                       "$ref": "#/$defs/string"
                     },
                     "profile": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "resource_path": {
                       "$ref": "#/$defs/string"
                     },
                     "root_path": {
@@ -2632,7 +2647,7 @@
                   "type": "object",
                   "properties": {
                     "no_alert_for_skipped_runs": {
-                      "description": "If true, do not send email to recipients specified in `on_failure` if the run is skipped.",
+                      "description": "If true, do not send email to recipients specified in `on_failure` if the run is skipped.\nThis field is `deprecated`. Please use the `notification_settings.no_alert_for_skipped_runs` field.",
                       "$ref": "#/$defs/bool"
                     },
                     "on_duration_warning_threshold_exceeded": {
@@ -3073,6 +3088,7 @@
                       "$ref": "#/$defs/map/string"
                     },
                     "pipeline_params": {
+                      "description": "Controls whether the pipeline should perform a full refresh",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.PipelineParams"
                     },
                     "python_named_params": {
@@ -3547,7 +3563,7 @@
                   "type": "object",
                   "properties": {
                     "no_alert_for_skipped_runs": {
-                      "description": "If true, do not send email to recipients specified in `on_failure` if the run is skipped.",
+                      "description": "If true, do not send email to recipients specified in `on_failure` if the run is skipped.\nThis field is `deprecated`. Please use the `notification_settings.no_alert_for_skipped_runs` field.",
                       "$ref": "#/$defs/bool"
                     },
                     "on_duration_warning_threshold_exceeded": {
@@ -4355,6 +4371,207 @@
                     },
                     "ai21labs_api_key_plaintext": {
                       "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "serving.AiGatewayConfig": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "guardrails": {
+                      "description": "Configuration for AI Guardrails to prevent unwanted data and unsafe data in requests and responses.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrails"
+                    },
+                    "inference_table_config": {
+                      "description": "Configuration for payload logging using inference tables. Use these tables to monitor and audit data being sent to and received from model APIs and to improve model quality.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayInferenceTableConfig"
+                    },
+                    "rate_limits": {
+                      "description": "Configuration for rate limits which can be set to limit endpoint traffic.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimit"
+                    },
+                    "usage_tracking_config": {
+                      "description": "Configuration to enable usage tracking using system tables. These tables allow you to monitor operational usage on endpoints and their associated costs.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayUsageTrackingConfig"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "serving.AiGatewayGuardrailParameters": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "invalid_keywords": {
+                      "description": "List of invalid keywords. AI guardrail uses keyword or string matching to decide if the keyword exists in the request or response content.",
+                      "$ref": "#/$defs/slice/string"
+                    },
+                    "pii": {
+                      "description": "Configuration for guardrail PII filter.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailPiiBehavior"
+                    },
+                    "safety": {
+                      "description": "Indicates whether the safety filter is enabled.",
+                      "$ref": "#/$defs/bool"
+                    },
+                    "valid_topics": {
+                      "description": "The list of allowed topics. Given a chat request, this guardrail flags the request if its topic is not in the allowed topics.",
+                      "$ref": "#/$defs/slice/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "serving.AiGatewayGuardrailPiiBehavior": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "behavior": {
+                      "description": "Behavior for PII filter. Currently only 'BLOCK' is supported. If 'BLOCK' is set for the input guardrail and the request contains PII, the request is not sent to the model server and 400 status code is returned; if 'BLOCK' is set for the output guardrail and the model response contains PII, the PII info in the response is redacted and 400 status code is returned.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailPiiBehaviorBehavior",
+                      "enum": [
+                        "NONE",
+                        "BLOCK"
+                      ]
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "behavior"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "serving.AiGatewayGuardrailPiiBehaviorBehavior": {
+              "type": "string"
+            },
+            "serving.AiGatewayGuardrails": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "input": {
+                      "description": "Configuration for input guardrail filters.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailParameters"
+                    },
+                    "output": {
+                      "description": "Configuration for output guardrail filters.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailParameters"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "serving.AiGatewayInferenceTableConfig": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "catalog_name": {
+                      "description": "The name of the catalog in Unity Catalog. Required when enabling inference tables. NOTE: On update, you have to disable inference table first in order to change the catalog name.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "enabled": {
+                      "description": "Indicates whether the inference table is enabled.",
+                      "$ref": "#/$defs/bool"
+                    },
+                    "schema_name": {
+                      "description": "The name of the schema in Unity Catalog. Required when enabling inference tables. NOTE: On update, you have to disable inference table first in order to change the schema name.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "table_name_prefix": {
+                      "description": "The prefix of the table in Unity Catalog. NOTE: On update, you have to disable inference table first in order to change the prefix name.",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "serving.AiGatewayRateLimit": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "calls": {
+                      "description": "Used to specify how many calls are allowed for a key within the renewal_period.",
+                      "$ref": "#/$defs/int"
+                    },
+                    "key": {
+                      "description": "Key field for a rate limit. Currently, only 'user' and 'endpoint' are supported, with 'endpoint' being the default if not specified.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimitKey",
+                      "enum": [
+                        "user",
+                        "endpoint"
+                      ]
+                    },
+                    "renewal_period": {
+                      "description": "Renewal period field for a rate limit. Currently, only 'minute' is supported.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimitRenewalPeriod",
+                      "enum": [
+                        "minute"
+                      ]
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "calls",
+                    "renewal_period"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "serving.AiGatewayRateLimitKey": {
+              "type": "string"
+            },
+            "serving.AiGatewayRateLimitRenewalPeriod": {
+              "type": "string"
+            },
+            "serving.AiGatewayUsageTrackingConfig": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "description": "Whether to enable usage tracking.",
+                      "$ref": "#/$defs/bool"
                     }
                   },
                   "additionalProperties": false
@@ -5561,6 +5778,20 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PipelineLibrary"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "serving.AiGatewayRateLimit": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimit"
                     }
                   },
                   {
