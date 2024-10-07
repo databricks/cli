@@ -32,7 +32,6 @@ resources:
       name: myjob
       continuous:
         pause_status: PAUSED
-      edit_mode: EDITABLE
       max_concurrent_runs: 10
       description: "my job description"
       email_notifications:
