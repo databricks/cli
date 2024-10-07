@@ -1,0 +1,4 @@
+resources:
+  pipelines:
+    pipeline1:
+      name: pipeline1
