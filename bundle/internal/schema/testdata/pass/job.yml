@@ -42,7 +42,6 @@ resources:
             dependencies:
               - python=3.7
             client: "myclient"
-      format: MULTI_TASK
       tags:
         foo: bar
         bar: baz
