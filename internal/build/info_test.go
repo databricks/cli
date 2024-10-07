@@ -19,6 +19,10 @@ func TestGetDetails(t *testing.T) {
 
 // This test is stored in the internal package to avoid build errors since this
 // test itself is run during the CLI generation process.
+// This test ensures that the OpenAPI SHA the CLI is being generated from matches
+// the OpenAPI SHA of the Go SDK version used in the CLI. We should always upgrade
+// the Go SDK version before generating the CLI because downstream generated assets
+// like the bundle schema depend on the Go SDK itself.
 func TestConsistentDatabricksSdkVersion(t *testing.T) {
 	// Read the go.mod file
 	b, err := os.ReadFile("../../go.mod")
