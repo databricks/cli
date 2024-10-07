@@ -535,6 +535,10 @@
                         "description": "Whether Photon is enabled for this pipeline.",
                         "$ref": "#/$defs/bool"
                       },
+                      "schema": {
+                        "description": "The default schema (database) where tables are read from or published to. The presence of this field implies that the pipeline is in direct publishing mode.",
+                        "$ref": "#/$defs/string"
+                      },
                       "serverless": {
                         "description": "Whether serverless compute is enabled for this pipeline.",
                         "$ref": "#/$defs/bool"
@@ -2624,7 +2628,7 @@
                   "type": "object",
                   "properties": {
                     "no_alert_for_skipped_runs": {
-                      "description": "If true, do not send email to recipients specified in `on_failure` if the run is skipped.",
+                      "description": "If true, do not send email to recipients specified in `on_failure` if the run is skipped.\nThis field is `deprecated`. Please use the `notification_settings.no_alert_for_skipped_runs` field.",
                       "$ref": "#/$defs/bool"
                     },
                     "on_duration_warning_threshold_exceeded": {
@@ -3065,6 +3069,7 @@
                       "$ref": "#/$defs/map/string"
                     },
                     "pipeline_params": {
+                      "description": "Controls whether the pipeline should perform a full refresh",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.PipelineParams"
                     },
                     "python_named_params": {
@@ -3539,7 +3544,7 @@
                   "type": "object",
                   "properties": {
                     "no_alert_for_skipped_runs": {
-                      "description": "If true, do not send email to recipients specified in `on_failure` if the run is skipped.",
+                      "description": "If true, do not send email to recipients specified in `on_failure` if the run is skipped.\nThis field is `deprecated`. Please use the `notification_settings.no_alert_for_skipped_runs` field.",
                       "$ref": "#/$defs/bool"
                     },
                     "on_duration_warning_threshold_exceeded": {

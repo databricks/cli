@@ -61,13 +61,13 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*workspace.CreateRepo,
+	*workspace.CreateRepoRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var createReq workspace.CreateRepo
+	var createReq workspace.CreateRepoRequest
 	var createJson flags.JsonFlag
 
 	// TODO: short flags
@@ -87,8 +87,9 @@ func newCreate() *cobra.Command {
   Arguments:
     URL: URL of the Git repository to be linked.
     PROVIDER: Git provider. This field is case-insensitive. The available Git providers
-      are gitHub, bitbucketCloud, gitLab, azureDevOpsServices, gitHubEnterprise,
-      bitbucketServer, gitLabEnterpriseEdition and awsCodeCommit.`
+      are gitHub, bitbucketCloud, gitLab, azureDevOpsServices,
+      gitHubEnterprise, bitbucketServer, gitLabEnterpriseEdition and
+      awsCodeCommit.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -164,7 +165,7 @@ func newDelete() *cobra.Command {
   Deletes the specified repo.
 
   Arguments:
-    REPO_ID: The ID for the corresponding repo to access.`
+    REPO_ID: ID of the Git folder (repo) object in the workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -181,14 +182,14 @@ func newDelete() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to access")
+			id, err := cmdio.Select(ctx, names, "ID of the Git folder (repo) object in the workspace")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding repo to access")
+			return fmt.Errorf("expected to have id of the git folder (repo) object in the workspace")
 		}
 		_, err = fmt.Sscan(args[0], &deleteReq.RepoId)
 		if err != nil {
@@ -237,7 +238,7 @@ func newGet() *cobra.Command {
   Returns the repo with the given repo ID.
 
   Arguments:
-    REPO_ID: The ID for the corresponding repo to access.`
+    REPO_ID: ID of the Git folder (repo) object in the workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -254,14 +255,14 @@ func newGet() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to access")
+			id, err := cmdio.Select(ctx, names, "ID of the Git folder (repo) object in the workspace")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding repo to access")
+			return fmt.Errorf("expected to have id of the git folder (repo) object in the workspace")
 		}
 		_, err = fmt.Sscan(args[0], &getReq.RepoId)
 		if err != nil {
@@ -451,8 +452,8 @@ func newList() *cobra.Command {
 	cmd.Short = `Get repos.`
 	cmd.Long = `Get repos.
   
-  Returns repos that the calling user has Manage permissions on. Results are
-  paginated with each page containing twenty repos.`
+  Returns repos that the calling user has Manage permissions on. Use
+  next_page_token to iterate through additional pages.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -569,13 +570,13 @@ func newSetPermissions() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*workspace.UpdateRepo,
+	*workspace.UpdateRepoRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var updateReq workspace.UpdateRepo
+	var updateReq workspace.UpdateRepoRequest
 	var updateJson flags.JsonFlag
 
 	// TODO: short flags
@@ -593,7 +594,7 @@ func newUpdate() *cobra.Command {
   latest commit on the same branch.
 
   Arguments:
-    REPO_ID: The ID for the corresponding repo to access.`
+    REPO_ID: ID of the Git folder (repo) object in the workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -616,14 +617,14 @@ func newUpdate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to access")
+			id, err := cmdio.Select(ctx, names, "ID of the Git folder (repo) object in the workspace")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding repo to access")
+			return fmt.Errorf("expected to have id of the git folder (repo) object in the workspace")
 		}
 		_, err = fmt.Sscan(args[0], &updateReq.RepoId)
 		if err != nil {

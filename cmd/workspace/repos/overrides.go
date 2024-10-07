@@ -19,7 +19,7 @@ func listOverride(listCmd *cobra.Command, listReq *workspace.ListReposRequest) {
 	{{end}}`)
 }
 
-func createOverride(createCmd *cobra.Command, createReq *workspace.CreateRepo) {
+func createOverride(createCmd *cobra.Command, createReq *workspace.CreateRepoRequest) {
 	createCmd.Use = "create URL [PROVIDER]"
 	createCmd.Args = func(cmd *cobra.Command, args []string) error {
 		// If the provider argument is not specified, we try to detect it from the URL.
@@ -95,7 +95,7 @@ func getOverride(getCmd *cobra.Command, getReq *workspace.GetRepoRequest) {
 	}
 }
 
-func updateOverride(updateCmd *cobra.Command, updateReq *workspace.UpdateRepo) {
+func updateOverride(updateCmd *cobra.Command, updateReq *workspace.UpdateRepoRequest) {
 	updateCmd.Use = "update REPO_ID_OR_PATH"
 
 	updateJson := updateCmd.Flag("json").Value.(*flags.JsonFlag)
