@@ -47,6 +47,9 @@ resources:
       tags:
         foo: bar
         bar: baz
+      git_source:
+        git_provider: gitHub
+        git_url: www.github.com/a/b
       tasks:
         - task_key: mytask
           notebook_task:
