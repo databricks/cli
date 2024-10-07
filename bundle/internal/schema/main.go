@@ -8,8 +8,10 @@ import (
 	"reflect"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/libs/jsonschema"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 func interpolationPattern(s string) string {
@@ -66,6 +68,24 @@ func addInterpolationPatterns(typ reflect.Type, s jsonschema.Schema) jsonschema.
 	}
 }
 
+func removeDeprecatedJobsFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
+	switch typ {
+	case reflect.TypeOf(resources.Job{}):
+		delete(s.Properties, "deployment")
+		delete(s.Properties, "edit_mode")
+		delete(s.Properties, "format")
+
+	case reflect.TypeOf(jobs.GitSource{}):
+		delete(s.Properties, "job_source")
+		delete(s.Properties, "git_snapshot")
+
+	default:
+		// Do nothing
+	}
+
+	return s
+}
+
 func main() {
 	if len(os.Args) != 2 {
 		fmt.Println("Usage: go run main.go <output-file>")
@@ -90,6 +110,7 @@ func main() {
 	s, err := jsonschema.FromType(reflect.TypeOf(config.Root{}), []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
 		p.addDescriptions,
 		p.addEnums,
+		removeDeprecatedJobsFields,
 		addInterpolationPatterns,
 	})
 	if err != nil {

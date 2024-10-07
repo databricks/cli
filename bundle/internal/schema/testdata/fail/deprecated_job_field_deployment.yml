@@ -1,0 +1,6 @@
+resources:
+  jobs:
+    foo:
+      deployment:
+        kind: BUNDLE
+        metadata_file_path: /a/b/c
