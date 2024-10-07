@@ -1,0 +1,4 @@
+resources:
+  jobs:
+    foo:
+      format: SINGLE_TASK

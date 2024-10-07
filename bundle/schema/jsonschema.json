@@ -213,17 +213,9 @@
                         "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.Continuous"
                       },
-                      "deployment": {
-                        "description": "Deployment information for jobs managed by external sources.",
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobDeployment"
-                      },
                       "description": {
                         "description": "An optional description for the job. The maximum length is 27700 characters in UTF-8 encoding.",
                         "$ref": "#/$defs/string"
-                      },
-                      "edit_mode": {
-                        "description": "Edit mode of the job.\n\n* `UI_LOCKED`: The job is in a locked UI state and cannot be modified.\n* `EDITABLE`: The job is in an editable state and can be modified.",
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobEditMode"
                       },
                       "email_notifications": {
                         "description": "An optional set of email addresses that is notified when runs of this job begin or complete as well as when this job is deleted.",
@@ -232,10 +224,6 @@
                       "environments": {
                         "description": "A list of task execution environment specifications that can be referenced by serverless tasks of this job.\nAn environment is required to be present for serverless tasks.\nFor serverless notebook tasks, the environment is accessible in the notebook environment panel.\nFor other serverless tasks, the task environment is required to be specified using environment_key in the task settings.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.JobEnvironment"
-                      },
-                      "format": {
-                        "description": "Used to tell what is the format of the job. This field is ignored in Create/Update/Reset calls. When using the Jobs API 2.1 this value is always set to `\"MULTI_TASK\"`.",
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.Format"
                       },
                       "git_source": {
                         "description": "An optional specification for a remote Git repository containing the source code used by tasks. Version-controlled source code is supported by notebook, dbt, Python script, and SQL File tasks.\n\nIf `git_source` is set, these tasks retrieve the file from the remote repository by default. However, this behavior can be overridden by setting `source` to `WORKSPACE` on the task.\n\nNote: dbt and SQL File tasks support only version-controlled sources. If dbt or SQL File tasks are used, `git_source` must be defined on the job.",
@@ -2547,9 +2535,6 @@
                       "description": "Unique identifier of the service used to host the Git repository. The value is case insensitive.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.GitProvider"
                     },
-                    "git_snapshot": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.GitSnapshot"
-                    },
                     "git_tag": {
                       "description": "Name of the tag to be checked out and used by this job. This field cannot be specified in conjunction with git_branch or git_commit.",
                       "$ref": "#/$defs/string"
@@ -2557,10 +2542,6 @@
                     "git_url": {
                       "description": "URL of the repository to be cloned by this job.",
                       "$ref": "#/$defs/string"
-                    },
-                    "job_source": {
-                      "description": "The source of the job specification in the remote repository when the job is source controlled.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobSource"
                     }
                   },
                   "additionalProperties": false,
