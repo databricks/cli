@@ -68,14 +68,22 @@ func addInterpolationPatterns(typ reflect.Type, s jsonschema.Schema) jsonschema.
 	}
 }
 
-func removeDeprecatedJobsFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
+func removeJobsFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
 	switch typ {
 	case reflect.TypeOf(resources.Job{}):
-		delete(s.Properties, "deployment")
-		delete(s.Properties, "edit_mode")
+		// This field has been deprecated in jobs API v2.1 and is always set to
+		// "MULTI_TASK" in the backend. We should not expose it to the user.
 		delete(s.Properties, "format")
 
+		// These fields are only meant to be set by the DABs client (ie the CLI)
+		// and thus should not be exposed to the user. These are used to annotate
+		// jobs that were created by DABs.
+		delete(s.Properties, "deployment")
+		delete(s.Properties, "edit_mode")
+
+
 	case reflect.TypeOf(jobs.GitSource{}):
+		// These fields are readonly and are not meant to be set by the user.
 		delete(s.Properties, "job_source")
 		delete(s.Properties, "git_snapshot")
 
@@ -110,7 +118,7 @@ func main() {
 	s, err := jsonschema.FromType(reflect.TypeOf(config.Root{}), []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
 		p.addDescriptions,
 		p.addEnums,
-		removeDeprecatedJobsFields,
+		removeJobsFields,
 		addInterpolationPatterns,
 	})
 	if err != nil {
