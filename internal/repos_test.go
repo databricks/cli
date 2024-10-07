@@ -34,7 +34,7 @@ func synthesizeTemporaryRepoPath(t *testing.T, w *databricks.WorkspaceClient, ct
 
 func createTemporaryRepo(t *testing.T, w *databricks.WorkspaceClient, ctx context.Context) (int64, string) {
 	repoPath := synthesizeTemporaryRepoPath(t, w, ctx)
-	repoInfo, err := w.Repos.Create(ctx, workspace.CreateRepo{
+	repoInfo, err := w.Repos.Create(ctx, workspace.CreateRepoRequest{
 		Path:     repoPath,
 		Url:      repoUrl,
 		Provider: "gitHub",
