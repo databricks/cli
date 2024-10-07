@@ -49,7 +49,7 @@ func TestConsistentDatabricksSdkVersion(t *testing.T) {
 
 	type goListResponse struct {
 		Origin struct {
-			Hash string `json:"Hash"`
+			Hash string
 		}
 	}
 
