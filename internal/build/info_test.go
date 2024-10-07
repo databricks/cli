@@ -1,13 +1,16 @@
 package build
 
 import (
-	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/databricks/cli/libs/git"
+	"os/exec"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/mod/modfile"
@@ -41,17 +44,36 @@ func TestConsistentDatabricksSdkVersion(t *testing.T) {
 	}
 	require.NotEmpty(t, version)
 
-	// Clone the Databricks Go SDK to get the version of the OpenAPI spec used to
-	// generate the SDK. We cannot use go mod vendor to download the SDK because
-	// that command only downloads the necessary files and thus skips ".codegen".
-	tmpDir := t.TempDir()
-	err = git.Clone(context.Background(), "https://github.com/databricks/databricks-sdk-go.git", version, tmpDir)
+	// Full path of the package. For example: github.com/databricks/databricks-sdk-go@v0.47.1-0.20241002195128-6cecc224cbf7
+	fullPath := fmt.Sprintf("%s@%s", modulePath, version)
+
+	type goListResponse struct {
+		Origin struct {
+			Hash string `json:"Hash"`
+		}
+	}
+
+	// Using the go CLI query for the git hash corresponding to the databricks-sdk-go version
+	cmd := exec.Command("go", "list", "-m", "-json", "-mod=readonly", fullPath)
+	out, err := cmd.Output()
+	require.NoError(t, err)
+	parsedOutput := new(goListResponse)
+	err = json.Unmarshal(out, parsedOutput)
+	require.NoError(t, err)
+	hash := parsedOutput.Origin.Hash
+	require.NotEmpty(t, hash)
+
+	// Read the OpenAPI SHA from the Go SDK.
+	url := fmt.Sprintf("https://raw.githubusercontent.com/databricks/databricks-sdk-go/%s/.codegen/_openapi_sha", hash)
+	resp, err := http.Get(url)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	sdkSha, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 
 	cliSha, err := os.ReadFile("../../.codegen/_openapi_sha")
-	require.NoError(t, err)
-
-	sdkSha, err := os.ReadFile(filepath.Join(tmpDir, ".codegen/_openapi_sha"))
 	require.NoError(t, err)
 
 	assert.Equal(t, strings.TrimSpace(string(cliSha)), strings.TrimSpace(string(sdkSha)), "please update the SDK version before generating the CLI")
