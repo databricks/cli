@@ -20,8 +20,6 @@ func TestGetDetails(t *testing.T) {
 	GetInfo()
 }
 
-// This test is stored in the internal package to avoid build errors since this
-// test itself is run during the CLI generation process.
 // This test ensures that the OpenAPI SHA the CLI is being generated from matches
 // the OpenAPI SHA of the Go SDK version used in the CLI. We should always upgrade
 // the Go SDK version before generating the CLI because downstream generated assets
