@@ -163,8 +163,11 @@ func newCreate() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -373,8 +376,11 @@ func newPatchStatus() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := patchStatusJson.Unmarshal(&patchStatusReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}

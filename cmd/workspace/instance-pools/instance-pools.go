@@ -129,8 +129,11 @@ func newCreate() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := createJson.Unmarshal(&createReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -210,8 +213,11 @@ func newDelete() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := deleteJson.Unmarshal(&deleteReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -316,8 +322,11 @@ func newEdit() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := editJson.Unmarshal(&editReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -641,8 +650,11 @@ func newSetPermissions() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := setPermissionsJson.Unmarshal(&setPermissionsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -725,8 +737,11 @@ func newUpdatePermissions() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := updatePermissionsJson.Unmarshal(&updatePermissionsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}

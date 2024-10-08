@@ -76,8 +76,11 @@ func newExchangeToken() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := exchangeTokenJson.Unmarshal(&exchangeTokenReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}

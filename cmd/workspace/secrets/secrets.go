@@ -111,8 +111,11 @@ func newCreateScope() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := createScopeJson.Unmarshal(&createScopeReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -195,8 +198,11 @@ func newDeleteAcl() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := deleteAclJson.Unmarshal(&deleteAclReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -280,8 +286,11 @@ func newDeleteScope() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := deleteScopeJson.Unmarshal(&deleteScopeReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -364,8 +373,11 @@ func newDeleteSecret() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := deleteSecretJson.Unmarshal(&deleteSecretReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -772,8 +784,11 @@ func newPutAcl() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := putAclJson.Unmarshal(&putAclReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}

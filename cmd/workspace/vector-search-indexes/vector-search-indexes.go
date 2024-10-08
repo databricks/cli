@@ -115,8 +115,11 @@ func newCreateIndex() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := createIndexJson.Unmarshal(&createIndexReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -199,8 +202,11 @@ func newDeleteDataVectorIndex() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := deleteDataVectorIndexJson.Unmarshal(&deleteDataVectorIndexReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -450,8 +456,11 @@ func newQueryIndex() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := queryIndexJson.Unmarshal(&queryIndexReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -525,8 +534,11 @@ func newQueryNextPage() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := queryNextPageJson.Unmarshal(&queryNextPageReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -598,8 +610,11 @@ func newScanIndex() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := scanIndexJson.Unmarshal(&scanIndexReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -734,8 +749,11 @@ func newUpsertDataVectorIndex() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := upsertDataVectorIndexJson.Unmarshal(&upsertDataVectorIndexReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}

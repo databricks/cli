@@ -96,8 +96,11 @@ func newCreateEndpoint() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := createEndpointJson.Unmarshal(&createEndpointReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}

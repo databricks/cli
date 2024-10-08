@@ -191,8 +191,11 @@ func newInstall() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := installJson.Unmarshal(&installReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -255,8 +258,11 @@ func newUninstall() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := uninstallJson.Unmarshal(&uninstallReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}

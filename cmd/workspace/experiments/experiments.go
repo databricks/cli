@@ -131,8 +131,11 @@ func newCreateExperiment() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := createExperimentJson.Unmarshal(&createExperimentReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -207,8 +210,11 @@ func newCreateRun() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := createRunJson.Unmarshal(&createRunReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -284,8 +290,11 @@ func newDeleteExperiment() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := deleteExperimentJson.Unmarshal(&deleteExperimentReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -362,8 +371,11 @@ func newDeleteRun() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := deleteRunJson.Unmarshal(&deleteRunReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -448,8 +460,11 @@ func newDeleteRuns() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := deleteRunsJson.Unmarshal(&deleteRunsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -534,8 +549,11 @@ func newDeleteTag() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := deleteTagJson.Unmarshal(&deleteTagReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -1127,8 +1145,11 @@ func newLogBatch() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := logBatchJson.Unmarshal(&logBatchReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -1196,8 +1217,11 @@ func newLogInputs() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := logInputsJson.Unmarshal(&logInputsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -1279,8 +1303,11 @@ func newLogMetric() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := logMetricJson.Unmarshal(&logMetricReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -1363,8 +1390,11 @@ func newLogModel() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := logModelJson.Unmarshal(&logModelReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -1445,8 +1475,11 @@ func newLogParam() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := logParamJson.Unmarshal(&logParamReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -1531,8 +1564,11 @@ func newRestoreExperiment() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := restoreExperimentJson.Unmarshal(&restoreExperimentReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -1609,8 +1645,11 @@ func newRestoreRun() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := restoreRunJson.Unmarshal(&restoreRunReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -1695,8 +1734,11 @@ func newRestoreRuns() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := restoreRunsJson.Unmarshal(&restoreRunsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -1775,8 +1817,11 @@ func newSearchExperiments() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := searchExperimentsJson.Unmarshal(&searchExperimentsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -1846,8 +1891,11 @@ func newSearchRuns() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := searchRunsJson.Unmarshal(&searchRunsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -1923,8 +1971,11 @@ func newSetExperimentTag() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := setExperimentTagJson.Unmarshal(&setExperimentTagReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -2003,8 +2054,11 @@ func newSetPermissions() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := setPermissionsJson.Unmarshal(&setPermissionsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -2087,8 +2141,11 @@ func newSetTag() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := setTagJson.Unmarshal(&setTagReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -2170,8 +2227,11 @@ func newUpdateExperiment() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := updateExperimentJson.Unmarshal(&updateExperimentReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -2244,8 +2304,11 @@ func newUpdatePermissions() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := updatePermissionsJson.Unmarshal(&updatePermissionsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -2315,8 +2378,11 @@ func newUpdateRun() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := updateRunJson.Unmarshal(&updateRunReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}

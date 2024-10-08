@@ -142,8 +142,11 @@ func newApproveTransitionRequest() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := approveTransitionRequestJson.Unmarshal(&approveTransitionRequestReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -239,8 +242,11 @@ func newCreateComment() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := createCommentJson.Unmarshal(&createCommentReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -329,8 +335,11 @@ func newCreateModel() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := createModelJson.Unmarshal(&createModelReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -413,8 +422,11 @@ func newCreateModelVersion() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := createModelVersionJson.Unmarshal(&createModelVersionReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -506,8 +518,11 @@ func newCreateTransitionRequest() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := createTransitionRequestJson.Unmarshal(&createTransitionRequestReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -586,8 +601,11 @@ func newCreateWebhook() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := createWebhookJson.Unmarshal(&createWebhookReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -1098,8 +1116,11 @@ func newGetLatestVersions() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := getLatestVersionsJson.Unmarshal(&getLatestVersionsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -1651,8 +1672,11 @@ func newRejectTransitionRequest() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := rejectTransitionRequestJson.Unmarshal(&rejectTransitionRequestReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -1740,8 +1764,11 @@ func newRenameModel() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := renameModelJson.Unmarshal(&renameModelReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -1935,8 +1962,11 @@ func newSetModelTag() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := setModelTagJson.Unmarshal(&setModelTagReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -2027,8 +2057,11 @@ func newSetModelVersionTag() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := setModelVersionTagJson.Unmarshal(&setModelVersionTagReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -2110,8 +2143,11 @@ func newSetPermissions() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := setPermissionsJson.Unmarshal(&setPermissionsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -2203,8 +2239,11 @@ func newTestRegistryWebhook() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := testRegistryWebhookJson.Unmarshal(&testRegistryWebhookReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -2299,8 +2338,11 @@ func newTransitionStage() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := transitionStageJson.Unmarshal(&transitionStageReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -2393,8 +2435,11 @@ func newUpdateComment() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := updateCommentJson.Unmarshal(&updateCommentReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -2476,8 +2521,11 @@ func newUpdateModel() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := updateModelJson.Unmarshal(&updateModelReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -2557,8 +2605,11 @@ func newUpdateModelVersion() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := updateModelVersionJson.Unmarshal(&updateModelVersionReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -2634,8 +2685,11 @@ func newUpdatePermissions() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := updatePermissionsJson.Unmarshal(&updatePermissionsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -2718,8 +2772,11 @@ func newUpdateWebhook() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := updateWebhookJson.Unmarshal(&updateWebhookReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}

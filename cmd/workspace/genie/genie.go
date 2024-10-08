@@ -106,8 +106,11 @@ func newCreateMessage() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := createMessageJson.Unmarshal(&createMessageReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -396,8 +399,11 @@ func newStartConversation() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := startConversationJson.Unmarshal(&startConversationReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}

@@ -100,8 +100,11 @@ func newAdd() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := addJson.Unmarshal(&addReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -196,8 +199,11 @@ func newEdit() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := editJson.Unmarshal(&editReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -318,8 +324,11 @@ func newRemove() *cobra.Command {
 
 		if cmd.Flags().Changed("json") {
 			diags := removeJson.Unmarshal(&removeReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiags(ctx, diags)
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
 				if err != nil {
 					return err
 				}

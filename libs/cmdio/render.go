@@ -443,9 +443,9 @@ const warningTemplate = `{{ "Warning" | yellow }}: {{ .Summary }}
 
 `
 
-func RenderDiags(ctx context.Context, diags diag.Diagnostics) error {
+func RenderDiagnosticsToErrorOut(ctx context.Context, diags diag.Diagnostics) error {
 	c := fromContext(ctx)
-	return RenderDiagnostics(c.out, diags)
+	return RenderDiagnostics(c.err, diags)
 }
 
 func RenderDiagnostics(out io.Writer, diags diag.Diagnostics) error {
