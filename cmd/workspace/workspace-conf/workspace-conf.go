@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/settings"
 	"github.com/spf13/cobra"
@@ -72,7 +71,6 @@ func newGetStatus() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		getStatusReq.Keys = args[0]
@@ -81,7 +79,7 @@ func newGetStatus() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.RenderWithDiagnostics(ctx, response, diags)
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -126,11 +124,16 @@ func newSetStatus() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			diags = setStatusJson.Unmarshal(&setStatusReq)
+			diags := setStatusJson.Unmarshal(&setStatusReq)
+			if len(diags) > 0 {
+				err := cmdio.RenderDiags(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
@@ -139,7 +142,7 @@ func newSetStatus() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return diags.Error()
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

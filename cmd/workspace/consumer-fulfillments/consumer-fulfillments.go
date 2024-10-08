@@ -5,7 +5,6 @@ package consumer_fulfillments
 import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/marketplace"
 	"github.com/spf13/cobra"
 )
@@ -72,13 +71,12 @@ func newGet() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		getReq.ListingId = args[0]
 
 		response := w.ConsumerFulfillments.Get(ctx, getReq)
-		return cmdio.RenderIteratorWithDiagnostics(ctx, response, diags)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -132,13 +130,12 @@ func newList() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		listReq.ListingId = args[0]
 
 		response := w.ConsumerFulfillments.List(ctx, listReq)
-		return cmdio.RenderIteratorWithDiagnostics(ctx, response, diags)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

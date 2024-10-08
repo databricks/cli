@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/spf13/cobra"
@@ -97,11 +96,16 @@ func newAdd() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			diags = addJson.Unmarshal(&addReq)
+			diags := addJson.Unmarshal(&addReq)
+			if len(diags) > 0 {
+				err := cmdio.RenderDiags(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
 		}
 		if !cmd.Flags().Changed("json") {
 			addReq.InstanceProfileArn = args[0]
@@ -111,7 +115,7 @@ func newAdd() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return diags.Error()
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -188,11 +192,16 @@ func newEdit() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			diags = editJson.Unmarshal(&editReq)
+			diags := editJson.Unmarshal(&editReq)
+			if len(diags) > 0 {
+				err := cmdio.RenderDiags(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
 		}
 		if !cmd.Flags().Changed("json") {
 			editReq.InstanceProfileArn = args[0]
@@ -202,7 +211,7 @@ func newEdit() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return diags.Error()
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -241,10 +250,9 @@ func newList() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 		response := w.InstanceProfiles.List(ctx)
-		return cmdio.RenderIteratorWithDiagnostics(ctx, response, diags)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -306,11 +314,16 @@ func newRemove() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			diags = removeJson.Unmarshal(&removeReq)
+			diags := removeJson.Unmarshal(&removeReq)
+			if len(diags) > 0 {
+				err := cmdio.RenderDiags(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
 		}
 		if !cmd.Flags().Changed("json") {
 			removeReq.InstanceProfileArn = args[0]
@@ -320,7 +333,7 @@ func newRemove() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return diags.Error()
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
@@ -102,7 +101,6 @@ func newCancelRefresh() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		cancelRefreshReq.TableName = args[0]
@@ -112,7 +110,7 @@ func newCancelRefresh() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return diags.Error()
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -195,11 +193,16 @@ func newCreate() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			diags = createJson.Unmarshal(&createReq)
+			diags := createJson.Unmarshal(&createReq)
+			if len(diags) > 0 {
+				err := cmdio.RenderDiags(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
 		}
 		createReq.TableName = args[0]
 		if !cmd.Flags().Changed("json") {
@@ -213,7 +216,7 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.RenderWithDiagnostics(ctx, response, diags)
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -275,7 +278,6 @@ func newDelete() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		deleteReq.TableName = args[0]
@@ -284,7 +286,7 @@ func newDelete() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return diags.Error()
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -345,7 +347,6 @@ func newGet() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		getReq.TableName = args[0]
@@ -354,7 +355,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.RenderWithDiagnostics(ctx, response, diags)
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -414,7 +415,6 @@ func newGetRefresh() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		getRefreshReq.TableName = args[0]
@@ -424,7 +424,7 @@ func newGetRefresh() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.RenderWithDiagnostics(ctx, response, diags)
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -484,7 +484,6 @@ func newListRefreshes() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		listRefreshesReq.TableName = args[0]
@@ -493,7 +492,7 @@ func newListRefreshes() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.RenderWithDiagnostics(ctx, response, diags)
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -560,11 +559,16 @@ func newRegenerateDashboard() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			diags = regenerateDashboardJson.Unmarshal(&regenerateDashboardReq)
+			diags := regenerateDashboardJson.Unmarshal(&regenerateDashboardReq)
+			if len(diags) > 0 {
+				err := cmdio.RenderDiags(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
 		}
 		regenerateDashboardReq.TableName = args[0]
 
@@ -572,7 +576,7 @@ func newRegenerateDashboard() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.RenderWithDiagnostics(ctx, response, diags)
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -632,7 +636,6 @@ func newRunRefresh() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		runRefreshReq.TableName = args[0]
@@ -641,7 +644,7 @@ func newRunRefresh() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.RenderWithDiagnostics(ctx, response, diags)
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -724,11 +727,16 @@ func newUpdate() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			diags = updateJson.Unmarshal(&updateReq)
+			diags := updateJson.Unmarshal(&updateReq)
+			if len(diags) > 0 {
+				err := cmdio.RenderDiags(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
 		}
 		updateReq.TableName = args[0]
 		if !cmd.Flags().Changed("json") {
@@ -739,7 +747,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.RenderWithDiagnostics(ctx, response, diags)
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

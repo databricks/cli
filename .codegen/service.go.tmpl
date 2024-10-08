@@ -228,12 +228,17 @@ func new{{.PascalName}}() *cobra.Command {
 	cmd.PreRunE = root.Must{{if .Service.IsAccounts}}Account{{else}}Workspace{{end}}Client
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		var diags diag.Diagnostics
 		{{if .Service.IsAccounts}}a := root.AccountClient(ctx){{else}}w := root.WorkspaceClient(ctx){{end}}
 		{{- if .Request }}
 			{{ if .CanUseJson }}
 			if cmd.Flags().Changed("json") {
-					diags = {{.CamelName}}Json.Unmarshal(&{{.CamelName}}Req)
+					diags := {{.CamelName}}Json.Unmarshal(&{{.CamelName}}Req)
+					if len(diags) > 0 {
+						err := cmdio.RenderDiags(ctx, diags)
+						if err != nil {
+							return err
+						}
+					}
 			}{{end}}{{ if .MustUseJson }}else {
 				return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 			}{{- end}}
@@ -277,9 +282,9 @@ func new{{.PascalName}}() *cobra.Command {
 		}
 		if {{.CamelName}}SkipWait {
 			{{if not .Response.IsEmpty -}}
-			return cmdio.RenderWithDiagnostics(ctx, wait.Response, diags)
+			return cmdio.Render(ctx, wait.Response)
 			{{- else -}}
-			return diags.Error()
+			return nil
 			{{- end}}
 		}
 		spinner := cmdio.Spinner(ctx)
@@ -307,7 +312,7 @@ func new{{.PascalName}}() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.RenderWithDiagnostics(ctx, info, diags)
+		return cmdio.Render(ctx, info)
 		{{- else -}}
 		{{template "method-call" .}}
 		{{end -}}
@@ -350,12 +355,12 @@ func new{{.PascalName}}() *cobra.Command {
 		{{ if not .Response.IsEmpty -}}
 			{{- if .IsResponseByteStream -}}
 			defer response.{{.ResponseBodyField.PascalName}}.Close()
-			return cmdio.Render{{ if .Pagination}}Iterator{{end}}WithDiagnostics(ctx, response.{{.ResponseBodyField.PascalName}}, diags)
+			return cmdio.Render{{ if .Pagination}}Iterator{{end}}(ctx, response.{{.ResponseBodyField.PascalName}})
 			{{- else -}}
-			return cmdio.Render{{ if .Pagination}}Iterator{{end}}WithDiagnostics(ctx, response, diags)
+			return cmdio.Render{{ if .Pagination}}Iterator{{end}}(ctx, response)
 			{{- end -}}
 		{{ else -}}
-		return diags.Error()
+		return nil
 		{{- end -}}
 {{- end -}}
 

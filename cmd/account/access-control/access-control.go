@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
@@ -80,7 +79,6 @@ func newGetAssignableRolesForResource() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		var diags diag.Diagnostics
 		a := root.AccountClient(ctx)
 
 		getAssignableRolesForResourceReq.Resource = args[0]
@@ -89,7 +87,7 @@ func newGetAssignableRolesForResource() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.RenderWithDiagnostics(ctx, response, diags)
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -149,7 +147,6 @@ func newGetRuleSet() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		var diags diag.Diagnostics
 		a := root.AccountClient(ctx)
 
 		getRuleSetReq.Name = args[0]
@@ -159,7 +156,7 @@ func newGetRuleSet() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.RenderWithDiagnostics(ctx, response, diags)
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -205,11 +202,16 @@ func newUpdateRuleSet() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		var diags diag.Diagnostics
 		a := root.AccountClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			diags = updateRuleSetJson.Unmarshal(&updateRuleSetReq)
+			diags := updateRuleSetJson.Unmarshal(&updateRuleSetReq)
+			if len(diags) > 0 {
+				err := cmdio.RenderDiags(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
@@ -218,7 +220,7 @@ func newUpdateRuleSet() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.RenderWithDiagnostics(ctx, response, diags)
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

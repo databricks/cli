@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/oauth2"
 	"github.com/spf13/cobra"
 )
@@ -87,7 +86,6 @@ func newCreate() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		var diags diag.Diagnostics
 		a := root.AccountClient(ctx)
 
 		_, err = fmt.Sscan(args[0], &createReq.ServicePrincipalId)
@@ -99,7 +97,7 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.RenderWithDiagnostics(ctx, response, diags)
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -150,7 +148,6 @@ func newDelete() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		var diags diag.Diagnostics
 		a := root.AccountClient(ctx)
 
 		_, err = fmt.Sscan(args[0], &deleteReq.ServicePrincipalId)
@@ -163,7 +160,7 @@ func newDelete() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return diags.Error()
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -215,7 +212,6 @@ func newList() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		var diags diag.Diagnostics
 		a := root.AccountClient(ctx)
 
 		_, err = fmt.Sscan(args[0], &listReq.ServicePrincipalId)
@@ -224,7 +220,7 @@ func newList() *cobra.Command {
 		}
 
 		response := a.ServicePrincipalSecrets.List(ctx, listReq)
-		return cmdio.RenderIteratorWithDiagnostics(ctx, response, diags)
+		return cmdio.RenderIterator(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

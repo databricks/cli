@@ -273,7 +273,7 @@ func RenderWithDiagnostics(ctx context.Context, v any, diags diag.Diagnostics) e
 		return err
 	}
 
-	return RenderDiagnostics(c.err, diags)
+	return RenderDiagnostics(c.out, diags)
 }
 
 func RenderIterator[T any](ctx context.Context, i listing.Iterator[T]) error {
@@ -442,6 +442,11 @@ const warningTemplate = `{{ "Warning" | yellow }}: {{ .Summary }}
 {{- end }}
 
 `
+
+func RenderDiags(ctx context.Context, diags diag.Diagnostics) error {
+	c := fromContext(ctx)
+	return RenderDiagnostics(c.out, diags)
+}
 
 func RenderDiagnostics(out io.Writer, diags diag.Diagnostics) error {
 	errorT := template.Must(template.New("error").Funcs(renderFuncMap).Parse(errorTemplate))

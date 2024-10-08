@@ -8,7 +8,6 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/spf13/cobra"
@@ -103,11 +102,16 @@ func newCreateMessage() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			diags = createMessageJson.Unmarshal(&createMessageReq)
+			diags := createMessageJson.Unmarshal(&createMessageReq)
+			if len(diags) > 0 {
+				err := cmdio.RenderDiags(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
 		}
 		createMessageReq.SpaceId = args[0]
 		createMessageReq.ConversationId = args[1]
@@ -120,7 +124,7 @@ func newCreateMessage() *cobra.Command {
 			return err
 		}
 		if createMessageSkipWait {
-			return cmdio.RenderWithDiagnostics(ctx, wait.Response, diags)
+			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *dashboards.GenieMessage) {
@@ -132,7 +136,7 @@ func newCreateMessage() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.RenderWithDiagnostics(ctx, info, diags)
+		return cmdio.Render(ctx, info)
 	}
 
 	// Disable completions since they are not applicable.
@@ -184,7 +188,6 @@ func newExecuteMessageQuery() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		executeMessageQueryReq.SpaceId = args[0]
@@ -195,7 +198,7 @@ func newExecuteMessageQuery() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.RenderWithDiagnostics(ctx, response, diags)
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -249,7 +252,6 @@ func newGetMessage() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		getMessageReq.SpaceId = args[0]
@@ -260,7 +262,7 @@ func newGetMessage() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.RenderWithDiagnostics(ctx, response, diags)
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -314,7 +316,6 @@ func newGetMessageQueryResult() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		getMessageQueryResultReq.SpaceId = args[0]
@@ -325,7 +326,7 @@ func newGetMessageQueryResult() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.RenderWithDiagnostics(ctx, response, diags)
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -391,11 +392,16 @@ func newStartConversation() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			diags = startConversationJson.Unmarshal(&startConversationReq)
+			diags := startConversationJson.Unmarshal(&startConversationReq)
+			if len(diags) > 0 {
+				err := cmdio.RenderDiags(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
 		}
 		startConversationReq.SpaceId = args[0]
 		if !cmd.Flags().Changed("json") {
@@ -407,7 +413,7 @@ func newStartConversation() *cobra.Command {
 			return err
 		}
 		if startConversationSkipWait {
-			return cmdio.RenderWithDiagnostics(ctx, wait.Response, diags)
+			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *dashboards.GenieMessage) {
@@ -419,7 +425,7 @@ func newStartConversation() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.RenderWithDiagnostics(ctx, info, diags)
+		return cmdio.Render(ctx, info)
 	}
 
 	// Disable completions since they are not applicable.
