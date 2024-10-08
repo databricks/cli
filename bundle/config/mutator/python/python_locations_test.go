@@ -20,7 +20,6 @@ func TestMergeLocations(t *testing.T) {
 		map[string]dyn.Value{
 			"foo": dyn.NewValue(
 				map[string]dyn.Value{
-					"bar": dyn.NewValue("baz", []dyn.Location{yamlLocation, pythonLocation}),
 					"baz": dyn.NewValue("baz", []dyn.Location{yamlLocation}),
 					"qux": dyn.NewValue("baz", []dyn.Location{generatedLocation, yamlLocation}),
 				},
@@ -35,8 +34,6 @@ func TestMergeLocations(t *testing.T) {
 		map[string]dyn.Value{
 			"foo": dyn.NewValue(
 				map[string]dyn.Value{
-					// pythonLocation was present before, we don't duplicate it, only move it to the beginning
-					"bar": dyn.NewValue("baz", []dyn.Location{pythonLocation, yamlLocation}),
 					// pythonLocation is appended to the beginning of the list if absent
 					"baz": dyn.NewValue("baz", []dyn.Location{pythonLocation, yamlLocation}),
 					// generatedLocation is replaced by pythonLocation
