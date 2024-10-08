@@ -197,10 +197,10 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		}
 
 		rightRoot, diags := m.runPythonMutator(ctx, leftRoot, runPythonMutatorOpts{
-			cacheDir:      cacheDir,
-			rootPath:      b.BundleRootPath,
-			pythonPath:    pythonPath,
-			loadLocations: experimental.PyDABs.LoadLocations,
+			cacheDir:       cacheDir,
+			bundleRootPath: b.BundleRootPath,
+			pythonPath:     pythonPath,
+			loadLocations:  experimental.PyDABs.LoadLocations,
 		})
 		mutateDiags = diags
 		if diags.HasError() {
@@ -246,10 +246,10 @@ func createCacheDir(ctx context.Context) (string, error) {
 }
 
 type runPythonMutatorOpts struct {
-	cacheDir      string
-	rootPath      string
-	pythonPath    string
-	loadLocations bool
+	cacheDir       string
+	bundleRootPath string
+	pythonPath     string
+	loadLocations  bool
 }
 
 func (m *pythonMutator) runPythonMutator(ctx context.Context, root dyn.Value, opts runPythonMutatorOpts) (dyn.Value, diag.Diagnostics) {
@@ -290,7 +290,7 @@ func (m *pythonMutator) runPythonMutator(ctx context.Context, root dyn.Value, op
 	_, processErr := process.Background(
 		ctx,
 		args,
-		process.WithDir(opts.rootPath),
+		process.WithDir(opts.bundleRootPath),
 		process.WithStderrWriter(stderrWriter),
 		process.WithStdoutWriter(stdoutWriter),
 	)
@@ -331,7 +331,7 @@ func (m *pythonMutator) runPythonMutator(ctx context.Context, root dyn.Value, op
 		return dyn.InvalidValue, diag.Errorf("failed to load locations: %s", err)
 	}
 
-	output, outputDiags := loadOutputFile(opts.rootPath, outputPath, locations)
+	output, outputDiags := loadOutputFile(opts.bundleRootPath, outputPath, locations)
 	pythonDiagnostics = pythonDiagnostics.Extend(outputDiags)
 
 	// we pass through pythonDiagnostic because it contains warnings
@@ -402,7 +402,7 @@ func loadOutputFile(rootPath string, outputPath string, locations *pythonLocatio
 	// we need absolute path because later parts of pipeline assume all paths are absolute
 	// and this file will be used as location to resolve relative paths.
 	//
-	// virtualPath has to stay in rootPath, because locations outside root path are not allowed:
+	// virtualPath has to stay in bundleRootPath, because locations outside root path are not allowed:
 	//
 	//   Error: path /var/folders/.../python/dist/*.whl is not contained in bundle root path
 	//
