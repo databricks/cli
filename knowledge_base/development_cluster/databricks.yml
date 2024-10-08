@@ -1,0 +1,41 @@
+bundle:
+  name: development_cluster
+
+include:
+  - resources/*.yml
+
+workspace:
+  host: https://e2-dogfood.staging.cloud.databricks.com
+
+targets:
+  dev:
+    mode: development
+    default: true
+
+    # By configuring this field for the "dev" target, all jobs in this bundle
+    # are overridden to use the all-purpose cluster defined below.
+    #
+    # This can increase the speed of development when iterating on code and job definitions,
+    # as you don't have to wait for job clusters to start for every job run.
+    #
+    # Note: make sure that the cluster configuration below matches the job cluster
+    # definition that will be used when deploying the other targets.
+    cluster_id: ${resources.clusters.development_cluster.id}
+
+    resources:
+      clusters:
+        development_cluster:
+          cluster_name: Development cluster
+          spark_version: 15.4.x-scala2.12
+          node_type_id: i3.xlarge
+          num_workers: 0
+          autotermination_minutes: 30
+          spark_conf:
+              "spark.databricks.cluster.profile": "singleNode"
+              "spark.master": "local[*, 4]"
+          custom_tags:
+              "ResourceClass": "SingleNode"
+
+  prod: {
+    # No overrides
+  }

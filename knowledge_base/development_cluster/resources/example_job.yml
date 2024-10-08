@@ -1,0 +1,22 @@
+resources:
+  jobs:
+    example_job:
+      name: "Example job to demonstrate using an interactive cluster for development"
+
+      tasks:
+        - task_key: notebook
+          job_cluster_key: cluster
+          notebook_task:
+            notebook_path: ../src/hello.py
+
+      job_clusters:
+        - job_cluster_key: cluster
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 0
+            spark_conf:
+                "spark.databricks.cluster.profile": "singleNode"
+                "spark.master": "local[*, 4]"
+            custom_tags:
+                "ResourceClass": "SingleNode"
