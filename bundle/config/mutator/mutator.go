@@ -23,6 +23,7 @@ func DefaultMutators() []bundle.Mutator {
 		VerifyCliVersion(),
 
 		EnvironmentsToTargets(),
+		ComputeIdToClusterId(),
 		InitializeVariables(),
 		DefineDefaultTarget(),
 		LoadGitDetails(),

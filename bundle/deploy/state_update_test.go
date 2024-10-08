@@ -27,7 +27,7 @@ func setupBundleForStateUpdate(t *testing.T) *bundle.Bundle {
 	require.NoError(t, err)
 
 	return &bundle.Bundle{
-		RootPath: tmpDir,
+		BundleRootPath: tmpDir,
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "default",

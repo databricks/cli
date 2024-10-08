@@ -15,9 +15,10 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/permissions"
-	"github.com/databricks/cli/bundle/python"
 	"github.com/databricks/cli/bundle/scripts"
+	"github.com/databricks/cli/bundle/trampoline"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/sync"
 	terraformlib "github.com/databricks/cli/libs/terraform"
 	tfjson "github.com/hashicorp/terraform-json"
 )
@@ -128,7 +129,7 @@ properties such as the 'catalog' or 'storage' are changed:`
 }
 
 // The deploy phase deploys artifacts and resources.
-func Deploy() bundle.Mutator {
+func Deploy(outputHandler sync.OutputHandler) bundle.Mutator {
 	// Core mutators that CRUD resources and modify deployment state. These
 	// mutators need informed consent if they are potentially destructive.
 	deployCore := bundle.Defer(
@@ -156,8 +157,8 @@ func Deploy() bundle.Mutator {
 				artifacts.CleanUp(),
 				libraries.ExpandGlobReferences(),
 				libraries.Upload(),
-				python.TransformWheelTask(),
-				files.Upload(),
+				trampoline.TransformWheelTask(),
+				files.Upload(outputHandler),
 				deploy.StateUpdate(),
 				deploy.StatePush(),
 				permissions.ApplyWorkspaceRootPermissions(),

@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -60,4 +61,19 @@ func TestCustomMarshallerIsImplemented(t *testing.T) {
 			json.Unmarshal([]byte("{}"), v)
 		}, "Resource %s does not have a custom unmarshaller", field.Name)
 	}
+}
+
+func TestSupportedResources(t *testing.T) {
+	expected := map[string]ResourceDescription{}
+	typ := reflect.TypeOf(Resources{})
+	for i := 0; i < typ.NumField(); i++ {
+		field := typ.Field(i)
+		jsonTags := strings.Split(field.Tag.Get("json"), ",")
+		singularName := strings.TrimSuffix(jsonTags[0], "s")
+		expected[jsonTags[0]] = ResourceDescription{SingularName: singularName}
+	}
+
+	// Please add your resource to the SupportedResources() function in resources.go
+	// if you are adding a new resource.
+	assert.Equal(t, expected, SupportedResources())
 }

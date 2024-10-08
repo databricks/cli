@@ -67,9 +67,20 @@ func buildTrailer(diags diag.Diagnostics) string {
 	if warnings := len(diags.Filter(diag.Warning)); warnings > 0 {
 		parts = append(parts, color.YellowString(pluralize(warnings, "warning", "warnings")))
 	}
-	if len(parts) > 0 {
-		return fmt.Sprintf("Found %s", strings.Join(parts, " and "))
-	} else {
+	if recommendations := len(diags.Filter(diag.Recommendation)); recommendations > 0 {
+		parts = append(parts, color.BlueString(pluralize(recommendations, "recommendation", "recommendations")))
+	}
+	switch {
+	case len(parts) >= 3:
+		first := strings.Join(parts[:len(parts)-1], ", ")
+		last := parts[len(parts)-1]
+		return fmt.Sprintf("Found %s, and %s", first, last)
+	case len(parts) == 2:
+		return fmt.Sprintf("Found %s and %s", parts[0], parts[1])
+	case len(parts) == 1:
+		return fmt.Sprintf("Found %s", parts[0])
+	default:
+		// No diagnostics to print.
 		return color.GreenString("Validation OK!")
 	}
 }
@@ -109,7 +120,7 @@ func renderDiagnostics(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics) 
 
 			// Make location relative to bundle root
 			if d.Locations[i].File != "" {
-				out, err := filepath.Rel(b.RootPath, d.Locations[i].File)
+				out, err := filepath.Rel(b.BundleRootPath, d.Locations[i].File)
 				// if we can't relativize the path, just use path as-is
 				if err == nil {
 					d.Locations[i].File = out

@@ -53,13 +53,13 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*workspace.CreateCredentials,
+	*workspace.CreateCredentialsRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var createReq workspace.CreateCredentials
+	var createReq workspace.CreateCredentialsRequest
 	var createJson flags.JsonFlag
 
 	// TODO: short flags
@@ -79,8 +79,9 @@ func newCreate() *cobra.Command {
 
   Arguments:
     GIT_PROVIDER: Git provider. This field is case-insensitive. The available Git providers
-      are gitHub, bitbucketCloud, gitLab, azureDevOpsServices, gitHubEnterprise,
-      bitbucketServer, gitLabEnterpriseEdition and awsCodeCommit.`
+      are gitHub, bitbucketCloud, gitLab, azureDevOpsServices,
+      gitHubEnterprise, bitbucketServer, gitLabEnterpriseEdition and
+      awsCodeCommit.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -142,13 +143,13 @@ func newCreate() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*workspace.DeleteGitCredentialRequest,
+	*workspace.DeleteCredentialsRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var deleteReq workspace.DeleteGitCredentialRequest
+	var deleteReq workspace.DeleteCredentialsRequest
 
 	// TODO: short flags
 
@@ -215,13 +216,13 @@ func newDelete() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var getOverrides []func(
 	*cobra.Command,
-	*workspace.GetGitCredentialRequest,
+	*workspace.GetCredentialsRequest,
 )
 
 func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getReq workspace.GetGitCredentialRequest
+	var getReq workspace.GetCredentialsRequest
 
 	// TODO: short flags
 
@@ -328,32 +329,47 @@ func newList() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var updateOverrides []func(
 	*cobra.Command,
-	*workspace.UpdateCredentials,
+	*workspace.UpdateCredentialsRequest,
 )
 
 func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var updateReq workspace.UpdateCredentials
+	var updateReq workspace.UpdateCredentialsRequest
 	var updateJson flags.JsonFlag
 
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.GitProvider, "git-provider", updateReq.GitProvider, `Git provider.`)
 	cmd.Flags().StringVar(&updateReq.GitUsername, "git-username", updateReq.GitUsername, `The username or email provided with your Git provider account, depending on which provider you are using.`)
 	cmd.Flags().StringVar(&updateReq.PersonalAccessToken, "personal-access-token", updateReq.PersonalAccessToken, `The personal access token used to authenticate to the corresponding Git provider.`)
 
-	cmd.Use = "update CREDENTIAL_ID"
+	cmd.Use = "update CREDENTIAL_ID GIT_PROVIDER"
 	cmd.Short = `Update a credential.`
 	cmd.Long = `Update a credential.
   
   Updates the specified Git credential.
 
   Arguments:
-    CREDENTIAL_ID: The ID for the corresponding credential to access.`
+    CREDENTIAL_ID: The ID for the corresponding credential to access.
+    GIT_PROVIDER: Git provider. This field is case-insensitive. The available Git providers
+      are gitHub, bitbucketCloud, gitLab, azureDevOpsServices,
+      gitHubEnterprise, bitbucketServer, gitLabEnterpriseEdition and
+      awsCodeCommit.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, provide only CREDENTIAL_ID as positional arguments. Provide 'git_provider' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -372,26 +388,12 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down."
-			names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx)
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Git Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The ID for the corresponding credential to access")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding credential to access")
-		}
 		_, err = fmt.Sscan(args[0], &updateReq.CredentialId)
 		if err != nil {
 			return fmt.Errorf("invalid CREDENTIAL_ID: %s", args[0])
+		}
+		if !cmd.Flags().Changed("json") {
+			updateReq.GitProvider = args[1]
 		}
 
 		err = w.GitCredentials.Update(ctx, updateReq)

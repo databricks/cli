@@ -119,7 +119,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 					return "", err
 				}
 			}
-			return auth.GetShortUserName(cachedUser.UserName), nil
+			return auth.GetShortUserName(cachedUser), nil
 		},
 		// Get the default workspace catalog. If there is no default, or if
 		// Unity Catalog is not enabled, return an empty string.

@@ -47,12 +47,17 @@ type Workspace struct {
 
 	// Remote workspace base path for deployment state, for artifacts, as synchronization target.
 	// This defaults to "~/.bundle/${bundle.name}/${bundle.target}" where "~" expands to
-	// the current user's home directory in the workspace (e.g. `/Users/jane@doe.com`).
+	// the current user's home directory in the workspace (e.g. `/Workspace/Users/jane@doe.com`).
 	RootPath string `json:"root_path,omitempty"`
 
 	// Remote workspace path to synchronize local files to.
 	// This defaults to "${workspace.root}/files".
 	FilePath string `json:"file_path,omitempty"`
+
+	// Remote workspace path for resources with a presence in the workspace.
+	// These are kept outside [FilePath] to avoid potential naming collisions.
+	// This defaults to "${workspace.root}/resources".
+	ResourcePath string `json:"resource_path,omitempty"`
 
 	// Remote workspace path for build artifacts.
 	// This defaults to "${workspace.root}/artifacts".

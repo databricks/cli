@@ -13,7 +13,7 @@ import (
 
 func TestParseResourcesStateWithNoFile(t *testing.T) {
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "whatever",
@@ -31,7 +31,7 @@ func TestParseResourcesStateWithNoFile(t *testing.T) {
 func TestParseResourcesStateWithExistingStateFile(t *testing.T) {
 	ctx := context.Background()
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "whatever",

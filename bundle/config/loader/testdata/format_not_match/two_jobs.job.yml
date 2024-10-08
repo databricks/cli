@@ -1,0 +1,7 @@
+resources:
+  jobs:
+    job1:
+      name: job1
+
+    job2:
+      name: job2

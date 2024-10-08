@@ -33,7 +33,7 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	}
 
 	b.Config.Workspace.CurrentUser = &config.User{
-		ShortName: auth.GetShortUserName(me.UserName),
+		ShortName: auth.GetShortUserName(me),
 		User:      me,
 	}
 

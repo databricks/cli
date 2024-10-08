@@ -9,8 +9,8 @@ import (
 	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/permissions"
-	"github.com/databricks/cli/bundle/python"
 	"github.com/databricks/cli/bundle/scripts"
+	"github.com/databricks/cli/bundle/trampoline"
 )
 
 // The initialize phase fills in defaults and connects to the workspace.
@@ -39,9 +39,16 @@ func Initialize() bundle.Mutator {
 			mutator.MergePipelineClusters(),
 			mutator.InitializeWorkspaceClient(),
 			mutator.PopulateCurrentUser(),
+
 			mutator.DefineDefaultWorkspaceRoot(),
 			mutator.ExpandWorkspaceRoot(),
 			mutator.DefineDefaultWorkspacePaths(),
+			mutator.PrependWorkspacePrefix(),
+
+			// This mutator needs to be run before variable interpolation because it
+			// searches for strings with variable references in them.
+			mutator.RewriteWorkspacePrefix(),
+
 			mutator.SetVariables(),
 			// Intentionally placed before ResolveVariableReferencesInLookup, ResolveResourceReferences,
 			// ResolveVariableReferencesInComplexVariables and ResolveVariableReferences.
@@ -66,7 +73,7 @@ func Initialize() bundle.Mutator {
 			mutator.ConfigureWSFS(),
 
 			mutator.TranslatePaths(),
-			python.WrapperWarning(),
+			trampoline.WrapperWarning(),
 			permissions.ApplyBundlePermissions(),
 			permissions.FilterCurrentUser(),
 			metadata.AnnotateJobs(),

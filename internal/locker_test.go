@@ -29,7 +29,7 @@ func createRemoteTestProject(t *testing.T, projectNamePrefix string, wsc *databr
 	assert.NoError(t, err)
 
 	remoteProjectRoot := fmt.Sprintf("/Repos/%s/%s", me.UserName, RandomName(projectNamePrefix))
-	repoInfo, err := wsc.Repos.Create(ctx, workspace.CreateRepo{
+	repoInfo, err := wsc.Repos.Create(ctx, workspace.CreateRepoRequest{
 		Path:     remoteProjectRoot,
 		Url:      EmptyRepoUrl,
 		Provider: "gitHub",

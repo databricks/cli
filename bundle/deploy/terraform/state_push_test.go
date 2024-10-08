@@ -3,6 +3,7 @@ package terraform
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"testing"
 
@@ -29,7 +30,7 @@ func mockStateFilerForPush(t *testing.T, fn func(body io.Reader)) filer.Filer {
 
 func statePushTestBundle(t *testing.T) *bundle.Bundle {
 	return &bundle.Bundle{
-		RootPath: t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "default",
@@ -57,5 +58,31 @@ func TestStatePush(t *testing.T) {
 	// Write a stale local state file.
 	writeLocalState(t, ctx, b, map[string]any{"serial": 4})
 	diags := bundle.Apply(ctx, b, m)
+	assert.NoError(t, diags.Error())
+}
+
+func TestStatePushLargeState(t *testing.T) {
+	mock := mockfiler.NewMockFiler(t)
+	m := &statePush{
+		identityFiler(mock),
+	}
+
+	ctx := context.Background()
+	b := statePushTestBundle(t)
+
+	largeState := map[string]any{}
+	for i := 0; i < 1000000; i++ {
+		largeState[fmt.Sprintf("field_%d", i)] = i
+	}
+
+	// Write a stale local state file.
+	writeLocalState(t, ctx, b, largeState)
+	diags := bundle.Apply(ctx, b, m)
+	assert.ErrorContains(t, diags.Error(), "Terraform state file size exceeds the maximum allowed size of 10485760 bytes. Please reduce the number of resources in your bundle, split your bundle into multiple or re-run the command with --force flag")
+
+	// Force the write.
+	b = statePushTestBundle(t)
+	b.Config.Bundle.Force = true
+	diags = bundle.Apply(ctx, b, m)
 	assert.NoError(t, diags.Error())
 }

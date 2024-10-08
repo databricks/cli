@@ -108,7 +108,7 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 			return dyn.InvalidValue, fmt.Errorf("failed to create cache dir: %w", err)
 		}
 
-		rightRoot, diags := m.runPythonMutator(ctx, cacheDir, b.RootPath, pythonPath, leftRoot)
+		rightRoot, diags := m.runPythonMutator(ctx, cacheDir, b.BundleRootPath, pythonPath, leftRoot)
 		mutateDiags = diags
 		if diags.HasError() {
 			return dyn.InvalidValue, mutateDiagsHasError
@@ -228,12 +228,12 @@ func (m *pythonMutator) runPythonMutator(ctx context.Context, cacheDir string, r
 	return output, pythonDiagnostics
 }
 
-const installExplanation = `If using Python wheels, ensure that 'databricks-pydabs' is included in the dependencies, 
+const installExplanation = `If using Python wheels, ensure that 'databricks-pydabs' is included in the dependencies,
 and that the wheel is installed in the Python environment:
 
   $ .venv/bin/pip install -e .
 
-If using a virtual environment, ensure it is specified as the venv_path property in databricks.yml, 
+If using a virtual environment, ensure it is specified as the venv_path property in databricks.yml,
 or activate the environment before running CLI commands:
 
   experimental:
