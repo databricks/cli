@@ -45,7 +45,7 @@ func (j *JsonFlag) Unmarshal(v any) error {
 
 	// First normalize the input data.
 	// It will convert all the values to the correct types.
-	// For example string lterals for booleans and integers will be converted to the correct types.
+	// For example string literals for booleans and integers will be converted to the correct types.
 	nv, diags := convert.Normalize(v, dv)
 	if len(diags) > 0 {
 		summary := ""
