@@ -59,26 +59,27 @@ type pythonLocationEntry struct {
 // validation errors will point to Python source code instead of generated YAML.
 func mergePythonLocations(value dyn.Value, locations *pythonLocations) (dyn.Value, error) {
 	return dyn.Walk(value, func(path dyn.Path, value dyn.Value) (dyn.Value, error) {
-		if newLocation, ok := findPythonLocation(locations, path); ok {
-			var newLocations []dyn.Location
-
-			// the first item in the list is the "last" location used for error reporting
-			newLocations = append(newLocations, newLocation)
-
-			for _, location := range value.Locations() {
-				// When loaded, dyn.Value created by PyDABs use the virtual file path as their location,
-				// we replace it with newLocation.
-				if filepath.Base(location.File) == generatedFileName {
-					continue
-				}
-
-				newLocations = append(newLocations, location)
-			}
-
-			return value.WithLocations(newLocations), nil
-		} else {
+		newLocation, ok := findPythonLocation(locations, path)
+		if !ok {
 			return value, nil
 		}
+
+		var newLocations []dyn.Location
+
+		// the first item in the list is the "last" location used for error reporting
+		newLocations = append(newLocations, newLocation)
+
+		for _, location := range value.Locations() {
+			// When loaded, dyn.Value created by PyDABs use the virtual file path as their location,
+			// we replace it with newLocation.
+			if filepath.Base(location.File) == generatedFileName {
+				continue
+			}
+
+			newLocations = append(newLocations, location)
+		}
+
+		return value.WithLocations(newLocations), nil
 	})
 }
 
