@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
@@ -95,6 +96,7 @@ func newGet() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		getReq.Name = args[0]
@@ -103,7 +105,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -158,6 +160,7 @@ func newGetBindings() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		_, err = fmt.Sscan(args[0], &getBindingsReq.SecurableType)
@@ -167,7 +170,7 @@ func newGetBindings() *cobra.Command {
 		getBindingsReq.SecurableName = args[1]
 
 		response := w.WorkspaceBindings.GetBindings(ctx, getBindingsReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIteratorWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -223,13 +226,11 @@ func newUpdate() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = updateJson.Unmarshal(&updateReq)
-			if err != nil {
-				return err
-			}
+			diags = updateJson.Unmarshal(&updateReq)
 		}
 		updateReq.Name = args[0]
 
@@ -237,7 +238,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -294,13 +295,11 @@ func newUpdateBindings() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = updateBindingsJson.Unmarshal(&updateBindingsReq)
-			if err != nil {
-				return err
-			}
+			diags = updateBindingsJson.Unmarshal(&updateBindingsReq)
 		}
 		_, err = fmt.Sscan(args[0], &updateBindingsReq.SecurableType)
 		if err != nil {
@@ -312,7 +311,7 @@ func newUpdateBindings() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.

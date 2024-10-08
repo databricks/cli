@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/provisioning"
 	"github.com/spf13/cobra"
@@ -94,13 +95,11 @@ func newCreate() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		a := root.AccountClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = createJson.Unmarshal(&createReq)
-			if err != nil {
-				return err
-			}
+			diags = createJson.Unmarshal(&createReq)
 		}
 		if !cmd.Flags().Changed("json") {
 			createReq.NetworkName = args[0]
@@ -110,7 +109,7 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -160,6 +159,7 @@ func newDelete() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		a := root.AccountClient(ctx)
 
 		if len(args) == 0 {
@@ -185,7 +185,7 @@ func newDelete() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return nil
+		return diags.Error()
 	}
 
 	// Disable completions since they are not applicable.
@@ -231,6 +231,7 @@ func newGet() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		a := root.AccountClient(ctx)
 
 		if len(args) == 0 {
@@ -256,7 +257,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -297,12 +298,13 @@ func newList() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		a := root.AccountClient(ctx)
 		response, err := a.Networks.List(ctx)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.

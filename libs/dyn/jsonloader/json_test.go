@@ -44,10 +44,50 @@ const jsonData = `
 `
 
 func TestJsonLoader(t *testing.T) {
-	v, err := LoadJSON([]byte(jsonData))
+	v, err := LoadJSON([]byte(jsonData), "(inline)")
 	require.NoError(t, err)
 
 	var r jobs.ResetJob
 	err = convert.ToTyped(&r, v)
 	require.NoError(t, err)
+}
+
+const malformedMap = `
+{
+    "job_id": 123,
+    "new_settings": {
+        "name": "xxx",
+        "wrong",
+    }
+}
+`
+
+func TestJsonLoaderMalformedMap(t *testing.T) {
+	_, err := LoadJSON([]byte(malformedMap), "(inline)")
+	require.ErrorContains(t, err, "error decoding JSON at (inline):6:16: invalid character ',' after object key")
+}
+
+const malformedArray = `
+{
+    "job_id": 123,
+    "new_settings": {
+        "name": "xxx",
+        "tasks": [1, "asd",]
+    }
+}`
+
+func TestJsonLoaderMalformedArray(t *testing.T) {
+	_, err := LoadJSON([]byte(malformedArray), "path/to/file.json")
+	require.ErrorContains(t, err, "error decoding JSON at path/to/file.json:6:28: invalid character ']' looking for beginning of value")
+}
+
+const eofData = `
+{
+    "job_id": 123,
+    "new_settings": {
+        "name": "xxx",`
+
+func TestJsonLoaderEOF(t *testing.T) {
+	_, err := LoadJSON([]byte(eofData), "path/to/file.json")
+	require.ErrorContains(t, err, "unexpected end of JSON input")
 }

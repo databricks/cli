@@ -11,8 +11,13 @@ type LineOffset struct {
 	Start int64
 }
 
+type Offset struct {
+	offsets []LineOffset
+	source  string
+}
+
 // buildLineOffsets scans the input data and records the starting byte offset of each line.
-func BuildLineOffsets(data []byte) []LineOffset {
+func BuildLineOffsets(data []byte) Offset {
 	offsets := []LineOffset{{Line: 1, Start: 0}}
 	line := 1
 	for i, b := range data {
@@ -21,24 +26,28 @@ func BuildLineOffsets(data []byte) []LineOffset {
 			offsets = append(offsets, LineOffset{Line: line, Start: int64(i + 1)})
 		}
 	}
-	return offsets
+	return Offset{offsets: offsets}
 }
 
 // GetPosition maps a byte offset to its corresponding line and column numbers.
-func GetPosition(offset int64, offsets []LineOffset) dyn.Location {
+func (o Offset) GetPosition(offset int64) dyn.Location {
 	// Binary search to find the line
-	idx := sort.Search(len(offsets), func(i int) bool {
-		return offsets[i].Start > offset
+	idx := sort.Search(len(o.offsets), func(i int) bool {
+		return o.offsets[i].Start > offset
 	}) - 1
 
 	if idx < 0 {
 		idx = 0
 	}
 
-	lineOffset := offsets[idx]
+	lineOffset := o.offsets[idx]
 	return dyn.Location{
-		File:   "(inline)",
+		File:   o.source,
 		Line:   lineOffset.Line,
 		Column: int(offset-lineOffset.Start) + 1,
 	}
+}
+
+func (o *Offset) SetSource(source string) {
+	o.source = source
 }

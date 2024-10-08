@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/spf13/cobra"
@@ -105,13 +106,11 @@ func newCreate() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = createJson.Unmarshal(&createReq)
-			if err != nil {
-				return err
-			}
+			diags = createJson.Unmarshal(&createReq)
 		}
 		if !cmd.Flags().Changed("json") {
 			createReq.DisplayName = args[0]
@@ -121,7 +120,7 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -177,13 +176,11 @@ func newCreateSchedule() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = createScheduleJson.Unmarshal(&createScheduleReq)
-			if err != nil {
-				return err
-			}
+			diags = createScheduleJson.Unmarshal(&createScheduleReq)
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
@@ -193,7 +190,7 @@ func newCreateSchedule() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -247,13 +244,11 @@ func newCreateSubscription() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = createSubscriptionJson.Unmarshal(&createSubscriptionReq)
-			if err != nil {
-				return err
-			}
+			diags = createSubscriptionJson.Unmarshal(&createSubscriptionReq)
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
@@ -264,7 +259,7 @@ func newCreateSubscription() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -318,6 +313,7 @@ func newDeleteSchedule() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		deleteScheduleReq.DashboardId = args[0]
@@ -327,7 +323,7 @@ func newDeleteSchedule() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return nil
+		return diags.Error()
 	}
 
 	// Disable completions since they are not applicable.
@@ -382,6 +378,7 @@ func newDeleteSubscription() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		deleteSubscriptionReq.DashboardId = args[0]
@@ -392,7 +389,7 @@ func newDeleteSubscription() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return nil
+		return diags.Error()
 	}
 
 	// Disable completions since they are not applicable.
@@ -442,6 +439,7 @@ func newGet() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		getReq.DashboardId = args[0]
@@ -450,7 +448,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -500,6 +498,7 @@ func newGetPublished() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		getPublishedReq.DashboardId = args[0]
@@ -508,7 +507,7 @@ func newGetPublished() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -560,6 +559,7 @@ func newGetSchedule() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		getScheduleReq.DashboardId = args[0]
@@ -569,7 +569,7 @@ func newGetSchedule() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -622,6 +622,7 @@ func newGetSubscription() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		getSubscriptionReq.DashboardId = args[0]
@@ -632,7 +633,7 @@ func newGetSubscription() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -682,10 +683,11 @@ func newList() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		response := w.Lakeview.List(ctx, listReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIteratorWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -739,12 +741,13 @@ func newListSchedules() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		listSchedulesReq.DashboardId = args[0]
 
 		response := w.Lakeview.ListSchedules(ctx, listSchedulesReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIteratorWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -799,13 +802,14 @@ func newListSubscriptions() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		listSubscriptionsReq.DashboardId = args[0]
 		listSubscriptionsReq.ScheduleId = args[1]
 
 		response := w.Lakeview.ListSubscriptions(ctx, listSubscriptionsReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIteratorWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -867,13 +871,11 @@ func newMigrate() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = migrateJson.Unmarshal(&migrateReq)
-			if err != nil {
-				return err
-			}
+			diags = migrateJson.Unmarshal(&migrateReq)
 		}
 		if !cmd.Flags().Changed("json") {
 			migrateReq.SourceDashboardId = args[0]
@@ -883,7 +885,7 @@ func newMigrate() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -938,13 +940,11 @@ func newPublish() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = publishJson.Unmarshal(&publishReq)
-			if err != nil {
-				return err
-			}
+			diags = publishJson.Unmarshal(&publishReq)
 		}
 		publishReq.DashboardId = args[0]
 
@@ -952,7 +952,7 @@ func newPublish() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1002,6 +1002,7 @@ func newTrash() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		trashReq.DashboardId = args[0]
@@ -1010,7 +1011,7 @@ func newTrash() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return nil
+		return diags.Error()
 	}
 
 	// Disable completions since they are not applicable.
@@ -1060,6 +1061,7 @@ func newUnpublish() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		unpublishReq.DashboardId = args[0]
@@ -1068,7 +1070,7 @@ func newUnpublish() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return nil
+		return diags.Error()
 	}
 
 	// Disable completions since they are not applicable.
@@ -1125,13 +1127,11 @@ func newUpdate() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = updateJson.Unmarshal(&updateReq)
-			if err != nil {
-				return err
-			}
+			diags = updateJson.Unmarshal(&updateReq)
 		}
 		updateReq.DashboardId = args[0]
 
@@ -1139,7 +1139,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1197,13 +1197,11 @@ func newUpdateSchedule() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = updateScheduleJson.Unmarshal(&updateScheduleReq)
-			if err != nil {
-				return err
-			}
+			diags = updateScheduleJson.Unmarshal(&updateScheduleReq)
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
@@ -1214,7 +1212,7 @@ func newUpdateSchedule() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.

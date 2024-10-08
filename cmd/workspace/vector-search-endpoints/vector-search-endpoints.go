@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/spf13/cobra"
@@ -92,13 +93,11 @@ func newCreateEndpoint() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = createEndpointJson.Unmarshal(&createEndpointReq)
-			if err != nil {
-				return err
-			}
+			diags = createEndpointJson.Unmarshal(&createEndpointReq)
 		}
 		if !cmd.Flags().Changed("json") {
 			createEndpointReq.Name = args[0]
@@ -115,7 +114,7 @@ func newCreateEndpoint() *cobra.Command {
 			return err
 		}
 		if createEndpointSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			return cmdio.RenderWithDiagnostics(ctx, wait.Response, diags)
 		}
 		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *vectorsearch.EndpointInfo) {
@@ -133,7 +132,7 @@ func newCreateEndpoint() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+		return cmdio.RenderWithDiagnostics(ctx, info, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -181,6 +180,7 @@ func newDeleteEndpoint() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		deleteEndpointReq.EndpointName = args[0]
@@ -189,7 +189,7 @@ func newDeleteEndpoint() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return nil
+		return diags.Error()
 	}
 
 	// Disable completions since they are not applicable.
@@ -237,6 +237,7 @@ func newGetEndpoint() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		getEndpointReq.EndpointName = args[0]
@@ -245,7 +246,7 @@ func newGetEndpoint() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -292,10 +293,11 @@ func newListEndpoints() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		response := w.VectorSearchEndpoints.ListEndpoints(ctx, listEndpointsReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIteratorWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.

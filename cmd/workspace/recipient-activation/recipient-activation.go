@@ -5,6 +5,7 @@ package recipient_activation
 import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/sharing"
 	"github.com/spf13/cobra"
 )
@@ -80,6 +81,7 @@ func newGetActivationUrlInfo() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		getActivationUrlInfoReq.ActivationUrl = args[0]
@@ -88,7 +90,7 @@ func newGetActivationUrlInfo() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return nil
+		return diags.Error()
 	}
 
 	// Disable completions since they are not applicable.
@@ -139,6 +141,7 @@ func newRetrieveToken() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		retrieveTokenReq.ActivationUrl = args[0]
@@ -147,7 +150,7 @@ func newRetrieveToken() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.

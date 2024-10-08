@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -33,12 +34,10 @@ func createOverride(createCmd *cobra.Command, createReq *workspace.CreateRepo) {
 	createJson := createCmd.Flag("json").Value.(*flags.JsonFlag)
 	createCmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 		if cmd.Flags().Changed("json") {
-			err = createJson.Unmarshal(createReq)
-			if err != nil {
-				return err
-			}
+			diags = createJson.Unmarshal(createReq)
 		} else {
 			createReq.Url = args[0]
 			if len(args) > 1 {
@@ -55,7 +54,7 @@ func createOverride(createCmd *cobra.Command, createReq *workspace.CreateRepo) {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 }
 
@@ -101,12 +100,10 @@ func updateOverride(updateCmd *cobra.Command, updateReq *workspace.UpdateRepo) {
 	updateJson := updateCmd.Flag("json").Value.(*flags.JsonFlag)
 	updateCmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 		if cmd.Flags().Changed("json") {
-			err = updateJson.Unmarshal(&updateReq)
-			if err != nil {
-				return err
-			}
+			diags = updateJson.Unmarshal(&updateReq)
 		} else {
 			updateReq.RepoId, err = repoArgumentToRepoID(ctx, w, args)
 			if err != nil {
@@ -118,7 +115,7 @@ func updateOverride(updateCmd *cobra.Command, updateReq *workspace.UpdateRepo) {
 		if err != nil {
 			return err
 		}
-		return nil
+		return diags.Error()
 	}
 }
 

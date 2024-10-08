@@ -13,6 +13,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/fatih/color"
@@ -262,9 +263,32 @@ func Render(ctx context.Context, v any) error {
 	return renderWithTemplate(newRenderer(v), ctx, c.outputFormat, c.out, c.headerTemplate, c.template)
 }
 
+func RenderWithDiagnostics(ctx context.Context, v any, diags diag.Diagnostics) error {
+	c := fromContext(ctx)
+	if _, ok := v.(listingInterface); ok {
+		panic("use RenderIterator instead")
+	}
+	err := renderWithTemplate(newRenderer(v), ctx, c.outputFormat, c.out, c.headerTemplate, c.template)
+	if err != nil {
+		return err
+	}
+
+	return RenderDiagnostics(c.err, diags)
+}
+
 func RenderIterator[T any](ctx context.Context, i listing.Iterator[T]) error {
 	c := fromContext(ctx)
 	return renderWithTemplate(newIteratorRenderer(i), ctx, c.outputFormat, c.out, c.headerTemplate, c.template)
+}
+
+func RenderIteratorWithDiagnostics[T any](ctx context.Context, i listing.Iterator[T], diags diag.Diagnostics) error {
+	c := fromContext(ctx)
+	err := renderWithTemplate(newIteratorRenderer(i), ctx, c.outputFormat, c.out, c.headerTemplate, c.template)
+	if err != nil {
+		return err
+	}
+
+	return RenderDiagnostics(c.err, diags)
 }
 
 func RenderWithTemplate(ctx context.Context, v any, headerTemplate, template string) error {
@@ -285,70 +309,72 @@ func RenderIteratorJson[T any](ctx context.Context, i listing.Iterator[T]) error
 	return renderWithTemplate(newIteratorRenderer(i), ctx, c.outputFormat, c.out, c.headerTemplate, c.template)
 }
 
+var renderFuncMap = template.FuncMap{
+	// we render colored output if stdout is TTY, otherwise we render text.
+	// in the future we'll check if we can explicitly check for stderr being
+	// a TTY
+	"header":  color.BlueString,
+	"red":     color.RedString,
+	"green":   color.GreenString,
+	"blue":    color.BlueString,
+	"yellow":  color.YellowString,
+	"magenta": color.MagentaString,
+	"cyan":    color.CyanString,
+	"bold": func(format string, a ...interface{}) string {
+		return color.New(color.Bold).Sprintf(format, a...)
+	},
+	"italic": func(format string, a ...interface{}) string {
+		return color.New(color.Italic).Sprintf(format, a...)
+	},
+	"replace": strings.ReplaceAll,
+	"join":    strings.Join,
+	"bool": func(v bool) string {
+		if v {
+			return color.GreenString("YES")
+		}
+		return color.RedString("NO")
+	},
+	"pretty_json": func(in string) (string, error) {
+		var tmp any
+		err := json.Unmarshal([]byte(in), &tmp)
+		if err != nil {
+			return "", err
+		}
+		b, err := fancyJSON(tmp)
+		if err != nil {
+			return "", err
+		}
+		return string(b), nil
+	},
+	"pretty_date": func(t time.Time) string {
+		return t.Format("2006-01-02T15:04:05Z")
+	},
+	"b64_encode": func(in string) (string, error) {
+		var out bytes.Buffer
+		enc := base64.NewEncoder(base64.StdEncoding, &out)
+		_, err := enc.Write([]byte(in))
+		if err != nil {
+			return "", err
+		}
+		err = enc.Close()
+		if err != nil {
+			return "", err
+		}
+		return out.String(), nil
+	},
+	"b64_decode": func(in string) (string, error) {
+		dec := base64.NewDecoder(base64.StdEncoding, strings.NewReader(in))
+		out, err := io.ReadAll(dec)
+		if err != nil {
+			return "", err
+		}
+		return string(out), nil
+	},
+}
+
 func renderUsingTemplate(ctx context.Context, r templateRenderer, w io.Writer, headerTmpl, tmpl string) error {
 	tw := tabwriter.NewWriter(w, 0, 4, 2, ' ', 0)
-	base := template.New("command").Funcs(template.FuncMap{
-		// we render colored output if stdout is TTY, otherwise we render text.
-		// in the future we'll check if we can explicitly check for stderr being
-		// a TTY
-		"header":  color.BlueString,
-		"red":     color.RedString,
-		"green":   color.GreenString,
-		"blue":    color.BlueString,
-		"yellow":  color.YellowString,
-		"magenta": color.MagentaString,
-		"cyan":    color.CyanString,
-		"bold": func(format string, a ...interface{}) string {
-			return color.New(color.Bold).Sprintf(format, a...)
-		},
-		"italic": func(format string, a ...interface{}) string {
-			return color.New(color.Italic).Sprintf(format, a...)
-		},
-		"replace": strings.ReplaceAll,
-		"join":    strings.Join,
-		"bool": func(v bool) string {
-			if v {
-				return color.GreenString("YES")
-			}
-			return color.RedString("NO")
-		},
-		"pretty_json": func(in string) (string, error) {
-			var tmp any
-			err := json.Unmarshal([]byte(in), &tmp)
-			if err != nil {
-				return "", err
-			}
-			b, err := fancyJSON(tmp)
-			if err != nil {
-				return "", err
-			}
-			return string(b), nil
-		},
-		"pretty_date": func(t time.Time) string {
-			return t.Format("2006-01-02T15:04:05Z")
-		},
-		"b64_encode": func(in string) (string, error) {
-			var out bytes.Buffer
-			enc := base64.NewEncoder(base64.StdEncoding, &out)
-			_, err := enc.Write([]byte(in))
-			if err != nil {
-				return "", err
-			}
-			err = enc.Close()
-			if err != nil {
-				return "", err
-			}
-			return out.String(), nil
-		},
-		"b64_decode": func(in string) (string, error) {
-			dec := base64.NewDecoder(base64.StdEncoding, strings.NewReader(in))
-			out, err := io.ReadAll(dec)
-			if err != nil {
-				return "", err
-			}
-			return string(out), nil
-		},
-	})
+	base := template.New("command").Funcs(renderFuncMap)
 	if headerTmpl != "" {
 		headerT, err := base.Parse(headerTmpl)
 		if err != nil {
@@ -387,4 +413,56 @@ func fancyJSON(v any) ([]byte, error) {
 	f.ColonColor = color.New(color.Reset)
 
 	return jsoncolor.MarshalIndentWithFormatter(v, "", "  ", f)
+}
+
+const errorTemplate = `{{ "Error" | red }}: {{ .Summary }}
+{{- range $index, $element := .Paths }}
+  {{ if eq $index 0 }}at {{else}}   {{ end}}{{ $element.String | green }}
+{{- end }}
+{{- range $index, $element := .Locations }}
+  {{ if eq $index 0 }}in {{else}}   {{ end}}{{ $element.String | cyan }}
+{{- end }}
+{{- if .Detail }}
+
+{{ .Detail }}
+{{- end }}
+
+`
+
+const warningTemplate = `{{ "Warning" | yellow }}: {{ .Summary }}
+{{- range $index, $element := .Paths }}
+  {{ if eq $index 0 }}at {{else}}   {{ end}}{{ $element.String | green }}
+{{- end }}
+{{- range $index, $element := .Locations }}
+  {{ if eq $index 0 }}in {{else}}   {{ end}}{{ $element.String | cyan }}
+{{- end }}
+{{- if .Detail }}
+
+{{ .Detail }}
+{{- end }}
+
+`
+
+func RenderDiagnostics(out io.Writer, diags diag.Diagnostics) error {
+	errorT := template.Must(template.New("error").Funcs(renderFuncMap).Parse(errorTemplate))
+	warningT := template.Must(template.New("warning").Funcs(renderFuncMap).Parse(warningTemplate))
+
+	// Print errors and warnings.
+	for _, d := range diags {
+		var t *template.Template
+		switch d.Severity {
+		case diag.Error:
+			t = errorT
+		case diag.Warning:
+			t = warningT
+		}
+
+		// Render the diagnostic with the appropriate template.
+		err := t.Execute(out, d)
+		if err != nil {
+			return fmt.Errorf("failed to render template: %w", err)
+		}
+	}
+
+	return nil
 }

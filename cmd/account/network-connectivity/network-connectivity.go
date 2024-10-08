@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/settings"
 	"github.com/spf13/cobra"
@@ -93,13 +94,11 @@ func newCreateNetworkConnectivityConfiguration() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		a := root.AccountClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = createNetworkConnectivityConfigurationJson.Unmarshal(&createNetworkConnectivityConfigurationReq)
-			if err != nil {
-				return err
-			}
+			diags = createNetworkConnectivityConfigurationJson.Unmarshal(&createNetworkConnectivityConfigurationReq)
 		}
 		if !cmd.Flags().Changed("json") {
 			createNetworkConnectivityConfigurationReq.Name = args[0]
@@ -112,7 +111,7 @@ func newCreateNetworkConnectivityConfiguration() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -184,13 +183,11 @@ func newCreatePrivateEndpointRule() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		a := root.AccountClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = createPrivateEndpointRuleJson.Unmarshal(&createPrivateEndpointRuleReq)
-			if err != nil {
-				return err
-			}
+			diags = createPrivateEndpointRuleJson.Unmarshal(&createPrivateEndpointRuleReq)
 		}
 		createPrivateEndpointRuleReq.NetworkConnectivityConfigId = args[0]
 		if !cmd.Flags().Changed("json") {
@@ -207,7 +204,7 @@ func newCreatePrivateEndpointRule() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -257,6 +254,7 @@ func newDeleteNetworkConnectivityConfiguration() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		a := root.AccountClient(ctx)
 
 		deleteNetworkConnectivityConfigurationReq.NetworkConnectivityConfigId = args[0]
@@ -265,7 +263,7 @@ func newDeleteNetworkConnectivityConfiguration() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return nil
+		return diags.Error()
 	}
 
 	// Disable completions since they are not applicable.
@@ -321,6 +319,7 @@ func newDeletePrivateEndpointRule() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		a := root.AccountClient(ctx)
 
 		deletePrivateEndpointRuleReq.NetworkConnectivityConfigId = args[0]
@@ -330,7 +329,7 @@ func newDeletePrivateEndpointRule() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -380,6 +379,7 @@ func newGetNetworkConnectivityConfiguration() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		a := root.AccountClient(ctx)
 
 		getNetworkConnectivityConfigurationReq.NetworkConnectivityConfigId = args[0]
@@ -388,7 +388,7 @@ func newGetNetworkConnectivityConfiguration() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -439,6 +439,7 @@ func newGetPrivateEndpointRule() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		a := root.AccountClient(ctx)
 
 		getPrivateEndpointRuleReq.NetworkConnectivityConfigId = args[0]
@@ -448,7 +449,7 @@ func newGetPrivateEndpointRule() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -497,10 +498,11 @@ func newListNetworkConnectivityConfigurations() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		a := root.AccountClient(ctx)
 
 		response := a.NetworkConnectivity.ListNetworkConnectivityConfigurations(ctx, listNetworkConnectivityConfigurationsReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIteratorWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -552,12 +554,13 @@ func newListPrivateEndpointRules() *cobra.Command {
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		a := root.AccountClient(ctx)
 
 		listPrivateEndpointRulesReq.NetworkConnectivityConfigId = args[0]
 
 		response := a.NetworkConnectivity.ListPrivateEndpointRules(ctx, listPrivateEndpointRulesReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIteratorWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.

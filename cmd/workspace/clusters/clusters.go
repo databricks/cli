@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/spf13/cobra"
@@ -131,13 +132,11 @@ func newChangeOwner() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = changeOwnerJson.Unmarshal(&changeOwnerReq)
-			if err != nil {
-				return err
-			}
+			diags = changeOwnerJson.Unmarshal(&changeOwnerReq)
 		}
 		if !cmd.Flags().Changed("json") {
 			changeOwnerReq.ClusterId = args[0]
@@ -150,7 +149,7 @@ func newChangeOwner() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return nil
+		return diags.Error()
 	}
 
 	// Disable completions since they are not applicable.
@@ -259,13 +258,11 @@ func newCreate() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = createJson.Unmarshal(&createReq)
-			if err != nil {
-				return err
-			}
+			diags = createJson.Unmarshal(&createReq)
 		}
 		if !cmd.Flags().Changed("json") {
 			createReq.SparkVersion = args[0]
@@ -276,7 +273,7 @@ func newCreate() *cobra.Command {
 			return err
 		}
 		if createSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			return cmdio.RenderWithDiagnostics(ctx, wait.Response, diags)
 		}
 		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *compute.ClusterDetails) {
@@ -287,7 +284,7 @@ func newCreate() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+		return cmdio.RenderWithDiagnostics(ctx, info, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -353,13 +350,11 @@ func newDelete() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = deleteJson.Unmarshal(&deleteReq)
-			if err != nil {
-				return err
-			}
+			diags = deleteJson.Unmarshal(&deleteReq)
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
@@ -386,7 +381,7 @@ func newDelete() *cobra.Command {
 			return err
 		}
 		if deleteSkipWait {
-			return nil
+			return diags.Error()
 		}
 		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *compute.ClusterDetails) {
@@ -397,7 +392,7 @@ func newDelete() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+		return cmdio.RenderWithDiagnostics(ctx, info, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -510,13 +505,11 @@ func newEdit() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = editJson.Unmarshal(&editReq)
-			if err != nil {
-				return err
-			}
+			diags = editJson.Unmarshal(&editReq)
 		}
 		if !cmd.Flags().Changed("json") {
 			editReq.ClusterId = args[0]
@@ -530,7 +523,7 @@ func newEdit() *cobra.Command {
 			return err
 		}
 		if editSkipWait {
-			return nil
+			return diags.Error()
 		}
 		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *compute.ClusterDetails) {
@@ -541,7 +534,7 @@ func newEdit() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+		return cmdio.RenderWithDiagnostics(ctx, info, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -608,13 +601,11 @@ func newEvents() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = eventsJson.Unmarshal(&eventsReq)
-			if err != nil {
-				return err
-			}
+			diags = eventsJson.Unmarshal(&eventsReq)
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
@@ -637,7 +628,7 @@ func newEvents() *cobra.Command {
 		}
 
 		response := w.Clusters.Events(ctx, eventsReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIteratorWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -688,6 +679,7 @@ func newGet() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
@@ -713,7 +705,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -758,6 +750,7 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
@@ -783,7 +776,7 @@ func newGetPermissionLevels() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -829,6 +822,7 @@ func newGetPermissions() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if len(args) == 0 {
@@ -854,7 +848,7 @@ func newGetPermissions() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -908,10 +902,11 @@ func newList() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		response := w.Clusters.List(ctx, listReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIteratorWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -949,12 +944,13 @@ func newListNodeTypes() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 		response, err := w.Clusters.ListNodeTypes(ctx)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -992,12 +988,13 @@ func newListZones() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 		response, err := w.Clusters.ListZones(ctx)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1060,13 +1057,11 @@ func newPermanentDelete() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = permanentDeleteJson.Unmarshal(&permanentDeleteReq)
-			if err != nil {
-				return err
-			}
+			diags = permanentDeleteJson.Unmarshal(&permanentDeleteReq)
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
@@ -1092,7 +1087,7 @@ func newPermanentDelete() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return nil
+		return diags.Error()
 	}
 
 	// Disable completions since they are not applicable.
@@ -1152,13 +1147,11 @@ func newPin() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = pinJson.Unmarshal(&pinReq)
-			if err != nil {
-				return err
-			}
+			diags = pinJson.Unmarshal(&pinReq)
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
@@ -1184,7 +1177,7 @@ func newPin() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return nil
+		return diags.Error()
 	}
 
 	// Disable completions since they are not applicable.
@@ -1251,13 +1244,11 @@ func newResize() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = resizeJson.Unmarshal(&resizeReq)
-			if err != nil {
-				return err
-			}
+			diags = resizeJson.Unmarshal(&resizeReq)
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
@@ -1284,7 +1275,7 @@ func newResize() *cobra.Command {
 			return err
 		}
 		if resizeSkipWait {
-			return nil
+			return diags.Error()
 		}
 		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *compute.ClusterDetails) {
@@ -1295,7 +1286,7 @@ func newResize() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+		return cmdio.RenderWithDiagnostics(ctx, info, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1361,13 +1352,11 @@ func newRestart() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = restartJson.Unmarshal(&restartReq)
-			if err != nil {
-				return err
-			}
+			diags = restartJson.Unmarshal(&restartReq)
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
@@ -1394,7 +1383,7 @@ func newRestart() *cobra.Command {
 			return err
 		}
 		if restartSkipWait {
-			return nil
+			return diags.Error()
 		}
 		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *compute.ClusterDetails) {
@@ -1405,7 +1394,7 @@ func newRestart() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+		return cmdio.RenderWithDiagnostics(ctx, info, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1455,13 +1444,11 @@ func newSetPermissions() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = setPermissionsJson.Unmarshal(&setPermissionsReq)
-			if err != nil {
-				return err
-			}
+			diags = setPermissionsJson.Unmarshal(&setPermissionsReq)
 		}
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
@@ -1486,7 +1473,7 @@ func newSetPermissions() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1524,12 +1511,13 @@ func newSparkVersions() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 		response, err := w.Clusters.SparkVersions(ctx)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1599,13 +1587,11 @@ func newStart() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = startJson.Unmarshal(&startReq)
-			if err != nil {
-				return err
-			}
+			diags = startJson.Unmarshal(&startReq)
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
@@ -1632,7 +1618,7 @@ func newStart() *cobra.Command {
 			return err
 		}
 		if startSkipWait {
-			return nil
+			return diags.Error()
 		}
 		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *compute.ClusterDetails) {
@@ -1643,7 +1629,7 @@ func newStart() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+		return cmdio.RenderWithDiagnostics(ctx, info, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1703,13 +1689,11 @@ func newUnpin() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = unpinJson.Unmarshal(&unpinReq)
-			if err != nil {
-				return err
-			}
+			diags = unpinJson.Unmarshal(&unpinReq)
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
@@ -1735,7 +1719,7 @@ func newUnpin() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return nil
+		return diags.Error()
 	}
 
 	// Disable completions since they are not applicable.
@@ -1815,13 +1799,11 @@ func newUpdate() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = updateJson.Unmarshal(&updateReq)
-			if err != nil {
-				return err
-			}
+			diags = updateJson.Unmarshal(&updateReq)
 		}
 		if !cmd.Flags().Changed("json") {
 			updateReq.ClusterId = args[0]
@@ -1835,7 +1817,7 @@ func newUpdate() *cobra.Command {
 			return err
 		}
 		if updateSkipWait {
-			return nil
+			return diags.Error()
 		}
 		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *compute.ClusterDetails) {
@@ -1846,7 +1828,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+		return cmdio.RenderWithDiagnostics(ctx, info, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -1896,13 +1878,11 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = updatePermissionsJson.Unmarshal(&updatePermissionsReq)
-			if err != nil {
-				return err
-			}
+			diags = updatePermissionsJson.Unmarshal(&updatePermissionsReq)
 		}
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
@@ -1927,7 +1907,7 @@ func newUpdatePermissions() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.

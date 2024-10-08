@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/spf13/cobra"
@@ -102,13 +103,11 @@ func newCreateMessage() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = createMessageJson.Unmarshal(&createMessageReq)
-			if err != nil {
-				return err
-			}
+			diags = createMessageJson.Unmarshal(&createMessageReq)
 		}
 		createMessageReq.SpaceId = args[0]
 		createMessageReq.ConversationId = args[1]
@@ -121,7 +120,7 @@ func newCreateMessage() *cobra.Command {
 			return err
 		}
 		if createMessageSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			return cmdio.RenderWithDiagnostics(ctx, wait.Response, diags)
 		}
 		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *dashboards.GenieMessage) {
@@ -133,7 +132,7 @@ func newCreateMessage() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+		return cmdio.RenderWithDiagnostics(ctx, info, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -185,6 +184,7 @@ func newExecuteMessageQuery() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		executeMessageQueryReq.SpaceId = args[0]
@@ -195,7 +195,7 @@ func newExecuteMessageQuery() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -249,6 +249,7 @@ func newGetMessage() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		getMessageReq.SpaceId = args[0]
@@ -259,7 +260,7 @@ func newGetMessage() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -313,6 +314,7 @@ func newGetMessageQueryResult() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		getMessageQueryResultReq.SpaceId = args[0]
@@ -323,7 +325,7 @@ func newGetMessageQueryResult() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -389,13 +391,11 @@ func newStartConversation() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = startConversationJson.Unmarshal(&startConversationReq)
-			if err != nil {
-				return err
-			}
+			diags = startConversationJson.Unmarshal(&startConversationReq)
 		}
 		startConversationReq.SpaceId = args[0]
 		if !cmd.Flags().Changed("json") {
@@ -407,7 +407,7 @@ func newStartConversation() *cobra.Command {
 			return err
 		}
 		if startConversationSkipWait {
-			return cmdio.Render(ctx, wait.Response)
+			return cmdio.RenderWithDiagnostics(ctx, wait.Response, diags)
 		}
 		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *dashboards.GenieMessage) {
@@ -419,7 +419,7 @@ func newStartConversation() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+		return cmdio.RenderWithDiagnostics(ctx, info, diags)
 	}
 
 	// Disable completions since they are not applicable.

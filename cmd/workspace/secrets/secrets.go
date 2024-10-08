@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
@@ -107,13 +108,11 @@ func newCreateScope() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = createScopeJson.Unmarshal(&createScopeReq)
-			if err != nil {
-				return err
-			}
+			diags = createScopeJson.Unmarshal(&createScopeReq)
 		}
 		if !cmd.Flags().Changed("json") {
 			createScopeReq.Scope = args[0]
@@ -123,7 +122,7 @@ func newCreateScope() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return nil
+		return diags.Error()
 	}
 
 	// Disable completions since they are not applicable.
@@ -188,13 +187,11 @@ func newDeleteAcl() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = deleteAclJson.Unmarshal(&deleteAclReq)
-			if err != nil {
-				return err
-			}
+			diags = deleteAclJson.Unmarshal(&deleteAclReq)
 		}
 		if !cmd.Flags().Changed("json") {
 			deleteAclReq.Scope = args[0]
@@ -207,7 +204,7 @@ func newDeleteAcl() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return nil
+		return diags.Error()
 	}
 
 	// Disable completions since they are not applicable.
@@ -270,13 +267,11 @@ func newDeleteScope() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = deleteScopeJson.Unmarshal(&deleteScopeReq)
-			if err != nil {
-				return err
-			}
+			diags = deleteScopeJson.Unmarshal(&deleteScopeReq)
 		}
 		if !cmd.Flags().Changed("json") {
 			deleteScopeReq.Scope = args[0]
@@ -286,7 +281,7 @@ func newDeleteScope() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return nil
+		return diags.Error()
 	}
 
 	// Disable completions since they are not applicable.
@@ -351,13 +346,11 @@ func newDeleteSecret() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = deleteSecretJson.Unmarshal(&deleteSecretReq)
-			if err != nil {
-				return err
-			}
+			diags = deleteSecretJson.Unmarshal(&deleteSecretReq)
 		}
 		if !cmd.Flags().Changed("json") {
 			deleteSecretReq.Scope = args[0]
@@ -370,7 +363,7 @@ func newDeleteSecret() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return nil
+		return diags.Error()
 	}
 
 	// Disable completions since they are not applicable.
@@ -426,6 +419,7 @@ func newGetAcl() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		getAclReq.Scope = args[0]
@@ -435,7 +429,7 @@ func newGetAcl() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -497,6 +491,7 @@ func newGetSecret() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		getSecretReq.Scope = args[0]
@@ -506,7 +501,7 @@ func newGetSecret() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -561,12 +556,13 @@ func newListAcls() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		listAclsReq.Scope = args[0]
 
 		response := w.Secrets.ListAcls(ctx, listAclsReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIteratorWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -606,9 +602,10 @@ func newListScopes() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 		response := w.Secrets.ListScopes(ctx)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIteratorWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -665,12 +662,13 @@ func newListSecrets() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		listSecretsReq.Scope = args[0]
 
 		response := w.Secrets.ListSecrets(ctx, listSecretsReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIteratorWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -756,13 +754,11 @@ func newPutAcl() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = putAclJson.Unmarshal(&putAclReq)
-			if err != nil {
-				return err
-			}
+			diags = putAclJson.Unmarshal(&putAclReq)
 		}
 		if !cmd.Flags().Changed("json") {
 			putAclReq.Scope = args[0]
@@ -781,7 +777,7 @@ func newPutAcl() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return nil
+		return diags.Error()
 	}
 
 	// Disable completions since they are not applicable.

@@ -276,7 +276,7 @@ func toTypedInt(dst reflect.Value, src dyn.Value) error {
 }
 
 func canConvertToInt(v float64) bool {
-	return v == float64(int(v))
+	return v == float64(int64(v))
 }
 
 func toTypedFloat(dst reflect.Value, src dyn.Value) error {

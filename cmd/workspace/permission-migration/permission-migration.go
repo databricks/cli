@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
@@ -89,13 +90,11 @@ func newMigratePermissions() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = migratePermissionsJson.Unmarshal(&migratePermissionsReq)
-			if err != nil {
-				return err
-			}
+			diags = migratePermissionsJson.Unmarshal(&migratePermissionsReq)
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[0], &migratePermissionsReq.WorkspaceId)
@@ -114,7 +113,7 @@ func newMigratePermissions() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.

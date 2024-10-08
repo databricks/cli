@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/spf13/cobra"
@@ -111,13 +112,11 @@ func newCreateIndex() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = createIndexJson.Unmarshal(&createIndexReq)
-			if err != nil {
-				return err
-			}
+			diags = createIndexJson.Unmarshal(&createIndexReq)
 		}
 		if !cmd.Flags().Changed("json") {
 			createIndexReq.Name = args[0]
@@ -139,7 +138,7 @@ func newCreateIndex() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -192,13 +191,11 @@ func newDeleteDataVectorIndex() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = deleteDataVectorIndexJson.Unmarshal(&deleteDataVectorIndexReq)
-			if err != nil {
-				return err
-			}
+			diags = deleteDataVectorIndexJson.Unmarshal(&deleteDataVectorIndexReq)
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
@@ -208,7 +205,7 @@ func newDeleteDataVectorIndex() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -258,6 +255,7 @@ func newDeleteIndex() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		deleteIndexReq.IndexName = args[0]
@@ -266,7 +264,7 @@ func newDeleteIndex() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return nil
+		return diags.Error()
 	}
 
 	// Disable completions since they are not applicable.
@@ -316,6 +314,7 @@ func newGetIndex() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		getIndexReq.IndexName = args[0]
@@ -324,7 +323,7 @@ func newGetIndex() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -376,12 +375,13 @@ func newListIndexes() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		listIndexesReq.EndpointName = args[0]
 
 		response := w.VectorSearchIndexes.ListIndexes(ctx, listIndexesReq)
-		return cmdio.RenderIterator(ctx, response)
+		return cmdio.RenderIteratorWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -440,13 +440,11 @@ func newQueryIndex() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = queryIndexJson.Unmarshal(&queryIndexReq)
-			if err != nil {
-				return err
-			}
+			diags = queryIndexJson.Unmarshal(&queryIndexReq)
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
@@ -456,7 +454,7 @@ func newQueryIndex() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -512,13 +510,11 @@ func newQueryNextPage() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = queryNextPageJson.Unmarshal(&queryNextPageReq)
-			if err != nil {
-				return err
-			}
+			diags = queryNextPageJson.Unmarshal(&queryNextPageReq)
 		}
 		queryNextPageReq.IndexName = args[0]
 
@@ -526,7 +522,7 @@ func newQueryNextPage() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -582,13 +578,11 @@ func newScanIndex() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = scanIndexJson.Unmarshal(&scanIndexReq)
-			if err != nil {
-				return err
-			}
+			diags = scanIndexJson.Unmarshal(&scanIndexReq)
 		}
 		scanIndexReq.IndexName = args[0]
 
@@ -596,7 +590,7 @@ func newScanIndex() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
@@ -646,6 +640,7 @@ func newSyncIndex() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		syncIndexReq.IndexName = args[0]
@@ -654,7 +649,7 @@ func newSyncIndex() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return nil
+		return diags.Error()
 	}
 
 	// Disable completions since they are not applicable.
@@ -715,13 +710,11 @@ func newUpsertDataVectorIndex() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = upsertDataVectorIndexJson.Unmarshal(&upsertDataVectorIndexReq)
-			if err != nil {
-				return err
-			}
+			diags = upsertDataVectorIndexJson.Unmarshal(&upsertDataVectorIndexReq)
 		}
 		upsertDataVectorIndexReq.IndexName = args[0]
 		if !cmd.Flags().Changed("json") {
@@ -732,7 +725,7 @@ func newUpsertDataVectorIndex() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.RenderWithDiagnostics(ctx, response, diags)
 	}
 
 	// Disable completions since they are not applicable.
