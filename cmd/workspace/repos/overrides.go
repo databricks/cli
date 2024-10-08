@@ -34,10 +34,18 @@ func createOverride(createCmd *cobra.Command, createReq *workspace.CreateRepoReq
 	createJson := createCmd.Flag("json").Value.(*flags.JsonFlag)
 	createCmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 		if cmd.Flags().Changed("json") {
-			diags = createJson.Unmarshal(createReq)
+			diags := createJson.Unmarshal(createReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
 		} else {
 			createReq.Url = args[0]
 			if len(args) > 1 {
@@ -54,7 +62,7 @@ func createOverride(createCmd *cobra.Command, createReq *workspace.CreateRepoReq
 		if err != nil {
 			return err
 		}
-		return cmdio.RenderWithDiagnostics(ctx, response, diags)
+		return cmdio.Render(ctx, response)
 	}
 }
 
@@ -104,6 +112,15 @@ func updateOverride(updateCmd *cobra.Command, updateReq *workspace.UpdateRepoReq
 		w := root.WorkspaceClient(ctx)
 		if cmd.Flags().Changed("json") {
 			diags = updateJson.Unmarshal(&updateReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
 		} else {
 			updateReq.RepoId, err = repoArgumentToRepoID(ctx, w, args)
 			if err != nil {
@@ -115,7 +132,7 @@ func updateOverride(updateCmd *cobra.Command, updateReq *workspace.UpdateRepoReq
 		if err != nil {
 			return err
 		}
-		return diags.Error()
+		return nil
 	}
 }
 

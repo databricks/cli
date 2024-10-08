@@ -443,6 +443,20 @@ const warningTemplate = `{{ "Warning" | yellow }}: {{ .Summary }}
 
 `
 
+const recommendationTemplate = `{{ "Recommendation" | blue }}: {{ .Summary }}
+{{- range $index, $element := .Paths }}
+  {{ if eq $index 0 }}at {{else}}   {{ end}}{{ $element.String | green }}
+{{- end }}
+{{- range $index, $element := .Locations }}
+  {{ if eq $index 0 }}in {{else}}   {{ end}}{{ $element.String | cyan }}
+{{- end }}
+{{- if .Detail }}
+
+{{ .Detail }}
+{{- end }}
+
+`
+
 func RenderDiagnosticsToErrorOut(ctx context.Context, diags diag.Diagnostics) error {
 	c := fromContext(ctx)
 	return RenderDiagnostics(c.err, diags)
@@ -451,6 +465,7 @@ func RenderDiagnosticsToErrorOut(ctx context.Context, diags diag.Diagnostics) er
 func RenderDiagnostics(out io.Writer, diags diag.Diagnostics) error {
 	errorT := template.Must(template.New("error").Funcs(renderFuncMap).Parse(errorTemplate))
 	warningT := template.Must(template.New("warning").Funcs(renderFuncMap).Parse(warningTemplate))
+	recommendationT := template.Must(template.New("recommendation").Funcs(renderFuncMap).Parse(recommendationTemplate))
 
 	// Print errors and warnings.
 	for _, d := range diags {
@@ -460,6 +475,8 @@ func RenderDiagnostics(out io.Writer, diags diag.Diagnostics) error {
 			t = errorT
 		case diag.Warning:
 			t = warningT
+		case diag.Recommendation:
+			t = recommendationT
 		}
 
 		// Render the diagnostic with the appropriate template.
