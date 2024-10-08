@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -377,12 +378,10 @@ func writeInputFile(inputPath string, input dyn.Value) error {
 
 // loadLocationsFile loads locations.json containing source locations for generated YAML.
 func loadLocationsFile(locationsPath string) (*pythonLocations, error) {
-	if _, err := os.Stat(locationsPath); os.IsNotExist(err) {
-		return newPythonLocations(), nil
-	}
-
 	locationsFile, err := os.Open(locationsPath)
-	if err != nil {
+	if errors.Is(err, fs.ErrNotExist) {
+		return newPythonLocations(), nil
+	} else if err != nil {
 		return nil, fmt.Errorf("failed to open locations file: %w", err)
 	}
 
