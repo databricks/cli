@@ -6,7 +6,7 @@ Notable changes for Databricks Asset Bundles:
 
 Workspace paths are automatically prefixed with `/Workspace`. In addition, all usage of path strings such as `/Workspace/${workspace.root_path}/...` in bundle configuration is automatically replaced with `${workspace.root_path}/...` and generates a warning as part of bundle validate.
 
-More details can be found here: https://docs.databricks.com/en/release-notes/dev-tools/bundles.html#workspace-paths-will-be-automatically-prefixed
+More details can be found here: https://docs.databricks.com/en/release-notes/dev-tools/bundles.html#workspace-paths
 
 Bundles:
  * Add an error if state files grow bigger than the export limit ([#1795](https://github.com/databricks/cli/pull/1795)).
