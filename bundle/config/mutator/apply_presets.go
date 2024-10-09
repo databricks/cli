@@ -212,6 +212,11 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 	}
 
+	// Dashboards: Prefix
+	for i := range r.Dashboards {
+		r.Dashboards[i].DisplayName = prefix + r.Dashboards[i].DisplayName
+	}
+
 	return diags
 }
 

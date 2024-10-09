@@ -64,6 +64,7 @@ func Initialize() bundle.Mutator {
 			),
 			mutator.SetRunAs(),
 			mutator.OverrideCompute(),
+			mutator.ConfigureDashboardDefaults(),
 			mutator.ProcessTargetMode(),
 			mutator.ApplyPresets(),
 			mutator.DefaultQueueing(),

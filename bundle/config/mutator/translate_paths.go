@@ -162,6 +162,20 @@ func (t *translateContext) translateNoOp(literal, localFullPath, localRelPath, r
 	return localRelPath, nil
 }
 
+func (t *translateContext) retainLocalAbsoluteFilePath(literal, localFullPath, localRelPath, remotePath string) (string, error) {
+	info, err := t.b.SyncRoot.Stat(localRelPath)
+	if errors.Is(err, fs.ErrNotExist) {
+		return "", fmt.Errorf("file %s not found", literal)
+	}
+	if err != nil {
+		return "", fmt.Errorf("unable to determine if %s is a file: %w", localFullPath, err)
+	}
+	if info.IsDir() {
+		return "", fmt.Errorf("expected %s to be a file but found a directory", literal)
+	}
+	return localFullPath, nil
+}
+
 func (t *translateContext) translateNoOpWithPrefix(literal, localFullPath, localRelPath, remotePath string) (string, error) {
 	if !strings.HasPrefix(localRelPath, ".") {
 		localRelPath = "." + string(filepath.Separator) + localRelPath
@@ -215,6 +229,7 @@ func (m *translatePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 			t.applyJobTranslations,
 			t.applyPipelineTranslations,
 			t.applyArtifactTranslations,
+			t.applyDashboardTranslations,
 		} {
 			v, err = fn(v)
 			if err != nil {
