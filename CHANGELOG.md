@@ -6,11 +6,7 @@ Notable changes for Databricks Asset Bundles:
 
 Workspace paths are automatically prefixed with `/Workspace`. In addition, all usage of path strings such as `/Workspace/${workspace.root_path}/...` in bundle configuration is automatically replaced with `${workspace.root_path}/...` and generates a warning as part of bundle validate.
 
-If you have specified a custom `workspace.root_path`, `workspace.artifact_path`, or `workspace.file_path`, Databricks Asset Bundles automatically prefixes it with `/Workspace`, but if you use any of these as variables (for example, `my_config_path: /Workspace/${workspace.file_path}/config`), you need to update those entries to remove the /Workspace prefix to avoid the warning.
-
-If you pass one of these as variables and prefix them in your code, you need to update your code to not do this.
-
-This change is required because originally when the workspace file system was rooted at `/` and home directories were under `/Users`, to access workspace paths through the Databricks REST API you would use these paths directly. To access workspace paths from your code, you could use the `/Workspace` file path and home directories were also available under `/Workspace/Users`. To avoid this duality of workspace paths, as well as the ambiguity between workspace paths and Unity Catalog `/Volumes` paths, all workspace paths are prefixed with `/Workspace`.
+More details can be find here: https://docs.databricks.com/en/release-notes/dev-tools/bundles.html#workspace-paths-will-be-automatically-prefixed
 
 Bundles:
  * Add an error if state files grow bigger than the export limit ([#1795](https://github.com/databricks/cli/pull/1795)).
@@ -22,20 +18,8 @@ Internal:
  * Remove deprecated or readonly fields from the bundle schema ([#1809](https://github.com/databricks/cli/pull/1809)).
 
 API Changes:
- * Changed `databricks git-credentials create` command . New request type is .
- * Changed `databricks git-credentials delete` command . New request type is .
- * Changed `databricks git-credentials delete` command to return .
- * Changed `databricks git-credentials get` command . New request type is .
- * Changed `databricks git-credentials get` command to return .
- * Changed `databricks git-credentials list` command to return .
- * Changed `databricks git-credentials update` command . New request type is .
- * Changed `databricks git-credentials update` command to return .
- * Changed `databricks repos create` command . New request type is .
- * Changed `databricks repos create` command to return .
- * Changed `databricks repos delete` command to return .
- * Changed `databricks repos get` command to return .
- * Changed `databricks repos update` command . New request type is .
- * Changed `databricks repos update` command to return .
+ * Changed `databricks git-credentials create`, `databricks git-credentials delete`, `databricks git-credentials get`, `databricks git-credentials list`, `databricks git-credentials update` commands .
+ * Changed `databricks repos create`, `databricks repos delete`, `databricks repos get`, `databricks repos update`  command .
 
 OpenAPI commit 0c86ea6dbd9a730c24ff0d4e509603e476955ac5 (2024-10-02)
 Dependency updates:
