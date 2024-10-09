@@ -1,5 +1,33 @@
 # Version changelog
 
+## [Release] Release v0.230.0
+
+Notable changes for Databricks Asset Bundles:
+
+Workspace paths are automatically prefixed with `/Workspace`. In addition, all usage of path strings such as `/Workspace/${workspace.root_path}/...` in bundle configuration is automatically replaced with `${workspace.root_path}/...` and generates a warning as part of bundle validate.
+
+More details can be found here: https://docs.databricks.com/en/release-notes/dev-tools/bundles.html#workspace-paths
+
+Bundles:
+ * Add an error if state files grow bigger than the export limit ([#1795](https://github.com/databricks/cli/pull/1795)).
+ * Always prepend bundle remote paths with /Workspace ([#1724](https://github.com/databricks/cli/pull/1724)).
+ * Add resource path field to bundle workspace configuration ([#1800](https://github.com/databricks/cli/pull/1800)).
+ * Add validation for files with a `.(resource-name).yml` extension ([#1780](https://github.com/databricks/cli/pull/1780)).
+
+Internal:
+ * Remove deprecated or readonly fields from the bundle schema ([#1809](https://github.com/databricks/cli/pull/1809)).
+
+API Changes:
+ * Changed `databricks git-credentials create`, `databricks git-credentials delete`, `databricks git-credentials get`, `databricks git-credentials list`, `databricks git-credentials update` commands .
+ * Changed `databricks repos create`, `databricks repos delete`, `databricks repos get`, `databricks repos update`  command .
+
+OpenAPI commit 0c86ea6dbd9a730c24ff0d4e509603e476955ac5 (2024-10-02)
+Dependency updates:
+ * Upgrade TF provider to 1.53.0 ([#1815](https://github.com/databricks/cli/pull/1815)).
+ * Bump golang.org/x/term from 0.24.0 to 0.25.0 ([#1811](https://github.com/databricks/cli/pull/1811)).
+ * Bump golang.org/x/text from 0.18.0 to 0.19.0 ([#1812](https://github.com/databricks/cli/pull/1812)).
+ * Bump github.com/databricks/databricks-sdk-go from 0.47.0 to 0.48.0 ([#1810](https://github.com/databricks/cli/pull/1810)).
+
 ## [Release] Release v0.229.0
 
 Bundles:
