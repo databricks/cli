@@ -2,7 +2,7 @@
 
 ## [Release] Release v0.230.0
 
-Important changes:
+Notable changes for Databricks Asset Bundles:
 
 Workspace paths are automatically prefixed with `/Workspace`. In addition, all usage of path strings such as `/Workspace/${workspace.root_path}/...` in bundle configuration is automatically replaced with `${workspace.root_path}/...` and generates a warning as part of bundle validate.
 
