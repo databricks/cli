@@ -3,6 +3,7 @@ package permissions
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
@@ -52,16 +53,54 @@ func giveAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle) error {
 	}
 
 	w := b.WorkspaceClient().Workspace
-	obj, err := w.GetStatusByPath(ctx, b.Config.Workspace.RootPath)
+	err := setPermissions(ctx, w, b.Config.Workspace.RootPath, permissions)
 	if err != nil {
 		return err
 	}
 
-	_, err = w.UpdatePermissions(ctx, workspace.WorkspaceObjectPermissionsRequest{
+	if !strings.HasPrefix(b.Config.Workspace.ArtifactPath, b.Config.Workspace.RootPath) {
+		err = setPermissions(ctx, w, b.Config.Workspace.ArtifactPath, permissions)
+		if err != nil {
+			return err
+		}
+	}
+
+	if !strings.HasPrefix(b.Config.Workspace.FilePath, b.Config.Workspace.RootPath) {
+		err = setPermissions(ctx, w, b.Config.Workspace.FilePath, permissions)
+		if err != nil {
+			return err
+		}
+	}
+
+	if !strings.HasPrefix(b.Config.Workspace.StatePath, b.Config.Workspace.RootPath) {
+		err = setPermissions(ctx, w, b.Config.Workspace.StatePath, permissions)
+		if err != nil {
+			return err
+		}
+	}
+
+	if !strings.HasPrefix(b.Config.Workspace.ResourcePath, b.Config.Workspace.RootPath) {
+		err = setPermissions(ctx, w, b.Config.Workspace.ResourcePath, permissions)
+		if err != nil {
+			return err
+		}
+	}
+
+	return err
+}
+
+func setPermissions(ctx context.Context, w workspace.WorkspaceInterface, path string, permissions []workspace.WorkspaceObjectAccessControlRequest) error {
+	obj, err := w.GetStatusByPath(ctx, path)
+	if err != nil {
+		return err
+	}
+
+	_, err = w.SetPermissions(ctx, workspace.WorkspaceObjectPermissionsRequest{
 		WorkspaceObjectId:   fmt.Sprint(obj.ObjectId),
 		WorkspaceObjectType: "directories",
 		AccessControlList:   permissions,
 	})
+
 	return err
 }
 
