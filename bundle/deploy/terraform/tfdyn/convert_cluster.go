@@ -40,7 +40,7 @@ func (clusterConverter) Convert(ctx context.Context, key string, vin dyn.Value, 
 
 	// Configure permissions for this resource.
 	if permissions := convertPermissionsResource(ctx, vin); permissions != nil {
-		permissions.JobId = fmt.Sprintf("${databricks_cluster.%s.id}", key)
+		permissions.ClusterId = fmt.Sprintf("${databricks_cluster.%s.id}", key)
 		out.Permissions["cluster_"+key] = permissions
 	}
 

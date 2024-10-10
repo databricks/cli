@@ -81,7 +81,7 @@ func TestConvertCluster(t *testing.T) {
 
 	// Assert equality on the permissions
 	assert.Equal(t, &schema.ResourcePermissions{
-		JobId: "${databricks_cluster.my_cluster.id}",
+		ClusterId: "${databricks_cluster.my_cluster.id}",
 		AccessControl: []schema.ResourcePermissionsAccessControl{
 			{
 				PermissionLevel: "CAN_RUN",
