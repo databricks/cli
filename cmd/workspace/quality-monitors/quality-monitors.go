@@ -198,7 +198,7 @@ func newCreate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = createJson.Unmarshal(&createReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		createReq.TableName = args[0]
@@ -561,7 +561,7 @@ func newRegenerateDashboard() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = regenerateDashboardJson.Unmarshal(&regenerateDashboardReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		regenerateDashboardReq.TableName = args[0]
@@ -726,7 +726,7 @@ func newUpdate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = updateJson.Unmarshal(&updateReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		updateReq.TableName = args[0]

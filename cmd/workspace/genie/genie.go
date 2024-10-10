@@ -107,7 +107,7 @@ func newCreateMessage() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = createMessageJson.Unmarshal(&createMessageReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		createMessageReq.SpaceId = args[0]
@@ -394,7 +394,7 @@ func newStartConversation() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = startConversationJson.Unmarshal(&startConversationReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		startConversationReq.SpaceId = args[0]
