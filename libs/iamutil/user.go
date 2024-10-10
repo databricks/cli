@@ -1,4 +1,4 @@
-package auth
+package iamutil
 
 import (
 	"strings"
@@ -12,7 +12,7 @@ import (
 // including dots, which are not supported in e.g. experiment names.
 func GetShortUserName(user *iam.User) string {
 	name := user.UserName
-	if IsServicePrincipal(user.UserName) && user.DisplayName != "" {
+	if IsServicePrincipal(user) && user.DisplayName != "" {
 		name = user.DisplayName
 	}
 	local, _, _ := strings.Cut(name, "@")
