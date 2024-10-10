@@ -133,6 +133,6 @@ func TestApplyWorkspaceRootPermissionsForSharedError(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, ApplyWorkspaceRootPermissions())
 	require.Len(t, diags, 1)
-	require.Equal(t, "workspace_root_permissions", diags[0].Summary)
+	require.Equal(t, "the bundle root path /Workspace/Shared/foo/bar is writable by all workspace users", diags[0].Summary)
 	require.Equal(t, diag.Warning, diags[0].Severity)
 }
