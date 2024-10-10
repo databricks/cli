@@ -23,4 +23,14 @@ func (i *InMemoryTokenCache) Store(key string, t *oauth2.Token) error {
 	return nil
 }
 
+// Delete implements TokenCache.
+func (i *InMemoryTokenCache) Delete(key string) error {
+	_, ok := i.Tokens[key]
+	if !ok {
+		return ErrNotConfigured
+	}
+	delete(i.Tokens, key)
+	return nil
+}
+
 var _ TokenCache = (*InMemoryTokenCache)(nil)
