@@ -128,8 +128,8 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 				metastore, err := w.Metastores.Current(ctx)
 				if err != nil {
 					var aerr *apierr.APIError
-					if errors.As(err, &aerr) && aerr.ErrorCode == "METASTORE_DOES_NOT_EXIST" {
-						// Workspace doesn't have a metastore assigned, ignore error
+					if errors.As(err, &aerr) && (aerr.ErrorCode == "PERMISSION_DENIED" || aerr.ErrorCode == "METASTORE_DOES_NOT_EXIST") {
+						// Ignore: access denied or workspace doesn't have a metastore assigned
 						empty_default := ""
 						cachedCatalog = &empty_default
 						return "", nil
