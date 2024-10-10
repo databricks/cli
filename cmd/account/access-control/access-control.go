@@ -61,7 +61,7 @@ func newGetAssignableRolesForResource() *cobra.Command {
 	cmd.Use = "get-assignable-roles-for-resource RESOURCE"
 	cmd.Short = `Get assignable roles for a resource.`
 	cmd.Long = `Get assignable roles for a resource.
-  
+
   Gets all the roles that can be granted on an account level resource. A role is
   grantable if the rule set on the resource can contain an access rule of the
   role.
@@ -121,7 +121,7 @@ func newGetRuleSet() *cobra.Command {
 	cmd.Use = "get-rule-set NAME ETAG"
 	cmd.Short = `Get a rule set.`
 	cmd.Long = `Get a rule set.
-  
+
   Get a rule set by its name. A rule set is always attached to a resource and
   contains a list of access rules on the said resource. Currently only a default
   rule set for each resource is supported.
@@ -192,7 +192,7 @@ func newUpdateRuleSet() *cobra.Command {
 	cmd.Use = "update-rule-set"
 	cmd.Short = `Update a rule set.`
 	cmd.Long = `Update a rule set.
-  
+
   Replace the rules of a rule set. First, use get to read the current version of
   the rule set before modifying it. This pattern helps prevent conflicts between
   concurrent updates.`
@@ -207,7 +207,7 @@ func newUpdateRuleSet() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = updateRuleSetJson.Unmarshal(&updateRuleSetReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")

@@ -116,7 +116,7 @@ func newCreateIndex() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = createIndexJson.Unmarshal(&createIndexReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -197,7 +197,7 @@ func newDeleteDataVectorIndex() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = deleteDataVectorIndexJson.Unmarshal(&deleteDataVectorIndexReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
@@ -445,7 +445,7 @@ func newQueryIndex() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = queryIndexJson.Unmarshal(&queryIndexReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
@@ -517,7 +517,7 @@ func newQueryNextPage() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = queryNextPageJson.Unmarshal(&queryNextPageReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		queryNextPageReq.IndexName = args[0]
@@ -587,7 +587,7 @@ func newScanIndex() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = scanIndexJson.Unmarshal(&scanIndexReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		scanIndexReq.IndexName = args[0]
@@ -720,7 +720,7 @@ func newUpsertDataVectorIndex() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = upsertDataVectorIndexJson.Unmarshal(&upsertDataVectorIndexReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		upsertDataVectorIndexReq.IndexName = args[0]

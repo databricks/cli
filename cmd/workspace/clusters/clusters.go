@@ -136,7 +136,7 @@ func newChangeOwner() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = changeOwnerJson.Unmarshal(&changeOwnerReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -270,7 +270,7 @@ func newCreate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = createJson.Unmarshal(&createReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -364,7 +364,7 @@ func newDelete() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		} else {
 			if len(args) == 0 {
@@ -521,7 +521,7 @@ func newEdit() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = editJson.Unmarshal(&editReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -619,7 +619,7 @@ func newEvents() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = eventsJson.Unmarshal(&eventsReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		} else {
 			if len(args) == 0 {
@@ -1071,7 +1071,7 @@ func newPermanentDelete() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = permanentDeleteJson.Unmarshal(&permanentDeleteReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		} else {
 			if len(args) == 0 {
@@ -1163,7 +1163,7 @@ func newPin() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = pinJson.Unmarshal(&pinReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		} else {
 			if len(args) == 0 {
@@ -1262,7 +1262,7 @@ func newResize() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = resizeJson.Unmarshal(&resizeReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		} else {
 			if len(args) == 0 {
@@ -1372,7 +1372,7 @@ func newRestart() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = restartJson.Unmarshal(&restartReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		} else {
 			if len(args) == 0 {
@@ -1466,7 +1466,7 @@ func newSetPermissions() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = setPermissionsJson.Unmarshal(&setPermissionsReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		if len(args) == 0 {
@@ -1610,7 +1610,7 @@ func newStart() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = startJson.Unmarshal(&startReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		} else {
 			if len(args) == 0 {
@@ -1714,7 +1714,7 @@ func newUnpin() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = unpinJson.Unmarshal(&unpinReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		} else {
 			if len(args) == 0 {
@@ -1826,7 +1826,7 @@ func newUpdate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = updateJson.Unmarshal(&updateReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -1907,7 +1907,7 @@ func newUpdatePermissions() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = updatePermissionsJson.Unmarshal(&updatePermissionsReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		if len(args) == 0 {

@@ -108,7 +108,7 @@ func newDelete() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		} else {
 			if len(args) == 0 {
@@ -484,7 +484,7 @@ func newImport() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = importJson.Unmarshal(&importReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -624,7 +624,7 @@ func newMkdirs() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = mkdirsJson.Unmarshal(&mkdirsReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		} else {
 			if len(args) == 0 {
@@ -712,7 +712,7 @@ func newSetPermissions() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = setPermissionsJson.Unmarshal(&setPermissionsReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		setPermissionsReq.WorkspaceObjectType = args[0]
@@ -783,7 +783,7 @@ func newUpdatePermissions() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = updatePermissionsJson.Unmarshal(&updatePermissionsReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		updatePermissionsReq.WorkspaceObjectType = args[0]

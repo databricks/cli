@@ -112,7 +112,7 @@ func newCreateScope() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = createScopeJson.Unmarshal(&createScopeReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -193,7 +193,7 @@ func newDeleteAcl() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = deleteAclJson.Unmarshal(&deleteAclReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -275,7 +275,7 @@ func newDeleteScope() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = deleteScopeJson.Unmarshal(&deleteScopeReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -356,7 +356,7 @@ func newDeleteSecret() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = deleteSecretJson.Unmarshal(&deleteSecretReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -761,7 +761,7 @@ func newPutAcl() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = putAclJson.Unmarshal(&putAclReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		if !cmd.Flags().Changed("json") {
