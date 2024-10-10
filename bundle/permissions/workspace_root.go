@@ -58,28 +58,34 @@ func giveAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 
-	if !strings.HasPrefix(b.Config.Workspace.ArtifactPath, b.Config.Workspace.RootPath) {
+	// Adding backslash to the root path
+	rootPath := b.Config.Workspace.RootPath
+	if rootPath[len(rootPath)-1] != '/' {
+		rootPath += "/"
+	}
+
+	if !strings.HasPrefix(b.Config.Workspace.ArtifactPath, rootPath) {
 		err = setPermissions(ctx, w, b.Config.Workspace.ArtifactPath, permissions)
 		if err != nil {
 			return err
 		}
 	}
 
-	if !strings.HasPrefix(b.Config.Workspace.FilePath, b.Config.Workspace.RootPath) {
+	if !strings.HasPrefix(b.Config.Workspace.FilePath, rootPath) {
 		err = setPermissions(ctx, w, b.Config.Workspace.FilePath, permissions)
 		if err != nil {
 			return err
 		}
 	}
 
-	if !strings.HasPrefix(b.Config.Workspace.StatePath, b.Config.Workspace.RootPath) {
+	if !strings.HasPrefix(b.Config.Workspace.StatePath, rootPath) {
 		err = setPermissions(ctx, w, b.Config.Workspace.StatePath, permissions)
 		if err != nil {
 			return err
 		}
 	}
 
-	if !strings.HasPrefix(b.Config.Workspace.ResourcePath, b.Config.Workspace.RootPath) {
+	if !strings.HasPrefix(b.Config.Workspace.ResourcePath, rootPath) {
 		err = setPermissions(ctx, w, b.Config.Workspace.ResourcePath, permissions)
 		if err != nil {
 			return err
