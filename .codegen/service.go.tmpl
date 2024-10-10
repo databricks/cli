@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/{{.Package.Name}}"
 	"github.com/spf13/cobra"
 
-
 	{{range .Subservices -}}
 	{{.SnakeName}} "github.com/databricks/cli/cmd/{{ if .ParentService.IsAccounts }}account{{ else }}workspace{{ end }}/{{.KebabName}}"
 	{{end}}
