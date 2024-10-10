@@ -92,7 +92,7 @@ func checkWorkspaceRootPermissions(b *bundle.Bundle) diag.Diagnostics {
 		return nil
 	}
 
-	if !strings.HasPrefix(b.Config.Workspace.RootPath, "/Workspace/Shared") {
+	if !strings.HasPrefix(b.Config.Workspace.RootPath, "/Workspace/Shared/") {
 		return nil
 	}
 
