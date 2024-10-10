@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"reflect"
 	"runtime"
 	"testing"
 
@@ -47,6 +46,7 @@ func TestPythonMutator_load(t *testing.T) {
         pydabs:
           enabled: true
           venv_path: .venv
+          load_locations: true
       resources:
         jobs:
           job0:
@@ -65,7 +65,8 @@ func TestPythonMutator_load(t *testing.T) {
 			"experimental": {
 				"pydabs": {
 					"enabled": true,
-					"venv_path": ".venv"
+					"venv_path": ".venv",
+					"load_locations": true
 				}
 			},
 			"resources": {
@@ -80,6 +81,8 @@ func TestPythonMutator_load(t *testing.T) {
 			}
 		}`,
 		`{"severity": "warning", "summary": "job doesn't have any tasks", "location": {"file": "src/examples/file.py", "line": 10, "column": 5}}`,
+		`{"path": "resources.jobs.job0", "file": "src/examples/job0.py", "line": 3, "column": 5}
+		{"path": "resources.jobs.job1", "file": "src/examples/job1.py", "line": 5, "column": 7}`,
 	)
 
 	mutator := PythonMutator(PythonMutatorPhaseLoad)
@@ -97,6 +100,25 @@ func TestPythonMutator_load(t *testing.T) {
 		assert.Equal(t, "job_1", job1.Name)
 	}
 
+	// output of locations.json should be applied to underlying dyn.Value
+	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		name1, err := dyn.GetByPath(v, dyn.MustPathFromString("resources.jobs.job1.name"))
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+
+		assert.Equal(t, []dyn.Location{
+			{
+				File:   "src/examples/job1.py",
+				Line:   5,
+				Column: 7,
+			},
+		}, name1.Locations())
+
+		return v, nil
+	})
+	assert.NoError(t, err)
+
 	assert.Equal(t, 1, len(diags))
 	assert.Equal(t, "job doesn't have any tasks", diags[0].Summary)
 	assert.Equal(t, []dyn.Location{
@@ -106,7 +128,6 @@ func TestPythonMutator_load(t *testing.T) {
 			Column: 5,
 		},
 	}, diags[0].Locations)
-
 }
 
 func TestPythonMutator_load_disallowed(t *testing.T) {
@@ -146,7 +167,7 @@ func TestPythonMutator_load_disallowed(t *testing.T) {
 					}
 				}
 			}
-		}`, "")
+		}`, "", "")
 
 	mutator := PythonMutator(PythonMutatorPhaseLoad)
 	diag := bundle.Apply(ctx, b, mutator)
@@ -191,7 +212,7 @@ func TestPythonMutator_init(t *testing.T) {
 					}
 				}
 			}
-		}`, "")
+		}`, "", "")
 
 	mutator := PythonMutator(PythonMutatorPhaseInit)
 	diag := bundle.Apply(ctx, b, mutator)
@@ -252,7 +273,7 @@ func TestPythonMutator_badOutput(t *testing.T) {
 					}
 				}
 			}
-		}`, "")
+		}`, "", "")
 
 	mutator := PythonMutator(PythonMutatorPhaseLoad)
 	diag := bundle.Apply(ctx, b, mutator)
@@ -588,7 +609,7 @@ or activate the environment before running CLI commands:
 	assert.Equal(t, expected, out)
 }
 
-func withProcessStub(t *testing.T, args []string, output string, diagnostics string) context.Context {
+func withProcessStub(t *testing.T, args []string, output string, diagnostics string, locations string) context.Context {
 	ctx := context.Background()
 	ctx, stub := process.WithStub(ctx)
 
@@ -600,30 +621,49 @@ func withProcessStub(t *testing.T, args []string, output string, diagnostics str
 
 	inputPath := filepath.Join(cacheDir, "input.json")
 	outputPath := filepath.Join(cacheDir, "output.json")
+	locationsPath := filepath.Join(cacheDir, "locations.json")
 	diagnosticsPath := filepath.Join(cacheDir, "diagnostics.json")
-
-	args = append(args, "--input", inputPath)
-	args = append(args, "--output", outputPath)
-	args = append(args, "--diagnostics", diagnosticsPath)
 
 	stub.WithCallback(func(actual *exec.Cmd) error {
 		_, err := os.Stat(inputPath)
 		assert.NoError(t, err)
 
-		if reflect.DeepEqual(actual.Args, args) {
-			err := os.WriteFile(outputPath, []byte(output), 0600)
-			require.NoError(t, err)
+		actualInputPath := getArg(actual.Args, "--input")
+		actualOutputPath := getArg(actual.Args, "--output")
+		actualDiagnosticsPath := getArg(actual.Args, "--diagnostics")
+		actualLocationsPath := getArg(actual.Args, "--locations")
 
-			err = os.WriteFile(diagnosticsPath, []byte(diagnostics), 0600)
-			require.NoError(t, err)
+		require.Equal(t, inputPath, actualInputPath)
+		require.Equal(t, outputPath, actualOutputPath)
+		require.Equal(t, diagnosticsPath, actualDiagnosticsPath)
 
-			return nil
-		} else {
-			return fmt.Errorf("unexpected command: %v", actual.Args)
+		// locations is an optional argument
+		if locations != "" {
+			require.Equal(t, locationsPath, actualLocationsPath)
+
+			err = os.WriteFile(locationsPath, []byte(locations), 0600)
+			require.NoError(t, err)
 		}
+
+		err = os.WriteFile(outputPath, []byte(output), 0600)
+		require.NoError(t, err)
+
+		err = os.WriteFile(diagnosticsPath, []byte(diagnostics), 0600)
+		require.NoError(t, err)
+
+		return nil
 	})
 
 	return ctx
+}
+
+func getArg(args []string, name string) string {
+	for i := 0; i < len(args); i++ {
+		if args[i] == name {
+			return args[i+1]
+		}
+	}
+	return ""
 }
 
 func loadYaml(name string, content string) *bundle.Bundle {
