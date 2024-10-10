@@ -75,9 +75,15 @@ func newExchangeToken() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = exchangeTokenJson.Unmarshal(&exchangeTokenReq)
-			if err != nil {
-				return err
+			diags := exchangeTokenJson.Unmarshal(&exchangeTokenReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")

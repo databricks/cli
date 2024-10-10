@@ -92,9 +92,15 @@ func newMigratePermissions() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = migratePermissionsJson.Unmarshal(&migratePermissionsReq)
-			if err != nil {
-				return err
+			diags := migratePermissionsJson.Unmarshal(&migratePermissionsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {

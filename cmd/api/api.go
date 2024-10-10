@@ -42,9 +42,9 @@ func makeCommand(method string) *cobra.Command {
 			var path = args[0]
 
 			var request any
-			err := payload.Unmarshal(&request)
-			if err != nil {
-				return err
+			diags := payload.Unmarshal(&request)
+			if diags.HasError() {
+				return diags.Error()
 			}
 
 			cfg := &config.Config{}

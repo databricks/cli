@@ -96,9 +96,15 @@ func newCreateNetworkConnectivityConfiguration() *cobra.Command {
 		a := root.AccountClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = createNetworkConnectivityConfigurationJson.Unmarshal(&createNetworkConnectivityConfigurationReq)
-			if err != nil {
-				return err
+			diags := createNetworkConnectivityConfigurationJson.Unmarshal(&createNetworkConnectivityConfigurationReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -187,9 +193,15 @@ func newCreatePrivateEndpointRule() *cobra.Command {
 		a := root.AccountClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = createPrivateEndpointRuleJson.Unmarshal(&createPrivateEndpointRuleReq)
-			if err != nil {
-				return err
+			diags := createPrivateEndpointRuleJson.Unmarshal(&createPrivateEndpointRuleReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		createPrivateEndpointRuleReq.NetworkConnectivityConfigId = args[0]
