@@ -3,6 +3,7 @@ package permissions
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
@@ -18,6 +19,12 @@ func ApplyWorkspaceRootPermissions() bundle.Mutator {
 
 // Apply implements bundle.Mutator.
 func (*workspaceRootPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+
+	diags := checkWorkspaceRootPermissions(b)
+	if len(diags) > 0 {
+		return diags
+	}
+
 	err := giveAccessForWorkspaceRoot(ctx, b)
 	if err != nil {
 		return diag.FromErr(err)
@@ -76,4 +83,33 @@ func getWorkspaceObjectPermissionLevel(bundlePermission string) (workspace.Works
 	default:
 		return "", fmt.Errorf("unsupported bundle permission level %s", bundlePermission)
 	}
+}
+
+// checkWorkspaceRootPermissions checks that if permissions are set for the workspace root, and workspace root starts with /Workspace/Shared, then permissions should be set for group: users
+func checkWorkspaceRootPermissions(b *bundle.Bundle) diag.Diagnostics {
+	var diags diag.Diagnostics
+	if len(b.Config.Permissions) == 0 {
+		return nil
+	}
+
+	if !strings.HasPrefix(b.Config.Workspace.RootPath, "/Workspace/Shared") {
+		return nil
+	}
+
+	allUsers := false
+	for _, p := range b.Config.Permissions {
+		if p.GroupName == "users" && p.Level == CAN_MANAGE {
+			allUsers = true
+		}
+	}
+
+	if !allUsers {
+		diags = diags.Append(diag.Diagnostic{
+			Severity: diag.Warning,
+			Summary:  "workspace_root_permissions",
+			Detail:   "bundle is configured to /Workspace/Shared, which will give read/write access to all users. If all users should have access, add CAN_MANAGE for 'group_name: users' permission to your bundle configuration. If the deployment should be restricted, move it to a restricted folder such as /Users/<username or principal name>",
+		})
+	}
+
+	return diags
 }
