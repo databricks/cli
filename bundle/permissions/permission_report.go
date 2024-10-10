@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -17,9 +17,10 @@ import (
 func ReportPossiblePermissionDenied(ctx context.Context, b *bundle.Bundle, path string) diag.Diagnostics {
 	log.Errorf(ctx, "Failed to update, encountered possible permission error: %v", path)
 
-	user := b.Config.Workspace.CurrentUser.UserName
-	if auth.IsServicePrincipal(user) {
-		user = b.Config.Workspace.CurrentUser.DisplayName
+	me := b.Config.Workspace.CurrentUser.User
+	userName := me.UserName
+	if iamutil.IsServicePrincipal(me) {
+		userName = me.DisplayName
 	}
 	canManageBundle, assistance := analyzeBundlePermissions(b)
 
@@ -30,7 +31,7 @@ func ReportPossiblePermissionDenied(ctx context.Context, b *bundle.Bundle, path 
 				"%s\n"+
 				"They may need to redeploy the bundle to apply the new permissions.\n"+
 				"Please refer to https://docs.databricks.com/dev-tools/bundles/permissions.html for more on managing permissions.",
-				path, user, assistance),
+				path, userName, assistance),
 			Severity: diag.Error,
 			ID:       diag.PathPermissionDenied,
 		}}
@@ -44,7 +45,7 @@ func ReportPossiblePermissionDenied(ctx context.Context, b *bundle.Bundle, path 
 			"%s\n"+
 			"They can redeploy the project to apply the latest set of permissions.\n"+
 			"Please refer to https://docs.databricks.com/dev-tools/bundles/permissions.html for more on managing permissions.",
-			path, user, assistance),
+			path, userName, assistance),
 		Severity: diag.Error,
 		ID:       diag.CannotChangePathPermissions,
 	}}
