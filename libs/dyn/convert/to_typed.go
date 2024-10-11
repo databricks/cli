@@ -249,6 +249,8 @@ func toTypedInt(dst reflect.Value, src dyn.Value) error {
 	case dyn.KindFloat:
 		v := src.MustFloat()
 		if v == float64(int64(v)) {
+			// If the destination is smaller than int64, but the value to set is bigger
+			// then destination overflows and is set to -1
 			dst.SetInt(int64(src.MustFloat()))
 			return nil
 		}

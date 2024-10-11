@@ -263,32 +263,9 @@ func Render(ctx context.Context, v any) error {
 	return renderWithTemplate(newRenderer(v), ctx, c.outputFormat, c.out, c.headerTemplate, c.template)
 }
 
-func RenderWithDiagnostics(ctx context.Context, v any, diags diag.Diagnostics) error {
-	c := fromContext(ctx)
-	if _, ok := v.(listingInterface); ok {
-		panic("use RenderIterator instead")
-	}
-	err := renderWithTemplate(newRenderer(v), ctx, c.outputFormat, c.out, c.headerTemplate, c.template)
-	if err != nil {
-		return err
-	}
-
-	return RenderDiagnostics(c.out, diags)
-}
-
 func RenderIterator[T any](ctx context.Context, i listing.Iterator[T]) error {
 	c := fromContext(ctx)
 	return renderWithTemplate(newIteratorRenderer(i), ctx, c.outputFormat, c.out, c.headerTemplate, c.template)
-}
-
-func RenderIteratorWithDiagnostics[T any](ctx context.Context, i listing.Iterator[T], diags diag.Diagnostics) error {
-	c := fromContext(ctx)
-	err := renderWithTemplate(newIteratorRenderer(i), ctx, c.outputFormat, c.out, c.headerTemplate, c.template)
-	if err != nil {
-		return err
-	}
-
-	return RenderDiagnostics(c.err, diags)
 }
 
 func RenderWithTemplate(ctx context.Context, v any, headerTemplate, template string) error {

@@ -223,6 +223,34 @@ func TestJsonUnmarshalWrongTypeReportsCorrectLocation(t *testing.T) {
 	var body JsonFlag
 
 	var r jobs.ResetJob
+	err := body.Set(`{
+    "job_id": [1, 2, 3]
+}
+`)
+	require.NoError(t, err)
+
+	diags := body.Unmarshal(&r)
+	assert.NoError(t, diags.Error())
+	assert.NotEmpty(t, diags)
+
+	assert.Contains(t, diags, diag.Diagnostic{
+		Severity: diag.Warning,
+		Summary:  "expected int, found sequence",
+		Locations: []dyn.Location{
+			{
+				File:   "(inline)",
+				Line:   2,
+				Column: 15,
+			},
+		},
+		Paths: []dyn.Path{dyn.NewPath(dyn.Key("job_id"))},
+	})
+}
+
+func TestJsonUnmarshalArrayInsteadOfIntReportsCorrectLocation(t *testing.T) {
+	var body JsonFlag
+
+	var r jobs.ResetJob
 	err := body.Set(wrontTypeJsonData)
 	require.NoError(t, err)
 

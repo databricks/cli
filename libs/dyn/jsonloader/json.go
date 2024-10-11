@@ -46,6 +46,7 @@ func decodeValue(decoder *json.Decoder, o *Offset) (dyn.Value, error) {
 	switch tok := token.(type) {
 	case json.Delim:
 		if tok == '{' {
+			location = o.GetPosition(offset - 1)
 			// Decode JSON object
 			obj := dyn.NewMapping()
 			for decoder.More() {
@@ -77,6 +78,7 @@ func decodeValue(decoder *json.Decoder, o *Offset) (dyn.Value, error) {
 			}
 			return dyn.NewValue(obj, []dyn.Location{location}), nil
 		} else if tok == '[' {
+			location = o.GetPosition(offset - 1)
 			// Decode JSON array
 			var arr []dyn.Value
 			for decoder.More() {
