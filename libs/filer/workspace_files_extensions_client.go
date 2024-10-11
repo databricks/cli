@@ -28,6 +28,9 @@ var extensionsToLanguages = map[string]workspace.Language{
 	".r":     workspace.LanguageR,
 	".scala": workspace.LanguageScala,
 	".sql":   workspace.LanguageSql,
+
+	// The platform supports all languages (Python, R, Scala, and SQL) for Jupyter notebooks.
+	// Thus, we do not need to check the language for .ipynb files.
 	".ipynb": workspace.LanguagePython,
 }
 
@@ -46,6 +49,10 @@ func (w *workspaceFilesExtensionsClient) stat(ctx context.Context, name string) 
 	}
 	return info.(wsfsFileInfo), err
 }
+
+// TODO: Add end to end tests that the filer works for all .ipynb cases.
+// TODO: Also fix the sync issues. OR add tests that sync works fine with non
+// python notebooks. Is this needed in the first place?
 
 // This function returns the stat for the provided notebook. The stat object itself contains the path
 // with the extension since it is meant to be used in the context of a fs.FileInfo.
@@ -75,8 +82,9 @@ func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithExt(ctx contex
 		return nil, nil
 	}
 
-	// Not the correct language. Return early.
-	if stat.Language != extensionsToLanguages[ext] {
+	// Not the correct language. Return early. Note: All languages are supported
+	// for Jupyter notebooks.
+	if ext != ".ipynb" && stat.Language != extensionsToLanguages[ext] {
 		log.Debugf(ctx, "attempting to determine if %s could be a notebook. Found a notebook at %s but it is not of the correct language. Expected %s but found %s.", name, path.Join(w.root, nameWithoutExt), extensionsToLanguages[ext], stat.Language)
 		return nil, nil
 	}
@@ -120,7 +128,8 @@ func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithoutExt(ctx con
 	ext := notebook.GetExtensionByLanguage(&stat.ObjectInfo)
 
 	// If the notebook was exported as a Jupyter notebook, the extension should be .ipynb.
-	if stat.Language == workspace.LanguagePython && stat.ReposExportFormat == workspace.ExportFormatJupyter {
+	// TODO: Test this.
+	if stat.ReposExportFormat == workspace.ExportFormatJupyter {
 		ext = ".ipynb"
 	}
 

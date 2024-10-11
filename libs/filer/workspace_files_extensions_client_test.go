@@ -45,15 +45,6 @@ func TestFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
 			expectedError:        "failed to read files from the workspace file system. Duplicate paths encountered. Both NOTEBOOK at /dir/foo and FILE at /dir/foo.py resolve to the same name /foo.py. Changing the name of one of these objects will resolve this issue",
 		},
 		{
-			name:                 "python jupyter notebook and file",
-			language:             workspace.LanguagePython,
-			notebookExportFormat: workspace.ExportFormatJupyter,
-			notebookPath:         "/dir/foo",
-			filePath:             "/dir/foo.py",
-			// Jupyter notebooks would correspond to foo.ipynb so an error is not expected.
-			expectedError: "",
-		},
-		{
 			name:                 "scala source notebook and file",
 			language:             workspace.LanguageScala,
 			notebookExportFormat: workspace.ExportFormatSource,
@@ -80,6 +71,66 @@ func TestFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
 		{
 			name:                 "python jupyter notebook and file",
 			language:             workspace.LanguagePython,
+			notebookExportFormat: workspace.ExportFormatJupyter,
+			notebookPath:         "/dir/foo",
+			filePath:             "/dir/foo.py",
+			// Jupyter notebooks would correspond to foo.ipynb so an error is not expected.
+			expectedError: "",
+		},
+		{
+			name:                 "scala jupyter notebook and file",
+			language:             workspace.LanguageScala,
+			notebookExportFormat: workspace.ExportFormatJupyter,
+			notebookPath:         "/dir/foo",
+			filePath:             "/dir/foo.scala",
+			// Jupyter notebooks would correspond to foo.ipynb so an error is not expected.
+			expectedError: "",
+		},
+		{
+			name:                 "sql jupyter notebook and file",
+			language:             workspace.LanguageSql,
+			notebookExportFormat: workspace.ExportFormatJupyter,
+			notebookPath:         "/dir/foo",
+			filePath:             "/dir/foo.sql",
+			// Jupyter notebooks would correspond to foo.ipynb so an error is not expected.
+			expectedError: "",
+		},
+		{
+			name:                 "r jupyter notebook and file",
+			language:             workspace.LanguageR,
+			notebookExportFormat: workspace.ExportFormatJupyter,
+			notebookPath:         "/dir/foo",
+			filePath:             "/dir/foo.sql",
+			// Jupyter notebooks would correspond to foo.ipynb so an error is not expected.
+			expectedError: "",
+		},
+		{
+			name:                 "python jupyter notebook and file",
+			language:             workspace.LanguagePython,
+			notebookExportFormat: workspace.ExportFormatJupyter,
+			notebookPath:         "/dir/foo",
+			filePath:             "/dir/foo.ipynb",
+			expectedError:        "failed to read files from the workspace file system. Duplicate paths encountered. Both NOTEBOOK at /dir/foo and FILE at /dir/foo.ipynb resolve to the same name /foo.ipynb. Changing the name of one of these objects will resolve this issue",
+		},
+		{
+			name:                 "scala jupyter notebook and file",
+			language:             workspace.LanguageScala,
+			notebookExportFormat: workspace.ExportFormatJupyter,
+			notebookPath:         "/dir/foo",
+			filePath:             "/dir/foo.ipynb",
+			expectedError:        "failed to read files from the workspace file system. Duplicate paths encountered. Both NOTEBOOK at /dir/foo and FILE at /dir/foo.ipynb resolve to the same name /foo.ipynb. Changing the name of one of these objects will resolve this issue",
+		},
+		{
+			name:                 "r jupyter notebook and file",
+			language:             workspace.LanguageR,
+			notebookExportFormat: workspace.ExportFormatJupyter,
+			notebookPath:         "/dir/foo",
+			filePath:             "/dir/foo.ipynb",
+			expectedError:        "failed to read files from the workspace file system. Duplicate paths encountered. Both NOTEBOOK at /dir/foo and FILE at /dir/foo.ipynb resolve to the same name /foo.ipynb. Changing the name of one of these objects will resolve this issue",
+		},
+		{
+			name:                 "sql jupyter notebook and file",
+			language:             workspace.LanguageSql,
 			notebookExportFormat: workspace.ExportFormatJupyter,
 			notebookPath:         "/dir/foo",
 			filePath:             "/dir/foo.ipynb",

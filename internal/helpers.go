@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/libs/flags"
 
 	"github.com/databricks/cli/cmd"
@@ -561,12 +562,10 @@ func setupLocalFiler(t *testing.T) (filer.Filer, string) {
 }
 
 func setupWsfsFiler(t *testing.T) (filer.Filer, string) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	ctx, w := acc.WorkspaceTest(t)
 
-	ctx := context.Background()
-	w := databricks.Must(databricks.NewWorkspaceClient())
-	tmpdir := TemporaryWorkspaceDir(t, w)
-	f, err := filer.NewWorkspaceFilesClient(w, tmpdir)
+	tmpdir := TemporaryWorkspaceDir(t, w.W)
+	f, err := filer.NewWorkspaceFilesClient(w.W, tmpdir)
 	require.NoError(t, err)
 
 	// Check if we can use this API here, skip test if we cannot.
