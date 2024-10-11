@@ -143,7 +143,7 @@ func newApproveTransitionRequest() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = approveTransitionRequestJson.Unmarshal(&approveTransitionRequestReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -237,7 +237,7 @@ func newCreateComment() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = createCommentJson.Unmarshal(&createCommentReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -324,7 +324,7 @@ func newCreateModel() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = createModelJson.Unmarshal(&createModelReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -405,7 +405,7 @@ func newCreateModelVersion() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = createModelVersionJson.Unmarshal(&createModelVersionReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -495,7 +495,7 @@ func newCreateTransitionRequest() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = createTransitionRequestJson.Unmarshal(&createTransitionRequestReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -572,7 +572,7 @@ func newCreateWebhook() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = createWebhookJson.Unmarshal(&createWebhookReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
@@ -1081,7 +1081,7 @@ func newGetLatestVersions() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = getLatestVersionsJson.Unmarshal(&getLatestVersionsReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -1631,7 +1631,7 @@ func newRejectTransitionRequest() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = rejectTransitionRequestJson.Unmarshal(&rejectTransitionRequestReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -1717,7 +1717,7 @@ func newRenameModel() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = renameModelJson.Unmarshal(&renameModelReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -1909,7 +1909,7 @@ func newSetModelTag() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = setModelTagJson.Unmarshal(&setModelTagReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -1998,7 +1998,7 @@ func newSetModelVersionTag() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = setModelVersionTagJson.Unmarshal(&setModelVersionTagReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -2078,7 +2078,7 @@ func newSetPermissions() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = setPermissionsJson.Unmarshal(&setPermissionsReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		setPermissionsReq.RegisteredModelId = args[0]
@@ -2168,7 +2168,7 @@ func newTestRegistryWebhook() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = testRegistryWebhookJson.Unmarshal(&testRegistryWebhookReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -2261,7 +2261,7 @@ func newTransitionStage() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = transitionStageJson.Unmarshal(&transitionStageReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -2352,7 +2352,7 @@ func newUpdateComment() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = updateCommentJson.Unmarshal(&updateCommentReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -2432,7 +2432,7 @@ func newUpdateModel() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = updateModelJson.Unmarshal(&updateModelReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -2510,7 +2510,7 @@ func newUpdateModelVersion() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = updateModelVersionJson.Unmarshal(&updateModelVersionReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -2584,7 +2584,7 @@ func newUpdatePermissions() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = updatePermissionsJson.Unmarshal(&updatePermissionsReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		updatePermissionsReq.RegisteredModelId = args[0]
@@ -2665,7 +2665,7 @@ func newUpdateWebhook() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = updateWebhookJson.Unmarshal(&updateWebhookReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		if !cmd.Flags().Changed("json") {

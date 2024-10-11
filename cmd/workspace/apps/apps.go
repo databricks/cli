@@ -115,7 +115,7 @@ func newCreate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = createJson.Unmarshal(&createReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -269,7 +269,7 @@ func newDeploy() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = deployJson.Unmarshal(&deployReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		deployReq.AppName = args[0]
@@ -704,7 +704,7 @@ func newSetPermissions() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = setPermissionsJson.Unmarshal(&setPermissionsReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		setPermissionsReq.AppName = args[0]
@@ -938,7 +938,7 @@ func newUpdate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = updateJson.Unmarshal(&updateReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		updateReq.Name = args[0]
@@ -1007,7 +1007,7 @@ func newUpdatePermissions() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err = updatePermissionsJson.Unmarshal(&updatePermissionsReq)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to parse JSON string. Please ensure that the value provided to the --json flag is either a valid JSON string or @path/to/file.json with valid JSON content: %w", err)
 			}
 		}
 		updatePermissionsReq.AppName = args[0]
