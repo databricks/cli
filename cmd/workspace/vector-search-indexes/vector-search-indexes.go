@@ -114,9 +114,15 @@ func newCreateIndex() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = createIndexJson.Unmarshal(&createIndexReq)
-			if err != nil {
-				return err
+			diags := createIndexJson.Unmarshal(&createIndexReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -195,9 +201,15 @@ func newDeleteDataVectorIndex() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = deleteDataVectorIndexJson.Unmarshal(&deleteDataVectorIndexReq)
-			if err != nil {
-				return err
+			diags := deleteDataVectorIndexJson.Unmarshal(&deleteDataVectorIndexReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
@@ -443,9 +455,15 @@ func newQueryIndex() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = queryIndexJson.Unmarshal(&queryIndexReq)
-			if err != nil {
-				return err
+			diags := queryIndexJson.Unmarshal(&queryIndexReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
@@ -515,9 +533,15 @@ func newQueryNextPage() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = queryNextPageJson.Unmarshal(&queryNextPageReq)
-			if err != nil {
-				return err
+			diags := queryNextPageJson.Unmarshal(&queryNextPageReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		queryNextPageReq.IndexName = args[0]
@@ -585,9 +609,15 @@ func newScanIndex() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = scanIndexJson.Unmarshal(&scanIndexReq)
-			if err != nil {
-				return err
+			diags := scanIndexJson.Unmarshal(&scanIndexReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		scanIndexReq.IndexName = args[0]
@@ -718,9 +748,15 @@ func newUpsertDataVectorIndex() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = upsertDataVectorIndexJson.Unmarshal(&upsertDataVectorIndexReq)
-			if err != nil {
-				return err
+			diags := upsertDataVectorIndexJson.Unmarshal(&upsertDataVectorIndexReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		upsertDataVectorIndexReq.IndexName = args[0]
