@@ -34,7 +34,12 @@ func decodeValue(decoder *json.Decoder, o *Offset) (dyn.Value, error) {
 		return dyn.InvalidValue, err
 	}
 
-	// Get the current byte offset
+	// Get the current byte offset and the location.
+	// We will later use this location to store the location of the value in the file
+	// For objects and arrays, we will store the location of the opening '{' or '['
+	// For primitive types, we will store the location of the value itself (end of the value)
+	// We can't reliably calculate the beginning of the value for primitive types because
+	// the decoder doesn't provide the offset of the beginning of the value and the value might or might not be quoted.
 	offset := decoder.InputOffset()
 	location := o.GetPosition(offset)
 
@@ -54,7 +59,10 @@ func decodeValue(decoder *json.Decoder, o *Offset) (dyn.Value, error) {
 					return invalidValueWithLocation(decoder, o), fmt.Errorf("expected string for object key")
 				}
 
-				keyVal := dyn.NewValue(key, []dyn.Location{o.GetPosition(decoder.InputOffset())})
+				// Get the offset of the key by subtracting the length of the key and the '"' character
+				keyOffset := decoder.InputOffset() - int64(len(key)+1)
+				keyVal := dyn.NewValue(key, []dyn.Location{o.GetPosition(keyOffset)})
+
 				// Decode the value recursively
 				val, err := decodeValue(decoder, o)
 				if err != nil {
@@ -85,7 +93,6 @@ func decodeValue(decoder *json.Decoder, o *Offset) (dyn.Value, error) {
 			return dyn.NewValue(arr, []dyn.Location{location}), nil
 		}
 	default:
-		// Primitive types: string, number, bool, or null
 		return dyn.NewValue(tok, []dyn.Location{location}), nil
 	}
 

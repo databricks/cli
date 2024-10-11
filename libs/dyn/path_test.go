@@ -72,3 +72,7 @@ func TestPathString(t *testing.T) {
 	p3 := dyn.NewPath(dyn.Key("foo"), dyn.Index(1), dyn.Key("bar"), dyn.Index(2), dyn.Key("baz"))
 	assert.Equal(t, "foo[1].bar[2].baz", p3.String())
 }
+
+func TestPathStringEmpty(t *testing.T) {
+	assert.Equal(t, ".", dyn.EmptyPath.String())
+}

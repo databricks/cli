@@ -182,7 +182,7 @@ func TestJsonUnmarshalRequestMismatch(t *testing.T) {
 			{
 				File:   "(inline)",
 				Line:   3,
-				Column: 15,
+				Column: 6,
 			},
 		},
 		Paths: []dyn.Path{{}},
