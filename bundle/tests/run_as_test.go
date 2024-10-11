@@ -3,7 +3,6 @@ package config_tests
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -113,8 +112,9 @@ func TestRunAsErrorForPipelines(t *testing.T) {
 	diags := bundle.Apply(ctx, b, mutator.SetRunAs())
 	err := diags.Error()
 
-	configPath := filepath.FromSlash("run_as/not_allowed/pipelines/databricks.yml")
-	assert.EqualError(t, err, fmt.Sprintf("pipelines are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. Please refer to the documentation at https://docs.databricks.com/dev-tools/bundles/run-as.html for more details. Location of the unsupported resource: %s:14:5. Current identity: jane@doe.com. Run as identity: my_service_principal", configPath))
+	assert.ErrorContains(t, err, "pipelines do not support a setting a run_as user that is different from the owner.\n"+
+		"Current identity: jane@doe.com. Run as identity: my_service_principal.\n"+
+		"See https://docs")
 }
 
 func TestRunAsNoErrorForPipelines(t *testing.T) {
@@ -152,8 +152,9 @@ func TestRunAsErrorForModelServing(t *testing.T) {
 	diags := bundle.Apply(ctx, b, mutator.SetRunAs())
 	err := diags.Error()
 
-	configPath := filepath.FromSlash("run_as/not_allowed/model_serving/databricks.yml")
-	assert.EqualError(t, err, fmt.Sprintf("model_serving_endpoints are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. Please refer to the documentation at https://docs.databricks.com/dev-tools/bundles/run-as.html for more details. Location of the unsupported resource: %s:14:5. Current identity: jane@doe.com. Run as identity: my_service_principal", configPath))
+	assert.ErrorContains(t, err, "model_serving_endpoints do not support a setting a run_as user that is different from the owner.\n"+
+		"Current identity: jane@doe.com. Run as identity: my_service_principal.\n"+
+		"See https://docs")
 }
 
 func TestRunAsNoErrorForModelServingEndpoints(t *testing.T) {
@@ -191,8 +192,7 @@ func TestRunAsErrorWhenBothUserAndSpSpecified(t *testing.T) {
 	diags := bundle.Apply(ctx, b, mutator.SetRunAs())
 	err := diags.Error()
 
-	configPath := filepath.FromSlash("run_as/not_allowed/both_sp_and_user/databricks.yml")
-	assert.EqualError(t, err, fmt.Sprintf("run_as section must specify exactly one identity. A service_principal_name \"my_service_principal\" is specified at %s:6:27. A user_name \"my_user_name\" is defined at %s:7:14", configPath, configPath))
+	assert.ErrorContains(t, err, "run_as section cannot specify both user_name and service_principal_name")
 }
 
 func TestRunAsErrorNeitherUserOrSpSpecified(t *testing.T) {
@@ -202,19 +202,19 @@ func TestRunAsErrorNeitherUserOrSpSpecified(t *testing.T) {
 	}{
 		{
 			name: "empty_run_as",
-			err:  fmt.Sprintf("run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at %s:4:8", filepath.FromSlash("run_as/not_allowed/neither_sp_nor_user/empty_run_as/databricks.yml")),
+			err:  "run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified",
 		},
 		{
 			name: "empty_sp",
-			err:  fmt.Sprintf("run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at %s:5:3", filepath.FromSlash("run_as/not_allowed/neither_sp_nor_user/empty_sp/databricks.yml")),
+			err:  "run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified",
 		},
 		{
 			name: "empty_user",
-			err:  fmt.Sprintf("run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at %s:5:3", filepath.FromSlash("run_as/not_allowed/neither_sp_nor_user/empty_user/databricks.yml")),
+			err:  "run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified",
 		},
 		{
 			name: "empty_user_and_sp",
-			err:  fmt.Sprintf("run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at %s:5:3", filepath.FromSlash("run_as/not_allowed/neither_sp_nor_user/empty_user_and_sp/databricks.yml")),
+			err:  "run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified",
 		},
 	}
 
@@ -257,8 +257,7 @@ func TestRunAsErrorNeitherUserOrSpSpecifiedAtTargetOverride(t *testing.T) {
 	diags := bundle.Apply(ctx, b, mutator.SetRunAs())
 	err := diags.Error()
 
-	configPath := filepath.FromSlash("run_as/not_allowed/neither_sp_nor_user/override/override.yml")
-	assert.EqualError(t, err, fmt.Sprintf("run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at %s:4:12", configPath))
+	assert.EqualError(t, err, "run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified")
 }
 
 func TestLegacyRunAs(t *testing.T) {

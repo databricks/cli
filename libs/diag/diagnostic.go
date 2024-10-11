@@ -1,6 +1,7 @@
 package diag
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/libs/dyn"
@@ -24,6 +25,9 @@ type Diagnostic struct {
 	// Paths are paths to the values in the configuration tree that the diagnostic is associated with.
 	// It may be nil if there are no associated paths.
 	Paths []dyn.Path
+
+	// A diagnostic ID. Only used for select diagnostic messages.
+	ID ID
 }
 
 // Errorf creates a new error diagnostic.
@@ -69,7 +73,7 @@ func Infof(format string, args ...any) Diagnostics {
 	}
 }
 
-// Diagsnostics holds zero or more instances of [Diagnostic].
+// Diagnostics holds zero or more instances of [Diagnostic].
 type Diagnostics []Diagnostic
 
 // Append adds a new diagnostic to the end of the list.
@@ -96,7 +100,14 @@ func (ds Diagnostics) HasError() bool {
 func (ds Diagnostics) Error() error {
 	for _, d := range ds {
 		if d.Severity == Error {
-			return fmt.Errorf(d.Summary)
+			message := d.Detail
+			if message == "" {
+				message = d.Summary
+			}
+			if d.ID != "" {
+				message = string(d.ID) + ": " + message
+			}
+			return errors.New(message)
 		}
 	}
 	return nil

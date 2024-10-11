@@ -128,3 +128,22 @@ func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) 
 
 	return found[0], nil
 }
+
+type ResourceDescription struct {
+	SingularName string
+}
+
+// The keys of the map corresponds to the resource key in the bundle configuration.
+func SupportedResources() map[string]ResourceDescription {
+	return map[string]ResourceDescription{
+		"jobs":                    {SingularName: "job"},
+		"pipelines":               {SingularName: "pipeline"},
+		"models":                  {SingularName: "model"},
+		"experiments":             {SingularName: "experiment"},
+		"model_serving_endpoints": {SingularName: "model_serving_endpoint"},
+		"registered_models":       {SingularName: "registered_model"},
+		"quality_monitors":        {SingularName: "quality_monitor"},
+		"schemas":                 {SingularName: "schema"},
+		"clusters":                {SingularName: "cluster"},
+	}
+}

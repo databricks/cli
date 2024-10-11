@@ -81,6 +81,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `The description of the app.`)
+	// TODO: array: resources
 
 	cmd.Use = "create NAME"
 	cmd.Short = `Create an app.`
@@ -910,6 +911,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Description, "description", updateReq.Description, `The description of the app.`)
+	// TODO: array: resources
 
 	cmd.Use = "update NAME"
 	cmd.Short = `Update an app.`

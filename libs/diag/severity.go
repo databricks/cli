@@ -6,4 +6,5 @@ const (
 	Error Severity = iota
 	Warning
 	Info
+	Recommendation
 )

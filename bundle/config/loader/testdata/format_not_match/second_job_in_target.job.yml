@@ -1,0 +1,11 @@
+resources:
+  jobs:
+    job1:
+      name: job1
+
+targets:
+  target1:
+    resources:
+      jobs:
+        job2:
+          name: job2

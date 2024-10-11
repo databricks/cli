@@ -58,6 +58,20 @@ const warningTemplate = `{{ "Warning" | yellow }}: {{ .Summary }}
 
 `
 
+const recommendationTemplate = `{{ "Recommendation" | blue }}: {{ .Summary }}
+{{- range $index, $element := .Paths }}
+  {{ if eq $index 0 }}at {{else}}   {{ end}}{{ $element.String | green }}
+{{- end }}
+{{- range $index, $element := .Locations }}
+  {{ if eq $index 0 }}in {{else}}   {{ end}}{{ $element.String | cyan }}
+{{- end }}
+{{- if .Detail }}
+
+{{ .Detail }}
+{{- end }}
+
+`
+
 const summaryHeaderTemplate = `{{- if .Name -}}
 Name: {{ .Name | bold }}
 {{- if .Target }}
@@ -114,9 +128,20 @@ func buildTrailer(diags diag.Diagnostics) string {
 	if warnings := len(diags.Filter(diag.Warning)); warnings > 0 {
 		parts = append(parts, color.YellowString(pluralize(warnings, "warning", "warnings")))
 	}
-	if len(parts) > 0 {
-		return fmt.Sprintf("Found %s\n", strings.Join(parts, " and "))
-	} else {
+	if recommendations := len(diags.Filter(diag.Recommendation)); recommendations > 0 {
+		parts = append(parts, color.BlueString(pluralize(recommendations, "recommendation", "recommendations")))
+	}
+	switch {
+	case len(parts) >= 3:
+		first := strings.Join(parts[:len(parts)-1], ", ")
+		last := parts[len(parts)-1]
+		return fmt.Sprintf("Found %s, and %s\n", first, last)
+	case len(parts) == 2:
+		return fmt.Sprintf("Found %s and %s\n", parts[0], parts[1])
+	case len(parts) == 1:
+		return fmt.Sprintf("Found %s\n", parts[0])
+	default:
+		// No diagnostics to print.
 		return color.GreenString("Validation OK!\n")
 	}
 }
@@ -149,6 +174,7 @@ func renderSummaryHeaderTemplate(out io.Writer, b *bundle.Bundle) error {
 func renderDiagnosticsOnly(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics) error {
 	errorT := template.Must(template.New("error").Funcs(renderFuncMap).Parse(errorTemplate))
 	warningT := template.Must(template.New("warning").Funcs(renderFuncMap).Parse(warningTemplate))
+	recommendationT := template.Must(template.New("recommendation").Funcs(renderFuncMap).Parse(recommendationTemplate))
 
 	// Print errors and warnings.
 	for _, d := range diags {
@@ -158,6 +184,8 @@ func renderDiagnosticsOnly(out io.Writer, b *bundle.Bundle, diags diag.Diagnosti
 			t = errorT
 		case diag.Warning:
 			t = warningT
+		case diag.Recommendation:
+			t = recommendationT
 		}
 
 		for i := range d.Locations {

@@ -2,9 +2,12 @@ package files
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
@@ -35,6 +38,9 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 	b.Files, err = sync.RunOnce(ctx)
 	if err != nil {
+		if errors.Is(err, fs.ErrPermission) {
+			return permissions.ReportPossiblePermissionDenied(ctx, b, b.Config.Workspace.FilePath)
+		}
 		return diag.FromErr(err)
 	}
 

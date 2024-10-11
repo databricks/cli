@@ -81,3 +81,18 @@ func TestResourcesAllResourcesCompleteness(t *testing.T) {
 		assert.True(t, exists, "Field %s is missing in AllResources map", field.Name)
 	}
 }
+
+func TestSupportedResources(t *testing.T) {
+	expected := map[string]ResourceDescription{}
+	typ := reflect.TypeOf(Resources{})
+	for i := 0; i < typ.NumField(); i++ {
+		field := typ.Field(i)
+		jsonTags := strings.Split(field.Tag.Get("json"), ",")
+		singularName := strings.TrimSuffix(jsonTags[0], "s")
+		expected[jsonTags[0]] = ResourceDescription{SingularName: singularName}
+	}
+
+	// Please add your resource to the SupportedResources() function in resources.go
+	// if you are adding a new resource.
+	assert.Equal(t, expected, SupportedResources())
+}
