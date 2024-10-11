@@ -52,7 +52,7 @@ func (j *JsonFlag) Unmarshal(v any) diag.Diagnostics {
 	// It will convert all the values to the correct types.
 	// For example string literals for booleans and integers will be converted to the correct types.
 	nv, diags := convert.Normalize(v, dv)
-	if len(diags) > 0 {
+	if diags.HasError() {
 		return diags
 	}
 

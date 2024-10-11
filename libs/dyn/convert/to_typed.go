@@ -248,7 +248,7 @@ func toTypedInt(dst reflect.Value, src dyn.Value) error {
 		return nil
 	case dyn.KindFloat:
 		v := src.MustFloat()
-		if canConvertToInt(v) {
+		if v == float64(int64(v)) {
 			dst.SetInt(int64(src.MustFloat()))
 			return nil
 		}
@@ -273,10 +273,6 @@ func toTypedInt(dst reflect.Value, src dyn.Value) error {
 		value: src,
 		msg:   fmt.Sprintf("expected an int, found a %s", src.Kind()),
 	}
-}
-
-func canConvertToInt(v float64) bool {
-	return v == float64(int64(v))
 }
 
 func toTypedFloat(dst reflect.Value, src dyn.Value) error {
