@@ -100,7 +100,7 @@ func TestInitializeURLs(t *testing.T) {
 	}
 }
 
-func URLs_NoOrgId(t *testing.T) {
+func TestInitializeURLsWithoutOrgId(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
