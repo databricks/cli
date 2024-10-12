@@ -179,10 +179,10 @@ func isRunAsSet(r config.Resources) bool {
 }
 
 func isExplicitRootSet(b *bundle.Bundle) bool {
-	if b.Config.Targets == nil {
+	if b.Config.Bundle.TargetConfig == nil {
 		return false
 	}
-	targetConfig := b.Config.Targets[b.Config.Bundle.Target]
+	targetConfig := b.Config.Bundle.TargetConfig
 	if targetConfig.Workspace == nil {
 		return false
 	}

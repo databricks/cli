@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
@@ -61,7 +60,7 @@ func newSummaryCommand() *cobra.Command {
 			}
 		}
 
-		diags = bundle.Apply(ctx, b, bundle.Seq(terraform.Load(), mutator.CleanupTargets()))
+		diags = bundle.Apply(ctx, b, terraform.Load())
 		if err := diags.Error(); err != nil {
 			return err
 		}

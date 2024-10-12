@@ -354,11 +354,9 @@ func TestProcessTargetModeProductionOkWithRootPath(t *testing.T) {
 	require.Error(t, diags.Error())
 
 	// ... but we're okay if we specify a root path
-	b.Config.Targets = map[string]*config.Target{
-		"": {
-			Workspace: &config.Workspace{
-				RootPath: "some-root-path",
-			},
+	b.Config.Bundle.TargetConfig = &config.Target{
+		Workspace: &config.Workspace{
+			RootPath: "some-root-path",
 		},
 	}
 	diags = validateProductionMode(context.Background(), b, false)
