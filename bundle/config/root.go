@@ -366,9 +366,9 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		}
 	}
 
-	// Merge `compute_id`. This field must be overwritten if set, not merged.
-	if v := target.Get("compute_id"); v.Kind() != dyn.KindInvalid {
-		root, err = dyn.SetByPath(root, dyn.NewPath(dyn.Key("bundle"), dyn.Key("compute_id")), v)
+	// Merge `cluster_id`. This field must be overwritten if set, not merged.
+	if v := target.Get("cluster_id"); v.Kind() != dyn.KindInvalid {
+		root, err = dyn.SetByPath(root, dyn.NewPath(dyn.Key("bundle"), dyn.Key("cluster_id")), v)
 		if err != nil {
 			return err
 		}
@@ -406,6 +406,52 @@ func (r *Root) MergeTargetOverrides(name string) error {
 	return r.updateWithDynamicValue(root)
 }
 
+var allowedVariableDefinitions = []([]string){
+	{"default", "type", "description"},
+	{"default", "type"},
+	{"default", "description"},
+	{"lookup", "description"},
+	{"default"},
+	{"lookup"},
+}
+
+// isFullVariableOverrideDef checks if the given value is a full syntax varaible override.
+// A full syntax variable override is a map with either 1 of 2 keys.
+// If it's 2 keys, the keys should be "default" and "type".
+// If it's 1 key, the key should be one of the following keys: "default", "lookup".
+func isFullVariableOverrideDef(v dyn.Value) bool {
+	mv, ok := v.AsMap()
+	if !ok {
+		return false
+	}
+
+	// If the map has more than 3 keys, it is not a full variable override.
+	if mv.Len() > 3 {
+		return false
+	}
+
+	for _, keys := range allowedVariableDefinitions {
+		if len(keys) != mv.Len() {
+			continue
+		}
+
+		// Check if the keys are the same.
+		match := true
+		for _, key := range keys {
+			if _, ok := mv.GetByString(key); !ok {
+				match = false
+				break
+			}
+		}
+
+		if match {
+			return true
+		}
+	}
+
+	return false
+}
+
 // rewriteShorthands performs lightweight rewriting of the configuration
 // tree where we allow users to write a shorthand and must rewrite to the full form.
 func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
@@ -433,20 +479,27 @@ func rewriteShorthands(v dyn.Value) (dyn.Value, error) {
 				}, variable.Locations()), nil
 
 			case dyn.KindMap, dyn.KindSequence:
-				// Check if the original definition of variable has a type field.
-				typeV, err := dyn.GetByPath(v, p.Append(dyn.Key("type")))
-				if err != nil {
+				// If it's a full variable definition, leave it as is.
+				if isFullVariableOverrideDef(variable) {
 					return variable, nil
 				}
 
-				if typeV.MustString() == "complex" {
+				// Check if the original definition of variable has a type field.
+				// If it has a type field, it means the shorthand is a value of a complex type.
+				// Type might not be found if the variable overriden in a separate file
+				// and configuration is not merged yet.
+				typeV, err := dyn.GetByPath(v, p.Append(dyn.Key("type")))
+				if err == nil && typeV.MustString() == "complex" {
 					return dyn.NewValue(map[string]dyn.Value{
 						"type":    typeV,
 						"default": variable,
 					}, variable.Locations()), nil
 				}
 
-				return variable, nil
+				// If it's a shorthand, rewrite it to a full variable definition.
+				return dyn.NewValue(map[string]dyn.Value{
+					"default": variable,
+				}, variable.Locations()), nil
 
 			default:
 				return variable, nil

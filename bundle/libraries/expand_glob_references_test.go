@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
@@ -23,7 +24,7 @@ func TestGlobReferencesExpandedForTaskLibraries(t *testing.T) {
 	testutil.Touch(t, dir, "jar", "my2.jar")
 
 	b := &bundle.Bundle{
-		RootPath: dir,
+		SyncRootPath: dir,
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -61,7 +62,7 @@ func TestGlobReferencesExpandedForTaskLibraries(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, ".", filepath.Join(dir, "resource.yml"))
+	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "resource.yml")}})
 
 	diags := bundle.Apply(context.Background(), b, ExpandGlobReferences())
 	require.Empty(t, diags)
@@ -104,7 +105,7 @@ func TestGlobReferencesExpandedForForeachTaskLibraries(t *testing.T) {
 	testutil.Touch(t, dir, "jar", "my2.jar")
 
 	b := &bundle.Bundle{
-		RootPath: dir,
+		SyncRootPath: dir,
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -146,7 +147,7 @@ func TestGlobReferencesExpandedForForeachTaskLibraries(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, ".", filepath.Join(dir, "resource.yml"))
+	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "resource.yml")}})
 
 	diags := bundle.Apply(context.Background(), b, ExpandGlobReferences())
 	require.Empty(t, diags)
@@ -189,7 +190,7 @@ func TestGlobReferencesExpandedForEnvironmentsDeps(t *testing.T) {
 	testutil.Touch(t, dir, "jar", "my2.jar")
 
 	b := &bundle.Bundle{
-		RootPath: dir,
+		SyncRootPath: dir,
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -221,7 +222,7 @@ func TestGlobReferencesExpandedForEnvironmentsDeps(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, ".", filepath.Join(dir, "resource.yml"))
+	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "resource.yml")}})
 
 	diags := bundle.Apply(context.Background(), b, ExpandGlobReferences())
 	require.Empty(t, diags)

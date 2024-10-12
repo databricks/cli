@@ -33,7 +33,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22.x
+          go-version: 1.22.7
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -68,7 +68,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22.x
+          go-version: 1.22.7
 
           # No need to download cached dependencies when running gofmt.
           cache: false
@@ -100,18 +100,25 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22.x
+          go-version: 1.22.7
 
       # Github repo: https://github.com/ajv-validator/ajv-cli
       - name: Install ajv-cli
         run: npm install -g ajv-cli@5.0.0
 
       # Assert that the generated bundle schema is a valid JSON schema by using
-      # ajv-cli to validate it against a sample configuration file.
+      # ajv-cli to validate it against bundle configuration files.
       # By default the ajv-cli runs in strict mode which will fail if the schema
       # itself is not valid. Strict mode is more strict than the JSON schema
       # specification. See for details: https://ajv.js.org/options.html#strict-mode-options
       - name: Validate bundle schema
         run: |
           go run main.go bundle schema > schema.json
-          ajv -s schema.json -d ./bundle/tests/basic/databricks.yml
+
+          for file in ./bundle/internal/schema/testdata/pass/*.yml; do
+            ajv test -s schema.json -d $file --valid
+          done
+
+          for file in ./bundle/internal/schema/testdata/fail/*.yml; do
+            ajv test -s schema.json -d $file --invalid
+          done

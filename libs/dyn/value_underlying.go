@@ -2,7 +2,6 @@ package dyn
 
 import (
 	"fmt"
-	"time"
 )
 
 // AsMap returns the underlying mapping if this value is a map,
@@ -123,14 +122,14 @@ func (v Value) MustFloat() float64 {
 
 // AsTime returns the underlying time if this value is a time,
 // the zero value and false otherwise.
-func (v Value) AsTime() (time.Time, bool) {
-	vv, ok := v.v.(time.Time)
+func (v Value) AsTime() (Time, bool) {
+	vv, ok := v.v.(Time)
 	return vv, ok
 }
 
 // MustTime returns the underlying time if this value is a time,
 // panics otherwise.
-func (v Value) MustTime() time.Time {
+func (v Value) MustTime() Time {
 	vv, ok := v.AsTime()
 	if !ok || v.k != KindTime {
 		panic(fmt.Sprintf("expected kind %s, got %s", KindTime, v.k))

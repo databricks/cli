@@ -42,8 +42,8 @@ func TestConvertJob(t *testing.T) {
 			},
 			Tasks: []jobs.Task{
 				{
-					TaskKey:       "task_key",
-					JobClusterKey: "job_cluster_key",
+					TaskKey:       "task_key_b",
+					JobClusterKey: "job_cluster_key_b",
 					Libraries: []compute.Library{
 						{
 							Pypi: &compute.PythonPyPiLibrary{
@@ -54,6 +54,17 @@ func TestConvertJob(t *testing.T) {
 							Whl: "/path/to/my.whl",
 						},
 					},
+				},
+				{
+					TaskKey:       "task_key_a",
+					JobClusterKey: "job_cluster_key_a",
+				},
+				{
+					TaskKey:       "task_key_c",
+					JobClusterKey: "job_cluster_key_c",
+				},
+				{
+					Description: "missing task key 😱",
 				},
 			},
 		},
@@ -100,8 +111,15 @@ func TestConvertJob(t *testing.T) {
 		},
 		"task": []any{
 			map[string]any{
-				"task_key":        "task_key",
-				"job_cluster_key": "job_cluster_key",
+				"description": "missing task key 😱",
+			},
+			map[string]any{
+				"task_key":        "task_key_a",
+				"job_cluster_key": "job_cluster_key_a",
+			},
+			map[string]any{
+				"task_key":        "task_key_b",
+				"job_cluster_key": "job_cluster_key_b",
 				"library": []any{
 					map[string]any{
 						"pypi": map[string]any{
@@ -112,6 +130,10 @@ func TestConvertJob(t *testing.T) {
 						"whl": "/path/to/my.whl",
 					},
 				},
+			},
+			map[string]any{
+				"task_key":        "task_key_c",
+				"job_cluster_key": "job_cluster_key_c",
 			},
 		},
 	}, out.Job["my_job"])

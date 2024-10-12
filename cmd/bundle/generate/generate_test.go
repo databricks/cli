@@ -24,7 +24,7 @@ func TestGeneratePipelineCommand(t *testing.T) {
 
 	root := t.TempDir()
 	b := &bundle.Bundle{
-		RootPath: root,
+		BundleRootPath: root,
 	}
 
 	m := mocks.NewMockWorkspaceClient(t)
@@ -122,7 +122,7 @@ func TestGenerateJobCommand(t *testing.T) {
 
 	root := t.TempDir()
 	b := &bundle.Bundle{
-		RootPath: root,
+		BundleRootPath: root,
 	}
 
 	m := mocks.NewMockWorkspaceClient(t)
@@ -150,6 +150,12 @@ func TestGenerateJobCommand(t *testing.T) {
 					NotebookTask: &jobs.NotebookTask{
 						NotebookPath: "/test/notebook",
 					},
+				},
+			},
+			Parameters: []jobs.JobParameterDefinition{
+				{
+					Name:    "empty",
+					Default: "",
 				},
 			},
 		},
@@ -198,6 +204,9 @@ func TestGenerateJobCommand(t *testing.T) {
         - task_key: notebook_task
           notebook_task:
             notebook_path: %s
+      parameters:
+        - name: empty
+          default: ""
 `, filepath.Join("..", "src", "notebook.py")), string(data))
 
 	data, err = os.ReadFile(filepath.Join(srcDir, "notebook.py"))

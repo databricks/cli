@@ -117,9 +117,10 @@ func newGet() *cobra.Command {
 
   Arguments:
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
-      authorization, clusters, cluster-policies, dbsql-dashboards, directories,
-      experiments, files, instance-pools, jobs, notebooks, pipelines, queries,
-      registered-models, repos, serving-endpoints, or warehouses.
+      authorization, clusters, cluster-policies, dashboards, dbsql-dashboards,
+      directories, experiments, files, instance-pools, jobs, notebooks,
+      pipelines, queries, registered-models, repos, serving-endpoints, or
+      warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
 	cmd.Annotations = make(map[string]string)
@@ -245,9 +246,10 @@ func newSet() *cobra.Command {
 
   Arguments:
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
-      authorization, clusters, cluster-policies, dbsql-dashboards, directories,
-      experiments, files, instance-pools, jobs, notebooks, pipelines, queries,
-      registered-models, repos, serving-endpoints, or warehouses.
+      authorization, clusters, cluster-policies, dashboards, dbsql-dashboards,
+      directories, experiments, files, instance-pools, jobs, notebooks,
+      pipelines, queries, registered-models, repos, serving-endpoints, or
+      warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
 	cmd.Annotations = make(map[string]string)
@@ -263,9 +265,15 @@ func newSet() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = setJson.Unmarshal(&setReq)
-			if err != nil {
-				return err
+			diags := setJson.Unmarshal(&setReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		setReq.RequestObjectType = args[0]
@@ -319,9 +327,10 @@ func newUpdate() *cobra.Command {
 
   Arguments:
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
-      authorization, clusters, cluster-policies, dbsql-dashboards, directories,
-      experiments, files, instance-pools, jobs, notebooks, pipelines, queries,
-      registered-models, repos, serving-endpoints, or warehouses.
+      authorization, clusters, cluster-policies, dashboards, dbsql-dashboards,
+      directories, experiments, files, instance-pools, jobs, notebooks,
+      pipelines, queries, registered-models, repos, serving-endpoints, or
+      warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
 	cmd.Annotations = make(map[string]string)
@@ -337,9 +346,15 @@ func newUpdate() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = updateJson.Unmarshal(&updateReq)
-			if err != nil {
-				return err
+			diags := updateJson.Unmarshal(&updateReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		updateReq.RequestObjectType = args[0]

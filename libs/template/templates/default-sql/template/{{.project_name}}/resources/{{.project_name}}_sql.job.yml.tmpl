@@ -1,0 +1,44 @@
+# A job running SQL queries on a SQL warehouse
+resources:
+  jobs:
+    {{.project_name}}_sql_job:
+      name: {{.project_name}}_sql_job
+
+      trigger:
+        # Run this job every day, exactly one day from the last run; see https://docs.databricks.com/api/workspace/jobs/create#trigger
+        periodic:
+          interval: 1
+          unit: DAYS
+
+      {{- if not is_service_principal}}
+
+      email_notifications:
+        on_failure:
+          - {{user_name}}
+
+      {{else}}
+
+      {{end -}}
+
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+        - name: bundle_target
+          default: ${bundle.target}
+
+      tasks:
+        - task_key: orders_raw
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: ../src/orders_raw.sql
+
+        - task_key: orders_daily
+          depends_on:
+            - task_key: orders_raw
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: ../src/orders_daily.sql

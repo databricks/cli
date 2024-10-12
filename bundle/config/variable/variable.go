@@ -16,6 +16,11 @@ const (
 	VariableTypeComplex VariableType = "complex"
 )
 
+// We alias it here to override the JSON schema associated with a variable value
+// in a target override. This is because we allow for directly specifying the value
+// in addition to the variable.Variable struct format in a target override.
+type TargetVariable Variable
+
 // An input variable for the bundle config
 type Variable struct {
 	// A type of the variable. This is used to validate the value of the variable

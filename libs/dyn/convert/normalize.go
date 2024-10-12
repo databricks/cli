@@ -267,6 +267,8 @@ func (n normalizeOptions) normalizeString(typ reflect.Type, src dyn.Value, path 
 		out = strconv.FormatInt(src.MustInt(), 10)
 	case dyn.KindFloat:
 		out = strconv.FormatFloat(src.MustFloat(), 'f', -1, 64)
+	case dyn.KindTime:
+		out = src.MustTime().String()
 	case dyn.KindNil:
 		// Return a warning if the field is present but has a null value.
 		return dyn.InvalidValue, diags.Append(nullWarning(dyn.KindString, src, path))

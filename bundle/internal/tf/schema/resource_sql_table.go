@@ -4,9 +4,11 @@ package schema
 
 type ResourceSqlTableColumn struct {
 	Comment  string `json:"comment,omitempty"`
+	Identity string `json:"identity,omitempty"`
 	Name     string `json:"name"`
 	Nullable bool   `json:"nullable,omitempty"`
 	Type     string `json:"type,omitempty"`
+	TypeJson string `json:"type_json,omitempty"`
 }
 
 type ResourceSqlTable struct {
@@ -15,6 +17,7 @@ type ResourceSqlTable struct {
 	ClusterKeys           []string                 `json:"cluster_keys,omitempty"`
 	Comment               string                   `json:"comment,omitempty"`
 	DataSourceFormat      string                   `json:"data_source_format,omitempty"`
+	EffectiveProperties   map[string]string        `json:"effective_properties,omitempty"`
 	Id                    string                   `json:"id,omitempty"`
 	Name                  string                   `json:"name"`
 	Options               map[string]string        `json:"options,omitempty"`

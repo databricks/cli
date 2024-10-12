@@ -68,3 +68,41 @@ func TestComplexVariablesOverride(t *testing.T) {
 	require.Equal(t, "", b.Config.Resources.Jobs["my_job"].JobClusters[0].NewCluster.SparkConf["spark.random"])
 	require.Equal(t, "", b.Config.Resources.Jobs["my_job"].JobClusters[0].NewCluster.PolicyId)
 }
+
+func TestComplexVariablesOverrideWithMultipleFiles(t *testing.T) {
+	b, diags := loadTargetWithDiags("variables/complex_multiple_files", "dev")
+	require.Empty(t, diags)
+
+	diags = bundle.Apply(context.Background(), b, bundle.Seq(
+		mutator.SetVariables(),
+		mutator.ResolveVariableReferencesInComplexVariables(),
+		mutator.ResolveVariableReferences(
+			"variables",
+		),
+	))
+	require.NoError(t, diags.Error())
+	for _, cluster := range b.Config.Resources.Jobs["my_job"].JobClusters {
+		require.Equalf(t, "14.2.x-scala2.11", cluster.NewCluster.SparkVersion, "cluster: %v", cluster.JobClusterKey)
+		require.Equalf(t, "Standard_DS3_v2", cluster.NewCluster.NodeTypeId, "cluster: %v", cluster.JobClusterKey)
+		require.Equalf(t, 4, cluster.NewCluster.NumWorkers, "cluster: %v", cluster.JobClusterKey)
+		require.Equalf(t, "false", cluster.NewCluster.SparkConf["spark.speculation"], "cluster: %v", cluster.JobClusterKey)
+	}
+}
+
+func TestComplexVariablesOverrideWithFullSyntax(t *testing.T) {
+	b, diags := loadTargetWithDiags("variables/complex", "dev")
+	require.Empty(t, diags)
+
+	diags = bundle.Apply(context.Background(), b, bundle.Seq(
+		mutator.SetVariables(),
+		mutator.ResolveVariableReferencesInComplexVariables(),
+		mutator.ResolveVariableReferences(
+			"variables",
+		),
+	))
+	require.NoError(t, diags.Error())
+	require.Empty(t, diags)
+
+	complexvar := b.Config.Variables["complexvar"].Value
+	require.Equal(t, map[string]interface{}{"key1": "1", "key2": "2", "key3": "3"}, complexvar)
+}

@@ -41,6 +41,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newGet())
 	cmd.AddCommand(newGetRefresh())
 	cmd.AddCommand(newListRefreshes())
+	cmd.AddCommand(newRegenerateDashboard())
 	cmd.AddCommand(newRunRefresh())
 	cmd.AddCommand(newUpdate())
 
@@ -195,9 +196,15 @@ func newCreate() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = createJson.Unmarshal(&createReq)
-			if err != nil {
-				return err
+			diags := createJson.Unmarshal(&createReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		createReq.TableName = args[0]
@@ -503,6 +510,93 @@ func newListRefreshes() *cobra.Command {
 	return cmd
 }
 
+// start regenerate-dashboard command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var regenerateDashboardOverrides []func(
+	*cobra.Command,
+	*catalog.RegenerateDashboardRequest,
+)
+
+func newRegenerateDashboard() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var regenerateDashboardReq catalog.RegenerateDashboardRequest
+	var regenerateDashboardJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&regenerateDashboardJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&regenerateDashboardReq.WarehouseId, "warehouse-id", regenerateDashboardReq.WarehouseId, `Optional argument to specify the warehouse for dashboard regeneration.`)
+
+	cmd.Use = "regenerate-dashboard TABLE_NAME"
+	cmd.Short = `Regenerate a monitoring dashboard.`
+	cmd.Long = `Regenerate a monitoring dashboard.
+  
+  Regenerates the monitoring dashboard for the specified table.
+  
+  The caller must either: 1. be an owner of the table's parent catalog 2. have
+  **USE_CATALOG** on the table's parent catalog and be an owner of the table's
+  parent schema 3. have the following permissions: - **USE_CATALOG** on the
+  table's parent catalog - **USE_SCHEMA** on the table's parent schema - be an
+  owner of the table
+  
+  The call must be made from the workspace where the monitor was created. The
+  dashboard will be regenerated in the assets directory that was specified when
+  the monitor was created.
+
+  Arguments:
+    TABLE_NAME: Full name of the table.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := regenerateDashboardJson.Unmarshal(&regenerateDashboardReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		regenerateDashboardReq.TableName = args[0]
+
+		response, err := w.QualityMonitors.RegenerateDashboard(ctx, regenerateDashboardReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range regenerateDashboardOverrides {
+		fn(cmd, &regenerateDashboardReq)
+	}
+
+	return cmd
+}
+
 // start run-refresh command
 
 // Slice with functions to override default command behavior.
@@ -642,9 +736,15 @@ func newUpdate() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = updateJson.Unmarshal(&updateReq)
-			if err != nil {
-				return err
+			diags := updateJson.Unmarshal(&updateReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		updateReq.TableName = args[0]

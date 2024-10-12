@@ -21,7 +21,7 @@ func (r ReadOnlyBundle) Config() config.Root {
 }
 
 func (r ReadOnlyBundle) RootPath() string {
-	return r.b.RootPath
+	return r.b.BundleRootPath
 }
 
 func (r ReadOnlyBundle) BundleRoot() vfs.Path {

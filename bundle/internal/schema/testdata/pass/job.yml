@@ -1,0 +1,64 @@
+bundle:
+  name: a job
+
+workspace:
+  host: "https://myworkspace.com"
+  root_path: /abc
+
+presets:
+  name_prefix: "[DEV]"
+  jobs_max_concurrent_runs: 10
+
+variables:
+  simplevar:
+    default: true
+    description: "simplevar description"
+
+  complexvar:
+    default:
+      key1: value1
+      key2: value2
+      key3:
+        - value3
+        - value4
+    description: "complexvar description"
+
+run_as:
+  service_principal_name: myserviceprincipal
+
+resources:
+  jobs:
+    myjob:
+      name: myjob
+      continuous:
+        pause_status: PAUSED
+      max_concurrent_runs: 10
+      description: "my job description"
+      email_notifications:
+        no_alert_for_skipped_runs: true
+      environments:
+        - environment_key: venv
+          spec:
+            dependencies:
+              - python=3.7
+            client: "myclient"
+      tags:
+        foo: bar
+        bar: baz
+      git_source:
+        git_provider: gitHub
+        git_url: www.github.com/a/b
+      tasks:
+        - task_key: mytask
+          notebook_task:
+            notebook_path: ${var.simplevar}
+          existing_cluster_id: abcd
+        - task_key: mytask2
+          for_each_task:
+            inputs: av
+            concurrency: 10
+            task:
+              task_key: inside_for_each
+              notebook_task:
+                notebook_path: ${var.complexvar.key3[0]}
+        - ${var.complexvar}

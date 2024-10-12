@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/sync"
 	"github.com/spf13/cobra"
 )
 
@@ -23,13 +24,19 @@ func newDeployCommand() *cobra.Command {
 	var force bool
 	var forceLock bool
 	var failOnActiveRuns bool
-	var computeID string
+	var clusterId string
 	var autoApprove bool
+	var verbose bool
 	cmd.Flags().BoolVar(&force, "force", false, "Force-override Git branch validation.")
 	cmd.Flags().BoolVar(&forceLock, "force-lock", false, "Force acquisition of deployment lock.")
 	cmd.Flags().BoolVar(&failOnActiveRuns, "fail-on-active-runs", false, "Fail if there are running jobs or pipelines in the deployment.")
-	cmd.Flags().StringVarP(&computeID, "compute-id", "c", "", "Override compute in the deployment with the given compute ID.")
+	cmd.Flags().StringVar(&clusterId, "compute-id", "", "Override cluster in the deployment with the given compute ID.")
+	cmd.Flags().StringVarP(&clusterId, "cluster-id", "c", "", "Override cluster in the deployment with the given cluster ID.")
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive approvals that might be required for deployment.")
+	cmd.Flags().MarkDeprecated("compute-id", "use --cluster-id instead")
+	cmd.Flags().BoolVar(&verbose, "verbose", false, "Enable verbose output.")
+	// Verbose flag currently only affects file sync output, it's used by the vscode extension
+	cmd.Flags().MarkHidden("verbose")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -42,7 +49,10 @@ func newDeployCommand() *cobra.Command {
 				b.AutoApprove = autoApprove
 
 				if cmd.Flag("compute-id").Changed {
-					b.Config.Bundle.ComputeID = computeID
+					b.Config.Bundle.ClusterId = clusterId
+				}
+				if cmd.Flag("cluster-id").Changed {
+					b.Config.Bundle.ClusterId = clusterId
 				}
 				if cmd.Flag("fail-on-active-runs").Changed {
 					b.Config.Bundle.Deployment.FailOnActiveRuns = failOnActiveRuns
@@ -51,11 +61,18 @@ func newDeployCommand() *cobra.Command {
 				return nil
 			})
 
+			var outputHandler sync.OutputHandler
+			if verbose {
+				outputHandler = func(ctx context.Context, c <-chan sync.Event) {
+					sync.TextOutput(ctx, c, cmd.OutOrStdout())
+				}
+			}
+
 			diags = diags.Extend(
 				bundle.Apply(ctx, b, bundle.Seq(
 					phases.Initialize(),
 					phases.Build(),
-					phases.Deploy(),
+					phases.Deploy(outputHandler),
 				)),
 			)
 		}

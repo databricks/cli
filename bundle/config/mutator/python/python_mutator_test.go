@@ -10,6 +10,8 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/databricks/cli/libs/dyn/convert"
+
 	"github.com/databricks/cli/libs/dyn/merge"
 
 	"github.com/databricks/cli/bundle/env"
@@ -255,7 +257,7 @@ func TestPythonMutator_badOutput(t *testing.T) {
 	mutator := PythonMutator(PythonMutatorPhaseLoad)
 	diag := bundle.Apply(ctx, b, mutator)
 
-	assert.EqualError(t, diag.Error(), "failed to load Python mutator output: failed to normalize output: unknown field: unknown_property")
+	assert.EqualError(t, diag.Error(), "unknown field: unknown_property")
 }
 
 func TestPythonMutator_disabled(t *testing.T) {
@@ -544,6 +546,46 @@ func TestInterpreterPath(t *testing.T) {
 	} else {
 		assert.Equal(t, "venv/bin/python3", interpreterPath("venv"))
 	}
+}
+
+func TestStrictNormalize(t *testing.T) {
+	// NB: there is no way to trigger diag.Error, so we don't test it
+
+	type TestStruct struct {
+		A int `json:"a"`
+	}
+
+	value := dyn.NewValue(map[string]dyn.Value{"A": dyn.NewValue("abc", nil)}, nil)
+
+	_, diags := convert.Normalize(TestStruct{}, value)
+	_, strictDiags := strictNormalize(TestStruct{}, value)
+
+	assert.False(t, diags.HasError())
+	assert.True(t, strictDiags.HasError())
+}
+
+func TestExplainProcessErr(t *testing.T) {
+	stderr := "/home/test/.venv/bin/python3: Error while finding module specification for 'databricks.bundles.build' (ModuleNotFoundError: No module named 'databricks')\n"
+	expected := `/home/test/.venv/bin/python3: Error while finding module specification for 'databricks.bundles.build' (ModuleNotFoundError: No module named 'databricks')
+
+Explanation: 'databricks-pydabs' library is not installed in the Python environment.
+
+If using Python wheels, ensure that 'databricks-pydabs' is included in the dependencies,
+and that the wheel is installed in the Python environment:
+
+  $ .venv/bin/pip install -e .
+
+If using a virtual environment, ensure it is specified as the venv_path property in databricks.yml,
+or activate the environment before running CLI commands:
+
+  experimental:
+    pydabs:
+      venv_path: .venv
+`
+
+	out := explainProcessErr(stderr)
+
+	assert.Equal(t, expected, out)
 }
 
 func withProcessStub(t *testing.T, args []string, output string, diagnostics string) context.Context {

@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -23,7 +24,7 @@ func TestExpandGlobs_Nominal(t *testing.T) {
 	testutil.Touch(t, tmpDir, "bc.txt")
 
 	b := &bundle.Bundle{
-		RootPath: tmpDir,
+		BundleRootPath: tmpDir,
 		Config: config.Root{
 			Artifacts: config.Artifacts{
 				"test": {
@@ -36,7 +37,7 @@ func TestExpandGlobs_Nominal(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, "artifacts", filepath.Join(tmpDir, "databricks.yml"))
+	bundletest.SetLocation(b, "artifacts", []dyn.Location{{File: filepath.Join(tmpDir, "databricks.yml")}})
 
 	ctx := context.Background()
 	diags := bundle.Apply(ctx, b, bundle.Seq(
@@ -62,7 +63,7 @@ func TestExpandGlobs_InvalidPattern(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	b := &bundle.Bundle{
-		RootPath: tmpDir,
+		BundleRootPath: tmpDir,
 		Config: config.Root{
 			Artifacts: config.Artifacts{
 				"test": {
@@ -77,7 +78,7 @@ func TestExpandGlobs_InvalidPattern(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, "artifacts", filepath.Join(tmpDir, "databricks.yml"))
+	bundletest.SetLocation(b, "artifacts", []dyn.Location{{File: filepath.Join(tmpDir, "databricks.yml")}})
 
 	ctx := context.Background()
 	diags := bundle.Apply(ctx, b, bundle.Seq(
@@ -110,7 +111,7 @@ func TestExpandGlobs_NoMatches(t *testing.T) {
 	testutil.Touch(t, tmpDir, "b2.txt")
 
 	b := &bundle.Bundle{
-		RootPath: tmpDir,
+		BundleRootPath: tmpDir,
 		Config: config.Root{
 			Artifacts: config.Artifacts{
 				"test": {
@@ -125,7 +126,7 @@ func TestExpandGlobs_NoMatches(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, "artifacts", filepath.Join(tmpDir, "databricks.yml"))
+	bundletest.SetLocation(b, "artifacts", []dyn.Location{{File: filepath.Join(tmpDir, "databricks.yml")}})
 
 	ctx := context.Background()
 	diags := bundle.Apply(ctx, b, bundle.Seq(

@@ -88,7 +88,9 @@ func newAssign() *cobra.Command {
   Arguments:
     WORKSPACE_ID: A workspace ID.
     METASTORE_ID: The unique ID of the metastore.
-    DEFAULT_CATALOG_NAME: The name of the default catalog in the metastore.`
+    DEFAULT_CATALOG_NAME: The name of the default catalog in the metastore. This field is depracted.
+      Please use "Default Namespace API" to configure the default catalog for a
+      Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -110,9 +112,15 @@ func newAssign() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = assignJson.Unmarshal(&assignReq)
-			if err != nil {
-				return err
+			diags := assignJson.Unmarshal(&assignReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		_, err = fmt.Sscan(args[0], &assignReq.WorkspaceId)
@@ -199,9 +207,15 @@ func newCreate() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = createJson.Unmarshal(&createReq)
-			if err != nil {
-				return err
+			diags := createJson.Unmarshal(&createReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -604,9 +618,15 @@ func newUpdate() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = updateJson.Unmarshal(&updateReq)
-			if err != nil {
-				return err
+			diags := updateJson.Unmarshal(&updateReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if len(args) == 0 {
@@ -665,7 +685,7 @@ func newUpdateAssignment() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateAssignmentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateAssignmentReq.DefaultCatalogName, "default-catalog-name", updateAssignmentReq.DefaultCatalogName, `The name of the default catalog for the metastore.`)
+	cmd.Flags().StringVar(&updateAssignmentReq.DefaultCatalogName, "default-catalog-name", updateAssignmentReq.DefaultCatalogName, `The name of the default catalog in the metastore.`)
 	cmd.Flags().StringVar(&updateAssignmentReq.MetastoreId, "metastore-id", updateAssignmentReq.MetastoreId, `The unique ID of the metastore.`)
 
 	cmd.Use = "update-assignment WORKSPACE_ID"
@@ -688,9 +708,15 @@ func newUpdateAssignment() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = updateAssignmentJson.Unmarshal(&updateAssignmentReq)
-			if err != nil {
-				return err
+			diags := updateAssignmentJson.Unmarshal(&updateAssignmentReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if len(args) == 0 {

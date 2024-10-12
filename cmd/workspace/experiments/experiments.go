@@ -130,9 +130,15 @@ func newCreateExperiment() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = createExperimentJson.Unmarshal(&createExperimentReq)
-			if err != nil {
-				return err
+			diags := createExperimentJson.Unmarshal(&createExperimentReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -203,9 +209,15 @@ func newCreateRun() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = createRunJson.Unmarshal(&createRunReq)
-			if err != nil {
-				return err
+			diags := createRunJson.Unmarshal(&createRunReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 
@@ -277,9 +289,15 @@ func newDeleteExperiment() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = deleteExperimentJson.Unmarshal(&deleteExperimentReq)
-			if err != nil {
-				return err
+			diags := deleteExperimentJson.Unmarshal(&deleteExperimentReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -352,9 +370,15 @@ func newDeleteRun() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = deleteRunJson.Unmarshal(&deleteRunReq)
-			if err != nil {
-				return err
+			diags := deleteRunJson.Unmarshal(&deleteRunReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -435,9 +459,15 @@ func newDeleteRuns() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = deleteRunsJson.Unmarshal(&deleteRunsReq)
-			if err != nil {
-				return err
+			diags := deleteRunsJson.Unmarshal(&deleteRunsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -518,9 +548,15 @@ func newDeleteTag() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = deleteTagJson.Unmarshal(&deleteTagReq)
-			if err != nil {
-				return err
+			diags := deleteTagJson.Unmarshal(&deleteTagReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -941,7 +977,12 @@ func newListArtifacts() *cobra.Command {
 	cmd.Long = `Get all artifacts.
   
   List artifacts for a run. Takes an optional artifact_path prefix. If it is
-  specified, the response contains only artifacts with the specified prefix.",`
+  specified, the response contains only artifacts with the specified prefix.
+  This API does not support pagination when listing artifacts in UC Volumes. A
+  maximum of 1000 artifacts will be retrieved for UC Volumes. Please call
+  /api/2.0/fs/directories{directory_path} for listing artifacts in UC Volumes,
+  which supports pagination. See [List directory contents | Files
+  API](/api/workspace/files/listdirectorycontents).`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1103,9 +1144,15 @@ func newLogBatch() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = logBatchJson.Unmarshal(&logBatchReq)
-			if err != nil {
-				return err
+			diags := logBatchJson.Unmarshal(&logBatchReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 
@@ -1169,9 +1216,15 @@ func newLogInputs() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = logInputsJson.Unmarshal(&logInputsReq)
-			if err != nil {
-				return err
+			diags := logInputsJson.Unmarshal(&logInputsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 
@@ -1249,9 +1302,15 @@ func newLogMetric() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = logMetricJson.Unmarshal(&logMetricReq)
-			if err != nil {
-				return err
+			diags := logMetricJson.Unmarshal(&logMetricReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -1330,9 +1389,15 @@ func newLogModel() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = logModelJson.Unmarshal(&logModelReq)
-			if err != nil {
-				return err
+			diags := logModelJson.Unmarshal(&logModelReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 
@@ -1409,9 +1474,15 @@ func newLogParam() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = logParamJson.Unmarshal(&logParamReq)
-			if err != nil {
-				return err
+			diags := logParamJson.Unmarshal(&logParamReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -1492,9 +1563,15 @@ func newRestoreExperiment() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = restoreExperimentJson.Unmarshal(&restoreExperimentReq)
-			if err != nil {
-				return err
+			diags := restoreExperimentJson.Unmarshal(&restoreExperimentReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -1567,9 +1644,15 @@ func newRestoreRun() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = restoreRunJson.Unmarshal(&restoreRunReq)
-			if err != nil {
-				return err
+			diags := restoreRunJson.Unmarshal(&restoreRunReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -1650,9 +1733,15 @@ func newRestoreRuns() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = restoreRunsJson.Unmarshal(&restoreRunsReq)
-			if err != nil {
-				return err
+			diags := restoreRunsJson.Unmarshal(&restoreRunsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -1727,9 +1816,15 @@ func newSearchExperiments() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = searchExperimentsJson.Unmarshal(&searchExperimentsReq)
-			if err != nil {
-				return err
+			diags := searchExperimentsJson.Unmarshal(&searchExperimentsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 
@@ -1795,9 +1890,15 @@ func newSearchRuns() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = searchRunsJson.Unmarshal(&searchRunsReq)
-			if err != nil {
-				return err
+			diags := searchRunsJson.Unmarshal(&searchRunsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 
@@ -1869,9 +1970,15 @@ func newSetExperimentTag() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = setExperimentTagJson.Unmarshal(&setExperimentTagReq)
-			if err != nil {
-				return err
+			diags := setExperimentTagJson.Unmarshal(&setExperimentTagReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -1946,9 +2053,15 @@ func newSetPermissions() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = setPermissionsJson.Unmarshal(&setPermissionsReq)
-			if err != nil {
-				return err
+			diags := setPermissionsJson.Unmarshal(&setPermissionsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		setPermissionsReq.ExperimentId = args[0]
@@ -2027,9 +2140,15 @@ func newSetTag() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = setTagJson.Unmarshal(&setTagReq)
-			if err != nil {
-				return err
+			diags := setTagJson.Unmarshal(&setTagReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -2107,9 +2226,15 @@ func newUpdateExperiment() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = updateExperimentJson.Unmarshal(&updateExperimentReq)
-			if err != nil {
-				return err
+			diags := updateExperimentJson.Unmarshal(&updateExperimentReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -2178,9 +2303,15 @@ func newUpdatePermissions() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = updatePermissionsJson.Unmarshal(&updatePermissionsReq)
-			if err != nil {
-				return err
+			diags := updatePermissionsJson.Unmarshal(&updatePermissionsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		updatePermissionsReq.ExperimentId = args[0]
@@ -2246,9 +2377,15 @@ func newUpdateRun() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = updateRunJson.Unmarshal(&updateRunReq)
-			if err != nil {
-				return err
+			diags := updateRunJson.Unmarshal(&updateRunReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 

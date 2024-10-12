@@ -75,12 +75,13 @@ func newCreate() *cobra.Command {
 	var createSkipWait bool
 	var createTimeout time.Duration
 
-	cmd.Flags().BoolVar(&createSkipWait, "no-wait", createSkipWait, `do not wait to reach IDLE state`)
-	cmd.Flags().DurationVar(&createTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach IDLE state`)
+	cmd.Flags().BoolVar(&createSkipWait, "no-wait", createSkipWait, `do not wait to reach ACTIVE state`)
+	cmd.Flags().DurationVar(&createTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach ACTIVE state`)
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `The description of the app.`)
+	// TODO: array: resources
 
 	cmd.Use = "create NAME"
 	cmd.Short = `Create an app.`
@@ -112,9 +113,15 @@ func newCreate() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = createJson.Unmarshal(&createReq)
-			if err != nil {
-				return err
+			diags := createJson.Unmarshal(&createReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -130,13 +137,13 @@ func newCreate() *cobra.Command {
 		}
 		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *apps.App) {
-			if i.Status == nil {
+			if i.ComputeStatus == nil {
 				return
 			}
-			status := i.Status.State
+			status := i.ComputeStatus.State
 			statusMessage := fmt.Sprintf("current status: %s", status)
-			if i.Status != nil {
-				statusMessage = i.Status.Message
+			if i.ComputeStatus != nil {
+				statusMessage = i.ComputeStatus.Message
 			}
 			spinner <- statusMessage
 		}).GetWithTimeout(createTimeout)
@@ -198,11 +205,11 @@ func newDelete() *cobra.Command {
 
 		deleteReq.Name = args[0]
 
-		err = w.Apps.Delete(ctx, deleteReq)
+		response, err := w.Apps.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -240,35 +247,23 @@ func newDeploy() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&deployJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&deployReq.DeploymentId, "deployment-id", deployReq.DeploymentId, `The unique id of the deployment.`)
 	cmd.Flags().Var(&deployReq.Mode, "mode", `The mode of which the deployment will manage the source code. Supported values: [AUTO_SYNC, SNAPSHOT]`)
+	cmd.Flags().StringVar(&deployReq.SourceCodePath, "source-code-path", deployReq.SourceCodePath, `The workspace file system path of the source code used to create the app deployment.`)
 
-	cmd.Use = "deploy APP_NAME SOURCE_CODE_PATH"
+	cmd.Use = "deploy APP_NAME"
 	cmd.Short = `Create an app deployment.`
 	cmd.Long = `Create an app deployment.
   
   Creates an app deployment for the app with the supplied name.
 
   Arguments:
-    APP_NAME: The name of the app.
-    SOURCE_CODE_PATH: The workspace file system path of the source code used to create the app
-      deployment. This is different from
-      deployment_artifacts.source_code_path, which is the path used by the
-      deployed app. The former refers to the original source code location of
-      the app in the workspace during deployment creation, whereas the latter
-      provides a system generated stable snapshotted source code path used by
-      the deployment.`
+    APP_NAME: The name of the app.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		if cmd.Flags().Changed("json") {
-			err := root.ExactArgs(1)(cmd, args)
-			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only APP_NAME as positional arguments. Provide 'source_code_path' in your JSON input")
-			}
-			return nil
-		}
-		check := root.ExactArgs(2)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -278,15 +273,18 @@ func newDeploy() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = deployJson.Unmarshal(&deployReq)
-			if err != nil {
-				return err
+			diags := deployJson.Unmarshal(&deployReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		deployReq.AppName = args[0]
-		if !cmd.Flags().Changed("json") {
-			deployReq.SourceCodePath = args[1]
-		}
 
 		wait, err := w.Apps.Deploy(ctx, deployReq)
 		if err != nil {
@@ -716,9 +714,15 @@ func newSetPermissions() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = setPermissionsJson.Unmarshal(&setPermissionsReq)
-			if err != nil {
-				return err
+			diags := setPermissionsJson.Unmarshal(&setPermissionsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		setPermissionsReq.AppName = args[0]
@@ -759,8 +763,8 @@ func newStart() *cobra.Command {
 	var startSkipWait bool
 	var startTimeout time.Duration
 
-	cmd.Flags().BoolVar(&startSkipWait, "no-wait", startSkipWait, `do not wait to reach SUCCEEDED state`)
-	cmd.Flags().DurationVar(&startTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach SUCCEEDED state`)
+	cmd.Flags().BoolVar(&startSkipWait, "no-wait", startSkipWait, `do not wait to reach ACTIVE state`)
+	cmd.Flags().DurationVar(&startTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach ACTIVE state`)
 	// TODO: short flags
 
 	cmd.Use = "start NAME"
@@ -794,14 +798,14 @@ func newStart() *cobra.Command {
 			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := wait.OnProgress(func(i *apps.AppDeployment) {
-			if i.Status == nil {
+		info, err := wait.OnProgress(func(i *apps.App) {
+			if i.ComputeStatus == nil {
 				return
 			}
-			status := i.Status.State
+			status := i.ComputeStatus.State
 			statusMessage := fmt.Sprintf("current status: %s", status)
-			if i.Status != nil {
-				statusMessage = i.Status.Message
+			if i.ComputeStatus != nil {
+				statusMessage = i.ComputeStatus.Message
 			}
 			spinner <- statusMessage
 		}).GetWithTimeout(startTimeout)
@@ -838,6 +842,11 @@ func newStop() *cobra.Command {
 
 	var stopReq apps.StopAppRequest
 
+	var stopSkipWait bool
+	var stopTimeout time.Duration
+
+	cmd.Flags().BoolVar(&stopSkipWait, "no-wait", stopSkipWait, `do not wait to reach STOPPED state`)
+	cmd.Flags().DurationVar(&stopTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach STOPPED state`)
 	// TODO: short flags
 
 	cmd.Use = "stop NAME"
@@ -863,11 +872,30 @@ func newStop() *cobra.Command {
 
 		stopReq.Name = args[0]
 
-		err = w.Apps.Stop(ctx, stopReq)
+		wait, err := w.Apps.Stop(ctx, stopReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		if stopSkipWait {
+			return cmdio.Render(ctx, wait.Response)
+		}
+		spinner := cmdio.Spinner(ctx)
+		info, err := wait.OnProgress(func(i *apps.App) {
+			if i.ComputeStatus == nil {
+				return
+			}
+			status := i.ComputeStatus.State
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			if i.ComputeStatus != nil {
+				statusMessage = i.ComputeStatus.Message
+			}
+			spinner <- statusMessage
+		}).GetWithTimeout(stopTimeout)
+		close(spinner)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, info)
 	}
 
 	// Disable completions since they are not applicable.
@@ -901,6 +929,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Description, "description", updateReq.Description, `The description of the app.`)
+	// TODO: array: resources
 
 	cmd.Use = "update NAME"
 	cmd.Short = `Update an app.`
@@ -925,9 +954,15 @@ func newUpdate() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = updateJson.Unmarshal(&updateReq)
-			if err != nil {
-				return err
+			diags := updateJson.Unmarshal(&updateReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		updateReq.Name = args[0]
@@ -994,9 +1029,15 @@ func newUpdatePermissions() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = updatePermissionsJson.Unmarshal(&updatePermissionsReq)
-			if err != nil {
-				return err
+			diags := updatePermissionsJson.Unmarshal(&updatePermissionsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		updatePermissionsReq.AppName = args[0]

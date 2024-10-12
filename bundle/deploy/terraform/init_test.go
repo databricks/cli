@@ -33,7 +33,7 @@ func TestInitEnvironmentVariables(t *testing.T) {
 	}
 
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "whatever",
@@ -60,7 +60,7 @@ func TestSetTempDirEnvVarsForUnixWithTmpDirSet(t *testing.T) {
 	}
 
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "whatever",
@@ -88,7 +88,7 @@ func TestSetTempDirEnvVarsForUnixWithTmpDirNotSet(t *testing.T) {
 	}
 
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "whatever",
@@ -114,7 +114,7 @@ func TestSetTempDirEnvVarsForWindowWithAllTmpDirEnvVarsSet(t *testing.T) {
 	}
 
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "whatever",
@@ -144,7 +144,7 @@ func TestSetTempDirEnvVarsForWindowWithUserProfileAndTempSet(t *testing.T) {
 	}
 
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "whatever",
@@ -174,7 +174,7 @@ func TestSetTempDirEnvVarsForWindowsWithoutAnyTempDirEnvVarsSet(t *testing.T) {
 	}
 
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "whatever",
@@ -202,7 +202,7 @@ func TestSetTempDirEnvVarsForWindowsWithoutAnyTempDirEnvVarsSet(t *testing.T) {
 
 func TestSetProxyEnvVars(t *testing.T) {
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "whatever",
@@ -250,7 +250,7 @@ func TestSetProxyEnvVars(t *testing.T) {
 
 func TestSetUserAgentExtraEnvVar(t *testing.T) {
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Experimental: &config.Experimental{
 				PyDABs: config.PyDABs{
@@ -269,19 +269,20 @@ func TestSetUserAgentExtraEnvVar(t *testing.T) {
 }
 
 func TestInheritEnvVars(t *testing.T) {
-	env := map[string]string{}
-
 	t.Setenv("HOME", "/home/testuser")
 	t.Setenv("PATH", "/foo:/bar")
 	t.Setenv("TF_CLI_CONFIG_FILE", "/tmp/config.tfrc")
+	t.Setenv("AZURE_CONFIG_FILE", "/tmp/foo/bar")
 
-	err := inheritEnvVars(context.Background(), env)
-
-	require.NoError(t, err)
-
-	require.Equal(t, env["HOME"], "/home/testuser")
-	require.Equal(t, env["PATH"], "/foo:/bar")
-	require.Equal(t, env["TF_CLI_CONFIG_FILE"], "/tmp/config.tfrc")
+	ctx := context.Background()
+	env := map[string]string{}
+	err := inheritEnvVars(ctx, env)
+	if assert.NoError(t, err) {
+		assert.Equal(t, "/home/testuser", env["HOME"])
+		assert.Equal(t, "/foo:/bar", env["PATH"])
+		assert.Equal(t, "/tmp/config.tfrc", env["TF_CLI_CONFIG_FILE"])
+		assert.Equal(t, "/tmp/foo/bar", env["AZURE_CONFIG_FILE"])
+	}
 }
 
 func TestSetUserProfileFromInheritEnvVars(t *testing.T) {
@@ -332,7 +333,7 @@ func TestFindExecPathFromEnvironmentWithWrongVersion(t *testing.T) {
 	ctx := context.Background()
 	m := &initialize{}
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target:    "whatever",
@@ -356,7 +357,7 @@ func TestFindExecPathFromEnvironmentWithCorrectVersionAndNoBinary(t *testing.T) 
 	ctx := context.Background()
 	m := &initialize{}
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target:    "whatever",
@@ -379,7 +380,7 @@ func TestFindExecPathFromEnvironmentWithCorrectVersionAndBinary(t *testing.T) {
 	ctx := context.Background()
 	m := &initialize{}
 	b := &bundle.Bundle{
-		RootPath: t.TempDir(),
+		BundleRootPath: t.TempDir(),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target:    "whatever",

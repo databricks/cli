@@ -53,6 +53,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newLogs())
 	cmd.AddCommand(newPatch())
 	cmd.AddCommand(newPut())
+	cmd.AddCommand(newPutAiGateway())
 	cmd.AddCommand(newQuery())
 	cmd.AddCommand(newSetPermissions())
 	cmd.AddCommand(newUpdateConfig())
@@ -151,6 +152,7 @@ func newCreate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: ai_gateway
 	// TODO: array: rate_limits
 	cmd.Flags().BoolVar(&createReq.RouteOptimized, "route-optimized", createReq.RouteOptimized, `Enable route optimization for the serving endpoint.`)
 	// TODO: array: tags
@@ -167,9 +169,15 @@ func newCreate() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = createJson.Unmarshal(&createReq)
-			if err != nil {
-				return err
+			diags := createJson.Unmarshal(&createReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
@@ -704,9 +712,15 @@ func newPatch() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = patchJson.Unmarshal(&patchReq)
-			if err != nil {
-				return err
+			diags := patchJson.Unmarshal(&patchReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		patchReq.Name = args[0]
@@ -754,8 +768,9 @@ func newPut() *cobra.Command {
 	cmd.Short = `Update rate limits of a serving endpoint.`
 	cmd.Long = `Update rate limits of a serving endpoint.
   
-  Used to update the rate limits of a serving endpoint. NOTE: only external and
-  foundation model endpoints are supported as of now.
+  Used to update the rate limits of a serving endpoint. NOTE: Only foundation
+  model endpoints are currently supported. For external models, use AI Gateway
+  to manage rate limits.
 
   Arguments:
     NAME: The name of the serving endpoint whose rate limits are being updated. This
@@ -774,9 +789,15 @@ func newPut() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = putJson.Unmarshal(&putReq)
-			if err != nil {
-				return err
+			diags := putJson.Unmarshal(&putReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		putReq.Name = args[0]
@@ -795,6 +816,85 @@ func newPut() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range putOverrides {
 		fn(cmd, &putReq)
+	}
+
+	return cmd
+}
+
+// start put-ai-gateway command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var putAiGatewayOverrides []func(
+	*cobra.Command,
+	*serving.PutAiGatewayRequest,
+)
+
+func newPutAiGateway() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var putAiGatewayReq serving.PutAiGatewayRequest
+	var putAiGatewayJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&putAiGatewayJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: complex arg: guardrails
+	// TODO: complex arg: inference_table_config
+	// TODO: array: rate_limits
+	// TODO: complex arg: usage_tracking_config
+
+	cmd.Use = "put-ai-gateway NAME"
+	cmd.Short = `Update AI Gateway of a serving endpoint.`
+	cmd.Long = `Update AI Gateway of a serving endpoint.
+  
+  Used to update the AI Gateway of a serving endpoint. NOTE: Only external model
+  endpoints are currently supported.
+
+  Arguments:
+    NAME: The name of the serving endpoint whose AI Gateway is being updated. This
+      field is required.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := putAiGatewayJson.Unmarshal(&putAiGatewayReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		putAiGatewayReq.Name = args[0]
+
+		response, err := w.ServingEndpoints.PutAiGateway(ctx, putAiGatewayReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range putAiGatewayOverrides {
+		fn(cmd, &putAiGatewayReq)
 	}
 
 	return cmd
@@ -852,9 +952,15 @@ func newQuery() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = queryJson.Unmarshal(&queryReq)
-			if err != nil {
-				return err
+			diags := queryJson.Unmarshal(&queryReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		queryReq.Name = args[0]
@@ -921,9 +1027,15 @@ func newSetPermissions() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = setPermissionsJson.Unmarshal(&setPermissionsReq)
-			if err != nil {
-				return err
+			diags := setPermissionsJson.Unmarshal(&setPermissionsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		setPermissionsReq.ServingEndpointId = args[0]
@@ -1000,9 +1112,15 @@ func newUpdateConfig() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = updateConfigJson.Unmarshal(&updateConfigReq)
-			if err != nil {
-				return err
+			diags := updateConfigJson.Unmarshal(&updateConfigReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		updateConfigReq.Name = args[0]
@@ -1082,9 +1200,15 @@ func newUpdatePermissions() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = updatePermissionsJson.Unmarshal(&updatePermissionsReq)
-			if err != nil {
-				return err
+			diags := updatePermissionsJson.Unmarshal(&updatePermissionsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		updatePermissionsReq.ServingEndpointId = args[0]

@@ -15,11 +15,10 @@ import (
 )
 
 func TestPythonWheelBuild(t *testing.T) {
-	ctx := context.Background()
-	b, err := bundle.Load(ctx, "./python_wheel/python_wheel")
-	require.NoError(t, err)
+	b := loadTarget(t, "./python_wheel/python_wheel", "default")
 
-	diags := bundle.Apply(ctx, b, bundle.Seq(phases.Load(), phases.Build()))
+	ctx := context.Background()
+	diags := bundle.Apply(ctx, b, phases.Build())
 	require.NoError(t, diags.Error())
 
 	matches, err := filepath.Glob("./python_wheel/python_wheel/my_test_code/dist/my_test_code-*.whl")
@@ -32,11 +31,10 @@ func TestPythonWheelBuild(t *testing.T) {
 }
 
 func TestPythonWheelBuildAutoDetect(t *testing.T) {
-	ctx := context.Background()
-	b, err := bundle.Load(ctx, "./python_wheel/python_wheel_no_artifact")
-	require.NoError(t, err)
+	b := loadTarget(t, "./python_wheel/python_wheel_no_artifact", "default")
 
-	diags := bundle.Apply(ctx, b, bundle.Seq(phases.Load(), phases.Build()))
+	ctx := context.Background()
+	diags := bundle.Apply(ctx, b, phases.Build())
 	require.NoError(t, diags.Error())
 
 	matches, err := filepath.Glob("./python_wheel/python_wheel_no_artifact/dist/my_test_code-*.whl")
@@ -49,11 +47,10 @@ func TestPythonWheelBuildAutoDetect(t *testing.T) {
 }
 
 func TestPythonWheelBuildAutoDetectWithNotebookTask(t *testing.T) {
-	ctx := context.Background()
-	b, err := bundle.Load(ctx, "./python_wheel/python_wheel_no_artifact_notebook")
-	require.NoError(t, err)
+	b := loadTarget(t, "./python_wheel/python_wheel_no_artifact_notebook", "default")
 
-	diags := bundle.Apply(ctx, b, bundle.Seq(phases.Load(), phases.Build()))
+	ctx := context.Background()
+	diags := bundle.Apply(ctx, b, phases.Build())
 	require.NoError(t, diags.Error())
 
 	matches, err := filepath.Glob("./python_wheel/python_wheel_no_artifact_notebook/dist/my_test_code-*.whl")
@@ -66,11 +63,10 @@ func TestPythonWheelBuildAutoDetectWithNotebookTask(t *testing.T) {
 }
 
 func TestPythonWheelWithDBFSLib(t *testing.T) {
-	ctx := context.Background()
-	b, err := bundle.Load(ctx, "./python_wheel/python_wheel_dbfs_lib")
-	require.NoError(t, err)
+	b := loadTarget(t, "./python_wheel/python_wheel_dbfs_lib", "default")
 
-	diags := bundle.Apply(ctx, b, bundle.Seq(phases.Load(), phases.Build()))
+	ctx := context.Background()
+	diags := bundle.Apply(ctx, b, phases.Build())
 	require.NoError(t, diags.Error())
 
 	match := libraries.ExpandGlobReferences()
@@ -79,11 +75,11 @@ func TestPythonWheelWithDBFSLib(t *testing.T) {
 }
 
 func TestPythonWheelBuildNoBuildJustUpload(t *testing.T) {
-	ctx := context.Background()
-	b, err := bundle.Load(ctx, "./python_wheel/python_wheel_no_artifact_no_setup")
-	require.NoError(t, err)
+	b := loadTarget(t, "./python_wheel/python_wheel_no_artifact_no_setup", "default")
 
-	b.Config.Workspace.ArtifactPath = "/foo/bar"
+	ctx := context.Background()
+	diags := bundle.Apply(ctx, b, phases.Build())
+	require.NoError(t, diags.Error())
 
 	mockFiler := mockfiler.NewMockFiler(t)
 	mockFiler.EXPECT().Write(
@@ -94,20 +90,20 @@ func TestPythonWheelBuildNoBuildJustUpload(t *testing.T) {
 		filer.CreateParentDirectories,
 	).Return(nil)
 
-	u := libraries.UploadWithClient(mockFiler)
-	diags := bundle.Apply(ctx, b, bundle.Seq(phases.Load(), phases.Build(), libraries.ExpandGlobReferences(), u))
+	diags = bundle.Apply(ctx, b, bundle.Seq(
+		libraries.ExpandGlobReferences(),
+		libraries.UploadWithClient(mockFiler),
+	))
 	require.NoError(t, diags.Error())
 	require.Empty(t, diags)
-
 	require.Equal(t, "/Workspace/foo/bar/.internal/my_test_code-0.0.1-py3-none-any.whl", b.Config.Resources.Jobs["test_job"].JobSettings.Tasks[0].Libraries[0].Whl)
 }
 
 func TestPythonWheelBuildWithEnvironmentKey(t *testing.T) {
-	ctx := context.Background()
-	b, err := bundle.Load(ctx, "./python_wheel/environment_key")
-	require.NoError(t, err)
+	b := loadTarget(t, "./python_wheel/environment_key", "default")
 
-	diags := bundle.Apply(ctx, b, bundle.Seq(phases.Load(), phases.Build()))
+	ctx := context.Background()
+	diags := bundle.Apply(ctx, b, phases.Build())
 	require.NoError(t, diags.Error())
 
 	matches, err := filepath.Glob("./python_wheel/environment_key/my_test_code/dist/my_test_code-*.whl")
@@ -120,11 +116,10 @@ func TestPythonWheelBuildWithEnvironmentKey(t *testing.T) {
 }
 
 func TestPythonWheelBuildMultiple(t *testing.T) {
-	ctx := context.Background()
-	b, err := bundle.Load(ctx, "./python_wheel/python_wheel_multiple")
-	require.NoError(t, err)
+	b := loadTarget(t, "./python_wheel/python_wheel_multiple", "default")
 
-	diags := bundle.Apply(ctx, b, bundle.Seq(phases.Load(), phases.Build()))
+	ctx := context.Background()
+	diags := bundle.Apply(ctx, b, phases.Build())
 	require.NoError(t, diags.Error())
 
 	matches, err := filepath.Glob("./python_wheel/python_wheel_multiple/my_test_code/dist/my_test_code*.whl")
@@ -137,11 +132,10 @@ func TestPythonWheelBuildMultiple(t *testing.T) {
 }
 
 func TestPythonWheelNoBuild(t *testing.T) {
-	ctx := context.Background()
-	b, err := bundle.Load(ctx, "./python_wheel/python_wheel_no_build")
-	require.NoError(t, err)
+	b := loadTarget(t, "./python_wheel/python_wheel_no_build", "default")
 
-	diags := bundle.Apply(ctx, b, bundle.Seq(phases.Load(), phases.Build()))
+	ctx := context.Background()
+	diags := bundle.Apply(ctx, b, phases.Build())
 	require.NoError(t, diags.Error())
 
 	match := libraries.ExpandGlobReferences()
