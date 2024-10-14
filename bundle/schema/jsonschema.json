@@ -59,6 +59,127 @@
         "cli": {
           "bundle": {
             "config": {
+              "resources.Cluster": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "apply_policy_default_values": {
+                        "description": "When set to true, fixed and default values from the policy will be used for fields that are omitted. When set to false, only fixed values from the policy will be applied.",
+                        "$ref": "#/$defs/bool"
+                      },
+                      "autoscale": {
+                        "description": "Parameters needed in order to automatically scale clusters up and down based on load.\nNote: autoscaling works best with DB runtime versions 3.0 or later.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.AutoScale"
+                      },
+                      "autotermination_minutes": {
+                        "description": "Automatically terminates the cluster after it is inactive for this time in minutes. If not set,\nthis cluster will not be automatically terminated. If specified, the threshold must be between\n10 and 10000 minutes.\nUsers can also set this value to 0 to explicitly disable automatic termination.",
+                        "$ref": "#/$defs/int"
+                      },
+                      "aws_attributes": {
+                        "description": "Attributes related to clusters running on Amazon Web Services.\nIf not specified at cluster creation, a set of default values will be used.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.AwsAttributes"
+                      },
+                      "azure_attributes": {
+                        "description": "Attributes related to clusters running on Microsoft Azure.\nIf not specified at cluster creation, a set of default values will be used.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.AzureAttributes"
+                      },
+                      "cluster_log_conf": {
+                        "description": "The configuration for delivering spark logs to a long-term storage destination.\nTwo kinds of destinations (dbfs and s3) are supported. Only one destination can be specified\nfor one cluster. If the conf is given, the logs will be delivered to the destination every\n`5 mins`. The destination of driver logs is `$destination/$clusterId/driver`, while\nthe destination of executor logs is `$destination/$clusterId/executor`.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.ClusterLogConf"
+                      },
+                      "cluster_name": {
+                        "description": "Cluster name requested by the user. This doesn't have to be unique.\nIf not specified at creation, the cluster name will be an empty string.\n",
+                        "$ref": "#/$defs/string"
+                      },
+                      "custom_tags": {
+                        "description": "Additional tags for cluster resources. Databricks will tag all cluster resources (e.g., AWS\ninstances and EBS volumes) with these tags in addition to `default_tags`. Notes:\n\n- Currently, Databricks allows at most 45 custom tags\n\n- Clusters can only reuse cloud resources if the resources' tags are a subset of the cluster tags",
+                        "$ref": "#/$defs/map/string"
+                      },
+                      "data_security_mode": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.DataSecurityMode"
+                      },
+                      "docker_image": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.DockerImage"
+                      },
+                      "driver_instance_pool_id": {
+                        "description": "The optional ID of the instance pool for the driver of the cluster belongs.\nThe pool cluster uses the instance pool with id (instance_pool_id) if the driver pool is not\nassigned.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "driver_node_type_id": {
+                        "description": "The node type of the Spark driver. Note that this field is optional;\nif unset, the driver node type will be set as the same value\nas `node_type_id` defined above.\n",
+                        "$ref": "#/$defs/string"
+                      },
+                      "enable_elastic_disk": {
+                        "description": "Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk\nspace when its Spark workers are running low on disk space. This feature requires specific AWS\npermissions to function correctly - refer to the User Guide for more details.",
+                        "$ref": "#/$defs/bool"
+                      },
+                      "enable_local_disk_encryption": {
+                        "description": "Whether to enable LUKS on cluster VMs' local disks",
+                        "$ref": "#/$defs/bool"
+                      },
+                      "gcp_attributes": {
+                        "description": "Attributes related to clusters running on Google Cloud Platform.\nIf not specified at cluster creation, a set of default values will be used.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.GcpAttributes"
+                      },
+                      "init_scripts": {
+                        "description": "The configuration for storing init scripts. Any number of destinations can be specified. The scripts are executed sequentially in the order provided. If `cluster_log_conf` is specified, init script logs are sent to `\u003cdestination\u003e/\u003ccluster-ID\u003e/init_scripts`.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/compute.InitScriptInfo"
+                      },
+                      "instance_pool_id": {
+                        "description": "The optional ID of the instance pool to which the cluster belongs.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "node_type_id": {
+                        "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.\n",
+                        "$ref": "#/$defs/string"
+                      },
+                      "num_workers": {
+                        "description": "Number of worker nodes that this cluster should have. A cluster has one Spark Driver\nand `num_workers` Executors for a total of `num_workers` + 1 Spark nodes.\n\nNote: When reading the properties of a cluster, this field reflects the desired number\nof workers rather than the actual current number of workers. For instance, if a cluster\nis resized from 5 to 10 workers, this field will immediately be updated to reflect\nthe target size of 10 workers, whereas the workers listed in `spark_info` will gradually\nincrease from 5 to 10 as the new nodes are provisioned.",
+                        "$ref": "#/$defs/int"
+                      },
+                      "permissions": {
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                      },
+                      "policy_id": {
+                        "description": "The ID of the cluster policy used to create the cluster if applicable.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "runtime_engine": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.RuntimeEngine"
+                      },
+                      "single_user_name": {
+                        "description": "Single user name if data_security_mode is `SINGLE_USER`",
+                        "$ref": "#/$defs/string"
+                      },
+                      "spark_conf": {
+                        "description": "An object containing a set of optional, user-specified Spark configuration key-value pairs.\nUsers can also pass in a string of extra JVM options to the driver and the executors via\n`spark.driver.extraJavaOptions` and `spark.executor.extraJavaOptions` respectively.\n",
+                        "$ref": "#/$defs/map/string"
+                      },
+                      "spark_env_vars": {
+                        "description": "An object containing a set of optional, user-specified environment variable key-value pairs.\nPlease note that key-value pair of the form (X,Y) will be exported as is (i.e.,\n`export X='Y'`) while launching the driver and workers.\n\nIn order to specify an additional set of `SPARK_DAEMON_JAVA_OPTS`, we recommend appending\nthem to `$SPARK_DAEMON_JAVA_OPTS` as shown in the example below. This ensures that all\ndefault databricks managed environmental variables are included as well.\n\nExample Spark environment variables:\n`{\"SPARK_WORKER_MEMORY\": \"28000m\", \"SPARK_LOCAL_DIRS\": \"/local_disk0\"}` or\n`{\"SPARK_DAEMON_JAVA_OPTS\": \"$SPARK_DAEMON_JAVA_OPTS -Dspark.shuffle.service.enabled=true\"}`",
+                        "$ref": "#/$defs/map/string"
+                      },
+                      "spark_version": {
+                        "description": "The Spark version of the cluster, e.g. `3.3.x-scala2.11`.\nA list of available Spark versions can be retrieved by using\nthe :method:clusters/sparkVersions API call.\n",
+                        "$ref": "#/$defs/string"
+                      },
+                      "ssh_public_keys": {
+                        "description": "SSH public key contents that will be added to each Spark node in this cluster. The\ncorresponding private keys can be used to login with the user name `ubuntu` on port `2200`.\nUp to 10 keys can be specified.",
+                        "$ref": "#/$defs/slice/string"
+                      },
+                      "workload_type": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.WorkloadType"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.Grant": {
                 "anyOf": [
                   {
@@ -92,29 +213,17 @@
                         "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.Continuous"
                       },
-                      "deployment": {
-                        "description": "Deployment information for jobs managed by external sources.",
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobDeployment"
-                      },
                       "description": {
                         "description": "An optional description for the job. The maximum length is 27700 characters in UTF-8 encoding.",
                         "$ref": "#/$defs/string"
-                      },
-                      "edit_mode": {
-                        "description": "Edit mode of the job.\n\n* `UI_LOCKED`: The job is in a locked UI state and cannot be modified.\n* `EDITABLE`: The job is in an editable state and can be modified.",
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobEditMode"
                       },
                       "email_notifications": {
                         "description": "An optional set of email addresses that is notified when runs of this job begin or complete as well as when this job is deleted.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobEmailNotifications"
                       },
                       "environments": {
-                        "description": "A list of task execution environment specifications that can be referenced by tasks of this job.",
+                        "description": "A list of task execution environment specifications that can be referenced by serverless tasks of this job.\nAn environment is required to be present for serverless tasks.\nFor serverless notebook tasks, the environment is accessible in the notebook environment panel.\nFor other serverless tasks, the task environment is required to be specified using environment_key in the task settings.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.JobEnvironment"
-                      },
-                      "format": {
-                        "description": "Used to tell what is the format of the job. This field is ignored in Create/Update/Reset calls. When using the Jobs API 2.1 this value is always set to `\"MULTI_TASK\"`.",
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.Format"
                       },
                       "git_source": {
                         "description": "An optional specification for a remote Git repository containing the source code used by tasks. Version-controlled source code is supported by notebook, dbt, Python script, and SQL File tasks.\n\nIf `git_source` is set, these tasks retrieve the file from the remote repository by default. However, this behavior can be overridden by setting `source` to `WORKSPACE` on the task.\n\nNote: dbt and SQL File tasks support only version-controlled sources. If dbt or SQL File tasks are used, `git_source` must be defined on the job.",
@@ -281,6 +390,10 @@
                   {
                     "type": "object",
                     "properties": {
+                      "ai_gateway": {
+                        "description": "The AI Gateway configuration for the serving endpoint. NOTE: only external model endpoints are supported as of now.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayConfig"
+                      },
                       "config": {
                         "description": "The core config of the serving endpoint.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.EndpointCoreConfigInput"
@@ -293,7 +406,7 @@
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
                       },
                       "rate_limits": {
-                        "description": "Rate limits to be applied to the serving endpoint. NOTE: only external and foundation model endpoints are supported as of now.",
+                        "description": "Rate limits to be applied to the serving endpoint. NOTE: this field is deprecated, please use AI Gateway to manage rate limits.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/serving.RateLimit"
                       },
                       "route_optimized": {
@@ -351,6 +464,10 @@
                   {
                     "type": "object",
                     "properties": {
+                      "budget_policy_id": {
+                        "description": "Budget policy of this pipeline.",
+                        "$ref": "#/$defs/string"
+                      },
                       "catalog": {
                         "description": "A catalog in Unity Catalog to publish data from this pipeline to. If `target` is specified, tables in this pipeline are published to a `target` schema inside `catalog` (for example, `catalog`.`target`.`table`). If `target` is not specified, no data is published to Unity Catalog.",
                         "$ref": "#/$defs/string"
@@ -417,6 +534,10 @@
                       "photon": {
                         "description": "Whether Photon is enabled for this pipeline.",
                         "$ref": "#/$defs/bool"
+                      },
+                      "schema": {
+                        "description": "The default schema (database) where tables are read from or published to. The presence of this field implies that the pipeline is in direct publishing mode.",
+                        "$ref": "#/$defs/string"
                       },
                       "serverless": {
                         "description": "Whether serverless compute is enabled for this pipeline.",
@@ -747,6 +868,9 @@
                 {
                   "type": "object",
                   "properties": {
+                    "cluster_id": {
+                      "$ref": "#/$defs/string"
+                    },
                     "compute_id": {
                       "$ref": "#/$defs/string"
                     },
@@ -923,6 +1047,9 @@
                 {
                   "type": "object",
                   "properties": {
+                    "clusters": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Cluster"
+                    },
                     "experiments": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.MlflowExperiment"
                     },
@@ -989,6 +1116,9 @@
                     },
                     "bundle": {
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Bundle"
+                    },
+                    "cluster_id": {
+                      "$ref": "#/$defs/string"
                     },
                     "compute_id": {
                       "$ref": "#/$defs/string"
@@ -1074,6 +1204,9 @@
                       "$ref": "#/$defs/string"
                     },
                     "profile": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "resource_path": {
                       "$ref": "#/$defs/string"
                     },
                     "root_path": {
@@ -2028,7 +2161,7 @@
             },
             "compute.RuntimeEngine": {
               "type": "string",
-              "description": "Decides which runtime engine to be use, e.g. Standard vs. Photon. If unspecified, the runtime\nengine is inferred from spark_version.",
+              "description": "Determines the cluster's runtime engine, either standard or Photon.\n\nThis field is not compatible with legacy `spark_version` values that contain `-photon-`.\nRemove `-photon-` from the `spark_version` and set `runtime_engine` to `PHOTON`.\n\nIf left unspecified, the runtime engine defaults to standard unless the spark_version\ncontains -photon-, in which case Photon will be used.\n",
               "enum": [
                 "NULL",
                 "STANDARD",
@@ -2402,9 +2535,6 @@
                       "description": "Unique identifier of the service used to host the Git repository. The value is case insensitive.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.GitProvider"
                     },
-                    "git_snapshot": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.GitSnapshot"
-                    },
                     "git_tag": {
                       "description": "Name of the tag to be checked out and used by this job. This field cannot be specified in conjunction with git_branch or git_commit.",
                       "$ref": "#/$defs/string"
@@ -2412,10 +2542,6 @@
                     "git_url": {
                       "description": "URL of the repository to be cloned by this job.",
                       "$ref": "#/$defs/string"
-                    },
-                    "job_source": {
-                      "description": "The source of the job specification in the remote repository when the job is source controlled.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobSource"
                     }
                   },
                   "additionalProperties": false,
@@ -2502,7 +2628,7 @@
                   "type": "object",
                   "properties": {
                     "no_alert_for_skipped_runs": {
-                      "description": "If true, do not send email to recipients specified in `on_failure` if the run is skipped.",
+                      "description": "If true, do not send email to recipients specified in `on_failure` if the run is skipped.\nThis field is `deprecated`. Please use the `notification_settings.no_alert_for_skipped_runs` field.",
                       "$ref": "#/$defs/bool"
                     },
                     "on_duration_warning_threshold_exceeded": {
@@ -2610,7 +2736,7 @@
               "anyOf": [
                 {
                   "type": "object",
-                  "description": "Write-only setting, available only in Create/Update/Reset and Submit calls. Specifies the user or service principal that the job runs as. If not specified, the job runs as the user who created the job.\n\nOnly `user_name` or `service_principal_name` can be specified. If both are specified, an error is thrown.",
+                  "description": "Write-only setting. Specifies the user, service principal or group that the job/pipeline runs as. If not specified, the job/pipeline runs as the user who created the job/pipeline.\n\nExactly one of `user_name`, `service_principal_name`, `group_name` should be specified. If not, an error is thrown.",
                   "properties": {
                     "service_principal_name": {
                       "description": "Application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.",
@@ -2943,6 +3069,7 @@
                       "$ref": "#/$defs/map/string"
                     },
                     "pipeline_params": {
+                      "description": "Controls whether the pipeline should perform a full refresh",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.PipelineParams"
                     },
                     "python_named_params": {
@@ -3417,7 +3544,7 @@
                   "type": "object",
                   "properties": {
                     "no_alert_for_skipped_runs": {
-                      "description": "If true, do not send email to recipients specified in `on_failure` if the run is skipped.",
+                      "description": "If true, do not send email to recipients specified in `on_failure` if the run is skipped.\nThis field is `deprecated`. Please use the `notification_settings.no_alert_for_skipped_runs` field.",
                       "$ref": "#/$defs/bool"
                     },
                     "on_duration_warning_threshold_exceeded": {
@@ -4235,6 +4362,207 @@
                 }
               ]
             },
+            "serving.AiGatewayConfig": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "guardrails": {
+                      "description": "Configuration for AI Guardrails to prevent unwanted data and unsafe data in requests and responses.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrails"
+                    },
+                    "inference_table_config": {
+                      "description": "Configuration for payload logging using inference tables. Use these tables to monitor and audit data being sent to and received from model APIs and to improve model quality.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayInferenceTableConfig"
+                    },
+                    "rate_limits": {
+                      "description": "Configuration for rate limits which can be set to limit endpoint traffic.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimit"
+                    },
+                    "usage_tracking_config": {
+                      "description": "Configuration to enable usage tracking using system tables. These tables allow you to monitor operational usage on endpoints and their associated costs.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayUsageTrackingConfig"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "serving.AiGatewayGuardrailParameters": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "invalid_keywords": {
+                      "description": "List of invalid keywords. AI guardrail uses keyword or string matching to decide if the keyword exists in the request or response content.",
+                      "$ref": "#/$defs/slice/string"
+                    },
+                    "pii": {
+                      "description": "Configuration for guardrail PII filter.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailPiiBehavior"
+                    },
+                    "safety": {
+                      "description": "Indicates whether the safety filter is enabled.",
+                      "$ref": "#/$defs/bool"
+                    },
+                    "valid_topics": {
+                      "description": "The list of allowed topics. Given a chat request, this guardrail flags the request if its topic is not in the allowed topics.",
+                      "$ref": "#/$defs/slice/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "serving.AiGatewayGuardrailPiiBehavior": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "behavior": {
+                      "description": "Behavior for PII filter. Currently only 'BLOCK' is supported. If 'BLOCK' is set for the input guardrail and the request contains PII, the request is not sent to the model server and 400 status code is returned; if 'BLOCK' is set for the output guardrail and the model response contains PII, the PII info in the response is redacted and 400 status code is returned.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailPiiBehaviorBehavior",
+                      "enum": [
+                        "NONE",
+                        "BLOCK"
+                      ]
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "behavior"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "serving.AiGatewayGuardrailPiiBehaviorBehavior": {
+              "type": "string"
+            },
+            "serving.AiGatewayGuardrails": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "input": {
+                      "description": "Configuration for input guardrail filters.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailParameters"
+                    },
+                    "output": {
+                      "description": "Configuration for output guardrail filters.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailParameters"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "serving.AiGatewayInferenceTableConfig": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "catalog_name": {
+                      "description": "The name of the catalog in Unity Catalog. Required when enabling inference tables. NOTE: On update, you have to disable inference table first in order to change the catalog name.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "enabled": {
+                      "description": "Indicates whether the inference table is enabled.",
+                      "$ref": "#/$defs/bool"
+                    },
+                    "schema_name": {
+                      "description": "The name of the schema in Unity Catalog. Required when enabling inference tables. NOTE: On update, you have to disable inference table first in order to change the schema name.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "table_name_prefix": {
+                      "description": "The prefix of the table in Unity Catalog. NOTE: On update, you have to disable inference table first in order to change the prefix name.",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "serving.AiGatewayRateLimit": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "calls": {
+                      "description": "Used to specify how many calls are allowed for a key within the renewal_period.",
+                      "$ref": "#/$defs/int"
+                    },
+                    "key": {
+                      "description": "Key field for a rate limit. Currently, only 'user' and 'endpoint' are supported, with 'endpoint' being the default if not specified.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimitKey",
+                      "enum": [
+                        "user",
+                        "endpoint"
+                      ]
+                    },
+                    "renewal_period": {
+                      "description": "Renewal period field for a rate limit. Currently, only 'minute' is supported.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimitRenewalPeriod",
+                      "enum": [
+                        "minute"
+                      ]
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "calls",
+                    "renewal_period"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "serving.AiGatewayRateLimitKey": {
+              "type": "string"
+            },
+            "serving.AiGatewayRateLimitRenewalPeriod": {
+              "type": "string"
+            },
+            "serving.AiGatewayUsageTrackingConfig": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "description": "Whether to enable usage tracking.",
+                      "$ref": "#/$defs/bool"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "serving.AmazonBedrockConfig": {
               "anyOf": [
                 {
@@ -4904,6 +5232,20 @@
           "cli": {
             "bundle": {
               "config": {
+                "resources.Cluster": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Cluster"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.Job": {
                   "anyOf": [
                     {
@@ -5417,6 +5759,20 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PipelineLibrary"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "serving.AiGatewayRateLimit": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimit"
                     }
                   },
                   {

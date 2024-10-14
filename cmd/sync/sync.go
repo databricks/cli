@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
-	stdsync "sync"
 	"time"
 
 	"github.com/databricks/cli/bundle"
@@ -46,6 +45,21 @@ func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*syn
 		return nil, flag.ErrHelp
 	}
 
+	var outputFunc func(context.Context, <-chan sync.Event, io.Writer)
+	switch f.output {
+	case flags.OutputText:
+		outputFunc = sync.TextOutput
+	case flags.OutputJSON:
+		outputFunc = sync.JsonOutput
+	}
+
+	var outputHandler sync.OutputHandler
+	if outputFunc != nil {
+		outputHandler = func(ctx context.Context, events <-chan sync.Event) {
+			outputFunc(ctx, events, cmd.OutOrStdout())
+		}
+	}
+
 	opts := sync.SyncOptions{
 		LocalRoot: vfs.MustNew(args[0]),
 		Paths:     []string{"."},
@@ -62,6 +76,8 @@ func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*syn
 		// exist and add it to the `.gitignore` file in the root.
 		SnapshotBasePath: filepath.Join(args[0], ".databricks"),
 		WorkspaceClient:  root.WorkspaceClient(cmd.Context()),
+
+		OutputHandler: outputHandler,
 	}
 	return &opts, nil
 }
@@ -118,23 +134,7 @@ func New() *cobra.Command {
 		if err != nil {
 			return err
 		}
-
-		var outputFunc func(context.Context, <-chan sync.Event, io.Writer)
-		switch f.output {
-		case flags.OutputText:
-			outputFunc = textOutput
-		case flags.OutputJSON:
-			outputFunc = jsonOutput
-		}
-
-		var wg stdsync.WaitGroup
-		if outputFunc != nil {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				outputFunc(ctx, s.Events(), cmd.OutOrStdout())
-			}()
-		}
+		defer s.Close()
 
 		if f.watch {
 			err = s.RunContinuous(ctx)
@@ -142,8 +142,6 @@ func New() *cobra.Command {
 			_, err = s.RunOnce(ctx)
 		}
 
-		s.Close()
-		wg.Wait()
 		return err
 	}
 

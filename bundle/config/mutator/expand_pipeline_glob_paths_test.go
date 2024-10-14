@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/bundletest"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/require"
@@ -41,7 +42,7 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 	touchEmptyFile(t, filepath.Join(dir, "skip/test7.py"))
 
 	b := &bundle.Bundle{
-		RootPath: dir,
+		BundleRootPath: dir,
 		Config: config.Root{
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
@@ -105,8 +106,8 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, ".", filepath.Join(dir, "resource.yml"))
-	bundletest.SetLocation(b, "resources.pipelines.pipeline.libraries[3]", filepath.Join(dir, "relative", "resource.yml"))
+	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "resource.yml")}})
+	bundletest.SetLocation(b, "resources.pipelines.pipeline.libraries[3]", []dyn.Location{{File: filepath.Join(dir, "relative", "resource.yml")}})
 
 	m := ExpandPipelineGlobPaths()
 	diags := bundle.Apply(context.Background(), b, m)

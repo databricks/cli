@@ -11,7 +11,7 @@ func TestExpandPipelineGlobPaths(t *testing.T) {
 	require.NoError(t, diags.Error())
 	require.Equal(
 		t,
-		"/Users/user@domain.com/.bundle/pipeline_glob_paths/default/files/dlt/nyc_taxi_loader",
+		"/Workspace/Users/user@domain.com/.bundle/pipeline_glob_paths/default/files/dlt/nyc_taxi_loader",
 		b.Config.Resources.Pipelines["nyc_taxi_pipeline"].Libraries[0].Notebook.Path,
 	)
 }

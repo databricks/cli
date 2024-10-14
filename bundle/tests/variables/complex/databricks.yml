@@ -35,6 +35,13 @@ variables:
       - jar: "/path/to/jar"
       - egg: "/path/to/egg"
       - whl: "/path/to/whl"
+  complexvar:
+    type: complex
+    description: "A complex variable"
+    default:
+      key1: "value1"
+      key2: "value2"
+      key3: "value3"
 
 
 targets:
@@ -49,3 +56,9 @@ targets:
         spark_conf:
           spark.speculation: false
           spark.databricks.delta.retentionDurationCheck.enabled: false
+      complexvar:
+        type: complex
+        default:
+          key1: "1"
+          key2: "2"
+          key3: "3"

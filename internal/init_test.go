@@ -12,7 +12,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/internal/testutil"
-	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -126,7 +126,7 @@ func TestAccBundleInitHelpers(t *testing.T) {
 	}{
 		{
 			funcName: "{{short_name}}",
-			expected: auth.GetShortUserName(me.UserName),
+			expected: iamutil.GetShortUserName(me),
 		},
 		{
 			funcName: "{{user_name}}",
@@ -138,7 +138,7 @@ func TestAccBundleInitHelpers(t *testing.T) {
 		},
 		{
 			funcName: "{{is_service_principal}}",
-			expected: strconv.FormatBool(auth.IsServicePrincipal(me.UserName)),
+			expected: strconv.FormatBool(iamutil.IsServicePrincipal(me)),
 		},
 		{
 			funcName: "{{smallest_node_type}}",

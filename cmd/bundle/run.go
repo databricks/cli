@@ -55,13 +55,7 @@ task or a Python wheel task, the second example applies.
 			return diags.Error()
 		}
 
-		diags = bundle.Apply(ctx, b, bundle.Seq(
-			phases.Initialize(),
-			terraform.Interpolate(),
-			terraform.Write(),
-			terraform.StatePull(),
-			terraform.Load(terraform.ErrorOnEmptyState),
-		))
+		diags = bundle.Apply(ctx, b, phases.Initialize())
 		if err := diags.Error(); err != nil {
 			return err
 		}
@@ -82,6 +76,16 @@ task or a Python wheel task, the second example applies.
 
 		if len(args) < 1 {
 			return fmt.Errorf("expected a KEY of the resource to run")
+		}
+
+		diags = bundle.Apply(ctx, b, bundle.Seq(
+			terraform.Interpolate(),
+			terraform.Write(),
+			terraform.StatePull(),
+			terraform.Load(terraform.ErrorOnEmptyState),
+		))
+		if err := diags.Error(); err != nil {
+			return err
 		}
 
 		runner, err := run.Find(b, args[0])

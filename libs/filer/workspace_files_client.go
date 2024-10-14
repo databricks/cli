@@ -178,6 +178,9 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		// Create parent directory.
 		err = w.workspaceClient.Workspace.MkdirsByPath(ctx, path.Dir(absPath))
 		if err != nil {
+			if errors.As(err, &aerr) && aerr.StatusCode == http.StatusForbidden {
+				return PermissionError{absPath}
+			}
 			return fmt.Errorf("unable to mkdir to write file %s: %w", absPath, err)
 		}
 
@@ -201,6 +204,11 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 
 		// Default to path specified to filer.Write if regex capture fails
 		return FileAlreadyExistsError{absPath}
+	}
+
+	// This API returns StatusForbidden when you have read access but don't have write access to a file
+	if aerr.StatusCode == http.StatusForbidden {
+		return PermissionError{absPath}
 	}
 
 	return err
@@ -295,11 +303,11 @@ func (w *WorkspaceFilesClient) ReadDir(ctx context.Context, name string) ([]fs.D
 			return nil, err
 		}
 
-		// This API returns a 404 if the specified path does not exist.
+		// NOTE: This API returns a 404 if the specified path does not exist,
+		// but can also do so if we don't have read access.
 		if aerr.StatusCode == http.StatusNotFound {
 			return nil, NoSuchDirectoryError{path.Dir(absPath)}
 		}
-
 		return nil, err
 	}
 

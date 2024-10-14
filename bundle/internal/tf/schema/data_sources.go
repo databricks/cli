@@ -30,6 +30,7 @@ type DataSources struct {
 	Metastores                      map[string]any `json:"databricks_metastores,omitempty"`
 	MlflowExperiment                map[string]any `json:"databricks_mlflow_experiment,omitempty"`
 	MlflowModel                     map[string]any `json:"databricks_mlflow_model,omitempty"`
+	MlflowModels                    map[string]any `json:"databricks_mlflow_models,omitempty"`
 	MwsCredentials                  map[string]any `json:"databricks_mws_credentials,omitempty"`
 	MwsWorkspaces                   map[string]any `json:"databricks_mws_workspaces,omitempty"`
 	NodeType                        map[string]any `json:"databricks_node_type,omitempty"`
@@ -85,6 +86,7 @@ func NewDataSources() *DataSources {
 		Metastores:                      make(map[string]any),
 		MlflowExperiment:                make(map[string]any),
 		MlflowModel:                     make(map[string]any),
+		MlflowModels:                    make(map[string]any),
 		MwsCredentials:                  make(map[string]any),
 		MwsWorkspaces:                   make(map[string]any),
 		NodeType:                        make(map[string]any),

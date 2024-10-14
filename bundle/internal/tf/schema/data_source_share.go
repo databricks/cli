@@ -18,12 +18,14 @@ type DataSourceShareObject struct {
 	AddedBy                  string                           `json:"added_by,omitempty"`
 	CdfEnabled               bool                             `json:"cdf_enabled,omitempty"`
 	Comment                  string                           `json:"comment,omitempty"`
+	Content                  string                           `json:"content,omitempty"`
 	DataObjectType           string                           `json:"data_object_type"`
 	HistoryDataSharingStatus string                           `json:"history_data_sharing_status,omitempty"`
 	Name                     string                           `json:"name"`
 	SharedAs                 string                           `json:"shared_as,omitempty"`
 	StartVersion             int                              `json:"start_version,omitempty"`
 	Status                   string                           `json:"status,omitempty"`
+	StringSharedAs           string                           `json:"string_shared_as,omitempty"`
 	Partition                []DataSourceShareObjectPartition `json:"partition,omitempty"`
 }
 

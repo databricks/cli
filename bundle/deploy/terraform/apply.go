@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/hashicorp/terraform-exec/tfexec"
@@ -34,6 +35,10 @@ func (w *apply) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Apply terraform according to the computed plan
 	err := tf.Apply(ctx, tfexec.DirOrPlan(b.Plan.Path))
 	if err != nil {
+		diags := permissions.TryExtendTerraformPermissionError(ctx, b, err)
+		if diags != nil {
+			return diags
+		}
 		return diag.Errorf("terraform apply: %v", err)
 	}
 

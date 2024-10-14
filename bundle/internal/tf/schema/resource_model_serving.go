@@ -2,6 +2,57 @@
 
 package schema
 
+type ResourceModelServingAiGatewayGuardrailsInputPii struct {
+	Behavior string `json:"behavior"`
+}
+
+type ResourceModelServingAiGatewayGuardrailsInput struct {
+	InvalidKeywords []string                                         `json:"invalid_keywords,omitempty"`
+	Safety          bool                                             `json:"safety,omitempty"`
+	ValidTopics     []string                                         `json:"valid_topics,omitempty"`
+	Pii             *ResourceModelServingAiGatewayGuardrailsInputPii `json:"pii,omitempty"`
+}
+
+type ResourceModelServingAiGatewayGuardrailsOutputPii struct {
+	Behavior string `json:"behavior"`
+}
+
+type ResourceModelServingAiGatewayGuardrailsOutput struct {
+	InvalidKeywords []string                                          `json:"invalid_keywords,omitempty"`
+	Safety          bool                                              `json:"safety,omitempty"`
+	ValidTopics     []string                                          `json:"valid_topics,omitempty"`
+	Pii             *ResourceModelServingAiGatewayGuardrailsOutputPii `json:"pii,omitempty"`
+}
+
+type ResourceModelServingAiGatewayGuardrails struct {
+	Input  *ResourceModelServingAiGatewayGuardrailsInput  `json:"input,omitempty"`
+	Output *ResourceModelServingAiGatewayGuardrailsOutput `json:"output,omitempty"`
+}
+
+type ResourceModelServingAiGatewayInferenceTableConfig struct {
+	CatalogName     string `json:"catalog_name,omitempty"`
+	Enabled         bool   `json:"enabled,omitempty"`
+	SchemaName      string `json:"schema_name,omitempty"`
+	TableNamePrefix string `json:"table_name_prefix,omitempty"`
+}
+
+type ResourceModelServingAiGatewayRateLimits struct {
+	Calls         int    `json:"calls"`
+	Key           string `json:"key,omitempty"`
+	RenewalPeriod string `json:"renewal_period"`
+}
+
+type ResourceModelServingAiGatewayUsageTrackingConfig struct {
+	Enabled bool `json:"enabled,omitempty"`
+}
+
+type ResourceModelServingAiGateway struct {
+	Guardrails           *ResourceModelServingAiGatewayGuardrails           `json:"guardrails,omitempty"`
+	InferenceTableConfig *ResourceModelServingAiGatewayInferenceTableConfig `json:"inference_table_config,omitempty"`
+	RateLimits           []ResourceModelServingAiGatewayRateLimits          `json:"rate_limits,omitempty"`
+	UsageTrackingConfig  *ResourceModelServingAiGatewayUsageTrackingConfig  `json:"usage_tracking_config,omitempty"`
+}
+
 type ResourceModelServingConfigAutoCaptureConfig struct {
 	CatalogName     string `json:"catalog_name,omitempty"`
 	Enabled         bool   `json:"enabled,omitempty"`
@@ -95,14 +146,16 @@ type ResourceModelServingConfigServedEntities struct {
 }
 
 type ResourceModelServingConfigServedModels struct {
-	EnvironmentVars    map[string]string `json:"environment_vars,omitempty"`
-	InstanceProfileArn string            `json:"instance_profile_arn,omitempty"`
-	ModelName          string            `json:"model_name"`
-	ModelVersion       string            `json:"model_version"`
-	Name               string            `json:"name,omitempty"`
-	ScaleToZeroEnabled bool              `json:"scale_to_zero_enabled,omitempty"`
-	WorkloadSize       string            `json:"workload_size"`
-	WorkloadType       string            `json:"workload_type,omitempty"`
+	EnvironmentVars          map[string]string `json:"environment_vars,omitempty"`
+	InstanceProfileArn       string            `json:"instance_profile_arn,omitempty"`
+	MaxProvisionedThroughput int               `json:"max_provisioned_throughput,omitempty"`
+	MinProvisionedThroughput int               `json:"min_provisioned_throughput,omitempty"`
+	ModelName                string            `json:"model_name"`
+	ModelVersion             string            `json:"model_version"`
+	Name                     string            `json:"name,omitempty"`
+	ScaleToZeroEnabled       bool              `json:"scale_to_zero_enabled,omitempty"`
+	WorkloadSize             string            `json:"workload_size,omitempty"`
+	WorkloadType             string            `json:"workload_type,omitempty"`
 }
 
 type ResourceModelServingConfigTrafficConfigRoutes struct {
@@ -137,6 +190,7 @@ type ResourceModelServing struct {
 	Name              string                           `json:"name"`
 	RouteOptimized    bool                             `json:"route_optimized,omitempty"`
 	ServingEndpointId string                           `json:"serving_endpoint_id,omitempty"`
+	AiGateway         *ResourceModelServingAiGateway   `json:"ai_gateway,omitempty"`
 	Config            *ResourceModelServingConfig      `json:"config,omitempty"`
 	RateLimits        []ResourceModelServingRateLimits `json:"rate_limits,omitempty"`
 	Tags              []ResourceModelServingTags       `json:"tags,omitempty"`

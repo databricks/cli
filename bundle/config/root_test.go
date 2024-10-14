@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/variable"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -167,5 +168,89 @@ func TestRootMergeTargetOverridesWithVariables(t *testing.T) {
 		"key1": "value1",
 	}, root.Variables["complex"].Default)
 	assert.Equal(t, "complex var", root.Variables["complex"].Description)
+
+}
+
+func TestIsFullVariableOverrideDef(t *testing.T) {
+	testCases := []struct {
+		value    dyn.Value
+		expected bool
+	}{
+		{
+			value: dyn.V(map[string]dyn.Value{
+				"type":        dyn.V("string"),
+				"default":     dyn.V("foo"),
+				"description": dyn.V("foo var"),
+			}),
+			expected: true,
+		},
+		{
+			value: dyn.V(map[string]dyn.Value{
+				"type":        dyn.V("string"),
+				"lookup":      dyn.V("foo"),
+				"description": dyn.V("foo var"),
+			}),
+			expected: false,
+		},
+		{
+			value: dyn.V(map[string]dyn.Value{
+				"type":    dyn.V("string"),
+				"default": dyn.V("foo"),
+			}),
+			expected: true,
+		},
+		{
+			value: dyn.V(map[string]dyn.Value{
+				"type":   dyn.V("string"),
+				"lookup": dyn.V("foo"),
+			}),
+			expected: false,
+		},
+		{
+			value: dyn.V(map[string]dyn.Value{
+				"description": dyn.V("string"),
+				"default":     dyn.V("foo"),
+			}),
+			expected: true,
+		},
+		{
+			value: dyn.V(map[string]dyn.Value{
+				"description": dyn.V("string"),
+				"lookup":      dyn.V("foo"),
+			}),
+			expected: true,
+		},
+		{
+			value: dyn.V(map[string]dyn.Value{
+				"default": dyn.V("foo"),
+			}),
+			expected: true,
+		},
+		{
+			value: dyn.V(map[string]dyn.Value{
+				"lookup": dyn.V("foo"),
+			}),
+			expected: true,
+		},
+		{
+			value: dyn.V(map[string]dyn.Value{
+				"type": dyn.V("string"),
+			}),
+			expected: false,
+		},
+		{
+			value: dyn.V(map[string]dyn.Value{
+				"type":        dyn.V("string"),
+				"default":     dyn.V("foo"),
+				"description": dyn.V("foo var"),
+				"lookup":      dyn.V("foo"),
+			}),
+			expected: false,
+		},
+	}
+
+	for i, tc := range testCases {
+		assert.Equal(t, tc.expected, isFullVariableOverrideDef(tc.value), "test case %d", i)
+	}
 
 }

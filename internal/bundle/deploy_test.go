@@ -236,7 +236,7 @@ func TestAccDeployBasicBundleLogs(t *testing.T) {
 
 	stdout, stderr := blackBoxRun(t, root, "bundle", "deploy")
 	assert.Equal(t, strings.Join([]string{
-		fmt.Sprintf("Uploading bundle files to /Users/%s/.bundle/%s/files...", currentUser.UserName, uniqueId),
+		fmt.Sprintf("Uploading bundle files to /Workspace/Users/%s/.bundle/%s/files...", currentUser.UserName, uniqueId),
 		"Deploying resources...",
 		"Updating deployment state...",
 		"Deployment complete!\n",

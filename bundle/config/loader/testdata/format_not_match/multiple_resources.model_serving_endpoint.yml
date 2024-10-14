@@ -1,0 +1,43 @@
+resources:
+  experiments:
+    experiment1:
+      name: experiment1
+
+  model_serving_endpoints:
+    model_serving_endpoint1:
+      name: model_serving_endpoint1
+
+  jobs:
+    job1:
+      name: job1
+    job2:
+      name: job2
+
+  models:
+    model1:
+      name: model1
+
+  pipelines:
+    pipeline1:
+      name: pipeline1
+    pipeline2:
+      name: pipeline2
+
+  schemas:
+    schema1:
+      name: schema1
+
+targets:
+  target1:
+    resources:
+      quality_monitors:
+        quality_monitor1:
+          baseline_table_name: quality_monitor1
+
+      jobs:
+        job3:
+          name: job3
+
+      registered_models:
+        registered_model1:
+          name: registered_model1

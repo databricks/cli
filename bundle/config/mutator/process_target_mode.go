@@ -6,9 +6,9 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -118,14 +118,17 @@ func findNonUserPath(b *bundle.Bundle) string {
 	if b.Config.Workspace.RootPath != "" && !containsName(b.Config.Workspace.RootPath) {
 		return "root_path"
 	}
-	if b.Config.Workspace.StatePath != "" && !containsName(b.Config.Workspace.StatePath) {
-		return "state_path"
-	}
 	if b.Config.Workspace.FilePath != "" && !containsName(b.Config.Workspace.FilePath) {
 		return "file_path"
 	}
+	if b.Config.Workspace.ResourcePath != "" && !containsName(b.Config.Workspace.ResourcePath) {
+		return "resource_path"
+	}
 	if b.Config.Workspace.ArtifactPath != "" && !containsName(b.Config.Workspace.ArtifactPath) {
 		return "artifact_path"
+	}
+	if b.Config.Workspace.StatePath != "" && !containsName(b.Config.Workspace.StatePath) {
+		return "state_path"
 	}
 	return ""
 }
@@ -171,7 +174,7 @@ func (m *processTargetMode) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 		transformDevelopmentMode(ctx, b)
 		return diags
 	case config.Production:
-		isPrincipal := auth.IsServicePrincipal(b.Config.Workspace.CurrentUser.UserName)
+		isPrincipal := iamutil.IsServicePrincipal(b.Config.Workspace.CurrentUser.User)
 		return validateProductionMode(ctx, b, isPrincipal)
 	case "":
 		// No action

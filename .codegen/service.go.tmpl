@@ -5,6 +5,7 @@ package {{(.TrimPrefix "account").SnakeName}}
 import (
     "github.com/databricks/cli/libs/cmdio"
     "github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/databricks-sdk-go/service/{{.Package.Name}}"
 	"github.com/spf13/cobra"
@@ -231,9 +232,15 @@ func new{{.PascalName}}() *cobra.Command {
 		{{- if .Request }}
 			{{ if .CanUseJson }}
 			if cmd.Flags().Changed("json") {
-					err = {{.CamelName}}Json.Unmarshal(&{{.CamelName}}Req)
-					if err != nil {
-						return err
+					diags := {{.CamelName}}Json.Unmarshal(&{{.CamelName}}Req)
+					if diags.HasError() {
+						return diags.Error()
+					}
+					if len(diags) > 0 {
+						err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+						if err != nil {
+							return err
+						}
 					}
 			}{{end}}{{ if .MustUseJson }}else {
 				return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
