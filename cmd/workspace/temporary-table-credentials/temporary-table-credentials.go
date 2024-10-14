@@ -94,9 +94,15 @@ func newGenerateTemporaryTableCredentials() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = generateTemporaryTableCredentialsJson.Unmarshal(&generateTemporaryTableCredentialsReq)
-			if err != nil {
-				return err
+			diags := generateTemporaryTableCredentialsJson.Unmarshal(&generateTemporaryTableCredentialsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 

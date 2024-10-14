@@ -519,7 +519,7 @@ func TemporaryRepo(t *testing.T, w *databricks.WorkspaceClient) string {
 	repoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, RandomName("integration-test-repo-"))
 
 	t.Logf("Creating repo:%s", repoPath)
-	repoInfo, err := w.Repos.Create(ctx, workspace.CreateRepo{
+	repoInfo, err := w.Repos.Create(ctx, workspace.CreateRepoRequest{
 		Url:      "https://github.com/databricks/cli",
 		Provider: "github",
 		Path:     repoPath,

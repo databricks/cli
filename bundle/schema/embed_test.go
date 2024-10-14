@@ -39,7 +39,7 @@ func TestJsonSchema(t *testing.T) {
 
 	// Assert job fields have their descriptions loaded.
 	resourceJob := walk(s.Definitions, "github.com", "databricks", "cli", "bundle", "config", "resources.Job")
-	fields := []string{"name", "continuous", "deployment", "tasks", "trigger"}
+	fields := []string{"name", "continuous", "tasks", "trigger"}
 	for _, field := range fields {
 		assert.NotEmpty(t, resourceJob.AnyOf[0].Properties[field].Description)
 	}
@@ -53,7 +53,7 @@ func TestJsonSchema(t *testing.T) {
 
 	// Assert descriptions are loaded for pipelines
 	pipeline := walk(s.Definitions, "github.com", "databricks", "cli", "bundle", "config", "resources.Pipeline")
-	fields = []string{"name", "catalog", "clusters", "channel", "continuous", "deployment", "development"}
+	fields = []string{"name", "catalog", "clusters", "channel", "continuous", "development"}
 	for _, field := range fields {
 		assert.NotEmpty(t, pipeline.AnyOf[0].Properties[field].Description)
 	}

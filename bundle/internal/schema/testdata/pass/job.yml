@@ -32,7 +32,6 @@ resources:
       name: myjob
       continuous:
         pause_status: PAUSED
-      edit_mode: EDITABLE
       max_concurrent_runs: 10
       description: "my job description"
       email_notifications:
@@ -43,10 +42,12 @@ resources:
             dependencies:
               - python=3.7
             client: "myclient"
-      format: MULTI_TASK
       tags:
         foo: bar
         bar: baz
+      git_source:
+        git_provider: gitHub
+        git_url: www.github.com/a/b
       tasks:
         - task_key: mytask
           notebook_task:

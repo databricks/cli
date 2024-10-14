@@ -7,7 +7,7 @@ toolchain go1.22.7
 require (
 	github.com/Masterminds/semver/v3 v3.3.0 // MIT
 	github.com/briandowns/spinner v1.23.1 // Apache 2.0
-	github.com/databricks/databricks-sdk-go v0.47.0 // Apache 2.0
+	github.com/databricks/databricks-sdk-go v0.48.0 // Apache 2.0
 	github.com/fatih/color v1.17.0 // MIT
 	github.com/ghodss/yaml v1.0.0 // MIT + NOTICE
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
@@ -28,7 +28,7 @@ require (
 	golang.org/x/oauth2 v0.23.0
 	golang.org/x/sync v0.8.0
 	golang.org/x/term v0.25.0
-	golang.org/x/text v0.18.0
+	golang.org/x/text v0.19.0
 	gopkg.in/ini.v1 v1.67.0 // Apache 2.0
 	gopkg.in/yaml.v3 v3.0.1
 )

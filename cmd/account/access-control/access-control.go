@@ -205,9 +205,15 @@ func newUpdateRuleSet() *cobra.Command {
 		a := root.AccountClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = updateRuleSetJson.Unmarshal(&updateRuleSetReq)
-			if err != nil {
-				return err
+			diags := updateRuleSetJson.Unmarshal(&updateRuleSetReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
