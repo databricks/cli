@@ -2,13 +2,16 @@ package validate
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"path"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"golang.org/x/sync/errgroup"
 )
@@ -22,45 +25,60 @@ func (f *folderPermissions) Apply(ctx context.Context, b bundle.ReadOnlyBundle) 
 		return nil
 	}
 
-	paths := []string{b.Config().Workspace.RootPath}
+	rootPath := b.Config().Workspace.RootPath
+	paths := []string{}
+	if !libraries.IsVolumesPath(rootPath) {
+		paths = append(paths, rootPath)
+	}
 
-	if !strings.HasPrefix(b.Config().Workspace.ArtifactPath, b.Config().Workspace.RootPath) {
+	if !strings.HasSuffix(rootPath, "/") {
+		rootPath += "/"
+	}
+
+	if !strings.HasPrefix(b.Config().Workspace.ArtifactPath, rootPath) &&
+		!libraries.IsVolumesPath(b.Config().Workspace.ArtifactPath) {
 		paths = append(paths, b.Config().Workspace.ArtifactPath)
 	}
 
-	if !strings.HasPrefix(b.Config().Workspace.FilePath, b.Config().Workspace.RootPath) {
+	if !strings.HasPrefix(b.Config().Workspace.FilePath, rootPath) &&
+		!libraries.IsVolumesPath(b.Config().Workspace.FilePath) {
 		paths = append(paths, b.Config().Workspace.FilePath)
 	}
 
-	if !strings.HasPrefix(b.Config().Workspace.StatePath, b.Config().Workspace.RootPath) {
+	if !strings.HasPrefix(b.Config().Workspace.StatePath, rootPath) &&
+		!libraries.IsVolumesPath(b.Config().Workspace.StatePath) {
 		paths = append(paths, b.Config().Workspace.StatePath)
 	}
 
-	if !strings.HasPrefix(b.Config().Workspace.ResourcePath, b.Config().Workspace.RootPath) {
+	if !strings.HasPrefix(b.Config().Workspace.ResourcePath, rootPath) &&
+		!libraries.IsVolumesPath(b.Config().Workspace.ResourcePath) {
 		paths = append(paths, b.Config().Workspace.ResourcePath)
 	}
 
 	var diags diag.Diagnostics
-	errGrp, errCtx := errgroup.WithContext(ctx)
-	for _, path := range paths {
-		p := path
-		errGrp.Go(func() error {
-			diags = diags.Extend(checkFolderPermission(errCtx, b, p))
+	g, ctx := errgroup.WithContext(ctx)
+	results := make([]diag.Diagnostics, len(paths))
+	for i, p := range paths {
+		g.Go(func() error {
+			results[i] = checkFolderPermission(ctx, b, p)
 			return nil
 		})
 	}
 
-	if err := errGrp.Wait(); err != nil {
+	if err := g.Wait(); err != nil {
 		return diag.FromErr(err)
+	}
+
+	for _, r := range results {
+		diags = diags.Extend(r)
 	}
 
 	return diags
 }
 
 func checkFolderPermission(ctx context.Context, b bundle.ReadOnlyBundle, folderPath string) diag.Diagnostics {
-	var diags diag.Diagnostics
 	w := b.WorkspaceClient().Workspace
-	obj, err := w.GetStatusByPath(ctx, folderPath)
+	obj, err := getClosestExistingObject(ctx, w, folderPath)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -73,75 +91,44 @@ func checkFolderPermission(ctx context.Context, b bundle.ReadOnlyBundle, folderP
 		return diag.FromErr(err)
 	}
 
-	if len(objPermissions.AccessControlList) != len(b.Config().Permissions) {
-		diags = diags.Append(diag.Diagnostic{
-			Severity: diag.Warning,
-			Summary:  "permissions count mismatch",
-			Detail:   fmt.Sprintf("The number of permissions in the bundle is %d, but the number of permissions in the workspace is %d\n%s", len(b.Config().Permissions), len(objPermissions.AccessControlList), permissionDetails(objPermissions.AccessControlList, b.Config().Permissions)),
-		})
-		return diags
-	}
-
-	for _, p := range b.Config().Permissions {
-		level, err := permissions.GetWorkspaceObjectPermissionLevel(p.Level)
-		if err != nil {
-			return diag.FromErr(err)
-		}
-
-		found := false
-		for _, objPerm := range objPermissions.AccessControlList {
-			if objPerm.GroupName == p.GroupName && objPerm.UserName == p.UserName && objPerm.ServicePrincipalName == p.ServicePrincipalName {
-				for _, l := range objPerm.AllPermissions {
-					if l.PermissionLevel == level {
-						found = true
-						break
-					}
-				}
-			}
-		}
-
-		if !found {
-			diags = diags.Append(diag.Diagnostic{
-				Severity: diag.Warning,
-				Summary:  "permission not found",
-				Detail:   fmt.Sprintf("Permission (%s) not set for bundle workspace folder %s\n%s", p, folderPath, permissionDetails(objPermissions.AccessControlList, b.Config().Permissions)),
-			})
-		}
-	}
-
-	return diags
+	p := permissions.NewFromWorkspaceObjectAcl(folderPath, objPermissions.AccessControlList)
+	return p.Compare(b.Config().Permissions)
 }
 
-func permissionDetails(acl []workspace.WorkspaceObjectAccessControlResponse, p []resources.Permission) string {
-	return fmt.Sprintf("Bundle permissions:\n%s\nWorkspace permissions:\n%s", permissionsToString(p), aclToString(acl))
-}
+var cache = map[string]*workspace.ObjectInfo{}
 
-func aclToString(acl []workspace.WorkspaceObjectAccessControlResponse) string {
-	var sb strings.Builder
-	for _, p := range acl {
-		levels := make([]string, len(p.AllPermissions))
-		for i, l := range p.AllPermissions {
-			levels[i] = string(l.PermissionLevel)
-		}
-		if p.UserName != "" {
-			sb.WriteString(fmt.Sprintf("- levels: %s, user_name: %s\n", levels, p.UserName))
-		}
-		if p.GroupName != "" {
-			sb.WriteString(fmt.Sprintf("- levels: %s, group_name: %s\n", levels, p.GroupName))
-		}
-		if p.ServicePrincipalName != "" {
-			sb.WriteString(fmt.Sprintf("- levels: %s, service_principal_name: %s\n", levels, p.ServicePrincipalName))
-		}
+func getClosestExistingObject(ctx context.Context, w workspace.WorkspaceInterface, folderPath string) (*workspace.ObjectInfo, error) {
+	if obj, ok := cache[folderPath]; ok {
+		return obj, nil
 	}
-	return sb.String()
-}
 
-func permissionsToString(p []resources.Permission) string {
-	var sb strings.Builder
-	for _, perm := range p {
-		sb.WriteString(fmt.Sprintf("- %s\n", perm))
+	for folderPath != "/" {
+		obj, err := w.GetStatusByPath(ctx, folderPath)
+		if err == nil {
+			cache[folderPath] = obj
+			return obj, nil
+		}
+
+		var aerr *apierr.APIError
+		if !errors.As(err, &aerr) {
+			return nil, err
+		}
+
+		if aerr.ErrorCode != "RESOURCE_DOES_NOT_EXIST" {
+			return nil, err
+		}
+
+		folderPath = path.Dir(folderPath)
 	}
-	return sb.String()
+
+	// Check "/" root folder
+	obj, err := w.GetStatusByPath(ctx, folderPath)
+	if err == nil {
+		cache[folderPath] = obj
+		return obj, nil
+	}
+
+	return nil, fmt.Errorf("folder %s and its parent folders do not exist", folderPath)
 }
 
 // Name implements bundle.ReadOnlyMutator.

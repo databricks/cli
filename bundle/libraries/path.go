@@ -36,3 +36,8 @@ func IsWorkspaceLibrary(library *compute.Library) bool {
 
 	return IsWorkspacePath(path)
 }
+
+// IsVolumesPath returns true if the specified path indicates that
+func IsVolumesPath(path string) bool {
+	return strings.HasPrefix(path, "/Volumes/")
+}
