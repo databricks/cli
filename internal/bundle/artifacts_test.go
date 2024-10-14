@@ -249,8 +249,8 @@ func TestAccUploadArtifactFileToInvalidVolume(t *testing.T) {
 		dir := t.TempDir()
 
 		b := &bundle.Bundle{
-			BundleRootPath:     dir,
-			SyncRootPath: dir,
+			BundleRootPath: dir,
+			SyncRootPath:   dir,
 			Config: config.Root{
 				Bundle: config.Bundle{
 					Target: "whatever",
@@ -282,8 +282,8 @@ func TestAccUploadArtifactFileToInvalidVolume(t *testing.T) {
 		dir := t.TempDir()
 
 		b := &bundle.Bundle{
-			BundleRootPath:     dir,
-			SyncRootPath: dir,
+			BundleRootPath: dir,
+			SyncRootPath:   dir,
 			Config: config.Root{
 				Bundle: config.Bundle{
 					Target: "whatever",

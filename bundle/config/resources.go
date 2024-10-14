@@ -76,6 +76,7 @@ func SupportedResources() map[string]ResourceDescription {
 		"registered_models":       {SingularName: "registered_model"},
 		"quality_monitors":        {SingularName: "quality_monitor"},
 		"schemas":                 {SingularName: "schema"},
+		"volumes":                 {SingularName: "volume"},
 		"clusters":                {SingularName: "cluster"},
 	}
 }
