@@ -20,9 +20,13 @@ func ApplyWorkspaceRootPermissions() bundle.Mutator {
 // Apply implements bundle.Mutator.
 func (*workspaceRootPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
-	diags := checkWorkspaceRootPermissions(b)
-	if len(diags) > 0 {
-		return diags
+	if isWorkspaceSharedRoot(b.Config.Workspace.RootPath) {
+		diags := checkWorkspaceRootPermissions(b)
+		// If there are permissions warnings, return them and do not apply permissions
+		// because they are not set correctly for /Workspace/Shared root anyway
+		if len(diags) > 0 {
+			return diags
+		}
 	}
 
 	err := giveAccessForWorkspaceRoot(ctx, b)
@@ -85,13 +89,13 @@ func getWorkspaceObjectPermissionLevel(bundlePermission string) (workspace.Works
 	}
 }
 
+func isWorkspaceSharedRoot(path string) bool {
+	return strings.HasPrefix(path, "/Workspace/Shared/")
+}
+
 // checkWorkspaceRootPermissions checks that if permissions are set for the workspace root, and workspace root starts with /Workspace/Shared, then permissions should be set for group: users
 func checkWorkspaceRootPermissions(b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	if !strings.HasPrefix(b.Config.Workspace.RootPath, "/Workspace/Shared/") {
-		return nil
-	}
 
 	allUsers := false
 	for _, p := range b.Config.Permissions {
