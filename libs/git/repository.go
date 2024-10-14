@@ -1,6 +1,7 @@
 package git
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -119,13 +120,54 @@ func (r *Repository) OriginUrl() string {
 	return parsedUrl.String()
 }
 
+func readGitDir(root vfs.Path) (string, error) {
+	file, err := root.Open(".git")
+	if err != nil {
+		return "", fmt.Errorf("error opening file: %w", err)
+	}
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "gitdir: ") {
+			// Extract the path after "gitdir: "
+			return strings.TrimSpace(strings.TrimPrefix(line, "gitdir: ")), nil
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return "", fmt.Errorf("error reading file: %w", err)
+	}
+
+	return "", errors.New("gitdir line not found")
+}
+
+func (r *Repository) resolveGitRoot() vfs.Path {
+	fileInfo, err := r.root.Stat(".git")
+	if err != nil {
+		return r.root
+	}
+	if fileInfo.IsDir() {
+		return r.root
+	}
+	gitDir, err := readGitDir(r.root)
+	if err != nil {
+		return r.root
+	}
+	return vfs.MustNew(gitDir)
+}
+
 // loadConfig loads and combines user specific and repository specific configuration files.
 func (r *Repository) loadConfig() error {
 	config, err := globalGitConfig()
 	if err != nil {
 		return fmt.Errorf("unable to load user specific gitconfig: %w", err)
 	}
-	err = config.loadFile(r.root, ".git/config")
+	root := r.resolveGitRoot()
+	if root == nil {
+		return fmt.Errorf("unable to resolve git root")
+	}
+	err = config.loadFile(root, ".git/config")
 	if err != nil {
 		return fmt.Errorf("unable to load repository specific gitconfig: %w", err)
 	}
@@ -136,7 +178,7 @@ func (r *Repository) loadConfig() error {
 // newIgnoreFile constructs a new [ignoreRules] implementation backed by
 // a file using the specified path relative to the repository root.
 func (r *Repository) newIgnoreFile(relativeIgnoreFilePath string) ignoreRules {
-	return newIgnoreFile(r.root, relativeIgnoreFilePath)
+	return newIgnoreFile(r.resolveGitRoot(), relativeIgnoreFilePath)
 }
 
 // getIgnoreRules returns a slice of [ignoreRules] that apply
