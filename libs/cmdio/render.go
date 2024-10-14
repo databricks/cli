@@ -420,12 +420,23 @@ const warningTemplate = `{{ "Warning" | yellow }}: {{ .Summary }}
 
 `
 
+// const recommendationTemplate = `{{ "Recommendation" | blue }}: {{ .Summary }}
+// {{- range $index, $element := .Paths }}
+//   {{ if eq $index 0 }}at {{else}}   {{ end}}{{ $element.String | green }}
+// {{- end }}
+// {{- range $index, $element := .Locations }}
+//   {{ if eq $index 0 }}in {{else}}   {{ end}}{{ $element.String | cyan }}
+// {{- end }}
+// {{- if .Detail }}
+
+// {{ .Detail }}
+// {{- end }}
+
+// `
+
 const recommendationTemplate = `{{ "Recommendation" | blue }}: {{ .Summary }}
-{{- range $index, $element := .Paths }}
-  {{ if eq $index 0 }}at {{else}}   {{ end}}{{ $element.String | green }}
-{{- end }}
-{{- range $index, $element := .Locations }}
-  {{ if eq $index 0 }}in {{else}}   {{ end}}{{ $element.String | cyan }}
+{{- range $index, $element := .LocationPathPairs}}
+  {{ if eq $index 0 }}at {{else}}   {{ end}}{{ $element.L.String | green }} in {{ $element.P.String | cyan }}
 {{- end }}
 {{- if .Detail }}
 

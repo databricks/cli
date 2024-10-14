@@ -7,6 +7,15 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 )
 
+// Convenience struct for retaining a 1:1 mapping between locations and paths.
+type LocationPathPair struct {
+	// Locations are the source code locations associated with the diagnostic message.
+	L dyn.Location
+
+	// Paths are paths to the values in the configuration tree that the diagnostic is associated with.
+	P dyn.Path
+}
+
 type Diagnostic struct {
 	Severity Severity
 
@@ -18,11 +27,13 @@ type Diagnostic struct {
 	// This may be multiple lines and may be nil.
 	Detail string
 
-	// Locations are the source code locations associated with the diagnostic message.
+	// LocationPathPairs are the source code locations and paths associated with the diagnostic message.
+	// It may be empty if there are no associated locations and paths.
+	LocationPathPairs []LocationPathPair
+
 	// It may be empty if there are no associated locations.
 	Locations []dyn.Location
 
-	// Paths are paths to the values in the configuration tree that the diagnostic is associated with.
 	// It may be nil if there are no associated paths.
 	Paths []dyn.Path
 
