@@ -108,7 +108,7 @@ func checkWorkspaceRootPermissions(b *bundle.Bundle) diag.Diagnostics {
 		diags = diags.Append(diag.Diagnostic{
 			Severity: diag.Warning,
 			Summary:  fmt.Sprintf("the bundle root path %s is writable by all workspace users", b.Config.Workspace.RootPath),
-			Detail:   "bundle is configured to /Workspace/Shared, which will give read/write access to all users. If all users should have access, add CAN_MANAGE for 'group_name: users' permission to your bundle configuration. If the deployment should be restricted, move it to a restricted folder such as /Users/<username or principal name>",
+			Detail:   "The bundle is configured to use /Workspace/Shared, which will give read/write access to all users. If this is intentional, add CAN_MANAGE for 'group_name: users' permission to your bundle configuration. If the deployment should be restricted, move it to a restricted folder such as /Workspace/Users/<username or principal name>.",
 		})
 	}
 
