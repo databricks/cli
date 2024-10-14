@@ -30,11 +30,19 @@ func (m *setRunAs) Name() string {
 	return "SetRunAs"
 }
 
-func reportRunAsNotSupported(resourceType string, location dyn.Location, currentUser string, runAsUser string) diag.Diagnostics {
+
+// TODO: CONTINUE with transformation to pair and test this.
+func reportRunAsNotSupported(resourceType string, location dyn.Location, path dyn.Path, currentUser string, runAsUser string) diag.Diagnostics {
 	return diag.Diagnostics{{
 		Summary: fmt.Sprintf("%s do not support a setting a run_as user that is different from the owner.\n"+
 			"Current identity: %s. Run as identity: %s.\n"+
 			"See https://docs.databricks.com/dev-tools/bundles/run-as.html to learn more about the run_as property.", resourceType, currentUser, runAsUser),
+		LocationPathPairs: []diag.LocationPathPair{
+			{
+				L: location,
+
+			},
+		},
 		Locations: []dyn.Location{location},
 		Severity:  diag.Error,
 	}}

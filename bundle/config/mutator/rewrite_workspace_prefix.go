@@ -47,12 +47,21 @@ func (m *rewriteWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) di
 			for path, replacePath := range paths {
 				if strings.Contains(vv, path) {
 					newPath := strings.Replace(vv, path, replacePath, 1)
+
+					locationPathPairs := []diag.LocationPathPair{}
+					for _, l := range v.Locations() {
+						locationPathPairs = append(locationPathPairs, diag.LocationPathPair{
+							L: l,
+							P: p,
+						})
+					}
+
+					// TODO: test this.
 					diags = append(diags, diag.Diagnostic{
-						Severity:  diag.Warning,
-						Summary:   fmt.Sprintf("substring %q found in %q. Please update this to %q.", path, vv, newPath),
-						Detail:    "For more information, please refer to: https://docs.databricks.com/en/release-notes/dev-tools/bundles.html#workspace-paths",
-						Locations: v.Locations(),
-						Paths:     []dyn.Path{p},
+						Severity:          diag.Warning,
+						Summary:           fmt.Sprintf("substring %q found in %q. Please update this to %q.", path, vv, newPath),
+						Detail:            "For more information, please refer to: https://docs.databricks.com/en/release-notes/dev-tools/bundles.html#workspace-paths",
+						LocationPathPairs: locationPathPairs,
 					})
 
 					// Remove the workspace prefix from the string.

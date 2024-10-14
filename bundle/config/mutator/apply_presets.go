@@ -220,10 +220,16 @@ func validatePauseStatus(b *bundle.Bundle) diag.Diagnostics {
 	if p == "" || p == config.Paused || p == config.Unpaused {
 		return nil
 	}
+	// TODO: test this.
 	return diag.Diagnostics{{
-		Summary:   "Invalid value for trigger_pause_status, should be PAUSED or UNPAUSED",
-		Severity:  diag.Error,
-		Locations: []dyn.Location{b.Config.GetLocation("presets.trigger_pause_status")},
+		Summary:  "Invalid value for trigger_pause_status, should be PAUSED or UNPAUSED",
+		Severity: diag.Error,
+		LocationPathPairs: []diag.LocationPathPair{
+			{
+				L: b.Config.GetLocation("presets.trigger_pause_status"),
+				P: dyn.MustPathFromString("presets.trigger_pause_status"),
+			},
+		},
 	}}
 }
 
