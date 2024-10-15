@@ -265,11 +265,19 @@ func TestAccDeployUcVolume(t *testing.T) {
 	catalogName := "main"
 	schemaName := "schema1-" + uniqueId
 	volumeName := "my_volume"
-	volume, err := w.Volumes.ReadByName(ctx, fmt.Sprintf("%s.%s.%s", catalogName, schemaName, volumeName))
+	fullName := fmt.Sprintf("%s.%s.%s", catalogName, schemaName, volumeName)
+	volume, err := w.Volumes.ReadByName(ctx, fullName)
 	require.NoError(t, err)
 	require.Equal(t, volume.Name, volumeName)
 	require.Equal(t, catalogName, volume.CatalogName)
 	require.Equal(t, schemaName, volume.SchemaName)
+
+	// Assert that the grants were successfully applied.
+	grants, err := w.Grants.GetBySecurableTypeAndFullName(ctx, catalog.SecurableTypeVolume, fullName)
+	require.NoError(t, err)
+	assert.Len(t, grants.PrivilegeAssignments, 1)
+	assert.Equal(t, "account users", grants.PrivilegeAssignments[0].Principal)
+	assert.Equal(t, []catalog.Privilege{catalog.PrivilegeWriteVolume}, grants.PrivilegeAssignments[0].Privileges)
 
 	// Recreation of the volume without --auto-approve should fail since prompting is not possible
 	t.Setenv("TERM", "dumb")
@@ -290,9 +298,17 @@ volumes the upstream data in the cloud tenant is not affected:
 
 	// Assert the volume is updated successfully
 	schemaName = "schema2-" + uniqueId
-	volume, err = w.Volumes.ReadByName(ctx, fmt.Sprintf("%s.%s.%s", catalogName, schemaName, volumeName))
+	fullName = fmt.Sprintf("%s.%s.%s", catalogName, schemaName, volumeName)
+	volume, err = w.Volumes.ReadByName(ctx, fullName)
 	require.NoError(t, err)
 	require.Equal(t, volume.Name, volumeName)
 	require.Equal(t, catalogName, volume.CatalogName)
 	require.Equal(t, schemaName, volume.SchemaName)
+
+	// assert that the grants were applied / retained on recreate.
+	grants, err = w.Grants.GetBySecurableTypeAndFullName(ctx, catalog.SecurableTypeVolume, fullName)
+	require.NoError(t, err)
+	assert.Len(t, grants.PrivilegeAssignments, 1)
+	assert.Equal(t, "account users", grants.PrivilegeAssignments[0].Principal)
+	assert.Equal(t, []catalog.Privilege{catalog.PrivilegeWriteVolume}, grants.PrivilegeAssignments[0].Privileges)
 }

@@ -24,3 +24,8 @@ resources:
       schema_name: ${var.schema_name}
       volume_type: MANAGED
       comment: This volume was created from DABs.
+
+      grants:
+        - principal: account users
+          privileges:
+          - WRITE_VOLUME
