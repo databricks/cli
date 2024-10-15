@@ -170,7 +170,7 @@ func TestFilerForVolumeWithInvalidVolumePaths(t *testing.T) {
 		}
 
 		_, _, diags := GetFilerForLibraries(context.Background(), b)
-		require.EqualError(t, diags.Error(), fmt.Sprintf("expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got %s", path.Join(p, ".internal")))
+		require.EqualError(t, diags.Error(), fmt.Sprintf("expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got %s", p))
 	}
 }
 
