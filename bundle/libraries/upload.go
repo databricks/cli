@@ -13,7 +13,6 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 
@@ -187,101 +186,6 @@ func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 func (u *upload) Name() string {
 	return "libraries.Upload"
-}
-
-// This function returns the right filer to use, to upload artifacts to the configured location.
-// Supported locations:
-// 1. WSFS
-// 2. UC volumes
-//
-// If a UC Volume is configured, this function checks if the UC volume exists in the workspace.
-// Then:
-//  1. If the UC volume exists in the workspace:
-//     Returns a filer for the UC volume.
-//  2. If the UC volume does not exist in the workspace but is (with high confidence) defined in
-//     the bundle configuration:
-//     Returns an error and a warning that instructs the user to deploy the
-//     UC volume before using it in the artifact path.
-//  3. If the UC volume does not exist in the workspace and is not defined in the bundle configuration:
-//     Returns an error.
-func GetFilerForLibraries(ctx context.Context, b *bundle.Bundle) (filer.Filer, string, diag.Diagnostics) {
-	artifactPath := b.Config.Workspace.ArtifactPath
-	if artifactPath == "" {
-		return nil, "", diag.Errorf("remote artifact path not configured")
-	}
-
-	w := b.WorkspaceClient()
-	isVolumesPath := strings.HasPrefix(artifactPath, "/Volumes/")
-
-	// Path to upload artifact files to.
-	uploadPath := path.Join(artifactPath, ".internal")
-
-	// Return early with a WSFS filer if the artifact path is not a UC volume path.
-	if !isVolumesPath {
-		f, err := filer.NewWorkspaceFilesClient(w, uploadPath)
-		return f, uploadPath, diag.FromErr(err)
-	}
-
-	parts := strings.Split(artifactPath, "/")
-	volumeFormatErr := fmt.Errorf("expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got %s", uploadPath)
-
-	// Incorrect format.
-	if len(parts) < 5 {
-		return nil, "", diag.FromErr(volumeFormatErr)
-	}
-
-	catalogName := parts[2]
-	schemaName := parts[3]
-	volumeName := parts[4]
-
-	// Incorrect format.
-	if catalogName == "" || schemaName == "" || volumeName == "" {
-		return nil, "", diag.FromErr(volumeFormatErr)
-	}
-
-	// Check if the UC volume exists in the workspace.
-	volumePath := fmt.Sprintf("/Volumes/%s/%s/%s", catalogName, schemaName, volumeName)
-	err := w.Files.GetDirectoryMetadataByDirectoryPath(ctx, volumePath)
-
-	// If the volume exists already, directly return the filer for the upload path.
-	if err == nil {
-		f, err := filer.NewFilesClient(w, uploadPath)
-		return f, uploadPath, diag.FromErr(err)
-	}
-
-	diags := diag.Errorf("failed to fetch metadata for the UC volume %s that is configured in the artifact_path: %s", volumePath, err)
-
-	path, locations, ok := findVolumeInBundle(b, catalogName, schemaName, volumeName)
-	if !ok {
-		return nil, "", diags
-	}
-
-	warning := diag.Diagnostic{
-		Severity:  diag.Warning,
-		Summary:   `You might be using a UC volume in your artifact_path that is managed by this bundle but which has not been deployed yet. Please deploy the UC volume in a separate bundle deploy before using it in the artifact_path.`,
-		Locations: locations,
-		Paths:     []dyn.Path{path},
-	}
-	return nil, "", diags.Append(warning)
-}
-
-func findVolumeInBundle(b *bundle.Bundle, catalogName, schemaName, volumeName string) (dyn.Path, []dyn.Location, bool) {
-	volumes := b.Config.Resources.Volumes
-	for k, v := range volumes {
-		if v.CatalogName != catalogName || v.Name != volumeName {
-			continue
-		}
-		// UC schemas can be defined in the bundle itself, and thus might be interpolated
-		// at runtime via the ${resources.schemas.<name>} syntax. Thus we match the volume
-		// definition if the schema name is the same as the one in the bundle, or if the
-		// schema name is interpolated.
-		if v.SchemaName != schemaName && !dynvar.IsPureVariableReference(v.SchemaName) {
-			continue
-		}
-		pathString := fmt.Sprintf("resources.volumes.%s", k)
-		return dyn.MustPathFromString(pathString), b.Config.GetLocations(pathString), true
-	}
-	return nil, nil, false
 }
 
 // Function to upload file (a library, artifact and etc) to Workspace or UC volume
