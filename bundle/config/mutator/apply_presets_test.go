@@ -148,7 +148,7 @@ func TestApplyPresetsPrefixForUcVolumes(t *testing.T) {
 			prefix: "[prefix]",
 			volume: &resources.Volume{
 				CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
-					Name: "volume1",
+					Name:        "volume1",
 					CatalogName: "catalog1",
 					SchemaName:  "schema1",
 				},
