@@ -174,6 +174,19 @@ func TestFilerForVolumeWithInvalidVolumePaths(t *testing.T) {
 	}
 }
 
+func TestFilerForVolumeWithInvalidPrefix(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Workspace: config.Workspace{
+				ArtifactPath: "/Volume/main/my_schema/my_volume",
+			},
+		},
+	}
+
+	_, _, diags := filerForVolume(context.Background(), b)
+	require.EqualError(t, diags.Error(), "expected artifact_path to start with /Volumes/, got /Volume/main/my_schema/my_volume")
+}
+
 func TestFilerForVolumeWithValidlVolumePaths(t *testing.T) {
 	validPaths := []string{
 		"/Volumes/main/my_schema/my_volume",

@@ -26,8 +26,11 @@ import (
 //     Returns an error.
 func filerForVolume(ctx context.Context, b *bundle.Bundle) (filer.Filer, string, diag.Diagnostics) {
 	artifactPath := b.Config.Workspace.ArtifactPath
-
 	w := b.WorkspaceClient()
+
+	if !strings.HasPrefix(artifactPath, "/Volumes/") {
+		return nil, "", diag.Errorf("expected artifact_path to start with /Volumes/, got %s", artifactPath)
+	}
 
 	parts := strings.Split(artifactPath, "/")
 	volumeFormatErr := fmt.Errorf("expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got %s", artifactPath)
