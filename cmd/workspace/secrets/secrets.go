@@ -110,9 +110,15 @@ func newCreateScope() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = createScopeJson.Unmarshal(&createScopeReq)
-			if err != nil {
-				return err
+			diags := createScopeJson.Unmarshal(&createScopeReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -191,9 +197,15 @@ func newDeleteAcl() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = deleteAclJson.Unmarshal(&deleteAclReq)
-			if err != nil {
-				return err
+			diags := deleteAclJson.Unmarshal(&deleteAclReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -273,9 +285,15 @@ func newDeleteScope() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = deleteScopeJson.Unmarshal(&deleteScopeReq)
-			if err != nil {
-				return err
+			diags := deleteScopeJson.Unmarshal(&deleteScopeReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -354,9 +372,15 @@ func newDeleteSecret() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = deleteSecretJson.Unmarshal(&deleteSecretReq)
-			if err != nil {
-				return err
+			diags := deleteSecretJson.Unmarshal(&deleteSecretReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -759,9 +783,15 @@ func newPutAcl() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = putAclJson.Unmarshal(&putAclReq)
-			if err != nil {
-				return err
+			diags := putAclJson.Unmarshal(&putAclReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {

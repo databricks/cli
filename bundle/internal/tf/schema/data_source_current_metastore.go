@@ -10,6 +10,7 @@ type DataSourceCurrentMetastoreMetastoreInfo struct {
 	DeltaSharingOrganizationName                string `json:"delta_sharing_organization_name,omitempty"`
 	DeltaSharingRecipientTokenLifetimeInSeconds int    `json:"delta_sharing_recipient_token_lifetime_in_seconds,omitempty"`
 	DeltaSharingScope                           string `json:"delta_sharing_scope,omitempty"`
+	ExternalAccessEnabled                       bool   `json:"external_access_enabled,omitempty"`
 	GlobalMetastoreId                           string `json:"global_metastore_id,omitempty"`
 	MetastoreId                                 string `json:"metastore_id,omitempty"`
 	Name                                        string `json:"name,omitempty"`

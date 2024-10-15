@@ -4,7 +4,7 @@ package schema
 
 type ResourcePermissionsAccessControl struct {
 	GroupName            string `json:"group_name,omitempty"`
-	PermissionLevel      string `json:"permission_level"`
+	PermissionLevel      string `json:"permission_level,omitempty"`
 	ServicePrincipalName string `json:"service_principal_name,omitempty"`
 	UserName             string `json:"user_name,omitempty"`
 }

@@ -105,9 +105,15 @@ func newCreateMessage() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = createMessageJson.Unmarshal(&createMessageReq)
-			if err != nil {
-				return err
+			diags := createMessageJson.Unmarshal(&createMessageReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		createMessageReq.SpaceId = args[0]
@@ -392,9 +398,15 @@ func newStartConversation() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = startConversationJson.Unmarshal(&startConversationReq)
-			if err != nil {
-				return err
+			diags := startConversationJson.Unmarshal(&startConversationReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		startConversationReq.SpaceId = args[0]

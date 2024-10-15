@@ -238,6 +238,7 @@ type ResourcePipelineTrigger struct {
 
 type ResourcePipeline struct {
 	AllowDuplicateNames  bool                                 `json:"allow_duplicate_names,omitempty"`
+	BudgetPolicyId       string                               `json:"budget_policy_id,omitempty"`
 	Catalog              string                               `json:"catalog,omitempty"`
 	Cause                string                               `json:"cause,omitempty"`
 	Channel              string                               `json:"channel,omitempty"`
@@ -254,6 +255,7 @@ type ResourcePipeline struct {
 	Name                 string                               `json:"name,omitempty"`
 	Photon               bool                                 `json:"photon,omitempty"`
 	RunAsUserName        string                               `json:"run_as_user_name,omitempty"`
+	Schema               string                               `json:"schema,omitempty"`
 	Serverless           bool                                 `json:"serverless,omitempty"`
 	State                string                               `json:"state,omitempty"`
 	Storage              string                               `json:"storage,omitempty"`

@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
@@ -60,6 +61,7 @@ func newPutSecret() *cobra.Command {
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 
 		bytesValueChanged := cmd.Flags().Changed("bytes-value")
@@ -69,9 +71,15 @@ func newPutSecret() *cobra.Command {
 		}
 
 		if cmd.Flags().Changed("json") {
-			err = putSecretJson.Unmarshal(&putSecretReq)
-			if err != nil {
-				return err
+			diags = putSecretJson.Unmarshal(&putSecretReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		} else {
 			putSecretReq.Scope = args[0]
