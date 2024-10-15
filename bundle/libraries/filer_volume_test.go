@@ -68,8 +68,14 @@ func TestFindVolumeInBundle(t *testing.T) {
 	_, _, ok = findVolumeInBundle(b, "doesnotexist", "my_schema", "my_volume")
 	assert.False(t, ok)
 
+	// schema name is interpolated but does not have the right prefix. In this case
+	// we should not match the volume.
+	b.Config.Resources.Volumes["foo"].SchemaName = "${foo.bar.baz}"
+	_, _, ok = findVolumeInBundle(b, "main", "my_schema", "my_volume")
+	assert.False(t, ok)
+
 	// schema name is interpolated.
-	b.Config.Resources.Volumes["foo"].SchemaName = "${resources.schemas.my_schema}"
+	b.Config.Resources.Volumes["foo"].SchemaName = "${resources.schemas.my_schema.name}"
 	path, locations, ok = findVolumeInBundle(b, "main", "valuedoesnotmatter", "my_volume")
 	assert.True(t, ok)
 	assert.Equal(t, []dyn.Location{{

@@ -87,7 +87,11 @@ func findVolumeInBundle(b *bundle.Bundle, catalogName, schemaName, volumeName st
 		// at runtime via the ${resources.schemas.<name>} syntax. Thus we match the volume
 		// definition if the schema name is the same as the one in the bundle, or if the
 		// schema name is interpolated.
-		if v.SchemaName != schemaName && !dynvar.IsPureVariableReference(v.SchemaName) {
+		// We only have to check for ${resources.schemas...} references because any
+		// other valid reference (like ${var.foo}) would have been interpolated by this point.
+		p, ok := dynvar.PureReferenceToPath(v.SchemaName)
+		isSchemaDefinedInBundle := ok && p.HasPrefix(dyn.Path{dyn.Key("resources"), dyn.Key("schemas")})
+		if v.SchemaName != schemaName && !isSchemaDefinedInBundle {
 			continue
 		}
 		pathString := fmt.Sprintf("resources.volumes.%s", k)

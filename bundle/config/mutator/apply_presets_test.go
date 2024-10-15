@@ -9,7 +9,9 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -125,6 +127,15 @@ func TestApplyPresetsPrefixForUcSchema(t *testing.T) {
 	}
 }
 
+func TestApplyPresentsReminderToAddSupportForSkippingPrefixes(t *testing.T) {
+	_, ok := config.SupportedResources()["catalogs"]
+	assert.False(t, ok,
+		`Since you are adding support for UC catalogs to DABs please ensure that
+you add logic to skip applying presets.name_prefix for UC schemas, UC volumes and
+any other resources that fall under a catalog in the UC hierarchy (like registered models).
+Once you do so feel free to remove this test.`)
+}
+
 func TestApplyPresetsPrefixForUcVolumes(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -138,6 +149,8 @@ func TestApplyPresetsPrefixForUcVolumes(t *testing.T) {
 			volume: &resources.Volume{
 				CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
 					Name: "volume1",
+					CatalogName: "catalog1",
+					SchemaName:  "schema1",
 				},
 			},
 			want: "prefix_volume1",
@@ -152,6 +165,72 @@ func TestApplyPresetsPrefixForUcVolumes(t *testing.T) {
 			},
 			want: "volume1",
 		},
+		{
+			name:   "skip prefix when catalog name contains user short name",
+			prefix: "[prefix]",
+			volume: &resources.Volume{
+				CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+					Name:        "volume1",
+					CatalogName: "dev_john_wick_targets",
+				},
+			},
+			want: "volume1",
+		},
+		{
+			name:   "skip prefix when catalog name contains user email",
+			prefix: "[prefix]",
+			volume: &resources.Volume{
+				CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+					Name:        "volume1",
+					CatalogName: "dev_john.wick@continental.com_targets",
+				},
+			},
+			want: "volume1",
+		},
+		{
+			name:   "skip prefix when schema name contains user short name",
+			prefix: "[prefix]",
+			volume: &resources.Volume{
+				CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+					Name:       "volume1",
+					SchemaName: "dev_john_wick_weapons",
+				},
+			},
+			want: "volume1",
+		},
+		{
+			name:   "skip prefix when schema name contains user email",
+			prefix: "[prefix]",
+			volume: &resources.Volume{
+				CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+					Name:       "volume1",
+					SchemaName: "dev_john.wick@continental.com_targets",
+				},
+			},
+			want: "volume1",
+		},
+		{
+			name:   "skip prefix when schema is defined in the bundle and will be interpolated at runtime",
+			prefix: "[prefix]",
+			volume: &resources.Volume{
+				CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+					Name:       "volume1",
+					SchemaName: "${resources.schemas.schema1.name}",
+				},
+			},
+			want: "volume1",
+		},
+		{
+			name:   "add prefix when schema is a reference without the resources.schemas prefix",
+			prefix: "[prefix]",
+			volume: &resources.Volume{
+				CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+					Name:       "volume1",
+					SchemaName: "${foo.bar.baz}",
+				},
+			},
+			want: "prefix_volume1",
+		},
 	}
 
 	for _, tt := range tests {
@@ -165,6 +244,14 @@ func TestApplyPresetsPrefixForUcVolumes(t *testing.T) {
 					},
 					Presets: config.Presets{
 						NamePrefix: tt.prefix,
+					},
+					Workspace: config.Workspace{
+						CurrentUser: &config.User{
+							ShortName: "john_wick",
+							User: &iam.User{
+								UserName: "john.wick@continental.com",
+							},
+						},
 					},
 				},
 			}
