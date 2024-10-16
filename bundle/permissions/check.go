@@ -54,7 +54,7 @@ func (p WorkspacePathPermissions) Compare(perms []resources.Permission) diag.Dia
 		diags = diags.Append(diag.Diagnostic{
 			Severity: diag.Warning,
 			Summary:  "permissions missing",
-			Detail:   fmt.Sprintf("Following permissions set for the workspace folder but not set for bundle %s:\n%s", p.Path, toString(missing)),
+			Detail:   fmt.Sprintf("The following permissions apply to the workspace folder at %q but are not configured in the bundle:\n%s", p.Path, toString(missing)),
 		})
 	}
 
