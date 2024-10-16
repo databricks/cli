@@ -1110,7 +1110,8 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 					{Attributes: stateInstanceAttributes{ID: "2"}},
 				},
 			},
-			{Type: "databricks_cluster",
+			{
+				Type: "databricks_cluster",
 				Mode: "managed",
 				Name: "test_cluster_old",
 				Instances: []stateResourceInstance{

@@ -208,7 +208,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		// We only have to check for ${resources.schemas...} references because any
 		// other valid reference (like ${var.foo}) would have been interpolated by this point.
 		if p, ok := dynvar.PureReferenceToPath(v.SchemaName); ok && p.HasPrefix(dyn.Path{dyn.Key("resources"), dyn.Key("schemas")}) {
-			log.Debugf(ctx, "Skipping prefix for volume %s because schema name %s is defined in the bundle and will be interpolated at runtime", v.Name, v.SchemaName)
+			log.Debugf(ctx, "Skipping prefix for volume %s because schema %s is defined in the bundle and the schema name will be interpolated at runtime", v.Name, v.SchemaName)
 			continue
 
 		}
