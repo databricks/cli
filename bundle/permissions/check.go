@@ -14,7 +14,7 @@ type WorkspacePathPermissions struct {
 	Permissions []resources.Permission
 }
 
-func NewFromWorkspaceObjectAcl(path string, acl []workspace.WorkspaceObjectAccessControlResponse) *WorkspacePathPermissions {
+func ObjectAclToResourcePermissions(path string, acl []workspace.WorkspaceObjectAccessControlResponse) *WorkspacePathPermissions {
 	permissions := make([]resources.Permission, 0)
 	for _, a := range acl {
 		// Skip the admin group because it's added to all resources by default.
@@ -24,7 +24,7 @@ func NewFromWorkspaceObjectAcl(path string, acl []workspace.WorkspaceObjectAcces
 
 		for _, pl := range a.AllPermissions {
 			permissions = append(permissions, resources.Permission{
-				Level:                string(pl.PermissionLevel),
+				Level:                convertWorkspaceObjectPermissionLevel(pl.PermissionLevel),
 				GroupName:            a.GroupName,
 				UserName:             a.UserName,
 				ServicePrincipalName: a.ServicePrincipalName,
@@ -38,55 +38,75 @@ func NewFromWorkspaceObjectAcl(path string, acl []workspace.WorkspaceObjectAcces
 func (p WorkspacePathPermissions) Compare(perms []resources.Permission) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	if len(p.Permissions) != len(perms) {
+	// Check the permissions in the bundle and see if they are all set in the workspace.
+	ok, missing := containsAll(perms, p.Permissions)
+	if !ok {
 		diags = diags.Append(diag.Diagnostic{
 			Severity: diag.Warning,
-			Summary:  "permissions count mismatch",
-			Detail: fmt.Sprintf(
-				"The number of permissions in the bundle is %d, but the number of permissions in the workspace is %d\n%s\n%s",
-				len(perms), len(p.Permissions),
-				toString("Bundle permissions", p.Permissions), toString("Workspace permissions", perms)),
+			Summary:  "permissions missing",
+			Detail:   fmt.Sprintf("Following permissions set in the bundle but not set for workspace folder %s:\n%s", p.Path, toString(missing)),
 		})
-		return diags
 	}
 
-	for _, perm := range perms {
-		level, err := GetWorkspaceObjectPermissionLevel(perm.Level)
-		if err != nil {
-			return diag.FromErr(err)
-		}
-
-		found := false
-		for _, objPerm := range p.Permissions {
-			if objPerm.GroupName == perm.GroupName &&
-				objPerm.UserName == perm.UserName &&
-				objPerm.ServicePrincipalName == perm.ServicePrincipalName &&
-				objPerm.Level == string(level) {
-				found = true
-				break
-			}
-		}
-
-		if !found {
-			diags = diags.Append(diag.Diagnostic{
-				Severity: diag.Warning,
-				Summary:  "permission not found",
-				Detail: fmt.Sprintf(
-					"Permission (%s) not set for bundle workspace folder %s\n%s\n%s",
-					perm, p.Path,
-					toString("Bundle permissions", p.Permissions), toString("Workspace permissions", perms)),
-			})
-		}
+	// Check the permissions in the workspace and see if they are all set in the bundle.
+	ok, missing = containsAll(p.Permissions, perms)
+	if !ok {
+		diags = diags.Append(diag.Diagnostic{
+			Severity: diag.Warning,
+			Summary:  "permissions missing",
+			Detail:   fmt.Sprintf("Following permissions set for the workspace folder but not set for bundle %s:\n%s", p.Path, toString(missing)),
+		})
 	}
 
 	return diags
 }
 
-func toString(title string, p []resources.Permission) string {
+// containsAll checks if permA contains all permissions in permB.
+func containsAll(permA []resources.Permission, permB []resources.Permission) (bool, []resources.Permission) {
+	missing := make([]resources.Permission, 0)
+	for _, a := range permA {
+		found := false
+		for _, b := range permB {
+			if a == b {
+				found = true
+				break
+			}
+		}
+		if !found {
+			missing = append(missing, a)
+		}
+	}
+	return len(missing) == 0, missing
+}
+
+// convertWorkspaceObjectPermissionLevel converts matching object permission levels to bundle ones.
+// If there is no matching permission level, it returns permission level as is, for example, CAN_EDIT.
+func convertWorkspaceObjectPermissionLevel(level workspace.WorkspaceObjectPermissionLevel) string {
+	switch level {
+	case workspace.WorkspaceObjectPermissionLevelCanRead:
+		return CAN_VIEW
+	default:
+		return string(level)
+	}
+}
+
+func toString(p []resources.Permission) string {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("%s\n", title))
 	for _, perm := range p {
-		sb.WriteString(fmt.Sprintf("- level: %s, user_name: %s, group_name: %s, service_principal_name: %s\n", perm.Level, perm.UserName, perm.GroupName, perm.ServicePrincipalName))
+		if perm.ServicePrincipalName != "" {
+			sb.WriteString(fmt.Sprintf("- level: %s\n  service_principal_name: %s\n", perm.Level, perm.ServicePrincipalName))
+			continue
+		}
+
+		if perm.GroupName != "" {
+			sb.WriteString(fmt.Sprintf("- level: %s\n  group_name: %s\n", perm.Level, perm.GroupName))
+			continue
+		}
+
+		if perm.UserName != "" {
+			sb.WriteString(fmt.Sprintf("- level: %s\n  user_name: %s\n", perm.Level, perm.UserName))
+			continue
+		}
 	}
 	return sb.String()
 }

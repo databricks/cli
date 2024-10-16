@@ -2,7 +2,6 @@ package validate
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"path"
 	"strings"
@@ -14,6 +13,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/singleflight"
 )
 
 type folderPermissions struct {
@@ -58,10 +58,15 @@ func (f *folderPermissions) Apply(ctx context.Context, b bundle.ReadOnlyBundle) 
 	var diags diag.Diagnostics
 	g, ctx := errgroup.WithContext(ctx)
 	results := make([]diag.Diagnostics, len(paths))
+	syncGroup := new(singleflight.Group)
 	for i, p := range paths {
 		g.Go(func() error {
-			results[i] = checkFolderPermission(ctx, b, p)
-			return nil
+			diags, err, _ := syncGroup.Do(p, func() (any, error) {
+				diags := checkFolderPermission(ctx, b, p)
+				return diags, nil
+			})
+			results[i] = diags.(diag.Diagnostics)
+			return err
 		})
 	}
 
@@ -91,41 +96,28 @@ func checkFolderPermission(ctx context.Context, b bundle.ReadOnlyBundle, folderP
 		return diag.FromErr(err)
 	}
 
-	p := permissions.NewFromWorkspaceObjectAcl(folderPath, objPermissions.AccessControlList)
+	p := permissions.ObjectAclToResourcePermissions(folderPath, objPermissions.AccessControlList)
 	return p.Compare(b.Config().Permissions)
 }
 
-var cache = map[string]*workspace.ObjectInfo{}
-
 func getClosestExistingObject(ctx context.Context, w workspace.WorkspaceInterface, folderPath string) (*workspace.ObjectInfo, error) {
-	if obj, ok := cache[folderPath]; ok {
-		return obj, nil
-	}
-
-	for folderPath != "/" {
+	for {
 		obj, err := w.GetStatusByPath(ctx, folderPath)
 		if err == nil {
-			cache[folderPath] = obj
 			return obj, nil
 		}
 
-		var aerr *apierr.APIError
-		if !errors.As(err, &aerr) {
+		if !apierr.IsMissing(err) {
 			return nil, err
 		}
 
-		if aerr.ErrorCode != "RESOURCE_DOES_NOT_EXIST" {
-			return nil, err
+		parent := path.Dir(folderPath)
+		// If the parent is the same as the current folder, then we have reached the root
+		if folderPath == parent {
+			break
 		}
 
-		folderPath = path.Dir(folderPath)
-	}
-
-	// Check "/" root folder
-	obj, err := w.GetStatusByPath(ctx, folderPath)
-	if err == nil {
-		cache[folderPath] = obj
-		return obj, nil
+		folderPath = parent
 	}
 
 	return nil, fmt.Errorf("folder %s and its parent folders do not exist", folderPath)
@@ -136,6 +128,8 @@ func (f *folderPermissions) Name() string {
 	return "validate:folder_permissions"
 }
 
+// ValidateFolderPermissions validates that permissions for the folders in Workspace file system matches
+// the permissions in the top-level permissions section of the bundle.
 func ValidateFolderPermissions() bundle.ReadOnlyMutator {
 	return &folderPermissions{}
 }

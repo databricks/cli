@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/permissions"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -16,7 +17,6 @@ import (
 )
 
 func TestValidateFolderPermissions(t *testing.T) {
-	setupTest(t)
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
@@ -68,7 +68,6 @@ func TestValidateFolderPermissions(t *testing.T) {
 }
 
 func TestValidateFolderPermissionsDifferentCount(t *testing.T) {
-	setupTest(t)
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
@@ -115,11 +114,12 @@ func TestValidateFolderPermissionsDifferentCount(t *testing.T) {
 
 	diags := bundle.ApplyReadOnly(context.Background(), rb, ValidateFolderPermissions())
 	require.Len(t, diags, 1)
-	require.Equal(t, "permissions count mismatch", diags[0].Summary)
+	require.Equal(t, "permissions missing", diags[0].Summary)
+	require.Equal(t, diag.Warning, diags[0].Severity)
+	require.Equal(t, "Following permissions set for the workspace folder but not set for bundle /Workspace/Users/foo@bar.com:\n- level: CAN_MANAGE\n  user_name: foo2@bar.com\n", diags[0].Detail)
 }
 
 func TestValidateFolderPermissionsDifferentPermission(t *testing.T) {
-	setupTest(t)
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
@@ -159,12 +159,15 @@ func TestValidateFolderPermissionsDifferentPermission(t *testing.T) {
 	rb := bundle.ReadOnly(b)
 
 	diags := bundle.ApplyReadOnly(context.Background(), rb, ValidateFolderPermissions())
-	require.Len(t, diags, 1)
-	require.Equal(t, "permission not found", diags[0].Summary)
+	require.Len(t, diags, 2)
+	require.Equal(t, "permissions missing", diags[0].Summary)
+	require.Equal(t, diag.Warning, diags[0].Severity)
+
+	require.Equal(t, "permissions missing", diags[1].Summary)
+	require.Equal(t, diag.Warning, diags[1].Severity)
 }
 
 func TestNoRootFolder(t *testing.T) {
-	setupTest(t)
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
@@ -196,8 +199,5 @@ func TestNoRootFolder(t *testing.T) {
 	diags := bundle.ApplyReadOnly(context.Background(), rb, ValidateFolderPermissions())
 	require.Len(t, diags, 1)
 	require.Equal(t, "folder / and its parent folders do not exist", diags[0].Summary)
-}
-
-func setupTest(t *testing.T) {
-	cache = make(map[string]*workspace.ObjectInfo)
+	require.Equal(t, diag.Error, diags[0].Severity)
 }
