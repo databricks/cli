@@ -13,22 +13,27 @@ import (
 type workspaceRootPermissions struct {
 }
 
+type validateSharedRootPermissions struct {
+}
+
 func ApplyWorkspaceRootPermissions() bundle.Mutator {
 	return &workspaceRootPermissions{}
 }
 
+func (*workspaceRootPermissions) Name() string {
+	return "ApplyWorkspaceRootPermissions"
+}
+
+func ValidateSharedRootPermissions() bundle.Mutator {
+	return &validateSharedRootPermissions{}
+}
+
+func (*validateSharedRootPermissions) Name() string {
+	return "ValidateSharedRootPermissions"
+}
+
 // Apply implements bundle.Mutator.
 func (*workspaceRootPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-
-	if isWorkspaceSharedRoot(b.Config.Workspace.RootPath) {
-		diags := checkWorkspaceRootPermissions(b)
-		// If there are permissions warnings, return them and do not apply permissions
-		// because they are not set correctly for /Workspace/Shared root anyway
-		if len(diags) > 0 {
-			return diags
-		}
-	}
-
 	err := giveAccessForWorkspaceRoot(ctx, b)
 	if err != nil {
 		return diag.FromErr(err)
@@ -37,8 +42,12 @@ func (*workspaceRootPermissions) Apply(ctx context.Context, b *bundle.Bundle) di
 	return nil
 }
 
-func (*workspaceRootPermissions) Name() string {
-	return "ApplyWorkspaceRootPermissions"
+func (*validateSharedRootPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	if isWorkspaceSharedRoot(b.Config.Workspace.RootPath) {
+		return isUsersGroupPermissionSet(b)
+	}
+
+	return nil
 }
 
 func giveAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle) error {
@@ -93,14 +102,15 @@ func isWorkspaceSharedRoot(path string) bool {
 	return strings.HasPrefix(path, "/Workspace/Shared/")
 }
 
-// checkWorkspaceRootPermissions checks that if permissions are set for the workspace root, and workspace root starts with /Workspace/Shared, then permissions should be set for group: users
-func checkWorkspaceRootPermissions(b *bundle.Bundle) diag.Diagnostics {
+// isUsersGroupPermissionSet checks that top-level permissions set for bundle contain group_name: users with CAN_MANAGE permission.
+func isUsersGroupPermissionSet(b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	allUsers := false
 	for _, p := range b.Config.Permissions {
 		if p.GroupName == "users" && p.Level == CAN_MANAGE {
 			allUsers = true
+			break
 		}
 	}
 

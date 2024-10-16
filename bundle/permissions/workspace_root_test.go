@@ -70,7 +70,7 @@ func TestApplyWorkspaceRootPermissions(t *testing.T) {
 		WorkspaceObjectType: "directories",
 	}).Return(nil, nil)
 
-	diags := bundle.Apply(context.Background(), b, ApplyWorkspaceRootPermissions())
+	diags := bundle.Apply(context.Background(), b, bundle.Seq(ValidateSharedRootPermissions(), ApplyWorkspaceRootPermissions()))
 	require.Empty(t, diags)
 }
 
@@ -106,7 +106,7 @@ func TestApplyWorkspaceRootPermissionsForShared(t *testing.T) {
 		WorkspaceObjectType: "directories",
 	}).Return(nil, nil)
 
-	diags := bundle.Apply(context.Background(), b, ApplyWorkspaceRootPermissions())
+	diags := bundle.Apply(context.Background(), b, bundle.Seq(ValidateSharedRootPermissions(), ApplyWorkspaceRootPermissions()))
 	require.Empty(t, diags)
 }
 
@@ -130,8 +130,20 @@ func TestApplyWorkspaceRootPermissionsForSharedError(t *testing.T) {
 
 	m := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(m.WorkspaceClient)
+	workspaceApi := m.GetMockWorkspaceAPI()
+	workspaceApi.EXPECT().GetStatusByPath(mock.Anything, "/Workspace/Shared/foo/bar").Return(&workspace.ObjectInfo{
+		ObjectId: 1234,
+	}, nil)
 
-	diags := bundle.Apply(context.Background(), b, ApplyWorkspaceRootPermissions())
+	workspaceApi.EXPECT().UpdatePermissions(mock.Anything, workspace.WorkspaceObjectPermissionsRequest{
+		AccessControlList: []workspace.WorkspaceObjectAccessControlRequest{
+			{UserName: "foo@bar.com", PermissionLevel: "CAN_MANAGE"},
+		},
+		WorkspaceObjectId:   "1234",
+		WorkspaceObjectType: "directories",
+	}).Return(nil, nil)
+
+	diags := bundle.Apply(context.Background(), b, bundle.Seq(ValidateSharedRootPermissions(), ApplyWorkspaceRootPermissions()))
 	require.Len(t, diags, 1)
 	require.Equal(t, "the bundle root path /Workspace/Shared/foo/bar is writable by all workspace users", diags[0].Summary)
 	require.Equal(t, diag.Warning, diags[0].Severity)
