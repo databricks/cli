@@ -2,7 +2,7 @@
     "properties": {
         "unique_id": {
             "type": "string",
-            "description": "Unique ID for the schema and pipeline names"
+            "description": "Unique ID for the schema names"
         }
     }
 }
