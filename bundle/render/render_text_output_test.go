@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/serving"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -335,7 +336,7 @@ func TestRenderTextOutput(t *testing.T) {
 			err := RenderDiagnostics(writer, tc.bundle, tc.diags, tc.opts)
 			require.NoError(t, err)
 
-			require.Equal(t, tc.expected, writer.String())
+			assert.Equal(t, tc.expected, writer.String())
 		})
 	}
 }
@@ -477,7 +478,7 @@ func TestRenderDiagnostics(t *testing.T) {
 			err := renderDiagnosticsOnly(writer, bundle, tc.diags)
 			require.NoError(t, err)
 
-			require.Equal(t, tc.expected, writer.String())
+			assert.Equal(t, tc.expected, writer.String())
 		})
 	}
 }
@@ -490,7 +491,7 @@ func TestRenderSummaryTemplate_nilBundle(t *testing.T) {
 
 	io.WriteString(writer, buildTrailer(nil))
 
-	require.Equal(t, "Validation OK!\n", writer.String())
+	assert.Equal(t, "Validation OK!\n", writer.String())
 }
 
 func TestRenderSummary(t *testing.T) {
@@ -585,5 +586,5 @@ Resources:
       Name: schema
       URL:  (not deployed)
 `
-	require.Equal(t, expectedSummary, writer.String())
+	assert.Equal(t, expectedSummary, writer.String())
 }
