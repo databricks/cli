@@ -360,7 +360,7 @@ func TestAccFilerReadDir(t *testing.T) {
 	}
 }
 
-var jupyterNotebookContent1 = `
+var pythonJupyterNotebookContent1 = `
 {
 	"cells": [
 	 {
@@ -384,7 +384,10 @@ var jupyterNotebookContent1 = `
    }
 `
 
-var jupyterNotebookContent2 = `
+// TODO: Does detect notebook work with notebooks exported from databricks?
+// They typically do not have the top level "language" key set.
+
+var pythonJupyterNotebookContent2 = `
 {
 	"cells": [
 	 {
@@ -408,6 +411,10 @@ var jupyterNotebookContent2 = `
    }
 `
 
+// TODO: Continue adding tests for other types of notebooks than python here.
+// Exporting from a workspace makes this work easier.
+
+
 func TestAccFilerWorkspaceNotebookConflict(t *testing.T) {
 	t.Parallel()
 
@@ -424,7 +431,7 @@ func TestAccFilerWorkspaceNotebookConflict(t *testing.T) {
 	require.NoError(t, err)
 	err = f.Write(ctx, "scalaNb.scala", strings.NewReader("// Databricks notebook source\n println(\"first upload\"))"))
 	require.NoError(t, err)
-	err = f.Write(ctx, "jupyterNb.ipynb", strings.NewReader(jupyterNotebookContent1))
+	err = f.Write(ctx, "pythonJupyterNb.ipynb", strings.NewReader(pythonJupyterNotebookContent1))
 	require.NoError(t, err)
 
 	// Assert contents after initial upload
@@ -432,7 +439,7 @@ func TestAccFilerWorkspaceNotebookConflict(t *testing.T) {
 	filerTest{t, f}.assertContents(ctx, "rNb", "# Databricks notebook source\nprint('first upload'))")
 	filerTest{t, f}.assertContents(ctx, "sqlNb", "-- Databricks notebook source\n SELECT \"first upload\"")
 	filerTest{t, f}.assertContents(ctx, "scalaNb", "// Databricks notebook source\n println(\"first upload\"))")
-	filerTest{t, f}.assertContents(ctx, "jupyterNb", "# Databricks notebook source\nprint(\"Jupyter Notebook Version 1\")")
+	filerTest{t, f}.assertContents(ctx, "pythonJupyterNb", "# Databricks notebook source\nprint(\"Jupyter Notebook Version 1\")")
 
 	// Assert uploading a second time fails due to overwrite mode missing
 	err = f.Write(ctx, "pyNb.py", strings.NewReader("# Databricks notebook source\nprint('second upload'))"))
@@ -451,9 +458,9 @@ func TestAccFilerWorkspaceNotebookConflict(t *testing.T) {
 	assert.ErrorIs(t, err, fs.ErrExist)
 	assert.Regexp(t, regexp.MustCompile(`file already exists: .*/scalaNb$`), err.Error())
 
-	err = f.Write(ctx, "jupyterNb.ipynb", strings.NewReader(jupyterNotebookContent2))
+	err = f.Write(ctx, "pythonJupyterNb.ipynb", strings.NewReader(pythonJupyterNotebookContent2))
 	assert.ErrorIs(t, err, fs.ErrExist)
-	assert.Regexp(t, regexp.MustCompile(`file already exists: .*/jupyterNb$`), err.Error())
+	assert.Regexp(t, regexp.MustCompile(`file already exists: .*/pythonJupyterNb$`), err.Error())
 }
 
 func TestAccFilerWorkspaceNotebookWithOverwriteFlag(t *testing.T) {
@@ -472,7 +479,7 @@ func TestAccFilerWorkspaceNotebookWithOverwriteFlag(t *testing.T) {
 	require.NoError(t, err)
 	err = f.Write(ctx, "scalaNb.scala", strings.NewReader("// Databricks notebook source\n println(\"first upload\"))"))
 	require.NoError(t, err)
-	err = f.Write(ctx, "jupyterNb.ipynb", strings.NewReader(jupyterNotebookContent1))
+	err = f.Write(ctx, "jupyterNb.ipynb", strings.NewReader(pythonJupyterNotebookContent1))
 	require.NoError(t, err)
 
 	// Assert contents after initial upload
@@ -491,7 +498,7 @@ func TestAccFilerWorkspaceNotebookWithOverwriteFlag(t *testing.T) {
 	require.NoError(t, err)
 	err = f.Write(ctx, "scalaNb.scala", strings.NewReader("// Databricks notebook source\n println(\"second upload\"))"), filer.OverwriteIfExists)
 	require.NoError(t, err)
-	err = f.Write(ctx, "jupyterNb.ipynb", strings.NewReader(jupyterNotebookContent2), filer.OverwriteIfExists)
+	err = f.Write(ctx, "jupyterNb.ipynb", strings.NewReader(pythonJupyterNotebookContent2), filer.OverwriteIfExists)
 	require.NoError(t, err)
 
 	// Assert contents have been overwritten
@@ -515,8 +522,8 @@ func TestAccFilerWorkspaceFilesExtensionsReadDir(t *testing.T) {
 		{"foo.r", "print('foo')"},
 		{"foo.scala", "println('foo')"},
 		{"foo.sql", "SELECT 'foo'"},
-		{"jupyterNb.ipynb", jupyterNotebookContent1},
-		{"jupyterNb2.ipynb", jupyterNotebookContent2},
+		{"jupyterNb.ipynb", pythonJupyterNotebookContent1},
+		{"jupyterNb2.ipynb", pythonJupyterNotebookContent2},
 		{"pyNb.py", "# Databricks notebook source\nprint('first upload'))"},
 		{"rNb.r", "# Databricks notebook source\nprint('first upload'))"},
 		{"scalaNb.scala", "// Databricks notebook source\n println(\"first upload\"))"},
@@ -582,7 +589,7 @@ func setupFilerWithExtensionsTest(t *testing.T) filer.Filer {
 	}{
 		{"foo.py", "# Databricks notebook source\nprint('first upload'))"},
 		{"bar.py", "print('foo')"},
-		{"jupyter.ipynb", jupyterNotebookContent1},
+		{"jupyter.ipynb", pythonJupyterNotebookContent1},
 		{"pretender", "not a notebook"},
 		{"dir/file.txt", "file content"},
 		{"scala-notebook.scala", "// Databricks notebook source\nprintln('first upload')"},
@@ -756,7 +763,7 @@ func TestAccWorkspaceFilesExtensions_ExportFormatIsPreserved(t *testing.T) {
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 
 	// Case 2: Jupyter Notebook
-	err = wf.Write(ctx, "bar.ipynb", strings.NewReader(jupyterNotebookContent1))
+	err = wf.Write(ctx, "bar.ipynb", strings.NewReader(pythonJupyterNotebookContent1))
 	require.NoError(t, err)
 
 	// The Jupyter notebook should exist but not the source notebook
