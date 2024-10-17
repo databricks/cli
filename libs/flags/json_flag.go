@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn/convert"
@@ -63,11 +64,24 @@ func (j *JsonFlag) Unmarshal(v any) diag.Diagnostics {
 		return diags.Extend(diag.FromErr(err))
 	}
 
-	// Finally unmarshal the normalized data to the output.
-	// It will fill in the ForceSendFields field if the struct contains it.
-	err = marshal.Unmarshal(data, v)
-	if err != nil {
-		return diags.Extend(diag.FromErr(err))
+	kind := reflect.ValueOf(v).Kind()
+	if kind == reflect.Ptr {
+		kind = reflect.ValueOf(v).Elem().Kind()
+	}
+
+	if kind == reflect.Struct {
+		// Finally unmarshal the normalized data to the output.
+		// It will fill in the ForceSendFields field if the struct contains it.
+		err = marshal.Unmarshal(data, v)
+		if err != nil {
+			return diags.Extend(diag.FromErr(err))
+		}
+	} else {
+		// If the output is not a struct, just unmarshal the data to the output.
+		err = json.Unmarshal(data, v)
+		if err != nil {
+			return diags.Extend(diag.FromErr(err))
+		}
 	}
 
 	return diags
