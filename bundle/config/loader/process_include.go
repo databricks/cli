@@ -107,27 +107,24 @@ func validateSingleResourceDefined(configRoot dyn.Value, ext, typ string) diag.D
 		detail.WriteString(l)
 	}
 
-	locations := []dyn.Location{}
-	paths := []dyn.Path{}
+	// TODO: test this.
+	locationPathPairs := []diag.LocationPathPair{}
 	for _, rr := range resources {
-		locations = append(locations, rr.value.Locations()...)
-		paths = append(paths, rr.path)
+		for _, l := range rr.value.Locations() {
+			locationPathPairs = append(locationPathPairs, diag.LocationPathPair{L: l, P: rr.path})
+		}
 	}
-	// Sort the locations and paths to make the output deterministic.
-	sort.Slice(locations, func(i, j int) bool {
-		return locations[i].String() < locations[j].String()
-	})
-	sort.Slice(paths, func(i, j int) bool {
-		return paths[i].String() < paths[j].String()
+	// Sort the location-path pairs to make the output deterministic.
+	sort.Slice(locationPathPairs, func(i, j int) bool {
+		return locationPathPairs[i].L.String() < locationPathPairs[j].L.String()
 	})
 
 	return diag.Diagnostics{
 		{
-			Severity:  diag.Recommendation,
-			Summary:   fmt.Sprintf("define a single %s in a file with the %s extension.", strings.ReplaceAll(typ, "_", " "), ext),
-			Detail:    detail.String(),
-			Locations: locations,
-			Paths:     paths,
+			Severity:          diag.Recommendation,
+			Summary:           fmt.Sprintf("define a single %s in a file with the %s extension.", strings.ReplaceAll(typ, "_", " "), ext),
+			Detail:            detail.String(),
+			LocationPathPairs: locationPathPairs,
 		},
 	}
 }

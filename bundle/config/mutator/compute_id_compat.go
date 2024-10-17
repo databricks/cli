@@ -52,11 +52,19 @@ func rewriteComputeIdToClusterId(v dyn.Value, p dyn.Path) (dyn.Value, diag.Diagn
 		return v, nil
 	}
 
+	// TODO: test this.
+	locationPathPaths := []diag.LocationPathPair{}
+	for _, l := range computeId.Locations() {
+		locationPathPaths = append(locationPathPaths, diag.LocationPathPair{
+			L: l,
+			P: computeIdPath,
+		})
+	}
+
 	diags = diags.Append(diag.Diagnostic{
-		Severity:  diag.Warning,
-		Summary:   "compute_id is deprecated, please use cluster_id instead",
-		Locations: computeId.Locations(),
-		Paths:     []dyn.Path{computeIdPath},
+		Severity:          diag.Warning,
+		Summary:           "compute_id is deprecated, please use cluster_id instead",
+		LocationPathPairs: locationPathPaths,
 	})
 
 	clusterIdPath := p.Append(dyn.Key("cluster_id"))

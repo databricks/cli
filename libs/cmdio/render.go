@@ -394,10 +394,7 @@ func fancyJSON(v any) ([]byte, error) {
 
 const errorTemplate = `{{ "Error" | red }}: {{ .Summary }}
 {{- range $index, $element := .Paths }}
-  {{ if eq $index 0 }}at {{else}}   {{ end}}{{ $element.String | green }}
-{{- end }}
-{{- range $index, $element := .Locations }}
-  {{ if eq $index 0 }}in {{else}}   {{ end}}{{ $element.String | cyan }}
+  {{ if eq $index 0 }}at {{else}}   {{ end}}{{ $element.P.String | green }} in {{ $element.L.String | cyan }}
 {{- end }}
 {{- if .Detail }}
 
@@ -406,12 +403,11 @@ const errorTemplate = `{{ "Error" | red }}: {{ .Summary }}
 
 `
 
+// TODO: Only print "at" and "in" if both are not nil.
+// TODO: also add tests for this.
 const warningTemplate = `{{ "Warning" | yellow }}: {{ .Summary }}
 {{- range $index, $element := .Paths }}
-  {{ if eq $index 0 }}at {{else}}   {{ end}}{{ $element.String | green }}
-{{- end }}
-{{- range $index, $element := .Locations }}
-  {{ if eq $index 0 }}in {{else}}   {{ end}}{{ $element.String | cyan }}
+  {{ if eq $index 0 }}at {{else}}   {{ end}}{{ $element.P.String | green }} in {{ $element.L.String | cyan }}
 {{- end }}
 {{- if .Detail }}
 
@@ -421,11 +417,8 @@ const warningTemplate = `{{ "Warning" | yellow }}: {{ .Summary }}
 `
 
 const recommendationTemplate = `{{ "Recommendation" | blue }}: {{ .Summary }}
-{{- range $index, $element := .Paths }}
-  {{ if eq $index 0 }}at {{else}}   {{ end}}{{ $element.String | green }}
-{{- end }}
-{{- range $index, $element := .Locations }}
-  {{ if eq $index 0 }}in {{else}}   {{ end}}{{ $element.String | cyan }}
+{{- range $index, $element := .LocationPathPairs}}
+  {{ if eq $index 0 }}at {{else}}   {{ end}}{{ $element.P.String | green }} in {{ $element.L.String | cyan }}
 {{- end }}
 {{- if .Detail }}
 

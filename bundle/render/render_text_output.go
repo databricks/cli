@@ -112,18 +112,19 @@ func renderSummaryTemplate(out io.Writer, b *bundle.Bundle, diags diag.Diagnosti
 }
 
 func renderDiagnostics(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics) error {
+	// TODO: test this.
 	for _, d := range diags {
-		for i := range d.Locations {
+		for i := range d.LocationPathPairs {
 			if b == nil {
 				break
 			}
 
 			// Make location relative to bundle root
-			if d.Locations[i].File != "" {
-				out, err := filepath.Rel(b.BundleRootPath, d.Locations[i].File)
+			if d.LocationPathPairs[i].L.File != "" {
+				out, err := filepath.Rel(b.BundleRootPath, d.LocationPathPairs[i].L.File)
 				// if we can't relativize the path, just use path as-is
 				if err == nil {
-					d.Locations[i].File = out
+					d.LocationPathPairs[i].L.File = out
 				}
 			}
 		}

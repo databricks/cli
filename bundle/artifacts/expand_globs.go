@@ -30,10 +30,14 @@ func createGlobError(v dyn.Value, p dyn.Path, message string) diag.Diagnostic {
 	}
 
 	return diag.Diagnostic{
-		Severity:  diag.Error,
-		Summary:   fmt.Sprintf("%s: %s", source, message),
-		Locations: []dyn.Location{v.Location()},
-		Paths:     []dyn.Path{p},
+		Severity: diag.Error,
+		Summary:  fmt.Sprintf("%s: %s", source, message),
+		LocationPathPairs: []diag.LocationPathPair{
+			{
+				L: v.Location(),
+				P: p,
+			},
+		},
 	}
 }
 
