@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
 )
@@ -96,12 +97,53 @@ func TestApplyPresetsPrefixForUcSchema(t *testing.T) {
 			},
 			want: "schema1",
 		},
+		{
+			name:   "skip prefix because catalog contains short name",
+			prefix: "[prefix]",
+			schema: &resources.Schema{
+				CreateSchema: &catalog.CreateSchema{
+					Name:        "schema1",
+					CatalogName: "dev_john_smith_test_catalog",
+				},
+			},
+			want: "schema1",
+		},
+		{
+			name:   "skip prefix because catalog contains email",
+			prefix: "[prefix]",
+			schema: &resources.Schema{
+				CreateSchema: &catalog.CreateSchema{
+					Name:        "schema1",
+					CatalogName: "dev_john.smith@databricks.com_test_catalog",
+				},
+			},
+			want: "schema1",
+		},
+		{
+			name:   "add prefix because catalog is not namespaced to user",
+			prefix: "[prefix]",
+			schema: &resources.Schema{
+				CreateSchema: &catalog.CreateSchema{
+					Name:        "schema1",
+					CatalogName: "test_catalog",
+				},
+			},
+			want: "prefix_schema1",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			b := &bundle.Bundle{
 				Config: config.Root{
+					Workspace: config.Workspace{
+						CurrentUser: &config.User{
+							ShortName: "john_smith",
+							User: &iam.User{
+								UserName: "john.smith@databricks.com",
+							},
+						},
+					},
 					Resources: config.Resources{
 						Schemas: map[string]*resources.Schema{
 							"schema1": tt.schema,
