@@ -45,7 +45,7 @@ func (s *MlflowModel) InitializeURL(urlPrefix string, urlSuffix string) {
 	if s.ID == "" {
 		return
 	}
-	s.URL = urlPrefix + "ml/models/" + s.Name + urlSuffix
+	s.URL = urlPrefix + "ml/models/" + s.ID + urlSuffix
 }
 
 func (s *MlflowModel) GetName() string {

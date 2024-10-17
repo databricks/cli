@@ -53,7 +53,7 @@ func (s *ModelServingEndpoint) InitializeURL(urlPrefix string, urlSuffix string)
 	if s.ID == "" {
 		return
 	}
-	s.URL = urlPrefix + "ml/endpoints/" + s.Name + urlSuffix
+	s.URL = urlPrefix + "ml/endpoints/" + s.ID + urlSuffix
 }
 
 func (s *ModelServingEndpoint) GetName() string {
