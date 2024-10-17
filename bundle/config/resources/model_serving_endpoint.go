@@ -2,6 +2,8 @@ package resources
 
 import (
 	"context"
+	"fmt"
+	"net/url"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
@@ -49,11 +51,12 @@ func (s *ModelServingEndpoint) TerraformResourceName() string {
 	return "databricks_model_serving"
 }
 
-func (s *ModelServingEndpoint) InitializeURL(urlPrefix string, urlSuffix string) {
+func (s *ModelServingEndpoint) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
 	}
-	s.URL = urlPrefix + "ml/endpoints/" + s.ID + urlSuffix
+	baseURL.Path = fmt.Sprintf("ml/endpoints/%s", s.ID)
+	s.URL = baseURL.String()
 }
 
 func (s *ModelServingEndpoint) GetName() string {

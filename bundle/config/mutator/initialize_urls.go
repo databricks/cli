@@ -2,6 +2,7 @@ package mutator
 
 import (
 	"context"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -30,12 +31,17 @@ func (m *initializeURLs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		return diag.FromErr(err)
 	}
 	orgId := strconv.FormatInt(workspaceId, 10)
-	urlPrefix := b.WorkspaceClient().Config.CanonicalHostName() + "/"
-	initializeForWorkspace(b, orgId, urlPrefix)
+	host := b.WorkspaceClient().Config.CanonicalHostName()
+	initializeForWorkspace(b, orgId, host)
 	return nil
 }
 
-func initializeForWorkspace(b *bundle.Bundle, orgId string, urlPrefix string) {
+func initializeForWorkspace(b *bundle.Bundle, orgId string, host string) error {
+	baseURL, err := url.Parse(host)
+	if err != nil {
+		return err
+	}
+
 	// Add ?o=<workspace id> only if <workspace id> wasn't in the subdomain already.
 	// The ?o= is needed when vanity URLs / legacy workspace URLs are used.
 	// If it's not needed we prefer to leave it out since these URLs are rather
@@ -43,14 +49,17 @@ func initializeForWorkspace(b *bundle.Bundle, orgId string, urlPrefix string) {
 	//
 	// See https://docs.databricks.com/en/workspace/workspace-details.html for
 	// further reading about the '?o=' suffix.
-	urlSuffix := ""
-	if !strings.Contains(urlPrefix, orgId) {
-		urlSuffix = "?o=" + orgId
+	if !strings.Contains(baseURL.Hostname(), orgId) {
+		values := baseURL.Query()
+		values.Add("o", orgId)
+		baseURL.RawQuery = values.Encode()
 	}
 
 	for _, group := range b.Config.Resources.AllResources() {
 		for _, r := range group.Resources {
-			r.InitializeURL(urlPrefix, urlSuffix)
+			r.InitializeURL(*baseURL)
 		}
 	}
+
+	return nil
 }

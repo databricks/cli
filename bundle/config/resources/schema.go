@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go"
@@ -32,11 +33,12 @@ func (s *Schema) TerraformResourceName() string {
 	return "databricks_schema"
 }
 
-func (s *Schema) InitializeURL(urlPrefix string, urlSuffix string) {
+func (s *Schema) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
 	}
-	s.URL = urlPrefix + "explore/data/" + strings.ReplaceAll(s.ID, ".", "/") + urlSuffix
+	baseURL.Path = fmt.Sprintf("explore/data/%s", strings.ReplaceAll(s.ID, ".", "/"))
+	s.URL = baseURL.String()
 }
 
 func (s *Schema) GetURL() string {

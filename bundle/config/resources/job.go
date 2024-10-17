@@ -2,6 +2,8 @@ package resources
 
 import (
 	"context"
+	"fmt"
+	"net/url"
 	"strconv"
 
 	"github.com/databricks/cli/libs/log"
@@ -46,11 +48,12 @@ func (j *Job) TerraformResourceName() string {
 	return "databricks_job"
 }
 
-func (j *Job) InitializeURL(urlPrefix string, urlSuffix string) {
+func (j *Job) InitializeURL(baseURL url.URL) {
 	if j.ID == "" {
 		return
 	}
-	j.URL = urlPrefix + "jobs/" + j.ID + urlSuffix
+	baseURL.Path = fmt.Sprintf("jobs/%s", j.ID)
+	j.URL = baseURL.String()
 }
 
 func (j *Job) GetName() string {

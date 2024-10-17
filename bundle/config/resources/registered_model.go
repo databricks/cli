@@ -2,6 +2,8 @@ package resources
 
 import (
 	"context"
+	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/databricks/cli/libs/log"
@@ -51,11 +53,12 @@ func (s *RegisteredModel) TerraformResourceName() string {
 	return "databricks_registered_model"
 }
 
-func (s *RegisteredModel) InitializeURL(urlPrefix string, urlSuffix string) {
+func (s *RegisteredModel) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
 	}
-	s.URL = urlPrefix + "explore/data/models/" + strings.ReplaceAll(s.ID, ".", "/") + urlSuffix
+	baseURL.Path = fmt.Sprintf("explore/data/models/%s", strings.ReplaceAll(s.ID, ".", "/"))
+	s.URL = baseURL.String()
 }
 
 func (s *RegisteredModel) GetName() string {

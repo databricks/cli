@@ -93,7 +93,7 @@ func TestInitializeURLs(t *testing.T) {
 		"job1":             "https://mycompany.databricks.com/jobs/1?o=123456",
 		"pipeline1":        "https://mycompany.databricks.com/pipelines/3?o=123456",
 		"experiment1":      "https://mycompany.databricks.com/ml/experiments/4?o=123456",
-		"model1":           "https://mycompany.databricks.com/ml/models/a model uses its name for identifier?o=123456",
+		"model1":           "https://mycompany.databricks.com/ml/models/a%20model%20uses%20its%20name%20for%20identifier?o=123456",
 		"servingendpoint1": "https://mycompany.databricks.com/ml/endpoints/my_serving_endpoint?o=123456",
 		"registeredmodel1": "https://mycompany.databricks.com/explore/data/models/8?o=123456",
 		"qualityMonitor1":  "https://mycompany.databricks.com/explore/data/catalog/schema/qualityMonitor1?o=123456",

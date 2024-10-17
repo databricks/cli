@@ -2,6 +2,8 @@ package resources
 
 import (
 	"context"
+	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/databricks/cli/libs/log"
@@ -47,11 +49,12 @@ func (s *QualityMonitor) TerraformResourceName() string {
 	return "databricks_quality_monitor"
 }
 
-func (s *QualityMonitor) InitializeURL(urlPrefix string, urlSuffix string) {
+func (s *QualityMonitor) InitializeURL(baseURL url.URL) {
 	if s.TableName == "" {
 		return
 	}
-	s.URL = urlPrefix + "explore/data/" + strings.ReplaceAll(s.TableName, ".", "/") + urlSuffix
+	baseURL.Path = fmt.Sprintf("explore/data/%s", strings.ReplaceAll(s.TableName, ".", "/"))
+	s.URL = baseURL.String()
 }
 
 func (s *QualityMonitor) GetName() string {

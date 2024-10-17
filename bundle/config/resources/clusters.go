@@ -2,6 +2,8 @@ package resources
 
 import (
 	"context"
+	"fmt"
+	"net/url"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
@@ -39,11 +41,12 @@ func (s *Cluster) TerraformResourceName() string {
 	return "databricks_cluster"
 }
 
-func (s *Cluster) InitializeURL(urlPrefix string, urlSuffix string) {
+func (s *Cluster) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
 	}
-	s.URL = urlPrefix + "compute/clusters/" + s.ID + urlSuffix
+	baseURL.Path = fmt.Sprintf("compute/clusters/%s", s.ID)
+	s.URL = baseURL.String()
 }
 
 func (s *Cluster) GetName() string {

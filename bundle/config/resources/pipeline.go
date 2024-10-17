@@ -2,6 +2,8 @@ package resources
 
 import (
 	"context"
+	"fmt"
+	"net/url"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
@@ -41,11 +43,12 @@ func (p *Pipeline) TerraformResourceName() string {
 	return "databricks_pipeline"
 }
 
-func (p *Pipeline) InitializeURL(urlPrefix string, urlSuffix string) {
+func (p *Pipeline) InitializeURL(baseURL url.URL) {
 	if p.ID == "" {
 		return
 	}
-	p.URL = urlPrefix + "pipelines/" + p.ID + urlSuffix
+	baseURL.Path = fmt.Sprintf("pipelines/%s", p.ID)
+	p.URL = baseURL.String()
 }
 
 func (p *Pipeline) GetName() string {

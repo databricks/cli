@@ -3,6 +3,7 @@ package config
 import (
 	"context"
 	"fmt"
+	"net/url"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -38,7 +39,7 @@ type ConfigResource interface {
 	GetURL() string
 
 	// InitializeURL initializes the URL field of the resource.
-	InitializeURL(urlPrefix string, urlSuffix string)
+	InitializeURL(url.URL)
 }
 
 // ResourceGroup represents a group of resources of the same type.

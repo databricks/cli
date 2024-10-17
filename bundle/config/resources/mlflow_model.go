@@ -2,6 +2,8 @@ package resources
 
 import (
 	"context"
+	"fmt"
+	"net/url"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
@@ -41,11 +43,12 @@ func (s *MlflowModel) TerraformResourceName() string {
 	return "databricks_mlflow_model"
 }
 
-func (s *MlflowModel) InitializeURL(urlPrefix string, urlSuffix string) {
+func (s *MlflowModel) InitializeURL(baseURL url.URL) {
 	if s.ID == "" {
 		return
 	}
-	s.URL = urlPrefix + "ml/models/" + s.ID + urlSuffix
+	baseURL.Path = fmt.Sprintf("ml/models/%s", s.ID)
+	s.URL = baseURL.String()
 }
 
 func (s *MlflowModel) GetName() string {
