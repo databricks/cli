@@ -2,12 +2,19 @@ package template
 
 import (
 	"context"
+	"encoding/base64"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/notebook"
+	"github.com/databricks/cli/libs/runtime"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 // Interface representing a file to be materialized from a template into a project
@@ -68,16 +75,20 @@ func (f *copyFile) PersistToDisk() error {
 		return err
 	}
 	defer srcFile.Close()
-	dstFile, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, f.perm)
+
+	// we read the full file into memory because we need to inspect the content
+	// in order to determine if it is a notebook
+	// Once we stop using the workspace API, we can remove this and write in a streaming fashion
+	content, err := io.ReadAll(srcFile)
 	if err != nil {
 		return err
 	}
-	defer dstFile.Close()
-	_, err = io.Copy(dstFile, srcFile)
-	return err
+	return writeFile(f.ctx, path, content, f.perm)
 }
 
 type inMemoryFile struct {
+	ctx context.Context
+
 	dstPath *destinationPath
 
 	content []byte
@@ -97,5 +108,37 @@ func (f *inMemoryFile) PersistToDisk() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, f.content, f.perm)
+
+	return writeFile(f.ctx, path, f.content, f.perm)
+}
+
+func shouldUseImportNotebook(ctx context.Context, path string, content []byte) bool {
+	if strings.HasPrefix(path, "/Workspace/") && runtime.RunsOnDatabricks(ctx) {
+		isNotebook, _, err := notebook.DetectWithContent(path, content)
+		if err != nil {
+			log.Debugf(ctx, "Error detecting notebook: %v", err)
+		}
+		return isNotebook && err == nil
+	}
+
+	return false
+}
+
+func writeFile(ctx context.Context, path string, content []byte, perm fs.FileMode) error {
+	if shouldUseImportNotebook(ctx, path, content) {
+		return importNotebook(ctx, path, content)
+	} else {
+		return os.WriteFile(path, content, perm)
+	}
+}
+
+func importNotebook(ctx context.Context, path string, content []byte) error {
+	w := root.WorkspaceClient(ctx)
+
+	return w.Workspace.Import(ctx, workspace.Import{
+		Format:    "AUTO",
+		Overwrite: false,
+		Path:      path,
+		Content:   base64.StdEncoding.EncodeToString(content),
+	})
 }

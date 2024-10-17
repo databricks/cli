@@ -153,12 +153,18 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 		return nil, err
 	}
 
+	// we need the absolute path in case we need to write notebooks using the REST API
+	rootPath, err := filepath.Abs(r.instanceRoot)
+	if err != nil {
+		return nil, err
+	}
+
 	// If file name does not specify the `.tmpl` extension, then it is copied
 	// over as is, without treating it as a template
 	if !strings.HasSuffix(relPathTemplate, templateExtension) {
 		return &copyFile{
 			dstPath: &destinationPath{
-				root:    r.instanceRoot,
+				root:    rootPath,
 				relPath: relPath,
 			},
 			perm:     perm,
@@ -194,8 +200,9 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 	}
 
 	return &inMemoryFile{
+		ctx: r.ctx,
 		dstPath: &destinationPath{
-			root:    r.instanceRoot,
+			root:    rootPath,
 			relPath: relPath,
 		},
 		perm:    perm,
@@ -314,7 +321,7 @@ func (r *renderer) persistToDisk() error {
 		if err == nil {
 			return fmt.Errorf("failed to initialize template, one or more files already exist: %s", path)
 		}
-		if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		if !errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("error while verifying file %s does not already exist: %w", path, err)
 		}
 	}
