@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/useragent"
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
 
@@ -33,5 +34,9 @@ func commandString(cmd *cobra.Command) string {
 }
 
 func withCommandInUserAgent(ctx context.Context, cmd *cobra.Command) context.Context {
-	return useragent.InContext(ctx, "cmd", commandString(cmd))
+	// We add a uuid to the command context to trace multiple API requests made
+	// by the same command invocation.
+	newCtx := useragent.InContext(ctx, "cmd-trace-id", uuid.New().String())
+
+	return useragent.InContext(newCtx, "cmd", commandString(cmd))
 }
