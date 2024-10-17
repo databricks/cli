@@ -2,14 +2,21 @@ package render
 
 import (
 	"bytes"
+	"context"
+	"io"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	assert "github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/serving"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -326,7 +333,7 @@ func TestRenderTextOutput(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			writer := &bytes.Buffer{}
 
-			err := RenderTextOutput(writer, tc.bundle, tc.diags, tc.opts)
+			err := RenderDiagnostics(writer, tc.bundle, tc.diags, tc.opts)
 			require.NoError(t, err)
 
 			assert.Equal(t, tc.expected, writer.String())
@@ -468,7 +475,7 @@ func TestRenderDiagnostics(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			writer := &bytes.Buffer{}
 
-			err := renderDiagnostics(writer, bundle, tc.diags)
+			err := renderDiagnosticsOnly(writer, bundle, tc.diags)
 			require.NoError(t, err)
 
 			assert.Equal(t, tc.expected, writer.String())
@@ -479,8 +486,105 @@ func TestRenderDiagnostics(t *testing.T) {
 func TestRenderSummaryTemplate_nilBundle(t *testing.T) {
 	writer := &bytes.Buffer{}
 
-	err := renderSummaryTemplate(writer, nil, nil)
+	err := renderSummaryHeaderTemplate(writer, nil)
 	require.NoError(t, err)
 
+	io.WriteString(writer, buildTrailer(nil))
+
 	assert.Equal(t, "Validation OK!\n", writer.String())
+}
+
+func TestRenderSummary(t *testing.T) {
+	ctx := context.Background()
+
+	// Create a mock bundle with various resources
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Bundle: config.Bundle{
+				Name:   "test-bundle",
+				Target: "test-target",
+			},
+			Workspace: config.Workspace{
+				Host: "https://mycompany.databricks.com/",
+			},
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job1": {
+						ID:          "1",
+						URL:         "https://url1",
+						JobSettings: &jobs.JobSettings{Name: "job1-name"},
+					},
+					"job2": {
+						ID:          "2",
+						URL:         "https://url2",
+						JobSettings: &jobs.JobSettings{Name: "job2-name"},
+					},
+				},
+				Pipelines: map[string]*resources.Pipeline{
+					"pipeline2": {
+						ID: "4",
+						// no URL
+						PipelineSpec: &pipelines.PipelineSpec{Name: "pipeline2-name"},
+					},
+					"pipeline1": {
+						ID:           "3",
+						URL:          "https://url3",
+						PipelineSpec: &pipelines.PipelineSpec{Name: "pipeline1-name"},
+					},
+				},
+				Schemas: map[string]*resources.Schema{
+					"schema1": {
+						ID: "catalog.schema",
+						CreateSchema: &catalog.CreateSchema{
+							Name: "schema",
+						},
+						// no URL
+					},
+				},
+				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
+					"endpoint1": {
+						ID: "7",
+						CreateServingEndpoint: &serving.CreateServingEndpoint{
+							Name: "my_serving_endpoint",
+						},
+						URL: "https://url4",
+					},
+				},
+			},
+		},
+	}
+
+	writer := &bytes.Buffer{}
+	err := RenderSummary(ctx, writer, b)
+	require.NoError(t, err)
+
+	expectedSummary := `Name: test-bundle
+Target: test-target
+Workspace:
+  Host: https://mycompany.databricks.com/
+Resources:
+  Jobs:
+    job1:
+      Name: job1-name
+      URL:  https://url1
+    job2:
+      Name: job2-name
+      URL:  https://url2
+  Model Serving Endpoints:
+    endpoint1:
+      Name: my_serving_endpoint
+      URL:  https://url4
+  Pipelines:
+    pipeline1:
+      Name: pipeline1-name
+      URL:  https://url3
+    pipeline2:
+      Name: pipeline2-name
+      URL:  (not deployed)
+  Schemas:
+    schema1:
+      Name: schema
+      URL:  (not deployed)
+`
+	assert.Equal(t, expectedSummary, writer.String())
 }

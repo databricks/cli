@@ -2,6 +2,9 @@ package resources
 
 import (
 	"context"
+	"fmt"
+	"net/url"
+	"strings"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
@@ -24,6 +27,7 @@ type RegisteredModel struct {
 	*catalog.CreateRegisteredModelRequest
 
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
+	URL            string         `json:"url,omitempty" bundle:"internal"`
 }
 
 func (s *RegisteredModel) UnmarshalJSON(b []byte) error {
@@ -47,4 +51,20 @@ func (s *RegisteredModel) Exists(ctx context.Context, w *databricks.WorkspaceCli
 
 func (s *RegisteredModel) TerraformResourceName() string {
 	return "databricks_registered_model"
+}
+
+func (s *RegisteredModel) InitializeURL(baseURL url.URL) {
+	if s.ID == "" {
+		return
+	}
+	baseURL.Path = fmt.Sprintf("explore/data/models/%s", strings.ReplaceAll(s.ID, ".", "/"))
+	s.URL = baseURL.String()
+}
+
+func (s *RegisteredModel) GetName() string {
+	return s.Name
+}
+
+func (s *RegisteredModel) GetURL() string {
+	return s.URL
 }
