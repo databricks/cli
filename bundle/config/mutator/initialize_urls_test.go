@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -76,6 +77,14 @@ func TestInitializeURLs(t *testing.T) {
 						},
 					},
 				},
+				Clusters: map[string]*resources.Cluster{
+					"cluster1": {
+						ID: "1017-103929-vlr7jzcf",
+						ClusterSpec: &compute.ClusterSpec{
+							ClusterName: "cluster1",
+						},
+					},
+				},
 			},
 		},
 	}
@@ -89,6 +98,7 @@ func TestInitializeURLs(t *testing.T) {
 		"registeredmodel1": "https://mycompany.databricks.com/explore/data/models/8?o=123456",
 		"qualityMonitor1":  "https://mycompany.databricks.com/explore/data/catalog/schema/qualityMonitor1?o=123456",
 		"schema1":          "https://mycompany.databricks.com/explore/data/catalog/schema?o=123456",
+		"cluster1":         "https://mycompany.databricks.com/compute/clusters/1017-103929-vlr7jzcf?o=123456",
 	}
 
 	initializeForWorkspace(b, "123456", "https://mycompany.databricks.com/")
