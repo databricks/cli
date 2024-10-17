@@ -106,8 +106,8 @@ func (d *loader) loadMapping(node *yaml.Node, loc dyn.Location) (dyn.Value, erro
 		case "!!str":
 			// OK
 		case "!!null":
-			// A literal value of "null" is treated as a null by the YAML parser
-			// for compatibility with JSON. We treat it as a string if used as a key.
+			// A literal unquoted "null" is treated as a null value by the YAML parser.
+			// However, when used as a key, it is treated as the string "null".
 		case "!!merge":
 			if merge != nil {
 				panic("merge node already set")
