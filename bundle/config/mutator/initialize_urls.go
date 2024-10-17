@@ -28,10 +28,10 @@ func (m *initializeURLs) Name() string {
 
 func (m *initializeURLs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	workspaceId, err := b.WorkspaceClient().CurrentWorkspaceID(ctx)
-	orgId := strconv.FormatInt(workspaceId, 10)
 	if err != nil {
 		return diag.FromErr(err)
 	}
+	orgId := strconv.FormatInt(workspaceId, 10)
 	urlPrefix := b.WorkspaceClient().Config.CanonicalHostName() + "/"
 	initializeForWorkspace(b, orgId, urlPrefix)
 	return nil
