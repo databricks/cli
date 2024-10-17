@@ -42,7 +42,7 @@ func TestIssue1828(t *testing.T) {
 		assert.Equal(t, "2021-01-01", b.Config.Variables["time"].Default)
 	}
 
-	if assert.Contains(t, b.Config.Variables, "null") {
-		assert.Equal(t, nil, b.Config.Variables["null"].Default)
+	if assert.Contains(t, b.Config.Variables, "nil") {
+		assert.Equal(t, nil, b.Config.Variables["nil"].Default)
 	}
 }

@@ -29,5 +29,5 @@ variables:
   time:
     default: 2021-01-01
 
-  null:
+  nil:
     default:
