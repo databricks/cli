@@ -2,7 +2,6 @@ package mutator
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -11,7 +10,6 @@ import (
 )
 
 type initializeURLs struct {
-	name string
 }
 
 // InitializeURLs makes sure the URL field of each resource is configured.
@@ -23,7 +21,7 @@ func InitializeURLs() bundle.Mutator {
 }
 
 func (m *initializeURLs) Name() string {
-	return fmt.Sprintf("InitializeURLs(%s)", m.name)
+	return "InitializeURLs"
 }
 
 func (m *initializeURLs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
