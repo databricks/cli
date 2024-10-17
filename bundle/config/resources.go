@@ -130,20 +130,71 @@ func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) 
 }
 
 type ResourceDescription struct {
+	// Singular and plural name when used to refer to the configuration.
 	SingularName string
+	PluralName   string
+
+	// Singular and plural title when used in summaries / terminal UI.
+	SingularTitle string
+	PluralTitle   string
 }
 
 // The keys of the map corresponds to the resource key in the bundle configuration.
 func SupportedResources() map[string]ResourceDescription {
 	return map[string]ResourceDescription{
-		"jobs":                    {SingularName: "job"},
-		"pipelines":               {SingularName: "pipeline"},
-		"models":                  {SingularName: "model"},
-		"experiments":             {SingularName: "experiment"},
-		"model_serving_endpoints": {SingularName: "model_serving_endpoint"},
-		"registered_models":       {SingularName: "registered_model"},
-		"quality_monitors":        {SingularName: "quality_monitor"},
-		"schemas":                 {SingularName: "schema"},
-		"clusters":                {SingularName: "cluster"},
+		"jobs": {
+			SingularName:  "job",
+			PluralName:    "jobs",
+			SingularTitle: "Job",
+			PluralTitle:   "Jobs",
+		},
+		"pipelines": {
+			SingularName:  "pipeline",
+			PluralName:    "pipelines",
+			SingularTitle: "Pipeline",
+			PluralTitle:   "Pipelines",
+		},
+		"models": {
+			SingularName:  "model",
+			PluralName:    "models",
+			SingularTitle: "Model",
+			PluralTitle:   "Models",
+		},
+		"experiments": {
+			SingularName:  "experiment",
+			PluralName:    "experiments",
+			SingularTitle: "Experiment",
+			PluralTitle:   "Experiments",
+		},
+		"model_serving_endpoints": {
+			SingularName:  "model_serving_endpoint",
+			PluralName:    "model_serving_endpoints",
+			SingularTitle: "Model Serving Endpoint",
+			PluralTitle:   "Model Serving Endpoints",
+		},
+		"registered_models": {
+			SingularName:  "registered_model",
+			PluralName:    "registered_models",
+			SingularTitle: "Registered Model",
+			PluralTitle:   "Registered Models",
+		},
+		"quality_monitors": {
+			SingularName:  "quality_monitor",
+			PluralName:    "quality_monitors",
+			SingularTitle: "Quality Monitor",
+			PluralTitle:   "Quality Monitors",
+		},
+		"schemas": {
+			SingularName:  "schema",
+			PluralName:    "schemas",
+			SingularTitle: "Schema",
+			PluralTitle:   "Schemas",
+		},
+		"clusters": {
+			SingularName:  "cluster",
+			PluralName:    "clusters",
+			SingularTitle: "Cluster",
+			PluralTitle:   "Clusters",
+		},
 	}
 }
