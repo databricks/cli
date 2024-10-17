@@ -105,6 +105,9 @@ func (d *loader) loadMapping(node *yaml.Node, loc dyn.Location) (dyn.Value, erro
 		switch st {
 		case "!!str":
 			// OK
+		case "!!null":
+			// A literal value of "null" is treated as a null by the YAML parser
+			// for compatibility with JSON. We treat it as a string if used as a key.
 		case "!!merge":
 			if merge != nil {
 				panic("merge node already set")
@@ -115,10 +118,11 @@ func (d *loader) loadMapping(node *yaml.Node, loc dyn.Location) (dyn.Value, erro
 			return dyn.InvalidValue, errorf(loc, "invalid key tag: %v", st)
 		}
 
-		k, err := d.load(key)
-		if err != nil {
-			return dyn.InvalidValue, err
-		}
+		k := dyn.NewValue(key.Value, []dyn.Location{{
+			File:   d.path,
+			Line:   key.Line,
+			Column: key.Column,
+		}})
 
 		v, err := d.load(val)
 		if err != nil {
@@ -173,6 +177,14 @@ func (d *loader) loadMapping(node *yaml.Node, loc dyn.Location) (dyn.Value, erro
 	return dyn.NewValue(out, []dyn.Location{loc}), nil
 }
 
+func newIntValue(i64 int64, loc dyn.Location) dyn.Value {
+	// Use regular int type instead of int64 if possible.
+	if i64 >= math.MinInt32 && i64 <= math.MaxInt32 {
+		return dyn.NewValue(int(i64), []dyn.Location{loc})
+	}
+	return dyn.NewValue(i64, []dyn.Location{loc})
+}
+
 func (d *loader) loadScalar(node *yaml.Node, loc dyn.Location) (dyn.Value, error) {
 	st := node.ShortTag()
 	switch st {
@@ -188,18 +200,44 @@ func (d *loader) loadScalar(node *yaml.Node, loc dyn.Location) (dyn.Value, error
 			return dyn.InvalidValue, errorf(loc, "invalid bool value: %v", node.Value)
 		}
 	case "!!int":
-		i64, err := strconv.ParseInt(node.Value, 10, 64)
-		if err != nil {
-			return dyn.InvalidValue, errorf(loc, "invalid int value: %v", node.Value)
+		// Try to parse the an integer value in base 10.
+		// We trim leading zeros to avoid octal parsing of the "0" prefix.
+		// See "testdata/spec_example_2.19.yml" for background.
+		i64, err := strconv.ParseInt(strings.TrimLeft(node.Value, "0"), 10, 64)
+		if err == nil {
+			return newIntValue(i64, loc), nil
 		}
-		// Use regular int type instead of int64 if possible.
-		if i64 >= math.MinInt32 && i64 <= math.MaxInt32 {
-			return dyn.NewValue(int(i64), []dyn.Location{loc}), nil
+		// Let the [ParseInt] function figure out the base.
+		i64, err = strconv.ParseInt(node.Value, 0, 64)
+		if err == nil {
+			return newIntValue(i64, loc), nil
 		}
-		return dyn.NewValue(i64, []dyn.Location{loc}), nil
+		return dyn.InvalidValue, errorf(loc, "invalid int value: %v", node.Value)
 	case "!!float":
 		f64, err := strconv.ParseFloat(node.Value, 64)
 		if err != nil {
+			// Deal with infinity prefixes.
+			v := strings.ToLower(node.Value)
+			switch {
+			case strings.HasPrefix(v, "+"):
+				v = strings.TrimPrefix(v, "+")
+				f64 = math.Inf(1)
+			case strings.HasPrefix(v, "-"):
+				v = strings.TrimPrefix(v, "-")
+				f64 = math.Inf(-1)
+			default:
+				// No prefix.
+				f64 = math.Inf(1)
+			}
+
+			// Deal with infinity and NaN values.
+			switch v {
+			case ".inf":
+				return dyn.NewValue(f64, []dyn.Location{loc}), nil
+			case ".nan":
+				return dyn.NewValue(math.NaN(), []dyn.Location{loc}), nil
+			}
+
 			return dyn.InvalidValue, errorf(loc, "invalid float value: %v", node.Value)
 		}
 		return dyn.NewValue(f64, []dyn.Location{loc}), nil
