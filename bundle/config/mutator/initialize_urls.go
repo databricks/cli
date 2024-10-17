@@ -48,8 +48,8 @@ func initializeForWorkspace(b *bundle.Bundle, orgId string, urlPrefix string) {
 		urlSuffix = "?o=" + orgId
 	}
 
-	for _, rs := range b.Config.Resources.AllResources() {
-		for _, r := range rs {
+	for _, group := range b.Config.Resources.AllResources() {
+		for _, r := range group.Resources {
 			r.InitializeURL(urlPrefix, urlSuffix)
 		}
 	}

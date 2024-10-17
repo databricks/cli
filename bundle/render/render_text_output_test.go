@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/stretchr/testify/require"
 )
 
@@ -539,6 +540,15 @@ func TestRenderSummary(t *testing.T) {
 						// no URL
 					},
 				},
+				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
+					"endpoint1": {
+						ID: "7",
+						CreateServingEndpoint: &serving.CreateServingEndpoint{
+							Name: "my_serving_endpoint",
+						},
+						URL: "https://url4",
+					},
+				},
 			},
 		},
 	}
@@ -559,6 +569,10 @@ Resources:
     job2:
       Name: job2-name
       URL:  https://url2
+  Model Serving Endpoints:
+    endpoint1:
+      Name: my_serving_endpoint
+      URL:  https://url4
   Pipelines:
     pipeline1:
       Name: pipeline1-name

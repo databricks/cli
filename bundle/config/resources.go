@@ -41,64 +41,42 @@ type ConfigResource interface {
 	InitializeURL(urlPrefix string, urlSuffix string)
 }
 
-func (r *Resources) AllResources() map[string]map[string]ConfigResource {
-	result := make(map[string]map[string]ConfigResource)
+// ResourceGroup represents a group of resources of the same type.
+// It includes a description of the resource type and a map of resources.
+type ResourceGroup struct {
+	Description ResourceDescription
+	Resources   map[string]ConfigResource
+}
 
-	jobResources := make(map[string]ConfigResource)
-	for key, job := range r.Jobs {
-		jobResources[key] = job
+// collectResourceMap collects resources of a specific type into a ResourceGroup.
+func collectResourceMap[T ConfigResource](
+	description ResourceDescription,
+	input map[string]T,
+) ResourceGroup {
+	resources := make(map[string]ConfigResource)
+	for key, resource := range input {
+		resources[key] = resource
 	}
-	result["jobs"] = jobResources
-
-	pipelineResources := make(map[string]ConfigResource)
-	for key, pipeline := range r.Pipelines {
-		pipelineResources[key] = pipeline
+	return ResourceGroup{
+		Description: description,
+		Resources:   resources,
 	}
-	result["pipelines"] = pipelineResources
+}
 
-	modelResources := make(map[string]ConfigResource)
-	for key, model := range r.Models {
-		modelResources[key] = model
+// AllResources returns all resources in the bundle grouped by their resource type.
+func (r *Resources) AllResources() []ResourceGroup {
+	descriptions := SupportedResources()
+	return []ResourceGroup{
+		collectResourceMap(descriptions["jobs"], r.Jobs),
+		collectResourceMap(descriptions["pipelines"], r.Pipelines),
+		collectResourceMap(descriptions["models"], r.Models),
+		collectResourceMap(descriptions["experiments"], r.Experiments),
+		collectResourceMap(descriptions["model_serving_endpoints"], r.ModelServingEndpoints),
+		collectResourceMap(descriptions["registered_models"], r.RegisteredModels),
+		collectResourceMap(descriptions["quality_monitors"], r.QualityMonitors),
+		collectResourceMap(descriptions["schemas"], r.Schemas),
+		collectResourceMap(descriptions["clusters"], r.Clusters),
 	}
-	result["models"] = modelResources
-
-	experimentResources := make(map[string]ConfigResource)
-	for key, experiment := range r.Experiments {
-		experimentResources[key] = experiment
-	}
-	result["experiments"] = experimentResources
-
-	modelServingEndpointResources := make(map[string]ConfigResource)
-	for key, endpoint := range r.ModelServingEndpoints {
-		modelServingEndpointResources[key] = endpoint
-	}
-	result["model_serving_endpoints"] = modelServingEndpointResources
-
-	registeredModelResources := make(map[string]ConfigResource)
-	for key, registeredModel := range r.RegisteredModels {
-		registeredModelResources[key] = registeredModel
-	}
-	result["registered_models"] = registeredModelResources
-
-	qualityMonitorResources := make(map[string]ConfigResource)
-	for key, qualityMonitor := range r.QualityMonitors {
-		qualityMonitorResources[key] = qualityMonitor
-	}
-	result["quality_monitors"] = qualityMonitorResources
-
-	schemaResources := make(map[string]ConfigResource)
-	for key, schema := range r.Schemas {
-		schemaResources[key] = schema
-	}
-	result["schemas"] = schemaResources
-
-	clusterResources := make(map[string]ConfigResource)
-	for key, schema := range r.Clusters {
-		clusterResources[key] = schema
-	}
-	result["clusters"] = clusterResources
-
-	return result
 }
 
 func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) {

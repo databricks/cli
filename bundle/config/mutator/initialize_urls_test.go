@@ -93,8 +93,8 @@ func TestInitializeURLs(t *testing.T) {
 
 	initializeForWorkspace(b, "123456", "https://mycompany.databricks.com/")
 
-	for _, rs := range b.Config.Resources.AllResources() {
-		for key, r := range rs {
+	for _, group := range b.Config.Resources.AllResources() {
+		for key, r := range group.Resources {
 			require.Equal(t, expectedURLs[key], r.GetURL(), "Unexpected URL for "+key)
 		}
 	}

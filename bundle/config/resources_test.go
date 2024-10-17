@@ -67,7 +67,11 @@ func TestResourcesAllResourcesCompleteness(t *testing.T) {
 	r := Resources{}
 	rt := reflect.TypeOf(r)
 
-	result := r.AllResources()
+	// Collect set of includes resource types
+	var types []string
+	for _, group := range r.AllResources() {
+		types = append(types, group.Description.PluralName)
+	}
 
 	for i := 0; i < rt.NumField(); i++ {
 		field := rt.Field(i)
@@ -77,8 +81,7 @@ func TestResourcesAllResourcesCompleteness(t *testing.T) {
 			jsonTag = jsonTag[:idx]
 		}
 
-		_, exists := result[jsonTag]
-		assert.True(t, exists, "Field %s is missing in AllResources map", field.Name)
+		assert.Contains(t, types, jsonTag, "Field %s is missing in AllResources", field.Name)
 	}
 }
 

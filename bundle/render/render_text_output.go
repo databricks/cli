@@ -187,9 +187,9 @@ func RenderSummary(ctx context.Context, out io.Writer, b *bundle.Bundle) error {
 
 	var resourceGroups []ResourceGroup
 
-	for group, r := range b.Config.Resources.AllResources() {
-		resources := make([]ResourceInfo, 0, len(r))
-		for key, resource := range r {
+	for _, group := range b.Config.Resources.AllResources() {
+		resources := make([]ResourceInfo, 0, len(group.Resources))
+		for key, resource := range group.Resources {
 			resources = append(resources, ResourceInfo{
 				Key:  key,
 				Name: resource.GetName(),
@@ -198,9 +198,8 @@ func RenderSummary(ctx context.Context, out io.Writer, b *bundle.Bundle) error {
 		}
 
 		if len(resources) > 0 {
-			capitalizedGroup := strings.ToUpper(group[:1]) + group[1:]
 			resourceGroups = append(resourceGroups, ResourceGroup{
-				GroupName: capitalizedGroup,
+				GroupName: group.Description.PluralTitle,
 				Resources: resources,
 			})
 		}
