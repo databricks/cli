@@ -120,6 +120,9 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				Schemas: map[string]*resources.Schema{
 					"schema1": {CreateSchema: &catalog.CreateSchema{Name: "schema1"}},
 				},
+				Volumes: map[string]*resources.Volume{
+					"volume1": {CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{Name: "volume1"}},
+				},
 				Clusters: map[string]*resources.Cluster{
 					"cluster1": {ClusterSpec: &compute.ClusterSpec{ClusterName: "cluster1", SparkVersion: "13.2.x", NumWorkers: 1}},
 				},
@@ -288,6 +291,8 @@ func TestProcessTargetModeDefault(t *testing.T) {
 	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
+	assert.Equal(t, "schema1", b.Config.Resources.Schemas["schema1"].Name)
+	assert.Equal(t, "volume1", b.Config.Resources.Volumes["volume1"].Name)
 	assert.Equal(t, "cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
 }
 
@@ -331,6 +336,8 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
+	assert.Equal(t, "schema1", b.Config.Resources.Schemas["schema1"].Name)
+	assert.Equal(t, "volume1", b.Config.Resources.Volumes["volume1"].Name)
 	assert.Equal(t, "cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
 }
 

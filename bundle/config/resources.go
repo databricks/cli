@@ -19,6 +19,7 @@ type Resources struct {
 	RegisteredModels      map[string]*resources.RegisteredModel      `json:"registered_models,omitempty"`
 	QualityMonitors       map[string]*resources.QualityMonitor       `json:"quality_monitors,omitempty"`
 	Schemas               map[string]*resources.Schema               `json:"schemas,omitempty"`
+	Volumes               map[string]*resources.Volume               `json:"volumes,omitempty"`
 	Clusters              map[string]*resources.Cluster              `json:"clusters,omitempty"`
 }
 
@@ -75,6 +76,7 @@ func SupportedResources() map[string]ResourceDescription {
 		"registered_models":       {SingularName: "registered_model"},
 		"quality_monitors":        {SingularName: "quality_monitor"},
 		"schemas":                 {SingularName: "schema"},
+		"volumes":                 {SingularName: "volume"},
 		"clusters":                {SingularName: "cluster"},
 	}
 }

@@ -71,3 +71,23 @@ func (v ref) references() []string {
 func IsPureVariableReference(s string) bool {
 	return len(s) > 0 && re.FindString(s) == s
 }
+
+// If s is a pure variable reference, this function returns the corresponding
+// dyn.Path. Otherwise, it returns false.
+func PureReferenceToPath(s string) (dyn.Path, bool) {
+	ref, ok := newRef(dyn.V(s))
+	if !ok {
+		return nil, false
+	}
+
+	if !ref.isPure() {
+		return nil, false
+	}
+
+	p, err := dyn.NewPathFromString(ref.references()[0])
+	if err != nil {
+		return nil, false
+	}
+
+	return p, true
+}
