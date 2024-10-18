@@ -80,7 +80,7 @@ func NewView(root vfs.Path) (*View, error) {
 
 	// Target path must be relative to the repository root path.
 	target := root.Native()
-	prefix := repo.root.Native()
+	prefix := repo.rootDir.Native()
 	if !strings.HasPrefix(target, prefix) {
 		return nil, fmt.Errorf("path %q is not within repository root %q", root.Native(), prefix)
 	}
@@ -107,17 +107,6 @@ func (v *View) EnsureValidGitIgnoreExists() error {
 		return nil
 	}
 
-	// Hard code .databricks ignore pattern so that we never sync it (irrespective)
-	// of .gitignore patterns
-	v.repo.addIgnoreRule(newStringIgnoreRules([]string{
-		".databricks",
-	}))
-
-	// Bail if we are in a worktree
-	if v.repo.Root() != v.repo.resolveGitRoot().Native() {
-		return nil
-	}
-
 	// Create .gitignore with .databricks entry
 	gitIgnorePath := filepath.Join(v.repo.Root(), v.targetPath, ".gitignore")
 	file, err := os.OpenFile(gitIgnorePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
@@ -125,6 +114,12 @@ func (v *View) EnsureValidGitIgnoreExists() error {
 		return err
 	}
 	defer file.Close()
+
+	// Hard code .databricks ignore pattern so that we never sync it (irrespective)
+	// of .gitignore patterns
+	v.repo.addIgnoreRule(newStringIgnoreRules([]string{
+		".databricks",
+	}))
 
 	_, err = file.WriteString("\n.databricks\n")
 	if err != nil {

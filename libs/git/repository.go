@@ -1,7 +1,6 @@
 package git
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -24,8 +23,18 @@ type Repository struct {
 	// directory where we process .gitignore files.
 	real bool
 
-	// root is the absolute path to the repository root.
-	root vfs.Path
+	// rootDir is the path to the root of the repository checkout.
+	// This can be either the main repository checkout or a worktree.
+	rootDir vfs.Path
+
+	// gitDir is the equivalent of $GIT_DIR and points to the
+	// `.git` directory of a repository or a worktree.
+	gitDir vfs.Path
+
+	// gitCommonDir is the equivalent of $GIT_COMMON_DIR and points to the
+	// `.git` directory of the main working tree (common between worktrees).
+	// This is equivalent to [gitDir] if this is the main working tree.
+	gitCommonDir vfs.Path
 
 	// ignore contains a list of ignore patterns indexed by the
 	// path prefix relative to the repository root.
@@ -45,12 +54,11 @@ type Repository struct {
 
 // Root returns the absolute path to the repository root.
 func (r *Repository) Root() string {
-	return r.root.Native()
+	return r.rootDir.Native()
 }
 
 func (r *Repository) CurrentBranch() (string, error) {
-	// load .git/HEAD
-	ref, err := LoadReferenceFile(r.root, path.Join(GitDirectoryName, "HEAD"))
+	ref, err := LoadReferenceFile(r.gitDir, "HEAD")
 	if err != nil {
 		return "", err
 	}
@@ -66,8 +74,7 @@ func (r *Repository) CurrentBranch() (string, error) {
 }
 
 func (r *Repository) LatestCommit() (string, error) {
-	// load .git/HEAD
-	ref, err := LoadReferenceFile(r.root, path.Join(GitDirectoryName, "HEAD"))
+	ref, err := LoadReferenceFile(r.gitDir, "HEAD")
 	if err != nil {
 		return "", err
 	}
@@ -81,12 +88,12 @@ func (r *Repository) LatestCommit() (string, error) {
 		return ref.Content, nil
 	}
 
-	// read reference from .git/HEAD
+	// Read reference from $GIT_DIR/HEAD
 	branchHeadPath, err := ref.ResolvePath()
 	if err != nil {
 		return "", err
 	}
-	branchHeadRef, err := LoadReferenceFile(r.root, path.Join(GitDirectoryName, branchHeadPath))
+	branchHeadRef, err := LoadReferenceFile(r.gitCommonDir, branchHeadPath)
 	if err != nil {
 		return "", err
 	}
@@ -120,65 +127,18 @@ func (r *Repository) OriginUrl() string {
 	return parsedUrl.String()
 }
 
-func readGitDir(root vfs.Path) (string, error) {
-	file, err := root.Open(".git")
-	if err != nil {
-		return "", fmt.Errorf("error opening file: %w", err)
-	}
-	defer file.Close()
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.HasPrefix(line, "gitdir: ") {
-			// Extract the path after "gitdir: "
-			return strings.TrimSpace(strings.TrimPrefix(line, "gitdir: ")), nil
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		return "", fmt.Errorf("error reading file: %w", err)
-	}
-
-	return "", errors.New("gitdir line not found")
-}
-
-func (r *Repository) resolveGitRoot() vfs.Path {
-	fileInfo, err := r.root.Stat(".git")
-	if err != nil {
-		return r.root
-	}
-	if fileInfo.IsDir() {
-		return r.root
-	}
-	gitDir, err := readGitDir(r.root)
-	if err != nil {
-		return r.root
-	}
-	return vfs.MustNew(gitDir)
-}
-
 // loadConfig loads and combines user specific and repository specific configuration files.
 func (r *Repository) loadConfig() error {
 	config, err := globalGitConfig()
 	if err != nil {
 		return fmt.Errorf("unable to load user specific gitconfig: %w", err)
 	}
-	root := r.resolveGitRoot()
-	if root == nil {
-		return fmt.Errorf("unable to resolve git root")
-	}
-	err = config.loadFile(root, ".git/config")
+	err = config.loadFile(r.gitCommonDir, "config")
 	if err != nil {
 		return fmt.Errorf("unable to load repository specific gitconfig: %w", err)
 	}
 	r.config = config
 	return nil
-}
-
-// newIgnoreFile constructs a new [ignoreRules] implementation backed by
-// a file using the specified path relative to the repository root.
-func (r *Repository) newIgnoreFile(relativeIgnoreFilePath string) ignoreRules {
-	return newIgnoreFile(r.resolveGitRoot(), relativeIgnoreFilePath)
 }
 
 // getIgnoreRules returns a slice of [ignoreRules] that apply
@@ -191,7 +151,7 @@ func (r *Repository) getIgnoreRules(prefix string) []ignoreRules {
 		return fs
 	}
 
-	r.ignore[prefix] = append(r.ignore[prefix], r.newIgnoreFile(path.Join(prefix, gitIgnoreFileName)))
+	r.ignore[prefix] = append(r.ignore[prefix], newIgnoreFile(r.rootDir, path.Join(prefix, gitIgnoreFileName)))
 	return r.ignore[prefix]
 }
 
@@ -247,7 +207,7 @@ func (r *Repository) Ignore(relPath string) (bool, error) {
 
 func NewRepository(path vfs.Path) (*Repository, error) {
 	real := true
-	rootPath, err := vfs.FindLeafInTree(path, GitDirectoryName)
+	rootDir, err := vfs.FindLeafInTree(path, GitDirectoryName)
 	if err != nil {
 		if !errors.Is(err, fs.ErrNotExist) {
 			return nil, err
@@ -255,13 +215,22 @@ func NewRepository(path vfs.Path) (*Repository, error) {
 		// Cannot find `.git` directory.
 		// Treat the specified path as a potential repository root.
 		real = false
-		rootPath = path
+		rootDir = path
+	}
+
+	// Derive $GIT_DIR and $GIT_COMMON_DIR paths if this is a real repository.
+	// If it isn't a real repository, they'll point to the (non-existent) `.git` directory.
+	gitDir, gitCommonDir, err := resolveGitDirs(rootDir)
+	if err != nil {
+		return nil, err
 	}
 
 	repo := &Repository{
-		real:   real,
-		root:   rootPath,
-		ignore: make(map[string][]ignoreRules),
+		real:         real,
+		rootDir:      rootDir,
+		gitDir:       gitDir,
+		gitCommonDir: gitCommonDir,
+		ignore:       make(map[string][]ignoreRules),
 	}
 
 	err = repo.loadConfig()
@@ -295,9 +264,9 @@ func NewRepository(path vfs.Path) (*Repository, error) {
 			".git",
 		}),
 		// Load repository-wide excludes file.
-		repo.newIgnoreFile(".git/info/excludes"),
+		newIgnoreFile(repo.gitCommonDir, "info/excludes"),
 		// Load root gitignore file.
-		repo.newIgnoreFile(".gitignore"),
+		newIgnoreFile(repo.rootDir, ".gitignore"),
 	}
 
 	return repo, nil
