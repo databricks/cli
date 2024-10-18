@@ -8,7 +8,7 @@ import (
 
 func (t *translateContext) applyDashboardTranslations(v dyn.Value) (dyn.Value, error) {
 	// Convert the `file_path` field to a local absolute path.
-	// Terraform will load the file at this path and use its contents for the dashboard contents.
+	// We load the file at this path and use its contents for the dashboard contents.
 	pattern := dyn.NewPattern(
 		dyn.Key("resources"),
 		dyn.Key("dashboards"),
