@@ -58,12 +58,9 @@ func TestBundleToTerraformJob(t *testing.T) {
 		},
 	}
 
-	vin, err := convert.FromTyped(config, dyn.NilValue)
-	require.NoError(t, err)
-	out, err := BundleToTerraformWithDynValue(context.Background(), vin)
-	require.NoError(t, err)
-
+	out := BundleToTerraform(&config)
 	resource := out.Resource.Job["my_job"].(*schema.ResourceJob)
+
 	assert.Equal(t, "my job", resource.Name)
 	assert.Len(t, resource.JobCluster, 1)
 	assert.Equal(t, "https://github.com/foo/bar", resource.GitSource.Url)
