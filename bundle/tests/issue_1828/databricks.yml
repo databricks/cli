@@ -1,0 +1,33 @@
+bundle:
+  name: issue_1828
+
+variables:
+  # One entry for each of the underlying YAML (or [dyn.Kind]) types.
+  # The test confirms we can convert to and from the typed configuration without losing information.
+
+  map:
+    default:
+      foo: bar
+
+  sequence:
+    default:
+      - foo
+      - bar
+
+  string:
+    default: foo
+
+  bool:
+    default: true
+
+  int:
+    default: 42
+
+  float:
+    default: 3.14
+
+  time:
+    default: 2021-01-01
+
+  nil:
+    default:
