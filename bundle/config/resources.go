@@ -39,7 +39,7 @@ type ConfigResource interface {
 	GetURL() string
 
 	// InitializeURL initializes the URL field of the resource.
-	InitializeURL(url.URL)
+	InitializeURL(baseURL url.URL)
 }
 
 // ResourceGroup represents a group of resources of the same type.
