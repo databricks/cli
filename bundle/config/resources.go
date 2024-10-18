@@ -78,6 +78,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["quality_monitors"], r.QualityMonitors),
 		collectResourceMap(descriptions["schemas"], r.Schemas),
 		collectResourceMap(descriptions["clusters"], r.Clusters),
+		collectResourceMap(descriptions["dashboards"], r.Dashboards),
 	}
 }
 
@@ -175,6 +176,12 @@ func SupportedResources() map[string]ResourceDescription {
 			PluralName:    "clusters",
 			SingularTitle: "Cluster",
 			PluralTitle:   "Clusters",
+		},
+		"dashboards": {
+			SingularName:  "dashboard",
+			PluralName:    "dashboards",
+			SingularTitle: "Dashboard",
+			PluralTitle:   "Dashboards",
 		},
 	}
 }

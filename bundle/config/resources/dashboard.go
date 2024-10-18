@@ -2,6 +2,8 @@ package resources
 
 import (
 	"context"
+	"fmt"
+	"net/url"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
@@ -13,6 +15,7 @@ type Dashboard struct {
 	ID             string         `json:"id,omitempty" bundle:"readonly"`
 	Permissions    []Permission   `json:"permissions,omitempty"`
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
+	URL            string         `json:"url,omitempty" bundle:"internal"`
 
 	// ===========================
 	// === BEGIN OF API FIELDS ===
@@ -50,12 +53,12 @@ type Dashboard struct {
 	FilePath string `json:"file_path,omitempty"`
 }
 
-func (s *Dashboard) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
+func (r *Dashboard) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, r)
 }
 
-func (s Dashboard) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
+func (r Dashboard) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(r)
 }
 
 func (*Dashboard) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
@@ -63,7 +66,7 @@ func (*Dashboard) Exists(ctx context.Context, w *databricks.WorkspaceClient, id 
 		DashboardId: id,
 	})
 	if err != nil {
-		log.Debugf(ctx, "Dashboard %s does not exist", id)
+		log.Debugf(ctx, "dashboard %s does not exist", id)
 		return false, err
 	}
 	return true, nil
@@ -71,4 +74,21 @@ func (*Dashboard) Exists(ctx context.Context, w *databricks.WorkspaceClient, id 
 
 func (*Dashboard) TerraformResourceName() string {
 	return "databricks_dashboard"
+}
+
+func (r *Dashboard) InitializeURL(baseURL url.URL) {
+	if r.ID == "" {
+		return
+	}
+
+	baseURL.Path = fmt.Sprintf("dashboardsv3/%s/published", r.ID)
+	r.URL = baseURL.String()
+}
+
+func (r *Dashboard) GetName() string {
+	return r.DisplayName
+}
+
+func (r *Dashboard) GetURL() string {
+	return r.URL
 }
