@@ -80,7 +80,7 @@ func NewView(root vfs.Path) (*View, error) {
 
 	// Target path must be relative to the repository root path.
 	target := root.Native()
-	prefix := repo.rootDir.Native()
+	prefix := repo.checkoutDir.Native()
 	if !strings.HasPrefix(target, prefix) {
 		return nil, fmt.Errorf("path %q is not within repository root %q", root.Native(), prefix)
 	}

@@ -23,9 +23,9 @@ type Repository struct {
 	// directory where we process .gitignore files.
 	real bool
 
-	// rootDir is the path to the root of the repository checkout.
+	// checkoutDir is the path to the root of the repository checkout.
 	// This can be either the main repository checkout or a worktree.
-	rootDir vfs.Path
+	checkoutDir vfs.Path
 
 	// gitDir is the equivalent of $GIT_DIR and points to the
 	// `.git` directory of a repository or a worktree.
@@ -54,7 +54,7 @@ type Repository struct {
 
 // Root returns the absolute path to the repository root.
 func (r *Repository) Root() string {
-	return r.rootDir.Native()
+	return r.checkoutDir.Native()
 }
 
 func (r *Repository) CurrentBranch() (string, error) {
@@ -151,7 +151,7 @@ func (r *Repository) getIgnoreRules(prefix string) []ignoreRules {
 		return fs
 	}
 
-	r.ignore[prefix] = append(r.ignore[prefix], newIgnoreFile(r.rootDir, path.Join(prefix, gitIgnoreFileName)))
+	r.ignore[prefix] = append(r.ignore[prefix], newIgnoreFile(r.checkoutDir, path.Join(prefix, gitIgnoreFileName)))
 	return r.ignore[prefix]
 }
 
@@ -207,27 +207,27 @@ func (r *Repository) Ignore(relPath string) (bool, error) {
 
 func NewRepository(path vfs.Path) (*Repository, error) {
 	real := true
-	rootDir, err := vfs.FindLeafInTree(path, GitDirectoryName)
+	checkoutDir, err := vfs.FindLeafInTree(path, GitDirectoryName)
 	if err != nil {
 		if !errors.Is(err, fs.ErrNotExist) {
 			return nil, err
 		}
 		// Cannot find `.git` directory.
-		// Treat the specified path as a potential repository root.
+		// Treat the specified path as a potential repository root checkout.
 		real = false
-		rootDir = path
+		checkoutDir = path
 	}
 
 	// Derive $GIT_DIR and $GIT_COMMON_DIR paths if this is a real repository.
 	// If it isn't a real repository, they'll point to the (non-existent) `.git` directory.
-	gitDir, gitCommonDir, err := resolveGitDirs(rootDir)
+	gitDir, gitCommonDir, err := resolveGitDirs(checkoutDir)
 	if err != nil {
 		return nil, err
 	}
 
 	repo := &Repository{
 		real:         real,
-		rootDir:      rootDir,
+		checkoutDir:  checkoutDir,
 		gitDir:       gitDir,
 		gitCommonDir: gitCommonDir,
 		ignore:       make(map[string][]ignoreRules),
@@ -266,7 +266,7 @@ func NewRepository(path vfs.Path) (*Repository, error) {
 		// Load repository-wide excludes file.
 		newIgnoreFile(repo.gitCommonDir, "info/excludes"),
 		// Load root gitignore file.
-		newIgnoreFile(repo.rootDir, ".gitignore"),
+		newIgnoreFile(repo.checkoutDir, ".gitignore"),
 	}
 
 	return repo, nil
