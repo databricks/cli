@@ -3,6 +3,7 @@ package git
 import (
 	"bufio"
 	"errors"
+	"fmt"
 	"io/fs"
 	"path/filepath"
 	"strings"
@@ -47,7 +48,7 @@ func readGitDir(root vfs.Path) (string, error) {
 	}
 
 	if gitDir == "" {
-		return "", errors.New("gitdir line not found")
+		return "", fmt.Errorf(`expected %q to contain a line with "gitdir: [...]"`, filepath.Join(root.Native(), GitDirectoryName))
 	}
 
 	return gitDir, nil
@@ -62,10 +63,10 @@ func readGitCommonDir(gitDir vfs.Path) (string, error) {
 	}
 
 	if len(lines) == 0 {
-		return "", errors.New("commondir file not found")
+		return "", errors.New("file is empty")
 	}
 
-	return lines[0], nil
+	return strings.TrimSpace(lines[0]), nil
 }
 
 // resolveGitDirs resolves the paths for $GIT_DIR and $GIT_COMMON_DIR.
@@ -107,7 +108,7 @@ func resolveGitDirs(root vfs.Path) (vfs.Path, vfs.Path, error) {
 	// Read value for $GIT_COMMON_DIR.
 	gitCommonDirValue, err := readGitCommonDir(gitDir)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf(`expected "commondir" file in worktree git folder at %q: %w`, gitDir.Native(), err)
 	}
 
 	// Resolve $GIT_COMMON_DIR.
