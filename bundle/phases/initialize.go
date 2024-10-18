@@ -66,6 +66,7 @@ func Initialize() bundle.Mutator {
 			permissions.PermissionDiagnostics(),
 			mutator.SetRunAs(),
 			mutator.OverrideCompute(),
+			mutator.ConfigureDashboardDefaults(),
 			mutator.ProcessTargetMode(),
 			mutator.ApplyPresets(),
 			mutator.DefaultQueueing(),
