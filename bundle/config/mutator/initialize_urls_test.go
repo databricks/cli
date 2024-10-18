@@ -43,7 +43,7 @@ func TestInitializeURLs(t *testing.T) {
 				Models: map[string]*resources.MlflowModel{
 					"model1": {
 						ID:    "a model uses its name for identifier",
-						Model: &ml.Model{Name: "model1"},
+						Model: &ml.Model{Name: "a model uses its name for identifier"},
 					},
 				},
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
