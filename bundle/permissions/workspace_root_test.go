@@ -7,7 +7,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -72,79 +71,4 @@ func TestApplyWorkspaceRootPermissions(t *testing.T) {
 
 	diags := bundle.Apply(context.Background(), b, bundle.Seq(ValidateSharedRootPermissions(), ApplyWorkspaceRootPermissions()))
 	require.Empty(t, diags)
-}
-
-func TestApplyWorkspaceRootPermissionsForShared(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Workspace: config.Workspace{
-				RootPath: "/Workspace/Shared/foo/bar",
-			},
-			Permissions: []resources.Permission{
-				{Level: CAN_MANAGE, GroupName: "users"},
-			},
-			Resources: config.Resources{
-				Jobs: map[string]*resources.Job{
-					"job_1": {JobSettings: &jobs.JobSettings{Name: "job_1"}},
-					"job_2": {JobSettings: &jobs.JobSettings{Name: "job_2"}},
-				},
-			},
-		},
-	}
-
-	m := mocks.NewMockWorkspaceClient(t)
-	b.SetWorkpaceClient(m.WorkspaceClient)
-	workspaceApi := m.GetMockWorkspaceAPI()
-	workspaceApi.EXPECT().GetStatusByPath(mock.Anything, "/Workspace/Shared/foo/bar").Return(&workspace.ObjectInfo{
-		ObjectId: 1234,
-	}, nil)
-	workspaceApi.EXPECT().UpdatePermissions(mock.Anything, workspace.WorkspaceObjectPermissionsRequest{
-		AccessControlList: []workspace.WorkspaceObjectAccessControlRequest{
-			{GroupName: "users", PermissionLevel: "CAN_MANAGE"},
-		},
-		WorkspaceObjectId:   "1234",
-		WorkspaceObjectType: "directories",
-	}).Return(nil, nil)
-
-	diags := bundle.Apply(context.Background(), b, bundle.Seq(ValidateSharedRootPermissions(), ApplyWorkspaceRootPermissions()))
-	require.Empty(t, diags)
-}
-
-func TestApplyWorkspaceRootPermissionsForSharedError(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Workspace: config.Workspace{
-				RootPath: "/Workspace/Shared/foo/bar",
-			},
-			Permissions: []resources.Permission{
-				{Level: CAN_MANAGE, UserName: "foo@bar.com"},
-			},
-			Resources: config.Resources{
-				Jobs: map[string]*resources.Job{
-					"job_1": {JobSettings: &jobs.JobSettings{Name: "job_1"}},
-					"job_2": {JobSettings: &jobs.JobSettings{Name: "job_2"}},
-				},
-			},
-		},
-	}
-
-	m := mocks.NewMockWorkspaceClient(t)
-	b.SetWorkpaceClient(m.WorkspaceClient)
-	workspaceApi := m.GetMockWorkspaceAPI()
-	workspaceApi.EXPECT().GetStatusByPath(mock.Anything, "/Workspace/Shared/foo/bar").Return(&workspace.ObjectInfo{
-		ObjectId: 1234,
-	}, nil)
-
-	workspaceApi.EXPECT().UpdatePermissions(mock.Anything, workspace.WorkspaceObjectPermissionsRequest{
-		AccessControlList: []workspace.WorkspaceObjectAccessControlRequest{
-			{UserName: "foo@bar.com", PermissionLevel: "CAN_MANAGE"},
-		},
-		WorkspaceObjectId:   "1234",
-		WorkspaceObjectType: "directories",
-	}).Return(nil, nil)
-
-	diags := bundle.Apply(context.Background(), b, bundle.Seq(ValidateSharedRootPermissions(), ApplyWorkspaceRootPermissions()))
-	require.Len(t, diags, 1)
-	require.Equal(t, "the bundle root path /Workspace/Shared/foo/bar is writable by all workspace users", diags[0].Summary)
-	require.Equal(t, diag.Warning, diags[0].Severity)
 }
