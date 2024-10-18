@@ -480,6 +480,11 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 			src.ModifiedStatus = resources.ModifiedStatusCreated
 		}
 	}
+	for _, src := range config.Resources.Dashboards {
+		if src.ModifiedStatus == "" && src.ID == "" {
+			src.ModifiedStatus = resources.ModifiedStatusCreated
+		}
+	}
 
 	return nil
 }
