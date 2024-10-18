@@ -252,8 +252,8 @@ func NewRepository(path vfs.Path) (*Repository, error) {
 		newStringIgnoreRules([]string{
 			".git",
 		}),
-		// Load repository-wide excludes file.
-		repo.newIgnoreFile(".git/info/excludes"),
+		// Load repository-wide exclude file.
+		repo.newIgnoreFile(".git/info/exclude"),
 		// Load root gitignore file.
 		repo.newIgnoreFile(".gitignore"),
 	}
