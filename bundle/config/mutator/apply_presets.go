@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -188,6 +189,14 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 			diags = diags.Extend(diag.Errorf("schema %s is not defined", key))
 			continue
 		}
+
+		// If the catalog is already namespaced to the current user, we don't need
+		// to prefix the schema name since it already falls under the user's namespace.
+		if containsUserIdentity(s.CatalogName, b.Config.Workspace.CurrentUser) {
+			log.Debugf(ctx, "Skipping schema %s since catalog %s already contains the user's identity", s.Name, s.CatalogName)
+			continue
+		}
+
 		s.Name = normalizePrefix(prefix) + s.Name
 		// HTTP API for schemas doesn't yet support tags. It's only supported in
 		// the Databricks UI and via the SQL API.
