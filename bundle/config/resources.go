@@ -3,6 +3,7 @@ package config
 import (
 	"context"
 	"fmt"
+	"net/url"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -31,6 +32,53 @@ type ConfigResource interface {
 	// Terraform equivalent name of the resource. For example "databricks_job"
 	// for jobs and "databricks_pipeline" for pipelines.
 	TerraformResourceName() string
+
+	// GetName returns the in-product name of the resource.
+	GetName() string
+
+	// GetURL returns the URL of the resource.
+	GetURL() string
+
+	// InitializeURL initializes the URL field of the resource.
+	InitializeURL(baseURL url.URL)
+}
+
+// ResourceGroup represents a group of resources of the same type.
+// It includes a description of the resource type and a map of resources.
+type ResourceGroup struct {
+	Description ResourceDescription
+	Resources   map[string]ConfigResource
+}
+
+// collectResourceMap collects resources of a specific type into a ResourceGroup.
+func collectResourceMap[T ConfigResource](
+	description ResourceDescription,
+	input map[string]T,
+) ResourceGroup {
+	resources := make(map[string]ConfigResource)
+	for key, resource := range input {
+		resources[key] = resource
+	}
+	return ResourceGroup{
+		Description: description,
+		Resources:   resources,
+	}
+}
+
+// AllResources returns all resources in the bundle grouped by their resource type.
+func (r *Resources) AllResources() []ResourceGroup {
+	descriptions := SupportedResources()
+	return []ResourceGroup{
+		collectResourceMap(descriptions["jobs"], r.Jobs),
+		collectResourceMap(descriptions["pipelines"], r.Pipelines),
+		collectResourceMap(descriptions["models"], r.Models),
+		collectResourceMap(descriptions["experiments"], r.Experiments),
+		collectResourceMap(descriptions["model_serving_endpoints"], r.ModelServingEndpoints),
+		collectResourceMap(descriptions["registered_models"], r.RegisteredModels),
+		collectResourceMap(descriptions["quality_monitors"], r.QualityMonitors),
+		collectResourceMap(descriptions["schemas"], r.Schemas),
+		collectResourceMap(descriptions["clusters"], r.Clusters),
+	}
 }
 
 func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) {
@@ -59,4 +107,74 @@ func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) 
 	}
 
 	return found[0], nil
+}
+
+type ResourceDescription struct {
+	// Singular and plural name when used to refer to the configuration.
+	SingularName string
+	PluralName   string
+
+	// Singular and plural title when used in summaries / terminal UI.
+	SingularTitle string
+	PluralTitle   string
+}
+
+// The keys of the map corresponds to the resource key in the bundle configuration.
+func SupportedResources() map[string]ResourceDescription {
+	return map[string]ResourceDescription{
+		"jobs": {
+			SingularName:  "job",
+			PluralName:    "jobs",
+			SingularTitle: "Job",
+			PluralTitle:   "Jobs",
+		},
+		"pipelines": {
+			SingularName:  "pipeline",
+			PluralName:    "pipelines",
+			SingularTitle: "Pipeline",
+			PluralTitle:   "Pipelines",
+		},
+		"models": {
+			SingularName:  "model",
+			PluralName:    "models",
+			SingularTitle: "Model",
+			PluralTitle:   "Models",
+		},
+		"experiments": {
+			SingularName:  "experiment",
+			PluralName:    "experiments",
+			SingularTitle: "Experiment",
+			PluralTitle:   "Experiments",
+		},
+		"model_serving_endpoints": {
+			SingularName:  "model_serving_endpoint",
+			PluralName:    "model_serving_endpoints",
+			SingularTitle: "Model Serving Endpoint",
+			PluralTitle:   "Model Serving Endpoints",
+		},
+		"registered_models": {
+			SingularName:  "registered_model",
+			PluralName:    "registered_models",
+			SingularTitle: "Registered Model",
+			PluralTitle:   "Registered Models",
+		},
+		"quality_monitors": {
+			SingularName:  "quality_monitor",
+			PluralName:    "quality_monitors",
+			SingularTitle: "Quality Monitor",
+			PluralTitle:   "Quality Monitors",
+		},
+		"schemas": {
+			SingularName:  "schema",
+			PluralName:    "schemas",
+			SingularTitle: "Schema",
+			PluralTitle:   "Schemas",
+		},
+		"clusters": {
+			SingularName:  "cluster",
+			PluralName:    "clusters",
+			SingularTitle: "Cluster",
+			PluralTitle:   "Clusters",
+		},
+	}
 }

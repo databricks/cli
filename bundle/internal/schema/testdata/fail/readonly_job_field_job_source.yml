@@ -1,0 +1,9 @@
+resources:
+  jobs:
+    foo:
+      git_source:
+        git_provider: GITHUB
+        git_url: www.whatever.com
+        job_source:
+          import_from_git_branch: master
+          job_config_path: def

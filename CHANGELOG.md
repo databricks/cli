@@ -1,5 +1,73 @@
 # Version changelog
 
+## [Release] Release v0.230.0
+
+Notable changes for Databricks Asset Bundles:
+
+Workspace paths are automatically prefixed with `/Workspace`. In addition, all usage of path strings such as `/Workspace/${workspace.root_path}/...` in bundle configuration is automatically replaced with `${workspace.root_path}/...` and generates a warning as part of bundle validate.
+
+More details can be found here: https://docs.databricks.com/en/release-notes/dev-tools/bundles.html#workspace-paths
+
+Bundles:
+ * Add an error if state files grow bigger than the export limit ([#1795](https://github.com/databricks/cli/pull/1795)).
+ * Always prepend bundle remote paths with /Workspace ([#1724](https://github.com/databricks/cli/pull/1724)).
+ * Add resource path field to bundle workspace configuration ([#1800](https://github.com/databricks/cli/pull/1800)).
+ * Add validation for files with a `.(resource-name).yml` extension ([#1780](https://github.com/databricks/cli/pull/1780)).
+
+Internal:
+ * Remove deprecated or readonly fields from the bundle schema ([#1809](https://github.com/databricks/cli/pull/1809)).
+
+API Changes:
+ * Changed `databricks git-credentials create`, `databricks git-credentials delete`, `databricks git-credentials get`, `databricks git-credentials list`, `databricks git-credentials update` commands .
+ * Changed `databricks repos create`, `databricks repos delete`, `databricks repos get`, `databricks repos update`  command .
+
+OpenAPI commit 0c86ea6dbd9a730c24ff0d4e509603e476955ac5 (2024-10-02)
+Dependency updates:
+ * Upgrade TF provider to 1.53.0 ([#1815](https://github.com/databricks/cli/pull/1815)).
+ * Bump golang.org/x/term from 0.24.0 to 0.25.0 ([#1811](https://github.com/databricks/cli/pull/1811)).
+ * Bump golang.org/x/text from 0.18.0 to 0.19.0 ([#1812](https://github.com/databricks/cli/pull/1812)).
+ * Bump github.com/databricks/databricks-sdk-go from 0.47.0 to 0.48.0 ([#1810](https://github.com/databricks/cli/pull/1810)).
+
+## [Release] Release v0.229.0
+
+Bundles:
+ * Added support for creating all-purpose clusters ([#1698](https://github.com/databricks/cli/pull/1698)).
+ * Reduce time until the prompt is shown for bundle run ([#1727](https://github.com/databricks/cli/pull/1727)).
+ * Use Unity Catalog for pipelines in the default-python template ([#1766](https://github.com/databricks/cli/pull/1766)).
+ * Add verbose flag to the "bundle deploy" command ([#1774](https://github.com/databricks/cli/pull/1774)).
+ * Fixed full variable override detection ([#1787](https://github.com/databricks/cli/pull/1787)).
+ * Add sub-extension to resource files in built-in templates ([#1777](https://github.com/databricks/cli/pull/1777)).
+ * Fix panic in `apply_presets.go` ([#1796](https://github.com/databricks/cli/pull/1796)).
+
+Internal:
+ * Assert tokens are redacted in origin URL when username is not specified ([#1785](https://github.com/databricks/cli/pull/1785)).
+ * Refactor jobs path translation ([#1782](https://github.com/databricks/cli/pull/1782)).
+ * Add JobTaskClusterSpec validate mutator ([#1784](https://github.com/databricks/cli/pull/1784)).
+ * Pin Go toolchain to 1.22.7 ([#1790](https://github.com/databricks/cli/pull/1790)).
+ * Modify SetLocation test utility to take full locations as argument ([#1788](https://github.com/databricks/cli/pull/1788)).
+ * Simplified isFullVariableOverrideDef implementation ([#1791](https://github.com/databricks/cli/pull/1791)).
+ * Sort tasks by `task_key` before generating the Terraform configuration ([#1776](https://github.com/databricks/cli/pull/1776)).
+ * Trim trailing whitespace ([#1794](https://github.com/databricks/cli/pull/1794)).
+ * Move trampoline code into trampoline package ([#1793](https://github.com/databricks/cli/pull/1793)).
+ * Rename `RootPath` -> `BundleRootPath` ([#1792](https://github.com/databricks/cli/pull/1792)).
+
+API Changes:
+ * Changed `databricks apps delete` command to return .
+ * Changed `databricks apps deploy` command with new required argument order.
+ * Changed `databricks apps start` command to return .
+ * Changed `databricks apps stop` command to return .
+ * Added `databricks temporary-table-credentials` command group.
+ * Added `databricks serving-endpoints put-ai-gateway` command.
+ * Added `databricks disable-legacy-access` command group.
+ * Added `databricks account disable-legacy-features` command group.
+
+OpenAPI commit 6f6b1371e640f2dfeba72d365ac566368656f6b6 (2024-09-19)
+Dependency updates:
+ * Upgrade to Go SDK 0.47.0 ([#1799](https://github.com/databricks/cli/pull/1799)).
+ * Upgrade to TF provider 1.52 ([#1781](https://github.com/databricks/cli/pull/1781)).
+ * Bump golang.org/x/mod from 0.20.0 to 0.21.0 ([#1758](https://github.com/databricks/cli/pull/1758)).
+ * Bump github.com/hashicorp/hc-install from 0.7.0 to 0.9.0 ([#1772](https://github.com/databricks/cli/pull/1772)).
+
 ## [Release] Release v0.228.1
 
 Bundles:

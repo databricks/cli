@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -59,5 +60,40 @@ func TestCustomMarshallerIsImplemented(t *testing.T) {
 		assert.NotPanics(t, func() {
 			json.Unmarshal([]byte("{}"), v)
 		}, "Resource %s does not have a custom unmarshaller", field.Name)
+	}
+}
+
+func TestResourcesAllResourcesCompleteness(t *testing.T) {
+	r := Resources{}
+	rt := reflect.TypeOf(r)
+
+	// Collect set of includes resource types
+	var types []string
+	for _, group := range r.AllResources() {
+		types = append(types, group.Description.PluralName)
+	}
+
+	for i := 0; i < rt.NumField(); i++ {
+		field := rt.Field(i)
+		jsonTag := field.Tag.Get("json")
+
+		if idx := strings.Index(jsonTag, ","); idx != -1 {
+			jsonTag = jsonTag[:idx]
+		}
+
+		assert.Contains(t, types, jsonTag, "Field %s is missing in AllResources", field.Name)
+	}
+}
+
+func TestSupportedResources(t *testing.T) {
+	// Please add your resource to the SupportedResources() function in resources.go if you add a new resource.
+	actual := SupportedResources()
+
+	typ := reflect.TypeOf(Resources{})
+	for i := 0; i < typ.NumField(); i++ {
+		field := typ.Field(i)
+		jsonTags := strings.Split(field.Tag.Get("json"), ",")
+		pluralName := jsonTags[0]
+		assert.Equal(t, actual[pluralName].PluralName, pluralName)
 	}
 }

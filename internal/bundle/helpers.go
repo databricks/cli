@@ -114,7 +114,7 @@ func getBundleRemoteRootPath(w *databricks.WorkspaceClient, t *testing.T, unique
 	// Compute root path for the bundle deployment
 	me, err := w.CurrentUser.Me(context.Background())
 	require.NoError(t, err)
-	root := fmt.Sprintf("/Users/%s/.bundle/%s", me.UserName, uniqueId)
+	root := fmt.Sprintf("/Workspace/Users/%s/.bundle/%s", me.UserName, uniqueId)
 	return root
 }
 

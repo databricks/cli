@@ -134,9 +134,15 @@ func newChangeOwner() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = changeOwnerJson.Unmarshal(&changeOwnerReq)
-			if err != nil {
-				return err
+			diags := changeOwnerJson.Unmarshal(&changeOwnerReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -217,7 +223,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.NodeTypeId, "node-type-id", createReq.NodeTypeId, `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
 	cmd.Flags().IntVar(&createReq.NumWorkers, "num-workers", createReq.NumWorkers, `Number of worker nodes that this cluster should have.`)
 	cmd.Flags().StringVar(&createReq.PolicyId, "policy-id", createReq.PolicyId, `The ID of the cluster policy used to create the cluster if applicable.`)
-	cmd.Flags().Var(&createReq.RuntimeEngine, "runtime-engine", `Decides which runtime engine to be use, e.g. Supported values: [NULL, PHOTON, STANDARD]`)
+	cmd.Flags().Var(&createReq.RuntimeEngine, "runtime-engine", `Determines the cluster's runtime engine, either standard or Photon. Supported values: [NULL, PHOTON, STANDARD]`)
 	cmd.Flags().StringVar(&createReq.SingleUserName, "single-user-name", createReq.SingleUserName, `Single user name if data_security_mode is SINGLE_USER.`)
 	// TODO: map via StringToStringVar: spark_conf
 	// TODO: map via StringToStringVar: spark_env_vars
@@ -236,6 +242,12 @@ func newCreate() *cobra.Command {
   If Databricks acquires at least 85% of the requested on-demand nodes, cluster
   creation will succeed. Otherwise the cluster will terminate with an
   informative error message.
+  
+  Rather than authoring the cluster's JSON definition from scratch, Databricks
+  recommends filling out the [create compute UI] and then copying the generated
+  JSON definition from the UI.
+  
+  [create compute UI]: https://docs.databricks.com/compute/configure.html
 
   Arguments:
     SPARK_VERSION: The Spark version of the cluster, e.g. 3.3.x-scala2.11. A list of
@@ -262,9 +274,15 @@ func newCreate() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = createJson.Unmarshal(&createReq)
-			if err != nil {
-				return err
+			diags := createJson.Unmarshal(&createReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -356,9 +374,15 @@ func newDelete() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = deleteJson.Unmarshal(&deleteReq)
-			if err != nil {
-				return err
+			diags := deleteJson.Unmarshal(&deleteReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		} else {
 			if len(args) == 0 {
@@ -463,7 +487,7 @@ func newEdit() *cobra.Command {
 	cmd.Flags().StringVar(&editReq.NodeTypeId, "node-type-id", editReq.NodeTypeId, `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
 	cmd.Flags().IntVar(&editReq.NumWorkers, "num-workers", editReq.NumWorkers, `Number of worker nodes that this cluster should have.`)
 	cmd.Flags().StringVar(&editReq.PolicyId, "policy-id", editReq.PolicyId, `The ID of the cluster policy used to create the cluster if applicable.`)
-	cmd.Flags().Var(&editReq.RuntimeEngine, "runtime-engine", `Decides which runtime engine to be use, e.g. Supported values: [NULL, PHOTON, STANDARD]`)
+	cmd.Flags().Var(&editReq.RuntimeEngine, "runtime-engine", `Determines the cluster's runtime engine, either standard or Photon. Supported values: [NULL, PHOTON, STANDARD]`)
 	cmd.Flags().StringVar(&editReq.SingleUserName, "single-user-name", editReq.SingleUserName, `Single user name if data_security_mode is SINGLE_USER.`)
 	// TODO: map via StringToStringVar: spark_conf
 	// TODO: map via StringToStringVar: spark_env_vars
@@ -513,9 +537,15 @@ func newEdit() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = editJson.Unmarshal(&editReq)
-			if err != nil {
-				return err
+			diags := editJson.Unmarshal(&editReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -611,9 +641,15 @@ func newEvents() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = eventsJson.Unmarshal(&eventsReq)
-			if err != nil {
-				return err
+			diags := eventsJson.Unmarshal(&eventsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		} else {
 			if len(args) == 0 {
@@ -1063,9 +1099,15 @@ func newPermanentDelete() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = permanentDeleteJson.Unmarshal(&permanentDeleteReq)
-			if err != nil {
-				return err
+			diags := permanentDeleteJson.Unmarshal(&permanentDeleteReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		} else {
 			if len(args) == 0 {
@@ -1155,9 +1197,15 @@ func newPin() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = pinJson.Unmarshal(&pinReq)
-			if err != nil {
-				return err
+			diags := pinJson.Unmarshal(&pinReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		} else {
 			if len(args) == 0 {
@@ -1254,9 +1302,15 @@ func newResize() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = resizeJson.Unmarshal(&resizeReq)
-			if err != nil {
-				return err
+			diags := resizeJson.Unmarshal(&resizeReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		} else {
 			if len(args) == 0 {
@@ -1364,9 +1418,15 @@ func newRestart() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = restartJson.Unmarshal(&restartReq)
-			if err != nil {
-				return err
+			diags := restartJson.Unmarshal(&restartReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		} else {
 			if len(args) == 0 {
@@ -1458,9 +1518,15 @@ func newSetPermissions() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = setPermissionsJson.Unmarshal(&setPermissionsReq)
-			if err != nil {
-				return err
+			diags := setPermissionsJson.Unmarshal(&setPermissionsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if len(args) == 0 {
@@ -1602,9 +1668,15 @@ func newStart() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = startJson.Unmarshal(&startReq)
-			if err != nil {
-				return err
+			diags := startJson.Unmarshal(&startReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		} else {
 			if len(args) == 0 {
@@ -1706,9 +1778,15 @@ func newUnpin() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = unpinJson.Unmarshal(&unpinReq)
-			if err != nil {
-				return err
+			diags := unpinJson.Unmarshal(&unpinReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		} else {
 			if len(args) == 0 {
@@ -1818,9 +1896,15 @@ func newUpdate() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = updateJson.Unmarshal(&updateReq)
-			if err != nil {
-				return err
+			diags := updateJson.Unmarshal(&updateReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -1899,9 +1983,15 @@ func newUpdatePermissions() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = updatePermissionsJson.Unmarshal(&updatePermissionsReq)
-			if err != nil {
-				return err
+			diags := updatePermissionsJson.Unmarshal(&updatePermissionsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if len(args) == 0 {

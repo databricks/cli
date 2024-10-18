@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -19,7 +20,7 @@ func listOverride(listCmd *cobra.Command, listReq *workspace.ListReposRequest) {
 	{{end}}`)
 }
 
-func createOverride(createCmd *cobra.Command, createReq *workspace.CreateRepo) {
+func createOverride(createCmd *cobra.Command, createReq *workspace.CreateRepoRequest) {
 	createCmd.Use = "create URL [PROVIDER]"
 	createCmd.Args = func(cmd *cobra.Command, args []string) error {
 		// If the provider argument is not specified, we try to detect it from the URL.
@@ -35,9 +36,15 @@ func createOverride(createCmd *cobra.Command, createReq *workspace.CreateRepo) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 		if cmd.Flags().Changed("json") {
-			err = createJson.Unmarshal(createReq)
-			if err != nil {
-				return err
+			diags := createJson.Unmarshal(createReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		} else {
 			createReq.Url = args[0]
@@ -95,17 +102,24 @@ func getOverride(getCmd *cobra.Command, getReq *workspace.GetRepoRequest) {
 	}
 }
 
-func updateOverride(updateCmd *cobra.Command, updateReq *workspace.UpdateRepo) {
+func updateOverride(updateCmd *cobra.Command, updateReq *workspace.UpdateRepoRequest) {
 	updateCmd.Use = "update REPO_ID_OR_PATH"
 
 	updateJson := updateCmd.Flag("json").Value.(*flags.JsonFlag)
 	updateCmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
+		var diags diag.Diagnostics
 		w := root.WorkspaceClient(ctx)
 		if cmd.Flags().Changed("json") {
-			err = updateJson.Unmarshal(&updateReq)
-			if err != nil {
-				return err
+			diags = updateJson.Unmarshal(&updateReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		} else {
 			updateReq.RepoId, err = repoArgumentToRepoID(ctx, w, args)

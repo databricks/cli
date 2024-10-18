@@ -1,0 +1,6 @@
+targets:
+  foo:
+    resources:
+      jobs:
+        bar:
+          edit_mode: whatever

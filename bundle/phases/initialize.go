@@ -39,9 +39,16 @@ func Initialize() bundle.Mutator {
 			mutator.MergePipelineClusters(),
 			mutator.InitializeWorkspaceClient(),
 			mutator.PopulateCurrentUser(),
+
 			mutator.DefineDefaultWorkspaceRoot(),
 			mutator.ExpandWorkspaceRoot(),
 			mutator.DefineDefaultWorkspacePaths(),
+			mutator.PrependWorkspacePrefix(),
+
+			// This mutator needs to be run before variable interpolation because it
+			// searches for strings with variable references in them.
+			mutator.RewriteWorkspacePrefix(),
+
 			mutator.SetVariables(),
 			// Intentionally placed before ResolveVariableReferencesInLookup, ResolveResourceReferences,
 			// ResolveVariableReferencesInComplexVariables and ResolveVariableReferences.
@@ -55,6 +62,8 @@ func Initialize() bundle.Mutator {
 				"workspace",
 				"variables",
 			),
+			// Provide permission config errors & warnings after initializing all variables
+			permissions.PermissionDiagnostics(),
 			mutator.SetRunAs(),
 			mutator.OverrideCompute(),
 			mutator.ConfigureDashboardDefaults(),
