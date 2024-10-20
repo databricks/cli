@@ -15,7 +15,15 @@ def get_spark() -> SparkSession:
     return SparkSession.builder.getOrCreate()
 
 def main():
-  get_taxis(get_spark()).show(5)
+  # Set the catalog and schema for the current session
+  parser = argparse.ArgumentParser()
+  parser.add_argument('--catalog', '-c', required=True)
+  parser.add_argument('--schema', '-s', required=True)
+  args, unknown = parser.parse_known_args()
+  spark = get_spark()
+  spark.sql(f"USE {args.catalog}.{args.schema}")
+
+  get_taxis(spark).show(5)
 
 if __name__ == '__main__':
   main()

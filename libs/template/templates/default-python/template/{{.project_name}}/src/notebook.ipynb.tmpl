@@ -23,8 +23,23 @@
    "metadata": {},
    "outputs": [],
    "source": [
+    "# Automatically reload this notebook when it is edited\n",
     "%load_ext autoreload\n",
     "%autoreload 2"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Set the catalog and schema for the current session\n",
+    "dbutils.widgets.text('catalog', '{{default_catalog}}')\n",
+    "dbutils.widgets.text('schema', 'default')\n",
+    "catalog = dbutils.widgets.get('catalog')\n",
+    "schema = dbutils.widgets.get('schema')\n",
+    "spark.sql(f'USE {catalog}.{schema}')"
    ]
   },
   {

@@ -16,6 +16,9 @@ targets:
     default: true
     workspace:
       host: {{workspace_host}}
+    presets:
+      catalog: {{default_catalog}}
+      schema: default
 
   prod:
     mode: production
@@ -23,6 +26,9 @@ targets:
       host: {{workspace_host}}
       # We explicitly specify /Workspace/Users/{{user_name}} to make sure we only have a single copy.
       root_path: /Workspace/Users/{{user_name}}/.bundle/${bundle.name}/${bundle.target}
+    presets:
+      catalog: {{default_catalog}}
+      schema: default
     permissions:
       - {{if is_service_principal}}service_principal{{else}}user{{end}}_name: {{user_name}}
         level: CAN_MANAGE

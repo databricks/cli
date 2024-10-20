@@ -19,6 +19,12 @@ type Presets struct {
 
 	// Tags to add to all resources.
 	Tags map[string]string `json:"tags,omitempty"`
+
+	// Catalog is the default catalog for all resources.
+	Catalog string `json:"catalog,omitempty"`
+
+	// Schema is the default schema for all resources.
+	Schema string `json:"schema,omitempty"`
 }
 
 // IsExplicitlyEnabled tests whether this feature is explicitly enabled.
