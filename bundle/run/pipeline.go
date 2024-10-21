@@ -90,11 +90,6 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 	// Include resource key in logger.
 	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("resource", r.Key()))
 	w := r.bundle.WorkspaceClient()
-	_, err := w.Pipelines.GetByPipelineId(ctx, pipelineID)
-	if err != nil {
-		log.Warnf(ctx, "Cannot get pipeline: %s", err)
-		return nil, err
-	}
 
 	req, err := opts.Pipeline.toPayload(r.pipeline, pipelineID)
 	if err != nil {
