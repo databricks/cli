@@ -361,9 +361,6 @@ func TestAccFilerReadDir(t *testing.T) {
 	}
 }
 
-// TODO: Continue adding tests for other types of notebooks than python here.
-// Exporting from a workspace makes this work easier.
-
 func TestAccFilerWorkspaceNotebookConflict(t *testing.T) {
 	t.Parallel()
 
@@ -703,50 +700,41 @@ func TestAccFilerWorkspaceFilesExtensionsDelete(t *testing.T) {
 	ctx := context.Background()
 	wf := setupFilerWithExtensionsTest(t)
 
-	// Delete notebook
-	err := wf.Delete(ctx, "foo.py")
-	require.NoError(t, err)
-	filerTest{t, wf}.assertNotExists(ctx, "foo.py")
+	for _, fileName := range []string{
+		// notebook
+		"foo.py",
+		// file
+		"bar.py",
+		// python jupyter notebook
+		"p1.ipynb",
+		// R jupyter notebook
+		"r1.ipynb",
+		// Scala jupyter notebook
+		"scala1.ipynb",
+		// SQL jupyter notebook
+		"sql1.ipynb",
+	} {
+		err := wf.Delete(ctx, fileName)
+		require.NoError(t, err)
+		filerTest{t, wf}.assertNotExists(ctx, fileName)
+	}
 
-	// Delete file
-	err = wf.Delete(ctx, "bar.py")
-	require.NoError(t, err)
-	filerTest{t, wf}.assertNotExists(ctx, "bar.py")
-
-	// Delete python jupyter notebook
-	err = wf.Delete(ctx, "p1.ipynb")
-	require.NoError(t, err)
-	filerTest{t, wf}.assertNotExists(ctx, "p1.ipynb")
-
-	// Delete r jupyter notebook
-	err = wf.Delete(ctx, "r1.ipynb")
-	require.NoError(t, err)
-	filerTest{t, wf}.assertNotExists(ctx, "r1.ipynb")
-
-	// Delete scala jupyter notebook
-	err = wf.Delete(ctx, "scala1.ipynb")
-	require.NoError(t, err)
-	filerTest{t, wf}.assertNotExists(ctx, "scala1.ipynb")
-
-	// Delete sql jupyter notebook
-	err = wf.Delete(ctx, "sql1.ipynb")
-	require.NoError(t, err)
-	filerTest{t, wf}.assertNotExists(ctx, "sql1.ipynb")
-
-	// Delete non-existent file
-	err = wf.Delete(ctx, "non-existent.py")
-	assert.ErrorIs(t, err, fs.ErrNotExist)
-
-	// Ensure we do not delete a file as a notebook
-	err = wf.Delete(ctx, "pretender.py")
-	assert.ErrorIs(t, err, fs.ErrNotExist)
-
-	// Ensure we do not delete a Scala notebook as a Python notebook
-	_, err = wf.Read(ctx, "scala-notebook.py")
-	assert.ErrorIs(t, err, fs.ErrNotExist)
+	for _, fileName := range []string{
+		// do not delete non-existent file
+		"non-existent.py",
+		// do not delete a file assuming it is a notebook and stripping the extension
+		"pretender.py",
+		// do not delete a Scala notebook as a Python notebook
+		"scala-notebook.py",
+		// do not delete a file assuming it is a Jupyter notebook and stripping the extension
+		"pretender.ipynb",
+	} {
+		err := wf.Delete(ctx, fileName)
+		assert.ErrorIs(t, err, fs.ErrNotExist)
+	}
 
 	// Delete directory
-	err = wf.Delete(ctx, "dir")
+	err := wf.Delete(ctx, "dir")
 	assert.ErrorIs(t, err, fs.ErrInvalid)
 
 	// Delete directory recursively
@@ -790,11 +778,11 @@ func TestAccFilerWorkspaceFilesExtensionsStat(t *testing.T) {
 	for _, fileName := range []string{
 		// non-existent file
 		"non-existent.py",
-		// do not stat a file as a notebook
+		// do not stat a file assuming it is a notebook and stripping the extension
 		"pretender.py",
 		// do not stat a Scala notebook as a Python notebook
 		"scala-notebook.py",
-		// do not read a regular file as a Jupyter notebook
+		// do not read a regular file assuming it is a Jupyter notebook and stripping the extension
 		"pretender.ipynb",
 	} {
 		_, err := wf.Stat(ctx, fileName)
@@ -862,8 +850,11 @@ func TestAccWorkspaceFilesExtensions_ExportFormatIsPreserved(t *testing.T) {
 			err := wf.Write(ctx, tc.sourceName, strings.NewReader(tc.sourceContent))
 			require.NoError(t, err)
 
-			// The source notebook should exist but not the Jupyter notebook
+			// Assert on the content of the source notebook that's been written.
 			filerTest{t, wf}.assertContents(ctx, tc.sourceName, tc.sourceContent)
+
+			// Ensure that the source notebook is not read when the name contains
+			// the .ipynb extension.
 			_, err = wf.Stat(ctx, tc.jupyterName)
 			assert.ErrorIs(t, err, fs.ErrNotExist)
 			_, err = wf.Read(ctx, tc.jupyterName)
@@ -914,8 +905,12 @@ func TestAccWorkspaceFilesExtensions_ExportFormatIsPreserved(t *testing.T) {
 			err := wf.Write(ctx, tc.jupyterName, strings.NewReader(tc.jupyterContent))
 			require.NoError(t, err)
 
-			// The Jupyter notebook should exist but not the source notebook
+			// Assert that the written notebook is jupyter and has the correct
+			// language_info metadata set.
 			filerTest{t, wf}.assertContentsJupyter(ctx, tc.jupyterName, tc.language)
+
+			// Ensure that the Jupyter notebook is not read when the name does not
+			// contain the .ipynb extension.
 			_, err = wf.Stat(ctx, tc.sourceName)
 			assert.ErrorIs(t, err, fs.ErrNotExist)
 			_, err = wf.Read(ctx, tc.sourceName)
