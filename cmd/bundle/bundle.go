@@ -27,5 +27,6 @@ func New() *cobra.Command {
 	cmd.AddCommand(newGenerateCommand())
 	cmd.AddCommand(newDebugCommand())
 	cmd.AddCommand(deployment.NewDeploymentCommand())
+	cmd.AddCommand(newOpenCommand())
 	return cmd
 }

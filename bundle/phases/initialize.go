@@ -77,8 +77,11 @@ func Initialize() bundle.Mutator {
 
 			mutator.TranslatePaths(),
 			trampoline.WrapperWarning(),
+
+			permissions.ValidateSharedRootPermissions(),
 			permissions.ApplyBundlePermissions(),
 			permissions.FilterCurrentUser(),
+
 			metadata.AnnotateJobs(),
 			metadata.AnnotatePipelines(),
 			terraform.Initialize(),

@@ -16,6 +16,10 @@ func ApplyWorkspaceRootPermissions() bundle.Mutator {
 	return &workspaceRootPermissions{}
 }
 
+func (*workspaceRootPermissions) Name() string {
+	return "ApplyWorkspaceRootPermissions"
+}
+
 // Apply implements bundle.Mutator.
 func (*workspaceRootPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	err := giveAccessForWorkspaceRoot(ctx, b)
@@ -24,10 +28,6 @@ func (*workspaceRootPermissions) Apply(ctx context.Context, b *bundle.Bundle) di
 	}
 
 	return nil
-}
-
-func (*workspaceRootPermissions) Name() string {
-	return "ApplyWorkspaceRootPermissions"
 }
 
 func giveAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle) error {

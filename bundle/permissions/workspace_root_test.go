@@ -69,6 +69,6 @@ func TestApplyWorkspaceRootPermissions(t *testing.T) {
 		WorkspaceObjectType: "directories",
 	}).Return(nil, nil)
 
-	diags := bundle.Apply(context.Background(), b, ApplyWorkspaceRootPermissions())
-	require.NoError(t, diags.Error())
+	diags := bundle.Apply(context.Background(), b, bundle.Seq(ValidateSharedRootPermissions(), ApplyWorkspaceRootPermissions()))
+	require.Empty(t, diags)
 }
