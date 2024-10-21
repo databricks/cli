@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/fs"
 	"path"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/log"
@@ -21,17 +22,6 @@ type workspaceFilesExtensionsClient struct {
 	wsfs     Filer
 	root     string
 	readonly bool
-}
-
-var extensionsToLanguages = map[string]workspace.Language{
-	".py":    workspace.LanguagePython,
-	".r":     workspace.LanguageR,
-	".scala": workspace.LanguageScala,
-	".sql":   workspace.LanguageSql,
-
-	// The platform supports all languages (Python, R, Scala, and SQL) for Jupyter notebooks.
-	// Thus, we do not need to check the language for .ipynb files.
-	".ipynb": workspace.LanguagePython,
 }
 
 type workspaceFileStatus struct {
@@ -57,11 +47,12 @@ func (w *workspaceFilesExtensionsClient) stat(ctx context.Context, name string) 
 // This function returns the stat for the provided notebook. The stat object itself contains the path
 // with the extension since it is meant to be used in the context of a fs.FileInfo.
 func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithExt(ctx context.Context, name string) (*workspaceFileStatus, error) {
-	ext := path.Ext(name)
-	nameWithoutExt := strings.TrimSuffix(name, ext)
+	// TODO: What happens when this type casting is not possible?
+	ext := notebook.Extension(path.Ext(name))
+	nameWithoutExt := strings.TrimSuffix(name, string(ext))
 
 	// File name does not have an extension associated with Databricks notebooks, return early.
-	if _, ok := extensionsToLanguages[ext]; !ok {
+	if _, ok := notebook.ExtensionToLanguage[ext]; !ok {
 		return nil, nil
 	}
 
@@ -84,28 +75,33 @@ func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithExt(ctx contex
 
 	// Not the correct language. Return early. Note: All languages are supported
 	// for Jupyter notebooks.
-	if ext != ".ipynb" && stat.Language != extensionsToLanguages[ext] {
-		log.Debugf(ctx, "attempting to determine if %s could be a notebook. Found a notebook at %s but it is not of the correct language. Expected %s but found %s.", name, path.Join(w.root, nameWithoutExt), extensionsToLanguages[ext], stat.Language)
+	if ext != notebook.ExtensionJupyter && stat.Language != notebook.ExtensionToLanguage[ext] {
+		log.Debugf(ctx, "attempting to determine if %s could be a notebook. Found a notebook at %s but it is not of the correct language. Expected %s but found %s.", name, path.Join(w.root, nameWithoutExt), notebook.ExtensionToLanguage[ext], stat.Language)
 		return nil, nil
 	}
 
-	// When the extension is .py we expect the export format to be source.
+	// When the extension is one of .py, .r, .scala or .sql we expect the export format to be source.
 	// If it's not, return early.
-	if ext == ".py" && stat.ReposExportFormat != workspace.ExportFormatSource {
+	if slices.Contains([]notebook.Extension{
+		notebook.ExtensionPython,
+		notebook.ExtensionR,
+		notebook.ExtensionScala,
+		notebook.ExtensionSql}, ext) &&
+		stat.ReposExportFormat != workspace.ExportFormatSource {
 		log.Debugf(ctx, "attempting to determine if %s could be a notebook. Found a notebook at %s but it is not exported as a source notebook. Its export format is %s.", name, path.Join(w.root, nameWithoutExt), stat.ReposExportFormat)
 		return nil, nil
 	}
 
 	// When the extension is .ipynb we expect the export format to be Jupyter.
 	// If it's not, return early.
-	if ext == ".ipynb" && stat.ReposExportFormat != workspace.ExportFormatJupyter {
+	if ext == notebook.ExtensionJupyter && stat.ReposExportFormat != workspace.ExportFormatJupyter {
 		log.Debugf(ctx, "attempting to determine if %s could be a notebook. Found a notebook at %s but it is not exported as a Jupyter notebook. Its export format is %s.", name, path.Join(w.root, nameWithoutExt), stat.ReposExportFormat)
 		return nil, nil
 	}
 
 	// Modify the stat object path to include the extension. This stat object will be used
 	// to return the fs.FileInfo object in the stat method.
-	stat.Path = stat.Path + ext
+	stat.Path = stat.Path + string(ext)
 	return &workspaceFileStatus{
 		wsfsFileInfo:        stat,
 		nameForWorkspaceAPI: nameWithoutExt,
@@ -130,12 +126,12 @@ func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithoutExt(ctx con
 	// If the notebook was exported as a Jupyter notebook, the extension should be .ipynb.
 	// TODO: Test this.
 	if stat.ReposExportFormat == workspace.ExportFormatJupyter {
-		ext = ".ipynb"
+		ext = notebook.ExtensionJupyter
 	}
 
 	// Modify the stat object path to include the extension. This stat object will be used
 	// to return the fs.DirEntry object in the ReadDir method.
-	stat.Path = stat.Path + ext
+	stat.Path = stat.Path + string(ext)
 	return &workspaceFileStatus{
 		wsfsFileInfo:        stat,
 		nameForWorkspaceAPI: name,

@@ -71,7 +71,7 @@ func (n *downloader) markNotebookForDownload(ctx context.Context, notebookPath *
 
 	ext := notebook.GetExtensionByLanguage(info)
 
-	filename := path.Base(*notebookPath) + ext
+	filename := path.Base(*notebookPath) + string(ext)
 	targetPath := filepath.Join(n.sourceDir, filename)
 
 	n.files[targetPath] = *notebookPath

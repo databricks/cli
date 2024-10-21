@@ -427,8 +427,17 @@ func TestAccFilerWorkspaceNotebookConflict(t *testing.T) {
 			expected1:      "// Databricks notebook source\nprintln(1)",
 			content2:       readFile(t, "testdata/notebooks/scala2.ipynb"),
 		},
+		{
+			name:           "sqlJupyterNotebook.ipynb",
+			nameWithoutExt: "sqlJupyterNotebook",
+			content1:       readFile(t, "testdata/notebooks/sql1.ipynb"),
+			expected1:      "-- Databricks notebook source\nselect 1",
+			content2:       readFile(t, "testdata/notebooks/sql2.ipynb"),
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			// Upload the notebook
 			err = f.Write(ctx, tc.name, strings.NewReader(tc.content1))
 			require.NoError(t, err)
@@ -516,8 +525,18 @@ func TestAccFilerWorkspaceNotebookWithOverwriteFlag(t *testing.T) {
 			content2:       readFile(t, "testdata/notebooks/scala2.ipynb"),
 			expected2:      "// Databricks notebook source\nprintln(2)",
 		},
+		{
+			name:           "sqlJupyterNotebook.ipynb",
+			nameWithoutExt: "sqlJupyterNotebook",
+			content1:       readFile(t, "testdata/notebooks/sql1.ipynb"),
+			expected1:      "-- Databricks notebook source\nselect 1",
+			content2:       readFile(t, "testdata/notebooks/sql2.ipynb"),
+			expected2:      "-- Databricks notebook source\nselect 2",
+		},
 	} {
 		t.Run(tcases.name, func(t *testing.T) {
+			t.Parallel()
+
 			// Upload the notebook
 			err = f.Write(ctx, tcases.name, strings.NewReader(tcases.content1))
 			require.NoError(t, err)
@@ -535,8 +554,6 @@ func TestAccFilerWorkspaceNotebookWithOverwriteFlag(t *testing.T) {
 	}
 }
 
-// TODO: Add a test that the exported file has the right extension / language_info set?
-// Required for DABs in the workspace.
 func TestAccFilerWorkspaceFilesExtensionsReadDir(t *testing.T) {
 	t.Parallel()
 
@@ -557,6 +574,7 @@ func TestAccFilerWorkspaceFilesExtensionsReadDir(t *testing.T) {
 		{"rNb.r", "# Databricks notebook source\nprint('first upload'))"},
 		{"scala1.ipynb", readFile(t, "testdata/notebooks/scala1.ipynb")},
 		{"scalaNb.scala", "// Databricks notebook source\n println(\"first upload\"))"},
+		{"sql1.ipynb", readFile(t, "testdata/notebooks/sql1.ipynb")},
 		{"sqlNb.sql", "-- Databricks notebook source\n SELECT \"first upload\""},
 	}
 
@@ -598,6 +616,7 @@ func TestAccFilerWorkspaceFilesExtensionsReadDir(t *testing.T) {
 		"rNb.r",
 		"scala1.ipynb",
 		"scalaNb.scala",
+		"sql1.ipynb",
 		"sqlNb.sql",
 	}, names)
 
@@ -624,6 +643,7 @@ func setupFilerWithExtensionsTest(t *testing.T) filer.Filer {
 		{"p1.ipynb", readFile(t, "testdata/notebooks/py1.ipynb")},
 		{"r1.ipynb", readFile(t, "testdata/notebooks/r1.ipynb")},
 		{"scala1.ipynb", readFile(t, "testdata/notebooks/scala1.ipynb")},
+		{"sql1.ipynb", readFile(t, "testdata/notebooks/sql1.ipynb")},
 		{"pretender", "not a notebook"},
 		{"dir/file.txt", "file content"},
 		{"scala-notebook.scala", "// Databricks notebook source\nprintln('first upload')"},
@@ -649,12 +669,14 @@ func TestAccFilerWorkspaceFilesExtensionsRead(t *testing.T) {
 	// Read contents of test fixtures as a sanity check.
 	filerTest{t, wf}.assertContents(ctx, "foo.py", "# Databricks notebook source\nprint('first upload'))")
 	filerTest{t, wf}.assertContents(ctx, "bar.py", "print('foo')")
-	filerTest{t, wf}.assertContentsJupyter(ctx, "p1.ipynb", "python")
-	filerTest{t, wf}.assertContentsJupyter(ctx, "r1.ipynb", "R")
-	filerTest{t, wf}.assertContentsJupyter(ctx, "scala1.ipynb", "scala")
 	filerTest{t, wf}.assertContents(ctx, "dir/file.txt", "file content")
 	filerTest{t, wf}.assertContents(ctx, "scala-notebook.scala", "// Databricks notebook source\nprintln('first upload')")
 	filerTest{t, wf}.assertContents(ctx, "pretender", "not a notebook")
+
+	filerTest{t, wf}.assertContentsJupyter(ctx, "p1.ipynb", "python")
+	filerTest{t, wf}.assertContentsJupyter(ctx, "r1.ipynb", "R")
+	filerTest{t, wf}.assertContentsJupyter(ctx, "scala1.ipynb", "scala")
+	filerTest{t, wf}.assertContentsJupyter(ctx, "sql1.ipynb", "sql")
 
 	// Read non-existent file
 	_, err := wf.Read(ctx, "non-existent.py")
@@ -706,6 +728,11 @@ func TestAccFilerWorkspaceFilesExtensionsDelete(t *testing.T) {
 	require.NoError(t, err)
 	filerTest{t, wf}.assertNotExists(ctx, "scala1.ipynb")
 
+	// Delete sql jupyter notebook
+	err = wf.Delete(ctx, "sql1.ipynb")
+	require.NoError(t, err)
+	filerTest{t, wf}.assertNotExists(ctx, "sql1.ipynb")
+
 	// Delete non-existent file
 	err = wf.Delete(ctx, "non-existent.py")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
@@ -734,56 +761,45 @@ func TestAccFilerWorkspaceFilesExtensionsStat(t *testing.T) {
 	ctx := context.Background()
 	wf := setupFilerWithExtensionsTest(t)
 
-	// Stat on a notebook
-	info, err := wf.Stat(ctx, "foo.py")
-	require.NoError(t, err)
-	assert.Equal(t, "foo.py", info.Name())
-	assert.False(t, info.IsDir())
-
-	// Stat on a file
-	info, err = wf.Stat(ctx, "bar.py")
-	require.NoError(t, err)
-	assert.Equal(t, "bar.py", info.Name())
-	assert.False(t, info.IsDir())
-
-	// Stat on a python jupyter notebook
-	info, err = wf.Stat(ctx, "p1.ipynb")
-	require.NoError(t, err)
-	assert.Equal(t, "p1.ipynb", info.Name())
-	assert.False(t, info.IsDir())
-
-	// Stat on an R jupyter notebook
-	info, err = wf.Stat(ctx, "r1.ipynb")
-	require.NoError(t, err)
-	assert.Equal(t, "r1.ipynb", info.Name())
-	assert.False(t, info.IsDir())
-
-	// Stat on a Scala jupyter notebook
-	info, err = wf.Stat(ctx, "scala1.ipynb")
-	require.NoError(t, err)
-	assert.Equal(t, "scala1.ipynb", info.Name())
-	assert.False(t, info.IsDir())
+	for _, fileName := range []string{
+		// notebook
+		"foo.py",
+		// file
+		"bar.py",
+		// python jupyter notebook
+		"p1.ipynb",
+		// R jupyter notebook
+		"r1.ipynb",
+		// Scala jupyter notebook
+		"scala1.ipynb",
+		// SQL jupyter notebook
+		"sql1.ipynb",
+	} {
+		info, err := wf.Stat(ctx, fileName)
+		require.NoError(t, err)
+		assert.Equal(t, fileName, info.Name())
+		assert.False(t, info.IsDir())
+	}
 
 	// Stat on a directory
-	info, err = wf.Stat(ctx, "dir")
+	info, err := wf.Stat(ctx, "dir")
 	require.NoError(t, err)
 	assert.Equal(t, "dir", info.Name())
 	assert.True(t, info.IsDir())
 
-	// Stat on a non-existent file
-	_, err = wf.Stat(ctx, "non-existent.py")
-	assert.ErrorIs(t, err, fs.ErrNotExist)
-
-	// Ensure we do not stat a file as a notebook
-	_, err = wf.Stat(ctx, "pretender.py")
-	assert.ErrorIs(t, err, fs.ErrNotExist)
-
-	// Ensure we do not stat a Scala notebook as a Python notebook
-	_, err = wf.Stat(ctx, "scala-notebook.py")
-	assert.ErrorIs(t, err, fs.ErrNotExist)
-
-	_, err = wf.Stat(ctx, "pretender.ipynb")
-	assert.ErrorIs(t, err, fs.ErrNotExist)
+	for _, fileName := range []string{
+		// non-existent file
+		"non-existent.py",
+		// do not stat a file as a notebook
+		"pretender.py",
+		// do not stat a Scala notebook as a Python notebook
+		"scala-notebook.py",
+		// do not read a regular file as a Jupyter notebook
+		"pretender.ipynb",
+	} {
+		_, err := wf.Stat(ctx, fileName)
+		assert.ErrorIs(t, err, fs.ErrNotExist)
+	}
 }
 
 func TestAccWorkspaceFilesExtensionsDirectoriesAreNotNotebooks(t *testing.T) {
@@ -830,8 +846,16 @@ func TestAccWorkspaceFilesExtensions_ExportFormatIsPreserved(t *testing.T) {
 			sourceContent: "// Databricks notebook source\nprintln('foo')",
 			jupyterName:   "foo.ipynb",
 		},
+		{
+			language:      "sql",
+			sourceName:    "foo.sql",
+			sourceContent: "-- Databricks notebook source\nselect 'foo'",
+			jupyterName:   "foo.ipynb",
+		},
 	} {
 		t.Run("source_"+tc.language, func(t *testing.T) {
+			t.Parallel()
+
 			ctx := context.Background()
 			wf, _ := setupWsfsExtensionsFiler(t)
 
@@ -858,24 +882,32 @@ func TestAccWorkspaceFilesExtensions_ExportFormatIsPreserved(t *testing.T) {
 	}{
 		{
 			language:       "python",
-			sourceName:     "bar.py",
+			sourceName:     "foo.py",
 			jupyterName:    "foo.ipynb",
 			jupyterContent: readFile(t, "testdata/notebooks/py1.ipynb"),
 		},
 		{
 			language:       "R",
-			sourceName:     "bar.r",
+			sourceName:     "foo.r",
 			jupyterName:    "foo.ipynb",
 			jupyterContent: readFile(t, "testdata/notebooks/r1.ipynb"),
 		},
 		{
 			language:       "scala",
-			sourceName:     "bar.scala",
+			sourceName:     "foo.scala",
 			jupyterName:    "foo.ipynb",
 			jupyterContent: readFile(t, "testdata/notebooks/scala1.ipynb"),
 		},
+		{
+			language:       "sql",
+			sourceName:     "foo.sql",
+			jupyterName:    "foo.ipynb",
+			jupyterContent: readFile(t, "testdata/notebooks/sql1.ipynb"),
+		},
 	} {
 		t.Run("jupyter_"+tc.language, func(t *testing.T) {
+			t.Parallel()
+
 			ctx := context.Background()
 			wf, _ := setupWsfsExtensionsFiler(t)
 
