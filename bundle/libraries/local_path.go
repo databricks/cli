@@ -57,6 +57,12 @@ func IsLibraryLocal(dep string) bool {
 		}
 	}
 
+	// If the dependency starts with --, it's a pip flag option which is a valid
+	// entry for environment dependencies but not a local path
+	if strings.HasPrefix(dep, "--") {
+		return false
+	}
+
 	// If the dependency is a requirements file, it's not a valid local path
 	if strings.HasPrefix(dep, "-r") {
 		return false
