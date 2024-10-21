@@ -371,7 +371,7 @@ func TestAccFilerWorkspaceNotebookConflict(t *testing.T) {
 	ctx := context.Background()
 	var err error
 
-	for _, tcases := range []struct {
+	for _, tc := range []struct {
 		name           string
 		nameWithoutExt string
 		content1       string
@@ -381,16 +381,16 @@ func TestAccFilerWorkspaceNotebookConflict(t *testing.T) {
 		{
 			name:           "pyNb.py",
 			nameWithoutExt: "pyNb",
-			content1:       "# Databricks notebook source\nprint('first upload'))",
-			expected1:      "# Databricks notebook source\nprint('first upload'))",
-			content2:       "# Databricks notebook source\nprint('second upload'))",
+			content1:       "# Databricks notebook source\nprint('first upload')",
+			expected1:      "# Databricks notebook source\nprint('first upload')",
+			content2:       "# Databricks notebook source\nprint('second upload')",
 		},
 		{
 			name:           "rNb.r",
 			nameWithoutExt: "rNb",
-			content1:       "# Databricks notebook source\nprint('first upload'))",
-			expected1:      "# Databricks notebook source\nprint('first upload'))",
-			content2:       "# Databricks notebook source\nprint('second upload'))",
+			content1:       "# Databricks notebook source\nprint('first upload')",
+			expected1:      "# Databricks notebook source\nprint('first upload')",
+			content2:       "# Databricks notebook source\nprint('second upload')",
 		},
 		{
 			name:           "sqlNb.sql",
@@ -402,9 +402,9 @@ func TestAccFilerWorkspaceNotebookConflict(t *testing.T) {
 		{
 			name:           "scalaNb.scala",
 			nameWithoutExt: "scalaNb",
-			content1:       "// Databricks notebook source\n println(\"first upload\"))",
-			expected1:      "// Databricks notebook source\n println(\"first upload\"))",
-			content2:       "// Databricks notebook source\n println(\"second upload\"))",
+			content1:       "// Databricks notebook source\n println(\"first upload\")",
+			expected1:      "// Databricks notebook source\n println(\"first upload\")",
+			content2:       "// Databricks notebook source\n println(\"second upload\")",
 		},
 		{
 			name:           "pythonJupyterNb.ipynb",
@@ -420,19 +420,26 @@ func TestAccFilerWorkspaceNotebookConflict(t *testing.T) {
 			expected1:      "# Databricks notebook source\nprint(1)",
 			content2:       readFile(t, "testdata/notebooks/r2.ipynb"),
 		},
+		{
+			name:           "scalaJupyterNb.ipynb",
+			nameWithoutExt: "scalaJupyterNb",
+			content1:       readFile(t, "testdata/notebooks/scala1.ipynb"),
+			expected1:      "// Databricks notebook source\nprintln(1)",
+			content2:       readFile(t, "testdata/notebooks/scala2.ipynb"),
+		},
 	} {
-		t.Run(tcases.name, func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			// Upload the notebook
-			err = f.Write(ctx, tcases.name, strings.NewReader(tcases.content1))
+			err = f.Write(ctx, tc.name, strings.NewReader(tc.content1))
 			require.NoError(t, err)
 
 			// Assert contents after initial upload
-			filerTest{t, f}.assertContents(ctx, tcases.nameWithoutExt, tcases.expected1)
+			filerTest{t, f}.assertContents(ctx, tc.nameWithoutExt, tc.expected1)
 
 			// Assert uploading a second time fails due to overwrite mode missing
-			err = f.Write(ctx, tcases.name, strings.NewReader(tcases.content2))
+			err = f.Write(ctx, tc.name, strings.NewReader(tc.content2))
 			assert.ErrorIs(t, err, fs.ErrExist)
-			assert.Regexp(t, regexp.MustCompile(`file already exists: .*/`+tcases.nameWithoutExt+`$`), err.Error())
+			assert.Regexp(t, regexp.MustCompile(`file already exists: .*/`+tc.nameWithoutExt+`$`), err.Error())
 
 		})
 	}
@@ -456,18 +463,18 @@ func TestAccFilerWorkspaceNotebookWithOverwriteFlag(t *testing.T) {
 		{
 			name:           "pyNb.py",
 			nameWithoutExt: "pyNb",
-			content1:       "# Databricks notebook source\nprint('first upload'))",
-			expected1:      "# Databricks notebook source\nprint('first upload'))",
-			content2:       "# Databricks notebook source\nprint('second upload'))",
-			expected2:      "# Databricks notebook source\nprint('second upload'))",
+			content1:       "# Databricks notebook source\nprint('first upload')",
+			expected1:      "# Databricks notebook source\nprint('first upload')",
+			content2:       "# Databricks notebook source\nprint('second upload')",
+			expected2:      "# Databricks notebook source\nprint('second upload')",
 		},
 		{
 			name:           "rNb.r",
 			nameWithoutExt: "rNb",
-			content1:       "# Databricks notebook source\nprint('first upload'))",
-			expected1:      "# Databricks notebook source\nprint('first upload'))",
-			content2:       "# Databricks notebook source\nprint('second upload'))",
-			expected2:      "# Databricks notebook source\nprint('second upload'))",
+			content1:       "# Databricks notebook source\nprint('first upload')",
+			expected1:      "# Databricks notebook source\nprint('first upload')",
+			content2:       "# Databricks notebook source\nprint('second upload')",
+			expected2:      "# Databricks notebook source\nprint('second upload')",
 		},
 		{
 			name:           "sqlNb.sql",
@@ -480,26 +487,34 @@ func TestAccFilerWorkspaceNotebookWithOverwriteFlag(t *testing.T) {
 		{
 			name:           "scalaNb.scala",
 			nameWithoutExt: "scalaNb",
-			content1:       "// Databricks notebook source\n println(\"first upload\"))",
-			expected1:      "// Databricks notebook source\n println(\"first upload\"))",
-			content2:       "// Databricks notebook source\n println(\"second upload\"))",
-			expected2:      "// Databricks notebook source\n println(\"second upload\"))",
+			content1:       "// Databricks notebook source\n println(\"first upload\")",
+			expected1:      "// Databricks notebook source\n println(\"first upload\")",
+			content2:       "// Databricks notebook source\n println(\"second upload\")",
+			expected2:      "// Databricks notebook source\n println(\"second upload\")",
 		},
 		{
 			name:           "pythonJupyterNb.ipynb",
 			nameWithoutExt: "pythonJupyterNb",
 			content1:       readFile(t, "testdata/notebooks/py1.ipynb"),
-			expected1:      "# Databricks notebook source\nprint(1))",
+			expected1:      "# Databricks notebook source\nprint(1)",
 			content2:       readFile(t, "testdata/notebooks/py2.ipynb"),
-			expected2:      "# Databricks notebook source\nprint(2))",
+			expected2:      "# Databricks notebook source\nprint(2)",
 		},
 		{
 			name:           "rJupyterNb.ipynb",
 			nameWithoutExt: "rJupyterNb",
 			content1:       readFile(t, "testdata/notebooks/r1.ipynb"),
-			expected1:      "# Databricks notebook source\nprint(1))",
+			expected1:      "# Databricks notebook source\nprint(1)",
 			content2:       readFile(t, "testdata/notebooks/r2.ipynb"),
-			expected2:      "# Databricks notebook source\nprint(2))",
+			expected2:      "# Databricks notebook source\nprint(2)",
+		},
+		{
+			name:           "scalaJupyterNb.ipynb",
+			nameWithoutExt: "scalaJupyterNb",
+			content1:       readFile(t, "testdata/notebooks/scala1.ipynb"),
+			expected1:      "// Databricks notebook source\nprintln(1)",
+			content2:       readFile(t, "testdata/notebooks/scala2.ipynb"),
+			expected2:      "// Databricks notebook source\nprintln(2)",
 		},
 	} {
 		t.Run(tcases.name, func(t *testing.T) {
@@ -540,6 +555,7 @@ func TestAccFilerWorkspaceFilesExtensionsReadDir(t *testing.T) {
 		{"r1.ipynb", readFile(t, "testdata/notebooks/r1.ipynb")},
 		{"pyNb.py", "# Databricks notebook source\nprint('first upload'))"},
 		{"rNb.r", "# Databricks notebook source\nprint('first upload'))"},
+		{"scala1.ipynb", readFile(t, "testdata/notebooks/scala1.ipynb")},
 		{"scalaNb.scala", "// Databricks notebook source\n println(\"first upload\"))"},
 		{"sqlNb.sql", "-- Databricks notebook source\n SELECT \"first upload\""},
 	}
@@ -580,6 +596,7 @@ func TestAccFilerWorkspaceFilesExtensionsReadDir(t *testing.T) {
 		"pyNb.py",
 		"r1.ipynb",
 		"rNb.r",
+		"scala1.ipynb",
 		"scalaNb.scala",
 		"sqlNb.sql",
 	}, names)
@@ -606,6 +623,7 @@ func setupFilerWithExtensionsTest(t *testing.T) filer.Filer {
 		{"bar.py", "print('foo')"},
 		{"p1.ipynb", readFile(t, "testdata/notebooks/py1.ipynb")},
 		{"r1.ipynb", readFile(t, "testdata/notebooks/r1.ipynb")},
+		{"scala1.ipynb", readFile(t, "testdata/notebooks/scala1.ipynb")},
 		{"pretender", "not a notebook"},
 		{"dir/file.txt", "file content"},
 		{"scala-notebook.scala", "// Databricks notebook source\nprintln('first upload')"},
@@ -633,6 +651,7 @@ func TestAccFilerWorkspaceFilesExtensionsRead(t *testing.T) {
 	filerTest{t, wf}.assertContents(ctx, "bar.py", "print('foo')")
 	filerTest{t, wf}.assertContentsJupyter(ctx, "p1.ipynb", "python")
 	filerTest{t, wf}.assertContentsJupyter(ctx, "r1.ipynb", "R")
+	filerTest{t, wf}.assertContentsJupyter(ctx, "scala1.ipynb", "scala")
 	filerTest{t, wf}.assertContents(ctx, "dir/file.txt", "file content")
 	filerTest{t, wf}.assertContents(ctx, "scala-notebook.scala", "// Databricks notebook source\nprintln('first upload')")
 	filerTest{t, wf}.assertContents(ctx, "pretender", "not a notebook")
@@ -681,6 +700,11 @@ func TestAccFilerWorkspaceFilesExtensionsDelete(t *testing.T) {
 	err = wf.Delete(ctx, "r1.ipynb")
 	require.NoError(t, err)
 	filerTest{t, wf}.assertNotExists(ctx, "r1.ipynb")
+
+	// Delete scala jupyter notebook
+	err = wf.Delete(ctx, "scala1.ipynb")
+	require.NoError(t, err)
+	filerTest{t, wf}.assertNotExists(ctx, "scala1.ipynb")
 
 	// Delete non-existent file
 	err = wf.Delete(ctx, "non-existent.py")
@@ -732,6 +756,12 @@ func TestAccFilerWorkspaceFilesExtensionsStat(t *testing.T) {
 	info, err = wf.Stat(ctx, "r1.ipynb")
 	require.NoError(t, err)
 	assert.Equal(t, "r1.ipynb", info.Name())
+	assert.False(t, info.IsDir())
+
+	// Stat on a Scala jupyter notebook
+	info, err = wf.Stat(ctx, "scala1.ipynb")
+	require.NoError(t, err)
+	assert.Equal(t, "scala1.ipynb", info.Name())
 	assert.False(t, info.IsDir())
 
 	// Stat on a directory
@@ -794,10 +824,14 @@ func TestAccWorkspaceFilesExtensions_ExportFormatIsPreserved(t *testing.T) {
 			sourceContent: "# Databricks notebook source\nprint('foo')",
 			jupyterName:   "foo.ipynb",
 		},
+		{
+			language:      "scala",
+			sourceName:    "foo.scala",
+			sourceContent: "// Databricks notebook source\nprintln('foo')",
+			jupyterName:   "foo.ipynb",
+		},
 	} {
-		t.Run(tc.language, func(t *testing.T) {
-			t.Parallel()
-
+		t.Run("source_"+tc.language, func(t *testing.T) {
 			ctx := context.Background()
 			wf, _ := setupWsfsExtensionsFiler(t)
 
@@ -834,10 +868,14 @@ func TestAccWorkspaceFilesExtensions_ExportFormatIsPreserved(t *testing.T) {
 			jupyterName:    "foo.ipynb",
 			jupyterContent: readFile(t, "testdata/notebooks/r1.ipynb"),
 		},
+		{
+			language:       "scala",
+			sourceName:     "bar.scala",
+			jupyterName:    "foo.ipynb",
+			jupyterContent: readFile(t, "testdata/notebooks/scala1.ipynb"),
+		},
 	} {
-		t.Run(tc.language, func(t *testing.T) {
-			t.Parallel()
-
+		t.Run("jupyter_"+tc.language, func(t *testing.T) {
 			ctx := context.Background()
 			wf, _ := setupWsfsExtensionsFiler(t)
 
