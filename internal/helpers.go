@@ -596,13 +596,10 @@ func setupWsfsExtensionsFiler(t *testing.T) (filer.Filer, string) {
 }
 
 func setupDbfsFiler(t *testing.T) (filer.Filer, string) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	_, wt := acc.WorkspaceTest(t)
 
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
-
-	tmpDir := TemporaryDbfsDir(t, w)
-	f, err := filer.NewDbfsClient(w, tmpDir)
+	tmpDir := TemporaryDbfsDir(t, wt.W)
+	f, err := filer.NewDbfsClient(wt.W, tmpDir)
 	require.NoError(t, err)
 
 	return f, path.Join("dbfs:/", tmpDir)
