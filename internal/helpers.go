@@ -352,6 +352,13 @@ func RequireErrorRun(t *testing.T, args ...string) (bytes.Buffer, bytes.Buffer, 
 	return stdout, stderr, err
 }
 
+func readFile(t *testing.T, name string) string {
+	b, err := os.ReadFile(name)
+	require.NoError(t, err)
+
+	return string(b)
+}
+
 func writeFile(t *testing.T, name string, body string) string {
 	f, err := os.Create(filepath.Join(t.TempDir(), name))
 	require.NoError(t, err)
@@ -562,10 +569,10 @@ func setupLocalFiler(t *testing.T) (filer.Filer, string) {
 }
 
 func setupWsfsFiler(t *testing.T) (filer.Filer, string) {
-	ctx, w := acc.WorkspaceTest(t)
+	ctx, wt := acc.WorkspaceTest(t)
 
-	tmpdir := TemporaryWorkspaceDir(t, w.W)
-	f, err := filer.NewWorkspaceFilesClient(w.W, tmpdir)
+	tmpdir := TemporaryWorkspaceDir(t, wt.W)
+	f, err := filer.NewWorkspaceFilesClient(wt.W, tmpdir)
 	require.NoError(t, err)
 
 	// Check if we can use this API here, skip test if we cannot.
@@ -579,11 +586,10 @@ func setupWsfsFiler(t *testing.T) (filer.Filer, string) {
 }
 
 func setupWsfsExtensionsFiler(t *testing.T) (filer.Filer, string) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	_, wt := acc.WorkspaceTest(t)
 
-	w := databricks.Must(databricks.NewWorkspaceClient())
-	tmpdir := TemporaryWorkspaceDir(t, w)
-	f, err := filer.NewWorkspaceFilesExtensionsClient(w, tmpdir)
+	tmpdir := TemporaryWorkspaceDir(t, wt.W)
+	f, err := filer.NewWorkspaceFilesExtensionsClient(wt.W, tmpdir)
 	require.NoError(t, err)
 
 	return f, tmpdir

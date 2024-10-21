@@ -39,7 +39,7 @@ func (f filerTest) assertContents(ctx context.Context, name string, contents str
 	assert.Equal(f, contents, body.String())
 }
 
-func (f filerTest) assertContentsJupyter(ctx context.Context, name string) {
+func (f filerTest) assertContentsJupyter(ctx context.Context, name string, language string) {
 	reader, err := f.Read(ctx, name)
 	if !assert.NoError(f, err) {
 		return
@@ -62,6 +62,7 @@ func (f filerTest) assertContentsJupyter(ctx context.Context, name string) {
 	// Since a roundtrip to the workspace changes a Jupyter notebook's payload,
 	// the best we can do is assert that the nbformat is correct.
 	assert.EqualValues(f, 4, actual["nbformat"])
+	assert.Equal(f, language, actual["metadata"].(map[string]any)["language_info"].(map[string]any)["name"])
 }
 
 func (f filerTest) assertNotExists(ctx context.Context, name string) {
@@ -360,60 +361,8 @@ func TestAccFilerReadDir(t *testing.T) {
 	}
 }
 
-var pythonJupyterNotebookContent1 = `
-{
-	"cells": [
-	 {
-	  "cell_type": "code",
-	  "execution_count": null,
-	  "metadata": {},
-	  "outputs": [],
-	  "source": [
-	   "print(\"Jupyter Notebook Version 1\")"
-	  ]
-	 }
-	],
-	"metadata": {
-	 "language_info": {
-	  "name": "python"
-	 },
-	 "orig_nbformat": 4
-	},
-	"nbformat": 4,
-	"nbformat_minor": 2
-   }
-`
-
-// TODO: Does detect notebook work with notebooks exported from databricks?
-// They typically do not have the top level "language" key set.
-
-var pythonJupyterNotebookContent2 = `
-{
-	"cells": [
-	 {
-	  "cell_type": "code",
-	  "execution_count": null,
-	  "metadata": {},
-	  "outputs": [],
-	  "source": [
-	   "print(\"Jupyter Notebook Version 2\")"
-	  ]
-	 }
-	],
-	"metadata": {
-	 "language_info": {
-	  "name": "python"
-	 },
-	 "orig_nbformat": 4
-	},
-	"nbformat": 4,
-	"nbformat_minor": 2
-   }
-`
-
 // TODO: Continue adding tests for other types of notebooks than python here.
 // Exporting from a workspace makes this work easier.
-
 
 func TestAccFilerWorkspaceNotebookConflict(t *testing.T) {
 	t.Parallel()
@@ -422,45 +371,71 @@ func TestAccFilerWorkspaceNotebookConflict(t *testing.T) {
 	ctx := context.Background()
 	var err error
 
-	// Upload the notebooks
-	err = f.Write(ctx, "pyNb.py", strings.NewReader("# Databricks notebook source\nprint('first upload'))"))
-	require.NoError(t, err)
-	err = f.Write(ctx, "rNb.r", strings.NewReader("# Databricks notebook source\nprint('first upload'))"))
-	require.NoError(t, err)
-	err = f.Write(ctx, "sqlNb.sql", strings.NewReader("-- Databricks notebook source\n SELECT \"first upload\""))
-	require.NoError(t, err)
-	err = f.Write(ctx, "scalaNb.scala", strings.NewReader("// Databricks notebook source\n println(\"first upload\"))"))
-	require.NoError(t, err)
-	err = f.Write(ctx, "pythonJupyterNb.ipynb", strings.NewReader(pythonJupyterNotebookContent1))
-	require.NoError(t, err)
+	for _, tcases := range []struct {
+		name           string
+		nameWithoutExt string
+		content1       string
+		expected1      string
+		content2       string
+	}{
+		{
+			name:           "pyNb.py",
+			nameWithoutExt: "pyNb",
+			content1:       "# Databricks notebook source\nprint('first upload'))",
+			expected1:      "# Databricks notebook source\nprint('first upload'))",
+			content2:       "# Databricks notebook source\nprint('second upload'))",
+		},
+		{
+			name:           "rNb.r",
+			nameWithoutExt: "rNb",
+			content1:       "# Databricks notebook source\nprint('first upload'))",
+			expected1:      "# Databricks notebook source\nprint('first upload'))",
+			content2:       "# Databricks notebook source\nprint('second upload'))",
+		},
+		{
+			name:           "sqlNb.sql",
+			nameWithoutExt: "sqlNb",
+			content1:       "-- Databricks notebook source\n SELECT \"first upload\"",
+			expected1:      "-- Databricks notebook source\n SELECT \"first upload\"",
+			content2:       "-- Databricks notebook source\n SELECT \"second upload\"",
+		},
+		{
+			name:           "scalaNb.scala",
+			nameWithoutExt: "scalaNb",
+			content1:       "// Databricks notebook source\n println(\"first upload\"))",
+			expected1:      "// Databricks notebook source\n println(\"first upload\"))",
+			content2:       "// Databricks notebook source\n println(\"second upload\"))",
+		},
+		{
+			name:           "pythonJupyterNb.ipynb",
+			nameWithoutExt: "pythonJupyterNb",
+			content1:       readFile(t, "testdata/notebooks/py1.ipynb"),
+			expected1:      "# Databricks notebook source\nprint(1)",
+			content2:       readFile(t, "testdata/notebooks/py2.ipynb"),
+		},
+		{
+			name:           "rJupyterNb.ipynb",
+			nameWithoutExt: "rJupyterNb",
+			content1:       readFile(t, "testdata/notebooks/r1.ipynb"),
+			expected1:      "# Databricks notebook source\nprint(1)",
+			content2:       readFile(t, "testdata/notebooks/r2.ipynb"),
+		},
+	} {
+		t.Run(tcases.name, func(t *testing.T) {
+			// Upload the notebook
+			err = f.Write(ctx, tcases.name, strings.NewReader(tcases.content1))
+			require.NoError(t, err)
 
-	// Assert contents after initial upload
-	filerTest{t, f}.assertContents(ctx, "pyNb", "# Databricks notebook source\nprint('first upload'))")
-	filerTest{t, f}.assertContents(ctx, "rNb", "# Databricks notebook source\nprint('first upload'))")
-	filerTest{t, f}.assertContents(ctx, "sqlNb", "-- Databricks notebook source\n SELECT \"first upload\"")
-	filerTest{t, f}.assertContents(ctx, "scalaNb", "// Databricks notebook source\n println(\"first upload\"))")
-	filerTest{t, f}.assertContents(ctx, "pythonJupyterNb", "# Databricks notebook source\nprint(\"Jupyter Notebook Version 1\")")
+			// Assert contents after initial upload
+			filerTest{t, f}.assertContents(ctx, tcases.nameWithoutExt, tcases.expected1)
 
-	// Assert uploading a second time fails due to overwrite mode missing
-	err = f.Write(ctx, "pyNb.py", strings.NewReader("# Databricks notebook source\nprint('second upload'))"))
-	assert.ErrorIs(t, err, fs.ErrExist)
-	assert.Regexp(t, regexp.MustCompile(`file already exists: .*/pyNb$`), err.Error())
+			// Assert uploading a second time fails due to overwrite mode missing
+			err = f.Write(ctx, tcases.name, strings.NewReader(tcases.content2))
+			assert.ErrorIs(t, err, fs.ErrExist)
+			assert.Regexp(t, regexp.MustCompile(`file already exists: .*/`+tcases.nameWithoutExt+`$`), err.Error())
 
-	err = f.Write(ctx, "rNb.r", strings.NewReader("# Databricks notebook source\nprint('second upload'))"))
-	assert.ErrorIs(t, err, fs.ErrExist)
-	assert.Regexp(t, regexp.MustCompile(`file already exists: .*/rNb$`), err.Error())
-
-	err = f.Write(ctx, "sqlNb.sql", strings.NewReader("# Databricks notebook source\n SELECT \"second upload\")"))
-	assert.ErrorIs(t, err, fs.ErrExist)
-	assert.Regexp(t, regexp.MustCompile(`file already exists: .*/sqlNb$`), err.Error())
-
-	err = f.Write(ctx, "scalaNb.scala", strings.NewReader("# Databricks notebook source\n println(\"second upload\"))"))
-	assert.ErrorIs(t, err, fs.ErrExist)
-	assert.Regexp(t, regexp.MustCompile(`file already exists: .*/scalaNb$`), err.Error())
-
-	err = f.Write(ctx, "pythonJupyterNb.ipynb", strings.NewReader(pythonJupyterNotebookContent2))
-	assert.ErrorIs(t, err, fs.ErrExist)
-	assert.Regexp(t, regexp.MustCompile(`file already exists: .*/pythonJupyterNb$`), err.Error())
+		})
+	}
 }
 
 func TestAccFilerWorkspaceNotebookWithOverwriteFlag(t *testing.T) {
@@ -470,45 +445,83 @@ func TestAccFilerWorkspaceNotebookWithOverwriteFlag(t *testing.T) {
 	ctx := context.Background()
 	var err error
 
-	// Upload notebooks
-	err = f.Write(ctx, "pyNb.py", strings.NewReader("# Databricks notebook source\nprint('first upload'))"))
-	require.NoError(t, err)
-	err = f.Write(ctx, "rNb.r", strings.NewReader("# Databricks notebook source\nprint('first upload'))"))
-	require.NoError(t, err)
-	err = f.Write(ctx, "sqlNb.sql", strings.NewReader("-- Databricks notebook source\n SELECT \"first upload\""))
-	require.NoError(t, err)
-	err = f.Write(ctx, "scalaNb.scala", strings.NewReader("// Databricks notebook source\n println(\"first upload\"))"))
-	require.NoError(t, err)
-	err = f.Write(ctx, "jupyterNb.ipynb", strings.NewReader(pythonJupyterNotebookContent1))
-	require.NoError(t, err)
+	for _, tcases := range []struct {
+		name           string
+		nameWithoutExt string
+		content1       string
+		expected1      string
+		content2       string
+		expected2      string
+	}{
+		{
+			name:           "pyNb.py",
+			nameWithoutExt: "pyNb",
+			content1:       "# Databricks notebook source\nprint('first upload'))",
+			expected1:      "# Databricks notebook source\nprint('first upload'))",
+			content2:       "# Databricks notebook source\nprint('second upload'))",
+			expected2:      "# Databricks notebook source\nprint('second upload'))",
+		},
+		{
+			name:           "rNb.r",
+			nameWithoutExt: "rNb",
+			content1:       "# Databricks notebook source\nprint('first upload'))",
+			expected1:      "# Databricks notebook source\nprint('first upload'))",
+			content2:       "# Databricks notebook source\nprint('second upload'))",
+			expected2:      "# Databricks notebook source\nprint('second upload'))",
+		},
+		{
+			name:           "sqlNb.sql",
+			nameWithoutExt: "sqlNb",
+			content1:       "-- Databricks notebook source\n SELECT \"first upload\"",
+			expected1:      "-- Databricks notebook source\n SELECT \"first upload\"",
+			content2:       "-- Databricks notebook source\n SELECT \"second upload\"",
+			expected2:      "-- Databricks notebook source\n SELECT \"second upload\"",
+		},
+		{
+			name:           "scalaNb.scala",
+			nameWithoutExt: "scalaNb",
+			content1:       "// Databricks notebook source\n println(\"first upload\"))",
+			expected1:      "// Databricks notebook source\n println(\"first upload\"))",
+			content2:       "// Databricks notebook source\n println(\"second upload\"))",
+			expected2:      "// Databricks notebook source\n println(\"second upload\"))",
+		},
+		{
+			name:           "pythonJupyterNb.ipynb",
+			nameWithoutExt: "pythonJupyterNb",
+			content1:       readFile(t, "testdata/notebooks/py1.ipynb"),
+			expected1:      "# Databricks notebook source\nprint(1))",
+			content2:       readFile(t, "testdata/notebooks/py2.ipynb"),
+			expected2:      "# Databricks notebook source\nprint(2))",
+		},
+		{
+			name:           "rJupyterNb.ipynb",
+			nameWithoutExt: "rJupyterNb",
+			content1:       readFile(t, "testdata/notebooks/r1.ipynb"),
+			expected1:      "# Databricks notebook source\nprint(1))",
+			content2:       readFile(t, "testdata/notebooks/r2.ipynb"),
+			expected2:      "# Databricks notebook source\nprint(2))",
+		},
+	} {
+		t.Run(tcases.name, func(t *testing.T) {
+			// Upload the notebook
+			err = f.Write(ctx, tcases.name, strings.NewReader(tcases.content1))
+			require.NoError(t, err)
 
-	// Assert contents after initial upload
-	filerTest{t, f}.assertContents(ctx, "pyNb", "# Databricks notebook source\nprint('first upload'))")
-	filerTest{t, f}.assertContents(ctx, "rNb", "# Databricks notebook source\nprint('first upload'))")
-	filerTest{t, f}.assertContents(ctx, "sqlNb", "-- Databricks notebook source\n SELECT \"first upload\"")
-	filerTest{t, f}.assertContents(ctx, "scalaNb", "// Databricks notebook source\n println(\"first upload\"))")
-	filerTest{t, f}.assertContents(ctx, "jupyterNb", "# Databricks notebook source\nprint(\"Jupyter Notebook Version 1\")")
+			// Assert contents after initial upload
+			filerTest{t, f}.assertContents(ctx, tcases.nameWithoutExt, tcases.expected1)
 
-	// Upload notebooks a second time, overwriting the initial uplaods
-	err = f.Write(ctx, "pyNb.py", strings.NewReader("# Databricks notebook source\nprint('second upload'))"), filer.OverwriteIfExists)
-	require.NoError(t, err)
-	err = f.Write(ctx, "rNb.r", strings.NewReader("# Databricks notebook source\nprint('second upload'))"), filer.OverwriteIfExists)
-	require.NoError(t, err)
-	err = f.Write(ctx, "sqlNb.sql", strings.NewReader("-- Databricks notebook source\n SELECT \"second upload\""), filer.OverwriteIfExists)
-	require.NoError(t, err)
-	err = f.Write(ctx, "scalaNb.scala", strings.NewReader("// Databricks notebook source\n println(\"second upload\"))"), filer.OverwriteIfExists)
-	require.NoError(t, err)
-	err = f.Write(ctx, "jupyterNb.ipynb", strings.NewReader(pythonJupyterNotebookContent2), filer.OverwriteIfExists)
-	require.NoError(t, err)
+			// Upload the notebook a second time with overwrite flag
+			err = f.Write(ctx, tcases.name, strings.NewReader(tcases.content2), filer.OverwriteIfExists)
+			require.NoError(t, err)
 
-	// Assert contents have been overwritten
-	filerTest{t, f}.assertContents(ctx, "pyNb", "# Databricks notebook source\nprint('second upload'))")
-	filerTest{t, f}.assertContents(ctx, "rNb", "# Databricks notebook source\nprint('second upload'))")
-	filerTest{t, f}.assertContents(ctx, "sqlNb", "-- Databricks notebook source\n SELECT \"second upload\"")
-	filerTest{t, f}.assertContents(ctx, "scalaNb", "// Databricks notebook source\n println(\"second upload\"))")
-	filerTest{t, f}.assertContents(ctx, "jupyterNb", "# Databricks notebook source\nprint(\"Jupyter Notebook Version 2\")")
+			// Assert contents after second upload
+			filerTest{t, f}.assertContents(ctx, tcases.nameWithoutExt, tcases.expected2)
+		})
+	}
 }
 
+// TODO: Add a test that the exported file has the right extension / language_info set?
+// Required for DABs in the workspace.
 func TestAccFilerWorkspaceFilesExtensionsReadDir(t *testing.T) {
 	t.Parallel()
 
@@ -522,8 +535,9 @@ func TestAccFilerWorkspaceFilesExtensionsReadDir(t *testing.T) {
 		{"foo.r", "print('foo')"},
 		{"foo.scala", "println('foo')"},
 		{"foo.sql", "SELECT 'foo'"},
-		{"jupyterNb.ipynb", pythonJupyterNotebookContent1},
-		{"jupyterNb2.ipynb", pythonJupyterNotebookContent2},
+		{"py1.ipynb", readFile(t, "testdata/notebooks/py1.ipynb")},
+		{"py2.ipynb", readFile(t, "testdata/notebooks/py2.ipynb")},
+		{"r1.ipynb", readFile(t, "testdata/notebooks/r1.ipynb")},
 		{"pyNb.py", "# Databricks notebook source\nprint('first upload'))"},
 		{"rNb.r", "# Databricks notebook source\nprint('first upload'))"},
 		{"scalaNb.scala", "// Databricks notebook source\n println(\"first upload\"))"},
@@ -561,9 +575,10 @@ func TestAccFilerWorkspaceFilesExtensionsReadDir(t *testing.T) {
 		"foo.r",
 		"foo.scala",
 		"foo.sql",
-		"jupyterNb.ipynb",
-		"jupyterNb2.ipynb",
+		"py1.ipynb",
+		"py2.ipynb",
 		"pyNb.py",
+		"r1.ipynb",
 		"rNb.r",
 		"scalaNb.scala",
 		"sqlNb.sql",
@@ -589,7 +604,8 @@ func setupFilerWithExtensionsTest(t *testing.T) filer.Filer {
 	}{
 		{"foo.py", "# Databricks notebook source\nprint('first upload'))"},
 		{"bar.py", "print('foo')"},
-		{"jupyter.ipynb", pythonJupyterNotebookContent1},
+		{"p1.ipynb", readFile(t, "testdata/notebooks/py1.ipynb")},
+		{"r1.ipynb", readFile(t, "testdata/notebooks/r1.ipynb")},
 		{"pretender", "not a notebook"},
 		{"dir/file.txt", "file content"},
 		{"scala-notebook.scala", "// Databricks notebook source\nprintln('first upload')"},
@@ -615,7 +631,8 @@ func TestAccFilerWorkspaceFilesExtensionsRead(t *testing.T) {
 	// Read contents of test fixtures as a sanity check.
 	filerTest{t, wf}.assertContents(ctx, "foo.py", "# Databricks notebook source\nprint('first upload'))")
 	filerTest{t, wf}.assertContents(ctx, "bar.py", "print('foo')")
-	filerTest{t, wf}.assertContentsJupyter(ctx, "jupyter.ipynb")
+	filerTest{t, wf}.assertContentsJupyter(ctx, "p1.ipynb", "python")
+	filerTest{t, wf}.assertContentsJupyter(ctx, "r1.ipynb", "R")
 	filerTest{t, wf}.assertContents(ctx, "dir/file.txt", "file content")
 	filerTest{t, wf}.assertContents(ctx, "scala-notebook.scala", "// Databricks notebook source\nprintln('first upload')")
 	filerTest{t, wf}.assertContents(ctx, "pretender", "not a notebook")
@@ -655,10 +672,15 @@ func TestAccFilerWorkspaceFilesExtensionsDelete(t *testing.T) {
 	require.NoError(t, err)
 	filerTest{t, wf}.assertNotExists(ctx, "bar.py")
 
-	// Delete jupyter notebook
-	err = wf.Delete(ctx, "jupyter.ipynb")
+	// Delete python jupyter notebook
+	err = wf.Delete(ctx, "p1.ipynb")
 	require.NoError(t, err)
-	filerTest{t, wf}.assertNotExists(ctx, "jupyter.ipynb")
+	filerTest{t, wf}.assertNotExists(ctx, "p1.ipynb")
+
+	// Delete r jupyter notebook
+	err = wf.Delete(ctx, "r1.ipynb")
+	require.NoError(t, err)
+	filerTest{t, wf}.assertNotExists(ctx, "r1.ipynb")
 
 	// Delete non-existent file
 	err = wf.Delete(ctx, "non-existent.py")
@@ -700,10 +722,16 @@ func TestAccFilerWorkspaceFilesExtensionsStat(t *testing.T) {
 	assert.Equal(t, "bar.py", info.Name())
 	assert.False(t, info.IsDir())
 
-	// Stat on a Jupyter notebook
-	info, err = wf.Stat(ctx, "jupyter.ipynb")
+	// Stat on a python jupyter notebook
+	info, err = wf.Stat(ctx, "p1.ipynb")
 	require.NoError(t, err)
-	assert.Equal(t, "jupyter.ipynb", info.Name())
+	assert.Equal(t, "p1.ipynb", info.Name())
+	assert.False(t, info.IsDir())
+
+	// Stat on an R jupyter notebook
+	info, err = wf.Stat(ctx, "r1.ipynb")
+	require.NoError(t, err)
+	assert.Equal(t, "r1.ipynb", info.Name())
 	assert.False(t, info.IsDir())
 
 	// Stat on a directory
@@ -746,32 +774,84 @@ func TestAccWorkspaceFilesExtensionsDirectoriesAreNotNotebooks(t *testing.T) {
 func TestAccWorkspaceFilesExtensions_ExportFormatIsPreserved(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
-	wf, _ := setupWsfsExtensionsFiler(t)
+	// Case 1: Writing source notebooks.
+	for _, tc := range []struct {
+		language       string
+		sourceName     string
+		sourceContent  string
+		jupyterName    string
+		jupyterContent string
+	}{
+		{
+			language:      "python",
+			sourceName:    "foo.py",
+			sourceContent: "# Databricks notebook source\nprint('foo')",
+			jupyterName:   "foo.ipynb",
+		},
+		{
+			language:      "r",
+			sourceName:    "foo.r",
+			sourceContent: "# Databricks notebook source\nprint('foo')",
+			jupyterName:   "foo.ipynb",
+		},
+	} {
+		t.Run(tc.language, func(t *testing.T) {
+			t.Parallel()
 
-	// Case 1: Source Notebook
-	err := wf.Write(ctx, "foo.py", strings.NewReader("# Databricks notebook source\nprint('foo')"))
-	require.NoError(t, err)
+			ctx := context.Background()
+			wf, _ := setupWsfsExtensionsFiler(t)
 
-	// The source notebook should exist but not the Jupyter notebook
-	filerTest{t, wf}.assertContents(ctx, "foo.py", "# Databricks notebook source\nprint('foo')")
-	_, err = wf.Stat(ctx, "foo.ipynb")
-	assert.ErrorIs(t, err, fs.ErrNotExist)
-	_, err = wf.Read(ctx, "foo.ipynb")
-	assert.ErrorIs(t, err, fs.ErrNotExist)
-	err = wf.Delete(ctx, "foo.ipynb")
-	assert.ErrorIs(t, err, fs.ErrNotExist)
+			err := wf.Write(ctx, tc.sourceName, strings.NewReader(tc.sourceContent))
+			require.NoError(t, err)
 
-	// Case 2: Jupyter Notebook
-	err = wf.Write(ctx, "bar.ipynb", strings.NewReader(pythonJupyterNotebookContent1))
-	require.NoError(t, err)
+			// The source notebook should exist but not the Jupyter notebook
+			filerTest{t, wf}.assertContents(ctx, tc.sourceName, tc.sourceContent)
+			_, err = wf.Stat(ctx, tc.jupyterName)
+			assert.ErrorIs(t, err, fs.ErrNotExist)
+			_, err = wf.Read(ctx, tc.jupyterName)
+			assert.ErrorIs(t, err, fs.ErrNotExist)
+			err = wf.Delete(ctx, tc.jupyterName)
+			assert.ErrorIs(t, err, fs.ErrNotExist)
+		})
+	}
 
-	// The Jupyter notebook should exist but not the source notebook
-	filerTest{t, wf}.assertContentsJupyter(ctx, "bar.ipynb")
-	_, err = wf.Stat(ctx, "bar.py")
-	assert.ErrorIs(t, err, fs.ErrNotExist)
-	_, err = wf.Read(ctx, "bar.py")
-	assert.ErrorIs(t, err, fs.ErrNotExist)
-	err = wf.Delete(ctx, "bar.py")
-	assert.ErrorIs(t, err, fs.ErrNotExist)
+	// Case 2: Writing Jupyter notebooks.
+	for _, tc := range []struct {
+		language       string
+		sourceName     string
+		jupyterName    string
+		jupyterContent string
+	}{
+		{
+			language:       "python",
+			sourceName:     "bar.py",
+			jupyterName:    "foo.ipynb",
+			jupyterContent: readFile(t, "testdata/notebooks/py1.ipynb"),
+		},
+		{
+			language:       "R",
+			sourceName:     "bar.r",
+			jupyterName:    "foo.ipynb",
+			jupyterContent: readFile(t, "testdata/notebooks/r1.ipynb"),
+		},
+	} {
+		t.Run(tc.language, func(t *testing.T) {
+			t.Parallel()
+
+			ctx := context.Background()
+			wf, _ := setupWsfsExtensionsFiler(t)
+
+			err := wf.Write(ctx, tc.jupyterName, strings.NewReader(tc.jupyterContent))
+			require.NoError(t, err)
+
+			// The Jupyter notebook should exist but not the source notebook
+			filerTest{t, wf}.assertContentsJupyter(ctx, tc.jupyterName, tc.language)
+			_, err = wf.Stat(ctx, tc.sourceName)
+			assert.ErrorIs(t, err, fs.ErrNotExist)
+			_, err = wf.Read(ctx, tc.sourceName)
+			assert.ErrorIs(t, err, fs.ErrNotExist)
+			err = wf.Delete(ctx, tc.sourceName)
+			assert.ErrorIs(t, err, fs.ErrNotExist)
+		})
+	}
 }
