@@ -37,7 +37,7 @@ func TestFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
 		expectedError        string
 	}{
 		{
-			name:                 "python source notebook and file",
+			name:                 "python source notebook and file with source extension",
 			language:             workspace.LanguagePython,
 			notebookExportFormat: workspace.ExportFormatSource,
 			notebookPath:         "/dir/foo",
@@ -45,7 +45,7 @@ func TestFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
 			expectedError:        "failed to read files from the workspace file system. Duplicate paths encountered. Both NOTEBOOK at /dir/foo and FILE at /dir/foo.py resolve to the same name /foo.py. Changing the name of one of these objects will resolve this issue",
 		},
 		{
-			name:                 "scala source notebook and file",
+			name:                 "scala source notebook and file with source extension",
 			language:             workspace.LanguageScala,
 			notebookExportFormat: workspace.ExportFormatSource,
 			notebookPath:         "/dir/foo",
@@ -53,7 +53,7 @@ func TestFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
 			expectedError:        "failed to read files from the workspace file system. Duplicate paths encountered. Both NOTEBOOK at /dir/foo and FILE at /dir/foo.scala resolve to the same name /foo.scala. Changing the name of one of these objects will resolve this issue",
 		},
 		{
-			name:                 "r source notebook and file",
+			name:                 "r source notebook and file with source extension",
 			language:             workspace.LanguageR,
 			notebookExportFormat: workspace.ExportFormatSource,
 			notebookPath:         "/dir/foo",
@@ -61,7 +61,7 @@ func TestFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
 			expectedError:        "failed to read files from the workspace file system. Duplicate paths encountered. Both NOTEBOOK at /dir/foo and FILE at /dir/foo.r resolve to the same name /foo.r. Changing the name of one of these objects will resolve this issue",
 		},
 		{
-			name:                 "sql source notebook and file",
+			name:                 "sql source notebook and file with source extension",
 			language:             workspace.LanguageSql,
 			notebookExportFormat: workspace.ExportFormatSource,
 			notebookPath:         "/dir/foo",
@@ -69,7 +69,7 @@ func TestFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
 			expectedError:        "failed to read files from the workspace file system. Duplicate paths encountered. Both NOTEBOOK at /dir/foo and FILE at /dir/foo.sql resolve to the same name /foo.sql. Changing the name of one of these objects will resolve this issue",
 		},
 		{
-			name:                 "python jupyter notebook and file",
+			name:                 "python jupyter notebook and file with source extension",
 			language:             workspace.LanguagePython,
 			notebookExportFormat: workspace.ExportFormatJupyter,
 			notebookPath:         "/dir/foo",
@@ -78,7 +78,7 @@ func TestFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
 			expectedError: "",
 		},
 		{
-			name:                 "scala jupyter notebook and file",
+			name:                 "scala jupyter notebook and file with source extension",
 			language:             workspace.LanguageScala,
 			notebookExportFormat: workspace.ExportFormatJupyter,
 			notebookPath:         "/dir/foo",
@@ -87,7 +87,7 @@ func TestFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
 			expectedError: "",
 		},
 		{
-			name:                 "sql jupyter notebook and file",
+			name:                 "sql jupyter notebook and file with source extension",
 			language:             workspace.LanguageSql,
 			notebookExportFormat: workspace.ExportFormatJupyter,
 			notebookPath:         "/dir/foo",
@@ -96,7 +96,7 @@ func TestFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
 			expectedError: "",
 		},
 		{
-			name:                 "r jupyter notebook and file",
+			name:                 "r jupyter notebook and file with source extension",
 			language:             workspace.LanguageR,
 			notebookExportFormat: workspace.ExportFormatJupyter,
 			notebookPath:         "/dir/foo",
@@ -105,7 +105,7 @@ func TestFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
 			expectedError: "",
 		},
 		{
-			name:                 "python jupyter notebook and file",
+			name:                 "python jupyter notebook and file with .ipynb extension",
 			language:             workspace.LanguagePython,
 			notebookExportFormat: workspace.ExportFormatJupyter,
 			notebookPath:         "/dir/foo",
@@ -113,7 +113,7 @@ func TestFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
 			expectedError:        "failed to read files from the workspace file system. Duplicate paths encountered. Both NOTEBOOK at /dir/foo and FILE at /dir/foo.ipynb resolve to the same name /foo.ipynb. Changing the name of one of these objects will resolve this issue",
 		},
 		{
-			name:                 "scala jupyter notebook and file",
+			name:                 "scala jupyter notebook and file with .ipynb extension",
 			language:             workspace.LanguageScala,
 			notebookExportFormat: workspace.ExportFormatJupyter,
 			notebookPath:         "/dir/foo",
@@ -121,7 +121,7 @@ func TestFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
 			expectedError:        "failed to read files from the workspace file system. Duplicate paths encountered. Both NOTEBOOK at /dir/foo and FILE at /dir/foo.ipynb resolve to the same name /foo.ipynb. Changing the name of one of these objects will resolve this issue",
 		},
 		{
-			name:                 "r jupyter notebook and file",
+			name:                 "r jupyter notebook and file with .ipynb extension",
 			language:             workspace.LanguageR,
 			notebookExportFormat: workspace.ExportFormatJupyter,
 			notebookPath:         "/dir/foo",
@@ -129,7 +129,7 @@ func TestFilerWorkspaceFilesExtensionsErrorsOnDupName(t *testing.T) {
 			expectedError:        "failed to read files from the workspace file system. Duplicate paths encountered. Both NOTEBOOK at /dir/foo and FILE at /dir/foo.ipynb resolve to the same name /foo.ipynb. Changing the name of one of these objects will resolve this issue",
 		},
 		{
-			name:                 "sql jupyter notebook and file",
+			name:                 "sql jupyter notebook and file with .ipynb extension",
 			language:             workspace.LanguageSql,
 			notebookExportFormat: workspace.ExportFormatJupyter,
 			notebookPath:         "/dir/foo",
