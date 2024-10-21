@@ -123,6 +123,9 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				Clusters: map[string]*resources.Cluster{
 					"cluster1": {ClusterSpec: &compute.ClusterSpec{ClusterName: "cluster1", SparkVersion: "13.2.x", NumWorkers: 1}},
 				},
+				Dashboards: map[string]*resources.Dashboard{
+					"dashboard1": {DisplayName: "dashboard1"},
+				},
 			},
 		},
 		// Use AWS implementation for testing.
@@ -184,6 +187,9 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Clusters
 	assert.Equal(t, "[dev lennart] cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
+
+	// Dashboards
+	assert.Equal(t, "[dev lennart] dashboard1", b.Config.Resources.Dashboards["dashboard1"].DisplayName)
 }
 
 func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {
