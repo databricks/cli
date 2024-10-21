@@ -1,0 +1,81 @@
+bundle:
+  name: job_with_run_job_tasks
+
+workspace:
+  host: https://e2-dogfood.staging.cloud.databricks.com
+
+permissions:
+  - level: CAN_VIEW
+    group_name: users
+
+resources:
+  jobs:
+    primary:
+      name: primary job
+
+      tasks:
+        - task_key: run_leaf1
+          run_job_task:
+            job_id: ${resources.jobs.leaf1.id}
+
+        - task_key: run_leaf2
+          depends_on:
+            - task_key: run_leaf1
+
+          run_job_task:
+            job_id: ${resources.jobs.leaf2.id}
+
+      parameters:
+        - name: input
+          default: test_propagation
+
+
+    leaf1:
+      name: leaf job 1
+
+      tasks:
+        - task_key: leaf
+          environment_key: default
+          spark_python_task:
+            python_file: ./argv.py
+            parameters:
+              - "leaf1"
+              - "{{ job.parameters.[input] }}"
+      parameters:
+        - # This parameter is passed by the primary job.
+          name: input
+          default: ""
+
+      environments:
+        - environment_key: default
+          spec:
+            client: "1"
+
+
+    leaf2:
+      name: leaf job 2
+
+      tasks:
+        - task_key: leaf
+          environment_key: default
+          spark_python_task:
+            python_file: ./argv.py
+            parameters:
+              - "leaf2"
+              - "{{ job.parameters.[input] }}"
+
+      parameters:
+        - # This parameter is passed by the primary job.
+          name: input
+          default: ""
+
+      environments:
+        - environment_key: default
+          spec:
+            client: "1"
+
+
+targets:
+  dev:
+    default: true
+    mode: development
