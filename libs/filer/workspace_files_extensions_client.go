@@ -43,7 +43,6 @@ func (w *workspaceFilesExtensionsClient) stat(ctx context.Context, name string) 
 // This function returns the stat for the provided notebook. The stat object itself contains the path
 // with the extension since it is meant to be used in the context of a fs.FileInfo.
 func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithExt(ctx context.Context, name string) (*workspaceFileStatus, error) {
-	// TODO: What happens when this type casting is not possible?
 	ext := notebook.Extension(path.Ext(name))
 	nameWithoutExt := strings.TrimSuffix(name, string(ext))
 
@@ -120,7 +119,6 @@ func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithoutExt(ctx con
 	ext := notebook.GetExtensionByLanguage(&stat.ObjectInfo)
 
 	// If the notebook was exported as a Jupyter notebook, the extension should be .ipynb.
-	// TODO: Test this.
 	if stat.ReposExportFormat == workspace.ExportFormatJupyter {
 		ext = notebook.ExtensionJupyter
 	}
