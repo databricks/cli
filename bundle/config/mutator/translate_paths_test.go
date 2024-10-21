@@ -699,7 +699,7 @@ func TestTranslatePathJobEnvironments(t *testing.T) {
 											"../dist/env2.whl",
 											"simplejson",
 											"/Workspace/Users/foo@bar.com/test.whl",
-											"--extra-index-url https://name:token@gitlab.com/api/v4/projects/9876/packages/pypi/simple bridgecraft",
+											"--extra-index-url https://name:token@gitlab.com/api/v4/projects/9876/packages/pypi/simple foobar",
 											"https://foo@bar.com/packages/pypi/simple",
 										},
 									},
