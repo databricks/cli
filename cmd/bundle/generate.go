@@ -16,6 +16,7 @@ func newGenerateCommand() *cobra.Command {
 
 	cmd.AddCommand(generate.NewGenerateJobCommand())
 	cmd.AddCommand(generate.NewGeneratePipelineCommand())
+	cmd.AddCommand(generate.NewGenerateDashboardCommand())
 	cmd.PersistentFlags().StringVar(&key, "key", "", `resource key to use for the generated configuration`)
 	return cmd
 }
