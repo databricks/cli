@@ -20,7 +20,6 @@ var ExtensionToLanguage = map[Extension]workspace.Language{
 	ExtensionSql:    workspace.LanguageSql,
 
 	// The platform supports all languages (Python, R, Scala, and SQL) for Jupyter notebooks.
-	ExtensionJupyter: workspace.LanguageUnknown,
 }
 
 func GetExtensionByLanguage(objectInfo *workspace.ObjectInfo) Extension {

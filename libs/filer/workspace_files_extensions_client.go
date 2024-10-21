@@ -47,7 +47,12 @@ func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithExt(ctx contex
 	nameWithoutExt := strings.TrimSuffix(name, string(ext))
 
 	// File name does not have an extension associated with Databricks notebooks, return early.
-	if _, ok := notebook.ExtensionToLanguage[ext]; !ok {
+	if !slices.Contains([]notebook.Extension{
+		notebook.ExtensionPython,
+		notebook.ExtensionR,
+		notebook.ExtensionScala,
+		notebook.ExtensionSql,
+		notebook.ExtensionJupyter}, ext) {
 		return nil, nil
 	}
 
