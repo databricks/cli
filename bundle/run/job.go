@@ -317,6 +317,25 @@ func (r *jobRunner) Cancel(ctx context.Context) error {
 	return errGroup.Wait()
 }
 
+func (r *jobRunner) Restart(ctx context.Context, opts *Options) (output.RunOutput, error) {
+	// We don't need to cancel existing runs if the job is continuous and unpaused.
+	// the /jobs/run-now API will automatically cancel any existing runs before starting a new one.
+	continuous := r.job.JobSettings.Continuous
+	if continuous != nil && continuous.PauseStatus == jobs.PauseStatusUnpaused {
+		r.Run(ctx, opts)
+	}
+
+	s := cmdio.Spinner(ctx)
+	s <- "Cancelling all active job runs"
+	err := r.Cancel(ctx)
+	close(s)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.Run(ctx, opts)
+}
+
 func (r *jobRunner) ParseArgs(args []string, opts *Options) error {
 	return r.posArgsHandler().ParseArgs(args, opts)
 }

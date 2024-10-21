@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/run"
+	"github.com/databricks/cli/bundle/run/output"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -100,19 +101,17 @@ task or a Python wheel task, the second example applies.
 		}
 
 		runOptions.NoWait = noWait
+
+		var output output.RunOutput
 		if restart {
-			s := cmdio.Spinner(ctx)
-			s <- "Cancelling all runs"
-			err := runner.Cancel(ctx)
-			close(s)
-			if err != nil {
-				return err
-			}
+			output, err = runner.Restart(ctx, &runOptions)
+		} else {
+			output, err = runner.Run(ctx, &runOptions)
 		}
-		output, err := runner.Run(ctx, &runOptions)
 		if err != nil {
 			return err
 		}
+
 		if output != nil {
 			switch root.OutputType(cmd) {
 			case flags.OutputText:
