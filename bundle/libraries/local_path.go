@@ -59,7 +59,7 @@ func IsLibraryLocal(dep string) bool {
 
 	// If the dependency starts with --, it's a pip flag option which is a valid
 	// entry for environment dependencies but not a local path
-	if strings.HasPrefix(dep, "--") {
+	if containsPipFlag(dep) {
 		return false
 	}
 
@@ -74,6 +74,11 @@ func IsLibraryLocal(dep string) bool {
 	}
 
 	return IsLocalPath(dep)
+}
+
+func containsPipFlag(input string) bool {
+	re := regexp.MustCompile(`--[a-zA-Z0-9-]+`)
+	return re.MatchString(input)
 }
 
 // ^[a-zA-Z0-9\-_]+: Matches the package name, allowing alphanumeric characters, dashes (-), and underscores (_).
