@@ -40,10 +40,6 @@ func (w *workspaceFilesExtensionsClient) stat(ctx context.Context, name string) 
 	return info.(wsfsFileInfo), err
 }
 
-// TODO: Add end to end tests that the filer works for all .ipynb cases.
-// TODO: Also fix the sync issues. OR add tests that sync works fine with non
-// python notebooks. Is this needed in the first place?
-
 // This function returns the stat for the provided notebook. The stat object itself contains the path
 // with the extension since it is meant to be used in the context of a fs.FileInfo.
 func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithExt(ctx context.Context, name string) (*workspaceFileStatus, error) {
