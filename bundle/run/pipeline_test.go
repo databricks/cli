@@ -90,21 +90,23 @@ func TestPipelineRunnerRestart(t *testing.T) {
 		PipelineId: "123",
 	}).Return(mockWait, nil)
 
-	// Runner does a
 	pipelineApi.EXPECT().GetByPipelineId(mock.Anything, "123").Return(&pipelines.GetPipelineResponse{}, nil)
 
+	// Mock runner starting a new update
 	pipelineApi.EXPECT().StartUpdate(mock.Anything, pipelines.StartUpdate{
 		PipelineId: "123",
 	}).Return(&pipelines.StartUpdateResponse{
 		UpdateId: "456",
 	}, nil)
 
+	// Mock runner polling for events
 	pipelineApi.EXPECT().ListPipelineEventsAll(mock.Anything, pipelines.ListPipelineEventsRequest{
 		Filter:     `update_id = '456'`,
 		MaxResults: 100,
 		PipelineId: "123",
 	}).Return([]pipelines.PipelineEvent{}, nil)
 
+	// Mock runner polling for update status
 	pipelineApi.EXPECT().GetUpdateByPipelineIdAndUpdateId(mock.Anything, "123", "456").
 		Return(&pipelines.GetUpdateResponse{
 			Update: &pipelines.UpdateInfo{
@@ -113,5 +115,6 @@ func TestPipelineRunnerRestart(t *testing.T) {
 		}, nil)
 
 	_, err := runner.Restart(ctx, &Options{})
+	// TODO: assert on the output.
 	require.NoError(t, err)
 }
