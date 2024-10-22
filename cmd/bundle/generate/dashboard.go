@@ -3,6 +3,7 @@ package generate
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -14,6 +15,7 @@ import (
 	"github.com/databricks/cli/bundle/config/generate"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/bundle/render"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
@@ -64,8 +66,24 @@ func (d *dashboard) resolveFromPath(ctx context.Context, b *bundle.Bundle) (stri
 	obj, err := w.Workspace.GetStatusByPath(ctx, d.dashboardPath)
 	if err != nil {
 		if apierr.IsMissing(err) {
-			return "", diag.Errorf("dashboard at path %q not found", d.dashboardPath)
+			return "", diag.Errorf("dashboard %q not found", path.Base(d.dashboardPath))
 		}
+
+		// Emit a more descriptive error message for legacy dashboards.
+		if errors.Is(err, apierr.ErrBadRequest) && strings.HasPrefix(err.Error(), "dbsqlDashboard ") {
+			return "", diag.Diagnostics{
+				{
+					Severity: diag.Error,
+					Summary:  fmt.Sprintf("dashboard %q is a legacy dashboard", path.Base(d.dashboardPath)),
+					Detail: "" +
+						"Databricks Asset Bundles work exclusively with AI/BI dashboards.\n" +
+						"\n" +
+						"Instructions on how to convert a legacy dashboard to an AI/BI dashboard\n" +
+						"can be found at: https://docs.databricks.com/en/dashboards/clone-legacy-to-aibi.html.",
+				},
+			}
+		}
+
 		return "", diag.FromErr(err)
 	}
 
@@ -347,7 +365,17 @@ func (d *dashboard) RunE(cmd *cobra.Command, args []string) error {
 		diags = d.runForExisting(ctx, b)
 	}
 
-	return diags.Error()
+	renderOpts := render.RenderOptions{RenderSummaryTable: false}
+	err := render.RenderDiagnostics(cmd.OutOrStdout(), b, diags, renderOpts)
+	if err != nil {
+		return fmt.Errorf("failed to render output: %w", err)
+	}
+
+	if diags.HasError() {
+		return root.ErrAlreadyPrinted
+	}
+
+	return nil
 }
 
 func NewGenerateDashboardCommand() *cobra.Command {
