@@ -1448,6 +1448,7 @@ type ResourceJobWebhookNotifications struct {
 
 type ResourceJob struct {
 	AlwaysRunning          bool                             `json:"always_running,omitempty"`
+	BudgetPolicyId         string                           `json:"budget_policy_id,omitempty"`
 	ControlRunState        bool                             `json:"control_run_state,omitempty"`
 	Description            string                           `json:"description,omitempty"`
 	EditMode               string                           `json:"edit_mode,omitempty"`
