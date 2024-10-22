@@ -101,7 +101,6 @@ task or a Python wheel task, the second example applies.
 		}
 
 		runOptions.NoWait = noWait
-
 		var output output.RunOutput
 		if restart {
 			output, err = runner.Restart(ctx, &runOptions)
