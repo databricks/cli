@@ -16,12 +16,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestValidateFolderPermissions(t *testing.T) {
+func TestFolderPermissionsInheritedWhenRootPathDoesNotExist(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
 				RootPath:     "/Workspace/Users/foo@bar.com",
-				ArtifactPath: "/Workspace/Users/foo@bar.com/artifacts",
+				ArtifactPath: "/Workspace/Users/otherfoo@bar.com/artifacts",
 				FilePath:     "/Workspace/Users/foo@bar.com/files",
 				StatePath:    "/Workspace/Users/foo@bar.com/state",
 				ResourcePath: "/Workspace/Users/foo@bar.com/resources",
@@ -33,6 +33,14 @@ func TestValidateFolderPermissions(t *testing.T) {
 	}
 	m := mocks.NewMockWorkspaceClient(t)
 	api := m.GetMockWorkspaceAPI()
+	api.EXPECT().GetStatusByPath(mock.Anything, "/Workspace/Users/otherfoo@bar.com/artifacts").Return(nil, &apierr.APIError{
+		StatusCode: 404,
+		ErrorCode:  "RESOURCE_DOES_NOT_EXIST",
+	})
+	api.EXPECT().GetStatusByPath(mock.Anything, "/Workspace/Users/otherfoo@bar.com").Return(nil, &apierr.APIError{
+		StatusCode: 404,
+		ErrorCode:  "RESOURCE_DOES_NOT_EXIST",
+	})
 	api.EXPECT().GetStatusByPath(mock.Anything, "/Workspace/Users/foo@bar.com").Return(nil, &apierr.APIError{
 		StatusCode: 404,
 		ErrorCode:  "RESOURCE_DOES_NOT_EXIST",
@@ -67,7 +75,7 @@ func TestValidateFolderPermissions(t *testing.T) {
 	require.Empty(t, diags)
 }
 
-func TestValidateFolderPermissionsDifferentCount(t *testing.T) {
+func TestValidateFolderPermissionsFailsOnMissingBundlePermission(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
@@ -116,10 +124,10 @@ func TestValidateFolderPermissionsDifferentCount(t *testing.T) {
 	require.Len(t, diags, 1)
 	require.Equal(t, "permissions missing", diags[0].Summary)
 	require.Equal(t, diag.Warning, diags[0].Severity)
-	require.Equal(t, "Following permissions set for the workspace folder but not set for bundle /Workspace/Users/foo@bar.com:\n- level: CAN_MANAGE\n  user_name: foo2@bar.com\n", diags[0].Detail)
+	require.Equal(t, "The following permissions apply to the workspace folder at \"/Workspace/Users/foo@bar.com\" but are not configured in the bundle:\n- level: CAN_MANAGE\n  user_name: foo2@bar.com\n", diags[0].Detail)
 }
 
-func TestValidateFolderPermissionsDifferentPermission(t *testing.T) {
+func TestValidateFolderPermissionsFailsOnPermissionMismatch(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
@@ -167,7 +175,7 @@ func TestValidateFolderPermissionsDifferentPermission(t *testing.T) {
 	require.Equal(t, diag.Warning, diags[1].Severity)
 }
 
-func TestNoRootFolder(t *testing.T) {
+func TestValidateFolderPermissionsFailsOnNoRootFolder(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{

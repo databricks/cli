@@ -66,7 +66,7 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 				{
 					Severity: diag.Warning,
 					Summary:  "permissions missing",
-					Detail:   "Following permissions set in the bundle but not set for workspace folder path:\n- level: CAN_MANAGE\n  service_principal_name: sp.com\n",
+					Detail:   "The following permissions are configured in the bundle but are do not (yet) apply to the workspace folder at \"path\":\n- level: CAN_MANAGE, service_principal_name: sp.com\n",
 				},
 			},
 		},
@@ -92,7 +92,7 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 				{
 					Severity: diag.Warning,
 					Summary:  "permissions missing",
-					Detail:   "Following permissions set for the workspace folder but not set for bundle path:\n- level: CAN_MANAGE\n  group_name: foo\n",
+					Detail:   "The following permissions apply to the workspace folder at \"path\" but are not configured in the bundle:\n- level: CAN_MANAGE, group_name: foo\n",
 				},
 			},
 		},
@@ -112,12 +112,12 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 				{
 					Severity: diag.Warning,
 					Summary:  "permissions missing",
-					Detail:   "Following permissions set in the bundle but not set for workspace folder path:\n- level: CAN_MANAGE\n  user_name: foo@bar.com\n",
+					Detail:   "The following permissions are configured in the bundle but are do not (yet) apply to the workspace folder at \"path\":\n- level: CAN_MANAGE, user_name: foo@bar.com\n",
 				},
 				{
 					Severity: diag.Warning,
 					Summary:  "permissions missing",
-					Detail:   "Following permissions set for the workspace folder but not set for bundle path:\n- level: CAN_MANAGE\n  user_name: foo2@bar.com\n",
+					Detail:   "The following permissions apply to the workspace folder at \"path\" but are not configured in the bundle:\n- level: CAN_MANAGE, user_name: foo2@bar.com\n",
 				},
 			},
 		},

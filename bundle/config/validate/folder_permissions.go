@@ -13,7 +13,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"golang.org/x/sync/errgroup"
-	"golang.org/x/sync/singleflight"
 )
 
 type folderPermissions struct {
@@ -58,15 +57,10 @@ func (f *folderPermissions) Apply(ctx context.Context, b bundle.ReadOnlyBundle) 
 	var diags diag.Diagnostics
 	g, ctx := errgroup.WithContext(ctx)
 	results := make([]diag.Diagnostics, len(paths))
-	syncGroup := new(singleflight.Group)
 	for i, p := range paths {
 		g.Go(func() error {
-			diags, err, _ := syncGroup.Do(p, func() (any, error) {
-				diags := checkFolderPermission(ctx, b, p)
-				return diags, nil
-			})
-			results[i] = diags.(diag.Diagnostics)
-			return err
+			results[i] = checkFolderPermission(ctx, b, p)
+			return nil
 		})
 	}
 

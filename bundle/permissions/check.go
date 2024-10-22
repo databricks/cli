@@ -93,20 +93,7 @@ func convertWorkspaceObjectPermissionLevel(level workspace.WorkspaceObjectPermis
 func toString(p []resources.Permission) string {
 	var sb strings.Builder
 	for _, perm := range p {
-		if perm.ServicePrincipalName != "" {
-			sb.WriteString(fmt.Sprintf("- level: %s\n  service_principal_name: %s\n", perm.Level, perm.ServicePrincipalName))
-			continue
-		}
-
-		if perm.GroupName != "" {
-			sb.WriteString(fmt.Sprintf("- level: %s\n  group_name: %s\n", perm.Level, perm.GroupName))
-			continue
-		}
-
-		if perm.UserName != "" {
-			sb.WriteString(fmt.Sprintf("- level: %s\n  user_name: %s\n", perm.Level, perm.UserName))
-			continue
-		}
+		sb.WriteString(fmt.Sprintf("- %s\n", perm.String()))
 	}
 	return sb.String()
 }
