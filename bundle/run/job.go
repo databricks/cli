@@ -320,6 +320,10 @@ func (r *jobRunner) Cancel(ctx context.Context) error {
 func (r *jobRunner) Restart(ctx context.Context, opts *Options) (output.RunOutput, error) {
 	// We don't need to cancel existing runs if the job is continuous and unpaused.
 	// the /jobs/run-now API will automatically cancel any existing runs before starting a new one.
+	//
+	// /jobs/run-now will not cancel existing runs if the job is continuous and paused.
+	// New job runs will be queued instead and will wait for existing runs to finish.
+	// In this case, we need to cancel the existing runs before starting a new one.
 	continuous := r.job.JobSettings.Continuous
 	if continuous != nil && continuous.PauseStatus == jobs.PauseStatusUnpaused {
 		return r.Run(ctx, opts)
