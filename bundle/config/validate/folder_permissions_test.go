@@ -124,7 +124,7 @@ func TestValidateFolderPermissionsFailsOnMissingBundlePermission(t *testing.T) {
 	require.Len(t, diags, 1)
 	require.Equal(t, "permissions missing", diags[0].Summary)
 	require.Equal(t, diag.Warning, diags[0].Severity)
-	require.Equal(t, "The following permissions apply to the workspace folder at \"/Workspace/Users/foo@bar.com\" but are not configured in the bundle:\n- level: CAN_MANAGE\n  user_name: foo2@bar.com\n", diags[0].Detail)
+	require.Equal(t, "The following permissions apply to the workspace folder at \"/Workspace/Users/foo@bar.com\" but are not configured in the bundle:\n- level: CAN_MANAGE, user_name: foo2@bar.com\n", diags[0].Detail)
 }
 
 func TestValidateFolderPermissionsFailsOnPermissionMismatch(t *testing.T) {
