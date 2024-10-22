@@ -26,26 +26,40 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type dashboardLookup struct {
+type dashboard struct {
+	// Lookup flags for one-time generate.
 	dashboardPath string
 	dashboardId   string
-	resource      string
+
+	// Lookup flag for existing bundle resource.
+	resource string
+
+	// Where to write the configuration and dashboard representation.
+	resourceDir  string
+	dashboardDir string
+
+	// Force overwrite of existing files.
+	force bool
+
+	// Watch for changes to the dashboard.
+	watch bool
+
+	// Relative path from the resource directory to the dashboard directory.
+	relativeDashboardDir string
 }
 
-func (d *dashboardLookup) resolveID(ctx context.Context, b *bundle.Bundle) (string, diag.Diagnostics) {
+func (d *dashboard) resolveID(ctx context.Context, b *bundle.Bundle) (string, diag.Diagnostics) {
 	switch {
 	case d.dashboardPath != "":
 		return d.resolveFromPath(ctx, b)
 	case d.dashboardId != "":
 		return d.resolveFromID(ctx, b)
-	case d.resource != "":
-		return d.resolveFromResource(ctx, b)
 	}
 
-	return "", diag.Errorf("expected one of --dashboard-path, --dashboard-id, or --resource")
+	return "", diag.Errorf("expected one of --dashboard-path, --dashboard-id")
 }
 
-func (d *dashboardLookup) resolveFromPath(ctx context.Context, b *bundle.Bundle) (string, diag.Diagnostics) {
+func (d *dashboard) resolveFromPath(ctx context.Context, b *bundle.Bundle) (string, diag.Diagnostics) {
 	w := b.WorkspaceClient()
 	obj, err := w.Workspace.GetStatusByPath(ctx, d.dashboardPath)
 	if err != nil {
@@ -77,7 +91,7 @@ func (d *dashboardLookup) resolveFromPath(ctx context.Context, b *bundle.Bundle)
 	return obj.ResourceId, nil
 }
 
-func (d *dashboardLookup) resolveFromID(ctx context.Context, b *bundle.Bundle) (string, diag.Diagnostics) {
+func (d *dashboard) resolveFromID(ctx context.Context, b *bundle.Bundle) (string, diag.Diagnostics) {
 	w := b.WorkspaceClient()
 	obj, err := w.Lakeview.GetByDashboardId(ctx, d.dashboardId)
 	if err != nil {
@@ -88,31 +102,6 @@ func (d *dashboardLookup) resolveFromID(ctx context.Context, b *bundle.Bundle) (
 	}
 
 	return obj.DashboardId, nil
-}
-
-func (d *dashboardLookup) resolveFromResource(_ context.Context, b *bundle.Bundle) (string, diag.Diagnostics) {
-	resource, ok := b.Config.Resources.Dashboards[d.resource]
-	if !ok {
-		return "", diag.Errorf("dashboard resource %q is not defined", d.resource)
-	}
-
-	if resource.ID == "" {
-		return "", diag.Errorf("dashboard resource hasn't been deployed yet")
-	}
-
-	return resource.ID, nil
-}
-
-type dashboard struct {
-	dashboardLookup
-
-	resourceDir  string
-	dashboardDir string
-	force        bool
-	watch        bool
-
-	// Relative path from the resource directory to the dashboard directory.
-	relativeDashboardDir string
 }
 
 func remarshalJSON(data []byte) ([]byte, error) {
@@ -166,12 +155,7 @@ func (d *dashboard) saveSerializedDashboard(_ context.Context, b *bundle.Bundle,
 	return os.WriteFile(filename, data, 0644)
 }
 
-func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, dashboard *dashboards.Dashboard) error {
-	key := d.dashboardLookup.resource
-	if key == "" {
-		key = textutil.NormalizeString(dashboard.DisplayName)
-	}
-
+func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, dashboard *dashboards.Dashboard, key string) error {
 	// Save serialized dashboard definition to the dashboard directory.
 	dashboardBasename := fmt.Sprintf("%s.lvdash.json", key)
 	dashboardPath := filepath.Join(d.dashboardDir, dashboardBasename)
@@ -220,7 +204,7 @@ func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, das
 	return nil
 }
 
-func (d *dashboard) runWatch(ctx context.Context, b *bundle.Bundle, dashboardID string) diag.Diagnostics {
+func (d *dashboard) generateForResource(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	resource, ok := b.Config.Resources.Dashboards[d.resource]
 	if !ok {
 		return diag.Errorf("dashboard resource %q is not defined", d.resource)
@@ -229,6 +213,9 @@ func (d *dashboard) runWatch(ctx context.Context, b *bundle.Bundle, dashboardID 
 	if resource.FilePath == "" {
 		return diag.Errorf("dashboard resource %q has no file path defined", d.resource)
 	}
+
+	// Resolve the dashboard ID from the resource.
+	dashboardID := resource.ID
 
 	// Overwrite the dashboard at the path referenced from the resource.
 	dashboardPath := resource.FilePath
@@ -247,6 +234,11 @@ func (d *dashboard) runWatch(ctx context.Context, b *bundle.Bundle, dashboardID 
 			if err != nil {
 				return diag.FromErr(err)
 			}
+		}
+
+		// Abort if we are not watching for changes.
+		if !d.watch {
+			return nil
 		}
 
 		// Update the etag for the next iteration.
@@ -277,14 +269,15 @@ func (d *dashboard) runWatch(ctx context.Context, b *bundle.Bundle, dashboardID 
 	}
 }
 
-func (d *dashboard) runOnce(ctx context.Context, b *bundle.Bundle, dashboardID string) diag.Diagnostics {
+func (d *dashboard) generateForExisting(ctx context.Context, b *bundle.Bundle, dashboardID string) diag.Diagnostics {
 	w := b.WorkspaceClient()
 	dashboard, err := w.Lakeview.GetByDashboardId(ctx, dashboardID)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	err = d.saveConfiguration(ctx, b, dashboard)
+	key := textutil.NormalizeString(dashboard.DisplayName)
+	err = d.saveConfiguration(ctx, b, dashboard, key)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -311,6 +304,31 @@ func (d *dashboard) initialize(b *bundle.Bundle) diag.Diagnostics {
 	return nil
 }
 
+func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	diags := bundle.Apply(ctx, b, bundle.Seq(
+		phases.Initialize(),
+		terraform.Interpolate(),
+		terraform.Write(),
+		terraform.StatePull(),
+		terraform.Load(),
+	))
+	if diags.HasError() {
+		return diags
+	}
+
+	return d.generateForResource(ctx, b)
+}
+
+func (d *dashboard) runForExisting(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	// Resolve the ID of the dashboard to generate configuration for.
+	dashboardID, diags := d.resolveID(ctx, b)
+	if diags.HasError() {
+		return diags
+	}
+
+	return d.generateForExisting(ctx, b, dashboardID)
+}
+
 func (d *dashboard) RunE(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 	b, diags := root.MustConfigureBundle(cmd)
@@ -323,27 +341,10 @@ func (d *dashboard) RunE(cmd *cobra.Command, args []string) error {
 		return diags.Error()
 	}
 
-	diags = bundle.Apply(ctx, b, bundle.Seq(
-		phases.Initialize(),
-		terraform.Interpolate(),
-		terraform.Write(),
-		terraform.StatePull(),
-		terraform.Load(),
-	))
-	if diags.HasError() {
-		return diags.Error()
-	}
-
-	// Resolve the ID of the dashboard to generate configuration for.
-	dashboardID, diags := d.resolveID(ctx, b)
-	if diags.HasError() {
-		return diags.Error()
-	}
-
-	if d.watch {
-		diags = d.runWatch(ctx, b, dashboardID)
+	if d.resource != "" {
+		diags = d.runForResource(ctx, b)
 	} else {
-		diags = d.runOnce(ctx, b, dashboardID)
+		diags = d.runForExisting(ctx, b)
 	}
 
 	return diags.Error()
@@ -360,7 +361,7 @@ func NewGenerateDashboardCommand() *cobra.Command {
 	// Lookup flags.
 	cmd.Flags().StringVar(&d.dashboardPath, "existing-path", "", `workspace path of the dashboard to generate configuration for`)
 	cmd.Flags().StringVar(&d.dashboardId, "existing-id", "", `ID of the dashboard to generate configuration for`)
-	cmd.Flags().StringVar(&d.resource, "existing-resource", "", `resource key of dashboard to watch for changes`)
+	cmd.Flags().StringVar(&d.resource, "resource", "", `resource key of dashboard to watch for changes`)
 
 	// Output flags.
 	cmd.Flags().StringVarP(&d.resourceDir, "resource-dir", "d", "./resources", `directory to write the configuration to`)
@@ -370,15 +371,15 @@ func NewGenerateDashboardCommand() *cobra.Command {
 	cmd.MarkFlagsOneRequired(
 		"existing-path",
 		"existing-id",
-		"existing-resource",
+		"resource",
 	)
 
 	// Watch flags.
 	cmd.Flags().BoolVar(&d.watch, "watch", false, `watch for changes to the dashboard and update the configuration`)
 
 	// Make sure the watch flag is only used with the existing-resource flag.
-	cmd.MarkFlagsRequiredTogether("watch", "existing-resource")
-	cmd.MarkFlagsOneRequired()
+	cmd.MarkFlagsMutuallyExclusive("watch", "existing-path")
+	cmd.MarkFlagsMutuallyExclusive("watch", "existing-id")
 
 	cmd.RunE = d.RunE
 	return cmd
