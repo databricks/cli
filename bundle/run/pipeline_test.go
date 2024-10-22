@@ -115,6 +115,5 @@ func TestPipelineRunnerRestart(t *testing.T) {
 		}, nil)
 
 	_, err := runner.Restart(ctx, &Options{})
-	// TODO: assert on the output.
 	require.NoError(t, err)
 }
