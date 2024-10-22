@@ -321,8 +321,6 @@ func (r *jobRunner) Restart(ctx context.Context, opts *Options) (output.RunOutpu
 	// We don't need to cancel existing runs if the job is continuous and unpaused.
 	// the /jobs/run-now API will automatically cancel any existing runs before starting a new one.
 	continuous := r.job.JobSettings.Continuous
-	// TODO: Is this correct wrt pause status?
-	// TODO: test all permutations, even pipelines.
 	if continuous != nil && continuous.PauseStatus == jobs.PauseStatusUnpaused {
 		return r.Run(ctx, opts)
 	}
