@@ -398,6 +398,34 @@ func (n normalizeOptions) normalizeFloat(typ reflect.Type, src dyn.Value, path d
 	return dyn.NewValue(out, src.Locations()), diags
 }
 
-func (n normalizeOptions) normalizeInterface(typ reflect.Type, src dyn.Value, path dyn.Path) (dyn.Value, diag.Diagnostics) {
+func (n normalizeOptions) normalizeInterface(_ reflect.Type, src dyn.Value, path dyn.Path) (dyn.Value, diag.Diagnostics) {
+	// Deal with every [dyn.Kind] here to ensure completeness.
+	switch src.Kind() {
+	case dyn.KindMap:
+		// Fall through
+	case dyn.KindSequence:
+		// Fall through
+	case dyn.KindString:
+		// Fall through
+	case dyn.KindBool:
+		// Fall through
+	case dyn.KindInt:
+		// Fall through
+	case dyn.KindFloat:
+		// Fall through
+	case dyn.KindTime:
+		// Conversion of a time value to an interface{}.
+		// The [dyn.Value.AsAny] equivalent for this kind is the [time.Time] struct.
+		// If we convert to a typed representation and back again, we cannot distinguish
+		// a [time.Time] struct from any other struct.
+		//
+		// Therefore, we normalize the time value to a string.
+		return dyn.NewValue(src.MustTime().String(), src.Locations()), nil
+	case dyn.KindNil:
+		// Fall through
+	default:
+		return dyn.InvalidValue, diag.Errorf("unsupported kind: %s", src.Kind())
+	}
+
 	return src, nil
 }

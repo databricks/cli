@@ -858,23 +858,7 @@ func TestNormalizeAnchors(t *testing.T) {
 	}, vout.AsAny())
 }
 
-func TestNormalizeBoolToAny(t *testing.T) {
-	var typ any
-	vin := dyn.NewValue(false, []dyn.Location{{File: "file", Line: 1, Column: 1}})
-	vout, err := Normalize(&typ, vin)
-	assert.Len(t, err, 0)
-	assert.Equal(t, dyn.NewValue(false, []dyn.Location{{File: "file", Line: 1, Column: 1}}), vout)
-}
-
-func TestNormalizeIntToAny(t *testing.T) {
-	var typ any
-	vin := dyn.NewValue(10, []dyn.Location{{File: "file", Line: 1, Column: 1}})
-	vout, err := Normalize(&typ, vin)
-	assert.Len(t, err, 0)
-	assert.Equal(t, dyn.NewValue(10, []dyn.Location{{File: "file", Line: 1, Column: 1}}), vout)
-}
-
-func TestNormalizeSliceToAny(t *testing.T) {
+func TestNormalizeAnyFromSlice(t *testing.T) {
 	var typ any
 	v1 := dyn.NewValue(1, []dyn.Location{{File: "file", Line: 1, Column: 1}})
 	v2 := dyn.NewValue(2, []dyn.Location{{File: "file", Line: 1, Column: 1}})
@@ -882,4 +866,36 @@ func TestNormalizeSliceToAny(t *testing.T) {
 	vout, err := Normalize(&typ, vin)
 	assert.Len(t, err, 0)
 	assert.Equal(t, dyn.NewValue([]dyn.Value{v1, v2}, []dyn.Location{{File: "file", Line: 1, Column: 1}}), vout)
+}
+
+func TestNormalizeAnyFromString(t *testing.T) {
+	var typ any
+	vin := dyn.NewValue("string", []dyn.Location{{File: "file", Line: 1, Column: 1}})
+	vout, err := Normalize(&typ, vin)
+	assert.Len(t, err, 0)
+	assert.Equal(t, dyn.NewValue("string", []dyn.Location{{File: "file", Line: 1, Column: 1}}), vout)
+}
+
+func TestNormalizeAnyFromBool(t *testing.T) {
+	var typ any
+	vin := dyn.NewValue(false, []dyn.Location{{File: "file", Line: 1, Column: 1}})
+	vout, err := Normalize(&typ, vin)
+	assert.Len(t, err, 0)
+	assert.Equal(t, dyn.NewValue(false, []dyn.Location{{File: "file", Line: 1, Column: 1}}), vout)
+}
+
+func TestNormalizeAnyFromInt(t *testing.T) {
+	var typ any
+	vin := dyn.NewValue(10, []dyn.Location{{File: "file", Line: 1, Column: 1}})
+	vout, err := Normalize(&typ, vin)
+	assert.Len(t, err, 0)
+	assert.Equal(t, dyn.NewValue(10, []dyn.Location{{File: "file", Line: 1, Column: 1}}), vout)
+}
+
+func TestNormalizeAnyFromTime(t *testing.T) {
+	var typ any
+	vin := dyn.NewValue(dyn.MustTime("2024-08-29"), []dyn.Location{{File: "file", Line: 1, Column: 1}})
+	vout, err := Normalize(&typ, vin)
+	assert.Empty(t, err)
+	assert.Equal(t, dyn.NewValue("2024-08-29", vin.Locations()), vout)
 }
