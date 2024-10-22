@@ -130,72 +130,6 @@ func TestJobRunnerCancelWithNoActiveRuns(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func runJobRunnerRestartTest(t *testing.T, jobSettings *jobs.JobSettings) {
-	job := &resources.Job{
-		ID:          "123",
-		JobSettings: jobSettings,
-	}
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Resources: config.Resources{
-				Jobs: map[string]*resources.Job{
-					"test_job": job,
-				},
-			},
-		},
-	}
-
-	runner := jobRunner{key: "test", bundle: b, job: job}
-
-	m := mocks.NewMockWorkspaceClient(t)
-	b.SetWorkpaceClient(m.WorkspaceClient)
-	ctx := context.Background()
-	ctx = cmdio.InContext(ctx, cmdio.NewIO(flags.OutputText, &bytes.Buffer{}, &bytes.Buffer{}, &bytes.Buffer{}, "", ""))
-	ctx = cmdio.NewContext(ctx, cmdio.NewLogger(flags.ModeAppend))
-
-	jobApi := m.GetMockJobsAPI()
-	jobApi.EXPECT().ListRunsAll(mock.Anything, jobs.ListRunsRequest{
-		ActiveOnly: true,
-		JobId:      123,
-	}).Return([]jobs.BaseRun{
-		{RunId: 1},
-		{RunId: 2},
-	}, nil)
-
-	// Mock the runner cancelling existing job runs.
-	mockWait := &jobs.WaitGetRunJobTerminatedOrSkipped[struct{}]{
-		Poll: func(time time.Duration, f func(j *jobs.Run)) (*jobs.Run, error) {
-			return nil, nil
-		},
-	}
-	jobApi.EXPECT().CancelRun(mock.Anything, jobs.CancelRun{
-		RunId: 1,
-	}).Return(mockWait, nil)
-	jobApi.EXPECT().CancelRun(mock.Anything, jobs.CancelRun{
-		RunId: 2,
-	}).Return(mockWait, nil)
-
-	// Mock the runner triggering a job run
-	mockWaitForRun := &jobs.WaitGetRunJobTerminatedOrSkipped[jobs.RunNowResponse]{
-		Poll: func(d time.Duration, f func(*jobs.Run)) (*jobs.Run, error) {
-			return &jobs.Run{
-				State: &jobs.RunState{
-					ResultState: jobs.RunResultStateSuccess,
-				},
-			}, nil
-		},
-	}
-	jobApi.EXPECT().RunNow(mock.Anything, jobs.RunNow{
-		JobId: 123,
-	}).Return(mockWaitForRun, nil)
-
-	// Mock the runner getting the job output
-	jobApi.EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{}).Return(&jobs.Run{}, nil)
-
-	_, err := runner.Restart(ctx, &Options{})
-	require.NoError(t, err)
-}
-
 func TestJobRunnerRestart(t *testing.T) {
 	for _, jobSettings := range []*jobs.JobSettings{
 		{},
@@ -205,7 +139,69 @@ func TestJobRunnerRestart(t *testing.T) {
 			},
 		},
 	} {
-		runJobRunnerRestartTest(t, jobSettings)
+		job := &resources.Job{
+			ID:          "123",
+			JobSettings: jobSettings,
+		}
+		b := &bundle.Bundle{
+			Config: config.Root{
+				Resources: config.Resources{
+					Jobs: map[string]*resources.Job{
+						"test_job": job,
+					},
+				},
+			},
+		}
+
+		runner := jobRunner{key: "test", bundle: b, job: job}
+
+		m := mocks.NewMockWorkspaceClient(t)
+		b.SetWorkpaceClient(m.WorkspaceClient)
+		ctx := context.Background()
+		ctx = cmdio.InContext(ctx, cmdio.NewIO(flags.OutputText, &bytes.Buffer{}, &bytes.Buffer{}, &bytes.Buffer{}, "", ""))
+		ctx = cmdio.NewContext(ctx, cmdio.NewLogger(flags.ModeAppend))
+
+		jobApi := m.GetMockJobsAPI()
+		jobApi.EXPECT().ListRunsAll(mock.Anything, jobs.ListRunsRequest{
+			ActiveOnly: true,
+			JobId:      123,
+		}).Return([]jobs.BaseRun{
+			{RunId: 1},
+			{RunId: 2},
+		}, nil)
+
+		// Mock the runner cancelling existing job runs.
+		mockWait := &jobs.WaitGetRunJobTerminatedOrSkipped[struct{}]{
+			Poll: func(time time.Duration, f func(j *jobs.Run)) (*jobs.Run, error) {
+				return nil, nil
+			},
+		}
+		jobApi.EXPECT().CancelRun(mock.Anything, jobs.CancelRun{
+			RunId: 1,
+		}).Return(mockWait, nil)
+		jobApi.EXPECT().CancelRun(mock.Anything, jobs.CancelRun{
+			RunId: 2,
+		}).Return(mockWait, nil)
+
+		// Mock the runner triggering a job run
+		mockWaitForRun := &jobs.WaitGetRunJobTerminatedOrSkipped[jobs.RunNowResponse]{
+			Poll: func(d time.Duration, f func(*jobs.Run)) (*jobs.Run, error) {
+				return &jobs.Run{
+					State: &jobs.RunState{
+						ResultState: jobs.RunResultStateSuccess,
+					},
+				}, nil
+			},
+		}
+		jobApi.EXPECT().RunNow(mock.Anything, jobs.RunNow{
+			JobId: 123,
+		}).Return(mockWaitForRun, nil)
+
+		// Mock the runner getting the job output
+		jobApi.EXPECT().GetRun(mock.Anything, jobs.GetRunRequest{}).Return(&jobs.Run{}, nil)
+
+		_, err := runner.Restart(ctx, &Options{})
+		require.NoError(t, err)
 	}
 }
 
