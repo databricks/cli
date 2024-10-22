@@ -130,10 +130,10 @@ func TestJobRunnerCancelWithNoActiveRuns(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestJobRunnerRestart(t *testing.T) {
+func runJobRunnerRestartTest(t *testing.T, jobSettings *jobs.JobSettings) {
 	job := &resources.Job{
 		ID:          "123",
-		JobSettings: &jobs.JobSettings{},
+		JobSettings: jobSettings,
 	}
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -194,6 +194,19 @@ func TestJobRunnerRestart(t *testing.T) {
 
 	_, err := runner.Restart(ctx, &Options{})
 	require.NoError(t, err)
+}
+
+func TestJobRunnerRestart(t *testing.T) {
+	for _, jobSettings := range []*jobs.JobSettings{
+		{},
+		{
+			Continuous: &jobs.Continuous{
+				PauseStatus: jobs.PauseStatusPaused,
+			},
+		},
+	} {
+		runJobRunnerRestartTest(t, jobSettings)
+	}
 }
 
 func TestJobRunnerRestartForContinuousUnpausedJobs(t *testing.T) {
