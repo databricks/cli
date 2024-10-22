@@ -6,8 +6,10 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"golang.org/x/sync/errgroup"
 )
 
 type workspaceRootPermissions struct {
@@ -53,46 +55,44 @@ func giveAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle) error {
 	}
 
 	w := b.WorkspaceClient().Workspace
-	err := setPermissions(ctx, w, b.Config.Workspace.RootPath, permissions)
-	if err != nil {
-		return err
+	rootPath := b.Config.Workspace.RootPath
+	paths := []string{}
+	if !libraries.IsVolumesPath(rootPath) {
+		paths = append(paths, rootPath)
 	}
 
-	// Adding backslash to the root path
-	rootPath := b.Config.Workspace.RootPath
-	if rootPath[len(rootPath)-1] != '/' {
+	if !strings.HasSuffix(rootPath, "/") {
 		rootPath += "/"
 	}
 
-	if !strings.HasPrefix(b.Config.Workspace.ArtifactPath, rootPath) {
-		err = setPermissions(ctx, w, b.Config.Workspace.ArtifactPath, permissions)
-		if err != nil {
-			return err
-		}
+	if !strings.HasPrefix(b.Config.Workspace.ArtifactPath, rootPath) &&
+		!libraries.IsVolumesPath(b.Config.Workspace.ArtifactPath) {
+		paths = append(paths, b.Config.Workspace.ArtifactPath)
 	}
 
-	if !strings.HasPrefix(b.Config.Workspace.FilePath, rootPath) {
-		err = setPermissions(ctx, w, b.Config.Workspace.FilePath, permissions)
-		if err != nil {
-			return err
-		}
+	if !strings.HasPrefix(b.Config.Workspace.FilePath, rootPath) &&
+		!libraries.IsVolumesPath(b.Config.Workspace.FilePath) {
+		paths = append(paths, b.Config.Workspace.FilePath)
 	}
 
-	if !strings.HasPrefix(b.Config.Workspace.StatePath, rootPath) {
-		err = setPermissions(ctx, w, b.Config.Workspace.StatePath, permissions)
-		if err != nil {
-			return err
-		}
+	if !strings.HasPrefix(b.Config.Workspace.StatePath, rootPath) &&
+		!libraries.IsVolumesPath(b.Config.Workspace.StatePath) {
+		paths = append(paths, b.Config.Workspace.StatePath)
 	}
 
-	if !strings.HasPrefix(b.Config.Workspace.ResourcePath, rootPath) {
-		err = setPermissions(ctx, w, b.Config.Workspace.ResourcePath, permissions)
-		if err != nil {
-			return err
-		}
+	if !strings.HasPrefix(b.Config.Workspace.ResourcePath, rootPath) &&
+		!libraries.IsVolumesPath(b.Config.Workspace.ResourcePath) {
+		paths = append(paths, b.Config.Workspace.ResourcePath)
 	}
 
-	return err
+	g, ctx := errgroup.WithContext(ctx)
+	for _, p := range paths {
+		g.Go(func() error {
+			return setPermissions(ctx, w, p, permissions)
+		})
+	}
+
+	return g.Wait()
 }
 
 func setPermissions(ctx context.Context, w workspace.WorkspaceInterface, path string, permissions []workspace.WorkspaceObjectAccessControlRequest) error {
