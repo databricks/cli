@@ -202,7 +202,7 @@ func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, das
 	}
 
 	// Save the configuration to the resource directory.
-	resourcePath := filepath.Join(d.resourceDir, fmt.Sprintf("%s.yml", key))
+	resourcePath := filepath.Join(d.resourceDir, fmt.Sprintf("%s.dashboard.yml", key))
 	saver := yamlsaver.NewSaverWithStyle(map[string]yaml.Style{
 		"display_name": yaml.DoubleQuotedStyle,
 	})
