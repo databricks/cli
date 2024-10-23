@@ -53,7 +53,7 @@ func resolveOpenArgument(ctx context.Context, b *bundle.Bundle, args []string) (
 func newOpenCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "open",
-		Short: "Open the web UI for a resource",
+		Short: "Open a resource in the browser",
 		Args:  root.MaximumNArgs(1),
 	}
 
