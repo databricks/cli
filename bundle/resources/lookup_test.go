@@ -77,7 +77,15 @@ func TestLookup_Nominal(t *testing.T) {
 		},
 	}
 
+	// Lookup by key only.
 	out, err := Lookup(b, "foo")
+	require.NoError(t, err)
+	if assert.NotNil(t, out) {
+		assert.Equal(t, "Foo job", out.GetName())
+	}
+
+	// Lookup by type and key.
+	out, err = Lookup(b, "jobs.foo")
 	require.NoError(t, err)
 	if assert.NotNil(t, out) {
 		assert.Equal(t, "Foo job", out.GetName())

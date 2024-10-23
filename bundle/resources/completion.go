@@ -6,7 +6,8 @@ import "github.com/databricks/cli/bundle"
 // that every key maps directly to a single reference.
 func Completions(b *bundle.Bundle) map[string]Reference {
 	out := make(map[string]Reference)
-	for k, refs := range References(b) {
+	keyOnlyRefs, _ := References(b)
+	for k, refs := range keyOnlyRefs {
 		if len(refs) != 1 {
 			continue
 		}

@@ -8,9 +8,8 @@ import (
 )
 
 // Reference is a reference to a resource.
-// It includes the resource key, the resource type description, and a reference to the resource itself.
+// It includes the resource type description, and a reference to the resource itself.
 type Reference struct {
-	Key         string
 	Description config.ResourceDescription
 	Resource    config.ConfigResource
 }
@@ -18,40 +17,51 @@ type Reference struct {
 // Map is the core type for resource lookup and completion.
 type Map map[string][]Reference
 
-// References returns a map of resource keys to a slice of [Reference].
-// While its return type allows for multiple resources to share the same key,
+// References returns maps of resource keys to a slice of [Reference].
+//
+// The first map is indexed by the resource key only.
+// The second map is indexed by the resource type name and its key.
+//
+// While the return types allows for multiple resources to share the same key,
 // this is confirmed not to happen in the [validate.UniqueResourceKeys]	mutator.
-func References(b *bundle.Bundle) Map {
-	output := make(Map)
+func References(b *bundle.Bundle) (Map, Map) {
+	keyOnly := make(Map)
+	keyWithType := make(Map)
 
 	// Collect map of resource references indexed by their keys.
 	for _, group := range b.Config.Resources.AllResources() {
 		for k, v := range group.Resources {
-			output[k] = append(output[k], Reference{
-				Key:         k,
+			ref := Reference{
 				Description: group.Description,
 				Resource:    v,
-			})
+			}
+
+			kt := fmt.Sprintf("%s.%s", group.Description.PluralName, k)
+			keyOnly[k] = append(keyOnly[k], ref)
+			keyWithType[kt] = append(keyWithType[kt], ref)
 		}
 	}
 
-	return output
+	return keyOnly, keyWithType
 }
 
 // Lookup returns the resource with the specified key.
 // If the key maps to more than one resource, an error is returned.
 // If the key does not map to any resource, an error is returned.
 func Lookup(b *bundle.Bundle, key string) (config.ConfigResource, error) {
-	refs := References(b)
-	res, ok := refs[key]
+	keyOnlyRefs, keyWithTypeRefs := References(b)
+	refs, ok := keyOnlyRefs[key]
 	if !ok {
-		return nil, fmt.Errorf("resource with key %q not found", key)
+		refs, ok = keyWithTypeRefs[key]
+		if !ok {
+			return nil, fmt.Errorf("resource with key %q not found", key)
+		}
 	}
 
 	switch {
-	case len(res) == 1:
-		return res[0].Resource, nil
-	case len(res) > 1:
+	case len(refs) == 1:
+		return refs[0].Resource, nil
+	case len(refs) > 1:
 		return nil, fmt.Errorf("multiple resources with key %q found", key)
 	default:
 		panic("unreachable")
