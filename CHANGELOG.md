@@ -4,9 +4,9 @@
 
 CLI:
  * Added JSON input validation for CLI commands ([#1771](https://github.com/databricks/cli/pull/1771)).
+ * Support Git worktrees for `sync` ([#1831](https://github.com/databricks/cli/pull/1831)).
 
 Bundles:
- * Support Git worktrees for `sync` ([#1831](https://github.com/databricks/cli/pull/1831)).
  * Add `bundle summary` to display URLs for deployed resources ([#1731](https://github.com/databricks/cli/pull/1731)).
  * Added a warning when incorrect permissions used for `/Workspace/Shared` bundle root ([#1821](https://github.com/databricks/cli/pull/1821)).
  * Show actionable errors for collaborative deployment scenarios ([#1386](https://github.com/databricks/cli/pull/1386)).
