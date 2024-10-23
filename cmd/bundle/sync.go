@@ -38,8 +38,10 @@ func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) 
 		case flags.OutputJSON:
 			outputFunc = sync.JsonOutput
 		}
-		opts.OutputHandler = func(ctx context.Context, c <-chan sync.Event) {
-			outputFunc(ctx, c, cmd.OutOrStdout())
+		if outputFunc != nil {
+			opts.OutputHandler = func(ctx context.Context, c <-chan sync.Event) {
+				outputFunc(ctx, c, cmd.OutOrStdout())
+			}
 		}
 	}
 
