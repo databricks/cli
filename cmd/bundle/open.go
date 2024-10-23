@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -15,9 +16,39 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
+	"golang.org/x/exp/maps"
 
 	"github.com/pkg/browser"
 )
+
+func promptOpenArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
+	// Compute map of "Human readable name of resource" -> "resource key".
+	inv := make(map[string]string)
+	for k, ref := range resources.Completions(b) {
+		title := fmt.Sprintf("%s: %s", ref.Description.SingularTitle, ref.Resource.GetName())
+		inv[title] = k
+	}
+
+	key, err := cmdio.Select(ctx, inv, "Resource to open")
+	if err != nil {
+		return "", err
+	}
+
+	return key, nil
+}
+
+func resolveOpenArgument(ctx context.Context, b *bundle.Bundle, args []string) (string, error) {
+	// If no arguments are specified, prompt the user to select something to run.
+	if len(args) == 0 && cmdio.IsPromptSupported(ctx) {
+		return promptOpenArgument(ctx, b)
+	}
+
+	if len(args) < 1 {
+		return "", fmt.Errorf("expected a KEY of the resource to open")
+	}
+
+	return args[0], nil
+}
 
 func newOpenCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -41,22 +72,9 @@ func newOpenCommand() *cobra.Command {
 			return err
 		}
 
-		// If no arguments are specified, prompt the user to select something to run.
-		if len(args) == 0 && cmdio.IsPromptSupported(ctx) {
-			// Invert completions from KEY -> NAME, to NAME -> KEY.
-			inv := make(map[string]string)
-			for k, v := range resources.CompletionMap(b) {
-				inv[v] = k
-			}
-			id, err := cmdio.Select(ctx, inv, "Resource to open")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-
-		if len(args) < 1 {
-			return fmt.Errorf("expected a KEY of the resource to open")
+		arg, err := resolveOpenArgument(ctx, b, args)
+		if err != nil {
+			return err
 		}
 
 		cacheDir, err := terraform.Dir(ctx, b)
@@ -87,7 +105,7 @@ func newOpenCommand() *cobra.Command {
 		}
 
 		// Locate resource to open.
-		resource, err := resources.Lookup(b, args[0])
+		resource, err := resources.Lookup(b, arg)
 		if err != nil {
 			return err
 		}
@@ -95,7 +113,7 @@ func newOpenCommand() *cobra.Command {
 		// Confirm that the resource has a URL.
 		url := resource.GetURL()
 		if url == "" {
-			return errors.New("resource does not have a URL associated with it (has it been deployed?)")
+			return fmt.Errorf("resource does not have a URL associated with it (has it been deployed?)")
 		}
 
 		return browser.OpenURL(url)
@@ -115,7 +133,8 @@ func newOpenCommand() *cobra.Command {
 		}
 
 		if len(args) == 0 {
-			return resources.Completions(b), cobra.ShellCompDirectiveNoFileComp
+			completions := resources.Completions(b)
+			return maps.Keys(completions), cobra.ShellCompDirectiveNoFileComp
 		} else {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
