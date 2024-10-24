@@ -70,40 +70,24 @@ func WithStdoutWriter(dst io.Writer) execOption {
 	}
 }
 
-// safeMultiWriter is a thread-safe io.Writer that writes to multiple writers.
-// It is functionality equivalent to io.MultiWriter, but is safe for concurrent use.
-type safeMultiWriter struct {
-	writers []io.Writer
-	mu      sync.Mutex
+// safeWriter is a writer that is safe to use concurrently.
+// It serializes writes to the underlying writer.
+type safeWriter struct {
+	w io.Writer
+	m sync.Mutex
 }
 
-// newSafeMultiWriter creates a new safeMultiWriter that writes to the provided writers.
-func newSafeMultiWriter(writers ...io.Writer) *safeMultiWriter {
-	return &safeMultiWriter{writers: writers}
-}
-
-// Write implements the io.Writer interface for safeMultiWriter.
-func (t *safeMultiWriter) Write(p []byte) (n int, err error) {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-
-	for _, w := range t.writers {
-		n, err = w.Write(p)
-		if err != nil {
-			return
-		}
-		if n != len(p) {
-			err = io.ErrShortWrite
-			return
-		}
-	}
-	return len(p), nil
+func (s *safeWriter) Write(p []byte) (n int, err error) {
+	s.m.Lock()
+	defer s.m.Unlock()
+	return s.w.Write(p)
 }
 
 func WithCombinedOutput(buf *bytes.Buffer) execOption {
+	sw := &safeWriter{w: buf}
 	return func(_ context.Context, c *exec.Cmd) error {
-		c.Stdout = newSafeMultiWriter(buf, c.Stdout)
-		c.Stderr = newSafeMultiWriter(buf, c.Stderr)
+		c.Stdout = io.MultiWriter(sw, c.Stdout)
+		c.Stderr = io.MultiWriter(sw, c.Stderr)
 		return nil
 	}
 }
