@@ -18,9 +18,8 @@ func TestLookup_EmptyBundle(t *testing.T) {
 		},
 	}
 
-	out, err := Lookup(b, "foo")
+	_, err := Lookup(b, "foo")
 	require.Error(t, err)
-	assert.Nil(t, out)
 	assert.ErrorContains(t, err, "resource with key \"foo\" not found")
 }
 
@@ -36,9 +35,8 @@ func TestLookup_NotFound(t *testing.T) {
 		},
 	}
 
-	out, err := Lookup(b, "qux")
+	_, err := Lookup(b, "qux")
 	require.Error(t, err)
-	assert.Nil(t, out)
 	assert.ErrorContains(t, err, `resource with key "qux" not found`)
 }
 
@@ -56,9 +54,8 @@ func TestLookup_MultipleFound(t *testing.T) {
 		},
 	}
 
-	out, err := Lookup(b, "foo")
+	_, err := Lookup(b, "foo")
 	require.Error(t, err)
-	assert.Nil(t, out)
 	assert.ErrorContains(t, err, `multiple resources with key "foo" found`)
 }
 
@@ -81,13 +78,13 @@ func TestLookup_Nominal(t *testing.T) {
 	out, err := Lookup(b, "foo")
 	require.NoError(t, err)
 	if assert.NotNil(t, out) {
-		assert.Equal(t, "Foo job", out.GetName())
+		assert.Equal(t, "Foo job", out.Resource.GetName())
 	}
 
 	// Lookup by type and key.
 	out, err = Lookup(b, "jobs.foo")
 	require.NoError(t, err)
 	if assert.NotNil(t, out) {
-		assert.Equal(t, "Foo job", out.GetName())
+		assert.Equal(t, "Foo job", out.Resource.GetName())
 	}
 }

@@ -48,21 +48,21 @@ func References(b *bundle.Bundle) (Map, Map) {
 // Lookup returns the resource with the specified key.
 // If the key maps to more than one resource, an error is returned.
 // If the key does not map to any resource, an error is returned.
-func Lookup(b *bundle.Bundle, key string) (config.ConfigResource, error) {
+func Lookup(b *bundle.Bundle, key string) (Reference, error) {
 	keyOnlyRefs, keyWithTypeRefs := References(b)
 	refs, ok := keyOnlyRefs[key]
 	if !ok {
 		refs, ok = keyWithTypeRefs[key]
 		if !ok {
-			return nil, fmt.Errorf("resource with key %q not found", key)
+			return Reference{}, fmt.Errorf("resource with key %q not found", key)
 		}
 	}
 
 	switch {
 	case len(refs) == 1:
-		return refs[0].Resource, nil
+		return refs[0], nil
 	case len(refs) > 1:
-		return nil, fmt.Errorf("multiple resources with key %q found", key)
+		return Reference{}, fmt.Errorf("multiple resources with key %q found", key)
 	default:
 		panic("unreachable")
 	}

@@ -38,7 +38,7 @@ func promptOpenArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
 }
 
 func resolveOpenArgument(ctx context.Context, b *bundle.Bundle, args []string) (string, error) {
-	// If no arguments are specified, prompt the user to select something to run.
+	// If no arguments are specified, prompt the user to select the resource to open.
 	if len(args) == 0 && cmdio.IsPromptSupported(ctx) {
 		return promptOpenArgument(ctx, b)
 	}
@@ -105,13 +105,13 @@ func newOpenCommand() *cobra.Command {
 		}
 
 		// Locate resource to open.
-		resource, err := resources.Lookup(b, arg)
+		ref, err := resources.Lookup(b, arg)
 		if err != nil {
 			return err
 		}
 
 		// Confirm that the resource has a URL.
-		url := resource.GetURL()
+		url := ref.Resource.GetURL()
 		if url == "" {
 			return fmt.Errorf("resource does not have a URL associated with it (has it been deployed?)")
 		}
