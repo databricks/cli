@@ -8,15 +8,19 @@ import (
 	"github.com/databricks/cli/bundle/internal/tf/schema"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestConvertDashboard(t *testing.T) {
 	var src = resources.Dashboard{
-		DisplayName:      "my dashboard",
-		WarehouseID:      "f00dcafe",
-		ParentPath:       "/some/path",
+		CreateDashboardRequest: &dashboards.CreateDashboardRequest{
+			DisplayName: "my dashboard",
+			WarehouseId: "f00dcafe",
+			ParentPath:  "/some/path",
+		},
+
 		EmbedCredentials: true,
 
 		Permissions: []resources.Permission{
