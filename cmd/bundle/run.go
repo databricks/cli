@@ -56,7 +56,7 @@ func keyToRunner(b *bundle.Bundle, arg string) (run.Runner, error) {
 	}
 
 	// Convert the resource to a runnable resource.
-	runner, err := run.ToRunner(ref)
+	runner, err := run.ToRunner(b, ref)
 	if err != nil {
 		return nil, err
 	}

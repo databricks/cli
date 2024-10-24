@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
 	refs "github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run/output"
@@ -49,12 +50,12 @@ func IsRunnable(ref refs.Reference) bool {
 }
 
 // ToRunner converts a resource reference to a runnable resource.
-func ToRunner(ref refs.Reference) (Runner, error) {
+func ToRunner(b *bundle.Bundle, ref refs.Reference) (Runner, error) {
 	switch resource := ref.Resource.(type) {
 	case *resources.Job:
-		return &jobRunner{key: key(ref.KeyWithType), job: resource}, nil
+		return &jobRunner{key: key(ref.KeyWithType), bundle: b, job: resource}, nil
 	case *resources.Pipeline:
-		return &pipelineRunner{key: key(ref.KeyWithType), pipeline: resource}, nil
+		return &pipelineRunner{key: key(ref.KeyWithType), bundle: b, pipeline: resource}, nil
 	default:
 		return nil, fmt.Errorf("unsupported resource type: %T", resource)
 	}
