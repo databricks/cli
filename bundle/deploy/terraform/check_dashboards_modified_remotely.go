@@ -16,7 +16,7 @@ type dashboardState struct {
 	ETag string
 }
 
-func collectDashboards(ctx context.Context, b *bundle.Bundle) ([]dashboardState, error) {
+func collectDashboardsFromState(ctx context.Context, b *bundle.Bundle) ([]dashboardState, error) {
 	state, err := ParseResourcesState(ctx, b)
 	if err != nil && state == nil {
 		return nil, err
@@ -28,22 +28,12 @@ func collectDashboards(ctx context.Context, b *bundle.Bundle) ([]dashboardState,
 			continue
 		}
 		for _, instance := range resource.Instances {
-			id := instance.Attributes.ID
-			if id == "" {
-				continue
-			}
-
 			switch resource.Type {
 			case "databricks_dashboard":
-				etag := instance.Attributes.ETag
-				if etag == "" {
-					continue
-				}
-
 				dashboards = append(dashboards, dashboardState{
 					Name: resource.Name,
-					ID:   id,
-					ETag: etag,
+					ID:   instance.Attributes.ID,
+					ETag: instance.Attributes.ETag,
 				})
 			}
 		}
@@ -52,14 +42,14 @@ func collectDashboards(ctx context.Context, b *bundle.Bundle) ([]dashboardState,
 	return dashboards, nil
 }
 
-type checkModifiedDashboards struct {
+type checkDashboardsModifiedRemotely struct {
 }
 
-func (l *checkModifiedDashboards) Name() string {
-	return "CheckModifiedDashboards"
+func (l *checkDashboardsModifiedRemotely) Name() string {
+	return "CheckDashboardsModifiedRemotely"
 }
 
-func (l *checkModifiedDashboards) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// This mutator is relevant only if the bundle includes dashboards.
 	if len(b.Config.Resources.Dashboards) == 0 {
 		return nil
@@ -70,7 +60,7 @@ func (l *checkModifiedDashboards) Apply(ctx context.Context, b *bundle.Bundle) d
 		return nil
 	}
 
-	dashboards, err := collectDashboards(ctx, b)
+	dashboards, err := collectDashboardsFromState(ctx, b)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -122,6 +112,6 @@ func (l *checkModifiedDashboards) Apply(ctx context.Context, b *bundle.Bundle) d
 	return diags
 }
 
-func CheckModifiedDashboards() *checkModifiedDashboards {
-	return &checkModifiedDashboards{}
+func CheckDashboardsModifiedRemotely() *checkDashboardsModifiedRemotely {
+	return &checkDashboardsModifiedRemotely{}
 }

@@ -152,7 +152,7 @@ func Deploy(outputHandler sync.OutputHandler) bundle.Mutator {
 		bundle.Defer(
 			bundle.Seq(
 				terraform.StatePull(),
-				terraform.CheckModifiedDashboards(),
+				terraform.CheckDashboardsModifiedRemotely(),
 				deploy.StatePull(),
 				mutator.ValidateGitDetails(),
 				artifacts.CleanUp(),

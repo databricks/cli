@@ -40,7 +40,7 @@ func mockDashboardBundle(t *testing.T) *bundle.Bundle {
 	return b
 }
 
-func TestCheckModifiedDashboards_NoDashboards(t *testing.T) {
+func TestCheckDashboardsModifiedRemotely_NoDashboards(t *testing.T) {
 	dir := t.TempDir()
 	b := &bundle.Bundle{
 		BundleRootPath: dir,
@@ -52,17 +52,17 @@ func TestCheckModifiedDashboards_NoDashboards(t *testing.T) {
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, CheckModifiedDashboards())
+	diags := bundle.Apply(context.Background(), b, CheckDashboardsModifiedRemotely())
 	assert.Empty(t, diags)
 }
 
-func TestCheckModifiedDashboards_FirstDeployment(t *testing.T) {
+func TestCheckDashboardsModifiedRemotely_FirstDeployment(t *testing.T) {
 	b := mockDashboardBundle(t)
-	diags := bundle.Apply(context.Background(), b, CheckModifiedDashboards())
+	diags := bundle.Apply(context.Background(), b, CheckDashboardsModifiedRemotely())
 	assert.Empty(t, diags)
 }
 
-func TestCheckModifiedDashboards_ExistingStateNoChange(t *testing.T) {
+func TestCheckDashboardsModifiedRemotely_ExistingStateNoChange(t *testing.T) {
 	ctx := context.Background()
 
 	b := mockDashboardBundle(t)
@@ -81,11 +81,11 @@ func TestCheckModifiedDashboards_ExistingStateNoChange(t *testing.T) {
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
 	// No changes, so no diags.
-	diags := bundle.Apply(ctx, b, CheckModifiedDashboards())
+	diags := bundle.Apply(ctx, b, CheckDashboardsModifiedRemotely())
 	assert.Empty(t, diags)
 }
 
-func TestCheckModifiedDashboards_ExistingStateChange(t *testing.T) {
+func TestCheckDashboardsModifiedRemotely_ExistingStateChange(t *testing.T) {
 	ctx := context.Background()
 
 	b := mockDashboardBundle(t)
@@ -104,14 +104,14 @@ func TestCheckModifiedDashboards_ExistingStateChange(t *testing.T) {
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
 	// The dashboard has changed, so expect an error.
-	diags := bundle.Apply(ctx, b, CheckModifiedDashboards())
+	diags := bundle.Apply(ctx, b, CheckDashboardsModifiedRemotely())
 	if assert.Len(t, diags, 1) {
 		assert.Equal(t, diag.Error, diags[0].Severity)
 		assert.Equal(t, `dashboard "dash1" has been modified remotely`, diags[0].Summary)
 	}
 }
 
-func TestCheckModifiedDashboards_ExistingStateFailureToGet(t *testing.T) {
+func TestCheckDashboardsModifiedRemotely_ExistingStateFailureToGet(t *testing.T) {
 	ctx := context.Background()
 
 	b := mockDashboardBundle(t)
@@ -127,7 +127,7 @@ func TestCheckModifiedDashboards_ExistingStateFailureToGet(t *testing.T) {
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
 	// Unable to get the dashboard, so expect an error.
-	diags := bundle.Apply(ctx, b, CheckModifiedDashboards())
+	diags := bundle.Apply(ctx, b, CheckDashboardsModifiedRemotely())
 	if assert.Len(t, diags, 1) {
 		assert.Equal(t, diag.Error, diags[0].Severity)
 		assert.Equal(t, `failed to get dashboard "dash1"`, diags[0].Summary)
