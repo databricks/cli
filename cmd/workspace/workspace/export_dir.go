@@ -48,7 +48,7 @@ func (opts exportDirOptions) callback(ctx context.Context, workspaceFiler filer.
 			return err
 		}
 		objectInfo := info.Sys().(workspace.ObjectInfo)
-		targetPath += notebook.GetExtensionByLanguage(&objectInfo)
+		targetPath += string(notebook.GetExtensionByLanguage(&objectInfo))
 
 		// Skip file if a file already exists in path.
 		// os.Stat returns a fs.ErrNotExist if a file does not exist at path.
