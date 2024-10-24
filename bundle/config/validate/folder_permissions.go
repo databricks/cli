@@ -4,10 +4,9 @@ import (
 	"context"
 	"fmt"
 	"path"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/libraries"
+	"github.com/databricks/cli/bundle/paths"
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -24,37 +23,12 @@ func (f *folderPermissions) Apply(ctx context.Context, b bundle.ReadOnlyBundle) 
 		return nil
 	}
 
-	rootPath := b.Config().Workspace.RootPath
-	paths := []string{}
-	if !libraries.IsVolumesPath(rootPath) && !libraries.IsWorkspaceSharedPath(rootPath) {
-		paths = append(paths, rootPath)
-	}
-
-	if !strings.HasSuffix(rootPath, "/") {
-		rootPath += "/"
-	}
-
-	for _, p := range []string{
-		b.Config().Workspace.ArtifactPath,
-		b.Config().Workspace.FilePath,
-		b.Config().Workspace.StatePath,
-		b.Config().Workspace.ResourcePath,
-	} {
-		if libraries.IsWorkspaceSharedPath(p) || libraries.IsVolumesPath(p) {
-			continue
-		}
-
-		if strings.HasPrefix(p, rootPath) {
-			continue
-		}
-
-		paths = append(paths, p)
-	}
+	bundlePaths := paths.CollectUniquePaths(b.Config().Workspace)
 
 	var diags diag.Diagnostics
 	g, ctx := errgroup.WithContext(ctx)
-	results := make([]diag.Diagnostics, len(paths))
-	for i, p := range paths {
+	results := make([]diag.Diagnostics, len(bundlePaths))
+	for i, p := range bundlePaths {
 		g.Go(func() error {
 			results[i] = checkFolderPermission(ctx, b, p)
 			return nil

@@ -3,10 +3,9 @@ package permissions
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/libraries"
+	"github.com/databricks/cli/bundle/paths"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"golang.org/x/sync/errgroup"
@@ -55,38 +54,10 @@ func giveAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle) error {
 	}
 
 	w := b.WorkspaceClient().Workspace
-	rootPath := b.Config.Workspace.RootPath
-	paths := []string{}
-	if !libraries.IsVolumesPath(rootPath) {
-		paths = append(paths, rootPath)
-	}
-
-	if !strings.HasSuffix(rootPath, "/") {
-		rootPath += "/"
-	}
-
-	if !strings.HasPrefix(b.Config.Workspace.ArtifactPath, rootPath) &&
-		!libraries.IsVolumesPath(b.Config.Workspace.ArtifactPath) {
-		paths = append(paths, b.Config.Workspace.ArtifactPath)
-	}
-
-	if !strings.HasPrefix(b.Config.Workspace.FilePath, rootPath) &&
-		!libraries.IsVolumesPath(b.Config.Workspace.FilePath) {
-		paths = append(paths, b.Config.Workspace.FilePath)
-	}
-
-	if !strings.HasPrefix(b.Config.Workspace.StatePath, rootPath) &&
-		!libraries.IsVolumesPath(b.Config.Workspace.StatePath) {
-		paths = append(paths, b.Config.Workspace.StatePath)
-	}
-
-	if !strings.HasPrefix(b.Config.Workspace.ResourcePath, rootPath) &&
-		!libraries.IsVolumesPath(b.Config.Workspace.ResourcePath) {
-		paths = append(paths, b.Config.Workspace.ResourcePath)
-	}
+	bundlePaths := paths.CollectUniquePaths(b.Config.Workspace)
 
 	g, ctx := errgroup.WithContext(ctx)
-	for _, p := range paths {
+	for _, p := range bundlePaths {
 		g.Go(func() error {
 			return setPermissions(ctx, w, p, permissions)
 		})
