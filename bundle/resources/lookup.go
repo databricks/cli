@@ -10,9 +10,17 @@ import (
 // Reference is a reference to a resource.
 // It includes the resource type description, and a reference to the resource itself.
 type Reference struct {
-	Key         string
+	// Key is the unique key of the resource, e.g. "my_job".
+	Key string
+
+	// KeyWithType is the unique key of the resource, including the resource type, e.g. "jobs.my_job".
+	KeyWithType string
+
+	// Description is the resource type description.
 	Description config.ResourceDescription
-	Resource    config.ConfigResource
+
+	// Resource is the resource itself.
+	Resource config.ConfigResource
 }
 
 // Map is the core type for resource lookup and completion.
@@ -48,6 +56,7 @@ func References(b *bundle.Bundle, filters ...Filter) (Map, Map) {
 		for k, v := range group.Resources {
 			ref := Reference{
 				Key:         k,
+				KeyWithType: fmt.Sprintf("%s.%s", group.Description.PluralName, k),
 				Description: group.Description,
 				Resource:    v,
 			}
@@ -57,9 +66,8 @@ func References(b *bundle.Bundle, filters ...Filter) (Map, Map) {
 				continue
 			}
 
-			kt := fmt.Sprintf("%s.%s", group.Description.PluralName, k)
-			keyOnly[k] = append(keyOnly[k], ref)
-			keyWithType[kt] = append(keyWithType[kt], ref)
+			keyOnly[ref.Key] = append(keyOnly[ref.Key], ref)
+			keyWithType[ref.KeyWithType] = append(keyWithType[ref.KeyWithType], ref)
 		}
 	}
 

@@ -52,9 +52,9 @@ func IsRunnable(ref refs.Reference) bool {
 func ToRunner(ref refs.Reference) (Runner, error) {
 	switch resource := ref.Resource.(type) {
 	case *resources.Job:
-		return &jobRunner{key: key(ref.Key), job: resource}, nil
+		return &jobRunner{key: key(ref.KeyWithType), job: resource}, nil
 	case *resources.Pipeline:
-		return &pipelineRunner{key: key(ref.Key), pipeline: resource}, nil
+		return &pipelineRunner{key: key(ref.KeyWithType), pipeline: resource}, nil
 	default:
 		return nil, fmt.Errorf("unsupported resource type: %T", resource)
 	}
