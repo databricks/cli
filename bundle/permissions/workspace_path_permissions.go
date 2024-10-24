@@ -18,7 +18,7 @@ func ObjectAclToResourcePermissions(path string, acl []workspace.WorkspaceObject
 	permissions := make([]resources.Permission, 0)
 	for _, a := range acl {
 		// Skip the admin group because it's added to all resources by default.
-		if a.GroupName == "admin" {
+		if a.GroupName == "admins" {
 			continue
 		}
 
@@ -38,22 +38,12 @@ func ObjectAclToResourcePermissions(path string, acl []workspace.WorkspaceObject
 func (p WorkspacePathPermissions) Compare(perms []resources.Permission) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	// Check the permissions in the bundle and see if they are all set in the workspace.
-	ok, missing := containsAll(perms, p.Permissions)
-	if !ok {
-		diags = diags.Append(diag.Diagnostic{
-			Severity: diag.Warning,
-			Summary:  "permissions missing",
-			Detail:   fmt.Sprintf("The following permissions are configured in the bundle but are do not (yet) apply to the workspace folder at %q:\n%s", p.Path, toString(missing)),
-		})
-	}
-
 	// Check the permissions in the workspace and see if they are all set in the bundle.
-	ok, missing = containsAll(p.Permissions, perms)
+	ok, missing := containsAll(p.Permissions, perms)
 	if !ok {
 		diags = diags.Append(diag.Diagnostic{
 			Severity: diag.Warning,
-			Summary:  "permissions missing",
+			Summary:  "untracked permissions apply to target workspace path",
 			Detail:   fmt.Sprintf("The following permissions apply to the workspace folder at %q but are not configured in the bundle:\n%s", p.Path, toString(missing)),
 		})
 	}

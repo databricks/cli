@@ -41,7 +41,7 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 					},
 				},
 				{
-					GroupName: "admin",
+					GroupName: "admins",
 					AllPermissions: []workspace.WorkspaceObjectPermission{
 						{PermissionLevel: "CAN_MANAGE"},
 					},
@@ -62,13 +62,7 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 					},
 				},
 			},
-			expected: diag.Diagnostics{
-				{
-					Severity: diag.Warning,
-					Summary:  "permissions missing",
-					Detail:   "The following permissions are configured in the bundle but are do not (yet) apply to the workspace folder at \"path\":\n- level: CAN_MANAGE, service_principal_name: sp.com\n",
-				},
-			},
+			expected: nil,
 		},
 		{
 			perms: []resources.Permission{
@@ -91,7 +85,7 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 			expected: diag.Diagnostics{
 				{
 					Severity: diag.Warning,
-					Summary:  "permissions missing",
+					Summary:  "untracked permissions apply to target workspace path",
 					Detail:   "The following permissions apply to the workspace folder at \"path\" but are not configured in the bundle:\n- level: CAN_MANAGE, group_name: foo\n",
 				},
 			},
@@ -111,12 +105,7 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 			expected: diag.Diagnostics{
 				{
 					Severity: diag.Warning,
-					Summary:  "permissions missing",
-					Detail:   "The following permissions are configured in the bundle but are do not (yet) apply to the workspace folder at \"path\":\n- level: CAN_MANAGE, user_name: foo@bar.com\n",
-				},
-				{
-					Severity: diag.Warning,
-					Summary:  "permissions missing",
+					Summary:  "untracked permissions apply to target workspace path",
 					Detail:   "The following permissions apply to the workspace folder at \"path\" but are not configured in the bundle:\n- level: CAN_MANAGE, user_name: foo2@bar.com\n",
 				},
 			},

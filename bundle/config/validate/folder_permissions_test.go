@@ -122,7 +122,7 @@ func TestValidateFolderPermissionsFailsOnMissingBundlePermission(t *testing.T) {
 
 	diags := bundle.ApplyReadOnly(context.Background(), rb, ValidateFolderPermissions())
 	require.Len(t, diags, 1)
-	require.Equal(t, "permissions missing", diags[0].Summary)
+	require.Equal(t, "untracked permissions apply to target workspace path", diags[0].Summary)
 	require.Equal(t, diag.Warning, diags[0].Severity)
 	require.Equal(t, "The following permissions apply to the workspace folder at \"/Workspace/Users/foo@bar.com\" but are not configured in the bundle:\n- level: CAN_MANAGE, user_name: foo2@bar.com\n", diags[0].Detail)
 }
@@ -167,12 +167,9 @@ func TestValidateFolderPermissionsFailsOnPermissionMismatch(t *testing.T) {
 	rb := bundle.ReadOnly(b)
 
 	diags := bundle.ApplyReadOnly(context.Background(), rb, ValidateFolderPermissions())
-	require.Len(t, diags, 2)
-	require.Equal(t, "permissions missing", diags[0].Summary)
+	require.Len(t, diags, 1)
+	require.Equal(t, "untracked permissions apply to target workspace path", diags[0].Summary)
 	require.Equal(t, diag.Warning, diags[0].Severity)
-
-	require.Equal(t, "permissions missing", diags[1].Summary)
-	require.Equal(t, diag.Warning, diags[1].Severity)
 }
 
 func TestValidateFolderPermissionsFailsOnNoRootFolder(t *testing.T) {

@@ -34,24 +34,15 @@ func (f *folderPermissions) Apply(ctx context.Context, b bundle.ReadOnlyBundle) 
 		rootPath += "/"
 	}
 
-	if !strings.HasPrefix(b.Config().Workspace.ArtifactPath, rootPath) &&
-		!libraries.IsVolumesPath(b.Config().Workspace.ArtifactPath) {
-		paths = append(paths, b.Config().Workspace.ArtifactPath)
-	}
-
-	if !strings.HasPrefix(b.Config().Workspace.FilePath, rootPath) &&
-		!libraries.IsVolumesPath(b.Config().Workspace.FilePath) {
-		paths = append(paths, b.Config().Workspace.FilePath)
-	}
-
-	if !strings.HasPrefix(b.Config().Workspace.StatePath, rootPath) &&
-		!libraries.IsVolumesPath(b.Config().Workspace.StatePath) {
-		paths = append(paths, b.Config().Workspace.StatePath)
-	}
-
-	if !strings.HasPrefix(b.Config().Workspace.ResourcePath, rootPath) &&
-		!libraries.IsVolumesPath(b.Config().Workspace.ResourcePath) {
-		paths = append(paths, b.Config().Workspace.ResourcePath)
+	for _, p := range []string{
+		b.Config().Workspace.ArtifactPath,
+		b.Config().Workspace.FilePath,
+		b.Config().Workspace.StatePath,
+		b.Config().Workspace.ResourcePath,
+	} {
+		if !strings.HasPrefix(p, rootPath) && !libraries.IsVolumesPath(p) {
+			paths = append(paths, p)
+		}
 	}
 
 	var diags diag.Diagnostics
