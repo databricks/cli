@@ -26,7 +26,7 @@ func (f *folderPermissions) Apply(ctx context.Context, b bundle.ReadOnlyBundle) 
 
 	rootPath := b.Config().Workspace.RootPath
 	paths := []string{}
-	if !libraries.IsVolumesPath(rootPath) {
+	if !libraries.IsVolumesPath(rootPath) && !libraries.IsWorkspaceSharedPath(rootPath) {
 		paths = append(paths, rootPath)
 	}
 
@@ -40,9 +40,15 @@ func (f *folderPermissions) Apply(ctx context.Context, b bundle.ReadOnlyBundle) 
 		b.Config().Workspace.StatePath,
 		b.Config().Workspace.ResourcePath,
 	} {
-		if !strings.HasPrefix(p, rootPath) && !libraries.IsVolumesPath(p) {
-			paths = append(paths, p)
+		if libraries.IsWorkspaceSharedPath(p) || libraries.IsVolumesPath(p) {
+			continue
 		}
+
+		if strings.HasPrefix(p, rootPath) {
+			continue
+		}
+
+		paths = append(paths, p)
 	}
 
 	var diags diag.Diagnostics

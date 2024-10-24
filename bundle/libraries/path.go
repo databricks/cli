@@ -41,3 +41,7 @@ func IsWorkspaceLibrary(library *compute.Library) bool {
 func IsVolumesPath(path string) bool {
 	return strings.HasPrefix(path, "/Volumes/")
 }
+
+func IsWorkspaceSharedPath(path string) bool {
+	return strings.HasPrefix(path, "/Workspace/Shared/")
+}
