@@ -6,7 +6,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,11 +15,7 @@ func TestCompletions_SkipDuplicates(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"foo": {},
-					"bar": {
-						JobSettings: &jobs.JobSettings{
-							Name: "Bar job",
-						},
-					},
+					"bar": {},
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"foo": {},
