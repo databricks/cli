@@ -4,9 +4,9 @@ import "github.com/databricks/cli/bundle"
 
 // Completions returns the same as [References] except
 // that every key maps directly to a single reference.
-func Completions(b *bundle.Bundle) map[string]Reference {
+func Completions(b *bundle.Bundle, filters ...Filter) map[string]Reference {
 	out := make(map[string]Reference)
-	keyOnlyRefs, _ := References(b)
+	keyOnlyRefs, _ := References(b, filters...)
 	for k, refs := range keyOnlyRefs {
 		if len(refs) != 1 {
 			continue
