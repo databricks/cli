@@ -35,3 +35,6 @@ docker run -e DATABRICKS_HOST=$YOUR_HOST_URL -e DATABRICKS_TOKEN=$YOUR_TOKEN ghc
 This CLI follows the Databricks Unified Authentication principles.
 
 You can find a detailed description at https://github.com/databricks/databricks-sdk-go#authentication.
+
+## Privacy Notice
+Databricks CLI is included in our definition of data processing platform products and services (the "Platform services") and subject to the [Databricks Privacy Notice](https://www.databricks.com/legal/privacynotice).
