@@ -139,3 +139,37 @@ func Detect(name string) (notebook bool, language workspace.Language, err error)
 	b := filepath.Base(name)
 	return DetectWithFS(os.DirFS(d), b)
 }
+
+type inMemoryFile struct {
+	buffer bytes.Buffer
+}
+
+type inMemoryFS struct {
+	content []byte
+}
+
+func (f *inMemoryFile) Close() error {
+	return nil
+}
+
+func (f *inMemoryFile) Stat() (fs.FileInfo, error) {
+	return nil, nil
+}
+
+func (f *inMemoryFile) Read(b []byte) (n int, err error) {
+	return f.buffer.Read(b)
+}
+
+func (fs inMemoryFS) Open(name string) (fs.File, error) {
+	return &inMemoryFile{
+		buffer: *bytes.NewBuffer(fs.content),
+	}, nil
+}
+
+func DetectWithContent(name string, content []byte) (notebook bool, language workspace.Language, err error) {
+	fs := inMemoryFS{
+		content: content,
+	}
+
+	return DetectWithFS(fs, name)
+}
