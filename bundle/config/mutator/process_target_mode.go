@@ -6,9 +6,9 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -174,7 +174,7 @@ func (m *processTargetMode) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 		transformDevelopmentMode(ctx, b)
 		return diags
 	case config.Production:
-		isPrincipal := auth.IsServicePrincipal(b.Config.Workspace.CurrentUser.UserName)
+		isPrincipal := iamutil.IsServicePrincipal(b.Config.Workspace.CurrentUser.User)
 		return validateProductionMode(ctx, b, isPrincipal)
 	case "":
 		// No action

@@ -27,6 +27,10 @@ type Runner interface {
 	// Run the underlying worklow.
 	Run(ctx context.Context, opts *Options) (output.RunOutput, error)
 
+	// Restart the underlying workflow by cancelling any existing runs before
+	// starting a new one.
+	Restart(ctx context.Context, opts *Options) (output.RunOutput, error)
+
 	// Cancel the underlying workflow.
 	Cancel(ctx context.Context) error
 
