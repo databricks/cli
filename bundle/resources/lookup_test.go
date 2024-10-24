@@ -86,3 +86,32 @@ func TestLookup_Nominal(t *testing.T) {
 		assert.Equal(t, "Foo job", out.Resource.GetName())
 	}
 }
+
+func TestLookup_NominalWithFilters(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"foo": {},
+				},
+				Pipelines: map[string]*resources.Pipeline{
+					"bar": {},
+				},
+			},
+		},
+	}
+
+	includeJobs := func(ref Reference) bool {
+		_, ok := ref.Resource.(*resources.Job)
+		return ok
+	}
+
+	// This should succeed because the filter includes jobs.
+	_, err := Lookup(b, "foo", includeJobs)
+	require.NoError(t, err)
+
+	// This should fail because the filter excludes pipelines.
+	_, err = Lookup(b, "bar", includeJobs)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, `resource with key "bar" not found`)
+}
