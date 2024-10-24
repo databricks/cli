@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCompletions(t *testing.T) {
+func TestCompletions_SkipDuplicates(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
