@@ -180,6 +180,45 @@
                   }
                 ]
               },
+              "resources.Dashboard": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "display_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "embed_credentials": {
+                        "$ref": "#/$defs/bool"
+                      },
+                      "file_path": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "parent_path": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "permissions": {
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                      },
+                      "serialized_dashboard": {
+                        "$ref": "#/$defs/interface"
+                      },
+                      "warehouse_id": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "display_name",
+                      "warehouse_id"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.Grant": {
                 "anyOf": [
                   {
@@ -1053,6 +1092,9 @@
                   "properties": {
                     "clusters": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Cluster"
+                    },
+                    "dashboards": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Dashboard"
                     },
                     "experiments": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.MlflowExperiment"
@@ -5284,6 +5326,20 @@
                       "type": "object",
                       "additionalProperties": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Cluster"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.Dashboard": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Dashboard"
                       }
                     },
                     {

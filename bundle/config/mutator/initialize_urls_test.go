@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -85,6 +86,14 @@ func TestInitializeURLs(t *testing.T) {
 						},
 					},
 				},
+				Dashboards: map[string]*resources.Dashboard{
+					"dashboard1": {
+						ID: "01ef8d56871e1d50ae30ce7375e42478",
+						CreateDashboardRequest: &dashboards.CreateDashboardRequest{
+							DisplayName: "My special dashboard",
+						},
+					},
+				},
 			},
 		},
 	}
@@ -99,6 +108,7 @@ func TestInitializeURLs(t *testing.T) {
 		"qualityMonitor1":  "https://mycompany.databricks.com/explore/data/catalog/schema/qualityMonitor1?o=123456",
 		"schema1":          "https://mycompany.databricks.com/explore/data/catalog/schema?o=123456",
 		"cluster1":         "https://mycompany.databricks.com/compute/clusters/1017-103929-vlr7jzcf?o=123456",
+		"dashboard1":       "https://mycompany.databricks.com/dashboardsv3/01ef8d56871e1d50ae30ce7375e42478/published?o=123456",
 	}
 
 	initializeForWorkspace(b, "123456", "https://mycompany.databricks.com/")
