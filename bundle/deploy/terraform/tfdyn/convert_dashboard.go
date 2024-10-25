@@ -52,7 +52,7 @@ func convertDashboardResource(ctx context.Context, vin dyn.Value) (dyn.Value, er
 	// Note: the Terraform resource supports "file_path" natively, but its
 	// change detection mechanism doesn't work as expected at the time of writing (Sep 30).
 	if path, ok := vout.Get(filePathFieldName).AsString(); ok {
-		vout, err = dyn.Set(vout, serializedDashboardFieldName, dyn.V(fmt.Sprintf("${file(\"%s\")}", path)))
+		vout, err = dyn.Set(vout, serializedDashboardFieldName, dyn.V(fmt.Sprintf("${file(%q)}", path)))
 		if err != nil {
 			return dyn.InvalidValue, fmt.Errorf("failed to set serialized_dashboard: %w", err)
 		}

@@ -83,6 +83,30 @@ func TestConvertDashboardFilePath(t *testing.T) {
 	})
 }
 
+func TestConvertDashboardFilePathQuoted(t *testing.T) {
+	var src = resources.Dashboard{
+		FilePath: `C:\foo\bar\baz\dashboard.lvdash.json`,
+	}
+
+	vin, err := convert.FromTyped(src, dyn.NilValue)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	out := schema.NewResources()
+	err = dashboardConverter{}.Convert(ctx, "my_dashboard", vin, out)
+	require.NoError(t, err)
+
+	// Assert that the "serialized_dashboard" is included.
+	assert.Subset(t, out.Dashboard["my_dashboard"], map[string]any{
+		"serialized_dashboard": `${file("C:\\foo\\bar\\baz\\dashboard.lvdash.json")}`,
+	})
+
+	// Assert that the "file_path" doesn't carry over.
+	assert.NotSubset(t, out.Dashboard["my_dashboard"], map[string]any{
+		"file_path": `C:\foo\bar\baz\dashboard.lvdash.json`,
+	})
+}
+
 func TestConvertDashboardSerializedDashboardString(t *testing.T) {
 	var src = resources.Dashboard{
 		SerializedDashboard: `{ "json": true }`,
