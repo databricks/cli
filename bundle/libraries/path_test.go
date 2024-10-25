@@ -31,3 +31,13 @@ func TestIsWorkspaceLibrary(t *testing.T) {
 	// Empty.
 	assert.False(t, IsWorkspaceLibrary(&compute.Library{}))
 }
+
+func TestIsVolumesPath(t *testing.T) {
+	// Absolute paths with particular prefixes.
+	assert.True(t, IsVolumesPath("/Volumes/path/to/package"))
+
+	// Relative paths.
+	assert.False(t, IsVolumesPath("myfile.txt"))
+	assert.False(t, IsVolumesPath("./myfile.txt"))
+	assert.False(t, IsVolumesPath("../myfile.txt"))
+}
