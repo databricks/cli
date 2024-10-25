@@ -180,6 +180,48 @@
                   }
                 ]
               },
+              "resources.Dashboard": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "display_name": {
+                        "description": "The display name of the dashboard.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "embed_credentials": {
+                        "$ref": "#/$defs/bool"
+                      },
+                      "file_path": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "parent_path": {
+                        "description": "The workspace path of the folder containing the dashboard. Includes leading slash and no\ntrailing slash.\nThis field is excluded in List Dashboards responses.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "permissions": {
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                      },
+                      "serialized_dashboard": {
+                        "description": "The contents of the dashboard in serialized string form.\nThis field is excluded in List Dashboards responses.\nUse the [get dashboard API](https://docs.databricks.com/api/workspace/lakeview/get)\nto retrieve an example response, which includes the `serialized_dashboard` field.\nThis field provides the structure of the JSON string that represents the dashboard's\nlayout and components.",
+                        "$ref": "#/$defs/interface"
+                      },
+                      "warehouse_id": {
+                        "description": "The warehouse ID used to run the dashboard.",
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "display_name"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.Grant": {
                 "anyOf": [
                   {
@@ -209,6 +251,10 @@
                   {
                     "type": "object",
                     "properties": {
+                      "budget_policy_id": {
+                        "description": "The id of the user specified budget policy to use for this job.\nIf not specified, a default budget policy may be applied when creating or modifying the job.\nSee `effective_budget_policy_id` for the budget policy used by this workload.",
+                        "$ref": "#/$defs/string"
+                      },
                       "continuous": {
                         "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.Continuous"
@@ -1049,6 +1095,9 @@
                   "properties": {
                     "clusters": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Cluster"
+                    },
+                    "dashboards": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Dashboard"
                     },
                     "experiments": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.MlflowExperiment"
@@ -3901,6 +3950,10 @@
                 {
                   "type": "object",
                   "properties": {
+                    "report": {
+                      "description": "Select tables from a specific source report.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ReportSpec"
+                    },
                     "schema": {
                       "description": "Select tables from a specific source schema.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.SchemaSpec"
@@ -4233,6 +4286,40 @@
                 }
               ]
             },
+            "pipelines.ReportSpec": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "destination_catalog": {
+                      "description": "Required. Destination catalog to store table.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "destination_schema": {
+                      "description": "Required. Destination schema to store table.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "destination_table": {
+                      "description": "Required. Destination table name. The pipeline fails if a table with that name already exists.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "source_url": {
+                      "description": "Required. Report URL in the source system.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "table_configuration": {
+                      "description": "Configuration settings to control the ingestion of tables. These settings override the table_configuration defined in the IngestionPipelineDefinition object.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfig"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "pipelines.SchemaSpec": {
               "anyOf": [
                 {
@@ -4281,7 +4368,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "destination_table": {
-                      "description": "Optional. Destination table name. The pipeline fails If a table with that name already exists. If not set, the source table name is used.",
+                      "description": "Optional. Destination table name. The pipeline fails if a table with that name already exists. If not set, the source table name is used.",
                       "$ref": "#/$defs/string"
                     },
                     "source_catalog": {
@@ -4329,6 +4416,10 @@
                         "SCD_TYPE_1",
                         "SCD_TYPE_2"
                       ]
+                    },
+                    "sequence_by": {
+                      "description": "The column names specifying the logical order of events in the source data. Delta Live Tables uses this sequencing to handle change events that arrive out of order.",
+                      "$ref": "#/$defs/slice/string"
                     }
                   },
                   "additionalProperties": false
@@ -5238,6 +5329,20 @@
                       "type": "object",
                       "additionalProperties": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Cluster"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.Dashboard": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Dashboard"
                       }
                     },
                     {

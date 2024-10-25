@@ -17,26 +17,17 @@ type Dashboard struct {
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
 	URL            string         `json:"url,omitempty" bundle:"internal"`
 
-	// ===========================
-	// === BEGIN OF API FIELDS ===
-	// ===========================
+	*dashboards.CreateDashboardRequest
 
-	// DisplayName is the display name of the dashboard (both as title and as basename in the workspace).
-	DisplayName string `json:"display_name"`
-
-	// WarehouseID is the ID of the SQL Warehouse used to run the dashboard's queries.
-	WarehouseID string `json:"warehouse_id"`
+	// =========================
+	// === Additional fields ===
+	// =========================
 
 	// SerializedDashboard holds the contents of the dashboard in serialized JSON form.
-	// Note: its type is any and not string such that it can be inlined as YAML.
-	// If it is not a string, its contents will be marshalled as JSON.
+	// We override the field's type from the SDK struct here to allow for inlining as YAML.
+	// If the value is a string, it is used as is.
+	// If it is not a string, its contents is marshalled as JSON.
 	SerializedDashboard any `json:"serialized_dashboard,omitempty"`
-
-	// ParentPath is the workspace path of the folder containing the dashboard.
-	// Includes leading slash and no trailing slash.
-	//
-	// Defaults to ${workspace.resource_path} if not set.
-	ParentPath string `json:"parent_path,omitempty"`
 
 	// EmbedCredentials is a flag to indicate if the publisher's credentials should
 	// be embedded in the published dashboard. These embedded credentials will be used
@@ -44,10 +35,6 @@ type Dashboard struct {
 	//
 	// Defaults to false if not set.
 	EmbedCredentials bool `json:"embed_credentials,omitempty"`
-
-	// ===========================
-	// ==== END OF API FIELDS ====
-	// ===========================
 
 	// FilePath points to the local `.lvdash.json` file containing the dashboard definition.
 	FilePath string `json:"file_path,omitempty"`

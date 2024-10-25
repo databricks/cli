@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -25,11 +26,15 @@ func TestConfigureDashboardDefaultsParentPath(t *testing.T) {
 					"d1": {
 						// Empty string is skipped.
 						// See below for how it is set.
-						ParentPath: "",
+						CreateDashboardRequest: &dashboards.CreateDashboardRequest{
+							ParentPath: "",
+						},
 					},
 					"d2": {
 						// Non-empty string is skipped.
-						ParentPath: "already-set",
+						CreateDashboardRequest: &dashboards.CreateDashboardRequest{
+							ParentPath: "already-set",
+						},
 					},
 					"d3": {
 						// No parent path set.
