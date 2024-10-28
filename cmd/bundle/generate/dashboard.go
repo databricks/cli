@@ -1,6 +1,7 @@
 package generate
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -16,6 +17,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/render"
+	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
@@ -25,6 +27,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
+	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
 )
 
@@ -129,11 +132,20 @@ func remarshalJSON(data []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	out, err := json.MarshalIndent(tmp, "", "  ")
+
+	// Remarshal the data to ensure its formatting is stable.
+	// The result will have alphabetically sorted keys and be indented.
+	// HTML escaping is disabled to retain characters such as &, <, and >.
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetIndent("", "  ")
+	enc.SetEscapeHTML(false)
+	err = enc.Encode(tmp)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+
+	return buf.Bytes(), nil
 }
 
 func (d *dashboard) saveSerializedDashboard(_ context.Context, b *bundle.Bundle, dashboard *dashboards.Dashboard, filename string) error {
@@ -378,6 +390,26 @@ func (d *dashboard) RunE(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+// filterDashboards returns a filter that only includes dashboards.
+func filterDashboards(ref resources.Reference) bool {
+	return ref.Description.SingularName == "dashboard"
+}
+
+// dashboardResourceCompletion executes to autocomplete the argument to the resource flag.
+func dashboardResourceCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	b, diags := root.MustConfigureBundle(cmd)
+	if err := diags.Error(); err != nil {
+		cobra.CompErrorln(err.Error())
+		return nil, cobra.ShellCompDirectiveError
+	}
+
+	if b == nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	return maps.Keys(resources.Completions(b, filterDashboards)), cobra.ShellCompDirectiveNoFileComp
+}
+
 func NewGenerateDashboardCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "dashboard",
@@ -408,6 +440,9 @@ func NewGenerateDashboardCommand() *cobra.Command {
 	// Make sure the watch flag is only used with the existing-resource flag.
 	cmd.MarkFlagsMutuallyExclusive("watch", "existing-path")
 	cmd.MarkFlagsMutuallyExclusive("watch", "existing-id")
+
+	// Completion for the resource flag.
+	cmd.RegisterFlagCompletionFunc("resource", dashboardResourceCompletion)
 
 	cmd.RunE = d.RunE
 	return cmd
