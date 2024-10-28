@@ -9,6 +9,7 @@ import (
 
 // Marshal is a version of [json.Marshal] for [dyn.Value].
 //
+// Objects in the output retain the order of keys as they appear in the underlying [dyn.Value].
 // The output does not escape HTML characters in strings.
 func Marshal(v dyn.Value) ([]byte, error) {
 	return marshalNoEscape(wrap{v})
@@ -16,6 +17,7 @@ func Marshal(v dyn.Value) ([]byte, error) {
 
 // MarshalIndent is a version of [json.MarshalIndent] for [dyn.Value].
 //
+// Objects in the output retain the order of keys as they appear in the underlying [dyn.Value].
 // The output does not escape HTML characters in strings.
 func MarshalIndent(v dyn.Value, prefix, indent string) ([]byte, error) {
 	return marshalIndentNoEscape(wrap{v}, prefix, indent)
