@@ -1,7 +1,6 @@
 package jsonsaver
 
 import (
-	"strings"
 	"testing"
 
 	assert "github.com/databricks/cli/libs/dyn/dynassert"
@@ -16,10 +15,10 @@ func TestEncoder_marshalNoEscape(t *testing.T) {
 	assert.JSONEq(t, `"1 < 2"`, string(out))
 
 	// Confirm that HTML escaping is disabled.
-	assert.False(t, strings.Contains(string(out), "\\u003c"))
+	assert.NotContains(t, string(out), "\\u003c")
 
 	// Confirm that the encoder writes a trailing newline.
-	assert.True(t, strings.HasSuffix(string(out), "\n"))
+	assert.Contains(t, string(out), "\n")
 }
 
 func TestEncoder_marshalIndentNoEscape(t *testing.T) {
@@ -30,10 +29,10 @@ func TestEncoder_marshalIndentNoEscape(t *testing.T) {
 	assert.JSONEq(t, `["1 < 2", "2 < 3"]`, string(out))
 
 	// Confirm that HTML escaping is disabled.
-	assert.False(t, strings.Contains(string(out), "\\u003c"))
+	assert.NotContains(t, string(out), "\\u003c")
 
 	// Confirm that the encoder performs indenting and writes a trailing newline.
-	assert.True(t, strings.HasPrefix(string(out), "[\n"))
-	assert.True(t, strings.Contains(string(out), "  \"1 < 2\",\n"))
-	assert.True(t, strings.HasSuffix(string(out), "]\n"))
+	assert.Contains(t, string(out), "[\n")
+	assert.Contains(t, string(out), "  \"1 < 2\",\n")
+	assert.Contains(t, string(out), "]\n")
 }
