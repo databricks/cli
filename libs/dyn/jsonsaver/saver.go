@@ -56,6 +56,10 @@ func marshalValue(buf *bytes.Buffer, v dyn.Value) error {
 			if i > 0 {
 				buf.WriteByte(',')
 			}
+			// Require keys to be strings.
+			if pair.Key.Kind() != dyn.KindString {
+				return fmt.Errorf("map key must be a string, got %s", pair.Key.Kind())
+			}
 			// Marshal the key
 			if err := marshalValue(buf, pair.Key); err != nil {
 				return err
