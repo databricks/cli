@@ -111,7 +111,3 @@ func PanicsWithError(t assert.TestingT, errString string, f func(), msgAndArgs .
 func NotPanics(t assert.TestingT, f func(), msgAndArgs ...interface{}) bool {
 	return assert.NotPanics(t, f, msgAndArgs...)
 }
-
-func JSONEq(t assert.TestingT, expected string, actual string, msgAndArgs ...interface{}) bool {
-	return assert.JSONEq(t, expected, actual, msgAndArgs...)
-}

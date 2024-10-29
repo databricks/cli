@@ -4,12 +4,13 @@ import (
 	"testing"
 
 	assert "github.com/databricks/cli/libs/dyn/dynassert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestEncoder_marshalNoEscape(t *testing.T) {
 	out, err := marshalNoEscape("1 < 2")
-	require.NoError(t, err)
+	if !assert.NoError(t, err) {
+		return
+	}
 
 	// Confirm the output.
 	assert.JSONEq(t, `"1 < 2"`, string(out))
@@ -23,7 +24,9 @@ func TestEncoder_marshalNoEscape(t *testing.T) {
 
 func TestEncoder_marshalIndentNoEscape(t *testing.T) {
 	out, err := marshalIndentNoEscape([]string{"1 < 2", "2 < 3"}, "", "  ")
-	require.NoError(t, err)
+	if !assert.NoError(t, err) {
+		return
+	}
 
 	// Confirm the output.
 	assert.JSONEq(t, `["1 < 2", "2 < 3"]`, string(out))
