@@ -51,6 +51,9 @@ func TestApplyBundlePermissions(t *testing.T) {
 					"endpoint_1": {},
 					"endpoint_2": {},
 				},
+				Clusters: map[string]*resources.Cluster{
+					"cluster_1": {},
+				},
 			},
 		},
 	}
@@ -103,6 +106,11 @@ func TestApplyBundlePermissions(t *testing.T) {
 	require.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint_2"].Permissions, resources.Permission{Level: "CAN_MANAGE", UserName: "TestUser"})
 	require.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint_2"].Permissions, resources.Permission{Level: "CAN_VIEW", GroupName: "TestGroup"})
 	require.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint_2"].Permissions, resources.Permission{Level: "CAN_QUERY", ServicePrincipalName: "TestServicePrincipal"})
+
+	require.Len(t, b.Config.Resources.Clusters["cluster_1"].Permissions, 3)
+	require.Contains(t, b.Config.Resources.Clusters["cluster_1"].Permissions, resources.Permission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.Clusters["cluster_1"].Permissions, resources.Permission{Level: "CAN_RESTART", GroupName: "TestGroup"})
+	require.Contains(t, b.Config.Resources.Clusters["cluster_1"].Permissions, resources.Permission{Level: "CAN_ATTACH_TO", ServicePrincipalName: "TestServicePrincipal"})
 }
 
 func TestWarningOnOverlapPermission(t *testing.T) {
