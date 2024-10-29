@@ -23,7 +23,7 @@ func (f *folderPermissions) Apply(ctx context.Context, b bundle.ReadOnlyBundle) 
 		return nil
 	}
 
-	bundlePaths := paths.CollectUniquePaths(b.Config().Workspace)
+	bundlePaths := paths.CollectUniqueWorkspacePathPrefixes(b.Config().Workspace)
 
 	var diags diag.Diagnostics
 	g, ctx := errgroup.WithContext(ctx)

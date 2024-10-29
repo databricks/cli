@@ -7,7 +7,7 @@ import (
 	"github.com/databricks/cli/bundle/libraries"
 )
 
-func CollectUniquePaths(workspace config.Workspace) []string {
+func CollectUniqueWorkspacePathPrefixes(workspace config.Workspace) []string {
 	rootPath := workspace.RootPath
 	paths := []string{}
 	if !libraries.IsVolumesPath(rootPath) && !libraries.IsWorkspaceSharedPath(rootPath) {

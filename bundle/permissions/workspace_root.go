@@ -54,7 +54,7 @@ func giveAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle) error {
 	}
 
 	w := b.WorkspaceClient().Workspace
-	bundlePaths := paths.CollectUniquePaths(b.Config.Workspace)
+	bundlePaths := paths.CollectUniqueWorkspacePathPrefixes(b.Config.Workspace)
 
 	g, ctx := errgroup.WithContext(ctx)
 	for _, p := range bundlePaths {
