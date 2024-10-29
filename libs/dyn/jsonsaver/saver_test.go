@@ -56,3 +56,36 @@ func TestMarshalSequence(t *testing.T) {
 	require.NoError(t, err)
 	require.JSONEq(t, `["value1","value2"]`, string(b))
 }
+
+func TestMarshalComplex(t *testing.T) {
+	map1 := dyn.NewMapping()
+	map1.Set(dyn.V("str1"), dyn.V("value1"))
+	map1.Set(dyn.V("str2"), dyn.V("value2"))
+
+	seq1 := []dyn.Value{}
+	seq1 = append(seq1, dyn.V("value1"))
+	seq1 = append(seq1, dyn.V("value2"))
+
+	root := dyn.NewMapping()
+	root.Set(dyn.V("map1"), dyn.V(map1))
+	root.Set(dyn.V("seq1"), dyn.V(seq1))
+
+	// Marshal without indent.
+	b, err := Marshal(dyn.V(root))
+	require.NoError(t, err)
+	require.Equal(t, `{"map1":{"str1":"value1","str2":"value2"},"seq1":["value1","value2"]}`+"\n", string(b))
+
+	// Marshal with indent.
+	b, err = MarshalIndent(dyn.V(root), "", "  ")
+	require.NoError(t, err)
+	require.Equal(t, `{
+  "map1": {
+    "str1": "value1",
+    "str2": "value2"
+  },
+  "seq1": [
+    "value1",
+    "value2"
+  ]
+}`+"\n", string(b))
+}
