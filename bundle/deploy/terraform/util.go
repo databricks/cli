@@ -13,7 +13,7 @@ import (
 
 // Partial representation of the Terraform state file format.
 // We are only interested global version and serial numbers,
-// plus resource types, names, modes, and ids.
+// plus resource types, names, modes, IDs, and ETags (for dashboards).
 type resourcesState struct {
 	Version   int             `json:"version"`
 	Resources []stateResource `json:"resources"`
@@ -33,7 +33,8 @@ type stateResourceInstance struct {
 }
 
 type stateInstanceAttributes struct {
-	ID string `json:"id"`
+	ID   string `json:"id"`
+	ETag string `json:"etag,omitempty"`
 }
 
 func ParseResourcesState(ctx context.Context, b *bundle.Bundle) (*resourcesState, error) {

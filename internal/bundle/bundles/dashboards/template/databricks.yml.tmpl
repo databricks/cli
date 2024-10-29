@@ -1,0 +1,12 @@
+bundle:
+  name: dashboards
+
+workspace:
+  root_path: "~/.bundle/{{.unique_id}}"
+
+resources:
+  dashboards:
+    file_reference:
+      display_name: test-dashboard-{{.unique_id}}
+      file_path: ./dashboard.lvdash.json
+      warehouse_id: {{.warehouse_id}}
