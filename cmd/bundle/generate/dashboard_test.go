@@ -22,7 +22,7 @@ func TestDashboard_ErrorOnLegacyDashboard(t *testing.T) {
 	// < }
 
 	d := dashboard{
-		dashboardPath: "/path/to/legacy dashboard",
+		existingPath: "/path/to/legacy dashboard",
 	}
 
 	m := mocks.NewMockWorkspaceClient(t)

@@ -23,6 +23,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/textutil"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -33,8 +34,8 @@ import (
 
 type dashboard struct {
 	// Lookup flags for one-time generate.
-	dashboardPath string
-	dashboardId   string
+	existingPath string
+	existingID   string
 
 	// Lookup flag for existing bundle resource.
 	resource string
@@ -55,9 +56,9 @@ type dashboard struct {
 
 func (d *dashboard) resolveID(ctx context.Context, b *bundle.Bundle) (string, diag.Diagnostics) {
 	switch {
-	case d.dashboardPath != "":
+	case d.existingPath != "":
 		return d.resolveFromPath(ctx, b)
-	case d.dashboardId != "":
+	case d.existingID != "":
 		return d.resolveFromID(ctx, b)
 	}
 
@@ -66,10 +67,10 @@ func (d *dashboard) resolveID(ctx context.Context, b *bundle.Bundle) (string, di
 
 func (d *dashboard) resolveFromPath(ctx context.Context, b *bundle.Bundle) (string, diag.Diagnostics) {
 	w := b.WorkspaceClient()
-	obj, err := w.Workspace.GetStatusByPath(ctx, d.dashboardPath)
+	obj, err := w.Workspace.GetStatusByPath(ctx, d.existingPath)
 	if err != nil {
 		if apierr.IsMissing(err) {
-			return "", diag.Errorf("dashboard %q not found", path.Base(d.dashboardPath))
+			return "", diag.Errorf("dashboard %q not found", path.Base(d.existingPath))
 		}
 
 		// Emit a more descriptive error message for legacy dashboards.
@@ -77,7 +78,7 @@ func (d *dashboard) resolveFromPath(ctx context.Context, b *bundle.Bundle) (stri
 			return "", diag.Diagnostics{
 				{
 					Severity: diag.Error,
-					Summary:  fmt.Sprintf("dashboard %q is a legacy dashboard", path.Base(d.dashboardPath)),
+					Summary:  fmt.Sprintf("dashboard %q is a legacy dashboard", path.Base(d.existingPath)),
 					Detail: "" +
 						"Databricks Asset Bundles work exclusively with AI/BI dashboards.\n" +
 						"\n" +
@@ -114,10 +115,10 @@ func (d *dashboard) resolveFromPath(ctx context.Context, b *bundle.Bundle) (stri
 
 func (d *dashboard) resolveFromID(ctx context.Context, b *bundle.Bundle) (string, diag.Diagnostics) {
 	w := b.WorkspaceClient()
-	obj, err := w.Lakeview.GetByDashboardId(ctx, d.dashboardId)
+	obj, err := w.Lakeview.GetByDashboardId(ctx, d.existingID)
 	if err != nil {
 		if apierr.IsMissing(err) {
-			return "", diag.Errorf("dashboard with ID %s not found", d.dashboardId)
+			return "", diag.Errorf("dashboard with ID %s not found", d.existingID)
 		}
 		return "", diag.FromErr(err)
 	}
@@ -234,7 +235,32 @@ func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, das
 	return nil
 }
 
-func (d *dashboard) generateForResource(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func waitForChanges(ctx context.Context, w *databricks.WorkspaceClient, dashboard *dashboards.Dashboard) diag.Diagnostics {
+	// Compute [time.Time] for the most recent update.
+	tref, err := time.Parse(time.RFC3339, dashboard.UpdateTime)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	for {
+		obj, err := w.Workspace.GetStatusByPath(ctx, dashboard.Path)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
+		// Compute [time.Time] from timestamp in millis since epoch.
+		tcur := time.Unix(0, obj.ModifiedAt*int64(time.Millisecond))
+		if tcur.After(tref) {
+			break
+		}
+
+		time.Sleep(1 * time.Second)
+	}
+
+	return nil
+}
+
+func (d *dashboard) updateDashboardForResource(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	resource, ok := b.Config.Resources.Dashboards[d.resource]
 	if !ok {
 		return diag.Errorf("dashboard resource %q is not defined", d.resource)
@@ -250,10 +276,11 @@ func (d *dashboard) generateForResource(ctx context.Context, b *bundle.Bundle) d
 	// Overwrite the dashboard at the path referenced from the resource.
 	dashboardPath := resource.FilePath
 
+	w := b.WorkspaceClient()
+
 	// Start polling the underlying dashboard for changes.
 	var etag string
 	for {
-		w := b.WorkspaceClient()
 		dashboard, err := w.Lakeview.GetByDashboardId(ctx, dashboardID)
 		if err != nil {
 			return diag.FromErr(err)
@@ -274,28 +301,11 @@ func (d *dashboard) generateForResource(ctx context.Context, b *bundle.Bundle) d
 		// Update the etag for the next iteration.
 		etag = dashboard.Etag
 
-		// Compute [time.Time] for the most recent update.
-		tref, err := time.Parse(time.RFC3339, dashboard.UpdateTime)
-		if err != nil {
-			return diag.FromErr(err)
-		}
-
 		// Now poll the workspace API for changes.
-		// This is much more efficient than polling the dashboard API.
-		for {
-			obj, err := w.Workspace.GetStatusByPath(ctx, dashboard.Path)
-			if err != nil {
-				return diag.FromErr(err)
-			}
-
-			// Compute [time.Time] from timestamp in millis since epoch.
-			tcur := time.Unix(0, obj.ModifiedAt*int64(time.Millisecond))
-			if tcur.After(tref) {
-				break
-			}
-
-			time.Sleep(1 * time.Second)
-		}
+		// This is much more efficient than polling the dashboard API because it
+		// includes the entire serialized dashboard whereas we're only interested
+		// in the last modified time of the dashboard here.
+		waitForChanges(ctx, w, dashboard)
 	}
 }
 
@@ -346,7 +356,7 @@ func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) diag.D
 		return diags
 	}
 
-	return d.generateForResource(ctx, b)
+	return d.updateDashboardForResource(ctx, b)
 }
 
 func (d *dashboard) runForExisting(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
@@ -419,22 +429,30 @@ func NewGenerateDashboardCommand() *cobra.Command {
 	d := &dashboard{}
 
 	// Lookup flags.
-	cmd.Flags().StringVar(&d.dashboardPath, "existing-path", "", `workspace path of the dashboard to generate configuration for`)
-	cmd.Flags().StringVar(&d.dashboardId, "existing-id", "", `ID of the dashboard to generate configuration for`)
+	cmd.Flags().StringVar(&d.existingPath, "existing-path", "", `workspace path of the dashboard to generate configuration for`)
+	cmd.Flags().StringVar(&d.existingID, "existing-id", "", `ID of the dashboard to generate configuration for`)
 	cmd.Flags().StringVar(&d.resource, "resource", "", `resource key of dashboard to watch for changes`)
+
+	// Alias lookup flags that include the resource type name.
+	// Included for symmetry with the other generate commands, but we prefer the shorter flags.
+	cmd.Flags().StringVar(&d.existingPath, "existing-dashboard-path", "", `workspace path of the dashboard to generate configuration for`)
+	cmd.Flags().StringVar(&d.existingID, "existing-dashboard-id", "", `ID of the dashboard to generate configuration for`)
+	cmd.Flags().MarkHidden("existing-dashboard-path")
+	cmd.Flags().MarkHidden("existing-dashboard-id")
 
 	// Output flags.
 	cmd.Flags().StringVarP(&d.resourceDir, "resource-dir", "d", "./resources", `directory to write the configuration to`)
 	cmd.Flags().StringVarP(&d.dashboardDir, "dashboard-dir", "s", "./src", `directory to write the dashboard representation to`)
 	cmd.Flags().BoolVarP(&d.force, "force", "f", false, `force overwrite existing files in the output directory`)
 
+	// Exactly one of the lookup flags must be provided.
 	cmd.MarkFlagsOneRequired(
 		"existing-path",
 		"existing-id",
 		"resource",
 	)
 
-	// Watch flags.
+	// Watch flag. This is relevant only in combination with the resource flag.
 	cmd.Flags().BoolVar(&d.watch, "watch", false, `watch for changes to the dashboard and update the configuration`)
 
 	// Make sure the watch flag is only used with the existing-resource flag.
