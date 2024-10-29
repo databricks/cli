@@ -33,6 +33,7 @@ func TestInterpolate(t *testing.T) {
 								"other_schema":           "${resources.schemas.other_schema.id}",
 								"other_volume":           "${resources.volumes.other_volume.id}",
 								"other_cluster":          "${resources.clusters.other_cluster.id}",
+								"other_dashboard":        "${resources.dashboards.other_dashboard.id}",
 							},
 							Tasks: []jobs.Task{
 								{
@@ -71,6 +72,7 @@ func TestInterpolate(t *testing.T) {
 	assert.Equal(t, "${databricks_schema.other_schema.id}", j.Tags["other_schema"])
 	assert.Equal(t, "${databricks_volume.other_volume.id}", j.Tags["other_volume"])
 	assert.Equal(t, "${databricks_cluster.other_cluster.id}", j.Tags["other_cluster"])
+	assert.Equal(t, "${databricks_dashboard.other_dashboard.id}", j.Tags["other_dashboard"])
 
 	m := b.Config.Resources.Models["my_model"]
 	assert.Equal(t, "my_model", m.Model.Name)

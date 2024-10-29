@@ -66,6 +66,7 @@ func Initialize() bundle.Mutator {
 			permissions.PermissionDiagnostics(),
 			mutator.SetRunAs(),
 			mutator.OverrideCompute(),
+			mutator.ConfigureDashboardDefaults(),
 			mutator.ProcessTargetMode(),
 			mutator.ApplyPresets(),
 			mutator.DefaultQueueing(),
@@ -76,8 +77,11 @@ func Initialize() bundle.Mutator {
 
 			mutator.TranslatePaths(),
 			trampoline.WrapperWarning(),
+
+			permissions.ValidateSharedRootPermissions(),
 			permissions.ApplyBundlePermissions(),
 			permissions.FilterCurrentUser(),
+
 			metadata.AnnotateJobs(),
 			metadata.AnnotatePipelines(),
 			terraform.Initialize(),
