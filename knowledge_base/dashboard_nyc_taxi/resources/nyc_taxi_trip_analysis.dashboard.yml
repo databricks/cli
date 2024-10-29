@@ -1,0 +1,22 @@
+resources:
+  dashboards:
+    nyc_taxi_trip_analysis:
+      display_name: "NYC Taxi Trip Analysis"
+      file_path: ../src/nyc_taxi_trip_analysis.lvdash.json
+      warehouse_id: ${var.warehouse_id}
+
+      # If "embed_credentials" is set to true, the bundle deployment identity's credentials
+      # are used to execute queries for all dashboard viewers.
+      # If it is set to false, each viewer's own credentials will be used instead.
+      #
+      # It defaults to false.
+      #
+      # embed_credentials: false
+
+      # The "parent_path" field can be configured to place the dashboard in a
+      # non-standard folder in the workspace.
+      #
+      # It defaults to "${workspace.resource_path}", which is located
+      # under the bundle deployment root.
+      #
+      # parent_path: ${workspace.resource_path}

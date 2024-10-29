@@ -1,0 +1,20 @@
+bundle:
+  name: dashboard_nyc_taxi
+
+include:
+  - resources/*.yml
+
+variables:
+  # The "warehouse_id" variable is used to reference the warehouse used by the dashboard.
+  warehouse_id:
+    lookup:
+      # Replace this with the name of your SQL warehouse.
+      warehouse: "Shared Unity Catalog Severless"
+
+workspace:
+  host: https://myworkspace.databricks.com
+
+targets:
+  dev:
+    default: true
+    mode: development

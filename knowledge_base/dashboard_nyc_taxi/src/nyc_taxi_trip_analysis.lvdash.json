@@ -1,0 +1,706 @@
+{
+  "datasets": [
+    {
+      "displayName": "route revenue",
+      "name": "0ca96e81",
+      "query": "SELECT\n  T.pickup_zip,\n  T.dropoff_zip,\n  T.route as `Route`,\n  T.frequency as `Number Trips`,\n  T.total_fare as `Total Revenue`\nFROM\n  (\n    SELECT\n      pickup_zip,\n      dropoff_zip,\n      concat(pickup_zip, '-', dropoff_zip) AS route,\n      count(*) as frequency,\n      SUM(fare_amount) as total_fare\n    FROM\n      `samples`.`nyctaxi`.`trips`\n    GROUP BY\n       1,2,3\n  ) T\nORDER BY\n  1 ASC"
+    },
+    {
+      "displayName": "trips",
+      "name": "3f5450e6",
+      "query": "SELECT\n  T.tpep_pickup_datetime,\n  T.tpep_dropoff_datetime,\n  T.fare_amount,\n  T.pickup_zip,\n  T.dropoff_zip,\n  T.trip_distance,\n  T.weekday,\n  CASE\n    WHEN T.weekday = 1 THEN 'Sunday'\n    WHEN T.weekday = 2 THEN 'Monday'\n    WHEN T.weekday = 3 THEN 'Tuesday'\n    WHEN T.weekday = 4 THEN 'Wednesday'\n    WHEN T.weekday = 5 THEN 'Thursday'\n    WHEN T.weekday = 6 THEN 'Friday'\n    WHEN T.weekday = 7 THEN 'Saturday'\n    ELSE 'N/A'\n  END AS day_of_week, \n  T.fare_amount, \n  T.trip_distance\nFROM\n  (\n    SELECT\n      dayofweek(tpep_pickup_datetime) as weekday,\n      *\n    FROM\n      `samples`.`nyctaxi`.`trips`\n    WHERE\n      trip_distance > 0\n      AND trip_distance < 10\n      AND fare_amount > 0\n      AND fare_amount < 50\n  ) T\nORDER BY\n  T.weekday  "
+    }
+  ],
+  "pages": [
+    {
+      "displayName": "Summary",
+      "layout": [
+        {
+          "position": {
+            "height": 1,
+            "width": 2,
+            "x": 0,
+            "y": 1
+          },
+          "widget": {
+            "name": "01e21234",
+            "queries": [
+              {
+                "name": "dashboards/01ee564285a315dd80d473e76171660a/datasets/01ee564285a51daf810a8ffc5051bfee_tpep_dropoff_datetime",
+                "query": {
+                  "datasetName": "3f5450e6",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "expression": "`tpep_dropoff_datetime`",
+                      "name": "tpep_dropoff_datetime"
+                    },
+                    {
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)",
+                      "name": "tpep_dropoff_datetime_associativity"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "encodings": {
+                "fields": [
+                  {
+                    "displayName": "tpep_dropoff_datetime",
+                    "fieldName": "tpep_dropoff_datetime",
+                    "queryName": "dashboards/01ee564285a315dd80d473e76171660a/datasets/01ee564285a51daf810a8ffc5051bfee_tpep_dropoff_datetime"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Time Range"
+              },
+              "version": 2,
+              "widgetType": "filter-date-range-picker"
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 4,
+            "width": 3,
+            "x": 0,
+            "y": 10
+          },
+          "widget": {
+            "name": "2c147a61",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "3f5450e6",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "expression": "COUNT(`*`)",
+                      "name": "count(*)"
+                    },
+                    {
+                      "expression": "DATE_TRUNC(\"HOUR\", `tpep_pickup_datetime`)",
+                      "name": "hourly(tpep_pickup_datetime)"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "encodings": {
+                "label": {
+                  "show": false
+                },
+                "x": {
+                  "axis": {
+                    "title": "Pickup Hour"
+                  },
+                  "displayName": "Pickup Hour",
+                  "fieldName": "hourly(tpep_pickup_datetime)",
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "axis": {
+                    "title": "Number of Rides"
+                  },
+                  "displayName": "Number of Rides",
+                  "fieldName": "count(*)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Pickup Hour Distribution"
+              },
+              "mark": {
+                "colors": [
+                  "#077A9D",
+                  "#FFAB00",
+                  "#00A972",
+                  "#FF3621",
+                  "#8BCAE7",
+                  "#AB4057",
+                  "#99DDB4",
+                  "#FCA4A1",
+                  "#919191",
+                  "#BF7080"
+                ]
+              },
+              "version": 3,
+              "widgetType": "bar"
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 8,
+            "width": 4,
+            "x": 2,
+            "y": 2
+          },
+          "widget": {
+            "name": "35a5a364",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "3f5450e6",
+                  "disaggregated": true,
+                  "fields": [
+                    {
+                      "expression": "`day_of_week`",
+                      "name": "day_of_week"
+                    },
+                    {
+                      "expression": "`fare_amount`",
+                      "name": "fare_amount"
+                    },
+                    {
+                      "expression": "`trip_distance`",
+                      "name": "trip_distance"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "encodings": {
+                "color": {
+                  "displayName": "Day of Week",
+                  "fieldName": "day_of_week",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "x": {
+                  "axis": {
+                    "title": "Trip Distance (miles)"
+                  },
+                  "displayName": "trip_distance",
+                  "fieldName": "trip_distance",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "axis": {
+                    "title": "Fare Amount (USD)"
+                  },
+                  "displayName": "fare_amount",
+                  "fieldName": "fare_amount",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Daily Fare Trends by Day of Week"
+              },
+              "version": 3,
+              "widgetType": "scatter"
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 1,
+            "width": 6,
+            "x": 0,
+            "y": 0
+          },
+          "widget": {
+            "name": "4e04176c",
+            "textbox_spec": "# NYC Taxi Trip Analysis"
+          }
+        },
+        {
+          "position": {
+            "height": 4,
+            "width": 3,
+            "x": 3,
+            "y": 10
+          },
+          "widget": {
+            "name": "64a2a1f5",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "3f5450e6",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "expression": "COUNT(`*`)",
+                      "name": "count(*)"
+                    },
+                    {
+                      "expression": "DATE_TRUNC(\"HOUR\", `tpep_dropoff_datetime`)",
+                      "name": "hourly(tpep_dropoff_datetime)"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "encodings": {
+                "x": {
+                  "axis": {
+                    "title": "Dropoff Hour"
+                  },
+                  "displayName": "Dropoff Hour",
+                  "fieldName": "hourly(tpep_dropoff_datetime)",
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "axis": {
+                    "title": "Number of Rides"
+                  },
+                  "displayName": "Number of Rides",
+                  "fieldName": "count(*)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Dropoff Hour Distribution"
+              },
+              "mark": {
+                "colors": [
+                  "#FFAB00",
+                  "#FFAB00",
+                  "#00A972",
+                  "#FF3621",
+                  "#8BCAE7",
+                  "#AB4057",
+                  "#99DDB4",
+                  "#FCA4A1",
+                  "#919191",
+                  "#BF7080"
+                ]
+              },
+              "version": 3,
+              "widgetType": "bar"
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 2,
+            "width": 2,
+            "x": 0,
+            "y": 2
+          },
+          "widget": {
+            "name": "8a537060",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "3f5450e6",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "expression": "COUNT(`*`)",
+                      "name": "count(*)"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "encodings": {
+                "value": {
+                  "displayName": "Count of Records",
+                  "fieldName": "count(*)"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Total Trips"
+              },
+              "version": 2,
+              "widgetType": "counter"
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 1,
+            "width": 2,
+            "x": 2,
+            "y": 1
+          },
+          "widget": {
+            "name": "c4e14639",
+            "queries": [
+              {
+                "name": "dashboards/01eed0e4082a1c7e903cac7e74114376/datasets/01eed0e4082d1205adc131b86b10198e_pickup_zip",
+                "query": {
+                  "datasetName": "0ca96e81",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "expression": "`pickup_zip`",
+                      "name": "pickup_zip"
+                    },
+                    {
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)",
+                      "name": "pickup_zip_associativity"
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "dashboards/01eed0e4082a1c7e903cac7e74114376/datasets/01eed0e4082e1ff49c3209776820e82e_pickup_zip",
+                "query": {
+                  "datasetName": "3f5450e6",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "expression": "`pickup_zip`",
+                      "name": "pickup_zip"
+                    },
+                    {
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)",
+                      "name": "pickup_zip_associativity"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "encodings": {
+                "fields": [
+                  {
+                    "displayName": "pickup_zip",
+                    "fieldName": "pickup_zip",
+                    "queryName": "dashboards/01eed0e4082a1c7e903cac7e74114376/datasets/01eed0e4082e1ff49c3209776820e82e_pickup_zip"
+                  },
+                  {
+                    "displayName": "pickup_zip",
+                    "fieldName": "pickup_zip",
+                    "queryName": "dashboards/01eed0e4082a1c7e903cac7e74114376/datasets/01eed0e4082d1205adc131b86b10198e_pickup_zip"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Pickup Zip"
+              },
+              "version": 2,
+              "widgetType": "filter-multi-select"
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 6,
+            "width": 2,
+            "x": 0,
+            "y": 4
+          },
+          "widget": {
+            "name": "c532be56",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "0ca96e81",
+                  "disaggregated": true,
+                  "fields": [
+                    {
+                      "expression": "`Number Trips`",
+                      "name": "Number Trips"
+                    },
+                    {
+                      "expression": "`Route`",
+                      "name": "Route"
+                    },
+                    {
+                      "expression": "`Total Revenue`",
+                      "name": "Total Revenue"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "allowHTMLByDefault": false,
+              "condensed": true,
+              "encodings": {
+                "columns": [
+                  {
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "allowSearch": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "displayAs": "string",
+                    "displayName": "Route",
+                    "fieldName": "Route",
+                    "highlightLinks": false,
+                    "imageHeight": "",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "linkOpenInNewTab": true,
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "order": 100000,
+                    "preserveWhitespace": false,
+                    "title": "Route",
+                    "type": "string",
+                    "useMonospaceFont": false,
+                    "visible": true
+                  },
+                  {
+                    "alignContent": "right",
+                    "allowHTML": false,
+                    "allowSearch": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "displayAs": "number",
+                    "displayName": "Number Trips",
+                    "fieldName": "Number Trips",
+                    "highlightLinks": false,
+                    "imageHeight": "",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "linkOpenInNewTab": true,
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "numberFormat": "0",
+                    "order": 100001,
+                    "preserveWhitespace": false,
+                    "title": "Number Trips",
+                    "type": "integer",
+                    "useMonospaceFont": false,
+                    "visible": true
+                  },
+                  {
+                    "alignContent": "right",
+                    "allowHTML": false,
+                    "allowSearch": false,
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "cellFormat": {
+                      "default": {
+                        "foregroundColor": "#85CADE"
+                      },
+                      "rules": [
+                        {
+                          "if": {
+                            "column": "Total Revenue",
+                            "fn": "<",
+                            "literal": "51"
+                          },
+                          "value": {
+                            "foregroundColor": "#9C2638"
+                          }
+                        },
+                        {
+                          "if": {
+                            "column": "Total Revenue",
+                            "fn": "<",
+                            "literal": "101"
+                          },
+                          "value": {
+                            "foregroundColor": "#FFD465"
+                          }
+                        },
+                        {
+                          "if": {
+                            "column": "Total Revenue",
+                            "fn": "<",
+                            "literal": "6001"
+                          },
+                          "value": {
+                            "foregroundColor": "#1FA873"
+                          }
+                        }
+                      ]
+                    },
+                    "displayAs": "number",
+                    "displayName": "Total Revenue",
+                    "fieldName": "Total Revenue",
+                    "highlightLinks": false,
+                    "imageHeight": "",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "linkOpenInNewTab": true,
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "numberFormat": "$0.00",
+                    "order": 100002,
+                    "preserveWhitespace": false,
+                    "title": "Total Revenue",
+                    "type": "float",
+                    "useMonospaceFont": false,
+                    "visible": true
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Route Revenue Attribution"
+              },
+              "invisibleColumns": [
+                {
+                  "alignContent": "right",
+                  "allowHTML": false,
+                  "allowSearch": false,
+                  "booleanValues": [
+                    "false",
+                    "true"
+                  ],
+                  "displayAs": "number",
+                  "highlightLinks": false,
+                  "imageHeight": "",
+                  "imageTitleTemplate": "{{ @ }}",
+                  "imageUrlTemplate": "{{ @ }}",
+                  "imageWidth": "",
+                  "linkOpenInNewTab": true,
+                  "linkTextTemplate": "{{ @ }}",
+                  "linkTitleTemplate": "{{ @ }}",
+                  "linkUrlTemplate": "{{ @ }}",
+                  "name": "pickup_zip",
+                  "numberFormat": "0",
+                  "order": 100000,
+                  "preserveWhitespace": false,
+                  "title": "pickup_zip",
+                  "type": "integer",
+                  "useMonospaceFont": false
+                },
+                {
+                  "alignContent": "right",
+                  "allowHTML": false,
+                  "allowSearch": false,
+                  "booleanValues": [
+                    "false",
+                    "true"
+                  ],
+                  "displayAs": "number",
+                  "highlightLinks": false,
+                  "imageHeight": "",
+                  "imageTitleTemplate": "{{ @ }}",
+                  "imageUrlTemplate": "{{ @ }}",
+                  "imageWidth": "",
+                  "linkOpenInNewTab": true,
+                  "linkTextTemplate": "{{ @ }}",
+                  "linkTitleTemplate": "{{ @ }}",
+                  "linkUrlTemplate": "{{ @ }}",
+                  "name": "dropoff_zip",
+                  "numberFormat": "0",
+                  "order": 100001,
+                  "preserveWhitespace": false,
+                  "title": "dropoff_zip",
+                  "type": "integer",
+                  "useMonospaceFont": false
+                }
+              ],
+              "itemsPerPage": 25,
+              "paginationSize": "default",
+              "version": 1,
+              "widgetType": "table",
+              "withRowNumber": false
+            }
+          }
+        },
+        {
+          "position": {
+            "height": 1,
+            "width": 2,
+            "x": 4,
+            "y": 1
+          },
+          "widget": {
+            "name": "c6fc64a3",
+            "queries": [
+              {
+                "name": "dashboards/01eed0e4082a1c7e903cac7e74114376/datasets/01eed0e4082d1205adc131b86b10198e_dropoff_zip",
+                "query": {
+                  "datasetName": "0ca96e81",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "expression": "`dropoff_zip`",
+                      "name": "dropoff_zip"
+                    },
+                    {
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)",
+                      "name": "dropoff_zip_associativity"
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "dashboards/01eed0e4082a1c7e903cac7e74114376/datasets/01eed0e4082e1ff49c3209776820e82e_dropoff_zip",
+                "query": {
+                  "datasetName": "3f5450e6",
+                  "disaggregated": false,
+                  "fields": [
+                    {
+                      "expression": "`dropoff_zip`",
+                      "name": "dropoff_zip"
+                    },
+                    {
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)",
+                      "name": "dropoff_zip_associativity"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "encodings": {
+                "fields": [
+                  {
+                    "displayName": "dropoff_zip",
+                    "fieldName": "dropoff_zip",
+                    "queryName": "dashboards/01eed0e4082a1c7e903cac7e74114376/datasets/01eed0e4082e1ff49c3209776820e82e_dropoff_zip"
+                  },
+                  {
+                    "displayName": "dropoff_zip",
+                    "fieldName": "dropoff_zip",
+                    "queryName": "dashboards/01eed0e4082a1c7e903cac7e74114376/datasets/01eed0e4082d1205adc131b86b10198e_dropoff_zip"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Dropoff Zip"
+              },
+              "version": 2,
+              "widgetType": "filter-multi-select"
+            }
+          }
+        }
+      ],
+      "name": "5a35864d"
+    }
+  ]
+}
