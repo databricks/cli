@@ -5,8 +5,10 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/paths"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"golang.org/x/sync/errgroup"
 )
 
 type workspaceRootPermissions struct {
@@ -52,16 +54,30 @@ func giveAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle) error {
 	}
 
 	w := b.WorkspaceClient().Workspace
-	obj, err := w.GetStatusByPath(ctx, b.Config.Workspace.RootPath)
+	bundlePaths := paths.CollectUniqueWorkspacePathPrefixes(b.Config.Workspace)
+
+	g, ctx := errgroup.WithContext(ctx)
+	for _, p := range bundlePaths {
+		g.Go(func() error {
+			return setPermissions(ctx, w, p, permissions)
+		})
+	}
+
+	return g.Wait()
+}
+
+func setPermissions(ctx context.Context, w workspace.WorkspaceInterface, path string, permissions []workspace.WorkspaceObjectAccessControlRequest) error {
+	obj, err := w.GetStatusByPath(ctx, path)
 	if err != nil {
 		return err
 	}
 
-	_, err = w.UpdatePermissions(ctx, workspace.WorkspaceObjectPermissionsRequest{
+	_, err = w.SetPermissions(ctx, workspace.WorkspaceObjectPermissionsRequest{
 		WorkspaceObjectId:   fmt.Sprint(obj.ObjectId),
 		WorkspaceObjectType: "directories",
 		AccessControlList:   permissions,
 	})
+
 	return err
 }
 
