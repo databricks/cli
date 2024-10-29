@@ -7,42 +7,42 @@ import (
 	assert "github.com/databricks/cli/libs/dyn/dynassert"
 )
 
-func TestMarshalString(t *testing.T) {
+func TestMarshal_String(t *testing.T) {
 	b, err := Marshal(dyn.V("string"))
 	if assert.NoError(t, err) {
 		assert.JSONEq(t, `"string"`, string(b))
 	}
 }
 
-func TestMarshalBool(t *testing.T) {
+func TestMarshal_Bool(t *testing.T) {
 	b, err := Marshal(dyn.V(true))
 	if assert.NoError(t, err) {
 		assert.JSONEq(t, `true`, string(b))
 	}
 }
 
-func TestMarshalInt(t *testing.T) {
+func TestMarshal_Int(t *testing.T) {
 	b, err := Marshal(dyn.V(42))
 	if assert.NoError(t, err) {
 		assert.JSONEq(t, `42`, string(b))
 	}
 }
 
-func TestMarshalFloat(t *testing.T) {
+func TestMarshal_Float(t *testing.T) {
 	b, err := Marshal(dyn.V(42.1))
 	if assert.NoError(t, err) {
 		assert.JSONEq(t, `42.1`, string(b))
 	}
 }
 
-func TestMarshalTime(t *testing.T) {
+func TestMarshal_Time(t *testing.T) {
 	b, err := Marshal(dyn.V(dyn.MustTime("2021-01-01T00:00:00Z")))
 	if assert.NoError(t, err) {
 		assert.JSONEq(t, `"2021-01-01T00:00:00Z"`, string(b))
 	}
 }
 
-func TestMarshalMap(t *testing.T) {
+func TestMarshal_Map(t *testing.T) {
 	m := dyn.NewMapping()
 	m.Set(dyn.V("key1"), dyn.V("value1"))
 	m.Set(dyn.V("key2"), dyn.V("value2"))
@@ -53,7 +53,7 @@ func TestMarshalMap(t *testing.T) {
 	}
 }
 
-func TestMarshalSequence(t *testing.T) {
+func TestMarshal_Sequence(t *testing.T) {
 	var s []dyn.Value
 	s = append(s, dyn.V("value1"))
 	s = append(s, dyn.V("value2"))
@@ -64,7 +64,7 @@ func TestMarshalSequence(t *testing.T) {
 	}
 }
 
-func TestMarshalComplex(t *testing.T) {
+func TestMarshal_Complex(t *testing.T) {
 	map1 := dyn.NewMapping()
 	map1.Set(dyn.V("str1"), dyn.V("value1"))
 	map1.Set(dyn.V("str2"), dyn.V("value2"))

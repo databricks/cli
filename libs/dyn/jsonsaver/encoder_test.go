@@ -6,7 +6,7 @@ import (
 	assert "github.com/databricks/cli/libs/dyn/dynassert"
 )
 
-func TestEncoder_marshalNoEscape(t *testing.T) {
+func TestEncoder_MarshalNoEscape(t *testing.T) {
 	out, err := marshalNoEscape("1 < 2")
 	if !assert.NoError(t, err) {
 		return
@@ -22,7 +22,7 @@ func TestEncoder_marshalNoEscape(t *testing.T) {
 	assert.Contains(t, string(out), "\n")
 }
 
-func TestEncoder_marshalIndentNoEscape(t *testing.T) {
+func TestEncoder_MarshalIndentNoEscape(t *testing.T) {
 	out, err := marshalIndentNoEscape([]string{"1 < 2", "2 < 3"}, "", "  ")
 	if !assert.NoError(t, err) {
 		return
