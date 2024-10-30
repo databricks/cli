@@ -1,13 +1,16 @@
 package render
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"path/filepath"
+	"sort"
 	"strings"
 	"text/template"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/fatih/color"
@@ -28,35 +31,7 @@ var renderFuncMap = template.FuncMap{
 	},
 }
 
-const errorTemplate = `{{ "Error" | red }}: {{ .Summary }}
-{{- range $index, $element := .Paths }}
-  {{ if eq $index 0 }}at {{else}}   {{ end}}{{ $element.String | green }}
-{{- end }}
-{{- range $index, $element := .Locations }}
-  {{ if eq $index 0 }}in {{else}}   {{ end}}{{ $element.String | cyan }}
-{{- end }}
-{{- if .Detail }}
-
-{{ .Detail }}
-{{- end }}
-
-`
-
-const warningTemplate = `{{ "Warning" | yellow }}: {{ .Summary }}
-{{- range $index, $element := .Paths }}
-  {{ if eq $index 0 }}at {{else}}   {{ end}}{{ $element.String | green }}
-{{- end }}
-{{- range $index, $element := .Locations }}
-  {{ if eq $index 0 }}in {{else}}   {{ end}}{{ $element.String | cyan }}
-{{- end }}
-{{- if .Detail }}
-
-{{ .Detail }}
-{{- end }}
-
-`
-
-const summaryTemplate = `{{- if .Name -}}
+const summaryHeaderTemplate = `{{- if .Name -}}
 Name: {{ .Name | bold }}
 {{- if .Target }}
 Target: {{ .Target | bold }}
@@ -73,11 +48,29 @@ Workspace:
   Path: {{ .Path | bold }}
 {{- end }}
 {{- end }}
+{{ end -}}`
 
-{{ end -}}
-
-{{ .Trailer }}
+const resourcesTemplate = `Resources:
+{{- range . }}
+  {{ .GroupName }}:
+  {{- range .Resources }}
+    {{ .Key | bold }}:
+      Name: {{ .Name }}
+      URL:  {{ if .URL }}{{ .URL | cyan }}{{ else }}{{ "(not deployed)" | cyan }}{{ end }}
+  {{- end }}
+{{- end }}
 `
+
+type ResourceGroup struct {
+	GroupName string
+	Resources []ResourceInfo
+}
+
+type ResourceInfo struct {
+	Key  string
+	Name string
+	URL  string
+}
 
 func pluralize(n int, singular, plural string) string {
 	if n == 1 {
@@ -94,16 +87,27 @@ func buildTrailer(diags diag.Diagnostics) string {
 	if warnings := len(diags.Filter(diag.Warning)); warnings > 0 {
 		parts = append(parts, color.YellowString(pluralize(warnings, "warning", "warnings")))
 	}
-	if len(parts) > 0 {
-		return fmt.Sprintf("Found %s", strings.Join(parts, " and "))
-	} else {
-		return color.GreenString("Validation OK!")
+	if recommendations := len(diags.Filter(diag.Recommendation)); recommendations > 0 {
+		parts = append(parts, color.BlueString(pluralize(recommendations, "recommendation", "recommendations")))
+	}
+	switch {
+	case len(parts) >= 3:
+		first := strings.Join(parts[:len(parts)-1], ", ")
+		last := parts[len(parts)-1]
+		return fmt.Sprintf("Found %s, and %s\n", first, last)
+	case len(parts) == 2:
+		return fmt.Sprintf("Found %s and %s\n", parts[0], parts[1])
+	case len(parts) == 1:
+		return fmt.Sprintf("Found %s\n", parts[0])
+	default:
+		// No diagnostics to print.
+		return color.GreenString("Validation OK!\n")
 	}
 }
 
-func renderSummaryTemplate(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics) error {
+func renderSummaryHeaderTemplate(out io.Writer, b *bundle.Bundle) error {
 	if b == nil {
-		return renderSummaryTemplate(out, &bundle.Bundle{}, diags)
+		return renderSummaryHeaderTemplate(out, &bundle.Bundle{})
 	}
 
 	var currentUser = &iam.User{}
@@ -114,33 +118,20 @@ func renderSummaryTemplate(out io.Writer, b *bundle.Bundle, diags diag.Diagnosti
 		}
 	}
 
-	t := template.Must(template.New("summary").Funcs(renderFuncMap).Parse(summaryTemplate))
+	t := template.Must(template.New("summary").Funcs(renderFuncMap).Parse(summaryHeaderTemplate))
 	err := t.Execute(out, map[string]any{
-		"Name":    b.Config.Bundle.Name,
-		"Target":  b.Config.Bundle.Target,
-		"User":    currentUser.UserName,
-		"Path":    b.Config.Workspace.RootPath,
-		"Host":    b.Config.Workspace.Host,
-		"Trailer": buildTrailer(diags),
+		"Name":   b.Config.Bundle.Name,
+		"Target": b.Config.Bundle.Target,
+		"User":   currentUser.UserName,
+		"Path":   b.Config.Workspace.RootPath,
+		"Host":   b.Config.Workspace.Host,
 	})
 
 	return err
 }
 
-func renderDiagnostics(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics) error {
-	errorT := template.Must(template.New("error").Funcs(renderFuncMap).Parse(errorTemplate))
-	warningT := template.Must(template.New("warning").Funcs(renderFuncMap).Parse(warningTemplate))
-
-	// Print errors and warnings.
+func renderDiagnosticsOnly(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics) error {
 	for _, d := range diags {
-		var t *template.Template
-		switch d.Severity {
-		case diag.Error:
-			t = errorT
-		case diag.Warning:
-			t = warningT
-		}
-
 		for i := range d.Locations {
 			if b == nil {
 				break
@@ -155,15 +146,9 @@ func renderDiagnostics(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics) 
 				}
 			}
 		}
-
-		// Render the diagnostic with the appropriate template.
-		err := t.Execute(out, d)
-		if err != nil {
-			return fmt.Errorf("failed to render template: %w", err)
-		}
 	}
 
-	return nil
+	return cmdio.RenderDiagnostics(out, diags)
 }
 
 // RenderOptions contains options for rendering diagnostics.
@@ -173,19 +158,73 @@ type RenderOptions struct {
 	RenderSummaryTable bool
 }
 
-// RenderTextOutput renders the diagnostics in a human-readable format.
-func RenderTextOutput(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics, opts RenderOptions) error {
-	err := renderDiagnostics(out, b, diags)
+// RenderDiagnostics renders the diagnostics in a human-readable format.
+func RenderDiagnostics(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics, opts RenderOptions) error {
+	err := renderDiagnosticsOnly(out, b, diags)
 	if err != nil {
 		return fmt.Errorf("failed to render diagnostics: %w", err)
 	}
 
 	if opts.RenderSummaryTable {
-		err = renderSummaryTemplate(out, b, diags)
-		if err != nil {
-			return fmt.Errorf("failed to render summary: %w", err)
+		if b != nil {
+			err = renderSummaryHeaderTemplate(out, b)
+			if err != nil {
+				return fmt.Errorf("failed to render summary: %w", err)
+			}
+			io.WriteString(out, "\n")
 		}
+		trailer := buildTrailer(diags)
+		io.WriteString(out, trailer)
 	}
 
 	return nil
+}
+
+func RenderSummary(ctx context.Context, out io.Writer, b *bundle.Bundle) error {
+	if err := renderSummaryHeaderTemplate(out, b); err != nil {
+		return err
+	}
+
+	var resourceGroups []ResourceGroup
+
+	for _, group := range b.Config.Resources.AllResources() {
+		resources := make([]ResourceInfo, 0, len(group.Resources))
+		for key, resource := range group.Resources {
+			resources = append(resources, ResourceInfo{
+				Key:  key,
+				Name: resource.GetName(),
+				URL:  resource.GetURL(),
+			})
+		}
+
+		if len(resources) > 0 {
+			resourceGroups = append(resourceGroups, ResourceGroup{
+				GroupName: group.Description.PluralTitle,
+				Resources: resources,
+			})
+		}
+	}
+
+	if err := renderResourcesTemplate(out, resourceGroups); err != nil {
+		return fmt.Errorf("failed to render resources template: %w", err)
+	}
+
+	return nil
+}
+
+// Helper function to sort and render resource groups using the template
+func renderResourcesTemplate(out io.Writer, resourceGroups []ResourceGroup) error {
+	// Sort everything to ensure consistent output
+	sort.Slice(resourceGroups, func(i, j int) bool {
+		return resourceGroups[i].GroupName < resourceGroups[j].GroupName
+	})
+	for _, group := range resourceGroups {
+		sort.Slice(group.Resources, func(i, j int) bool {
+			return group.Resources[i].Key < group.Resources[j].Key
+		})
+	}
+
+	t := template.Must(template.New("resources").Funcs(renderFuncMap).Parse(resourcesTemplate))
+
+	return t.Execute(out, resourceGroups)
 }

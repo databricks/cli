@@ -38,7 +38,7 @@ func setupRepo(t *testing.T, wsc *databricks.WorkspaceClient, ctx context.Contex
 	require.NoError(t, err)
 	repoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, RandomName("empty-repo-sync-integration-"))
 
-	repoInfo, err := wsc.Repos.Create(ctx, workspace.CreateRepo{
+	repoInfo, err := wsc.Repos.Create(ctx, workspace.CreateRepoRequest{
 		Path:     repoPath,
 		Url:      repoUrl,
 		Provider: "gitHub",

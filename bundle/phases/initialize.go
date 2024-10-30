@@ -62,8 +62,11 @@ func Initialize() bundle.Mutator {
 				"workspace",
 				"variables",
 			),
+			// Provide permission config errors & warnings after initializing all variables
+			permissions.PermissionDiagnostics(),
 			mutator.SetRunAs(),
 			mutator.OverrideCompute(),
+			mutator.ConfigureDashboardDefaults(),
 			mutator.ProcessTargetMode(),
 			mutator.ApplyPresets(),
 			mutator.DefaultQueueing(),
@@ -74,8 +77,11 @@ func Initialize() bundle.Mutator {
 
 			mutator.TranslatePaths(),
 			trampoline.WrapperWarning(),
+
+			permissions.ValidateSharedRootPermissions(),
 			permissions.ApplyBundlePermissions(),
 			permissions.FilterCurrentUser(),
+
 			metadata.AnnotateJobs(),
 			metadata.AnnotatePipelines(),
 			terraform.Initialize(),

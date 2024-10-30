@@ -104,9 +104,15 @@ func newEnforceCompliance() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = enforceComplianceJson.Unmarshal(&enforceComplianceReq)
-			if err != nil {
-				return err
+			diags := enforceComplianceJson.Unmarshal(&enforceComplianceReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {

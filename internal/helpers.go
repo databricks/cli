@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/libs/flags"
 
 	"github.com/databricks/cli/cmd"
@@ -519,7 +520,7 @@ func TemporaryRepo(t *testing.T, w *databricks.WorkspaceClient) string {
 	repoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, RandomName("integration-test-repo-"))
 
 	t.Logf("Creating repo:%s", repoPath)
-	repoInfo, err := w.Repos.Create(ctx, workspace.CreateRepo{
+	repoInfo, err := w.Repos.Create(ctx, workspace.CreateRepoRequest{
 		Url:      "https://github.com/databricks/cli",
 		Provider: "github",
 		Path:     repoPath,
@@ -591,13 +592,10 @@ func setupWsfsExtensionsFiler(t *testing.T) (filer.Filer, string) {
 }
 
 func setupDbfsFiler(t *testing.T) (filer.Filer, string) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	_, wt := acc.WorkspaceTest(t)
 
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
-
-	tmpDir := TemporaryDbfsDir(t, w)
-	f, err := filer.NewDbfsClient(w, tmpDir)
+	tmpDir := TemporaryDbfsDir(t, wt.W)
+	f, err := filer.NewDbfsClient(wt.W, tmpDir)
 	require.NoError(t, err)
 
 	return f, path.Join("dbfs:/", tmpDir)

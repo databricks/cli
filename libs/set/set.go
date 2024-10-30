@@ -14,6 +14,11 @@ type Set[T any] struct {
 	data map[string]T
 }
 
+// Values returns a slice of the set's values
+func (s *Set[T]) Values() []T {
+	return maps.Values(s.data)
+}
+
 // NewSetFromF initialise a new set with initial values and a hash function
 // to define uniqueness of value
 func NewSetFromF[T any](values []T, f hashFunc[T]) *Set[T] {
@@ -67,6 +72,11 @@ func (s *Set[T]) Remove(item T) {
 func (s *Set[T]) Has(item T) bool {
 	_, ok := s.data[s.key(item)]
 	return ok
+}
+
+// Size returns the number of elements in the set
+func (s *Set[T]) Size() int {
+	return len(s.data)
 }
 
 // Returns an iterable slice of values from set

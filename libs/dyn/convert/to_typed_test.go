@@ -341,14 +341,14 @@ func TestToTypedBoolFromString(t *testing.T) {
 	var out bool
 
 	// True-ish
-	for _, v := range []string{"y", "yes", "on"} {
+	for _, v := range []string{"y", "yes", "on", "true"} {
 		err := ToTyped(&out, dyn.V(v))
 		require.NoError(t, err)
 		assert.Equal(t, true, out)
 	}
 
 	// False-ish
-	for _, v := range []string{"n", "no", "off"} {
+	for _, v := range []string{"n", "no", "off", "false"} {
 		err := ToTyped(&out, dyn.V(v))
 		require.NoError(t, err)
 		assert.Equal(t, false, out)
@@ -426,6 +426,19 @@ func TestToTypedIntFromStringVariableReference(t *testing.T) {
 	err := ToTyped(&out, dyn.V("${var.foo}"))
 	require.NoError(t, err)
 	assert.Equal(t, int(0), out)
+}
+
+func TestToTypedIntFromFloat(t *testing.T) {
+	var out int
+	err := ToTyped(&out, dyn.V(1.0))
+	require.NoError(t, err)
+	assert.Equal(t, int(1), out)
+}
+
+func TestToTypedIntFromFloatError(t *testing.T) {
+	var out int
+	err := ToTyped(&out, dyn.V(1.2))
+	require.ErrorContains(t, err, "expected an int, found a float")
 }
 
 func TestToTypedFloat32(t *testing.T) {

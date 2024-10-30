@@ -141,9 +141,15 @@ func newApproveTransitionRequest() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = approveTransitionRequestJson.Unmarshal(&approveTransitionRequestReq)
-			if err != nil {
-				return err
+			diags := approveTransitionRequestJson.Unmarshal(&approveTransitionRequestReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -235,9 +241,15 @@ func newCreateComment() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = createCommentJson.Unmarshal(&createCommentReq)
-			if err != nil {
-				return err
+			diags := createCommentJson.Unmarshal(&createCommentReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -322,9 +334,15 @@ func newCreateModel() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = createModelJson.Unmarshal(&createModelReq)
-			if err != nil {
-				return err
+			diags := createModelJson.Unmarshal(&createModelReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -403,9 +421,15 @@ func newCreateModelVersion() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = createModelVersionJson.Unmarshal(&createModelVersionReq)
-			if err != nil {
-				return err
+			diags := createModelVersionJson.Unmarshal(&createModelVersionReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -493,9 +517,15 @@ func newCreateTransitionRequest() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = createTransitionRequestJson.Unmarshal(&createTransitionRequestReq)
-			if err != nil {
-				return err
+			diags := createTransitionRequestJson.Unmarshal(&createTransitionRequestReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -570,9 +600,15 @@ func newCreateWebhook() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = createWebhookJson.Unmarshal(&createWebhookReq)
-			if err != nil {
-				return err
+			diags := createWebhookJson.Unmarshal(&createWebhookReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		} else {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
@@ -1079,9 +1115,15 @@ func newGetLatestVersions() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = getLatestVersionsJson.Unmarshal(&getLatestVersionsReq)
-			if err != nil {
-				return err
+			diags := getLatestVersionsJson.Unmarshal(&getLatestVersionsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -1629,9 +1671,15 @@ func newRejectTransitionRequest() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = rejectTransitionRequestJson.Unmarshal(&rejectTransitionRequestReq)
-			if err != nil {
-				return err
+			diags := rejectTransitionRequestJson.Unmarshal(&rejectTransitionRequestReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -1715,9 +1763,15 @@ func newRenameModel() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = renameModelJson.Unmarshal(&renameModelReq)
-			if err != nil {
-				return err
+			diags := renameModelJson.Unmarshal(&renameModelReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -1907,9 +1961,15 @@ func newSetModelTag() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = setModelTagJson.Unmarshal(&setModelTagReq)
-			if err != nil {
-				return err
+			diags := setModelTagJson.Unmarshal(&setModelTagReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -1996,9 +2056,15 @@ func newSetModelVersionTag() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = setModelVersionTagJson.Unmarshal(&setModelVersionTagReq)
-			if err != nil {
-				return err
+			diags := setModelVersionTagJson.Unmarshal(&setModelVersionTagReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -2076,9 +2142,15 @@ func newSetPermissions() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = setPermissionsJson.Unmarshal(&setPermissionsReq)
-			if err != nil {
-				return err
+			diags := setPermissionsJson.Unmarshal(&setPermissionsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		setPermissionsReq.RegisteredModelId = args[0]
@@ -2166,9 +2238,15 @@ func newTestRegistryWebhook() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = testRegistryWebhookJson.Unmarshal(&testRegistryWebhookReq)
-			if err != nil {
-				return err
+			diags := testRegistryWebhookJson.Unmarshal(&testRegistryWebhookReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -2259,9 +2337,15 @@ func newTransitionStage() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = transitionStageJson.Unmarshal(&transitionStageReq)
-			if err != nil {
-				return err
+			diags := transitionStageJson.Unmarshal(&transitionStageReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -2350,9 +2434,15 @@ func newUpdateComment() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = updateCommentJson.Unmarshal(&updateCommentReq)
-			if err != nil {
-				return err
+			diags := updateCommentJson.Unmarshal(&updateCommentReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -2430,9 +2520,15 @@ func newUpdateModel() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = updateModelJson.Unmarshal(&updateModelReq)
-			if err != nil {
-				return err
+			diags := updateModelJson.Unmarshal(&updateModelReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -2508,9 +2604,15 @@ func newUpdateModelVersion() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = updateModelVersionJson.Unmarshal(&updateModelVersionReq)
-			if err != nil {
-				return err
+			diags := updateModelVersionJson.Unmarshal(&updateModelVersionReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {
@@ -2582,9 +2684,15 @@ func newUpdatePermissions() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = updatePermissionsJson.Unmarshal(&updatePermissionsReq)
-			if err != nil {
-				return err
+			diags := updatePermissionsJson.Unmarshal(&updatePermissionsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		updatePermissionsReq.RegisteredModelId = args[0]
@@ -2663,9 +2771,15 @@ func newUpdateWebhook() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = updateWebhookJson.Unmarshal(&updateWebhookReq)
-			if err != nil {
-				return err
+			diags := updateWebhookJson.Unmarshal(&updateWebhookReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if !cmd.Flags().Changed("json") {

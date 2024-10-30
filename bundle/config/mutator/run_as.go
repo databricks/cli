@@ -30,50 +30,44 @@ func (m *setRunAs) Name() string {
 	return "SetRunAs"
 }
 
-type errUnsupportedResourceTypeForRunAs struct {
-	resourceType     string
-	resourceLocation dyn.Location
-	currentUser      string
-	runAsUser        string
+func reportRunAsNotSupported(resourceType string, location dyn.Location, currentUser string, runAsUser string) diag.Diagnostics {
+	return diag.Diagnostics{{
+		Summary: fmt.Sprintf("%s do not support a setting a run_as user that is different from the owner.\n"+
+			"Current identity: %s. Run as identity: %s.\n"+
+			"See https://docs.databricks.com/dev-tools/bundles/run-as.html to learn more about the run_as property.", resourceType, currentUser, runAsUser),
+		Locations: []dyn.Location{location},
+		Severity:  diag.Error,
+	}}
 }
 
-func (e errUnsupportedResourceTypeForRunAs) Error() string {
-	return fmt.Sprintf("%s are not supported when the current deployment user is different from the bundle's run_as identity. Please deploy as the run_as identity. Please refer to the documentation at https://docs.databricks.com/dev-tools/bundles/run-as.html for more details. Location of the unsupported resource: %s. Current identity: %s. Run as identity: %s", e.resourceType, e.resourceLocation, e.currentUser, e.runAsUser)
-}
+func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
+	diags := diag.Diagnostics{}
 
-type errBothSpAndUserSpecified struct {
-	spName   string
-	spLoc    dyn.Location
-	userName string
-	userLoc  dyn.Location
-}
+	neitherSpecifiedErr := diag.Diagnostics{{
+		Summary:   "run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified",
+		Locations: []dyn.Location{b.Config.GetLocation("run_as")},
+		Severity:  diag.Error,
+	}}
 
-func (e errBothSpAndUserSpecified) Error() string {
-	return fmt.Sprintf("run_as section must specify exactly one identity. A service_principal_name %q is specified at %s. A user_name %q is defined at %s", e.spName, e.spLoc, e.userName, e.userLoc)
-}
-
-func validateRunAs(b *bundle.Bundle) error {
-	neitherSpecifiedErr := fmt.Errorf("run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified at %s", b.Config.GetLocation("run_as"))
-	// Error if neither service_principal_name nor user_name are specified, but the
+	// Fail fast if neither service_principal_name nor user_name are specified, but the
 	// run_as section is present.
 	if b.Config.Value().Get("run_as").Kind() == dyn.KindNil {
 		return neitherSpecifiedErr
 	}
-	// Error if one or both of service_principal_name and user_name are specified,
+
+	// Fail fast if one or both of service_principal_name and user_name are specified,
 	// but with empty values.
-	if b.Config.RunAs.ServicePrincipalName == "" && b.Config.RunAs.UserName == "" {
+	runAs := b.Config.RunAs
+	if runAs.ServicePrincipalName == "" && runAs.UserName == "" {
 		return neitherSpecifiedErr
 	}
 
-	// Error if both service_principal_name and user_name are specified
-	runAs := b.Config.RunAs
 	if runAs.UserName != "" && runAs.ServicePrincipalName != "" {
-		return errBothSpAndUserSpecified{
-			spName:   runAs.ServicePrincipalName,
-			userName: runAs.UserName,
-			spLoc:    b.Config.GetLocation("run_as.service_principal_name"),
-			userLoc:  b.Config.GetLocation("run_as.user_name"),
-		}
+		diags = diags.Extend(diag.Diagnostics{{
+			Summary:   "run_as section cannot specify both user_name and service_principal_name",
+			Locations: []dyn.Location{b.Config.GetLocation("run_as")},
+			Severity:  diag.Error,
+		}})
 	}
 
 	identity := runAs.ServicePrincipalName
@@ -83,40 +77,50 @@ func validateRunAs(b *bundle.Bundle) error {
 
 	// All resources are supported if the run_as identity is the same as the current deployment identity.
 	if identity == b.Config.Workspace.CurrentUser.UserName {
-		return nil
+		return diags
 	}
 
 	// DLT pipelines do not support run_as in the API.
 	if len(b.Config.Resources.Pipelines) > 0 {
-		return errUnsupportedResourceTypeForRunAs{
-			resourceType:     "pipelines",
-			resourceLocation: b.Config.GetLocation("resources.pipelines"),
-			currentUser:      b.Config.Workspace.CurrentUser.UserName,
-			runAsUser:        identity,
-		}
+		diags = diags.Extend(reportRunAsNotSupported(
+			"pipelines",
+			b.Config.GetLocation("resources.pipelines"),
+			b.Config.Workspace.CurrentUser.UserName,
+			identity,
+		))
 	}
 
 	// Model serving endpoints do not support run_as in the API.
 	if len(b.Config.Resources.ModelServingEndpoints) > 0 {
-		return errUnsupportedResourceTypeForRunAs{
-			resourceType:     "model_serving_endpoints",
-			resourceLocation: b.Config.GetLocation("resources.model_serving_endpoints"),
-			currentUser:      b.Config.Workspace.CurrentUser.UserName,
-			runAsUser:        identity,
-		}
+		diags = diags.Extend(reportRunAsNotSupported(
+			"model_serving_endpoints",
+			b.Config.GetLocation("resources.model_serving_endpoints"),
+			b.Config.Workspace.CurrentUser.UserName,
+			identity,
+		))
 	}
 
 	// Monitors do not support run_as in the API.
 	if len(b.Config.Resources.QualityMonitors) > 0 {
-		return errUnsupportedResourceTypeForRunAs{
-			resourceType:     "quality_monitors",
-			resourceLocation: b.Config.GetLocation("resources.quality_monitors"),
-			currentUser:      b.Config.Workspace.CurrentUser.UserName,
-			runAsUser:        identity,
-		}
+		diags = diags.Extend(reportRunAsNotSupported(
+			"quality_monitors",
+			b.Config.GetLocation("resources.quality_monitors"),
+			b.Config.Workspace.CurrentUser.UserName,
+			identity,
+		))
 	}
 
-	return nil
+	// Dashboards do not support run_as in the API.
+	if len(b.Config.Resources.Dashboards) > 0 {
+		diags = diags.Extend(reportRunAsNotSupported(
+			"dashboards",
+			b.Config.GetLocation("resources.dashboards"),
+			b.Config.Workspace.CurrentUser.UserName,
+			identity,
+		))
+	}
+
+	return diags
 }
 
 func setRunAsForJobs(b *bundle.Bundle) {
@@ -187,8 +191,9 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	}
 
 	// Assert the run_as configuration is valid in the context of the bundle
-	if err := validateRunAs(b); err != nil {
-		return diag.FromErr(err)
+	diags := validateRunAs(b)
+	if diags.HasError() {
+		return diags
 	}
 
 	setRunAsForJobs(b)

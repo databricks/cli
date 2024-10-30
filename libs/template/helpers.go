@@ -11,7 +11,7 @@ import (
 	"text/template"
 
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 
@@ -119,7 +119,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 					return "", err
 				}
 			}
-			return auth.GetShortUserName(cachedUser), nil
+			return iamutil.GetShortUserName(cachedUser), nil
 		},
 		// Get the default workspace catalog. If there is no default, or if
 		// Unity Catalog is not enabled, return an empty string.
@@ -128,8 +128,8 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 				metastore, err := w.Metastores.Current(ctx)
 				if err != nil {
 					var aerr *apierr.APIError
-					if errors.As(err, &aerr) && aerr.ErrorCode == "METASTORE_DOES_NOT_EXIST" {
-						// Workspace doesn't have a metastore assigned, ignore error
+					if errors.As(err, &aerr) && (aerr.ErrorCode == "PERMISSION_DENIED" || aerr.ErrorCode == "METASTORE_DOES_NOT_EXIST") {
+						// Ignore: access denied or workspace doesn't have a metastore assigned
 						empty_default := ""
 						cachedCatalog = &empty_default
 						return "", nil
@@ -151,7 +151,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 					return false, err
 				}
 			}
-			result := auth.IsServicePrincipal(cachedUser.UserName)
+			result := iamutil.IsServicePrincipal(cachedUser)
 			cachedIsServicePrincipal = &result
 			return result, nil
 		},

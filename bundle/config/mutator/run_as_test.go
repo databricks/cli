@@ -33,6 +33,7 @@ func allResourceTypes(t *testing.T) []string {
 	// also update this check when adding a new resource
 	require.Equal(t, []string{
 		"clusters",
+		"dashboards",
 		"experiments",
 		"jobs",
 		"model_serving_endpoints",
@@ -188,11 +189,9 @@ func TestRunAsErrorForUnsupportedResources(t *testing.T) {
 			Config: *r,
 		}
 		diags := bundle.Apply(context.Background(), b, SetRunAs())
-		assert.Equal(t, diags.Error().Error(), errUnsupportedResourceTypeForRunAs{
-			resourceType:     rt,
-			resourceLocation: dyn.Location{},
-			currentUser:      "alice",
-			runAsUser:        "bob",
-		}.Error(), "expected run_as with a different identity than the current deployment user to not supported for resources of type: %s", rt)
+		require.Error(t, diags.Error())
+		assert.Contains(t, diags.Error().Error(), "do not support a setting a run_as user that is different from the owner.\n"+
+			"Current identity: alice. Run as identity: bob.\n"+
+			"See https://docs.databricks.com/dev-tools/bundles/run-as.html to learn more about the run_as property.", rt)
 	}
 }
