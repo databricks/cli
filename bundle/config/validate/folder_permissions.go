@@ -6,6 +6,7 @@ import (
 	"path"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/paths"
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/libs/diag"
@@ -47,6 +48,11 @@ func (f *folderPermissions) Apply(ctx context.Context, b bundle.ReadOnlyBundle) 
 }
 
 func checkFolderPermission(ctx context.Context, b bundle.ReadOnlyBundle, folderPath string) diag.Diagnostics {
+	// If the folder is shared, then we don't need to check permissions as it was already checked in the other mutator before.
+	if libraries.IsWorkspaceSharedPath(folderPath) {
+		return nil
+	}
+
 	w := b.WorkspaceClient().Workspace
 	obj, err := getClosestExistingObject(ctx, w, folderPath)
 	if err != nil {

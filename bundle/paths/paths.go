@@ -10,7 +10,7 @@ import (
 func CollectUniqueWorkspacePathPrefixes(workspace config.Workspace) []string {
 	rootPath := workspace.RootPath
 	paths := []string{}
-	if !libraries.IsVolumesPath(rootPath) && !libraries.IsWorkspaceSharedPath(rootPath) {
+	if !libraries.IsVolumesPath(rootPath) {
 		paths = append(paths, rootPath)
 	}
 
@@ -24,7 +24,7 @@ func CollectUniqueWorkspacePathPrefixes(workspace config.Workspace) []string {
 		workspace.StatePath,
 		workspace.ResourcePath,
 	} {
-		if libraries.IsWorkspaceSharedPath(p) || libraries.IsVolumesPath(p) {
+		if libraries.IsVolumesPath(p) {
 			continue
 		}
 

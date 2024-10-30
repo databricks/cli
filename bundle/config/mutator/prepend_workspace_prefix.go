@@ -32,6 +32,7 @@ func (m *prependWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) di
 		dyn.NewPattern(dyn.Key("workspace"), dyn.Key("file_path")),
 		dyn.NewPattern(dyn.Key("workspace"), dyn.Key("artifact_path")),
 		dyn.NewPattern(dyn.Key("workspace"), dyn.Key("state_path")),
+		dyn.NewPattern(dyn.Key("workspace"), dyn.Key("resource_path")),
 	}
 
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {

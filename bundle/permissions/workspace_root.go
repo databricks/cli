@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/paths"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -67,6 +68,11 @@ func giveAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle) error {
 }
 
 func setPermissions(ctx context.Context, w workspace.WorkspaceInterface, path string, permissions []workspace.WorkspaceObjectAccessControlRequest) error {
+	// If the folder is shared, then we don't need to set permissions since it's always set for all users and it's checked in mutators before.
+	if libraries.IsWorkspaceSharedPath(path) {
+		return nil
+	}
+
 	obj, err := w.GetStatusByPath(ctx, path)
 	if err != nil {
 		return err
