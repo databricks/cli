@@ -34,9 +34,11 @@ func commandString(cmd *cobra.Command) string {
 }
 
 func withCommandInUserAgent(ctx context.Context, cmd *cobra.Command) context.Context {
-	// We add a uuid to the command context to trace multiple API requests made
-	// by the same command invocation.
-	newCtx := useragent.InContext(ctx, "cmd-trace-id", uuid.New().String())
+	// A UUID that'll will allow use to correlate multiple API requests made by
+	// the same command invocation.
+	// When we add telemetry to the CLI, this trace ID will allow allow us to
+	// correlate logs in HTTP access logs with logs in Frontend logs.
+	newCtx := useragent.InContext(ctx, "command-trace-id", uuid.New().String())
 
 	return useragent.InContext(newCtx, "cmd", commandString(cmd))
 }
