@@ -3,8 +3,11 @@
 ## [Release] Release v0.232.0
 
 New features for Databricks Asset Bundles:
-This release adds support for managing AI/BI dashboards as part of your bundle configuration. The `bundle generate` command is updated to support producing dashboard bundle configuration as well as dashboard payloads.
+This release adds support for managing AI/BI dashboards as part of your bundle configuration. The `bundle generate` command is updated to support producing dashboard bundle configuration as well as a serialized JSON representation of the dashboard.
 You can find an example configuration and walkthrough at https://github.com/databricks/bundle-examples/tree/main/knowledge_base/dashboard_nyc_taxi
+
+CLI:
+ * Add privacy notice to README ([#1841](https://github.com/databricks/cli/pull/1841)).
 
 Bundles:
  * Add support for AI/BI dashboards ([#1743](https://github.com/databricks/cli/pull/1743)).
@@ -16,7 +19,6 @@ Internal:
  * Attempt to reduce test flakiness on Windows ([#1845](https://github.com/databricks/cli/pull/1845)).
  * Reuse resource resolution code for the run command ([#1858](https://github.com/databricks/cli/pull/1858)).
  * [Internal] Automatically trigger integration tests on PR ([#1857](https://github.com/databricks/cli/pull/1857)).
- * Add privacy notice to README ([#1841](https://github.com/databricks/cli/pull/1841)).
  * [Internal] Add test instructions for external contributors ([#1863](https://github.com/databricks/cli/pull/1863)).
  * Add `libs/dyn/jsonsaver` ([#1862](https://github.com/databricks/cli/pull/1862)).
 
