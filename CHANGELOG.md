@@ -2,7 +2,8 @@
 
 ## [Release] Release v0.232.0
 
-New features for Databricks Asset Bundles:
+**New features for Databricks Asset Bundles:**
+
 This release adds support for managing AI/BI dashboards as part of your bundle configuration. The `bundle generate` command is updated to support producing dashboard bundle configuration as well as a serialized JSON representation of the dashboard.
 You can find an example configuration and walkthrough at https://github.com/databricks/bundle-examples/tree/main/knowledge_base/dashboard_nyc_taxi
 
