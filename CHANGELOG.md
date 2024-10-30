@@ -1,5 +1,14 @@
 # Version changelog
 
+## [Release] Release v0.232.1
+
+This patch release fixes the following error observed when deploying to /Shared root folder
+"Error: Path (/Shared/.bundle/.../resources) doesn't exist"
+
+Bundles:
+ * Fixed adding /Workspace prefix for resource paths ([#1866](https://github.com/databricks/cli/pull/1866)).
+
+
 ## [Release] Release v0.232.0
 
 **New features for Databricks Asset Bundles:**
