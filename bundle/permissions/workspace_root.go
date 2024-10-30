@@ -68,7 +68,7 @@ func giveAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle) error {
 }
 
 func setPermissions(ctx context.Context, w workspace.WorkspaceInterface, path string, permissions []workspace.WorkspaceObjectAccessControlRequest) error {
-	// If the folder is shared, then we don't need to set it's as it was already checked in the other mutator before.
+	// If the folder is shared, then we don't need to set permissions since it's always set for all users and it's checked in mutators before.
 	if libraries.IsWorkspaceSharedPath(path) {
 		return nil
 	}
