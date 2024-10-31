@@ -5,15 +5,15 @@ import "github.com/databricks/databricks-sdk-go/service/workspace"
 type Extension string
 
 const (
-	ExtensionNone    Extension = ""
-	ExtensionPython  Extension = ".py"
-	ExtensionR       Extension = ".r"
-	ExtensionScala   Extension = ".scala"
-	ExtensionSql     Extension = ".sql"
-	ExtensionJupyter Extension = ".ipynb"
+	ExtensionNone    string = ""
+	ExtensionPython  string = ".py"
+	ExtensionR       string = ".r"
+	ExtensionScala   string = ".scala"
+	ExtensionSql     string = ".sql"
+	ExtensionJupyter string = ".ipynb"
 )
 
-var ExtensionToLanguage = map[Extension]workspace.Language{
+var ExtensionToLanguage = map[string]workspace.Language{
 	ExtensionPython: workspace.LanguagePython,
 	ExtensionR:      workspace.LanguageR,
 	ExtensionScala:  workspace.LanguageScala,
@@ -22,7 +22,7 @@ var ExtensionToLanguage = map[Extension]workspace.Language{
 	// The platform supports all languages (Python, R, Scala, and SQL) for Jupyter notebooks.
 }
 
-func GetExtensionByLanguage(objectInfo *workspace.ObjectInfo) Extension {
+func GetExtensionByLanguage(objectInfo *workspace.ObjectInfo) string {
 	if objectInfo.ObjectType != workspace.ObjectTypeNotebook {
 		return ExtensionNone
 	}

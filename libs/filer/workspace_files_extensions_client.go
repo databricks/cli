@@ -43,11 +43,11 @@ func (w *workspaceFilesExtensionsClient) stat(ctx context.Context, name string) 
 // This function returns the stat for the provided notebook. The stat object itself contains the path
 // with the extension since it is meant to be used in the context of a fs.FileInfo.
 func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithExt(ctx context.Context, name string) (*workspaceFileStatus, error) {
-	ext := notebook.Extension(path.Ext(name))
-	nameWithoutExt := strings.TrimSuffix(name, string(ext))
+	ext := path.Ext(name)
+	nameWithoutExt := strings.TrimSuffix(name, ext)
 
 	// File name does not have an extension associated with Databricks notebooks, return early.
-	if !slices.Contains([]notebook.Extension{
+	if !slices.Contains([]string{
 		notebook.ExtensionPython,
 		notebook.ExtensionR,
 		notebook.ExtensionScala,
@@ -82,7 +82,7 @@ func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithExt(ctx contex
 
 	// When the extension is one of .py, .r, .scala or .sql we expect the export format to be source.
 	// If it's not, return early.
-	if slices.Contains([]notebook.Extension{
+	if slices.Contains([]string{
 		notebook.ExtensionPython,
 		notebook.ExtensionR,
 		notebook.ExtensionScala,
@@ -101,7 +101,7 @@ func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithExt(ctx contex
 
 	// Modify the stat object path to include the extension. This stat object will be used
 	// to return the fs.FileInfo object in the stat method.
-	stat.Path = stat.Path + string(ext)
+	stat.Path = stat.Path + ext
 	return &workspaceFileStatus{
 		wsfsFileInfo:        stat,
 		nameForWorkspaceAPI: nameWithoutExt,
@@ -130,7 +130,7 @@ func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithoutExt(ctx con
 
 	// Modify the stat object path to include the extension. This stat object will be used
 	// to return the fs.DirEntry object in the ReadDir method.
-	stat.Path = stat.Path + string(ext)
+	stat.Path = stat.Path + ext
 	return &workspaceFileStatus{
 		wsfsFileInfo:        stat,
 		nameForWorkspaceAPI: name,
