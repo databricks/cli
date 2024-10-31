@@ -361,106 +361,13 @@ func TestAccFilerReadDir(t *testing.T) {
 	}
 }
 
-func TestAccFilerWorkspaceNotebookConflict(t *testing.T) {
+func TestAccFilerWorkspaceNotebook(t *testing.T) {
 	t.Parallel()
 
-	f, _ := setupWsfsFiler(t)
 	ctx := context.Background()
 	var err error
 
-	for _, tc := range []struct {
-		name           string
-		nameWithoutExt string
-		content1       string
-		expected1      string
-		content2       string
-	}{
-		{
-			name:           "pyNb.py",
-			nameWithoutExt: "pyNb",
-			content1:       "# Databricks notebook source\nprint('first upload')",
-			expected1:      "# Databricks notebook source\nprint('first upload')",
-			content2:       "# Databricks notebook source\nprint('second upload')",
-		},
-		{
-			name:           "rNb.r",
-			nameWithoutExt: "rNb",
-			content1:       "# Databricks notebook source\nprint('first upload')",
-			expected1:      "# Databricks notebook source\nprint('first upload')",
-			content2:       "# Databricks notebook source\nprint('second upload')",
-		},
-		{
-			name:           "sqlNb.sql",
-			nameWithoutExt: "sqlNb",
-			content1:       "-- Databricks notebook source\n SELECT \"first upload\"",
-			expected1:      "-- Databricks notebook source\n SELECT \"first upload\"",
-			content2:       "-- Databricks notebook source\n SELECT \"second upload\"",
-		},
-		{
-			name:           "scalaNb.scala",
-			nameWithoutExt: "scalaNb",
-			content1:       "// Databricks notebook source\n println(\"first upload\")",
-			expected1:      "// Databricks notebook source\n println(\"first upload\")",
-			content2:       "// Databricks notebook source\n println(\"second upload\")",
-		},
-		{
-			name:           "pythonJupyterNb.ipynb",
-			nameWithoutExt: "pythonJupyterNb",
-			content1:       readFile(t, "testdata/notebooks/py1.ipynb"),
-			expected1:      "# Databricks notebook source\nprint(1)",
-			content2:       readFile(t, "testdata/notebooks/py2.ipynb"),
-		},
-		{
-			name:           "rJupyterNb.ipynb",
-			nameWithoutExt: "rJupyterNb",
-			content1:       readFile(t, "testdata/notebooks/r1.ipynb"),
-			expected1:      "# Databricks notebook source\nprint(1)",
-			content2:       readFile(t, "testdata/notebooks/r2.ipynb"),
-		},
-		{
-			name:           "scalaJupyterNb.ipynb",
-			nameWithoutExt: "scalaJupyterNb",
-			content1:       readFile(t, "testdata/notebooks/scala1.ipynb"),
-			expected1:      "// Databricks notebook source\nprintln(1)",
-			content2:       readFile(t, "testdata/notebooks/scala2.ipynb"),
-		},
-		{
-			name:           "sqlJupyterNotebook.ipynb",
-			nameWithoutExt: "sqlJupyterNotebook",
-			content1:       readFile(t, "testdata/notebooks/sql1.ipynb"),
-			expected1:      "-- Databricks notebook source\nselect 1",
-			content2:       readFile(t, "testdata/notebooks/sql2.ipynb"),
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			// Upload the notebook
-			err = f.Write(ctx, tc.name, strings.NewReader(tc.content1))
-			require.NoError(t, err)
-
-			// Assert contents after initial upload. Note that we expect the content
-			// for jupyter notebooks to be of type source because the workspace files
-			// client always uses the source format to read notebooks from the workspace.
-			filerTest{t, f}.assertContents(ctx, tc.nameWithoutExt, tc.expected1)
-
-			// Assert uploading a second time fails due to overwrite mode missing
-			err = f.Write(ctx, tc.name, strings.NewReader(tc.content2))
-			assert.ErrorIs(t, err, fs.ErrExist)
-			assert.Regexp(t, regexp.MustCompile(`file already exists: .*/`+tc.nameWithoutExt+`$`), err.Error())
-
-		})
-	}
-}
-
-func TestAccFilerWorkspaceNotebookWithOverwriteFlag(t *testing.T) {
-	t.Parallel()
-
-	f, _ := setupWsfsFiler(t)
-	ctx := context.Background()
-	var err error
-
-	for _, tcases := range []struct {
+	tcases := []struct {
 		name           string
 		nameWithoutExt string
 		content1       string
@@ -532,25 +439,36 @@ func TestAccFilerWorkspaceNotebookWithOverwriteFlag(t *testing.T) {
 			content2:       readFile(t, "testdata/notebooks/sql2.ipynb"),
 			expected2:      "-- Databricks notebook source\nselect 2",
 		},
-	} {
-		t.Run(tcases.name, func(t *testing.T) {
+	}
+
+	for _, tc := range tcases {
+		f, _ := setupWsfsFiler(t)
+		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
 			// Upload the notebook
-			err = f.Write(ctx, tcases.name, strings.NewReader(tcases.content1))
+			err = f.Write(ctx, tc.name, strings.NewReader(tc.content1))
 			require.NoError(t, err)
 
-			// Assert contents after initial upload
-			filerTest{t, f}.assertContents(ctx, tcases.nameWithoutExt, tcases.expected1)
+			// Assert contents after initial upload. Note that we expect the content
+			// for jupyter notebooks to be of type source because the workspace files
+			// client always uses the source format to read notebooks from the workspace.
+			filerTest{t, f}.assertContents(ctx, tc.nameWithoutExt, tc.expected1)
 
-			// Upload the notebook a second time with overwrite flag
-			err = f.Write(ctx, tcases.name, strings.NewReader(tcases.content2), filer.OverwriteIfExists)
+			// Assert uploading a second time fails due to overwrite mode missing
+			err = f.Write(ctx, tc.name, strings.NewReader(tc.content2))
+			assert.ErrorIs(t, err, fs.ErrExist)
+			assert.Regexp(t, regexp.MustCompile(`file already exists: .*/`+tc.nameWithoutExt+`$`), err.Error())
+
+			// Try uploading the notebook again with overwrite flag. This time it should succeed.
+			err = f.Write(ctx, tc.name, strings.NewReader(tc.content2), filer.OverwriteIfExists)
 			require.NoError(t, err)
 
 			// Assert contents after second upload
-			filerTest{t, f}.assertContents(ctx, tcases.nameWithoutExt, tcases.expected2)
+			filerTest{t, f}.assertContents(ctx, tc.nameWithoutExt, tc.expected2)
 		})
 	}
+
 }
 
 func TestAccFilerWorkspaceFilesExtensionsReadDir(t *testing.T) {
