@@ -249,7 +249,7 @@ func TestAccDeployUcVolume(t *testing.T) {
 	w := wt.W
 
 	uniqueId := uuid.New().String()
-	bundleRoot, err := initTestTemplate(t, ctx, "uc_volume", map[string]any{
+	bundleRoot, err := initTestTemplate(t, ctx, "volume", map[string]any{
 		"unique_id": uniqueId,
 	})
 	require.NoError(t, err)
