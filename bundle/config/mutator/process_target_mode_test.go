@@ -286,6 +286,7 @@ func TestValidateDevelopmentMode(t *testing.T) {
 	b.Config.Workspace.StatePath = "/Users/lennart@company.com/.bundle/x/y/state"
 	b.Config.Workspace.FilePath = "/Users/lennart@company.com/.bundle/x/y/files"
 	b.Config.Workspace.ArtifactPath = "/Users/lennart@company.com/.bundle/x/y/artifacts"
+	b.Config.Workspace.ResourcePath = "/Users/lennart@company.com/.bundle/x/y/resources"
 	diags = validateDevelopmentMode(b)
 	require.NoError(t, diags.Error())
 }
@@ -316,6 +317,7 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	b.Config.Workspace.StatePath = "/Shared/.bundle/x/y/state"
 	b.Config.Workspace.ArtifactPath = "/Shared/.bundle/x/y/artifacts"
 	b.Config.Workspace.FilePath = "/Shared/.bundle/x/y/files"
+	b.Config.Workspace.ResourcePath = "/Shared/.bundle/x/y/resources"
 
 	diags = validateProductionMode(context.Background(), b, false)
 	require.ErrorContains(t, diags.Error(), "production")
