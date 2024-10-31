@@ -2,7 +2,6 @@ package libraries
 
 import (
 	"context"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
@@ -20,7 +19,7 @@ func GetFilerForLibraries(ctx context.Context, b *bundle.Bundle) (filer.Filer, s
 	}
 
 	switch {
-	case strings.HasPrefix(artifactPath, "/Volumes/"):
+	case IsVolumesPath(artifactPath):
 		return filerForVolume(ctx, b)
 
 	default:
