@@ -14,6 +14,7 @@ import (
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -123,6 +124,13 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				Clusters: map[string]*resources.Cluster{
 					"cluster1": {ClusterSpec: &compute.ClusterSpec{ClusterName: "cluster1", SparkVersion: "13.2.x", NumWorkers: 1}},
 				},
+				Dashboards: map[string]*resources.Dashboard{
+					"dashboard1": {
+						CreateDashboardRequest: &dashboards.CreateDashboardRequest{
+							DisplayName: "dashboard1",
+						},
+					},
+				},
 			},
 		},
 		// Use AWS implementation for testing.
@@ -184,6 +192,9 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Clusters
 	assert.Equal(t, "[dev lennart] cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
+
+	// Dashboards
+	assert.Equal(t, "[dev lennart] dashboard1", b.Config.Resources.Dashboards["dashboard1"].DisplayName)
 }
 
 func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {
@@ -272,6 +283,7 @@ func TestValidateDevelopmentMode(t *testing.T) {
 	b.Config.Workspace.StatePath = "/Users/lennart@company.com/.bundle/x/y/state"
 	b.Config.Workspace.FilePath = "/Users/lennart@company.com/.bundle/x/y/files"
 	b.Config.Workspace.ArtifactPath = "/Users/lennart@company.com/.bundle/x/y/artifacts"
+	b.Config.Workspace.ResourcePath = "/Users/lennart@company.com/.bundle/x/y/resources"
 	diags = validateDevelopmentMode(b)
 	require.NoError(t, diags.Error())
 }
@@ -300,6 +312,7 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	b.Config.Workspace.StatePath = "/Shared/.bundle/x/y/state"
 	b.Config.Workspace.ArtifactPath = "/Shared/.bundle/x/y/artifacts"
 	b.Config.Workspace.FilePath = "/Shared/.bundle/x/y/files"
+	b.Config.Workspace.ResourcePath = "/Shared/.bundle/x/y/resources"
 
 	diags = validateProductionMode(context.Background(), b, false)
 	require.ErrorContains(t, diags.Error(), "production")
