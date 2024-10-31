@@ -439,7 +439,9 @@ func TestAccFilerWorkspaceNotebookConflict(t *testing.T) {
 			err = f.Write(ctx, tc.name, strings.NewReader(tc.content1))
 			require.NoError(t, err)
 
-			// Assert contents after initial upload
+			// Assert contents after initial upload. Note that we expect the content
+			// for jupyter notebooks to be of type source because the workspace files
+			// client always uses the source format to read notebooks from the workspace.
 			filerTest{t, f}.assertContents(ctx, tc.nameWithoutExt, tc.expected1)
 
 			// Assert uploading a second time fails due to overwrite mode missing
