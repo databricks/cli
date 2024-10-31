@@ -195,7 +195,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		// the Databricks UI and via the SQL API.
 	}
 
-	// Apply the prefix to volumes
+	// Volumes: Prefix
 	for _, v := range r.Volumes {
 		if containsUserIdentity(v.CatalogName, b.Config.Workspace.CurrentUser) {
 			log.Debugf(ctx, "Skipping prefix for volume %s because catalog %s contains the current user's identity", v.Name, v.CatalogName)
