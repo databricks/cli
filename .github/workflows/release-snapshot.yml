@@ -6,6 +6,15 @@ on:
       - "main"
       - "demo-*"
 
+  # Confirm that snapshot builds work if this file is modified.
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+    paths:
+      - ".github/workflows/release-snapshot.yml"
+
   workflow_dispatch:
 
 jobs:
