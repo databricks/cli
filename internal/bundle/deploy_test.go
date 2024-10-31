@@ -284,9 +284,10 @@ func TestAccDeployUcVolume(t *testing.T) {
 	t.Setenv("BUNDLE_ROOT", bundleRoot)
 	stdout, stderr, err := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "deploy", "--var=schema_name=${resources.schemas.schema2.name}").Run()
 	assert.Error(t, err)
-	assert.Contains(t, stderr.String(), `This action will result in the deletion or recreation of the following Volumes. For managed volumes,
-this typically results in a deletion of the upstream data in the cloud tenant in ~30 days. For external
-volumes the upstream data in the cloud tenant is not affected:
+	assert.Contains(t, stderr.String(), `This action will result in the deletion or recreation of the following Volumes.
+For managed volumes, the files stored in the volume are also deleted from your
+cloud tenant within 30 days. For external volumes, the metadata about the volume
+is removed from the catalog, but the underlying files are not deleted:
   recreate volume foo`)
 	assert.Contains(t, stdout.String(), "the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
 
