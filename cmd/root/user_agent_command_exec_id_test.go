@@ -14,7 +14,7 @@ import (
 func TestWithCommandExecIdInUserAgent(t *testing.T) {
 	ctx := withCommandExecIdInUserAgent(context.Background())
 
-	// Check that the command trace ID is in the user agent string.
+	// Check that the command exec ID is in the user agent string.
 	ua := useragent.FromContext(ctx)
 	re := regexp.MustCompile(`cmd-exec-id/([a-f0-9-]+)`)
 	matches := re.FindAllStringSubmatch(ua, -1)
