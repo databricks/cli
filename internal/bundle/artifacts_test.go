@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/bundletest"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/libraries"
@@ -244,6 +245,11 @@ func TestAccUploadArtifactFileToInvalidVolume(t *testing.T) {
 	})
 	require.NoError(t, err)
 
+	t.Cleanup(func() {
+		err = w.Schemas.DeleteByFullName(ctx, "main."+schemaName)
+		require.NoError(t, err)
+	})
+
 	t.Run("volume not in DAB", func(t *testing.T) {
 		volumePath := fmt.Sprintf("/Volumes/main/%s/doesnotexist", schemaName)
 		dir := t.TempDir()
@@ -307,17 +313,11 @@ func TestAccUploadArtifactFileToInvalidVolume(t *testing.T) {
 		}
 
 		// set location of volume definition in config.
-		b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-			return dyn.Map(v, "resources.volumes.foo", func(p dyn.Path, volume dyn.Value) (dyn.Value, error) {
-				return volume.WithLocations([]dyn.Location{
-					{
-						File:   filepath.Join(dir, "databricks.yml"),
-						Line:   1,
-						Column: 2,
-					},
-				}), nil
-			})
-		})
+		bundletest.SetLocation(b, "resources.volumes.foo", []dyn.Location{{
+			File:   filepath.Join(dir, "databricks.yml"),
+			Line:   1,
+			Column: 2,
+		}})
 
 		diags := bundle.Apply(ctx, b, bundle.Seq(libraries.ExpandGlobReferences(), libraries.Upload()))
 		assert.Contains(t, diags, diag.Diagnostic{
