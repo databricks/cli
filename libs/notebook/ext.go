@@ -2,8 +2,6 @@ package notebook
 
 import "github.com/databricks/databricks-sdk-go/service/workspace"
 
-type Extension string
-
 const (
 	ExtensionNone    string = ""
 	ExtensionPython  string = ".py"
