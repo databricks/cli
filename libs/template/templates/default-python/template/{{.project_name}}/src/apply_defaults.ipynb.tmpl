@@ -1,0 +1,83 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "application/vnd.databricks.v1+cell": {
+     "cellMetadata": {},
+     "inputWidgets": {},
+     "nuid": "9a626959-61c8-4bba-84d2-2a4ecab1f7ec",
+     "showTitle": false,
+     "title": ""
+    }
+   },
+   "source": [
+    "# helper notebook: apply_defaults\n",
+    "\n",
+    "This helper notebook is used to create widgets that configure the default catalog\n",
+    "and schema.\n",
+    "\n",
+    "Usage:\n",
+    "\n",
+    "```\n",
+    "% run ../relative/path/to/apply_defaults\n",
+    "```"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 0,
+   "metadata": {
+    "application/vnd.databricks.v1+cell": {
+     "cellMetadata": {},
+     "inputWidgets": {},
+     "nuid": "9198e987-5606-403d-9f6d-8f14e6a4017f",
+     "showTitle": false,
+     "title": ""
+    }
+   },
+   "outputs": [],
+   "source": [
+    "# Load default catalog and schema as widget and set their values as the default catalog / schema\n",
+    "dbutils.widgets.text('catalog', '{{.default_catalog}}')\n",
+    "dbutils.widgets.text('schema', 'default')\n",
+    "catalog = dbutils.widgets.get('catalog')\n",
+    "schema = dbutils.widgets.get('schema')\n",
+    "spark.sql(f'USE {catalog}.{schema}')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Automatically reload imported modules when they change\n",
+    "%load_ext autoreload\n",
+    "%autoreload 2"
+   ]
+  }
+ ],
+ "metadata": {
+  "application/vnd.databricks.v1+notebook": {
+   "dashboards": [],
+   "language": "python",
+   "notebookMetadata": {
+    "pythonIndentUnit": 2
+   },
+   "notebookName": "dlt_pipeline",
+   "widgets": {}
+  },
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "name": "python",
+   "version": "3.11.4"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 0
+}

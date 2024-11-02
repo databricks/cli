@@ -93,11 +93,13 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 						task.DbtTask.Catalog = t.Catalog
 					}
 					if task.DbtTask.Schema == "" {
-						task.DbtTask.Schema = t.Catalog
+						task.DbtTask.Schema = t.Schema
 					}
 				}
 			}
-			diags = diags.Extend(validateJobUsesCatalogAndSchema(b, key, j))
+
+			diags = diags.Extend(addCatalogSchemaParameters(b, key, j, t))
+			diags = diags.Extend(validateCatalogSchemaUsage(b, key, j))
 		}
 	}
 
@@ -116,7 +118,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if t.TriggerPauseStatus == config.Paused {
 			p.Continuous = false
 		}
-		if t.Catalog != "" && p.Catalog == "" {
+		if t.Catalog != "" && p.Catalog == "" && p.Catalog != "hive_metastore" {
 			p.Catalog = t.Catalog
 		}
 		if t.Schema != "" && p.Target == "" {
@@ -182,13 +184,16 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 		e.Name = normalizePrefix(prefix) + e.Name
 
-		TODO:
-		-  e.AiGateway.InferenceTableConfig.CatalogName
-		- e.AiGateway.InferenceTableConfig.SchemaName
-		- e.Config.AutoCaptureConfig.SchemaName
-		- e.Config.AutoCaptureConfig.CatalogName
-		- e.Config.ServedEntities[0].EntityName (__catalog_name__.__schema_name__.__model_name__.)
-		- e.Config.ServedModels[0].ModelName (__catalog_name__.__schema_name__.__model_name__.)
+		if t.Catalog != "" || t.Schema != "" {
+			// TODO:
+			// - e.AiGateway.InferenceTableConfig.CatalogName
+			// - e.AiGateway.InferenceTableConfig.SchemaName
+			// - e.Config.AutoCaptureConfig.SchemaName
+			// - e.Config.AutoCaptureConfig.CatalogName
+			// - e.Config.ServedEntities[0].EntityName (__catalog_name__.__schema_name__.__model_name__.)
+			// - e.Config.ServedModels[0].ModelName (__catalog_name__.__schema_name__.__model_name__.)
+			diags = diags.Extend(diag.Errorf("model serving endpoints are not supported with catalog/schema presets"))
+		}
 
 	}
 
@@ -306,55 +311,30 @@ func validateCatalogAndSchema(b *bundle.Bundle) diag.Diagnostics {
 	}
 	return nil
 }
+func validateCatalogSchemaUsage(b *bundle.Bundle, key string, job *resources.Job) diag.Diagnostics {
+	for _, t := range job.Tasks {
+		if t.NotebookTask != nil {
+			// TODO: proper validation that warns
+			return diag.Diagnostics{{
+				Summary: fmt.Sprintf("job %s must read catalog and schema from parameters for notebook %s",
+					key, t.NotebookTask.NotebookPath),
+				Severity:  diag.Recommendation,
+				Locations: []dyn.Location{b.Config.GetLocation("resources.jobs." + key)},
+			}}
+		}
+	}
 
-func validateJobUsesCatalogAndSchema(b *bundle.Bundle, key string, job *resources.Job) diag.Diagnostics {
-	if !hasTasksRequiringParameters(job) {
-		return nil
-	}
-	if !hasParameter(job, "catalog") || !hasParameter(job, "schema") {
-		return diag.Diagnostics{{
-			Summary: fmt.Sprintf("job %s must pass catalog and schema presets as parameters as follows:\n"+
-				"  parameters:\n"+
-				"    - name: catalog:\n"+
-				"      default: ${presets.catalog}\n"+
-				"    - name: schema\n"+
-				"      default: ${presets.schema}\n", key),
-			Severity:  diag.Error,
-			Locations: []dyn.Location{b.Config.GetLocation("resources.jobs." + key)},
-		}}
-	}
+	// TODO: validate that any notebooks actually read the catalog/schema arguments
+	// if ... {
+	// 	return diag.Diagnostics{{
+	// 		Summary: fmt.Sprintf("job %s must pass catalog and schema presets as parameters as follows:\n"+
+	// 			"  ...", key),
+	// 		Severity:  diag.Error,
+	// 		Locations: []dyn.Location{b.Config.GetLocation("resources.jobs." + key)},
+	// 	}}
+	// }
+
 	return nil
-}
-
-// hasTasksRequiringParameters determines if there is a task in this job that
-// requires the 'catalog' and 'schema' parameters when they are enabled in presets.
-func hasTasksRequiringParameters(job *resources.Job) bool {
-	for _, task := range job.Tasks {
-		// Allowlisted task types: these don't require catalog / schema to be passed as a paramater
-		if task.DbtTask != nil || task.ConditionTask != nil || task.RunJobTask != nil || task.ForEachTask != nil || task.PipelineTask != nil {
-			continue
-		}
-		// Alert tasks, query object tasks, etc. don't require a parameter;
-		// the catalog / schema is set inside those objects instead.
-		if task.SqlTask != nil && task.SqlTask.File == nil {
-			continue
-		}
-		return true
-	}
-	return false
-}
-
-// hasParameter determines if a job has a parameter with the given name.
-func hasParameter(job *resources.Job, name string) bool {
-	if job.Parameters == nil {
-		return false
-	}
-	for _, p := range job.Parameters {
-		if p.Name == name {
-			return true
-		}
-	}
-	return false
 }
 
 // toTagArray converts a map of tags to an array of tags.
@@ -387,4 +367,57 @@ func normalizePrefix(prefix string) string {
 	}
 
 	return textutil.NormalizeString(prefix) + suffix
+}
+
+// addCatalogSchemaParameters adds catalog and schema parameters to a job if they don't already exist.
+// Returns any warning diagnostics for existing parameters.
+func addCatalogSchemaParameters(b *bundle.Bundle, key string, job *resources.Job, t config.Presets) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	// Check for existing catalog/schema parameters
+	hasCatalog := false
+	hasSchema := false
+	if job.Parameters != nil {
+		for _, param := range job.Parameters {
+			if param.Name == "catalog" {
+				hasCatalog = true
+				diags = diags.Extend(diag.Diagnostics{{
+					Summary:   fmt.Sprintf("job %s already has 'catalog' parameter defined; ignoring preset value", key),
+					Severity:  diag.Warning,
+					Locations: []dyn.Location{b.Config.GetLocation("resources.jobs." + key)},
+				}})
+			}
+			if param.Name == "schema" {
+				hasSchema = true
+				diags = diags.Extend(diag.Diagnostics{{
+					Summary:   fmt.Sprintf("job %s already has 'schema' parameter defined; ignoring preset value", key),
+					Severity:  diag.Warning,
+					Locations: []dyn.Location{b.Config.GetLocation("resources.jobs." + key)},
+				}})
+			}
+		}
+	}
+
+	// Initialize parameters if nil
+	if job.Parameters == nil {
+		job.Parameters = []jobs.JobParameterDefinition{}
+	}
+
+	// Add catalog parameter if not already present
+	if !hasCatalog && t.Catalog != "" {
+		job.Parameters = append(job.Parameters, jobs.JobParameterDefinition{
+			Name:    "catalog",
+			Default: t.Catalog,
+		})
+	}
+
+	// Add schema parameter if not already present
+	if !hasSchema && t.Schema != "" {
+		job.Parameters = append(job.Parameters, jobs.JobParameterDefinition{
+			Name:    "schema",
+			Default: t.Schema,
+		})
+	}
+
+	return diags
 }

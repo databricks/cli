@@ -23,23 +23,8 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "# Automatically reload this notebook when it is edited\n",
-    "%load_ext autoreload\n",
-    "%autoreload 2"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": 2,
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Set the catalog and schema for the current session\n",
-    "dbutils.widgets.text('catalog', '{{default_catalog}}')\n",
-    "dbutils.widgets.text('schema', 'default')\n",
-    "catalog = dbutils.widgets.get('catalog')\n",
-    "schema = dbutils.widgets.get('schema')\n",
-    "spark.sql(f'USE {catalog}.{schema}')"
+    "# Load default catalog and schema as widget and set their values as the default catalog / schema\n",
+    "%run ./apply_defaults"
    ]
   },
   {
@@ -62,9 +47,9 @@
    {{- if (eq .include_python "yes") }}
     "from {{.project_name}} import main\n",
     "\n",
-    "main.get_taxis(spark).show(10)"
+    "main.create_example_table()"
    {{else}}
-    "spark.range(10)"
+    "spark.sql("CREATE OR REPLACE TABLE example AS SELECT 'example table' AS text_column")"
    {{end -}}
    ]
   }

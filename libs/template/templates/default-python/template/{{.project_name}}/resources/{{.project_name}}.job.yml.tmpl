@@ -10,14 +10,6 @@ resources:
     {{.project_name}}_job:
       name: {{.project_name}}_job
 
-      {{if or (eq .include_notebook "yes") (eq .include_python "yes") -}}
-      parameters:
-        - name: catalog
-          default: ${presets.catalog}
-        - name: schema
-          default: ${presets.schema}
-
-      {{end -}}
       trigger:
         # Run this job every day, exactly one day from the last run; see https://docs.databricks.com/api/workspace/jobs/create#trigger
         periodic:
