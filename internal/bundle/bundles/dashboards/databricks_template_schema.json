@@ -1,0 +1,12 @@
+{
+    "properties": {
+        "unique_id": {
+            "type": "string",
+            "description": "Unique ID for job name"
+        },
+        "warehouse_id": {
+            "type": "string",
+            "description": "The SQL warehouse ID to use for the dashboard"
+        }
+    }
+}

@@ -3,9 +3,9 @@ package permissions
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/diag"
 )
 
@@ -21,15 +21,11 @@ func (*validateSharedRootPermissions) Name() string {
 }
 
 func (*validateSharedRootPermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	if isWorkspaceSharedRoot(b.Config.Workspace.RootPath) {
+	if libraries.IsWorkspaceSharedPath(b.Config.Workspace.RootPath) {
 		return isUsersGroupPermissionSet(b)
 	}
 
 	return nil
-}
-
-func isWorkspaceSharedRoot(path string) bool {
-	return strings.HasPrefix(path, "/Workspace/Shared/")
 }
 
 // isUsersGroupPermissionSet checks that top-level permissions set for bundle contain group_name: users with CAN_MANAGE permission.

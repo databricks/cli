@@ -36,3 +36,13 @@ func IsWorkspaceLibrary(library *compute.Library) bool {
 
 	return IsWorkspacePath(path)
 }
+
+// IsVolumesPath returns true if the specified path indicates that
+// it should be interpreted as a Databricks Volumes path.
+func IsVolumesPath(path string) bool {
+	return strings.HasPrefix(path, "/Volumes/")
+}
+
+func IsWorkspaceSharedPath(path string) bool {
+	return strings.HasPrefix(path, "/Workspace/Shared/")
+}

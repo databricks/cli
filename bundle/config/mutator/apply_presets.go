@@ -271,6 +271,15 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 	}
 
+	// Dashboards: Prefix
+	for key, dashboard := range r.Dashboards {
+		if dashboard == nil || dashboard.CreateDashboardRequest == nil {
+			diags = diags.Extend(diag.Errorf("dashboard %s s is not defined", key))
+			continue
+		}
+		dashboard.DisplayName = prefix + dashboard.DisplayName
+	}
+
 	return diags
 }
 

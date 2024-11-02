@@ -142,10 +142,26 @@ type ResourcePipelineGatewayDefinition struct {
 	GatewayStorageSchema  string `json:"gateway_storage_schema,omitempty"`
 }
 
+type ResourcePipelineIngestionDefinitionObjectsReportTableConfiguration struct {
+	PrimaryKeys                    []string `json:"primary_keys,omitempty"`
+	SalesforceIncludeFormulaFields bool     `json:"salesforce_include_formula_fields,omitempty"`
+	ScdType                        string   `json:"scd_type,omitempty"`
+	SequenceBy                     []string `json:"sequence_by,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsReport struct {
+	DestinationCatalog string                                                              `json:"destination_catalog,omitempty"`
+	DestinationSchema  string                                                              `json:"destination_schema,omitempty"`
+	DestinationTable   string                                                              `json:"destination_table,omitempty"`
+	SourceUrl          string                                                              `json:"source_url,omitempty"`
+	TableConfiguration *ResourcePipelineIngestionDefinitionObjectsReportTableConfiguration `json:"table_configuration,omitempty"`
+}
+
 type ResourcePipelineIngestionDefinitionObjectsSchemaTableConfiguration struct {
 	PrimaryKeys                    []string `json:"primary_keys,omitempty"`
 	SalesforceIncludeFormulaFields bool     `json:"salesforce_include_formula_fields,omitempty"`
 	ScdType                        string   `json:"scd_type,omitempty"`
+	SequenceBy                     []string `json:"sequence_by,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsSchema struct {
@@ -160,6 +176,7 @@ type ResourcePipelineIngestionDefinitionObjectsTableTableConfiguration struct {
 	PrimaryKeys                    []string `json:"primary_keys,omitempty"`
 	SalesforceIncludeFormulaFields bool     `json:"salesforce_include_formula_fields,omitempty"`
 	ScdType                        string   `json:"scd_type,omitempty"`
+	SequenceBy                     []string `json:"sequence_by,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsTable struct {
@@ -173,6 +190,7 @@ type ResourcePipelineIngestionDefinitionObjectsTable struct {
 }
 
 type ResourcePipelineIngestionDefinitionObjects struct {
+	Report *ResourcePipelineIngestionDefinitionObjectsReport `json:"report,omitempty"`
 	Schema *ResourcePipelineIngestionDefinitionObjectsSchema `json:"schema,omitempty"`
 	Table  *ResourcePipelineIngestionDefinitionObjectsTable  `json:"table,omitempty"`
 }
@@ -181,6 +199,7 @@ type ResourcePipelineIngestionDefinitionTableConfiguration struct {
 	PrimaryKeys                    []string `json:"primary_keys,omitempty"`
 	SalesforceIncludeFormulaFields bool     `json:"salesforce_include_formula_fields,omitempty"`
 	ScdType                        string   `json:"scd_type,omitempty"`
+	SequenceBy                     []string `json:"sequence_by,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinition struct {
