@@ -77,30 +77,18 @@ func newCreate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `The description of the app.`)
-	// TODO: array: resources
+	// TODO: complex arg: app
 
-	cmd.Use = "create NAME"
+	cmd.Use = "create"
 	cmd.Short = `Create an app.`
 	cmd.Long = `Create an app.
   
-  Creates a new app.
-
-  Arguments:
-    NAME: The name of the app. The name must contain only lowercase alphanumeric
-      characters and hyphens. It must be unique within the workspace.`
+  Creates a new app.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		if cmd.Flags().Changed("json") {
-			err := root.ExactArgs(0)(cmd, args)
-			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
-			}
-			return nil
-		}
-		check := root.ExactArgs(1)
+		check := root.ExactArgs(0)
 		return check(cmd, args)
 	}
 
@@ -120,9 +108,6 @@ func newCreate() *cobra.Command {
 					return err
 				}
 			}
-		}
-		if !cmd.Flags().Changed("json") {
-			createReq.Name = args[0]
 		}
 
 		wait, err := w.Apps.Create(ctx, createReq)
@@ -244,9 +229,7 @@ func newDeploy() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&deployJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&deployReq.DeploymentId, "deployment-id", deployReq.DeploymentId, `The unique id of the deployment.`)
-	cmd.Flags().Var(&deployReq.Mode, "mode", `The mode of which the deployment will manage the source code. Supported values: [AUTO_SYNC, SNAPSHOT]`)
-	cmd.Flags().StringVar(&deployReq.SourceCodePath, "source-code-path", deployReq.SourceCodePath, `The workspace file system path of the source code used to create the app deployment.`)
+	// TODO: complex arg: app_deployment
 
 	cmd.Use = "deploy APP_NAME"
 	cmd.Short = `Create an app deployment.`
@@ -925,8 +908,7 @@ func newUpdate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Description, "description", updateReq.Description, `The description of the app.`)
-	// TODO: array: resources
+	// TODO: complex arg: app
 
 	cmd.Use = "update NAME"
 	cmd.Short = `Update an app.`
@@ -935,8 +917,7 @@ func newUpdate() *cobra.Command {
   Updates the app with the supplied name.
 
   Arguments:
-    NAME: The name of the app. The name must contain only lowercase alphanumeric
-      characters and hyphens. It must be unique within the workspace.`
+    NAME: The name of the app.`
 
 	cmd.Annotations = make(map[string]string)
 

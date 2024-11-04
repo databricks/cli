@@ -26,13 +26,13 @@ func TestConfigureDashboardDefaultsParentPath(t *testing.T) {
 					"d1": {
 						// Empty string is skipped.
 						// See below for how it is set.
-						CreateDashboardRequest: &dashboards.CreateDashboardRequest{
+						Dashboard: &dashboards.Dashboard{
 							ParentPath: "",
 						},
 					},
 					"d2": {
 						// Non-empty string is skipped.
-						CreateDashboardRequest: &dashboards.CreateDashboardRequest{
+						Dashboard: &dashboards.Dashboard{
 							ParentPath: "already-set",
 						},
 					},

@@ -15,7 +15,7 @@ import (
 
 func TestConvertDashboard(t *testing.T) {
 	var src = resources.Dashboard{
-		CreateDashboardRequest: &dashboards.CreateDashboardRequest{
+		Dashboard: &dashboards.Dashboard{
 			DisplayName: "my dashboard",
 			WarehouseId: "f00dcafe",
 			ParentPath:  "/some/path",

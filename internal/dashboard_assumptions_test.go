@@ -30,10 +30,12 @@ func TestAccDashboardAssumptions_WorkspaceImport(t *testing.T) {
 	dir := wt.TemporaryWorkspaceDir("dashboard-assumptions-")
 
 	dashboard, err := wt.W.Lakeview.Create(ctx, dashboards.CreateDashboardRequest{
-		DisplayName:         dashboardName,
-		ParentPath:          dir,
-		SerializedDashboard: string(dashboardPayload),
-		WarehouseId:         warehouseId,
+		Dashboard: &dashboards.Dashboard{
+			DisplayName:         dashboardName,
+			ParentPath:          dir,
+			SerializedDashboard: string(dashboardPayload),
+			WarehouseId:         warehouseId,
+		},
 	})
 	require.NoError(t, err)
 	t.Logf("Dashboard ID (per Lakeview API): %s", dashboard.DashboardId)
@@ -62,9 +64,11 @@ func TestAccDashboardAssumptions_WorkspaceImport(t *testing.T) {
 	// Try to overwrite the dashboard via the Lakeview API (and expect failure).
 	{
 		_, err := wt.W.Lakeview.Create(ctx, dashboards.CreateDashboardRequest{
-			DisplayName:         dashboardName,
-			ParentPath:          dir,
-			SerializedDashboard: string(dashboardPayload),
+			Dashboard: &dashboards.Dashboard{
+				DisplayName:         dashboardName,
+				ParentPath:          dir,
+				SerializedDashboard: string(dashboardPayload),
+			},
 		})
 		require.ErrorIs(t, err, apierr.ErrResourceAlreadyExists)
 	}

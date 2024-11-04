@@ -75,30 +75,18 @@ func newCreate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.ParentPath, "parent-path", createReq.ParentPath, `The workspace path of the folder containing the dashboard.`)
-	cmd.Flags().StringVar(&createReq.SerializedDashboard, "serialized-dashboard", createReq.SerializedDashboard, `The contents of the dashboard in serialized string form.`)
-	cmd.Flags().StringVar(&createReq.WarehouseId, "warehouse-id", createReq.WarehouseId, `The warehouse ID used to run the dashboard.`)
+	// TODO: complex arg: dashboard
 
-	cmd.Use = "create DISPLAY_NAME"
+	cmd.Use = "create"
 	cmd.Short = `Create dashboard.`
 	cmd.Long = `Create dashboard.
   
-  Create a draft dashboard.
-
-  Arguments:
-    DISPLAY_NAME: The display name of the dashboard.`
+  Create a draft dashboard.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		if cmd.Flags().Changed("json") {
-			err := root.ExactArgs(0)(cmd, args)
-			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'display_name' in your JSON input")
-			}
-			return nil
-		}
-		check := root.ExactArgs(1)
+		check := root.ExactArgs(0)
 		return check(cmd, args)
 	}
 
@@ -118,9 +106,6 @@ func newCreate() *cobra.Command {
 					return err
 				}
 			}
-		}
-		if !cmd.Flags().Changed("json") {
-			createReq.DisplayName = args[0]
 		}
 
 		response, err := w.Lakeview.Create(ctx, createReq)
@@ -160,8 +145,7 @@ func newCreateSchedule() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createScheduleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createScheduleReq.DisplayName, "display-name", createScheduleReq.DisplayName, `The display name for schedule.`)
-	cmd.Flags().Var(&createScheduleReq.PauseStatus, "pause-status", `The status indicates whether this schedule is paused or not. Supported values: [PAUSED, UNPAUSED]`)
+	// TODO: complex arg: schedule
 
 	cmd.Use = "create-schedule DASHBOARD_ID"
 	cmd.Short = `Create dashboard schedule.`
@@ -196,8 +180,6 @@ func newCreateSchedule() *cobra.Command {
 					return err
 				}
 			}
-		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 		createScheduleReq.DashboardId = args[0]
 
@@ -238,6 +220,8 @@ func newCreateSubscription() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createSubscriptionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: subscription
+
 	cmd.Use = "create-subscription DASHBOARD_ID SCHEDULE_ID"
 	cmd.Short = `Create schedule subscription.`
 	cmd.Long = `Create schedule subscription.
@@ -272,8 +256,6 @@ func newCreateSubscription() *cobra.Command {
 					return err
 				}
 			}
-		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 		createSubscriptionReq.DashboardId = args[0]
 		createSubscriptionReq.ScheduleId = args[1]
@@ -1131,10 +1113,7 @@ func newUpdate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `The display name of the dashboard.`)
-	cmd.Flags().StringVar(&updateReq.Etag, "etag", updateReq.Etag, `The etag for the dashboard.`)
-	cmd.Flags().StringVar(&updateReq.SerializedDashboard, "serialized-dashboard", updateReq.SerializedDashboard, `The contents of the dashboard in serialized string form.`)
-	cmd.Flags().StringVar(&updateReq.WarehouseId, "warehouse-id", updateReq.WarehouseId, `The warehouse ID used to run the dashboard.`)
+	// TODO: complex arg: dashboard
 
 	cmd.Use = "update DASHBOARD_ID"
 	cmd.Short = `Update dashboard.`
@@ -1208,9 +1187,7 @@ func newUpdateSchedule() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateScheduleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateScheduleReq.DisplayName, "display-name", updateScheduleReq.DisplayName, `The display name for schedule.`)
-	cmd.Flags().StringVar(&updateScheduleReq.Etag, "etag", updateScheduleReq.Etag, `The etag for the schedule.`)
-	cmd.Flags().Var(&updateScheduleReq.PauseStatus, "pause-status", `The status indicates whether this schedule is paused or not. Supported values: [PAUSED, UNPAUSED]`)
+	// TODO: complex arg: schedule
 
 	cmd.Use = "update-schedule DASHBOARD_ID SCHEDULE_ID"
 	cmd.Short = `Update dashboard schedule.`
@@ -1246,8 +1223,6 @@ func newUpdateSchedule() *cobra.Command {
 					return err
 				}
 			}
-		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 		updateScheduleReq.DashboardId = args[0]
 		updateScheduleReq.ScheduleId = args[1]
