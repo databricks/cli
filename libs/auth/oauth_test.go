@@ -234,21 +234,22 @@ func TestPerisistentAuthCleanHost(t *testing.T) {
 		in  string
 		out string
 	}{
+
 		{"https://example.com", "https://example.com"},
-		{"https://example.com/", "https://example.com"},
-		{"https://example.com/path", "https://example.com"},
-		{"https://example.com/path?query", "https://example.com"},
-		{"https://example.com/path?query=1&other=2", "https://example.com"},
-		{"https://example.com/path#fragment", "https://example.com"},
-		{"https://example.com/path?query=1#fragment", "https://example.com"},
-		{"https://example.com/path?query=1&other=2#fragment", "https://example.com"},
-		{"https://example.com/path/subpath", "https://example.com"},
-		{"https://example.com/path/subpath?query=1", "https://example.com"},
-		{"https://example.com/path/subpath?query=1&other=2", "https://example.com"},
-		{"https://example.com/path/subpath#fragment", "https://example.com"},
-		{"https://example.com/path/subpath?query=1#fragment", "https://example.com"},
-		{"https://example.com/path/subpath?query=1&other=2#fragment", "https://example.com"},
-		{"https://example.com/path?query=1%20value&other=2%20value", "https://example.com"},
+		{"https://example.com/path", "https://example.com/path"},
+		{"https://example.com/path/subpath", "https://example.com/path/subpath"},
+		{"https://example.com/path?query=1", "https://example.com/path"},
+		{"https://example.com/path?query=1&other=2", "https://example.com/path"},
+		{"https://example.com/path#fragment", "https://example.com/path"},
+		{"https://example.com/path?query=1#fragment", "https://example.com/path"},
+		{"https://example.com/path?query=1&other=2#fragment", "https://example.com/path"},
+		{"https://example.com/path/subpath?query=1", "https://example.com/path/subpath"},
+		{"https://example.com/path/subpath?query=1&other=2", "https://example.com/path/subpath"},
+		{"https://example.com/path/subpath#fragment", "https://example.com/path/subpath"},
+		{"https://example.com/path/subpath?query=1#fragment", "https://example.com/path/subpath"},
+		{"https://example.com/path/subpath?query=1&other=2#fragment", "https://example.com/path/subpath"},
+		{"https://example.com/path?query=1%20value&other=2%20value", "https://example.com/path"},
+		{"https://example.com/path/subpath?query=1%20value&other=2%20value", "https://example.com/path/subpath"},
 	} {
 		p := &PersistentAuth{
 			Host: tcases.in,

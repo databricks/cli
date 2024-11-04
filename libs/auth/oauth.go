@@ -144,15 +144,13 @@ func (a *PersistentAuth) Challenge(ctx context.Context) error {
 	return nil
 }
 
-// Best effort to remove url path, query args and fragments from the host
+// Best effort to remove url query args and fragments from the host
 func (a *PersistentAuth) cleanHost() {
 	parsedHost, err := url.Parse(a.Host)
 	if err != nil {
 		return
 	}
-	parsedHost.RawPath = ""
 	parsedHost.RawQuery = ""
-	parsedHost.Path = ""
 	parsedHost.Fragment = ""
 	a.Host = parsedHost.String()
 }
