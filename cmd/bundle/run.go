@@ -35,17 +35,23 @@ func promptRunArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
 	return key, nil
 }
 
-func resolveRunArgument(ctx context.Context, b *bundle.Bundle, args []string) (string, error) {
+// resolveRunArgument resolves the resource key to run.
+// It returns the remaining arguments to pass to the runner, if applicable.
+func resolveRunArgument(ctx context.Context, b *bundle.Bundle, args []string) (string, []string, error) {
 	// If no arguments are specified, prompt the user to select something to run.
 	if len(args) == 0 && cmdio.IsPromptSupported(ctx) {
-		return promptRunArgument(ctx, b)
+		key, err := promptRunArgument(ctx, b)
+		if err != nil {
+			return "", nil, err
+		}
+		return key, args, nil
 	}
 
 	if len(args) < 1 {
-		return "", fmt.Errorf("expected a KEY of the resource to run")
+		return "", nil, fmt.Errorf("expected a KEY of the resource to run")
 	}
 
-	return args[0], nil
+	return args[0], args[1:], nil
 }
 
 func keyToRunner(b *bundle.Bundle, arg string) (run.Runner, error) {
@@ -109,7 +115,7 @@ task or a Python wheel task, the second example applies.
 			return err
 		}
 
-		arg, err := resolveRunArgument(ctx, b, args)
+		key, args, err := resolveRunArgument(ctx, b, args)
 		if err != nil {
 			return err
 		}
@@ -124,13 +130,13 @@ task or a Python wheel task, the second example applies.
 			return err
 		}
 
-		runner, err := keyToRunner(b, arg)
+		runner, err := keyToRunner(b, key)
 		if err != nil {
 			return err
 		}
 
 		// Parse additional positional arguments.
-		err = runner.ParseArgs(args[1:], &runOptions)
+		err = runner.ParseArgs(args, &runOptions)
 		if err != nil {
 			return err
 		}
