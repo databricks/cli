@@ -229,7 +229,7 @@ func TestChallengeFailed(t *testing.T) {
 	})
 }
 
-func TestPerisistentAuthCleanHost(t *testing.T) {
+func TestPersistentAuthCleanHost(t *testing.T) {
 	for _, tcases := range []struct {
 		in  string
 		out string

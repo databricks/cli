@@ -150,9 +150,15 @@ func (a *PersistentAuth) cleanHost() {
 	if err != nil {
 		return
 	}
-	parsedHost.RawQuery = ""
-	parsedHost.Fragment = ""
-	a.Host = parsedHost.String()
+	host := url.URL{
+		Scheme: parsedHost.Scheme,
+		Host:   parsedHost.Host,
+
+		// We retain the path, because it may contain the account id for account
+		// logins.
+		Path: parsedHost.Path,
+	}
+	a.Host = host.String()
 }
 
 func (a *PersistentAuth) init(ctx context.Context) error {
