@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/url"
 	"strings"
 	"time"
 
@@ -143,6 +144,19 @@ func (a *PersistentAuth) Challenge(ctx context.Context) error {
 	return nil
 }
 
+// Best effort to remove url path, query args and fragments from the host
+func (a *PersistentAuth) cleanHost() {
+	parsedHost, err := url.Parse(a.Host)
+	if err != nil {
+		return
+	}
+	parsedHost.RawPath = ""
+	parsedHost.RawQuery = ""
+	parsedHost.Path = ""
+	parsedHost.Fragment = ""
+	a.Host = parsedHost.String()
+}
+
 func (a *PersistentAuth) init(ctx context.Context) error {
 	if a.Host == "" && a.AccountID == "" {
 		return ErrFetchCredentials
@@ -156,6 +170,9 @@ func (a *PersistentAuth) init(ctx context.Context) error {
 	if a.browser == nil {
 		a.browser = browser.OpenURL
 	}
+
+	a.cleanHost()
+
 	// try acquire listener, which we also use as a machine-local
 	// exclusive lock to prevent token cache corruption in the scope
 	// of developer machine, where this command runs.
