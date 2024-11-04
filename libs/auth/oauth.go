@@ -144,19 +144,21 @@ func (a *PersistentAuth) Challenge(ctx context.Context) error {
 	return nil
 }
 
-// Best effort to remove url query args and fragments from the host
+// Remove url query and path args and fragments from the host
 func (a *PersistentAuth) cleanHost() {
 	parsedHost, err := url.Parse(a.Host)
 	if err != nil {
 		return
 	}
+	// when either host or scheme is empty, we don't want to clean it. This is because
+	// the Go url library parses a raw "abc" string as the path of a URL and cleaning
+	// it will return thus return an empty string.
+	if parsedHost.Host == "" || parsedHost.Scheme == "" {
+		return
+	}
 	host := url.URL{
 		Scheme: parsedHost.Scheme,
 		Host:   parsedHost.Host,
-
-		// We retain the path, because it may contain the account id for account
-		// logins.
-		Path: parsedHost.Path,
 	}
 	a.Host = host.String()
 }
