@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/tags"
+	"github.com/databricks/cli/libs/vfs"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -133,6 +134,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				},
 			},
 		},
+		SyncRoot: vfs.MustNew("/Users/lennart.kats@databricks.com"),
 		// Use AWS implementation for testing.
 		Tagging: tags.ForCloud(&sdkconfig.Config{
 			Host: "https://company.cloud.databricks.com",

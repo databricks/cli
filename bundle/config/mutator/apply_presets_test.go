@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
@@ -55,6 +56,7 @@ func TestApplyPresetsPrefix(t *testing.T) {
 						NamePrefix: tt.prefix,
 					},
 				},
+				SyncRoot: vfs.MustNew(t.TempDir()),
 			}
 
 			ctx := context.Background()
@@ -101,6 +103,7 @@ func TestApplyPresetsPrefixForUcSchema(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			b := &bundle.Bundle{
+				SyncRoot: vfs.MustNew(t.TempDir()),
 				Config: config.Root{
 					Resources: config.Resources{
 						Schemas: map[string]*resources.Schema{
@@ -180,6 +183,7 @@ func TestApplyPresetsTags(t *testing.T) {
 						Tags: tt.tags,
 					},
 				},
+				SyncRoot: vfs.MustNew(t.TempDir()),
 			}
 
 			ctx := context.Background()
@@ -239,6 +243,7 @@ func TestApplyPresetsJobsMaxConcurrentRuns(t *testing.T) {
 						JobsMaxConcurrentRuns: tt.setting,
 					},
 				},
+				SyncRoot: vfs.MustNew(t.TempDir()),
 			}
 			ctx := context.Background()
 			diag := bundle.Apply(ctx, b, mutator.ApplyPresets())
@@ -264,6 +269,7 @@ func TestApplyPresetsPrefixWithoutJobSettings(t *testing.T) {
 				NamePrefix: "prefix-",
 			},
 		},
+		SyncRoot: vfs.MustNew(t.TempDir()),
 	}
 
 	ctx := context.Background()
@@ -355,6 +361,7 @@ func TestApplyPresetsResourceNotDefined(t *testing.T) {
 						TriggerPauseStatus: config.Paused,
 					},
 				},
+				SyncRoot: vfs.MustNew(t.TempDir()),
 			}
 
 			ctx := context.Background()
