@@ -7,6 +7,7 @@ import (
 	"io/fs"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
@@ -23,6 +24,11 @@ func (m *upload) Name() string {
 }
 
 func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	if config.IsExplicitlyEnabled(b.Config.Presets.InPlaceDeployment) {
+		cmdio.LogString(ctx, "Bundle files uploading skipped: in-place deployment is enabled")
+		return nil
+	}
+
 	cmdio.LogString(ctx, fmt.Sprintf("Uploading bundle files to %s...", b.Config.Workspace.FilePath))
 	opts, err := GetSyncOptions(ctx, bundle.ReadOnly(b))
 	if err != nil {

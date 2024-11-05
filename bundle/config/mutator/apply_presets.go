@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -219,6 +220,15 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 			continue
 		}
 		dashboard.DisplayName = prefix + dashboard.DisplayName
+	}
+
+	root := b.SyncRoot.Native()
+	_, ok := env.Lookup(ctx, envDatabricksRuntimeVersion)
+	isInWorkspace := ok && strings.HasPrefix(root, "/Workspace/")
+
+	if !isInWorkspace {
+		disabled := false
+		b.Config.Presets.InPlaceDeployment = &disabled
 	}
 
 	return diags

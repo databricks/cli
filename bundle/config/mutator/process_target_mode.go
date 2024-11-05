@@ -57,6 +57,11 @@ func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) {
 		t.TriggerPauseStatus = config.Paused
 	}
 
+	if !config.IsExplicitlyDisabled(t.InPlaceDeployment) {
+		enabled := true
+		t.InPlaceDeployment = &enabled
+	}
+
 	if !config.IsExplicitlyDisabled(t.PipelinesDevelopment) {
 		enabled := true
 		t.PipelinesDevelopment = &enabled
