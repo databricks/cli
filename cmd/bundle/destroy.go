@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
@@ -62,6 +63,9 @@ func newDestroyCommand() *cobra.Command {
 
 		diags = bundle.Apply(ctx, b, bundle.Seq(
 			phases.Initialize(),
+			mutator.ResolveVariableReferences(
+				"artifacts",
+			),
 			phases.Destroy(),
 		))
 		if err := diags.Error(); err != nil {
