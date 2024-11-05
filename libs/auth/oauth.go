@@ -144,7 +144,8 @@ func (a *PersistentAuth) Challenge(ctx context.Context) error {
 	return nil
 }
 
-// Remove url query and path args and fragments from the host
+// This function cleans up the host URL by only retaining the scheme and the host.
+// This function thus removes any path, query arguments, or fragments from the URL.
 func (a *PersistentAuth) cleanHost() {
 	parsedHost, err := url.Parse(a.Host)
 	if err != nil {
