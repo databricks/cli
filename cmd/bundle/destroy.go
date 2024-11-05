@@ -62,7 +62,6 @@ func newDestroyCommand() *cobra.Command {
 
 		diags = bundle.Apply(ctx, b, bundle.Seq(
 			phases.Initialize(),
-			phases.Build(),
 			phases.Destroy(),
 		))
 		if err := diags.Error(); err != nil {
