@@ -177,7 +177,7 @@ func (t *translateContext) translateNoOp(literal, localFullPath, localRelPath, r
 }
 
 func (t *translateContext) retainLocalAbsoluteFilePath(literal, localFullPath, localRelPath, remotePath string) (string, error) {
-	info, err := t.b.SyncRoot.Stat(localRelPath)
+	info, err := t.b.SyncRoot.Stat(filepath.ToSlash(localRelPath))
 	if errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("file %s not found", literal)
 	}
