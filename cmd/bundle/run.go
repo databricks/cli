@@ -1,12 +1,14 @@
 package bundle
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
 	"github.com/databricks/cli/bundle/run/output"
 	"github.com/databricks/cli/cmd/bundle/utils"
@@ -14,7 +16,59 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
+	"golang.org/x/exp/maps"
 )
+
+func promptRunArgument(ctx context.Context, b *bundle.Bundle) (string, error) {
+	// Compute map of "Human readable name of resource" -> "resource key".
+	inv := make(map[string]string)
+	for k, ref := range resources.Completions(b, run.IsRunnable) {
+		title := fmt.Sprintf("%s: %s", ref.Description.SingularTitle, ref.Resource.GetName())
+		inv[title] = k
+	}
+
+	key, err := cmdio.Select(ctx, inv, "Resource to run")
+	if err != nil {
+		return "", err
+	}
+
+	return key, nil
+}
+
+// resolveRunArgument resolves the resource key to run.
+// It returns the remaining arguments to pass to the runner, if applicable.
+func resolveRunArgument(ctx context.Context, b *bundle.Bundle, args []string) (string, []string, error) {
+	// If no arguments are specified, prompt the user to select something to run.
+	if len(args) == 0 && cmdio.IsPromptSupported(ctx) {
+		key, err := promptRunArgument(ctx, b)
+		if err != nil {
+			return "", nil, err
+		}
+		return key, args, nil
+	}
+
+	if len(args) < 1 {
+		return "", nil, fmt.Errorf("expected a KEY of the resource to run")
+	}
+
+	return args[0], args[1:], nil
+}
+
+func keyToRunner(b *bundle.Bundle, arg string) (run.Runner, error) {
+	// Locate the resource to run.
+	ref, err := resources.Lookup(b, arg, run.IsRunnable)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert the resource to a runnable resource.
+	runner, err := run.ToRunner(b, ref)
+	if err != nil {
+		return nil, err
+	}
+
+	return runner, nil
+}
 
 func newRunCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -61,22 +115,9 @@ task or a Python wheel task, the second example applies.
 			return err
 		}
 
-		// If no arguments are specified, prompt the user to select something to run.
-		if len(args) == 0 && cmdio.IsPromptSupported(ctx) {
-			// Invert completions from KEY -> NAME, to NAME -> KEY.
-			inv := make(map[string]string)
-			for k, v := range run.ResourceCompletionMap(b) {
-				inv[v] = k
-			}
-			id, err := cmdio.Select(ctx, inv, "Resource to run")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-
-		if len(args) < 1 {
-			return fmt.Errorf("expected a KEY of the resource to run")
+		key, args, err := resolveRunArgument(ctx, b, args)
+		if err != nil {
+			return err
 		}
 
 		diags = bundle.Apply(ctx, b, bundle.Seq(
@@ -89,13 +130,13 @@ task or a Python wheel task, the second example applies.
 			return err
 		}
 
-		runner, err := run.Find(b, args[0])
+		runner, err := keyToRunner(b, key)
 		if err != nil {
 			return err
 		}
 
 		// Parse additional positional arguments.
-		err = runner.ParseArgs(args[1:], &runOptions)
+		err = runner.ParseArgs(args, &runOptions)
 		if err != nil {
 			return err
 		}
@@ -146,10 +187,11 @@ task or a Python wheel task, the second example applies.
 		}
 
 		if len(args) == 0 {
-			return run.ResourceCompletions(b), cobra.ShellCompDirectiveNoFileComp
+			completions := resources.Completions(b, run.IsRunnable)
+			return maps.Keys(completions), cobra.ShellCompDirectiveNoFileComp
 		} else {
 			// If we know the resource to run, we can complete additional positional arguments.
-			runner, err := run.Find(b, args[0])
+			runner, err := keyToRunner(b, args[0])
 			if err != nil {
 				return nil, cobra.ShellCompDirectiveError
 			}

@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/url"
 	"strings"
 	"time"
 
@@ -155,6 +156,26 @@ func (a *PersistentAuth) ClearToken(ctx context.Context) error {
 	return a.cache.Delete(key)
 }
 
+// This function cleans up the host URL by only retaining the scheme and the host.
+// This function thus removes any path, query arguments, or fragments from the URL.
+func (a *PersistentAuth) cleanHost() {
+	parsedHost, err := url.Parse(a.Host)
+	if err != nil {
+		return
+	}
+	// when either host or scheme is empty, we don't want to clean it. This is because
+	// the Go url library parses a raw "abc" string as the path of a URL and cleaning
+	// it will return thus return an empty string.
+	if parsedHost.Host == "" || parsedHost.Scheme == "" {
+		return
+	}
+	host := url.URL{
+		Scheme: parsedHost.Scheme,
+		Host:   parsedHost.Host,
+	}
+	a.Host = host.String()
+}
+
 func (a *PersistentAuth) init(ctx context.Context) error {
 	if a.Host == "" && a.AccountID == "" {
 		return ErrFetchCredentials
@@ -168,6 +189,9 @@ func (a *PersistentAuth) init(ctx context.Context) error {
 	if a.browser == nil {
 		a.browser = browser.OpenURL
 	}
+
+	a.cleanHost()
+
 	// try acquire listener, which we also use as a machine-local
 	// exclusive lock to prevent token cache corruption in the scope
 	// of developer machine, where this command runs.
