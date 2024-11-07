@@ -2,6 +2,7 @@ package mutator_test
 
 import (
 	"context"
+	"runtime"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -14,9 +15,14 @@ import (
 )
 
 func mockBundleForConfigureWSFS(t *testing.T, syncRootPath string) *bundle.Bundle {
+	// The native path of the sync root on Windows will never match the /Workspace prefix,
+	// so the test case for nominal behavior will always fail.
+	if runtime.GOOS == "windows" {
+		t.Skip("this test is not applicable on Windows")
+	}
+
 	b := &bundle.Bundle{
-		SyncRootPath: syncRootPath,
-		SyncRoot:     vfs.MustNew(syncRootPath),
+		SyncRoot: vfs.MustNew(syncRootPath),
 	}
 
 	w := mocks.NewMockWorkspaceClient(t)
