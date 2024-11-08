@@ -66,7 +66,11 @@ func newCreate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: complex arg: table
+	cmd.Flags().StringVar(&createReq.Table.Name, "name", createReq.Table.Name, `Full three-part (catalog, schema, table) name of the table.`)
+	// TODO: complex arg: spec
+	// TODO: complex arg: status
+	cmd.Flags().StringVar(&createReq.Table.TableServingUrl, "table-serving-url", createReq.Table.TableServingUrl, `Data serving REST API URL for this table.`)
+	cmd.Flags().Var(&createReq.Table.UnityCatalogProvisioningState, "unity-catalog-provisioning-state", `The provisioning state of the online table entity in Unity Catalog. Supported values: [ACTIVE, DELETING, FAILED, PROVISIONING, UPDATING]`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create an Online Table.`

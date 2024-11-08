@@ -78,7 +78,20 @@ func newCreate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: complex arg: app
+	// TODO: complex arg: active_deployment
+	// TODO: complex arg: app_status
+	// TODO: complex arg: compute_status
+	cmd.Flags().StringVar(&createReq.App.CreateTime, "create-time", createReq.App.CreateTime, `The creation time of the app.`)
+	cmd.Flags().StringVar(&createReq.App.Creator, "creator", createReq.App.Creator, `The email of the user that created the app.`)
+	cmd.Flags().StringVar(&createReq.App.DefaultSourceCodePath, "default-source-code-path", createReq.App.DefaultSourceCodePath, `The default workspace file system path of the source code from which app deployment are created.`)
+	cmd.Flags().StringVar(&createReq.App.Description, "description", createReq.App.Description, `The description of the app.`)
+	// TODO: complex arg: pending_deployment
+	// TODO: array: resources
+	cmd.Flags().Int64Var(&createReq.App.ServicePrincipalId, "service-principal-id", createReq.App.ServicePrincipalId, ``)
+	cmd.Flags().StringVar(&createReq.App.ServicePrincipalName, "service-principal-name", createReq.App.ServicePrincipalName, ``)
+	cmd.Flags().StringVar(&createReq.App.UpdateTime, "update-time", createReq.App.UpdateTime, `The update time of the app.`)
+	cmd.Flags().StringVar(&createReq.App.Updater, "updater", createReq.App.Updater, `The email of the user that last updated the app.`)
+	cmd.Flags().StringVar(&createReq.App.Url, "url", createReq.App.Url, `The URL of the app once it is deployed.`)
 
 	cmd.Use = "create NAME"
 	cmd.Short = `Create an app.`
@@ -93,6 +106,13 @@ func newCreate() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
+			}
+			return nil
+		}
 		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
@@ -238,7 +258,14 @@ func newDeploy() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&deployJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: complex arg: app_deployment
+	cmd.Flags().StringVar(&deployReq.AppDeployment.CreateTime, "create-time", deployReq.AppDeployment.CreateTime, `The creation time of the deployment.`)
+	cmd.Flags().StringVar(&deployReq.AppDeployment.Creator, "creator", deployReq.AppDeployment.Creator, `The email of the user creates the deployment.`)
+	// TODO: complex arg: deployment_artifacts
+	cmd.Flags().StringVar(&deployReq.AppDeployment.DeploymentId, "deployment-id", deployReq.AppDeployment.DeploymentId, `The unique id of the deployment.`)
+	cmd.Flags().Var(&deployReq.AppDeployment.Mode, "mode", `The mode of which the deployment will manage the source code. Supported values: [AUTO_SYNC, SNAPSHOT]`)
+	cmd.Flags().StringVar(&deployReq.AppDeployment.SourceCodePath, "source-code-path", deployReq.AppDeployment.SourceCodePath, `The workspace file system path of the source code used to create the app deployment.`)
+	// TODO: complex arg: status
+	cmd.Flags().StringVar(&deployReq.AppDeployment.UpdateTime, "update-time", deployReq.AppDeployment.UpdateTime, `The update time of the deployment.`)
 
 	cmd.Use = "deploy"
 	cmd.Short = `Create an app deployment.`
@@ -914,7 +941,20 @@ func newUpdate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: complex arg: app
+	// TODO: complex arg: active_deployment
+	// TODO: complex arg: app_status
+	// TODO: complex arg: compute_status
+	cmd.Flags().StringVar(&updateReq.App.CreateTime, "create-time", updateReq.App.CreateTime, `The creation time of the app.`)
+	cmd.Flags().StringVar(&updateReq.App.Creator, "creator", updateReq.App.Creator, `The email of the user that created the app.`)
+	cmd.Flags().StringVar(&updateReq.App.DefaultSourceCodePath, "default-source-code-path", updateReq.App.DefaultSourceCodePath, `The default workspace file system path of the source code from which app deployment are created.`)
+	cmd.Flags().StringVar(&updateReq.App.Description, "description", updateReq.App.Description, `The description of the app.`)
+	// TODO: complex arg: pending_deployment
+	// TODO: array: resources
+	cmd.Flags().Int64Var(&updateReq.App.ServicePrincipalId, "service-principal-id", updateReq.App.ServicePrincipalId, ``)
+	cmd.Flags().StringVar(&updateReq.App.ServicePrincipalName, "service-principal-name", updateReq.App.ServicePrincipalName, ``)
+	cmd.Flags().StringVar(&updateReq.App.UpdateTime, "update-time", updateReq.App.UpdateTime, `The update time of the app.`)
+	cmd.Flags().StringVar(&updateReq.App.Updater, "updater", updateReq.App.Updater, `The email of the user that last updated the app.`)
+	cmd.Flags().StringVar(&updateReq.App.Url, "url", updateReq.App.Url, `The URL of the app once it is deployed.`)
 
 	cmd.Use = "update NAME"
 	cmd.Short = `Update an app.`
@@ -929,6 +969,13 @@ func newUpdate() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
+			}
+			return nil
+		}
 		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
