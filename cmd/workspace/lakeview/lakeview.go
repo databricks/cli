@@ -76,15 +76,9 @@ func newCreate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Dashboard.CreateTime, "create-time", createReq.Dashboard.CreateTime, `The timestamp of when the dashboard was created.`)
-	cmd.Flags().StringVar(&createReq.Dashboard.DashboardId, "dashboard-id", createReq.Dashboard.DashboardId, `UUID identifying the dashboard.`)
 	cmd.Flags().StringVar(&createReq.Dashboard.DisplayName, "display-name", createReq.Dashboard.DisplayName, `The display name of the dashboard.`)
-	cmd.Flags().StringVar(&createReq.Dashboard.Etag, "etag", createReq.Dashboard.Etag, `The etag for the dashboard.`)
 	cmd.Flags().Var(&createReq.Dashboard.LifecycleState, "lifecycle-state", `The state of the dashboard resource. Supported values: [ACTIVE, TRASHED]`)
-	cmd.Flags().StringVar(&createReq.Dashboard.ParentPath, "parent-path", createReq.Dashboard.ParentPath, `The workspace path of the folder containing the dashboard.`)
-	cmd.Flags().StringVar(&createReq.Dashboard.Path, "path", createReq.Dashboard.Path, `The workspace path of the dashboard asset, including the file name.`)
 	cmd.Flags().StringVar(&createReq.Dashboard.SerializedDashboard, "serialized-dashboard", createReq.Dashboard.SerializedDashboard, `The contents of the dashboard in serialized string form.`)
-	cmd.Flags().StringVar(&createReq.Dashboard.UpdateTime, "update-time", createReq.Dashboard.UpdateTime, `The timestamp of when the dashboard was last updated by the user.`)
 	cmd.Flags().StringVar(&createReq.Dashboard.WarehouseId, "warehouse-id", createReq.Dashboard.WarehouseId, `The warehouse ID used to run the dashboard.`)
 
 	cmd.Use = "create"
@@ -156,13 +150,8 @@ func newCreateSchedule() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createScheduleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createScheduleReq.Schedule.CreateTime, "create-time", createScheduleReq.Schedule.CreateTime, `A timestamp indicating when the schedule was created.`)
-	cmd.Flags().StringVar(&createScheduleReq.Schedule.DashboardId, "dashboard-id", createScheduleReq.Schedule.DashboardId, `UUID identifying the dashboard to which the schedule belongs.`)
 	cmd.Flags().StringVar(&createScheduleReq.Schedule.DisplayName, "display-name", createScheduleReq.Schedule.DisplayName, `The display name for schedule.`)
-	cmd.Flags().StringVar(&createScheduleReq.Schedule.Etag, "etag", createScheduleReq.Schedule.Etag, `The etag for the schedule.`)
 	cmd.Flags().Var(&createScheduleReq.Schedule.PauseStatus, "pause-status", `The status indicates whether this schedule is paused or not. Supported values: [PAUSED, UNPAUSED]`)
-	cmd.Flags().StringVar(&createScheduleReq.Schedule.ScheduleId, "schedule-id", createScheduleReq.Schedule.ScheduleId, `UUID identifying the schedule.`)
-	cmd.Flags().StringVar(&createScheduleReq.Schedule.UpdateTime, "update-time", createScheduleReq.Schedule.UpdateTime, `A timestamp indicating when the schedule was last updated.`)
 
 	cmd.Use = "create-schedule DASHBOARD_ID"
 	cmd.Short = `Create dashboard schedule.`
@@ -245,14 +234,6 @@ func newCreateSubscription() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createSubscriptionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createSubscriptionReq.Subscription.CreateTime, "create-time", createSubscriptionReq.Subscription.CreateTime, `A timestamp indicating when the subscription was created.`)
-	cmd.Flags().Int64Var(&createSubscriptionReq.Subscription.CreatedByUserId, "created-by-user-id", createSubscriptionReq.Subscription.CreatedByUserId, `UserId of the user who adds subscribers (users or notification destinations) to the dashboard's schedule.`)
-	cmd.Flags().StringVar(&createSubscriptionReq.Subscription.DashboardId, "dashboard-id", createSubscriptionReq.Subscription.DashboardId, `UUID identifying the dashboard to which the subscription belongs.`)
-	cmd.Flags().StringVar(&createSubscriptionReq.Subscription.Etag, "etag", createSubscriptionReq.Subscription.Etag, `The etag for the subscription.`)
-	cmd.Flags().StringVar(&createSubscriptionReq.Subscription.ScheduleId, "schedule-id", createSubscriptionReq.Subscription.ScheduleId, `UUID identifying the schedule to which the subscription belongs.`)
-	cmd.Flags().StringVar(&createSubscriptionReq.Subscription.SubscriptionId, "subscription-id", createSubscriptionReq.Subscription.SubscriptionId, `UUID identifying the subscription.`)
-	cmd.Flags().StringVar(&createSubscriptionReq.Subscription.UpdateTime, "update-time", createSubscriptionReq.Subscription.UpdateTime, `A timestamp indicating when the subscription was last updated.`)
-
 	cmd.Use = "create-subscription DASHBOARD_ID SCHEDULE_ID"
 	cmd.Short = `Create schedule subscription.`
 	cmd.Long = `Create schedule subscription.
@@ -333,8 +314,6 @@ func newDeleteSchedule() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Flags().StringVar(&deleteScheduleReq.Etag, "etag", deleteScheduleReq.Etag, `The etag for the schedule.`)
-
 	cmd.Use = "delete-schedule DASHBOARD_ID SCHEDULE_ID"
 	cmd.Short = `Delete dashboard schedule.`
 	cmd.Long = `Delete dashboard schedule.
@@ -395,8 +374,6 @@ func newDeleteSubscription() *cobra.Command {
 	var deleteSubscriptionReq dashboards.DeleteSubscriptionRequest
 
 	// TODO: short flags
-
-	cmd.Flags().StringVar(&deleteSubscriptionReq.Etag, "etag", deleteSubscriptionReq.Etag, `The etag for the subscription.`)
 
 	cmd.Use = "delete-subscription DASHBOARD_ID SCHEDULE_ID SUBSCRIPTION_ID"
 	cmd.Short = `Delete schedule subscription.`
@@ -702,7 +679,6 @@ func newList() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `The number of dashboards to return per page.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A page token, received from a previous ListDashboards call.`)
 	cmd.Flags().BoolVar(&listReq.ShowTrashed, "show-trashed", listReq.ShowTrashed, `The flag to include dashboards located in the trash.`)
 	cmd.Flags().Var(&listReq.View, "view", `DASHBOARD_VIEW_BASIConly includes summary metadata from the dashboard. Supported values: [DASHBOARD_VIEW_BASIC]`)
 
@@ -755,7 +731,6 @@ func newListSchedules() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Flags().IntVar(&listSchedulesReq.PageSize, "page-size", listSchedulesReq.PageSize, `The number of schedules to return per page.`)
-	cmd.Flags().StringVar(&listSchedulesReq.PageToken, "page-token", listSchedulesReq.PageToken, `A page token, received from a previous ListSchedules call.`)
 
 	cmd.Use = "list-schedules DASHBOARD_ID"
 	cmd.Short = `List dashboard schedules.`
@@ -814,7 +789,6 @@ func newListSubscriptions() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Flags().IntVar(&listSubscriptionsReq.PageSize, "page-size", listSubscriptionsReq.PageSize, `The number of subscriptions to return per page.`)
-	cmd.Flags().StringVar(&listSubscriptionsReq.PageToken, "page-token", listSubscriptionsReq.PageToken, `A page token, received from a previous ListSubscriptions call.`)
 
 	cmd.Use = "list-subscriptions DASHBOARD_ID SCHEDULE_ID"
 	cmd.Short = `List schedule subscriptions.`
@@ -1152,15 +1126,9 @@ func newUpdate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Dashboard.CreateTime, "create-time", updateReq.Dashboard.CreateTime, `The timestamp of when the dashboard was created.`)
-	cmd.Flags().StringVar(&updateReq.Dashboard.DashboardId, "dashboard-id", updateReq.Dashboard.DashboardId, `UUID identifying the dashboard.`)
 	cmd.Flags().StringVar(&updateReq.Dashboard.DisplayName, "display-name", updateReq.Dashboard.DisplayName, `The display name of the dashboard.`)
-	cmd.Flags().StringVar(&updateReq.Dashboard.Etag, "etag", updateReq.Dashboard.Etag, `The etag for the dashboard.`)
 	cmd.Flags().Var(&updateReq.Dashboard.LifecycleState, "lifecycle-state", `The state of the dashboard resource. Supported values: [ACTIVE, TRASHED]`)
-	cmd.Flags().StringVar(&updateReq.Dashboard.ParentPath, "parent-path", updateReq.Dashboard.ParentPath, `The workspace path of the folder containing the dashboard.`)
-	cmd.Flags().StringVar(&updateReq.Dashboard.Path, "path", updateReq.Dashboard.Path, `The workspace path of the dashboard asset, including the file name.`)
 	cmd.Flags().StringVar(&updateReq.Dashboard.SerializedDashboard, "serialized-dashboard", updateReq.Dashboard.SerializedDashboard, `The contents of the dashboard in serialized string form.`)
-	cmd.Flags().StringVar(&updateReq.Dashboard.UpdateTime, "update-time", updateReq.Dashboard.UpdateTime, `The timestamp of when the dashboard was last updated by the user.`)
 	cmd.Flags().StringVar(&updateReq.Dashboard.WarehouseId, "warehouse-id", updateReq.Dashboard.WarehouseId, `The warehouse ID used to run the dashboard.`)
 
 	cmd.Use = "update DASHBOARD_ID"
@@ -1236,13 +1204,8 @@ func newUpdateSchedule() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateScheduleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateScheduleReq.Schedule.CreateTime, "create-time", updateScheduleReq.Schedule.CreateTime, `A timestamp indicating when the schedule was created.`)
-	cmd.Flags().StringVar(&updateScheduleReq.Schedule.DashboardId, "dashboard-id", updateScheduleReq.Schedule.DashboardId, `UUID identifying the dashboard to which the schedule belongs.`)
 	cmd.Flags().StringVar(&updateScheduleReq.Schedule.DisplayName, "display-name", updateScheduleReq.Schedule.DisplayName, `The display name for schedule.`)
-	cmd.Flags().StringVar(&updateScheduleReq.Schedule.Etag, "etag", updateScheduleReq.Schedule.Etag, `The etag for the schedule.`)
 	cmd.Flags().Var(&updateScheduleReq.Schedule.PauseStatus, "pause-status", `The status indicates whether this schedule is paused or not. Supported values: [PAUSED, UNPAUSED]`)
-	cmd.Flags().StringVar(&updateScheduleReq.Schedule.ScheduleId, "schedule-id", updateScheduleReq.Schedule.ScheduleId, `UUID identifying the schedule.`)
-	cmd.Flags().StringVar(&updateScheduleReq.Schedule.UpdateTime, "update-time", updateScheduleReq.Schedule.UpdateTime, `A timestamp indicating when the schedule was last updated.`)
 
 	cmd.Use = "update-schedule DASHBOARD_ID SCHEDULE_ID"
 	cmd.Short = `Update dashboard schedule.`
