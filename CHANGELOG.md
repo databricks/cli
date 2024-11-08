@@ -1,5 +1,26 @@
 # Version changelog
 
+## [Release] Release v0.233.0
+
+CLI:
+ * Clean host URL in the `auth login` command ([#1879](https://github.com/databricks/cli/pull/1879)).
+
+Bundles:
+ * Fix bundle run when run interactively ([#1880](https://github.com/databricks/cli/pull/1880)).
+ * Fix relative path resolution for dashboards on Windows ([#1881](https://github.com/databricks/cli/pull/1881)).
+
+Internal:
+ * Address goreleaser deprecation warning ([#1872](https://github.com/databricks/cli/pull/1872)).
+ * Update actions/github-script to v7 ([#1873](https://github.com/databricks/cli/pull/1873)).
+ * Use Go 1.23 ([#1871](https://github.com/databricks/cli/pull/1871)).
+ * [Internal] Always write message for manual integration test trigger ([#1874](https://github.com/databricks/cli/pull/1874)).
+ * Add `cmd-exec-id` to user agent ([#1808](https://github.com/databricks/cli/pull/1808)).
+ * Added E2E test to run Python wheels on interactive cluster created in bundle ([#1864](https://github.com/databricks/cli/pull/1864)).
+
+
+Dependency updates:
+ * Bump github.com/hashicorp/terraform-json from 0.22.1 to 0.23.0 ([#1877](https://github.com/databricks/cli/pull/1877)).
+
 ## [Release] Release v0.232.1
 
 This patch release fixes the following error observed when deploying to /Shared root folder
