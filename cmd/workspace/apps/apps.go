@@ -67,6 +67,7 @@ func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var createReq apps.CreateAppRequest
+	createReq.App = &apps.App{}
 	var createJson flags.JsonFlag
 
 	var createSkipWait bool
@@ -79,16 +80,20 @@ func newCreate() *cobra.Command {
 
 	// TODO: complex arg: app
 
-	cmd.Use = "create"
+	cmd.Use = "create NAME"
 	cmd.Short = `Create an app.`
 	cmd.Long = `Create an app.
   
-  Creates a new app.`
+  Creates a new app.
+
+  Arguments:
+    NAME: The name of the app. The name must contain only lowercase alphanumeric
+      characters and hyphens. It must be unique within the workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(0)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -98,7 +103,7 @@ func newCreate() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			diags := createJson.Unmarshal(&createReq)
+			diags := createJson.Unmarshal(&createReq.App)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -108,6 +113,9 @@ func newCreate() *cobra.Command {
 					return err
 				}
 			}
+		}
+		if !cmd.Flags().Changed("json") {
+			createReq.App.Name = args[0]
 		}
 
 		wait, err := w.Apps.Create(ctx, createReq)
@@ -219,6 +227,7 @@ func newDeploy() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var deployReq apps.CreateAppDeploymentRequest
+	deployReq.AppDeployment = &apps.AppDeployment{}
 	var deployJson flags.JsonFlag
 
 	var deploySkipWait bool
@@ -231,19 +240,16 @@ func newDeploy() *cobra.Command {
 
 	// TODO: complex arg: app_deployment
 
-	cmd.Use = "deploy APP_NAME"
+	cmd.Use = "deploy"
 	cmd.Short = `Create an app deployment.`
 	cmd.Long = `Create an app deployment.
   
-  Creates an app deployment for the app with the supplied name.
-
-  Arguments:
-    APP_NAME: The name of the app.`
+  Creates an app deployment for the app with the supplied name.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
+		check := root.ExactArgs(0)
 		return check(cmd, args)
 	}
 
@@ -253,7 +259,7 @@ func newDeploy() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			diags := deployJson.Unmarshal(&deployReq)
+			diags := deployJson.Unmarshal(&deployReq.AppDeployment)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -264,7 +270,6 @@ func newDeploy() *cobra.Command {
 				}
 			}
 		}
-		deployReq.AppName = args[0]
 
 		wait, err := w.Apps.Deploy(ctx, deployReq)
 		if err != nil {
@@ -903,6 +908,7 @@ func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var updateReq apps.UpdateAppRequest
+	updateReq.App = &apps.App{}
 	var updateJson flags.JsonFlag
 
 	// TODO: short flags
@@ -917,7 +923,8 @@ func newUpdate() *cobra.Command {
   Updates the app with the supplied name.
 
   Arguments:
-    NAME: The name of the app.`
+    NAME: The name of the app. The name must contain only lowercase alphanumeric
+      characters and hyphens. It must be unique within the workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -932,7 +939,7 @@ func newUpdate() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			diags := updateJson.Unmarshal(&updateReq)
+			diags := updateJson.Unmarshal(&updateReq.App)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -943,7 +950,9 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		updateReq.Name = args[0]
+		if !cmd.Flags().Changed("json") {
+			updateReq.App.Name = args[0]
+		}
 
 		response, err := w.Apps.Update(ctx, updateReq)
 		if err != nil {

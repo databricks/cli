@@ -55,6 +55,7 @@ func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var createReq catalog.CreateOnlineTableRequest
+	createReq.Table = &catalog.OnlineTable{}
 	var createJson flags.JsonFlag
 
 	var createSkipWait bool
@@ -86,7 +87,7 @@ func newCreate() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			diags := createJson.Unmarshal(&createReq)
+			diags := createJson.Unmarshal(&createReq.Table)
 			if diags.HasError() {
 				return diags.Error()
 			}

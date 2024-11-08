@@ -115,6 +115,9 @@ func new{{.PascalName}}() *cobra.Command {
 	{{- if .Request}}
 
 	var {{.CamelName}}Req {{.Service.Package.Name}}.{{.Request.PascalName}}
+	{{- if .RequestBodyField }}
+	{{.CamelName}}Req.{{.RequestBodyField.PascalName}} = &{{.Service.Package.Name}}.{{.RequestBodyField.Entity.PascalName}}{}
+	{{- end }}
 	{{- if .CanUseJson}}
 	var {{.CamelName}}Json flags.JsonFlag
 	{{- end}}
@@ -232,7 +235,7 @@ func new{{.PascalName}}() *cobra.Command {
 		{{- if .Request }}
 			{{ if .CanUseJson }}
 			if cmd.Flags().Changed("json") {
-					diags := {{.CamelName}}Json.Unmarshal(&{{.CamelName}}Req)
+					diags := {{.CamelName}}Json.Unmarshal(&{{.CamelName}}Req{{ if .RequestBodyField }}.{{.RequestBodyField.PascalName}}{{ end }})
 					if diags.HasError() {
 						return diags.Error()
 					}
@@ -392,7 +395,7 @@ func new{{.PascalName}}() *cobra.Command {
 	if err != nil {
 		return fmt.Errorf("invalid {{$field.ConstantName}}: %s", args[{{$arg}}])
 	}{{else -}}
-	{{$method.CamelName}}Req.{{$field.PascalName}} = args[{{$arg}}]
+	{{$method.CamelName}}Req.{{ if $method.RequestBodyField }}{{$method.RequestBodyField.PascalName}}.{{end}}{{$field.PascalName}} = args[{{$arg}}]
 	{{- end -}}
 	{{- if $optionalIfJsonIsUsed  }}
 	}

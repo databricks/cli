@@ -70,6 +70,7 @@ func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var createReq dashboards.CreateDashboardRequest
+	createReq.Dashboard = &dashboards.Dashboard{}
 	var createJson flags.JsonFlag
 
 	// TODO: short flags
@@ -96,7 +97,7 @@ func newCreate() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			diags := createJson.Unmarshal(&createReq)
+			diags := createJson.Unmarshal(&createReq.Dashboard)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -140,6 +141,7 @@ func newCreateSchedule() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var createScheduleReq dashboards.CreateScheduleRequest
+	createScheduleReq.Schedule = &dashboards.Schedule{}
 	var createScheduleJson flags.JsonFlag
 
 	// TODO: short flags
@@ -147,22 +149,14 @@ func newCreateSchedule() *cobra.Command {
 
 	// TODO: complex arg: schedule
 
-	cmd.Use = "create-schedule DASHBOARD_ID"
+	cmd.Use = "create-schedule"
 	cmd.Short = `Create dashboard schedule.`
-	cmd.Long = `Create dashboard schedule.
-
-  Arguments:
-    DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.`
+	cmd.Long = `Create dashboard schedule.`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
-
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
-		return check(cmd, args)
-	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -170,7 +164,7 @@ func newCreateSchedule() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			diags := createScheduleJson.Unmarshal(&createScheduleReq)
+			diags := createScheduleJson.Unmarshal(&createScheduleReq.Schedule)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -181,7 +175,6 @@ func newCreateSchedule() *cobra.Command {
 				}
 			}
 		}
-		createScheduleReq.DashboardId = args[0]
 
 		response, err := w.Lakeview.CreateSchedule(ctx, createScheduleReq)
 		if err != nil {
@@ -215,6 +208,7 @@ func newCreateSubscription() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var createSubscriptionReq dashboards.CreateSubscriptionRequest
+	createSubscriptionReq.Subscription = &dashboards.Subscription{}
 	var createSubscriptionJson flags.JsonFlag
 
 	// TODO: short flags
@@ -222,23 +216,14 @@ func newCreateSubscription() *cobra.Command {
 
 	// TODO: complex arg: subscription
 
-	cmd.Use = "create-subscription DASHBOARD_ID SCHEDULE_ID"
+	cmd.Use = "create-subscription"
 	cmd.Short = `Create schedule subscription.`
-	cmd.Long = `Create schedule subscription.
-
-  Arguments:
-    DASHBOARD_ID: UUID identifying the dashboard to which the subscription belongs.
-    SCHEDULE_ID: UUID identifying the schedule to which the subscription belongs.`
+	cmd.Long = `Create schedule subscription.`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
-
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(2)
-		return check(cmd, args)
-	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -246,7 +231,7 @@ func newCreateSubscription() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			diags := createSubscriptionJson.Unmarshal(&createSubscriptionReq)
+			diags := createSubscriptionJson.Unmarshal(&createSubscriptionReq.Subscription)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -257,8 +242,6 @@ func newCreateSubscription() *cobra.Command {
 				}
 			}
 		}
-		createSubscriptionReq.DashboardId = args[0]
-		createSubscriptionReq.ScheduleId = args[1]
 
 		response, err := w.Lakeview.CreateSubscription(ctx, createSubscriptionReq)
 		if err != nil {
@@ -1108,6 +1091,7 @@ func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var updateReq dashboards.UpdateDashboardRequest
+	updateReq.Dashboard = &dashboards.Dashboard{}
 	var updateJson flags.JsonFlag
 
 	// TODO: short flags
@@ -1115,19 +1099,16 @@ func newUpdate() *cobra.Command {
 
 	// TODO: complex arg: dashboard
 
-	cmd.Use = "update DASHBOARD_ID"
+	cmd.Use = "update"
 	cmd.Short = `Update dashboard.`
 	cmd.Long = `Update dashboard.
   
-  Update a draft dashboard.
-
-  Arguments:
-    DASHBOARD_ID: UUID identifying the dashboard.`
+  Update a draft dashboard.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
+		check := root.ExactArgs(0)
 		return check(cmd, args)
 	}
 
@@ -1137,7 +1118,7 @@ func newUpdate() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			diags := updateJson.Unmarshal(&updateReq)
+			diags := updateJson.Unmarshal(&updateReq.Dashboard)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -1148,7 +1129,6 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		updateReq.DashboardId = args[0]
 
 		response, err := w.Lakeview.Update(ctx, updateReq)
 		if err != nil {
@@ -1182,6 +1162,7 @@ func newUpdateSchedule() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var updateScheduleReq dashboards.UpdateScheduleRequest
+	updateScheduleReq.Schedule = &dashboards.Schedule{}
 	var updateScheduleJson flags.JsonFlag
 
 	// TODO: short flags
@@ -1189,23 +1170,14 @@ func newUpdateSchedule() *cobra.Command {
 
 	// TODO: complex arg: schedule
 
-	cmd.Use = "update-schedule DASHBOARD_ID SCHEDULE_ID"
+	cmd.Use = "update-schedule"
 	cmd.Short = `Update dashboard schedule.`
-	cmd.Long = `Update dashboard schedule.
-
-  Arguments:
-    DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.
-    SCHEDULE_ID: UUID identifying the schedule.`
+	cmd.Long = `Update dashboard schedule.`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
-
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(2)
-		return check(cmd, args)
-	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -1213,7 +1185,7 @@ func newUpdateSchedule() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			diags := updateScheduleJson.Unmarshal(&updateScheduleReq)
+			diags := updateScheduleJson.Unmarshal(&updateScheduleReq.Schedule)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -1224,8 +1196,6 @@ func newUpdateSchedule() *cobra.Command {
 				}
 			}
 		}
-		updateScheduleReq.DashboardId = args[0]
-		updateScheduleReq.ScheduleId = args[1]
 
 		response, err := w.Lakeview.UpdateSchedule(ctx, updateScheduleReq)
 		if err != nil {
