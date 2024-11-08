@@ -147,8 +147,8 @@ func new{{.PascalName}}() *cobra.Command {
 			{{else if .Entity.ArrayValue }}// TODO: array: {{.Name}}
 			{{else if .Entity.MapValue }}// TODO: map via StringToStringVar: {{.Name}}
 			{{else if .Entity.IsEmpty }}// TODO: output-only field
-			{{else if .Entity.Enum }}cmd.Flags().Var(&{{- template "request-body-obj" (dict "Method" $method)}}.{{.PascalName}}, "{{.KebabName}}", `{{.Summary | without "`" | trimSuffix "."}}. Supported values: {{template "printArray" .Entity.Enum}}`)
-			{{else}}cmd.Flags().{{template "arg-type" .Entity}}(&{{- template "request-body-obj" (dict "Method" $method)}}.{{.PascalName}}, "{{.KebabName}}", {{- template "request-body-obj" (dict "Method" $method)}}.{{.PascalName}}, `{{.Summary | without "`"}}`)
+			{{else if .Entity.Enum }}cmd.Flags().Var(&{{- template "request-body-obj" (dict "Method" $method "Field" .)}}, "{{.KebabName}}", `{{.Summary | without "`" | trimSuffix "."}}. Supported values: {{template "printArray" .Entity.Enum}}`)
+			{{else}}cmd.Flags().{{template "arg-type" .Entity}}(&{{- template "request-body-obj" (dict "Method" $method "Field" .)}}, "{{.KebabName}}", {{- template "request-body-obj" (dict "Method" $method "Field" .)}}, `{{.Summary | without "`"}}`)
 			{{end}}
 		{{- end -}}
 	{{- end}}
@@ -395,11 +395,11 @@ func new{{.PascalName}}() *cobra.Command {
 	if !cmd.Flags().Changed("json") {
 	{{- end }}
 	{{if not $field.Entity.IsString -}}
-	_, err = fmt.Sscan(args[{{$arg}}], &{{- template "request-body-obj" (dict "Method" $method)}}.{{$field.PascalName}})
+	_, err = fmt.Sscan(args[{{$arg}}], &{{- template "request-body-obj" (dict "Method" $method "Field" $field)}})
 	if err != nil {
 		return fmt.Errorf("invalid {{$field.ConstantName}}: %s", args[{{$arg}}])
 	}{{else -}}
-	{{- template "request-body-obj" (dict "Method" $method)}}.{{$field.PascalName}} = args[{{$arg}}]
+	{{- template "request-body-obj" (dict "Method" $method "Field" $field)}} = args[{{$arg}}]
 	{{- end -}}
 	{{- if $optionalIfJsonIsUsed  }}
 	}
@@ -408,5 +408,6 @@ func new{{.PascalName}}() *cobra.Command {
 
 {{- define "request-body-obj" -}}
 	{{- $method := .Method -}}
-	{{$method.CamelName}}Req{{ if $method.RequestBodyField }}.{{$method.RequestBodyField.PascalName}}{{end}}
+	{{- $field := .Field -}}
+	{{$method.CamelName}}Req{{ if (and $method.RequestBodyField (not $field.IsPath)) }}.{{$method.RequestBodyField.PascalName}}{{end}}.{{$field.PascalName}}
 {{- end -}}

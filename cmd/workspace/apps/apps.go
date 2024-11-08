@@ -267,16 +267,19 @@ func newDeploy() *cobra.Command {
 	// TODO: complex arg: status
 	cmd.Flags().StringVar(&deployReq.AppDeployment.UpdateTime, "update-time", deployReq.AppDeployment.UpdateTime, `The update time of the deployment.`)
 
-	cmd.Use = "deploy"
+	cmd.Use = "deploy APP_NAME"
 	cmd.Short = `Create an app deployment.`
 	cmd.Long = `Create an app deployment.
   
-  Creates an app deployment for the app with the supplied name.`
+  Creates an app deployment for the app with the supplied name.
+
+  Arguments:
+    APP_NAME: The name of the app.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(0)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -297,6 +300,7 @@ func newDeploy() *cobra.Command {
 				}
 			}
 		}
+		deployReq.AppName = args[0]
 
 		wait, err := w.Apps.Deploy(ctx, deployReq)
 		if err != nil {
@@ -956,13 +960,14 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.App.Updater, "updater", updateReq.App.Updater, `The email of the user that last updated the app.`)
 	cmd.Flags().StringVar(&updateReq.App.Url, "url", updateReq.App.Url, `The URL of the app once it is deployed.`)
 
-	cmd.Use = "update NAME"
+	cmd.Use = "update NAME NAME"
 	cmd.Short = `Update an app.`
 	cmd.Long = `Update an app.
   
   Updates the app with the supplied name.
 
   Arguments:
+    NAME: The name of the app.
     NAME: The name of the app. The name must contain only lowercase alphanumeric
       characters and hyphens. It must be unique within the workspace.`
 
@@ -976,7 +981,7 @@ func newUpdate() *cobra.Command {
 			}
 			return nil
 		}
-		check := root.ExactArgs(1)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -997,8 +1002,9 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
+		updateReq.Name = args[0]
 		if !cmd.Flags().Changed("json") {
-			updateReq.App.Name = args[0]
+			updateReq.App.Name = args[1]
 		}
 
 		response, err := w.Apps.Update(ctx, updateReq)

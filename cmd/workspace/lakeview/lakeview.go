@@ -164,14 +164,29 @@ func newCreateSchedule() *cobra.Command {
 	cmd.Flags().StringVar(&createScheduleReq.Schedule.ScheduleId, "schedule-id", createScheduleReq.Schedule.ScheduleId, `UUID identifying the schedule.`)
 	cmd.Flags().StringVar(&createScheduleReq.Schedule.UpdateTime, "update-time", createScheduleReq.Schedule.UpdateTime, `A timestamp indicating when the schedule was last updated.`)
 
-	cmd.Use = "create-schedule"
+	cmd.Use = "create-schedule DASHBOARD_ID"
 	cmd.Short = `Create dashboard schedule.`
-	cmd.Long = `Create dashboard schedule.`
+	cmd.Long = `Create dashboard schedule.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'cron_schedule' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -190,6 +205,7 @@ func newCreateSchedule() *cobra.Command {
 				}
 			}
 		}
+		createScheduleReq.DashboardId = args[0]
 
 		response, err := w.Lakeview.CreateSchedule(ctx, createScheduleReq)
 		if err != nil {
@@ -237,14 +253,30 @@ func newCreateSubscription() *cobra.Command {
 	cmd.Flags().StringVar(&createSubscriptionReq.Subscription.SubscriptionId, "subscription-id", createSubscriptionReq.Subscription.SubscriptionId, `UUID identifying the subscription.`)
 	cmd.Flags().StringVar(&createSubscriptionReq.Subscription.UpdateTime, "update-time", createSubscriptionReq.Subscription.UpdateTime, `A timestamp indicating when the subscription was last updated.`)
 
-	cmd.Use = "create-subscription"
+	cmd.Use = "create-subscription DASHBOARD_ID SCHEDULE_ID"
 	cmd.Short = `Create schedule subscription.`
-	cmd.Long = `Create schedule subscription.`
+	cmd.Long = `Create schedule subscription.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard to which the subscription belongs.
+    SCHEDULE_ID: UUID identifying the schedule to which the subscription belongs.`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'subscriber' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -263,6 +295,8 @@ func newCreateSubscription() *cobra.Command {
 				}
 			}
 		}
+		createSubscriptionReq.DashboardId = args[0]
+		createSubscriptionReq.ScheduleId = args[1]
 
 		response, err := w.Lakeview.CreateSubscription(ctx, createSubscriptionReq)
 		if err != nil {
@@ -1129,16 +1163,19 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.Dashboard.UpdateTime, "update-time", updateReq.Dashboard.UpdateTime, `The timestamp of when the dashboard was last updated by the user.`)
 	cmd.Flags().StringVar(&updateReq.Dashboard.WarehouseId, "warehouse-id", updateReq.Dashboard.WarehouseId, `The warehouse ID used to run the dashboard.`)
 
-	cmd.Use = "update"
+	cmd.Use = "update DASHBOARD_ID"
 	cmd.Short = `Update dashboard.`
 	cmd.Long = `Update dashboard.
   
-  Update a draft dashboard.`
+  Update a draft dashboard.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(0)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -1159,6 +1196,7 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
+		updateReq.DashboardId = args[0]
 
 		response, err := w.Lakeview.Update(ctx, updateReq)
 		if err != nil {
@@ -1206,14 +1244,30 @@ func newUpdateSchedule() *cobra.Command {
 	cmd.Flags().StringVar(&updateScheduleReq.Schedule.ScheduleId, "schedule-id", updateScheduleReq.Schedule.ScheduleId, `UUID identifying the schedule.`)
 	cmd.Flags().StringVar(&updateScheduleReq.Schedule.UpdateTime, "update-time", updateScheduleReq.Schedule.UpdateTime, `A timestamp indicating when the schedule was last updated.`)
 
-	cmd.Use = "update-schedule"
+	cmd.Use = "update-schedule DASHBOARD_ID SCHEDULE_ID"
 	cmd.Short = `Update dashboard schedule.`
-	cmd.Long = `Update dashboard schedule.`
+	cmd.Long = `Update dashboard schedule.
+
+  Arguments:
+    DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.
+    SCHEDULE_ID: UUID identifying the schedule.`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'cron_schedule' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -1232,6 +1286,8 @@ func newUpdateSchedule() *cobra.Command {
 				}
 			}
 		}
+		updateScheduleReq.DashboardId = args[0]
+		updateScheduleReq.ScheduleId = args[1]
 
 		response, err := w.Lakeview.UpdateSchedule(ctx, updateScheduleReq)
 		if err != nil {
