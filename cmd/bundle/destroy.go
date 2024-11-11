@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
@@ -62,7 +63,12 @@ func newDestroyCommand() *cobra.Command {
 
 		diags = bundle.Apply(ctx, b, bundle.Seq(
 			phases.Initialize(),
-			phases.Build(),
+			// We need to resolve artifact variable (how we do it in build phase)
+			// because some of the to-be-destroyed resource might use this variable.
+			// Not resolving might lead to terraform "Reference to undeclared resource" error
+			mutator.ResolveVariableReferences(
+				"artifacts",
+			),
 			phases.Destroy(),
 		))
 		if err := diags.Error(); err != nil {
