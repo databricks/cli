@@ -84,9 +84,14 @@ class Job:
             permission["level"] = permission["permission_level"]
             permission.pop("permission_level")
 
+        # Filter out keys that are not in the base configuration
+        filtered_ordered_keys = [k for k in ordered_keys if k in obj]
+
         return {
             "resources": {
-                "jobs": {self.normalized_key(): {k: obj[k] for k in ordered_keys}}
+                "jobs": {
+                    self.normalized_key(): {k: obj[k] for k in filtered_ordered_keys}
+                }
             }
         }
 
