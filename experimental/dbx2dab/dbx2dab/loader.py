@@ -3,7 +3,7 @@ from typing import Dict, List, Tuple
 import yaml
 
 from dbx2dab.config_reader import ConfigReader
-from dbx2dab.compare import walk
+from dbx2dab.compare import tuple_walk
 
 
 class VerboseSafeDumper(yaml.SafeDumper):
@@ -138,7 +138,7 @@ class Loader:
                 correctly_replaced = False
                 return
 
-            walk(complete_config, config, update_callback=update_callback)
+            tuple_walk(complete_config, config, update_callback=update_callback)
 
             # If we found an incompatible replacement, bail.
             if not correctly_replaced:

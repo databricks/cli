@@ -252,7 +252,7 @@ def recursive_subtract_list(list1: List[any], list2: List[any]):
     return result
 
 
-class Walker:
+class TupleWalker:
     _insert_callback = None
     _update_callback = None
     _delete_callback = None
@@ -319,8 +319,10 @@ class Walker:
             self.update_callback(path, o1, o2)
 
 
-def walk(o1, o2, insert_callback=None, update_callback=None, delete_callback=None):
-    walker = Walker(insert_callback, update_callback, delete_callback)
+def tuple_walk(
+    o1, o2, insert_callback=None, update_callback=None, delete_callback=None
+):
+    walker = TupleWalker(insert_callback, update_callback, delete_callback)
     walker.walk(o1, o2)
 
 
