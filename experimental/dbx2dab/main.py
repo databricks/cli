@@ -241,6 +241,40 @@ class LookupRewriter:
         return variables
 
 
+class FileRefRewriter:
+    _prefixes = [
+        "file://",
+        "file:fuse://",
+    ]
+
+    def __init__(self, job: Job) -> None:
+        self.job = job
+
+    def rewrite(self):
+        # Now rewrite the job configuration
+        def cb(path, obj):
+            if not isinstance(obj, str):
+                return obj
+
+            for prefix in self._prefixes:
+                if not obj.startswith(prefix):
+                    continue
+
+                # DBX anchors paths at the root of the project.
+                # DABs anchors paths relative to the location of the configuration file.
+                # Below we write configuration to the "./resources" directory.
+                # We need to go up one level to get to the root of the project.
+                payload = obj.replace(prefix, "")
+                return f"../{payload}"
+
+            return obj
+
+        for env in self.job.configs.keys():
+            self.job.configs[env] = walk(copy.deepcopy(self.job.configs[env]), cb)
+
+        return
+
+
 def dedup_variables(variables):
     deduped = dict()
     for v in variables:
@@ -319,6 +353,11 @@ def main():
         for env in job.configs:
             lr.add(env)
         var_lookup_variables.extend(lr.rewrite())
+
+    # Rewrite file references
+    for job in jobs.values():
+        fr = FileRefRewriter(job)
+        fr.rewrite()
 
     for job in jobs.values():
         base_job = job.compute_base()
