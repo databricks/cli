@@ -1,0 +1,31 @@
+bundle:
+  name: {{ bundle_name }}
+
+include:
+  - "resources/*.yml"
+  - "conf/*/overrides.yml"
+  - "conf/*/variables.yml"
+
+variables:
+  # Variables that are specified as environment variables.
+  # These are known only at deployment time.
+  #
+  # These were directly accessible in DBX configuration.
+  # This is not possible in bundles for security reasons.
+  #
+  # A variable that was previously referred as env["CI_PROJECT_URL"],
+  # must now be used as ${var.env_ci_project_url} and can be set
+  # with the environment variable "BUNDLE_VAR_env_ci_project_url".
+  #
+  {% for item in env_variables -%}
+  {{ item }}:
+    description: "<unknown>"
+  {% endfor %}
+
+  # Variables with known values at deployment time.
+  # They may define a default below, may be set for each target,
+  # or may be set at deployment time.
+  {% for item in var_variables -%}
+  {{ item }}:
+    description: "<unknown>"
+  {% endfor %}

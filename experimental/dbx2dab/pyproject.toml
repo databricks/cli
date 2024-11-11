@@ -1,0 +1,11 @@
+[project]
+name = "eval"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.11"
+dependencies = [
+    "pyyaml",
+    "jinja2",
+    "pytest",
+    "ruff",
+]
