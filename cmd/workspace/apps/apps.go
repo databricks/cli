@@ -81,7 +81,6 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: active_deployment
 	// TODO: complex arg: app_status
 	// TODO: complex arg: compute_status
-	cmd.Flags().StringVar(&createReq.App.DefaultSourceCodePath, "default-source-code-path", createReq.App.DefaultSourceCodePath, `The default workspace file system path of the source code from which app deployment are created.`)
 	cmd.Flags().StringVar(&createReq.App.Description, "description", createReq.App.Description, `The description of the app.`)
 	// TODO: complex arg: pending_deployment
 	// TODO: array: resources
@@ -938,7 +937,6 @@ func newUpdate() *cobra.Command {
 	// TODO: complex arg: active_deployment
 	// TODO: complex arg: app_status
 	// TODO: complex arg: compute_status
-	cmd.Flags().StringVar(&updateReq.App.DefaultSourceCodePath, "default-source-code-path", updateReq.App.DefaultSourceCodePath, `The default workspace file system path of the source code from which app deployment are created.`)
 	cmd.Flags().StringVar(&updateReq.App.Description, "description", updateReq.App.Description, `The description of the app.`)
 	// TODO: complex arg: pending_deployment
 	// TODO: array: resources
