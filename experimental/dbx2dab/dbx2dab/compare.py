@@ -393,3 +393,41 @@ def recursive_merge_list(list1: List[any], list2: List[any]):
         else:
             merged.append(item)
     return merged
+
+
+class Walker:
+    _callback = None
+
+    def __init__(self, callback=None):
+        self._callback = callback
+
+    def walk(self, obj, path=None):
+        if path is None:
+            path = []
+
+        if isinstance(obj, dict):
+            return self._walk_dict(obj, path)
+        elif isinstance(obj, list):
+            return self._walk_list(obj, path)
+        else:
+            return self._walk_scalar(obj, path)
+
+    def _walk_dict(self, obj, path):
+        for key in obj:
+            obj[key] = self.walk(obj[key], path + [key])
+        return obj
+
+    def _walk_list(self, obj, path):
+        for i, item in enumerate(obj):
+            obj[i] = self.walk(item, path + [i])
+        return obj
+
+    def _walk_scalar(self, obj, path):
+        if self._callback:
+            return self._callback(path, obj)
+        return obj
+
+
+def walk(obj, callback=None):
+    walker = Walker(callback)
+    return walker.walk(obj)

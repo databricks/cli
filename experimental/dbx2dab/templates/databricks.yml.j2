@@ -29,3 +29,12 @@ variables:
   {{ item }}:
     description: "<unknown>"
   {% endfor %}
+
+  # Variables for fixtures in the workspace that are resolved by name.
+  # The lookup value is defined below, but can be overridden in the target.
+  {% for obj in var_lookup_variables -%}
+  {{ obj["name"] }}:
+    description: "<unknown>"
+    lookup:
+      {{ obj["lookup_type"] }}: {{ obj["lookup_value"] }}
+  {% endfor %}
