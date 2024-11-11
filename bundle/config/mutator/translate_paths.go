@@ -11,8 +11,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/notebook"
@@ -131,9 +129,6 @@ func (t *translateContext) translateNotebookPath(literal, localFullPath, localRe
 		return "", ErrIsNotNotebook{localFullPath}
 	}
 
-	if t.shouldTranslateRemotePaths(localFullPath) {
-		return localFullPath, nil
-	}
 	// Upon import, notebooks are stripped of their extension.
 	return strings.TrimSuffix(remotePath, filepath.Ext(localFullPath)), nil
 }
@@ -149,9 +144,6 @@ func (t *translateContext) translateFilePath(literal, localFullPath, localRelPat
 	if nb {
 		return "", ErrIsNotebook{localFullPath}
 	}
-	if t.shouldTranslateRemotePaths(localFullPath) {
-		return localFullPath, nil
-	}
 	return remotePath, nil
 }
 
@@ -163,16 +155,10 @@ func (t *translateContext) translateDirectoryPath(literal, localFullPath, localR
 	if !info.IsDir() {
 		return "", fmt.Errorf("%s is not a directory", localFullPath)
 	}
-	if t.shouldTranslateRemotePaths(localFullPath) {
-		return localFullPath, nil
-	}
 	return remotePath, nil
 }
 
 func (t *translateContext) translateNoOp(literal, localFullPath, localRelPath, remotePath string) (string, error) {
-	if t.shouldTranslateRemotePaths(localFullPath) {
-		return localFullPath, nil
-	}
 	return localRelPath, nil
 }
 
@@ -191,10 +177,6 @@ func (t *translateContext) retainLocalAbsoluteFilePath(literal, localFullPath, l
 }
 
 func (t *translateContext) translateNoOpWithPrefix(literal, localFullPath, localRelPath, remotePath string) (string, error) {
-	if t.shouldTranslateRemotePaths(localFullPath) {
-		return localFullPath, nil
-	}
-
 	if !strings.HasPrefix(localRelPath, ".") {
 		localRelPath = "." + string(filepath.Separator) + localRelPath
 	}
@@ -233,11 +215,6 @@ func (t *translateContext) rewriteRelativeTo(p dyn.Path, v dyn.Value, fn rewrite
 	}
 
 	return dyn.InvalidValue, err
-}
-
-func (t *translateContext) shouldTranslateRemotePaths(localFullPath string) bool {
-	return config.IsExplicitlyEnabled(t.b.Config.Presets.InPlaceDeployment) &&
-		libraries.IsWorkspacePath(localFullPath)
 }
 
 func (m *translatePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {

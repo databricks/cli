@@ -5,6 +5,7 @@ import (
 	"path"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 )
 
@@ -23,6 +24,10 @@ func (m *defineDefaultWorkspacePaths) Apply(ctx context.Context, b *bundle.Bundl
 	root := b.Config.Workspace.RootPath
 	if root == "" {
 		return diag.Errorf("unable to define default workspace paths: workspace root not defined")
+	}
+
+	if config.IsExplicitlyEnabled((b.Config.Presets.InPlaceDeployment)) {
+		b.Config.Workspace.FilePath = b.BundleRootPath
 	}
 
 	if b.Config.Workspace.FilePath == "" {
