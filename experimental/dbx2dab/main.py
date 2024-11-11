@@ -55,9 +55,6 @@ class Job:
 
     def compute_base(self) -> Dict[str, any]:
         keys = list(self.configs.keys())
-        if len(keys) == 1:
-            return self.configs[keys[0]]
-
         out = self.configs[keys[0]]
         for key in keys[1:]:
             out = recursive_intersection(out, self.configs[key])
@@ -70,11 +67,19 @@ class Job:
             "schedule",
             "email_notifications",
             "git_source",
+            "permissions",
             "tasks",
             "job_clusters",
         ]
 
         obj = self.compute_base()
+
+        # DBX uses "access_control_list" per job.
+        # In DABs we use "permissions" for the whole job.
+        obj["permissions"] = [dict(e) for e in obj["access_control_list"]]
+        for permission in obj["permissions"]:
+            permission["level"] = permission["permission_level"]
+            permission.pop("permission_level")
 
         return {
             "resources": {
