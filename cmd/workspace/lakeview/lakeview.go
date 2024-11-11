@@ -151,6 +151,7 @@ func newCreateSchedule() *cobra.Command {
 
 	cmd.Flags().StringVar(&createScheduleReq.Schedule.DisplayName, "display-name", createScheduleReq.Schedule.DisplayName, `The display name for schedule.`)
 	cmd.Flags().Var(&createScheduleReq.Schedule.PauseStatus, "pause-status", `The status indicates whether this schedule is paused or not. Supported values: [PAUSED, UNPAUSED]`)
+	cmd.Flags().StringVar(&createScheduleReq.Schedule.WarehouseId, "warehouse-id", createScheduleReq.Schedule.WarehouseId, `The warehouse id to run the dashboard with for the schedule.`)
 
 	cmd.Use = "create-schedule DASHBOARD_ID"
 	cmd.Short = `Create dashboard schedule.`
@@ -1204,6 +1205,7 @@ func newUpdateSchedule() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateScheduleReq.Schedule.DisplayName, "display-name", updateScheduleReq.Schedule.DisplayName, `The display name for schedule.`)
 	cmd.Flags().Var(&updateScheduleReq.Schedule.PauseStatus, "pause-status", `The status indicates whether this schedule is paused or not. Supported values: [PAUSED, UNPAUSED]`)
+	cmd.Flags().StringVar(&updateScheduleReq.Schedule.WarehouseId, "warehouse-id", updateScheduleReq.Schedule.WarehouseId, `The warehouse id to run the dashboard with for the schedule.`)
 
 	cmd.Use = "update-schedule DASHBOARD_ID SCHEDULE_ID"
 	cmd.Short = `Update dashboard schedule.`

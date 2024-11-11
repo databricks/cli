@@ -421,6 +421,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.ManagedServicesCustomerManagedKeyId, "managed-services-customer-managed-key-id", updateReq.ManagedServicesCustomerManagedKeyId, `The ID of the workspace's managed services encryption key configuration object.`)
 	cmd.Flags().StringVar(&updateReq.NetworkConnectivityConfigId, "network-connectivity-config-id", updateReq.NetworkConnectivityConfigId, ``)
 	cmd.Flags().StringVar(&updateReq.NetworkId, "network-id", updateReq.NetworkId, `The ID of the workspace's network configuration object.`)
+	cmd.Flags().StringVar(&updateReq.PrivateAccessSettingsId, "private-access-settings-id", updateReq.PrivateAccessSettingsId, `The ID of the workspace's private access settings configuration object.`)
 	cmd.Flags().StringVar(&updateReq.StorageConfigurationId, "storage-configuration-id", updateReq.StorageConfigurationId, `The ID of the workspace's storage configuration object.`)
 	cmd.Flags().StringVar(&updateReq.StorageCustomerManagedKeyId, "storage-customer-managed-key-id", updateReq.StorageCustomerManagedKeyId, `The ID of the key configuration object for workspace storage.`)
 

@@ -513,8 +513,9 @@ func newSetPermissions() *cobra.Command {
 	cmd.Short = `Set repo permissions.`
 	cmd.Long = `Set repo permissions.
   
-  Sets permissions on a repo. Repos can inherit permissions from their root
-  object.
+  Sets permissions on an object, replacing existing permissions if they exist.
+  Deletes all direct permissions if none are specified. Objects can inherit
+  permissions from their root object.
 
   Arguments:
     REPO_ID: The repo for which to get or manage permissions.`

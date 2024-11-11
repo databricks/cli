@@ -572,7 +572,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.Filters"
                       },
                       "gateway_definition": {
-                        "description": "The definition of a gateway pipeline to support CDC.",
+                        "description": "The definition of a gateway pipeline to support change data capture.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionGatewayPipelineDefinition"
                       },
                       "id": {
@@ -601,6 +601,10 @@
                       "photon": {
                         "description": "Whether Photon is enabled for this pipeline.",
                         "$ref": "#/$defs/bool"
+                      },
+                      "restart_window": {
+                        "description": "Restart window of this pipeline.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RestartWindow"
                       },
                       "schema": {
                         "description": "The default schema (database) where tables are read from or published to. The presence of this field implies that the pipeline is in direct publishing mode.",
@@ -1310,11 +1314,7 @@
                   "properties": {
                     "pause_status": {
                       "description": "Read only field that indicates whether a schedule is paused or not.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorCronSchedulePauseStatus",
-                      "enum": [
-                        "UNPAUSED",
-                        "PAUSED"
-                      ]
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorCronSchedulePauseStatus"
                     },
                     "quartz_cron_expression": {
                       "description": "The expression that determines when to run the monitor. See [examples](https://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html).\n",
@@ -1338,7 +1338,12 @@
               ]
             },
             "catalog.MonitorCronSchedulePauseStatus": {
-              "type": "string"
+              "type": "string",
+              "description": "Read only field that indicates whether a schedule is paused or not.",
+              "enum": [
+                "UNPAUSED",
+                "PAUSED"
+              ]
             },
             "catalog.MonitorDataClassificationConfig": {
               "anyOf": [
@@ -1403,11 +1408,7 @@
                     },
                     "problem_type": {
                       "description": "Problem type the model aims to solve. Determines the type of model-quality metrics that will be computed.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorInferenceLogProblemType",
-                      "enum": [
-                        "PROBLEM_TYPE_CLASSIFICATION",
-                        "PROBLEM_TYPE_REGRESSION"
-                      ]
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorInferenceLogProblemType"
                     },
                     "timestamp_col": {
                       "description": "Column that contains the timestamps of requests. The column must be one of the following:\n- A ``TimestampType`` column\n- A column whose values can be converted to timestamps through the pyspark\n  ``to_timestamp`` [function](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.functions.to_timestamp.html).\n",
@@ -1430,7 +1431,12 @@
               ]
             },
             "catalog.MonitorInferenceLogProblemType": {
-              "type": "string"
+              "type": "string",
+              "description": "Problem type the model aims to solve. Determines the type of model-quality metrics that will be computed.",
+              "enum": [
+                "PROBLEM_TYPE_CLASSIFICATION",
+                "PROBLEM_TYPE_REGRESSION"
+              ]
             },
             "catalog.MonitorMetric": {
               "anyOf": [
@@ -1455,12 +1461,7 @@
                     },
                     "type": {
                       "description": "Can only be one of ``\"CUSTOM_METRIC_TYPE_AGGREGATE\"``, ``\"CUSTOM_METRIC_TYPE_DERIVED\"``, or ``\"CUSTOM_METRIC_TYPE_DRIFT\"``.\nThe ``\"CUSTOM_METRIC_TYPE_AGGREGATE\"`` and ``\"CUSTOM_METRIC_TYPE_DERIVED\"`` metrics\nare computed on a single table, whereas the ``\"CUSTOM_METRIC_TYPE_DRIFT\"`` compare metrics across\nbaseline and input table, or across the two consecutive time windows.\n- CUSTOM_METRIC_TYPE_AGGREGATE: only depend on the existing columns in your table\n- CUSTOM_METRIC_TYPE_DERIVED: depend on previously computed aggregate metrics\n- CUSTOM_METRIC_TYPE_DRIFT:  depend on previously computed aggregate or derived metrics\n",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorMetricType",
-                      "enum": [
-                        "CUSTOM_METRIC_TYPE_AGGREGATE",
-                        "CUSTOM_METRIC_TYPE_DERIVED",
-                        "CUSTOM_METRIC_TYPE_DRIFT"
-                      ]
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorMetricType"
                     }
                   },
                   "additionalProperties": false,
@@ -1479,7 +1480,13 @@
               ]
             },
             "catalog.MonitorMetricType": {
-              "type": "string"
+              "type": "string",
+              "description": "Can only be one of ``\"CUSTOM_METRIC_TYPE_AGGREGATE\"``, ``\"CUSTOM_METRIC_TYPE_DERIVED\"``, or ``\"CUSTOM_METRIC_TYPE_DRIFT\"``.\nThe ``\"CUSTOM_METRIC_TYPE_AGGREGATE\"`` and ``\"CUSTOM_METRIC_TYPE_DERIVED\"`` metrics\nare computed on a single table, whereas the ``\"CUSTOM_METRIC_TYPE_DRIFT\"`` compare metrics across\nbaseline and input table, or across the two consecutive time windows.\n- CUSTOM_METRIC_TYPE_AGGREGATE: only depend on the existing columns in your table\n- CUSTOM_METRIC_TYPE_DERIVED: depend on previously computed aggregate metrics\n- CUSTOM_METRIC_TYPE_DRIFT:  depend on previously computed aggregate or derived metrics\n",
+              "enum": [
+                "CUSTOM_METRIC_TYPE_AGGREGATE",
+                "CUSTOM_METRIC_TYPE_DERIVED",
+                "CUSTOM_METRIC_TYPE_DRIFT"
+              ]
             },
             "catalog.MonitorNotifications": {
               "anyOf": [
@@ -3980,15 +3987,15 @@
                   "type": "object",
                   "properties": {
                     "report": {
-                      "description": "Select tables from a specific source report.",
+                      "description": "Select a specific source report.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ReportSpec"
                     },
                     "schema": {
-                      "description": "Select tables from a specific source schema.",
+                      "description": "Select all tables from a specific source schema.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.SchemaSpec"
                     },
                     "table": {
-                      "description": "Select tables from a specific source table.",
+                      "description": "Select a specific source table.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TableSpec"
                     }
                   },
@@ -4006,7 +4013,11 @@
                   "type": "object",
                   "properties": {
                     "connection_id": {
-                      "description": "Immutable. The Unity Catalog connection this gateway pipeline uses to communicate with the source.",
+                      "description": "[Deprecated, use connection_name instead] Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "connection_name": {
+                      "description": "Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.",
                       "$ref": "#/$defs/string"
                     },
                     "gateway_storage_catalog": {
@@ -4036,11 +4047,11 @@
                   "type": "object",
                   "properties": {
                     "connection_name": {
-                      "description": "Immutable. The Unity Catalog connection this ingestion pipeline uses to communicate with the source. Specify either ingestion_gateway_id or connection_name.",
+                      "description": "Immutable. The Unity Catalog connection that this ingestion pipeline uses to communicate with the source. This is used with connectors for applications like Salesforce, Workday, and so on.",
                       "$ref": "#/$defs/string"
                     },
                     "ingestion_gateway_id": {
-                      "description": "Immutable. Identifier for the ingestion gateway used by this ingestion pipeline to communicate with the source. Specify either ingestion_gateway_id or connection_name.",
+                      "description": "Immutable. Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database. This is used with connectors to databases like SQL Server.",
                       "$ref": "#/$defs/string"
                     },
                     "objects": {
@@ -4349,6 +4360,47 @@
                   "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
                 }
               ]
+            },
+            "pipelines.RestartWindow": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "days_of_week": {
+                      "description": "Days of week in which the restart is allowed to happen (within a five-hour window starting at start_hour).\nIf not specified all days of the week will be used.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RestartWindowDaysOfWeek",
+                      "enum": [
+                        "MONDAY",
+                        "TUESDAY",
+                        "WEDNESDAY",
+                        "THURSDAY",
+                        "FRIDAY",
+                        "SATURDAY",
+                        "SUNDAY"
+                      ]
+                    },
+                    "start_hour": {
+                      "description": "An integer between 0 and 23 denoting the start hour for the restart window in the 24-hour day.\nContinuous pipeline restart is triggered only within a five-hour window starting at this hour.",
+                      "$ref": "#/$defs/int"
+                    },
+                    "time_zone_id": {
+                      "description": "Time zone id of restart window. See https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html for details.\nIf not specified, UTC will be used.",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "start_hour"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "pipelines.RestartWindowDaysOfWeek": {
+              "type": "string"
             },
             "pipelines.SchemaSpec": {
               "anyOf": [
