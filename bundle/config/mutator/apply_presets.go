@@ -222,13 +222,17 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		dashboard.DisplayName = prefix + dashboard.DisplayName
 	}
 
-	root := b.SyncRoot.Native()
-	_, ok := env.Lookup(ctx, envDatabricksRuntimeVersion)
-	isInWorkspace := ok && strings.HasPrefix(root, "/Workspace/")
+	if config.IsExplicitlyEnabled((b.Config.Presets.InPlaceDeployment)) {
+		root := b.SyncRoot.Native()
+		_, ok := env.Lookup(ctx, envDatabricksRuntimeVersion)
+		isInWorkspace := ok && strings.HasPrefix(root, "/Workspace/")
 
-	if !isInWorkspace {
-		disabled := false
-		b.Config.Presets.InPlaceDeployment = &disabled
+		if isInWorkspace {
+			b.Config.Workspace.FilePath = b.BundleRootPath
+		} else {
+			disabled := false
+			b.Config.Presets.InPlaceDeployment = &disabled
+		}
 	}
 
 	return diags
