@@ -80,14 +80,9 @@ func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithExt(ctx contex
 		return nil, nil
 	}
 
-	// When the extension is one of .py, .r, .scala or .sql we expect the export format to be source.
+	// For non-jupyter notebooks the export format should be source.
 	// If it's not, return early.
-	if slices.Contains([]string{
-		notebook.ExtensionPython,
-		notebook.ExtensionR,
-		notebook.ExtensionScala,
-		notebook.ExtensionSql}, ext) &&
-		stat.ReposExportFormat != workspace.ExportFormatSource {
+	if ext != notebook.ExtensionJupyter && stat.ReposExportFormat != workspace.ExportFormatSource {
 		log.Debugf(ctx, "attempting to determine if %s could be a notebook. Found a notebook at %s but it is not exported as a source notebook. Its export format is %s.", name, path.Join(w.root, nameWithoutExt), stat.ReposExportFormat)
 		return nil, nil
 	}
