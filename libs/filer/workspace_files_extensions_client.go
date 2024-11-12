@@ -98,6 +98,7 @@ func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithExt(ctx contex
 	// Modify the stat object path to include the extension. This stat object will be used
 	// to return the fs.FileInfo object in the stat method.
 	stat.Path = stat.Path + ext
+	stat.VirtualFileExtension = ext
 	return &workspaceFileStatus{
 		wsfsFileInfo:        stat,
 		nameForWorkspaceAPI: nameWithoutExt,
@@ -127,6 +128,7 @@ func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithoutExt(ctx con
 	// Modify the stat object path to include the extension. This stat object will be used
 	// to return the fs.DirEntry object in the ReadDir method.
 	stat.Path = stat.Path + ext
+	stat.VirtualFileExtension = ext
 	return &workspaceFileStatus{
 		wsfsFileInfo:        stat,
 		nameForWorkspaceAPI: name,
@@ -214,7 +216,7 @@ func (w *workspaceFilesExtensionsClient) ReadDir(ctx context.Context, name strin
 				return nil, err
 			}
 			// Replace the entry with the new entry that includes the extension.
-			entries[i] = wsfsDirEntry{wsfsFileInfo{ObjectInfo: stat.ObjectInfo}}
+			entries[i] = wsfsDirEntry{wsfsFileInfo{ObjectInfo: stat.ObjectInfo, VirtualFileExtension: stat.VirtualFileExtension}}
 		}
 
 		// Error if we have seen this path before in the current directory.
@@ -313,7 +315,7 @@ func (w *workspaceFilesExtensionsClient) Stat(ctx context.Context, name string) 
 			return nil, err
 		}
 
-		return wsfsFileInfo{ObjectInfo: stat.ObjectInfo}, nil
+		return wsfsFileInfo{ObjectInfo: stat.ObjectInfo, VirtualFileExtension: stat.VirtualFileExtension}, nil
 	}
 
 	return info, err

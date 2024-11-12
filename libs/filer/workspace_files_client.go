@@ -53,6 +53,9 @@ type wsfsFileInfo struct {
 
 	// The export format of a notebook. This is not exposed by the SDK.
 	ReposExportFormat workspace.ExportFormat `json:"repos_export_format,omitempty"`
+
+	// Explicitly added file extension of the notebook based on its language
+	VirtualFileExtension string `json:"virtual_file_extension,omitempty"`
 }
 
 func (info wsfsFileInfo) Name() string {
@@ -86,6 +89,10 @@ func (info wsfsFileInfo) Sys() any {
 
 func (info wsfsFileInfo) WorkspaceObjectInfo() workspace.ObjectInfo {
 	return info.ObjectInfo
+}
+
+func (info wsfsFileInfo) VirtualExtension() string {
+	return info.VirtualFileExtension
 }
 
 // UnmarshalJSON is a custom unmarshaller for the wsfsFileInfo struct.

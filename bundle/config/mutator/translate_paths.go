@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/notebook"
@@ -117,6 +118,10 @@ func (t *translateContext) rewritePath(
 	return nil
 }
 
+type FileInfoWithVirtualExtension interface {
+	VirtualExtension() string
+}
+
 func (t *translateContext) translateNotebookPath(literal, localFullPath, localRelPath, remotePath string) (string, error) {
 	nb, _, err := notebook.DetectWithFS(t.b.SyncRoot, filepath.ToSlash(localRelPath))
 	if errors.Is(err, fs.ErrNotExist) {
@@ -127,6 +132,18 @@ func (t *translateContext) translateNotebookPath(literal, localFullPath, localRe
 	}
 	if !nb {
 		return "", ErrIsNotNotebook{localFullPath}
+	}
+
+	if config.IsExplicitlyEnabled(t.b.Config.Presets.InPlaceDeployment) {
+		stat, err := t.b.SyncRoot.Stat(filepath.ToSlash(localRelPath))
+		if err != nil {
+			return "", fmt.Errorf("unable to get file info for %s: %w", localFullPath, err)
+		}
+
+		if i, ok := stat.(FileInfoWithVirtualExtension); ok {
+			vext := i.VirtualExtension()
+			return strings.TrimSuffix(remotePath, vext), nil
+		}
 	}
 
 	// Upon import, notebooks are stripped of their extension.
