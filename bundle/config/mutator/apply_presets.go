@@ -228,7 +228,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		isInWorkspace := ok && strings.HasPrefix(root, "/Workspace/")
 
 		if isInWorkspace {
-			b.Config.Workspace.FilePath = b.BundleRootPath
+			b.Config.Workspace.FilePath = b.SyncRootPath
 		} else {
 			disabled := false
 			b.Config.Presets.InPlaceDeployment = &disabled
