@@ -2,7 +2,10 @@ package dbr
 
 import "context"
 
-// key is a private type to prevent collisions with other packages.
+// key is a package-local type to use for context keys.
+//
+// Using an unexported type for context keys prevents key collisions across
+// packages since external packages cannot create values of this type.
 type key int
 
 const (
@@ -14,7 +17,7 @@ const (
 
 // DetectRuntime detects whether or not the current
 // process is running inside a Databricks Runtime environment.
-// It return a new context with the detection result cached.
+// It return a new context with the detection result set.
 func DetectRuntime(ctx context.Context) context.Context {
 	if v := ctx.Value(dbrKey); v != nil {
 		panic("dbr.DetectRuntime called twice on the same context")
@@ -23,7 +26,7 @@ func DetectRuntime(ctx context.Context) context.Context {
 }
 
 // MockRuntime is a helper function to mock the detection result.
-// It returns a new context with the detection result cached.
+// It returns a new context with the detection result set.
 func MockRuntime(ctx context.Context, b bool) context.Context {
 	if v := ctx.Value(dbrKey); v != nil {
 		panic("dbr.MockRuntime called twice on the same context")
@@ -31,8 +34,12 @@ func MockRuntime(ctx context.Context, b bool) context.Context {
 	return context.WithValue(ctx, dbrKey, b)
 }
 
-// RunsOnRuntime returns the cached detection result from the context.
+// RunsOnRuntime returns the detection result from the context.
 // It expects a context returned by [DetectRuntime] or [MockRuntime].
+//
+// We store this value in a context to avoid having to use either
+// a global variable, passing a boolean around everywhere, or
+// performing the same detection multiple times.
 func RunsOnRuntime(ctx context.Context) bool {
 	v := ctx.Value(dbrKey)
 	if v == nil {
