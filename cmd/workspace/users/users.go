@@ -542,8 +542,9 @@ func newSetPermissions() *cobra.Command {
 	cmd.Short = `Set password permissions.`
 	cmd.Long = `Set password permissions.
   
-  Sets permissions on all passwords. Passwords can inherit permissions from
-  their root object.`
+  Sets permissions on an object, replacing existing permissions if they exist.
+  Deletes all direct permissions if none are specified. Objects can inherit
+  permissions from their root object.`
 
 	cmd.Annotations = make(map[string]string)
 
