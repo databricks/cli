@@ -160,13 +160,13 @@ func newCreateMessage() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var executeMessageQueryOverrides []func(
 	*cobra.Command,
-	*dashboards.ExecuteMessageQueryRequest,
+	*dashboards.GenieExecuteMessageQueryRequest,
 )
 
 func newExecuteMessageQuery() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var executeMessageQueryReq dashboards.ExecuteMessageQueryRequest
+	var executeMessageQueryReq dashboards.GenieExecuteMessageQueryRequest
 
 	// TODO: short flags
 

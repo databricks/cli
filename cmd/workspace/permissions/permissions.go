@@ -241,8 +241,9 @@ func newSet() *cobra.Command {
 	cmd.Short = `Set object permissions.`
 	cmd.Long = `Set object permissions.
   
-  Sets permissions on an object. Objects can inherit permissions from their
-  parent objects or root object.
+  Sets permissions on an object, replacing existing permissions if they exist.
+  Deletes all direct permissions if none are specified. Objects can inherit
+  permissions from their parent objects or root object.
 
   Arguments:
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,

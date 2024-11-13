@@ -77,8 +77,7 @@ func newCreate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `The description of the app.`)
-	// TODO: array: resources
+	// TODO: complex arg: app
 
 	cmd.Use = "create NAME"
 	cmd.Short = `Create an app.`
@@ -93,13 +92,6 @@ func newCreate() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		if cmd.Flags().Changed("json") {
-			err := root.ExactArgs(0)(cmd, args)
-			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
-			}
-			return nil
-		}
 		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
@@ -244,9 +236,7 @@ func newDeploy() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&deployJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&deployReq.DeploymentId, "deployment-id", deployReq.DeploymentId, `The unique id of the deployment.`)
-	cmd.Flags().Var(&deployReq.Mode, "mode", `The mode of which the deployment will manage the source code. Supported values: [AUTO_SYNC, SNAPSHOT]`)
-	cmd.Flags().StringVar(&deployReq.SourceCodePath, "source-code-path", deployReq.SourceCodePath, `The workspace file system path of the source code used to create the app deployment.`)
+	// TODO: complex arg: app_deployment
 
 	cmd.Use = "deploy APP_NAME"
 	cmd.Short = `Create an app deployment.`
@@ -692,8 +682,9 @@ func newSetPermissions() *cobra.Command {
 	cmd.Short = `Set app permissions.`
 	cmd.Long = `Set app permissions.
   
-  Sets permissions on an app. Apps can inherit permissions from their root
-  object.
+  Sets permissions on an object, replacing existing permissions if they exist.
+  Deletes all direct permissions if none are specified. Objects can inherit
+  permissions from their root object.
 
   Arguments:
     APP_NAME: The app for which to get or manage permissions.`
@@ -925,10 +916,9 @@ func newUpdate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Description, "description", updateReq.Description, `The description of the app.`)
-	// TODO: array: resources
+	// TODO: complex arg: app
 
-	cmd.Use = "update NAME"
+	cmd.Use = "update NAME NAME"
 	cmd.Short = `Update an app.`
 	cmd.Long = `Update an app.
   
@@ -936,12 +926,14 @@ func newUpdate() *cobra.Command {
 
   Arguments:
     NAME: The name of the app. The name must contain only lowercase alphanumeric
+      characters and hyphens. It must be unique within the workspace.
+    NAME: The name of the app. The name must contain only lowercase alphanumeric
       characters and hyphens. It must be unique within the workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -963,6 +955,9 @@ func newUpdate() *cobra.Command {
 			}
 		}
 		updateReq.Name = args[0]
+		if !cmd.Flags().Changed("json") {
+			updateReq.Name = args[1]
+		}
 
 		response, err := w.Apps.Update(ctx, updateReq)
 		if err != nil {

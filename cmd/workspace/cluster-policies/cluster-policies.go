@@ -634,8 +634,9 @@ func newSetPermissions() *cobra.Command {
 	cmd.Short = `Set cluster policy permissions.`
 	cmd.Long = `Set cluster policy permissions.
   
-  Sets permissions on a cluster policy. Cluster policies can inherit permissions
-  from their root object.
+  Sets permissions on an object, replacing existing permissions if they exist.
+  Deletes all direct permissions if none are specified. Objects can inherit
+  permissions from their root object.
 
   Arguments:
     CLUSTER_POLICY_ID: The cluster policy for which to get or manage permissions.`

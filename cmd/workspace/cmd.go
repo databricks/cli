@@ -8,7 +8,6 @@ import (
 	apps "github.com/databricks/cli/cmd/workspace/apps"
 	artifact_allowlists "github.com/databricks/cli/cmd/workspace/artifact-allowlists"
 	catalogs "github.com/databricks/cli/cmd/workspace/catalogs"
-	clean_rooms "github.com/databricks/cli/cmd/workspace/clean-rooms"
 	cluster_policies "github.com/databricks/cli/cmd/workspace/cluster-policies"
 	clusters "github.com/databricks/cli/cmd/workspace/clusters"
 	connections "github.com/databricks/cli/cmd/workspace/connections"
@@ -17,6 +16,7 @@ import (
 	consumer_listings "github.com/databricks/cli/cmd/workspace/consumer-listings"
 	consumer_personalization_requests "github.com/databricks/cli/cmd/workspace/consumer-personalization-requests"
 	consumer_providers "github.com/databricks/cli/cmd/workspace/consumer-providers"
+	credentials "github.com/databricks/cli/cmd/workspace/credentials"
 	credentials_manager "github.com/databricks/cli/cmd/workspace/credentials-manager"
 	current_user "github.com/databricks/cli/cmd/workspace/current-user"
 	dashboard_widgets "github.com/databricks/cli/cmd/workspace/dashboard-widgets"
@@ -98,7 +98,6 @@ func All() []*cobra.Command {
 	out = append(out, apps.New())
 	out = append(out, artifact_allowlists.New())
 	out = append(out, catalogs.New())
-	out = append(out, clean_rooms.New())
 	out = append(out, cluster_policies.New())
 	out = append(out, clusters.New())
 	out = append(out, connections.New())
@@ -107,6 +106,7 @@ func All() []*cobra.Command {
 	out = append(out, consumer_listings.New())
 	out = append(out, consumer_personalization_requests.New())
 	out = append(out, consumer_providers.New())
+	out = append(out, credentials.New())
 	out = append(out, credentials_manager.New())
 	out = append(out, current_user.New())
 	out = append(out, dashboard_widgets.New())

@@ -2034,8 +2034,9 @@ func newSetPermissions() *cobra.Command {
 	cmd.Short = `Set experiment permissions.`
 	cmd.Long = `Set experiment permissions.
   
-  Sets permissions on an experiment. Experiments can inherit permissions from
-  their root object.
+  Sets permissions on an object, replacing existing permissions if they exist.
+  Deletes all direct permissions if none are specified. Objects can inherit
+  permissions from their root object.
 
   Arguments:
     EXPERIMENT_ID: The experiment for which to get or manage permissions.`
