@@ -1,8 +1,6 @@
 package apps
 
 import (
-	"fmt"
-
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -25,13 +23,6 @@ func updateOverride(cmd *cobra.Command, req *apps.UpdateAppRequest) {
       characters and hyphens. It must be unique within the workspace.`
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		if cmd.Flags().Changed("json") {
-			err := root.ExactArgs(0)(cmd, args)
-			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
-			}
-			return nil
-		}
 		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
@@ -53,6 +44,7 @@ func updateOverride(cmd *cobra.Command, req *apps.UpdateAppRequest) {
 				}
 			}
 		}
+
 		req.Name = args[0]
 		response, err := w.Apps.Update(ctx, *req)
 		if err != nil {
