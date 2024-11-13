@@ -42,6 +42,7 @@ func (m *overrideCompute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 
 	if b.Config.Bundle.Mode == config.Production {
 		if b.Config.Bundle.ClusterId != "" {
+			// Overriding compute via a command-line flag for production works, but is not recommended.
 			diags = diags.Extend(diag.Warningf("overriding compute for a target that uses 'mode: production' is not recommended"))
 		}
 		if env.Get(ctx, "DATABRICKS_CLUSTER_ID") != "" {

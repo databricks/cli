@@ -144,7 +144,7 @@ func TestOverrideComputeForEachTask(t *testing.T) {
 	assert.Empty(t, b.Config.Resources.Jobs["job1"].Tasks[0].ForEachTask.Task)
 }
 
-func TesOverrideComputeProductionMode(t *testing.T) {
+func TestOverrideComputeModeProduction(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Bundle: config.Bundle{
@@ -171,15 +171,18 @@ func TesOverrideComputeProductionMode(t *testing.T) {
 
 	m := mutator.OverrideCompute()
 	diags := bundle.Apply(context.Background(), b, m)
-	require.True(t, diags.HasError())
-	assert.ErrorContains(t, diags.Error(), "overriding compute is not allowed in production mode")
-	assert.Equal(t, "cluster2", b.Config.Resources.Jobs["job1"].Tasks[0].ExistingClusterId)
+	require.Len(t, diags, 1)
+	assert.Equal(t, "overriding compute for a target that uses 'mode: production' is not recommended", diags[0].Summary)
+	assert.Equal(t, "newClusterID", b.Config.Resources.Jobs["job1"].Tasks[0].ExistingClusterId)
 }
 
-func TestOverrideProductionEnv(t *testing.T) {
+func TestOverrideComputeModeProductionIgnoresVariable(t *testing.T) {
 	t.Setenv("DATABRICKS_CLUSTER_ID", "newClusterId")
 	b := &bundle.Bundle{
 		Config: config.Root{
+			Bundle: config.Bundle{
+				Mode: config.Production,
+			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {JobSettings: &jobs.JobSettings{
@@ -200,5 +203,7 @@ func TestOverrideProductionEnv(t *testing.T) {
 
 	m := mutator.OverrideCompute()
 	diags := bundle.Apply(context.Background(), b, m)
-	require.NoError(t, diags.Error())
+	require.Len(t, diags, 1)
+	assert.Equal(t, "the DATABRICKS_CLUSTER_ID variable is set but is ignored since the current target uses 'mode: production'", diags[0].Summary)
+	assert.Equal(t, "cluster2", b.Config.Resources.Jobs["job1"].Tasks[1].ExistingClusterId)
 }
