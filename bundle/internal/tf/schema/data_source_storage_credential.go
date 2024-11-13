@@ -35,6 +35,7 @@ type DataSourceStorageCredentialStorageCredentialInfo struct {
 	Comment                     string                                                                       `json:"comment,omitempty"`
 	CreatedAt                   int                                                                          `json:"created_at,omitempty"`
 	CreatedBy                   string                                                                       `json:"created_by,omitempty"`
+	FullName                    string                                                                       `json:"full_name,omitempty"`
 	Id                          string                                                                       `json:"id,omitempty"`
 	IsolationMode               string                                                                       `json:"isolation_mode,omitempty"`
 	MetastoreId                 string                                                                       `json:"metastore_id,omitempty"`
