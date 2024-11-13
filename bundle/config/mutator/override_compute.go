@@ -38,18 +38,26 @@ func overrideJobCompute(j *resources.Job, compute string) {
 }
 
 func (m *overrideCompute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	if b.Config.Bundle.Mode != config.Development {
+	var diags diag.Diagnostics
+
+	if b.Config.Bundle.Mode == config.Production {
 		if b.Config.Bundle.ClusterId != "" {
-			return diag.Errorf("cannot override compute for an target that does not use 'mode: development'")
+			diags = diags.Extend(diag.Warningf("overriding compute for a target that uses 'mode: production' is not recommended"))
 		}
-		return nil
+		if env.Get(ctx, "DATABRICKS_CLUSTER_ID") != "" {
+			// The DATABRICKS_CLUSTER_ID may be set by accident when doing a production deploy.
+			// Overriding the cluster in production is almost always a mistake since customers
+			// want consistency in production and not compute that is different each deploy.
+			// For this reason we log a warning and ignore the environment variable.
+			return diag.Warningf("the DATABRICKS_CLUSTER_ID variable is set but is ignored since the current target uses 'mode: production'")
+		}
 	}
 	if v := env.Get(ctx, "DATABRICKS_CLUSTER_ID"); v != "" {
 		b.Config.Bundle.ClusterId = v
 	}
 
 	if b.Config.Bundle.ClusterId == "" {
-		return nil
+		return diags
 	}
 
 	r := b.Config.Resources
@@ -57,5 +65,5 @@ func (m *overrideCompute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 		overrideJobCompute(r.Jobs[i], b.Config.Bundle.ClusterId)
 	}
 
-	return nil
+	return diags
 }

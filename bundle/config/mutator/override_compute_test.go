@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestOverrideDevelopment(t *testing.T) {
+func TestOverrideComputeModeDevelopment(t *testing.T) {
 	t.Setenv("DATABRICKS_CLUSTER_ID", "")
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -62,10 +62,13 @@ func TestOverrideDevelopment(t *testing.T) {
 	assert.Empty(t, b.Config.Resources.Jobs["job1"].Tasks[3].JobClusterKey)
 }
 
-func TestOverrideDevelopmentEnv(t *testing.T) {
+func TestOverrideComputeModeDefault(t *testing.T) {
 	t.Setenv("DATABRICKS_CLUSTER_ID", "newClusterId")
 	b := &bundle.Bundle{
 		Config: config.Root{
+			Bundle: config.Bundle{
+				Mode: "",
+			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {JobSettings: &jobs.JobSettings{
@@ -86,11 +89,12 @@ func TestOverrideDevelopmentEnv(t *testing.T) {
 
 	m := mutator.OverrideCompute()
 	diags := bundle.Apply(context.Background(), b, m)
-	require.NoError(t, diags.Error())
-	assert.Equal(t, "cluster2", b.Config.Resources.Jobs["job1"].Tasks[1].ExistingClusterId)
+	require.Empty(t, diags)
+	assert.Equal(t, "newClusterId", b.Config.Resources.Jobs["job1"].Tasks[0].ExistingClusterId)
+	assert.Equal(t, "newClusterId", b.Config.Resources.Jobs["job1"].Tasks[1].ExistingClusterId)
 }
 
-func TestOverridePipelineTask(t *testing.T) {
+func TestOverrideComputePipelineTask(t *testing.T) {
 	t.Setenv("DATABRICKS_CLUSTER_ID", "newClusterId")
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -115,7 +119,7 @@ func TestOverridePipelineTask(t *testing.T) {
 	assert.Empty(t, b.Config.Resources.Jobs["job1"].Tasks[0].ExistingClusterId)
 }
 
-func TestOverrideForEachTask(t *testing.T) {
+func TestOverrideComputeForEachTask(t *testing.T) {
 	t.Setenv("DATABRICKS_CLUSTER_ID", "newClusterId")
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -140,10 +144,11 @@ func TestOverrideForEachTask(t *testing.T) {
 	assert.Empty(t, b.Config.Resources.Jobs["job1"].Tasks[0].ForEachTask.Task)
 }
 
-func TestOverrideProduction(t *testing.T) {
+func TesOverrideComputeProductionMode(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Bundle: config.Bundle{
+				Mode:      config.Production,
 				ClusterId: "newClusterID",
 			},
 			Resources: config.Resources{
@@ -167,6 +172,8 @@ func TestOverrideProduction(t *testing.T) {
 	m := mutator.OverrideCompute()
 	diags := bundle.Apply(context.Background(), b, m)
 	require.True(t, diags.HasError())
+	assert.ErrorContains(t, diags.Error(), "overriding compute is not allowed in production mode")
+	assert.Equal(t, "cluster2", b.Config.Resources.Jobs["job1"].Tasks[0].ExistingClusterId)
 }
 
 func TestOverrideProductionEnv(t *testing.T) {
