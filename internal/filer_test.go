@@ -485,8 +485,8 @@ func TestAccFilerWorkspaceFilesExtensionsReadDir(t *testing.T) {
 		{"foo.scala", "println('foo')"},
 		{"foo.sql", "SELECT 'foo'"},
 		{"py1.ipynb", readFile(t, "testdata/notebooks/py1.ipynb")},
-		{"r1.ipynb", readFile(t, "testdata/notebooks/r1.ipynb")},
 		{"pyNb.py", "# Databricks notebook source\nprint('first upload'))"},
+		{"r1.ipynb", readFile(t, "testdata/notebooks/r1.ipynb")},
 		{"rNb.r", "# Databricks notebook source\nprint('first upload'))"},
 		{"scala1.ipynb", readFile(t, "testdata/notebooks/scala1.ipynb")},
 		{"scalaNb.scala", "// Databricks notebook source\n println(\"first upload\"))"},
@@ -589,7 +589,7 @@ func TestAccFilerWorkspaceFilesExtensionsRead(t *testing.T) {
 	filerTest{t, wf}.assertContents(ctx, "pretender", "not a notebook")
 
 	filerTest{t, wf}.assertContentsJupyter(ctx, "p1.ipynb", "python")
-	filerTest{t, wf}.assertContentsJupyter(ctx, "r1.ipynb", "R")
+	filerTest{t, wf}.assertContentsJupyter(ctx, "r1.ipynb", "r")
 	filerTest{t, wf}.assertContentsJupyter(ctx, "scala1.ipynb", "scala")
 	filerTest{t, wf}.assertContentsJupyter(ctx, "sql1.ipynb", "sql")
 
@@ -796,7 +796,7 @@ func TestAccWorkspaceFilesExtensions_ExportFormatIsPreserved(t *testing.T) {
 			jupyterContent: readFile(t, "testdata/notebooks/py1.ipynb"),
 		},
 		{
-			language:       "R",
+			language:       "r",
 			sourceName:     "foo.r",
 			jupyterName:    "foo.ipynb",
 			jupyterContent: readFile(t, "testdata/notebooks/r1.ipynb"),
