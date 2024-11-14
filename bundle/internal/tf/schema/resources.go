@@ -4,6 +4,7 @@ package schema
 
 type Resources struct {
 	AccessControlRuleSet                       map[string]any `json:"databricks_access_control_rule_set,omitempty"`
+	Alert                                      map[string]any `json:"databricks_alert,omitempty"`
 	ArtifactAllowlist                          map[string]any `json:"databricks_artifact_allowlist,omitempty"`
 	AutomaticClusterUpdateWorkspaceSetting     map[string]any `json:"databricks_automatic_cluster_update_workspace_setting,omitempty"`
 	AwsS3Mount                                 map[string]any `json:"databricks_aws_s3_mount,omitempty"`
@@ -17,6 +18,7 @@ type Resources struct {
 	ClusterPolicy                              map[string]any `json:"databricks_cluster_policy,omitempty"`
 	ComplianceSecurityProfileWorkspaceSetting  map[string]any `json:"databricks_compliance_security_profile_workspace_setting,omitempty"`
 	Connection                                 map[string]any `json:"databricks_connection,omitempty"`
+	CustomAppIntegration                       map[string]any `json:"databricks_custom_app_integration,omitempty"`
 	Dashboard                                  map[string]any `json:"databricks_dashboard,omitempty"`
 	DbfsFile                                   map[string]any `json:"databricks_dbfs_file,omitempty"`
 	DefaultNamespaceSetting                    map[string]any `json:"databricks_default_namespace_setting,omitempty"`
@@ -68,6 +70,7 @@ type Resources struct {
 	Pipeline                                   map[string]any `json:"databricks_pipeline,omitempty"`
 	Provider                                   map[string]any `json:"databricks_provider,omitempty"`
 	QualityMonitor                             map[string]any `json:"databricks_quality_monitor,omitempty"`
+	Query                                      map[string]any `json:"databricks_query,omitempty"`
 	Recipient                                  map[string]any `json:"databricks_recipient,omitempty"`
 	RegisteredModel                            map[string]any `json:"databricks_registered_model,omitempty"`
 	Repo                                       map[string]any `json:"databricks_repo,omitempty"`
@@ -107,6 +110,7 @@ type Resources struct {
 func NewResources() *Resources {
 	return &Resources{
 		AccessControlRuleSet:                   make(map[string]any),
+		Alert:                                  make(map[string]any),
 		ArtifactAllowlist:                      make(map[string]any),
 		AutomaticClusterUpdateWorkspaceSetting: make(map[string]any),
 		AwsS3Mount:                             make(map[string]any),
@@ -120,6 +124,7 @@ func NewResources() *Resources {
 		ClusterPolicy:                          make(map[string]any),
 		ComplianceSecurityProfileWorkspaceSetting: make(map[string]any),
 		Connection:              make(map[string]any),
+		CustomAppIntegration:    make(map[string]any),
 		Dashboard:               make(map[string]any),
 		DbfsFile:                make(map[string]any),
 		DefaultNamespaceSetting: make(map[string]any),
@@ -171,6 +176,7 @@ func NewResources() *Resources {
 		Pipeline:                       make(map[string]any),
 		Provider:                       make(map[string]any),
 		QualityMonitor:                 make(map[string]any),
+		Query:                          make(map[string]any),
 		Recipient:                      make(map[string]any),
 		RegisteredModel:                make(map[string]any),
 		Repo:                           make(map[string]any),

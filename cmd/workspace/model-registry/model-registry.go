@@ -2123,7 +2123,8 @@ func newSetPermissions() *cobra.Command {
 	cmd.Short = `Set registered model permissions.`
 	cmd.Long = `Set registered model permissions.
   
-  Sets permissions on a registered model. Registered models can inherit
+  Sets permissions on an object, replacing existing permissions if they exist.
+  Deletes all direct permissions if none are specified. Objects can inherit
   permissions from their root object.
 
   Arguments:

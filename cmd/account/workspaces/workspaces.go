@@ -81,6 +81,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.DeploymentName, "deployment-name", createReq.DeploymentName, `The deployment name defines part of the subdomain for the workspace.`)
 	// TODO: complex arg: gcp_managed_network_config
 	// TODO: complex arg: gke_config
+	cmd.Flags().BoolVar(&createReq.IsNoPublicIpEnabled, "is-no-public-ip-enabled", createReq.IsNoPublicIpEnabled, `Whether no public IP is enabled for the workspace.`)
 	cmd.Flags().StringVar(&createReq.Location, "location", createReq.Location, `The Google Cloud region of the workspace data plane in your Google account.`)
 	cmd.Flags().StringVar(&createReq.ManagedServicesCustomerManagedKeyId, "managed-services-customer-managed-key-id", createReq.ManagedServicesCustomerManagedKeyId, `The ID of the workspace's managed services encryption key configuration object.`)
 	cmd.Flags().StringVar(&createReq.NetworkId, "network-id", createReq.NetworkId, ``)
@@ -420,6 +421,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.ManagedServicesCustomerManagedKeyId, "managed-services-customer-managed-key-id", updateReq.ManagedServicesCustomerManagedKeyId, `The ID of the workspace's managed services encryption key configuration object.`)
 	cmd.Flags().StringVar(&updateReq.NetworkConnectivityConfigId, "network-connectivity-config-id", updateReq.NetworkConnectivityConfigId, ``)
 	cmd.Flags().StringVar(&updateReq.NetworkId, "network-id", updateReq.NetworkId, `The ID of the workspace's network configuration object.`)
+	cmd.Flags().StringVar(&updateReq.PrivateAccessSettingsId, "private-access-settings-id", updateReq.PrivateAccessSettingsId, `The ID of the workspace's private access settings configuration object.`)
 	cmd.Flags().StringVar(&updateReq.StorageConfigurationId, "storage-configuration-id", updateReq.StorageConfigurationId, `The ID of the workspace's storage configuration object.`)
 	cmd.Flags().StringVar(&updateReq.StorageCustomerManagedKeyId, "storage-customer-managed-key-id", updateReq.StorageCustomerManagedKeyId, `The ID of the key configuration object for workspace storage.`)
 

@@ -127,7 +127,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				},
 				Dashboards: map[string]*resources.Dashboard{
 					"dashboard1": {
-						CreateDashboardRequest: &dashboards.CreateDashboardRequest{
+						Dashboard: &dashboards.Dashboard{
 							DisplayName: "dashboard1",
 						},
 					},
