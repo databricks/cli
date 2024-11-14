@@ -223,11 +223,8 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	}
 
 	if config.IsExplicitlyEnabled((b.Config.Presets.InPlaceDeployment)) {
-		root := b.SyncRoot.Native()
-		_, ok := env.Lookup(ctx, envDatabricksRuntimeVersion)
 		isInWorkspace := ok && strings.HasPrefix(root, "/Workspace/")
-
-		if isInWorkspace {
+		if isInWorkspace && dbr.RunsOnRuntime(ctx) {
 			b.Config.Workspace.FilePath = b.SyncRootPath
 		} else {
 			disabled := false
