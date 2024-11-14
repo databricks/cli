@@ -33,8 +33,8 @@ type ResourceQualityMonitorNotificationsOnNewClassificationTagDetected struct {
 }
 
 type ResourceQualityMonitorNotifications struct {
-	OnFailure                      []ResourceQualityMonitorNotificationsOnFailure                      `json:"on_failure,omitempty"`
-	OnNewClassificationTagDetected []ResourceQualityMonitorNotificationsOnNewClassificationTagDetected `json:"on_new_classification_tag_detected,omitempty"`
+	OnFailure                      *ResourceQualityMonitorNotificationsOnFailure                      `json:"on_failure,omitempty"`
+	OnNewClassificationTagDetected *ResourceQualityMonitorNotificationsOnNewClassificationTagDetected `json:"on_new_classification_tag_detected,omitempty"`
 }
 
 type ResourceQualityMonitorSchedule struct {
@@ -52,25 +52,25 @@ type ResourceQualityMonitorTimeSeries struct {
 }
 
 type ResourceQualityMonitor struct {
-	AssetsDir                string                                           `json:"assets_dir"`
-	BaselineTableName        string                                           `json:"baseline_table_name,omitempty"`
-	DashboardId              string                                           `json:"dashboard_id,omitempty"`
-	DriftMetricsTableName    string                                           `json:"drift_metrics_table_name,omitempty"`
-	Id                       string                                           `json:"id,omitempty"`
-	LatestMonitorFailureMsg  string                                           `json:"latest_monitor_failure_msg,omitempty"`
-	MonitorVersion           string                                           `json:"monitor_version,omitempty"`
-	OutputSchemaName         string                                           `json:"output_schema_name"`
-	ProfileMetricsTableName  string                                           `json:"profile_metrics_table_name,omitempty"`
-	SkipBuiltinDashboard     bool                                             `json:"skip_builtin_dashboard,omitempty"`
-	SlicingExprs             []string                                         `json:"slicing_exprs,omitempty"`
-	Status                   string                                           `json:"status,omitempty"`
-	TableName                string                                           `json:"table_name"`
-	WarehouseId              string                                           `json:"warehouse_id,omitempty"`
-	CustomMetrics            []ResourceQualityMonitorCustomMetrics            `json:"custom_metrics,omitempty"`
-	DataClassificationConfig []ResourceQualityMonitorDataClassificationConfig `json:"data_classification_config,omitempty"`
-	InferenceLog             []ResourceQualityMonitorInferenceLog             `json:"inference_log,omitempty"`
-	Notifications            []ResourceQualityMonitorNotifications            `json:"notifications,omitempty"`
-	Schedule                 []ResourceQualityMonitorSchedule                 `json:"schedule,omitempty"`
-	Snapshot                 []ResourceQualityMonitorSnapshot                 `json:"snapshot,omitempty"`
-	TimeSeries               []ResourceQualityMonitorTimeSeries               `json:"time_series,omitempty"`
+	AssetsDir                string                                          `json:"assets_dir"`
+	BaselineTableName        string                                          `json:"baseline_table_name,omitempty"`
+	DashboardId              string                                          `json:"dashboard_id,omitempty"`
+	DriftMetricsTableName    string                                          `json:"drift_metrics_table_name,omitempty"`
+	Id                       string                                          `json:"id,omitempty"`
+	LatestMonitorFailureMsg  string                                          `json:"latest_monitor_failure_msg,omitempty"`
+	MonitorVersion           string                                          `json:"monitor_version,omitempty"`
+	OutputSchemaName         string                                          `json:"output_schema_name"`
+	ProfileMetricsTableName  string                                          `json:"profile_metrics_table_name,omitempty"`
+	SkipBuiltinDashboard     bool                                            `json:"skip_builtin_dashboard,omitempty"`
+	SlicingExprs             []string                                        `json:"slicing_exprs,omitempty"`
+	Status                   string                                          `json:"status,omitempty"`
+	TableName                string                                          `json:"table_name"`
+	WarehouseId              string                                          `json:"warehouse_id,omitempty"`
+	CustomMetrics            []ResourceQualityMonitorCustomMetrics           `json:"custom_metrics,omitempty"`
+	DataClassificationConfig *ResourceQualityMonitorDataClassificationConfig `json:"data_classification_config,omitempty"`
+	InferenceLog             *ResourceQualityMonitorInferenceLog             `json:"inference_log,omitempty"`
+	Notifications            *ResourceQualityMonitorNotifications            `json:"notifications,omitempty"`
+	Schedule                 *ResourceQualityMonitorSchedule                 `json:"schedule,omitempty"`
+	Snapshot                 *ResourceQualityMonitorSnapshot                 `json:"snapshot,omitempty"`
+	TimeSeries               *ResourceQualityMonitorTimeSeries               `json:"time_series,omitempty"`
 }
