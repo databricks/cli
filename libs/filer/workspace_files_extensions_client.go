@@ -287,7 +287,18 @@ func (w *workspaceFilesExtensionsClient) Delete(ctx context.Context, name string
 		return ReadOnlyError{"delete"}
 	}
 
-	err := w.wsfs.Delete(ctx, name, mode...)
+	// Ensure that the file / notebook exists. We do this check here to avoid
+	// deleting the a notebook called `foo` when the user actually wanted to
+	// delete a file called `foo`.
+	//
+	// To delete a notebook called `foo` in the workspace the user should use the
+	// name with the extension included like `foo.ipynb` or `foo.sql`.
+	_, err := w.Stat(ctx, name)
+	if err != nil {
+		return err
+	}
+
+	err = w.wsfs.Delete(ctx, name, mode...)
 
 	// If the file is not found, it might be a notebook.
 	if errors.As(err, &FileDoesNotExistError{}) {

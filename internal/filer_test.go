@@ -752,12 +752,31 @@ func TestAccWorkspaceFilesExtensionsNotebooksAreNotStatAsFiles(t *testing.T) {
 	err := wf.Write(ctx, "foo.ipynb", strings.NewReader(readFile(t, "testdata/notebooks/py1.ipynb")))
 	require.NoError(t, err)
 
-	// Reading foo should fail. Even though the WSFS name for the notebook is foo
-	// reading the notebook should only work with the .ipynb extension.
+	// Stating foo should fail. Even though the WSFS name for the notebook is foo
+	// stating the notebook should only work with the .ipynb extension.
 	_, err = wf.Stat(ctx, "foo")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 
-	_, err = wf.Read(ctx, "foo.ipynb")
+	_, err = wf.Stat(ctx, "foo.ipynb")
+	assert.NoError(t, err)
+}
+
+func TestAccWorkspaceFilesExtensionsNotebooksAreNotDeletedAsFiles(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	wf, _ := setupWsfsExtensionsFiler(t)
+
+	// Create a notebook
+	err := wf.Write(ctx, "foo.ipynb", strings.NewReader(readFile(t, "testdata/notebooks/py1.ipynb")))
+	require.NoError(t, err)
+
+	// Deleting foo should fail. Even though the WSFS name for the notebook is foo
+	// deleting the notebook should only work with the .ipynb extension.
+	err = wf.Delete(ctx, "foo")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+
+	err = wf.Delete(ctx, "foo.ipynb")
 	assert.NoError(t, err)
 }
 
