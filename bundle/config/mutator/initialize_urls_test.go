@@ -65,9 +65,8 @@ func TestInitializeURLs(t *testing.T) {
 				},
 				QualityMonitors: map[string]*resources.QualityMonitor{
 					"qualityMonitor1": {
-						CreateMonitor: &catalog.CreateMonitor{
-							TableName: "catalog.schema.qualityMonitor1",
-						},
+						TableName:     "catalog.schema.qualityMonitor1",
+						CreateMonitor: &catalog.CreateMonitor{},
 					},
 				},
 				Schemas: map[string]*resources.Schema{
