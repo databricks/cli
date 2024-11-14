@@ -5,13 +5,11 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/vfs"
 )
-
-const envDatabricksRuntimeVersion = "DATABRICKS_RUNTIME_VERSION"
 
 type configureWSFS struct{}
 
@@ -32,7 +30,7 @@ func (m *configureWSFS) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	}
 
 	// The executable must be running on DBR.
-	if _, ok := env.Lookup(ctx, envDatabricksRuntimeVersion); !ok {
+	if !dbr.RunsOnRuntime(ctx) {
 		return nil
 	}
 
