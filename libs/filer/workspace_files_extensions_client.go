@@ -311,22 +311,6 @@ func (w *workspaceFilesExtensionsClient) Delete(ctx context.Context, name string
 func (w *workspaceFilesExtensionsClient) Stat(ctx context.Context, name string) (fs.FileInfo, error) {
 	info, err := w.wsfs.Stat(ctx, name)
 
-	// If an object is found and it is not a notebook, return the stat object. This check is done
-	// to avoid returning the stat for a notebook called `foo` when the user actually
-	// wanted to stat a file called `foo`.
-	//
-	// To stat the metadata of a notebook called `foo` in the workspace the user
-	// should use the name with the extension included like `foo.ipynb` or `foo.sql`.
-	if err == nil && info.Sys().(workspace.ObjectInfo).ObjectType != workspace.ObjectTypeNotebook {
-		return info, nil
-	}
-
-	// If a notebook is found by the workspace files client, without having stripped
-	// the extension, this implies that no file with the same name exists.
-	if err == nil && info.Sys().(workspace.ObjectInfo).ObjectType == workspace.ObjectTypeNotebook {
-		return nil, FileDoesNotExistError{name}
-	}
-
 	// If the file is not found, it might be a notebook.
 	if errors.As(err, &FileDoesNotExistError{}) {
 		stat, serr := w.getNotebookStatByNameWithExt(ctx, name)
@@ -342,7 +326,24 @@ func (w *workspaceFilesExtensionsClient) Stat(ctx context.Context, name string) 
 		return wsfsFileInfo{ObjectInfo: stat.ObjectInfo}, nil
 	}
 
-	return nil, err
+	if err != nil {
+		return nil, err
+	}
+
+	// If an object is found and it is a notebook, return a FileDoesNotExistError.
+	// If a notebook is found by the workspace files client, without having stripped
+	// the extension, this implies that no file with the same name exists.
+	//
+	// This check is done to avoid returning the stat for a notebook called `foo`
+	// when the user actually wanted to stat a file called `foo`.
+	//
+	// To stat the metadata of a notebook called `foo` in the workspace the user
+	// should use the name with the extension included like `foo.ipynb` or `foo.sql`.
+	if info.Sys().(workspace.ObjectInfo).ObjectType == workspace.ObjectTypeNotebook {
+		return nil, FileDoesNotExistError{name}
+	}
+
+	return info, nil
 }
 
 // Note: The import API returns opaque internal errors for namespace clashes
