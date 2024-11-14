@@ -1,7 +1,9 @@
 package generate
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -87,9 +89,8 @@ func NewGeneratePipelineCommand() *cobra.Command {
 		filename := filepath.Join(configDir, fmt.Sprintf("%s.pipeline.yml", pipelineKey))
 
 		err = os.Rename(oldFilename, filename)
-		if err != nil {
-			return fmt.Errorf("failed to rename file %s. DABs uses resource type as sub extension for generated content, please rename to %s", oldFilename, filename)
-
+		if err != nil && !errors.Is(err, fs.ErrNotExist) {
+			return fmt.Errorf("failed to rename file %s. DABs uses resource type as sub extension for generated content, please rename to %s, err: %w", oldFilename, filename, err)
 		}
 
 		saver := yamlsaver.NewSaverWithStyle(

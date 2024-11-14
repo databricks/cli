@@ -90,7 +90,7 @@ func TestGeneratePipelineCommand(t *testing.T) {
 	err := cmd.RunE(cmd, []string{})
 	require.NoError(t, err)
 
-	data, err := os.ReadFile(filepath.Join(configDir, "test_pipeline.yml"))
+	data, err := os.ReadFile(filepath.Join(configDir, "test_pipeline.pipeline.yml"))
 	require.NoError(t, err)
 	require.Equal(t, fmt.Sprintf(`resources:
   pipelines:
@@ -186,7 +186,7 @@ func TestGenerateJobCommand(t *testing.T) {
 	err := cmd.RunE(cmd, []string{})
 	require.NoError(t, err)
 
-	data, err := os.ReadFile(filepath.Join(configDir, "test_job.yml"))
+	data, err := os.ReadFile(filepath.Join(configDir, "test_job.job.yml"))
 	require.NoError(t, err)
 
 	require.Equal(t, fmt.Sprintf(`resources:
