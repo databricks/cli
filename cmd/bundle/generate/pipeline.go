@@ -83,7 +83,15 @@ func NewGeneratePipelineCommand() *cobra.Command {
 			return err
 		}
 
-		filename := filepath.Join(configDir, fmt.Sprintf("%s.yml", pipelineKey))
+		oldFilename := filepath.Join(configDir, fmt.Sprintf("%s.yml", pipelineKey))
+		filename := filepath.Join(configDir, fmt.Sprintf("%s.pipeline.yml", pipelineKey))
+
+		err = os.Rename(oldFilename, filename)
+		if err != nil {
+			return fmt.Errorf("failed to rename file %s. DABs uses resource type as sub extension for generated content, please rename to %s", oldFilename, filename)
+
+		}
+
 		saver := yamlsaver.NewSaverWithStyle(
 			// Including all PipelineSpec and nested fields which are map[string]string type
 			map[string]yaml.Style{

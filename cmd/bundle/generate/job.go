@@ -83,7 +83,15 @@ func NewGenerateJobCommand() *cobra.Command {
 			return err
 		}
 
-		filename := filepath.Join(configDir, fmt.Sprintf("%s.yml", jobKey))
+		oldFilename := filepath.Join(configDir, fmt.Sprintf("%s.yml", jobKey))
+		filename := filepath.Join(configDir, fmt.Sprintf("%s.job.yml", jobKey))
+
+		err = os.Rename(oldFilename, filename)
+		if err != nil {
+			return fmt.Errorf("failed to rename file %s. DABs uses resource type as sub extension for generated content, please rename to %s", oldFilename, filename)
+
+		}
+
 		saver := yamlsaver.NewSaverWithStyle(map[string]yaml.Style{
 			// Including all JobSettings and nested fields which are map[string]string type
 			"spark_conf":  yaml.DoubleQuotedStyle,
