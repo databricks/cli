@@ -13,17 +13,15 @@ import (
 )
 
 type QualityMonitor struct {
-	// Represents the Input Arguments for Terraform and will get
-	// converted to a HCL representation for CRUD
-	*catalog.CreateMonitor
-
-	// This represents the id which is the full name of the monitor
-	// (catalog_name.schema_name.table_name) that can be used
-	// as a reference in other resources. This value is returned by terraform.
-	ID string `json:"id,omitempty" bundle:"readonly"`
-
+	ID             string         `json:"id,omitempty" bundle:"readonly"`
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
 	URL            string         `json:"url,omitempty" bundle:"internal"`
+
+	// The table name is a required field but not included as a JSON field in [catalog.CreateMonitor].
+	TableName string `json:"table_name"`
+
+	// This struct defines the creation payload for a monitor.
+	*catalog.CreateMonitor
 }
 
 func (s *QualityMonitor) UnmarshalJSON(b []byte) error {

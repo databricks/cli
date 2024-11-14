@@ -684,6 +684,9 @@
                         "description": "Configuration for monitoring snapshot tables.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorSnapshot"
                       },
+                      "table_name": {
+                        "$ref": "#/$defs/string"
+                      },
                       "time_series": {
                         "description": "Configuration for monitoring time series tables.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorTimeSeries"
@@ -695,6 +698,7 @@
                     },
                     "additionalProperties": false,
                     "required": [
+                      "table_name",
                       "assets_dir",
                       "output_schema_name"
                     ]
