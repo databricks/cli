@@ -512,7 +512,7 @@ func newEdit() *cobra.Command {
   Clusters created by the Databricks Jobs service cannot be edited.
 
   Arguments:
-    CLUSTER_ID: ID of the cluser
+    CLUSTER_ID: ID of the cluster
     SPARK_VERSION: The Spark version of the cluster, e.g. 3.3.x-scala2.11. A list of
       available Spark versions can be retrieved by using the
       :method:clusters/sparkVersions API call.`
@@ -1504,8 +1504,9 @@ func newSetPermissions() *cobra.Command {
 	cmd.Short = `Set cluster permissions.`
 	cmd.Long = `Set cluster permissions.
   
-  Sets permissions on a cluster. Clusters can inherit permissions from their
-  root object.
+  Sets permissions on an object, replacing existing permissions if they exist.
+  Deletes all direct permissions if none are specified. Objects can inherit
+  permissions from their root object.
 
   Arguments:
     CLUSTER_ID: The cluster for which to get or manage permissions.`

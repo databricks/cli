@@ -635,8 +635,9 @@ func newSetPermissions() *cobra.Command {
 	cmd.Short = `Set instance pool permissions.`
 	cmd.Long = `Set instance pool permissions.
   
-  Sets permissions on an instance pool. Instance pools can inherit permissions
-  from their root object.
+  Sets permissions on an object, replacing existing permissions if they exist.
+  Deletes all direct permissions if none are specified. Objects can inherit
+  permissions from their root object.
 
   Arguments:
     INSTANCE_POOL_ID: The instance pool for which to get or manage permissions.`
