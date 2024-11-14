@@ -8,11 +8,7 @@ Bundles:
 
 API Changes:
  * Added `databricks credentials` command group.
- * Changed `databricks genie execute-message-query` command to type `databricks genie execute-message-query` command.
  * Changed `databricks lakeview create` command with new required argument order.
- * Added `databricks aibi-dashboard-embedding-access-policy` command group.
- * Added `databricks aibi-dashboard-embedding-approved-domains` command group.
- * Removed `databricks clean-rooms` command group.
 
 OpenAPI commit d25296d2f4aa7bd6195c816fdf82e0f960f775da (2024-11-07)
 Dependency updates:
