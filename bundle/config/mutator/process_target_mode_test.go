@@ -102,16 +102,23 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					"registeredmodel1": {CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{Name: "registeredmodel1"}},
 				},
 				QualityMonitors: map[string]*resources.QualityMonitor{
-					"qualityMonitor1": {CreateMonitor: &catalog.CreateMonitor{TableName: "qualityMonitor1"}},
-					"qualityMonitor2": {
+					"qualityMonitor1": {
+						TableName: "qualityMonitor1",
 						CreateMonitor: &catalog.CreateMonitor{
-							TableName: "qualityMonitor2",
-							Schedule:  &catalog.MonitorCronSchedule{},
+							OutputSchemaName: "catalog.schema",
+						},
+					},
+					"qualityMonitor2": {
+						TableName: "qualityMonitor2",
+						CreateMonitor: &catalog.CreateMonitor{
+							OutputSchemaName: "catalog.schema",
+							Schedule:         &catalog.MonitorCronSchedule{},
 						},
 					},
 					"qualityMonitor3": {
+						TableName: "qualityMonitor3",
 						CreateMonitor: &catalog.CreateMonitor{
-							TableName: "qualityMonitor3",
+							OutputSchemaName: "catalog.schema",
 							Schedule: &catalog.MonitorCronSchedule{
 								PauseStatus: catalog.MonitorCronSchedulePauseStatusUnpaused,
 							},

@@ -15,8 +15,8 @@ import (
 
 func TestConvertQualityMonitor(t *testing.T) {
 	var src = resources.QualityMonitor{
+		TableName: "test_table_name",
 		CreateMonitor: &catalog.CreateMonitor{
-			TableName:        "test_table_name",
 			AssetsDir:        "assets_dir",
 			OutputSchemaName: "output_schema_name",
 			InferenceLog: &catalog.MonitorInferenceLog{
