@@ -730,7 +730,7 @@ func TestAccWorkspaceFilesExtensionsNotebooksAreNotReadAsFiles(t *testing.T) {
 	wf, _ := setupWsfsExtensionsFiler(t)
 
 	// Create a notebook
-	err := wf.Write(ctx, "foo.ipynb", strings.NewReader(jupyterNotebookContent1))
+	err := wf.Write(ctx, "foo.ipynb", strings.NewReader(readFile(t, "testdata/notebooks/py1.ipynb")))
 	require.NoError(t, err)
 
 	// Reading foo should fail. Even though the WSFS name for the notebook is foo
@@ -749,7 +749,7 @@ func TestAccWorkspaceFilesExtensionsNotebooksAreNotStatAsFiles(t *testing.T) {
 	wf, _ := setupWsfsExtensionsFiler(t)
 
 	// Create a notebook
-	err := wf.Write(ctx, "foo.ipynb", strings.NewReader(jupyterNotebookContent1))
+	err := wf.Write(ctx, "foo.ipynb", strings.NewReader(readFile(t, "testdata/notebooks/py1.ipynb")))
 	require.NoError(t, err)
 
 	// Reading foo should fail. Even though the WSFS name for the notebook is foo
