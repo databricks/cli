@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -368,6 +369,89 @@ func TestApplyPresetsResourceNotDefined(t *testing.T) {
 			diags := bundle.Apply(ctx, b, mutator.ApplyPresets())
 
 			require.ErrorContains(t, diags.Error(), tt.error)
+		})
+	}
+}
+
+func TestApplyPresetsInPlaceDeployment(t *testing.T) {
+	testContext := context.TODO()
+	enabled := true
+	disabled := false
+	remotePath := "/Users/files"
+	workspacePath := "/Workspace/user.name@company.com"
+
+	tests := []struct {
+		bundlePath       string
+		ctx              context.Context
+		name             string
+		initialValue     *bool
+		expectedValue    *bool
+		expectedFilePath string
+	}{
+		{
+			name:             "preset enabled, bundle in Workspace, databricks runtime",
+			bundlePath:       workspacePath,
+			ctx:              dbr.MockRuntime(testContext, true),
+			initialValue:     &enabled,
+			expectedValue:    &enabled,
+			expectedFilePath: workspacePath,
+		},
+		{
+			name:             "preset enabled, bundle not in Workspace, databricks runtime",
+			bundlePath:       "/Users/user.name@company.com",
+			ctx:              dbr.MockRuntime(testContext, true),
+			initialValue:     &enabled,
+			expectedValue:    &disabled,
+			expectedFilePath: remotePath,
+		},
+		{
+			name:             "preset enabled, bundle in Workspace, not databricks runtime",
+			bundlePath:       workspacePath,
+			ctx:              dbr.MockRuntime(testContext, false),
+			initialValue:     &enabled,
+			expectedValue:    &disabled,
+			expectedFilePath: remotePath,
+		},
+		{
+			name:             "preset disabled, bundle in Workspace, databricks runtime",
+			bundlePath:       workspacePath,
+			ctx:              dbr.MockRuntime(testContext, true),
+			initialValue:     &disabled,
+			expectedValue:    &disabled,
+			expectedFilePath: remotePath,
+		},
+		{
+			name:             "preset nil, bundle in Workspace, databricks runtime",
+			bundlePath:       workspacePath,
+			ctx:              dbr.MockRuntime(testContext, true),
+			initialValue:     nil,
+			expectedValue:    nil,
+			expectedFilePath: remotePath,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := &bundle.Bundle{
+				Config: config.Root{
+					Presets: config.Presets{
+						InPlaceDeployment: tt.initialValue,
+					},
+					Workspace: config.Workspace{
+						FilePath: remotePath,
+					},
+				},
+				SyncRoot:     vfs.MustNew(tt.bundlePath),
+				SyncRootPath: tt.bundlePath,
+			}
+
+			diags := bundle.Apply(tt.ctx, b, mutator.ApplyPresets())
+			if diags.HasError() {
+				t.Fatalf("unexpected error: %v", diags)
+			}
+
+			require.Equal(t, tt.expectedFilePath, b.Config.Workspace.FilePath)
+			require.Equal(t, tt.expectedValue, b.Config.Presets.InPlaceDeployment)
 		})
 	}
 }
