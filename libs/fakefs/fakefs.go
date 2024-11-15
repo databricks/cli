@@ -1,18 +1,21 @@
 package fakefs
 
 import (
+	"fmt"
 	"io/fs"
 	"time"
 )
 
+var ErrNotImplemented = fmt.Errorf("not implemented")
+
 // DirEntry is a fake implementation of [fs.DirEntry].
 type DirEntry struct {
-	FileInfo
+	fs.FileInfo
 }
 
 func (entry DirEntry) Type() fs.FileMode {
 	typ := fs.ModePerm
-	if entry.FakeDir {
+	if entry.IsDir() {
 		typ |= fs.ModeDir
 	}
 	return typ
@@ -52,4 +55,33 @@ func (info FileInfo) IsDir() bool {
 
 func (info FileInfo) Sys() any {
 	return nil
+}
+
+// File is a fake implementation of [fs.File].
+type File struct {
+	FileInfo fs.FileInfo
+}
+
+func (f File) Close() error {
+	return nil
+}
+
+func (f File) Read(p []byte) (n int, err error) {
+	return 0, ErrNotImplemented
+}
+
+func (f File) Stat() (fs.FileInfo, error) {
+	return f.FileInfo, nil
+}
+
+// FS is a fake implementation of [fs.FS].
+type FS map[string]fs.File
+
+func (f FS) Open(name string) (fs.File, error) {
+	e, ok := f[name]
+	if !ok {
+		return nil, fs.ErrNotExist
+	}
+
+	return e, nil
 }
