@@ -3,8 +3,10 @@ package generate
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -185,6 +187,122 @@ func TestGenerateJobCommand(t *testing.T) {
 
 	err := cmd.RunE(cmd, []string{})
 	require.NoError(t, err)
+
+	data, err := os.ReadFile(filepath.Join(configDir, "test_job.job.yml"))
+	require.NoError(t, err)
+
+	require.Equal(t, fmt.Sprintf(`resources:
+  jobs:
+    test_job:
+      name: test-job
+      job_clusters:
+        - new_cluster:
+            custom_tags:
+              "Tag1": "24X7-1234"
+        - new_cluster:
+            spark_conf:
+              "spark.databricks.delta.preview.enabled": "true"
+      tasks:
+        - task_key: notebook_task
+          notebook_task:
+            notebook_path: %s
+      parameters:
+        - name: empty
+          default: ""
+`, filepath.Join("..", "src", "notebook.py")), string(data))
+
+	data, err = os.ReadFile(filepath.Join(srcDir, "notebook.py"))
+	require.NoError(t, err)
+	require.Equal(t, "# Databricks notebook source\nNotebook content", string(data))
+}
+
+func touchEmptyFile(t *testing.T, path string) {
+	err := os.MkdirAll(filepath.Dir(path), 0700)
+	require.NoError(t, err)
+	f, err := os.Create(path)
+	require.NoError(t, err)
+	f.Close()
+}
+
+func TestGenerateJobCommandOldFileRename(t *testing.T) {
+	cmd := NewGenerateJobCommand()
+
+	root := t.TempDir()
+	b := &bundle.Bundle{
+		BundleRootPath: root,
+	}
+
+	m := mocks.NewMockWorkspaceClient(t)
+	b.SetWorkpaceClient(m.WorkspaceClient)
+
+	jobsApi := m.GetMockJobsAPI()
+	jobsApi.EXPECT().Get(mock.Anything, jobs.GetJobRequest{JobId: 1234}).Return(&jobs.Job{
+		Settings: &jobs.JobSettings{
+			Name: "test-job",
+			JobClusters: []jobs.JobCluster{
+				{NewCluster: compute.ClusterSpec{
+					CustomTags: map[string]string{
+						"Tag1": "24X7-1234",
+					},
+				}},
+				{NewCluster: compute.ClusterSpec{
+					SparkConf: map[string]string{
+						"spark.databricks.delta.preview.enabled": "true",
+					},
+				}},
+			},
+			Tasks: []jobs.Task{
+				{
+					TaskKey: "notebook_task",
+					NotebookTask: &jobs.NotebookTask{
+						NotebookPath: "/test/notebook",
+					},
+				},
+			},
+			Parameters: []jobs.JobParameterDefinition{
+				{
+					Name:    "empty",
+					Default: "",
+				},
+			},
+		},
+	}, nil)
+
+	workspaceApi := m.GetMockWorkspaceAPI()
+	workspaceApi.EXPECT().GetStatusByPath(mock.Anything, "/test/notebook").Return(&workspace.ObjectInfo{
+		ObjectType: workspace.ObjectTypeNotebook,
+		Language:   workspace.LanguagePython,
+		Path:       "/test/notebook",
+	}, nil)
+
+	notebookContent := io.NopCloser(bytes.NewBufferString("# Databricks notebook source\nNotebook content"))
+	workspaceApi.EXPECT().Download(mock.Anything, "/test/notebook", mock.Anything).Return(notebookContent, nil)
+
+	cmd.SetContext(bundle.Context(context.Background(), b))
+	cmd.Flag("existing-job-id").Value.Set("1234")
+
+	configDir := filepath.Join(root, "resources")
+	cmd.Flag("config-dir").Value.Set(configDir)
+
+	srcDir := filepath.Join(root, "src")
+	cmd.Flag("source-dir").Value.Set(srcDir)
+
+	var key string
+	cmd.Flags().StringVar(&key, "key", "test_job", "")
+
+	// Create an old generated file first
+	oldFilename := filepath.Join(configDir, "test_job.yml")
+	touchEmptyFile(t, oldFilename)
+
+	// Having an existing files require --force flag to regenerate them
+	cmd.Flag("force").Value.Set("true")
+
+	err := cmd.RunE(cmd, []string{})
+	require.NoError(t, err)
+
+	// Make sure file do not exists after the run
+	_, err = os.Stat(oldFilename)
+	require.True(t, errors.Is(err, fs.ErrNotExist))
 
 	data, err := os.ReadFile(filepath.Join(configDir, "test_job.job.yml"))
 	require.NoError(t, err)
