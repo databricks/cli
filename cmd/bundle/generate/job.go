@@ -90,7 +90,7 @@ func NewGenerateJobCommand() *cobra.Command {
 
 		err = os.Rename(oldFilename, filename)
 		if err != nil && !errors.Is(err, fs.ErrNotExist) {
-			return fmt.Errorf("failed to rename file %s. DABs uses resource type as sub extension for generated content, please rename to %s, err: %w", oldFilename, filename, err)
+			return fmt.Errorf("failed to rename file %s. DABs uses the resource type as a sub-extension for generated content, please rename it to %s, err: %w", oldFilename, filename, err)
 		}
 
 		saver := yamlsaver.NewSaverWithStyle(map[string]yaml.Style{
