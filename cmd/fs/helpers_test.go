@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/fakefs"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/spf13/cobra"
@@ -84,7 +85,7 @@ func setupTest(t *testing.T) (*validArgs, *cobra.Command, *mocks.MockWorkspaceCl
 	cmd, m := setupCommand(t)
 
 	fakeFilerForPath := func(ctx context.Context, fullPath string) (filer.Filer, string, error) {
-		fakeFiler := filer.NewFakeFiler(map[string]filer.FakeFileInfo{
+		fakeFiler := filer.NewFakeFiler(map[string]fakefs.FileInfo{
 			"dir":       {FakeName: "root", FakeDir: true},
 			"dir/dirA":  {FakeDir: true},
 			"dir/dirB":  {FakeDir: true},
