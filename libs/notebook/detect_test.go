@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/libs/fakefs"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -100,11 +101,21 @@ func TestDetectFileWithLongHeader(t *testing.T) {
 	assert.False(t, nb)
 }
 
+type fileInfoWithWorkspaceInfo struct {
+	fakefs.FileInfo
+
+	oi workspace.ObjectInfo
+}
+
+func (f fileInfoWithWorkspaceInfo) WorkspaceObjectInfo() workspace.ObjectInfo {
+	return f.oi
+}
+
 func TestDetectWithObjectInfo(t *testing.T) {
-	fakeFS := &fakeFS{
-		fakeFile{
-			fakeFileInfo{
-				workspace.ObjectInfo{
+	fakefs := fakefs.FS{
+		"file.py": fakefs.File{
+			FileInfo: fileInfoWithWorkspaceInfo{
+				oi: workspace.ObjectInfo{
 					ObjectType: workspace.ObjectTypeNotebook,
 					Language:   workspace.LanguagePython,
 				},
@@ -112,7 +123,7 @@ func TestDetectWithObjectInfo(t *testing.T) {
 		},
 	}
 
-	nb, lang, err := DetectWithFS(fakeFS, "doesntmatter")
+	nb, lang, err := DetectWithFS(fakefs, "file.py")
 	require.NoError(t, err)
 	assert.True(t, nb)
 	assert.Equal(t, workspace.LanguagePython, lang)
