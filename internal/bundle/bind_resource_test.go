@@ -166,7 +166,7 @@ func TestAccGenerateAndBind(t *testing.T) {
 	_, err = os.Stat(filepath.Join(bundleRoot, "src", "test.py"))
 	require.NoError(t, err)
 
-	matches, err := filepath.Glob(filepath.Join(bundleRoot, "resources", "test_job_key.yml"))
+	matches, err := filepath.Glob(filepath.Join(bundleRoot, "resources", "test_job_key.job.yml"))
 	require.NoError(t, err)
 
 	require.Len(t, matches, 1)
