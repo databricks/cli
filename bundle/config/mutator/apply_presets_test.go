@@ -374,7 +374,7 @@ func TestApplyPresetsResourceNotDefined(t *testing.T) {
 }
 
 func TestApplyPresetsInPlaceDeployment(t *testing.T) {
-	testContext := context.TODO()
+	testContext := context.Background()
 	enabled := true
 	disabled := false
 	remotePath := "/Users/files"

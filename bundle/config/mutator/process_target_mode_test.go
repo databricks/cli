@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/cli/libs/vfs"
@@ -516,4 +517,32 @@ func TestPipelinesDevelopmentDisabled(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
+}
+
+func TestInPlaceDeploymentEnabled(t *testing.T) {
+	b, diags := processInPlaceBundle(true)
+	require.NoError(t, diags.Error())
+	assert.True(t, *b.Config.Presets.InPlaceDeployment)
+	assert.Equal(t, b.Config.Workspace.FilePath, b.SyncRootPath)
+}
+
+func TestInPlaceDeploymentDisabled(t *testing.T) {
+	b, diags := processInPlaceBundle(false)
+	require.NoError(t, diags.Error())
+	assert.False(t, *b.Config.Presets.InPlaceDeployment)
+	assert.NotEqual(t, b.Config.Workspace.FilePath, b.SyncRootPath)
+}
+
+func processInPlaceBundle(presetEnabled bool) (*bundle.Bundle, diag.Diagnostics) {
+	b := mockBundle(config.Development)
+
+	workspacePath := "/Workspace/lennart@company.com/"
+	b.SyncRoot = vfs.MustNew(workspacePath)
+	b.SyncRootPath = workspacePath
+	b.Config.Presets.InPlaceDeployment = &presetEnabled
+
+	ctx := dbr.MockRuntime(context.Background(), true)
+	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
+	diags := bundle.Apply(ctx, b, m)
+	return b, diags
 }
