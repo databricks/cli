@@ -44,12 +44,12 @@ func (m *prependWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) di
 					return dyn.InvalidValue, fmt.Errorf("expected string, got %s", v.Kind())
 				}
 
-				for _, prefix := range skipPrefixes {
-					// Skip prefixing if the path does not start with /, it might be variable reference or smth else.
-					if !strings.HasPrefix(path, "/") {
-						return pv, nil
-					}
+				// Skip prefixing if the path does not start with /, it might be variable reference or smth else.
+				if !strings.HasPrefix(path, "/") {
+					return pv, nil
+				}
 
+				for _, prefix := range skipPrefixes {
 					if strings.HasPrefix(path, prefix) {
 						return pv, nil
 					}
