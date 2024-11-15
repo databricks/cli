@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/libs/fakefs"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFakeFiler_Read(t *testing.T) {
@@ -17,14 +18,9 @@ func TestFakeFiler_Read(t *testing.T) {
 
 	ctx := context.Background()
 	r, err := f.Read(ctx, "file")
-	if !assert.NoError(t, err) {
-		return
-	}
-
+	require.NoError(t, err)
 	contents, err := io.ReadAll(r)
-	if !assert.NoError(t, err) {
-		return
-	}
+	require.NoError(t, err)
 
 	// Contents of every file is "foo".
 	assert.Equal(t, "foo", string(contents))
@@ -69,13 +65,8 @@ func TestFakeFiler_ReadDir(t *testing.T) {
 
 	ctx := context.Background()
 	entries, err := f.ReadDir(ctx, "dir1/")
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	if !assert.Len(t, entries, 2) {
-		return
-	}
+	require.NoError(t, err)
+	require.Len(t, entries, 2)
 
 	// The entries are sorted by name.
 	assert.Equal(t, "dir2", entries[0].Name())
@@ -91,9 +82,7 @@ func TestFakeFiler_Stat(t *testing.T) {
 
 	ctx := context.Background()
 	info, err := f.Stat(ctx, "file")
-	if !assert.NoError(t, err) {
-		return
-	}
+	require.NoError(t, err)
 
 	assert.Equal(t, "file", info.Name())
 }
