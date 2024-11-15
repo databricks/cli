@@ -24,6 +24,8 @@ func (m *prependWorkspacePrefix) Name() string {
 var skipPrefixes = []string{
 	"/Workspace/",
 	"/Volumes/",
+	"${", // Skipping all the paths starting with variable reference, such as ${workspace.root_path}
+	"~/", // Skipping paths starting with a home folder
 }
 
 func (m *prependWorkspacePrefix) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
