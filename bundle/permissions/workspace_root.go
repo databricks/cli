@@ -3,7 +3,6 @@ package permissions
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/libraries"
@@ -60,9 +59,6 @@ func giveAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle) error {
 
 	g, ctx := errgroup.WithContext(ctx)
 	for _, p := range bundlePaths {
-		if strings.HasPrefix(p, b.SyncRootPath) {
-			continue
-		}
 		g.Go(func() error {
 			return setPermissions(ctx, w, p, permissions)
 		})

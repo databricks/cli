@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"path"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/libraries"
@@ -31,9 +30,6 @@ func (f *folderPermissions) Apply(ctx context.Context, b bundle.ReadOnlyBundle) 
 	g, ctx := errgroup.WithContext(ctx)
 	results := make([]diag.Diagnostics, len(bundlePaths))
 	for i, p := range bundlePaths {
-		if strings.HasPrefix(p, b.SyncRootPath()) {
-			continue
-		}
 		g.Go(func() error {
 			results[i] = checkFolderPermission(ctx, b, p)
 			return nil
