@@ -19,7 +19,7 @@ const schemaFileName = "databricks_template_schema.json"
 //
 //	ctx: 			context containing a cmdio object. This is used to prompt the user
 //	configFilePath: file path containing user defined config values
-//	templateRoot: 	root of the template definition
+//	templateFS: 	root of the template definition
 //	outputDir: 	root of directory where to initialize the template
 func Materialize(ctx context.Context, configFilePath string, templateFS fs.FS, outputDir string) error {
 	if _, err := fs.Stat(templateFS, schemaFileName); errors.Is(err, fs.ErrNotExist) {
