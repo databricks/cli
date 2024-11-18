@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -40,12 +41,11 @@ func (v *Volume) TerraformResourceName() string {
 	return "databricks_volume"
 }
 
-// TODO: Test unit and manually. Maybe just manually.
 func (v *Volume) InitializeURL(baseURL url.URL) {
 	if v.ID == "" {
 		return
 	}
-	baseURL.Path = fmt.Sprintf("explore/data/volumes/%s", v.ID)
+	baseURL.Path = fmt.Sprintf("explore/data/volumes/%s", strings.ReplaceAll(v.ID, ".", "/"))
 	v.URL = baseURL.String()
 }
 
