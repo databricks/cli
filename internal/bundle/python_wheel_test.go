@@ -5,17 +5,18 @@ import (
 
 	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
-func runPythonWheelTest(t *testing.T, sparkVersion string, pythonWheelWrapper bool) {
+func runPythonWheelTest(t *testing.T, templateName string, sparkVersion string, pythonWheelWrapper bool) {
 	ctx, _ := acc.WorkspaceTest(t)
 
 	nodeTypeId := internal.GetNodeTypeId(env.Get(ctx, "CLOUD_ENV"))
 	instancePoolId := env.Get(ctx, "TEST_INSTANCE_POOL_ID")
-	bundleRoot, err := initTestTemplate(t, ctx, "python_wheel_task", map[string]any{
+	bundleRoot, err := initTestTemplate(t, ctx, templateName, map[string]any{
 		"node_type_id":         nodeTypeId,
 		"unique_id":            uuid.New().String(),
 		"spark_version":        sparkVersion,
@@ -45,9 +46,19 @@ func runPythonWheelTest(t *testing.T, sparkVersion string, pythonWheelWrapper bo
 }
 
 func TestAccPythonWheelTaskDeployAndRunWithoutWrapper(t *testing.T) {
-	runPythonWheelTest(t, "13.3.x-snapshot-scala2.12", false)
+	runPythonWheelTest(t, "python_wheel_task", "13.3.x-snapshot-scala2.12", false)
 }
 
 func TestAccPythonWheelTaskDeployAndRunWithWrapper(t *testing.T) {
-	runPythonWheelTest(t, "12.2.x-scala2.12", true)
+	runPythonWheelTest(t, "python_wheel_task", "12.2.x-scala2.12", true)
+}
+
+func TestAccPythonWheelTaskDeployAndRunOnInteractiveCluster(t *testing.T) {
+	_, wt := acc.WorkspaceTest(t)
+
+	if testutil.IsAWSCloud(wt.T) {
+		t.Skip("Skipping test for AWS cloud because it is not permitted to create clusters")
+	}
+
+	runPythonWheelTest(t, "python_wheel_task_with_cluster", defaultSparkVersion, false)
 }

@@ -137,6 +137,7 @@ type ResourcePipelineFilters struct {
 
 type ResourcePipelineGatewayDefinition struct {
 	ConnectionId          string `json:"connection_id,omitempty"`
+	ConnectionName        string `json:"connection_name,omitempty"`
 	GatewayStorageCatalog string `json:"gateway_storage_catalog,omitempty"`
 	GatewayStorageName    string `json:"gateway_storage_name,omitempty"`
 	GatewayStorageSchema  string `json:"gateway_storage_schema,omitempty"`
@@ -242,6 +243,12 @@ type ResourcePipelineNotification struct {
 	EmailRecipients []string `json:"email_recipients,omitempty"`
 }
 
+type ResourcePipelineRestartWindow struct {
+	DaysOfWeek string `json:"days_of_week,omitempty"`
+	StartHour  int    `json:"start_hour"`
+	TimeZoneId string `json:"time_zone_id,omitempty"`
+}
+
 type ResourcePipelineTriggerCron struct {
 	QuartzCronSchedule string `json:"quartz_cron_schedule,omitempty"`
 	TimezoneId         string `json:"timezone_id,omitempty"`
@@ -288,5 +295,6 @@ type ResourcePipeline struct {
 	LatestUpdates        []ResourcePipelineLatestUpdates      `json:"latest_updates,omitempty"`
 	Library              []ResourcePipelineLibrary            `json:"library,omitempty"`
 	Notification         []ResourcePipelineNotification       `json:"notification,omitempty"`
+	RestartWindow        *ResourcePipelineRestartWindow       `json:"restart_window,omitempty"`
 	Trigger              *ResourcePipelineTrigger             `json:"trigger,omitempty"`
 }

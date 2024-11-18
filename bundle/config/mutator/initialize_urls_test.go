@@ -65,9 +65,8 @@ func TestInitializeURLs(t *testing.T) {
 				},
 				QualityMonitors: map[string]*resources.QualityMonitor{
 					"qualityMonitor1": {
-						CreateMonitor: &catalog.CreateMonitor{
-							TableName: "catalog.schema.qualityMonitor1",
-						},
+						TableName:     "catalog.schema.qualityMonitor1",
+						CreateMonitor: &catalog.CreateMonitor{},
 					},
 				},
 				Schemas: map[string]*resources.Schema{
@@ -89,7 +88,7 @@ func TestInitializeURLs(t *testing.T) {
 				Dashboards: map[string]*resources.Dashboard{
 					"dashboard1": {
 						ID: "01ef8d56871e1d50ae30ce7375e42478",
-						CreateDashboardRequest: &dashboards.CreateDashboardRequest{
+						Dashboard: &dashboards.Dashboard{
 							DisplayName: "My special dashboard",
 						},
 					},

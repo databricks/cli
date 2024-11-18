@@ -17,7 +17,7 @@ type Dashboard struct {
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
 	URL            string         `json:"url,omitempty" bundle:"internal"`
 
-	*dashboards.CreateDashboardRequest
+	*dashboards.Dashboard
 
 	// =========================
 	// === Additional fields ===

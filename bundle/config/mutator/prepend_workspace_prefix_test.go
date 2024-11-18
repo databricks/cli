@@ -31,6 +31,14 @@ func TestPrependWorkspacePrefix(t *testing.T) {
 			path:     "/Volumes/Users/test",
 			expected: "/Volumes/Users/test",
 		},
+		{
+			path:     "~/test",
+			expected: "~/test",
+		},
+		{
+			path:     "${workspace.file_path}/test",
+			expected: "${workspace.file_path}/test",
+		},
 	}
 
 	for _, tc := range testCases {

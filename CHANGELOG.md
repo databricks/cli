@@ -1,5 +1,45 @@
 # Version changelog
 
+## [Release] Release v0.234.0
+
+Bundles:
+ * Do not execute build on bundle destroy ([#1882](https://github.com/databricks/cli/pull/1882)).
+ * Add support for non-Python ipynb notebooks to DABs ([#1827](https://github.com/databricks/cli/pull/1827)).
+
+API Changes:
+ * Added `databricks credentials` command group.
+ * Changed `databricks lakeview create` command with new required argument order.
+
+OpenAPI commit d25296d2f4aa7bd6195c816fdf82e0f960f775da (2024-11-07)
+Dependency updates:
+ * Upgrade TF provider to 1.58.0 ([#1900](https://github.com/databricks/cli/pull/1900)).
+ * Bump golang.org/x/sync from 0.8.0 to 0.9.0 ([#1892](https://github.com/databricks/cli/pull/1892)).
+ * Bump golang.org/x/text from 0.19.0 to 0.20.0 ([#1893](https://github.com/databricks/cli/pull/1893)).
+ * Bump golang.org/x/mod from 0.21.0 to 0.22.0 ([#1895](https://github.com/databricks/cli/pull/1895)).
+ * Bump golang.org/x/oauth2 from 0.23.0 to 0.24.0 ([#1894](https://github.com/databricks/cli/pull/1894)).
+ * Bump github.com/databricks/databricks-sdk-go from 0.49.0 to 0.51.0 ([#1878](https://github.com/databricks/cli/pull/1878)).
+
+## [Release] Release v0.233.0
+
+CLI:
+ * Clean host URL in the `auth login` command ([#1879](https://github.com/databricks/cli/pull/1879)).
+
+Bundles:
+ * Fix bundle run when run interactively ([#1880](https://github.com/databricks/cli/pull/1880)).
+ * Fix relative path resolution for dashboards on Windows ([#1881](https://github.com/databricks/cli/pull/1881)).
+
+Internal:
+ * Address goreleaser deprecation warning ([#1872](https://github.com/databricks/cli/pull/1872)).
+ * Update actions/github-script to v7 ([#1873](https://github.com/databricks/cli/pull/1873)).
+ * Use Go 1.23 ([#1871](https://github.com/databricks/cli/pull/1871)).
+ * [Internal] Always write message for manual integration test trigger ([#1874](https://github.com/databricks/cli/pull/1874)).
+ * Add `cmd-exec-id` to user agent ([#1808](https://github.com/databricks/cli/pull/1808)).
+ * Added E2E test to run Python wheels on interactive cluster created in bundle ([#1864](https://github.com/databricks/cli/pull/1864)).
+
+
+Dependency updates:
+ * Bump github.com/hashicorp/terraform-json from 0.22.1 to 0.23.0 ([#1877](https://github.com/databricks/cli/pull/1877)).
+
 ## [Release] Release v0.232.1
 
 This patch release fixes the following error observed when deploying to /Shared root folder

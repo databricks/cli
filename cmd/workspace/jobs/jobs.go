@@ -847,7 +847,7 @@ func newGetRun() *cobra.Command {
 
 	cmd.Flags().BoolVar(&getRunReq.IncludeHistory, "include-history", getRunReq.IncludeHistory, `Whether to include the repair history in the response.`)
 	cmd.Flags().BoolVar(&getRunReq.IncludeResolvedValues, "include-resolved-values", getRunReq.IncludeResolvedValues, `Whether to include resolved parameter values in the response.`)
-	cmd.Flags().StringVar(&getRunReq.PageToken, "page-token", getRunReq.PageToken, `To list the next page or the previous page of job tasks, set this field to the value of the next_page_token or prev_page_token returned in the GetJob response.`)
+	cmd.Flags().StringVar(&getRunReq.PageToken, "page-token", getRunReq.PageToken, `To list the next page of job tasks, set this field to the value of the next_page_token returned in the GetJob response.`)
 
 	cmd.Use = "get-run RUN_ID"
 	cmd.Short = `Get a single job run.`
@@ -1339,6 +1339,7 @@ func newRunNow() *cobra.Command {
 	// TODO: array: jar_params
 	// TODO: map via StringToStringVar: job_parameters
 	// TODO: map via StringToStringVar: notebook_params
+	// TODO: array: only
 	// TODO: complex arg: pipeline_params
 	// TODO: map via StringToStringVar: python_named_params
 	// TODO: array: python_params
@@ -1470,8 +1471,9 @@ func newSetPermissions() *cobra.Command {
 	cmd.Short = `Set job permissions.`
 	cmd.Long = `Set job permissions.
   
-  Sets permissions on a job. Jobs can inherit permissions from their root
-  object.
+  Sets permissions on an object, replacing existing permissions if they exist.
+  Deletes all direct permissions if none are specified. Objects can inherit
+  permissions from their root object.
 
   Arguments:
     JOB_ID: The job for which to get or manage permissions.`

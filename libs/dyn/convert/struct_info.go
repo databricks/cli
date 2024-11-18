@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/textutil"
 )
 
 // structInfo holds the type information we need to efficiently
@@ -85,14 +84,6 @@ func buildStructInfo(typ reflect.Type) structInfo {
 			}
 
 			name, _, _ := strings.Cut(sf.Tag.Get("json"), ",")
-			if typ.Name() == "QualityMonitor" && name == "-" {
-				urlName, _, _ := strings.Cut(sf.Tag.Get("url"), ",")
-				if urlName == "" || urlName == "-" {
-					name = textutil.CamelToSnakeCase(sf.Name)
-				} else {
-					name = urlName
-				}
-			}
 			if name == "" || name == "-" {
 				continue
 			}

@@ -7,14 +7,14 @@ toolchain go1.23.2
 require (
 	github.com/Masterminds/semver/v3 v3.3.0 // MIT
 	github.com/briandowns/spinner v1.23.1 // Apache 2.0
-	github.com/databricks/databricks-sdk-go v0.49.0 // Apache 2.0
+	github.com/databricks/databricks-sdk-go v0.51.0 // Apache 2.0
 	github.com/fatih/color v1.18.0 // MIT
 	github.com/ghodss/yaml v1.0.0 // MIT + NOTICE
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/hashicorp/go-version v1.7.0 // MPL 2.0
 	github.com/hashicorp/hc-install v0.9.0 // MPL 2.0
 	github.com/hashicorp/terraform-exec v0.21.0 // MPL 2.0
-	github.com/hashicorp/terraform-json v0.22.1 // MPL 2.0
+	github.com/hashicorp/terraform-json v0.23.0 // MPL 2.0
 	github.com/manifoldco/promptui v0.9.0 // BSD-3-Clause
 	github.com/mattn/go-isatty v0.0.20 // MIT
 	github.com/nwidger/jsoncolor v0.3.2 // MIT
@@ -24,11 +24,11 @@ require (
 	github.com/spf13/pflag v1.0.5 // BSD-3-Clause
 	github.com/stretchr/testify v1.9.0 // MIT
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225
-	golang.org/x/mod v0.21.0
-	golang.org/x/oauth2 v0.23.0
-	golang.org/x/sync v0.8.0
+	golang.org/x/mod v0.22.0
+	golang.org/x/oauth2 v0.24.0
+	golang.org/x/sync v0.9.0
 	golang.org/x/term v0.25.0
-	golang.org/x/text v0.19.0
+	golang.org/x/text v0.20.0
 	gopkg.in/ini.v1 v1.67.0 // Apache 2.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -56,7 +56,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
-	github.com/zclconf/go-cty v1.14.4 // indirect
+	github.com/zclconf/go-cty v1.15.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect

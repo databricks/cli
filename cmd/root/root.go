@@ -11,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
 )
@@ -73,8 +74,12 @@ func New(ctx context.Context) *cobra.Command {
 		// get the context back
 		ctx = cmd.Context()
 
+		// Detect if the CLI is running on DBR and store this on the context.
+		ctx = dbr.DetectRuntime(ctx)
+
 		// Configure our user agent with the command that's about to be executed.
 		ctx = withCommandInUserAgent(ctx, cmd)
+		ctx = withCommandExecIdInUserAgent(ctx)
 		ctx = withUpstreamInUserAgent(ctx)
 		cmd.SetContext(ctx)
 		return nil

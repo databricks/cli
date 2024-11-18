@@ -5,6 +5,8 @@ package settings
 import (
 	"github.com/spf13/cobra"
 
+	aibi_dashboard_embedding_access_policy "github.com/databricks/cli/cmd/workspace/aibi-dashboard-embedding-access-policy"
+	aibi_dashboard_embedding_approved_domains "github.com/databricks/cli/cmd/workspace/aibi-dashboard-embedding-approved-domains"
 	automatic_cluster_update "github.com/databricks/cli/cmd/workspace/automatic-cluster-update"
 	compliance_security_profile "github.com/databricks/cli/cmd/workspace/compliance-security-profile"
 	default_namespace "github.com/databricks/cli/cmd/workspace/default-namespace"
@@ -30,6 +32,8 @@ func New() *cobra.Command {
 	}
 
 	// Add subservices
+	cmd.AddCommand(aibi_dashboard_embedding_access_policy.New())
+	cmd.AddCommand(aibi_dashboard_embedding_approved_domains.New())
 	cmd.AddCommand(automatic_cluster_update.New())
 	cmd.AddCommand(compliance_security_profile.New())
 	cmd.AddCommand(default_namespace.New())
