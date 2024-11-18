@@ -8,7 +8,6 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/databricks/cli/libs/filer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -33,10 +32,7 @@ func testInMemoryFile(t *testing.T, perm fs.FileMode) {
 
 func testCopyFile(t *testing.T, perm fs.FileMode) {
 	tmpDir := t.TempDir()
-
-	templateFiler, err := filer.NewLocalClient(tmpDir)
-	require.NoError(t, err)
-	err = os.WriteFile(filepath.Join(tmpDir, "source"), []byte("qwerty"), perm)
+	err := os.WriteFile(filepath.Join(tmpDir, "source"), []byte("qwerty"), perm)
 	require.NoError(t, err)
 
 	f := &copyFile{
@@ -45,9 +41,9 @@ func testCopyFile(t *testing.T, perm fs.FileMode) {
 			root:    tmpDir,
 			relPath: "a/b/c",
 		},
-		perm:     perm,
-		srcPath:  "source",
-		srcFiler: templateFiler,
+		perm:    perm,
+		srcPath: "source",
+		srcFS:   os.DirFS(tmpDir),
 	}
 	err = f.PersistToDisk()
 	assert.NoError(t, err)

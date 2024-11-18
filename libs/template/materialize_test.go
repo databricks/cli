@@ -3,6 +3,7 @@ package template
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -19,6 +20,6 @@ func TestMaterializeForNonTemplateDirectory(t *testing.T) {
 	ctx := root.SetWorkspaceClient(context.Background(), w)
 
 	// Try to materialize a non-template directory.
-	err = Materialize(ctx, "", tmpDir, "")
+	err = Materialize(ctx, "", os.DirFS(tmpDir), "")
 	assert.EqualError(t, err, fmt.Sprintf("not a bundle template: expected to find a template schema file at %s", filepath.Join(tmpDir, schemaFileName)))
 }

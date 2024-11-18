@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/jsonschema"
@@ -28,9 +29,8 @@ type config struct {
 	schema *jsonschema.Schema
 }
 
-func newConfig(ctx context.Context, schemaPath string) (*config, error) {
-	// Read config schema
-	schema, err := jsonschema.Load(schemaPath)
+func newConfig(ctx context.Context, templateRoot fs.FS, schemaPath string) (*config, error) {
+	schema, err := jsonschema.LoadFS(templateRoot, schemaPath)
 	if err != nil {
 		return nil, err
 	}

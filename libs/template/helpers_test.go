@@ -22,7 +22,7 @@ func TestTemplatePrintStringWithoutProcessing(t *testing.T) {
 
 	ctx = root.SetWorkspaceClient(ctx, nil)
 	helpers := loadHelpers(ctx)
-	r, err := newRenderer(ctx, nil, helpers, "./testdata/print-without-processing/template", "./testdata/print-without-processing/library", tmpDir)
+	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/print-without-processing/template", "./testdata/print-without-processing/library", tmpDir)
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -39,7 +39,7 @@ func TestTemplateRegexpCompileFunction(t *testing.T) {
 
 	ctx = root.SetWorkspaceClient(ctx, nil)
 	helpers := loadHelpers(ctx)
-	r, err := newRenderer(ctx, nil, helpers, "./testdata/regexp-compile/template", "./testdata/regexp-compile/library", tmpDir)
+	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/regexp-compile/template", "./testdata/regexp-compile/library", tmpDir)
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -57,7 +57,7 @@ func TestTemplateRandIntFunction(t *testing.T) {
 
 	ctx = root.SetWorkspaceClient(ctx, nil)
 	helpers := loadHelpers(ctx)
-	r, err := newRenderer(ctx, nil, helpers, "./testdata/random-int/template", "./testdata/random-int/library", tmpDir)
+	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/random-int/template", "./testdata/random-int/library", tmpDir)
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -75,7 +75,7 @@ func TestTemplateUuidFunction(t *testing.T) {
 
 	ctx = root.SetWorkspaceClient(ctx, nil)
 	helpers := loadHelpers(ctx)
-	r, err := newRenderer(ctx, nil, helpers, "./testdata/uuid/template", "./testdata/uuid/library", tmpDir)
+	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/uuid/template", "./testdata/uuid/library", tmpDir)
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -92,7 +92,7 @@ func TestTemplateUrlFunction(t *testing.T) {
 
 	ctx = root.SetWorkspaceClient(ctx, nil)
 	helpers := loadHelpers(ctx)
-	r, err := newRenderer(ctx, nil, helpers, "./testdata/urlparse-function/template", "./testdata/urlparse-function/library", tmpDir)
+	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/urlparse-function/template", "./testdata/urlparse-function/library", tmpDir)
 
 	require.NoError(t, err)
 
@@ -109,7 +109,7 @@ func TestTemplateMapPairFunction(t *testing.T) {
 
 	ctx = root.SetWorkspaceClient(ctx, nil)
 	helpers := loadHelpers(ctx)
-	r, err := newRenderer(ctx, nil, helpers, "./testdata/map-pair/template", "./testdata/map-pair/library", tmpDir)
+	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/map-pair/template", "./testdata/map-pair/library", tmpDir)
 
 	require.NoError(t, err)
 
@@ -132,7 +132,7 @@ func TestWorkspaceHost(t *testing.T) {
 	ctx = root.SetWorkspaceClient(ctx, w)
 
 	helpers := loadHelpers(ctx)
-	r, err := newRenderer(ctx, nil, helpers, "./testdata/workspace-host/template", "./testdata/map-pair/library", tmpDir)
+	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/workspace-host/template", "./testdata/map-pair/library", tmpDir)
 
 	require.NoError(t, err)
 
@@ -157,7 +157,7 @@ func TestWorkspaceHostNotConfigured(t *testing.T) {
 	ctx = root.SetWorkspaceClient(ctx, w)
 
 	helpers := loadHelpers(ctx)
-	r, err := newRenderer(ctx, nil, helpers, "./testdata/workspace-host/template", "./testdata/map-pair/library", tmpDir)
+	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/workspace-host/template", "./testdata/map-pair/library", tmpDir)
 
 	assert.NoError(t, err)
 
