@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func testInMemoryFile(t *testing.T, perm fs.FileMode) {
+func testInMemoryFile(t *testing.T, ctx context.Context, perm fs.FileMode) {
 	tmpDir := t.TempDir()
 
 	f := &inMemoryFile{
@@ -23,14 +23,14 @@ func testInMemoryFile(t *testing.T, perm fs.FileMode) {
 		perm:    perm,
 		content: []byte("123"),
 	}
-	err := f.PersistToDisk()
+	err := f.Write(ctx)
 	assert.NoError(t, err)
 
 	assertFileContent(t, filepath.Join(tmpDir, "a/b/c"), "123")
 	assertFilePermissions(t, filepath.Join(tmpDir, "a/b/c"), perm)
 }
 
-func testCopyFile(t *testing.T, perm fs.FileMode) {
+func testCopyFile(t *testing.T, ctx context.Context, perm fs.FileMode) {
 	tmpDir := t.TempDir()
 	err := os.WriteFile(filepath.Join(tmpDir, "source"), []byte("qwerty"), perm)
 	require.NoError(t, err)
@@ -45,7 +45,7 @@ func testCopyFile(t *testing.T, perm fs.FileMode) {
 		srcPath: "source",
 		srcFS:   os.DirFS(tmpDir),
 	}
-	err = f.PersistToDisk()
+	err = f.Write(ctx)
 	assert.NoError(t, err)
 
 	assertFileContent(t, filepath.Join(tmpDir, "a/b/c"), "qwerty")
@@ -78,7 +78,8 @@ func TestTemplateInMemoryFilePersistToDisk(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.SkipNow()
 	}
-	testInMemoryFile(t, 0755)
+	ctx := context.Background()
+	testInMemoryFile(t, ctx, 0755)
 }
 
 func TestTemplateInMemoryFilePersistToDiskForWindows(t *testing.T) {
@@ -87,14 +88,16 @@ func TestTemplateInMemoryFilePersistToDiskForWindows(t *testing.T) {
 	}
 	// we have separate tests for windows because of differences in valid
 	// fs.FileMode values we can use for different operating systems.
-	testInMemoryFile(t, 0666)
+	ctx := context.Background()
+	testInMemoryFile(t, ctx, 0666)
 }
 
 func TestTemplateCopyFilePersistToDisk(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.SkipNow()
 	}
-	testCopyFile(t, 0644)
+	ctx := context.Background()
+	testCopyFile(t, ctx, 0644)
 }
 
 func TestTemplateCopyFilePersistToDiskForWindows(t *testing.T) {
@@ -103,5 +106,6 @@ func TestTemplateCopyFilePersistToDiskForWindows(t *testing.T) {
 	}
 	// we have separate tests for windows because of differences in valid
 	// fs.FileMode values we can use for different operating systems.
-	testCopyFile(t, 0666)
+	ctx := context.Background()
+	testCopyFile(t, ctx, 0666)
 }

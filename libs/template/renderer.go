@@ -299,7 +299,7 @@ func (r *renderer) walk() error {
 	return nil
 }
 
-func (r *renderer) persistToDisk() error {
+func (r *renderer) persistToDisk(ctx context.Context) error {
 	// Accumulate files which we will persist, skipping files whose path matches
 	// any of the skip patterns
 	filesToPersist := make([]file, 0)
@@ -329,7 +329,7 @@ func (r *renderer) persistToDisk() error {
 
 	// Persist files to disk
 	for _, file := range filesToPersist {
-		err := file.PersistToDisk()
+		err := file.Write(ctx)
 		if err != nil {
 			return err
 		}

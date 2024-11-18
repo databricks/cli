@@ -17,7 +17,7 @@ type file interface {
 	DstPath() *destinationPath
 
 	// Write file to disk at the destination path.
-	PersistToDisk() error
+	Write(ctx context.Context) error
 
 	// contents returns the file contents as a byte slice.
 	// This is used for testing purposes.
@@ -60,7 +60,7 @@ func (f *copyFile) DstPath() *destinationPath {
 	return f.dstPath
 }
 
-func (f *copyFile) PersistToDisk() error {
+func (f *copyFile) Write(ctx context.Context) error {
 	path := f.DstPath().absPath()
 	err := os.MkdirAll(filepath.Dir(path), 0755)
 	if err != nil {
@@ -97,7 +97,7 @@ func (f *inMemoryFile) DstPath() *destinationPath {
 	return f.dstPath
 }
 
-func (f *inMemoryFile) PersistToDisk() error {
+func (f *inMemoryFile) Write(ctx context.Context) error {
 	path := f.DstPath().absPath()
 
 	err := os.MkdirAll(filepath.Dir(path), 0755)

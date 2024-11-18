@@ -63,7 +63,7 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 	// Evaluate template
 	err = renderer.walk()
 	require.NoError(t, err)
-	err = renderer.persistToDisk()
+	err = renderer.persistToDisk(ctx)
 	require.NoError(t, err)
 
 	b, err := bundle.Load(ctx, filepath.Join(tempDir, "my_project"))
@@ -187,7 +187,7 @@ func TestRendererWithAssociatedTemplateInLibrary(t *testing.T) {
 	err = r.walk()
 	require.NoError(t, err)
 
-	err = r.persistToDisk()
+	err = r.persistToDisk(ctx)
 	require.NoError(t, err)
 
 	b, err := os.ReadFile(filepath.Join(tmpDir, "my_email"))
@@ -350,7 +350,7 @@ func TestRendererPersistToDisk(t *testing.T) {
 		},
 	}
 
-	err := r.persistToDisk()
+	err := r.persistToDisk(ctx)
 	require.NoError(t, err)
 
 	assert.NoFileExists(t, filepath.Join(tmpDir, "a", "b", "c"))
@@ -438,7 +438,7 @@ func TestRendererSkipAllFilesInCurrentDirectory(t *testing.T) {
 	// All 3 files are executed and have in memory representations
 	require.Len(t, r.files, 3)
 
-	err = r.persistToDisk()
+	err = r.persistToDisk(ctx)
 	require.NoError(t, err)
 
 	entries, err := os.ReadDir(tmpDir)
@@ -480,7 +480,7 @@ func TestRendererSkip(t *testing.T) {
 	// This is because "dir2/*" matches the files in dir2, but not dir2 itself
 	assert.Len(t, r.files, 6)
 
-	err = r.persistToDisk()
+	err = r.persistToDisk(ctx)
 	require.NoError(t, err)
 
 	assert.FileExists(t, filepath.Join(tmpDir, "file1"))
@@ -534,6 +534,7 @@ func TestRendererReadsPermissionsBits(t *testing.T) {
 
 func TestRendererErrorOnConflictingFile(t *testing.T) {
 	tmpDir := t.TempDir()
+	ctx := context.Background()
 
 	f, err := os.Create(filepath.Join(tmpDir, "a"))
 	require.NoError(t, err)
@@ -553,7 +554,7 @@ func TestRendererErrorOnConflictingFile(t *testing.T) {
 			},
 		},
 	}
-	err = r.persistToDisk()
+	err = r.persistToDisk(ctx)
 	assert.EqualError(t, err, fmt.Sprintf("failed to initialize template, one or more files already exist: %s", filepath.Join(tmpDir, "a")))
 }
 
@@ -580,7 +581,7 @@ func TestRendererNoErrorOnConflictingFileIfSkipped(t *testing.T) {
 			},
 		},
 	}
-	err = r.persistToDisk()
+	err = r.persistToDisk(ctx)
 	// No error is returned even though a conflicting file exists. This is because
 	// the generated file is being skipped
 	assert.NoError(t, err)
@@ -623,7 +624,7 @@ func TestRendererFileTreeRendering(t *testing.T) {
 	assert.Len(t, r.files, 1)
 	assert.Equal(t, r.files[0].DstPath().absPath(), filepath.Join(tmpDir, "my_directory", "my_file"))
 
-	err = r.persistToDisk()
+	err = r.persistToDisk(ctx)
 	require.NoError(t, err)
 
 	// Assert files and directories are correctly materialized.

@@ -72,7 +72,7 @@ func Materialize(ctx context.Context, configFilePath string, templateFS fs.FS, o
 		return err
 	}
 
-	err = r.persistToDisk()
+	err = r.persistToDisk(ctx)
 	if err != nil {
 		return err
 	}
