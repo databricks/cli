@@ -59,18 +59,17 @@ func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) {
 	}
 
 	if !config.IsExplicitlyDisabled(t.InPlaceDeployment) {
-		enabled := true
-		t.InPlaceDeployment = &enabled
+		root := b.SyncRootPath
+		isInWorkspace := strings.HasPrefix(root, "/Workspace/")
+		if isInWorkspace && dbr.RunsOnRuntime(ctx) {
+			enabled := true
+			t.InPlaceDeployment = &enabled
+		}
 	}
 
 	if !config.IsExplicitlyDisabled(t.PipelinesDevelopment) {
-		root := b.SyncRootPath
-		isInWorkspace := strings.HasPrefix(root, "/Workspace/")
-
-		if isInWorkspace && dbr.RunsOnRuntime(ctx) {
-			enabled := true
-			t.PipelinesDevelopment = &enabled
-		}
+		enabled := true
+		t.PipelinesDevelopment = &enabled
 	}
 }
 
