@@ -2,6 +2,7 @@ package mutator_test
 
 import (
 	"context"
+	"runtime"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -374,6 +375,10 @@ func TestApplyPresetsResourceNotDefined(t *testing.T) {
 }
 
 func TestApplyPresetsInPlaceDeployment(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("this test is not applicable on Windows because in-place works only in the Databricks Workspace")
+	}
+
 	testContext := context.Background()
 	enabled := true
 	disabled := false

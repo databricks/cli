@@ -3,6 +3,7 @@ package mutator
 import (
 	"context"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -520,20 +521,24 @@ func TestPipelinesDevelopmentDisabled(t *testing.T) {
 }
 
 func TestInPlaceDeploymentEnabled(t *testing.T) {
-	b, diags := processInPlaceBundle(true)
+	b, diags := processInPlaceBundle(t, true)
 	require.NoError(t, diags.Error())
 	assert.True(t, *b.Config.Presets.InPlaceDeployment)
 	assert.Equal(t, b.Config.Workspace.FilePath, b.SyncRootPath)
 }
 
 func TestInPlaceDeploymentDisabled(t *testing.T) {
-	b, diags := processInPlaceBundle(false)
+	b, diags := processInPlaceBundle(t, false)
 	require.NoError(t, diags.Error())
 	assert.False(t, *b.Config.Presets.InPlaceDeployment)
 	assert.NotEqual(t, b.Config.Workspace.FilePath, b.SyncRootPath)
 }
 
-func processInPlaceBundle(presetEnabled bool) (*bundle.Bundle, diag.Diagnostics) {
+func processInPlaceBundle(t *testing.T, presetEnabled bool) (*bundle.Bundle, diag.Diagnostics) {
+	if runtime.GOOS == "windows" {
+		t.Skip("this test is not applicable on Windows because in-place works only in the Databricks Workspace")
+	}
+
 	b := mockBundle(config.Development)
 
 	workspacePath := "/Workspace/lennart@company.com/"
