@@ -2,7 +2,6 @@ package template
 
 import (
 	"context"
-	"embed"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -13,9 +12,6 @@ import (
 const libraryDirName = "library"
 const templateDirName = "template"
 const schemaFileName = "databricks_template_schema.json"
-
-//go:embed all:templates
-var builtinTemplates embed.FS
 
 // This function materializes the input templates as a project, using user defined
 // configurations.
