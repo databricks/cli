@@ -105,7 +105,6 @@ func TestApplyPresetsPrefixForUcSchema(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			b := &bundle.Bundle{
-				SyncRoot: vfs.MustNew(t.TempDir()),
 				Config: config.Root{
 					Resources: config.Resources{
 						Schemas: map[string]*resources.Schema{
@@ -175,7 +174,6 @@ func TestApplyPresetsTags(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			b := &bundle.Bundle{
-				SyncRoot: vfs.MustNew(t.TempDir()),
 				Config: config.Root{
 					Resources: config.Resources{
 						Jobs: map[string]*resources.Job{
@@ -235,7 +233,6 @@ func TestApplyPresetsJobsMaxConcurrentRuns(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			b := &bundle.Bundle{
-				SyncRoot: vfs.MustNew(t.TempDir()),
 				Config: config.Root{
 					Resources: config.Resources{
 						Jobs: map[string]*resources.Job{
@@ -261,7 +258,6 @@ func TestApplyPresetsJobsMaxConcurrentRuns(t *testing.T) {
 
 func TestApplyPresetsPrefixWithoutJobSettings(t *testing.T) {
 	b := &bundle.Bundle{
-		SyncRoot: vfs.MustNew(t.TempDir()),
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -357,7 +353,6 @@ func TestApplyPresetsResourceNotDefined(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.error, func(t *testing.T) {
 			b := &bundle.Bundle{
-				SyncRoot: vfs.MustNew(t.TempDir()),
 				Config: config.Root{
 					Resources: tt.resources,
 					Presets: config.Presets{
