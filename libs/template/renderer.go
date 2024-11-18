@@ -50,9 +50,8 @@ type renderer struct {
 	// do not match any glob patterns from this list
 	skipPatterns []string
 
-	// [fs.FS] for the template root. The file tree from this root is walked to
-	// generate the project
-	templateRoot fs.FS
+	// [fs.FS] that holds the template's file tree.
+	srcFS fs.FS
 
 	// Root directory for the project instantiated from the template
 	instanceRoot string
@@ -86,7 +85,7 @@ func newRenderer(
 		}
 	}
 
-	fsys, err := fs.Sub(templateFS, path.Clean(templateDir))
+	srcFS, err := fs.Sub(templateFS, path.Clean(templateDir))
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +98,7 @@ func newRenderer(
 		baseTemplate: tmpl,
 		files:        make([]file, 0),
 		skipPatterns: make([]string, 0),
-		templateRoot: fsys,
+		srcFS:        srcFS,
 		instanceRoot: instanceRoot,
 	}, nil
 }
@@ -150,7 +149,7 @@ func (r *renderer) executeTemplate(templateDefinition string) (string, error) {
 
 func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 	// read file permissions
-	info, err := fs.Stat(r.templateRoot, relPathTemplate)
+	info, err := fs.Stat(r.srcFS, relPathTemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +171,7 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 			},
 			perm:    perm,
 			ctx:     r.ctx,
-			srcFS:   r.templateRoot,
+			srcFS:   r.srcFS,
 			srcPath: relPathTemplate,
 		}, nil
 	} else {
@@ -182,7 +181,7 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 	}
 
 	// read template file's content
-	templateReader, err := r.templateRoot.Open(relPathTemplate)
+	templateReader, err := r.srcFS.Open(relPathTemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -272,7 +271,7 @@ func (r *renderer) walk() error {
 		//
 		// 2. For directories: They are appended to a slice, which acts as a queue
 		//     allowing BFS traversal of the template file tree
-		entries, err := fs.ReadDir(r.templateRoot, currentDirectory)
+		entries, err := fs.ReadDir(r.srcFS, currentDirectory)
 		if err != nil {
 			return err
 		}

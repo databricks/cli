@@ -21,12 +21,12 @@ const schemaFileName = "databricks_template_schema.json"
 //	configFilePath: file path containing user defined config values
 //	templateRoot: 	root of the template definition
 //	outputDir: 	root of directory where to initialize the template
-func Materialize(ctx context.Context, configFilePath string, templateRoot fs.FS, outputDir string) error {
-	if _, err := fs.Stat(templateRoot, schemaFileName); errors.Is(err, fs.ErrNotExist) {
+func Materialize(ctx context.Context, configFilePath string, templateFS fs.FS, outputDir string) error {
+	if _, err := fs.Stat(templateFS, schemaFileName); errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("not a bundle template: expected to find a template schema file at %s", schemaFileName)
 	}
 
-	config, err := newConfig(ctx, templateRoot, schemaFileName)
+	config, err := newConfig(ctx, templateFS, schemaFileName)
 	if err != nil {
 		return err
 	}
@@ -40,7 +40,7 @@ func Materialize(ctx context.Context, configFilePath string, templateRoot fs.FS,
 	}
 
 	helpers := loadHelpers(ctx)
-	r, err := newRenderer(ctx, config.values, helpers, templateRoot, templateDirName, libraryDirName, outputDir)
+	r, err := newRenderer(ctx, config.values, helpers, templateFS, templateDirName, libraryDirName, outputDir)
 	if err != nil {
 		return err
 	}

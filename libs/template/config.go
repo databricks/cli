@@ -29,8 +29,8 @@ type config struct {
 	schema *jsonschema.Schema
 }
 
-func newConfig(ctx context.Context, templateRoot fs.FS, schemaPath string) (*config, error) {
-	schema, err := jsonschema.LoadFS(templateRoot, schemaPath)
+func newConfig(ctx context.Context, templateFS fs.FS, schemaPath string) (*config, error) {
+	schema, err := jsonschema.LoadFS(templateFS, schemaPath)
 	if err != nil {
 		return nil, err
 	}
