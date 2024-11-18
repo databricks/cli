@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -677,6 +678,14 @@ func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
 					{Attributes: stateInstanceAttributes{ID: "1"}},
 				},
 			},
+			{
+				Type: "databricks_dashboard",
+				Mode: "managed",
+				Name: "test_dashboard",
+				Instances: []stateResourceInstance{
+					{Attributes: stateInstanceAttributes{ID: "1"}},
+				},
+			},
 		},
 	}
 	err := TerraformToBundle(&tfState, &config)
@@ -708,6 +717,9 @@ func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
 
 	assert.Equal(t, "1", config.Resources.Clusters["test_cluster"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Clusters["test_cluster"].ModifiedStatus)
+
+	assert.Equal(t, "1", config.Resources.Dashboards["test_dashboard"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Dashboards["test_dashboard"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -778,6 +790,13 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
+			Dashboards: map[string]*resources.Dashboard{
+				"test_dashboard": {
+					Dashboard: &dashboards.Dashboard{
+						DisplayName: "test_dashboard",
+					},
+				},
+			},
 		},
 	}
 	var tfState = resourcesState{
@@ -812,6 +831,9 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 
 	assert.Equal(t, "", config.Resources.Clusters["test_cluster"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Clusters["test_cluster"].ModifiedStatus)
+
+	assert.Equal(t, "", config.Resources.Dashboards["test_dashboard"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Dashboards["test_dashboard"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -924,6 +946,18 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 				"test_cluster_new": {
 					ClusterSpec: &compute.ClusterSpec{
 						ClusterName: "test_cluster_new",
+					},
+				},
+			},
+			Dashboards: map[string]*resources.Dashboard{
+				"test_dashboard": {
+					Dashboard: &dashboards.Dashboard{
+						DisplayName: "test_dashboard",
+					},
+				},
+				"test_dashboard_new": {
+					Dashboard: &dashboards.Dashboard{
+						DisplayName: "test_dashboard_new",
 					},
 				},
 			},
@@ -1075,6 +1109,22 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 					{Attributes: stateInstanceAttributes{ID: "2"}},
 				},
 			},
+			{
+				Type: "databricks_dashboard",
+				Mode: "managed",
+				Name: "test_dashboard",
+				Instances: []stateResourceInstance{
+					{Attributes: stateInstanceAttributes{ID: "1"}},
+				},
+			},
+			{
+				Type: "databricks_dashboard",
+				Mode: "managed",
+				Name: "test_dashboard_old",
+				Instances: []stateResourceInstance{
+					{Attributes: stateInstanceAttributes{ID: "2"}},
+				},
+			},
 		},
 	}
 	err := TerraformToBundle(&tfState, &config)
@@ -1142,6 +1192,13 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Clusters["test_cluster_old"].ModifiedStatus)
 	assert.Equal(t, "", config.Resources.Clusters["test_cluster_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Clusters["test_cluster_new"].ModifiedStatus)
+
+	assert.Equal(t, "1", config.Resources.Dashboards["test_dashboard"].ID)
+	assert.Equal(t, "", config.Resources.Dashboards["test_dashboard"].ModifiedStatus)
+	assert.Equal(t, "2", config.Resources.Dashboards["test_dashboard_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Dashboards["test_dashboard_old"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.Dashboards["test_dashboard_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Dashboards["test_dashboard_new"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }

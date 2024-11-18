@@ -1,5 +1,119 @@
 # Version changelog
 
+## [Release] Release v0.234.0
+
+Bundles:
+ * Do not execute build on bundle destroy ([#1882](https://github.com/databricks/cli/pull/1882)).
+ * Add support for non-Python ipynb notebooks to DABs ([#1827](https://github.com/databricks/cli/pull/1827)).
+
+API Changes:
+ * Added `databricks credentials` command group.
+ * Changed `databricks lakeview create` command with new required argument order.
+
+OpenAPI commit d25296d2f4aa7bd6195c816fdf82e0f960f775da (2024-11-07)
+Dependency updates:
+ * Upgrade TF provider to 1.58.0 ([#1900](https://github.com/databricks/cli/pull/1900)).
+ * Bump golang.org/x/sync from 0.8.0 to 0.9.0 ([#1892](https://github.com/databricks/cli/pull/1892)).
+ * Bump golang.org/x/text from 0.19.0 to 0.20.0 ([#1893](https://github.com/databricks/cli/pull/1893)).
+ * Bump golang.org/x/mod from 0.21.0 to 0.22.0 ([#1895](https://github.com/databricks/cli/pull/1895)).
+ * Bump golang.org/x/oauth2 from 0.23.0 to 0.24.0 ([#1894](https://github.com/databricks/cli/pull/1894)).
+ * Bump github.com/databricks/databricks-sdk-go from 0.49.0 to 0.51.0 ([#1878](https://github.com/databricks/cli/pull/1878)).
+
+## [Release] Release v0.233.0
+
+CLI:
+ * Clean host URL in the `auth login` command ([#1879](https://github.com/databricks/cli/pull/1879)).
+
+Bundles:
+ * Fix bundle run when run interactively ([#1880](https://github.com/databricks/cli/pull/1880)).
+ * Fix relative path resolution for dashboards on Windows ([#1881](https://github.com/databricks/cli/pull/1881)).
+
+Internal:
+ * Address goreleaser deprecation warning ([#1872](https://github.com/databricks/cli/pull/1872)).
+ * Update actions/github-script to v7 ([#1873](https://github.com/databricks/cli/pull/1873)).
+ * Use Go 1.23 ([#1871](https://github.com/databricks/cli/pull/1871)).
+ * [Internal] Always write message for manual integration test trigger ([#1874](https://github.com/databricks/cli/pull/1874)).
+ * Add `cmd-exec-id` to user agent ([#1808](https://github.com/databricks/cli/pull/1808)).
+ * Added E2E test to run Python wheels on interactive cluster created in bundle ([#1864](https://github.com/databricks/cli/pull/1864)).
+
+
+Dependency updates:
+ * Bump github.com/hashicorp/terraform-json from 0.22.1 to 0.23.0 ([#1877](https://github.com/databricks/cli/pull/1877)).
+
+## [Release] Release v0.232.1
+
+This patch release fixes the following error observed when deploying to /Shared root folder
+"Error: Path (/Shared/.bundle/.../resources) doesn't exist"
+
+Bundles:
+ * Fixed adding /Workspace prefix for resource paths ([#1866](https://github.com/databricks/cli/pull/1866)).
+
+
+## [Release] Release v0.232.0
+
+**New features for Databricks Asset Bundles:**
+
+This release adds support for managing AI/BI dashboards as part of your bundle configuration. The `bundle generate` command is updated to support producing dashboard bundle configuration as well as a serialized JSON representation of the dashboard.
+You can find an example configuration and walkthrough at https://github.com/databricks/bundle-examples/tree/main/knowledge_base/dashboard_nyc_taxi
+
+CLI:
+ * Add privacy notice to README ([#1841](https://github.com/databricks/cli/pull/1841)).
+
+Bundles:
+ * Add support for AI/BI dashboards ([#1743](https://github.com/databricks/cli/pull/1743)).
+ * Added validator for folder permissions ([#1824](https://github.com/databricks/cli/pull/1824)).
+ * Add bundle generate variant for dashboards ([#1847](https://github.com/databricks/cli/pull/1847)).
+ * Use SetPermissions instead of UpdatePermissions when setting folder permissions based on top-level ones ([#1822](https://github.com/databricks/cli/pull/1822)).
+
+Internal:
+ * Attempt to reduce test flakiness on Windows ([#1845](https://github.com/databricks/cli/pull/1845)).
+ * Reuse resource resolution code for the run command ([#1858](https://github.com/databricks/cli/pull/1858)).
+ * [Internal] Automatically trigger integration tests on PR ([#1857](https://github.com/databricks/cli/pull/1857)).
+ * [Internal] Add test instructions for external contributors ([#1863](https://github.com/databricks/cli/pull/1863)).
+ * Add `libs/dyn/jsonsaver` ([#1862](https://github.com/databricks/cli/pull/1862)).
+
+
+Dependency updates:
+ * Bump github.com/fatih/color from 1.17.0 to 1.18.0 ([#1861](https://github.com/databricks/cli/pull/1861)).
+
+## [Release] Release v0.231.0
+
+CLI:
+ * Added JSON input validation for CLI commands ([#1771](https://github.com/databricks/cli/pull/1771)).
+ * Support Git worktrees for `sync` ([#1831](https://github.com/databricks/cli/pull/1831)).
+
+Bundles:
+ * Add `bundle summary` to display URLs for deployed resources ([#1731](https://github.com/databricks/cli/pull/1731)).
+ * Added a warning when incorrect permissions used for `/Workspace/Shared` bundle root ([#1821](https://github.com/databricks/cli/pull/1821)).
+ * Show actionable errors for collaborative deployment scenarios ([#1386](https://github.com/databricks/cli/pull/1386)).
+ * Fix path to repository-wide exclude file ([#1837](https://github.com/databricks/cli/pull/1837)).
+ * Fixed typo in converting cluster permissions ([#1826](https://github.com/databricks/cli/pull/1826)).
+ * Ignore metastore permission error during template generation ([#1819](https://github.com/databricks/cli/pull/1819)).
+ * Handle normalization of `dyn.KindTime` into an any type ([#1836](https://github.com/databricks/cli/pull/1836)).
+ * Added support for pip options in environment dependencies ([#1842](https://github.com/databricks/cli/pull/1842)).
+ * Fix race condition when restarting continuous jobs ([#1849](https://github.com/databricks/cli/pull/1849)).
+ * Fix pipeline in default-python template not working for certain workspaces ([#1854](https://github.com/databricks/cli/pull/1854)).
+ * Add "output" flag to the bundle sync command ([#1853](https://github.com/databricks/cli/pull/1853)).
+
+Internal:
+ * Move utility functions dealing with IAM to libs/iamutil ([#1820](https://github.com/databricks/cli/pull/1820)).
+ * Remove unused `IS_OWNER` constant ([#1823](https://github.com/databricks/cli/pull/1823)).
+ * Assert SDK version is consistent in the CLI generation process ([#1814](https://github.com/databricks/cli/pull/1814)).
+ * Fixed unmarshalling json input into `interface{}` type ([#1832](https://github.com/databricks/cli/pull/1832)).
+ * Fix `TestAccFsMkdirWhenFileExistsAtPath` in isolated Azure environments ([#1833](https://github.com/databricks/cli/pull/1833)).
+ * Add behavioral tests for examples from the YAML spec ([#1835](https://github.com/databricks/cli/pull/1835)).
+ * Remove Terraform conversion function that's no longer used ([#1840](https://github.com/databricks/cli/pull/1840)).
+ * Encode assumptions about the dashboards API in a test ([#1839](https://github.com/databricks/cli/pull/1839)).
+ * Add script to make testing of code on branches easier ([#1844](https://github.com/databricks/cli/pull/1844)).
+
+API Changes:
+ * Added `databricks disable-legacy-dbfs` command group.
+
+OpenAPI commit cf9c61453990df0f9453670f2fe68e1b128647a2 (2024-10-14)
+Dependency updates:
+ * Upgrade TF provider to 1.54.0 ([#1852](https://github.com/databricks/cli/pull/1852)).
+ * Bump github.com/databricks/databricks-sdk-go from 0.48.0 to 0.49.0 ([#1843](https://github.com/databricks/cli/pull/1843)).
+
 ## [Release] Release v0.230.0
 
 Notable changes for Databricks Asset Bundles:

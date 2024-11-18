@@ -21,6 +21,7 @@ type Resources struct {
 	QualityMonitors       map[string]*resources.QualityMonitor       `json:"quality_monitors,omitempty"`
 	Schemas               map[string]*resources.Schema               `json:"schemas,omitempty"`
 	Clusters              map[string]*resources.Cluster              `json:"clusters,omitempty"`
+	Dashboards            map[string]*resources.Dashboard            `json:"dashboards,omitempty"`
 }
 
 type ConfigResource interface {
@@ -77,6 +78,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["quality_monitors"], r.QualityMonitors),
 		collectResourceMap(descriptions["schemas"], r.Schemas),
 		collectResourceMap(descriptions["clusters"], r.Clusters),
+		collectResourceMap(descriptions["dashboards"], r.Dashboards),
 	}
 }
 
@@ -174,6 +176,12 @@ func SupportedResources() map[string]ResourceDescription {
 			PluralName:    "clusters",
 			SingularTitle: "Cluster",
 			PluralTitle:   "Clusters",
+		},
+		"dashboards": {
+			SingularName:  "dashboard",
+			PluralName:    "dashboards",
+			SingularTitle: "Dashboard",
+			PluralTitle:   "Dashboards",
 		},
 	}
 }

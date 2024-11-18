@@ -137,15 +137,32 @@ type ResourcePipelineFilters struct {
 
 type ResourcePipelineGatewayDefinition struct {
 	ConnectionId          string `json:"connection_id,omitempty"`
+	ConnectionName        string `json:"connection_name,omitempty"`
 	GatewayStorageCatalog string `json:"gateway_storage_catalog,omitempty"`
 	GatewayStorageName    string `json:"gateway_storage_name,omitempty"`
 	GatewayStorageSchema  string `json:"gateway_storage_schema,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsReportTableConfiguration struct {
+	PrimaryKeys                    []string `json:"primary_keys,omitempty"`
+	SalesforceIncludeFormulaFields bool     `json:"salesforce_include_formula_fields,omitempty"`
+	ScdType                        string   `json:"scd_type,omitempty"`
+	SequenceBy                     []string `json:"sequence_by,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsReport struct {
+	DestinationCatalog string                                                              `json:"destination_catalog,omitempty"`
+	DestinationSchema  string                                                              `json:"destination_schema,omitempty"`
+	DestinationTable   string                                                              `json:"destination_table,omitempty"`
+	SourceUrl          string                                                              `json:"source_url,omitempty"`
+	TableConfiguration *ResourcePipelineIngestionDefinitionObjectsReportTableConfiguration `json:"table_configuration,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsSchemaTableConfiguration struct {
 	PrimaryKeys                    []string `json:"primary_keys,omitempty"`
 	SalesforceIncludeFormulaFields bool     `json:"salesforce_include_formula_fields,omitempty"`
 	ScdType                        string   `json:"scd_type,omitempty"`
+	SequenceBy                     []string `json:"sequence_by,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsSchema struct {
@@ -160,6 +177,7 @@ type ResourcePipelineIngestionDefinitionObjectsTableTableConfiguration struct {
 	PrimaryKeys                    []string `json:"primary_keys,omitempty"`
 	SalesforceIncludeFormulaFields bool     `json:"salesforce_include_formula_fields,omitempty"`
 	ScdType                        string   `json:"scd_type,omitempty"`
+	SequenceBy                     []string `json:"sequence_by,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsTable struct {
@@ -173,6 +191,7 @@ type ResourcePipelineIngestionDefinitionObjectsTable struct {
 }
 
 type ResourcePipelineIngestionDefinitionObjects struct {
+	Report *ResourcePipelineIngestionDefinitionObjectsReport `json:"report,omitempty"`
 	Schema *ResourcePipelineIngestionDefinitionObjectsSchema `json:"schema,omitempty"`
 	Table  *ResourcePipelineIngestionDefinitionObjectsTable  `json:"table,omitempty"`
 }
@@ -181,6 +200,7 @@ type ResourcePipelineIngestionDefinitionTableConfiguration struct {
 	PrimaryKeys                    []string `json:"primary_keys,omitempty"`
 	SalesforceIncludeFormulaFields bool     `json:"salesforce_include_formula_fields,omitempty"`
 	ScdType                        string   `json:"scd_type,omitempty"`
+	SequenceBy                     []string `json:"sequence_by,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinition struct {
@@ -221,6 +241,12 @@ type ResourcePipelineLibrary struct {
 type ResourcePipelineNotification struct {
 	Alerts          []string `json:"alerts,omitempty"`
 	EmailRecipients []string `json:"email_recipients,omitempty"`
+}
+
+type ResourcePipelineRestartWindow struct {
+	DaysOfWeek string `json:"days_of_week,omitempty"`
+	StartHour  int    `json:"start_hour"`
+	TimeZoneId string `json:"time_zone_id,omitempty"`
 }
 
 type ResourcePipelineTriggerCron struct {
@@ -269,5 +295,6 @@ type ResourcePipeline struct {
 	LatestUpdates        []ResourcePipelineLatestUpdates      `json:"latest_updates,omitempty"`
 	Library              []ResourcePipelineLibrary            `json:"library,omitempty"`
 	Notification         []ResourcePipelineNotification       `json:"notification,omitempty"`
+	RestartWindow        *ResourcePipelineRestartWindow       `json:"restart_window,omitempty"`
 	Trigger              *ResourcePipelineTrigger             `json:"trigger,omitempty"`
 }

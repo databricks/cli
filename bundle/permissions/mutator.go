@@ -39,6 +39,10 @@ var levelsMap = map[string](map[string]string){
 		CAN_VIEW:   "CAN_VIEW",
 		CAN_RUN:    "CAN_QUERY",
 	},
+	"dashboards": {
+		CAN_MANAGE: "CAN_MANAGE",
+		CAN_VIEW:   "CAN_READ",
+	},
 }
 
 type bundlePermissions struct{}

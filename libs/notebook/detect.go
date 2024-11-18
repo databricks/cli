@@ -107,19 +107,19 @@ func DetectWithFS(fsys fs.FS, name string) (notebook bool, language workspace.La
 	// Determine which header to expect based on filename extension.
 	ext := strings.ToLower(filepath.Ext(name))
 	switch ext {
-	case ".py":
+	case ExtensionPython:
 		header = `# Databricks notebook source`
 		language = workspace.LanguagePython
-	case ".r":
+	case ExtensionR:
 		header = `# Databricks notebook source`
 		language = workspace.LanguageR
-	case ".scala":
+	case ExtensionScala:
 		header = "// Databricks notebook source"
 		language = workspace.LanguageScala
-	case ".sql":
+	case ExtensionSql:
 		header = "-- Databricks notebook source"
 		language = workspace.LanguageSql
-	case ".ipynb":
+	case ExtensionJupyter:
 		return DetectJupyterWithFS(fsys, name)
 	default:
 		return false, "", nil

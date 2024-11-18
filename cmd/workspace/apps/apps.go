@@ -28,9 +28,6 @@ func New() *cobra.Command {
 		Annotations: map[string]string{
 			"package": "apps",
 		},
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
 	}
 
 	// Add methods
@@ -70,6 +67,7 @@ func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var createReq apps.CreateAppRequest
+	createReq.App = &apps.App{}
 	var createJson flags.JsonFlag
 
 	var createSkipWait bool
@@ -80,7 +78,11 @@ func newCreate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `The description of the app.`)
+	// TODO: complex arg: active_deployment
+	// TODO: complex arg: app_status
+	// TODO: complex arg: compute_status
+	cmd.Flags().StringVar(&createReq.App.Description, "description", createReq.App.Description, `The description of the app.`)
+	// TODO: complex arg: pending_deployment
 	// TODO: array: resources
 
 	cmd.Use = "create NAME"
@@ -113,7 +115,7 @@ func newCreate() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			diags := createJson.Unmarshal(&createReq)
+			diags := createJson.Unmarshal(&createReq.App)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -125,7 +127,7 @@ func newCreate() *cobra.Command {
 			}
 		}
 		if !cmd.Flags().Changed("json") {
-			createReq.Name = args[0]
+			createReq.App.Name = args[0]
 		}
 
 		wait, err := w.Apps.Create(ctx, createReq)
@@ -237,6 +239,7 @@ func newDeploy() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var deployReq apps.CreateAppDeploymentRequest
+	deployReq.AppDeployment = &apps.AppDeployment{}
 	var deployJson flags.JsonFlag
 
 	var deploySkipWait bool
@@ -247,9 +250,11 @@ func newDeploy() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&deployJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&deployReq.DeploymentId, "deployment-id", deployReq.DeploymentId, `The unique id of the deployment.`)
-	cmd.Flags().Var(&deployReq.Mode, "mode", `The mode of which the deployment will manage the source code. Supported values: [AUTO_SYNC, SNAPSHOT]`)
-	cmd.Flags().StringVar(&deployReq.SourceCodePath, "source-code-path", deployReq.SourceCodePath, `The workspace file system path of the source code used to create the app deployment.`)
+	// TODO: complex arg: deployment_artifacts
+	cmd.Flags().StringVar(&deployReq.AppDeployment.DeploymentId, "deployment-id", deployReq.AppDeployment.DeploymentId, `The unique id of the deployment.`)
+	cmd.Flags().Var(&deployReq.AppDeployment.Mode, "mode", `The mode of which the deployment will manage the source code. Supported values: [AUTO_SYNC, SNAPSHOT]`)
+	cmd.Flags().StringVar(&deployReq.AppDeployment.SourceCodePath, "source-code-path", deployReq.AppDeployment.SourceCodePath, `The workspace file system path of the source code used to create the app deployment.`)
+	// TODO: complex arg: status
 
 	cmd.Use = "deploy APP_NAME"
 	cmd.Short = `Create an app deployment.`
@@ -273,7 +278,7 @@ func newDeploy() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			diags := deployJson.Unmarshal(&deployReq)
+			diags := deployJson.Unmarshal(&deployReq.AppDeployment)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -695,8 +700,9 @@ func newSetPermissions() *cobra.Command {
 	cmd.Short = `Set app permissions.`
 	cmd.Long = `Set app permissions.
   
-  Sets permissions on an app. Apps can inherit permissions from their root
-  object.
+  Sets permissions on an object, replacing existing permissions if they exist.
+  Deletes all direct permissions if none are specified. Objects can inherit
+  permissions from their root object.
 
   Arguments:
     APP_NAME: The app for which to get or manage permissions.`
@@ -923,28 +929,41 @@ func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var updateReq apps.UpdateAppRequest
+	updateReq.App = &apps.App{}
 	var updateJson flags.JsonFlag
 
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Description, "description", updateReq.Description, `The description of the app.`)
+	// TODO: complex arg: active_deployment
+	// TODO: complex arg: app_status
+	// TODO: complex arg: compute_status
+	cmd.Flags().StringVar(&updateReq.App.Description, "description", updateReq.App.Description, `The description of the app.`)
+	// TODO: complex arg: pending_deployment
 	// TODO: array: resources
 
-	cmd.Use = "update NAME"
+	cmd.Use = "update NAME NAME"
 	cmd.Short = `Update an app.`
 	cmd.Long = `Update an app.
   
   Updates the app with the supplied name.
 
   Arguments:
+    NAME: The name of the app.
     NAME: The name of the app. The name must contain only lowercase alphanumeric
       characters and hyphens. It must be unique within the workspace.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -954,7 +973,7 @@ func newUpdate() *cobra.Command {
 		w := root.WorkspaceClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			diags := updateJson.Unmarshal(&updateReq)
+			diags := updateJson.Unmarshal(&updateReq.App)
 			if diags.HasError() {
 				return diags.Error()
 			}
@@ -966,6 +985,9 @@ func newUpdate() *cobra.Command {
 			}
 		}
 		updateReq.Name = args[0]
+		if !cmd.Flags().Changed("json") {
+			updateReq.App.Name = args[1]
+		}
 
 		response, err := w.Apps.Update(ctx, updateReq)
 		if err != nil {
