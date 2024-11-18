@@ -226,7 +226,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		root := b.SyncRootPath
 		isInWorkspace := strings.HasPrefix(root, "/Workspace/")
 		if isInWorkspace && dbr.RunsOnRuntime(ctx) {
-			b.Config.Workspace.FilePath = b.SyncRootPath
+			b.Config.Workspace.FilePath = root
 		} else {
 			disabled := false
 			b.Config.Presets.InPlaceDeployment = &disabled
