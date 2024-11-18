@@ -11,8 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynvar"
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -194,31 +192,6 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		// HTTP API for schemas doesn't yet support tags. It's only supported in
 		// the Databricks UI and via the SQL API.
 	}
-
-	// Volumes: Prefix
-	for _, v := range r.Volumes {
-		if containsUserIdentity(v.CatalogName, b.Config.Workspace.CurrentUser) {
-			log.Debugf(ctx, "Skipping prefix for volume %s because catalog %s contains the current user's identity", v.Name, v.CatalogName)
-			continue
-		}
-		if containsUserIdentity(v.SchemaName, b.Config.Workspace.CurrentUser) {
-			log.Debugf(ctx, "Skipping prefix for volume %s because schema %s contains the current user's identity", v.Name, v.SchemaName)
-			continue
-		}
-		// We only have to check for ${resources.schemas...} references because any
-		// other valid reference (like ${var.foo}) would have been interpolated by this point.
-		if p, ok := dynvar.PureReferenceToPath(v.SchemaName); ok && p.HasPrefix(dyn.Path{dyn.Key("resources"), dyn.Key("schemas")}) {
-			log.Debugf(ctx, "Skipping prefix for volume %s because schema %s is defined in the bundle and the schema name will be interpolated at runtime", v.Name, v.SchemaName)
-			continue
-
-		}
-
-		v.Name = normalizePrefix(prefix) + v.Name
-
-		// HTTP API for volumes doesn't yet support tags. It's only supported in
-		// the Databricks UI and via the SQL API.
-	}
-
 	// Clusters: Prefix, Tags
 	for key, c := range r.Clusters {
 		if c.ClusterSpec == nil {
