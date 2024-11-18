@@ -19,6 +19,7 @@ import (
 
 func TestApplyWorkspaceRootPermissions(t *testing.T) {
 	b := &bundle.Bundle{
+		SyncRootPath: t.TempDir(),
 		Config: config.Root{
 			Workspace: config.Workspace{
 				RootPath:     "/Users/foo@bar.com",
@@ -79,6 +80,7 @@ func TestApplyWorkspaceRootPermissions(t *testing.T) {
 
 func TestApplyWorkspaceRootPermissionsForAllPaths(t *testing.T) {
 	b := &bundle.Bundle{
+		SyncRootPath: t.TempDir(),
 		Config: config.Root{
 			Workspace: config.Workspace{
 				RootPath:     "/Some/Root/Path",

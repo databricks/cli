@@ -77,6 +77,7 @@ func TestFolderPermissionsInheritedWhenRootPathDoesNotExist(t *testing.T) {
 
 func TestValidateFolderPermissionsFailsOnMissingBundlePermission(t *testing.T) {
 	b := &bundle.Bundle{
+		SyncRootPath: t.TempDir(),
 		Config: config.Root{
 			Workspace: config.Workspace{
 				RootPath:     "/Workspace/Users/foo@bar.com",
@@ -129,6 +130,7 @@ func TestValidateFolderPermissionsFailsOnMissingBundlePermission(t *testing.T) {
 
 func TestValidateFolderPermissionsFailsOnPermissionMismatch(t *testing.T) {
 	b := &bundle.Bundle{
+		SyncRootPath: t.TempDir(),
 		Config: config.Root{
 			Workspace: config.Workspace{
 				RootPath:     "/Workspace/Users/foo@bar.com",
@@ -174,6 +176,7 @@ func TestValidateFolderPermissionsFailsOnPermissionMismatch(t *testing.T) {
 
 func TestValidateFolderPermissionsFailsOnNoRootFolder(t *testing.T) {
 	b := &bundle.Bundle{
+		SyncRootPath: t.TempDir(),
 		Config: config.Root{
 			Workspace: config.Workspace{
 				RootPath:     "/NotExisting",

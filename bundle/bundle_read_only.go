@@ -32,6 +32,10 @@ func (r ReadOnlyBundle) SyncRoot() vfs.Path {
 	return r.b.SyncRoot
 }
 
+func (r ReadOnlyBundle) SyncRootPath() string {
+	return r.b.SyncRootPath
+}
+
 func (r ReadOnlyBundle) WorkspaceClient() *databricks.WorkspaceClient {
 	return r.b.WorkspaceClient()
 }
