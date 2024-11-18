@@ -18,6 +18,7 @@ import (
 
 func TestFolderPermissionsInheritedWhenRootPathDoesNotExist(t *testing.T) {
 	b := &bundle.Bundle{
+		SyncRootPath: t.TempDir(),
 		Config: config.Root{
 			Workspace: config.Workspace{
 				RootPath:     "/Workspace/Users/foo@bar.com",
