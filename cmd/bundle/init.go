@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -11,6 +12,8 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/dbr"
+	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/template"
 	"github.com/spf13/cobra"
@@ -147,6 +150,26 @@ func repoName(url string) string {
 	return parts[len(parts)-1]
 }
 
+func constructOutputFiler(ctx context.Context, outputDir string) (filer.Filer, error) {
+	outputDir, err := filepath.Abs(outputDir)
+	if err != nil {
+		return nil, err
+	}
+
+	// If the CLI is running on DBR and we're writing to the workspace file system,
+	// use the extension-aware workspace filesystem filer to instantiate the template.
+	//
+	// It is not possible to write notebooks through the workspace filesystem's FUSE mount.
+	// Therefore this is the only way we can initialize templates that contain notebooks
+	// when running the CLI on DBR and initializing a template to the workspace.
+	//
+	if strings.HasPrefix(outputDir, "/Workspace/") && dbr.RunsOnRuntime(ctx) {
+		return filer.NewWorkspaceFilesExtensionsClient(root.WorkspaceClient(ctx), outputDir)
+	}
+
+	return filer.NewLocalClient(outputDir)
+}
+
 func newInitCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init [TEMPLATE_PATH]",
@@ -201,6 +224,11 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 			templatePath = getNativeTemplateByDescription(description)
 		}
 
+		outputFiler, err := constructOutputFiler(ctx, outputDir)
+		if err != nil {
+			return err
+		}
+
 		if templatePath == customTemplate {
 			cmdio.LogString(ctx, "Please specify a path or Git repository to use a custom template.")
 			cmdio.LogString(ctx, "See https://docs.databricks.com/en/dev-tools/bundles/templates.html to learn more about custom templates.")
@@ -230,7 +258,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 
 			// skip downloading the repo because input arg is not a URL. We assume
 			// it's a path on the local file system in that case
-			return template.Materialize(ctx, configFile, templateFS, outputDir)
+			return template.Materialize(ctx, configFile, templateFS, outputFiler)
 		}
 
 		// Create a temporary directory with the name of the repository.  The '*'
@@ -255,7 +283,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 		// Clean up downloaded repository once the template is materialized.
 		defer os.RemoveAll(repoDir)
 		templateFS := os.DirFS(filepath.Join(repoDir, templateDir))
-		return template.Materialize(ctx, configFile, templateFS, outputDir)
+		return template.Materialize(ctx, configFile, templateFS, outputFiler)
 	}
 	return cmd
 }

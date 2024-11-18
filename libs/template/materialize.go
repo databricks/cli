@@ -21,8 +21,8 @@ const schemaFileName = "databricks_template_schema.json"
 //	ctx: 			context containing a cmdio object. This is used to prompt the user
 //	configFilePath: file path containing user defined config values
 //	templateFS: 	root of the template definition
-//	outputDir: 	root of directory where to initialize the template
-func Materialize(ctx context.Context, configFilePath string, templateFS fs.FS, outputDir string) error {
+//	outputFiler: 	filer to use for writing the initialized template
+func Materialize(ctx context.Context, configFilePath string, templateFS fs.FS, outputFiler filer.Filer) error {
 	if _, err := fs.Stat(templateFS, schemaFileName); errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("not a bundle template: expected to find a template schema file at %s", schemaFileName)
 	}
@@ -73,12 +73,7 @@ func Materialize(ctx context.Context, configFilePath string, templateFS fs.FS, o
 		return err
 	}
 
-	out, err := filer.NewLocalClient(outputDir)
-	if err != nil {
-		return err
-	}
-
-	err = r.persistToDisk(ctx, out)
+	err = r.persistToDisk(ctx, outputFiler)
 	if err != nil {
 		return err
 	}
