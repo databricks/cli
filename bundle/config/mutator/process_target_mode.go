@@ -63,10 +63,6 @@ func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) {
 	}
 }
 
-func containsUserIdentity(s string, u *config.User) bool {
-	return strings.Contains(s, u.ShortName) || strings.Contains(s, u.UserName)
-}
-
 func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
 	p := b.Config.Presets
@@ -96,7 +92,7 @@ func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
 			diags = diags.Extend(diag.Errorf("%s must start with '~/' or contain the current username to ensure uniqueness when using 'mode: development'", path))
 		}
 	}
-	if p.NamePrefix != "" && !containsUserIdentity(p.NamePrefix, u) {
+	if p.NamePrefix != "" && !strings.Contains(p.NamePrefix, u.ShortName) && !strings.Contains(p.NamePrefix, u.UserName) {
 		// Resources such as pipelines require a unique name, e.g. '[dev steve] my_pipeline'.
 		// For this reason we require the name prefix to contain the current username;
 		// it's a pitfall for users if they don't include it and later find out that
