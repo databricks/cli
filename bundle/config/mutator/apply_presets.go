@@ -223,7 +223,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	}
 
 	if config.IsExplicitlyEnabled((b.Config.Presets.InPlaceDeployment)) {
-		root := b.SyncRoot.Native()
+		root := b.SyncRootPath
 		isInWorkspace := strings.HasPrefix(root, "/Workspace/")
 		if isInWorkspace && dbr.RunsOnRuntime(ctx) {
 			b.Config.Workspace.FilePath = b.SyncRootPath
