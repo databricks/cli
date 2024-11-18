@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/iamutil"
@@ -63,8 +64,13 @@ func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) {
 	}
 
 	if !config.IsExplicitlyDisabled(t.PipelinesDevelopment) {
-		enabled := true
-		t.PipelinesDevelopment = &enabled
+		root := b.SyncRootPath
+		isInWorkspace := strings.HasPrefix(root, "/Workspace/")
+
+		if isInWorkspace && dbr.RunsOnRuntime(ctx) {
+			enabled := true
+			t.PipelinesDevelopment = &enabled
+		}
 	}
 }
 

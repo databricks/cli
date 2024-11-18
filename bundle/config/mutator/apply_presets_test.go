@@ -387,6 +387,7 @@ func TestApplyPresetsInPlaceDeployment(t *testing.T) {
 		initialValue     *bool
 		expectedValue    *bool
 		expectedFilePath string
+		expectedWarning  string
 	}{
 		{
 			name:             "preset enabled, bundle in Workspace, databricks runtime",
@@ -395,6 +396,7 @@ func TestApplyPresetsInPlaceDeployment(t *testing.T) {
 			initialValue:     &enabled,
 			expectedValue:    &enabled,
 			expectedFilePath: workspacePath,
+			expectedWarning:  "",
 		},
 		{
 			name:             "preset enabled, bundle not in Workspace, databricks runtime",
@@ -403,6 +405,7 @@ func TestApplyPresetsInPlaceDeployment(t *testing.T) {
 			initialValue:     &enabled,
 			expectedValue:    &disabled,
 			expectedFilePath: remotePath,
+			expectedWarning:  "in-place deployment is available only in the Databricks Workspace",
 		},
 		{
 			name:             "preset enabled, bundle in Workspace, not databricks runtime",
@@ -411,6 +414,7 @@ func TestApplyPresetsInPlaceDeployment(t *testing.T) {
 			initialValue:     &enabled,
 			expectedValue:    &disabled,
 			expectedFilePath: remotePath,
+			expectedWarning:  "in-place deployment is available only in the Databricks Workspace",
 		},
 		{
 			name:             "preset disabled, bundle in Workspace, databricks runtime",
@@ -450,8 +454,13 @@ func TestApplyPresetsInPlaceDeployment(t *testing.T) {
 				t.Fatalf("unexpected error: %v", diags)
 			}
 
+			if tt.expectedWarning != "" {
+				require.Equal(t, tt.expectedWarning, diags[0].Summary)
+			}
+
 			require.Equal(t, tt.expectedFilePath, b.Config.Workspace.FilePath)
 			require.Equal(t, tt.expectedValue, b.Config.Presets.InPlaceDeployment)
 		})
 	}
+
 }

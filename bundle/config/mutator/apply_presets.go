@@ -230,6 +230,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		} else {
 			disabled := false
 			b.Config.Presets.InPlaceDeployment = &disabled
+			diags = diags.Extend(diag.Warningf("in-place deployment is available only in the Databricks Workspace"))
 		}
 	}
 
