@@ -3,7 +3,7 @@ package mutator
 import (
 	"context"
 	"reflect"
-	"strings"
+	"slices"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -391,9 +391,16 @@ func TestAllResourcesMocked(t *testing.T) {
 	}
 }
 
-// Make sure that we at least rename all resources
-func TestAllResourcesRenamed(t *testing.T) {
+// Make sure that we at rename all non UC resources
+func TestAllNonUCResourcesAreRenamed(t *testing.T) {
 	b := mockBundle(config.Development)
+
+	// UC resources should not have a prefix added to their name. Right now
+	// this list only contains the Volume resource since we have yet to remove
+	// prefixing support for UC schemas and registered models.
+	ucFields := []reflect.Type{
+		reflect.TypeOf(&resources.Volume{}),
+	}
 
 	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
 	diags := bundle.Apply(context.Background(), b, m)
@@ -407,14 +414,14 @@ func TestAllResourcesRenamed(t *testing.T) {
 			for _, key := range field.MapKeys() {
 				resource := field.MapIndex(key)
 				nameField := resource.Elem().FieldByName("Name")
-				if nameField.IsValid() && nameField.Kind() == reflect.String {
-					assert.True(
-						t,
-						strings.Contains(nameField.String(), "dev"),
-						"process_target_mode should rename '%s' in '%s'",
-						key,
-						resources.Type().Field(i).Name,
-					)
+				if !nameField.IsValid() || nameField.Kind() != reflect.String {
+					continue
+				}
+
+				if slices.Contains(ucFields, resource.Type()) {
+					assert.NotContains(t, nameField.String(), "dev", "process_target_mode should not rename '%s' in '%s'", key, resources.Type().Field(i).Name)
+				} else {
+					assert.Contains(t, nameField.String(), "dev", "process_target_mode should rename '%s' in '%s'", key, resources.Type().Field(i).Name)
 				}
 			}
 		}
