@@ -80,6 +80,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["schemas"], r.Schemas),
 		collectResourceMap(descriptions["clusters"], r.Clusters),
 		collectResourceMap(descriptions["dashboards"], r.Dashboards),
+		collectResourceMap(descriptions["volumes"], r.Volumes),
 	}
 }
 
@@ -183,6 +184,12 @@ func SupportedResources() map[string]ResourceDescription {
 			PluralName:    "dashboards",
 			SingularTitle: "Dashboard",
 			PluralTitle:   "Dashboards",
+		},
+		"volumes": {
+			SingularName:  "volume",
+			PluralName:    "volumes",
+			SingularTitle: "Volume",
+			PluralTitle:   "Volumes",
 		},
 	}
 }

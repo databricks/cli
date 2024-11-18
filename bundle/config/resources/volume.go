@@ -1,6 +1,11 @@
 package resources
 
 import (
+	"context"
+	"fmt"
+	"net/url"
+
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -16,6 +21,7 @@ type Volume struct {
 	*catalog.CreateVolumeRequestContent
 
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
+	URL            string         `json:"url,omitempty" bundle:"internal"`
 }
 
 func (v *Volume) UnmarshalJSON(b []byte) error {
@@ -24,4 +30,29 @@ func (v *Volume) UnmarshalJSON(b []byte) error {
 
 func (v Volume) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(v)
+}
+
+func (v *Volume) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
+	return false, fmt.Errorf("volume.Exists() is not supported")
+}
+
+func (v *Volume) TerraformResourceName() string {
+	return "databricks_volume"
+}
+
+// TODO: Test unit and manually. Maybe just manually.
+func (v *Volume) InitializeURL(baseURL url.URL) {
+	if v.ID == "" {
+		return
+	}
+	baseURL.Path = fmt.Sprintf("explore/data/volumes/%s", v.ID)
+	v.URL = baseURL.String()
+}
+
+func (v *Volume) GetURL() string {
+	return v.URL
+}
+
+func (v *Volume) GetName() string {
+	return v.Name
 }
