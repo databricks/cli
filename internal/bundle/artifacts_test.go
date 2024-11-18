@@ -279,7 +279,7 @@ func TestAccUploadArtifactFileToInvalidVolume(t *testing.T) {
 			},
 		}
 
-		diags := bundle.Apply(ctx, b, bundle.Seq(libraries.ExpandGlobReferences(), libraries.Upload()))
+		diags := bundle.Apply(ctx, b, libraries.Upload())
 		assert.ErrorContains(t, diags.Error(), fmt.Sprintf("failed to fetch metadata for the UC volume %s that is configured in the artifact_path:", volumePath))
 	})
 
@@ -319,7 +319,7 @@ func TestAccUploadArtifactFileToInvalidVolume(t *testing.T) {
 			Column: 2,
 		}})
 
-		diags := bundle.Apply(ctx, b, bundle.Seq(libraries.ExpandGlobReferences(), libraries.Upload()))
+		diags := bundle.Apply(ctx, b, libraries.Upload())
 		assert.Contains(t, diags, diag.Diagnostic{
 			Severity: diag.Error,
 			Summary:  fmt.Sprintf("failed to fetch metadata for the UC volume %s that is configured in the artifact_path: Not Found", volumePath),

@@ -133,8 +133,8 @@ func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return diags
 	}
 
-	// Only set the filer client if it's not already set. We use client field
-	// in mutator to mock the filer client in testing
+	// Only set the filer client if it's not already set. We use the client field
+	// in the mutator to mock the filer client in testing
 	if u.client == nil {
 		u.client = client
 	}
