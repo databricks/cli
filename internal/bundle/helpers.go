@@ -42,7 +42,7 @@ func initTestTemplateWithBundleRoot(t *testing.T, ctx context.Context, templateN
 	cmd := cmdio.NewIO(flags.OutputJSON, strings.NewReader(""), os.Stdout, os.Stderr, "", "bundles")
 	ctx = cmdio.InContext(ctx, cmd)
 
-	err = template.Materialize(ctx, configFilePath, templateRoot, bundleRoot)
+	err = template.Materialize(ctx, configFilePath, os.DirFS(templateRoot), bundleRoot)
 	return bundleRoot, err
 }
 
