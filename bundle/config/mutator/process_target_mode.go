@@ -58,12 +58,12 @@ func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) {
 		t.TriggerPauseStatus = config.Paused
 	}
 
-	if !config.IsExplicitlyDisabled(t.InPlaceDeployment) {
+	if !config.IsExplicitlyDisabled(t.SourceLinkedDeployment) {
 		root := b.SyncRootPath
 		isInWorkspace := strings.HasPrefix(root, "/Workspace/")
 		if isInWorkspace && dbr.RunsOnRuntime(ctx) {
 			enabled := true
-			t.InPlaceDeployment = &enabled
+			t.SourceLinkedDeployment = &enabled
 		}
 	}
 

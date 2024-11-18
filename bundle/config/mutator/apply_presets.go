@@ -222,15 +222,15 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		dashboard.DisplayName = prefix + dashboard.DisplayName
 	}
 
-	if config.IsExplicitlyEnabled((b.Config.Presets.InPlaceDeployment)) {
+	if config.IsExplicitlyEnabled((b.Config.Presets.SourceLinkedDeployment)) {
 		root := b.SyncRootPath
 		isInWorkspace := strings.HasPrefix(root, "/Workspace/")
 		if isInWorkspace && dbr.RunsOnRuntime(ctx) {
 			b.Config.Workspace.FilePath = root
 		} else {
 			disabled := false
-			b.Config.Presets.InPlaceDeployment = &disabled
-			diags = diags.Extend(diag.Warningf("in-place deployment is available only in the Databricks Workspace"))
+			b.Config.Presets.SourceLinkedDeployment = &disabled
+			diags = diags.Extend(diag.Warningf("source-linked deployment is available only in the Databricks Workspace"))
 		}
 	}
 

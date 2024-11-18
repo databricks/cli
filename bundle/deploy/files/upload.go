@@ -24,8 +24,8 @@ func (m *upload) Name() string {
 }
 
 func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	if config.IsExplicitlyEnabled(b.Config.Presets.InPlaceDeployment) {
-		cmdio.LogString(ctx, "Bundle files uploading skipped: in-place deployment is enabled")
+	if config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
+		cmdio.LogString(ctx, "Source-linked deployment is enabled. Resources will point to the source files directly without making copies")
 		return nil
 	}
 

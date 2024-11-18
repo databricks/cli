@@ -520,23 +520,23 @@ func TestPipelinesDevelopmentDisabled(t *testing.T) {
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
 }
 
-func TestInPlaceDeploymentEnabled(t *testing.T) {
-	b, diags := processInPlaceBundle(t, true)
+func TestSourceLinkedDeploymentEnabled(t *testing.T) {
+	b, diags := processSourceLinkedBundle(t, true)
 	require.NoError(t, diags.Error())
-	assert.True(t, *b.Config.Presets.InPlaceDeployment)
+	assert.True(t, *b.Config.Presets.SourceLinkedDeployment)
 	assert.Equal(t, b.Config.Workspace.FilePath, b.SyncRootPath)
 }
 
-func TestInPlaceDeploymentDisabled(t *testing.T) {
-	b, diags := processInPlaceBundle(t, false)
+func TestSourceLinkedDeploymentDisabled(t *testing.T) {
+	b, diags := processSourceLinkedBundle(t, false)
 	require.NoError(t, diags.Error())
-	assert.False(t, *b.Config.Presets.InPlaceDeployment)
+	assert.False(t, *b.Config.Presets.SourceLinkedDeployment)
 	assert.NotEqual(t, b.Config.Workspace.FilePath, b.SyncRootPath)
 }
 
-func processInPlaceBundle(t *testing.T, presetEnabled bool) (*bundle.Bundle, diag.Diagnostics) {
+func processSourceLinkedBundle(t *testing.T, presetEnabled bool) (*bundle.Bundle, diag.Diagnostics) {
 	if runtime.GOOS == "windows" {
-		t.Skip("this test is not applicable on Windows because in-place works only in the Databricks Workspace")
+		t.Skip("this test is not applicable on Windows because source-linked mode works only in the Databricks Workspace")
 	}
 
 	b := mockBundle(config.Development)
@@ -544,7 +544,7 @@ func processInPlaceBundle(t *testing.T, presetEnabled bool) (*bundle.Bundle, dia
 	workspacePath := "/Workspace/lennart@company.com/"
 	b.SyncRoot = vfs.MustNew(workspacePath)
 	b.SyncRootPath = workspacePath
-	b.Config.Presets.InPlaceDeployment = &presetEnabled
+	b.Config.Presets.SourceLinkedDeployment = &presetEnabled
 
 	ctx := dbr.MockRuntime(context.Background(), true)
 	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())

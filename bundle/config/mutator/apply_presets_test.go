@@ -369,9 +369,9 @@ func TestApplyPresetsResourceNotDefined(t *testing.T) {
 	}
 }
 
-func TestApplyPresetsInPlaceDeployment(t *testing.T) {
+func TestApplyPresetsSourceLinkedDeployment(t *testing.T) {
 	if runtime.GOOS == "windows" {
-		t.Skip("this test is not applicable on Windows because in-place works only in the Databricks Workspace")
+		t.Skip("this test is not applicable on Windows because source-linked mode works only in the Databricks Workspace")
 	}
 
 	testContext := context.Background()
@@ -405,7 +405,7 @@ func TestApplyPresetsInPlaceDeployment(t *testing.T) {
 			initialValue:     &enabled,
 			expectedValue:    &disabled,
 			expectedFilePath: remotePath,
-			expectedWarning:  "in-place deployment is available only in the Databricks Workspace",
+			expectedWarning:  "source-linked deployment is available only in the Databricks Workspace",
 		},
 		{
 			name:             "preset enabled, bundle in Workspace, not databricks runtime",
@@ -414,7 +414,7 @@ func TestApplyPresetsInPlaceDeployment(t *testing.T) {
 			initialValue:     &enabled,
 			expectedValue:    &disabled,
 			expectedFilePath: remotePath,
-			expectedWarning:  "in-place deployment is available only in the Databricks Workspace",
+			expectedWarning:  "source-linked deployment is available only in the Databricks Workspace",
 		},
 		{
 			name:             "preset disabled, bundle in Workspace, databricks runtime",
@@ -441,7 +441,7 @@ func TestApplyPresetsInPlaceDeployment(t *testing.T) {
 				SyncRootPath: tt.bundlePath,
 				Config: config.Root{
 					Presets: config.Presets{
-						InPlaceDeployment: tt.initialValue,
+						SourceLinkedDeployment: tt.initialValue,
 					},
 					Workspace: config.Workspace{
 						FilePath: remotePath,
@@ -459,7 +459,7 @@ func TestApplyPresetsInPlaceDeployment(t *testing.T) {
 			}
 
 			require.Equal(t, tt.expectedFilePath, b.Config.Workspace.FilePath)
-			require.Equal(t, tt.expectedValue, b.Config.Presets.InPlaceDeployment)
+			require.Equal(t, tt.expectedValue, b.Config.Presets.SourceLinkedDeployment)
 		})
 	}
 
