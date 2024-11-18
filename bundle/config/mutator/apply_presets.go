@@ -192,6 +192,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		// HTTP API for schemas doesn't yet support tags. It's only supported in
 		// the Databricks UI and via the SQL API.
 	}
+	
 	// Clusters: Prefix, Tags
 	for key, c := range r.Clusters {
 		if c.ClusterSpec == nil {
