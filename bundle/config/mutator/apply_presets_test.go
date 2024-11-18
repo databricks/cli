@@ -47,6 +47,7 @@ func TestApplyPresetsPrefix(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			b := &bundle.Bundle{
+				SyncRoot: vfs.MustNew(t.TempDir()),
 				Config: config.Root{
 					Resources: config.Resources{
 						Jobs: map[string]*resources.Job{
@@ -57,7 +58,6 @@ func TestApplyPresetsPrefix(t *testing.T) {
 						NamePrefix: tt.prefix,
 					},
 				},
-				SyncRoot: vfs.MustNew(t.TempDir()),
 			}
 
 			ctx := context.Background()
@@ -174,6 +174,7 @@ func TestApplyPresetsTags(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			b := &bundle.Bundle{
+				SyncRoot: vfs.MustNew(t.TempDir()),
 				Config: config.Root{
 					Resources: config.Resources{
 						Jobs: map[string]*resources.Job{
@@ -184,7 +185,6 @@ func TestApplyPresetsTags(t *testing.T) {
 						Tags: tt.tags,
 					},
 				},
-				SyncRoot: vfs.MustNew(t.TempDir()),
 			}
 
 			ctx := context.Background()
@@ -234,6 +234,7 @@ func TestApplyPresetsJobsMaxConcurrentRuns(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			b := &bundle.Bundle{
+				SyncRoot: vfs.MustNew(t.TempDir()),
 				Config: config.Root{
 					Resources: config.Resources{
 						Jobs: map[string]*resources.Job{
@@ -244,7 +245,6 @@ func TestApplyPresetsJobsMaxConcurrentRuns(t *testing.T) {
 						JobsMaxConcurrentRuns: tt.setting,
 					},
 				},
-				SyncRoot: vfs.MustNew(t.TempDir()),
 			}
 			ctx := context.Background()
 			diag := bundle.Apply(ctx, b, mutator.ApplyPresets())
@@ -260,6 +260,7 @@ func TestApplyPresetsJobsMaxConcurrentRuns(t *testing.T) {
 
 func TestApplyPresetsPrefixWithoutJobSettings(t *testing.T) {
 	b := &bundle.Bundle{
+		SyncRoot: vfs.MustNew(t.TempDir()),
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -270,7 +271,6 @@ func TestApplyPresetsPrefixWithoutJobSettings(t *testing.T) {
 				NamePrefix: "prefix-",
 			},
 		},
-		SyncRoot: vfs.MustNew(t.TempDir()),
 	}
 
 	ctx := context.Background()
@@ -356,13 +356,13 @@ func TestApplyPresetsResourceNotDefined(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.error, func(t *testing.T) {
 			b := &bundle.Bundle{
+				SyncRoot: vfs.MustNew(t.TempDir()),
 				Config: config.Root{
 					Resources: tt.resources,
 					Presets: config.Presets{
 						TriggerPauseStatus: config.Paused,
 					},
 				},
-				SyncRoot: vfs.MustNew(t.TempDir()),
 			}
 
 			ctx := context.Background()
@@ -433,6 +433,8 @@ func TestApplyPresetsInPlaceDeployment(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			b := &bundle.Bundle{
+				SyncRoot:     vfs.MustNew(tt.bundlePath),
+				SyncRootPath: tt.bundlePath,
 				Config: config.Root{
 					Presets: config.Presets{
 						InPlaceDeployment: tt.initialValue,
@@ -441,8 +443,6 @@ func TestApplyPresetsInPlaceDeployment(t *testing.T) {
 						FilePath: remotePath,
 					},
 				},
-				SyncRoot:     vfs.MustNew(tt.bundlePath),
-				SyncRootPath: tt.bundlePath,
 			}
 
 			diags := bundle.Apply(tt.ctx, b, mutator.ApplyPresets())
