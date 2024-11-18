@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/databricks/cli/libs/filer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -16,14 +17,14 @@ func testInMemoryFile(t *testing.T, ctx context.Context, perm fs.FileMode) {
 	tmpDir := t.TempDir()
 
 	f := &inMemoryFile{
-		dstPath: &destinationPath{
-			root:    tmpDir,
-			relPath: "a/b/c",
-		},
 		perm:    perm,
+		relPath: "a/b/c",
 		content: []byte("123"),
 	}
-	err := f.Write(ctx)
+
+	out, err := filer.NewLocalClient(tmpDir)
+	require.NoError(t, err)
+	err = f.Write(ctx, out)
 	assert.NoError(t, err)
 
 	assertFileContent(t, filepath.Join(tmpDir, "a/b/c"), "123")
@@ -36,42 +37,19 @@ func testCopyFile(t *testing.T, ctx context.Context, perm fs.FileMode) {
 	require.NoError(t, err)
 
 	f := &copyFile{
-		ctx: context.Background(),
-		dstPath: &destinationPath{
-			root:    tmpDir,
-			relPath: "a/b/c",
-		},
 		perm:    perm,
-		srcPath: "source",
+		relPath: "a/b/c",
 		srcFS:   os.DirFS(tmpDir),
+		srcPath: "source",
 	}
-	err = f.Write(ctx)
+
+	out, err := filer.NewLocalClient(tmpDir)
+	require.NoError(t, err)
+	err = f.Write(ctx, out)
 	assert.NoError(t, err)
 
 	assertFileContent(t, filepath.Join(tmpDir, "a/b/c"), "qwerty")
 	assertFilePermissions(t, filepath.Join(tmpDir, "a/b/c"), perm)
-}
-
-func TestTemplateFileDestinationPath(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.SkipNow()
-	}
-	f := &destinationPath{
-		root:    `a/b/c`,
-		relPath: "d/e",
-	}
-	assert.Equal(t, `a/b/c/d/e`, f.absPath())
-}
-
-func TestTemplateFileDestinationPathForWindows(t *testing.T) {
-	if runtime.GOOS != "windows" {
-		t.SkipNow()
-	}
-	f := &destinationPath{
-		root:    `c:\a\b\c`,
-		relPath: "d/e",
-	}
-	assert.Equal(t, `c:\a\b\c\d\e`, f.absPath())
 }
 
 func TestTemplateInMemoryFilePersistToDisk(t *testing.T) {
