@@ -90,8 +90,6 @@ func TestPipelineRunnerRestart(t *testing.T) {
 		PipelineId: "123",
 	}).Return(mockWait, nil)
 
-	pipelineApi.EXPECT().GetByPipelineId(mock.Anything, "123").Return(&pipelines.GetPipelineResponse{}, nil)
-
 	// Mock runner starting a new update
 	pipelineApi.EXPECT().StartUpdate(mock.Anything, pipelines.StartUpdate{
 		PipelineId: "123",
