@@ -811,7 +811,7 @@ func TestTranslatePathsWithSourceLinkedDeployment(t *testing.T) {
 							Tasks: []jobs.Task{
 								{
 									NotebookTask: &jobs.NotebookTask{
-										NotebookPath: "./my_job_notebook.py",
+										NotebookPath: "my_job_notebook.py",
 									},
 									Libraries: []compute.Library{
 										{Whl: "./dist/task.whl"},
@@ -824,15 +824,15 @@ func TestTranslatePathsWithSourceLinkedDeployment(t *testing.T) {
 								},
 								{
 									NotebookTask: &jobs.NotebookTask{
-										NotebookPath: "./my_job_notebook.py",
+										NotebookPath: "my_job_notebook.py",
 									},
 									Libraries: []compute.Library{
-										{Requirements: "./requirements.txt"},
+										{Requirements: "requirements.txt"},
 									},
 								},
 								{
 									SparkPythonTask: &jobs.SparkPythonTask{
-										PythonFile: "./my_python_file.py",
+										PythonFile: "my_python_file.py",
 									},
 								},
 								{
@@ -861,7 +861,7 @@ func TestTranslatePathsWithSourceLinkedDeployment(t *testing.T) {
 							Libraries: []pipelines.PipelineLibrary{
 								{
 									Notebook: &pipelines.NotebookLibrary{
-										Path: "./my_pipeline_notebook.py",
+										Path: "my_pipeline_notebook.py",
 									},
 								},
 								{
@@ -871,7 +871,7 @@ func TestTranslatePathsWithSourceLinkedDeployment(t *testing.T) {
 								},
 								{
 									File: &pipelines.FileLibrary{
-										Path: "./my_python_file.py",
+										Path: "my_python_file.py",
 									},
 								},
 							},
@@ -919,7 +919,7 @@ func TestTranslatePathsWithSourceLinkedDeployment(t *testing.T) {
 	// left as is
 	assert.Equal(
 		t,
-		"dist/task.whl",
+		filepath.Join("dist", "task.whl"),
 		b.Config.Resources.Jobs["job"].Tasks[0].Libraries[0].Whl,
 	)
 	assert.Equal(
