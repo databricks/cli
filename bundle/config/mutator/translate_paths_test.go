@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -789,6 +790,10 @@ func TestTranslatePathWithComplexVariables(t *testing.T) {
 }
 
 func TestTranslatePathsWithSourceLinkedDeployment(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("this test is not applicable on Windows because source-linked mode works only in the Databricks Workspace")
+	}
+
 	dir := t.TempDir()
 	touchNotebookFile(t, filepath.Join(dir, "my_job_notebook.py"))
 	touchNotebookFile(t, filepath.Join(dir, "my_pipeline_notebook.py"))
