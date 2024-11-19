@@ -18,7 +18,7 @@ type WriteMode int
 const writeModePerm = WriteMode(fs.ModePerm)
 
 const (
-	OverwriteIfExists WriteMode = writeModePerm + 1<<iota
+	OverwriteIfExists WriteMode = (writeModePerm + 1) << iota
 	CreateParentDirectories
 )
 

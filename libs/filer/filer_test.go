@@ -8,4 +8,5 @@ import (
 
 func TestWriteMode(t *testing.T) {
 	assert.Equal(t, 512, int(OverwriteIfExists))
+	assert.Equal(t, 1024, int(CreateParentDirectories))
 }
