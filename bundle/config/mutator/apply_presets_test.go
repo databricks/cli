@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/dbr"
-	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
@@ -48,7 +47,6 @@ func TestApplyPresetsPrefix(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			b := &bundle.Bundle{
-				SyncRoot: vfs.MustNew(t.TempDir()),
 				Config: config.Root{
 					Resources: config.Resources{
 						Jobs: map[string]*resources.Job{
