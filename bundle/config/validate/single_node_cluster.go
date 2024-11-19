@@ -2,14 +2,13 @@ package validate
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/cli/libs/log"
 )
 
 // Validates that any single node clusters defined in the bundle are correctly configured.
@@ -37,138 +36,100 @@ are correctly set in the cluster specification:
 
 const singleNodeWarningSummary = `Single node cluster is not correctly configured`
 
-func validateSingleNodeCluster(spec *compute.ClusterSpec, l []dyn.Location, p dyn.Path) *diag.Diagnostic {
-	if spec == nil {
-		return nil
+func showSingleNodeClusterWarning(ctx context.Context, v dyn.Value) bool {
+	// Check if the user has explicitly set the num_workers to 0. Skip the warning
+	// if that's not the case.
+	numWorkers, ok := v.Get("num_workers").AsInt()
+	if !ok || numWorkers > 0 {
+		return false
 	}
 
-	if spec.NumWorkers > 0 || spec.Autoscale != nil {
-		return nil
+	// Convenient type that contains the common fields from compute.ClusterSpec and
+	// pipelines.PipelineCluster that we are interested in.
+	type ClusterConf struct {
+		SparkConf  map[string]string `json:"spark_conf"`
+		CustomTags map[string]string `json:"custom_tags"`
+		PolicyId   string            `json:"policy_id"`
 	}
 
-	if spec.PolicyId != "" {
-		return nil
+	conf := &ClusterConf{}
+	err := convert.ToTyped(conf, v)
+	if err != nil {
+		return false
 	}
 
-	invalidSingleNodeWarning := &diag.Diagnostic{
-		Severity:  diag.Warning,
-		Summary:   singleNodeWarningSummary,
-		Detail:    singleNodeWarningDetail,
-		Locations: l,
-		Paths:     []dyn.Path{p},
+	// If the policy id is set, we don't want to show the warning. This is because
+	// the user might have configured `spark_conf` and `custom_tags` correctly
+	// in their cluster policy.
+	if conf.PolicyId != "" {
+		return false
 	}
-	profile, ok := spec.SparkConf["spark.databricks.cluster.profile"]
+
+	profile, ok := conf.SparkConf["spark.databricks.cluster.profile"]
 	if !ok {
-		return invalidSingleNodeWarning
+		log.Warnf(ctx, "spark_conf spark.databricks.cluster.profile not found in single-node cluster spec")
+		return true
 	}
-	master, ok := spec.SparkConf["spark.master"]
+	if profile != "singleNode" {
+		log.Warnf(ctx, "spark_conf spark.databricks.cluster.profile is not singleNode in single-node cluster spec")
+		return true
+	}
+
+	master, ok := conf.SparkConf["spark.master"]
 	if !ok {
-		return invalidSingleNodeWarning
+		log.Warnf(ctx, "spark_conf spark.master not found in single-node cluster spec")
+		return true
 	}
-	resourceClass, ok := spec.CustomTags["ResourceClass"]
+	if !strings.HasPrefix(master, "local") {
+		log.Warnf(ctx, "spark_conf spark.master is not local in single-node cluster spec")
+		return true
+	}
+
+	resourceClass, ok := conf.CustomTags["ResourceClass"]
 	if !ok {
-		return invalidSingleNodeWarning
+		log.Warnf(ctx, "custom_tag ResourceClass not found in single-node cluster spec")
+		return true
+	}
+	if resourceClass != "SingleNode" {
+		log.Warnf(ctx, "custom_tag ResourceClass is not SingleNode in single-node cluster spec")
+		return true
 	}
 
-	if profile == "singleNode" && strings.HasPrefix(master, "local") && resourceClass == "SingleNode" {
-		return nil
-	}
-
-	return invalidSingleNodeWarning
-}
-
-func validateSingleNodePipelineCluster(spec pipelines.PipelineCluster, l []dyn.Location, p dyn.Path) *diag.Diagnostic {
-	if spec.NumWorkers > 0 || spec.Autoscale != nil {
-		return nil
-	}
-
-	if spec.PolicyId != "" {
-		return nil
-	}
-
-	invalidSingleNodeWarning := &diag.Diagnostic{
-		Severity:  diag.Warning,
-		Summary:   singleNodeWarningSummary,
-		Detail:    singleNodeWarningDetail,
-		Locations: l,
-		Paths:     []dyn.Path{p},
-	}
-	profile, ok := spec.SparkConf["spark.databricks.cluster.profile"]
-	if !ok {
-		return invalidSingleNodeWarning
-	}
-	master, ok := spec.SparkConf["spark.master"]
-	if !ok {
-		return invalidSingleNodeWarning
-	}
-	resourceClass, ok := spec.CustomTags["ResourceClass"]
-	if !ok {
-		return invalidSingleNodeWarning
-	}
-
-	if profile == "singleNode" && strings.HasPrefix(master, "local") && resourceClass == "SingleNode" {
-		return nil
-	}
-
-	return invalidSingleNodeWarning
+	return false
 }
 
 func (m *singleNodeCluster) Apply(ctx context.Context, rb bundle.ReadOnlyBundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
-	// Interactive clusters
-	for k, r := range rb.Config().Resources.Clusters {
-		p := dyn.NewPath(dyn.Key("resources"), dyn.Key("clusters"), dyn.Key(k))
-		l := rb.Config().GetLocations("resources.clusters." + k)
-
-		d := validateSingleNodeCluster(r.ClusterSpec, l, p)
-		if d != nil {
-			diags = append(diags, *d)
-		}
+	patterns := []dyn.Pattern{
+		// Interactive clusters
+		dyn.NewPattern(dyn.Key("resources"), dyn.Key("clusters"), dyn.AnyKey()),
+		// Job clusters
+		dyn.NewPattern(dyn.Key("resources"), dyn.Key("jobs"), dyn.AnyKey(), dyn.Key("job_clusters"), dyn.AnyIndex(), dyn.Key("new_cluster")),
+		// Job task clusters
+		dyn.NewPattern(dyn.Key("resources"), dyn.Key("jobs"), dyn.AnyKey(), dyn.Key("tasks"), dyn.AnyIndex(), dyn.Key("new_cluster")),
+		// Pipeline clusters
+		dyn.NewPattern(dyn.Key("resources"), dyn.Key("pipelines"), dyn.AnyKey(), dyn.Key("clusters"), dyn.AnyIndex()),
 	}
 
-	// Job clusters
-	for jobK, jobV := range rb.Config().Resources.Jobs {
-		for i, clusterV := range jobV.JobSettings.JobClusters {
-			p := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"), dyn.Key(jobK), dyn.Key("job_clusters"), dyn.Index(i))
-			l := rb.Config().GetLocations(fmt.Sprintf("resources.jobs.%s.job_clusters[%d]", jobK, i))
-
-			d := validateSingleNodeCluster(&clusterV.NewCluster, l, p)
-			if d != nil {
-				diags = append(diags, *d)
+	for _, p := range patterns {
+		_, err := dyn.MapByPattern(rb.Config().Value(), p, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+			warning := diag.Diagnostic{
+				Severity:  diag.Warning,
+				Summary:   singleNodeWarningSummary,
+				Detail:    singleNodeWarningDetail,
+				Locations: v.Locations(),
+				Paths:     []dyn.Path{p},
 			}
+
+			if showSingleNodeClusterWarning(ctx, v) {
+				diags = append(diags, warning)
+			}
+			return v, nil
+		})
+		if err != nil {
+			log.Debugf(ctx, "Error while applying single node cluster validation: %s", err)
 		}
 	}
-
-	// Job task clusters
-	for jobK, jobV := range rb.Config().Resources.Jobs {
-		for i, taskV := range jobV.JobSettings.Tasks {
-			if taskV.NewCluster == nil {
-				continue
-			}
-
-			p := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"), dyn.Key(jobK), dyn.Key("tasks"), dyn.Index(i), dyn.Key("new_cluster"))
-			l := rb.Config().GetLocations(fmt.Sprintf("resources.jobs.%s.tasks[%d].new_cluster", jobK, i))
-
-			d := validateSingleNodeCluster(taskV.NewCluster, l, p)
-			if d != nil {
-				diags = append(diags, *d)
-			}
-		}
-	}
-
-	// Pipeline clusters
-	for pipelineK, pipelineV := range rb.Config().Resources.Pipelines {
-		for i, clusterV := range pipelineV.PipelineSpec.Clusters {
-			p := dyn.NewPath(dyn.Key("resources"), dyn.Key("pipelines"), dyn.Key(pipelineK), dyn.Key("clusters"), dyn.Index(i))
-			l := rb.Config().GetLocations(fmt.Sprintf("resources.pipelines.%s.clusters[%d]", pipelineK, i))
-
-			d := validateSingleNodePipelineCluster(clusterV, l, p)
-			if d != nil {
-				diags = append(diags, *d)
-			}
-		}
-	}
-
 	return diags
 }
