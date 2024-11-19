@@ -524,14 +524,12 @@ func TestSourceLinkedDeploymentEnabled(t *testing.T) {
 	b, diags := processSourceLinkedBundle(t, true)
 	require.NoError(t, diags.Error())
 	assert.True(t, *b.Config.Presets.SourceLinkedDeployment)
-	assert.Equal(t, b.Config.Workspace.FilePath, b.SyncRootPath)
 }
 
 func TestSourceLinkedDeploymentDisabled(t *testing.T) {
 	b, diags := processSourceLinkedBundle(t, false)
 	require.NoError(t, diags.Error())
 	assert.False(t, *b.Config.Presets.SourceLinkedDeployment)
-	assert.NotEqual(t, b.Config.Workspace.FilePath, b.SyncRootPath)
 }
 
 func processSourceLinkedBundle(t *testing.T, presetEnabled bool) (*bundle.Bundle, diag.Diagnostics) {
@@ -542,7 +540,6 @@ func processSourceLinkedBundle(t *testing.T, presetEnabled bool) (*bundle.Bundle
 	b := mockBundle(config.Development)
 
 	workspacePath := "/Workspace/lennart@company.com/"
-	b.SyncRoot = vfs.MustNew(workspacePath)
 	b.SyncRootPath = workspacePath
 	b.Config.Presets.SourceLinkedDeployment = &presetEnabled
 

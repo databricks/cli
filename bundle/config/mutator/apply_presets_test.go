@@ -377,74 +377,62 @@ func TestApplyPresetsSourceLinkedDeployment(t *testing.T) {
 	testContext := context.Background()
 	enabled := true
 	disabled := false
-	remotePath := "/Users/files"
 	workspacePath := "/Workspace/user.name@company.com"
 
 	tests := []struct {
-		bundlePath       string
-		ctx              context.Context
-		name             string
-		initialValue     *bool
-		expectedValue    *bool
-		expectedFilePath string
-		expectedWarning  string
+		bundlePath      string
+		ctx             context.Context
+		name            string
+		initialValue    *bool
+		expectedValue   *bool
+		expectedWarning string
 	}{
 		{
-			name:             "preset enabled, bundle in Workspace, databricks runtime",
-			bundlePath:       workspacePath,
-			ctx:              dbr.MockRuntime(testContext, true),
-			initialValue:     &enabled,
-			expectedValue:    &enabled,
-			expectedFilePath: workspacePath,
-			expectedWarning:  "",
+			name:          "preset enabled, bundle in Workspace, databricks runtime",
+			bundlePath:    workspacePath,
+			ctx:           dbr.MockRuntime(testContext, true),
+			initialValue:  &enabled,
+			expectedValue: &enabled,
 		},
 		{
-			name:             "preset enabled, bundle not in Workspace, databricks runtime",
-			bundlePath:       "/Users/user.name@company.com",
-			ctx:              dbr.MockRuntime(testContext, true),
-			initialValue:     &enabled,
-			expectedValue:    &disabled,
-			expectedFilePath: remotePath,
-			expectedWarning:  "source-linked deployment is available only in the Databricks Workspace",
+			name:            "preset enabled, bundle not in Workspace, databricks runtime",
+			bundlePath:      "/Users/user.name@company.com",
+			ctx:             dbr.MockRuntime(testContext, true),
+			initialValue:    &enabled,
+			expectedValue:   &disabled,
+			expectedWarning: "source-linked deployment is available only in the Databricks Workspace",
 		},
 		{
-			name:             "preset enabled, bundle in Workspace, not databricks runtime",
-			bundlePath:       workspacePath,
-			ctx:              dbr.MockRuntime(testContext, false),
-			initialValue:     &enabled,
-			expectedValue:    &disabled,
-			expectedFilePath: remotePath,
-			expectedWarning:  "source-linked deployment is available only in the Databricks Workspace",
+			name:            "preset enabled, bundle in Workspace, not databricks runtime",
+			bundlePath:      workspacePath,
+			ctx:             dbr.MockRuntime(testContext, false),
+			initialValue:    &enabled,
+			expectedValue:   &disabled,
+			expectedWarning: "source-linked deployment is available only in the Databricks Workspace",
 		},
 		{
-			name:             "preset disabled, bundle in Workspace, databricks runtime",
-			bundlePath:       workspacePath,
-			ctx:              dbr.MockRuntime(testContext, true),
-			initialValue:     &disabled,
-			expectedValue:    &disabled,
-			expectedFilePath: remotePath,
+			name:          "preset disabled, bundle in Workspace, databricks runtime",
+			bundlePath:    workspacePath,
+			ctx:           dbr.MockRuntime(testContext, true),
+			initialValue:  &disabled,
+			expectedValue: &disabled,
 		},
 		{
-			name:             "preset nil, bundle in Workspace, databricks runtime",
-			bundlePath:       workspacePath,
-			ctx:              dbr.MockRuntime(testContext, true),
-			initialValue:     nil,
-			expectedValue:    nil,
-			expectedFilePath: remotePath,
+			name:          "preset nil, bundle in Workspace, databricks runtime",
+			bundlePath:    workspacePath,
+			ctx:           dbr.MockRuntime(testContext, true),
+			initialValue:  nil,
+			expectedValue: nil,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			b := &bundle.Bundle{
-				SyncRoot:     vfs.MustNew(tt.bundlePath),
 				SyncRootPath: tt.bundlePath,
 				Config: config.Root{
 					Presets: config.Presets{
 						SourceLinkedDeployment: tt.initialValue,
-					},
-					Workspace: config.Workspace{
-						FilePath: remotePath,
 					},
 				},
 			}
@@ -458,7 +446,6 @@ func TestApplyPresetsSourceLinkedDeployment(t *testing.T) {
 				require.Equal(t, tt.expectedWarning, diags[0].Summary)
 			}
 
-			require.Equal(t, tt.expectedFilePath, b.Config.Workspace.FilePath)
 			require.Equal(t, tt.expectedValue, b.Config.Presets.SourceLinkedDeployment)
 		})
 	}

@@ -223,11 +223,8 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	}
 
 	if config.IsExplicitlyEnabled((b.Config.Presets.SourceLinkedDeployment)) {
-		root := b.SyncRootPath
-		isInWorkspace := strings.HasPrefix(root, "/Workspace/")
-		if isInWorkspace && dbr.RunsOnRuntime(ctx) {
-			b.Config.Workspace.FilePath = root
-		} else {
+		isDatabricksWorkspace := dbr.RunsOnRuntime(ctx) && strings.HasPrefix(b.SyncRootPath, "/Workspace/")
+		if !isDatabricksWorkspace {
 			disabled := false
 			b.Config.Presets.SourceLinkedDeployment = &disabled
 			diags = diags.Extend(diag.Warningf("source-linked deployment is available only in the Databricks Workspace"))
