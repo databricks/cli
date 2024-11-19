@@ -2,7 +2,11 @@ bundle:
   name: basic
 
 workspace:
+  {{ if .root_path }}
+  root_path: "{{.root_path}}/.bundle/{{.unique_id}}"
+  {{ else }}
   root_path: "~/.bundle/{{.unique_id}}"
+  {{ end }}
 
 resources:
   jobs:
