@@ -71,7 +71,7 @@ func showSingleNodeClusterWarning(ctx context.Context, v dyn.Value) bool {
 		return true
 	}
 	if profile != "singleNode" {
-		log.Warnf(ctx, "spark_conf spark.databricks.cluster.profile is not singleNode in single-node cluster spec")
+		log.Warnf(ctx, "spark_conf spark.databricks.cluster.profile is not singleNode in single-node cluster spec: %s", profile)
 		return true
 	}
 
@@ -81,7 +81,7 @@ func showSingleNodeClusterWarning(ctx context.Context, v dyn.Value) bool {
 		return true
 	}
 	if !strings.HasPrefix(master, "local") {
-		log.Warnf(ctx, "spark_conf spark.master is not local in single-node cluster spec")
+		log.Warnf(ctx, "spark_conf spark.master does not start with local in single-node cluster spec: %s", master)
 		return true
 	}
 
@@ -91,7 +91,7 @@ func showSingleNodeClusterWarning(ctx context.Context, v dyn.Value) bool {
 		return true
 	}
 	if resourceClass != "SingleNode" {
-		log.Warnf(ctx, "custom_tag ResourceClass is not SingleNode in single-node cluster spec")
+		log.Warnf(ctx, "custom_tag ResourceClass is not SingleNode in single-node cluster spec: %s", resourceClass)
 		return true
 	}
 
