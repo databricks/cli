@@ -335,6 +335,24 @@ func TestNoWarningWhenPythonWheelWrapperIsOn(t *testing.T) {
 	require.NoError(t, diags.Error())
 }
 
+func TestPythonWheelWithSourceLinkedDeployment(t *testing.T) {
+	enabled := true
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Experimental: &config.Experimental{
+				PythonWheelWrapper: true,
+			},
+			Presets: config.Presets{
+				SourceLinkedDeployment: &enabled,
+			},
+		},
+	}
+
+	diags := bundle.Apply(context.Background(), b, WrapperWarning())
+	require.NoError(t, diags.Error())
+	require.Contains(t, diags[0].Summary, "Python wheel notebook wrapper is not available when using source-linked deployment mode")
+}
+
 func TestSparkVersionLowerThanExpected(t *testing.T) {
 	testCases := map[string]bool{
 		"13.1.x-scala2.12":                false,
