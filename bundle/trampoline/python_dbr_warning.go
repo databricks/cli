@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/libraries"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
@@ -24,7 +25,7 @@ func WrapperWarning() bundle.Mutator {
 func (m *wrapperWarning) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if isPythonWheelWrapperOn(b) {
 		if config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
-			return diag.Warningf("Python wheel notebook wrapper is not available when using source-linked deployment mode. You can disable this mode by setting 'presets.source_linked_deployment: false'")
+			cmdio.LogString(ctx, "Python wheel notebook wrapper is not available when using source-linked deployment mode. You can disable this mode by setting 'presets.source_linked_deployment: false'")
 		}
 		return nil
 	}
