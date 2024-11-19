@@ -59,8 +59,7 @@ func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) {
 	}
 
 	if !config.IsExplicitlyDisabled(t.SourceLinkedDeployment) {
-		root := b.SyncRootPath
-		isInWorkspace := strings.HasPrefix(root, "/Workspace/")
+		isInWorkspace := strings.HasPrefix(b.SyncRootPath, "/Workspace/")
 		if isInWorkspace && dbr.RunsOnRuntime(ctx) {
 			enabled := true
 			t.SourceLinkedDeployment = &enabled
