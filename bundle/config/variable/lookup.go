@@ -7,12 +7,6 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
-type resolver interface {
-	Resolve(ctx context.Context, w *databricks.WorkspaceClient) (string, error)
-
-	String() string
-}
-
 type Lookup struct {
 	Alert string `json:"alert,omitempty"`
 
@@ -35,6 +29,14 @@ type Lookup struct {
 	ServicePrincipal string `json:"service_principal,omitempty"`
 
 	Warehouse string `json:"warehouse,omitempty"`
+}
+
+type resolver interface {
+	// Resolve resolves the underlying entity's ID.
+	Resolve(ctx context.Context, w *databricks.WorkspaceClient) (string, error)
+
+	// String returns a human-readable representation of the resolver.
+	String() string
 }
 
 func (l *Lookup) constructResolver() (resolver, error) {
