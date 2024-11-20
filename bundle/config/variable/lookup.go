@@ -10,6 +10,12 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
+type Resolver interface {
+	Resolve(ctx context.Context, w *databricks.WorkspaceClient) (string, error)
+
+	String() string
+}
+
 type Lookup struct {
 	Alert string `json:"alert,omitempty"`
 
