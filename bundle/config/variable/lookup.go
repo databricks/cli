@@ -1,11 +1,8 @@
-// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
-
 package variable
 
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/databricks/databricks-sdk-go"
 )
