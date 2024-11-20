@@ -14,7 +14,8 @@
         },
         "root_path": {
             "type": "string",
-            "description": "Root path to deploy bundle to"
+            "description": "Root path to deploy bundle to",
+            "default": ""
         }
     }
 }
