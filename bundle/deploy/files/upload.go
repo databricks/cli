@@ -25,7 +25,7 @@ func (m *upload) Name() string {
 
 func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
-		cmdio.LogString(ctx, "Source-linked deployment is enabled. Resources will point to the source files directly without making copies")
+		cmdio.LogString(ctx, "Source-linked deployment is enabled. Deployed resources reference the source files in your working tree instead of separate copies.")
 		return nil
 	}
 
