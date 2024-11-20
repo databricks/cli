@@ -40,7 +40,6 @@ func (l *lookupCluster) Resolve(ctx context.Context, w *databricks.WorkspaceClie
 		return "", fmt.Errorf("there are %d instances of clusters named '%s'", len(alternatives), name)
 	}
 	return alternatives[0].ClusterId, nil
-
 }
 
 func (l *lookupCluster) String() string {
