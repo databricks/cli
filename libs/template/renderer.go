@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"os"
 	"path"
 	"regexp"
 	"slices"
@@ -14,6 +13,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/logger"
 )
@@ -52,9 +52,6 @@ type renderer struct {
 
 	// [fs.FS] that holds the template's file tree.
 	srcFS fs.FS
-
-	// Root directory for the project instantiated from the template
-	instanceRoot string
 }
 
 func newRenderer(
@@ -64,7 +61,6 @@ func newRenderer(
 	templateFS fs.FS,
 	templateDir string,
 	libraryDir string,
-	instanceRoot string,
 ) (*renderer, error) {
 	// Initialize new template, with helper functions loaded
 	tmpl := template.New("").Funcs(helpers)
@@ -99,7 +95,6 @@ func newRenderer(
 		files:        make([]file, 0),
 		skipPatterns: make([]string, 0),
 		srcFS:        srcFS,
-		instanceRoot: instanceRoot,
 	}, nil
 }
 
@@ -165,12 +160,8 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 	// over as is, without treating it as a template
 	if !strings.HasSuffix(relPathTemplate, templateExtension) {
 		return &copyFile{
-			dstPath: &destinationPath{
-				root:    r.instanceRoot,
-				relPath: relPath,
-			},
 			perm:    perm,
-			ctx:     r.ctx,
+			relPath: relPath,
 			srcFS:   r.srcFS,
 			srcPath: relPathTemplate,
 		}, nil
@@ -202,11 +193,8 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 	}
 
 	return &inMemoryFile{
-		dstPath: &destinationPath{
-			root:    r.instanceRoot,
-			relPath: relPath,
-		},
 		perm:    perm,
+		relPath: relPath,
 		content: []byte(content),
 	}, nil
 }
@@ -291,7 +279,7 @@ func (r *renderer) walk() error {
 			if err != nil {
 				return err
 			}
-			logger.Infof(r.ctx, "added file to list of possible project files: %s", f.DstPath().relPath)
+			logger.Infof(r.ctx, "added file to list of possible project files: %s", f.RelPath())
 			r.files = append(r.files, f)
 		}
 
@@ -299,17 +287,17 @@ func (r *renderer) walk() error {
 	return nil
 }
 
-func (r *renderer) persistToDisk() error {
+func (r *renderer) persistToDisk(ctx context.Context, out filer.Filer) error {
 	// Accumulate files which we will persist, skipping files whose path matches
 	// any of the skip patterns
 	filesToPersist := make([]file, 0)
 	for _, file := range r.files {
-		match, err := isSkipped(file.DstPath().relPath, r.skipPatterns)
+		match, err := isSkipped(file.RelPath(), r.skipPatterns)
 		if err != nil {
 			return err
 		}
 		if match {
-			log.Infof(r.ctx, "skipping file: %s", file.DstPath())
+			log.Infof(r.ctx, "skipping file: %s", file.RelPath())
 			continue
 		}
 		filesToPersist = append(filesToPersist, file)
@@ -317,8 +305,8 @@ func (r *renderer) persistToDisk() error {
 
 	// Assert no conflicting files exist
 	for _, file := range filesToPersist {
-		path := file.DstPath().absPath()
-		_, err := os.Stat(path)
+		path := file.RelPath()
+		_, err := out.Stat(ctx, path)
 		if err == nil {
 			return fmt.Errorf("failed to initialize template, one or more files already exist: %s", path)
 		}
@@ -329,7 +317,7 @@ func (r *renderer) persistToDisk() error {
 
 	// Persist files to disk
 	for _, file := range filesToPersist {
-		err := file.PersistToDisk()
+		err := file.Write(ctx, out)
 		if err != nil {
 			return err
 		}

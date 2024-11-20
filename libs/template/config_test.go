@@ -83,7 +83,7 @@ func TestTemplateConfigAssignValuesFromDefaultValues(t *testing.T) {
 	c, err := newConfig(ctx, os.DirFS(testDir), "schema.json")
 	require.NoError(t, err)
 
-	r, err := newRenderer(ctx, nil, nil, os.DirFS("."), "./testdata/empty/template", "./testdata/empty/library", t.TempDir())
+	r, err := newRenderer(ctx, nil, nil, os.DirFS("."), "./testdata/empty/template", "./testdata/empty/library")
 	require.NoError(t, err)
 
 	err = c.assignDefaultValues(r)
@@ -102,7 +102,7 @@ func TestTemplateConfigAssignValuesFromTemplatedDefaultValues(t *testing.T) {
 	c, err := newConfig(ctx, os.DirFS(testDir), "schema.json")
 	require.NoError(t, err)
 
-	r, err := newRenderer(ctx, nil, nil, os.DirFS("."), path.Join(testDir, "template/template"), path.Join(testDir, "template/library"), t.TempDir())
+	r, err := newRenderer(ctx, nil, nil, os.DirFS("."), path.Join(testDir, "template/template"), path.Join(testDir, "template/library"))
 	require.NoError(t, err)
 
 	// Note: only the string value is templated.

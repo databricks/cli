@@ -7,6 +7,7 @@ import (
 	"io/fs"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/filer"
 )
 
 const libraryDirName = "library"
@@ -40,7 +41,7 @@ func Materialize(ctx context.Context, configFilePath string, templateFS fs.FS, o
 	}
 
 	helpers := loadHelpers(ctx)
-	r, err := newRenderer(ctx, config.values, helpers, templateFS, templateDirName, libraryDirName, outputDir)
+	r, err := newRenderer(ctx, config.values, helpers, templateFS, templateDirName, libraryDirName)
 	if err != nil {
 		return err
 	}
@@ -72,7 +73,12 @@ func Materialize(ctx context.Context, configFilePath string, templateFS fs.FS, o
 		return err
 	}
 
-	err = r.persistToDisk()
+	out, err := filer.NewLocalClient(outputDir)
+	if err != nil {
+		return err
+	}
+
+	err = r.persistToDisk(ctx, out)
 	if err != nil {
 		return err
 	}
