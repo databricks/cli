@@ -195,7 +195,10 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get OAuth Custom App Integration.`
 	cmd.Long = `Get OAuth Custom App Integration.
   
-  Gets the Custom OAuth App Integration for the given integration id.`
+  Gets the Custom OAuth App Integration for the given integration id.
+
+  Arguments:
+    INTEGRATION_ID: The OAuth app integration ID.`
 
 	cmd.Annotations = make(map[string]string)
 

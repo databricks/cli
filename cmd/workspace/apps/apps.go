@@ -85,27 +85,16 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: pending_deployment
 	// TODO: array: resources
 
-	cmd.Use = "create NAME"
+	cmd.Use = "create"
 	cmd.Short = `Create an app.`
 	cmd.Long = `Create an app.
   
-  Creates a new app.
-
-  Arguments:
-    NAME: The name of the app. The name must contain only lowercase alphanumeric
-      characters and hyphens. It must be unique within the workspace.`
+  Creates a new app.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		if cmd.Flags().Changed("json") {
-			err := root.ExactArgs(0)(cmd, args)
-			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
-			}
-			return nil
-		}
-		check := root.ExactArgs(1)
+		check := root.ExactArgs(0)
 		return check(cmd, args)
 	}
 
@@ -125,9 +114,6 @@ func newCreate() *cobra.Command {
 					return err
 				}
 			}
-		}
-		if !cmd.Flags().Changed("json") {
-			createReq.App.Name = args[0]
 		}
 
 		wait, err := w.Apps.Create(ctx, createReq)
@@ -942,14 +928,13 @@ func newUpdate() *cobra.Command {
 	// TODO: complex arg: pending_deployment
 	// TODO: array: resources
 
-	cmd.Use = "update NAME NAME"
+	cmd.Use = "update NAME"
 	cmd.Short = `Update an app.`
 	cmd.Long = `Update an app.
   
   Updates the app with the supplied name.
 
   Arguments:
-    NAME: The name of the app.
     NAME: The name of the app. The name must contain only lowercase alphanumeric
       characters and hyphens. It must be unique within the workspace.`
 
@@ -963,7 +948,7 @@ func newUpdate() *cobra.Command {
 			}
 			return nil
 		}
-		check := root.ExactArgs(2)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -985,9 +970,6 @@ func newUpdate() *cobra.Command {
 			}
 		}
 		updateReq.Name = args[0]
-		if !cmd.Flags().Changed("json") {
-			updateReq.App.Name = args[1]
-		}
 
 		response, err := w.Apps.Update(ctx, updateReq)
 		if err != nil {

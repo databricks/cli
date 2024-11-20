@@ -257,7 +257,7 @@ func newUpdate() *cobra.Command {
   workspace for the specified principal.
 
   Arguments:
-    WORKSPACE_ID: The workspace ID for the account.
+    WORKSPACE_ID: The workspace ID.
     PRINCIPAL_ID: The ID of the user, service principal, or group.`
 
 	cmd.Annotations = make(map[string]string)
