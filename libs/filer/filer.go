@@ -18,6 +18,8 @@ type WriteMode int
 const writeModePerm = WriteMode(fs.ModePerm)
 
 const (
+	// Note: these constants are defined as powers of 2 to support combining them using a bit-wise OR.
+	// They starts from the 10th bit (permission mask + 1) to avoid conflicts with the permission bits.
 	OverwriteIfExists WriteMode = (writeModePerm + 1) << iota
 	CreateParentDirectories
 )
