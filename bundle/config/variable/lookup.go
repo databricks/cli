@@ -41,178 +41,66 @@ type Lookup struct {
 }
 
 func (l *Lookup) constructResolver() (resolver, error) {
+	var resolvers []resolver
 
 	if l.Alert != "" {
-		return lookupAlert{name: l.Alert}, nil
+		resolvers = append(resolvers, lookupAlert{name: l.Alert})
 	}
 	if l.ClusterPolicy != "" {
-		return lookupClusterPolicy{name: l.ClusterPolicy}, nil
+		resolvers = append(resolvers, lookupClusterPolicy{name: l.ClusterPolicy})
 	}
 	if l.Cluster != "" {
-		return lookupCluster{name: l.Cluster}, nil
+		resolvers = append(resolvers, lookupCluster{name: l.Cluster})
 	}
 	if l.Dashboard != "" {
-		return lookupDashboard{name: l.Dashboard}, nil
+		resolvers = append(resolvers, lookupDashboard{name: l.Dashboard})
 	}
 	if l.InstancePool != "" {
-		return lookupInstancePool{name: l.InstancePool}, nil
+		resolvers = append(resolvers, lookupInstancePool{name: l.InstancePool})
 	}
 	if l.Job != "" {
-		return lookupJob{name: l.Job}, nil
+		resolvers = append(resolvers, lookupJob{name: l.Job})
 	}
 	if l.Metastore != "" {
-		return lookupMetastore{name: l.Metastore}, nil
+		resolvers = append(resolvers, lookupMetastore{name: l.Metastore})
 	}
 	if l.Pipeline != "" {
-		return lookupPipeline{name: l.Pipeline}, nil
+		resolvers = append(resolvers, lookupPipeline{name: l.Pipeline})
 	}
 	if l.Query != "" {
-		return lookupQuery{name: l.Query}, nil
+		resolvers = append(resolvers, lookupQuery{name: l.Query})
 	}
 	if l.ServicePrincipal != "" {
-		return lookupServicePrincipal{name: l.ServicePrincipal}, nil
+		resolvers = append(resolvers, lookupServicePrincipal{name: l.ServicePrincipal})
 	}
 	if l.Warehouse != "" {
-		return lookupWarehouse{name: l.Warehouse}, nil
+		resolvers = append(resolvers, lookupWarehouse{name: l.Warehouse})
 	}
 
-	return nil, fmt.Errorf("no valid lookup fields provided")
+	switch len(resolvers) {
+	case 0:
+		return nil, fmt.Errorf("no valid lookup fields provided")
+	case 1:
+		return resolvers[0], nil
+	default:
+		return nil, fmt.Errorf("exactly one lookup field must be provided")
+	}
 }
 
-// func LookupFromMap(m map[string]any) *Lookup {
-// 	l := &Lookup{}
-// 	if v, ok := m["alert"]; ok {
-// 		l.Alert = v.(string)
-// 	}
-// 	if v, ok := m["cluster_policy"]; ok {
-// 		l.ClusterPolicy = v.(string)
-// 	}
-// 	if v, ok := m["cluster"]; ok {
-// 		l.Cluster = v.(string)
-// 	}
-// 	if v, ok := m["dashboard"]; ok {
-// 		l.Dashboard = v.(string)
-// 	}
-// 	if v, ok := m["instance_pool"]; ok {
-// 		l.InstancePool = v.(string)
-// 	}
-// 	if v, ok := m["job"]; ok {
-// 		l.Job = v.(string)
-// 	}
-// 	if v, ok := m["metastore"]; ok {
-// 		l.Metastore = v.(string)
-// 	}
-// 	if v, ok := m["pipeline"]; ok {
-// 		l.Pipeline = v.(string)
-// 	}
-// 	if v, ok := m["query"]; ok {
-// 		l.Query = v.(string)
-// 	}
-// 	if v, ok := m["service_principal"]; ok {
-// 		l.ServicePrincipal = v.(string)
-// 	}
-// 	if v, ok := m["warehouse"]; ok {
-// 		l.Warehouse = v.(string)
-// 	}
+func (l *Lookup) Resolve(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
+	r, err := l.constructResolver()
+	if err != nil {
+		return "", err
+	}
 
-// 	return l
-// }
-
-// func (l *Lookup) Resolve(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
-// 	if err := l.validate(); err != nil {
-// 		return "", err
-// 	}
-
-// 	r := allResolvers()
-// 	if l.Alert != "" {
-// 		return r.Alert(ctx, w, l.Alert)
-// 	}
-// 	if l.ClusterPolicy != "" {
-// 		return r.ClusterPolicy(ctx, w, l.ClusterPolicy)
-// 	}
-// 	if l.Cluster != "" {
-// 		return r.Cluster(ctx, w, l.Cluster)
-// 	}
-// 	if l.Dashboard != "" {
-// 		return r.Dashboard(ctx, w, l.Dashboard)
-// 	}
-// 	if l.InstancePool != "" {
-// 		return r.InstancePool(ctx, w, l.InstancePool)
-// 	}
-// 	if l.Job != "" {
-// 		return r.Job(ctx, w, l.Job)
-// 	}
-// 	if l.Metastore != "" {
-// 		return r.Metastore(ctx, w, l.Metastore)
-// 	}
-// 	if l.Pipeline != "" {
-// 		return r.Pipeline(ctx, w, l.Pipeline)
-// 	}
-// 	if l.Query != "" {
-// 		return r.Query(ctx, w, l.Query)
-// 	}
-// 	if l.ServicePrincipal != "" {
-// 		return r.ServicePrincipal(ctx, w, l.ServicePrincipal)
-// 	}
-// 	if l.Warehouse != "" {
-// 		return r.Warehouse(ctx, w, l.Warehouse)
-// 	}
-
-// 	return "", fmt.Errorf("no valid lookup fields provided")
-// }
+	return r.Resolve(ctx, w)
+}
 
 func (l *Lookup) String() string {
 	r, _ := l.constructResolver()
-	if r != nil {
-		return r.String()
-	}
-	return ""
-}
-
-func (l *Lookup) validate() error {
-	// Validate that only one field is set
-	count := 0
-	if l.Alert != "" {
-		count++
-	}
-	if l.ClusterPolicy != "" {
-		count++
-	}
-	if l.Cluster != "" {
-		count++
-	}
-	if l.Dashboard != "" {
-		count++
-	}
-	if l.InstancePool != "" {
-		count++
-	}
-	if l.Job != "" {
-		count++
-	}
-	if l.Metastore != "" {
-		count++
-	}
-	if l.Pipeline != "" {
-		count++
-	}
-	if l.Query != "" {
-		count++
-	}
-	if l.ServicePrincipal != "" {
-		count++
-	}
-	if l.Warehouse != "" {
-		count++
+	if r == nil {
+		return ""
 	}
 
-	if count != 1 {
-		return fmt.Errorf("exactly one lookup field must be provided")
-	}
-
-	if strings.Contains(l.String(), "${var") {
-		return fmt.Errorf("lookup fields cannot contain variable references")
-	}
-
-	return nil
+	return r.String()
 }
