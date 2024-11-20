@@ -1,7 +1,9 @@
 package generate
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -83,7 +85,17 @@ func NewGenerateJobCommand() *cobra.Command {
 			return err
 		}
 
-		filename := filepath.Join(configDir, fmt.Sprintf("%s.yml", jobKey))
+		oldFilename := filepath.Join(configDir, fmt.Sprintf("%s.yml", jobKey))
+		filename := filepath.Join(configDir, fmt.Sprintf("%s.job.yml", jobKey))
+
+		// User might continuously run generate command to update their bundle jobs with any changes made in Databricks UI.
+		// Due to changing in the generated file names, we need to first rename existing resource file to the new name.
+		// Otherwise users can end up with duplicated resources.
+		err = os.Rename(oldFilename, filename)
+		if err != nil && !errors.Is(err, fs.ErrNotExist) {
+			return fmt.Errorf("failed to rename file %s. DABs uses the resource type as a sub-extension for generated content, please rename it to %s, err: %w", oldFilename, filename, err)
+		}
+
 		saver := yamlsaver.NewSaverWithStyle(map[string]yaml.Style{
 			// Including all JobSettings and nested fields which are map[string]string type
 			"spark_conf":  yaml.DoubleQuotedStyle,
