@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/textutil"
@@ -219,6 +220,15 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 			continue
 		}
 		dashboard.DisplayName = prefix + dashboard.DisplayName
+	}
+
+	if config.IsExplicitlyEnabled((b.Config.Presets.SourceLinkedDeployment)) {
+		isDatabricksWorkspace := dbr.RunsOnRuntime(ctx) && strings.HasPrefix(b.SyncRootPath, "/Workspace/")
+		if !isDatabricksWorkspace {
+			disabled := false
+			b.Config.Presets.SourceLinkedDeployment = &disabled
+			diags = diags.Extend(diag.Warningf("source-linked deployment is available only in the Databricks Workspace"))
+		}
 	}
 
 	return diags

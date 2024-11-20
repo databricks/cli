@@ -3,14 +3,17 @@ package mutator
 import (
 	"context"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/tags"
+	"github.com/databricks/cli/libs/vfs"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -140,6 +143,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				},
 			},
 		},
+		SyncRoot: vfs.MustNew("/Users/lennart.kats@databricks.com"),
 		// Use AWS implementation for testing.
 		Tagging: tags.ForCloud(&sdkconfig.Config{
 			Host: "https://company.cloud.databricks.com",
@@ -521,4 +525,33 @@ func TestPipelinesDevelopmentDisabled(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
+}
+
+func TestSourceLinkedDeploymentEnabled(t *testing.T) {
+	b, diags := processSourceLinkedBundle(t, true)
+	require.NoError(t, diags.Error())
+	assert.True(t, *b.Config.Presets.SourceLinkedDeployment)
+}
+
+func TestSourceLinkedDeploymentDisabled(t *testing.T) {
+	b, diags := processSourceLinkedBundle(t, false)
+	require.NoError(t, diags.Error())
+	assert.False(t, *b.Config.Presets.SourceLinkedDeployment)
+}
+
+func processSourceLinkedBundle(t *testing.T, presetEnabled bool) (*bundle.Bundle, diag.Diagnostics) {
+	if runtime.GOOS == "windows" {
+		t.Skip("this test is not applicable on Windows because source-linked mode works only in the Databricks Workspace")
+	}
+
+	b := mockBundle(config.Development)
+
+	workspacePath := "/Workspace/lennart@company.com/"
+	b.SyncRootPath = workspacePath
+	b.Config.Presets.SourceLinkedDeployment = &presetEnabled
+
+	ctx := dbr.MockRuntime(context.Background(), true)
+	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
+	diags := bundle.Apply(ctx, b, m)
+	return b, diags
 }

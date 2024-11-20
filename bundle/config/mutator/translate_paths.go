@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/notebook"
@@ -103,8 +104,13 @@ func (t *translateContext) rewritePath(
 		return fmt.Errorf("path %s is not contained in sync root path", localPath)
 	}
 
-	// Prefix remote path with its remote root path.
-	remotePath := path.Join(t.b.Config.Workspace.FilePath, filepath.ToSlash(localRelPath))
+	var workspacePath string
+	if config.IsExplicitlyEnabled(t.b.Config.Presets.SourceLinkedDeployment) {
+		workspacePath = t.b.SyncRootPath
+	} else {
+		workspacePath = t.b.Config.Workspace.FilePath
+	}
+	remotePath := path.Join(workspacePath, filepath.ToSlash(localRelPath))
 
 	// Convert local path into workspace path via specified function.
 	interp, err := fn(*p, localPath, localRelPath, remotePath)
