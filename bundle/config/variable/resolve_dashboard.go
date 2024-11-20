@@ -7,11 +7,11 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
-type lookupDashboard struct {
+type resolveDashboard struct {
 	name string
 }
 
-func (l lookupDashboard) Resolve(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
+func (l resolveDashboard) Resolve(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
 	entity, err := w.Dashboards.GetByName(ctx, l.name)
 	if err != nil {
 		return "", err
@@ -19,6 +19,6 @@ func (l lookupDashboard) Resolve(ctx context.Context, w *databricks.WorkspaceCli
 	return fmt.Sprint(entity.Id), nil
 }
 
-func (l lookupDashboard) String() string {
+func (l resolveDashboard) String() string {
 	return fmt.Sprintf("dashboard: %s", l.name)
 }

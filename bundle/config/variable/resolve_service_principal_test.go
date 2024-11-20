@@ -6,44 +6,44 @@ import (
 
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
-func TestLookupInstancePool_ResolveSuccess(t *testing.T) {
+func TestResolveServicePrincipal_ResolveSuccess(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 
-	api := m.GetMockInstancePoolsAPI()
+	api := m.GetMockServicePrincipalsAPI()
 	api.EXPECT().
-		GetByInstancePoolName(mock.Anything, "instance_pool").
-		Return(&compute.InstancePoolAndStats{
-			InstancePoolId: "5678",
+		GetByDisplayName(mock.Anything, "service-principal").
+		Return(&iam.ServicePrincipal{
+			ApplicationId: "5678",
 		}, nil)
 
 	ctx := context.Background()
-	l := lookupInstancePool{name: "instance_pool"}
+	l := resolveServicePrincipal{name: "service-principal"}
 	result, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.NoError(t, err)
 	assert.Equal(t, "5678", result)
 }
 
-func TestLookupInstancePool_ResolveNotFound(t *testing.T) {
+func TestResolveServicePrincipal_ResolveNotFound(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 
-	api := m.GetMockInstancePoolsAPI()
+	api := m.GetMockServicePrincipalsAPI()
 	api.EXPECT().
-		GetByInstancePoolName(mock.Anything, "instance_pool").
+		GetByDisplayName(mock.Anything, "service-principal").
 		Return(nil, &apierr.APIError{StatusCode: 404})
 
 	ctx := context.Background()
-	l := lookupInstancePool{name: "instance_pool"}
+	l := resolveServicePrincipal{name: "service-principal"}
 	_, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.ErrorIs(t, err, apierr.ErrNotFound)
 }
 
-func TestLookupInstancePool_String(t *testing.T) {
-	l := lookupInstancePool{name: "name"}
-	assert.Equal(t, "instance-pool: name", l.String())
+func TestResolveServicePrincipal_String(t *testing.T) {
+	l := resolveServicePrincipal{name: "name"}
+	assert.Equal(t, "service-principal: name", l.String())
 }

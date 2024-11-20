@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestLookupClusterPolicy_ResolveSuccess(t *testing.T) {
+func TestResolveClusterPolicy_ResolveSuccess(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 
 	api := m.GetMockClusterPoliciesAPI()
@@ -23,13 +23,13 @@ func TestLookupClusterPolicy_ResolveSuccess(t *testing.T) {
 		}, nil)
 
 	ctx := context.Background()
-	l := lookupClusterPolicy{name: "policy"}
+	l := resolveClusterPolicy{name: "policy"}
 	result, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.NoError(t, err)
 	assert.Equal(t, "1234", result)
 }
 
-func TestLookupClusterPolicy_ResolveNotFound(t *testing.T) {
+func TestResolveClusterPolicy_ResolveNotFound(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 
 	api := m.GetMockClusterPoliciesAPI()
@@ -38,12 +38,12 @@ func TestLookupClusterPolicy_ResolveNotFound(t *testing.T) {
 		Return(nil, &apierr.APIError{StatusCode: 404})
 
 	ctx := context.Background()
-	l := lookupClusterPolicy{name: "policy"}
+	l := resolveClusterPolicy{name: "policy"}
 	_, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.ErrorIs(t, err, apierr.ErrNotFound)
 }
 
-func TestLookupClusterPolicy_String(t *testing.T) {
-	l := lookupClusterPolicy{name: "name"}
+func TestResolveClusterPolicy_String(t *testing.T) {
+	l := resolveClusterPolicy{name: "name"}
 	assert.Equal(t, "cluster-policy: name", l.String())
 }

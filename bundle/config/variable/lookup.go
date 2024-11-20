@@ -41,37 +41,37 @@ func (l *Lookup) constructResolver() (resolver, error) {
 	var resolvers []resolver
 
 	if l.Alert != "" {
-		resolvers = append(resolvers, lookupAlert{name: l.Alert})
+		resolvers = append(resolvers, resolveAlert{name: l.Alert})
 	}
 	if l.ClusterPolicy != "" {
-		resolvers = append(resolvers, lookupClusterPolicy{name: l.ClusterPolicy})
+		resolvers = append(resolvers, resolveClusterPolicy{name: l.ClusterPolicy})
 	}
 	if l.Cluster != "" {
-		resolvers = append(resolvers, lookupCluster{name: l.Cluster})
+		resolvers = append(resolvers, resolveCluster{name: l.Cluster})
 	}
 	if l.Dashboard != "" {
-		resolvers = append(resolvers, lookupDashboard{name: l.Dashboard})
+		resolvers = append(resolvers, resolveDashboard{name: l.Dashboard})
 	}
 	if l.InstancePool != "" {
-		resolvers = append(resolvers, lookupInstancePool{name: l.InstancePool})
+		resolvers = append(resolvers, resolveInstancePool{name: l.InstancePool})
 	}
 	if l.Job != "" {
-		resolvers = append(resolvers, lookupJob{name: l.Job})
+		resolvers = append(resolvers, resolveJob{name: l.Job})
 	}
 	if l.Metastore != "" {
-		resolvers = append(resolvers, lookupMetastore{name: l.Metastore})
+		resolvers = append(resolvers, resolveMetastore{name: l.Metastore})
 	}
 	if l.Pipeline != "" {
-		resolvers = append(resolvers, lookupPipeline{name: l.Pipeline})
+		resolvers = append(resolvers, resolvePipeline{name: l.Pipeline})
 	}
 	if l.Query != "" {
-		resolvers = append(resolvers, lookupQuery{name: l.Query})
+		resolvers = append(resolvers, resolveQuery{name: l.Query})
 	}
 	if l.ServicePrincipal != "" {
-		resolvers = append(resolvers, lookupServicePrincipal{name: l.ServicePrincipal})
+		resolvers = append(resolvers, resolveServicePrincipal{name: l.ServicePrincipal})
 	}
 	if l.Warehouse != "" {
-		resolvers = append(resolvers, lookupWarehouse{name: l.Warehouse})
+		resolvers = append(resolvers, resolveWarehouse{name: l.Warehouse})
 	}
 
 	switch len(resolvers) {

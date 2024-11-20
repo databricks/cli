@@ -6,44 +6,44 @@ import (
 
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
-func TestLookupJob_ResolveSuccess(t *testing.T) {
+func TestResolveWarehouse_ResolveSuccess(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 
-	api := m.GetMockJobsAPI()
+	api := m.GetMockWarehousesAPI()
 	api.EXPECT().
-		GetBySettingsName(mock.Anything, "job").
-		Return(&jobs.BaseJob{
-			JobId: 5678,
+		GetByName(mock.Anything, "warehouse").
+		Return(&sql.EndpointInfo{
+			Id: "abcd",
 		}, nil)
 
 	ctx := context.Background()
-	l := lookupJob{name: "job"}
+	l := resolveWarehouse{name: "warehouse"}
 	result, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.NoError(t, err)
-	assert.Equal(t, "5678", result)
+	assert.Equal(t, "abcd", result)
 }
 
-func TestLookupJob_ResolveNotFound(t *testing.T) {
+func TestResolveWarehouse_ResolveNotFound(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 
-	api := m.GetMockJobsAPI()
+	api := m.GetMockWarehousesAPI()
 	api.EXPECT().
-		GetBySettingsName(mock.Anything, "job").
+		GetByName(mock.Anything, "warehouse").
 		Return(nil, &apierr.APIError{StatusCode: 404})
 
 	ctx := context.Background()
-	l := lookupJob{name: "job"}
+	l := resolveWarehouse{name: "warehouse"}
 	_, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.ErrorIs(t, err, apierr.ErrNotFound)
 }
 
-func TestLookupJob_String(t *testing.T) {
-	l := lookupJob{name: "name"}
-	assert.Equal(t, "job: name", l.String())
+func TestResolveWarehouse_String(t *testing.T) {
+	l := resolveWarehouse{name: "name"}
+	assert.Equal(t, "warehouse: name", l.String())
 }

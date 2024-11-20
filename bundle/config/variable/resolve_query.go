@@ -7,11 +7,11 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
-type lookupQuery struct {
+type resolveQuery struct {
 	name string
 }
 
-func (l lookupQuery) Resolve(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
+func (l resolveQuery) Resolve(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
 	entity, err := w.Queries.GetByDisplayName(ctx, l.name)
 	if err != nil {
 		return "", err
@@ -19,6 +19,6 @@ func (l lookupQuery) Resolve(ctx context.Context, w *databricks.WorkspaceClient)
 	return fmt.Sprint(entity.Id), nil
 }
 
-func (l lookupQuery) String() string {
+func (l resolveQuery) String() string {
 	return fmt.Sprintf("query: %s", l.name)
 }

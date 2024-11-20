@@ -7,11 +7,11 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
-type lookupInstancePool struct {
+type resolveInstancePool struct {
 	name string
 }
 
-func (l lookupInstancePool) Resolve(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
+func (l resolveInstancePool) Resolve(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
 	entity, err := w.InstancePools.GetByInstancePoolName(ctx, l.name)
 	if err != nil {
 		return "", err
@@ -19,6 +19,6 @@ func (l lookupInstancePool) Resolve(ctx context.Context, w *databricks.Workspace
 	return fmt.Sprint(entity.InstancePoolId), nil
 }
 
-func (l lookupInstancePool) String() string {
+func (l resolveInstancePool) String() string {
 	return fmt.Sprintf("instance-pool: %s", l.name)
 }

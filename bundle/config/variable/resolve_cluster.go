@@ -8,13 +8,13 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
-type lookupCluster struct {
+type resolveCluster struct {
 	name string
 }
 
 // We added a custom resolver for the cluster to add filtering for the cluster source when we list all clusters.
 // Without the filtering listing could take a very long time (5-10 mins) which leads to lookup timeouts.
-func (l lookupCluster) Resolve(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
+func (l resolveCluster) Resolve(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
 	result, err := w.Clusters.ListAll(ctx, compute.ListClustersRequest{
 		FilterBy: &compute.ListClustersFilterBy{
 			ClusterSources: []compute.ClusterSource{compute.ClusterSourceApi, compute.ClusterSourceUi},
@@ -42,6 +42,6 @@ func (l lookupCluster) Resolve(ctx context.Context, w *databricks.WorkspaceClien
 	return alternatives[0].ClusterId, nil
 }
 
-func (l lookupCluster) String() string {
+func (l resolveCluster) String() string {
 	return fmt.Sprintf("cluster: %s", l.name)
 }

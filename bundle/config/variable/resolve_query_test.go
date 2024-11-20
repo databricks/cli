@@ -12,38 +12,38 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestLookupWarehouse_ResolveSuccess(t *testing.T) {
+func TestResolveQuery_ResolveSuccess(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 
-	api := m.GetMockWarehousesAPI()
+	api := m.GetMockQueriesAPI()
 	api.EXPECT().
-		GetByName(mock.Anything, "warehouse").
-		Return(&sql.EndpointInfo{
-			Id: "abcd",
+		GetByDisplayName(mock.Anything, "query").
+		Return(&sql.ListQueryObjectsResponseQuery{
+			Id: "1234",
 		}, nil)
 
 	ctx := context.Background()
-	l := lookupWarehouse{name: "warehouse"}
+	l := resolveQuery{name: "query"}
 	result, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.NoError(t, err)
-	assert.Equal(t, "abcd", result)
+	assert.Equal(t, "1234", result)
 }
 
-func TestLookupWarehouse_ResolveNotFound(t *testing.T) {
+func TestResolveQuery_ResolveNotFound(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 
-	api := m.GetMockWarehousesAPI()
+	api := m.GetMockQueriesAPI()
 	api.EXPECT().
-		GetByName(mock.Anything, "warehouse").
+		GetByDisplayName(mock.Anything, "query").
 		Return(nil, &apierr.APIError{StatusCode: 404})
 
 	ctx := context.Background()
-	l := lookupWarehouse{name: "warehouse"}
+	l := resolveQuery{name: "query"}
 	_, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.ErrorIs(t, err, apierr.ErrNotFound)
 }
 
-func TestLookupWarehouse_String(t *testing.T) {
-	l := lookupWarehouse{name: "name"}
-	assert.Equal(t, "warehouse: name", l.String())
+func TestResolveQuery_String(t *testing.T) {
+	l := resolveQuery{name: "name"}
+	assert.Equal(t, "query: name", l.String())
 }
