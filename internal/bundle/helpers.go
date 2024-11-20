@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/template"
 	"github.com/databricks/cli/libs/vfs"
@@ -42,7 +43,9 @@ func initTestTemplateWithBundleRoot(t *testing.T, ctx context.Context, templateN
 	cmd := cmdio.NewIO(flags.OutputJSON, strings.NewReader(""), os.Stdout, os.Stderr, "", "bundles")
 	ctx = cmdio.InContext(ctx, cmd)
 
-	err = template.Materialize(ctx, configFilePath, os.DirFS(templateRoot), bundleRoot)
+	out, err := filer.NewLocalClient(bundleRoot)
+	require.NoError(t, err)
+	err = template.Materialize(ctx, configFilePath, os.DirFS(templateRoot), out)
 	return bundleRoot, err
 }
 

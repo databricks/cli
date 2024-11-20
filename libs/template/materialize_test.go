@@ -19,6 +19,6 @@ func TestMaterializeForNonTemplateDirectory(t *testing.T) {
 	ctx := root.SetWorkspaceClient(context.Background(), w)
 
 	// Try to materialize a non-template directory.
-	err = Materialize(ctx, "", os.DirFS(tmpDir), "")
+	err = Materialize(ctx, "", os.DirFS(tmpDir), nil)
 	assert.EqualError(t, err, fmt.Sprintf("not a bundle template: expected to find a template schema file at %s", schemaFileName))
 }
