@@ -23,7 +23,7 @@ func TestLookupCluster_ResolveSuccess(t *testing.T) {
 		}, nil)
 
 	ctx := context.Background()
-	l := &lookupCluster{name: "cluster2"}
+	l := lookupCluster{name: "cluster2"}
 	result, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.NoError(t, err)
 	assert.Equal(t, "2345", result)
@@ -38,13 +38,13 @@ func TestLookupCluster_ResolveNotFound(t *testing.T) {
 		Return([]compute.ClusterDetails{}, nil)
 
 	ctx := context.Background()
-	l := &lookupCluster{name: "cluster"}
+	l := lookupCluster{name: "cluster"}
 	_, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "cluster named 'cluster' does not exist")
 }
 
 func TestLookupCluster_String(t *testing.T) {
-	l := &lookupCluster{name: "name"}
+	l := lookupCluster{name: "name"}
 	assert.Equal(t, "cluster: name", l.String())
 }

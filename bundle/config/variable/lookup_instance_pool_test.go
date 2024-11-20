@@ -23,7 +23,7 @@ func TestLookupInstancePool_ResolveSuccess(t *testing.T) {
 		}, nil)
 
 	ctx := context.Background()
-	l := &lookupInstancePool{name: "instance_pool"}
+	l := lookupInstancePool{name: "instance_pool"}
 	result, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.NoError(t, err)
 	assert.Equal(t, "5678", result)
@@ -38,12 +38,12 @@ func TestLookupInstancePool_ResolveNotFound(t *testing.T) {
 		Return(nil, &apierr.APIError{StatusCode: 404})
 
 	ctx := context.Background()
-	l := &lookupInstancePool{name: "instance_pool"}
+	l := lookupInstancePool{name: "instance_pool"}
 	_, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.ErrorIs(t, err, apierr.ErrNotFound)
 }
 
 func TestLookupInstancePool_String(t *testing.T) {
-	l := &lookupInstancePool{name: "name"}
+	l := lookupInstancePool{name: "name"}
 	assert.Equal(t, "instance-pool: name", l.String())
 }

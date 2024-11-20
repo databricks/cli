@@ -11,7 +11,7 @@ type lookupPipeline struct {
 	name string
 }
 
-func (l *lookupPipeline) Resolve(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
+func (l lookupPipeline) Resolve(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
 	entity, err := w.Pipelines.GetByName(ctx, l.name)
 	if err != nil {
 		return "", err
@@ -19,6 +19,6 @@ func (l *lookupPipeline) Resolve(ctx context.Context, w *databricks.WorkspaceCli
 	return fmt.Sprint(entity.PipelineId), nil
 }
 
-func (l *lookupPipeline) String() string {
+func (l lookupPipeline) String() string {
 	return fmt.Sprintf("pipeline: %s", l.name)
 }

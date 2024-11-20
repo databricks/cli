@@ -23,7 +23,7 @@ func TestLookupAlert_ResolveSuccess(t *testing.T) {
 		}, nil)
 
 	ctx := context.Background()
-	l := &lookupAlert{name: "alert"}
+	l := lookupAlert{name: "alert"}
 	result, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.NoError(t, err)
 	assert.Equal(t, "1234", result)
@@ -38,12 +38,12 @@ func TestLookupAlert_ResolveNotFound(t *testing.T) {
 		Return(nil, &apierr.APIError{StatusCode: 404})
 
 	ctx := context.Background()
-	l := &lookupAlert{name: "alert"}
+	l := lookupAlert{name: "alert"}
 	_, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.ErrorIs(t, err, apierr.ErrNotFound)
 }
 
 func TestLookupAlert_String(t *testing.T) {
-	l := &lookupAlert{name: "name"}
+	l := lookupAlert{name: "name"}
 	assert.Equal(t, "alert: name", l.String())
 }

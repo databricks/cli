@@ -23,7 +23,7 @@ func TestLookupQuery_ResolveSuccess(t *testing.T) {
 		}, nil)
 
 	ctx := context.Background()
-	l := &lookupQuery{name: "query"}
+	l := lookupQuery{name: "query"}
 	result, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.NoError(t, err)
 	assert.Equal(t, "1234", result)
@@ -38,12 +38,12 @@ func TestLookupQuery_ResolveNotFound(t *testing.T) {
 		Return(nil, &apierr.APIError{StatusCode: 404})
 
 	ctx := context.Background()
-	l := &lookupQuery{name: "query"}
+	l := lookupQuery{name: "query"}
 	_, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.ErrorIs(t, err, apierr.ErrNotFound)
 }
 
 func TestLookupQuery_String(t *testing.T) {
-	l := &lookupQuery{name: "name"}
+	l := lookupQuery{name: "name"}
 	assert.Equal(t, "query: name", l.String())
 }

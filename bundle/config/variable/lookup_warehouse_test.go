@@ -23,7 +23,7 @@ func TestLookupWarehouse_ResolveSuccess(t *testing.T) {
 		}, nil)
 
 	ctx := context.Background()
-	l := &lookupWarehouse{name: "warehouse"}
+	l := lookupWarehouse{name: "warehouse"}
 	result, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.NoError(t, err)
 	assert.Equal(t, "abcd", result)
@@ -38,12 +38,12 @@ func TestLookupWarehouse_ResolveNotFound(t *testing.T) {
 		Return(nil, &apierr.APIError{StatusCode: 404})
 
 	ctx := context.Background()
-	l := &lookupWarehouse{name: "warehouse"}
+	l := lookupWarehouse{name: "warehouse"}
 	_, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.ErrorIs(t, err, apierr.ErrNotFound)
 }
 
 func TestLookupWarehouse_String(t *testing.T) {
-	l := &lookupWarehouse{name: "name"}
+	l := lookupWarehouse{name: "name"}
 	assert.Equal(t, "warehouse: name", l.String())
 }

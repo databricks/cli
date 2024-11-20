@@ -11,7 +11,7 @@ type lookupClusterPolicy struct {
 	name string
 }
 
-func (l *lookupClusterPolicy) Resolve(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
+func (l lookupClusterPolicy) Resolve(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
 	entity, err := w.ClusterPolicies.GetByName(ctx, l.name)
 	if err != nil {
 		return "", err
@@ -19,6 +19,6 @@ func (l *lookupClusterPolicy) Resolve(ctx context.Context, w *databricks.Workspa
 	return fmt.Sprint(entity.PolicyId), nil
 }
 
-func (l *lookupClusterPolicy) String() string {
+func (l lookupClusterPolicy) String() string {
 	return fmt.Sprintf("cluster-policy: %s", l.name)
 }

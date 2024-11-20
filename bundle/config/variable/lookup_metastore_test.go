@@ -23,7 +23,7 @@ func TestLookupMetastore_ResolveSuccess(t *testing.T) {
 		}, nil)
 
 	ctx := context.Background()
-	l := &lookupMetastore{name: "metastore"}
+	l := lookupMetastore{name: "metastore"}
 	result, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.NoError(t, err)
 	assert.Equal(t, "abcd", result)
@@ -38,12 +38,12 @@ func TestLookupMetastore_ResolveNotFound(t *testing.T) {
 		Return(nil, &apierr.APIError{StatusCode: 404})
 
 	ctx := context.Background()
-	l := &lookupMetastore{name: "metastore"}
+	l := lookupMetastore{name: "metastore"}
 	_, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.ErrorIs(t, err, apierr.ErrNotFound)
 }
 
 func TestLookupMetastore_String(t *testing.T) {
-	l := &lookupMetastore{name: "name"}
+	l := lookupMetastore{name: "name"}
 	assert.Equal(t, "metastore: name", l.String())
 }

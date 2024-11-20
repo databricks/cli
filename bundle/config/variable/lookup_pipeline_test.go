@@ -23,7 +23,7 @@ func TestLookupPipeline_ResolveSuccess(t *testing.T) {
 		}, nil)
 
 	ctx := context.Background()
-	l := &lookupPipeline{name: "pipeline"}
+	l := lookupPipeline{name: "pipeline"}
 	result, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.NoError(t, err)
 	assert.Equal(t, "abcd", result)
@@ -38,12 +38,12 @@ func TestLookupPipeline_ResolveNotFound(t *testing.T) {
 		Return(nil, &apierr.APIError{StatusCode: 404})
 
 	ctx := context.Background()
-	l := &lookupPipeline{name: "pipeline"}
+	l := lookupPipeline{name: "pipeline"}
 	_, err := l.Resolve(ctx, m.WorkspaceClient)
 	require.ErrorIs(t, err, apierr.ErrNotFound)
 }
 
 func TestLookupPipeline_String(t *testing.T) {
-	l := &lookupPipeline{name: "name"}
+	l := lookupPipeline{name: "name"}
 	assert.Equal(t, "pipeline: name", l.String())
 }

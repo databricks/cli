@@ -11,7 +11,7 @@ type lookupAlert struct {
 	name string
 }
 
-func (l *lookupAlert) Resolve(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
+func (l lookupAlert) Resolve(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
 	entity, err := w.Alerts.GetByDisplayName(ctx, l.name)
 	if err != nil {
 		return "", err
@@ -19,6 +19,6 @@ func (l *lookupAlert) Resolve(ctx context.Context, w *databricks.WorkspaceClient
 	return fmt.Sprint(entity.Id), nil
 }
 
-func (l *lookupAlert) String() string {
+func (l lookupAlert) String() string {
 	return fmt.Sprintf("alert: %s", l.name)
 }

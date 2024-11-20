@@ -4,6 +4,8 @@ package variable
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/databricks/databricks-sdk-go"
 )
@@ -40,41 +42,41 @@ type Lookup struct {
 
 func (l *Lookup) constructResolver() (resolver, error) {
 
-if l.Alert != "" {
-	return lookupAlert{name: l.Alert}, nil
-}
-if l.ClusterPolicy != "" {
-	return lookupClusterPolicy{name: l.ClusterPolicy}, nil
-}
-if l.Cluster != "" {
-	return lookupCluster{name: l.Cluster}, nil
-}
-if l.Dashboard != "" {
-	return lookupDashboard{name: l.Dashboard}, nil
-}
-if l.InstancePool != "" {
-	return lookupInstancePool{name: l.InstancePool}, nil
-}
-if l.Job != "" {
-	return lookupJob{name: l.Job}, nil
-}
-if l.Metastore != "" {
-	return lookupMetastore{name: l.Metastore}, nil
-}
-if l.Pipeline != "" {
-	return lookupPipeline{name: l.Pipeline}, nil
-}
-if l.Query != "" {
-	return lookupQuery{name: l.Query}, nil
-}
-if l.ServicePrincipal != "" {
-	return lookupServicePrincipal{name: l.ServicePrincipal}, nil
-}
-if l.Warehouse != "" {
-	return lookupWarehouse{name: l.Warehouse}, nil
-}
+	if l.Alert != "" {
+		return lookupAlert{name: l.Alert}, nil
+	}
+	if l.ClusterPolicy != "" {
+		return lookupClusterPolicy{name: l.ClusterPolicy}, nil
+	}
+	if l.Cluster != "" {
+		return lookupCluster{name: l.Cluster}, nil
+	}
+	if l.Dashboard != "" {
+		return lookupDashboard{name: l.Dashboard}, nil
+	}
+	if l.InstancePool != "" {
+		return lookupInstancePool{name: l.InstancePool}, nil
+	}
+	if l.Job != "" {
+		return lookupJob{name: l.Job}, nil
+	}
+	if l.Metastore != "" {
+		return lookupMetastore{name: l.Metastore}, nil
+	}
+	if l.Pipeline != "" {
+		return lookupPipeline{name: l.Pipeline}, nil
+	}
+	if l.Query != "" {
+		return lookupQuery{name: l.Query}, nil
+	}
+	if l.ServicePrincipal != "" {
+		return lookupServicePrincipal{name: l.ServicePrincipal}, nil
+	}
+	if l.Warehouse != "" {
+		return lookupWarehouse{name: l.Warehouse}, nil
+	}
 
-return nil, fmt.Errorf("no valid lookup fields provided")
+	return nil, fmt.Errorf("no valid lookup fields provided")
 }
 
 // func LookupFromMap(m map[string]any) *Lookup {
@@ -160,10 +162,10 @@ return nil, fmt.Errorf("no valid lookup fields provided")
 // }
 
 func (l *Lookup) String() string {
-r, _ := l.constructResolver()
-if r != nil {
-	return r.String()
-}
+	r, _ := l.constructResolver()
+	if r != nil {
+		return r.String()
+	}
 	return ""
 }
 
