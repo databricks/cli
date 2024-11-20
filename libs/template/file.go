@@ -6,8 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-
-	"github.com/databricks/cli/libs/filer"
+	"slices"
 )
 
 // Interface representing a file to be materialized from a template into a project
@@ -19,6 +18,10 @@ type file interface {
 
 	// Write file to disk at the destination path.
 	PersistToDisk() error
+
+	// contents returns the file contents as a byte slice.
+	// This is used for testing purposes.
+	contents() ([]byte, error)
 }
 
 type destinationPath struct {
@@ -46,8 +49,8 @@ type copyFile struct {
 
 	dstPath *destinationPath
 
-	// Filer rooted at template root. Used to read srcPath.
-	srcFiler filer.Filer
+	// [fs.FS] rooted at template root. Used to read srcPath.
+	srcFS fs.FS
 
 	// Relative path from template root for file to be copied.
 	srcPath string
@@ -63,7 +66,7 @@ func (f *copyFile) PersistToDisk() error {
 	if err != nil {
 		return err
 	}
-	srcFile, err := f.srcFiler.Read(f.ctx, f.srcPath)
+	srcFile, err := f.srcFS.Open(f.srcPath)
 	if err != nil {
 		return err
 	}
@@ -75,6 +78,10 @@ func (f *copyFile) PersistToDisk() error {
 	defer dstFile.Close()
 	_, err = io.Copy(dstFile, srcFile)
 	return err
+}
+
+func (f *copyFile) contents() ([]byte, error) {
+	return fs.ReadFile(f.srcFS, f.srcPath)
 }
 
 type inMemoryFile struct {
@@ -98,4 +105,8 @@ func (f *inMemoryFile) PersistToDisk() error {
 		return err
 	}
 	return os.WriteFile(path, f.content, f.perm)
+}
+
+func (f *inMemoryFile) contents() ([]byte, error) {
+	return slices.Clone(f.content), nil
 }

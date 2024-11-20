@@ -8,14 +8,12 @@ import (
 	"io/fs"
 	"os"
 	"path"
-	"path/filepath"
 	"regexp"
 	"slices"
 	"sort"
 	"strings"
 	"text/template"
 
-	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/logger"
 )
@@ -52,32 +50,42 @@ type renderer struct {
 	// do not match any glob patterns from this list
 	skipPatterns []string
 
-	// Filer rooted at template root. The file tree from this root is walked to
-	// generate the project
-	templateFiler filer.Filer
+	// [fs.FS] that holds the template's file tree.
+	srcFS fs.FS
 
 	// Root directory for the project instantiated from the template
 	instanceRoot string
 }
 
-func newRenderer(ctx context.Context, config map[string]any, helpers template.FuncMap, templateRoot, libraryRoot, instanceRoot string) (*renderer, error) {
+func newRenderer(
+	ctx context.Context,
+	config map[string]any,
+	helpers template.FuncMap,
+	templateFS fs.FS,
+	templateDir string,
+	libraryDir string,
+	instanceRoot string,
+) (*renderer, error) {
 	// Initialize new template, with helper functions loaded
 	tmpl := template.New("").Funcs(helpers)
 
-	// Load user defined associated templates from the library root
-	libraryGlob := filepath.Join(libraryRoot, "*")
-	matches, err := filepath.Glob(libraryGlob)
+	// Find user-defined templates in the library directory
+	matches, err := fs.Glob(templateFS, path.Join(libraryDir, "*"))
 	if err != nil {
 		return nil, err
 	}
+
+	// Parse user-defined templates.
+	// Note: we do not call [ParseFS] with the glob directly because
+	// it returns an error if no files match the pattern.
 	if len(matches) != 0 {
-		tmpl, err = tmpl.ParseFiles(matches...)
+		tmpl, err = tmpl.ParseFS(templateFS, matches...)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	templateFiler, err := filer.NewLocalClient(templateRoot)
+	srcFS, err := fs.Sub(templateFS, path.Clean(templateDir))
 	if err != nil {
 		return nil, err
 	}
@@ -85,13 +93,13 @@ func newRenderer(ctx context.Context, config map[string]any, helpers template.Fu
 	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("action", "initialize-template"))
 
 	return &renderer{
-		ctx:           ctx,
-		config:        config,
-		baseTemplate:  tmpl,
-		files:         make([]file, 0),
-		skipPatterns:  make([]string, 0),
-		templateFiler: templateFiler,
-		instanceRoot:  instanceRoot,
+		ctx:          ctx,
+		config:       config,
+		baseTemplate: tmpl,
+		files:        make([]file, 0),
+		skipPatterns: make([]string, 0),
+		srcFS:        srcFS,
+		instanceRoot: instanceRoot,
 	}, nil
 }
 
@@ -141,7 +149,7 @@ func (r *renderer) executeTemplate(templateDefinition string) (string, error) {
 
 func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 	// read file permissions
-	info, err := r.templateFiler.Stat(r.ctx, relPathTemplate)
+	info, err := fs.Stat(r.srcFS, relPathTemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -161,10 +169,10 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 				root:    r.instanceRoot,
 				relPath: relPath,
 			},
-			perm:     perm,
-			ctx:      r.ctx,
-			srcPath:  relPathTemplate,
-			srcFiler: r.templateFiler,
+			perm:    perm,
+			ctx:     r.ctx,
+			srcFS:   r.srcFS,
+			srcPath: relPathTemplate,
 		}, nil
 	} else {
 		// Trim the .tmpl suffix from file name, if specified in the template
@@ -173,7 +181,7 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 	}
 
 	// read template file's content
-	templateReader, err := r.templateFiler.Read(r.ctx, relPathTemplate)
+	templateReader, err := r.srcFS.Open(relPathTemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +271,7 @@ func (r *renderer) walk() error {
 		//
 		// 2. For directories: They are appended to a slice, which acts as a queue
 		//     allowing BFS traversal of the template file tree
-		entries, err := r.templateFiler.ReadDir(r.ctx, currentDirectory)
+		entries, err := fs.ReadDir(r.srcFS, currentDirectory)
 		if err != nil {
 			return err
 		}

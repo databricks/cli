@@ -3,6 +3,8 @@ package template
 import (
 	"context"
 	"fmt"
+	"os"
+	"path"
 	"path/filepath"
 	"testing"
 	"text/template"
@@ -16,7 +18,7 @@ func TestTemplateConfigAssignValuesFromFile(t *testing.T) {
 	testDir := "./testdata/config-assign-from-file"
 
 	ctx := context.Background()
-	c, err := newConfig(ctx, filepath.Join(testDir, "schema.json"))
+	c, err := newConfig(ctx, os.DirFS(testDir), "schema.json")
 	require.NoError(t, err)
 
 	err = c.assignValuesFromFile(filepath.Join(testDir, "config.json"))
@@ -32,7 +34,7 @@ func TestTemplateConfigAssignValuesFromFileDoesNotOverwriteExistingConfigs(t *te
 	testDir := "./testdata/config-assign-from-file"
 
 	ctx := context.Background()
-	c, err := newConfig(ctx, filepath.Join(testDir, "schema.json"))
+	c, err := newConfig(ctx, os.DirFS(testDir), "schema.json")
 	require.NoError(t, err)
 
 	c.values = map[string]any{
@@ -52,7 +54,7 @@ func TestTemplateConfigAssignValuesFromFileForInvalidIntegerValue(t *testing.T) 
 	testDir := "./testdata/config-assign-from-file-invalid-int"
 
 	ctx := context.Background()
-	c, err := newConfig(ctx, filepath.Join(testDir, "schema.json"))
+	c, err := newConfig(ctx, os.DirFS(testDir), "schema.json")
 	require.NoError(t, err)
 
 	err = c.assignValuesFromFile(filepath.Join(testDir, "config.json"))
@@ -63,7 +65,7 @@ func TestTemplateConfigAssignValuesFromFileFiltersPropertiesNotInTheSchema(t *te
 	testDir := "./testdata/config-assign-from-file-unknown-property"
 
 	ctx := context.Background()
-	c, err := newConfig(ctx, filepath.Join(testDir, "schema.json"))
+	c, err := newConfig(ctx, os.DirFS(testDir), "schema.json")
 	require.NoError(t, err)
 
 	err = c.assignValuesFromFile(filepath.Join(testDir, "config.json"))
@@ -78,10 +80,10 @@ func TestTemplateConfigAssignValuesFromDefaultValues(t *testing.T) {
 	testDir := "./testdata/config-assign-from-default-value"
 
 	ctx := context.Background()
-	c, err := newConfig(ctx, filepath.Join(testDir, "schema.json"))
+	c, err := newConfig(ctx, os.DirFS(testDir), "schema.json")
 	require.NoError(t, err)
 
-	r, err := newRenderer(ctx, nil, nil, "./testdata/empty/template", "./testdata/empty/library", t.TempDir())
+	r, err := newRenderer(ctx, nil, nil, os.DirFS("."), "./testdata/empty/template", "./testdata/empty/library", t.TempDir())
 	require.NoError(t, err)
 
 	err = c.assignDefaultValues(r)
@@ -97,10 +99,10 @@ func TestTemplateConfigAssignValuesFromTemplatedDefaultValues(t *testing.T) {
 	testDir := "./testdata/config-assign-from-templated-default-value"
 
 	ctx := context.Background()
-	c, err := newConfig(ctx, filepath.Join(testDir, "schema.json"))
+	c, err := newConfig(ctx, os.DirFS(testDir), "schema.json")
 	require.NoError(t, err)
 
-	r, err := newRenderer(ctx, nil, nil, filepath.Join(testDir, "template/template"), filepath.Join(testDir, "template/library"), t.TempDir())
+	r, err := newRenderer(ctx, nil, nil, os.DirFS("."), path.Join(testDir, "template/template"), path.Join(testDir, "template/library"), t.TempDir())
 	require.NoError(t, err)
 
 	// Note: only the string value is templated.
@@ -116,7 +118,7 @@ func TestTemplateConfigAssignValuesFromTemplatedDefaultValues(t *testing.T) {
 
 func TestTemplateConfigValidateValuesDefined(t *testing.T) {
 	ctx := context.Background()
-	c, err := newConfig(ctx, "testdata/config-test-schema/test-schema.json")
+	c, err := newConfig(ctx, os.DirFS("testdata/config-test-schema"), "test-schema.json")
 	require.NoError(t, err)
 
 	c.values = map[string]any{
@@ -131,7 +133,7 @@ func TestTemplateConfigValidateValuesDefined(t *testing.T) {
 
 func TestTemplateConfigValidateTypeForValidConfig(t *testing.T) {
 	ctx := context.Background()
-	c, err := newConfig(ctx, "testdata/config-test-schema/test-schema.json")
+	c, err := newConfig(ctx, os.DirFS("testdata/config-test-schema"), "test-schema.json")
 	require.NoError(t, err)
 
 	c.values = map[string]any{
@@ -147,7 +149,7 @@ func TestTemplateConfigValidateTypeForValidConfig(t *testing.T) {
 
 func TestTemplateConfigValidateTypeForUnknownField(t *testing.T) {
 	ctx := context.Background()
-	c, err := newConfig(ctx, "testdata/config-test-schema/test-schema.json")
+	c, err := newConfig(ctx, os.DirFS("testdata/config-test-schema"), "test-schema.json")
 	require.NoError(t, err)
 
 	c.values = map[string]any{
@@ -164,7 +166,7 @@ func TestTemplateConfigValidateTypeForUnknownField(t *testing.T) {
 
 func TestTemplateConfigValidateTypeForInvalidType(t *testing.T) {
 	ctx := context.Background()
-	c, err := newConfig(ctx, "testdata/config-test-schema/test-schema.json")
+	c, err := newConfig(ctx, os.DirFS("testdata/config-test-schema"), "test-schema.json")
 	require.NoError(t, err)
 
 	c.values = map[string]any{
@@ -271,7 +273,8 @@ func TestTemplateEnumValidation(t *testing.T) {
 }
 
 func TestTemplateSchemaErrorsWithEmptyDescription(t *testing.T) {
-	_, err := newConfig(context.Background(), "./testdata/config-test-schema/invalid-test-schema.json")
+	ctx := context.Background()
+	_, err := newConfig(ctx, os.DirFS("./testdata/config-test-schema"), "invalid-test-schema.json")
 	assert.EqualError(t, err, "template property property-without-description is missing a description")
 }
 

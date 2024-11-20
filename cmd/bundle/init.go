@@ -3,6 +3,7 @@ package bundle
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
@@ -109,6 +110,24 @@ func getUrlForNativeTemplate(name string) string {
 	return ""
 }
 
+func getFsForNativeTemplate(name string) (fs.FS, error) {
+	builtin, err := template.Builtin()
+	if err != nil {
+		return nil, err
+	}
+
+	// If this is a built-in template, the return value will be non-nil.
+	var templateFS fs.FS
+	for _, entry := range builtin {
+		if entry.Name == name {
+			templateFS = entry.FS
+			break
+		}
+	}
+
+	return templateFS, nil
+}
+
 func isRepoUrl(url string) bool {
 	result := false
 	for _, prefix := range gitUrlPrefixes {
@@ -198,9 +217,20 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 			if templateDir != "" {
 				return errors.New("--template-dir can only be used with a Git repository URL")
 			}
+
+			templateFS, err := getFsForNativeTemplate(templatePath)
+			if err != nil {
+				return err
+			}
+
+			// If this is not a built-in template, then it must be a local file system path.
+			if templateFS == nil {
+				templateFS = os.DirFS(templatePath)
+			}
+
 			// skip downloading the repo because input arg is not a URL. We assume
 			// it's a path on the local file system in that case
-			return template.Materialize(ctx, configFile, templatePath, outputDir)
+			return template.Materialize(ctx, configFile, templateFS, outputDir)
 		}
 
 		// Create a temporary directory with the name of the repository.  The '*'
@@ -224,7 +254,8 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 
 		// Clean up downloaded repository once the template is materialized.
 		defer os.RemoveAll(repoDir)
-		return template.Materialize(ctx, configFile, filepath.Join(repoDir, templateDir), outputDir)
+		templateFS := os.DirFS(filepath.Join(repoDir, templateDir))
+		return template.Materialize(ctx, configFile, templateFS, outputDir)
 	}
 	return cmd
 }
