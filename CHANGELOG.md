@@ -1,5 +1,28 @@
 # Version changelog
 
+## [Release] Release v0.235.0
+
+**Note:** the `bundle generate` command now uses the `.<resource-type>.yml`
+sub-extension for the configuration files it writes. Existing configuration
+files that do not use this sub-extension are renamed to include it.
+
+Bundles:
+ * Make `TableName` field part of quality monitor schema ([#1903](https://github.com/databricks/cli/pull/1903)).
+ * Do not prepend paths starting with ~ or variable reference ([#1905](https://github.com/databricks/cli/pull/1905)).
+ * Fix workspace extensions filer accidentally reading notebooks ([#1891](https://github.com/databricks/cli/pull/1891)).
+ * Fix template initialization when running on Databricks ([#1912](https://github.com/databricks/cli/pull/1912)).
+ * Source-linked deployments for bundles in the workspace ([#1884](https://github.com/databricks/cli/pull/1884)).
+ * Added integration test to deploy bundle to /Shared root path ([#1914](https://github.com/databricks/cli/pull/1914)).
+ * Update filenames used by bundle generate to use `.<resource-type>.yml` ([#1901](https://github.com/databricks/cli/pull/1901)).
+
+Internal:
+ * Extract functionality to detect if the CLI is running on DBR ([#1889](https://github.com/databricks/cli/pull/1889)).
+ * Consolidate test helpers for `io/fs` ([#1906](https://github.com/databricks/cli/pull/1906)).
+ * Use `fs.FS` interface to read template ([#1910](https://github.com/databricks/cli/pull/1910)).
+ * Use `filer.Filer` to write template instantiation ([#1911](https://github.com/databricks/cli/pull/1911)).
+
+
+
 ## [Release] Release v0.234.0
 
 Bundles:
