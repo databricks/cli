@@ -126,6 +126,18 @@ func (t *translateContext) rewritePath(
 func (t *translateContext) translateNotebookPath(literal, localFullPath, localRelPath, remotePath string) (string, error) {
 	nb, _, err := notebook.DetectWithFS(t.b.SyncRoot, filepath.ToSlash(localRelPath))
 	if errors.Is(err, fs.ErrNotExist) {
+		if filepath.Ext(localFullPath) == notebook.ExtensionNone {
+			return "", fmt.Errorf(`notebook %s not found. Local notebook references are expected
+to contain one of the following file extensions: [%s]`,
+				literal,
+				strings.Join([]string{
+					notebook.ExtensionPython,
+					notebook.ExtensionR,
+					notebook.ExtensionScala,
+					notebook.ExtensionSql,
+					notebook.ExtensionJupyter}, ", "))
+		}
+
 		return "", fmt.Errorf("notebook %s not found", literal)
 	}
 	if err != nil {
