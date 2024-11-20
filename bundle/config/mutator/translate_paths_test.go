@@ -2,6 +2,7 @@ package mutator_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -509,35 +510,83 @@ func TestPipelineNotebookDoesNotExistError(t *testing.T) {
 }
 
 func TestPipelineNotebookDoesNotExistErrorWithoutExtension(t *testing.T) {
-	dir := t.TempDir()
+	for _, ext := range []string{
+		".py",
+		".r",
+		".scala",
+		".sql",
+		".ipynb",
+		"",
+	} {
+		t.Run("case_"+ext, func(t *testing.T) {
+			dir := t.TempDir()
 
-	b := &bundle.Bundle{
-		SyncRootPath: dir,
-		SyncRoot:     vfs.MustNew(dir),
-		Config: config.Root{
-			Resources: config.Resources{
-				Pipelines: map[string]*resources.Pipeline{
-					"pipeline": {
-						PipelineSpec: &pipelines.PipelineSpec{
-							Libraries: []pipelines.PipelineLibrary{
-								{
-									Notebook: &pipelines.NotebookLibrary{
-										Path: "./doesnt_exist",
+			if ext != "" {
+				touchEmptyFile(t, filepath.Join(dir, "foo"+ext))
+			}
+
+			b := &bundle.Bundle{
+				SyncRootPath: dir,
+				SyncRoot:     vfs.MustNew(dir),
+				Config: config.Root{
+					Resources: config.Resources{
+						Pipelines: map[string]*resources.Pipeline{
+							"pipeline": {
+								PipelineSpec: &pipelines.PipelineSpec{
+									Libraries: []pipelines.PipelineLibrary{
+										{
+											Notebook: &pipelines.NotebookLibrary{
+												Path: "./foo",
+											},
+										},
 									},
 								},
 							},
 						},
 					},
 				},
-			},
-		},
+			}
+
+			bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "fake.yml")}})
+			diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
+
+			if ext == "" {
+				assert.EqualError(t, diags.Error(), `notebook ./foo not found. Local notebook references are expected
+to contain one of the following file extensions: [.py, .r, .scala, .sql, .ipynb]`)
+			} else {
+				assert.EqualError(t, diags.Error(), fmt.Sprintf(`notebook ./foo not found. Did you mean ./foo%s?
+Local notebook references are expected to contain one of the following
+file extensions: [.py, .r, .scala, .sql, .ipynb]`, ext))
+			}
+		})
 	}
 
-	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "fake.yml")}})
+	// touchEmptyFile(t, filepath.Join(dir, "doesnt_exist.py"))
 
-	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
-	assert.EqualError(t, diags.Error(), `notebook ./doesnt_exist not found. Local notebook references are expected
-to contain one of the following file extensions: [.py, .r, .scala, .sql, .ipynb]`)
+	// b := &bundle.Bundle{
+	// 	SyncRootPath: dir,
+	// 	SyncRoot:     vfs.MustNew(dir),
+	// 	Config: config.Root{
+	// 		Resources: config.Resources{
+	// 			Pipelines: map[string]*resources.Pipeline{
+	// 				"pipeline": {
+	// 					PipelineSpec: &pipelines.PipelineSpec{
+	// 						Libraries: []pipelines.PipelineLibrary{
+	// 							{
+	// 								Notebook: &pipelines.NotebookLibrary{
+	// 									Path: "./doesnt_exist",
+	// 								},
+	// 							},
+	// 						},
+	// 					},
+	// 				},
+	// 			},
+	// 		},
+	// 	},
+	// }
+
+	// bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "fake.yml")}})
+
 }
 
 func TestPipelineFileDoesNotExistError(t *testing.T) {
