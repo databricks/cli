@@ -560,33 +560,6 @@ file extensions: [.py, .r, .scala, .sql, .ipynb]`, ext))
 			}
 		})
 	}
-
-	// touchEmptyFile(t, filepath.Join(dir, "doesnt_exist.py"))
-
-	// b := &bundle.Bundle{
-	// 	SyncRootPath: dir,
-	// 	SyncRoot:     vfs.MustNew(dir),
-	// 	Config: config.Root{
-	// 		Resources: config.Resources{
-	// 			Pipelines: map[string]*resources.Pipeline{
-	// 				"pipeline": {
-	// 					PipelineSpec: &pipelines.PipelineSpec{
-	// 						Libraries: []pipelines.PipelineLibrary{
-	// 							{
-	// 								Notebook: &pipelines.NotebookLibrary{
-	// 									Path: "./doesnt_exist",
-	// 								},
-	// 							},
-	// 						},
-	// 					},
-	// 				},
-	// 			},
-	// 		},
-	// 	},
-	// }
-
-	// bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "fake.yml")}})
-
 }
 
 func TestPipelineFileDoesNotExistError(t *testing.T) {
