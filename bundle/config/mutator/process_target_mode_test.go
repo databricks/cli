@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/cli/libs/vfs"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
@@ -141,6 +142,13 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					"dashboard1": {
 						Dashboard: &dashboards.Dashboard{
 							DisplayName: "dashboard1",
+						},
+					},
+				},
+				Apps: map[string]*resources.App{
+					"app1": {
+						App: &apps.App{
+							Name: "app1",
 						},
 					},
 				},

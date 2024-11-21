@@ -222,6 +222,19 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		dashboard.DisplayName = prefix + dashboard.DisplayName
 	}
 
+	// Apps: Prefix
+	for key, app := range r.Apps {
+		if app == nil || app.App == nil {
+			diags = diags.Extend(diag.Errorf("app %s is not defined", key))
+			continue
+		}
+
+		app.Name = textutil.NormalizeString(prefix + app.Name)
+		// Normalize the app name to ensure it is a valid identifier.
+		// App supports only alphanumeric characters and hyphens.
+		app.Name = strings.ReplaceAll(app.Name, "_", "-")
+	}
+
 	if config.IsExplicitlyEnabled((b.Config.Presets.SourceLinkedDeployment)) {
 		isDatabricksWorkspace := dbr.RunsOnRuntime(ctx) && strings.HasPrefix(b.SyncRootPath, "/Workspace/")
 		if !isDatabricksWorkspace {

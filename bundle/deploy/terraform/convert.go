@@ -196,6 +196,16 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 				}
 				cur.ID = instance.Attributes.ID
 				config.Resources.Dashboards[resource.Name] = cur
+			case "databricks_app":
+				if config.Resources.Apps == nil {
+					config.Resources.Apps = make(map[string]*resources.App)
+				}
+				cur := config.Resources.Apps[resource.Name]
+				if cur == nil {
+					cur = &resources.App{ModifiedStatus: resources.ModifiedStatusDeleted}
+				}
+				cur.ID = instance.Attributes.ID
+				config.Resources.Apps[resource.Name] = cur
 			case "databricks_permissions":
 			case "databricks_grants":
 				// Ignore; no need to pull these back into the configuration.
@@ -256,6 +266,11 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 		}
 	}
 	for _, src := range config.Resources.Dashboards {
+		if src.ModifiedStatus == "" && src.ID == "" {
+			src.ModifiedStatus = resources.ModifiedStatusCreated
+		}
+	}
+	for _, src := range config.Resources.Apps {
 		if src.ModifiedStatus == "" && src.ID == "" {
 			src.ModifiedStatus = resources.ModifiedStatusCreated
 		}

@@ -37,6 +37,8 @@ func Initialize() bundle.Mutator {
 			mutator.MergeJobParameters(),
 			mutator.MergeJobTasks(),
 			mutator.MergePipelineClusters(),
+			mutator.MergeApps(),
+
 			mutator.InitializeWorkspaceClient(),
 			mutator.PopulateCurrentUser(),
 			mutator.LoadGitDetails(),
