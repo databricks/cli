@@ -150,7 +150,7 @@ file extensions: [%s]`, literal, literalWithExt, strings.Join(extensions, ", "))
 			}
 		}
 
-		// Return a generic error message if no matching possible q is found.
+		// Return a generic error message if no matching possible file is found.
 		return "", fmt.Errorf(`notebook %s not found. Local notebook references are expected
 to contain one of the following file extensions: [%s]`, literal, strings.Join(extensions, ", "))
 	}
