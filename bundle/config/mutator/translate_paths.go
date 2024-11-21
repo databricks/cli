@@ -126,7 +126,33 @@ func (t *translateContext) rewritePath(
 func (t *translateContext) translateNotebookPath(literal, localFullPath, localRelPath, remotePath string) (string, error) {
 	nb, _, err := notebook.DetectWithFS(t.b.SyncRoot, filepath.ToSlash(localRelPath))
 	if errors.Is(err, fs.ErrNotExist) {
-		return "", fmt.Errorf("notebook %s not found", literal)
+		if filepath.Ext(localFullPath) != notebook.ExtensionNone {
+			return "", fmt.Errorf("notebook %s not found", literal)
+		}
+
+		extensions := []string{
+			notebook.ExtensionPython,
+			notebook.ExtensionR,
+			notebook.ExtensionScala,
+			notebook.ExtensionSql,
+			notebook.ExtensionJupyter,
+		}
+
+		// Check whether a file with a notebook extension already exists. This
+		// way we can provide a more targeted error message.
+		for _, ext := range extensions {
+			literalWithExt := literal + ext
+			localRelPathWithExt := filepath.ToSlash(localRelPath + ext)
+			if _, err := fs.Stat(t.b.SyncRoot, localRelPathWithExt); err == nil {
+				return "", fmt.Errorf(`notebook %s not found. Did you mean %s?
+Local notebook references are expected to contain one of the following
+file extensions: [%s]`, literal, literalWithExt, strings.Join(extensions, ", "))
+			}
+		}
+
+		// Return a generic error message if no matching possible file is found.
+		return "", fmt.Errorf(`notebook %s not found. Local notebook references are expected
+to contain one of the following file extensions: [%s]`, literal, strings.Join(extensions, ", "))
 	}
 	if err != nil {
 		return "", fmt.Errorf("unable to determine if %s is a notebook: %w", localFullPath, err)
