@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
@@ -479,6 +480,62 @@ func TestApplyPresetsSourceLinkedDeployment(t *testing.T) {
 			}
 
 			require.Equal(t, tt.expectedValue, b.Config.Presets.SourceLinkedDeployment)
+		})
+	}
+}
+
+func TestApplyPresetsPrefixForApps(t *testing.T) {
+	tests := []struct {
+		name   string
+		prefix string
+		app    *resources.App
+		want   string
+	}{
+		{
+			name:   "add prefix to app",
+			prefix: "[prefix] ",
+			app: &resources.App{
+				App: &apps.App{
+					Name: "app1",
+				},
+			},
+			want: "prefix-app1",
+		},
+		{
+			name:   "add empty prefix to app",
+			prefix: "",
+			app: &resources.App{
+				App: &apps.App{
+					Name: "app1",
+				},
+			},
+			want: "app1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := &bundle.Bundle{
+				Config: config.Root{
+					Resources: config.Resources{
+						Apps: map[string]*resources.App{
+							"app1": tt.app,
+						},
+					},
+					Presets: config.Presets{
+						NamePrefix: tt.prefix,
+					},
+				},
+			}
+
+			ctx := context.Background()
+			diag := bundle.Apply(ctx, b, mutator.ApplyPresets())
+
+			if diag.HasError() {
+				t.Fatalf("unexpected error: %v", diag)
+			}
+
+			require.Equal(t, tt.want, b.Config.Resources.Apps["app1"].Name)
 		})
 	}
 }
