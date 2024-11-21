@@ -143,9 +143,7 @@ func (t *translateContext) translateNotebookPath(literal, localFullPath, localRe
 		for _, ext := range extensions {
 			literalWithExt := literal + ext
 			localRelPathWithExt := filepath.ToSlash(localRelPath + ext)
-			// TODO: inline the err call.
-			_, err := fs.Stat(t.b.SyncRoot, localRelPathWithExt)
-			if err == nil {
+			if _, err := fs.Stat(t.b.SyncRoot, localRelPathWithExt); err == nil {
 				return "", fmt.Errorf(`notebook %s not found. Did you mean %s?
 Local notebook references are expected to contain one of the following
 file extensions: [%s]`, literal, literalWithExt, strings.Join(extensions, ", "))
