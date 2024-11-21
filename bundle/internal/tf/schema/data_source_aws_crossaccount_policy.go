@@ -4,6 +4,7 @@ package schema
 
 type DataSourceAwsCrossaccountPolicy struct {
 	AwsAccountId    string   `json:"aws_account_id,omitempty"`
+	AwsPartition    string   `json:"aws_partition,omitempty"`
 	Id              string   `json:"id,omitempty"`
 	Json            string   `json:"json,omitempty"`
 	PassRoles       []string `json:"pass_roles,omitempty"`

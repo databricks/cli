@@ -22,6 +22,7 @@ type Resources struct {
 	Schemas               map[string]*resources.Schema               `json:"schemas,omitempty"`
 	Clusters              map[string]*resources.Cluster              `json:"clusters,omitempty"`
 	Dashboards            map[string]*resources.Dashboard            `json:"dashboards,omitempty"`
+	Apps                  map[string]*resources.App                  `json:"apps,omitempty"`
 }
 
 type ConfigResource interface {
@@ -85,6 +86,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["schemas"], r.Schemas),
 		collectResourceMap(descriptions["clusters"], r.Clusters),
 		collectResourceMap(descriptions["dashboards"], r.Dashboards),
+		collectResourceMap(descriptions["apps"], r.Apps),
 	}
 }
 
@@ -188,6 +190,12 @@ func SupportedResources() map[string]ResourceDescription {
 			PluralName:    "dashboards",
 			SingularTitle: "Dashboard",
 			PluralTitle:   "Dashboards",
+		},
+		"apps": {
+			SingularName:  "app",
+			PluralName:    "apps",
+			SingularTitle: "App",
+			PluralTitle:   "Apps",
 		},
 	}
 }

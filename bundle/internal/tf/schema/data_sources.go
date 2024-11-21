@@ -33,6 +33,8 @@ type DataSources struct {
 	MlflowModel                     map[string]any `json:"databricks_mlflow_model,omitempty"`
 	MlflowModels                    map[string]any `json:"databricks_mlflow_models,omitempty"`
 	MwsCredentials                  map[string]any `json:"databricks_mws_credentials,omitempty"`
+	MwsNetworkConnectivityConfig    map[string]any `json:"databricks_mws_network_connectivity_config,omitempty"`
+	MwsNetworkConnectivityConfigs   map[string]any `json:"databricks_mws_network_connectivity_configs,omitempty"`
 	MwsWorkspaces                   map[string]any `json:"databricks_mws_workspaces,omitempty"`
 	NodeType                        map[string]any `json:"databricks_node_type,omitempty"`
 	Notebook                        map[string]any `json:"databricks_notebook,omitempty"`
@@ -40,10 +42,12 @@ type DataSources struct {
 	NotificationDestinations        map[string]any `json:"databricks_notification_destinations,omitempty"`
 	Pipelines                       map[string]any `json:"databricks_pipelines,omitempty"`
 	RegisteredModel                 map[string]any `json:"databricks_registered_model,omitempty"`
+	RegisteredModelVersions         map[string]any `json:"databricks_registered_model_versions,omitempty"`
 	Schema                          map[string]any `json:"databricks_schema,omitempty"`
 	Schemas                         map[string]any `json:"databricks_schemas,omitempty"`
 	ServicePrincipal                map[string]any `json:"databricks_service_principal,omitempty"`
 	ServicePrincipals               map[string]any `json:"databricks_service_principals,omitempty"`
+	ServingEndpoints                map[string]any `json:"databricks_serving_endpoints,omitempty"`
 	Share                           map[string]any `json:"databricks_share,omitempty"`
 	Shares                          map[string]any `json:"databricks_shares,omitempty"`
 	SparkVersion                    map[string]any `json:"databricks_spark_version,omitempty"`
@@ -92,6 +96,8 @@ func NewDataSources() *DataSources {
 		MlflowModel:                     make(map[string]any),
 		MlflowModels:                    make(map[string]any),
 		MwsCredentials:                  make(map[string]any),
+		MwsNetworkConnectivityConfig:    make(map[string]any),
+		MwsNetworkConnectivityConfigs:   make(map[string]any),
 		MwsWorkspaces:                   make(map[string]any),
 		NodeType:                        make(map[string]any),
 		Notebook:                        make(map[string]any),
@@ -99,10 +105,12 @@ func NewDataSources() *DataSources {
 		NotificationDestinations:        make(map[string]any),
 		Pipelines:                       make(map[string]any),
 		RegisteredModel:                 make(map[string]any),
+		RegisteredModelVersions:         make(map[string]any),
 		Schema:                          make(map[string]any),
 		Schemas:                         make(map[string]any),
 		ServicePrincipal:                make(map[string]any),
 		ServicePrincipals:               make(map[string]any),
+		ServingEndpoints:                make(map[string]any),
 		Share:                           make(map[string]any),
 		Shares:                          make(map[string]any),
 		SparkVersion:                    make(map[string]any),

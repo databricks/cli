@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	refs "github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run/output"
+	"github.com/databricks/cli/libs/filer"
 )
 
 type key string
@@ -42,7 +43,7 @@ type Runner interface {
 // IsRunnable returns a filter that only allows runnable resources.
 func IsRunnable(ref refs.Reference) bool {
 	switch ref.Resource.(type) {
-	case *resources.Job, *resources.Pipeline:
+	case *resources.Job, *resources.Pipeline, *resources.App:
 		return true
 	default:
 		return false
@@ -56,6 +57,15 @@ func ToRunner(b *bundle.Bundle, ref refs.Reference) (Runner, error) {
 		return &jobRunner{key: key(ref.KeyWithType), bundle: b, job: resource}, nil
 	case *resources.Pipeline:
 		return &pipelineRunner{key: key(ref.KeyWithType), bundle: b, pipeline: resource}, nil
+	case *resources.App:
+		return &appRunner{
+			key:    key(ref.KeyWithType),
+			bundle: b,
+			app:    resource,
+			filerFactory: func(b *bundle.Bundle) (filer.Filer, error) {
+				return filer.NewWorkspaceFilesClient(b.WorkspaceClient(), b.Config.Workspace.FilePath)
+			},
+		}, nil
 	default:
 		return nil, fmt.Errorf("unsupported resource type: %T", resource)
 	}

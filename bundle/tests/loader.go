@@ -46,6 +46,7 @@ func loadTargetWithDiags(path, env string) (*bundle.Bundle, diag.Diagnostics) {
 		mutator.MergeJobParameters(),
 		mutator.MergeJobTasks(),
 		mutator.MergePipelineClusters(),
+		mutator.MergeApps(),
 	))
 	return b, diags
 }

@@ -5,6 +5,7 @@ package schema
 type Resources struct {
 	AccessControlRuleSet                       map[string]any `json:"databricks_access_control_rule_set,omitempty"`
 	Alert                                      map[string]any `json:"databricks_alert,omitempty"`
+	App                                        map[string]any `json:"databricks_app,omitempty"`
 	ArtifactAllowlist                          map[string]any `json:"databricks_artifact_allowlist,omitempty"`
 	AutomaticClusterUpdateWorkspaceSetting     map[string]any `json:"databricks_automatic_cluster_update_workspace_setting,omitempty"`
 	AwsS3Mount                                 map[string]any `json:"databricks_aws_s3_mount,omitempty"`
@@ -111,6 +112,7 @@ func NewResources() *Resources {
 	return &Resources{
 		AccessControlRuleSet:                   make(map[string]any),
 		Alert:                                  make(map[string]any),
+		App:                                    make(map[string]any),
 		ArtifactAllowlist:                      make(map[string]any),
 		AutomaticClusterUpdateWorkspaceSetting: make(map[string]any),
 		AwsS3Mount:                             make(map[string]any),
