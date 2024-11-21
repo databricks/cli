@@ -22,6 +22,8 @@ type Lookup struct {
 
 	Metastore string `json:"metastore,omitempty"`
 
+	NotificationDestination string `json:"notification_destination,omitempty"`
+
 	Pipeline string `json:"pipeline,omitempty"`
 
 	Query string `json:"query,omitempty"`
@@ -62,6 +64,9 @@ func (l *Lookup) constructResolver() (resolver, error) {
 	}
 	if l.Metastore != "" {
 		resolvers = append(resolvers, resolveMetastore{name: l.Metastore})
+	}
+	if l.NotificationDestination != "" {
+		resolvers = append(resolvers, resolveNotificationDestination{name: l.NotificationDestination})
 	}
 	if l.Pipeline != "" {
 		resolvers = append(resolvers, resolvePipeline{name: l.Pipeline})
