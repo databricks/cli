@@ -231,7 +231,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 				diag.Diagnostics{
 					{
 						Severity: diag.Warning,
-						Summary:  "Source-linked deployment is available only in the Databricks Workspace",
+						Summary:  "source-linked deployment is available only in the Databricks Workspace",
 						Paths: []dyn.Path{
 							path,
 						},
