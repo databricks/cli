@@ -67,31 +67,31 @@ func showSingleNodeClusterWarning(ctx context.Context, v dyn.Value) bool {
 
 	profile, ok := conf.SparkConf["spark.databricks.cluster.profile"]
 	if !ok {
-		log.Warnf(ctx, "spark_conf spark.databricks.cluster.profile not found in single-node cluster spec")
+		log.Debugf(ctx, "spark_conf spark.databricks.cluster.profile not found in single-node cluster spec")
 		return true
 	}
 	if profile != "singleNode" {
-		log.Warnf(ctx, "spark_conf spark.databricks.cluster.profile is not singleNode in single-node cluster spec: %s", profile)
+		log.Debugf(ctx, "spark_conf spark.databricks.cluster.profile is not singleNode in single-node cluster spec: %s", profile)
 		return true
 	}
 
 	master, ok := conf.SparkConf["spark.master"]
 	if !ok {
-		log.Warnf(ctx, "spark_conf spark.master not found in single-node cluster spec")
+		log.Debugf(ctx, "spark_conf spark.master not found in single-node cluster spec")
 		return true
 	}
 	if !strings.HasPrefix(master, "local") {
-		log.Warnf(ctx, "spark_conf spark.master does not start with local in single-node cluster spec: %s", master)
+		log.Debugf(ctx, "spark_conf spark.master does not start with local in single-node cluster spec: %s", master)
 		return true
 	}
 
 	resourceClass, ok := conf.CustomTags["ResourceClass"]
 	if !ok {
-		log.Warnf(ctx, "custom_tag ResourceClass not found in single-node cluster spec")
+		log.Debugf(ctx, "custom_tag ResourceClass not found in single-node cluster spec")
 		return true
 	}
 	if resourceClass != "SingleNode" {
-		log.Warnf(ctx, "custom_tag ResourceClass is not SingleNode in single-node cluster spec: %s", resourceClass)
+		log.Debugf(ctx, "custom_tag ResourceClass is not SingleNode in single-node cluster spec: %s", resourceClass)
 		return true
 	}
 
