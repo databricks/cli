@@ -9,7 +9,9 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/dbr"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
@@ -435,6 +437,7 @@ func TestApplyPresetsSourceLinkedDeployment(t *testing.T) {
 				},
 			}
 
+			bundletest.SetLocation(b, "presets.source_linked_deployment", []dyn.Location{{File: "databricks.yml"}})
 			diags := bundle.Apply(tt.ctx, b, mutator.ApplyPresets())
 			if diags.HasError() {
 				t.Fatalf("unexpected error: %v", diags)
@@ -442,6 +445,7 @@ func TestApplyPresetsSourceLinkedDeployment(t *testing.T) {
 
 			if tt.expectedWarning != "" {
 				require.Equal(t, tt.expectedWarning, diags[0].Summary)
+				require.NotEmpty(t, diags[0].Locations)
 			}
 
 			require.Equal(t, tt.expectedValue, b.Config.Presets.SourceLinkedDeployment)

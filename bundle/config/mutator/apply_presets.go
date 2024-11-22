@@ -227,17 +227,16 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if !isDatabricksWorkspace {
 			target := b.Config.Bundle.Target
 			path := dyn.NewPath(dyn.Key("targets"), dyn.Key(target), dyn.Key("presets"), dyn.Key("source_linked_deployment"))
-			diags = diags.Extend(
-				diag.Diagnostics{
-					{
-						Severity: diag.Warning,
-						Summary:  "source-linked deployment is available only in the Databricks Workspace",
-						Paths: []dyn.Path{
-							path,
-						},
-						Locations: b.Config.GetLocations(dyn.NewPath(dyn.Key("presets"), dyn.Key("source_linked_deployment")).String()),
+			diags = diags.Append(
+				diag.Diagnostic{
+					Severity: diag.Warning,
+					Summary:  "source-linked deployment is available only in the Databricks Workspace",
+					Paths: []dyn.Path{
+						path,
 					},
-				})
+					Locations: b.Config.GetLocations(path[2:].String()),
+				},
+			)
 
 			disabled := false
 			b.Config.Presets.SourceLinkedDeployment = &disabled
