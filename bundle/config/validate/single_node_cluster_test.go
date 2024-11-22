@@ -16,8 +16,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestValidateSingleNodeClusterFail(t *testing.T) {
-	failCases := []struct {
+func failCases() []struct {
+	name       string
+	sparkConf  map[string]string
+	customTags map[string]string
+} {
+	return []struct {
 		name       string
 		sparkConf  map[string]string
 		customTags map[string]string
@@ -83,11 +87,12 @@ func TestValidateSingleNodeClusterFail(t *testing.T) {
 			customTags: map[string]string{"ResourceClass": "SingleNode"},
 		},
 	}
+}
 
+func TestValidateSingleNodeClusterFailForInteractiveClusters(t *testing.T) {
 	ctx := context.Background()
 
-	// Interactive clusters.
-	for _, tc := range failCases {
+	for _, tc := range failCases() {
 		t.Run("interactive_"+tc.name, func(t *testing.T) {
 			b := &bundle.Bundle{
 				Config: config.Root{
@@ -123,9 +128,12 @@ func TestValidateSingleNodeClusterFail(t *testing.T) {
 			}, diags)
 		})
 	}
+}
 
-	// Job clusters.
-	for _, tc := range failCases {
+func TestValidateSingleNodeClusterFailForJobClusters(t *testing.T) {
+	ctx := context.Background()
+
+	for _, tc := range failCases() {
 		t.Run("job_"+tc.name, func(t *testing.T) {
 			b := &bundle.Bundle{
 				Config: config.Root{
@@ -170,9 +178,12 @@ func TestValidateSingleNodeClusterFail(t *testing.T) {
 
 		})
 	}
+}
 
-	// Job task clusters.
-	for _, tc := range failCases {
+func TestValidateSingleNodeClusterFailForJobTaskClusters(t *testing.T) {
+	ctx := context.Background()
+
+	for _, tc := range failCases() {
 		t.Run("task_"+tc.name, func(t *testing.T) {
 			b := &bundle.Bundle{
 				Config: config.Root{
@@ -216,9 +227,12 @@ func TestValidateSingleNodeClusterFail(t *testing.T) {
 			}, diags)
 		})
 	}
+}
 
-	// Pipeline clusters.
-	for _, tc := range failCases {
+func TestValidateSingleNodeClusterFailForPipelineClusters(t *testing.T) {
+	ctx := context.Background()
+
+	for _, tc := range failCases() {
 		t.Run("pipeline_"+tc.name, func(t *testing.T) {
 			b := &bundle.Bundle{
 				Config: config.Root{
@@ -259,14 +273,19 @@ func TestValidateSingleNodeClusterFail(t *testing.T) {
 			}, diags)
 		})
 	}
-
 }
 
-func TestValidateSingleNodeClusterPass(t *testing.T) {
+func passCases() []struct {
+	name       string
+	numWorkers *int
+	sparkConf  map[string]string
+	customTags map[string]string
+	policyId   string
+} {
 	zero := 0
 	one := 1
 
-	passCases := []struct {
+	return []struct {
 		name       string
 		numWorkers *int
 		sparkConf  map[string]string
@@ -297,11 +316,12 @@ func TestValidateSingleNodeClusterPass(t *testing.T) {
 			numWorkers: &zero,
 		},
 	}
+}
 
+func TestValidateSingleNodeClusterPassInteractiveClusters(t *testing.T) {
 	ctx := context.Background()
 
-	// Interactive clusters.
-	for _, tc := range passCases {
+	for _, tc := range passCases() {
 		t.Run("interactive_"+tc.name, func(t *testing.T) {
 			b := &bundle.Bundle{
 				Config: config.Root{
@@ -329,9 +349,12 @@ func TestValidateSingleNodeClusterPass(t *testing.T) {
 			assert.Empty(t, diags)
 		})
 	}
+}
 
-	// Job clusters.
-	for _, tc := range passCases {
+func TestValidateSingleNodeClusterPassJobClusters(t *testing.T) {
+	ctx := context.Background()
+
+	for _, tc := range passCases() {
 		t.Run("job_"+tc.name, func(t *testing.T) {
 			b := &bundle.Bundle{
 				Config: config.Root{
@@ -366,9 +389,12 @@ func TestValidateSingleNodeClusterPass(t *testing.T) {
 			assert.Empty(t, diags)
 		})
 	}
+}
 
-	// Job task clusters.
-	for _, tc := range passCases {
+func TestValidateSingleNodeClusterPassJobTaskClusters(t *testing.T) {
+	ctx := context.Background()
+
+	for _, tc := range passCases() {
 		t.Run("task_"+tc.name, func(t *testing.T) {
 			b := &bundle.Bundle{
 				Config: config.Root{
@@ -403,9 +429,12 @@ func TestValidateSingleNodeClusterPass(t *testing.T) {
 			assert.Empty(t, diags)
 		})
 	}
+}
 
-	// Pipeline clusters.
-	for _, tc := range passCases {
+func TestValidateSingleNodeClusterPassPipelineClusters(t *testing.T) {
+	ctx := context.Background()
+
+	for _, tc := range passCases() {
 		t.Run("pipeline_"+tc.name, func(t *testing.T) {
 			b := &bundle.Bundle{
 				Config: config.Root{
