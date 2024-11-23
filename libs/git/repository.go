@@ -19,10 +19,6 @@ var GitDirectoryName = ".git"
 // Repository represents a Git repository or a directory
 // that could later be initialized as Git repository.
 type Repository struct {
-	// real indicates if this is a real repository or a non-Git
-	// directory where we process .gitignore files.
-	real bool
-
 	// rootDir is the path to the root of the repository checkout.
 	// This can be either the main repository checkout or a worktree checkout.
 	// For more information about worktrees, see: https://git-scm.com/docs/git-worktree#_description.
@@ -209,7 +205,6 @@ func (r *Repository) Ignore(relPath string) (bool, error) {
 }
 
 func NewRepository(path vfs.Path) (*Repository, error) {
-	real := true
 	rootDir, err := vfs.FindLeafInTree(path, GitDirectoryName)
 	if err != nil {
 		if !errors.Is(err, fs.ErrNotExist) {
@@ -217,7 +212,6 @@ func NewRepository(path vfs.Path) (*Repository, error) {
 		}
 		// Cannot find `.git` directory.
 		// Treat the specified path as a potential repository root checkout.
-		real = false
 		rootDir = path
 	}
 
@@ -229,7 +223,6 @@ func NewRepository(path vfs.Path) (*Repository, error) {
 	}
 
 	repo := &Repository{
-		real:         real,
 		rootDir:      rootDir,
 		gitDir:       gitDir,
 		gitCommonDir: gitCommonDir,
