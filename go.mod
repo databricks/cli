@@ -22,7 +22,7 @@ require (
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06 // MIT
 	github.com/spf13/cobra v1.8.1 // Apache 2.0
 	github.com/spf13/pflag v1.0.5 // BSD-3-Clause
-	github.com/stretchr/testify v1.9.0 // MIT
+	github.com/stretchr/testify v1.10.0 // MIT
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225
 	golang.org/x/mod v0.22.0
 	golang.org/x/oauth2 v0.24.0
