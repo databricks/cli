@@ -26,6 +26,7 @@ func newDeployCommand() *cobra.Command {
 	var failOnActiveRuns bool
 	var clusterId string
 	var autoApprove bool
+	var dryRyn bool
 	var verbose bool
 	cmd.Flags().BoolVar(&force, "force", false, "Force-override Git branch validation.")
 	cmd.Flags().BoolVar(&forceLock, "force-lock", false, "Force acquisition of deployment lock.")
@@ -33,6 +34,7 @@ func newDeployCommand() *cobra.Command {
 	cmd.Flags().StringVar(&clusterId, "compute-id", "", "Override cluster in the deployment with the given compute ID.")
 	cmd.Flags().StringVarP(&clusterId, "cluster-id", "c", "", "Override cluster in the deployment with the given cluster ID.")
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive approvals that might be required for deployment.")
+	cmd.Flags().BoolVar(&dryRyn, "dry-run", false, "Present changes that would be deployed without applying.")
 	cmd.Flags().MarkDeprecated("compute-id", "use --cluster-id instead")
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "Enable verbose output.")
 	// Verbose flag currently only affects file sync output, it's used by the vscode extension
@@ -47,6 +49,7 @@ func newDeployCommand() *cobra.Command {
 				b.Config.Bundle.Force = force
 				b.Config.Bundle.Deployment.Lock.Force = forceLock
 				b.AutoApprove = autoApprove
+				b.DryRun = dryRyn
 
 				if cmd.Flag("compute-id").Changed {
 					b.Config.Bundle.ClusterId = clusterId

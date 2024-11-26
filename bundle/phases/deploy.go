@@ -51,6 +51,43 @@ func parseTerraformActions(changes []*tfjson.ResourceChange, toInclude func(typ 
 	return res
 }
 
+func showDryRunChanges(ctx context.Context, plan *tfjson.Plan) {
+	updateActions := make([]terraformlib.Action, 0)
+	for _, rc := range plan.ResourceChanges {
+		if rc.Change.Actions.Update() {
+			updateActions = append(updateActions, terraformlib.Action{
+				Action:       terraformlib.ActionTypeUpdate,
+				ResourceType: rc.Type,
+				ResourceName: rc.Name,
+			})
+		}
+	}
+	createActions := make([]terraformlib.Action, 0)
+	for _, rc := range plan.ResourceChanges {
+		if rc.Change.Actions.Create() {
+			createActions = append(createActions, terraformlib.Action{
+				Action:       terraformlib.ActionTypeCreate,
+				ResourceType: rc.Type,
+				ResourceName: rc.Name,
+			})
+		}
+	}
+	if len(updateActions) > 0 {
+		cmdio.LogString(ctx, "The following resources will be updated:")
+		for _, a := range updateActions {
+			cmdio.Log(ctx, a)
+		}
+		cmdio.LogString(ctx, "")
+	}
+	if len(createActions) > 0 {
+		cmdio.LogString(ctx, "The following resources will be created:")
+		for _, a := range createActions {
+			cmdio.Log(ctx, a)
+		}
+		cmdio.LogString(ctx, "")
+	}
+}
+
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	tf := b.Terraform
 	if tf == nil {
@@ -61,6 +98,11 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	plan, err := tf.ShowPlanFile(ctx, b.Plan.Path)
 	if err != nil {
 		return false, err
+	}
+
+	if b.DryRun {
+		showDryRunChanges(ctx, plan)
+		return false, nil
 	}
 
 	schemaActions := parseTerraformActions(plan.ResourceChanges, func(typ string, actions tfjson.Actions) bool {
