@@ -4,7 +4,7 @@ bundle:
 resources:
   jobs:
     test_job:
-      name: "[${bundle.environment}] My Wheel Job"
+      name: "[${bundle.target}] My Wheel Job"
       tasks:
       - task_key: TestTask
         existing_cluster_id: "0717-aaaaa-bbbbbb"
