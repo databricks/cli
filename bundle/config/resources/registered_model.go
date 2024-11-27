@@ -68,3 +68,7 @@ func (s *RegisteredModel) GetName() string {
 func (s *RegisteredModel) GetURL() string {
 	return s.URL
 }
+
+func (s *RegisteredModel) IsNil() bool {
+	return s.CreateRegisteredModelRequest == nil
+}
