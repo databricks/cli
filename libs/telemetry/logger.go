@@ -125,7 +125,7 @@ func (l *logger) TrackEvent(event FrontendLogEntry) {
 // Maximum additional time to wait for the telemetry event to flush. We expect the flush
 // method to be called when the CLI command is about to exist, so this time would
 // be purely additive to the end user's experience.
-const MaxAdditionalWaitTime = 1 * time.Second
+var MaxAdditionalWaitTime = 1 * time.Second
 
 // TODO: Do not close the connection in-case of error. Allows for faster retry.
 // TODO: Talk about why we make only one API call at the end. It's because the
@@ -152,7 +152,7 @@ func (l *logger) Flush() {
 		}
 
 		// All logs were successfully sent. No need to retry.
-		if len(l.protoLogs) <= int(resp.NumProtoSuccess) && len(resp.Errors) > 0 {
+		if len(l.protoLogs) <= int(resp.NumProtoSuccess) && len(resp.Errors) == 0 {
 			return
 		}
 
