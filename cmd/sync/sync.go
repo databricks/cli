@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/spf13/cobra"
@@ -37,6 +38,7 @@ func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, args []string, b *
 
 	opts.Full = f.full
 	opts.PollInterval = f.interval
+	opts.WorktreeRoot = b.WorktreeRoot
 	return opts, nil
 }
 
@@ -60,11 +62,21 @@ func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*syn
 		}
 	}
 
+	ctx := cmd.Context()
+	client := root.WorkspaceClient(ctx)
+
+	localRoot := vfs.MustNew(args[0])
+	info, err := git.FetchRepositoryInfo(ctx, localRoot, client)
+	if err != nil {
+		return nil, err
+	}
+
 	opts := sync.SyncOptions{
-		LocalRoot: vfs.MustNew(args[0]),
-		Paths:     []string{"."},
-		Include:   nil,
-		Exclude:   nil,
+		WorktreeRoot: info.WorktreeRoot,
+		LocalRoot:    localRoot,
+		Paths:        []string{"."},
+		Include:      nil,
+		Exclude:      nil,
 
 		RemotePath:   args[1],
 		Full:         f.full,
@@ -75,7 +87,7 @@ func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*syn
 		// The sync code will automatically create this directory if it doesn't
 		// exist and add it to the `.gitignore` file in the root.
 		SnapshotBasePath: filepath.Join(args[0], ".databricks"),
-		WorkspaceClient:  root.WorkspaceClient(cmd.Context()),
+		WorkspaceClient:  client,
 
 		OutputHandler: outputHandler,
 	}
