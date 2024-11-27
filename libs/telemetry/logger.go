@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/client"
 )
 
@@ -20,14 +21,12 @@ type databricksClient interface {
 }
 
 type logger struct {
-	ctx context.Context
-
 	respChannel chan *ResponseBody
 
 	apiClient databricksClient
 
 	// TODO: Appropriately name this field.
-	w io.Writer
+	w *io.PipeWriter
 
 	// TODO: wrap this in a mutex since it'll be concurrently accessed.
 	protoLogs []string
@@ -42,10 +41,24 @@ type logger struct {
 // thread.
 //
 //	TODO: Add an integration test for this functionality as well.
-func (l *logger) createPersistentConnection(r io.Reader) {
+
+// spawnTelemetryConnection will spawn a new TCP connection to the telemetry
+// endpoint and keep it alive until the main CLI thread is alive.
+//
+// Both the Databricks Go SDK client and Databricks control plane servers typically
+// timeout after 60 seconds. Thus if we see any error from the API client we'll
+// simply retry the request to establish a new TCP connection.
+//
+// The intent of this function is to reduce the RTT for the HTTP request to the telemetry
+// endpoint since underneath the hood the Go standard library http client will establish
+// the connection but will be blocked on reading the request body until we write
+// to the corresponding pipe writer for the request body pipe reader.
+//
+// Benchmarks suggest this reduces the RTT from ~700 ms to ~200 ms.
+func (l *logger) spawnTelemetryConnection(ctx context.Context, r *io.PipeReader) {
 	for {
 		select {
-		case <-l.ctx.Done():
+		case <-ctx.Done():
 			return
 		default:
 			// Proceed
@@ -56,7 +69,7 @@ func (l *logger) createPersistentConnection(r io.Reader) {
 		// This API request will exchange TCP/TLS headers with the server but would
 		// be blocked on sending over the request body until we write to the
 		// corresponding writer for the request body reader.
-		err := l.apiClient.Do(l.ctx, http.MethodPost, "/telemetry-ext", nil, r, resp)
+		err := l.apiClient.Do(ctx, http.MethodPost, "/telemetry-ext", nil, r, resp)
 
 		// The TCP connection can timeout while it waits for the CLI to send over
 		// the request body. It could be either due to the client which has a
@@ -76,7 +89,6 @@ func (l *logger) createPersistentConnection(r io.Reader) {
 
 }
 
-// TODO: Use bundle auth appropriately here instead of default auth.
 // TODO: Log warning or errors when any of these telemetry requests fail.
 // TODO: Figure out how to create or use an existing general purpose http mocking
 // library to unit test this functionality out.
@@ -98,7 +110,6 @@ func NewLogger(ctx context.Context, apiClient databricksClient) (*logger, error)
 	r, w := io.Pipe()
 
 	l := &logger{
-		ctx:         ctx,
 		protoLogs:   []string{},
 		apiClient:   apiClient,
 		w:           w,
@@ -106,7 +117,7 @@ func NewLogger(ctx context.Context, apiClient databricksClient) (*logger, error)
 	}
 
 	go func() {
-		l.createPersistentConnection(r)
+		l.spawnTelemetryConnection(ctx, r)
 	}()
 
 	return l, nil
@@ -123,29 +134,48 @@ func (l *logger) TrackEvent(event FrontendLogEntry) {
 }
 
 // Maximum additional time to wait for the telemetry event to flush. We expect the flush
-// method to be called when the CLI command is about to exist, so this time would
-// be purely additive to the end user's experience.
+// method to be called when the CLI command is about to exist, so this caps the maximum
+// additional time the user will experience because of us logging CLI telemetry.
 var MaxAdditionalWaitTime = 1 * time.Second
 
-// TODO: Do not close the connection in-case of error. Allows for faster retry.
 // TODO: Talk about why we make only one API call at the end. It's because the
 // size limit on the payload is pretty high: ~1000 events.
-func (l *logger) Flush() {
+func (l *logger) Flush(ctx context.Context) {
 	// Set a maximum time to wait for the telemetry event to flush.
-	ctx, _ := context.WithTimeout(l.ctx, MaxAdditionalWaitTime)
+	ctx, _ = context.WithTimeout(ctx, MaxAdditionalWaitTime)
 	var resp *ResponseBody
+
+	reqb := RequestBody{
+		UploadTime: time.Now().Unix(),
+		ProtoLogs:  l.protoLogs,
+	}
+
+	// Finally write to the pipe writer to unblock the API request.
+	b, err := json.Marshal(reqb)
+	if err != nil {
+		log.Debugf(ctx, "Error marshalling telemetry logs: %v", err)
+		return
+	}
+	_, err = l.w.Write(b)
+	if err != nil {
+		log.Debugf(ctx, "Error writing to telemetry pipe: %v", err)
+		return
+	}
+
 	select {
 	case <-ctx.Done():
+		log.Debugf(ctx, "Timed out before flushing telemetry events")
 		return
 	case resp = <-l.respChannel:
 		// The persistent TCP connection we create finally returned a response
-		// from the telemetry-ext endpoint. We can now start processing the
+		// from the /telemetry-ext endpoint. We can now start processing the
 		// response in the main thread.
 	}
 
 	for {
 		select {
 		case <-ctx.Done():
+			log.Debugf(ctx, "Timed out before flushing telemetry events")
 			return
 		default:
 			// Proceed
@@ -161,7 +191,7 @@ func (l *logger) Flush() {
 		//
 		// Note: This will result in server side duplications but that's fine since
 		// we can always deduplicate in the data pipeline itself.
-		l.apiClient.Do(l.ctx, http.MethodPost, "/telemetry-ext", nil, RequestBody{
+		l.apiClient.Do(ctx, http.MethodPost, "/telemetry-ext", nil, RequestBody{
 			UploadTime: time.Now().Unix(),
 			ProtoLogs:  l.protoLogs,
 		}, resp)
