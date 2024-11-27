@@ -7,7 +7,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/git"
-	"github.com/databricks/cli/libs/log"
 )
 
 type loadGitDetails struct{}
@@ -21,45 +20,35 @@ func (m *loadGitDetails) Name() string {
 }
 
 func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	// Load relevant git repository
-	repo, err := git.NewRepository(b.BundleRoot)
+	info, err := git.FetchRepositoryInfo(ctx, b.BundleRoot, b.WorkspaceClient())
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	// Read branch name of current checkout
-	branch, err := repo.CurrentBranch()
-	if err == nil {
-		b.Config.Bundle.Git.ActualBranch = branch
-		if b.Config.Bundle.Git.Branch == "" {
-			// Only load branch if there's no user defined value
-			b.Config.Bundle.Git.Inferred = true
-			b.Config.Bundle.Git.Branch = branch
-		}
-	} else {
-		log.Warnf(ctx, "failed to load current branch: %s", err)
+	b.WorktreeRoot = info.WorktreeRoot
+
+	b.Config.Bundle.Git.ActualBranch = info.CurrentBranch
+	if b.Config.Bundle.Git.Branch == "" {
+		// Only load branch if there's no user defined value
+		b.Config.Bundle.Git.Inferred = true
+		b.Config.Bundle.Git.Branch = info.CurrentBranch
 	}
 
 	// load commit hash if undefined
 	if b.Config.Bundle.Git.Commit == "" {
-		commit, err := repo.LatestCommit()
-		if err != nil {
-			log.Warnf(ctx, "failed to load latest commit: %s", err)
-		} else {
-			b.Config.Bundle.Git.Commit = commit
-		}
-	}
-	// load origin url if undefined
-	if b.Config.Bundle.Git.OriginURL == "" {
-		remoteUrl := repo.OriginUrl()
-		b.Config.Bundle.Git.OriginURL = remoteUrl
+		b.Config.Bundle.Git.Commit = info.LatestCommit
 	}
 
-	// repo.Root() returns the absolute path of the repo
-	relBundlePath, err := filepath.Rel(repo.Root(), b.BundleRoot.Native())
+	// load origin url if undefined
+	if b.Config.Bundle.Git.OriginURL == "" {
+		b.Config.Bundle.Git.OriginURL = info.OriginURL
+	}
+
+	relBundlePath, err := filepath.Rel(info.WorktreeRoot.Native(), b.BundleRoot.Native())
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
 	b.Config.Bundle.Git.BundleRootPath = filepath.ToSlash(relBundlePath)
 	return nil
 }

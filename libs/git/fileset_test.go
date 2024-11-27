@@ -13,7 +13,7 @@ import (
 )
 
 func testFileSetAll(t *testing.T, root string) {
-	fileSet, err := NewFileSet(vfs.MustNew(root))
+	fileSet, err := NewFileSetAtRoot(vfs.MustNew(root))
 	require.NoError(t, err)
 	files, err := fileSet.Files()
 	require.NoError(t, err)
@@ -35,7 +35,7 @@ func TestFileSetNonCleanRoot(t *testing.T) {
 	// Test what happens if the root directory can be simplified.
 	// Path simplification is done by most filepath functions.
 	// This should yield the same result as above test.
-	fileSet, err := NewFileSet(vfs.MustNew("./testdata/../testdata"))
+	fileSet, err := NewFileSetAtRoot(vfs.MustNew("./testdata/../testdata"))
 	require.NoError(t, err)
 	files, err := fileSet.Files()
 	require.NoError(t, err)
@@ -44,7 +44,7 @@ func TestFileSetNonCleanRoot(t *testing.T) {
 
 func TestFileSetAddsCacheDirToGitIgnore(t *testing.T) {
 	projectDir := t.TempDir()
-	fileSet, err := NewFileSet(vfs.MustNew(projectDir))
+	fileSet, err := NewFileSetAtRoot(vfs.MustNew(projectDir))
 	require.NoError(t, err)
 	fileSet.EnsureValidGitIgnoreExists()
 
@@ -59,7 +59,7 @@ func TestFileSetDoesNotCacheDirToGitIgnoreIfAlreadyPresent(t *testing.T) {
 	projectDir := t.TempDir()
 	gitIgnorePath := filepath.Join(projectDir, ".gitignore")
 
-	fileSet, err := NewFileSet(vfs.MustNew(projectDir))
+	fileSet, err := NewFileSetAtRoot(vfs.MustNew(projectDir))
 	require.NoError(t, err)
 	err = os.WriteFile(gitIgnorePath, []byte(".databricks"), 0o644)
 	require.NoError(t, err)
