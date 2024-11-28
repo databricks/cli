@@ -519,6 +519,10 @@ func TestRenderSummary(t *testing.T) {
 						URL:         "https://url2",
 						JobSettings: &jobs.JobSettings{Name: "job2-name"},
 					},
+					"job3": {
+						ID:  "3",
+						URL: "https://url3", // This emulates deleted job
+					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline2": {
