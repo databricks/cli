@@ -69,17 +69,25 @@ func FetchRepositoryInfoAPI(ctx context.Context, path vfs.Path, w *databricks.Wo
 	gi := response.GitInfo
 	// XXX log warning if missing
 	if gi != nil {
+		fixedPath := fixResponsePath(gi.Path)
 		return GitRepositoryInfo{
 			OriginURL:     gi.URL,
 			LatestCommit:  gi.HeadCommitID,
 			CurrentBranch: gi.Branch,
-			WorktreeRoot:  vfs.MustNew(gi.Path),
+			WorktreeRoot:  vfs.MustNew(fixedPath),
 		}, nil
 	}
 
 	return GitRepositoryInfo{
 		WorktreeRoot: path,
 	}, nil
+}
+
+func fixResponsePath(path string) string {
+	if strings.HasPrefix(path, "/Users/") {
+		return "/Workspace/" + path
+	}
+	return path
 }
 
 func FetchRepositoryInfoDotGit(ctx context.Context, path vfs.Path) (GitRepositoryInfo, error) {
