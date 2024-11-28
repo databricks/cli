@@ -84,7 +84,7 @@ func FetchRepositoryInfoAPI(ctx context.Context, path vfs.Path, w *databricks.Wo
 }
 
 func fixResponsePath(path string) string {
-	if strings.HasPrefix(path, "/Users/") {
+	if !strings.HasPrefix(path, "/Workspace/") {
 		return "/Workspace/" + path
 	}
 	return path
