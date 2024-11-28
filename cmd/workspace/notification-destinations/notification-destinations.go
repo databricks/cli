@@ -304,7 +304,10 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Update a notification destination.
   
   Updates a notification destination. Requires workspace admin permissions. At
-  least one field is required in the request body.`
+  least one field is required in the request body.
+
+  Arguments:
+    ID: UUID identifying notification destination.`
 
 	cmd.Annotations = make(map[string]string)
 

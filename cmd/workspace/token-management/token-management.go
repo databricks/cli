@@ -169,7 +169,7 @@ func newDelete() *cobra.Command {
   Deletes a token, specified by its ID.
 
   Arguments:
-    TOKEN_ID: The ID of the token to get.`
+    TOKEN_ID: The ID of the token to revoke.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -186,14 +186,14 @@ func newDelete() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Token Management drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "The ID of the token to get")
+			id, err := cmdio.Select(ctx, names, "The ID of the token to revoke")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id of the token to get")
+			return fmt.Errorf("expected to have the id of the token to revoke")
 		}
 		deleteReq.TokenId = args[0]
 

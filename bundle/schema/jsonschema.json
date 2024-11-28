@@ -817,6 +817,9 @@
                       "metastore": {
                         "$ref": "#/$defs/string"
                       },
+                      "notification_destination": {
+                        "$ref": "#/$defs/string"
+                      },
                       "pipeline": {
                         "$ref": "#/$defs/string"
                       },
@@ -1077,6 +1080,9 @@
                       "$ref": "#/$defs/string"
                     },
                     "pipelines_development": {
+                      "$ref": "#/$defs/bool"
+                    },
+                    "source_linked_deployment": {
                       "$ref": "#/$defs/bool"
                     },
                     "tags": {
@@ -2824,7 +2830,7 @@
               "anyOf": [
                 {
                   "type": "object",
-                  "description": "Write-only setting. Specifies the user, service principal or group that the job/pipeline runs as. If not specified, the job/pipeline runs as the user who created the job/pipeline.\n\nExactly one of `user_name`, `service_principal_name`, `group_name` should be specified. If not, an error is thrown.",
+                  "description": "Write-only setting. Specifies the user, service principal or group that the job/pipeline runs as. If not specified, the job/pipeline runs as the user who created the job/pipeline.\n\nEither `user_name` or `service_principal_name` should be specified. If not, an error is thrown.",
                   "properties": {
                     "service_principal_name": {
                       "description": "Application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.",
