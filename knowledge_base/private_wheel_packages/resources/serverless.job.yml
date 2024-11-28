@@ -1,0 +1,27 @@
+resources:
+  jobs:
+    serverless:
+      name: Example to demonstrate using a private wheel package on serverless
+
+      tasks:
+        - task_key: task
+          environment_key: default
+
+          spark_python_task:
+            python_file: ../src/main.py
+
+      environments:
+        - environment_key: default
+
+          spec:
+            client: "1"
+            dependencies:
+              # Relative local path reference to the private wheel package.
+              # This references alone is sufficient to upload it on deployment.
+              #
+              # It is uploaded to `${workspace.artifact_path}`, which can point to
+              # a workspace directory (under `${workspace.bundle_root}`, by default),
+              # or a Unity Catalog Volume.
+              #
+              # This value is automatically rewritten to the fully qualified remote path.
+              - ../dist/cowsay-6.1-*.whl

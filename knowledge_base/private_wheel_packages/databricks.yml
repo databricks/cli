@@ -1,0 +1,13 @@
+bundle:
+  name: private_wheel_packages
+
+include:
+  - resources/*.yml
+
+workspace:
+  # host: https://myworkspace.cloud.databricks.com
+
+targets:
+  dev:
+    default: true
+    mode: development
