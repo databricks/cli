@@ -2,7 +2,9 @@ package libraries
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
 	"path"
 	"strings"
 
@@ -11,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 func extractVolumeFromPath(artifactPath string) (string, string, string, error) {
@@ -81,20 +84,27 @@ func filerForVolume(ctx context.Context, b *bundle.Bundle) (filer.Filer, string,
 		return f, uploadPath, diag.FromErr(err)
 	}
 
-	diags := diag.Errorf("failed to fetch metadata for the UC volume %s that is configured in the artifact_path: %s", volumePath, err)
-
-	path, locations, ok := findVolumeInBundle(b, catalogName, schemaName, volumeName)
-	if !ok {
-		return nil, "", diags
+	baseErr := diag.Diagnostic{
+		Severity:  diag.Error,
+		Summary:   fmt.Sprintf("failed to fetch metadata for %s: %s", volumePath, err),
+		Locations: b.Config.GetLocations("workspace.artifact_path"),
+		Paths:     []dyn.Path{dyn.MustPathFromString("workspace.artifact_path")},
 	}
 
-	warning := diag.Diagnostic{
-		Severity:  diag.Warning,
-		Summary:   `You might be using a UC volume in your artifact_path that is managed by this bundle but which has not been deployed yet. Please deploy the UC volume in a separate bundle deploy before using it in the artifact_path.`,
-		Locations: locations,
-		Paths:     []dyn.Path{path},
+	var aerr *apierr.APIError
+	if errors.As(err, &aerr) && aerr.StatusCode == http.StatusNotFound {
+		path, locations, ok := findVolumeInBundle(b, catalogName, schemaName, volumeName)
+		if !ok {
+			return nil, "", diag.Diagnostics{baseErr}
+		}
+		baseErr.Detail = `You are using a UC volume in your artifact_path that is managed by
+this bundle but which has not been deployed yet. Please deploy the UC volume in
+a separate bundle deploy before using it in the artifact_path.`
+		baseErr.Paths = append(baseErr.Paths, path)
+		baseErr.Locations = append(baseErr.Locations, locations...)
 	}
-	return nil, "", diags.Append(warning)
+
+	return nil, "", diag.Diagnostics{baseErr}
 }
 
 func findVolumeInBundle(b *bundle.Bundle, catalogName, schemaName, volumeName string) (dyn.Path, []dyn.Location, bool) {

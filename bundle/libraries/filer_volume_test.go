@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -95,14 +96,21 @@ func TestFilerForVolumeNotInBundle(t *testing.T) {
 		},
 	}
 
+	bundletest.SetLocation(b, "workspace.artifact_path", []dyn.Location{{File: "config.yml", Line: 1, Column: 2}})
+
 	m := mocks.NewMockWorkspaceClient(t)
 	m.WorkspaceClient.Config = &sdkconfig.Config{}
 	m.GetMockFilesAPI().EXPECT().GetDirectoryMetadataByDirectoryPath(mock.Anything, "/Volumes/main/my_schema/doesnotexist").Return(fmt.Errorf("error from API"))
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
 	_, _, diags := filerForVolume(context.Background(), b)
-	assert.EqualError(t, diags.Error(), "failed to fetch metadata for the UC volume /Volumes/main/my_schema/doesnotexist that is configured in the artifact_path: error from API")
-	assert.Len(t, diags, 1)
+	assert.Equal(t, diag.Diagnostics{
+		{
+			Severity:  diag.Error,
+			Summary:   "failed to fetch metadata for /Volumes/main/my_schema/doesnotexist: error from API",
+			Locations: []dyn.Location{{File: "config.yml", Line: 1, Column: 2}},
+			Paths:     []dyn.Path{dyn.MustPathFromString("workspace.artifact_path")},
+		}}, diags)
 }
 
 func TestFilerForVolumeInBundle(t *testing.T) {
@@ -126,31 +134,29 @@ func TestFilerForVolumeInBundle(t *testing.T) {
 		},
 	}
 
-	bundletest.SetLocation(b, "resources.volumes.foo", []dyn.Location{
-		{
-			File:   "volume.yml",
-			Line:   1,
-			Column: 2,
-		},
-	})
+	bundletest.SetLocation(b, "workspace.artifact_path", []dyn.Location{{File: "config.yml", Line: 1, Column: 2}})
+	bundletest.SetLocation(b, "resources.volumes.foo", []dyn.Location{{File: "volume.yml", Line: 1, Column: 2}})
 
 	m := mocks.NewMockWorkspaceClient(t)
 	m.WorkspaceClient.Config = &sdkconfig.Config{}
-	m.GetMockFilesAPI().EXPECT().GetDirectoryMetadataByDirectoryPath(mock.Anything, "/Volumes/main/my_schema/my_volume").Return(fmt.Errorf("error from API"))
+	m.GetMockFilesAPI().EXPECT().GetDirectoryMetadataByDirectoryPath(mock.Anything, "/Volumes/main/my_schema/my_volume").Return(&apierr.APIError{
+		StatusCode: 404,
+		Message:    "error from API",
+	})
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
 	_, _, diags := GetFilerForLibraries(context.Background(), b)
-	assert.EqualError(t, diags.Error(), "failed to fetch metadata for the UC volume /Volumes/main/my_schema/my_volume that is configured in the artifact_path: error from API")
-	assert.Contains(t, diags, diag.Diagnostic{
-		Severity: diag.Warning,
-		Summary:  "You might be using a UC volume in your artifact_path that is managed by this bundle but which has not been deployed yet. Please deploy the UC volume in a separate bundle deploy before using it in the artifact_path.",
-		Locations: []dyn.Location{{
-			File:   "volume.yml",
-			Line:   1,
-			Column: 2,
-		}},
-		Paths: []dyn.Path{dyn.MustPathFromString("resources.volumes.foo")},
-	})
+	assert.Equal(t, diag.Diagnostics{
+		{
+			Severity:  diag.Error,
+			Summary:   "failed to fetch metadata for /Volumes/main/my_schema/my_volume: error from API",
+			Locations: []dyn.Location{{"config.yml", 1, 2}, {"volume.yml", 1, 2}},
+			Paths:     []dyn.Path{dyn.MustPathFromString("workspace.artifact_path"), dyn.MustPathFromString("resources.volumes.foo")},
+			Detail: `You are using a UC volume in your artifact_path that is managed by
+this bundle but which has not been deployed yet. Please deploy the UC volume in
+a separate bundle deploy before using it in the artifact_path.`,
+		},
+	}, diags)
 }
 
 func invalidVolumePaths() []string {

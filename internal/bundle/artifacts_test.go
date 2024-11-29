@@ -9,17 +9,15 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/bundletest"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
-	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -232,7 +230,7 @@ func TestAccUploadArtifactFileToCorrectRemotePathForVolumes(t *testing.T) {
 	)
 }
 
-func TestAccUploadArtifactFileToInvalidVolume(t *testing.T) {
+func TestAccUploadArtifactFileToVolumeThatDoesNotExist(t *testing.T) {
 	ctx, wt := acc.UcWorkspaceTest(t)
 	w := wt.W
 
@@ -250,93 +248,64 @@ func TestAccUploadArtifactFileToInvalidVolume(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("volume not in DAB", func(t *testing.T) {
-		volumePath := fmt.Sprintf("/Volumes/main/%s/doesnotexist", schemaName)
-		dir := t.TempDir()
+	bundleRoot, err := initTestTemplate(t, ctx, "artifact_path_with_volume", map[string]any{
+		"unique_id":   uuid.New().String(),
+		"schema_name": schemaName,
+		"volume_name": "doesnotexist",
+	})
+	require.NoError(t, err)
 
-		b := &bundle.Bundle{
-			BundleRootPath: dir,
-			SyncRootPath:   dir,
-			Config: config.Root{
-				Bundle: config.Bundle{
-					Target: "whatever",
-				},
-				Workspace: config.Workspace{
-					ArtifactPath: volumePath,
-				},
-				Resources: config.Resources{
-					Volumes: map[string]*resources.Volume{
-						"foo": {
-							CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
-								CatalogName: "main",
-								Name:        "my_volume",
-								VolumeType:  "MANAGED",
-								SchemaName:  schemaName,
-							},
-						},
-					},
-				},
-			},
-		}
+	t.Setenv("BUNDLE_ROOT", bundleRoot)
+	stdout, stderr, err := internal.RequireErrorRun(t, "bundle", "deploy")
 
-		diags := bundle.Apply(ctx, b, libraries.Upload())
-		assert.ErrorContains(t, diags.Error(), fmt.Sprintf("failed to fetch metadata for the UC volume %s that is configured in the artifact_path:", volumePath))
+	assert.Error(t, err)
+	assert.Equal(t, fmt.Sprintf(`Error: failed to fetch metadata for /Volumes/main/%s/doesnotexist: Not Found
+  at workspace.artifact_path
+  in databricks.yml:6:18
+
+`, schemaName), stdout.String())
+	assert.Equal(t, "", stderr.String())
+}
+
+func TestAccUploadArtifactToVolumeNotYetDeployed(t *testing.T) {
+	ctx, wt := acc.UcWorkspaceTest(t)
+	w := wt.W
+
+	schemaName := internal.RandomName("schema-")
+
+	_, err := w.Schemas.Create(ctx, catalog.CreateSchema{
+		CatalogName: "main",
+		Comment:     "test schema",
+		Name:        schemaName,
+	})
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err = w.Schemas.DeleteByFullName(ctx, "main."+schemaName)
+		require.NoError(t, err)
 	})
 
-	t.Run("volume in DAB config", func(t *testing.T) {
-		volumePath := fmt.Sprintf("/Volumes/main/%s/my_volume", schemaName)
-		dir := t.TempDir()
-
-		b := &bundle.Bundle{
-			BundleRootPath: dir,
-			SyncRootPath:   dir,
-			Config: config.Root{
-				Bundle: config.Bundle{
-					Target: "whatever",
-				},
-				Workspace: config.Workspace{
-					ArtifactPath: volumePath,
-				},
-				Resources: config.Resources{
-					Volumes: map[string]*resources.Volume{
-						"foo": {
-							CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
-								CatalogName: "main",
-								Name:        "my_volume",
-								VolumeType:  "MANAGED",
-								SchemaName:  schemaName,
-							},
-						},
-					},
-				},
-			},
-		}
-
-		// set location of volume definition in config.
-		bundletest.SetLocation(b, "resources.volumes.foo", []dyn.Location{{
-			File:   filepath.Join(dir, "databricks.yml"),
-			Line:   1,
-			Column: 2,
-		}})
-
-		diags := bundle.Apply(ctx, b, libraries.Upload())
-		assert.Contains(t, diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  fmt.Sprintf("failed to fetch metadata for the UC volume %s that is configured in the artifact_path: Not Found", volumePath),
-		})
-		assert.Contains(t, diags, diag.Diagnostic{
-			Severity: diag.Warning,
-			Summary:  "You might be using a UC volume in your artifact_path that is managed by this bundle but which has not been deployed yet. Please deploy the UC volume in a separate bundle deploy before using it in the artifact_path.",
-			Locations: []dyn.Location{
-				{
-					File:   filepath.Join(dir, "databricks.yml"),
-					Line:   1,
-					Column: 2,
-				},
-			},
-			Paths: []dyn.Path{
-				dyn.MustPathFromString("resources.volumes.foo"),
-			},
-		})
+	bundleRoot, err := initTestTemplate(t, ctx, "artifact_path_with_volume", map[string]any{
+		"unique_id":   uuid.New().String(),
+		"schema_name": schemaName,
+		"volume_name": "my_volume",
 	})
+	require.NoError(t, err)
+
+	t.Setenv("BUNDLE_ROOT", bundleRoot)
+	stdout, stderr, err := internal.RequireErrorRun(t, "bundle", "deploy")
+
+	assert.Error(t, err)
+	assert.Equal(t, fmt.Sprintf(`Error: failed to fetch metadata for /Volumes/main/%s/my_volume: Not Found
+  at workspace.artifact_path
+     resources.volumes.foo
+  in databricks.yml:6:18
+     databricks.yml:11:7
+
+You are using a UC volume in your artifact_path that is managed by
+this bundle but which has not been deployed yet. Please deploy the UC volume in
+a separate bundle deploy before using it in the artifact_path.
+
+`, schemaName), stdout.String())
+	assert.Equal(t, "", stderr.String())
 }
