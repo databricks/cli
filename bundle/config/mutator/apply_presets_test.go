@@ -73,7 +73,7 @@ func TestApplyPresetsPrefix(t *testing.T) {
 	}
 }
 
-func TestApplyPresetsPrefixForUcSchema(t *testing.T) {
+func TestApplyPresetsPrefixForSchema(t *testing.T) {
 	tests := []struct {
 		name   string
 		prefix string
@@ -129,7 +129,7 @@ func TestApplyPresetsPrefixForUcSchema(t *testing.T) {
 	}
 }
 
-func TestApplyPresetsUCVolumesShouldNotBePrefixed(t *testing.T) {
+func TestApplyPresetsVolumesShouldNotBePrefixed(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
