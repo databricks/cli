@@ -13,6 +13,31 @@ import (
 	"github.com/databricks/cli/libs/filer"
 )
 
+func extractVolumeFromPath(artifactPath string) (string, string, string, error) {
+	if !IsVolumesPath(artifactPath) {
+		return "", "", "", fmt.Errorf("expected artifact_path to start with /Volumes/, got %s", artifactPath)
+	}
+
+	parts := strings.Split(artifactPath, "/")
+	volumeFormatErr := fmt.Errorf("expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got %s", artifactPath)
+
+	// Incorrect format.
+	if len(parts) < 5 {
+		return "", "", "", volumeFormatErr
+	}
+
+	catalogName := parts[2]
+	schemaName := parts[3]
+	volumeName := parts[4]
+
+	// Incorrect format.
+	if catalogName == "" || schemaName == "" || volumeName == "" {
+		return "", "", "", volumeFormatErr
+	}
+
+	return catalogName, schemaName, volumeName, nil
+}
+
 // This function returns a filer for ".internal" folder inside the directory configured
 // at `workspace.artifact_path`.
 // This function also checks if the UC volume exists in the workspace and then:
@@ -32,26 +57,21 @@ func filerForVolume(ctx context.Context, b *bundle.Bundle) (filer.Filer, string,
 		return nil, "", diag.Errorf("expected artifact_path to start with /Volumes/, got %s", artifactPath)
 	}
 
-	parts := strings.Split(artifactPath, "/")
-	volumeFormatErr := fmt.Errorf("expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got %s", artifactPath)
-
-	// Incorrect format.
-	if len(parts) < 5 {
-		return nil, "", diag.FromErr(volumeFormatErr)
-	}
-
-	catalogName := parts[2]
-	schemaName := parts[3]
-	volumeName := parts[4]
-
-	// Incorrect format.
-	if catalogName == "" || schemaName == "" || volumeName == "" {
-		return nil, "", diag.FromErr(volumeFormatErr)
+	catalogName, schemaName, volumeName, err := extractVolumeFromPath(artifactPath)
+	if err != nil {
+		return nil, "", diag.Diagnostics{
+			{
+				Severity:  diag.Error,
+				Summary:   err.Error(),
+				Locations: b.Config.GetLocations("workspace.artifact_path"),
+				Paths:     []dyn.Path{dyn.MustPathFromString("workspace.artifact_path")},
+			},
+		}
 	}
 
 	// Check if the UC volume exists in the workspace.
 	volumePath := fmt.Sprintf("/Volumes/%s/%s/%s", catalogName, schemaName, volumeName)
-	err := w.Files.GetDirectoryMetadataByDirectoryPath(ctx, volumePath)
+	err = w.Files.GetDirectoryMetadataByDirectoryPath(ctx, volumePath)
 
 	// If the volume exists already, directly return the filer for the path to
 	// upload the artifacts to.

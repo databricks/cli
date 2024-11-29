@@ -153,8 +153,8 @@ func TestFilerForVolumeInBundle(t *testing.T) {
 	})
 }
 
-func TestFilerForVolumeWithInvalidVolumePaths(t *testing.T) {
-	invalidPaths := []string{
+func invalidVolumePaths() []string {
+	return []string{
 		"/Volumes/",
 		"/Volumes/main",
 		"/Volumes/main/",
@@ -165,8 +165,10 @@ func TestFilerForVolumeWithInvalidVolumePaths(t *testing.T) {
 		"/Volumes/main/my_schema//",
 		"/Volumes//my_schema/my_volume",
 	}
+}
 
-	for _, p := range invalidPaths {
+func TestFilerForVolumeWithInvalidVolumePaths(t *testing.T) {
+	for _, p := range invalidVolumePaths() {
 		b := &bundle.Bundle{
 			Config: config.Root{
 				Workspace: config.Workspace{
@@ -175,8 +177,15 @@ func TestFilerForVolumeWithInvalidVolumePaths(t *testing.T) {
 			},
 		}
 
+		bundletest.SetLocation(b, "workspace.artifact_path", []dyn.Location{{File: "config.yml", Line: 1, Column: 2}})
+
 		_, _, diags := GetFilerForLibraries(context.Background(), b)
-		require.EqualError(t, diags.Error(), fmt.Sprintf("expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got %s", p))
+		require.Equal(t, diags, diag.Diagnostics{{
+			Severity:  diag.Error,
+			Summary:   fmt.Sprintf("expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got %s", p),
+			Locations: []dyn.Location{{File: "config.yml", Line: 1, Column: 2}},
+			Paths:     []dyn.Path{dyn.MustPathFromString("workspace.artifact_path")},
+		}})
 	}
 }
 
@@ -219,5 +228,18 @@ func TestFilerForVolumeWithValidlVolumePaths(t *testing.T) {
 		require.NoError(t, diags.Error())
 		assert.Equal(t, path.Join(p, ".internal"), uploadPath)
 		assert.IsType(t, &filer.FilesClient{}, client)
+	}
+}
+
+func TestExtractVolumeFromPath(t *testing.T) {
+	catalogName, schemaName, volumeName, err := extractVolumeFromPath("/Volumes/main/my_schema/my_volume")
+	require.NoError(t, err)
+	assert.Equal(t, "main", catalogName)
+	assert.Equal(t, "my_schema", schemaName)
+	assert.Equal(t, "my_volume", volumeName)
+
+	for _, p := range invalidVolumePaths() {
+		_, _, _, err := extractVolumeFromPath(p)
+		assert.EqualError(t, err, fmt.Sprintf("expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got %s", p))
 	}
 }
