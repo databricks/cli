@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/stretchr/testify/assert"
@@ -78,7 +79,7 @@ func TestTelemetryLoggerFlushExitsOnTimeout(t *testing.T) {
 	// Set the maximum additional wait time to 0 to ensure that the Flush method times out immediately.
 	MaxAdditionalWaitTime = 0
 	t.Cleanup(func() {
-		MaxAdditionalWaitTime = 2
+		MaxAdditionalWaitTime = 2 * time.Second
 	})
 
 	mockClient := &mockDatabricksClient{

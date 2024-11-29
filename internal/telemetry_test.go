@@ -36,7 +36,7 @@ func TestAccTelemetryLogger(t *testing.T) {
 	// Extend the maximum wait time for the telemetry flush just for this test.
 	telemetry.MaxAdditionalWaitTime = 1 * time.Hour
 	t.Cleanup(func() {
-		telemetry.MaxAdditionalWaitTime = 2
+		telemetry.MaxAdditionalWaitTime = 2 * time.Second
 	})
 
 	// Log some events.
