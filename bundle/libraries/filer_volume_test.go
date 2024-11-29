@@ -202,7 +202,7 @@ func TestFilerForVolumeWithInvalidPrefix(t *testing.T) {
 	require.EqualError(t, diags.Error(), "expected artifact_path to start with /Volumes/, got /Volume/main/my_schema/my_volume")
 }
 
-func TestFilerForVolumeWithValidlVolumePaths(t *testing.T) {
+func TestFilerForVolumeWithValidVolumePaths(t *testing.T) {
 	validPaths := []string{
 		"/Volumes/main/my_schema/my_volume",
 		"/Volumes/main/my_schema/my_volume/",
