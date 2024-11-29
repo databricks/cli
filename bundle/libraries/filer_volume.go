@@ -98,8 +98,9 @@ func filerForVolume(ctx context.Context, b *bundle.Bundle) (filer.Filer, string,
 			return nil, "", diag.Diagnostics{baseErr}
 		}
 		baseErr.Detail = `You are using a UC volume in your artifact_path that is managed by
-this bundle but which has not been deployed yet. Please deploy the UC volume in
-a separate bundle deploy before using it in the artifact_path.`
+this bundle but which has not been deployed yet. Please first deploy
+the UC volume using 'bundle deploy' and then switch over to using it in
+the artifact_path.`
 		baseErr.Paths = append(baseErr.Paths, path)
 		baseErr.Locations = append(baseErr.Locations, locations...)
 	}
