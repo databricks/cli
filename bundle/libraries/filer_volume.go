@@ -28,7 +28,7 @@ func filerForVolume(ctx context.Context, b *bundle.Bundle) (filer.Filer, string,
 	artifactPath := b.Config.Workspace.ArtifactPath
 	w := b.WorkspaceClient()
 
-	if !strings.HasPrefix(artifactPath, "/Volumes/") {
+	if !IsVolumesPath(artifactPath) {
 		return nil, "", diag.Errorf("expected artifact_path to start with /Volumes/, got %s", artifactPath)
 	}
 
