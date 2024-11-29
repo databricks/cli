@@ -69,7 +69,8 @@ func TestTelemetryLoggerFlushesEvents(t *testing.T) {
 	// Flush the events.
 	Flush(ctx, mockClient)
 
-	// Assert that the protoLogs are empty after flushing.
+	// Assert that the .Do method is called twice, because all logs were not
+	// successfully logged in the first call.
 	assert.Equal(t, 2, mockClient.numCalls)
 }
 
