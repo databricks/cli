@@ -396,7 +396,7 @@ func TestAllResourcesMocked(t *testing.T) {
 }
 
 // Make sure that we at rename all non UC resources
-func TestAllNonUCResourcesAreRenamed(t *testing.T) {
+func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 	b := mockBundle(config.Development)
 
 	// UC resources should not have a prefix added to their name. Right now
