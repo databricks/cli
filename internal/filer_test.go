@@ -723,6 +723,63 @@ func TestAccWorkspaceFilesExtensionsDirectoriesAreNotNotebooks(t *testing.T) {
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
+func TestAccWorkspaceFilesExtensionsNotebooksAreNotReadAsFiles(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	wf, _ := setupWsfsExtensionsFiler(t)
+
+	// Create a notebook
+	err := wf.Write(ctx, "foo.ipynb", strings.NewReader(readFile(t, "testdata/notebooks/py1.ipynb")))
+	require.NoError(t, err)
+
+	// Reading foo should fail. Even though the WSFS name for the notebook is foo
+	// reading the notebook should only work with the .ipynb extension.
+	_, err = wf.Read(ctx, "foo")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+
+	_, err = wf.Read(ctx, "foo.ipynb")
+	assert.NoError(t, err)
+}
+
+func TestAccWorkspaceFilesExtensionsNotebooksAreNotStatAsFiles(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	wf, _ := setupWsfsExtensionsFiler(t)
+
+	// Create a notebook
+	err := wf.Write(ctx, "foo.ipynb", strings.NewReader(readFile(t, "testdata/notebooks/py1.ipynb")))
+	require.NoError(t, err)
+
+	// Stating foo should fail. Even though the WSFS name for the notebook is foo
+	// stating the notebook should only work with the .ipynb extension.
+	_, err = wf.Stat(ctx, "foo")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+
+	_, err = wf.Stat(ctx, "foo.ipynb")
+	assert.NoError(t, err)
+}
+
+func TestAccWorkspaceFilesExtensionsNotebooksAreNotDeletedAsFiles(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	wf, _ := setupWsfsExtensionsFiler(t)
+
+	// Create a notebook
+	err := wf.Write(ctx, "foo.ipynb", strings.NewReader(readFile(t, "testdata/notebooks/py1.ipynb")))
+	require.NoError(t, err)
+
+	// Deleting foo should fail. Even though the WSFS name for the notebook is foo
+	// deleting the notebook should only work with the .ipynb extension.
+	err = wf.Delete(ctx, "foo")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+
+	err = wf.Delete(ctx, "foo.ipynb")
+	assert.NoError(t, err)
+}
+
 func TestAccWorkspaceFilesExtensions_ExportFormatIsPreserved(t *testing.T) {
 	t.Parallel()
 

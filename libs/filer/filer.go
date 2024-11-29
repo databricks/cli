@@ -7,13 +7,24 @@ import (
 	"io/fs"
 )
 
+// WriteMode captures intent when writing a file.
+//
+// The first 9 bits are reserved for the [fs.FileMode] permission bits.
+// These are used only by the local filer implementation and have
+// no effect for the other implementations.
 type WriteMode int
 
+// writeModePerm is a mask to extract permission bits from a WriteMode.
+const writeModePerm = WriteMode(fs.ModePerm)
+
 const (
-	OverwriteIfExists WriteMode = 1 << iota
+	// Note: these constants are defined as powers of 2 to support combining them using a bit-wise OR.
+	// They starts from the 10th bit (permission mask + 1) to avoid conflicts with the permission bits.
+	OverwriteIfExists WriteMode = (writeModePerm + 1) << iota
 	CreateParentDirectories
 )
 
+// DeleteMode captures intent when deleting a file.
 type DeleteMode int
 
 const (

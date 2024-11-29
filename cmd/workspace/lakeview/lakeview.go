@@ -503,7 +503,7 @@ func newGetPublished() *cobra.Command {
   Get the current published dashboard.
 
   Arguments:
-    DASHBOARD_ID: UUID identifying the dashboard to be published.`
+    DASHBOARD_ID: UUID identifying the published dashboard.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -737,7 +737,7 @@ func newListSchedules() *cobra.Command {
 	cmd.Long = `List dashboard schedules.
 
   Arguments:
-    DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.`
+    DASHBOARD_ID: UUID identifying the dashboard to which the schedules belongs.`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true
@@ -795,8 +795,8 @@ func newListSubscriptions() *cobra.Command {
 	cmd.Long = `List schedule subscriptions.
 
   Arguments:
-    DASHBOARD_ID: UUID identifying the dashboard to which the subscription belongs.
-    SCHEDULE_ID: UUID identifying the schedule to which the subscription belongs.`
+    DASHBOARD_ID: UUID identifying the dashboard which the subscriptions belongs.
+    SCHEDULE_ID: UUID identifying the schedule which the subscriptions belongs.`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true
@@ -1072,7 +1072,7 @@ func newUnpublish() *cobra.Command {
   Unpublish the dashboard.
 
   Arguments:
-    DASHBOARD_ID: UUID identifying the dashboard to be published.`
+    DASHBOARD_ID: UUID identifying the published dashboard.`
 
 	cmd.Annotations = make(map[string]string)
 

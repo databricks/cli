@@ -2,8 +2,10 @@ package mutator_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -507,6 +509,59 @@ func TestPipelineNotebookDoesNotExistError(t *testing.T) {
 	assert.EqualError(t, diags.Error(), "notebook ./doesnt_exist.py not found")
 }
 
+func TestPipelineNotebookDoesNotExistErrorWithoutExtension(t *testing.T) {
+	for _, ext := range []string{
+		".py",
+		".r",
+		".scala",
+		".sql",
+		".ipynb",
+		"",
+	} {
+		t.Run("case_"+ext, func(t *testing.T) {
+			dir := t.TempDir()
+
+			if ext != "" {
+				touchEmptyFile(t, filepath.Join(dir, "foo"+ext))
+			}
+
+			b := &bundle.Bundle{
+				SyncRootPath: dir,
+				SyncRoot:     vfs.MustNew(dir),
+				Config: config.Root{
+					Resources: config.Resources{
+						Pipelines: map[string]*resources.Pipeline{
+							"pipeline": {
+								PipelineSpec: &pipelines.PipelineSpec{
+									Libraries: []pipelines.PipelineLibrary{
+										{
+											Notebook: &pipelines.NotebookLibrary{
+												Path: "./foo",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "fake.yml")}})
+			diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
+
+			if ext == "" {
+				assert.EqualError(t, diags.Error(), `notebook ./foo not found. Local notebook references are expected
+to contain one of the following file extensions: [.py, .r, .scala, .sql, .ipynb]`)
+			} else {
+				assert.EqualError(t, diags.Error(), fmt.Sprintf(`notebook ./foo not found. Did you mean ./foo%s?
+Local notebook references are expected to contain one of the following
+file extensions: [.py, .r, .scala, .sql, .ipynb]`, ext))
+			}
+		})
+	}
+}
+
 func TestPipelineFileDoesNotExistError(t *testing.T) {
 	dir := t.TempDir()
 
@@ -785,5 +840,165 @@ func TestTranslatePathWithComplexVariables(t *testing.T) {
 		t,
 		filepath.Join("variables", "local", "whl.whl"),
 		b.Config.Resources.Jobs["job"].Tasks[0].Libraries[0].Whl,
+	)
+}
+
+func TestTranslatePathsWithSourceLinkedDeployment(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("this test is not applicable on Windows because source-linked mode works only in the Databricks Workspace")
+	}
+
+	dir := t.TempDir()
+	touchNotebookFile(t, filepath.Join(dir, "my_job_notebook.py"))
+	touchNotebookFile(t, filepath.Join(dir, "my_pipeline_notebook.py"))
+	touchEmptyFile(t, filepath.Join(dir, "my_python_file.py"))
+	touchEmptyFile(t, filepath.Join(dir, "dist", "task.jar"))
+	touchEmptyFile(t, filepath.Join(dir, "requirements.txt"))
+
+	enabled := true
+	b := &bundle.Bundle{
+		SyncRootPath: dir,
+		SyncRoot:     vfs.MustNew(dir),
+		Config: config.Root{
+			Workspace: config.Workspace{
+				FilePath: "/bundle",
+			},
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job": {
+						JobSettings: &jobs.JobSettings{
+							Tasks: []jobs.Task{
+								{
+									NotebookTask: &jobs.NotebookTask{
+										NotebookPath: "my_job_notebook.py",
+									},
+									Libraries: []compute.Library{
+										{Whl: "./dist/task.whl"},
+									},
+								},
+								{
+									NotebookTask: &jobs.NotebookTask{
+										NotebookPath: "/Users/jane.doe@databricks.com/absolute_remote.py",
+									},
+								},
+								{
+									NotebookTask: &jobs.NotebookTask{
+										NotebookPath: "my_job_notebook.py",
+									},
+									Libraries: []compute.Library{
+										{Requirements: "requirements.txt"},
+									},
+								},
+								{
+									SparkPythonTask: &jobs.SparkPythonTask{
+										PythonFile: "my_python_file.py",
+									},
+								},
+								{
+									SparkJarTask: &jobs.SparkJarTask{
+										MainClassName: "HelloWorld",
+									},
+									Libraries: []compute.Library{
+										{Jar: "./dist/task.jar"},
+									},
+								},
+								{
+									SparkJarTask: &jobs.SparkJarTask{
+										MainClassName: "HelloWorldRemote",
+									},
+									Libraries: []compute.Library{
+										{Jar: "dbfs:/bundle/dist/task_remote.jar"},
+									},
+								},
+							},
+						},
+					},
+				},
+				Pipelines: map[string]*resources.Pipeline{
+					"pipeline": {
+						PipelineSpec: &pipelines.PipelineSpec{
+							Libraries: []pipelines.PipelineLibrary{
+								{
+									Notebook: &pipelines.NotebookLibrary{
+										Path: "my_pipeline_notebook.py",
+									},
+								},
+								{
+									Notebook: &pipelines.NotebookLibrary{
+										Path: "/Users/jane.doe@databricks.com/absolute_remote.py",
+									},
+								},
+								{
+									File: &pipelines.FileLibrary{
+										Path: "my_python_file.py",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Presets: config.Presets{
+				SourceLinkedDeployment: &enabled,
+			},
+		},
+	}
+
+	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "resource.yml")}})
+	diags := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
+	require.NoError(t, diags.Error())
+
+	// updated to source path
+	assert.Equal(
+		t,
+		filepath.Join(dir, "my_job_notebook"),
+		b.Config.Resources.Jobs["job"].Tasks[0].NotebookTask.NotebookPath,
+	)
+	assert.Equal(
+		t,
+		filepath.Join(dir, "requirements.txt"),
+		b.Config.Resources.Jobs["job"].Tasks[2].Libraries[0].Requirements,
+	)
+	assert.Equal(
+		t,
+		filepath.Join(dir, "my_python_file.py"),
+		b.Config.Resources.Jobs["job"].Tasks[3].SparkPythonTask.PythonFile,
+	)
+	assert.Equal(
+		t,
+		filepath.Join(dir, "my_pipeline_notebook"),
+		b.Config.Resources.Pipelines["pipeline"].Libraries[0].Notebook.Path,
+	)
+	assert.Equal(
+		t,
+		filepath.Join(dir, "my_python_file.py"),
+		b.Config.Resources.Pipelines["pipeline"].Libraries[2].File.Path,
+	)
+
+	// left as is
+	assert.Equal(
+		t,
+		filepath.Join("dist", "task.whl"),
+		b.Config.Resources.Jobs["job"].Tasks[0].Libraries[0].Whl,
+	)
+	assert.Equal(
+		t,
+		"/Users/jane.doe@databricks.com/absolute_remote.py",
+		b.Config.Resources.Jobs["job"].Tasks[1].NotebookTask.NotebookPath,
+	)
+	assert.Equal(
+		t,
+		filepath.Join("dist", "task.jar"),
+		b.Config.Resources.Jobs["job"].Tasks[4].Libraries[0].Jar,
+	)
+	assert.Equal(
+		t,
+		"dbfs:/bundle/dist/task_remote.jar",
+		b.Config.Resources.Jobs["job"].Tasks[5].Libraries[0].Jar,
+	)
+	assert.Equal(
+		t,
+		"/Users/jane.doe@databricks.com/absolute_remote.py",
+		b.Config.Resources.Pipelines["pipeline"].Libraries[1].Notebook.Path,
 	)
 }

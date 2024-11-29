@@ -6,6 +6,8 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -14,11 +16,17 @@ func TestCompletions_SkipDuplicates(t *testing.T) {
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
-					"foo": {},
-					"bar": {},
+					"foo": {
+						JobSettings: &jobs.JobSettings{},
+					},
+					"bar": {
+						JobSettings: &jobs.JobSettings{},
+					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
-					"foo": {},
+					"foo": {
+						PipelineSpec: &pipelines.PipelineSpec{},
+					},
 				},
 			},
 		},
@@ -36,10 +44,14 @@ func TestCompletions_Filter(t *testing.T) {
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
-					"foo": {},
+					"foo": {
+						JobSettings: &jobs.JobSettings{},
+					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
-					"bar": {},
+					"bar": {
+						PipelineSpec: &pipelines.PipelineSpec{},
+					},
 				},
 			},
 		},

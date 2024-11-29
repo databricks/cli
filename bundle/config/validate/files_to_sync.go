@@ -21,6 +21,12 @@ func (v *filesToSync) Name() string {
 }
 
 func (v *filesToSync) Apply(ctx context.Context, rb bundle.ReadOnlyBundle) diag.Diagnostics {
+	// The user may be intentional about not synchronizing any files.
+	// In this case, we should not show any warnings.
+	if len(rb.Config().Sync.Paths) == 0 {
+		return nil
+	}
+
 	sync, err := files.GetSync(ctx, rb)
 	if err != nil {
 		return diag.FromErr(err)
@@ -31,6 +37,7 @@ func (v *filesToSync) Apply(ctx context.Context, rb bundle.ReadOnlyBundle) diag.
 		return diag.FromErr(err)
 	}
 
+	// If there are files to sync, we don't need to show any warnings.
 	if len(fl) != 0 {
 		return nil
 	}
