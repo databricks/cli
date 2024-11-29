@@ -51,7 +51,7 @@ var MaxAdditionalWaitTime = 2 * time.Second
 // We make the API call to the /telemetry-ext endpoint to log the CLI telemetry events
 // right about as the CLI command is about to exit. The API endpoint can handle
 // payloads with ~1000 events easily. Thus we log all the events at once instead of
-// batching the API calls.
+// batching the logs across multiple API calls.
 func Flush(ctx context.Context, apiClient DatabricksApiClient) {
 	// Set a maximum time to wait for the telemetry event to flush.
 	ctx, _ = context.WithTimeout(ctx, MaxAdditionalWaitTime)
