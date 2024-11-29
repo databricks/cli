@@ -79,7 +79,7 @@ func filerForVolume(ctx context.Context, b *bundle.Bundle) (filer.Filer, string,
 	// If the volume exists already, directly return the filer for the path to
 	// upload the artifacts to.
 	if err == nil {
-		uploadPath := path.Join(artifactPath, ".internal")
+		uploadPath := path.Join(artifactPath, InternalDirName)
 		f, err := filer.NewFilesClient(w, uploadPath)
 		return f, uploadPath, diag.FromErr(err)
 	}
