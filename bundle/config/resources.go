@@ -97,9 +97,16 @@ func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) 
 			found = append(found, r.Jobs[k])
 		}
 	}
+
 	for k := range r.Pipelines {
 		if k == key {
 			found = append(found, r.Pipelines[k])
+		}
+	}
+
+	for k := range r.Apps {
+		if k == key {
+			found = append(found, r.Apps[k])
 		}
 	}
 
