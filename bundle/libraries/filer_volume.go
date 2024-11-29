@@ -56,10 +56,6 @@ func filerForVolume(ctx context.Context, b *bundle.Bundle) (filer.Filer, string,
 	artifactPath := b.Config.Workspace.ArtifactPath
 	w := b.WorkspaceClient()
 
-	if !IsVolumesPath(artifactPath) {
-		return nil, "", diag.Errorf("expected artifact_path to start with /Volumes/, got %s", artifactPath)
-	}
-
 	catalogName, schemaName, volumeName, err := extractVolumeFromPath(artifactPath)
 	if err != nil {
 		return nil, "", diag.Diagnostics{
