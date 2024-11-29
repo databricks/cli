@@ -8,7 +8,7 @@ import (
 	"github.com/databricks/cli/libs/filer"
 )
 
-// This function returns the right filer to use, to upload artifacts to the configured location.
+// This function returns a filer for uploading artifacts to the configured location.
 // Supported locations:
 // 1. WSFS
 // 2. UC volumes
