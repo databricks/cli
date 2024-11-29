@@ -2,12 +2,12 @@ package telemetry
 
 import (
 	"context"
-	"fmt"
+	"math/rand"
 	"net/http"
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/cmd/root"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -23,10 +23,10 @@ func (m *mockDatabricksClient) Do(ctx context.Context, method, path string, head
 
 	assertRequestPayload := func(reqb RequestBody) {
 		expectedProtoLogs := []string{
-			fmt.Sprintf("{\"frontend_log_event_id\":\"%s\",\"entry\":{\"databricks_cli_log\":{\"cli_test_event\":{\"name\":\"VALUE1\"}}}}", root.CommandExecId()),
-			fmt.Sprintf("{\"frontend_log_event_id\":\"%s\",\"entry\":{\"databricks_cli_log\":{\"cli_test_event\":{\"name\":\"VALUE2\"}}}}", root.CommandExecId()),
-			fmt.Sprintf("{\"frontend_log_event_id\":\"%s\",\"entry\":{\"databricks_cli_log\":{\"cli_test_event\":{\"name\":\"VALUE2\"}}}}", root.CommandExecId()),
-			fmt.Sprintf("{\"frontend_log_event_id\":\"%s\",\"entry\":{\"databricks_cli_log\":{\"cli_test_event\":{\"name\":\"VALUE3\"}}}}", root.CommandExecId()),
+			"{\"frontend_log_event_id\":\"0194fdc2-fa2f-4cc0-81d3-ff12045b73c8\",\"entry\":{\"databricks_cli_log\":{\"cli_test_event\":{\"name\":\"VALUE1\"}}}}",
+			"{\"frontend_log_event_id\":\"6e4ff95f-f662-45ee-a82a-bdf44a2d0b75\",\"entry\":{\"databricks_cli_log\":{\"cli_test_event\":{\"name\":\"VALUE2\"}}}}",
+			"{\"frontend_log_event_id\":\"fb180daf-48a7-4ee0-b10d-394651850fd4\",\"entry\":{\"databricks_cli_log\":{\"cli_test_event\":{\"name\":\"VALUE2\"}}}}",
+			"{\"frontend_log_event_id\":\"a178892e-e285-4ce1-9114-55780875d64e\",\"entry\":{\"databricks_cli_log\":{\"cli_test_event\":{\"name\":\"VALUE3\"}}}}",
 		}
 
 		// Assert payload matches the expected payload.
@@ -58,6 +58,12 @@ func TestTelemetryLoggerFlushesEvents(t *testing.T) {
 		t: t,
 	}
 
+	// Set the random number generator to a fixed seed to ensure that the UUIDs are deterministic.
+	uuid.SetRand(rand.New(rand.NewSource(0)))
+	t.Cleanup(func() {
+		uuid.SetRand(nil)
+	})
+
 	ctx := NewContext(context.Background())
 
 	for _, v := range []DummyCliEnum{DummyCliEnumValue1, DummyCliEnumValue2, DummyCliEnumValue2, DummyCliEnumValue3} {
@@ -85,6 +91,12 @@ func TestTelemetryLoggerFlushExitsOnTimeout(t *testing.T) {
 	mockClient := &mockDatabricksClient{
 		t: t,
 	}
+
+	// Set the random number generator to a fixed seed to ensure that the UUIDs are deterministic.
+	uuid.SetRand(rand.New(rand.NewSource(0)))
+	t.Cleanup(func() {
+		uuid.SetRand(nil)
+	})
 
 	ctx := NewContext(context.Background())
 
