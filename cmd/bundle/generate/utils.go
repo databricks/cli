@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -60,6 +61,37 @@ func (n *downloader) markFileForDownload(ctx context.Context, filePath *string) 
 	}
 
 	*filePath = rel
+	return nil
+}
+
+func (n *downloader) markDirectoryForDownload(ctx context.Context, dirPath *string) error {
+	_, err := n.w.Workspace.GetStatusByPath(ctx, *dirPath)
+	if err != nil {
+		return err
+	}
+
+	objects, err := n.w.Workspace.RecursiveList(ctx, *dirPath)
+	if err != nil {
+		return err
+	}
+
+	for _, obj := range objects {
+		if obj.ObjectType == workspace.ObjectTypeDirectory {
+			continue
+		}
+
+		err := n.markFileForDownload(ctx, &obj.Path)
+		if err != nil {
+			return err
+		}
+	}
+
+	rel, err := filepath.Rel(n.configDir, n.sourceDir)
+	if err != nil {
+		return err
+	}
+
+	*dirPath = rel
 	return nil
 }
 
