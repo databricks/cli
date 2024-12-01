@@ -313,7 +313,7 @@ func TestProcessTargetModeDefault(t *testing.T) {
 func TestProcessTargetModeProduction(t *testing.T) {
 	b := mockBundle(config.Production)
 
-	diags := validateProductionMode(context.Background(), b, false)
+	diags := validateProductionMode(b, false)
 	require.ErrorContains(t, diags.Error(), "run_as")
 
 	b.Config.Workspace.StatePath = "/Shared/.bundle/x/y/state"
@@ -321,7 +321,7 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	b.Config.Workspace.FilePath = "/Shared/.bundle/x/y/files"
 	b.Config.Workspace.ResourcePath = "/Shared/.bundle/x/y/resources"
 
-	diags = validateProductionMode(context.Background(), b, false)
+	diags = validateProductionMode(b, false)
 	require.ErrorContains(t, diags.Error(), "production")
 
 	permissions := []resources.Permission{
@@ -342,7 +342,7 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Permissions = permissions
 	b.Config.Resources.Clusters["cluster1"].Permissions = permissions
 
-	diags = validateProductionMode(context.Background(), b, false)
+	diags = validateProductionMode(b, false)
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
@@ -358,11 +358,11 @@ func TestProcessTargetModeProductionOkForPrincipal(t *testing.T) {
 	b := mockBundle(config.Production)
 
 	// Our target has all kinds of problems when not using service principals ...
-	diags := validateProductionMode(context.Background(), b, false)
+	diags := validateProductionMode(b, false)
 	require.Error(t, diags.Error())
 
 	// ... but we're much less strict when a principal is used
-	diags = validateProductionMode(context.Background(), b, true)
+	diags = validateProductionMode(b, true)
 	require.NoError(t, diags.Error())
 }
 

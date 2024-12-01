@@ -72,7 +72,7 @@ func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
 	// this could be surprising since most users (and tools) expect triggers
 	// to be paused in development.
 	// (Note that there still is an exceptional case where users set the trigger
-	// status to UNPAUSED at the level of an individual object, whic hwas
+	// status to UNPAUSED at the level of an individual object, which was
 	// historically allowed.)
 	if p.TriggerPauseStatus == config.Unpaused {
 		diags = diags.Append(diag.Diagnostic{
@@ -133,12 +133,7 @@ func findNonUserPath(b *bundle.Bundle) string {
 	return ""
 }
 
-func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUsed bool) diag.Diagnostics {
-	if b.Config.Bundle.Git.Inferred {
-		env := b.Config.Bundle.Target
-		log.Warnf(ctx, "target with 'mode: production' should specify an explicit 'targets.%s.git' configuration", env)
-	}
-
+func validateProductionMode(b *bundle.Bundle, isPrincipalUsed bool) diag.Diagnostics {
 	r := b.Config.Resources
 	for i := range r.Pipelines {
 		if r.Pipelines[i].Development {
@@ -175,7 +170,7 @@ func (m *processTargetMode) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 		return diags
 	case config.Production:
 		isPrincipal := iamutil.IsServicePrincipal(b.Config.Workspace.CurrentUser.User)
-		return validateProductionMode(ctx, b, isPrincipal)
+		return validateProductionMode(b, isPrincipal)
 	case "":
 		// No action
 	default:
