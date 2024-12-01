@@ -3,7 +3,9 @@ package jsonschema
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
 
@@ -255,7 +257,12 @@ func (schema *Schema) validate() error {
 }
 
 func Load(path string) (*Schema, error) {
-	b, err := os.ReadFile(path)
+	dir, file := filepath.Split(path)
+	return LoadFS(os.DirFS(dir), file)
+}
+
+func LoadFS(fsys fs.FS, path string) (*Schema, error) {
+	b, err := fs.ReadFile(fsys, path)
 	if err != nil {
 		return nil, err
 	}

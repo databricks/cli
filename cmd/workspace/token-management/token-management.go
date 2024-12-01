@@ -169,7 +169,7 @@ func newDelete() *cobra.Command {
   Deletes a token, specified by its ID.
 
   Arguments:
-    TOKEN_ID: The ID of the token to get.`
+    TOKEN_ID: The ID of the token to revoke.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -186,14 +186,14 @@ func newDelete() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Token Management drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "The ID of the token to get")
+			id, err := cmdio.Select(ctx, names, "The ID of the token to revoke")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id of the token to get")
+			return fmt.Errorf("expected to have the id of the token to revoke")
 		}
 		deleteReq.TokenId = args[0]
 
@@ -448,8 +448,9 @@ func newSetPermissions() *cobra.Command {
 	cmd.Short = `Set token permissions.`
 	cmd.Long = `Set token permissions.
   
-  Sets permissions on all tokens. Tokens can inherit permissions from their root
-  object.`
+  Sets permissions on an object, replacing existing permissions if they exist.
+  Deletes all direct permissions if none are specified. Objects can inherit
+  permissions from their root object.`
 
 	cmd.Annotations = make(map[string]string)
 

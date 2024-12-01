@@ -1,6 +1,7 @@
 package jsonschema
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -303,5 +304,11 @@ func TestValidateSchemaSkippedPropertiesHaveDefaults(t *testing.T) {
 		},
 	}
 	err = s.validate()
+	assert.NoError(t, err)
+}
+
+func TestSchema_LoadFS(t *testing.T) {
+	fsys := os.DirFS("./testdata/schema-load-int")
+	_, err := LoadFS(fsys, "schema-valid.json")
 	assert.NoError(t, err)
 }

@@ -63,3 +63,7 @@ func (j *Job) GetName() string {
 func (j *Job) GetURL() string {
 	return j.URL
 }
+
+func (j *Job) IsNil() bool {
+	return j.JobSettings == nil
+}

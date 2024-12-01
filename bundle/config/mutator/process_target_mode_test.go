@@ -3,14 +3,17 @@ package mutator
 import (
 	"context"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/tags"
+	"github.com/databricks/cli/libs/vfs"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -102,16 +105,23 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					"registeredmodel1": {CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{Name: "registeredmodel1"}},
 				},
 				QualityMonitors: map[string]*resources.QualityMonitor{
-					"qualityMonitor1": {CreateMonitor: &catalog.CreateMonitor{TableName: "qualityMonitor1"}},
-					"qualityMonitor2": {
+					"qualityMonitor1": {
+						TableName: "qualityMonitor1",
 						CreateMonitor: &catalog.CreateMonitor{
-							TableName: "qualityMonitor2",
-							Schedule:  &catalog.MonitorCronSchedule{},
+							OutputSchemaName: "catalog.schema",
+						},
+					},
+					"qualityMonitor2": {
+						TableName: "qualityMonitor2",
+						CreateMonitor: &catalog.CreateMonitor{
+							OutputSchemaName: "catalog.schema",
+							Schedule:         &catalog.MonitorCronSchedule{},
 						},
 					},
 					"qualityMonitor3": {
+						TableName: "qualityMonitor3",
 						CreateMonitor: &catalog.CreateMonitor{
-							TableName: "qualityMonitor3",
+							OutputSchemaName: "catalog.schema",
 							Schedule: &catalog.MonitorCronSchedule{
 								PauseStatus: catalog.MonitorCronSchedulePauseStatusUnpaused,
 							},
@@ -126,13 +136,14 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				},
 				Dashboards: map[string]*resources.Dashboard{
 					"dashboard1": {
-						CreateDashboardRequest: &dashboards.CreateDashboardRequest{
+						Dashboard: &dashboards.Dashboard{
 							DisplayName: "dashboard1",
 						},
 					},
 				},
 			},
 		},
+		SyncRoot: vfs.MustNew("/Users/lennart.kats@databricks.com"),
 		// Use AWS implementation for testing.
 		Tagging: tags.ForCloud(&sdkconfig.Config{
 			Host: "https://company.cloud.databricks.com",
@@ -514,4 +525,33 @@ func TestPipelinesDevelopmentDisabled(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
+}
+
+func TestSourceLinkedDeploymentEnabled(t *testing.T) {
+	b, diags := processSourceLinkedBundle(t, true)
+	require.NoError(t, diags.Error())
+	assert.True(t, *b.Config.Presets.SourceLinkedDeployment)
+}
+
+func TestSourceLinkedDeploymentDisabled(t *testing.T) {
+	b, diags := processSourceLinkedBundle(t, false)
+	require.NoError(t, diags.Error())
+	assert.False(t, *b.Config.Presets.SourceLinkedDeployment)
+}
+
+func processSourceLinkedBundle(t *testing.T, presetEnabled bool) (*bundle.Bundle, diag.Diagnostics) {
+	if runtime.GOOS == "windows" {
+		t.Skip("this test is not applicable on Windows because source-linked mode works only in the Databricks Workspace")
+	}
+
+	b := mockBundle(config.Development)
+
+	workspacePath := "/Workspace/lennart@company.com/"
+	b.SyncRootPath = workspacePath
+	b.Config.Presets.SourceLinkedDeployment = &presetEnabled
+
+	ctx := dbr.MockRuntime(context.Background(), true)
+	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
+	diags := bundle.Apply(ctx, b, m)
+	return b, diags
 }

@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/fs"
 	"path"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/log"
@@ -21,14 +22,6 @@ type workspaceFilesExtensionsClient struct {
 	wsfs     Filer
 	root     string
 	readonly bool
-}
-
-var extensionsToLanguages = map[string]workspace.Language{
-	".py":    workspace.LanguagePython,
-	".r":     workspace.LanguageR,
-	".scala": workspace.LanguageScala,
-	".sql":   workspace.LanguageSql,
-	".ipynb": workspace.LanguagePython,
 }
 
 type workspaceFileStatus struct {
@@ -54,7 +47,12 @@ func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithExt(ctx contex
 	nameWithoutExt := strings.TrimSuffix(name, ext)
 
 	// File name does not have an extension associated with Databricks notebooks, return early.
-	if _, ok := extensionsToLanguages[ext]; !ok {
+	if !slices.Contains([]string{
+		notebook.ExtensionPython,
+		notebook.ExtensionR,
+		notebook.ExtensionScala,
+		notebook.ExtensionSql,
+		notebook.ExtensionJupyter}, ext) {
 		return nil, nil
 	}
 
@@ -75,22 +73,23 @@ func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithExt(ctx contex
 		return nil, nil
 	}
 
-	// Not the correct language. Return early.
-	if stat.Language != extensionsToLanguages[ext] {
-		log.Debugf(ctx, "attempting to determine if %s could be a notebook. Found a notebook at %s but it is not of the correct language. Expected %s but found %s.", name, path.Join(w.root, nameWithoutExt), extensionsToLanguages[ext], stat.Language)
+	// Not the correct language. Return early. Note: All languages are supported
+	// for Jupyter notebooks.
+	if ext != notebook.ExtensionJupyter && stat.Language != notebook.ExtensionToLanguage[ext] {
+		log.Debugf(ctx, "attempting to determine if %s could be a notebook. Found a notebook at %s but it is not of the correct language. Expected %s but found %s.", name, path.Join(w.root, nameWithoutExt), notebook.ExtensionToLanguage[ext], stat.Language)
 		return nil, nil
 	}
 
-	// When the extension is .py we expect the export format to be source.
+	// For non-jupyter notebooks the export format should be source.
 	// If it's not, return early.
-	if ext == ".py" && stat.ReposExportFormat != workspace.ExportFormatSource {
+	if ext != notebook.ExtensionJupyter && stat.ReposExportFormat != workspace.ExportFormatSource {
 		log.Debugf(ctx, "attempting to determine if %s could be a notebook. Found a notebook at %s but it is not exported as a source notebook. Its export format is %s.", name, path.Join(w.root, nameWithoutExt), stat.ReposExportFormat)
 		return nil, nil
 	}
 
 	// When the extension is .ipynb we expect the export format to be Jupyter.
 	// If it's not, return early.
-	if ext == ".ipynb" && stat.ReposExportFormat != workspace.ExportFormatJupyter {
+	if ext == notebook.ExtensionJupyter && stat.ReposExportFormat != workspace.ExportFormatJupyter {
 		log.Debugf(ctx, "attempting to determine if %s could be a notebook. Found a notebook at %s but it is not exported as a Jupyter notebook. Its export format is %s.", name, path.Join(w.root, nameWithoutExt), stat.ReposExportFormat)
 		return nil, nil
 	}
@@ -120,8 +119,8 @@ func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithoutExt(ctx con
 	ext := notebook.GetExtensionByLanguage(&stat.ObjectInfo)
 
 	// If the notebook was exported as a Jupyter notebook, the extension should be .ipynb.
-	if stat.Language == workspace.LanguagePython && stat.ReposExportFormat == workspace.ExportFormatJupyter {
-		ext = ".ipynb"
+	if stat.ReposExportFormat == workspace.ExportFormatJupyter {
+		ext = notebook.ExtensionJupyter
 	}
 
 	// Modify the stat object path to include the extension. This stat object will be used
@@ -245,6 +244,17 @@ func (w *workspaceFilesExtensionsClient) Write(ctx context.Context, name string,
 
 // Try to read the file as a regular file. If the file is not found, try to read it as a notebook.
 func (w *workspaceFilesExtensionsClient) Read(ctx context.Context, name string) (io.ReadCloser, error) {
+	// Ensure that the file / notebook exists. We do this check here to avoid reading
+	// the content of a notebook called `foo` when the user actually wanted
+	// to read the content of a file called `foo`.
+	//
+	// To read the content of a notebook called `foo` in the workspace the user
+	// should use the name with the extension included like `foo.ipynb` or `foo.sql`.
+	_, err := w.Stat(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+
 	r, err := w.wsfs.Read(ctx, name)
 
 	// If the file is not found, it might be a notebook.
@@ -277,7 +287,18 @@ func (w *workspaceFilesExtensionsClient) Delete(ctx context.Context, name string
 		return ReadOnlyError{"delete"}
 	}
 
-	err := w.wsfs.Delete(ctx, name, mode...)
+	// Ensure that the file / notebook exists. We do this check here to avoid
+	// deleting the a notebook called `foo` when the user actually wanted to
+	// delete a file called `foo`.
+	//
+	// To delete a notebook called `foo` in the workspace the user should use the
+	// name with the extension included like `foo.ipynb` or `foo.sql`.
+	_, err := w.Stat(ctx, name)
+	if err != nil {
+		return err
+	}
+
+	err = w.wsfs.Delete(ctx, name, mode...)
 
 	// If the file is not found, it might be a notebook.
 	if errors.As(err, &FileDoesNotExistError{}) {
@@ -316,7 +337,24 @@ func (w *workspaceFilesExtensionsClient) Stat(ctx context.Context, name string) 
 		return wsfsFileInfo{ObjectInfo: stat.ObjectInfo}, nil
 	}
 
-	return info, err
+	if err != nil {
+		return nil, err
+	}
+
+	// If an object is found and it is a notebook, return a FileDoesNotExistError.
+	// If a notebook is found by the workspace files client, without having stripped
+	// the extension, this implies that no file with the same name exists.
+	//
+	// This check is done to avoid returning the stat for a notebook called `foo`
+	// when the user actually wanted to stat a file called `foo`.
+	//
+	// To stat the metadata of a notebook called `foo` in the workspace the user
+	// should use the name with the extension included like `foo.ipynb` or `foo.sql`.
+	if info.Sys().(workspace.ObjectInfo).ObjectType == workspace.ObjectTypeNotebook {
+		return nil, FileDoesNotExistError{name}
+	}
+
+	return info, nil
 }
 
 // Note: The import API returns opaque internal errors for namespace clashes

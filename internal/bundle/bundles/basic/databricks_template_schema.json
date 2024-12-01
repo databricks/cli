@@ -11,6 +11,11 @@
         "node_type_id": {
             "type": "string",
             "description": "Node type id for job cluster"
+        },
+        "root_path": {
+            "type": "string",
+            "description": "Root path to deploy bundle to",
+            "default": ""
         }
     }
 }

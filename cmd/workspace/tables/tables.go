@@ -304,6 +304,7 @@ func newList() *cobra.Command {
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of tables to return.`)
 	cmd.Flags().BoolVar(&listReq.OmitColumns, "omit-columns", listReq.OmitColumns, `Whether to omit the columns of the table from the response or not.`)
 	cmd.Flags().BoolVar(&listReq.OmitProperties, "omit-properties", listReq.OmitProperties, `Whether to omit the properties of the table from the response or not.`)
+	cmd.Flags().BoolVar(&listReq.OmitUsername, "omit-username", listReq.OmitUsername, `Whether to omit the username of the table (e.g.`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque token to send for the next page of results (pagination).`)
 
 	cmd.Use = "list CATALOG_NAME SCHEMA_NAME"

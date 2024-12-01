@@ -171,7 +171,7 @@ func newDelete() *cobra.Command {
   Deletes the specified repo.
 
   Arguments:
-    REPO_ID: ID of the Git folder (repo) object in the workspace.`
+    REPO_ID: The ID for the corresponding repo to delete.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -188,14 +188,14 @@ func newDelete() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "ID of the Git folder (repo) object in the workspace")
+			id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to delete")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have id of the git folder (repo) object in the workspace")
+			return fmt.Errorf("expected to have the id for the corresponding repo to delete")
 		}
 		_, err = fmt.Sscan(args[0], &deleteReq.RepoId)
 		if err != nil {
@@ -513,8 +513,9 @@ func newSetPermissions() *cobra.Command {
 	cmd.Short = `Set repo permissions.`
 	cmd.Long = `Set repo permissions.
   
-  Sets permissions on a repo. Repos can inherit permissions from their root
-  object.
+  Sets permissions on an object, replacing existing permissions if they exist.
+  Deletes all direct permissions if none are specified. Objects can inherit
+  permissions from their root object.
 
   Arguments:
     REPO_ID: The repo for which to get or manage permissions.`

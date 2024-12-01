@@ -56,3 +56,7 @@ func (s *Schema) UnmarshalJSON(b []byte) error {
 func (s Schema) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
+
+func (s *Schema) IsNil() bool {
+	return s.CreateSchema == nil
+}

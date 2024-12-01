@@ -1008,7 +1008,8 @@ func newSetPermissions() *cobra.Command {
 	cmd.Short = `Set serving endpoint permissions.`
 	cmd.Long = `Set serving endpoint permissions.
   
-  Sets permissions on a serving endpoint. Serving endpoints can inherit
+  Sets permissions on an object, replacing existing permissions if they exist.
+  Deletes all direct permissions if none are specified. Objects can inherit
   permissions from their root object.
 
   Arguments:
