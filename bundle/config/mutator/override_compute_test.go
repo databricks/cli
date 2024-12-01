@@ -62,7 +62,7 @@ func TestOverrideComputeModeDevelopment(t *testing.T) {
 	assert.Empty(t, b.Config.Resources.Jobs["job1"].Tasks[3].JobClusterKey)
 }
 
-func TestOverrideComputeModeDefault(t *testing.T) {
+func TestOverrideComputeModeDefaultIgnoresVariable(t *testing.T) {
 	t.Setenv("DATABRICKS_CLUSTER_ID", "newClusterId")
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -89,9 +89,9 @@ func TestOverrideComputeModeDefault(t *testing.T) {
 
 	m := mutator.OverrideCompute()
 	diags := bundle.Apply(context.Background(), b, m)
-	require.Empty(t, diags)
-	assert.Equal(t, "newClusterId", b.Config.Resources.Jobs["job1"].Tasks[0].ExistingClusterId)
-	assert.Equal(t, "newClusterId", b.Config.Resources.Jobs["job1"].Tasks[1].ExistingClusterId)
+	require.Len(t, diags, 1)
+	assert.Equal(t, "The DATABRICKS_CLUSTER_ID variable is set but is ignored since the current target does not use 'mode: development'", diags[0].Summary)
+	assert.Equal(t, "cluster2", b.Config.Resources.Jobs["job1"].Tasks[1].ExistingClusterId)
 }
 
 func TestOverrideComputePipelineTask(t *testing.T) {
@@ -172,7 +172,7 @@ func TestOverrideComputeModeProduction(t *testing.T) {
 	m := mutator.OverrideCompute()
 	diags := bundle.Apply(context.Background(), b, m)
 	require.Len(t, diags, 1)
-	assert.Equal(t, "overriding compute for a target that uses 'mode: production' is not recommended", diags[0].Summary)
+	assert.Equal(t, "Overriding compute for a target that uses 'mode: production' is not recommended", diags[0].Summary)
 	assert.Equal(t, "newClusterID", b.Config.Resources.Jobs["job1"].Tasks[0].ExistingClusterId)
 }
 
@@ -204,6 +204,6 @@ func TestOverrideComputeModeProductionIgnoresVariable(t *testing.T) {
 	m := mutator.OverrideCompute()
 	diags := bundle.Apply(context.Background(), b, m)
 	require.Len(t, diags, 1)
-	assert.Equal(t, "the DATABRICKS_CLUSTER_ID variable is set but is ignored since the current target uses 'mode: production'", diags[0].Summary)
+	assert.Equal(t, "The DATABRICKS_CLUSTER_ID variable is set but is ignored since the current target does not use 'mode: development'", diags[0].Summary)
 	assert.Equal(t, "cluster2", b.Config.Resources.Jobs["job1"].Tasks[1].ExistingClusterId)
 }

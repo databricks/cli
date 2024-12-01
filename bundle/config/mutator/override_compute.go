@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/env"
 )
@@ -43,17 +44,18 @@ func (m *overrideCompute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 	if b.Config.Bundle.Mode == config.Production {
 		if b.Config.Bundle.ClusterId != "" {
 			// Overriding compute via a command-line flag for production works, but is not recommended.
-			diags = diags.Extend(diag.Warningf("overriding compute for a target that uses 'mode: production' is not recommended"))
-		}
-		if env.Get(ctx, "DATABRICKS_CLUSTER_ID") != "" {
-			// The DATABRICKS_CLUSTER_ID may be set by accident when doing a production deploy.
-			// Overriding the cluster in production is almost always a mistake since customers
-			// want consistency in production and not compute that is different each deploy.
-			// For this reason we log a warning and ignore the environment variable.
-			return diag.Warningf("the DATABRICKS_CLUSTER_ID variable is set but is ignored since the current target uses 'mode: production'")
+			diags = diags.Extend(diag.Warningf("Overriding compute for a target that uses 'mode: production' is not recommended"))
 		}
 	}
 	if v := env.Get(ctx, "DATABRICKS_CLUSTER_ID"); v != "" {
+		// For historical reasons, we allow setting the cluster ID via the DATABRICKS_CLUSTER_ID
+		// when development mode is used. Sometimes, this is done by accident, so we log an info message.
+		if b.Config.Bundle.Mode == config.Development {
+			cmdio.LogString(ctx, "Overriding compute because DATABRICKS_CLUSTER_ID is set. It is recommended to use --cluster-id instead, which works in any target mode.")
+		} else {
+			// We don't allow using DATABRICKS_CLUSTER_ID in any other mode, it's too error-prone.
+			return diag.Warningf("The DATABRICKS_CLUSTER_ID variable is set but is ignored since the current target does not use 'mode: development'")
+		}
 		b.Config.Bundle.ClusterId = v
 	}
 
