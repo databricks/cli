@@ -43,9 +43,11 @@ func TestTemplateBundleUuidFunction(t *testing.T) {
 	err = r.walk()
 	assert.NoError(t, err)
 
-	assert.Len(t, r.files, 1)
-	cleanContent := strings.Trim(string(r.files[0].(*inMemoryFile).content), "\n\r")
-	assert.Equal(t, strings.Repeat(bundleUuid, 5), cleanContent)
+	assert.Len(t, r.files, 2)
+	c1 := strings.Trim(string(r.files[0].(*inMemoryFile).content), "\n\r")
+	assert.Equal(t, strings.Repeat(bundleUuid, 3), c1)
+	c2 := strings.Trim(string(r.files[1].(*inMemoryFile).content), "\n\r")
+	assert.Equal(t, strings.Repeat(bundleUuid, 5), c2)
 }
 
 func TestTemplateRegexpCompileFunction(t *testing.T) {
