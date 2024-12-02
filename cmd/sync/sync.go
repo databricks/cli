@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/git"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/spf13/cobra"
@@ -67,12 +68,17 @@ func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*syn
 
 	localRoot := vfs.MustNew(args[0])
 	info, err := git.FetchRepositoryInfo(ctx, localRoot, client)
+
 	if err != nil {
-		return nil, err
+		log.Warnf(ctx, "Failed to read git info: %s", err)
+	}
+
+	if info.WorktreeRoot == "" {
+		info.WorktreeRoot = localRoot.Native()
 	}
 
 	opts := sync.SyncOptions{
-		WorktreeRoot: info.WorktreeRoot,
+		WorktreeRoot: vfs.MustNew(info.WorktreeRoot),
 		LocalRoot:    localRoot,
 		Paths:        []string{"."},
 		Include:      nil,

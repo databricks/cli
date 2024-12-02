@@ -19,7 +19,7 @@ type GitRepositoryInfo struct {
 	OriginURL     string
 	LatestCommit  string
 	CurrentBranch string
-	WorktreeRoot  vfs.Path
+	WorktreeRoot  string
 }
 
 type gitInfo struct {
@@ -74,14 +74,12 @@ func fetchRepositoryInfoAPI(ctx context.Context, path vfs.Path, w *databricks.Wo
 			OriginURL:     gi.URL,
 			LatestCommit:  gi.HeadCommitID,
 			CurrentBranch: gi.Branch,
-			WorktreeRoot:  vfs.MustNew(fixedPath),
+			WorktreeRoot:  fixedPath,
 		}, nil
 	}
 
 	log.Warnf(ctx, "Failed to load git info from %s", apiEndpoint)
-	return GitRepositoryInfo{
-		WorktreeRoot: path,
-	}, nil
+	return GitRepositoryInfo{}, nil
 }
 
 func ensureWorkspacePrefix(p string) string {
@@ -93,32 +91,36 @@ func ensureWorkspacePrefix(p string) string {
 
 func fetchRepositoryInfoDotGit(ctx context.Context, path vfs.Path) (GitRepositoryInfo, error) {
 	rootDir, err := vfs.FindLeafInTree(path, GitDirectoryName)
-	if err != nil {
-		if !errors.Is(err, fs.ErrNotExist) {
-			return GitRepositoryInfo{}, err
+	if err != nil || rootDir == nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return GitRepositoryInfo{}, nil
 		}
-		rootDir = path
+		return GitRepositoryInfo{}, err
+	}
+
+	result := GitRepositoryInfo{
+		WorktreeRoot: rootDir.Native(),
 	}
 
 	repo, err := NewRepository(rootDir)
 	if err != nil {
-		return GitRepositoryInfo{}, err
+		log.Warnf(ctx, "failed to read .git: %s", err)
+
+		// return early since operations below won't work
+		return result, nil
 	}
 
-	branch, err := repo.CurrentBranch()
+	result.OriginURL = repo.OriginUrl()
+
+	result.CurrentBranch, err = repo.CurrentBranch()
 	if err != nil {
-		return GitRepositoryInfo{}, nil
+		log.Warnf(ctx, "failed to load current branch: %s", err)
 	}
 
-	commit, err := repo.LatestCommit()
+	result.LatestCommit, err = repo.LatestCommit()
 	if err != nil {
-		return GitRepositoryInfo{}, nil
+		log.Warnf(ctx, "failed to load latest commit: %s", err)
 	}
 
-	return GitRepositoryInfo{
-		OriginURL:     repo.OriginUrl(),
-		LatestCommit:  commit,
-		CurrentBranch: branch,
-		WorktreeRoot:  rootDir,
-	}, nil
+	return result, nil
 }
