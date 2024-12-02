@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 
 	"gopkg.in/yaml.v3"
 )
@@ -90,8 +91,7 @@ func (a *appRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 		return nil, err
 	}
 
-	// TODO: We should return the app URL here.
-	cmdio.LogString(ctx, "You can access the app at <app-url>")
+	cmdio.LogString(ctx, fmt.Sprintf("You can access the app at %s", createdApp.Url))
 	return nil, nil
 }
 
@@ -106,7 +106,7 @@ func (a *appRunner) start(ctx context.Context) error {
 		return err
 	}
 
-	startedApp, err := wait.OnProgress(func(p *apps.App) {
+	_, err = wait.OnProgress(func(p *apps.App) {
 		if p.AppStatus == nil {
 			return
 		}
@@ -115,28 +115,6 @@ func (a *appRunner) start(ctx context.Context) error {
 
 	if err != nil {
 		return err
-	}
-
-	// If the app has a pending deployment, wait for it to complete.
-	if startedApp.PendingDeployment != nil {
-		_, err := w.Apps.WaitGetDeploymentAppSucceeded(ctx,
-			startedApp.Name, startedApp.PendingDeployment.DeploymentId,
-			20*time.Minute, nil)
-
-		if err != nil {
-			return err
-		}
-	}
-
-	// If the app has an active deployment, wait for it to complete as well
-	if startedApp.ActiveDeployment != nil {
-		_, err := w.Apps.WaitGetDeploymentAppSucceeded(ctx,
-			startedApp.Name, startedApp.ActiveDeployment.DeploymentId,
-			20*time.Minute, nil)
-
-		if err != nil {
-			return err
-		}
 	}
 
 	logProgress(ctx, "App is started!")
@@ -182,8 +160,27 @@ func (a *appRunner) deploy(ctx context.Context) error {
 		},
 	})
 
+	// If deploy returns an error, then there's an active deployment in progress, wait for it to complete.
 	if err != nil {
-		return err
+		logProgress(ctx, err.Error())
+		err := a.waitForInProgressDeployments(ctx)
+		if err != nil {
+			return err
+		}
+
+		// Retry the deployment.
+		wait, err = w.Apps.Deploy(ctx, apps.CreateAppDeploymentRequest{
+			AppName: app.Name,
+			AppDeployment: &apps.AppDeployment{
+				Mode:           apps.AppDeploymentModeSnapshot,
+				SourceCodePath: app.SourceCodePath,
+			},
+		})
+
+		// If it still fails, return the error.
+		if err != nil {
+			return err
+		}
 	}
 
 	_, err = wait.OnProgress(func(ad *apps.AppDeployment) {
@@ -198,6 +195,37 @@ func (a *appRunner) deploy(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (a *appRunner) waitForInProgressDeployments(ctx context.Context) error {
+	app := a.app
+	b := a.bundle
+	w := b.WorkspaceClient()
+
+	allDeployments, err := w.Apps.ListDeploymentsAll(ctx, apps.ListAppDeploymentsRequest{AppName: app.Name})
+	if err != nil {
+		return err
+	}
+
+	errGrp, ctx := errgroup.WithContext(ctx)
+	for _, deployment := range allDeployments {
+		if deployment.Status.State == apps.AppDeploymentStateInProgress {
+			id := deployment.DeploymentId
+
+			errGrp.Go(func() error {
+				logProgress(ctx, fmt.Sprintf("Waiting for deployment %s to complete", id))
+				d, err := w.Apps.WaitGetDeploymentAppSucceeded(ctx, app.Name, id, 20*time.Minute, nil)
+				if err != nil {
+					return err
+				}
+
+				logProgress(ctx, fmt.Sprintf("Deployment %s reached state %s", id, d.Status.State))
+				return nil
+			})
+		}
+	}
+
+	return errGrp.Wait()
 }
 
 func (a *appRunner) Cancel(ctx context.Context) error {
