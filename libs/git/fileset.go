@@ -13,7 +13,7 @@ type FileSet struct {
 	view    *View
 }
 
-// NewFileSet returns [FileSet] for the directory `root` which is contained within Git repository located at `worktreeRoot`.
+// NewFileSet returns [FileSet] for the directory `root` which is contained within Git worktree located at `worktreeRoot`.
 func NewFileSet(worktreeRoot, root vfs.Path, paths ...[]string) (*FileSet, error) {
 	fs := fileset.New(root, paths...)
 	v, err := NewView(worktreeRoot, root)
