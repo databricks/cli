@@ -177,7 +177,7 @@ func TestFilerForVolumeNotFoundAndInBundle(t *testing.T) {
 			Paths:     []dyn.Path{dyn.MustPathFromString("workspace.artifact_path"), dyn.MustPathFromString("resources.volumes.foo")},
 			Detail: `You are using a volume in your artifact_path that is managed by
 this bundle but which has not been deployed yet. Please first deploy
-the UC volume using 'bundle deploy' and then switch over to using it in
+the volume using 'bundle deploy' and then switch over to using it in
 the artifact_path.`,
 		},
 	}, diags)
