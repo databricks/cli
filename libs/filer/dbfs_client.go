@@ -90,13 +90,18 @@ func (w *DbfsClient) uploadUsingDbfsPutApi(ctx context.Context, path string, ove
 		return fmt.Errorf("failed to create API client: %w", err)
 	}
 
+	overwriteField := "False"
+	if overwrite {
+		overwriteField = "True"
+	}
+
 	buf := &bytes.Buffer{}
 	writer := multipart.NewWriter(buf)
 	err = writer.WriteField("path", path)
 	if err != nil {
 		return err
 	}
-	err = writer.WriteField("overwrite", "True")
+	err = writer.WriteField("overwrite", overwriteField)
 	if err != nil {
 		return err
 	}
