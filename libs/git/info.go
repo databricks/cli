@@ -34,13 +34,13 @@ type response struct {
 
 func FetchRepositoryInfo(ctx context.Context, path vfs.Path, w *databricks.WorkspaceClient) (GitRepositoryInfo, error) {
 	if strings.HasPrefix(path.Native(), "/Workspace/") && dbr.RunsOnRuntime(ctx) {
-		return FetchRepositoryInfoAPI(ctx, path, w)
+		return fetchRepositoryInfoAPI(ctx, path, w)
 	} else {
-		return FetchRepositoryInfoDotGit(ctx, path)
+		return fetchRepositoryInfoDotGit(ctx, path)
 	}
 }
 
-func FetchRepositoryInfoAPI(ctx context.Context, path vfs.Path, w *databricks.WorkspaceClient) (GitRepositoryInfo, error) {
+func fetchRepositoryInfoAPI(ctx context.Context, path vfs.Path, w *databricks.WorkspaceClient) (GitRepositoryInfo, error) {
 	apiClient, err := client.New(w.Config)
 	if err != nil {
 		return GitRepositoryInfo{}, err
@@ -91,7 +91,7 @@ func fixResponsePath(path string) string {
 	return path
 }
 
-func FetchRepositoryInfoDotGit(ctx context.Context, path vfs.Path) (GitRepositoryInfo, error) {
+func fetchRepositoryInfoDotGit(ctx context.Context, path vfs.Path) (GitRepositoryInfo, error) {
 	rootDir, err := vfs.FindLeafInTree(path, GitDirectoryName)
 	if err != nil {
 		if !errors.Is(err, fs.ErrNotExist) {
