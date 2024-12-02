@@ -1,0 +1,20 @@
+[project]
+name = "my_data_project"
+version = "0.1.0"
+description = "Databricks ETL pipeline project"
+requires-python = "==3.10.*"
+dependencies = [
+    "databricks-dlt",
+    "pytest",
+    "databricks-connect==15.1.*",
+]
+
+[project.scripts]
+add-asset = "scripts.add_asset:main"
+test = "scripts.test:main"
+
+[tool.uv]
+package = true
+
+[tool.setuptools.packages.find]
+include = ["scripts"]

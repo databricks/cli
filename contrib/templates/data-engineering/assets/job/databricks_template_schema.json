@@ -1,0 +1,10 @@
+{
+    "welcome_message": "\nWelcome to the data-engineering job resource template!",
+    "properties": {
+        "pipeline_name": {
+            "type": "string",
+            "description": "\n{{fail \"The job template is not yet implemented.\"}}",
+            "order": 3
+        }
+    }
+}

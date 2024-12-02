@@ -1,0 +1,46 @@
+{
+    "welcome_message": "\nWelcome to the data-engineering pipeline template!",
+    "properties": {
+        "pipeline_name": {
+            "type": "string",
+            "description": "\nPlease provide the name of the pipeline to generate.\npipeline_name",
+            "default": "etl_pipeline",
+            "order": 1
+        },
+        "format": {
+            "type": "string",
+            "description": "\nPlease select the format to use to define this pipeline.\nformat",
+            "order": 2,
+            "enum": [
+                "python files",
+                "sql files",
+                "notebooks"
+            ],
+            "default": "python files"
+        },
+        "only_python_files_supported": {
+            "skip_prompt_if": {
+                "properties": {
+                    "format": {
+                        "pattern": "python files"
+                    }
+                }
+            },
+            "default": "ignored",
+            "type": "string",
+            "description": "{{fail \"Only Python files are supported in this template at this time.\"}}",
+            "order": 3
+        },
+        "include_job": {
+            "type": "string",
+            "description": "\nWould you like to include a job that automatically triggers this pipeline?\nThis trigger will only be enabled for production deployments.\ninclude_job",
+            "order": 4,
+            "enum": [
+                "yes",
+                "no"
+            ],
+            "default": "yes"
+        }
+    },
+    "success_message": "\n\n🪠 New pipeline definition generated under 'assets/{{.pipeline_name}}'!"
+}
