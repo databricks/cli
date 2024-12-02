@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io/fs"
 	"net/http"
+	"path"
 	"strings"
 
 	"github.com/databricks/cli/libs/dbr"
@@ -83,11 +84,11 @@ func fetchRepositoryInfoAPI(ctx context.Context, path vfs.Path, w *databricks.Wo
 	}, nil
 }
 
-func ensureWorkspacePrefix(path string) string {
-	if !strings.HasPrefix(path, "/Workspace/") {
-		return "/Workspace/" + path
+func ensureWorkspacePrefix(p string) string {
+	if !strings.HasPrefix(p, "/Workspace/") {
+		return path.Join("/Workspace", p)
 	}
-	return path
+	return p
 }
 
 func fetchRepositoryInfoDotGit(ctx context.Context, path vfs.Path) (GitRepositoryInfo, error) {
