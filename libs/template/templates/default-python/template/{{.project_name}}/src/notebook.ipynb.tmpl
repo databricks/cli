@@ -24,7 +24,9 @@
    "outputs": [],
    "source": [
     "# Load default catalog and schema as widget and set their values as the default catalog / schema\n",
-    "%run ./apply_defaults"
+    "catalog = dbutils.widgets.get('catalog')\n",
+    "schema = dbutils.widgets.get('schema')\n",
+    "spark.sql(f'USE {catalog}.{schema}')"
    ]
   },
   {
@@ -62,7 +64,64 @@
     "pythonIndentUnit": 2
    },
    "notebookName": "notebook",
-   "widgets": {}
+   "widgets": {
+    "catalog": {
+     "currentValue": "{{.default_catalog}}",
+     "nuid": "3965fc9c-8080-45b1-bee3-f75cef7685b4",
+     "typedWidgetInfo": {
+      "autoCreated": false,
+      "defaultValue": "{{.default_catalog}}",
+      "label": null,
+      "name": "catalog",
+      "options": {
+       "widgetDisplayType": "Text",
+       "validationRegex": null
+      },
+      "parameterDataType": "String"
+     },
+     "widgetInfo": {
+      "widgetType": "text",
+      "defaultValue": "{{.default_catalog}}",
+      "label": null,
+      "name": "catalog",
+      "options": {
+       "widgetType": "text",
+       "autoCreated": null,
+       "validationRegex": null
+      }
+     }
+    },
+{{- $dev_schema := .shared_schema }}
+{{- if (regexp "^yes").MatchString .personal_schemas}}
+  {{- $dev_schema = "{{short_name}}"}}
+{{- end}}
+    "schema": {
+     "currentValue": "{{$dev_schema}}",
+     "nuid": "6ec0d70f-39bf-4859-a510-02c3e3d59bff",
+     "typedWidgetInfo": {
+      "autoCreated": false,
+      "defaultValue": "{{$dev_schema}}",
+      "label": null,
+      "name": "schema",
+      "options": {
+       "widgetDisplayType": "Text",
+       "validationRegex": null
+      },
+      "parameterDataType": "String"
+     },
+     "widgetInfo": {
+      "widgetType": "text",
+      "defaultValue": "{{$dev_schema}}",
+      "label": null,
+      "name": "schema",
+      "options": {
+       "widgetType": "text",
+       "autoCreated": null,
+       "validationRegex": null
+      }
+     }
+    }
+   }
   },
   "kernelspec": {
    "display_name": "Python 3",
