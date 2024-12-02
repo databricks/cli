@@ -30,7 +30,9 @@ func TestFetchRepositoryInfoAPI(t *testing.T) {
 
 	targetPath := acc.RandomName("/Workspace/Users/" + me.UserName + "/testing-clone-bundle-examples-")
 	stdout, stderr := RequireSuccessfulRun(t, "repos", "create", examplesRepoUrl, examplesRepoProvider, "--path", targetPath)
-	defer RequireSuccessfulRun(t, "repos", "delete", targetPath)
+	t.Cleanup(func() {
+		RequireSuccessfulRun(t, "repos", "delete", targetPath)
+	})
 
 	assert.Empty(t, stderr.String())
 	assert.NotEmpty(t, stdout.String())
