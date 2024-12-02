@@ -6,10 +6,10 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/bundletest"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"

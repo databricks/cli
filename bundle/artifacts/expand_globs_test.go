@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/bundletest"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
