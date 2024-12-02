@@ -4,7 +4,7 @@ import (
 	"context"
 	"reflect"
 	"runtime"
-	"strings"
+	"slices"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -130,6 +130,9 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				},
 				Schemas: map[string]*resources.Schema{
 					"schema1": {CreateSchema: &catalog.CreateSchema{Name: "schema1"}},
+				},
+				Volumes: map[string]*resources.Volume{
+					"volume1": {CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{Name: "volume1"}},
 				},
 				Clusters: map[string]*resources.Cluster{
 					"cluster1": {ClusterSpec: &compute.ClusterSpec{ClusterName: "cluster1", SparkVersion: "13.2.x", NumWorkers: 1}},
@@ -311,6 +314,8 @@ func TestProcessTargetModeDefault(t *testing.T) {
 	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
+	assert.Equal(t, "schema1", b.Config.Resources.Schemas["schema1"].Name)
+	assert.Equal(t, "volume1", b.Config.Resources.Volumes["volume1"].Name)
 	assert.Equal(t, "cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
 }
 
@@ -355,6 +360,8 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
+	assert.Equal(t, "schema1", b.Config.Resources.Schemas["schema1"].Name)
+	assert.Equal(t, "volume1", b.Config.Resources.Volumes["volume1"].Name)
 	assert.Equal(t, "cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
 }
 
@@ -388,9 +395,16 @@ func TestAllResourcesMocked(t *testing.T) {
 	}
 }
 
-// Make sure that we at least rename all resources
-func TestAllResourcesRenamed(t *testing.T) {
+// Make sure that we at rename all non UC resources
+func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 	b := mockBundle(config.Development)
+
+	// UC resources should not have a prefix added to their name. Right now
+	// this list only contains the Volume resource since we have yet to remove
+	// prefixing support for UC schemas and registered models.
+	ucFields := []reflect.Type{
+		reflect.TypeOf(&resources.Volume{}),
+	}
 
 	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
 	diags := bundle.Apply(context.Background(), b, m)
@@ -404,14 +418,14 @@ func TestAllResourcesRenamed(t *testing.T) {
 			for _, key := range field.MapKeys() {
 				resource := field.MapIndex(key)
 				nameField := resource.Elem().FieldByName("Name")
-				if nameField.IsValid() && nameField.Kind() == reflect.String {
-					assert.True(
-						t,
-						strings.Contains(nameField.String(), "dev"),
-						"process_target_mode should rename '%s' in '%s'",
-						key,
-						resources.Type().Field(i).Name,
-					)
+				if !nameField.IsValid() || nameField.Kind() != reflect.String {
+					continue
+				}
+
+				if slices.Contains(ucFields, resource.Type()) {
+					assert.NotContains(t, nameField.String(), "dev", "process_target_mode should not rename '%s' in '%s'", key, resources.Type().Field(i).Name)
+				} else {
+					assert.Contains(t, nameField.String(), "dev", "process_target_mode should rename '%s' in '%s'", key, resources.Type().Field(i).Name)
 				}
 			}
 		}

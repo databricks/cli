@@ -671,6 +671,14 @@ func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
 				},
 			},
 			{
+				Type: "databricks_volume",
+				Mode: "managed",
+				Name: "test_volume",
+				Instances: []stateResourceInstance{
+					{Attributes: stateInstanceAttributes{ID: "1"}},
+				},
+			},
+			{
 				Type: "databricks_cluster",
 				Mode: "managed",
 				Name: "test_cluster",
@@ -714,6 +722,9 @@ func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
 
 	assert.Equal(t, "1", config.Resources.Schemas["test_schema"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Schemas["test_schema"].ModifiedStatus)
+
+	assert.Equal(t, "1", config.Resources.Volumes["test_volume"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Volumes["test_volume"].ModifiedStatus)
 
 	assert.Equal(t, "1", config.Resources.Clusters["test_cluster"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Clusters["test_cluster"].ModifiedStatus)
@@ -783,6 +794,13 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
+			Volumes: map[string]*resources.Volume{
+				"test_volume": {
+					CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+						Name: "test_volume",
+					},
+				},
+			},
 			Clusters: map[string]*resources.Cluster{
 				"test_cluster": {
 					ClusterSpec: &compute.ClusterSpec{
@@ -828,6 +846,9 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 
 	assert.Equal(t, "", config.Resources.Schemas["test_schema"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Schemas["test_schema"].ModifiedStatus)
+
+	assert.Equal(t, "", config.Resources.Volumes["test_volume"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Volumes["test_volume"].ModifiedStatus)
 
 	assert.Equal(t, "", config.Resources.Clusters["test_cluster"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Clusters["test_cluster"].ModifiedStatus)
@@ -934,6 +955,18 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 				"test_schema_new": {
 					CreateSchema: &catalog.CreateSchema{
 						Name: "test_schema_new",
+					},
+				},
+			},
+			Volumes: map[string]*resources.Volume{
+				"test_volume": {
+					CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+						Name: "test_volume",
+					},
+				},
+				"test_volume_new": {
+					CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+						Name: "test_volume_new",
 					},
 				},
 			},
@@ -1094,6 +1127,22 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 				},
 			},
 			{
+				Type: "databricks_volume",
+				Mode: "managed",
+				Name: "test_volume",
+				Instances: []stateResourceInstance{
+					{Attributes: stateInstanceAttributes{ID: "1"}},
+				},
+			},
+			{
+				Type: "databricks_volume",
+				Mode: "managed",
+				Name: "test_volume_old",
+				Instances: []stateResourceInstance{
+					{Attributes: stateInstanceAttributes{ID: "2"}},
+				},
+			},
+			{
 				Type: "databricks_cluster",
 				Mode: "managed",
 				Name: "test_cluster",
@@ -1185,6 +1234,13 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Schemas["test_schema_old"].ModifiedStatus)
 	assert.Equal(t, "", config.Resources.Schemas["test_schema_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Schemas["test_schema_new"].ModifiedStatus)
+
+	assert.Equal(t, "1", config.Resources.Volumes["test_volume"].ID)
+	assert.Equal(t, "", config.Resources.Volumes["test_volume"].ModifiedStatus)
+	assert.Equal(t, "2", config.Resources.Volumes["test_volume_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Volumes["test_volume_old"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.Volumes["test_volume_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Volumes["test_volume_new"].ModifiedStatus)
 
 	assert.Equal(t, "1", config.Resources.Clusters["test_cluster"].ID)
 	assert.Equal(t, "", config.Resources.Clusters["test_cluster"].ModifiedStatus)
