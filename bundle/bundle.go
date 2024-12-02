@@ -48,7 +48,7 @@ type Bundle struct {
 	// Exclusively use this field for filesystem operations.
 	SyncRoot vfs.Path
 
-	// Path to root of git worktree
+	// Path to the root of git worktree
 	WorktreeRoot vfs.Path
 
 	// Config contains the bundle configuration.
