@@ -26,7 +26,6 @@ func DefaultMutators() []bundle.Mutator {
 		ComputeIdToClusterId(),
 		InitializeVariables(),
 		DefineDefaultTarget(),
-		LoadGitDetails(),
 		pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseLoad),
 
 		// Note: This mutator must run before the target overrides are merged.
