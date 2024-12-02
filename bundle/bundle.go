@@ -49,8 +49,6 @@ type Bundle struct {
 	SyncRoot vfs.Path
 
 	// Path to the root of git worktree containing the bundle.
-	// This is the same as git repository root if worktrees are not used,
-	// otherwise it's a descedant of git repository root.
 	// https://git-scm.com/docs/git-worktree
 	WorktreeRoot vfs.Path
 
