@@ -93,7 +93,7 @@ func filerForVolume(ctx context.Context, b *bundle.Bundle) (filer.Filer, string,
 		if !ok {
 			return nil, "", diag.Diagnostics{baseErr}
 		}
-		baseErr.Detail = `You are using a UC volume in your artifact_path that is managed by
+		baseErr.Detail = `You are using a volume in your artifact_path that is managed by
 this bundle but which has not been deployed yet. Please first deploy
 the UC volume using 'bundle deploy' and then switch over to using it in
 the artifact_path.`

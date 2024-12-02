@@ -302,7 +302,7 @@ func TestAccUploadArtifactToVolumeNotYetDeployed(t *testing.T) {
   in databricks.yml:6:18
      databricks.yml:11:7
 
-You are using a UC volume in your artifact_path that is managed by
+You are using a volume in your artifact_path that is managed by
 this bundle but which has not been deployed yet. Please first deploy
 the UC volume using 'bundle deploy' and then switch over to using it in
 the artifact_path.

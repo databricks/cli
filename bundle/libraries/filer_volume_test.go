@@ -152,7 +152,7 @@ func TestFilerForVolumeInBundle(t *testing.T) {
 			Summary:   "failed to fetch metadata for /Volumes/main/my_schema/my_volume: error from API",
 			Locations: []dyn.Location{{"config.yml", 1, 2}, {"volume.yml", 1, 2}},
 			Paths:     []dyn.Path{dyn.MustPathFromString("workspace.artifact_path"), dyn.MustPathFromString("resources.volumes.foo")},
-			Detail: `You are using a UC volume in your artifact_path that is managed by
+			Detail: `You are using a volume in your artifact_path that is managed by
 this bundle but which has not been deployed yet. Please first deploy
 the UC volume using 'bundle deploy' and then switch over to using it in
 the artifact_path.`,
