@@ -39,6 +39,7 @@ func Initialize() bundle.Mutator {
 			mutator.MergePipelineClusters(),
 			mutator.InitializeWorkspaceClient(),
 			mutator.PopulateCurrentUser(),
+			mutator.LoadGitDetails(),
 
 			mutator.DefineDefaultWorkspaceRoot(),
 			mutator.ExpandWorkspaceRoot(),
