@@ -70,7 +70,7 @@ func fetchRepositoryInfoAPI(ctx context.Context, path vfs.Path, w *databricks.Wo
 	if gi == nil {
 		log.Warnf(ctx, "Failed to load git info from %s", apiEndpoint)
 	} else {
-		fixedPath := fixResponsePath(gi.Path)
+		fixedPath := ensureWorkspacePrefix(gi.Path)
 		return GitRepositoryInfo{
 			OriginURL:     gi.URL,
 			LatestCommit:  gi.HeadCommitID,
@@ -84,7 +84,7 @@ func fetchRepositoryInfoAPI(ctx context.Context, path vfs.Path, w *databricks.Wo
 	}, nil
 }
 
-func fixResponsePath(path string) string {
+func ensureWorkspacePrefix(path string) string {
 	if !strings.HasPrefix(path, "/Workspace/") {
 		return "/Workspace/" + path
 	}
