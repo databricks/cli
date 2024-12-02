@@ -284,7 +284,7 @@ func TestAccDeployUcVolume(t *testing.T) {
 	t.Setenv("BUNDLE_ROOT", bundleRoot)
 	stdout, stderr, err := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "deploy", "--var=schema_name=${resources.schemas.schema2.name}").Run()
 	assert.Error(t, err)
-	assert.Contains(t, stderr.String(), `This action will result in the deletion or recreation of the following Volumes.
+	assert.Contains(t, stderr.String(), `This action will result in the deletion or recreation of the following volumes.
 For managed volumes, the files stored in the volume are also deleted from your
 cloud tenant within 30 days. For external volumes, the metadata about the volume
 is removed from the catalog, but the underlying files are not deleted:
