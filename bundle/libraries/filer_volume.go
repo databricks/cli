@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"path"
 	"strings"
 
@@ -87,8 +86,7 @@ func filerForVolume(ctx context.Context, b *bundle.Bundle) (filer.Filer, string,
 		Paths:     []dyn.Path{dyn.MustPathFromString("workspace.artifact_path")},
 	}
 
-	var aerr *apierr.APIError
-	if errors.As(err, &aerr) && aerr.StatusCode == http.StatusNotFound {
+	if errors.Is(err, apierr.ErrNotFound) {
 		path, locations, ok := findVolumeInBundle(b, catalogName, schemaName, volumeName)
 		if !ok {
 			return nil, "", diag.Diagnostics{baseErr}
