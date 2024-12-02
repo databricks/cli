@@ -67,9 +67,7 @@ func fetchRepositoryInfoAPI(ctx context.Context, path vfs.Path, w *databricks.Wo
 
 	// Check if GitInfo is present and extract relevant fields
 	gi := response.GitInfo
-	if gi == nil {
-		log.Warnf(ctx, "Failed to load git info from %s", apiEndpoint)
-	} else {
+	if gi != nil {
 		fixedPath := ensureWorkspacePrefix(gi.Path)
 		return GitRepositoryInfo{
 			OriginURL:     gi.URL,
@@ -79,6 +77,7 @@ func fetchRepositoryInfoAPI(ctx context.Context, path vfs.Path, w *databricks.Wo
 		}, nil
 	}
 
+	log.Warnf(ctx, "Failed to load git info from %s", apiEndpoint)
 	return GitRepositoryInfo{
 		WorktreeRoot: path,
 	}, nil
