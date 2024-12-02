@@ -8,6 +8,10 @@ import (
 	"github.com/databricks/cli/libs/filer"
 )
 
+// We upload artifacts to the workspace in a directory named ".internal" to have
+// a well defined location for artifacts that have been uploaded by the DABs.
+const InternalDirName = ".internal"
+
 // This function returns a filer for uploading artifacts to the configured location.
 // Supported locations:
 // 1. WSFS
