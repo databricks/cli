@@ -136,6 +136,9 @@ func getAppConfig(ctx context.Context, app *apps.App, w *databricks.WorkspaceCli
 
 		cmdio.LogString(ctx, fmt.Sprintf("Reading app configuration from %s", configFile))
 		content, err := io.ReadAll(r)
+		if err != nil {
+			return nil, err
+		}
 
 		var appConfig map[string]interface{}
 		err = yaml.Unmarshal(content, &appConfig)
