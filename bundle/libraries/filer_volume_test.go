@@ -87,7 +87,33 @@ func TestFindVolumeInBundle(t *testing.T) {
 	assert.Equal(t, dyn.MustPathFromString("resources.volumes.foo"), path)
 }
 
-func TestFilerForVolumeNotInBundle(t *testing.T) {
+func TestFilerForVolumeForErrorFromAPI(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Workspace: config.Workspace{
+				ArtifactPath: "/Volumes/main/my_schema/my_volume",
+			},
+		},
+	}
+
+	bundletest.SetLocation(b, "workspace.artifact_path", []dyn.Location{{File: "config.yml", Line: 1, Column: 2}})
+
+	m := mocks.NewMockWorkspaceClient(t)
+	m.WorkspaceClient.Config = &sdkconfig.Config{}
+	m.GetMockFilesAPI().EXPECT().GetDirectoryMetadataByDirectoryPath(mock.Anything, "/Volumes/main/my_schema/my_volume").Return(fmt.Errorf("error from API"))
+	b.SetWorkpaceClient(m.WorkspaceClient)
+
+	_, _, diags := filerForVolume(context.Background(), b)
+	assert.Equal(t, diag.Diagnostics{
+		{
+			Severity:  diag.Error,
+			Summary:   "unable to determine if volume at /Volumes/main/my_schema/my_volume exists: error from API",
+			Locations: []dyn.Location{{File: "config.yml", Line: 1, Column: 2}},
+			Paths:     []dyn.Path{dyn.MustPathFromString("workspace.artifact_path")},
+		}}, diags)
+}
+
+func TestFilerForVolumeWithVolumeNotFound(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
@@ -100,20 +126,20 @@ func TestFilerForVolumeNotInBundle(t *testing.T) {
 
 	m := mocks.NewMockWorkspaceClient(t)
 	m.WorkspaceClient.Config = &sdkconfig.Config{}
-	m.GetMockFilesAPI().EXPECT().GetDirectoryMetadataByDirectoryPath(mock.Anything, "/Volumes/main/my_schema/doesnotexist").Return(fmt.Errorf("error from API"))
+	m.GetMockFilesAPI().EXPECT().GetDirectoryMetadataByDirectoryPath(mock.Anything, "/Volumes/main/my_schema/doesnotexist").Return(apierr.NotFound("some error message"))
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
 	_, _, diags := filerForVolume(context.Background(), b)
 	assert.Equal(t, diag.Diagnostics{
 		{
 			Severity:  diag.Error,
-			Summary:   "failed to fetch metadata for /Volumes/main/my_schema/doesnotexist: error from API",
+			Summary:   "volume /Volumes/main/my_schema/doesnotexist does not exist: some error message",
 			Locations: []dyn.Location{{File: "config.yml", Line: 1, Column: 2}},
 			Paths:     []dyn.Path{dyn.MustPathFromString("workspace.artifact_path")},
 		}}, diags)
 }
 
-func TestFilerForVolumeInBundle(t *testing.T) {
+func TestFilerForVolumeNotFoundAndInBundle(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
@@ -139,17 +165,14 @@ func TestFilerForVolumeInBundle(t *testing.T) {
 
 	m := mocks.NewMockWorkspaceClient(t)
 	m.WorkspaceClient.Config = &sdkconfig.Config{}
-	m.GetMockFilesAPI().EXPECT().GetDirectoryMetadataByDirectoryPath(mock.Anything, "/Volumes/main/my_schema/my_volume").Return(&apierr.APIError{
-		StatusCode: 404,
-		Message:    "error from API",
-	})
+	m.GetMockFilesAPI().EXPECT().GetDirectoryMetadataByDirectoryPath(mock.Anything, "/Volumes/main/my_schema/my_volume").Return(apierr.NotFound("error from API"))
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
 	_, _, diags := GetFilerForLibraries(context.Background(), b)
 	assert.Equal(t, diag.Diagnostics{
 		{
 			Severity:  diag.Error,
-			Summary:   "failed to fetch metadata for /Volumes/main/my_schema/my_volume: error from API",
+			Summary:   "volume /Volumes/main/my_schema/my_volume does not exist: error from API",
 			Locations: []dyn.Location{{"config.yml", 1, 2}, {"volume.yml", 1, 2}},
 			Paths:     []dyn.Path{dyn.MustPathFromString("workspace.artifact_path"), dyn.MustPathFromString("resources.volumes.foo")},
 			Detail: `You are using a volume in your artifact_path that is managed by

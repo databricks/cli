@@ -81,12 +81,18 @@ func filerForVolume(ctx context.Context, b *bundle.Bundle) (filer.Filer, string,
 
 	baseErr := diag.Diagnostic{
 		Severity:  diag.Error,
-		Summary:   fmt.Sprintf("failed to fetch metadata for %s: %s", volumePath, err),
+		Summary:   fmt.Sprintf("unable to determine if volume at %s exists: %s", volumePath, err),
 		Locations: b.Config.GetLocations("workspace.artifact_path"),
 		Paths:     []dyn.Path{dyn.MustPathFromString("workspace.artifact_path")},
 	}
 
 	if errors.Is(err, apierr.ErrNotFound) {
+		// Since the API returned a 404, the volume does not exist in the workspace.
+		// Modify the error message to provide more context.
+		baseErr.Summary = fmt.Sprintf("volume %s does not exist: %s", volumePath, err)
+
+		// If the volume is defined in the bundle, provide a more helpful error diagnostic,
+		// with more details and location information.
 		path, locations, ok := findVolumeInBundle(b, catalogName, schemaName, volumeName)
 		if !ok {
 			return nil, "", diag.Diagnostics{baseErr}

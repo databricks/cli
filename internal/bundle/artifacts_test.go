@@ -259,7 +259,7 @@ func TestAccUploadArtifactFileToVolumeThatDoesNotExist(t *testing.T) {
 	stdout, stderr, err := internal.RequireErrorRun(t, "bundle", "deploy")
 
 	assert.Error(t, err)
-	assert.Equal(t, fmt.Sprintf(`Error: failed to fetch metadata for /Volumes/main/%s/doesnotexist: Not Found
+	assert.Equal(t, fmt.Sprintf(`Error: volume /Volumes/main/%s/doesnotexist does not exist: Not Found
   at workspace.artifact_path
   in databricks.yml:6:18
 
@@ -296,7 +296,7 @@ func TestAccUploadArtifactToVolumeNotYetDeployed(t *testing.T) {
 	stdout, stderr, err := internal.RequireErrorRun(t, "bundle", "deploy")
 
 	assert.Error(t, err)
-	assert.Equal(t, fmt.Sprintf(`Error: failed to fetch metadata for /Volumes/main/%s/my_volume: Not Found
+	assert.Equal(t, fmt.Sprintf(`Error: volume /Volumes/main/%s/my_volume does not exist: Not Found
   at workspace.artifact_path
      resources.volumes.foo
   in databricks.yml:6:18
