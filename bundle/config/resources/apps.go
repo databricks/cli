@@ -51,7 +51,7 @@ func (a *App) Exists(ctx context.Context, w *databricks.WorkspaceClient, name st
 }
 
 func (a *App) TerraformResourceName() string {
-	return "databricks_cluster"
+	return "databricks_app"
 }
 
 func (a *App) InitializeURL(baseURL url.URL) {

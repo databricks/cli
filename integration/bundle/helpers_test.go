@@ -119,7 +119,16 @@ func runResource(t testutil.TestingT, ctx context.Context, path, key string) (st
 	return stdout.String(), err
 }
 
-func runResourceWithParams(t testutil.TestingT, ctx context.Context, path, key string, params ...string) (string, error) {
+func runResourceWithStderr(t testutil.TestingT, ctx context.Context, path string, key string) (string, string, error) {
+	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
+	ctx = cmdio.NewContext(ctx, cmdio.Default())
+
+	c := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "run", key)
+	stdout, stderr, err := c.Run()
+	return stdout.String(), stderr.String(), err
+}
+
+func runResourceWithParams(t testutil.TestingT, ctx context.Context, path string, key string, params ...string) (string, error) {
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	ctx = cmdio.NewContext(ctx, cmdio.Default())
 
