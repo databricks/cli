@@ -23,7 +23,7 @@ func assertGitInfo(t *testing.T, info git.GitRepositoryInfo, expectedRoot string
 	assert.Equal(t, expectedRoot, info.WorktreeRoot.Native())
 }
 
-func TestFetchRepositoryInfoAPI(t *testing.T) {
+func TestAccFetchRepositoryInfoAPI(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	me, err := wt.W.CurrentUser.Me(ctx)
 	require.NoError(t, err)
@@ -50,7 +50,7 @@ func TestFetchRepositoryInfoAPI(t *testing.T) {
 	}
 }
 
-func TestFetchRepositoryInfoDotGit(t *testing.T) {
+func TestAccFetchRepositoryInfoDotGit(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 
 	repo := cloneRepoLocally(t, examplesRepoUrl)
