@@ -55,13 +55,8 @@ func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		b.Config.Bundle.Git.OriginURL = remoteUrl
 	}
 
-	// Compute relative path of the bundle root from the Git repo root.
-	absBundlePath, err := filepath.Abs(b.BundleRootPath)
-	if err != nil {
-		return diag.FromErr(err)
-	}
 	// repo.Root() returns the absolute path of the repo
-	relBundlePath, err := filepath.Rel(repo.Root(), absBundlePath)
+	relBundlePath, err := filepath.Rel(repo.Root(), b.BundleRoot.Native())
 	if err != nil {
 		return diag.FromErr(err)
 	}
