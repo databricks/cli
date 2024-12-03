@@ -5,6 +5,8 @@ linters:
   # Enable specific linter
   # https://golangci-lint.run/usage/linters/#enabled-by-default
   enable:
+    # errcheck and govet are part of default setup and should be included but give too many errors now
+    # once errors are fixed, they should be enabled here:
     #- errcheck
     - gosimple
     #- govet
