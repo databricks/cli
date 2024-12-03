@@ -44,9 +44,9 @@ type response struct {
 //   - If there were any errors when trying to determine git root (e.g. API call returned an error or there were permission issues
 //     reading the file system), all strings fields of GitRepositoryInfo will be "" and err will be non-nil.
 //   - For convenience, GuessedWorktreeRoot parameter will be set to path in the above two cases.
-//   - If we could determine git worktree root but there were errors when reading metadata (origin, branch, commit), those errors will be logged
-//     as warnings, GitRepositoryInfo will have non-empty WorktreeRoot and corresponding GuessedWorktreeRoot.
-//     Other strings fields will be "" and err will be nil.
+//   - If we could determine git worktree root but there were errors when reading metadata (origin, branch, commit), those errors
+//     will be logged as warnings, GitRepositoryInfo is guaranteed to have non-empty WorktreeRoot and corresponding GuessedWorktreeRoot
+//     and other fields on best effort basis. The err will be nil.
 //   - In successful case, all fields are set to proper git repository metadata.
 func FetchRepositoryInfo(ctx context.Context, path vfs.Path, w *databricks.WorkspaceClient) (GitRepositoryInfo, error) {
 	if strings.HasPrefix(path.Native(), "/Workspace/") && dbr.RunsOnRuntime(ctx) {
