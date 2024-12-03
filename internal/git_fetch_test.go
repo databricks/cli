@@ -17,10 +17,21 @@ import (
 const examplesRepoUrl = "https://github.com/databricks/bundle-examples"
 const examplesRepoProvider = "gitHub"
 
-func assertFullGitInfo(t *testing.T, info git.GitRepositoryInfo, expectedRoot string) {
+func assertFullGitInfo(t *testing.T, expectedRoot string, info git.GitRepositoryInfo) {
 	assert.Equal(t, "main", info.CurrentBranch)
 	assert.NotEmpty(t, info.LatestCommit)
 	assert.Equal(t, examplesRepoUrl, info.OriginURL)
+	assert.Equal(t, expectedRoot, info.WorktreeRoot)
+}
+
+func assertEmptyGitInfo(t *testing.T, info git.GitRepositoryInfo) {
+	assertSparseGitInfo(t, "", info)
+}
+
+func assertSparseGitInfo(t *testing.T, expectedRoot string, info git.GitRepositoryInfo) {
+	assert.Equal(t, "", info.CurrentBranch)
+	assert.Equal(t, "", info.LatestCommit)
+	assert.Equal(t, "", info.OriginURL)
 	assert.Equal(t, expectedRoot, info.WorktreeRoot)
 }
 
@@ -46,7 +57,7 @@ func TestAccFetchRepositoryInfoAPI_FromRepo(t *testing.T) {
 		t.Run(inputPath, func(t *testing.T) {
 			info, err := git.FetchRepositoryInfo(ctx, vfs.MustNew(inputPath), wt.W)
 			assert.NoError(t, err)
-			assertFullGitInfo(t, info, targetPath)
+			assertFullGitInfo(t, targetPath, info)
 		})
 	}
 }
@@ -93,10 +104,7 @@ func TestAccFetchRepositoryInfoAPI_FromNonRepo(t *testing.T) {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), test.msg)
 			}
-			assert.Equal(t, "", info.CurrentBranch)
-			assert.Equal(t, "", info.LatestCommit)
-			assert.Equal(t, "", info.OriginURL)
-			assert.Equal(t, "", info.WorktreeRoot)
+			assertEmptyGitInfo(t, info)
 		})
 	}
 }
@@ -113,7 +121,7 @@ func TestAccFetchRepositoryInfoDotGit_FromGitRepo(t *testing.T) {
 		t.Run(inputPath, func(t *testing.T) {
 			info, err := git.FetchRepositoryInfo(ctx, vfs.MustNew(inputPath), wt.W)
 			assert.NoError(t, err)
-			assertFullGitInfo(t, info, repo)
+			assertFullGitInfo(t, repo, info)
 		})
 	}
 }
@@ -145,10 +153,7 @@ func TestAccFetchRepositoryInfoDotGit_FromNonGitRepo(t *testing.T) {
 		t.Run(input, func(t *testing.T) {
 			info, err := git.FetchRepositoryInfo(ctx, vfs.MustNew(input), wt.W)
 			assert.NoError(t, err)
-			assert.Equal(t, "", info.CurrentBranch)
-			assert.Equal(t, "", info.LatestCommit)
-			assert.Equal(t, "", info.OriginURL)
-			assert.Equal(t, "", info.WorktreeRoot)
+			assertEmptyGitInfo(t, info)
 		})
 	}
 }
@@ -164,8 +169,5 @@ func TestAccFetchRepositoryInfoDotGit_FromBrokenGitRepo(t *testing.T) {
 
 	info, err := git.FetchRepositoryInfo(ctx, vfs.MustNew(path), wt.W)
 	assert.NoError(t, err)
-	assert.Equal(t, root, info.WorktreeRoot)
-	assert.Equal(t, "", info.CurrentBranch)
-	assert.Equal(t, "", info.LatestCommit)
-	assert.Equal(t, "", info.OriginURL)
+	assertSparseGitInfo(t, root, info)
 }
