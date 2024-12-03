@@ -7,7 +7,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/git"
-	"github.com/databricks/cli/libs/vfs"
 )
 
 type loadGitDetails struct{}
@@ -27,11 +26,7 @@ func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		diags = append(diags, diag.WarningFromErr(err)...)
 	}
 
-	if info.WorktreeRoot == "" {
-		b.WorktreeRoot = b.BundleRoot
-	} else {
-		b.WorktreeRoot = vfs.MustNew(info.WorktreeRoot)
-	}
+	b.WorktreeRoot = info.GuessedWorktreeRoot
 
 	b.Config.Bundle.Git.ActualBranch = info.CurrentBranch
 	if b.Config.Bundle.Git.Branch == "" {

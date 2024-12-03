@@ -73,12 +73,8 @@ func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*syn
 		log.Warnf(ctx, "Failed to read git info: %s", err)
 	}
 
-	if info.WorktreeRoot == "" {
-		info.WorktreeRoot = localRoot.Native()
-	}
-
 	opts := sync.SyncOptions{
-		WorktreeRoot: vfs.MustNew(info.WorktreeRoot),
+		WorktreeRoot: info.GuessedWorktreeRoot,
 		LocalRoot:    localRoot,
 		Paths:        []string{"."},
 		Include:      nil,
