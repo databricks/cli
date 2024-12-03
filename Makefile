@@ -7,8 +7,8 @@ fmt:
 	@gofmt -w $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
 lint: vendor
-	@echo "✓ Linting source code with https://staticcheck.io/ ..."
-	@staticcheck ./...
+	@echo "✓ Linting source code with https://golangci-lint.run/ ..."
+	@golangci-lint run ./...
 
 test: lint
 	@echo "✓ Running tests ..."
