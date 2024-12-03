@@ -11,6 +11,20 @@ linters:
     - ineffassign
     - staticcheck
     - unused
+    - gofmt
+linters-settings:
+  gofmt:
+    # Simplify code: gofmt with `-s` option.
+    # Default: true
+    simplify: false
+    # Apply the rewrite rules to the source before reformatting.
+    # https://pkg.go.dev/cmd/gofmt
+    # Default: []
+    rewrite-rules:
+      #- pattern: 'interface{}'
+      #  replacement: 'any'
+      - pattern: 'a[b:len(a)]'
+        replacement: 'a[b:]'
 issues:
   exclude-dirs-use-default: false  # recommended by docs https://golangci-lint.run/usage/false-positives/
   exclude:
