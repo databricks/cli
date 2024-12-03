@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/git"
-	"github.com/databricks/cli/libs/vfs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -55,7 +54,7 @@ func TestAccFetchRepositoryInfoAPI_FromRepo(t *testing.T) {
 		targetPath,
 	} {
 		t.Run(inputPath, func(t *testing.T) {
-			info, err := git.FetchRepositoryInfo(ctx, vfs.MustNew(inputPath), wt.W)
+			info, err := git.FetchRepositoryInfo(ctx, inputPath, wt.W)
 			assert.NoError(t, err)
 			assertFullGitInfo(t, targetPath, info)
 		})
@@ -97,7 +96,7 @@ func TestAccFetchRepositoryInfoAPI_FromNonRepo(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.input+" <==> "+test.msg, func(t *testing.T) {
-			info, err := git.FetchRepositoryInfo(ctx, vfs.MustNew(test.input), wt.W)
+			info, err := git.FetchRepositoryInfo(ctx, test.input, wt.W)
 			if test.msg == "" {
 				assert.NoError(t, err)
 			} else {
@@ -119,7 +118,7 @@ func TestAccFetchRepositoryInfoDotGit_FromGitRepo(t *testing.T) {
 		repo,
 	} {
 		t.Run(inputPath, func(t *testing.T) {
-			info, err := git.FetchRepositoryInfo(ctx, vfs.MustNew(inputPath), wt.W)
+			info, err := git.FetchRepositoryInfo(ctx, inputPath, wt.W)
 			assert.NoError(t, err)
 			assertFullGitInfo(t, repo, info)
 		})
@@ -151,7 +150,7 @@ func TestAccFetchRepositoryInfoDotGit_FromNonGitRepo(t *testing.T) {
 
 	for _, input := range tests {
 		t.Run(input, func(t *testing.T) {
-			info, err := git.FetchRepositoryInfo(ctx, vfs.MustNew(input), wt.W)
+			info, err := git.FetchRepositoryInfo(ctx, input, wt.W)
 			assert.NoError(t, err)
 			assertEmptyGitInfo(t, info)
 		})
@@ -167,7 +166,7 @@ func TestAccFetchRepositoryInfoDotGit_FromBrokenGitRepo(t *testing.T) {
 	require.NoError(t, os.MkdirAll(path, 0700))
 	require.NoError(t, os.WriteFile(root+"/.git", []byte(""), 0000))
 
-	info, err := git.FetchRepositoryInfo(ctx, vfs.MustNew(path), wt.W)
+	info, err := git.FetchRepositoryInfo(ctx, path, wt.W)
 	assert.NoError(t, err)
 	assertSparseGitInfo(t, root, info)
 }

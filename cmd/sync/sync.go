@@ -67,7 +67,7 @@ func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*syn
 	client := root.WorkspaceClient(ctx)
 
 	localRoot := vfs.MustNew(args[0])
-	info, err := git.FetchRepositoryInfo(ctx, localRoot, client)
+	info, err := git.FetchRepositoryInfo(ctx, localRoot.Native(), client)
 
 	if err != nil {
 		log.Warnf(ctx, "Failed to read git info: %s", err)

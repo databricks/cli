@@ -21,7 +21,7 @@ func (m *loadGitDetails) Name() string {
 
 func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
-	info, err := git.FetchRepositoryInfo(ctx, b.BundleRoot, b.WorkspaceClient())
+	info, err := git.FetchRepositoryInfo(ctx, b.BundleRoot.Native(), b.WorkspaceClient())
 	if err != nil {
 		diags = append(diags, diag.WarningFromErr(err)...)
 	}
