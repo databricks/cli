@@ -3,7 +3,6 @@ package run
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -185,68 +184,23 @@ func TestAppRunWithAnActiveDeploymentInProgress(t *testing.T) {
 				ComputeStatus: &apps.ComputeStatus{
 					State: apps.ComputeStateActive,
 				},
+				ActiveDeployment: &apps.AppDeployment{
+					DeploymentId: "active_deployment_id",
+					Status: &apps.AppDeploymentStatus{
+						State: apps.AppDeploymentStateInProgress,
+					},
+				},
+				PendingDeployment: &apps.AppDeployment{
+					DeploymentId: "pending_deployment_id",
+					Status: &apps.AppDeploymentStatus{
+						State: apps.AppDeploymentStateCancelled,
+					},
+				},
 			}, nil
 		},
 	}, nil)
 
-	// First unset existing deploy handlers
-	appsApi.EXPECT().Deploy(mock.Anything, apps.CreateAppDeploymentRequest{
-		AppName: "my_app",
-		AppDeployment: &apps.AppDeployment{
-			Mode:           apps.AppDeploymentModeSnapshot,
-			SourceCodePath: "/Workspace/Users/foo@bar.com/files/my_app",
-		},
-	}).Unset()
-
-	// The first deploy call will return an error
-	appsApi.EXPECT().Deploy(mock.Anything, apps.CreateAppDeploymentRequest{
-		AppName: "my_app",
-		AppDeployment: &apps.AppDeployment{
-			Mode:           apps.AppDeploymentModeSnapshot,
-			SourceCodePath: "/Workspace/Users/foo@bar.com/files/my_app",
-		},
-	}).Return(nil, fmt.Errorf("deployment in progress")).Once()
-
-	// We will then list deployments and find all in progress deployments.
-	appsApi.EXPECT().ListDeploymentsAll(mock.Anything, apps.ListAppDeploymentsRequest{
-		AppName: "my_app",
-	}).Return([]apps.AppDeployment{
-		{
-			DeploymentId: "deployment-1",
-			Status: &apps.AppDeploymentStatus{
-				State: apps.AppDeploymentStateInProgress,
-			},
-		},
-		{
-			DeploymentId: "deployment-2",
-			Status: &apps.AppDeploymentStatus{
-				State: apps.AppDeploymentStateSucceeded,
-			},
-		},
-	}, nil)
-
-	// Wait for the in progress deployment to complete
-	appsApi.EXPECT().WaitGetDeploymentAppSucceeded(mock.Anything, "my_app", "deployment-1", mock.Anything, mock.Anything).Return(&apps.AppDeployment{
-		DeploymentId: "deployment-1",
-		Status: &apps.AppDeploymentStatus{
-			State: apps.AppDeploymentStateSucceeded,
-		},
-	}, nil)
-
-	wait := &apps.WaitGetDeploymentAppSucceeded[apps.AppDeployment]{
-		Poll: func(_ time.Duration, _ func(*apps.AppDeployment)) (*apps.AppDeployment, error) {
-			return nil, nil
-		},
-	}
-
-	// Retry the deployment
-	appsApi.EXPECT().Deploy(mock.Anything, apps.CreateAppDeploymentRequest{
-		AppName: "my_app",
-		AppDeployment: &apps.AppDeployment{
-			Mode:           apps.AppDeploymentModeSnapshot,
-			SourceCodePath: "/Workspace/Users/foo@bar.com/files/my_app",
-		},
-	}).Return(wait, nil)
+	appsApi.EXPECT().WaitGetDeploymentAppSucceeded(mock.Anything, "my_app", "active_deployment_id", mock.Anything, mock.Anything).Return(nil, nil)
 
 	r.run(t)
 }
