@@ -10,7 +10,9 @@ lint: vendor
 	@echo "✓ Linting source code with https://golangci-lint.run/ ..."
 	@golangci-lint run ./...
 
-test: lint
+test: lint testonly
+
+testonly:
 	@echo "✓ Running tests ..."
 	@gotestsum --format pkgname-and-test-fails --no-summary=skipped --raw-command go test -v -json -short -coverprofile=coverage.txt ./...
 
