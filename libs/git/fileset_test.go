@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func testFileSetAll(t *testing.T, root string) {
-	fileSet, err := NewFileSetAtRoot(vfs.MustNew(root))
+func testFileSetAll(t *testing.T, worktreeRoot, root string) {
+	fileSet, err := NewFileSet(vfs.MustNew(worktreeRoot), vfs.MustNew(root))
 	require.NoError(t, err)
 	files, err := fileSet.Files()
 	require.NoError(t, err)
@@ -24,11 +24,21 @@ func testFileSetAll(t *testing.T, root string) {
 }
 
 func TestFileSetListAllInRepo(t *testing.T) {
-	testFileSetAll(t, "./testdata")
+	testFileSetAll(t, "./testdata", "./testdata")
+}
+
+func TestFileSetListAllInRepoDifferentRoot(t *testing.T) {
+	testFileSetAll(t, ".", "./testdata")
 }
 
 func TestFileSetListAllInTempDir(t *testing.T) {
-	testFileSetAll(t, copyTestdata(t, "./testdata"))
+	dir := copyTestdata(t, "./testdata")
+	testFileSetAll(t, dir, dir)
+}
+
+func TestFileSetListAllInTempDirDifferentRoot(t *testing.T) {
+	dir := copyTestdata(t, "./testdata")
+	testFileSetAll(t, filepath.Dir(dir), dir)
 }
 
 func TestFileSetNonCleanRoot(t *testing.T) {
