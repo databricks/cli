@@ -43,6 +43,11 @@ var levelsMap = map[string](map[string]string){
 		CAN_MANAGE: "CAN_MANAGE",
 		CAN_VIEW:   "CAN_READ",
 	},
+	"clusters": {
+		CAN_MANAGE: "CAN_MANAGE",
+		CAN_VIEW:   "CAN_RESTART",
+		CAN_RUN:    "CAN_ATTACH_TO",
+	},
 }
 
 type bundlePermissions struct{}
@@ -62,6 +67,7 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 	applyForMlModels(ctx, b)
 	applyForMlExperiments(ctx, b)
 	applyForModelServiceEndpoints(ctx, b)
+	applyForClusters(ctx, b)
 
 	return nil
 }
@@ -134,6 +140,19 @@ func applyForModelServiceEndpoints(ctx context.Context, b *bundle.Bundle) {
 			levelsMap["model_serving_endpoints"],
 		)...)
 	}
+}
+
+func applyForClusters(ctx context.Context, b *bundle.Bundle) {
+	for key, cluster := range b.Config.Resources.Clusters {
+		cluster.Permissions = append(cluster.Permissions, convert(
+			ctx,
+			b.Config.Permissions,
+			cluster.Permissions,
+			key,
+			levelsMap["clusters"],
+		)...)
+	}
+
 }
 
 func (m *bundlePermissions) Name() string {
