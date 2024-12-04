@@ -3,6 +3,10 @@
         "editor.insertSpaces": false,
         "editor.formatOnSave": true
     },
+    "go.lintTool": "golangci-lint",
+    "go.lintFlags": [
+        "--fast"
+    ],
     "files.trimTrailingWhitespace": true,
     "files.insertFinalNewline": true,
     "files.trimFinalNewlines": true,
