@@ -10,6 +10,10 @@ lint: vendor
 	@echo "✓ Linting source code with https://golangci-lint.run/ ..."
 	@golangci-lint run ./...
 
+lintfix: vendor
+	@echo "✓ Linting source code with 'golangci-lint run --fix' ..."
+	@golangci-lint run --fix ./...
+
 test: lint testonly
 
 testonly:
