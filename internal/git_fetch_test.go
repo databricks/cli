@@ -16,18 +16,18 @@ import (
 const examplesRepoUrl = "https://github.com/databricks/bundle-examples"
 const examplesRepoProvider = "gitHub"
 
-func assertFullGitInfo(t *testing.T, expectedRoot string, info git.GitRepositoryInfo) {
+func assertFullGitInfo(t *testing.T, expectedRoot string, info git.RepositoryInfo) {
 	assert.Equal(t, "main", info.CurrentBranch)
 	assert.NotEmpty(t, info.LatestCommit)
 	assert.Equal(t, examplesRepoUrl, info.OriginURL)
 	assert.Equal(t, expectedRoot, info.WorktreeRoot)
 }
 
-func assertEmptyGitInfo(t *testing.T, info git.GitRepositoryInfo) {
+func assertEmptyGitInfo(t *testing.T, info git.RepositoryInfo) {
 	assertSparseGitInfo(t, "", info)
 }
 
-func assertSparseGitInfo(t *testing.T, expectedRoot string, info git.GitRepositoryInfo) {
+func assertSparseGitInfo(t *testing.T, expectedRoot string, info git.RepositoryInfo) {
 	assert.Equal(t, "", info.CurrentBranch)
 	assert.Equal(t, "", info.LatestCommit)
 	assert.Equal(t, "", info.OriginURL)
