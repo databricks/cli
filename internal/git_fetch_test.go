@@ -3,6 +3,7 @@ package internal
 import (
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"testing"
 
@@ -39,7 +40,7 @@ func TestAccFetchRepositoryInfoAPI_FromRepo(t *testing.T) {
 	me, err := wt.W.CurrentUser.Me(ctx)
 	require.NoError(t, err)
 
-	targetPath := acc.RandomName("/Workspace/Users/" + me.UserName + "/testing-clone-bundle-examples-")
+	targetPath := acc.RandomName(path.Join("/Workspace/Users", me.UserName, "/testing-clone-bundle-examples-"))
 	stdout, stderr := RequireSuccessfulRun(t, "repos", "create", examplesRepoUrl, examplesRepoProvider, "--path", targetPath)
 	t.Cleanup(func() {
 		RequireSuccessfulRun(t, "repos", "delete", targetPath)
@@ -50,7 +51,7 @@ func TestAccFetchRepositoryInfoAPI_FromRepo(t *testing.T) {
 	ctx = dbr.MockRuntime(ctx, true)
 
 	for _, inputPath := range []string{
-		targetPath + "/knowledge_base/dashboard_nyc_taxi",
+		path.Join(targetPath, "knowledge_base/dashboard_nyc_taxi"),
 		targetPath,
 	} {
 		t.Run(inputPath, func(t *testing.T) {
@@ -66,8 +67,8 @@ func TestAccFetchRepositoryInfoAPI_FromNonRepo(t *testing.T) {
 	me, err := wt.W.CurrentUser.Me(ctx)
 	require.NoError(t, err)
 
-	rootPath := acc.RandomName("/Workspace/Users/" + me.UserName + "/testing-nonrepo-")
-	_, stderr := RequireSuccessfulRun(t, "workspace", "mkdirs", rootPath+"/a/b/c")
+	rootPath := acc.RandomName(path.Join("/Workspace/Users", me.UserName, "testing-nonrepo-"))
+	_, stderr := RequireSuccessfulRun(t, "workspace", "mkdirs", path.Join(rootPath, "a/b/c"))
 	t.Cleanup(func() {
 		RequireSuccessfulRun(t, "workspace", "delete", "--recursive", rootPath)
 	})
@@ -80,7 +81,7 @@ func TestAccFetchRepositoryInfoAPI_FromNonRepo(t *testing.T) {
 		msg   string
 	}{
 		{
-			input: rootPath + "/a/b/c",
+			input: path.Join(rootPath, "a/b/c"),
 			msg:   "",
 		},
 		{
@@ -88,7 +89,7 @@ func TestAccFetchRepositoryInfoAPI_FromNonRepo(t *testing.T) {
 			msg:   "",
 		},
 		{
-			input: rootPath + "/non-existent",
+			input: path.Join(rootPath, "/non-existent"),
 			msg:   "doesn't exist",
 		},
 	}
@@ -113,7 +114,7 @@ func TestAccFetchRepositoryInfoDotGit_FromGitRepo(t *testing.T) {
 	repo := cloneRepoLocally(t, examplesRepoUrl)
 
 	for _, inputPath := range []string{
-		repo + "/knowledge_base/dashboard_nyc_taxi",
+		filepath.Join(repo, "knowledge_base/dashboard_nyc_taxi"),
 		repo,
 	} {
 		t.Run(inputPath, func(t *testing.T) {
@@ -139,12 +140,12 @@ func TestAccFetchRepositoryInfoDotGit_FromNonGitRepo(t *testing.T) {
 
 	tempDir := t.TempDir()
 	root := filepath.Join(tempDir, "repo")
-	require.NoError(t, os.MkdirAll(root+"/a/b/c", 0700))
+	require.NoError(t, os.MkdirAll(filepath.Join(root, "a/b/c"), 0700))
 
 	tests := []string{
-		root + "/a/b/c",
+		filepath.Join(root, "a/b/c"),
 		root,
-		root + "/non-existent",
+		filepath.Join(root, "/non-existent"),
 	}
 
 	for _, input := range tests {
@@ -161,9 +162,9 @@ func TestAccFetchRepositoryInfoDotGit_FromBrokenGitRepo(t *testing.T) {
 
 	tempDir := t.TempDir()
 	root := filepath.Join(tempDir, "repo")
-	path := root + "/a/b/c"
+	path := filepath.Join(root, "a/b/c")
 	require.NoError(t, os.MkdirAll(path, 0700))
-	require.NoError(t, os.WriteFile(root+"/.git", []byte(""), 0000))
+	require.NoError(t, os.WriteFile(filepath.Join(root, ".git"), []byte(""), 0000))
 
 	info, err := git.FetchRepositoryInfo(ctx, path, wt.W)
 	assert.NoError(t, err)
