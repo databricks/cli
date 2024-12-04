@@ -53,8 +53,8 @@ func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	relBundlePath, err := filepath.Rel(b.WorktreeRoot.Native(), b.BundleRoot.Native())
 	if err != nil {
 		diags = append(diags, diag.FromErr(err)...)
+	} else {
+		b.Config.Bundle.Git.BundleRootPath = filepath.ToSlash(relBundlePath)
 	}
-
-	b.Config.Bundle.Git.BundleRootPath = filepath.ToSlash(relBundlePath)
 	return diags
 }
