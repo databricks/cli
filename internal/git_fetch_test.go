@@ -73,7 +73,6 @@ func TestAccFetchRepositoryInfoAPI_FromNonRepo(t *testing.T) {
 	})
 
 	assert.Empty(t, stderr.String())
-	//assert.NotEmpty(t, stdout.String())
 	ctx = dbr.MockRuntime(ctx, true)
 
 	tests := []struct {
