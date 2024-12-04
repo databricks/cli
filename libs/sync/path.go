@@ -24,7 +24,8 @@ func repoPathForPath(me *iam.User, remotePath string) string {
 
 // EnsureRemotePathIsUsable checks if the specified path is nested under
 // expected base paths and if it is a directory or repository.
-func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClient, remotePath string, me *iam.User) error {
+// Returns (doesRemoteExist, error)
+func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClient, remotePath string, me *iam.User) (bool, error) {
 	var err error
 
 	// TODO: we should cache CurrentUser.Me at the SDK level
@@ -32,7 +33,7 @@ func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClie
 	if me == nil {
 		me, err = wsc.CurrentUser.Me(ctx)
 		if err != nil {
-			return err
+			return false, err
 		}
 	}
 
@@ -43,7 +44,7 @@ func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClie
 	if err != nil {
 		// We only deal with 404s below.
 		if !apierr.IsMissing(err) {
-			return err
+			return false, err
 		}
 
 		// If the path is nested under a repo, the repo has to exist.
@@ -51,19 +52,12 @@ func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClie
 			repoPath := repoPathForPath(me, remotePath)
 			_, err = wsc.Workspace.GetStatusByPath(ctx, repoPath)
 			if err != nil && apierr.IsMissing(err) {
-				return fmt.Errorf("%s does not exist; please create it first", repoPath)
+				return false, fmt.Errorf("%s does not exist; please create it first", repoPath)
 			}
 		}
 
-		// The workspace path doesn't exist. Create it and try again.
-		err = wsc.Workspace.MkdirsByPath(ctx, remotePath)
-		if err != nil {
-			return fmt.Errorf("unable to create directory at %s: %w", remotePath, err)
-		}
-		info, err = wsc.Workspace.GetStatusByPath(ctx, remotePath)
-		if err != nil {
-			return err
-		}
+		return false, nil
+
 	}
 
 	log.Debugf(
@@ -77,10 +71,23 @@ func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClie
 	// We expect the object at path to be a directory or a repo.
 	switch info.ObjectType {
 	case workspace.ObjectTypeDirectory:
-		return nil
+		return true, nil
 	case workspace.ObjectTypeRepo:
-		return nil
+		return true, nil
 	}
 
-	return fmt.Errorf("%s points to a %s", remotePath, strings.ToLower(info.ObjectType.String()))
+	return true, fmt.Errorf("%s points to a %s", remotePath, strings.ToLower(info.ObjectType.String()))
+}
+
+func createRemotePath(ctx context.Context, wsc *databricks.WorkspaceClient, remotePath string) error {
+	// The workspace path doesn't exist. Create it and try again.
+	err := wsc.Workspace.MkdirsByPath(ctx, remotePath)
+	if err != nil {
+		return fmt.Errorf("unable to create directory at %s: %w", remotePath, err)
+	}
+	_, err = wsc.Workspace.GetStatusByPath(ctx, remotePath)
+	if err != nil {
+		return err
+	}
+	return nil
 }
