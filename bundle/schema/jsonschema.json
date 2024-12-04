@@ -935,8 +935,10 @@
               "anyOf": [
                 {
                   "type": "object",
+                  "description": "Defines the attributes to build an artifact.",
                   "properties": {
                     "build": {
+                      "description": "The command to build the artifact.",
                       "$ref": "#/$defs/string"
                     },
                     "executable": {
@@ -955,7 +957,8 @@
                   "additionalProperties": false,
                   "required": [
                     "type"
-                  ]
+                  ],
+                  "title": "Artifact"
                 },
                 {
                   "type": "string",

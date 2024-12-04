@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+
 	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -112,13 +113,14 @@ func makeVolumeTypeOptional(typ reflect.Type, s jsonschema.Schema) jsonschema.Sc
 }
 
 func main() {
-	if len(os.Args) != 2 {
-		fmt.Println("Usage: go run main.go <output-file>")
+	if len(os.Args) != 3 {
+		fmt.Println("Usage: go run main.go <annotations-file> <output-file>")
 		os.Exit(1)
 	}
 
 	// Output file, where the generated JSON schema will be written to.
-	outputFile := os.Args[1]
+	annotationsFile := os.Args[1]
+	outputFile := os.Args[2]
 
 	// Input file, the databricks openapi spec.
 	inputFile := os.Getenv("DATABRICKS_OPENAPI_SPEC")
@@ -131,14 +133,25 @@ func main() {
 		log.Fatal(err)
 	}
 
+	a, err := newAnnotationHandler(annotationsFile, p)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Generate the JSON schema from the bundle Go struct.
 	s, err := jsonschema.FromType(reflect.TypeOf(config.Root{}), []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
 		p.addDescriptions,
 		p.addEnums,
 		removeJobsFields,
 		makeVolumeTypeOptional,
+		a.addAnnotations,
 		addInterpolationPatterns,
 	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = a.overwrite()
 	if err != nil {
 		log.Fatal(err)
 	}

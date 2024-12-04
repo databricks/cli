@@ -510,12 +510,12 @@ func TestTypePath(t *testing.T) {
 
 	for _, tc := range tcases {
 		t.Run(tc.typ.String(), func(t *testing.T) {
-			assert.Equal(t, tc.path, typePath(tc.typ))
+			assert.Equal(t, tc.path, TypePath(tc.typ))
 		})
 	}
 
 	// Maps with non-string keys should panic.
 	assert.PanicsWithValue(t, "found map with non-string key: int", func() {
-		typePath(reflect.TypeOf(map[int]int{}))
+		TypePath(reflect.TypeOf(map[int]int{}))
 	})
 }
