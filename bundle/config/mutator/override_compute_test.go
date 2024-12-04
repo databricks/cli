@@ -172,7 +172,7 @@ func TestOverrideComputeModeProduction(t *testing.T) {
 	m := mutator.OverrideCompute()
 	diags := bundle.Apply(context.Background(), b, m)
 	require.Len(t, diags, 1)
-	assert.Equal(t, "Overriding compute for a target that uses 'mode: production' is not recommended", diags[0].Summary)
+	assert.Equal(t, "Setting a cluster override for a target that uses 'mode: production' is not recommended", diags[0].Summary)
 	assert.Equal(t, "newClusterID", b.Config.Resources.Jobs["job1"].Tasks[0].ExistingClusterId)
 }
 
