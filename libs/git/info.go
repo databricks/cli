@@ -25,9 +25,6 @@ type GitRepositoryInfo struct {
 
 	// Absolute path to determined worktree root or "" if worktree root could not be determined.
 	WorktreeRoot string
-
-	// vfs.Path variant of WorktreeRoot if WorktreeRoot is set; otherwise defaults to input path.
-	GuessedWorktreeRoot vfs.Path
 }
 
 type gitInfo struct {
@@ -45,10 +42,8 @@ type response struct {
 //   - In case we could not find git repository, all string fields of GitRepositoryInfo will be "" and err will be nil.
 //   - If there were any errors when trying to determine git root (e.g. API call returned an error or there were permission issues
 //     reading the file system), all strings fields of GitRepositoryInfo will be "" and err will be non-nil.
-//   - For convenience, GuessedWorktreeRoot parameter will be set to path in the above two cases.
 //   - If we could determine git worktree root but there were errors when reading metadata (origin, branch, commit), those errors
-//     will be logged as warnings, GitRepositoryInfo is guaranteed to have non-empty WorktreeRoot and corresponding GuessedWorktreeRoot
-//     and other fields on best effort basis. The err will be nil.
+//     will be logged as warnings, GitRepositoryInfo is guaranteed to have non-empty WorktreeRoot and other fields on best effort basis.
 //   - In successful case, all fields are set to proper git repository metadata.
 func FetchRepositoryInfo(ctx context.Context, path string, w *databricks.WorkspaceClient) (GitRepositoryInfo, error) {
 	if strings.HasPrefix(path, "/Workspace/") && dbr.RunsOnRuntime(ctx) {
@@ -59,10 +54,7 @@ func FetchRepositoryInfo(ctx context.Context, path string, w *databricks.Workspa
 }
 
 func fetchRepositoryInfoAPI(ctx context.Context, path string, w *databricks.WorkspaceClient) (GitRepositoryInfo, error) {
-	result := GitRepositoryInfo{
-		// For convenience, this field defaults to input path, even if err is also set.
-		GuessedWorktreeRoot: vfs.MustNew(path),
-	}
+	result := GitRepositoryInfo{}
 
 	apiClient, err := client.New(w.Config)
 	if err != nil {
@@ -96,8 +88,6 @@ func fetchRepositoryInfoAPI(ctx context.Context, path string, w *databricks.Work
 		result.LatestCommit = gi.HeadCommitID
 		result.CurrentBranch = gi.Branch
 		result.WorktreeRoot = fixedPath
-		// Note, this won't work on Windows since vfs.MustNew will call filepath.Abs
-		result.GuessedWorktreeRoot = vfs.MustNew(fixedPath)
 	} else {
 		log.Warnf(ctx, "Failed to load git info from %s", apiEndpoint)
 	}
@@ -113,9 +103,7 @@ func ensureWorkspacePrefix(p string) string {
 }
 
 func fetchRepositoryInfoDotGit(ctx context.Context, path string) (GitRepositoryInfo, error) {
-	result := GitRepositoryInfo{
-		GuessedWorktreeRoot: vfs.MustNew(path),
-	}
+	result := GitRepositoryInfo{}
 
 	rootDir, err := findLeafInTree(path, GitDirectoryName)
 	if rootDir == "" {
@@ -123,9 +111,8 @@ func fetchRepositoryInfoDotGit(ctx context.Context, path string) (GitRepositoryI
 	}
 
 	result.WorktreeRoot = rootDir
-	result.GuessedWorktreeRoot = vfs.MustNew(rootDir)
 
-	repo, err := NewRepository(result.GuessedWorktreeRoot)
+	repo, err := NewRepository(vfs.MustNew(rootDir))
 	if err != nil {
 		log.Warnf(ctx, "failed to read .git: %s", err)
 
