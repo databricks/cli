@@ -17,7 +17,3 @@ linters-settings:
         replacement: 'a[b:]'
 issues:
   exclude-dirs-use-default: false  # recommended by docs https://golangci-lint.run/usage/false-positives/
-  exclude:
-    # Excluded because they are currently failing. Once fixed, these exceptions should be removed from here:
-    - "SA1019: tfexec.State is deprecated: The -state CLI flag is a legacy flag and should not be used. If you need a different state file for every run, you can instead use the local backend. See https://github.com/hashicorp/terraform/issues/25920#issuecomment-676560799"
-    - "SA1012: do not pass a nil Context, even if a function permits it; pass context.TODO if you are unsure about which Context to use"

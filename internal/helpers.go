@@ -251,7 +251,7 @@ func (t *cobraTestRunner) RunBackground() {
 		// These commands are globals so we have to clean up to the best of our ability after each run.
 		// See https://github.com/spf13/cobra/blob/a6f198b635c4b18fff81930c40d464904e55b161/command.go#L1062-L1066
 		//lint:ignore SA1012 cobra sets the context and doesn't clear it
-		cli.SetContext(nil)
+		cli.SetContext(nil) //nolint:staticcheck
 
 		// Make caller aware of error.
 		errch <- err
