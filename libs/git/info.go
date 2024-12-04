@@ -154,7 +154,7 @@ func findLeafInTree(p string, leafName string) (string, error) {
 		_, err = os.Stat(filepath.Join(p, leafName))
 
 		if err == nil {
-			// found .git in p
+			// Found [leafName] in p
 			return p, nil
 		}
 
