@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"math/rand"
 	"net/http"
 	"os"
@@ -36,6 +37,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	_ "github.com/databricks/cli/cmd/workspace"
@@ -354,9 +356,26 @@ func RequireErrorRun(t *testing.T, args ...string) (bytes.Buffer, bytes.Buffer, 
 
 func readFile(t *testing.T, name string) string {
 	b, err := os.ReadFile(name)
-	require.NoError(t, err)
 
-	return string(b)
+	if assert.NoError(t, err) {
+		return string(b)
+	} else {
+		// We have observed flakyness when using this function to read certain notebooks
+		// stored in ./testdata. This are debugging logs to help diagnose the issue
+		// when it occurs again.
+		t.Logf("Error reading file %s: %w", name, err)
+		err := filepath.Walk(".", func(path string, info fs.FileInfo, err error) error {
+			if info.IsDir() {
+				t.Logf("Found directory: %s", path)
+			} else {
+				t.Logf("Found file: %s", path)
+			}
+			return nil
+		})
+		if err != nil {
+			t.Logf("Error walking directory: %w", err)
+		}
+	}
 }
 
 func writeFile(t *testing.T, name string, body string) string {
