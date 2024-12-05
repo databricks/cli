@@ -1,6 +1,7 @@
 linters:
   disable-all: true
   enable:
+    - bodyclose
     # errcheck and govet are part of default setup and should be included but give too many errors now
     # once errors are fixed, they should be enabled here:
     #- errcheck
