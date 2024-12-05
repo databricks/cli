@@ -42,6 +42,13 @@ func TestMergeApps(t *testing.T) {
 										Permission: "CAN_MANAGE",
 									},
 								},
+								{
+									Name: "sql1",
+									Job: &apps.AppResourceJob{
+										Id:         "9876",
+										Permission: "CAN_MANAGE",
+									},
+								},
 							},
 						},
 					},
@@ -60,5 +67,7 @@ func TestMergeApps(t *testing.T) {
 	assert.Equal(t, "sql1", j.Resources[1].Name)
 
 	assert.Equal(t, "CAN_MANAGE", string(j.Resources[0].Job.Permission))
-	assert.Equal(t, "CAN_USE", string(j.Resources[1].SqlWarehouse.Permission))
+
+	assert.Nil(t, j.Resources[1].SqlWarehouse)
+	assert.Equal(t, "CAN_MANAGE", string(j.Resources[1].Job.Permission))
 }

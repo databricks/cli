@@ -142,7 +142,6 @@ func TestRunAsErrorForUnsupportedResources(t *testing.T) {
 		"registered_models",
 		"experiments",
 		"schemas",
-		"apps",
 	}
 
 	base := config.Root{
