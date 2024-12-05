@@ -255,7 +255,7 @@ func (c *config) promptForValues(r *renderer) error {
 // Prompt user for any missing config values. Assign default values if
 // terminal is not TTY
 func (c *config) promptOrAssignDefaultValues(r *renderer) error {
-	// TODO: replace with IsPromptSupported call (requires fixing TestAccBundleInitErrorOnUnknownFields test)
+	// TODO: replace with IsPromptSupported call (requires fixing TestBundleInitErrorOnUnknownFields test)
 	if cmdio.IsOutTTY(c.ctx) && cmdio.IsInTTY(c.ctx) && !cmdio.IsGitBash(c.ctx) {
 		return c.promptForValues(r)
 	}

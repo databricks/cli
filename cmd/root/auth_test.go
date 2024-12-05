@@ -65,7 +65,7 @@ func expectReturns(t *testing.T, fn promptFn, config *config.Config) {
 	require.NotNil(t, client)
 }
 
-func TestAccountClientOrPrompt(t *testing.T) {
+func TestountClientOrPrompt(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 
 	dir := t.TempDir()

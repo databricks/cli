@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlertsCreateErrWhenNoArguments(t *testing.T) {
+func TestAlertsCreateErrWhenNoArguments(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	_, _, err := RequireErrorRun(t, "alerts-legacy", "create")

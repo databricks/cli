@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAccFsMkdir(t *testing.T) {
+func TestFsMkdir(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range fsTests {
@@ -37,7 +37,7 @@ func TestAccFsMkdir(t *testing.T) {
 	}
 }
 
-func TestAccFsMkdirCreatesIntermediateDirectories(t *testing.T) {
+func TestFsMkdirCreatesIntermediateDirectories(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range fsTests {
@@ -74,7 +74,7 @@ func TestAccFsMkdirCreatesIntermediateDirectories(t *testing.T) {
 	}
 }
 
-func TestAccFsMkdirWhenDirectoryAlreadyExists(t *testing.T) {
+func TestFsMkdirWhenDirectoryAlreadyExists(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range fsTests {
@@ -97,7 +97,7 @@ func TestAccFsMkdirWhenDirectoryAlreadyExists(t *testing.T) {
 	}
 }
 
-func TestAccFsMkdirWhenFileExistsAtPath(t *testing.T) {
+func TestFsMkdirWhenFileExistsAtPath(t *testing.T) {
 	t.Parallel()
 
 	t.Run("dbfs", func(t *testing.T) {

@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAccCreateJob(t *testing.T) {
+func TestCreateJob(t *testing.T) {
 	acc.WorkspaceTest(t)
 	env := GetEnvOrSkipTest(t, "CLOUD_ENV")
 	if env != "azure" {

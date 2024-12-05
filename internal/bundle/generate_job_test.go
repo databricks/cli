@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAccGenerateFromExistingJobAndDeploy(t *testing.T) {
+func TestGenerateFromExistingJobAndDeploy(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	gt := &generateJobTest{T: t, w: wt.W}
 

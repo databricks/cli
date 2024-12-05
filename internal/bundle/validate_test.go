@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAccBundleValidate(t *testing.T) {
+func TestBundleValidate(t *testing.T) {
 	testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 
 	tmpDir := t.TempDir()

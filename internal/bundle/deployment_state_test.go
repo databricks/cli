@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAccFilesAreSyncedCorrectlyWhenNoSnapshot(t *testing.T) {
+func TestFilesAreSyncedCorrectlyWhenNoSnapshot(t *testing.T) {
 	env := internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
 	t.Log(env)
 

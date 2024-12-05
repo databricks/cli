@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAccBindJobToExistingJob(t *testing.T) {
+func TestBindJobToExistingJob(t *testing.T) {
 	env := internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
 	t.Log(env)
 
@@ -80,7 +80,7 @@ func TestAccBindJobToExistingJob(t *testing.T) {
 	require.Contains(t, job.Settings.Tasks[0].SparkPythonTask.PythonFile, "hello_world.py")
 }
 
-func TestAccAbortBind(t *testing.T) {
+func TestAbortBind(t *testing.T) {
 	env := internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
 	t.Log(env)
 
@@ -128,7 +128,7 @@ func TestAccAbortBind(t *testing.T) {
 	require.Contains(t, job.Settings.Tasks[0].NotebookTask.NotebookPath, "test")
 }
 
-func TestAccGenerateAndBind(t *testing.T) {
+func TestGenerateAndBind(t *testing.T) {
 	env := internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
 	t.Log(env)
 

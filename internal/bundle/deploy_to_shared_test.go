@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAccDeployBasicToSharedWorkspacePath(t *testing.T) {
+func TestDeployBasicToSharedWorkspacePath(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 
 	nodeTypeId := internal.GetNodeTypeId(env.Get(ctx, "CLOUD_ENV"))

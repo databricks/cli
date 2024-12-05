@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccGitClone(t *testing.T) {
+func TestGitClone(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	tmpDir := t.TempDir()
@@ -32,7 +32,7 @@ func TestAccGitClone(t *testing.T) {
 	assert.Contains(t, string(b), "ide")
 }
 
-func TestAccGitCloneOnNonDefaultBranch(t *testing.T) {
+func TestGitCloneOnNonDefaultBranch(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	tmpDir := t.TempDir()
@@ -53,7 +53,7 @@ func TestAccGitCloneOnNonDefaultBranch(t *testing.T) {
 	assert.Contains(t, string(b), "dais-2022")
 }
 
-func TestAccGitCloneErrorsWhenRepositoryDoesNotExist(t *testing.T) {
+func TestGitCloneErrorsWhenRepositoryDoesNotExist(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	tmpDir := t.TempDir()

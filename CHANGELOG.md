@@ -123,7 +123,7 @@ Internal:
  * Remove unused `IS_OWNER` constant ([#1823](https://github.com/databricks/cli/pull/1823)).
  * Assert SDK version is consistent in the CLI generation process ([#1814](https://github.com/databricks/cli/pull/1814)).
  * Fixed unmarshalling json input into `interface{}` type ([#1832](https://github.com/databricks/cli/pull/1832)).
- * Fix `TestAccFsMkdirWhenFileExistsAtPath` in isolated Azure environments ([#1833](https://github.com/databricks/cli/pull/1833)).
+ * Fix `TestFsMkdirWhenFileExistsAtPath` in isolated Azure environments ([#1833](https://github.com/databricks/cli/pull/1833)).
  * Add behavioral tests for examples from the YAML spec ([#1835](https://github.com/databricks/cli/pull/1835)).
  * Remove Terraform conversion function that's no longer used ([#1840](https://github.com/databricks/cli/pull/1840)).
  * Encode assumptions about the dashboards API in a test ([#1839](https://github.com/databricks/cli/pull/1839)).
@@ -1680,7 +1680,7 @@ Internal:
  * Remove dependency on global state for the root command ([#606](https://github.com/databricks/cli/pull/606)).
  * Add merge_group trigger for build ([#612](https://github.com/databricks/cli/pull/612)).
  * Added support for build command chaining and error on missing wheel ([#607](https://github.com/databricks/cli/pull/607)).
- * Add TestAcc prefix to filer test and fix any failing tests ([#611](https://github.com/databricks/cli/pull/611)).
+ * Add Test prefix to filer test and fix any failing tests ([#611](https://github.com/databricks/cli/pull/611)).
  * Add url parse helper function for templates ([#600](https://github.com/databricks/cli/pull/600)).
  * Remove dependency on global state for remaining commands ([#613](https://github.com/databricks/cli/pull/613)).
  * Update CHANGELOG template ([#588](https://github.com/databricks/cli/pull/588)).

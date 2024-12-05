@@ -30,7 +30,7 @@ func touchEmptyFile(t *testing.T, path string) {
 	f.Close()
 }
 
-func TestAccUploadArtifactFileToCorrectRemotePath(t *testing.T) {
+func TestUploadArtifactFileToCorrectRemotePath(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	w := wt.W
 	dir := t.TempDir()
@@ -95,7 +95,7 @@ func TestAccUploadArtifactFileToCorrectRemotePath(t *testing.T) {
 	)
 }
 
-func TestAccUploadArtifactFileToCorrectRemotePathWithEnvironments(t *testing.T) {
+func TestUploadArtifactFileToCorrectRemotePathWithEnvironments(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	w := wt.W
 	dir := t.TempDir()
@@ -160,7 +160,7 @@ func TestAccUploadArtifactFileToCorrectRemotePathWithEnvironments(t *testing.T) 
 	)
 }
 
-func TestAccUploadArtifactFileToCorrectRemotePathForVolumes(t *testing.T) {
+func TestUploadArtifactFileToCorrectRemotePathForVolumes(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	w := wt.W
 
@@ -230,7 +230,7 @@ func TestAccUploadArtifactFileToCorrectRemotePathForVolumes(t *testing.T) {
 	)
 }
 
-func TestAccUploadArtifactFileToVolumeThatDoesNotExist(t *testing.T) {
+func TestUploadArtifactFileToVolumeThatDoesNotExist(t *testing.T) {
 	ctx, wt := acc.UcWorkspaceTest(t)
 	w := wt.W
 
@@ -267,7 +267,7 @@ func TestAccUploadArtifactFileToVolumeThatDoesNotExist(t *testing.T) {
 	assert.Equal(t, "", stderr.String())
 }
 
-func TestAccUploadArtifactToVolumeNotYetDeployed(t *testing.T) {
+func TestUploadArtifactToVolumeNotYetDeployed(t *testing.T) {
 	ctx, wt := acc.UcWorkspaceTest(t)
 	w := wt.W
 

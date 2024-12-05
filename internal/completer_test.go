@@ -17,7 +17,7 @@ func setupCompletionFile(t *testing.T, f filer.Filer) {
 	require.NoError(t, err)
 }
 
-func TestAccFsCompletion(t *testing.T) {
+func TestFsCompletion(t *testing.T) {
 	f, tmpDir := setupDbfsFiler(t)
 	setupCompletionFile(t, f)
 

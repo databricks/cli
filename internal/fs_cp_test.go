@@ -120,7 +120,7 @@ func copyTests() []cpTest {
 	}
 }
 
-func TestAccFsCpDir(t *testing.T) {
+func TestFsCpDir(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range copyTests() {
@@ -140,7 +140,7 @@ func TestAccFsCpDir(t *testing.T) {
 	}
 }
 
-func TestAccFsCpFileToFile(t *testing.T) {
+func TestFsCpFileToFile(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range copyTests() {
@@ -160,7 +160,7 @@ func TestAccFsCpFileToFile(t *testing.T) {
 	}
 }
 
-func TestAccFsCpFileToDir(t *testing.T) {
+func TestFsCpFileToDir(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range copyTests() {
@@ -180,7 +180,7 @@ func TestAccFsCpFileToDir(t *testing.T) {
 	}
 }
 
-func TestAccFsCpFileToDirForWindowsPaths(t *testing.T) {
+func TestFsCpFileToDirForWindowsPaths(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		t.Skip("Skipping test on non-windows OS")
 	}
@@ -196,7 +196,7 @@ func TestAccFsCpFileToDirForWindowsPaths(t *testing.T) {
 	assertTargetFile(t, ctx, targetFiler, "foo.txt")
 }
 
-func TestAccFsCpDirToDirFileNotOverwritten(t *testing.T) {
+func TestFsCpDirToDirFileNotOverwritten(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range copyTests() {
@@ -221,7 +221,7 @@ func TestAccFsCpDirToDirFileNotOverwritten(t *testing.T) {
 	}
 }
 
-func TestAccFsCpFileToDirFileNotOverwritten(t *testing.T) {
+func TestFsCpFileToDirFileNotOverwritten(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range copyTests() {
@@ -244,7 +244,7 @@ func TestAccFsCpFileToDirFileNotOverwritten(t *testing.T) {
 	}
 }
 
-func TestAccFsCpFileToFileFileNotOverwritten(t *testing.T) {
+func TestFsCpFileToFileFileNotOverwritten(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range copyTests() {
@@ -267,7 +267,7 @@ func TestAccFsCpFileToFileFileNotOverwritten(t *testing.T) {
 	}
 }
 
-func TestAccFsCpDirToDirWithOverwriteFlag(t *testing.T) {
+func TestFsCpDirToDirWithOverwriteFlag(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range copyTests() {
@@ -290,7 +290,7 @@ func TestAccFsCpDirToDirWithOverwriteFlag(t *testing.T) {
 	}
 }
 
-func TestAccFsCpFileToFileWithOverwriteFlag(t *testing.T) {
+func TestFsCpFileToFileWithOverwriteFlag(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range copyTests() {
@@ -313,7 +313,7 @@ func TestAccFsCpFileToFileWithOverwriteFlag(t *testing.T) {
 	}
 }
 
-func TestAccFsCpFileToDirWithOverwriteFlag(t *testing.T) {
+func TestFsCpFileToDirWithOverwriteFlag(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range copyTests() {
@@ -336,7 +336,7 @@ func TestAccFsCpFileToDirWithOverwriteFlag(t *testing.T) {
 	}
 }
 
-func TestAccFsCpErrorsWhenSourceIsDirWithoutRecursiveFlag(t *testing.T) {
+func TestFsCpErrorsWhenSourceIsDirWithoutRecursiveFlag(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range fsTests {
@@ -354,14 +354,14 @@ func TestAccFsCpErrorsWhenSourceIsDirWithoutRecursiveFlag(t *testing.T) {
 	}
 }
 
-func TestAccFsCpErrorsOnInvalidScheme(t *testing.T) {
+func TestFsCpErrorsOnInvalidScheme(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	_, _, err := RequireErrorRun(t, "fs", "cp", "dbfs:/a", "https:/b")
 	assert.Equal(t, "invalid scheme: https", err.Error())
 }
 
-func TestAccFsCpSourceIsDirectoryButTargetIsFile(t *testing.T) {
+func TestFsCpSourceIsDirectoryButTargetIsFile(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range copyTests() {

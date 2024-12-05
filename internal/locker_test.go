@@ -43,7 +43,7 @@ func createRemoteTestProject(t *testing.T, projectNamePrefix string, wsc *databr
 	return remoteProjectRoot
 }
 
-func TestAccLock(t *testing.T) {
+func TestLock(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 	ctx := context.TODO()
 	wsc, err := databricks.NewWorkspaceClient()
@@ -180,7 +180,7 @@ func setupLockerTest(ctx context.Context, t *testing.T) (*lockpkg.Locker, filer.
 	return locker, f
 }
 
-func TestAccLockUnlockWithoutAllowsLockFileNotExist(t *testing.T) {
+func TestLockUnlockWithoutAllowsLockFileNotExist(t *testing.T) {
 	ctx := context.Background()
 	locker, f := setupLockerTest(ctx, t)
 	var err error
@@ -202,7 +202,7 @@ func TestAccLockUnlockWithoutAllowsLockFileNotExist(t *testing.T) {
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
-func TestAccLockUnlockWithAllowsLockFileNotExist(t *testing.T) {
+func TestLockUnlockWithAllowsLockFileNotExist(t *testing.T) {
 	ctx := context.Background()
 	locker, f := setupLockerTest(ctx, t)
 	var err error

@@ -90,7 +90,7 @@ func runTagTestCases(t *testing.T, cases []tagTestCase) {
 	}
 }
 
-func TestAccTagKeyAWS(t *testing.T) {
+func TestTagKeyAWS(t *testing.T) {
 	testutil.Require(t, testutil.AWS)
 	t.Parallel()
 
@@ -122,7 +122,7 @@ func TestAccTagKeyAWS(t *testing.T) {
 	})
 }
 
-func TestAccTagValueAWS(t *testing.T) {
+func TestTagValueAWS(t *testing.T) {
 	testutil.Require(t, testutil.AWS)
 	t.Parallel()
 
@@ -148,7 +148,7 @@ func TestAccTagValueAWS(t *testing.T) {
 	})
 }
 
-func TestAccTagKeyAzure(t *testing.T) {
+func TestTagKeyAzure(t *testing.T) {
 	testutil.Require(t, testutil.Azure)
 	t.Parallel()
 
@@ -180,7 +180,7 @@ func TestAccTagKeyAzure(t *testing.T) {
 	})
 }
 
-func TestAccTagValueAzure(t *testing.T) {
+func TestTagValueAzure(t *testing.T) {
 	testutil.Require(t, testutil.Azure)
 	t.Parallel()
 
@@ -200,7 +200,7 @@ func TestAccTagValueAzure(t *testing.T) {
 	})
 }
 
-func TestAccTagKeyGCP(t *testing.T) {
+func TestTagKeyGCP(t *testing.T) {
 	testutil.Require(t, testutil.GCP)
 	t.Parallel()
 
@@ -232,7 +232,7 @@ func TestAccTagKeyGCP(t *testing.T) {
 	})
 }
 
-func TestAccTagValueGCP(t *testing.T) {
+func TestTagValueGCP(t *testing.T) {
 	testutil.Require(t, testutil.GCP)
 	t.Parallel()
 
