@@ -361,9 +361,15 @@ func TestFilerReadDir(t *testing.T) {
 	}
 }
 
-func TestFilerWorkspaceNotebook(t *testing.T) {
+func TestAccFilerWorkspaceNotebook(t *testing.T) {
 	t.Parallel()
 
+	for i := 0; i < 10; i++ {
+		testAccFilerWorkspacenotebook(t)
+	}
+}
+
+func testAccFilerWorkspacenotebook(t *testing.T) {
 	ctx := context.Background()
 	var err error
 
@@ -468,7 +474,6 @@ func TestFilerWorkspaceNotebook(t *testing.T) {
 			filerTest{t, f}.assertContents(ctx, tc.nameWithoutExt, tc.expected2)
 		})
 	}
-
 }
 
 func TestFilerWorkspaceFilesExtensionsReadDir(t *testing.T) {
@@ -612,9 +617,7 @@ func TestFilerWorkspaceFilesExtensionsRead(t *testing.T) {
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
-func TestFilerWorkspaceFilesExtensionsDelete(t *testing.T) {
-	t.Parallel()
-
+func testAccFilerWorkspaceFilesExtensionsDelete(t *testing.T) {
 	ctx := context.Background()
 	wf := setupFilerWithExtensionsTest(t)
 
@@ -659,6 +662,15 @@ func TestFilerWorkspaceFilesExtensionsDelete(t *testing.T) {
 	err = wf.Delete(ctx, "dir", filer.DeleteRecursively)
 	require.NoError(t, err)
 	filerTest{t, wf}.assertNotExists(ctx, "dir")
+
+}
+
+func TestAccFilerWorkspaceFilesExtensionsDelete(t *testing.T) {
+	t.Parallel()
+
+	for i := 0; i < 10; i++ {
+		testAccFilerWorkspaceFilesExtensionsDelete(t)
+	}
 }
 
 func TestFilerWorkspaceFilesExtensionsStat(t *testing.T) {
@@ -761,9 +773,7 @@ func TestWorkspaceFilesExtensionsNotebooksAreNotStatAsFiles(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestAccWorkspaceFilesExtensionsNotebooksAreNotDeletedAsFiles(t *testing.T) {
-	t.Parallel()
-
+func testAccWorkspaceFilesExtensionsNotebooksAreNotDeletedAsFiles(t *testing.T) {
 	ctx := context.Background()
 	wf, _ := setupWsfsExtensionsFiler(t)
 
@@ -778,6 +788,14 @@ func TestAccWorkspaceFilesExtensionsNotebooksAreNotDeletedAsFiles(t *testing.T) 
 
 	err = wf.Delete(ctx, "foo.ipynb")
 	assert.NoError(t, err)
+}
+
+func TestAccWorkspaceFilesExtensionsNotebooksAreNotDeletedAsFiles(t *testing.T) {
+	t.Parallel()
+
+	for i := 0; i < 10; i++ {
+		testAccWorkspaceFilesExtensionsNotebooksAreNotDeletedAsFiles(t)
+	}
 }
 
 func TestWorkspaceFilesExtensions_ExportFormatIsPreserved(t *testing.T) {
