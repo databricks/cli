@@ -10,6 +10,7 @@ import (
 	"path"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/databricks/cli/libs/filer"
@@ -364,9 +365,17 @@ func TestFilerReadDir(t *testing.T) {
 func TestAccFilerWorkspaceNotebook(t *testing.T) {
 	t.Parallel()
 
+	wg := sync.WaitGroup{}
+
 	for i := 0; i < 10; i++ {
-		testAccFilerWorkspacenotebook(t)
+		wg.Add(1)
+		go func() {
+			testAccFilerWorkspacenotebook(t)
+			wg.Done()
+		}()
 	}
+
+	wg.Wait()
 }
 
 func testAccFilerWorkspacenotebook(t *testing.T) {
@@ -668,9 +677,17 @@ func testAccFilerWorkspaceFilesExtensionsDelete(t *testing.T) {
 func TestAccFilerWorkspaceFilesExtensionsDelete(t *testing.T) {
 	t.Parallel()
 
+	wg := sync.WaitGroup{}
+
 	for i := 0; i < 10; i++ {
-		testAccFilerWorkspaceFilesExtensionsDelete(t)
+		wg.Add(1)
+		go func() {
+			testAccFilerWorkspaceFilesExtensionsDelete(t)
+			wg.Done()
+		}()
 	}
+
+	wg.Wait()
 }
 
 func TestFilerWorkspaceFilesExtensionsStat(t *testing.T) {
@@ -793,9 +810,17 @@ func testAccWorkspaceFilesExtensionsNotebooksAreNotDeletedAsFiles(t *testing.T) 
 func TestAccWorkspaceFilesExtensionsNotebooksAreNotDeletedAsFiles(t *testing.T) {
 	t.Parallel()
 
+	wg := sync.WaitGroup{}
+
 	for i := 0; i < 10; i++ {
-		testAccWorkspaceFilesExtensionsNotebooksAreNotDeletedAsFiles(t)
+		wg.Add(1)
+		go func() {
+			testAccWorkspaceFilesExtensionsNotebooksAreNotDeletedAsFiles(t)
+			wg.Done()
+		}()
 	}
+
+	wg.Wait()
 }
 
 func TestWorkspaceFilesExtensions_ExportFormatIsPreserved(t *testing.T) {
