@@ -198,6 +198,7 @@ func SupportedResources() map[string]ResourceDescription {
 			PluralName:    "volumes",
 			SingularTitle: "Volume",
 			PluralTitle:   "Volumes",
+		},
 		"apps": {
 			SingularName:  "app",
 			PluralName:    "apps",
