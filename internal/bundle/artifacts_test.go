@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -13,8 +14,11 @@ import (
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -224,4 +228,85 @@ func TestAccUploadArtifactFileToCorrectRemotePathForVolumes(t *testing.T) {
 		regexp.MustCompile(path.Join(regexp.QuoteMeta(volumePath), `.internal/test\.whl`)),
 		b.Config.Resources.Jobs["test"].JobSettings.Tasks[0].Libraries[0].Whl,
 	)
+}
+
+func TestAccUploadArtifactFileToVolumeThatDoesNotExist(t *testing.T) {
+	ctx, wt := acc.UcWorkspaceTest(t)
+	w := wt.W
+
+	schemaName := internal.RandomName("schema-")
+
+	_, err := w.Schemas.Create(ctx, catalog.CreateSchema{
+		CatalogName: "main",
+		Comment:     "test schema",
+		Name:        schemaName,
+	})
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err = w.Schemas.DeleteByFullName(ctx, "main."+schemaName)
+		require.NoError(t, err)
+	})
+
+	bundleRoot, err := initTestTemplate(t, ctx, "artifact_path_with_volume", map[string]any{
+		"unique_id":   uuid.New().String(),
+		"schema_name": schemaName,
+		"volume_name": "doesnotexist",
+	})
+	require.NoError(t, err)
+
+	t.Setenv("BUNDLE_ROOT", bundleRoot)
+	stdout, stderr, err := internal.RequireErrorRun(t, "bundle", "deploy")
+
+	assert.Error(t, err)
+	assert.Equal(t, fmt.Sprintf(`Error: volume /Volumes/main/%s/doesnotexist does not exist: Not Found
+  at workspace.artifact_path
+  in databricks.yml:6:18
+
+`, schemaName), stdout.String())
+	assert.Equal(t, "", stderr.String())
+}
+
+func TestAccUploadArtifactToVolumeNotYetDeployed(t *testing.T) {
+	ctx, wt := acc.UcWorkspaceTest(t)
+	w := wt.W
+
+	schemaName := internal.RandomName("schema-")
+
+	_, err := w.Schemas.Create(ctx, catalog.CreateSchema{
+		CatalogName: "main",
+		Comment:     "test schema",
+		Name:        schemaName,
+	})
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err = w.Schemas.DeleteByFullName(ctx, "main."+schemaName)
+		require.NoError(t, err)
+	})
+
+	bundleRoot, err := initTestTemplate(t, ctx, "artifact_path_with_volume", map[string]any{
+		"unique_id":   uuid.New().String(),
+		"schema_name": schemaName,
+		"volume_name": "my_volume",
+	})
+	require.NoError(t, err)
+
+	t.Setenv("BUNDLE_ROOT", bundleRoot)
+	stdout, stderr, err := internal.RequireErrorRun(t, "bundle", "deploy")
+
+	assert.Error(t, err)
+	assert.Equal(t, fmt.Sprintf(`Error: volume /Volumes/main/%s/my_volume does not exist: Not Found
+  at workspace.artifact_path
+     resources.volumes.foo
+  in databricks.yml:6:18
+     databricks.yml:11:7
+
+You are using a volume in your artifact_path that is managed by
+this bundle but which has not been deployed yet. Please first deploy
+the volume using 'bundle deploy' and then switch over to using it in
+the artifact_path.
+
+`, schemaName), stdout.String())
+	assert.Equal(t, "", stderr.String())
 }

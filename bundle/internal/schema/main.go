@@ -93,6 +93,24 @@ func removeJobsFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
 	return s
 }
 
+// While volume_type is required in the volume create API, DABs automatically sets
+// it's value to "MANAGED" if it's not provided. Thus, we make it optional
+// in the bundle schema.
+func makeVolumeTypeOptional(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
+	if typ != reflect.TypeOf(resources.Volume{}) {
+		return s
+	}
+
+	res := []string{}
+	for _, r := range s.Required {
+		if r != "volume_type" {
+			res = append(res, r)
+		}
+	}
+	s.Required = res
+	return s
+}
+
 func main() {
 	if len(os.Args) != 2 {
 		fmt.Println("Usage: go run main.go <output-file>")
@@ -118,6 +136,7 @@ func main() {
 		p.addDescriptions,
 		p.addEnums,
 		removeJobsFields,
+		makeVolumeTypeOptional,
 		addInterpolationPatterns,
 	})
 	if err != nil {

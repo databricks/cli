@@ -72,8 +72,8 @@ func (v *View) IgnoreDirectory(dir string) (bool, error) {
 	return v.Ignore(dir + "/")
 }
 
-func NewView(root vfs.Path) (*View, error) {
-	repo, err := NewRepository(root)
+func NewView(worktreeRoot, root vfs.Path) (*View, error) {
+	repo, err := NewRepository(worktreeRoot)
 	if err != nil {
 		return nil, err
 	}
@@ -94,6 +94,10 @@ func NewView(root vfs.Path) (*View, error) {
 		repo:       repo,
 		targetPath: target,
 	}, nil
+}
+
+func NewViewAtRoot(root vfs.Path) (*View, error) {
+	return NewView(root, root)
 }
 
 func (v *View) EnsureValidGitIgnoreExists() error {

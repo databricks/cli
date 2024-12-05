@@ -43,6 +43,7 @@ func allResourceTypes(t *testing.T) []string {
 		"quality_monitors",
 		"registered_models",
 		"schemas",
+		"volumes",
 	},
 		resourceTypes,
 	)
@@ -142,6 +143,7 @@ func TestRunAsErrorForUnsupportedResources(t *testing.T) {
 		"registered_models",
 		"experiments",
 		"schemas",
+		"volumes",
 	}
 
 	base := config.Root{

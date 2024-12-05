@@ -35,6 +35,13 @@ var cachedUser *iam.User
 var cachedIsServicePrincipal *bool
 var cachedCatalog *string
 
+// UUID that is stable for the duration of the template execution. This can be used
+// to populate the `bundle.uuid` field in databricks.yml by template authors.
+//
+// It's automatically logged in our telemetry logs when `databricks bundle init`
+// is run and can be used to attribute DBU revenue to bundle templates.
+var bundleUuid = uuid.New().String()
+
 func loadHelpers(ctx context.Context) template.FuncMap {
 	w := root.WorkspaceClient(ctx)
 	return template.FuncMap{
@@ -56,6 +63,9 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 		// Alias for https://pkg.go.dev/github.com/google/uuid#New. Returns, as a string, a UUID which is a 128 bit (16 byte) Universal Unique IDentifier as defined in RFC 4122.
 		"uuid": func() string {
 			return uuid.New().String()
+		},
+		"bundle_uuid": func() string {
+			return bundleUuid
 		},
 		// A key value pair. This is used with the map function to generate maps
 		// to use inside a template

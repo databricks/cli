@@ -5,6 +5,7 @@ on:
     branches:
       - "main"
       - "demo-*"
+      - "bugbash-*"
 
   # Confirm that snapshot builds work if this file is modified.
   pull_request:

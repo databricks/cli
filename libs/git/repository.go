@@ -1,9 +1,7 @@
 package git
 
 import (
-	"errors"
 	"fmt"
-	"io/fs"
 	"net/url"
 	"path"
 	"path/filepath"
@@ -204,17 +202,7 @@ func (r *Repository) Ignore(relPath string) (bool, error) {
 	return false, nil
 }
 
-func NewRepository(path vfs.Path) (*Repository, error) {
-	rootDir, err := vfs.FindLeafInTree(path, GitDirectoryName)
-	if err != nil {
-		if !errors.Is(err, fs.ErrNotExist) {
-			return nil, err
-		}
-		// Cannot find `.git` directory.
-		// Treat the specified path as a potential repository root checkout.
-		rootDir = path
-	}
-
+func NewRepository(rootDir vfs.Path) (*Repository, error) {
 	// Derive $GIT_DIR and $GIT_COMMON_DIR paths if this is a real repository.
 	// If it isn't a real repository, they'll point to the (non-existent) `.git` directory.
 	gitDir, gitCommonDir, err := resolveGitDirs(rootDir)

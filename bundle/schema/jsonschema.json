@@ -791,6 +791,51 @@
                   }
                 ]
               },
+              "resources.Volume": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "catalog_name": {
+                        "description": "The name of the catalog where the schema and the volume are",
+                        "$ref": "#/$defs/string"
+                      },
+                      "comment": {
+                        "description": "The comment attached to the volume",
+                        "$ref": "#/$defs/string"
+                      },
+                      "grants": {
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Grant"
+                      },
+                      "name": {
+                        "description": "The name of the volume",
+                        "$ref": "#/$defs/string"
+                      },
+                      "schema_name": {
+                        "description": "The name of the schema where the volume is",
+                        "$ref": "#/$defs/string"
+                      },
+                      "storage_location": {
+                        "description": "The storage location on the cloud",
+                        "$ref": "#/$defs/string"
+                      },
+                      "volume_type": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.VolumeType"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "catalog_name",
+                      "name",
+                      "schema_name"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "variable.Lookup": {
                 "anyOf": [
                   {
@@ -962,6 +1007,9 @@
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Git"
                     },
                     "name": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "uuid": {
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -1157,6 +1205,9 @@
                     },
                     "schemas": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Schema"
+                    },
+                    "volumes": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Volume"
                     }
                   },
                   "additionalProperties": false
@@ -1556,6 +1607,13 @@
                   "type": "string",
                   "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
                 }
+              ]
+            },
+            "catalog.VolumeType": {
+              "type": "string",
+              "enum": [
+                "EXTERNAL",
+                "MANAGED"
               ]
             },
             "compute.Adlsgen2Info": {
@@ -5557,6 +5615,20 @@
                       "type": "object",
                       "additionalProperties": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Schema"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.Volume": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Volume"
                       }
                     },
                     {

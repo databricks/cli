@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func testFileSetAll(t *testing.T, root string) {
-	fileSet, err := NewFileSet(vfs.MustNew(root))
+func testFileSetAll(t *testing.T, worktreeRoot, root string) {
+	fileSet, err := NewFileSet(vfs.MustNew(worktreeRoot), vfs.MustNew(root))
 	require.NoError(t, err)
 	files, err := fileSet.Files()
 	require.NoError(t, err)
@@ -24,18 +24,28 @@ func testFileSetAll(t *testing.T, root string) {
 }
 
 func TestFileSetListAllInRepo(t *testing.T) {
-	testFileSetAll(t, "./testdata")
+	testFileSetAll(t, "./testdata", "./testdata")
+}
+
+func TestFileSetListAllInRepoDifferentRoot(t *testing.T) {
+	testFileSetAll(t, ".", "./testdata")
 }
 
 func TestFileSetListAllInTempDir(t *testing.T) {
-	testFileSetAll(t, copyTestdata(t, "./testdata"))
+	dir := copyTestdata(t, "./testdata")
+	testFileSetAll(t, dir, dir)
+}
+
+func TestFileSetListAllInTempDirDifferentRoot(t *testing.T) {
+	dir := copyTestdata(t, "./testdata")
+	testFileSetAll(t, filepath.Dir(dir), dir)
 }
 
 func TestFileSetNonCleanRoot(t *testing.T) {
 	// Test what happens if the root directory can be simplified.
 	// Path simplification is done by most filepath functions.
 	// This should yield the same result as above test.
-	fileSet, err := NewFileSet(vfs.MustNew("./testdata/../testdata"))
+	fileSet, err := NewFileSetAtRoot(vfs.MustNew("./testdata/../testdata"))
 	require.NoError(t, err)
 	files, err := fileSet.Files()
 	require.NoError(t, err)
@@ -44,7 +54,7 @@ func TestFileSetNonCleanRoot(t *testing.T) {
 
 func TestFileSetAddsCacheDirToGitIgnore(t *testing.T) {
 	projectDir := t.TempDir()
-	fileSet, err := NewFileSet(vfs.MustNew(projectDir))
+	fileSet, err := NewFileSetAtRoot(vfs.MustNew(projectDir))
 	require.NoError(t, err)
 	fileSet.EnsureValidGitIgnoreExists()
 
@@ -59,7 +69,7 @@ func TestFileSetDoesNotCacheDirToGitIgnoreIfAlreadyPresent(t *testing.T) {
 	projectDir := t.TempDir()
 	gitIgnorePath := filepath.Join(projectDir, ".gitignore")
 
-	fileSet, err := NewFileSet(vfs.MustNew(projectDir))
+	fileSet, err := NewFileSetAtRoot(vfs.MustNew(projectDir))
 	require.NoError(t, err)
 	err = os.WriteFile(gitIgnorePath, []byte(".databricks"), 0o644)
 	require.NoError(t, err)

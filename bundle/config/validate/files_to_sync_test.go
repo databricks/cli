@@ -44,6 +44,7 @@ func setupBundleForFilesToSyncTest(t *testing.T) *bundle.Bundle {
 		BundleRoot:     vfs.MustNew(dir),
 		SyncRootPath:   dir,
 		SyncRoot:       vfs.MustNew(dir),
+		WorktreeRoot:   vfs.MustNew(dir),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "default",

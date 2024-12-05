@@ -20,6 +20,7 @@ type Resources struct {
 	RegisteredModels      map[string]*resources.RegisteredModel      `json:"registered_models,omitempty"`
 	QualityMonitors       map[string]*resources.QualityMonitor       `json:"quality_monitors,omitempty"`
 	Schemas               map[string]*resources.Schema               `json:"schemas,omitempty"`
+	Volumes               map[string]*resources.Volume               `json:"volumes,omitempty"`
 	Clusters              map[string]*resources.Cluster              `json:"clusters,omitempty"`
 	Dashboards            map[string]*resources.Dashboard            `json:"dashboards,omitempty"`
 	Apps                  map[string]*resources.App                  `json:"apps,omitempty"`
@@ -86,6 +87,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["schemas"], r.Schemas),
 		collectResourceMap(descriptions["clusters"], r.Clusters),
 		collectResourceMap(descriptions["dashboards"], r.Dashboards),
+    collectResourceMap(descriptions["volumes"], r.Volumes),
 		collectResourceMap(descriptions["apps"], r.Apps),
 	}
 }
@@ -191,11 +193,17 @@ func SupportedResources() map[string]ResourceDescription {
 			SingularTitle: "Dashboard",
 			PluralTitle:   "Dashboards",
 		},
-		"apps": {
+		"volumes": {
+			SingularName:  "volume",
+			PluralName:    "volumes",
+			SingularTitle: "Volume",
+			PluralTitle:   "Volumes",
+		},
+    "apps": {
 			SingularName:  "app",
 			PluralName:    "apps",
 			SingularTitle: "App",
 			PluralTitle:   "Apps",
-		},
+    },
 	}
 }

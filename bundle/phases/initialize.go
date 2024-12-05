@@ -42,6 +42,7 @@ func Initialize() bundle.Mutator {
 
 			mutator.InitializeWorkspaceClient(),
 			mutator.PopulateCurrentUser(),
+			mutator.LoadGitDetails(),
 
 			mutator.DefineDefaultWorkspaceRoot(),
 			mutator.ExpandWorkspaceRoot(),
@@ -70,6 +71,7 @@ func Initialize() bundle.Mutator {
 			mutator.SetRunAs(),
 			mutator.OverrideCompute(),
 			mutator.ConfigureDashboardDefaults(),
+			mutator.ConfigureVolumeDefaults(),
 			mutator.ProcessTargetMode(),
 			mutator.ApplyPresets(),
 			mutator.DefaultQueueing(),

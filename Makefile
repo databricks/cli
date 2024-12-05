@@ -7,10 +7,16 @@ fmt:
 	@gofmt -w $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
 lint: vendor
-	@echo "✓ Linting source code with https://staticcheck.io/ ..."
-	@staticcheck ./...
+	@echo "✓ Linting source code with https://golangci-lint.run/ ..."
+	@golangci-lint run ./...
 
-test: lint
+lintfix: vendor
+	@echo "✓ Linting source code with 'golangci-lint run --fix' ..."
+	@golangci-lint run --fix ./...
+
+test: lint testonly
+
+testonly:
 	@echo "✓ Running tests ..."
 	@gotestsum --format pkgname-and-test-fails --no-summary=skipped --raw-command go test -v -json -short -coverprofile=coverage.txt ./...
 
