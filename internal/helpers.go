@@ -276,7 +276,7 @@ func (t *cobraTestRunner) Run() (bytes.Buffer, bytes.Buffer, error) {
 }
 
 // Like [require.Eventually] but errors if the underlying command has failed.
-func (c *cobraTestRunner) Eventually(condition func() bool, waitFor time.Duration, tick time.Duration, msgAndArgs ...interface{}) {
+func (c *cobraTestRunner) Eventually(condition func() bool, waitFor time.Duration, tick time.Duration, msgAndArgs ...any) {
 	ch := make(chan bool, 1)
 
 	timer := time.NewTimer(waitFor)

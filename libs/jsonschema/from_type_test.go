@@ -11,10 +11,10 @@ import (
 
 func TestFromTypeBasic(t *testing.T) {
 	type myStruct struct {
-		S             string      `json:"s"`
-		I             *int        `json:"i,omitempty"`
-		V             interface{} `json:"v,omitempty"`
-		TriplePointer ***int      `json:"triple_pointer,omitempty"`
+		S             string `json:"s"`
+		I             *int   `json:"i,omitempty"`
+		V             any    `json:"v,omitempty"`
+		TriplePointer ***int `json:"triple_pointer,omitempty"`
 
 		// These fields should be ignored in the resulting schema.
 		NotAnnotated     string
