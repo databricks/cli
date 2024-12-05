@@ -14,6 +14,7 @@ import (
 type App struct {
 	// This represents the id which is the name of the app that can be used
 	// as a reference in other resources. This value is returned by terraform.
+	// This equals to app name and added for symmetry with other resources.
 	ID string `json:"id,omitempty" bundle:"readonly"`
 
 	// SourceCodePath is a required field used by DABs to point databricks app source code
@@ -23,7 +24,7 @@ type App struct {
 	// Config is an optional field which allows configuring the app following Databricks app configuration format like in app.yml.
 	// When this field is set, DABs read the configuration set in this field and write
 	// it to app.yml in the root of the source code folder in Databricks workspace.
-	// If there’s app.yml defined already, it will be overridden.
+	// If there’s app.yml defined locally, DABs will raise an error.
 	Config map[string]interface{} `json:"config,omitempty"`
 
 	Permissions    []Permission   `json:"permissions,omitempty"`

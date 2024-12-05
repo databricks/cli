@@ -7,7 +7,7 @@ type elementsByKey struct {
 	keyFunc func(dyn.Value) string
 }
 
-func (e elementsByKey) Map(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
+func (e elementsByKey) doMap(_ dyn.Path, v dyn.Value, mergeFunc func(a dyn.Value, b dyn.Value) (dyn.Value, error)) (dyn.Value, error) {
 	// We know the type of this value is a sequence.
 	// For additional defence, return self if it is not.
 	elements, ok := v.AsSequence()
@@ -33,7 +33,7 @@ func (e elementsByKey) Map(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 		}
 
 		// Merge this instance into the reference.
-		nv, err := Merge(ref, elements[i])
+		nv, err := mergeFunc(ref, elements[i])
 		if err != nil {
 			return v, err
 		}
@@ -55,6 +55,26 @@ func (e elementsByKey) Map(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 	return dyn.NewValue(out, v.Locations()), nil
 }
 
+func (e elementsByKey) Map(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
+	return e.doMap(nil, v, Merge)
+}
+
+func (e elementsByKey) MapWithOverride(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+	return e.doMap(nil, v, func(a dyn.Value, b dyn.Value) (dyn.Value, error) {
+		return Override(a, b, OverrideVisitor{
+			VisitInsert: func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
+				return v, nil
+			},
+			VisitDelete: func(valuePath dyn.Path, left dyn.Value) error {
+				return nil
+			},
+			VisitUpdate: func(_ dyn.Path, a dyn.Value, b dyn.Value) (dyn.Value, error) {
+				return b, nil
+			},
+		})
+	})
+}
+
 // ElementsByKey returns a [dyn.MapFunc] that operates on a sequence
 // where each element is a map. It groups elements by a key and merges
 // elements with the same key.
@@ -64,4 +84,8 @@ func (e elementsByKey) Map(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 // with the value as returned by the key function.
 func ElementsByKey(key string, keyFunc func(dyn.Value) string) dyn.MapFunc {
 	return elementsByKey{key, keyFunc}.Map
+}
+
+func ElementsByKeyWithOverride(key string, keyFunc func(dyn.Value) string) dyn.MapFunc {
+	return elementsByKey{key, keyFunc}.MapWithOverride
 }
