@@ -37,7 +37,7 @@ func (m *mergeApps) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 		}
 
 		return dyn.Map(v, "resources.apps", dyn.Foreach(func(_ dyn.Path, app dyn.Value) (dyn.Value, error) {
-			return dyn.Map(app, "resources", merge.ElementsByKey("name", m.resourceName))
+			return dyn.Map(app, "resources", merge.ElementsByKeyWithOverride("name", m.resourceName))
 		}))
 	})
 
