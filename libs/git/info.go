@@ -105,7 +105,7 @@ func ensureWorkspacePrefix(p string) string {
 func fetchRepositoryInfoDotGit(ctx context.Context, path string) (RepositoryInfo, error) {
 	result := RepositoryInfo{}
 
-	rootDir, err := findLeafInTree(path, GitDirectoryName)
+	rootDir, err := FindLeafInTree(path, GitDirectoryName)
 	if rootDir == "" {
 		return result, err
 	}
@@ -135,7 +135,7 @@ func fetchRepositoryInfoDotGit(ctx context.Context, path string) (RepositoryInfo
 	return result, nil
 }
 
-func findLeafInTree(p string, leafName string) (string, error) {
+func FindLeafInTree(p string, leafName string) (string, error) {
 	var err error
 	for i := 0; i < 10000; i++ {
 		_, err = os.Stat(filepath.Join(p, leafName))
