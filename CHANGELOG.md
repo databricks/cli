@@ -1,5 +1,32 @@
 # Version changelog
 
+## [Release] Release v0.236.0
+
+**New features for Databricks Asset Bundles:**
+
+This release adds support for managing Unity Catalog volumes as part of your bundle configuration.
+
+Bundles:
+ * Add DABs support for Unity Catalog volumes ([#1762](https://github.com/databricks/cli/pull/1762)).
+ * Support lookup by name of notification destinations ([#1922](https://github.com/databricks/cli/pull/1922)).
+ * Extend "notebook not found" error to warn about missing extension ([#1920](https://github.com/databricks/cli/pull/1920)).
+ * Skip sync warning if no sync paths are defined ([#1926](https://github.com/databricks/cli/pull/1926)).
+ * Add validation for single node clusters ([#1909](https://github.com/databricks/cli/pull/1909)).
+ * Fix segfault in bundle summary command ([#1937](https://github.com/databricks/cli/pull/1937)).
+ * Add the `bundle_uuid` helper function for templates ([#1947](https://github.com/databricks/cli/pull/1947)).
+ * Add default value for `volume_type` for DABs ([#1952](https://github.com/databricks/cli/pull/1952)).
+ * Properly read Git metadata when running inside workspace ([#1945](https://github.com/databricks/cli/pull/1945)).
+ * Upgrade TF provider to 1.59.0 ([#1960](https://github.com/databricks/cli/pull/1960)).
+
+Internal:
+ * Breakout variable lookup into separate files and tests ([#1921](https://github.com/databricks/cli/pull/1921)).
+ * Add golangci-lint v1.62.2 ([#1953](https://github.com/databricks/cli/pull/1953)).
+
+Dependency updates:
+ * Bump golang.org/x/term from 0.25.0 to 0.26.0 ([#1907](https://github.com/databricks/cli/pull/1907)).
+ * Bump github.com/Masterminds/semver/v3 from 3.3.0 to 3.3.1 ([#1930](https://github.com/databricks/cli/pull/1930)).
+ * Bump github.com/stretchr/testify from 1.9.0 to 1.10.0 ([#1932](https://github.com/databricks/cli/pull/1932)).
+ * Bump github.com/databricks/databricks-sdk-go from 0.51.0 to 0.52.0 ([#1931](https://github.com/databricks/cli/pull/1931)).
 ## [Release] Release v0.235.0
 
 **Note:** the `bundle generate` command now uses the `.<resource-type>.yml`
