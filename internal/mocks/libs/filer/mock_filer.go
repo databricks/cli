@@ -28,11 +28,11 @@ func (_m *MockFiler) EXPECT() *MockFiler_Expecter {
 
 // Delete provides a mock function with given fields: ctx, path, mode
 func (_m *MockFiler) Delete(ctx context.Context, path string, mode ...filer.DeleteMode) error {
-	_va := make([]interface{}, len(mode))
+	_va := make([]any, len(mode))
 	for _i := range mode {
 		_va[_i] = mode[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, ctx, path)
 	_ca = append(_ca, _va...)
 	ret := _m.Called(_ca...)
@@ -60,9 +60,9 @@ type MockFiler_Delete_Call struct {
 //   - ctx context.Context
 //   - path string
 //   - mode ...filer.DeleteMode
-func (_e *MockFiler_Expecter) Delete(ctx interface{}, path interface{}, mode ...interface{}) *MockFiler_Delete_Call {
+func (_e *MockFiler_Expecter) Delete(ctx any, path any, mode ...any) *MockFiler_Delete_Call {
 	return &MockFiler_Delete_Call{Call: _e.mock.On("Delete",
-		append([]interface{}{ctx, path}, mode...)...)}
+		append([]any{ctx, path}, mode...)...)}
 }
 
 func (_c *MockFiler_Delete_Call) Run(run func(ctx context.Context, path string, mode ...filer.DeleteMode)) *MockFiler_Delete_Call {
@@ -114,7 +114,7 @@ type MockFiler_Mkdir_Call struct {
 // Mkdir is a helper method to define mock.On call
 //   - ctx context.Context
 //   - path string
-func (_e *MockFiler_Expecter) Mkdir(ctx interface{}, path interface{}) *MockFiler_Mkdir_Call {
+func (_e *MockFiler_Expecter) Mkdir(ctx any, path any) *MockFiler_Mkdir_Call {
 	return &MockFiler_Mkdir_Call{Call: _e.mock.On("Mkdir", ctx, path)}
 }
 
@@ -173,7 +173,7 @@ type MockFiler_Read_Call struct {
 // Read is a helper method to define mock.On call
 //   - ctx context.Context
 //   - path string
-func (_e *MockFiler_Expecter) Read(ctx interface{}, path interface{}) *MockFiler_Read_Call {
+func (_e *MockFiler_Expecter) Read(ctx any, path any) *MockFiler_Read_Call {
 	return &MockFiler_Read_Call{Call: _e.mock.On("Read", ctx, path)}
 }
 
@@ -232,7 +232,7 @@ type MockFiler_ReadDir_Call struct {
 // ReadDir is a helper method to define mock.On call
 //   - ctx context.Context
 //   - path string
-func (_e *MockFiler_Expecter) ReadDir(ctx interface{}, path interface{}) *MockFiler_ReadDir_Call {
+func (_e *MockFiler_Expecter) ReadDir(ctx any, path any) *MockFiler_ReadDir_Call {
 	return &MockFiler_ReadDir_Call{Call: _e.mock.On("ReadDir", ctx, path)}
 }
 
@@ -291,7 +291,7 @@ type MockFiler_Stat_Call struct {
 // Stat is a helper method to define mock.On call
 //   - ctx context.Context
 //   - name string
-func (_e *MockFiler_Expecter) Stat(ctx interface{}, name interface{}) *MockFiler_Stat_Call {
+func (_e *MockFiler_Expecter) Stat(ctx any, name any) *MockFiler_Stat_Call {
 	return &MockFiler_Stat_Call{Call: _e.mock.On("Stat", ctx, name)}
 }
 
@@ -314,11 +314,11 @@ func (_c *MockFiler_Stat_Call) RunAndReturn(run func(context.Context, string) (f
 
 // Write provides a mock function with given fields: ctx, path, reader, mode
 func (_m *MockFiler) Write(ctx context.Context, path string, reader io.Reader, mode ...filer.WriteMode) error {
-	_va := make([]interface{}, len(mode))
+	_va := make([]any, len(mode))
 	for _i := range mode {
 		_va[_i] = mode[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, ctx, path, reader)
 	_ca = append(_ca, _va...)
 	ret := _m.Called(_ca...)
@@ -347,9 +347,9 @@ type MockFiler_Write_Call struct {
 //   - path string
 //   - reader io.Reader
 //   - mode ...filer.WriteMode
-func (_e *MockFiler_Expecter) Write(ctx interface{}, path interface{}, reader interface{}, mode ...interface{}) *MockFiler_Write_Call {
+func (_e *MockFiler_Expecter) Write(ctx any, path any, reader any, mode ...any) *MockFiler_Write_Call {
 	return &MockFiler_Write_Call{Call: _e.mock.On("Write",
-		append([]interface{}{ctx, path, reader}, mode...)...)}
+		append([]any{ctx, path, reader}, mode...)...)}
 }
 
 func (_c *MockFiler_Write_Call) Run(run func(ctx context.Context, path string, reader io.Reader, mode ...filer.WriteMode)) *MockFiler_Write_Call {
