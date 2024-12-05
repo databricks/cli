@@ -363,6 +363,7 @@ func readFile(t *testing.T, name string) string {
 		// We have observed flakyness when using this function to read certain notebooks
 		// stored in ./testdata. This are debugging logs to help diagnose the issue
 		// when it occurs again.
+		origErr := err
 		t.Logf("Error reading file %s: %w", name, err)
 		err := filepath.Walk(".", func(path string, info fs.FileInfo, err error) error {
 			if info.IsDir() {
@@ -375,6 +376,8 @@ func readFile(t *testing.T, name string) string {
 		if err != nil {
 			t.Logf("Error walking directory: %w", err)
 		}
+		t.Fatalf("Ending test because of failure to read file %s: %w", name, origErr)
+		return ""
 	}
 }
 
