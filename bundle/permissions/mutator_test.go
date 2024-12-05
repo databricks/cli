@@ -161,6 +161,12 @@ func TestWarningOnOverlapPermission(t *testing.T) {
 
 func TestAllResourcesExplicitlyDefinedForPermissionsSupport(t *testing.T) {
 	r := config.Resources{}
+
+	for _, resource := range notSupportedResources {
+		_, ok := levelsMap[resource]
+		assert.False(t, ok, fmt.Sprintf("Resource %s is defined in both levelsMap and notSupportedResources", resource))
+	}
+
 	for _, resource := range r.AllResources() {
 		_, ok := levelsMap[resource.Description.PluralName]
 		if !slices.Contains(notSupportedResources, resource.Description.PluralName) && !ok {
