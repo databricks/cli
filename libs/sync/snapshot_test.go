@@ -30,7 +30,7 @@ func TestDiff(t *testing.T) {
 
 	// Create temp project dir
 	projectDir := t.TempDir()
-	fileSet, err := git.NewFileSet(vfs.MustNew(projectDir))
+	fileSet, err := git.NewFileSetAtRoot(vfs.MustNew(projectDir))
 	require.NoError(t, err)
 	state := Snapshot{
 		SnapshotState: &SnapshotState{
@@ -94,7 +94,7 @@ func TestSymlinkDiff(t *testing.T) {
 
 	// Create temp project dir
 	projectDir := t.TempDir()
-	fileSet, err := git.NewFileSet(vfs.MustNew(projectDir))
+	fileSet, err := git.NewFileSetAtRoot(vfs.MustNew(projectDir))
 	require.NoError(t, err)
 	state := Snapshot{
 		SnapshotState: &SnapshotState{
@@ -125,7 +125,7 @@ func TestFolderDiff(t *testing.T) {
 
 	// Create temp project dir
 	projectDir := t.TempDir()
-	fileSet, err := git.NewFileSet(vfs.MustNew(projectDir))
+	fileSet, err := git.NewFileSetAtRoot(vfs.MustNew(projectDir))
 	require.NoError(t, err)
 	state := Snapshot{
 		SnapshotState: &SnapshotState{
@@ -170,7 +170,7 @@ func TestPythonNotebookDiff(t *testing.T) {
 
 	// Create temp project dir
 	projectDir := t.TempDir()
-	fileSet, err := git.NewFileSet(vfs.MustNew(projectDir))
+	fileSet, err := git.NewFileSetAtRoot(vfs.MustNew(projectDir))
 	require.NoError(t, err)
 	state := Snapshot{
 		SnapshotState: &SnapshotState{
@@ -245,7 +245,7 @@ func TestErrorWhenIdenticalRemoteName(t *testing.T) {
 
 	// Create temp project dir
 	projectDir := t.TempDir()
-	fileSet, err := git.NewFileSet(vfs.MustNew(projectDir))
+	fileSet, err := git.NewFileSetAtRoot(vfs.MustNew(projectDir))
 	require.NoError(t, err)
 	state := Snapshot{
 		SnapshotState: &SnapshotState{
@@ -282,7 +282,7 @@ func TestNoErrorRenameWithIdenticalRemoteName(t *testing.T) {
 
 	// Create temp project dir
 	projectDir := t.TempDir()
-	fileSet, err := git.NewFileSet(vfs.MustNew(projectDir))
+	fileSet, err := git.NewFileSetAtRoot(vfs.MustNew(projectDir))
 	require.NoError(t, err)
 	state := Snapshot{
 		SnapshotState: &SnapshotState{
