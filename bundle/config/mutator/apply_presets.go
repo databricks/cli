@@ -222,6 +222,8 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		dashboard.DisplayName = prefix + dashboard.DisplayName
 	}
 
+	// Apps: No presets
+
 	if config.IsExplicitlyEnabled((b.Config.Presets.SourceLinkedDeployment)) {
 		isDatabricksWorkspace := dbr.RunsOnRuntime(ctx) && strings.HasPrefix(b.SyncRootPath, "/Workspace/")
 		if !isDatabricksWorkspace {
