@@ -59,6 +59,9 @@ type Sync struct {
 	// WaitGroup is automatically created when an output handler is provided in the SyncOptions.
 	// Close call is required to ensure the output handler goroutine handles all events in time.
 	outputWaitGroup *stdsync.WaitGroup
+
+	// If this flag is not set, we'll create remote directory before starting upload
+	remoteExists bool
 }
 
 // New initializes and returns a new [Sync] instance.
@@ -84,7 +87,7 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 	}
 
 	// Verify that the remote path we're about to synchronize to is valid and allowed.
-	err = EnsureRemotePathIsUsable(ctx, opts.WorkspaceClient, opts.RemotePath, opts.CurrentUser)
+	remoteExists, err := EnsureRemotePathIsUsable(ctx, opts.WorkspaceClient, opts.RemotePath, opts.CurrentUser)
 	if err != nil {
 		return nil, err
 	}
@@ -141,6 +144,7 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 		notifier:        notifier,
 		outputWaitGroup: outputWaitGroup,
 		seq:             0,
+		remoteExists:    remoteExists,
 	}, nil
 }
 
@@ -180,6 +184,14 @@ func (s *Sync) notifyComplete(ctx context.Context, d diff) {
 // Returns the list of files tracked (and synchronized) by the syncer during the run,
 // and an error if any occurred.
 func (s *Sync) RunOnce(ctx context.Context) ([]fileset.File, error) {
+	if !s.remoteExists {
+		err := createRemotePath(ctx, s.WorkspaceClient, s.RemotePath)
+		if err != nil {
+			return nil, err
+		}
+		s.remoteExists = true
+	}
+
 	files, err := s.GetFileList(ctx)
 	if err != nil {
 		return files, err
