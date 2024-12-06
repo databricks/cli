@@ -1,5 +1,6 @@
 base_branch: refs/remotes/origin/main
 go_mod: go.mod
-reset_list:
-  - go.mod
-  - go.sum
+# If this is enabled, changes in any of these result in full re-test
+#reset_list:
+#  - go.mod
+#  - go.sum
