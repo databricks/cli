@@ -95,7 +95,7 @@ jobs:
           pip3 install wheel
 
       - name: Run tests
-        run: make testchanged
+        run: make testchanges
 
       #- name: Publish test coverage
       #  uses: codecov/codecov-action@v4
