@@ -20,6 +20,17 @@ testonly:
 	@echo "✓ Running tests ..."
 	@gotestsum --format pkgname-and-test-fails --no-summary=skipped --raw-command go test -v -json -short -coverprofile=coverage.txt ./...
 
+viewchanges: changecalc/changecalc
+	@changecalc/changecalc
+
+testchanges: changecalc/changecalc
+	@echo "✓ Running tests based on changes relative to main..."
+	changecalc/changecalc > changed-packages.txt || echo "./..." > changed-packages.txt
+	gotestsum --format pkgname-and-test-fails --no-summary=skipped --raw-command go test -v -json -short -coverprofile=coverage.txt $(shell cat changed-packages.txt)
+
+changecalc/changecalc: changecalc/*.go
+	@go build -o changecalc/changecalc changecalc/main.go
+
 coverage: test
 	@echo "✓ Opening coverage for unit tests ..."
 	@go tool cover -html=coverage.txt
@@ -36,5 +47,5 @@ vendor:
 	@echo "✓ Filling vendor folder with library code ..."
 	@go mod vendor
 
-.PHONY: build vendor coverage test lint fmt
 
+.PHONY: build vendor coverage test lint fmt viewchanges testchanges

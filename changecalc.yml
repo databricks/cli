@@ -1,0 +1,5 @@
+base_branch: main
+go_mod: go.mod
+reset_list:
+  - go.mod
+  - go.sum
