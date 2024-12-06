@@ -25,7 +25,6 @@ type annotation struct {
 }
 
 type annotationHandler struct {
-	op    *openapiParser
 	ref   map[string]annotation
 	empty map[string]annotation
 }
