@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"reflect"
@@ -8,6 +9,10 @@ import (
 
 	"github.com/ghodss/yaml"
 
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/cli/libs/dyn/merge"
+	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/jsonschema"
 )
 
@@ -16,48 +21,51 @@ type annotation struct {
 	MarkdownDescription string `json:"markdown_description,omitempty"`
 	Title               string `json:"title,omitempty"`
 	Default             any    `json:"default,omitempty"`
+	Enum                []any  `json:"enum,omitempty"`
 }
 
 type annotationHandler struct {
 	filePath string
 	op       *openapiParser
 	ref      map[string]annotation
+	empty    map[string]annotation
 }
 
 const Placeholder = "PLACEHOLDER"
 
-// Adds annotations to the JSON schema reading from the annotations file.
+// Adds annotations to the JSON schema reading from the annotation files.
 // More details https://json-schema.org/understanding-json-schema/reference/annotations
-func newAnnotationHandler(path string, op *openapiParser) (*annotationHandler, error) {
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
+func newAnnotationHandler(sources []string) (*annotationHandler, error) {
+	prev := dyn.NilValue
+	for _, path := range sources {
+		b, err := os.ReadFile(path)
+		if err != nil {
+			return nil, err
+		}
+		generated, err := yamlloader.LoadYAML(path, bytes.NewBuffer(b))
+		if err != nil {
+			return nil, err
+		}
+		prev, err = merge.Merge(prev, generated)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	data := map[string]annotation{}
-	err = yaml.Unmarshal(b, &data)
+	var data map[string]annotation
+
+	err := convert.ToTyped(&data, prev)
 	if err != nil {
 		return nil, err
-	}
-
-	if data == nil {
-		data = map[string]annotation{}
 	}
 
 	d := &annotationHandler{}
 	d.ref = data
-	d.op = op
-	d.filePath = path
+	d.empty = map[string]annotation{}
 	return d, nil
 }
 
 func (d *annotationHandler) addAnnotations(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
-	// Skips the type if it is a part of OpenAPI spec, as it is already annotated.
-	_, ok := d.op.findRef(typ)
-	if ok {
-		return s
-	}
-
 	refPath := jsonschema.TypePath(typ)
 	items := map[string]*jsonschema.Schema{}
 	items[refPath] = &s
@@ -76,32 +84,47 @@ func (d *annotationHandler) addAnnotations(typ reflect.Type, s jsonschema.Schema
 
 		item, ok := d.ref[k]
 		if !ok {
-			d.ref[k] = annotation{
-				Description: Placeholder,
-			}
-			continue
+			item = annotation{}
 		}
-		if item.Description == Placeholder {
-			continue
+		if item.Description == "" {
+			item.Description = Placeholder
+			d.empty[k] = item
+		}
+		if item.Description != Placeholder {
+			v.Description = item.Description
 		}
 
-		v.Description = item.Description
 		if item.Default != nil {
 			v.Default = item.Default
 		}
 		v.MarkdownDescription = item.MarkdownDescription
 		v.Title = item.Title
+		v.Enum = item.Enum
 	}
 	return s
 }
 
-func (d *annotationHandler) overwrite() error {
-	data, err := yaml.Marshal(d.ref)
+// Adds empty annotations with placeholders to the annotation file
+func (d *annotationHandler) sync(outputPath string) error {
+	file, err := os.ReadFile(outputPath)
 	if err != nil {
 		return err
 	}
 
-	err = os.WriteFile(d.filePath, data, 0644)
+	existing := map[string]annotation{}
+	err = yaml.Unmarshal(file, &existing)
+
+	for k, v := range d.empty {
+		existing[k] = v
+	}
+	if err != nil {
+		return err
+	}
+	b, err := yaml.Marshal(existing)
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(outputPath, b, 0644)
 	if err != nil {
 		return err
 	}
