@@ -3,7 +3,9 @@ package mutator
 import (
 	"context"
 	"fmt"
+	"os"
 	"path"
+	"regexp"
 	"slices"
 	"sort"
 	"strings"
@@ -14,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -100,7 +103,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 			}
 
 			diags = diags.Extend(addCatalogSchemaParameters(b, key, j, t))
-			diags = diags.Extend(validateCatalogSchemaUsage(b, key, j))
+			diags = diags.Extend(recommendCatalogSchemaUsage(b, ctx, key, j))
 		}
 	}
 
@@ -333,31 +336,6 @@ func validateCatalogAndSchema(b *bundle.Bundle) diag.Diagnostics {
 	}
 	return nil
 }
-func validateCatalogSchemaUsage(b *bundle.Bundle, key string, job *resources.Job) diag.Diagnostics {
-	for _, t := range job.Tasks {
-		if t.NotebookTask != nil {
-			// TODO: proper validation that warns
-			return diag.Diagnostics{{
-				Summary: fmt.Sprintf("job %s must read catalog and schema from parameters for notebook %s",
-					key, t.NotebookTask.NotebookPath),
-				Severity:  diag.Recommendation,
-				Locations: []dyn.Location{b.Config.GetLocation("resources.jobs." + key)},
-			}}
-		}
-	}
-
-	// TODO: validate that any notebooks actually read the catalog/schema arguments
-	// if ... {
-	// 	return diag.Diagnostics{{
-	// 		Summary: fmt.Sprintf("job %s must pass catalog and schema presets as parameters as follows:\n"+
-	// 			"  ...", key),
-	// 		Severity:  diag.Error,
-	// 		Locations: []dyn.Location{b.Config.GetLocation("resources.jobs." + key)},
-	// 	}}
-	// }
-
-	return nil
-}
 
 // toTagArray converts a map of tags to an array of tags.
 // We sort tags so ensure stable ordering.
@@ -442,4 +420,87 @@ func addCatalogSchemaParameters(b *bundle.Bundle, key string, job *resources.Job
 	}
 
 	return diags
+}
+
+func recommendCatalogSchemaUsage(b *bundle.Bundle, ctx context.Context, key string, job *resources.Job) diag.Diagnostics {
+	var diags diag.Diagnostics
+	for _, t := range job.Tasks {
+		var relPath string
+		var expected string
+		var fix string
+		if t.NotebookTask != nil {
+			relPath = t.NotebookTask.NotebookPath
+			expected = `"  dbutils.widgets.text(['"]schema|` +
+				`USE[^)]+schema`
+			fix = "  dbutils.widgets.text('catalog')\n" +
+				"  dbutils.widgets.text('schema')\n" +
+				"  catalog = dbutils.widgets.get('catalog')\n" +
+				"  schema = dbutils.widgets.get('schema')\n" +
+				"  spark.sql(f'USE {catalog}.{schema}')\n"
+		} else if t.SparkPythonTask != nil {
+			relPath = t.SparkPythonTask.PythonFile
+			expected = `add_argument\(['"]--catalog'|` +
+				`USE[^)]+catalog`
+			fix = "  def main():\n" +
+				"    parser = argparse.ArgumentParser()\n" +
+				"    parser.add_argument('--catalog', required=True)\n" +
+				"    parser.add_argument('--schema', '-s', required=True)\n" +
+				"    args, unknown = parser.parse_known_args()\n" +
+				"    spark.sql(f\"USE {args.catalog}.{args.schema}\")\n"
+		} else if t.SqlTask != nil && t.SqlTask.File != nil {
+			relPath = t.SqlTask.File.Path
+			expected = `:schema|\{\{schema\}\}`
+			fix = "  USE CATALOG {{catalog}};\n" +
+				"  USE IDENTIFIER({schema});\n"
+		} else {
+			continue
+		}
+
+		sourceDir, err := b.Config.GetLocation("resources.jobs." + key).Directory()
+		if err != nil {
+			continue
+		}
+
+		localPath, _, err := GetLocalPath(ctx, b, sourceDir, relPath)
+		if err != nil {
+			// Any path errors are reported by another mutator
+			continue
+		}
+		if localPath == "" {
+			// If there is no local copy we don't want to download it and skip this check
+			continue
+		}
+
+		log.Warnf(ctx, "LocalPath: %s, relPath: %s, sourceDir: %s", localPath, relPath, sourceDir)
+
+		if !fileIncludesPattern(ctx, localPath, expected) {
+			diags = diags.Extend(diag.Diagnostics{{
+				Summary: fmt.Sprintf("Use the 'catalog' and 'schema' parameters provided via 'presets.catalog' and 'presets.schema' using\n\n" +
+					fix),
+				Severity: diag.Recommendation,
+				Locations: []dyn.Location{{
+					File:   localPath,
+					Line:   1,
+					Column: 1,
+				}},
+			}})
+		}
+	}
+
+	return diags
+}
+
+func fileIncludesPattern(ctx context.Context, filePath string, expected string) bool {
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		log.Warnf(ctx, "failed to check file %s: %v", filePath, err)
+		return true
+	}
+
+	matched, err := regexp.MatchString(expected, string(content))
+	if err != nil {
+		log.Warnf(ctx, "failed to check pattern in %s: %v", filePath, err)
+		return true
+	}
+	return matched
 }

@@ -27,8 +27,8 @@ def main():
   # In the default template, these parameters are set
   # using the 'catalog' and 'schema' presets in databricks.yml.
   parser = argparse.ArgumentParser()
-  parser.add_argument('--catalog', '-c', required=True)
-  parser.add_argument('--schema', '-s', required=True)
+  parser.add_argument('--catalog', required=True)
+  parser.add_argument('--schema', required=True)
   args, unknown = parser.parse_known_args()
   spark = get_spark()
   spark.sql(f"USE {args.catalog}.{args.schema}")

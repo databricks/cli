@@ -453,3 +453,53 @@ func TestApplyPresetsSourceLinkedDeployment(t *testing.T) {
 	}
 
 }
+
+// func TestApplyPresetsRecommendsCatalogSchemaUsage(t *testing.T) {
+// 	dir := t.TempDir()
+
+// 	...
+
+// 	b := &bundle.Bundle{
+// 		Config: config.Root{
+// 			Resources: config.Resources{
+// 				Jobs: map[string]*resources.Job{
+// 					"job1": {
+// 						JobSettings: &jobs.JobSettings{
+// 							Tasks: []jobs.Task{
+// 								{
+// 									NotebookTask: &jobs.NotebookTask{
+// 										NotebookPath: notebookPath,
+// 									},
+// 								},
+// 								{
+// 									SparkPythonTask: &jobs.SparkPythonTask{
+// 										PythonFile: pythonPath,
+// 									},
+// 								},
+// 								{
+// 									NotebookTask: &jobs.NotebookTask{
+// 										NotebookPath: "/Workspace/absolute/path/notebook",
+// 									},
+// 								},
+// 							},
+// 						},
+// 					},
+// 				},
+// 			},
+// 		},
+// 	}
+
+// 	ctx := context.Background()
+// 	diags := bundle.Apply(ctx, b, ApplyPresets())
+// 	require.Len(t, diags, 2)
+
+// 	// Check notebook diagnostic
+// 	assert.Equal(t, notebookPath, diags[0].Locations[0].File)
+// 	assert.Equal(t, 1, diags[0].Locations[0].Line)
+// 	assert.Equal(t, 1, diags[0].Locations[0].Column)
+
+// 	// Check Python script diagnostic
+// 	assert.Equal(t, pythonPath, diags[1].Locations[0].File)
+// 	assert.Equal(t, 1, diags[1].Locations[0].Line)
+// 	assert.Equal(t, 1, diags[1].Locations[0].Column)
+// }

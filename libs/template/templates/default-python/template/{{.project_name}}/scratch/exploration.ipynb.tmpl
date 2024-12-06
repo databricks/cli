@@ -27,15 +27,24 @@
    },
    "outputs": [],
    "source": [
-   {{- if (eq .include_python "yes") }}
+    {{- if (eq .include_python "yes") }}
     "import sys\n",
     "sys.path.append('../src')\n",
     "from {{.project_name}} import main\n",
     "\n",
-    "main.get_taxis(spark).show(10)"
-   {{else}}
-    "spark.range(10)"
-   {{end -}}
+    "catalog = dbutils.widgets.get('catalog')\n",
+    "schema = dbutils.widgets.get('schema')\n",
+    "spark.sql(f'USE {catalog}.{schema}')\n",
+    "\n",
+    "spark.sql('SELECT * FROM example').show(10)"
+    {{- else}}
+    "# Load default catalog and schema as widget and set their values as the default catalog / schema\n",
+    "catalog = dbutils.widgets.get('catalog')\n",
+    "schema = dbutils.widgets.get('schema')\n",
+    "spark.sql(f'USE {catalog}.{schema}')\n",
+    "\n",
+    "spark.sql('SELECT * FROM example').show(10)"
+   {{- end}}
    ]
   }
  ],
@@ -46,8 +55,63 @@
    "notebookMetadata": {
     "pythonIndentUnit": 2
    },
-   "notebookName": "ipynb-notebook",
-   "widgets": {}
+   "notebookName": "exploration",
+   "widgets": {
+    "catalog": {
+     "currentValue": "{{.default_catalog}}",
+     "nuid": "c47e96d8-5751-4c8a-9d6b-5c6c7c3f1234",
+     "typedWidgetInfo": {
+      "autoCreated": false,
+      "defaultValue": "{{.default_catalog}}",
+      "label": null,
+      "name": "catalog",
+      "options": {
+       "widgetDisplayType": "Text",
+       "validationRegex": null
+      },
+      "parameterDataType": "String"
+     },
+     "widgetInfo": {
+      "widgetType": "text",
+      "defaultValue": "{{.default_catalog}}",
+      "label": null,
+      "name": "catalog",
+      "options": {
+       "widgetType": "text",
+       "autoCreated": null,
+       "validationRegex": null
+      }
+     }
+    },
+{{- $dev_schema := .shared_schema }}
+{{- if (regexp "^yes").MatchString .personal_schemas}}
+  {{- $dev_schema = "{{short_name}}"}}
+{{- end}}
+    "schema": {
+     "currentValue": "{{$dev_schema}}",
+     "nuid": "c47e96d8-5751-4c8a-9d6b-5c6c7c3f5678",
+     "typedWidgetInfo": {
+      "autoCreated": false,
+      "defaultValue": "{{$dev_schema}}",
+      "label": null,
+      "name": "schema",
+      "options": {
+       "widgetDisplayType": "Text",
+       "validationRegex": null
+      },
+      "parameterDataType": "String"
+     },
+     "widgetInfo": {
+      "widgetType": "text",
+      "defaultValue": "{{$dev_schema}}",
+      "label": null,
+      "name": "schema",
+      "options": {
+       "widgetType": "text",
+       "autoCreated": null,
+       "validationRegex": null
+      }
+     }
   },
   "kernelspec": {
    "display_name": "Python 3",
