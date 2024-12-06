@@ -1,4 +1,4 @@
-base_branch: main
+base_branch: refs/remotes/origin/main
 go_mod: go.mod
 reset_list:
   - go.mod
