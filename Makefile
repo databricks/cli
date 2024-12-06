@@ -26,7 +26,9 @@ viewchanges: affected-packages.txt
 affected-packages.txt: changecalc/changecalc
 	changecalc/changecalc > affected-packages.txt || echo "./..." > affected-packages.txt
 
-testchanges: affected-packages.txt
+testchanges: affected-packages.txt _testchanges
+
+_testchanges:
 	xargs gotestsum --format pkgname-and-test-fails --no-summary=skipped --raw-command go test -v -json -short -coverprofile=coverage.txt < affected-packages.txt
 
 changecalc/changecalc: changecalc/*.go

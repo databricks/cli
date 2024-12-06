@@ -103,7 +103,7 @@ jobs:
         run: make viewchanges
 
       - name: Run tests
-        run: make testchanges
+        run: make _testchanges
 
       #- name: Publish test coverage
       #  uses: codecov/codecov-action@v4
