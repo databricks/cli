@@ -20,13 +20,14 @@ testonly:
 	@echo "✓ Running tests ..."
 	@gotestsum --format pkgname-and-test-fails --no-summary=skipped --raw-command go test -v -json -short -coverprofile=coverage.txt ./...
 
-viewchanges: changecalc/changecalc
-	@changecalc/changecalc
+viewchanges: affected-packages.txt
+	@cat affected-packages.txt
 
-testchanges: changecalc/changecalc
-	@echo "✓ Running tests based on changes relative to main..."
-	changecalc/changecalc > changed-packages.txt || echo "./..." > changed-packages.txt
-	xargs gotestsum --format pkgname-and-test-fails --no-summary=skipped --raw-command go test -v -json -short -coverprofile=coverage.txt < changed-packages.txt
+affected-packages.txt: changecalc/changecalc
+	changecalc/changecalc > affected-packages.txt || echo "./..." > affected-packages.txt
+
+testchanges: affected-packages.txt
+	xargs gotestsum --format pkgname-and-test-fails --no-summary=skipped --raw-command go test -v -json -short -coverprofile=coverage.txt < affected-packages.txt
 
 changecalc/changecalc: changecalc/*.go
 	@go build -o changecalc/changecalc changecalc/main.go
@@ -48,4 +49,4 @@ vendor:
 	@go mod vendor
 
 
-.PHONY: build vendor coverage test lint fmt viewchanges testchanges
+.PHONY: build vendor coverage test lint fmt viewchanges testchanges affected-packages.txt

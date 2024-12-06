@@ -96,6 +96,12 @@ jobs:
           make vendor
           pip3 install wheel
 
+      - name: Build changecalc
+        run: make changecalc/changecalc
+
+      - name: Calculate affected packages
+        run: make viewchanges
+
       - name: Run tests
         run: make testchanges
 
