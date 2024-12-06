@@ -26,7 +26,7 @@ viewchanges: changecalc/changecalc
 testchanges: changecalc/changecalc
 	@echo "✓ Running tests based on changes relative to main..."
 	changecalc/changecalc > changed-packages.txt || echo "./..." > changed-packages.txt
-	gotestsum --format pkgname-and-test-fails --no-summary=skipped --raw-command go test -v -json -short -coverprofile=coverage.txt $(shell cat changed-packages.txt)
+	xargs gotestsum --format pkgname-and-test-fails --no-summary=skipped --raw-command go test -v -json -short -coverprofile=coverage.txt < changed-packages.txt
 
 changecalc/changecalc: changecalc/*.go
 	@go build -o changecalc/changecalc changecalc/main.go
