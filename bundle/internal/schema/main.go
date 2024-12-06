@@ -123,6 +123,10 @@ func main() {
 	// Output file, where the generated JSON schema will be written to.
 	outputFile := os.Args[2]
 
+	generateSchema(workdir, outputFile)
+}
+
+func generateSchema(workdir, outputFile string) {
 	annotationsPath := path.Join(workdir, "annotations.yml")
 	annotationsOpenApiPath := path.Join(workdir, "annotations_openapi.yml")
 	annotationsOpenApiOverridesPath := path.Join(workdir, "annotations_openapi_overrides.yml")
