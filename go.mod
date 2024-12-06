@@ -29,6 +29,7 @@ require (
 	golang.org/x/sync v0.9.0
 	golang.org/x/term v0.26.0
 	golang.org/x/text v0.20.0
+	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d
 	gopkg.in/ini.v1 v1.67.0 // Apache 2.0
 	gopkg.in/yaml.v3 v3.0.1
 )
