@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/notebook"
 )
 
@@ -58,6 +59,47 @@ type translateContext struct {
 	seen map[string]string
 }
 
+// GetLocalPath returns the local file system paths for a path referenced from a resource..
+// If it's an absolute path, we treat it as a workspace path and return "".
+//
+// Arguments:
+//
+//	sourceDir - the source directory for the resource definition.
+//	p         - the path referenced from the resource definition.
+//
+// Returns:
+//
+//	localPath - the full local file system path.
+//	localRelPath  - the relative path from the base directory.
+func GetLocalPath(ctx context.Context, b *bundle.Bundle, sourceDir string, p string) (string, string, error) {
+	if p == "" {
+		return "", "", fmt.Errorf("path cannot be empty")
+	}
+	if path.IsAbs(p) {
+		return "", "", nil
+	}
+
+	url, err := url.Parse(p)
+	if err != nil {
+		// Apparently this path is not a URL; this can happen for paths that
+		// have non-URL characters like './profit-%.csv'.
+		log.Warnf(ctx, "Failed to parse path as a URL '%s': %v", p, err)
+	} else if url.Scheme != "" {
+		return "", "", nil
+	}
+
+	localPath := filepath.Join(sourceDir, filepath.FromSlash(p))
+	localRelPath, err := filepath.Rel(b.SyncRootPath, localPath)
+	if err != nil {
+		return "", "", err
+	}
+	if strings.HasPrefix(localRelPath, "..") {
+		return "", "", fmt.Errorf("path '%s' is not contained in sync root path", p)
+	}
+
+	return localPath, localRelPath, nil
+}
+
 // rewritePath converts a given relative path from the loaded config to a new path based on the passed rewriting function
 //
 // It takes these arguments:
@@ -68,40 +110,23 @@ type translateContext struct {
 //
 // The function returns an error if it is impossible to rewrite the given relative path.
 func (t *translateContext) rewritePath(
+	ctx context.Context,
 	dir string,
 	p *string,
 	fn rewriteFunc,
 ) error {
-	// We assume absolute paths point to a location in the workspace
-	if path.IsAbs(*p) {
-		return nil
-	}
-
-	url, err := url.Parse(*p)
+	localPath, localRelPath, err := GetLocalPath(ctx, t.b, dir, *p)
 	if err != nil {
 		return err
 	}
-
-	// If the file path has scheme, it's a full path and we don't need to transform it
-	if url.Scheme != "" {
+	if localPath == "" {
+		// Skip absolute paths
 		return nil
 	}
 
-	// Local path is relative to the directory the resource was defined in.
-	localPath := filepath.Join(dir, filepath.FromSlash(*p))
 	if interp, ok := t.seen[localPath]; ok {
 		*p = interp
 		return nil
-	}
-
-	// Local path must be contained in the sync root.
-	// If it isn't, it won't be synchronized into the workspace.
-	localRelPath, err := filepath.Rel(t.b.SyncRootPath, localPath)
-	if err != nil {
-		return err
-	}
-	if strings.HasPrefix(localRelPath, "..") {
-		return fmt.Errorf("path %s is not contained in sync root path", localPath)
 	}
 
 	var workspacePath string
@@ -215,9 +240,9 @@ func (t *translateContext) translateNoOpWithPrefix(literal, localFullPath, local
 	return localRelPath, nil
 }
 
-func (t *translateContext) rewriteValue(p dyn.Path, v dyn.Value, fn rewriteFunc, dir string) (dyn.Value, error) {
+func (t *translateContext) rewriteValue(ctx context.Context, p dyn.Path, v dyn.Value, fn rewriteFunc, dir string) (dyn.Value, error) {
 	out := v.MustString()
-	err := t.rewritePath(dir, &out, fn)
+	err := t.rewritePath(ctx, dir, &out, fn)
 	if err != nil {
 		if target := (&ErrIsNotebook{}); errors.As(err, target) {
 			return dyn.InvalidValue, fmt.Errorf(`expected a file for "%s" but got a notebook: %w`, p, target)
@@ -231,15 +256,15 @@ func (t *translateContext) rewriteValue(p dyn.Path, v dyn.Value, fn rewriteFunc,
 	return dyn.NewValue(out, v.Locations()), nil
 }
 
-func (t *translateContext) rewriteRelativeTo(p dyn.Path, v dyn.Value, fn rewriteFunc, dir, fallback string) (dyn.Value, error) {
-	nv, err := t.rewriteValue(p, v, fn, dir)
+func (t *translateContext) rewriteRelativeTo(ctx context.Context, p dyn.Path, v dyn.Value, fn rewriteFunc, dir, fallback string) (dyn.Value, error) {
+	nv, err := t.rewriteValue(ctx, p, v, fn, dir)
 	if err == nil {
 		return nv, nil
 	}
 
 	// If we failed to rewrite the path, try to rewrite it relative to the fallback directory.
 	if fallback != "" {
-		nv, nerr := t.rewriteValue(p, v, fn, fallback)
+		nv, nerr := t.rewriteValue(ctx, p, v, fn, fallback)
 		if nerr == nil {
 			// TODO: Emit a warning that this path should be rewritten.
 			return nv, nil
@@ -249,7 +274,7 @@ func (t *translateContext) rewriteRelativeTo(p dyn.Path, v dyn.Value, fn rewrite
 	return dyn.InvalidValue, err
 }
 
-func (m *translatePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	t := &translateContext{
 		b:    b,
 		seen: make(map[string]string),
@@ -257,13 +282,13 @@ func (m *translatePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 
 	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		var err error
-		for _, fn := range []func(dyn.Value) (dyn.Value, error){
+		for _, fn := range []func(ctx context.Context, v dyn.Value) (dyn.Value, error){
 			t.applyJobTranslations,
 			t.applyPipelineTranslations,
 			t.applyArtifactTranslations,
 			t.applyDashboardTranslations,
 		} {
-			v, err = fn(v)
+			v, err = fn(ctx, v)
 			if err != nil {
 				return dyn.InvalidValue, err
 			}

@@ -1002,3 +1002,93 @@ func TestTranslatePathsWithSourceLinkedDeployment(t *testing.T) {
 		b.Config.Resources.Pipelines["pipeline"].Libraries[1].Notebook.Path,
 	)
 }
+
+// TestGetLocalPath contains test cases for the GetLocalPath function.
+func TestGetLocalPath(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    string
+		expected string
+		errMsg   string
+	}{
+		{
+			name:     "EmptyPath",
+			input:    "",
+			expected: "",
+			errMsg:   "path cannot be empty",
+		},
+		{
+			name:     "AbsolutePathUnix",
+			input:    "/usr/local/bin",
+			expected: "",
+			errMsg:   "",
+		},
+		{
+			name:     "AbsolutePathWindows",
+			input:    `C:\Program Files\`,
+			expected: ``,
+			errMsg:   "",
+		},
+		{
+			name:     "RelativePath",
+			input:    "./local/path",
+			expected: "root/src/local/path",
+			errMsg:   "",
+		},
+		{
+			name:     "NestedRelativePath",
+			input:    "../relative/path",
+			expected: "root/relative/path",
+			errMsg:   "",
+		},
+		{
+			name:     "PathWithSpaces",
+			input:    "path/with spaces and slash/",
+			expected: "root/src/path/with spaces and slash",
+			errMsg:   "",
+		},
+		{
+			name:     "PathWithSpecialChars",
+			input:    "path/with/@#$%^&*()!",
+			expected: "root/src/path/with/@#$%^&*()!",
+			errMsg:   "",
+		},
+		{
+			name:     "DBFS path",
+			input:    "dbfs:/some/path",
+			expected: "",
+			errMsg:   "",
+		},
+		{
+			name:     "PathTraversal",
+			input:    "path/with/../../../traversal",
+			expected: "root/traversal",
+			errMsg:   "",
+		},
+		{
+			name:     "RelativeOutOfBundle",
+			input:    "../../outside",
+			expected: "",
+			errMsg:   "path '../../outside' is not contained in sync root path",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			b := &bundle.Bundle{
+				SyncRootPath: "root",
+			}
+			ctx := context.Background()
+			localPath, _, err := mutator.GetLocalPath(ctx, b, "root/src", tc.input)
+			if tc.errMsg != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.errMsg)
+			} else {
+				require.NoError(t, err)
+				// On Windows, filepath.Join may return backslashes. Normalize to forward slashes for comparison.
+				normalizedResult := filepath.ToSlash(localPath)
+				assert.Equal(t, tc.expected, normalizedResult, "For test case: %s", tc.name)
+			}
+		})
+	}
+}
