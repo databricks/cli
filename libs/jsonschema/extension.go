@@ -34,4 +34,10 @@ type Extension struct {
 	// Version of the schema. This is used to determine if the schema is
 	// compatible with the current CLI version.
 	Version *int `json:"version,omitempty"`
+
+	// This field is not in JSON schema spec, but it is supported in VSCode and in the Databricks Workspace
+	// It is used to provide a rich description of the field in the hover tooltip.
+	// https://code.visualstudio.com/docs/languages/json#_use-rich-formatting-in-hovers
+	// Also it can be used in documentation generation.
+	MarkdownDescription string `json:"markdownDescription,omitempty"`
 }

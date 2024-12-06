@@ -38,3 +38,6 @@ vendor:
 
 .PHONY: build vendor coverage test lint fmt
 
+schema:
+	@echo "✓ Generating json-schema ..."
+	@go run $(shell find ./bundle/internal/schema -name "*.go" ! -name "*_test.go") ./bundle/internal/schema ./bundle/schema/jsonschema.json

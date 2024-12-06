@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"reflect"
 
 	"github.com/databricks/cli/bundle/config"
@@ -112,33 +113,52 @@ func makeVolumeTypeOptional(typ reflect.Type, s jsonschema.Schema) jsonschema.Sc
 }
 
 func main() {
-	if len(os.Args) != 2 {
-		fmt.Println("Usage: go run main.go <output-file>")
+	if len(os.Args) != 3 {
+		fmt.Println("Usage: go run main.go <work-dir> <output-file>")
 		os.Exit(1)
 	}
 
+	// Directory with annotation files
+	workdir := os.Args[1]
 	// Output file, where the generated JSON schema will be written to.
-	outputFile := os.Args[1]
+	outputFile := os.Args[2]
+
+	generateSchema(workdir, outputFile)
+}
+
+func generateSchema(workdir, outputFile string) {
+	annotationsPath := path.Join(workdir, "annotations.yml")
+	annotationsOpenApiPath := path.Join(workdir, "annotations_openapi.yml")
+	annotationsOpenApiOverridesPath := path.Join(workdir, "annotations_openapi_overrides.yml")
 
 	// Input file, the databricks openapi spec.
 	inputFile := os.Getenv("DATABRICKS_OPENAPI_SPEC")
-	if inputFile == "" {
-		log.Fatal("DATABRICKS_OPENAPI_SPEC environment variable not set")
+	if inputFile != "" {
+		p, err := newParser(inputFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("Writing OpenAPI annotations to %s\n", annotationsOpenApiPath)
+		p.extractAnnotations(reflect.TypeOf(config.Root{}), annotationsOpenApiPath, annotationsOpenApiOverridesPath)
 	}
 
-	p, err := newParser(inputFile)
+	a, err := newAnnotationHandler([]string{annotationsOpenApiPath, annotationsOpenApiOverridesPath, annotationsPath})
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Generate the JSON schema from the bundle Go struct.
 	s, err := jsonschema.FromType(reflect.TypeOf(config.Root{}), []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
-		p.addDescriptions,
-		p.addEnums,
 		removeJobsFields,
 		makeVolumeTypeOptional,
+		a.addAnnotations,
 		addInterpolationPatterns,
 	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = a.sync(annotationsPath)
 	if err != nil {
 		log.Fatal(err)
 	}
