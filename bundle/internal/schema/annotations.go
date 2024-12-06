@@ -25,10 +25,9 @@ type annotation struct {
 }
 
 type annotationHandler struct {
-	filePath string
-	op       *openapiParser
-	ref      map[string]annotation
-	empty    map[string]annotation
+	op    *openapiParser
+	ref   map[string]annotation
+	empty map[string]annotation
 }
 
 const Placeholder = "PLACEHOLDER"
