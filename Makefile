@@ -37,6 +37,6 @@ vendor:
 	@go mod vendor
 
 integration:
-	gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./internal/..." -- -run "TestAcc.*" -parallel 4 -timeout=30m
+	gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./internal/..." -- -run "TestAcc.*" -parallel 4 -timeout=2h
 
 .PHONY: fmt lint lintfix test testonly coverage build snapshot vendor integration
