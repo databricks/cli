@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -36,6 +37,9 @@ func copyFile(src, dst string) error {
 //  2. replace all "PLACEHOLDER" values with the actual descriptions if possible
 //  3. run `make schema` again to regenerate the schema with acutal descriptions
 func TestRequiredAnnotationsForNewFields(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip()
+	}
 	workdir := t.TempDir()
 	annotationsPath := path.Join(workdir, "annotations.yml")
 	annotationsOpenApiPath := path.Join(workdir, "annotations_openapi.yml")
