@@ -43,9 +43,18 @@ func TextOutput(ctx context.Context, ch <-chan Event, w io.Writer) {
 			// Log only if something actually happened.
 			// Sync events produce an empty string if nothing happened.
 			if str := e.String(); str != "" {
-				bw.WriteString(str)
-				bw.WriteString("\n")
-				bw.Flush()
+				_, err := bw.WriteString(str)
+				if err != nil {
+					panic(err)
+				}
+				_, err = bw.WriteString("\n")
+				if err != nil {
+					panic(err)
+				}
+				err = bw.Flush()
+				if err != nil {
+					panic(err)
+				}
 			}
 		}
 	}

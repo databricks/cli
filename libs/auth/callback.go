@@ -53,7 +53,11 @@ func newCallback(ctx context.Context, a *PersistentAuth) (*callbackServer, error
 		a:           a,
 	}
 	cb.srv.Handler = cb
-	go cb.srv.Serve(cb.ln)
+	go func() {
+		if err := cb.srv.Serve(cb.ln); err != http.ErrServerClosed {
+			panic(err)
+		}
+	}()
 	return cb, nil
 }
 

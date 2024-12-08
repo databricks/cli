@@ -188,23 +188,35 @@ func (l *Logger) writeJson(event Event) {
 		// we panic because there we cannot catch this in jobs.RunNowAndWait
 		panic(err)
 	}
-	l.Writer.Write([]byte(b))
-	l.Writer.Write([]byte("\n"))
+	if _, err := l.Writer.Write([]byte(b)); err != nil {
+		panic(err)
+	}
+	if _, err := l.Writer.Write([]byte("\n")); err != nil {
+		panic(err)
+	}
 }
 
 func (l *Logger) writeAppend(event Event) {
-	l.Writer.Write([]byte(event.String()))
-	l.Writer.Write([]byte("\n"))
+	if _, err := l.Writer.Write([]byte(event.String())); err != nil {
+		panic(err)
+	}
+	if _, err := l.Writer.Write([]byte("\n")); err != nil {
+		panic(err)
+	}
 }
 
 func (l *Logger) writeInplace(event Event) {
 	if l.isFirstEvent {
 		// save cursor location
-		l.Writer.Write([]byte("\033[s"))
+		if _, err := l.Writer.Write([]byte("\033[s")); err != nil {
+			panic(err)
+		}
 	}
 
 	// move cursor to saved location
-	l.Writer.Write([]byte("\033[u"))
+	if _, err := l.Writer.Write([]byte("\033[u")); err != nil {
+		panic(err)
+	}
 
 	// clear from cursor to end of screen
 	l.Writer.Write([]byte("\033[0J"))

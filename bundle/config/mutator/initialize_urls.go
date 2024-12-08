@@ -32,7 +32,9 @@ func (m *initializeURLs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	}
 	orgId := strconv.FormatInt(workspaceId, 10)
 	host := b.WorkspaceClient().Config.CanonicalHostName()
-	initializeForWorkspace(b, orgId, host)
+	if err := initializeForWorkspace(b, orgId, host); err != nil {
+		return diag.FromErr(err)
+	}
 	return nil
 }
 

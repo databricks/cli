@@ -60,13 +60,19 @@ For more information about filesystem mirrors, see the Terraform documentation: 
 		}
 		switch root.OutputType(cmd) {
 		case flags.OutputText:
-			cmdio.Render(cmd.Context(), dependencies.Terraform)
+			err := cmdio.Render(cmd.Context(), dependencies.Terraform)
+			if err != nil {
+				return err
+			}
 		case flags.OutputJSON:
 			buf, err := json.MarshalIndent(dependencies, "", "  ")
 			if err != nil {
 				return err
 			}
-			cmd.OutOrStdout().Write(buf)
+			_, err = cmd.OutOrStdout().Write(buf)
+			if err != nil {
+				return err
+			}
 		default:
 			return fmt.Errorf("unknown output type %s", root.OutputType(cmd))
 		}

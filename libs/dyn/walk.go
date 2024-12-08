@@ -45,7 +45,9 @@ func walk(v Value, p Path, fn func(p Path, v Value) (Value, error)) (Value, erro
 			if err != nil {
 				return InvalidValue, err
 			}
-			out.Set(pk, nv)
+			if err := out.Set(pk, nv); err != nil {
+				panic(err)
+			}
 		}
 		v.v = out
 	case KindSequence:
