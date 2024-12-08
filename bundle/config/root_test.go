@@ -100,7 +100,8 @@ func TestRootMergeTargetOverridesWithMode(t *testing.T) {
 			},
 		},
 	}
-	root.initializeDynamicValue()
+	err := root.initializeDynamicValue()
+	require.NoError(t, err)
 	require.NoError(t, root.MergeTargetOverrides("development"))
 	assert.Equal(t, Development, root.Bundle.Mode)
 }
@@ -156,7 +157,9 @@ func TestRootMergeTargetOverridesWithVariables(t *testing.T) {
 			},
 		},
 	}
-	root.initializeDynamicValue()
+	if err := root.initializeDynamicValue(); err != nil {
+		t.Fatal(err)
+	}
 	require.NoError(t, root.MergeTargetOverrides("development"))
 	assert.Equal(t, "bar", root.Variables["foo"].Default)
 	assert.Equal(t, "foo var", root.Variables["foo"].Description)

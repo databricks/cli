@@ -23,7 +23,7 @@ func TestArtifactUploadForWorkspace(t *testing.T) {
 	tmpDir := t.TempDir()
 	whlFolder := filepath.Join(tmpDir, "whl")
 	testutil.Touch(t, whlFolder, "source.whl")
-	whlLocalPath := filepath.Join(whlFolder, "source.whl")
+	_ = filepath.Join(whlFolder, "source.whl")
 
 	b := &bundle.Bundle{
 		SyncRootPath: tmpDir,
@@ -32,10 +32,10 @@ func TestArtifactUploadForWorkspace(t *testing.T) {
 				ArtifactPath: "/foo/bar/artifacts",
 			},
 			Artifacts: config.Artifacts{
-				"whl": {
+				"whl": &config.Artifact{
 					Type: config.ArtifactPythonWheel,
 					Files: []config.ArtifactFile{
-						{Source: whlLocalPath},
+						{Source: filepath.Join(whlFolder, "source.whl")},
 					},
 				},
 			},
@@ -111,7 +111,7 @@ func TestArtifactUploadForVolumes(t *testing.T) {
 	tmpDir := t.TempDir()
 	whlFolder := filepath.Join(tmpDir, "whl")
 	testutil.Touch(t, whlFolder, "source.whl")
-	whlLocalPath := filepath.Join(whlFolder, "source.whl")
+	_ = filepath.Join(whlFolder, "source.whl")
 
 	b := &bundle.Bundle{
 		SyncRootPath: tmpDir,
@@ -120,10 +120,10 @@ func TestArtifactUploadForVolumes(t *testing.T) {
 				ArtifactPath: "/Volumes/foo/bar/artifacts",
 			},
 			Artifacts: config.Artifacts{
-				"whl": {
+				"whl": &config.Artifact{
 					Type: config.ArtifactPythonWheel,
 					Files: []config.ArtifactFile{
-						{Source: whlLocalPath},
+						{Source: filepath.Join(whlFolder, "source.whl")},
 					},
 				},
 			},

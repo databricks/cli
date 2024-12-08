@@ -33,7 +33,8 @@ func setupUcSchemaBundle(t *testing.T, ctx context.Context, w *databricks.Worksp
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		destroyBundle(t, ctx, bundleRoot)
+		err := destroyBundle(t, ctx, bundleRoot)
+		require.NoError(t, err)
 	})
 
 	// Assert the schema is created
@@ -190,7 +191,8 @@ func TestAccBundlePipelineRecreateWithoutAutoApprove(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		destroyBundle(t, ctx, bundleRoot)
+		err := destroyBundle(t, ctx, bundleRoot)
+		require.NoError(t, err)
 	})
 
 	// Assert the pipeline is created
@@ -258,7 +260,8 @@ func TestAccDeployUcVolume(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		destroyBundle(t, ctx, bundleRoot)
+		err := destroyBundle(t, ctx, bundleRoot)
+		require.NoError(t, err)
 	})
 
 	// Assert the volume is created successfully

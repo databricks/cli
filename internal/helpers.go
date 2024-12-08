@@ -176,7 +176,10 @@ func (t *cobraTestRunner) SendText(text string) {
 	if t.stdinW == nil {
 		panic("no standard input configured")
 	}
-	t.stdinW.Write([]byte(text + "\n"))
+	_, err := t.stdinW.Write([]byte(text + "\n"))
+	if err != nil {
+		panic("Failed to to write to t.stdinW")
+	}
 }
 
 func (t *cobraTestRunner) RunBackground() {
@@ -496,9 +499,10 @@ func TemporaryUcVolume(t *testing.T, w *databricks.WorkspaceClient) string {
 	})
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		w.Schemas.Delete(ctx, catalog.DeleteSchemaRequest{
+		err := w.Schemas.Delete(ctx, catalog.DeleteSchemaRequest{
 			FullName: schema.FullName,
 		})
+		require.NoError(t, err)
 	})
 
 	// Create a volume
@@ -510,9 +514,10 @@ func TemporaryUcVolume(t *testing.T, w *databricks.WorkspaceClient) string {
 	})
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		w.Volumes.Delete(ctx, catalog.DeleteVolumeRequest{
+		err := w.Volumes.Delete(ctx, catalog.DeleteVolumeRequest{
 			Name: volume.FullName,
 		})
+		require.NoError(t, err)
 	})
 
 	return path.Join("/Volumes", "main", schema.Name, volume.Name)

@@ -10,7 +10,7 @@ import (
 // with the path it is loaded from.
 func SetLocation(b *bundle.Bundle, prefix string, locations []dyn.Location) {
 	start := dyn.MustPathFromString(prefix)
-	b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
+	_ = b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		return dyn.Walk(root, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			// If the path has the given prefix, set the location.
 			if p.HasPrefix(start) {

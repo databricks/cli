@@ -86,9 +86,15 @@ func testExecutorWithShell(t *testing.T, shell string) {
 	tmpDir := t.TempDir()
 	t.Setenv("PATH", tmpDir)
 	if runtime.GOOS == "windows" {
-		os.Symlink(p, fmt.Sprintf("%s/%s.exe", tmpDir, shell))
+		err = os.Symlink(p, fmt.Sprintf("%s/%s.exe", tmpDir, shell))
+		if err != nil {
+			t.Fatal(err)
+		}
 	} else {
-		os.Symlink(p, fmt.Sprintf("%s/%s", tmpDir, shell))
+		err = os.Symlink(p, fmt.Sprintf("%s/%s", tmpDir, shell))
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	executor, err := NewCommandExecutor(".")

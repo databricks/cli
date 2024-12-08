@@ -120,7 +120,10 @@ func respondWithJSON(t *testing.T, w http.ResponseWriter, v any) {
 	if err != nil {
 		require.NoError(t, err)
 	}
-	w.Write(raw)
+	_, err = w.Write(raw)
+	if err != nil {
+		panic(err)
+	}
 }
 
 type fileTree struct {
@@ -170,7 +173,12 @@ func TestInstallerWorksForReleases(t *testing.T) {
 			if err != nil {
 				panic(err)
 			}
-			w.Write(raw)
+			_, err = w.Write(raw)
+			require.NoError(t, err)
+			require.NoError(t, err)
+			if err != nil {
+				panic(err)
+			}
 			return
 		}
 		if r.URL.Path == "/repos/databrickslabs/blueprint/zipball/v0.3.15" {
@@ -179,7 +187,10 @@ func TestInstallerWorksForReleases(t *testing.T) {
 				panic(err)
 			}
 			w.Header().Add("Content-Type", "application/octet-stream")
-			w.Write(raw)
+			_, err = w.Write(raw)
+			if err != nil {
+				panic(err)
+			}
 			return
 		}
 		if r.URL.Path == "/api/2.1/clusters/get" {
@@ -314,7 +325,12 @@ func TestInstallerWorksForDevelopment(t *testing.T) {
 	defer server.Close()
 
 	wd, _ := os.Getwd()
-	defer os.Chdir(wd)
+	defer func() {
+		err := os.Chdir(wd)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
 
 	devDir := copyTestdata(t, "testdata/installed-in-home/.databricks/labs/blueprint/lib")
 	err := os.Chdir(devDir)
@@ -376,7 +392,8 @@ func TestUpgraderWorksForReleases(t *testing.T) {
 			if err != nil {
 				panic(err)
 			}
-			w.Write(raw)
+			_, err = w.Write(raw)
+			require.NoError(t, err)
 			return
 		}
 		if r.URL.Path == "/repos/databrickslabs/blueprint/zipball/v0.4.0" {
@@ -385,7 +402,8 @@ func TestUpgraderWorksForReleases(t *testing.T) {
 				panic(err)
 			}
 			w.Header().Add("Content-Type", "application/octet-stream")
-			w.Write(raw)
+			_, err = w.Write(raw)
+			require.NoError(t, err)
 			return
 		}
 		if r.URL.Path == "/api/2.1/clusters/get" {

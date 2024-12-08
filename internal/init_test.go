@@ -59,7 +59,8 @@ func TestAccBundleInitOnMlopsStacks(t *testing.T) {
 	}
 	b, err := json.Marshal(initConfig)
 	require.NoError(t, err)
-	os.WriteFile(filepath.Join(tmpDir1, "config.json"), b, 0644)
+	err = os.WriteFile(filepath.Join(tmpDir1, "config.json"), b, 0644)
+	require.NoError(t, err)
 
 	// Run bundle init
 	assert.NoFileExists(t, filepath.Join(tmpDir2, "repo_name", projectName, "README.md"))

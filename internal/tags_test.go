@@ -47,7 +47,8 @@ func testTags(t *testing.T, tags map[string]string) error {
 
 	if resp != nil {
 		t.Cleanup(func() {
-			w.Jobs.DeleteByJobId(ctx, resp.JobId)
+			err := w.Jobs.DeleteByJobId(ctx, resp.JobId)
+			require.NoError(t, err)
 		})
 	}
 
