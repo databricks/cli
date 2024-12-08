@@ -59,9 +59,14 @@ func TestJsonSchema(t *testing.T) {
 	}
 
 	// Assert enum values are loaded
-	schedule := walk(s.Definitions, "github.com", "databricks", "databricks-sdk-go", "service", "catalog.MonitorCronSchedule")
-	assert.Contains(t, schedule.AnyOf[0].Properties["pause_status"].Enum, "PAUSED")
-	assert.Contains(t, schedule.AnyOf[0].Properties["pause_status"].Enum, "UNPAUSED")
+	schedule := walk(s.Definitions, "github.com", "databricks", "databricks-sdk-go", "service", "pipelines.RestartWindow")
+	assert.Contains(t, schedule.AnyOf[0].Properties["days_of_week"].Enum, "MONDAY")
+	assert.Contains(t, schedule.AnyOf[0].Properties["days_of_week"].Enum, "TUESDAY")
+	assert.Contains(t, schedule.AnyOf[0].Properties["days_of_week"].Enum, "WEDNESDAY")
+	assert.Contains(t, schedule.AnyOf[0].Properties["days_of_week"].Enum, "THURSDAY")
+	assert.Contains(t, schedule.AnyOf[0].Properties["days_of_week"].Enum, "FRIDAY")
+	assert.Contains(t, schedule.AnyOf[0].Properties["days_of_week"].Enum, "SATURDAY")
+	assert.Contains(t, schedule.AnyOf[0].Properties["days_of_week"].Enum, "SUNDAY")
 
 	providers := walk(s.Definitions, "github.com", "databricks", "databricks-sdk-go", "service", "jobs.GitProvider")
 	assert.Contains(t, providers.Enum, "gitHub")

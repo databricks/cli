@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/libs/flags"
 
 	"github.com/databricks/cli/cmd"
@@ -249,7 +250,7 @@ func (t *cobraTestRunner) RunBackground() {
 		// Reset context on command for the next test.
 		// These commands are globals so we have to clean up to the best of our ability after each run.
 		// See https://github.com/spf13/cobra/blob/a6f198b635c4b18fff81930c40d464904e55b161/command.go#L1062-L1066
-		//lint:ignore SA1012 cobra sets the context and doesn't clear it
+		//nolint:staticcheck  // cobra sets the context and doesn't clear it
 		cli.SetContext(nil)
 
 		// Make caller aware of error.
@@ -275,7 +276,7 @@ func (t *cobraTestRunner) Run() (bytes.Buffer, bytes.Buffer, error) {
 }
 
 // Like [require.Eventually] but errors if the underlying command has failed.
-func (c *cobraTestRunner) Eventually(condition func() bool, waitFor time.Duration, tick time.Duration, msgAndArgs ...interface{}) {
+func (c *cobraTestRunner) Eventually(condition func() bool, waitFor time.Duration, tick time.Duration, msgAndArgs ...any) {
 	ch := make(chan bool, 1)
 
 	timer := time.NewTimer(waitFor)
@@ -349,6 +350,13 @@ func RequireErrorRun(t *testing.T, args ...string) (bytes.Buffer, bytes.Buffer, 
 	stdout, stderr, err := c.Run()
 	require.Error(t, err)
 	return stdout, stderr, err
+}
+
+func readFile(t *testing.T, name string) string {
+	b, err := os.ReadFile(name)
+	require.NoError(t, err)
+
+	return string(b)
 }
 
 func writeFile(t *testing.T, name string, body string) string {
@@ -561,12 +569,10 @@ func setupLocalFiler(t *testing.T) (filer.Filer, string) {
 }
 
 func setupWsfsFiler(t *testing.T) (filer.Filer, string) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	ctx, wt := acc.WorkspaceTest(t)
 
-	ctx := context.Background()
-	w := databricks.Must(databricks.NewWorkspaceClient())
-	tmpdir := TemporaryWorkspaceDir(t, w)
-	f, err := filer.NewWorkspaceFilesClient(w, tmpdir)
+	tmpdir := TemporaryWorkspaceDir(t, wt.W)
+	f, err := filer.NewWorkspaceFilesClient(wt.W, tmpdir)
 	require.NoError(t, err)
 
 	// Check if we can use this API here, skip test if we cannot.
@@ -580,24 +586,20 @@ func setupWsfsFiler(t *testing.T) (filer.Filer, string) {
 }
 
 func setupWsfsExtensionsFiler(t *testing.T) (filer.Filer, string) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	_, wt := acc.WorkspaceTest(t)
 
-	w := databricks.Must(databricks.NewWorkspaceClient())
-	tmpdir := TemporaryWorkspaceDir(t, w)
-	f, err := filer.NewWorkspaceFilesExtensionsClient(w, tmpdir)
+	tmpdir := TemporaryWorkspaceDir(t, wt.W)
+	f, err := filer.NewWorkspaceFilesExtensionsClient(wt.W, tmpdir)
 	require.NoError(t, err)
 
 	return f, tmpdir
 }
 
 func setupDbfsFiler(t *testing.T) (filer.Filer, string) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	_, wt := acc.WorkspaceTest(t)
 
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
-
-	tmpDir := TemporaryDbfsDir(t, w)
-	f, err := filer.NewDbfsClient(w, tmpDir)
+	tmpDir := TemporaryDbfsDir(t, wt.W)
+	f, err := filer.NewDbfsClient(wt.W, tmpDir)
 	require.NoError(t, err)
 
 	return f, path.Join("dbfs:/", tmpDir)

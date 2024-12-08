@@ -17,6 +17,11 @@ type Presets struct {
 	// JobsMaxConcurrentRuns is the default value for the max concurrent runs of jobs.
 	JobsMaxConcurrentRuns int `json:"jobs_max_concurrent_runs,omitempty"`
 
+	// SourceLinkedDeployment indicates whether source-linked deployment is enabled. Works only in Databricks Workspace
+	// When set to true, resources created during deployment will point to source files in the workspace instead of their workspace copies.
+	// File synchronization to ${workspace.file_path} is skipped.
+	SourceLinkedDeployment *bool `json:"source_linked_deployment,omitempty"`
+
 	// Tags to add to all resources.
 	Tags map[string]string `json:"tags,omitempty"`
 }

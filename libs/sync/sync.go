@@ -19,10 +19,11 @@ import (
 type OutputHandler func(context.Context, <-chan Event)
 
 type SyncOptions struct {
-	LocalRoot vfs.Path
-	Paths     []string
-	Include   []string
-	Exclude   []string
+	WorktreeRoot vfs.Path
+	LocalRoot    vfs.Path
+	Paths        []string
+	Include      []string
+	Exclude      []string
 
 	RemotePath string
 
@@ -62,7 +63,7 @@ type Sync struct {
 
 // New initializes and returns a new [Sync] instance.
 func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
-	fileSet, err := git.NewFileSet(opts.LocalRoot, opts.Paths)
+	fileSet, err := git.NewFileSet(opts.WorktreeRoot, opts.LocalRoot, opts.Paths)
 	if err != nil {
 		return nil, err
 	}

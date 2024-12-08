@@ -356,7 +356,7 @@ func newUpdate() *cobra.Command {
 	// TODO: complex arg: encryption_details
 	cmd.Flags().BoolVar(&updateReq.Fallback, "fallback", updateReq.Fallback, `Indicates whether fallback mode is enabled for this external location.`)
 	cmd.Flags().BoolVar(&updateReq.Force, "force", updateReq.Force, `Force update even if changing url invalidates dependent external tables or mounts.`)
-	cmd.Flags().Var(&updateReq.IsolationMode, "isolation-mode", `Whether the current securable is accessible from all workspaces or a specific set of workspaces. Supported values: [ISOLATION_MODE_ISOLATED, ISOLATION_MODE_OPEN]`)
+	cmd.Flags().Var(&updateReq.IsolationMode, "isolation-mode", `. Supported values: [ISOLATION_MODE_ISOLATED, ISOLATION_MODE_OPEN]`)
 	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the external location.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `The owner of the external location.`)
 	cmd.Flags().BoolVar(&updateReq.ReadOnly, "read-only", updateReq.ReadOnly, `Indicates whether the external location is read-only.`)

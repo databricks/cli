@@ -13,10 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type requestType struct {
-	Foo string `json:"foo"`
-}
-
 func TestJsonFlagEmpty(t *testing.T) {
 	var body JsonFlag
 
@@ -35,13 +31,13 @@ func TestJsonFlagInline(t *testing.T) {
 	err := body.Set(`{"foo": "bar"}`)
 	assert.NoError(t, err)
 
-	var request requestType
+	var request any
 	diags := body.Unmarshal(&request)
 	assert.NoError(t, diags.Error())
 	assert.Empty(t, diags)
 
 	assert.Equal(t, "JSON (14 bytes)", body.String())
-	assert.Equal(t, requestType{"bar"}, request)
+	assert.Equal(t, map[string]any{"foo": "bar"}, request)
 }
 
 func TestJsonFlagError(t *testing.T) {
@@ -50,7 +46,7 @@ func TestJsonFlagError(t *testing.T) {
 	err := body.Set(`{"foo":`)
 	assert.NoError(t, err)
 
-	var request requestType
+	var request any
 	diags := body.Unmarshal(&request)
 	assert.EqualError(t, diags.Error(), "error decoding JSON at (inline):1:8: unexpected end of JSON input")
 	assert.Equal(t, "JSON (7 bytes)", body.String())
@@ -58,7 +54,7 @@ func TestJsonFlagError(t *testing.T) {
 
 func TestJsonFlagFile(t *testing.T) {
 	var body JsonFlag
-	var request requestType
+	var request any
 
 	var fpath string
 	var payload = []byte(`{"foo": "bar"}`)
@@ -78,7 +74,7 @@ func TestJsonFlagFile(t *testing.T) {
 	assert.NoError(t, diags.Error())
 	assert.Empty(t, diags)
 
-	assert.Equal(t, requestType{"bar"}, request)
+	assert.Equal(t, map[string]any{"foo": "bar"}, request)
 }
 
 const jsonData = `

@@ -5,8 +5,11 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/libraries"
+	"github.com/databricks/cli/bundle/paths"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"golang.org/x/sync/errgroup"
 )
 
 type workspaceRootPermissions struct {
@@ -14,6 +17,10 @@ type workspaceRootPermissions struct {
 
 func ApplyWorkspaceRootPermissions() bundle.Mutator {
 	return &workspaceRootPermissions{}
+}
+
+func (*workspaceRootPermissions) Name() string {
+	return "ApplyWorkspaceRootPermissions"
 }
 
 // Apply implements bundle.Mutator.
@@ -26,15 +33,11 @@ func (*workspaceRootPermissions) Apply(ctx context.Context, b *bundle.Bundle) di
 	return nil
 }
 
-func (*workspaceRootPermissions) Name() string {
-	return "ApplyWorkspaceRootPermissions"
-}
-
 func giveAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle) error {
 	permissions := make([]workspace.WorkspaceObjectAccessControlRequest, 0)
 
 	for _, p := range b.Config.Permissions {
-		level, err := getWorkspaceObjectPermissionLevel(p.Level)
+		level, err := GetWorkspaceObjectPermissionLevel(p.Level)
 		if err != nil {
 			return err
 		}
@@ -52,20 +55,39 @@ func giveAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle) error {
 	}
 
 	w := b.WorkspaceClient().Workspace
-	obj, err := w.GetStatusByPath(ctx, b.Config.Workspace.RootPath)
+	bundlePaths := paths.CollectUniqueWorkspacePathPrefixes(b.Config.Workspace)
+
+	g, ctx := errgroup.WithContext(ctx)
+	for _, p := range bundlePaths {
+		g.Go(func() error {
+			return setPermissions(ctx, w, p, permissions)
+		})
+	}
+
+	return g.Wait()
+}
+
+func setPermissions(ctx context.Context, w workspace.WorkspaceInterface, path string, permissions []workspace.WorkspaceObjectAccessControlRequest) error {
+	// If the folder is shared, then we don't need to set permissions since it's always set for all users and it's checked in mutators before.
+	if libraries.IsWorkspaceSharedPath(path) {
+		return nil
+	}
+
+	obj, err := w.GetStatusByPath(ctx, path)
 	if err != nil {
 		return err
 	}
 
-	_, err = w.UpdatePermissions(ctx, workspace.WorkspaceObjectPermissionsRequest{
+	_, err = w.SetPermissions(ctx, workspace.WorkspaceObjectPermissionsRequest{
 		WorkspaceObjectId:   fmt.Sprint(obj.ObjectId),
 		WorkspaceObjectType: "directories",
 		AccessControlList:   permissions,
 	})
+
 	return err
 }
 
-func getWorkspaceObjectPermissionLevel(bundlePermission string) (workspace.WorkspaceObjectPermissionLevel, error) {
+func GetWorkspaceObjectPermissionLevel(bundlePermission string) (workspace.WorkspaceObjectPermissionLevel, error) {
 	switch bundlePermission {
 	case CAN_MANAGE:
 		return workspace.WorkspaceObjectPermissionLevelCanManage, nil

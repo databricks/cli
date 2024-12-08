@@ -11,10 +11,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/template"
 	"github.com/databricks/cli/libs/vfs"
@@ -41,7 +43,9 @@ func initTestTemplateWithBundleRoot(t *testing.T, ctx context.Context, templateN
 	cmd := cmdio.NewIO(flags.OutputJSON, strings.NewReader(""), os.Stdout, os.Stderr, "", "bundles")
 	ctx = cmdio.InContext(ctx, cmd)
 
-	err = template.Materialize(ctx, configFilePath, templateRoot, bundleRoot)
+	out, err := filer.NewLocalClient(bundleRoot)
+	require.NoError(t, err)
+	err = template.Materialize(ctx, configFilePath, os.DirFS(templateRoot), out)
 	return bundleRoot, err
 }
 
@@ -66,11 +70,32 @@ func validateBundle(t *testing.T, ctx context.Context, path string) ([]byte, err
 	return stdout.Bytes(), err
 }
 
+func mustValidateBundle(t *testing.T, ctx context.Context, path string) []byte {
+	data, err := validateBundle(t, ctx, path)
+	require.NoError(t, err)
+	return data
+}
+
+func unmarshalConfig(t *testing.T, data []byte) *bundle.Bundle {
+	bundle := &bundle.Bundle{}
+	err := json.Unmarshal(data, &bundle.Config)
+	require.NoError(t, err)
+	return bundle
+}
+
 func deployBundle(t *testing.T, ctx context.Context, path string) error {
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	c := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "deploy", "--force-lock", "--auto-approve")
 	_, _, err := c.Run()
 	return err
+}
+
+func deployBundleWithArgs(t *testing.T, ctx context.Context, path string, args ...string) (string, string, error) {
+	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
+	args = append([]string{"bundle", "deploy"}, args...)
+	c := internal.NewCobraTestRunnerWithContext(t, ctx, args...)
+	stdout, stderr, err := c.Run()
+	return stdout.String(), stderr.String(), err
 }
 
 func deployBundleWithFlags(t *testing.T, ctx context.Context, path string, flags []string) error {

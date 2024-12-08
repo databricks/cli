@@ -1,0 +1,22 @@
+linters:
+  disable-all: true
+  enable:
+    - bodyclose
+    # errcheck and govet are part of default setup and should be included but give too many errors now
+    # once errors are fixed, they should be enabled here:
+    #- errcheck
+    - gosimple
+    #- govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gofmt
+linters-settings:
+  gofmt:
+    rewrite-rules:
+      - pattern: 'a[b:len(a)]'
+        replacement: 'a[b:]'
+      - pattern: 'interface{}'
+        replacement: 'any'
+issues:
+  exclude-dirs-use-default: false  # recommended by docs https://golangci-lint.run/usage/false-positives/

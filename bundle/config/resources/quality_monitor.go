@@ -2,6 +2,9 @@ package resources
 
 import (
 	"context"
+	"fmt"
+	"net/url"
+	"strings"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
@@ -10,16 +13,15 @@ import (
 )
 
 type QualityMonitor struct {
-	// Represents the Input Arguments for Terraform and will get
-	// converted to a HCL representation for CRUD
-	*catalog.CreateMonitor
-
-	// This represents the id which is the full name of the monitor
-	// (catalog_name.schema_name.table_name) that can be used
-	// as a reference in other resources. This value is returned by terraform.
-	ID string `json:"id,omitempty" bundle:"readonly"`
-
+	ID             string         `json:"id,omitempty" bundle:"readonly"`
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
+	URL            string         `json:"url,omitempty" bundle:"internal"`
+
+	// The table name is a required field but not included as a JSON field in [catalog.CreateMonitor].
+	TableName string `json:"table_name"`
+
+	// This struct defines the creation payload for a monitor.
+	*catalog.CreateMonitor
 }
 
 func (s *QualityMonitor) UnmarshalJSON(b []byte) error {
@@ -43,4 +45,24 @@ func (s *QualityMonitor) Exists(ctx context.Context, w *databricks.WorkspaceClie
 
 func (s *QualityMonitor) TerraformResourceName() string {
 	return "databricks_quality_monitor"
+}
+
+func (s *QualityMonitor) InitializeURL(baseURL url.URL) {
+	if s.TableName == "" {
+		return
+	}
+	baseURL.Path = fmt.Sprintf("explore/data/%s", strings.ReplaceAll(s.TableName, ".", "/"))
+	s.URL = baseURL.String()
+}
+
+func (s *QualityMonitor) GetName() string {
+	return s.TableName
+}
+
+func (s *QualityMonitor) GetURL() string {
+	return s.URL
+}
+
+func (s *QualityMonitor) IsNil() bool {
+	return s.CreateMonitor == nil
 }

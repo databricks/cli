@@ -3,13 +3,13 @@ resources:
   pipelines:
     {{.project_name}}_pipeline:
       name: {{.project_name}}_pipeline
-      {{- if eq default_catalog ""}}
+      {{- if or (eq default_catalog "") (eq default_catalog "hive_metastore")}}
       ## Specify the 'catalog' field to configure this pipeline to make use of Unity Catalog:
       # catalog: catalog_name
       {{- else}}
       catalog: {{default_catalog}}
       {{- end}}
-      target: {{.project_name}}_${bundle.environment}
+      target: {{.project_name}}_${bundle.target}
       libraries:
         - notebook:
             path: ../src/dlt_pipeline.ipynb

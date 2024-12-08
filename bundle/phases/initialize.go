@@ -39,6 +39,7 @@ func Initialize() bundle.Mutator {
 			mutator.MergePipelineClusters(),
 			mutator.InitializeWorkspaceClient(),
 			mutator.PopulateCurrentUser(),
+			mutator.LoadGitDetails(),
 
 			mutator.DefineDefaultWorkspaceRoot(),
 			mutator.ExpandWorkspaceRoot(),
@@ -66,6 +67,8 @@ func Initialize() bundle.Mutator {
 			permissions.PermissionDiagnostics(),
 			mutator.SetRunAs(),
 			mutator.OverrideCompute(),
+			mutator.ConfigureDashboardDefaults(),
+			mutator.ConfigureVolumeDefaults(),
 			mutator.ProcessTargetMode(),
 			mutator.ApplyPresets(),
 			mutator.DefaultQueueing(),
@@ -76,8 +79,11 @@ func Initialize() bundle.Mutator {
 
 			mutator.TranslatePaths(),
 			trampoline.WrapperWarning(),
+
+			permissions.ValidateSharedRootPermissions(),
 			permissions.ApplyBundlePermissions(),
 			permissions.FilterCurrentUser(),
+
 			metadata.AnnotateJobs(),
 			metadata.AnnotatePipelines(),
 			terraform.Initialize(),

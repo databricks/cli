@@ -8,8 +8,10 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/bundle/render"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/flags"
@@ -19,11 +21,8 @@ import (
 func newSummaryCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "summary",
-		Short: "Describe the bundle resources and their deployment states",
+		Short: "Summarize resources deployed by this bundle",
 		Args:  root.NoArgs,
-
-		// This command is currently intended for the Databricks VSCode extension only
-		Hidden: true,
 	}
 
 	var forcePull bool
@@ -60,14 +59,15 @@ func newSummaryCommand() *cobra.Command {
 			}
 		}
 
-		diags = bundle.Apply(ctx, b, terraform.Load())
+		diags = bundle.Apply(ctx, b,
+			bundle.Seq(terraform.Load(), mutator.InitializeURLs()))
 		if err := diags.Error(); err != nil {
 			return err
 		}
 
 		switch root.OutputType(cmd) {
 		case flags.OutputText:
-			return fmt.Errorf("%w, only json output is supported", errors.ErrUnsupported)
+			return render.RenderSummary(ctx, cmd.OutOrStdout(), b)
 		case flags.OutputJSON:
 			buf, err := json.MarshalIndent(b.Config, "", "  ")
 			if err != nil {

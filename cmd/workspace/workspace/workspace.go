@@ -447,6 +447,7 @@ func newImport() *cobra.Command {
   DBC,
   HTML,
   JUPYTER,
+  RAW,
   R_MARKDOWN,
   SOURCE,
 ]`)
@@ -708,7 +709,8 @@ func newSetPermissions() *cobra.Command {
 	cmd.Short = `Set workspace object permissions.`
 	cmd.Long = `Set workspace object permissions.
   
-  Sets permissions on a workspace object. Workspace objects can inherit
+  Sets permissions on an object, replacing existing permissions if they exist.
+  Deletes all direct permissions if none are specified. Objects can inherit
   permissions from their parent objects or root object.
 
   Arguments:

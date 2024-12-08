@@ -33,7 +33,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22.7
+          go-version: 1.23.2
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -45,7 +45,6 @@ jobs:
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
           go install gotest.tools/gotestsum@latest
-          go install honnef.co/go/tools/cmd/staticcheck@latest
 
       - name: Pull external libraries
         run: |
@@ -53,7 +52,7 @@ jobs:
           pip3 install wheel
 
       - name: Run tests
-        run: make test
+        run: make testonly
 
       - name: Publish test coverage
         uses: codecov/codecov-action@v4
@@ -68,7 +67,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22.7
+          go-version: 1.23.2
 
           # No need to download cached dependencies when running gofmt.
           cache: false
@@ -90,6 +89,20 @@ jobs:
           # Exit with status code 1 if there are differences (i.e. unformatted files)
           git diff --exit-code
 
+  golangci:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.23.2
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.62.2
+          args: --timeout=15m
+
   validate-bundle-schema:
     runs-on: ubuntu-latest
 
@@ -100,7 +113,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22.7
+          go-version: 1.23.2
 
       # Github repo: https://github.com/ajv-validator/ajv-cli
       - name: Install ajv-cli

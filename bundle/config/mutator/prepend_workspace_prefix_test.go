@@ -31,6 +31,14 @@ func TestPrependWorkspacePrefix(t *testing.T) {
 			path:     "/Volumes/Users/test",
 			expected: "/Volumes/Users/test",
 		},
+		{
+			path:     "~/test",
+			expected: "~/test",
+		},
+		{
+			path:     "${workspace.file_path}/test",
+			expected: "${workspace.file_path}/test",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -41,6 +49,7 @@ func TestPrependWorkspacePrefix(t *testing.T) {
 					ArtifactPath: tc.path,
 					FilePath:     tc.path,
 					StatePath:    tc.path,
+					ResourcePath: tc.path,
 				},
 			},
 		}
@@ -51,6 +60,7 @@ func TestPrependWorkspacePrefix(t *testing.T) {
 		require.Equal(t, tc.expected, b.Config.Workspace.ArtifactPath)
 		require.Equal(t, tc.expected, b.Config.Workspace.FilePath)
 		require.Equal(t, tc.expected, b.Config.Workspace.StatePath)
+		require.Equal(t, tc.expected, b.Config.Workspace.ResourcePath)
 	}
 }
 
@@ -76,4 +86,5 @@ func TestPrependWorkspaceForDefaultConfig(t *testing.T) {
 	require.Equal(t, "/Workspace/Users/jane@doe.com/.bundle/test/dev/artifacts", b.Config.Workspace.ArtifactPath)
 	require.Equal(t, "/Workspace/Users/jane@doe.com/.bundle/test/dev/files", b.Config.Workspace.FilePath)
 	require.Equal(t, "/Workspace/Users/jane@doe.com/.bundle/test/dev/state", b.Config.Workspace.StatePath)
+	require.Equal(t, "/Workspace/Users/jane@doe.com/.bundle/test/dev/resources", b.Config.Workspace.ResourcePath)
 }

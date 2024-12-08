@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/httpclient/fixtures"
 	"github.com/databricks/databricks-sdk-go/qa"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
 
@@ -182,7 +183,8 @@ func TestChallenge(t *testing.T) {
 
 		state := <-browserOpened
 		resp, err := http.Get(fmt.Sprintf("http://%s?code=__THIS__&state=%s", appRedirectAddr, state))
-		assert.NoError(t, err)
+		require.NoError(t, err)
+		defer resp.Body.Close()
 		assert.Equal(t, 200, resp.StatusCode)
 
 		err = <-errc
@@ -221,10 +223,45 @@ func TestChallengeFailed(t *testing.T) {
 		resp, err := http.Get(fmt.Sprintf(
 			"http://%s?error=access_denied&error_description=Policy%%20evaluation%%20failed%%20for%%20this%%20request",
 			appRedirectAddr))
-		assert.NoError(t, err)
+		require.NoError(t, err)
+		defer resp.Body.Close()
 		assert.Equal(t, 400, resp.StatusCode)
 
 		err = <-errc
 		assert.EqualError(t, err, "authorize: access_denied: Policy evaluation failed for this request")
 	})
+}
+
+func TestPersistentAuthCleanHost(t *testing.T) {
+	for _, tcases := range []struct {
+		in  string
+		out string
+	}{
+		{"https://example.com", "https://example.com"},
+		{"https://example.com/", "https://example.com"},
+		{"https://example.com/path", "https://example.com"},
+		{"https://example.com/path/subpath", "https://example.com"},
+		{"https://example.com/path?query=1", "https://example.com"},
+		{"https://example.com/path?query=1&other=2", "https://example.com"},
+		{"https://example.com/path#fragment", "https://example.com"},
+		{"https://example.com/path?query=1#fragment", "https://example.com"},
+		{"https://example.com/path?query=1&other=2#fragment", "https://example.com"},
+		{"https://example.com/path/subpath?query=1", "https://example.com"},
+		{"https://example.com/path/subpath?query=1&other=2", "https://example.com"},
+		{"https://example.com/path/subpath#fragment", "https://example.com"},
+		{"https://example.com/path/subpath?query=1#fragment", "https://example.com"},
+		{"https://example.com/path/subpath?query=1&other=2#fragment", "https://example.com"},
+		{"https://example.com/path?query=1%20value&other=2%20value", "https://example.com"},
+		{"http://example.com/path/subpath?query=1%20value&other=2%20value", "http://example.com"},
+
+		// URLs without scheme should be left as is
+		{"abc", "abc"},
+		{"abc.com/def", "abc.com/def"},
+	} {
+		p := &PersistentAuth{
+			Host: tcases.in,
+		}
+		p.cleanHost()
+		assert.Equal(t, tcases.out, p.Host)
+	}
 }

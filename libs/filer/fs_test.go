@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"testing"
 
+	"github.com/databricks/cli/libs/fakefs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -35,7 +36,7 @@ func TestFsDirImplementsFsReadDirFile(t *testing.T) {
 }
 
 func fakeFS() fs.FS {
-	fakeFiler := NewFakeFiler(map[string]FakeFileInfo{
+	fakeFiler := NewFakeFiler(map[string]fakefs.FileInfo{
 		".":     {FakeName: "root", FakeDir: true},
 		"dirA":  {FakeDir: true},
 		"dirB":  {FakeDir: true},

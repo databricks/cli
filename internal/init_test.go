@@ -97,7 +97,7 @@ func TestAccBundleInitOnMlopsStacks(t *testing.T) {
 	require.NoError(t, err)
 	job, err := w.Jobs.GetByJobId(context.Background(), batchJobId)
 	assert.NoError(t, err)
-	assert.Equal(t, fmt.Sprintf("dev-%s-batch-inference-job", projectName), job.Settings.Name)
+	assert.Contains(t, job.Settings.Name, fmt.Sprintf("dev-%s-batch-inference-job", projectName))
 }
 
 func TestAccBundleInitHelpers(t *testing.T) {

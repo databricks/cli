@@ -8,58 +8,12 @@ import (
 	"path"
 	"sort"
 	"strings"
-	"time"
+
+	"github.com/databricks/cli/libs/fakefs"
 )
 
-type FakeDirEntry struct {
-	FakeFileInfo
-}
-
-func (entry FakeDirEntry) Type() fs.FileMode {
-	typ := fs.ModePerm
-	if entry.FakeDir {
-		typ |= fs.ModeDir
-	}
-	return typ
-}
-
-func (entry FakeDirEntry) Info() (fs.FileInfo, error) {
-	return entry.FakeFileInfo, nil
-}
-
-type FakeFileInfo struct {
-	FakeName string
-	FakeSize int64
-	FakeDir  bool
-	FakeMode fs.FileMode
-}
-
-func (info FakeFileInfo) Name() string {
-	return info.FakeName
-}
-
-func (info FakeFileInfo) Size() int64 {
-	return info.FakeSize
-}
-
-func (info FakeFileInfo) Mode() fs.FileMode {
-	return info.FakeMode
-}
-
-func (info FakeFileInfo) ModTime() time.Time {
-	return time.Now()
-}
-
-func (info FakeFileInfo) IsDir() bool {
-	return info.FakeDir
-}
-
-func (info FakeFileInfo) Sys() any {
-	return nil
-}
-
 type FakeFiler struct {
-	entries map[string]FakeFileInfo
+	entries map[string]fakefs.FileInfo
 }
 
 func (f *FakeFiler) Write(ctx context.Context, p string, reader io.Reader, mode ...WriteMode) error {
@@ -97,7 +51,7 @@ func (f *FakeFiler) ReadDir(ctx context.Context, p string) ([]fs.DirEntry, error
 			continue
 		}
 
-		out = append(out, FakeDirEntry{v})
+		out = append(out, fakefs.DirEntry{FileInfo: v})
 	}
 
 	sort.Slice(out, func(i, j int) bool { return out[i].Name() < out[j].Name() })
@@ -117,7 +71,11 @@ func (f *FakeFiler) Stat(ctx context.Context, path string) (fs.FileInfo, error) 
 	return entry, nil
 }
 
-func NewFakeFiler(entries map[string]FakeFileInfo) *FakeFiler {
+// NewFakeFiler creates a new fake [Filer] instance with the given entries.
+// It sets the [Name] field of each entry to the base name of the path.
+//
+// This is meant to be used in tests.
+func NewFakeFiler(entries map[string]fakefs.FileInfo) *FakeFiler {
 	fakeFiler := &FakeFiler{
 		entries: entries,
 	}

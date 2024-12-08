@@ -5,7 +5,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Equal(t assert.TestingT, expected interface{}, actual interface{}, msgAndArgs ...interface{}) bool {
+func Equal(t assert.TestingT, expected any, actual any, msgAndArgs ...any) bool {
 	ev, eok := expected.(dyn.Value)
 	av, aok := actual.(dyn.Value)
 	if eok && aok && ev.IsValid() && av.IsValid() {
@@ -32,82 +32,86 @@ func Equal(t assert.TestingT, expected interface{}, actual interface{}, msgAndAr
 	return assert.Equal(t, expected, actual, msgAndArgs...)
 }
 
-func EqualValues(t assert.TestingT, expected, actual interface{}, msgAndArgs ...interface{}) bool {
+func EqualValues(t assert.TestingT, expected, actual any, msgAndArgs ...any) bool {
 	return assert.EqualValues(t, expected, actual, msgAndArgs...)
 }
 
-func NotEqual(t assert.TestingT, expected interface{}, actual interface{}, msgAndArgs ...interface{}) bool {
+func NotEqual(t assert.TestingT, expected any, actual any, msgAndArgs ...any) bool {
 	return assert.NotEqual(t, expected, actual, msgAndArgs...)
 }
 
-func Len(t assert.TestingT, object interface{}, length int, msgAndArgs ...interface{}) bool {
+func Len(t assert.TestingT, object any, length int, msgAndArgs ...any) bool {
 	return assert.Len(t, object, length, msgAndArgs...)
 }
 
-func Empty(t assert.TestingT, object interface{}, msgAndArgs ...interface{}) bool {
+func Empty(t assert.TestingT, object any, msgAndArgs ...any) bool {
 	return assert.Empty(t, object, msgAndArgs...)
 }
 
-func Nil(t assert.TestingT, object interface{}, msgAndArgs ...interface{}) bool {
+func Nil(t assert.TestingT, object any, msgAndArgs ...any) bool {
 	return assert.Nil(t, object, msgAndArgs...)
 }
 
-func NotNil(t assert.TestingT, object interface{}, msgAndArgs ...interface{}) bool {
+func NotNil(t assert.TestingT, object any, msgAndArgs ...any) bool {
 	return assert.NotNil(t, object, msgAndArgs...)
 }
 
-func NoError(t assert.TestingT, err error, msgAndArgs ...interface{}) bool {
+func NoError(t assert.TestingT, err error, msgAndArgs ...any) bool {
 	return assert.NoError(t, err, msgAndArgs...)
 }
 
-func Error(t assert.TestingT, err error, msgAndArgs ...interface{}) bool {
+func Error(t assert.TestingT, err error, msgAndArgs ...any) bool {
 	return assert.Error(t, err, msgAndArgs...)
 }
 
-func EqualError(t assert.TestingT, theError error, errString string, msgAndArgs ...interface{}) bool {
+func EqualError(t assert.TestingT, theError error, errString string, msgAndArgs ...any) bool {
 	return assert.EqualError(t, theError, errString, msgAndArgs...)
 }
 
-func ErrorContains(t assert.TestingT, theError error, contains string, msgAndArgs ...interface{}) bool {
+func ErrorContains(t assert.TestingT, theError error, contains string, msgAndArgs ...any) bool {
 	return assert.ErrorContains(t, theError, contains, msgAndArgs...)
 }
 
-func ErrorIs(t assert.TestingT, theError, target error, msgAndArgs ...interface{}) bool {
+func ErrorIs(t assert.TestingT, theError, target error, msgAndArgs ...any) bool {
 	return assert.ErrorIs(t, theError, target, msgAndArgs...)
 }
 
-func True(t assert.TestingT, value bool, msgAndArgs ...interface{}) bool {
+func True(t assert.TestingT, value bool, msgAndArgs ...any) bool {
 	return assert.True(t, value, msgAndArgs...)
 }
 
-func False(t assert.TestingT, value bool, msgAndArgs ...interface{}) bool {
+func False(t assert.TestingT, value bool, msgAndArgs ...any) bool {
 	return assert.False(t, value, msgAndArgs...)
 }
 
-func Contains(t assert.TestingT, list interface{}, element interface{}, msgAndArgs ...interface{}) bool {
+func Contains(t assert.TestingT, list any, element any, msgAndArgs ...any) bool {
 	return assert.Contains(t, list, element, msgAndArgs...)
 }
 
-func NotContains(t assert.TestingT, list interface{}, element interface{}, msgAndArgs ...interface{}) bool {
+func NotContains(t assert.TestingT, list any, element any, msgAndArgs ...any) bool {
 	return assert.NotContains(t, list, element, msgAndArgs...)
 }
 
-func ElementsMatch(t assert.TestingT, listA, listB interface{}, msgAndArgs ...interface{}) bool {
+func ElementsMatch(t assert.TestingT, listA, listB any, msgAndArgs ...any) bool {
 	return assert.ElementsMatch(t, listA, listB, msgAndArgs...)
 }
 
-func Panics(t assert.TestingT, f func(), msgAndArgs ...interface{}) bool {
+func Panics(t assert.TestingT, f func(), msgAndArgs ...any) bool {
 	return assert.Panics(t, f, msgAndArgs...)
 }
 
-func PanicsWithValue(t assert.TestingT, expected interface{}, f func(), msgAndArgs ...interface{}) bool {
+func PanicsWithValue(t assert.TestingT, expected any, f func(), msgAndArgs ...any) bool {
 	return assert.PanicsWithValue(t, expected, f, msgAndArgs...)
 }
 
-func PanicsWithError(t assert.TestingT, errString string, f func(), msgAndArgs ...interface{}) bool {
+func PanicsWithError(t assert.TestingT, errString string, f func(), msgAndArgs ...any) bool {
 	return assert.PanicsWithError(t, errString, f, msgAndArgs...)
 }
 
-func NotPanics(t assert.TestingT, f func(), msgAndArgs ...interface{}) bool {
+func NotPanics(t assert.TestingT, f func(), msgAndArgs ...any) bool {
 	return assert.NotPanics(t, f, msgAndArgs...)
+}
+
+func JSONEq(t assert.TestingT, expected string, actual string, msgAndArgs ...any) bool {
+	return assert.JSONEq(t, expected, actual, msgAndArgs...)
 }

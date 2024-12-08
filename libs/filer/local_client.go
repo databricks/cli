@@ -28,6 +28,15 @@ func (w *LocalClient) Write(ctx context.Context, name string, reader io.Reader, 
 		return err
 	}
 
+	// Retrieve permission mask from the [WriteMode], if present.
+	perm := fs.FileMode(0644)
+	for _, m := range mode {
+		bits := m & writeModePerm
+		if bits != 0 {
+			perm = fs.FileMode(bits)
+		}
+	}
+
 	flags := os.O_WRONLY | os.O_CREATE
 	if slices.Contains(mode, OverwriteIfExists) {
 		flags |= os.O_TRUNC
@@ -35,7 +44,7 @@ func (w *LocalClient) Write(ctx context.Context, name string, reader io.Reader, 
 		flags |= os.O_EXCL
 	}
 
-	f, err := os.OpenFile(absPath, flags, 0644)
+	f, err := os.OpenFile(absPath, flags, perm)
 	if errors.Is(err, fs.ErrNotExist) && slices.Contains(mode, CreateParentDirectories) {
 		// Create parent directories if they don't exist.
 		err = os.MkdirAll(filepath.Dir(absPath), 0755)
@@ -43,7 +52,7 @@ func (w *LocalClient) Write(ctx context.Context, name string, reader io.Reader, 
 			return err
 		}
 		// Try again.
-		f, err = os.OpenFile(absPath, flags, 0644)
+		f, err = os.OpenFile(absPath, flags, perm)
 	}
 
 	if err != nil {

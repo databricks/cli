@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/iamutil"
@@ -56,6 +57,14 @@ func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) {
 
 	if t.TriggerPauseStatus == "" {
 		t.TriggerPauseStatus = config.Paused
+	}
+
+	if !config.IsExplicitlyDisabled(t.SourceLinkedDeployment) {
+		isInWorkspace := strings.HasPrefix(b.SyncRootPath, "/Workspace/")
+		if isInWorkspace && dbr.RunsOnRuntime(ctx) {
+			enabled := true
+			t.SourceLinkedDeployment = &enabled
+		}
 	}
 
 	if !config.IsExplicitlyDisabled(t.PipelinesDevelopment) {

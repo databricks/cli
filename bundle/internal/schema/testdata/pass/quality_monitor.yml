@@ -4,6 +4,7 @@ bundle:
 resources:
   quality_monitors:
     myqualitymonitor:
+      table_name: catalog.schema.quality_monitor
       inference_log:
         granularities:
           - a

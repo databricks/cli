@@ -3,17 +3,21 @@ package mutator
 import (
 	"context"
 	"reflect"
-	"strings"
+	"runtime"
+	"slices"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/tags"
+	"github.com/databricks/cli/libs/vfs"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -101,16 +105,23 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					"registeredmodel1": {CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{Name: "registeredmodel1"}},
 				},
 				QualityMonitors: map[string]*resources.QualityMonitor{
-					"qualityMonitor1": {CreateMonitor: &catalog.CreateMonitor{TableName: "qualityMonitor1"}},
-					"qualityMonitor2": {
+					"qualityMonitor1": {
+						TableName: "qualityMonitor1",
 						CreateMonitor: &catalog.CreateMonitor{
-							TableName: "qualityMonitor2",
-							Schedule:  &catalog.MonitorCronSchedule{},
+							OutputSchemaName: "catalog.schema",
+						},
+					},
+					"qualityMonitor2": {
+						TableName: "qualityMonitor2",
+						CreateMonitor: &catalog.CreateMonitor{
+							OutputSchemaName: "catalog.schema",
+							Schedule:         &catalog.MonitorCronSchedule{},
 						},
 					},
 					"qualityMonitor3": {
+						TableName: "qualityMonitor3",
 						CreateMonitor: &catalog.CreateMonitor{
-							TableName: "qualityMonitor3",
+							OutputSchemaName: "catalog.schema",
 							Schedule: &catalog.MonitorCronSchedule{
 								PauseStatus: catalog.MonitorCronSchedulePauseStatusUnpaused,
 							},
@@ -120,11 +131,22 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				Schemas: map[string]*resources.Schema{
 					"schema1": {CreateSchema: &catalog.CreateSchema{Name: "schema1"}},
 				},
+				Volumes: map[string]*resources.Volume{
+					"volume1": {CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{Name: "volume1"}},
+				},
 				Clusters: map[string]*resources.Cluster{
 					"cluster1": {ClusterSpec: &compute.ClusterSpec{ClusterName: "cluster1", SparkVersion: "13.2.x", NumWorkers: 1}},
 				},
+				Dashboards: map[string]*resources.Dashboard{
+					"dashboard1": {
+						Dashboard: &dashboards.Dashboard{
+							DisplayName: "dashboard1",
+						},
+					},
+				},
 			},
 		},
+		SyncRoot: vfs.MustNew("/Users/lennart.kats@databricks.com"),
 		// Use AWS implementation for testing.
 		Tagging: tags.ForCloud(&sdkconfig.Config{
 			Host: "https://company.cloud.databricks.com",
@@ -184,6 +206,9 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Clusters
 	assert.Equal(t, "[dev lennart] cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
+
+	// Dashboards
+	assert.Equal(t, "[dev lennart] dashboard1", b.Config.Resources.Dashboards["dashboard1"].DisplayName)
 }
 
 func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {
@@ -272,6 +297,7 @@ func TestValidateDevelopmentMode(t *testing.T) {
 	b.Config.Workspace.StatePath = "/Users/lennart@company.com/.bundle/x/y/state"
 	b.Config.Workspace.FilePath = "/Users/lennart@company.com/.bundle/x/y/files"
 	b.Config.Workspace.ArtifactPath = "/Users/lennart@company.com/.bundle/x/y/artifacts"
+	b.Config.Workspace.ResourcePath = "/Users/lennart@company.com/.bundle/x/y/resources"
 	diags = validateDevelopmentMode(b)
 	require.NoError(t, diags.Error())
 }
@@ -288,6 +314,8 @@ func TestProcessTargetModeDefault(t *testing.T) {
 	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
+	assert.Equal(t, "schema1", b.Config.Resources.Schemas["schema1"].Name)
+	assert.Equal(t, "volume1", b.Config.Resources.Volumes["volume1"].Name)
 	assert.Equal(t, "cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
 }
 
@@ -300,6 +328,7 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	b.Config.Workspace.StatePath = "/Shared/.bundle/x/y/state"
 	b.Config.Workspace.ArtifactPath = "/Shared/.bundle/x/y/artifacts"
 	b.Config.Workspace.FilePath = "/Shared/.bundle/x/y/files"
+	b.Config.Workspace.ResourcePath = "/Shared/.bundle/x/y/resources"
 
 	diags = validateProductionMode(context.Background(), b, false)
 	require.ErrorContains(t, diags.Error(), "target with 'mode: production' must set 'workspace.root_path' to make sure only one copy is deployed. A common practice is to use a username or principal name in this path, i.e. root_path: /Users/lennart@company.com/.bundle/${bundle.name}/${bundle.target}")
@@ -331,6 +360,8 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
+	assert.Equal(t, "schema1", b.Config.Resources.Schemas["schema1"].Name)
+	assert.Equal(t, "volume1", b.Config.Resources.Volumes["volume1"].Name)
 	assert.Equal(t, "cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
 }
 
@@ -381,9 +412,16 @@ func TestAllResourcesMocked(t *testing.T) {
 	}
 }
 
-// Make sure that we at least rename all resources
-func TestAllResourcesRenamed(t *testing.T) {
+// Make sure that we at rename all non UC resources
+func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 	b := mockBundle(config.Development)
+
+	// UC resources should not have a prefix added to their name. Right now
+	// this list only contains the Volume resource since we have yet to remove
+	// prefixing support for UC schemas and registered models.
+	ucFields := []reflect.Type{
+		reflect.TypeOf(&resources.Volume{}),
+	}
 
 	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
 	diags := bundle.Apply(context.Background(), b, m)
@@ -397,14 +435,14 @@ func TestAllResourcesRenamed(t *testing.T) {
 			for _, key := range field.MapKeys() {
 				resource := field.MapIndex(key)
 				nameField := resource.Elem().FieldByName("Name")
-				if nameField.IsValid() && nameField.Kind() == reflect.String {
-					assert.True(
-						t,
-						strings.Contains(nameField.String(), "dev"),
-						"process_target_mode should rename '%s' in '%s'",
-						key,
-						resources.Type().Field(i).Name,
-					)
+				if !nameField.IsValid() || nameField.Kind() != reflect.String {
+					continue
+				}
+
+				if slices.Contains(ucFields, resource.Type()) {
+					assert.NotContains(t, nameField.String(), "dev", "process_target_mode should not rename '%s' in '%s'", key, resources.Type().Field(i).Name)
+				} else {
+					assert.Contains(t, nameField.String(), "dev", "process_target_mode should rename '%s' in '%s'", key, resources.Type().Field(i).Name)
 				}
 			}
 		}
@@ -518,4 +556,33 @@ func TestPipelinesDevelopmentDisabled(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
+}
+
+func TestSourceLinkedDeploymentEnabled(t *testing.T) {
+	b, diags := processSourceLinkedBundle(t, true)
+	require.NoError(t, diags.Error())
+	assert.True(t, *b.Config.Presets.SourceLinkedDeployment)
+}
+
+func TestSourceLinkedDeploymentDisabled(t *testing.T) {
+	b, diags := processSourceLinkedBundle(t, false)
+	require.NoError(t, diags.Error())
+	assert.False(t, *b.Config.Presets.SourceLinkedDeployment)
+}
+
+func processSourceLinkedBundle(t *testing.T, presetEnabled bool) (*bundle.Bundle, diag.Diagnostics) {
+	if runtime.GOOS == "windows" {
+		t.Skip("this test is not applicable on Windows because source-linked mode works only in the Databricks Workspace")
+	}
+
+	b := mockBundle(config.Development)
+
+	workspacePath := "/Workspace/lennart@company.com/"
+	b.SyncRootPath = workspacePath
+	b.Config.Presets.SourceLinkedDeployment = &presetEnabled
+
+	ctx := dbr.MockRuntime(context.Background(), true)
+	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
+	diags := bundle.Apply(ctx, b, m)
+	return b, diags
 }

@@ -1,0 +1,14 @@
+bundle:
+  name: artifact_path_with_volume
+
+workspace:
+  root_path: "~/.bundle/{{.unique_id}}"
+  artifact_path: /Volumes/main/{{.schema_name}}/{{.volume_name}}
+
+resources:
+  volumes:
+    foo:
+      catalog_name: main
+      name: my_volume
+      schema_name: {{.schema_name}}
+      volume_type: MANAGED

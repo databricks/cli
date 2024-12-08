@@ -2,6 +2,8 @@ package resources
 
 import (
 	"context"
+	"fmt"
+	"net/url"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
@@ -13,6 +15,7 @@ type Cluster struct {
 	ID             string         `json:"id,omitempty" bundle:"readonly"`
 	Permissions    []Permission   `json:"permissions,omitempty"`
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
+	URL            string         `json:"url,omitempty" bundle:"internal"`
 
 	*compute.ClusterSpec
 }
@@ -36,4 +39,24 @@ func (s *Cluster) Exists(ctx context.Context, w *databricks.WorkspaceClient, id 
 
 func (s *Cluster) TerraformResourceName() string {
 	return "databricks_cluster"
+}
+
+func (s *Cluster) InitializeURL(baseURL url.URL) {
+	if s.ID == "" {
+		return
+	}
+	baseURL.Path = fmt.Sprintf("compute/clusters/%s", s.ID)
+	s.URL = baseURL.String()
+}
+
+func (s *Cluster) GetName() string {
+	return s.ClusterName
+}
+
+func (s *Cluster) GetURL() string {
+	return s.URL
+}
+
+func (s *Cluster) IsNil() bool {
+	return s.ClusterSpec == nil
 }
