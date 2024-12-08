@@ -45,7 +45,9 @@ func (f *logFlags) makeLogHandler(opts slog.HandlerOptions) (slog.Handler, error
 
 func (f *logFlags) initializeContext(ctx context.Context) (context.Context, error) {
 	if f.debug {
-		f.level.Set("debug")
+		if err := f.level.Set("debug"); err != nil {
+			panic(err)
+		}
 	}
 
 	opts := slog.HandlerOptions{}
@@ -81,13 +83,19 @@ func initLogFlags(cmd *cobra.Command) *logFlags {
 	// Configure defaults from environment, if applicable.
 	// If the provided value is invalid it is ignored.
 	if v, ok := env.Lookup(cmd.Context(), envLogFile); ok {
-		f.file.Set(v)
+		if err := f.file.Set(v); err != nil {
+			panic(err)
+		}
 	}
 	if v, ok := env.Lookup(cmd.Context(), envLogLevel); ok {
-		f.level.Set(v)
+		if err := f.level.Set(v); err != nil {
+			panic(err)
+		}
 	}
 	if v, ok := env.Lookup(cmd.Context(), envLogFormat); ok {
-		f.output.Set(v)
+		if err := f.output.Set(v); err != nil {
+			panic(err)
+		}
 	}
 
 	flags := cmd.PersistentFlags()
@@ -97,12 +105,24 @@ func initLogFlags(cmd *cobra.Command) *logFlags {
 	flags.Var(&f.output, "log-format", "log output format (text or json)")
 
 	// mark fine-grained flags hidden from global --help
-	flags.MarkHidden("log-file")
-	flags.MarkHidden("log-level")
-	flags.MarkHidden("log-format")
+	if err := flags.MarkHidden("log-file"); err != nil {
+		panic(err)
+	}
+	if err := flags.MarkHidden("log-level"); err != nil {
+		panic(err)
+	}
+	if err := flags.MarkHidden("log-format"); err != nil {
+		panic(err)
+	}
 
-	cmd.RegisterFlagCompletionFunc("log-file", f.file.Complete)
-	cmd.RegisterFlagCompletionFunc("log-level", f.level.Complete)
-	cmd.RegisterFlagCompletionFunc("log-format", f.output.Complete)
+	if err := cmd.RegisterFlagCompletionFunc("log-file", f.file.Complete); err != nil {
+		panic(err)
+	}
+	if err := cmd.RegisterFlagCompletionFunc("log-level", f.level.Complete); err != nil {
+		panic(err)
+	}
+	if err := cmd.RegisterFlagCompletionFunc("log-format", f.output.Complete); err != nil {
+		panic(err)
+	}
 	return &f
 }

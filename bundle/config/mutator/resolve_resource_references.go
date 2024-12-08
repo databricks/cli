@@ -36,7 +36,9 @@ func (m *resolveResourceReferences) Apply(ctx context.Context, b *bundle.Bundle)
 				return fmt.Errorf("failed to resolve %s, err: %w", v.Lookup, err)
 			}
 
-			v.Set(id)
+			if err := v.Set(id); err != nil {
+				return err
+			}
 			return nil
 		})
 	}

@@ -126,7 +126,9 @@ func fromTypedStruct(src reflect.Value, ref dyn.Value, options ...fromTypedOptio
 
 		// Either if the key was set in the reference or the field is not zero-valued, we include it.
 		if ok || nv.Kind() != dyn.KindNil {
-			out.Set(refk, nv)
+			if err := out.Set(refk, nv); err != nil {
+				return dyn.InvalidValue, err
+			}
 		}
 	}
 
@@ -184,7 +186,9 @@ func fromTypedMap(src reflect.Value, ref dyn.Value) (dyn.Value, error) {
 
 		// Every entry is represented, even if it is a nil.
 		// Otherwise, a map with zero-valued structs would yield a nil as well.
-		out.Set(refk, nv)
+		if err := out.Set(refk, nv); err != nil {
+			return dyn.InvalidValue, err
+		}
 	}
 
 	return dyn.V(out), nil

@@ -171,10 +171,14 @@ func RenderDiagnostics(out io.Writer, b *bundle.Bundle, diags diag.Diagnostics, 
 			if err != nil {
 				return fmt.Errorf("failed to render summary: %w", err)
 			}
-			io.WriteString(out, "\n")
+			if _, err := io.WriteString(out, "\n"); err != nil {
+				return err
+			}
 		}
 		trailer := buildTrailer(diags)
-		io.WriteString(out, trailer)
+		if _, err := io.WriteString(out, trailer); err != nil {
+			return err
+		}
 	}
 
 	return nil

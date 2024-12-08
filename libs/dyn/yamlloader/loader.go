@@ -129,7 +129,9 @@ func (d *loader) loadMapping(node *yaml.Node, loc dyn.Location) (dyn.Value, erro
 			return dyn.InvalidValue, err
 		}
 
-		acc.Set(k, v)
+		if err := acc.Set(k, v); err != nil {
+			return dyn.InvalidValue, err
+		}
 	}
 
 	if merge == nil {
