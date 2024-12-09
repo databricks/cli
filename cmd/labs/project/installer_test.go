@@ -167,27 +167,17 @@ func TestInstallerWorksForReleases(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/databrickslabs/blueprint/v0.3.15/labs.yml" {
 			raw, err := os.ReadFile("testdata/installed-in-home/.databricks/labs/blueprint/lib/labs.yml")
-			if err != nil {
-				panic(err)
-			}
+			require.NoError(t, err)
 			_, err = w.Write(raw)
 			require.NoError(t, err)
-			require.NoError(t, err)
-			if err != nil {
-				panic(err)
-			}
 			return
 		}
 		if r.URL.Path == "/repos/databrickslabs/blueprint/zipball/v0.3.15" {
 			raw, err := zipballFromFolder("testdata/installed-in-home/.databricks/labs/blueprint/lib")
-			if err != nil {
-				panic(err)
-			}
+			require.NoError(t, err)
 			w.Header().Add("Content-Type", "application/octet-stream")
 			_, err = w.Write(raw)
-			if err != nil {
-				panic(err)
-			}
+			require.NoError(t, err)
 			return
 		}
 		if r.URL.Path == "/api/2.1/clusters/get" {
@@ -324,9 +314,7 @@ func TestInstallerWorksForDevelopment(t *testing.T) {
 	wd, _ := os.Getwd()
 	defer func() {
 		err := os.Chdir(wd)
-		if err != nil {
-			require.NoError(t, err)
-		}
+		require.NoError(t, err)
 	}()
 
 	devDir := copyTestdata(t, "testdata/installed-in-home/.databricks/labs/blueprint/lib")
@@ -386,18 +374,14 @@ func TestUpgraderWorksForReleases(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/databrickslabs/blueprint/v0.4.0/labs.yml" {
 			raw, err := os.ReadFile("testdata/installed-in-home/.databricks/labs/blueprint/lib/labs.yml")
-			if err != nil {
-				panic(err)
-			}
+			require.NoError(t, err)
 			_, err = w.Write(raw)
 			require.NoError(t, err)
 			return
 		}
 		if r.URL.Path == "/repos/databrickslabs/blueprint/zipball/v0.4.0" {
 			raw, err := zipballFromFolder("testdata/installed-in-home/.databricks/labs/blueprint/lib")
-			if err != nil {
-				panic(err)
-			}
+			require.NoError(t, err)
 			w.Header().Add("Content-Type", "application/octet-stream")
 			_, err = w.Write(raw)
 			require.NoError(t, err)

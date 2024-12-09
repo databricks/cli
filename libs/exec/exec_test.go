@@ -88,14 +88,10 @@ func testExecutorWithShell(t *testing.T, shell string) {
 	t.Setenv("PATH", tmpDir)
 	if runtime.GOOS == "windows" {
 		err = os.Symlink(p, fmt.Sprintf("%s/%s.exe", tmpDir, shell))
-		if err != nil {
-			require.NoError(t, err)
-		}
+		require.NoError(t, err)
 	} else {
 		err = os.Symlink(p, fmt.Sprintf("%s/%s", tmpDir, shell))
-		if err != nil {
-			require.NoError(t, err)
-		}
+		require.NoError(t, err)
 	}
 
 	executor, err := NewCommandExecutor(".")
