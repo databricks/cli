@@ -45,7 +45,7 @@ func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	// In case of branch and commit and absence of --force we raise severity to Error
 	diags = append(diags, checkMatch("Git branch", info.CurrentBranch, &config.Branch, b.Config.Bundle.Force)...)
 	diags = append(diags, checkMatch("Git commit", info.LatestCommit, &config.Commit, b.Config.Bundle.Force)...)
-	diags = append(diags, checkMatch("Git originURL", info.OriginURL, &config.OriginURL, true)...)
+	diags = append(diags, checkMatch("Git origin URL", info.OriginURL, &config.OriginURL, true)...)
 
 	relBundlePath, err := filepath.Rel(b.WorktreeRoot.Native(), b.BundleRoot.Native())
 	if err != nil {
