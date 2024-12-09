@@ -38,9 +38,7 @@ func newDeployCommand() *cobra.Command {
 	}
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "Enable verbose output.")
 	// Verbose flag currently only affects file sync output, it's used by the vscode extension
-	if err := cmd.Flags().MarkHidden("verbose"); err != nil {
-		return nil
-	}
+	_ = cmd.Flags().MarkHidden("verbose")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
