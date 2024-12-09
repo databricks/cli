@@ -117,13 +117,10 @@ func installerContext(t *testing.T, server *httptest.Server) context.Context {
 
 func respondWithJSON(t *testing.T, w http.ResponseWriter, v any) {
 	raw, err := json.Marshal(v)
-	if err != nil {
-		require.NoError(t, err)
-	}
+	require.NoError(t, err)
+
 	_, err = w.Write(raw)
-	if err != nil {
-		require.NoError(t, err)
-	}
+	require.NoError(t, err)
 }
 
 type fileTree struct {
