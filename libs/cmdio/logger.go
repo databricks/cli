@@ -200,11 +200,11 @@ func (l *Logger) writeAppend(event Event) {
 func (l *Logger) writeInplace(event Event) {
 	if l.isFirstEvent {
 		// save cursor location
-		_ = l.Writer.Write([]byte("\033[s"))
+		_, _ = l.Writer.Write([]byte("\033[s"))
 	}
 
 	// move cursor to saved location
-	_ = l.Writer.Write([]byte("\033[u"))
+	_, _ = l.Writer.Write([]byte("\033[u"))
 
 	// clear from cursor to end of screen
 	_, _ = l.Writer.Write([]byte("\033[0J"))
