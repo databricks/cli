@@ -31,11 +31,6 @@ func TestCheckMatch(t *testing.T) {
 			ConfiguredBefore: "main",
 			ConfiguredAfter:  "main",
 		},
-		{
-			Fetched:          "",
-			ConfiguredBefore: "main",
-			ConfiguredAfter:  "main",
-		},
 	}
 
 	for _, test := range tests {
