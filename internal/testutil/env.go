@@ -52,6 +52,7 @@ func GetEnvOrSkipTest(t *testing.T, name string) string {
 // Returns the current working directory.
 func Chdir(t *testing.T, dir string) string {
 	// Prevent parallel execution when changing the working directory.
+	// t.Setenv automatically fails if t.Parallel is set.
 	t.Setenv("DO_NOT_RUN_IN_PARALLEL", "true")
 
 	wd, err := os.Getwd()
