@@ -84,19 +84,14 @@ func initLogFlags(cmd *cobra.Command) *logFlags {
 	// Configure defaults from environment, if applicable.
 	// If the provided value is invalid it is ignored.
 	if v, ok := env.Lookup(cmd.Context(), envLogFile); ok {
-		if err := f.file.Set(v); err != nil {
-			panic(err)
-		}
+		// QQQ log the error? here and below
+		_ = f.file.Set(v)
 	}
 	if v, ok := env.Lookup(cmd.Context(), envLogLevel); ok {
-		if err := f.level.Set(v); err != nil {
-			panic(err)
-		}
+		_ = f.level.Set(v)
 	}
 	if v, ok := env.Lookup(cmd.Context(), envLogFormat); ok {
-		if err := f.output.Set(v); err != nil {
-			panic(err)
-		}
+		_ = f.output.Set(v)
 	}
 
 	flags := cmd.PersistentFlags()
