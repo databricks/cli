@@ -45,8 +45,9 @@ func walk(v Value, p Path, fn func(p Path, v Value) (Value, error)) (Value, erro
 			if err != nil {
 				return InvalidValue, err
 			}
-			if err := out.Set(pk, nv); err != nil {
-				panic(err)
+			err = out.Set(pk, nv)
+			if err != nil {
+				return InvalidValue, err
 			}
 		}
 		v.v = out

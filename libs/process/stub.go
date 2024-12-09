@@ -170,10 +170,12 @@ func (s *processStub) run(cmd *exec.Cmd) error {
 	if s.reponseStub == zeroStub {
 		return fmt.Errorf("no default process stub")
 	}
+	err := s.reponseStub.err
 	if s.reponseStub.stdout != "" {
-		if _, err := cmd.Stdout.Write([]byte(s.reponseStub.stdout)); err != nil {
-			return err
+		_, err1 := cmd.Stdout.Write([]byte(s.reponseStub.stdout))
+		if err == nil {
+			err = err1
 		}
 	}
-	return s.reponseStub.err
+	return err
 }
