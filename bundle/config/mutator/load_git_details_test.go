@@ -1,4 +1,4 @@
-package mutator_test
+package mutator
 
 import (
 	"testing"
@@ -8,54 +8,67 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCheckMatch(t *testing.T, force bool) {
+func TestCheckMatch(t *testing.T) {
 	type test struct {
-		Fetched    string
-		Configured string
+		Fetched          string
+		ConfiguredBefore string
+		ConfiguredAfter  string
 	}
 
 	tests := []test{
 		{
-			Fetched:    "main",
-			Configured: "main",
+			Fetched:          "main",
+			ConfiguredBefore: "main",
+			ConfiguredAfter:  "main",
 		},
 		{
-			Fetched:    "main",
-			Configured: "",
+			Fetched:          "main",
+			ConfiguredBefore: "",
+			ConfiguredAfter:  "main",
 		},
 		{
-			Fetched:    "",
-			Configured: "main",
+			Fetched:          "",
+			ConfiguredBefore: "main",
+			ConfiguredAfter:  "main",
 		},
 		{
-			Fetched:    "",
-			Configured: "main",
+			Fetched:          "",
+			ConfiguredBefore: "main",
+			ConfiguredAfter:  "main",
 		},
 	}
 
-	for test := range tests {
-		name := "CheckMatch " + test.Fetched + " " + test.Configured
+	for _, test := range tests {
+		name := "CheckMatch " + test.Fetched + " " + test.ConfiguredBefore + " " + test.ConfiguredAfter
 		t.Run(name, func(t *testing.T) {
-			diags := checkMatch("", test.Fetched, testConfigured, false)
+			configValue := test.ConfiguredBefore
+			diags := checkMatch("", test.Fetched, &configValue, false)
 			assert.Nil(t, diags)
+			assert.Equal(t, test.ConfiguredAfter, configValue)
 		})
 		t.Run(name+" force", func(t *testing.T) {
-			diags := checkMatch("", test.Fetched, testConfigured, true)
+			configValue := test.ConfiguredBefore
+			diags := checkMatch("", test.Fetched, &configValue, true)
 			assert.Nil(t, diags)
+			assert.Equal(t, test.ConfiguredAfter, configValue)
 		})
 	}
 }
 
-func TestCheckWarning(t *testing.T, force bool) {
-	diags := checkMatch("Git branch", "feature", "main", true)
+func TestCheckWarning(t *testing.T) {
+	configValue := "main"
+	diags := checkMatch("Git branch", "feature", &configValue, true)
 	require.Len(t, diags, 1)
 	assert.Equal(t, diags[0].Severity, diag.Warning)
 	assert.Equal(t, diags[0].Summary, "not on the right Git branch:\n  expected according to configuration: main\n  actual: feature")
+	assert.Equal(t, "main", configValue)
 }
 
-func TestCheckError(t *testing.T, force bool) {
-	diags := checkMatch("Git branch", "feature", "main", false)
+func TestCheckError(t *testing.T) {
+	configValue := "main"
+	diags := checkMatch("Git branch", "feature", &configValue, false)
 	require.Len(t, diags, 1)
 	assert.Equal(t, diags[0].Severity, diag.Error)
 	assert.Equal(t, diags[0].Summary, "not on the right Git branch:\n  expected according to configuration: main\n  actual: feature\nuse --force to override")
+	assert.Equal(t, "main", configValue)
 }
