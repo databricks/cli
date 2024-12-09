@@ -22,8 +22,6 @@ func (m *loadGitDetails) Name() string {
 }
 
 func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	fmt.Printf("running loadGitDetails config=%v\n", b.Config.Bundle.Git)
-
 	var diags diag.Diagnostics
 	info, err := git.FetchRepositoryInfo(ctx, b.BundleRoot.Native(), b.WorkspaceClient())
 	if err != nil {
@@ -40,10 +38,7 @@ func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 
 	config.ActualBranch = info.CurrentBranch
 	if config.Branch == "" {
-		fmt.Printf("setting inferred config=%v info=%v\n", *config, info)
 		config.Inferred = true
-	} else {
-		fmt.Printf("NOT setting inferred config=%v info=%v\n", *config, info)
 	}
 
 	// The value from config takes precedence; however, we always warn if configValue and fetchedValue disagree.
@@ -64,7 +59,6 @@ func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 }
 
 func checkMatch(field, fetchedValue string, configValue *string, allowedToMismatch bool) []diag.Diagnostic {
-	fmt.Printf("checkMatch %s %s %s %v\n", field, fetchedValue, *configValue, allowedToMismatch)
 	if fetchedValue == "" {
 		return nil
 	}
