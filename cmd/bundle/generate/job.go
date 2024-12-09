@@ -30,7 +30,7 @@ func NewGenerateJobCommand() *cobra.Command {
 	}
 
 	cmd.Flags().Int64Var(&jobId, "existing-job-id", 0, `Job ID of the job to generate config for`)
-	cmd.MarkFlagRequired("existing-job-id")
+	_ = cmd.MarkFlagRequired("existing-job-id")
 
 	wd, err := os.Getwd()
 	if err != nil {

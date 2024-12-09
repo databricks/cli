@@ -30,7 +30,7 @@ func NewGeneratePipelineCommand() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&pipelineId, "existing-pipeline-id", "", `ID of the pipeline to generate config for`)
-	cmd.MarkFlagRequired("existing-pipeline-id")
+	_ = cmd.MarkFlagRequired("existing-pipeline-id")
 
 	wd, err := os.Getwd()
 	if err != nil {

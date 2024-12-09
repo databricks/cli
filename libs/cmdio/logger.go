@@ -219,10 +219,10 @@ func (l *Logger) writeInplace(event Event) {
 	}
 
 	// clear from cursor to end of screen
-	l.Writer.Write([]byte("\033[0J"))
+	_, _ = l.Writer.Write([]byte("\033[0J"))
 
-	l.Writer.Write([]byte(event.String()))
-	l.Writer.Write([]byte("\n"))
+	_, _ = l.Writer.Write([]byte(event.String()))
+	_, _ = l.Writer.Write([]byte("\n"))
 	l.isFirstEvent = false
 }
 
