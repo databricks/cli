@@ -37,9 +37,7 @@ func (e ErrNoAccountProfiles) Error() string {
 
 func initProfileFlag(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringP("profile", "p", "", "~/.databrickscfg profile")
-	if err := cmd.RegisterFlagCompletionFunc("profile", profile.ProfileCompletion); err != nil {
-		panic(err)
-	}
+	_ = cmd.RegisterFlagCompletionFunc("profile", profile.ProfileCompletion)
 }
 
 func profileFlagValue(cmd *cobra.Command) (string, bool) {

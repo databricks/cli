@@ -141,7 +141,8 @@ func render(ctx context.Context, cmd *cobra.Command, status *authStatus, templat
 		if err != nil {
 			return err
 		}
-		if _, err := cmd.OutOrStdout().Write(buf); err != nil {
+		_, err = cmd.OutOrStdout().Write(buf)
+		if err != nil {
 			return err
 		}
 	default:

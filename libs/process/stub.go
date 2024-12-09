@@ -148,17 +148,20 @@ func (s *processStub) run(cmd *exec.Cmd) error {
 		if !re.MatchString(norm) {
 			continue
 		}
+		err := resp.err
 		if resp.stdout != "" {
-			if _, err := cmd.Stdout.Write([]byte(resp.stdout)); err != nil {
-				return err
+			_, err1 := cmd.Stdout.Write([]byte(resp.stdout))
+			if err == nil {
+				err = err1
 			}
 		}
 		if resp.stderr != "" {
-			if _, err := cmd.Stderr.Write([]byte(resp.stderr)); err != nil {
-				return err
+			_, err1 := cmd.Stderr.Write([]byte(resp.stderr))
+			if err == nil {
+				err = err1
 			}
 		}
-		return resp.err
+		return err
 	}
 	if s.callback != nil {
 		return s.callback(cmd)

@@ -59,16 +59,12 @@ func initProgressLoggerFlag(cmd *cobra.Command, logFlags *logFlags) *progressLog
 	// Configure defaults from environment, if applicable.
 	// If the provided value is invalid it is ignored.
 	if v, ok := env.Lookup(cmd.Context(), envProgressFormat); ok {
-		if err := f.ProgressLogFormat.Set(v); err != nil {
-			panic(err)
-		}
+		_ = f.ProgressLogFormat.Set(v)
 	}
 
 	flags := cmd.PersistentFlags()
 	flags.Var(&f.ProgressLogFormat, "progress-format", "format for progress logs (append, inplace, json)")
-	if err := flags.MarkHidden("progress-format"); err != nil {
-		panic(err)
-	}
+	_ = flags.MarkHidden("progress-format")
 	_ = cmd.RegisterFlagCompletionFunc("progress-format", f.ProgressLogFormat.Complete)
 	return &f
 }
