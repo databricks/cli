@@ -67,13 +67,11 @@ func TestDashboard_ExistingID_Nominal(t *testing.T) {
 	ctx := bundle.Context(context.Background(), b)
 	cmd := NewGenerateDashboardCommand()
 	cmd.SetContext(ctx)
-	if err := cmd.Flag("existing-id").Value.Set("f00dcafe"); err != nil {
-		require.NoError(t, err)
-	}
+	err := cmd.Flag("existing-id").Value.Set("f00dcafe")
+	require.NoError(t, err)
 
-	if err := cmd.RunE(cmd, []string{}); err != nil {
-		require.NoError(t, err)
-	}
+	err = cmd.RunE(cmd, []string{})
+	require.NoError(t, err)
 
 	// Assert the contents of the generated configuration
 	data, err := os.ReadFile(filepath.Join(root, "resources", "this_is_a_test_dashboard.dashboard.yml"))
@@ -184,6 +182,6 @@ func TestDashboard_ExistingPath_NotFound(t *testing.T) {
 	err := cmd.Flag("existing-path").Value.Set("/path/to/dashboard")
 	require.NoError(t, err)
 
-	err := cmd.RunE(cmd, []string{})
+	err = cmd.RunE(cmd, []string{})
 	require.Error(t, err)
 }
