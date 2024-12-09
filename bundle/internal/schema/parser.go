@@ -115,7 +115,7 @@ func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overrid
 				return s
 			}
 
-			basePath := jsonschema.TypePath(typ)
+			basePath := getPath(typ)
 			annotations[basePath] = annotation{
 				Description: ref.Description,
 				Enum:        ref.Enum,

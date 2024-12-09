@@ -64,7 +64,7 @@ func newAnnotationHandler(sources []string) (*annotationHandler, error) {
 }
 
 func (d *annotationHandler) addAnnotations(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
-	refPath := jsonschema.TypePath(typ)
+	refPath := getPath(typ)
 	items := map[string]*jsonschema.Schema{}
 	items[refPath] = &s
 
@@ -127,4 +127,8 @@ func (d *annotationHandler) sync(outputPath string) error {
 		return err
 	}
 	return nil
+}
+
+func getPath(typ reflect.Type) string {
+	return typ.PkgPath() + "." + typ.Name()
 }

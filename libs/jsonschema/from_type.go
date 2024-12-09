@@ -52,7 +52,7 @@ func (c *constructor) Definitions() map[string]any {
 
 	// Remove the root type from the definitions. We don't need to include it in
 	// the definitions because it will be inlined as the root of the generated JSON schema.
-	delete(defs, TypePath(c.root))
+	delete(defs, typePath(c.root))
 
 	if len(defs) == 0 {
 		return nil
@@ -106,14 +106,14 @@ func FromType(typ reflect.Type, fns []func(typ reflect.Type, s Schema) Schema) (
 		}
 	}
 
-	res := c.definitions[TypePath(typ)]
+	res := c.definitions[typePath(typ)]
 	res.Definitions = c.Definitions()
 	return res, nil
 }
 
-// TypePath computes a unique string representation of the type. $ref in the generated
+// typePath computes a unique string representation of the type. $ref in the generated
 // JSON schema will refer to this path. See TestTypePath for examples outputs.
-func TypePath(typ reflect.Type) string {
+func typePath(typ reflect.Type) string {
 	// Pointers have a typ.Name() of "". Dereference them to get the underlying type.
 	for typ.Kind() == reflect.Ptr {
 		typ = typ.Elem()
@@ -125,7 +125,7 @@ func TypePath(typ reflect.Type) string {
 
 	// Recursively call typePath, to handle slices of slices / maps.
 	if typ.Kind() == reflect.Slice {
-		return path.Join("slice", TypePath(typ.Elem()))
+		return path.Join("slice", typePath(typ.Elem()))
 	}
 
 	if typ.Kind() == reflect.Map {
@@ -134,7 +134,7 @@ func TypePath(typ reflect.Type) string {
 		}
 
 		// Recursively call typePath, to handle maps of maps / slices.
-		return path.Join("map", TypePath(typ.Elem()))
+		return path.Join("map", typePath(typ.Elem()))
 	}
 
 	switch {
@@ -157,7 +157,7 @@ func (c *constructor) walk(typ reflect.Type) (string, error) {
 		typ = typ.Elem()
 	}
 
-	typPath := TypePath(typ)
+	typPath := typePath(typ)
 
 	// Return early if the type has already been seen, to avoid infinite recursion.
 	if _, ok := c.seen[typPath]; ok {
