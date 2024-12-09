@@ -45,8 +45,9 @@ func (f *logFlags) makeLogHandler(opts slog.HandlerOptions) (slog.Handler, error
 
 func (f *logFlags) initializeContext(ctx context.Context) (context.Context, error) {
 	if f.debug {
-		if err := f.level.Set("debug"); err != nil {
-			panic(err)
+		err := f.level.Set("debug")
+		if err != nil {
+			return nil, err
 		}
 	}
 

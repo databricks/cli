@@ -146,19 +146,13 @@ func targetCompletion(cmd *cobra.Command, args []string, toComplete string) ([]s
 func initTargetFlag(cmd *cobra.Command) {
 	// To operate in the context of a bundle, all commands must take an "target" parameter.
 	cmd.PersistentFlags().StringP("target", "t", "", "bundle target to use (if applicable)")
-	if err := cmd.RegisterFlagCompletionFunc("target", targetCompletion); err != nil {
-		panic(err)
-	}
+	_ = cmd.RegisterFlagCompletionFunc("target", targetCompletion)
 }
 
 // DEPRECATED flag
 func initEnvironmentFlag(cmd *cobra.Command) {
 	// To operate in the context of a bundle, all commands must take an "environment" parameter.
 	cmd.PersistentFlags().StringP("environment", "e", "", "bundle target to use (if applicable)")
-	if err := cmd.PersistentFlags().MarkDeprecated("environment", "use --target flag instead"); err != nil {
-		panic(err)
-	}
-	if err := cmd.RegisterFlagCompletionFunc("environment", targetCompletion); err != nil {
-		panic(err)
-	}
+	_ = cmd.PersistentFlags().MarkDeprecated("environment", "use --target flag instead")
+	_ = cmd.RegisterFlagCompletionFunc("environment", targetCompletion)
 }

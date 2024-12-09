@@ -159,7 +159,8 @@ task or a Python wheel task, the second example applies.
 				if err != nil {
 					return err
 				}
-				if _, err := cmd.OutOrStdout().Write([]byte(resultString)); err != nil {
+				_, err = cmd.OutOrStdout().Write([]byte(resultString))
+				if err != nil {
 					return err
 				}
 			case flags.OutputJSON:
@@ -167,7 +168,8 @@ task or a Python wheel task, the second example applies.
 				if err != nil {
 					return err
 				}
-				if _, err := cmd.OutOrStdout().Write(b); err != nil {
+				_, err = cmd.OutOrStdout().Write(b)
+				if err != nil {
 					return err
 				}
 			default:
