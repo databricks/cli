@@ -26,12 +26,69 @@ func New() *cobra.Command {
 	}
 
 	// Add methods
+	cmd.AddCommand(newDelete())
 	cmd.AddCommand(newGet())
 	cmd.AddCommand(newUpdate())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
+	}
+
+	return cmd
+}
+
+// start delete command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteOverrides []func(
+	*cobra.Command,
+	*settings.DeleteAibiDashboardEmbeddingApprovedDomainsSettingRequest,
+)
+
+func newDelete() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteReq settings.DeleteAibiDashboardEmbeddingApprovedDomainsSettingRequest
+
+	// TODO: short flags
+
+	cmd.Flags().StringVar(&deleteReq.Etag, "etag", deleteReq.Etag, `etag used for versioning.`)
+
+	cmd.Use = "delete"
+	cmd.Short = `Delete AI/BI dashboard embedding approved domains.`
+	cmd.Long = `Delete AI/BI dashboard embedding approved domains.
+  
+  Delete the list of domains approved to host embedded AI/BI dashboards,
+  reverting back to the default empty list.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		response, err := w.Settings.AibiDashboardEmbeddingApprovedDomains().Delete(ctx, deleteReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteOverrides {
+		fn(cmd, &deleteReq)
 	}
 
 	return cmd
