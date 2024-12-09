@@ -43,7 +43,9 @@ func (le *configLoader) Configure(cfg *config.Config) error {
 			if v == "" {
 				continue
 			}
-			a.Set(cfg, v)
+			if err := a.Set(cfg, v); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

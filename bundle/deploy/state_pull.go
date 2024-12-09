@@ -62,8 +62,14 @@ func (s *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	}
 
 	// Truncating the file before writing
-	local.Truncate(0)
-	local.Seek(0, 0)
+	err = local.Truncate(0)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	_, err = local.Seek(0, 0)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	// Write file to disk.
 	log.Infof(ctx, "Writing remote deployment state file to local cache directory")

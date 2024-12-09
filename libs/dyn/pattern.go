@@ -69,7 +69,10 @@ func (c anyKeyComponent) visit(v Value, prefix Path, suffix Pattern, opts visitO
 			return InvalidValue, err
 		}
 
-		m.Set(pk, nv)
+		err = m.Set(pk, nv)
+		if err != nil {
+			return InvalidValue, err
+		}
 	}
 
 	return NewValue(m, v.Locations()), nil

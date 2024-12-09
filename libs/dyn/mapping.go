@@ -41,7 +41,8 @@ func newMappingWithSize(size int) Mapping {
 func newMappingFromGoMap(vin map[string]Value) Mapping {
 	m := newMappingWithSize(len(vin))
 	for k, v := range vin {
-		m.Set(V(k), v)
+		// QQQ log error or panic?
+		_ = m.Set(V(k), v)
 	}
 	return m
 }
@@ -144,6 +145,7 @@ func (m Mapping) Clone() Mapping {
 // Merge merges the key-value pairs from another Mapping into the current Mapping.
 func (m *Mapping) Merge(n Mapping) {
 	for _, p := range n.pairs {
-		m.Set(p.Key, p.Value)
+		// QQQ log error or panic?
+		_ = m.Set(p.Key, p.Value)
 	}
 }
