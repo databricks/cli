@@ -69,6 +69,6 @@ func initProgressLoggerFlag(cmd *cobra.Command, logFlags *logFlags) *progressLog
 	if err := flags.MarkHidden("progress-format"); err != nil {
 		panic(err)
 	}
-	cmd.RegisterFlagCompletionFunc("progress-format", f.ProgressLogFormat.Complete)
+	_ = cmd.RegisterFlagCompletionFunc("progress-format", f.ProgressLogFormat.Complete)
 	return &f
 }

@@ -437,8 +437,8 @@ func NewGenerateDashboardCommand() *cobra.Command {
 	// Included for symmetry with the other generate commands, but we prefer the shorter flags.
 	cmd.Flags().StringVar(&d.existingPath, "existing-dashboard-path", "", `workspace path of the dashboard to generate configuration for`)
 	cmd.Flags().StringVar(&d.existingID, "existing-dashboard-id", "", `ID of the dashboard to generate configuration for`)
-	cmd.Flags().MarkHidden("existing-dashboard-path")
-	cmd.Flags().MarkHidden("existing-dashboard-id")
+	_ = cmd.Flags().MarkHidden("existing-dashboard-path")
+	_ = cmd.Flags().MarkHidden("existing-dashboard-id")
 
 	// Output flags.
 	cmd.Flags().StringVarP(&d.resourceDir, "resource-dir", "d", "./resources", `directory to write the configuration to`)
@@ -460,7 +460,7 @@ func NewGenerateDashboardCommand() *cobra.Command {
 	cmd.MarkFlagsMutuallyExclusive("watch", "existing-id")
 
 	// Completion for the resource flag.
-	cmd.RegisterFlagCompletionFunc("resource", dashboardResourceCompletion)
+	_ = cmd.RegisterFlagCompletionFunc("resource", dashboardResourceCompletion)
 
 	cmd.RunE = d.RunE
 	return cmd
