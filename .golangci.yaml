@@ -18,7 +18,3 @@ linters-settings:
         replacement: 'any'
 issues:
   exclude-dirs-use-default: false  # recommended by docs https://golangci-lint.run/usage/false-positives/
-  exclude-rules:
-    - path-except: (_test\.go|internal)
-      linters:
-        - errcheck
