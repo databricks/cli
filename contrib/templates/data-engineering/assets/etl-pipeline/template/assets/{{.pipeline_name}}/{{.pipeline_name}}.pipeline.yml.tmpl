@@ -2,7 +2,11 @@ resources:
   pipelines:
     {{.pipeline_name}}:
       name: {{.pipeline_name}}
+      {{- if eq .use_serverless "yes"}}
       serverless: true
+      {{- else}}
+      serverless: false
+      {{- end}}
       {{- if or (eq default_catalog "") (eq default_catalog "hive_metastore")}}
       ## Specify the 'catalog' field to configure this pipeline to make use of Unity Catalog:
       # catalog: ${var.catalog}

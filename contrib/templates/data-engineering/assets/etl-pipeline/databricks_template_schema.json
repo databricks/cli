@@ -40,6 +40,16 @@
                 "no"
             ],
             "default": "yes"
+        },
+        "use_serverless": {
+            "type": "string",
+            "default": "no",
+            "enum": [
+                "yes",
+                "no"
+            ],
+            "description": "\nWould you like to use serverless compute for this pipeline?\nuse_serverless",
+            "order": 5
         }
     },
     "success_message": "\n\n🪠 New pipeline definition generated under 'assets/{{.pipeline_name}}'!"
