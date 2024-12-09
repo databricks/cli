@@ -21,9 +21,8 @@ func initOutputFlag(cmd *cobra.Command) *outputFlag {
 	// Configure defaults from environment, if applicable.
 	// If the provided value is invalid it is ignored.
 	if v, ok := env.Lookup(cmd.Context(), envOutputFormat); ok {
-		if err := f.output.Set(v); err != nil {
-			panic(err)
-		}
+		// QQQ log the error?
+		_ = f.output.Set(v)
 	}
 
 	cmd.PersistentFlags().VarP(&f.output, "output", "o", "output type: text or json")
