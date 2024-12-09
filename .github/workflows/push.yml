@@ -32,9 +32,9 @@ jobs:
 
       - name: Query git
         run: |
-          git rev-parse --abbrev-ref HEAD
-          git describe --all
-          git describe
+          git rev-parse --abbrev-ref HEAD || true
+          git describe --all || true
+          git describe || true
 
       - name: Setup Go
         uses: actions/setup-go@v5
