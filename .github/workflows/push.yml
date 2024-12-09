@@ -30,6 +30,12 @@ jobs:
       - name: Checkout repository and submodules
         uses: actions/checkout@v4
 
+      - name: Query git
+        run: |
+          git rev-parse --abbrev-ref HEAD
+          git describe --all
+          git describe
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
