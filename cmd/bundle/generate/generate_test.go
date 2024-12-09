@@ -294,10 +294,11 @@ func TestGenerateJobCommandOldFileRename(t *testing.T) {
 	// Having an existing files require --force flag to regenerate them
 	require.NoError(t, cmd.Flag("force").Value.Set("true"))
 
-	require.NoError(t, cmd.RunE(cmd, []string{}))
+	err := cmd.RunE(cmd, []string{})
+	require.NoError(t, err)
 
 	// Make sure file do not exists after the run
-	_, err := os.Stat(oldFilename)
+	_, err = os.Stat(oldFilename)
 	require.True(t, errors.Is(err, fs.ErrNotExist))
 
 	data, err := os.ReadFile(filepath.Join(configDir, "test_job.job.yml"))
