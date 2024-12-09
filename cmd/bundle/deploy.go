@@ -33,9 +33,7 @@ func newDeployCommand() *cobra.Command {
 	cmd.Flags().StringVar(&clusterId, "compute-id", "", "Override cluster in the deployment with the given compute ID.")
 	cmd.Flags().StringVarP(&clusterId, "cluster-id", "c", "", "Override cluster in the deployment with the given cluster ID.")
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive approvals that might be required for deployment.")
-	if err := cmd.Flags().MarkDeprecated("compute-id", "use --cluster-id instead"); err != nil {
-		return nil
-	}
+	_ = cmd.Flags().MarkDeprecated("compute-id", "use --cluster-id instead")
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "Enable verbose output.")
 	// Verbose flag currently only affects file sync output, it's used by the vscode extension
 	_ = cmd.Flags().MarkHidden("verbose")
