@@ -110,14 +110,8 @@ func initLogFlags(cmd *cobra.Command) *logFlags {
 	_ = flags.MarkHidden("log-level")
 	_ = flags.MarkHidden("log-format")
 
-	if err := cmd.RegisterFlagCompletionFunc("log-file", f.file.Complete); err != nil {
-		panic(err)
-	}
-	if err := cmd.RegisterFlagCompletionFunc("log-level", f.level.Complete); err != nil {
-		panic(err)
-	}
-	if err := cmd.RegisterFlagCompletionFunc("log-format", f.output.Complete); err != nil {
-		panic(err)
-	}
+	_ = cmd.RegisterFlagCompletionFunc("log-file", f.file.Complete)
+	_ = cmd.RegisterFlagCompletionFunc("log-level", f.level.Complete)
+	_ = cmd.RegisterFlagCompletionFunc("log-format", f.output.Complete)
 	return &f
 }
