@@ -139,8 +139,7 @@ func TestDashboard_ExistingPath_Nominal(t *testing.T) {
 	ctx := bundle.Context(context.Background(), b)
 	cmd := NewGenerateDashboardCommand()
 	cmd.SetContext(ctx)
-	var err error
-	err = cmd.Flag("existing-path").Value.Set("/path/to/dashboard")
+	err := cmd.Flag("existing-path").Value.Set("/path/to/dashboard")
 	require.NoError(t, err)
 
 	err = cmd.RunE(cmd, []string{})
