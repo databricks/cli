@@ -181,11 +181,9 @@ func TestDashboard_ExistingPath_NotFound(t *testing.T) {
 	ctx := bundle.Context(context.Background(), b)
 	cmd := NewGenerateDashboardCommand()
 	cmd.SetContext(ctx)
-	if err := cmd.Flag("existing-path").Value.Set("/path/to/dashboard"); err != nil {
-		require.NoError(t, err)
-	}
+	err := cmd.Flag("existing-path").Value.Set("/path/to/dashboard")
+	require.NoError(t, err)
 
-	if err := cmd.RunE(cmd, []string{}); err != nil {
-		require.Error(t, err)
-	}
+	err := cmd.RunE(cmd, []string{})
+	require.Error(t, err)
 }

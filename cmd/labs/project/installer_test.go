@@ -122,7 +122,7 @@ func respondWithJSON(t *testing.T, w http.ResponseWriter, v any) {
 	}
 	_, err = w.Write(raw)
 	if err != nil {
-		panic(err)
+		require.NoError(t, err)
 	}
 }
 
@@ -328,7 +328,7 @@ func TestInstallerWorksForDevelopment(t *testing.T) {
 	defer func() {
 		err := os.Chdir(wd)
 		if err != nil {
-			t.Fatal(err)
+			require.NoError(t, err)
 		}
 	}()
 
