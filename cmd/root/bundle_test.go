@@ -99,10 +99,11 @@ func TestBundleConfigureWithNonExistentProfileFlag(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 
 	cmd := emptyCommand(t)
-	cmd.Flag("profile").Value.Set("NOEXIST")
+	err := cmd.Flag("profile").Value.Set("NOEXIST")
+	require.NoError(t, err)
 	b := setupWithHost(t, cmd, "https://x.com")
 
-	_, err := b.InitializeWorkspaceClient()
+	_, err = b.InitializeWorkspaceClient()
 	assert.ErrorContains(t, err, "has no NOEXIST profile configured")
 }
 
@@ -110,10 +111,11 @@ func TestBundleConfigureWithMismatchedProfile(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 
 	cmd := emptyCommand(t)
-	cmd.Flag("profile").Value.Set("PROFILE-1")
+	err := cmd.Flag("profile").Value.Set("PROFILE-1")
+	require.NoError(t, err)
 	b := setupWithHost(t, cmd, "https://x.com")
 
-	_, err := b.InitializeWorkspaceClient()
+	_, err = b.InitializeWorkspaceClient()
 	assert.ErrorContains(t, err, "config host mismatch: profile uses host https://a.com, but CLI configured to use https://x.com")
 }
 
@@ -121,7 +123,8 @@ func TestBundleConfigureWithCorrectProfile(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 
 	cmd := emptyCommand(t)
-	cmd.Flag("profile").Value.Set("PROFILE-1")
+	err := cmd.Flag("profile").Value.Set("PROFILE-1")
+	require.NoError(t, err)
 	b := setupWithHost(t, cmd, "https://a.com")
 
 	client, err := b.InitializeWorkspaceClient()
@@ -146,7 +149,8 @@ func TestBundleConfigureWithProfileFlagAndEnvVariable(t *testing.T) {
 
 	t.Setenv("DATABRICKS_CONFIG_PROFILE", "NOEXIST")
 	cmd := emptyCommand(t)
-	cmd.Flag("profile").Value.Set("PROFILE-1")
+	err := cmd.Flag("profile").Value.Set("PROFILE-1")
+	require.NoError(t, err)
 	b := setupWithHost(t, cmd, "https://a.com")
 
 	client, err := b.InitializeWorkspaceClient()
@@ -174,7 +178,8 @@ func TestBundleConfigureProfileFlag(t *testing.T) {
 
 	// The --profile flag takes precedence over the profile in the databricks.yml file
 	cmd := emptyCommand(t)
-	cmd.Flag("profile").Value.Set("PROFILE-2")
+	err := cmd.Flag("profile").Value.Set("PROFILE-2")
+	require.NoError(t, err)
 	b := setupWithProfile(t, cmd, "PROFILE-1")
 
 	client, err := b.InitializeWorkspaceClient()
@@ -205,7 +210,8 @@ func TestBundleConfigureProfileFlagAndEnvVariable(t *testing.T) {
 	// The --profile flag takes precedence over the DATABRICKS_CONFIG_PROFILE environment variable
 	t.Setenv("DATABRICKS_CONFIG_PROFILE", "NOEXIST")
 	cmd := emptyCommand(t)
-	cmd.Flag("profile").Value.Set("PROFILE-2")
+	err := cmd.Flag("profile").Value.Set("PROFILE-2")
+	require.NoError(t, err)
 	b := setupWithProfile(t, cmd, "PROFILE-1")
 
 	client, err := b.InitializeWorkspaceClient()

@@ -2,9 +2,7 @@ linters:
   disable-all: true
   enable:
     - bodyclose
-    # errcheck and govet are part of default setup and should be included but give too many errors now
-    # once errors are fixed, they should be enabled here:
-    #- errcheck
+    - errcheck
     - gosimple
     #- govet
     - ineffassign
@@ -20,3 +18,7 @@ linters-settings:
         replacement: 'any'
 issues:
   exclude-dirs-use-default: false  # recommended by docs https://golangci-lint.run/usage/false-positives/
+  exclude-rules:
+    - path-except: (_test\.go|internal)
+      linters:
+        - errcheck

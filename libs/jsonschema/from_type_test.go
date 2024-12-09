@@ -403,7 +403,8 @@ func TestFromTypeError(t *testing.T) {
 	// Maps with non-string keys should panic.
 	type mapOfInts map[int]int
 	assert.PanicsWithValue(t, "found map with non-string key: int", func() {
-		FromType(reflect.TypeOf(mapOfInts{}), nil)
+		_, err := FromType(reflect.TypeOf(mapOfInts{}), nil)
+		require.NoError(t, err)
 	})
 
 	// Unsupported types should return an error.
