@@ -73,7 +73,7 @@ func newSummaryCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			cmd.OutOrStdout().Write(buf)
+			_, _ = cmd.OutOrStdout().Write(buf)
 		default:
 			return fmt.Errorf("unknown output type %s", root.OutputType(cmd))
 		}
