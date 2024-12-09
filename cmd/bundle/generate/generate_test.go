@@ -184,8 +184,7 @@ func TestGenerateJobCommand(t *testing.T) {
 	var key string
 	cmd.Flags().StringVar(&key, "key", "test_job", "")
 
-	err = cmd.RunE(cmd, []string{})
-	require.NoError(t, err)
+	require.NoError(t, cmd.RunE(cmd, []string{}))
 
 	data, err := os.ReadFile(filepath.Join(configDir, "test_job.job.yml"))
 	require.NoError(t, err)
@@ -216,8 +215,7 @@ func TestGenerateJobCommand(t *testing.T) {
 }
 
 func touchEmptyFile(t *testing.T, path string) {
-	err := os.MkdirAll(filepath.Dir(path), 0700)
-	require.NoError(t, err)
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0700))
 	f, err := os.Create(path)
 	require.NoError(t, err)
 	f.Close()
