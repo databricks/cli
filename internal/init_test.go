@@ -39,7 +39,6 @@ func TestAccBundleInitErrorOnUnknownFields(t *testing.T) {
 //     make changes that can break the MLOps Stacks DAB. In which case we should
 //     skip this test until the MLOps Stacks DAB is updated to work again.
 func TestAccBundleInitOnMlopsStacks(t *testing.T) {
-	t.Parallel()
 	env := testutil.GetCloud(t).String()
 
 	tmpDir1 := t.TempDir()
