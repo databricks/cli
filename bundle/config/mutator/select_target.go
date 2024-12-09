@@ -15,6 +15,7 @@ type selectTarget struct {
 }
 
 // SelectTarget merges the specified target into the root configuration.
+// After merging, it removes the 'Targets' section from the configuration.
 func SelectTarget(name string) bundle.Mutator {
 	return &selectTarget{
 		name: name,
@@ -31,7 +32,7 @@ func (m *selectTarget) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnosti
 	}
 
 	// Get specified target
-	_, ok := b.Config.Targets[m.name]
+	target, ok := b.Config.Targets[m.name]
 	if !ok {
 		return diag.Errorf("%s: no such target. Available targets: %s", m.name, strings.Join(maps.Keys(b.Config.Targets), ", "))
 	}
@@ -43,13 +44,15 @@ func (m *selectTarget) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnosti
 	}
 
 	// Store specified target in configuration for reference.
+	b.Target = target
 	b.Config.Bundle.Target = m.name
 
 	// We do this for backward compatibility.
 	// TODO: remove when Environments section is not supported anymore.
 	b.Config.Bundle.Environment = b.Config.Bundle.Target
 
-	// Clear targets after loading.
+	// Cleanup the original targets and environments sections since they
+	// show up in the JSON output of the 'summary' and 'validate' commands.
 	b.Config.Targets = nil
 	b.Config.Environments = nil
 
