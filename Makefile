@@ -27,11 +27,11 @@ snapshot:
 
 vendor:
 	go mod vendor
-  
+
 schema:
 	go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json
 
-INTEGRATION = gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./integration/..." -- -parallel 4 -timeout=2h
+INTEGRATION = gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./integration/..." -- -p 8 -parallel 8 -timeout=2h
 
 integration:
 	$(INTEGRATION)
