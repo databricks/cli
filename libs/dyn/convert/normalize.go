@@ -117,10 +117,7 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 			}
 
 			if err := out.Set(pk, nv); err != nil {
-				return dyn.InvalidValue, diag.Diagnostics{diag.Diagnostic{
-					Severity: diag.Error,
-					Summary:  err.Error(),
-				}}
+				return dyn.InvalidValue, diag.FromErr(err)
 			}
 		}
 
