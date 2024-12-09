@@ -40,4 +40,4 @@ vendor:
 
 schema:
 	@echo "✓ Generating json-schema ..."
-	@go run $(shell find ./bundle/internal/schema -name "*.go" ! -name "*_test.go") ./bundle/internal/schema ./bundle/schema/jsonschema.json
+	@go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json
