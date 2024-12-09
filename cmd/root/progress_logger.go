@@ -59,7 +59,7 @@ func initProgressLoggerFlag(cmd *cobra.Command, logFlags *logFlags) *progressLog
 	// Configure defaults from environment, if applicable.
 	// If the provided value is invalid it is ignored.
 	if v, ok := env.Lookup(cmd.Context(), envProgressFormat); ok {
-		_ = f.ProgressLogFormat.Set(v)
+		_ = f.Set(v)
 	}
 
 	flags := cmd.PersistentFlags()
