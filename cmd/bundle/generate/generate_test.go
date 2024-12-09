@@ -89,8 +89,7 @@ func TestGeneratePipelineCommand(t *testing.T) {
 	var key string
 	cmd.Flags().StringVar(&key, "key", "test_pipeline", "")
 
-	err = cmd.RunE(cmd, []string{})
-	require.NoError(t, err)
+	require.NoError(t, cmd.RunE(cmd, []string{}))
 
 	data, err := os.ReadFile(filepath.Join(configDir, "test_pipeline.pipeline.yml"))
 	require.NoError(t, err)
@@ -110,7 +109,7 @@ func TestGeneratePipelineCommand(t *testing.T) {
             path: %s
 `, filepath.Join("..", "src", "notebook.py"), filepath.Join("..", "src", "file.py")), string(data))
 
-	data, err = os.ReadFile(filepath.Join(srcDir, "notebook.py"))
+	data, err := os.ReadFile(filepath.Join(srcDir, "notebook.py"))
 	require.NoError(t, err)
 	require.Equal(t, "# Databricks notebook source\nNotebook content", string(data))
 
