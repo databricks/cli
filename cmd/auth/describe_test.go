@@ -44,11 +44,12 @@ func TestGetWorkspaceAuthStatus(t *testing.T) {
 	require.NoError(t, err)
 
 	status, err := getAuthStatus(cmd, []string{}, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
-		_ = config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
+		err := config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
 			"host":      "https://test.com",
 			"token":     "test-token",
 			"auth_type": "azure-cli",
 		})
+		require.NoError(t, err)
 		return cfg, false, nil
 	})
 	require.NoError(t, err)
