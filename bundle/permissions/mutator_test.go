@@ -51,6 +51,14 @@ func TestApplyBundlePermissions(t *testing.T) {
 					"endpoint_1": {},
 					"endpoint_2": {},
 				},
+				Dashboards: map[string]*resources.Dashboard{
+					"dashboard_1": {},
+					"dashboard_2": {},
+				},
+				Apps: map[string]*resources.App{
+					"app_1": {},
+					"app_2": {},
+				},
 			},
 		},
 	}
@@ -103,6 +111,14 @@ func TestApplyBundlePermissions(t *testing.T) {
 	require.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint_2"].Permissions, resources.Permission{Level: "CAN_MANAGE", UserName: "TestUser"})
 	require.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint_2"].Permissions, resources.Permission{Level: "CAN_VIEW", GroupName: "TestGroup"})
 	require.Contains(t, b.Config.Resources.ModelServingEndpoints["endpoint_2"].Permissions, resources.Permission{Level: "CAN_QUERY", ServicePrincipalName: "TestServicePrincipal"})
+
+	require.Len(t, b.Config.Resources.Dashboards["dashboard_1"].Permissions, 2)
+	require.Contains(t, b.Config.Resources.Dashboards["dashboard_1"].Permissions, resources.Permission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.Dashboards["dashboard_1"].Permissions, resources.Permission{Level: "CAN_READ", GroupName: "TestGroup"})
+
+	require.Len(t, b.Config.Resources.Apps["app_1"].Permissions, 2)
+	require.Contains(t, b.Config.Resources.Apps["app_1"].Permissions, resources.Permission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.Apps["app_1"].Permissions, resources.Permission{Level: "CAN_USE", GroupName: "TestGroup"})
 }
 
 func TestWarningOnOverlapPermission(t *testing.T) {
