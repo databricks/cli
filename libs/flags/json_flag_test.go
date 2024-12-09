@@ -62,9 +62,8 @@ func TestJsonFlagFile(t *testing.T) {
 	{
 		f, err := os.Create(path.Join(t.TempDir(), "file"))
 		require.NoError(t, err)
-		n, err := f.Write(payload)
+		_, err = f.Write(payload)
 		require.NoError(t, err)
-		require.Greater(t, n, 0)
 		f.Close()
 		fpath = f.Name()
 	}
