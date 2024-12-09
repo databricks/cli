@@ -188,21 +188,13 @@ func (l *Logger) writeJson(event Event) {
 		// we panic because there we cannot catch this in jobs.RunNowAndWait
 		panic(err)
 	}
-	if _, err := l.Writer.Write([]byte(b)); err != nil {
-		panic(err)
-	}
-	if _, err := l.Writer.Write([]byte("\n")); err != nil {
-		panic(err)
-	}
+	_, _ = l.Writer.Write([]byte(b))
+	_, _ = l.Writer.Write([]byte("\n"))
 }
 
 func (l *Logger) writeAppend(event Event) {
-	if _, err := l.Writer.Write([]byte(event.String())); err != nil {
-		panic(err)
-	}
-	if _, err := l.Writer.Write([]byte("\n")); err != nil {
-		panic(err)
-	}
+	_, _ = l.Writer.Write([]byte(event.String()))
+	_, _ = l.Writer.Write([]byte("\n"))
 }
 
 func (l *Logger) writeInplace(event Event) {
