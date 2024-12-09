@@ -430,7 +430,7 @@ func recommendCatalogSchemaUsage(b *bundle.Bundle, ctx context.Context, key stri
 		var fix string
 		if t.NotebookTask != nil {
 			relPath = t.NotebookTask.NotebookPath
-			expected = `"  dbutils.widgets.text(['"]schema|` +
+			expected = `dbutils.widgets.text\(['"]schema|` +
 				`USE[^)]+schema`
 			fix = "  dbutils.widgets.text('catalog')\n" +
 				"  dbutils.widgets.text('schema')\n" +
@@ -462,16 +462,11 @@ func recommendCatalogSchemaUsage(b *bundle.Bundle, ctx context.Context, key stri
 		}
 
 		localPath, _, err := GetLocalPath(ctx, b, sourceDir, relPath)
-		if err != nil {
-			// Any path errors are reported by another mutator
+		if err != nil || localPath == "" {
+			// We ignore errors (they're reported by another mutator)
+			// and ignore empty local paths (which means we'd have to download the file)
 			continue
 		}
-		if localPath == "" {
-			// If there is no local copy we don't want to download it and skip this check
-			continue
-		}
-
-		log.Warnf(ctx, "LocalPath: %s, relPath: %s, sourceDir: %s", localPath, relPath, sourceDir)
 
 		if !fileIncludesPattern(ctx, localPath, expected) {
 			diags = diags.Extend(diag.Diagnostics{{
