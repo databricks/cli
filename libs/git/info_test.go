@@ -1,4 +1,4 @@
-package vfs
+package git
 
 import (
 	"os"
@@ -17,22 +17,22 @@ func TestFindLeafInTree(t *testing.T) {
 
 	// Find from working directory should work.
 	{
-		out, err := FindLeafInTree(MustNew(wd), ".git")
+		out, err := FindLeafInTree(wd, ".git")
 		assert.NoError(t, err)
-		assert.Equal(t, root, out.Native())
+		assert.Equal(t, root, out)
 	}
 
 	// Find from project root itself should work.
 	{
-		out, err := FindLeafInTree(MustNew(root), ".git")
+		out, err := FindLeafInTree(root, ".git")
 		assert.NoError(t, err)
-		assert.Equal(t, root, out.Native())
+		assert.Equal(t, root, out)
 	}
 
 	// Find for something that doesn't exist should work.
 	{
-		out, err := FindLeafInTree(MustNew(root), "this-leaf-doesnt-exist-anywhere")
-		assert.ErrorIs(t, err, os.ErrNotExist)
-		assert.Equal(t, nil, out)
+		out, err := FindLeafInTree(root, "this-leaf-doesnt-exist-anywhere")
+		assert.NoError(t, err)
+		assert.Equal(t, "", out)
 	}
 }
