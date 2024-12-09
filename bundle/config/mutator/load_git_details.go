@@ -39,7 +39,7 @@ func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	config := &b.Config.Bundle.Git
 
 	config.ActualBranch = info.CurrentBranch
-	if config.Branch == "" && info.CurrentBranch != "" {
+	if config.Branch == "" {
 		fmt.Printf("setting inferred config=%v info=%v\n", *config, info)
 		config.Inferred = true
 	} else {
