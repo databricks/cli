@@ -364,7 +364,7 @@ func readFile(t *testing.T, name string) string {
 		// stored in ./testdata. This are debugging logs to help diagnose the issue
 		// when it occurs again.
 		origErr := err
-		t.Logf("Error reading file %s: %w", name, err)
+		t.Logf("Error reading file %s: %s", name, err)
 		err := filepath.Walk(".", func(path string, info fs.FileInfo, err error) error {
 			if info.IsDir() {
 				t.Logf("Found directory: %s", path)
@@ -374,9 +374,9 @@ func readFile(t *testing.T, name string) string {
 			return nil
 		})
 		if err != nil {
-			t.Logf("Error walking directory: %w", err)
+			t.Logf("Error walking directory: %s", err)
 		}
-		t.Fatalf("Ending test because of failure to read file %s: %w", name, origErr)
+		t.Fatalf("Ending test because of failure to read file %s: %s", name, origErr)
 		return ""
 	}
 }
