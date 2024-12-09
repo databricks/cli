@@ -51,6 +51,9 @@ func GetEnvOrSkipTest(t *testing.T, name string) string {
 // Changes into specified directory for the duration of the test.
 // Returns the current working directory.
 func Chdir(t *testing.T, dir string) string {
+	// Prevent parallel execution when changing the working directory.
+	t.Setenv("DO_NOT_RUN_IN_PARALLEL", "true")
+
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 
