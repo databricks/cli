@@ -155,12 +155,8 @@ func globalGitConfig() (*config, error) {
 	// > are missing or unreadable they will be ignored.
 	//
 	// We therefore ignore the error return value for the calls below.
-	if err := config.loadFile(vfs.MustNew(xdgConfigHome), "git/config"); err != nil {
-		return nil, err
-	}
-	if err := config.loadFile(vfs.MustNew(config.home), ".gitconfig"); err != nil {
-		return nil, err
-	}
+	_ = config.loadFile(vfs.MustNew(xdgConfigHome), "git/config")
+	_ = config.loadFile(vfs.MustNew(config.home), ".gitconfig")
 
 	return config, nil
 }
