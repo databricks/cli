@@ -157,7 +157,6 @@ func TestRootMergeTargetOverridesWithVariables(t *testing.T) {
 		},
 	}
 	require.NoError(t, root.initializeDynamicValue())
-
 	require.NoError(t, root.MergeTargetOverrides("development"))
 	assert.Equal(t, "bar", root.Variables["foo"].Default)
 	assert.Equal(t, "foo var", root.Variables["foo"].Description)
