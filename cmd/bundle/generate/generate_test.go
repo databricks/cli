@@ -89,7 +89,8 @@ func TestGeneratePipelineCommand(t *testing.T) {
 	var key string
 	cmd.Flags().StringVar(&key, "key", "test_pipeline", "")
 
-	require.NoError(t, cmd.RunE(cmd, []string{}))
+	err := cmd.RunE(cmd, []string{})
+	require.NoError(t, err)
 
 	data, err := os.ReadFile(filepath.Join(configDir, "test_pipeline.pipeline.yml"))
 	require.NoError(t, err)
@@ -184,7 +185,8 @@ func TestGenerateJobCommand(t *testing.T) {
 	var key string
 	cmd.Flags().StringVar(&key, "key", "test_job", "")
 
-	require.NoError(t, cmd.RunE(cmd, []string{}))
+	err := cmd.RunE(cmd, []string{})
+	require.NoError(t, err)
 
 	data, err := os.ReadFile(filepath.Join(configDir, "test_job.job.yml"))
 	require.NoError(t, err)
@@ -215,7 +217,8 @@ func TestGenerateJobCommand(t *testing.T) {
 }
 
 func touchEmptyFile(t *testing.T, path string) {
-	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0700))
+	err := os.MkdirAll(filepath.Dir(path), 0700)
+	require.NoError(t, err)
 	f, err := os.Create(path)
 	require.NoError(t, err)
 	f.Close()
