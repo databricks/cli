@@ -10,7 +10,7 @@ import (
 // with the path it is loaded from.
 func SetLocation(b *bundle.Bundle, prefix string, locations []dyn.Location) {
 	start := dyn.MustPathFromString(prefix)
-	_ = b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
+	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		return dyn.Walk(root, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			// If the path has the given prefix, set the location.
 			if p.HasPrefix(start) {
@@ -27,4 +27,7 @@ func SetLocation(b *bundle.Bundle, prefix string, locations []dyn.Location) {
 			return v, dyn.ErrSkip
 		})
 	})
+	if err != nil {
+		panic("Mutate() failed: " + err.Error())
+	}
 }
