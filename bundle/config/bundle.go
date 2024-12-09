@@ -18,9 +18,6 @@ type Bundle struct {
 	// Target is set by the mutator that selects the target.
 	Target string `json:"target,omitempty" bundle:"readonly"`
 
-	// TargetConfig stores a snapshot of the target configuration when it was selected by SelectTarget.
-	TargetConfig *Target `json:"target_config,omitempty" bundle:"internal"`
-
 	// DEPRECATED. Left for backward compatibility with Target
 	Environment string `json:"environment,omitempty" bundle:"readonly"`
 

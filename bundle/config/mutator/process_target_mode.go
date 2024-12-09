@@ -159,7 +159,7 @@ func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUs
 	// We need to verify that there is only a single deployment of the current target.
 	// The best way to enforce this is to explicitly set root_path.
 	advice := fmt.Sprintf(
-		"set 'workspace.root_path' to make sure only one copy is deployed. A common practice is to use a username or principal name in this path, i.e. root_path: /Users/%s/.bundle/${bundle.name}/${bundle.target}",
+		"set 'workspace.root_path' to make sure only one copy is deployed. A common practice is to use a username or principal name in this path, i.e. root_path: /Workspace/Users/%s/.bundle/${bundle.name}/${bundle.target}",
 		b.Config.Workspace.CurrentUser.UserName,
 	)
 	if !isExplicitRootSet(b) {
@@ -188,14 +188,7 @@ func isRunAsSet(r config.Resources) bool {
 }
 
 func isExplicitRootSet(b *bundle.Bundle) bool {
-	if b.Config.Bundle.TargetConfig == nil {
-		return false
-	}
-	targetConfig := b.Config.Bundle.TargetConfig
-	if targetConfig.Workspace == nil {
-		return false
-	}
-	return targetConfig.Workspace.RootPath != ""
+	return b.Target != nil && b.Target.Workspace != nil && b.Target.Workspace.RootPath != ""
 }
 
 func (m *processTargetMode) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {

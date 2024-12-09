@@ -48,7 +48,7 @@ type Root struct {
 	// Targets can be used to differentiate settings and resources between
 	// bundle deployment targets (e.g. development, staging, production).
 	// Note that this field is set to 'nil' by the SelectTarget mutator;
-	// use Bundle.TargetConfig to access the selected target configuration.
+	// use bundle.Bundle.Target to access the selected target configuration.
 	Targets map[string]*Target `json:"targets,omitempty"`
 
 	// DEPRECATED. Left for backward compatibility with Targets

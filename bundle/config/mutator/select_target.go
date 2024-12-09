@@ -32,7 +32,7 @@ func (m *selectTarget) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnosti
 	}
 
 	// Get specified target
-	targetConfig, ok := b.Config.Targets[m.name]
+	target, ok := b.Config.Targets[m.name]
 	if !ok {
 		return diag.Errorf("%s: no such target. Available targets: %s", m.name, strings.Join(maps.Keys(b.Config.Targets), ", "))
 	}
@@ -44,7 +44,7 @@ func (m *selectTarget) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnosti
 	}
 
 	// Store specified target in configuration for reference.
-	b.Config.Bundle.TargetConfig = targetConfig
+	b.Target = target
 	b.Config.Bundle.Target = m.name
 
 	// We do this for backward compatibility.
