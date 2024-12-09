@@ -107,7 +107,7 @@ func initLogFlags(cmd *cobra.Command) *logFlags {
 
 	// mark fine-grained flags hidden from global --help
 	_ = flags.MarkHidden("log-file")
-	_ = flags.MarkHidden("log-level") 
+	_ = flags.MarkHidden("log-level")
 	_ = flags.MarkHidden("log-format")
 
 	if err := cmd.RegisterFlagCompletionFunc("log-file", f.file.Complete); err != nil {
