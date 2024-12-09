@@ -31,7 +31,8 @@ func runSparkJarTestCommon(t *testing.T, ctx context.Context, sparkVersion strin
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		require.NoError(t, destroyBundle(t, ctx, bundleRoot))
+		err := destroyBundle(t, ctx, bundleRoot)
+		require.NoError(t, err)
 	})
 
 	out, err := runResource(t, ctx, bundleRoot, "jar_job")

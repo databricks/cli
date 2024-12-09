@@ -91,8 +91,7 @@ func TestBundleConfigureWithMultipleMatches(t *testing.T) {
 	cmd := emptyCommand(t)
 	b := setupWithHost(t, cmd, "https://a.com")
 
-	var err error
-	_, err = b.InitializeWorkspaceClient()
+	_, err := b.InitializeWorkspaceClient()
 	assert.ErrorContains(t, err, "multiple profiles matched: PROFILE-1, PROFILE-2")
 }
 
