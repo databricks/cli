@@ -146,7 +146,7 @@ func targetCompletion(cmd *cobra.Command, args []string, toComplete string) ([]s
 func initTargetFlag(cmd *cobra.Command) {
 	// To operate in the context of a bundle, all commands must take an "target" parameter.
 	cmd.PersistentFlags().StringP("target", "t", "", "bundle target to use (if applicable)")
-	_ = cmd.RegisterFlagCompletionFunc("target", targetCompletion)
+	cmd.RegisterFlagCompletionFunc("target", targetCompletion)
 }
 
 // DEPRECATED flag

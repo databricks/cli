@@ -104,8 +104,8 @@ func initLogFlags(cmd *cobra.Command) *logFlags {
 	flags.MarkHidden("log-level")
 	flags.MarkHidden("log-format")
 
-	_ = cmd.RegisterFlagCompletionFunc("log-file", f.file.Complete)
-	_ = cmd.RegisterFlagCompletionFunc("log-level", f.level.Complete)
-	_ = cmd.RegisterFlagCompletionFunc("log-format", f.output.Complete)
+	cmd.RegisterFlagCompletionFunc("log-file", f.file.Complete)
+	cmd.RegisterFlagCompletionFunc("log-level", f.level.Complete)
+	cmd.RegisterFlagCompletionFunc("log-format", f.output.Complete)
 	return &f
 }
