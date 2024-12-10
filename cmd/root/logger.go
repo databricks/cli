@@ -100,9 +100,9 @@ func initLogFlags(cmd *cobra.Command) *logFlags {
 	flags.Var(&f.output, "log-format", "log output format (text or json)")
 
 	// mark fine-grained flags hidden from global --help
-	_ = flags.MarkHidden("log-file")
-	_ = flags.MarkHidden("log-level")
-	_ = flags.MarkHidden("log-format")
+	flags.MarkHidden("log-file")
+	flags.MarkHidden("log-level")
+	flags.MarkHidden("log-format")
 
 	_ = cmd.RegisterFlagCompletionFunc("log-file", f.file.Complete)
 	_ = cmd.RegisterFlagCompletionFunc("log-level", f.level.Complete)

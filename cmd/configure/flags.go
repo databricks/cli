@@ -21,5 +21,5 @@ func (f *configureFlags) Register(cmd *cobra.Command) {
 	// Include token flag for compatibility with the legacy CLI.
 	// It doesn't actually do anything because we always use PATs.
 	cmd.Flags().Bool("token", true, "Configure using Databricks Personal Access Token")
-	_ = cmd.Flags().MarkHidden("token")
+	cmd.Flags().MarkHidden("token")
 }
