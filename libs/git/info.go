@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/dbr"
+	"github.com/databricks/cli/libs/folders"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
@@ -105,7 +106,7 @@ func ensureWorkspacePrefix(p string) string {
 func fetchRepositoryInfoDotGit(ctx context.Context, path string) (RepositoryInfo, error) {
 	result := RepositoryInfo{}
 
-	rootDir, err := FindLeafInTree(path, GitDirectoryName)
+	rootDir, err := folders.FindDirWithLeaf(path, GitDirectoryName)
 	if rootDir == "" {
 		return result, err
 	}
