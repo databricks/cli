@@ -2,12 +2,8 @@ package git
 
 import (
 	"context"
-	"errors"
-	"io/fs"
 	"net/http"
-	"os"
 	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/databricks/cli/libs/dbr"
@@ -134,32 +130,4 @@ func fetchRepositoryInfoDotGit(ctx context.Context, path string) (RepositoryInfo
 	}
 
 	return result, nil
-}
-
-func FindLeafInTree(p string, leafName string) (string, error) {
-	p, err := filepath.Abs(p)
-	if err != nil {
-		return "", err
-	}
-	for i := 0; i < 10000; i++ {
-		_, err = os.Stat(filepath.Join(p, leafName))
-
-		if err == nil {
-			// Found [leafName] in p
-			return p, nil
-		}
-
-		// ErrNotExist means we continue traversal up the tree.
-		if errors.Is(err, fs.ErrNotExist) {
-			parent := filepath.Dir(p)
-			if parent == p {
-				return "", nil
-			}
-			p = parent
-			continue
-		}
-		break
-	}
-
-	return "", err
 }
