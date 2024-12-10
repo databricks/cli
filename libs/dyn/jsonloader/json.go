@@ -70,9 +70,8 @@ func decodeValue(decoder *json.Decoder, o *Offset) (dyn.Value, error) {
 					return invalidValueWithLocation(decoder, o), err
 				}
 
-				if err := obj.Set(keyVal, val); err != nil {
-					return invalidValueWithLocation(decoder, o), err
-				}
+				// QQQ log this?
+				_ = obj.Set(keyVal, val)
 			}
 			// Consume the closing '}'
 			if _, err := decoder.Token(); err != nil {
