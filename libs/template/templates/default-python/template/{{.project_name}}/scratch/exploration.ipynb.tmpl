@@ -32,6 +32,7 @@
     "sys.path.append('../src')\n",
     "from {{.project_name}} import main\n",
     "\n",
+    {{- /* We can use the short form here without 'dbutils.text()' since the widgets are defined in the metadata below. */}}
     "catalog = dbutils.widgets.get('catalog')\n",
     "schema = dbutils.widgets.get('schema')\n",
     "spark.sql(f'USE {catalog}.{schema}')\n",
