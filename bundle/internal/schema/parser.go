@@ -11,6 +11,7 @@ import (
 
 	"github.com/ghodss/yaml"
 
+	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/jsonschema"
 )
 
@@ -147,7 +148,11 @@ func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overrid
 	if err != nil {
 		return err
 	}
-	err = saveYamlWithStyle(overridesPath, b, []byte{})
+	o, err := yamlloader.LoadYAML("", bytes.NewBuffer(b))
+	if err != nil {
+		return err
+	}
+	err = saveYamlWithStyle(overridesPath, o)
 	if err != nil {
 		return err
 	}

@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/ghodss/yaml"
 	yaml3 "gopkg.in/yaml.v3"
 
 	"github.com/databricks/cli/libs/dyn"
@@ -109,12 +108,21 @@ func (d *annotationHandler) sync(outputPath string) error {
 	if err != nil {
 		return err
 	}
-
-	missingAnnotations, err := yaml.Marshal(d.empty)
+	existing, err := yamlloader.LoadYAML("", bytes.NewBuffer(existingFile))
 	if err != nil {
 		return err
 	}
-	err = saveYamlWithStyle(outputPath, existingFile, missingAnnotations)
+	missingAnnotations, err := convert.FromTyped(&d.empty, dyn.NilValue)
+	if err != nil {
+		return err
+	}
+
+	output, err := merge.Merge(existing, missingAnnotations)
+	if err != nil {
+		return err
+	}
+
+	err = saveYamlWithStyle(outputPath, output)
 	if err != nil {
 		return err
 	}
@@ -138,30 +146,15 @@ func assingAnnotation(s *jsonschema.Schema, a annotation) {
 	s.Enum = a.Enum
 }
 
-func saveYamlWithStyle(outputPath string, input []byte, overrides []byte) error {
-	inputDyn, err := yamlloader.LoadYAML("", bytes.NewBuffer(input))
-	if err != nil {
-		return err
-	}
-	if len(overrides) != 0 {
-		overrideDyn, err := yamlloader.LoadYAML("", bytes.NewBuffer(overrides))
-		if err != nil {
-			return err
-		}
-		inputDyn, err = merge.Merge(inputDyn, overrideDyn)
-		if err != nil {
-			return err
-		}
-	}
-
+func saveYamlWithStyle(outputPath string, input dyn.Value) error {
 	style := map[string]yaml3.Style{}
-	file, _ := inputDyn.AsMap()
+	file, _ := input.AsMap()
 	for _, v := range file.Keys() {
 		style[v.MustString()] = yaml3.LiteralStyle
 	}
 
 	saver := yamlsaver.NewSaverWithStyle(style)
-	err = saver.SaveAsYAML(file, outputPath, true)
+	err := saver.SaveAsYAML(file, outputPath, true)
 	if err != nil {
 		return err
 	}
