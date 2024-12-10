@@ -2,12 +2,15 @@ package permissions
 
 import (
 	"context"
+	"fmt"
+	"slices"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -162,5 +165,20 @@ func TestWarningOnOverlapPermission(t *testing.T) {
 	require.Contains(t, b.Config.Resources.Jobs["job_2"].Permissions, resources.Permission{Level: "CAN_VIEW", UserName: "TestUser2"})
 	require.Contains(t, b.Config.Resources.Jobs["job_2"].Permissions, resources.Permission{Level: "CAN_MANAGE", UserName: "TestUser"})
 	require.Contains(t, b.Config.Resources.Jobs["job_2"].Permissions, resources.Permission{Level: "CAN_VIEW", GroupName: "TestGroup"})
+}
 
+func TestAllResourcesExplicitlyDefinedForPermissionsSupport(t *testing.T) {
+	r := config.Resources{}
+
+	for _, resource := range unsupportedResources {
+		_, ok := levelsMap[resource]
+		assert.False(t, ok, fmt.Sprintf("Resource %s is defined in both levelsMap and unsupportedResources", resource))
+	}
+
+	for _, resource := range r.AllResources() {
+		_, ok := levelsMap[resource.Description.PluralName]
+		if !slices.Contains(unsupportedResources, resource.Description.PluralName) && !ok {
+			assert.Fail(t, fmt.Sprintf("Resource %s is not explicitly defined in levelsMap or unsupportedResources", resource.Description.PluralName))
+		}
+	}
 }

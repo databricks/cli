@@ -489,7 +489,8 @@ func TestRenderSummaryTemplate_nilBundle(t *testing.T) {
 	err := renderSummaryHeaderTemplate(writer, nil)
 	require.NoError(t, err)
 
-	io.WriteString(writer, buildTrailer(nil))
+	_, err = io.WriteString(writer, buildTrailer(nil))
+	require.NoError(t, err)
 
 	assert.Equal(t, "Validation OK!\n", writer.String())
 }

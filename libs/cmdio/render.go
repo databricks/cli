@@ -297,10 +297,10 @@ var renderFuncMap = template.FuncMap{
 	"yellow":  color.YellowString,
 	"magenta": color.MagentaString,
 	"cyan":    color.CyanString,
-	"bold": func(format string, a ...interface{}) string {
+	"bold": func(format string, a ...any) string {
 		return color.New(color.Bold).Sprintf(format, a...)
 	},
-	"italic": func(format string, a ...interface{}) string {
+	"italic": func(format string, a ...any) string {
 		return color.New(color.Italic).Sprintf(format, a...)
 	},
 	"replace": strings.ReplaceAll,

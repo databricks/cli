@@ -133,7 +133,8 @@ func TestAccLock(t *testing.T) {
 
 	// assert on active locker content
 	var res map[string]string
-	json.Unmarshal(b, &res)
+	err = json.Unmarshal(b, &res)
+	require.NoError(t, err)
 	assert.NoError(t, err)
 	assert.Equal(t, "Khan", res["surname"])
 	assert.Equal(t, "Shah Rukh", res["name"])

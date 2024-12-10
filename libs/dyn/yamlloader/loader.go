@@ -14,7 +14,7 @@ type loader struct {
 	path string
 }
 
-func errorf(loc dyn.Location, format string, args ...interface{}) error {
+func errorf(loc dyn.Location, format string, args ...any) error {
 	return fmt.Errorf("yaml (%s): %s", loc, fmt.Sprintf(format, args...))
 }
 

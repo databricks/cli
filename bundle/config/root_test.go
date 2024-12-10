@@ -100,7 +100,7 @@ func TestRootMergeTargetOverridesWithMode(t *testing.T) {
 			},
 		},
 	}
-	root.initializeDynamicValue()
+	require.NoError(t, root.initializeDynamicValue())
 	require.NoError(t, root.MergeTargetOverrides("development"))
 	assert.Equal(t, Development, root.Bundle.Mode)
 }
@@ -133,7 +133,7 @@ func TestRootMergeTargetOverridesWithVariables(t *testing.T) {
 			"complex": {
 				Type:        variable.VariableTypeComplex,
 				Description: "complex var",
-				Default: map[string]interface{}{
+				Default: map[string]any{
 					"key": "value",
 				},
 			},
@@ -148,7 +148,7 @@ func TestRootMergeTargetOverridesWithVariables(t *testing.T) {
 					"complex": {
 						Type:        "wrong",
 						Description: "wrong",
-						Default: map[string]interface{}{
+						Default: map[string]any{
 							"key1": "value1",
 						},
 					},
@@ -156,7 +156,7 @@ func TestRootMergeTargetOverridesWithVariables(t *testing.T) {
 			},
 		},
 	}
-	root.initializeDynamicValue()
+	require.NoError(t, root.initializeDynamicValue())
 	require.NoError(t, root.MergeTargetOverrides("development"))
 	assert.Equal(t, "bar", root.Variables["foo"].Default)
 	assert.Equal(t, "foo var", root.Variables["foo"].Description)
@@ -164,7 +164,7 @@ func TestRootMergeTargetOverridesWithVariables(t *testing.T) {
 	assert.Equal(t, "foo2", root.Variables["foo2"].Default)
 	assert.Equal(t, "foo2 var", root.Variables["foo2"].Description)
 
-	assert.Equal(t, map[string]interface{}{
+	assert.Equal(t, map[string]any{
 		"key1": "value1",
 	}, root.Variables["complex"].Default)
 	assert.Equal(t, "complex var", root.Variables["complex"].Description)

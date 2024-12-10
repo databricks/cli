@@ -15,10 +15,10 @@ import (
 )
 
 func (s *Schema) writeTerraformBlock(_ context.Context) error {
-	var body = map[string]interface{}{
-		"terraform": map[string]interface{}{
-			"required_providers": map[string]interface{}{
-				"databricks": map[string]interface{}{
+	var body = map[string]any{
+		"terraform": map[string]any{
+			"required_providers": map[string]any{
+				"databricks": map[string]any{
 					"source":  "databricks/databricks",
 					"version": ProviderVersion,
 				},

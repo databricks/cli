@@ -457,7 +457,7 @@ func TestAccFilerWorkspaceNotebook(t *testing.T) {
 
 			// Assert uploading a second time fails due to overwrite mode missing
 			err = f.Write(ctx, tc.name, strings.NewReader(tc.content2))
-			assert.ErrorIs(t, err, fs.ErrExist)
+			require.ErrorIs(t, err, fs.ErrExist)
 			assert.Regexp(t, regexp.MustCompile(`file already exists: .*/`+tc.nameWithoutExt+`$`), err.Error())
 
 			// Try uploading the notebook again with overwrite flag. This time it should succeed.

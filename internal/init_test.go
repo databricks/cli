@@ -39,7 +39,6 @@ func TestAccBundleInitErrorOnUnknownFields(t *testing.T) {
 //     make changes that can break the MLOps Stacks DAB. In which case we should
 //     skip this test until the MLOps Stacks DAB is updated to work again.
 func TestAccBundleInitOnMlopsStacks(t *testing.T) {
-	t.Parallel()
 	env := testutil.GetCloud(t).String()
 
 	tmpDir1 := t.TempDir()
@@ -59,7 +58,8 @@ func TestAccBundleInitOnMlopsStacks(t *testing.T) {
 	}
 	b, err := json.Marshal(initConfig)
 	require.NoError(t, err)
-	os.WriteFile(filepath.Join(tmpDir1, "config.json"), b, 0644)
+	err = os.WriteFile(filepath.Join(tmpDir1, "config.json"), b, 0644)
+	require.NoError(t, err)
 
 	// Run bundle init
 	assert.NoFileExists(t, filepath.Join(tmpDir2, "repo_name", projectName, "README.md"))

@@ -56,7 +56,8 @@ func TestFileSetAddsCacheDirToGitIgnore(t *testing.T) {
 	projectDir := t.TempDir()
 	fileSet, err := NewFileSetAtRoot(vfs.MustNew(projectDir))
 	require.NoError(t, err)
-	fileSet.EnsureValidGitIgnoreExists()
+	err = fileSet.EnsureValidGitIgnoreExists()
+	require.NoError(t, err)
 
 	gitIgnorePath := filepath.Join(projectDir, ".gitignore")
 	assert.FileExists(t, gitIgnorePath)
@@ -74,7 +75,8 @@ func TestFileSetDoesNotCacheDirToGitIgnoreIfAlreadyPresent(t *testing.T) {
 	err = os.WriteFile(gitIgnorePath, []byte(".databricks"), 0o644)
 	require.NoError(t, err)
 
-	fileSet.EnsureValidGitIgnoreExists()
+	err = fileSet.EnsureValidGitIgnoreExists()
+	require.NoError(t, err)
 
 	b, err := os.ReadFile(gitIgnorePath)
 	require.NoError(t, err)

@@ -31,7 +31,8 @@ func TestGetWorkspaceAuthStatus(t *testing.T) {
 
 	cmd.Flags().String("host", "", "")
 	cmd.Flags().String("profile", "", "")
-	cmd.Flag("profile").Value.Set("my-profile")
+	err := cmd.Flag("profile").Value.Set("my-profile")
+	require.NoError(t, err)
 	cmd.Flag("profile").Changed = true
 
 	cfg := &config.Config{
@@ -39,14 +40,16 @@ func TestGetWorkspaceAuthStatus(t *testing.T) {
 	}
 	m.WorkspaceClient.Config = cfg
 	t.Setenv("DATABRICKS_AUTH_TYPE", "azure-cli")
-	config.ConfigAttributes.Configure(cfg)
+	err = config.ConfigAttributes.Configure(cfg)
+	require.NoError(t, err)
 
 	status, err := getAuthStatus(cmd, []string{}, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
-		config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
+		err := config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
 			"host":      "https://test.com",
 			"token":     "test-token",
 			"auth_type": "azure-cli",
 		})
+		require.NoError(t, err)
 		return cfg, false, nil
 	})
 	require.NoError(t, err)
@@ -81,7 +84,8 @@ func TestGetWorkspaceAuthStatusError(t *testing.T) {
 
 	cmd.Flags().String("host", "", "")
 	cmd.Flags().String("profile", "", "")
-	cmd.Flag("profile").Value.Set("my-profile")
+	err := cmd.Flag("profile").Value.Set("my-profile")
+	require.NoError(t, err)
 	cmd.Flag("profile").Changed = true
 
 	cfg := &config.Config{
@@ -89,10 +93,11 @@ func TestGetWorkspaceAuthStatusError(t *testing.T) {
 	}
 	m.WorkspaceClient.Config = cfg
 	t.Setenv("DATABRICKS_AUTH_TYPE", "azure-cli")
-	config.ConfigAttributes.Configure(cfg)
+	err = config.ConfigAttributes.Configure(cfg)
+	require.NoError(t, err)
 
 	status, err := getAuthStatus(cmd, []string{}, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
-		config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
+		err = config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
 			"host":      "https://test.com",
 			"token":     "test-token",
 			"auth_type": "azure-cli",
@@ -128,7 +133,8 @@ func TestGetWorkspaceAuthStatusSensitive(t *testing.T) {
 
 	cmd.Flags().String("host", "", "")
 	cmd.Flags().String("profile", "", "")
-	cmd.Flag("profile").Value.Set("my-profile")
+	err := cmd.Flag("profile").Value.Set("my-profile")
+	require.NoError(t, err)
 	cmd.Flag("profile").Changed = true
 
 	cfg := &config.Config{
@@ -136,10 +142,11 @@ func TestGetWorkspaceAuthStatusSensitive(t *testing.T) {
 	}
 	m.WorkspaceClient.Config = cfg
 	t.Setenv("DATABRICKS_AUTH_TYPE", "azure-cli")
-	config.ConfigAttributes.Configure(cfg)
+	err = config.ConfigAttributes.Configure(cfg)
+	require.NoError(t, err)
 
 	status, err := getAuthStatus(cmd, []string{}, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
-		config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
+		err = config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
 			"host":      "https://test.com",
 			"token":     "test-token",
 			"auth_type": "azure-cli",
@@ -171,7 +178,8 @@ func TestGetAccountAuthStatus(t *testing.T) {
 
 	cmd.Flags().String("host", "", "")
 	cmd.Flags().String("profile", "", "")
-	cmd.Flag("profile").Value.Set("my-profile")
+	err := cmd.Flag("profile").Value.Set("my-profile")
+	require.NoError(t, err)
 	cmd.Flag("profile").Changed = true
 
 	cfg := &config.Config{
@@ -179,13 +187,14 @@ func TestGetAccountAuthStatus(t *testing.T) {
 	}
 	m.AccountClient.Config = cfg
 	t.Setenv("DATABRICKS_AUTH_TYPE", "azure-cli")
-	config.ConfigAttributes.Configure(cfg)
+	err = config.ConfigAttributes.Configure(cfg)
+	require.NoError(t, err)
 
 	wsApi := m.GetMockWorkspacesAPI()
 	wsApi.EXPECT().List(mock.Anything).Return(nil, nil)
 
 	status, err := getAuthStatus(cmd, []string{}, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
-		config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
+		err = config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
 			"account_id": "test-account-id",
 			"username":   "test-user",
 			"host":       "https://test.com",

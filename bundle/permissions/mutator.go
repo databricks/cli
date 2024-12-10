@@ -17,6 +17,8 @@ const CAN_MANAGE = "CAN_MANAGE"
 const CAN_VIEW = "CAN_VIEW"
 const CAN_RUN = "CAN_RUN"
 
+var unsupportedResources = []string{"clusters", "volumes", "schemas", "quality_monitors", "registered_models"}
+
 var allowedLevels = []string{CAN_MANAGE, CAN_VIEW, CAN_RUN}
 var levelsMap = map[string](map[string]string){
 	"jobs": {

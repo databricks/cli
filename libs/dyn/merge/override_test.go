@@ -432,10 +432,12 @@ func TestOverride_PreserveMappingKeys(t *testing.T) {
 	rightValueLocation := dyn.Location{File: "right.yml", Line: 3, Column: 1}
 
 	left := dyn.NewMapping()
-	left.Set(dyn.NewValue("a", []dyn.Location{leftKeyLocation}), dyn.NewValue(42, []dyn.Location{leftValueLocation}))
+	err := left.Set(dyn.NewValue("a", []dyn.Location{leftKeyLocation}), dyn.NewValue(42, []dyn.Location{leftValueLocation}))
+	require.NoError(t, err)
 
 	right := dyn.NewMapping()
-	right.Set(dyn.NewValue("a", []dyn.Location{rightKeyLocation}), dyn.NewValue(7, []dyn.Location{rightValueLocation}))
+	err = right.Set(dyn.NewValue("a", []dyn.Location{rightKeyLocation}), dyn.NewValue(7, []dyn.Location{rightValueLocation}))
+	require.NoError(t, err)
 
 	state, visitor := createVisitor(visitorOpts{})
 

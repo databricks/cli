@@ -34,7 +34,8 @@ func TestFilteringInterpreters(t *testing.T) {
 	rogueBin := filepath.Join(t.TempDir(), "rogue-bin")
 	err := os.Mkdir(rogueBin, 0o777)
 	assert.NoError(t, err)
-	os.Chmod(rogueBin, 0o777)
+	err = os.Chmod(rogueBin, 0o777)
+	assert.NoError(t, err)
 
 	raw, err := os.ReadFile("testdata/world-writeable/python8.4")
 	assert.NoError(t, err)

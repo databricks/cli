@@ -11,10 +11,10 @@ import (
 
 func TestFromTypeBasic(t *testing.T) {
 	type myStruct struct {
-		S             string      `json:"s"`
-		I             *int        `json:"i,omitempty"`
-		V             interface{} `json:"v,omitempty"`
-		TriplePointer ***int      `json:"triple_pointer,omitempty"`
+		S             string `json:"s"`
+		I             *int   `json:"i,omitempty"`
+		V             any    `json:"v,omitempty"`
+		TriplePointer ***int `json:"triple_pointer,omitempty"`
 
 		// These fields should be ignored in the resulting schema.
 		NotAnnotated     string
@@ -403,7 +403,8 @@ func TestFromTypeError(t *testing.T) {
 	// Maps with non-string keys should panic.
 	type mapOfInts map[int]int
 	assert.PanicsWithValue(t, "found map with non-string key: int", func() {
-		FromType(reflect.TypeOf(mapOfInts{}), nil)
+		_, err := FromType(reflect.TypeOf(mapOfInts{}), nil)
+		require.NoError(t, err)
 	})
 
 	// Unsupported types should return an error.

@@ -117,10 +117,10 @@ func installerContext(t *testing.T, server *httptest.Server) context.Context {
 
 func respondWithJSON(t *testing.T, w http.ResponseWriter, v any) {
 	raw, err := json.Marshal(v)
-	if err != nil {
-		require.NoError(t, err)
-	}
-	w.Write(raw)
+	require.NoError(t, err)
+
+	_, err = w.Write(raw)
+	require.NoError(t, err)
 }
 
 type fileTree struct {
@@ -167,19 +167,17 @@ func TestInstallerWorksForReleases(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/databrickslabs/blueprint/v0.3.15/labs.yml" {
 			raw, err := os.ReadFile("testdata/installed-in-home/.databricks/labs/blueprint/lib/labs.yml")
-			if err != nil {
-				panic(err)
-			}
-			w.Write(raw)
+			require.NoError(t, err)
+			_, err = w.Write(raw)
+			require.NoError(t, err)
 			return
 		}
 		if r.URL.Path == "/repos/databrickslabs/blueprint/zipball/v0.3.15" {
 			raw, err := zipballFromFolder("testdata/installed-in-home/.databricks/labs/blueprint/lib")
-			if err != nil {
-				panic(err)
-			}
+			require.NoError(t, err)
 			w.Header().Add("Content-Type", "application/octet-stream")
-			w.Write(raw)
+			_, err = w.Write(raw)
+			require.NoError(t, err)
 			return
 		}
 		if r.URL.Path == "/api/2.1/clusters/get" {
@@ -314,7 +312,10 @@ func TestInstallerWorksForDevelopment(t *testing.T) {
 	defer server.Close()
 
 	wd, _ := os.Getwd()
-	defer os.Chdir(wd)
+	defer func() {
+		err := os.Chdir(wd)
+		require.NoError(t, err)
+	}()
 
 	devDir := copyTestdata(t, "testdata/installed-in-home/.databricks/labs/blueprint/lib")
 	err := os.Chdir(devDir)
@@ -373,19 +374,17 @@ func TestUpgraderWorksForReleases(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/databrickslabs/blueprint/v0.4.0/labs.yml" {
 			raw, err := os.ReadFile("testdata/installed-in-home/.databricks/labs/blueprint/lib/labs.yml")
-			if err != nil {
-				panic(err)
-			}
-			w.Write(raw)
+			require.NoError(t, err)
+			_, err = w.Write(raw)
+			require.NoError(t, err)
 			return
 		}
 		if r.URL.Path == "/repos/databrickslabs/blueprint/zipball/v0.4.0" {
 			raw, err := zipballFromFolder("testdata/installed-in-home/.databricks/labs/blueprint/lib")
-			if err != nil {
-				panic(err)
-			}
+			require.NoError(t, err)
 			w.Header().Add("Content-Type", "application/octet-stream")
-			w.Write(raw)
+			_, err = w.Write(raw)
+			require.NoError(t, err)
 			return
 		}
 		if r.URL.Path == "/api/2.1/clusters/get" {

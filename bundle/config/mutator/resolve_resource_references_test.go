@@ -108,7 +108,8 @@ func TestNoLookupIfVariableIsSet(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
-	b.Config.Variables["my-cluster-id"].Set("random value")
+	err := b.Config.Variables["my-cluster-id"].Set("random value")
+	require.NoError(t, err)
 
 	diags := bundle.Apply(context.Background(), b, ResolveResourceReferences())
 	require.NoError(t, diags.Error())

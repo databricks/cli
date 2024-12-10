@@ -104,5 +104,5 @@ func TestComplexVariablesOverrideWithFullSyntax(t *testing.T) {
 	require.Empty(t, diags)
 
 	complexvar := b.Config.Variables["complexvar"].Value
-	require.Equal(t, map[string]interface{}{"key1": "1", "key2": "2", "key3": "3"}, complexvar)
+	require.Equal(t, map[string]any{"key1": "1", "key2": "2", "key3": "3"}, complexvar)
 }
