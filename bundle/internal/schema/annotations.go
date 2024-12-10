@@ -110,32 +110,11 @@ func (d *annotationHandler) sync(outputPath string) error {
 		return err
 	}
 
-	existing, err := yamlloader.LoadYAML(outputPath, bytes.NewBuffer(existingFile))
+	missingAnnotations, err := yaml.Marshal(d.empty)
 	if err != nil {
 		return err
 	}
-	emptyB, err := yaml.Marshal(d.empty)
-	if err != nil {
-		return err
-	}
-
-	empty, err := yamlloader.LoadYAML("", bytes.NewBuffer(emptyB))
-	if err != nil {
-		return err
-	}
-	mergedFile, err := merge.Merge(existing, empty)
-	if err != nil {
-		return err
-	}
-
-	style := map[string]yaml3.Style{}
-	file, _ := mergedFile.AsMap()
-	for _, v := range file.Keys() {
-		style[v.MustString()] = yaml3.LiteralStyle
-	}
-
-	saver := yamlsaver.NewSaverWithStyle(style)
-	err = saver.SaveAsYAML(file, outputPath, true)
+	err = saveYamlWithStyle(outputPath, existingFile, missingAnnotations)
 	if err != nil {
 		return err
 	}
@@ -157,4 +136,34 @@ func assingAnnotation(s *jsonschema.Schema, a annotation) {
 	s.MarkdownDescription = a.MarkdownDescription
 	s.Title = a.Title
 	s.Enum = a.Enum
+}
+
+func saveYamlWithStyle(outputPath string, input []byte, overrides []byte) error {
+	inputDyn, err := yamlloader.LoadYAML("", bytes.NewBuffer(input))
+	if err != nil {
+		return err
+	}
+	if len(overrides) != 0 {
+		overrideDyn, err := yamlloader.LoadYAML("", bytes.NewBuffer(overrides))
+		if err != nil {
+			return err
+		}
+		inputDyn, err = merge.Merge(inputDyn, overrideDyn)
+		if err != nil {
+			return err
+		}
+	}
+
+	style := map[string]yaml3.Style{}
+	file, _ := inputDyn.AsMap()
+	for _, v := range file.Keys() {
+		style[v.MustString()] = yaml3.LiteralStyle
+	}
+
+	saver := yamlsaver.NewSaverWithStyle(style)
+	err = saver.SaveAsYAML(file, outputPath, true)
+	if err != nil {
+		return err
+	}
+	return nil
 }

@@ -147,11 +147,10 @@ func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overrid
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(overridesPath, b, 0644)
+	err = saveYamlWithStyle(overridesPath, b, []byte{})
 	if err != nil {
 		return err
 	}
-
 	b, err = yaml.Marshal(annotations)
 	if err != nil {
 		return err
