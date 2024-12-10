@@ -16,5 +16,10 @@ linters-settings:
         replacement: 'a[b:]'
       - pattern: 'interface{}'
         replacement: 'any'
+  errcheck:
+    exclude-functions:
+      - (*github.com/spf13/pflag.FlagSet).MarkHidden
+      - (*github.com/spf13/pflag.FlagSet).MarkDeprecated
+      - (*github.com/spf13/cobra.Command).RegisterFlagCompletionFunc
 issues:
   exclude-dirs-use-default: false  # recommended by docs https://golangci-lint.run/usage/false-positives/

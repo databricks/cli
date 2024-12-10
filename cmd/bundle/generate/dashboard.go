@@ -460,7 +460,7 @@ func NewGenerateDashboardCommand() *cobra.Command {
 	cmd.MarkFlagsMutuallyExclusive("watch", "existing-id")
 
 	// Completion for the resource flag.
-	_ = cmd.RegisterFlagCompletionFunc("resource", dashboardResourceCompletion)
+	cmd.RegisterFlagCompletionFunc("resource", dashboardResourceCompletion)
 
 	cmd.RunE = d.RunE
 	return cmd
