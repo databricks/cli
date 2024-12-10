@@ -909,7 +909,7 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.Lookup"
                       },
                       "type": {
-                        "description": "The type of the variable. Valid values are complex.",
+                        "description": "The type of the variable.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.VariableType"
                       }
                     },
@@ -953,7 +953,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "executable": {
-                      "description": "The executable type. Valid values are  ......",
+                      "description": "The executable type.",
                       "$ref": "#/$defs/github.com/databricks/cli/libs/exec.ExecutableType"
                     },
                     "files": {
@@ -6299,6 +6299,7 @@
       "markdownDescription": "See [link](https://docs.databricks.com/dev-tools/bundles/resources.html)."
     },
     "run_as": {
+      "description": "The identity to use to run the bundle.",
       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs"
     },
     "sync": {

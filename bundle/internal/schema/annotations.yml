@@ -8,7 +8,7 @@ github.com/databricks/cli/bundle/config.Artifact:
       To specify multiple build commands, separate each command with double-ampersand (&&) characters.
   "executable":
     "description": |-
-      The executable type. Valid values are  ......
+      The executable type.
   "files":
     "description": |-
       The source files for the artifact.
@@ -209,7 +209,7 @@ github.com/databricks/cli/bundle/config.Root:
       See [_](/dev-tools/bundles/resources.md).
   "run_as":
     "description": |-
-      PLACEHOLDER
+      The identity to use to run the bundle.
   "sync":
     "description": |-
       The files and file paths to include or exclude in the bundle.
@@ -415,7 +415,10 @@ github.com/databricks/cli/bundle/config/variable.TargetVariable:
       The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
   "type":
     "description": |-
-      The type of the variable. Valid values are complex.
+      The type of the variable.
+  "markdown_description":
+    "description": |-
+      The type of the variable. Valid values are `complex`.
 github.com/databricks/cli/bundle/config/variable.Variable:
   "default":
     "description": |-
