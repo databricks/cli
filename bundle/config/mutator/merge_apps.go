@@ -26,7 +26,7 @@ func (m *mergeApps) resourceName(v dyn.Value) string {
 	case dyn.KindString:
 		return v.MustString()
 	default:
-		panic("job cluster key must be a string")
+		panic("app name must be a string")
 	}
 }
 

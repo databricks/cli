@@ -1,23 +1,16 @@
 package run
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"path"
-	"path/filepath"
 	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/run/output"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
-
-	"gopkg.in/yaml.v3"
 )
 
 func logProgress(ctx context.Context, msg string) {
@@ -32,8 +25,6 @@ type appRunner struct {
 
 	bundle *bundle.Bundle
 	app    *resources.App
-
-	filerFactory deploy.FilerFactory
 }
 
 func (a *appRunner) Name() string {
@@ -116,6 +107,11 @@ func (a *appRunner) start(ctx context.Context) error {
 		return err
 	}
 
+	// After the app is started (meaning the compute is running), the API will return the app object with the
+	// active and pending deployments fields (if any). If there are active or pending deployments,
+	// we need to wait for them to complete before we can do the new deployment.
+	// Otherwise, the new deployment will fail.
+	// Thus, we first wait for the active deployment to complete.
 	if startedApp.ActiveDeployment != nil &&
 		startedApp.ActiveDeployment.Status.State == apps.AppDeploymentStateInProgress {
 		logProgress(ctx, "Waiting for the active deployment to complete...")
@@ -126,6 +122,7 @@ func (a *appRunner) start(ctx context.Context) error {
 		logProgress(ctx, "Active deployment is completed!")
 	}
 
+	// Then, we wait for the pending deployment to complete.
 	if startedApp.PendingDeployment != nil &&
 		startedApp.PendingDeployment.Status.State == apps.AppDeploymentStateInProgress {
 		logProgress(ctx, "Waiting for the pending deployment to complete...")
@@ -144,32 +141,6 @@ func (a *appRunner) deploy(ctx context.Context) error {
 	app := a.app
 	b := a.bundle
 	w := b.WorkspaceClient()
-
-	// If the app has a config, we need to deploy it first.
-	// It means we need to write app.yml file with the content of the config field
-	// to the remote source code path of the app.
-	if app.Config != nil {
-		appPath, err := filepath.Rel(b.Config.Workspace.FilePath, app.SourceCodePath)
-		if err != nil {
-			return fmt.Errorf("failed to get relative path of app source code path: %w", err)
-		}
-
-		buf, err := configToYaml(app)
-		if err != nil {
-			return err
-		}
-
-		// When the app is started, create a new app deployment and wait for it to complete.
-		f, err := a.filerFactory(b)
-		if err != nil {
-			return err
-		}
-
-		err = f.Write(ctx, path.Join(appPath, "app.yml"), buf, filer.OverwriteIfExists)
-		if err != nil {
-			return fmt.Errorf("failed to write %s file: %w", path.Join(app.SourceCodePath, "app.yml"), err)
-		}
-	}
 
 	wait, err := w.Apps.Deploy(ctx, apps.CreateAppDeploymentRequest{
 		AppName: app.Name,
@@ -240,19 +211,4 @@ func (a *appRunner) ParseArgs(args []string, opts *Options) error {
 
 func (a *appRunner) CompleteArgs(args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return nil, cobra.ShellCompDirectiveNoFileComp
-}
-
-func configToYaml(app *resources.App) (*bytes.Buffer, error) {
-	buf := bytes.NewBuffer(nil)
-	enc := yaml.NewEncoder(buf)
-	enc.SetIndent(2)
-
-	err := enc.Encode(app.Config)
-	defer enc.Close()
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to encode app config to yaml: %w", err)
-	}
-
-	return buf, nil
 }
