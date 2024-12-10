@@ -128,10 +128,13 @@ jobs:
         run: |
           go run main.go bundle schema > schema.json
 
+          # Add markdownDescription keyword to ajv
+          echo "module.exports=function(a){a.addKeyword('markdownDescription')}" >> keywords.js
+
           for file in ./bundle/internal/schema/testdata/pass/*.yml; do
-            ajv test -s schema.json -d $file --valid
+            ajv test -s schema.json -d $file --valid -c=./keywords.js
           done
 
           for file in ./bundle/internal/schema/testdata/fail/*.yml; do
-            ajv test -s schema.json -d $file --invalid
+            ajv test -s schema.json -d $file --invalid -c=./keywords.js
           done
