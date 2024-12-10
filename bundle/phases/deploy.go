@@ -7,7 +7,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
@@ -149,7 +148,6 @@ func Deploy(outputHandler sync.OutputHandler) bundle.Mutator {
 				terraform.StatePull(),
 				terraform.CheckDashboardsModifiedRemotely(),
 				deploy.StatePull(),
-				mutator.ValidateGitDetails(),
 				artifacts.CleanUp(),
 				libraries.ExpandGlobReferences(),
 				libraries.Upload(),

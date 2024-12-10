@@ -36,11 +36,10 @@ func TestGitBundleBranchValidation(t *testing.T) {
 	})
 
 	b := load(t, "./git_branch_validation")
-	bundle.Apply(context.Background(), b, mutator.LoadGitDetails())
+	diags := bundle.Apply(context.Background(), b, mutator.LoadGitDetails())
 	assert.False(t, b.Config.Bundle.Git.Inferred)
 	assert.Equal(t, "feature-a", b.Config.Bundle.Git.Branch)
 	assert.Equal(t, "feature-b", b.Config.Bundle.Git.ActualBranch)
 
-	diags := bundle.Apply(context.Background(), b, mutator.ValidateGitDetails())
 	assert.ErrorContains(t, diags.Error(), "not on the right Git branch:")
 }
