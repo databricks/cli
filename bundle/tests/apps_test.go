@@ -23,8 +23,8 @@ func TestApps(t *testing.T) {
 	app := b.Config.Resources.Apps["my_app"]
 	assert.Equal(t, "my-app", app.Name)
 	assert.Equal(t, "My App", app.Description)
-	assert.Equal(t, []interface{}{"python", "app.py"}, app.Config["command"])
-	assert.Equal(t, []interface{}{map[string]interface{}{"name": "SOME_ENV_VARIABLE", "value": "Some value"}}, app.Config["env"])
+	assert.Equal(t, []any{"python", "app.py"}, app.Config["command"])
+	assert.Equal(t, []any{map[string]any{"name": "SOME_ENV_VARIABLE", "value": "Some value"}}, app.Config["env"])
 
 	assert.Len(t, app.Resources, 2)
 	assert.Equal(t, "1234", app.Resources[0].SqlWarehouse.Id)
@@ -46,8 +46,8 @@ func TestAppsOverride(t *testing.T) {
 	app := b.Config.Resources.Apps["my_app"]
 	assert.Equal(t, "my-app", app.Name)
 	assert.Equal(t, "My App", app.Description)
-	assert.Equal(t, []interface{}{"python", "dev.py"}, app.Config["command"])
-	assert.Equal(t, []interface{}{map[string]interface{}{"name": "SOME_ENV_VARIABLE_2", "value": "Some value 2"}}, app.Config["env"])
+	assert.Equal(t, []any{"python", "dev.py"}, app.Config["command"])
+	assert.Equal(t, []any{map[string]any{"name": "SOME_ENV_VARIABLE_2", "value": "Some value 2"}}, app.Config["env"])
 
 	assert.Len(t, app.Resources, 3)
 	assert.Equal(t, "1234", app.Resources[0].SqlWarehouse.Id)

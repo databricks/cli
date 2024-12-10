@@ -16,7 +16,7 @@ import (
 func TestConvertApp(t *testing.T) {
 	var src = resources.App{
 		SourceCodePath: "./app",
-		Config: map[string]interface{}{
+		Config: map[string]any{
 			"command": []string{"python", "app.py"},
 		},
 		App: &apps.App{
@@ -60,20 +60,20 @@ func TestConvertApp(t *testing.T) {
 	require.NoError(t, err)
 
 	app := out.App["my_app"]
-	assert.Equal(t, map[string]interface{}{
+	assert.Equal(t, map[string]any{
 		"description": "app description",
 		"name":        "app_id",
-		"resource": []interface{}{
-			map[string]interface{}{
+		"resource": []any{
+			map[string]any{
 				"name": "job1",
-				"job": map[string]interface{}{
+				"job": map[string]any{
 					"id":         "1234",
 					"permission": "CAN_MANAGE_RUN",
 				},
 			},
-			map[string]interface{}{
+			map[string]any{
 				"name": "sql1",
-				"sql_warehouse": map[string]interface{}{
+				"sql_warehouse": map[string]any{
 					"id":         "5678",
 					"permission": "CAN_USE",
 				},

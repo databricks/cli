@@ -13,10 +13,8 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/bundletest"
-	mockfiler "github.com/databricks/cli/internal/mocks/libs/filer"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
@@ -26,10 +24,9 @@ import (
 )
 
 type testAppRunner struct {
-	m         *mocks.MockWorkspaceClient
-	b         *bundle.Bundle
-	mockFiler *mockfiler.MockFiler
-	ctx       context.Context
+	m   *mocks.MockWorkspaceClient
+	b   *bundle.Bundle
+	ctx context.Context
 }
 
 func (ta *testAppRunner) run(t *testing.T) {
@@ -37,9 +34,6 @@ func (ta *testAppRunner) run(t *testing.T) {
 		key:    "my_app",
 		bundle: ta.b,
 		app:    ta.b.Config.Resources.Apps["my_app"],
-		filerFactory: func(b *bundle.Bundle) (filer.Filer, error) {
-			return ta.mockFiler, nil
-		},
 	}
 
 	_, err := r.Run(ta.ctx, &Options{})
@@ -65,7 +59,7 @@ func setupBundle(t *testing.T) (context.Context, *bundle.Bundle, *mocks.MockWork
 							Name: "my_app",
 						},
 						SourceCodePath: "./my_app",
-						Config: map[string]interface{}{
+						Config: map[string]any{
 							"command": []string{"echo", "hello"},
 							"env": []map[string]string{
 								{"name": "MY_APP", "value": "my value"},
@@ -123,20 +117,10 @@ func setupTestApp(t *testing.T, initialAppState apps.ApplicationState, initialCo
 		},
 	}).Return(wait, nil)
 
-	mockFiler := mockfiler.NewMockFiler(t)
-	mockFiler.EXPECT().Write(mock.Anything, "my_app/app.yml", bytes.NewBufferString(`command:
-  - echo
-  - hello
-env:
-  - name: MY_APP
-    value: my value
-`), filer.OverwriteIfExists).Return(nil)
-
 	return &testAppRunner{
-		m:         mwc,
-		b:         b,
-		mockFiler: mockFiler,
-		ctx:       ctx,
+		m:   mwc,
+		b:   b,
+		ctx: ctx,
 	}
 }
 
@@ -225,9 +209,6 @@ func TestStopApp(t *testing.T) {
 		key:    "my_app",
 		bundle: b,
 		app:    b.Config.Resources.Apps["my_app"],
-		filerFactory: func(b *bundle.Bundle) (filer.Filer, error) {
-			return nil, nil
-		},
 	}
 
 	err := r.Cancel(ctx)
