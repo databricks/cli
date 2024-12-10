@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 	"reflect"
 	"strings"
@@ -13,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
+	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/jsonschema"
 )
 
@@ -25,9 +25,11 @@ type annotation struct {
 }
 
 type annotationHandler struct {
-	ref   map[string]annotation
-	empty map[string]annotation
+	ref   annotationFile
+	empty annotationFile
 }
+
+type annotationFile map[string]map[string]annotation
 
 const Placeholder = "PLACEHOLDER"
 
@@ -50,7 +52,7 @@ func newAnnotationHandler(sources []string) (*annotationHandler, error) {
 		}
 	}
 
-	var data map[string]annotation
+	var data annotationFile
 
 	err := convert.ToTyped(&data, prev)
 	if err != nil {
@@ -59,45 +61,43 @@ func newAnnotationHandler(sources []string) (*annotationHandler, error) {
 
 	d := &annotationHandler{}
 	d.ref = data
-	d.empty = map[string]annotation{}
+	d.empty = annotationFile{}
 	return d, nil
 }
 
 func (d *annotationHandler) addAnnotations(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
 	refPath := getPath(typ)
-	items := map[string]*jsonschema.Schema{}
-	items[refPath] = &s
-
-	for k, v := range s.Properties {
-		itemRefPath := fmt.Sprintf("%s.%s", refPath, k)
-		items[itemRefPath] = v
+	shouldHandle := strings.HasPrefix(refPath, "github.com")
+	if !shouldHandle {
+		return s
 	}
 
-	for k, v := range items {
-		// Skipping all default types like int, string, etc.
-		shouldHandle := strings.HasPrefix(refPath, "github.com")
-		if !shouldHandle {
-			continue
-		}
+	annotations := d.ref[refPath]
+	if annotations == nil {
+		annotations = map[string]annotation{}
+	}
 
-		item, ok := d.ref[k]
+	rootTypeAnnotation, ok := annotations[RootTypeKey]
+	if ok {
+		assingAnnotation(&s, rootTypeAnnotation)
+	}
+
+	for k, v := range s.Properties {
+		item, ok := annotations[k]
 		if !ok {
 			item = annotation{}
 		}
 		if item.Description == "" {
 			item.Description = Placeholder
-			d.empty[k] = item
-		}
-		if item.Description != Placeholder {
-			v.Description = item.Description
-		}
 
-		if item.Default != nil {
-			v.Default = item.Default
+			emptyAnnotations := d.empty[refPath]
+			if emptyAnnotations == nil {
+				emptyAnnotations = map[string]annotation{}
+				d.empty[refPath] = emptyAnnotations
+			}
+			emptyAnnotations[k] = item
 		}
-		v.MarkdownDescription = item.MarkdownDescription
-		v.Title = item.Title
-		v.Enum = item.Enum
+		assingAnnotation(v, item)
 	}
 	return s
 }
@@ -109,20 +109,27 @@ func (d *annotationHandler) sync(outputPath string) error {
 		return err
 	}
 
-	existing := map[string]annotation{}
-	err = yaml.Unmarshal(file, &existing)
+	existing, err := yamlloader.LoadYAML(outputPath, bytes.NewBuffer(file))
+	if err != nil {
+		return err
+	}
+	emptyB, err := yaml.Marshal(d.empty)
+	if err != nil {
+		return err
+	}
 
-	for k, v := range d.empty {
-		existing[k] = v
-	}
+	empty, err := yamlloader.LoadYAML("", bytes.NewBuffer(emptyB))
 	if err != nil {
 		return err
 	}
-	b, err := yaml.Marshal(existing)
+	mergedFile, err := merge.Merge(existing, empty)
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(outputPath, b, 0644)
+
+	saver := yamlsaver.NewSaver()
+	config, _ := mergedFile.AsMap()
+	err = saver.SaveAsYAML(config, outputPath, true)
 	if err != nil {
 		return err
 	}
@@ -131,4 +138,17 @@ func (d *annotationHandler) sync(outputPath string) error {
 
 func getPath(typ reflect.Type) string {
 	return typ.PkgPath() + "." + typ.Name()
+}
+
+func assingAnnotation(s *jsonschema.Schema, a annotation) {
+	if a.Description != Placeholder {
+		s.Description = a.Description
+	}
+
+	if a.Default != nil {
+		s.Default = a.Default
+	}
+	s.MarkdownDescription = a.MarkdownDescription
+	s.Title = a.Title
+	s.Enum = a.Enum
 }

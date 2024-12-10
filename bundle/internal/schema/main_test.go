@@ -4,9 +4,13 @@ import (
 	"io"
 	"os"
 	"path"
+	"reflect"
 	"runtime"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/jsonschema"
+	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -60,4 +64,49 @@ func TestRequiredAnnotationsForNewFields(t *testing.T) {
 	copied, err := os.ReadFile(annotationsPath)
 	assert.NoError(t, err)
 	assert.Equal(t, string(original), string(copied), "Missing JSON-schema descriptions for new config fields in bundle/internal/schema/annotations.yml")
+}
+
+// Checks whether types in annotation files are still present in Config type
+func TestNoDetachedAnnotations(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip()
+	}
+	files := []string{
+		"annotations.yml",
+		"annotations_openapi.yml",
+		"annotations_openapi_overrides.yml",
+	}
+
+	types := map[string]bool{}
+	for _, file := range files {
+		annotations, err := getAnnotations(file)
+		assert.NoError(t, err)
+		for k := range annotations {
+			types[k] = false
+		}
+	}
+
+	_, err := jsonschema.FromType(reflect.TypeOf(config.Root{}), []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
+		func(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
+			delete(types, getPath(typ))
+			return s
+		},
+	})
+	assert.NoError(t, err)
+
+	for typ := range types {
+		t.Errorf("Type `%s` in annotations file is not found in `root.Config` type", typ)
+	}
+	assert.Empty(t, types, "Detached annotations found, regenerate schema and check for package path changes")
+}
+
+func getAnnotations(path string) (annotationFile, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var data annotationFile
+	err = yaml.Unmarshal(b, &data)
+	return data, err
 }

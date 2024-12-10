@@ -1,344 +1,112 @@
 github.com/databricks/cli/bundle/config/resources.Cluster:
-  description: PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.Cluster.data_security_mode:
-  description: PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.Cluster.docker_image:
-  description: PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.Cluster.permissions:
-  description: PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.Cluster.runtime_engine:
-  description: PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.Cluster.workload_type:
-  description: PLACEHOLDER
+  data_security_mode:
+    description: PLACEHOLDER
+  docker_image:
+    description: PLACEHOLDER
+  permissions:
+    description: PLACEHOLDER
+  runtime_engine:
+    description: PLACEHOLDER
+  workload_type:
+    description: PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Dashboard:
-  description: PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.Dashboard.embed_credentials:
-  description: PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.Dashboard.file_path:
-  description: PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.Dashboard.permissions:
-  description: PLACEHOLDER
+  embed_credentials:
+    description: PLACEHOLDER
+  file_path:
+    description: PLACEHOLDER
+  permissions:
+    description: PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Job:
-  description: PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.Job.health:
-  description: PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.Job.permissions:
-  description: PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.Job.run_as:
-  description: PLACEHOLDER
+  health:
+    description: PLACEHOLDER
+  permissions:
+    description: PLACEHOLDER
+  run_as:
+    description: PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.MlflowExperiment:
-  description: PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.MlflowExperiment.permissions:
-  description: PLACEHOLDER
+  permissions:
+    description: PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.MlflowModel:
-  description: PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.MlflowModel.permissions:
-  description: PLACEHOLDER
+  permissions:
+    description: PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint:
-  description: PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint.permissions:
-  description: PLACEHOLDER
+  permissions:
+    description: PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Pipeline:
-  description: PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.Pipeline.permissions:
-  description: PLACEHOLDER
+  permissions:
+    description: PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.QualityMonitor:
-  description: PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.QualityMonitor.table_name:
-  description: PLACEHOLDER
+  table_name:
+    description: PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.RegisteredModel:
-  description: PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.RegisteredModel.grants:
-  description: PLACEHOLDER
+  grants:
+    description: PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Schema:
-  description: PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.Schema.grants:
-  description: PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.Schema.properties:
-  description: PLACEHOLDER
+  grants:
+    description: PLACEHOLDER
+  properties:
+    description: PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Volume:
-  description: PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.Volume.grants:
-  description: PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.Volume.volume_type:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/catalog.MonitorCronSchedule:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/catalog.MonitorDataClassificationConfig:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/catalog.MonitorDestination:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/catalog.MonitorInferenceLog:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/catalog.MonitorMetric:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/catalog.MonitorNotifications:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/catalog.MonitorSnapshot:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/catalog.MonitorTimeSeries:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/catalog.VolumeType:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.Adlsgen2Info:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.AutoScale:
-  description: PLACEHOLDER
+  grants:
+    description: PLACEHOLDER
+  volume_type:
+    description: PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/compute.AwsAttributes:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.AwsAttributes.availability:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.AwsAttributes.ebs_volume_type:
-  description: PLACEHOLDER
+  availability:
+    description: PLACEHOLDER
+  ebs_volume_type:
+    description: PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/compute.AzureAttributes:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.AzureAttributes.availability:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.ClientsTypes:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.ClusterLogConf:
-  description: PLACEHOLDER
+  availability:
+    description: PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec.data_security_mode:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec.docker_image:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec.runtime_engine:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec.workload_type:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.DbfsStorageInfo:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.DockerBasicAuth:
-  description: PLACEHOLDER
+  data_security_mode:
+    description: PLACEHOLDER
+  docker_image:
+    description: PLACEHOLDER
+  runtime_engine:
+    description: PLACEHOLDER
+  workload_type:
+    description: PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/compute.DockerImage:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.DockerImage.basic_auth:
-  description: PLACEHOLDER
+  basic_auth:
+    description: PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/compute.GcpAttributes:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.GcpAttributes.availability:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.GcsStorageInfo:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.InitScriptInfo:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.Library:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.LocalFileInfo:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.LogAnalyticsInfo:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.MavenLibrary:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.PythonPyPiLibrary:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.RCranLibrary:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.S3StorageInfo:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.VolumesStorageInfo:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.WorkloadType:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/compute.WorkspaceStorageInfo:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/dashboards.LifecycleState:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.Condition:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.ConditionTask:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.Continuous:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.CronSchedule:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.DbtTask:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.FileArrivalTriggerConfiguration:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.ForEachTask:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.Format:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.GitProvider:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.GitSource.git_snapshot:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.JobCluster:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.JobDeployment:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.JobEmailNotifications:
-  description: PLACEHOLDER
+  availability:
+    description: PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/jobs.GitSource:
+  git_snapshot:
+    description: PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/jobs.JobEnvironment:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.JobEnvironment.spec:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.JobNotificationSettings:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.JobParameterDefinition:
-  description: PLACEHOLDER
+  spec:
+    description: PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRule:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRule.metric:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRule.op:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRules.rules:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.NotebookTask:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.PauseStatus:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.PeriodicTriggerConfiguration:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.PeriodicTriggerConfigurationTimeUnit:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.PipelineParams:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.PipelineTask:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.PythonWheelTask:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.QueueSettings:
-  description: PLACEHOLDER
+  metric:
+    description: PLACEHOLDER
+  op:
+    description: PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRules:
+  rules:
+    description: PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/jobs.RunJobTask:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.RunJobTask.python_named_params:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.SparkJarTask:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.SparkPythonTask:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.SparkSubmitTask:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.SqlTask:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.SqlTaskAlert:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.SqlTaskDashboard:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.SqlTaskFile:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.SqlTaskQuery:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.SqlTaskSubscription:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.TableUpdateTriggerConfiguration:
-  description: PLACEHOLDER
+  python_named_params:
+    description: PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/jobs.Task:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.Task.health:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.TaskDependency:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.TaskEmailNotifications:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.TaskNotificationSettings:
-  description: PLACEHOLDER
+  health:
+    description: PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/jobs.TriggerSettings:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.TriggerSettings.table_update:
-  description: PLACEHOLDER
+  table_update:
+    description: PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/jobs.Webhook:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.Webhook.id:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/jobs.WebhookNotifications:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/ml.ExperimentTag:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/ml.ModelTag:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/ml.ModelVersion:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/ml.ModelVersionTag:
-  description: PLACEHOLDER
+  id:
+    description: PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/pipelines.CronTrigger:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/pipelines.CronTrigger.quartz_cron_schedule:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/pipelines.CronTrigger.timezone_id:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/pipelines.FileLibrary:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/pipelines.Filters:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/pipelines.IngestionConfig:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/pipelines.IngestionGatewayPipelineDefinition:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinition:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/pipelines.ManualTrigger:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/pipelines.NotebookLibrary:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/pipelines.Notifications:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/pipelines.PipelineCluster:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/pipelines.PipelineClusterAutoscale:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/pipelines.PipelineDeployment:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/pipelines.PipelineLibrary:
-  description: PLACEHOLDER
+  quartz_cron_schedule:
+    description: PLACEHOLDER
+  timezone_id:
+    description: PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTrigger:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTrigger.cron:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTrigger.manual:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/pipelines.ReportSpec:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/pipelines.RestartWindow:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/pipelines.SchemaSpec:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/pipelines.TableSpec:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfig:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.AiGatewayConfig:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailParameters:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailPiiBehavior:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrails:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.AiGatewayInferenceTableConfig:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimit:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.AiGatewayUsageTrackingConfig:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.AmazonBedrockConfig:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.AnthropicConfig:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.AutoCaptureConfigInput:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.CohereConfig:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.DatabricksModelServingConfig:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.EndpointCoreConfigInput:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.EndpointTag:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.ExternalModel:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.RateLimit:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.Route:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.ServedEntityInput:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.ServedModelInput:
-  description: PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.TrafficConfig:
-  description: PLACEHOLDER
+  cron:
+    description: PLACEHOLDER
+  manual:
+    description: PLACEHOLDER

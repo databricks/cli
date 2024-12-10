@@ -26,6 +26,8 @@ type openapiParser struct {
 	ref map[string]jsonschema.Schema
 }
 
+const RootTypeKey = "_"
+
 func newParser(path string) (*openapiParser, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
@@ -93,8 +95,8 @@ func (p *openapiParser) findRef(typ reflect.Type) (jsonschema.Schema, bool) {
 
 // Use the OpenAPI spec to load descriptions for the given type.
 func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overridesPath string) error {
-	annotations := map[string]annotation{}
-	overrides := map[string]annotation{}
+	annotations := annotationFile{}
+	overrides := annotationFile{}
 
 	b, err := os.ReadFile(overridesPath)
 	if err != nil {
@@ -105,7 +107,7 @@ func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overrid
 		return err
 	}
 	if overrides == nil {
-		overrides = map[string]annotation{}
+		overrides = annotationFile{}
 	}
 
 	_, err = jsonschema.FromType(typ, []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
@@ -116,24 +118,21 @@ func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overrid
 			}
 
 			basePath := getPath(typ)
-			annotations[basePath] = annotation{
-				Description: ref.Description,
-				Enum:        ref.Enum,
-			}
-			if ref.Description == "" {
-				addEmptyOverride(basePath, overrides)
+			pkg := map[string]annotation{}
+			annotations[basePath] = pkg
+
+			if ref.Description != "" || ref.Enum != nil {
+				pkg[RootTypeKey] = annotation{Description: ref.Description, Enum: ref.Enum}
 			}
 
 			for k := range s.Properties {
-				itemPath := fmt.Sprintf("%s.%s", basePath, k)
-
 				if refProp, ok := ref.Properties[k]; ok {
-					annotations[itemPath] = annotation{Description: refProp.Description, Enum: refProp.Enum}
+					pkg[k] = annotation{Description: refProp.Description, Enum: refProp.Enum}
 					if refProp.Description == "" {
-						addEmptyOverride(itemPath, overrides)
+						addEmptyOverride(k, basePath, overrides)
 					}
 				} else {
-					addEmptyOverride(itemPath, overrides)
+					addEmptyOverride(k, basePath, overrides)
 				}
 			}
 			return s
@@ -166,17 +165,22 @@ func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overrid
 	return nil
 }
 
-func addEmptyOverride(path string, overrides map[string]annotation) {
-	if overrides[path].Description == "" {
-		overrides[path] = annotation{Description: Placeholder}
+func addEmptyOverride(key, pkg string, overridesFile annotationFile) {
+	if overridesFile[pkg] == nil {
+		overridesFile[pkg] = map[string]annotation{}
 	}
 
-	a, ok := overrides[path]
+	overrides := overridesFile[pkg]
+	if overrides[key].Description == "" {
+		overrides[key] = annotation{Description: Placeholder}
+	}
+
+	a, ok := overrides[key]
 	if !ok {
 		a = annotation{}
 	}
 	if a.Description == "" {
 		a.Description = Placeholder
 	}
-	overrides[path] = a
+	overrides[key] = a
 }
