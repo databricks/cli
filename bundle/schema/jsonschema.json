@@ -937,7 +937,7 @@
                   "type": "object",
                   "properties": {
                     "build": {
-                      "description": "An optional set of non-default build commands that you want to run locally before deployment. For Python wheel builds, the Databricks CLI assumes that it can find a local install of the Python wheel package to run builds, and it runs the command python setup.py bdist_wheel by default during each bundle deployment. To specify multiple build commands, separate each command with double-ampersand (\u0026\u0026) characters.",
+                      "description": "An optional set of non-default build commands that you want to run locally before deployment.\n\nFor Python wheel builds, the Databricks CLI assumes that it can find a local install of the Python wheel package to run builds, and it runs the command python setup.py bdist_wheel by default during each bundle deployment.\n\nTo specify multiple build commands, separate each command with double-ampersand (\u0026\u0026) characters.",
                       "$ref": "#/$defs/string"
                     },
                     "executable": {

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/ghodss/yaml"
+	yaml3 "gopkg.in/yaml.v3"
 
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
@@ -104,12 +105,12 @@ func (d *annotationHandler) addAnnotations(typ reflect.Type, s jsonschema.Schema
 
 // Adds empty annotations with placeholders to the annotation file
 func (d *annotationHandler) sync(outputPath string) error {
-	file, err := os.ReadFile(outputPath)
+	existingFile, err := os.ReadFile(outputPath)
 	if err != nil {
 		return err
 	}
 
-	existing, err := yamlloader.LoadYAML(outputPath, bytes.NewBuffer(file))
+	existing, err := yamlloader.LoadYAML(outputPath, bytes.NewBuffer(existingFile))
 	if err != nil {
 		return err
 	}
@@ -127,9 +128,14 @@ func (d *annotationHandler) sync(outputPath string) error {
 		return err
 	}
 
-	saver := yamlsaver.NewSaver()
-	config, _ := mergedFile.AsMap()
-	err = saver.SaveAsYAML(config, outputPath, true)
+	style := map[string]yaml3.Style{}
+	file, _ := mergedFile.AsMap()
+	for _, v := range file.Keys() {
+		style[v.MustString()] = yaml3.LiteralStyle
+	}
+
+	saver := yamlsaver.NewSaverWithStyle(style)
+	err = saver.SaveAsYAML(file, outputPath, true)
 	if err != nil {
 		return err
 	}

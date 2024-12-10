@@ -1,289 +1,426 @@
 github.com/databricks/cli/bundle/config.Artifact:
-  build:
-    description: An optional set of non-default build commands that you want to run locally before deployment. For Python wheel builds, the Databricks CLI assumes that it can find a local install of the Python wheel package to run builds, and it runs the command python setup.py bdist_wheel by default during each bundle deployment. To specify multiple build commands, separate each command with double-ampersand (&&) characters.
-  executable:
-    description: PLACEHOLDER
-  files:
-    description: PLACEHOLDER
-  path:
-    description: PLACEHOLDER
-  type:
-    description: PLACEHOLDER
+  "build":
+    "description": |-
+      An optional set of non-default build commands that you want to run locally before deployment.
+
+      For Python wheel builds, the Databricks CLI assumes that it can find a local install of the Python wheel package to run builds, and it runs the command python setup.py bdist_wheel by default during each bundle deployment.
+
+      To specify multiple build commands, separate each command with double-ampersand (&&) characters.
+  "executable":
+    "description": |-
+      PLACEHOLDER
+  "files":
+    "description": |-
+      PLACEHOLDER
+  "path":
+    "description": |-
+      PLACEHOLDER
+  "type":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config.ArtifactFile:
-  source:
-    description: PLACEHOLDER
+  "source":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config.Bundle:
-  cluster_id:
-    description: PLACEHOLDER
-  compute_id:
-    description: PLACEHOLDER
-  databricks_cli_version:
-    description: PLACEHOLDER
-  deployment:
-    description: PLACEHOLDER
-  git:
-    description: PLACEHOLDER
-  name:
-    description: PLACEHOLDER
-  uuid:
-    description: PLACEHOLDER
+  "cluster_id":
+    "description": |-
+      PLACEHOLDER
+  "compute_id":
+    "description": |-
+      PLACEHOLDER
+  "databricks_cli_version":
+    "description": |-
+      PLACEHOLDER
+  "deployment":
+    "description": |-
+      PLACEHOLDER
+  "git":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "uuid":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config.Deployment:
-  fail_on_active_runs:
-    description: PLACEHOLDER
-  lock:
-    description: PLACEHOLDER
+  "fail_on_active_runs":
+    "description": |-
+      PLACEHOLDER
+  "lock":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config.Experimental:
-  pydabs:
-    description: PLACEHOLDER
-  python_wheel_wrapper:
-    description: PLACEHOLDER
-  scripts:
-    description: PLACEHOLDER
-  use_legacy_run_as:
-    description: PLACEHOLDER
+  "pydabs":
+    "description": |-
+      PLACEHOLDER
+  "python_wheel_wrapper":
+    "description": |-
+      PLACEHOLDER
+  "scripts":
+    "description": |-
+      PLACEHOLDER
+  "use_legacy_run_as":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config.Git:
-  branch:
-    description: PLACEHOLDER
-  origin_url:
-    description: PLACEHOLDER
+  "branch":
+    "description": |-
+      PLACEHOLDER
+  "origin_url":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config.Lock:
-  enabled:
-    description: PLACEHOLDER
-  force:
-    description: PLACEHOLDER
+  "enabled":
+    "description": |-
+      PLACEHOLDER
+  "force":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config.Presets:
-  jobs_max_concurrent_runs:
-    description: PLACEHOLDER
-  name_prefix:
-    description: PLACEHOLDER
-  pipelines_development:
-    description: PLACEHOLDER
-  source_linked_deployment:
-    description: PLACEHOLDER
-  tags:
-    description: PLACEHOLDER
-  trigger_pause_status:
-    description: PLACEHOLDER
+  "jobs_max_concurrent_runs":
+    "description": |-
+      PLACEHOLDER
+  "name_prefix":
+    "description": |-
+      PLACEHOLDER
+  "pipelines_development":
+    "description": |-
+      PLACEHOLDER
+  "source_linked_deployment":
+    "description": |-
+      PLACEHOLDER
+  "tags":
+    "description": |-
+      PLACEHOLDER
+  "trigger_pause_status":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config.PyDABs:
-  enabled:
-    description: PLACEHOLDER
-  import:
-    description: PLACEHOLDER
-  venv_path:
-    description: PLACEHOLDER
+  "enabled":
+    "description": |-
+      PLACEHOLDER
+  "import":
+    "description": |-
+      PLACEHOLDER
+  "venv_path":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config.Resources:
-  clusters:
-    description: PLACEHOLDER
-  dashboards:
-    description: PLACEHOLDER
-  experiments:
-    description: PLACEHOLDER
-  jobs:
-    description: PLACEHOLDER
-  model_serving_endpoints:
-    description: PLACEHOLDER
-  models:
-    description: PLACEHOLDER
-  pipelines:
-    description: PLACEHOLDER
-  quality_monitors:
-    description: PLACEHOLDER
-  registered_models:
-    description: PLACEHOLDER
-  schemas:
-    description: PLACEHOLDER
-  volumes:
-    description: PLACEHOLDER
+  "clusters":
+    "description": |-
+      PLACEHOLDER
+  "dashboards":
+    "description": |-
+      PLACEHOLDER
+  "experiments":
+    "description": |-
+      PLACEHOLDER
+  "jobs":
+    "description": |-
+      PLACEHOLDER
+  "model_serving_endpoints":
+    "description": |-
+      PLACEHOLDER
+  "models":
+    "description": |-
+      PLACEHOLDER
+  "pipelines":
+    "description": |-
+      PLACEHOLDER
+  "quality_monitors":
+    "description": |-
+      PLACEHOLDER
+  "registered_models":
+    "description": |-
+      PLACEHOLDER
+  "schemas":
+    "description": |-
+      PLACEHOLDER
+  "volumes":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config.Root:
-  artifacts:
-    description: Defines the attributes to build an artifact
-  bundle:
-    description: PLACEHOLDER
-  experimental:
-    description: PLACEHOLDER
-  include:
-    description: PLACEHOLDER
-  permissions:
-    description: PLACEHOLDER
-  presets:
-    description: PLACEHOLDER
-  resources:
-    description: PLACEHOLDER
-  run_as:
-    description: PLACEHOLDER
-  sync:
-    description: PLACEHOLDER
-  targets:
-    description: PLACEHOLDER
-  variables:
-    description: PLACEHOLDER
-  workspace:
-    description: PLACEHOLDER
+  "artifacts":
+    "description": |-
+      Defines the attributes to build an artifact
+  "bundle":
+    "description": |-
+      PLACEHOLDER
+  "experimental":
+    "description": |-
+      PLACEHOLDER
+  "include":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "presets":
+    "description": |-
+      PLACEHOLDER
+  "resources":
+    "description": |-
+      PLACEHOLDER
+  "run_as":
+    "description": |-
+      PLACEHOLDER
+  "sync":
+    "description": |-
+      PLACEHOLDER
+  "targets":
+    "description": |-
+      PLACEHOLDER
+  "variables":
+    "description": |-
+      PLACEHOLDER
+  "workspace":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config.Sync:
-  exclude:
-    description: PLACEHOLDER
-  include:
-    description: PLACEHOLDER
-  paths:
-    description: PLACEHOLDER
+  "exclude":
+    "description": |-
+      PLACEHOLDER
+  "include":
+    "description": |-
+      PLACEHOLDER
+  "paths":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config.Target:
-  artifacts:
-    description: PLACEHOLDER
-  bundle:
-    description: PLACEHOLDER
-  cluster_id:
-    description: PLACEHOLDER
-  compute_id:
-    description: PLACEHOLDER
-  default:
-    description: PLACEHOLDER
-  git:
-    description: PLACEHOLDER
-  mode:
-    description: PLACEHOLDER
-  permissions:
-    description: PLACEHOLDER
-  presets:
-    description: PLACEHOLDER
-  resources:
-    description: PLACEHOLDER
-  run_as:
-    description: PLACEHOLDER
-  sync:
-    description: PLACEHOLDER
-  variables:
-    description: PLACEHOLDER
-  workspace:
-    description: PLACEHOLDER
+  "artifacts":
+    "description": |-
+      PLACEHOLDER
+  "bundle":
+    "description": |-
+      PLACEHOLDER
+  "cluster_id":
+    "description": |-
+      PLACEHOLDER
+  "compute_id":
+    "description": |-
+      PLACEHOLDER
+  "default":
+    "description": |-
+      PLACEHOLDER
+  "git":
+    "description": |-
+      PLACEHOLDER
+  "mode":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "presets":
+    "description": |-
+      PLACEHOLDER
+  "resources":
+    "description": |-
+      PLACEHOLDER
+  "run_as":
+    "description": |-
+      PLACEHOLDER
+  "sync":
+    "description": |-
+      PLACEHOLDER
+  "variables":
+    "description": |-
+      PLACEHOLDER
+  "workspace":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config.Workspace:
-  artifact_path:
-    description: PLACEHOLDER
-  auth_type:
-    description: PLACEHOLDER
-  azure_client_id:
-    description: PLACEHOLDER
-  azure_environment:
-    description: PLACEHOLDER
-  azure_login_app_id:
-    description: PLACEHOLDER
-  azure_tenant_id:
-    description: PLACEHOLDER
-  azure_use_msi:
-    description: PLACEHOLDER
-  azure_workspace_resource_id:
-    description: PLACEHOLDER
-  client_id:
-    description: PLACEHOLDER
-  file_path:
-    description: PLACEHOLDER
-  google_service_account:
-    description: PLACEHOLDER
-  host:
-    description: PLACEHOLDER
-  profile:
-    description: PLACEHOLDER
-  resource_path:
-    description: PLACEHOLDER
-  root_path:
-    description: PLACEHOLDER
-  state_path:
-    description: PLACEHOLDER
+  "artifact_path":
+    "description": |-
+      PLACEHOLDER
+  "auth_type":
+    "description": |-
+      PLACEHOLDER
+  "azure_client_id":
+    "description": |-
+      PLACEHOLDER
+  "azure_environment":
+    "description": |-
+      PLACEHOLDER
+  "azure_login_app_id":
+    "description": |-
+      PLACEHOLDER
+  "azure_tenant_id":
+    "description": |-
+      PLACEHOLDER
+  "azure_use_msi":
+    "description": |-
+      PLACEHOLDER
+  "azure_workspace_resource_id":
+    "description": |-
+      PLACEHOLDER
+  "client_id":
+    "description": |-
+      PLACEHOLDER
+  "file_path":
+    "description": |-
+      PLACEHOLDER
+  "google_service_account":
+    "description": |-
+      PLACEHOLDER
+  "host":
+    "description": |-
+      PLACEHOLDER
+  "profile":
+    "description": |-
+      PLACEHOLDER
+  "resource_path":
+    "description": |-
+      PLACEHOLDER
+  "root_path":
+    "description": |-
+      PLACEHOLDER
+  "state_path":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Grant:
-  principal:
-    description: PLACEHOLDER
-  privileges:
-    description: PLACEHOLDER
+  "principal":
+    "description": |-
+      PLACEHOLDER
+  "privileges":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Permission:
-  group_name:
-    description: PLACEHOLDER
-  level:
-    description: PLACEHOLDER
-  service_principal_name:
-    description: PLACEHOLDER
-  user_name:
-    description: PLACEHOLDER
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/variable.Lookup:
-  alert:
-    description: PLACEHOLDER
-  cluster:
-    description: PLACEHOLDER
-  cluster_policy:
-    description: PLACEHOLDER
-  dashboard:
-    description: PLACEHOLDER
-  instance_pool:
-    description: PLACEHOLDER
-  job:
-    description: PLACEHOLDER
-  metastore:
-    description: PLACEHOLDER
-  notification_destination:
-    description: PLACEHOLDER
-  pipeline:
-    description: PLACEHOLDER
-  query:
-    description: PLACEHOLDER
-  service_principal:
-    description: PLACEHOLDER
-  warehouse:
-    description: PLACEHOLDER
+  "alert":
+    "description": |-
+      PLACEHOLDER
+  "cluster":
+    "description": |-
+      PLACEHOLDER
+  "cluster_policy":
+    "description": |-
+      PLACEHOLDER
+  "dashboard":
+    "description": |-
+      PLACEHOLDER
+  "instance_pool":
+    "description": |-
+      PLACEHOLDER
+  "job":
+    "description": |-
+      PLACEHOLDER
+  "metastore":
+    "description": |-
+      PLACEHOLDER
+  "notification_destination":
+    "description": |-
+      PLACEHOLDER
+  "pipeline":
+    "description": |-
+      PLACEHOLDER
+  "query":
+    "description": |-
+      PLACEHOLDER
+  "service_principal":
+    "description": |-
+      PLACEHOLDER
+  "warehouse":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/variable.TargetVariable:
-  default:
-    description: PLACEHOLDER
-  description:
-    description: PLACEHOLDER
-  lookup:
-    description: PLACEHOLDER
-  type:
-    description: PLACEHOLDER
+  "default":
+    "description": |-
+      PLACEHOLDER
+  "description":
+    "description": |-
+      PLACEHOLDER
+  "lookup":
+    "description": |-
+      PLACEHOLDER
+  "type":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/variable.Variable:
-  default:
-    description: PLACEHOLDER
-  description:
-    description: PLACEHOLDER
-  lookup:
-    description: PLACEHOLDER
-  type:
-    description: PLACEHOLDER
+  "default":
+    "description": |-
+      PLACEHOLDER
+  "description":
+    "description": |-
+      PLACEHOLDER
+  "lookup":
+    "description": |-
+      PLACEHOLDER
+  "type":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/serving.Ai21LabsConfig:
-  ai21labs_api_key:
-    description: PLACEHOLDER
-  ai21labs_api_key_plaintext:
-    description: PLACEHOLDER
+  "ai21labs_api_key":
+    "description": |-
+      PLACEHOLDER
+  "ai21labs_api_key_plaintext":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/serving.GoogleCloudVertexAiConfig:
-  private_key:
-    description: PLACEHOLDER
-  private_key_plaintext:
-    description: PLACEHOLDER
-  project_id:
-    description: PLACEHOLDER
-  region:
-    description: PLACEHOLDER
+  "private_key":
+    "description": |-
+      PLACEHOLDER
+  "private_key_plaintext":
+    "description": |-
+      PLACEHOLDER
+  "project_id":
+    "description": |-
+      PLACEHOLDER
+  "region":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/serving.OpenAiConfig:
-  microsoft_entra_client_id:
-    description: PLACEHOLDER
-  microsoft_entra_client_secret:
-    description: PLACEHOLDER
-  microsoft_entra_client_secret_plaintext:
-    description: PLACEHOLDER
-  microsoft_entra_tenant_id:
-    description: PLACEHOLDER
-  openai_api_base:
-    description: PLACEHOLDER
-  openai_api_key:
-    description: PLACEHOLDER
-  openai_api_key_plaintext:
-    description: PLACEHOLDER
-  openai_api_type:
-    description: PLACEHOLDER
-  openai_api_version:
-    description: PLACEHOLDER
-  openai_deployment_name:
-    description: PLACEHOLDER
-  openai_organization:
-    description: PLACEHOLDER
+  "microsoft_entra_client_id":
+    "description": |-
+      PLACEHOLDER
+  "microsoft_entra_client_secret":
+    "description": |-
+      PLACEHOLDER
+  "microsoft_entra_client_secret_plaintext":
+    "description": |-
+      PLACEHOLDER
+  "microsoft_entra_tenant_id":
+    "description": |-
+      PLACEHOLDER
+  "openai_api_base":
+    "description": |-
+      PLACEHOLDER
+  "openai_api_key":
+    "description": |-
+      PLACEHOLDER
+  "openai_api_key_plaintext":
+    "description": |-
+      PLACEHOLDER
+  "openai_api_type":
+    "description": |-
+      PLACEHOLDER
+  "openai_api_version":
+    "description": |-
+      PLACEHOLDER
+  "openai_deployment_name":
+    "description": |-
+      PLACEHOLDER
+  "openai_organization":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/serving.PaLmConfig:
-  palm_api_key:
-    description: PLACEHOLDER
-  palm_api_key_plaintext:
-    description: PLACEHOLDER
+  "palm_api_key":
+    "description": |-
+      PLACEHOLDER
+  "palm_api_key_plaintext":
+    "description": |-
+      PLACEHOLDER
