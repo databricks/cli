@@ -8,7 +8,6 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	refs "github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run/output"
-	"github.com/databricks/cli/libs/filer"
 )
 
 type key string
@@ -62,9 +61,6 @@ func ToRunner(b *bundle.Bundle, ref refs.Reference) (Runner, error) {
 			key:    key(ref.KeyWithType),
 			bundle: b,
 			app:    resource,
-			filerFactory: func(b *bundle.Bundle) (filer.Filer, error) {
-				return filer.NewWorkspaceFilesClient(b.WorkspaceClient(), b.Config.Workspace.FilePath)
-			},
 		}, nil
 	default:
 		return nil, fmt.Errorf("unsupported resource type: %T", resource)

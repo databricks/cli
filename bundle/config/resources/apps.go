@@ -17,15 +17,15 @@ type App struct {
 	// This equals to app name and added for symmetry with other resources.
 	ID string `json:"id,omitempty" bundle:"readonly"`
 
-	// SourceCodePath is a required field used by DABs to point databricks app source code
-	// on local disk and use it to point to this source code in the app deployment
+	// SourceCodePath is a required field used by DABs to point to Databricks app source code
+	// on local disk and to the corresponding workspace path during app deployment.
 	SourceCodePath string `json:"source_code_path"`
 
 	// Config is an optional field which allows configuring the app following Databricks app configuration format like in app.yml.
 	// When this field is set, DABs read the configuration set in this field and write
 	// it to app.yml in the root of the source code folder in Databricks workspace.
 	// If there’s app.yml defined locally, DABs will raise an error.
-	Config map[string]interface{} `json:"config,omitempty"`
+	Config map[string]any `json:"config,omitempty"`
 
 	Permissions    []Permission   `json:"permissions,omitempty"`
 	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
