@@ -19,7 +19,7 @@ func (t *mutatorWithError) Name() string {
 
 func (t *mutatorWithError) Apply(_ context.Context, b *Bundle) diag.Diagnostics {
 	t.applyCalled++
-	return diag.Errorf(t.errorMsg)
+	return diag.Errorf("%s", t.errorMsg)
 }
 
 func TestDeferredMutatorWhenAllMutatorsSucceed(t *testing.T) {
