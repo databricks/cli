@@ -153,6 +153,6 @@ func initTargetFlag(cmd *cobra.Command) {
 func initEnvironmentFlag(cmd *cobra.Command) {
 	// To operate in the context of a bundle, all commands must take an "environment" parameter.
 	cmd.PersistentFlags().StringP("environment", "e", "", "bundle target to use (if applicable)")
-	_ = cmd.PersistentFlags().MarkDeprecated("environment", "use --target flag instead")
-	_ = cmd.RegisterFlagCompletionFunc("environment", targetCompletion)
+	cmd.PersistentFlags().MarkDeprecated("environment", "use --target flag instead")
+	cmd.RegisterFlagCompletionFunc("environment", targetCompletion)
 }
