@@ -101,7 +101,7 @@ func TestAccFetchRepositoryInfoAPI_FromNonRepo(t *testing.T) {
 				assert.NoError(t, err)
 			} else {
 				assert.Error(t, err)
-				assert.Contains(t, err.Error(), test.msg)
+				assert.ErrorContains(t, err, test.msg)
 			}
 			assertEmptyGitInfo(t, info)
 		})
@@ -151,7 +151,7 @@ func TestAccFetchRepositoryInfoDotGit_FromNonGitRepo(t *testing.T) {
 	for _, input := range tests {
 		t.Run(input, func(t *testing.T) {
 			info, err := git.FetchRepositoryInfo(ctx, input, wt.W)
-			assert.NoError(t, err)
+			assert.ErrorIs(t, err, os.ErrNotExist)
 			assertEmptyGitInfo(t, info)
 		})
 	}
