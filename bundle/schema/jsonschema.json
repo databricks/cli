@@ -959,7 +959,7 @@
                     "files": {
                       "description": "The source files for the artifact.",
                       "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config.ArtifactFile",
-                      "markdownDescription": "The source files for the artifact, defined as an [_](#artifact_file)."
+                      "markdownDescription": "The source files for the artifact, defined as an [artifact_file](https://docs.databricks.com/dev-tools/bundles/reference.html#artifact_file)."
                     },
                     "path": {
                       "description": "The location where the built artifact will be saved.",
@@ -1013,7 +1013,7 @@
                     "cluster_id": {
                       "description": "The ID of a cluster to use to run the bundle.",
                       "$ref": "#/$defs/string",
-                      "markdownDescription": "The ID of a cluster to use to run the bundle. See [_](/dev-tools/bundles/settings.md#cluster_id)."
+                      "markdownDescription": "The ID of a cluster to use to run the bundle. See [cluster_id](https://docs.databricks.com/dev-tools/bundles/settings.html#cluster_id)."
                     },
                     "compute_id": {
                       "$ref": "#/$defs/string"
@@ -1021,17 +1021,17 @@
                     "databricks_cli_version": {
                       "description": "The Databricks CLI version to use for the bundle.",
                       "$ref": "#/$defs/string",
-                      "markdownDescription": "The Databricks CLI version to use for the bundle. See [_](/dev-tools/bundles/settings.md#databricks_cli_version)."
+                      "markdownDescription": "The Databricks CLI version to use for the bundle. See [databricks_cli_version](https://docs.databricks.com/dev-tools/bundles/settings.html#databricks_cli_version)."
                     },
                     "deployment": {
                       "description": "The definition of the bundle deployment",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Deployment",
-                      "markdownDescription": "The definition of the bundle deployment. For supported attributes, see [_](#deployment) and [_](/dev-tools/bundles/deployment-modes.md)."
+                      "markdownDescription": "The definition of the bundle deployment. For supported attributes, see [deployment](https://docs.databricks.com/dev-tools/bundles/reference.html#deployment) and [link](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html)."
                     },
                     "git": {
                       "description": "The Git version control details that are associated with your bundle.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Git",
-                      "markdownDescription": "The Git version control details that are associated with your bundle. For supported attributes, see [_](#git) and [_](/dev-tools/bundles/settings.md#git)."
+                      "markdownDescription": "The Git version control details that are associated with your bundle. For supported attributes, see [git](https://docs.databricks.com/dev-tools/bundles/reference.html#git) and [git](https://docs.databricks.com/dev-tools/bundles/settings.html#git)."
                     },
                     "name": {
                       "description": "The name of the bundle.",
@@ -1067,7 +1067,7 @@
                     "lock": {
                       "description": "The deployment lock attributes.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Lock",
-                      "markdownDescription": "The deployment lock attributes. See [_](#lock)."
+                      "markdownDescription": "The deployment lock attributes. See [lock](https://docs.databricks.com/dev-tools/bundles/reference.html#lock)."
                     }
                   },
                   "additionalProperties": false
@@ -1116,12 +1116,12 @@
                     "branch": {
                       "description": "The Git branch name.",
                       "$ref": "#/$defs/string",
-                      "markdownDescription": "The Git branch name. See [_](/dev-tools/bundles/settings.md#git)."
+                      "markdownDescription": "The Git branch name. See [git](https://docs.databricks.com/dev-tools/bundles/settings.html#git)."
                     },
                     "origin_url": {
                       "description": "The origin URL of the repository.",
                       "$ref": "#/$defs/string",
-                      "markdownDescription": "The origin URL of the repository. See [_](/dev-tools/bundles/settings.md#git)."
+                      "markdownDescription": "The origin URL of the repository. See [git](https://docs.databricks.com/dev-tools/bundles/settings.html#git)."
                     }
                   },
                   "additionalProperties": false
@@ -1229,52 +1229,52 @@
                     "clusters": {
                       "description": "The cluster definitions for the bundle.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Cluster",
-                      "markdownDescription": "The cluster definitions for the bundle. See [_](/dev-tools/bundles/resources.md#cluster)"
+                      "markdownDescription": "The cluster definitions for the bundle. See [cluster](https://docs.databricks.com/dev-tools/bundles/resources.html#cluster)"
                     },
                     "dashboards": {
                       "description": "The dashboard definitions for the bundle.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Dashboard",
-                      "markdownDescription": "The dashboard definitions for the bundle. See [_](/dev-tools/bundles/resources.md#dashboard)"
+                      "markdownDescription": "The dashboard definitions for the bundle. See [dashboard](https://docs.databricks.com/dev-tools/bundles/resources.html#dashboard)"
                     },
                     "experiments": {
                       "description": "The experiment definitions for the bundle.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.MlflowExperiment",
-                      "markdownDescription": "The experiment definitions for the bundle. See [_](/dev-tools/bundles/resources.md#experiment)"
+                      "markdownDescription": "The experiment definitions for the bundle. See [experiment](https://docs.databricks.com/dev-tools/bundles/resources.html#experiment)"
                     },
                     "jobs": {
                       "description": "The job definitions for the bundle.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Job",
-                      "markdownDescription": "The job definitions for the bundle. See [_](/dev-tools/bundles/resources.md#job)"
+                      "markdownDescription": "The job definitions for the bundle. See [job](https://docs.databricks.com/dev-tools/bundles/resources.html#job)"
                     },
                     "model_serving_endpoints": {
                       "description": "The model serving endpoint definitions for the bundle.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint",
-                      "markdownDescription": "The model serving endpoint definitions for the bundle. See [_](/dev-tools/bundles/resources.md#model_serving_endpoint)"
+                      "markdownDescription": "The model serving endpoint definitions for the bundle. See [model_serving_endpoint](https://docs.databricks.com/dev-tools/bundles/resources.html#model_serving_endpoint)"
                     },
                     "models": {
                       "description": "The model definitions for the bundle.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.MlflowModel",
-                      "markdownDescription": "The model definitions for the bundle. See [_](/dev-tools/bundles/resources.md#model)"
+                      "markdownDescription": "The model definitions for the bundle. See [model](https://docs.databricks.com/dev-tools/bundles/resources.html#model)"
                     },
                     "pipelines": {
                       "description": "The pipeline definitions for the bundle.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Pipeline",
-                      "markdownDescription": "The pipeline definitions for the bundle. See [_](/dev-tools/bundles/resources.md#pipeline)"
+                      "markdownDescription": "The pipeline definitions for the bundle. See [pipeline](https://docs.databricks.com/dev-tools/bundles/resources.html#pipeline)"
                     },
                     "quality_monitors": {
                       "description": "The quality monitor definitions for the bundle.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.QualityMonitor",
-                      "markdownDescription": "The quality monitor definitions for the bundle. See [_](/dev-tools/bundles/resources.md#quality_monitor)"
+                      "markdownDescription": "The quality monitor definitions for the bundle. See [quality_monitor](https://docs.databricks.com/dev-tools/bundles/resources.html#quality_monitor)"
                     },
                     "registered_models": {
                       "description": "The registered model definitions for the bundle.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.RegisteredModel",
-                      "markdownDescription": "The registered model definitions for the bundle. See [_](/dev-tools/bundles/resources.md#registered_model)"
+                      "markdownDescription": "The registered model definitions for the bundle. See [registered_model](https://docs.databricks.com/dev-tools/bundles/resources.html#registered_model)"
                     },
                     "schemas": {
                       "description": "The schema definitions for the bundle.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Schema",
-                      "markdownDescription": "The schema definitions for the bundle. See [_](/dev-tools/bundles/resources.md#schema)"
+                      "markdownDescription": "The schema definitions for the bundle. See [schema](https://docs.databricks.com/dev-tools/bundles/resources.html#schema)"
                     },
                     "volumes": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Volume"
@@ -1322,7 +1322,7 @@
                     "artifacts": {
                       "description": "The artifacts to include in the target deployment.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Artifact",
-                      "markdownDescription": "The artifacts to include in the target deployment. See [_](#artifact)"
+                      "markdownDescription": "The artifacts to include in the target deployment. See [artifact](https://docs.databricks.com/dev-tools/bundles/reference.html#artifact)"
                     },
                     "bundle": {
                       "description": "The name of the bundle when deploying to this target.",
@@ -1343,47 +1343,47 @@
                     "git": {
                       "description": "The Git version control settings for the target.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Git",
-                      "markdownDescription": "The Git version control settings for the target. See [_](#git)."
+                      "markdownDescription": "The Git version control settings for the target. See [git](https://docs.databricks.com/dev-tools/bundles/reference.html#git)."
                     },
                     "mode": {
                       "description": "The deployment mode for the target. Valid values are development or production.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Mode",
-                      "markdownDescription": "The deployment mode for the target. Valid values are development or production. See [_](/dev-tools/bundles/deployment-modes.md)."
+                      "markdownDescription": "The deployment mode for the target. Valid values are development or production. See [link](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html)."
                     },
                     "permissions": {
                       "description": "The permissions for deploying and running the bundle in the target.",
                       "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
-                      "markdownDescription": "The permissions for deploying and running the bundle in the target. See [_](#permission)."
+                      "markdownDescription": "The permissions for deploying and running the bundle in the target. See [permission](https://docs.databricks.com/dev-tools/bundles/reference.html#permission)."
                     },
                     "presets": {
                       "description": "The deployment presets for the target.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Presets",
-                      "markdownDescription": "The deployment presets for the target. See [_](#preset)."
+                      "markdownDescription": "The deployment presets for the target. See [preset](https://docs.databricks.com/dev-tools/bundles/reference.html#preset)."
                     },
                     "resources": {
                       "description": "The resource definitions for the target.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Resources",
-                      "markdownDescription": "The resource definitions for the target. See [_](#resources)."
+                      "markdownDescription": "The resource definitions for the target. See [resources](https://docs.databricks.com/dev-tools/bundles/reference.html#resources)."
                     },
                     "run_as": {
                       "description": "The identity to use to run the bundle.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs",
-                      "markdownDescription": "The identity to use to run the bundle. See [_](#job_run_as) and [_](/dev-tools/bundles/run_as.md)."
+                      "markdownDescription": "The identity to use to run the bundle. See [job_run_as](https://docs.databricks.com/dev-tools/bundles/reference.html#job_run_as) and [link](https://docs.databricks.com/dev-tools/bundles/run_as.html)."
                     },
                     "sync": {
                       "description": "The local paths to sync to the target workspace when a bundle is run or deployed.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Sync",
-                      "markdownDescription": "The local paths to sync to the target workspace when a bundle is run or deployed. See [_](#sync)."
+                      "markdownDescription": "The local paths to sync to the target workspace when a bundle is run or deployed. See [sync](https://docs.databricks.com/dev-tools/bundles/reference.html#sync)."
                     },
                     "variables": {
                       "description": "The custom variable definitions for the target.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/variable.TargetVariable",
-                      "markdownDescription": "The custom variable definitions for the target. See [_](/dev-tools/bundles/settings.md#variables) and [_](/dev-tools/bundles/variables.md)."
+                      "markdownDescription": "The custom variable definitions for the target. See [variables](https://docs.databricks.com/dev-tools/bundles/settings.html#variables) and [link](https://docs.databricks.com/dev-tools/bundles/variables.html)."
                     },
                     "workspace": {
                       "description": "The Databricks workspace for the target. _.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Workspace",
-                      "markdownDescription": "The Databricks workspace for the target. [_](#workspace)"
+                      "markdownDescription": "The Databricks workspace for the target. [workspace](https://docs.databricks.com/dev-tools/bundles/reference.html#workspace)"
                     }
                   },
                   "additionalProperties": false
@@ -6275,7 +6275,7 @@
     "bundle": {
       "description": "The attributes of the bundle.",
       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Bundle",
-      "markdownDescription": "The attributes of the bundle. See [_](/dev-tools/bundles/settings.md#bundle)"
+      "markdownDescription": "The attributes of the bundle. See [bundle](https://docs.databricks.com/dev-tools/bundles/settings.html#bundle)"
     },
     "experimental": {
       "description": "Defines attributes for experimental features.",
@@ -6287,16 +6287,16 @@
     "permissions": {
       "description": "Defines the permissions to apply to experiments, jobs, pipelines, and models defined in the bundle",
       "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
-      "markdownDescription": "Defines the permissions to apply to experiments, jobs, pipelines, and models defined in the bundle. See [_](/dev-tools/bundles/settings.md#permissions) and [_](/dev-tools/bundles/permissions.md)."
+      "markdownDescription": "Defines the permissions to apply to experiments, jobs, pipelines, and models defined in the bundle. See [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
     },
     "presets": {
       "description": "Defines bundle deployment presets.",
       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Presets",
-      "markdownDescription": "Defines bundle deployment presets. See [_](/dev-tools/bundles/deployment-modes.md#presets)."
+      "markdownDescription": "Defines bundle deployment presets. See [presets](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html#presets)."
     },
     "resources": {
       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Resources",
-      "markdownDescription": "See [_](/dev-tools/bundles/resources.md)."
+      "markdownDescription": "See [link](https://docs.databricks.com/dev-tools/bundles/resources.html)."
     },
     "run_as": {
       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs"
@@ -6304,7 +6304,7 @@
     "sync": {
       "description": "The files and file paths to include or exclude in the bundle.",
       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Sync",
-      "markdownDescription": "The files and file paths to include or exclude in the bundle. See [_](/dev-tools/bundles/)"
+      "markdownDescription": "The files and file paths to include or exclude in the bundle. See [link](https://docs.databricks.com/dev-tools/bundles/)"
     },
     "targets": {
       "description": "Defines deployment targets for the bundle.",
