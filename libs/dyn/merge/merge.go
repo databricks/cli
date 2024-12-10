@@ -88,14 +88,10 @@ func mergeMap(a, b dyn.Value) (dyn.Value, error) {
 			if err != nil {
 				return dyn.InvalidValue, err
 			}
-			if err := out.Set(pk, merged); err != nil {
-				return dyn.InvalidValue, err
-			}
+			out.Set(pk, merged) //nolint:errcheck
 		} else {
 			// Otherwise, just set the value.
-			if err := out.Set(pk, pv); err != nil {
-				return dyn.InvalidValue, err
-			}
+			out.Set(pk, pv) //nolint:errcheck
 		}
 	}
 
