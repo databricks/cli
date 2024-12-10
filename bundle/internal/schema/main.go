@@ -139,7 +139,10 @@ func generateSchema(workdir, outputFile string) {
 			log.Fatal(err)
 		}
 		fmt.Printf("Writing OpenAPI annotations to %s\n", annotationsOpenApiPath)
-		p.extractAnnotations(reflect.TypeOf(config.Root{}), annotationsOpenApiPath, annotationsOpenApiOverridesPath)
+		err = p.extractAnnotations(reflect.TypeOf(config.Root{}), annotationsOpenApiPath, annotationsOpenApiOverridesPath)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	a, err := newAnnotationHandler([]string{annotationsOpenApiPath, annotationsOpenApiOverridesPath, annotationsPath})
