@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/httpclient/fixtures"
 	"github.com/databricks/databricks-sdk-go/qa"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
 
@@ -182,7 +183,8 @@ func TestChallenge(t *testing.T) {
 
 		state := <-browserOpened
 		resp, err := http.Get(fmt.Sprintf("http://%s?code=__THIS__&state=%s", appRedirectAddr, state))
-		assert.NoError(t, err)
+		require.NoError(t, err)
+		defer resp.Body.Close()
 		assert.Equal(t, 200, resp.StatusCode)
 
 		err = <-errc
@@ -221,7 +223,8 @@ func TestChallengeFailed(t *testing.T) {
 		resp, err := http.Get(fmt.Sprintf(
 			"http://%s?error=access_denied&error_description=Policy%%20evaluation%%20failed%%20for%%20this%%20request",
 			appRedirectAddr))
-		assert.NoError(t, err)
+		require.NoError(t, err)
+		defer resp.Body.Close()
 		assert.Equal(t, 400, resp.StatusCode)
 
 		err = <-errc

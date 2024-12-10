@@ -7,7 +7,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 )
 
-func convert(
+func convertPermissions(
 	ctx context.Context,
 	bundlePermissions []resources.Permission,
 	resourcePermissions []resources.Permission,

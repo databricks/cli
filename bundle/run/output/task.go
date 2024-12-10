@@ -15,7 +15,7 @@ type LogsOutput struct {
 	LogsTruncated bool   `json:"logs_truncated"`
 }
 
-func structToString(val interface{}) (string, error) {
+func structToString(val any) (string, error) {
 	b, err := json.MarshalIndent(val, "", "  ")
 	if err != nil {
 		return "", err

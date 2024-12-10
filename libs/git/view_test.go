@@ -90,19 +90,19 @@ func testViewAtRoot(t *testing.T, tv testView) {
 }
 
 func TestViewRootInBricksRepo(t *testing.T) {
-	v, err := NewView(vfs.MustNew("./testdata"))
+	v, err := NewViewAtRoot(vfs.MustNew("./testdata"))
 	require.NoError(t, err)
 	testViewAtRoot(t, testView{t, v})
 }
 
 func TestViewRootInTempRepo(t *testing.T) {
-	v, err := NewView(vfs.MustNew(createFakeRepo(t, "testdata")))
+	v, err := NewViewAtRoot(vfs.MustNew(createFakeRepo(t, "testdata")))
 	require.NoError(t, err)
 	testViewAtRoot(t, testView{t, v})
 }
 
 func TestViewRootInTempDir(t *testing.T) {
-	v, err := NewView(vfs.MustNew(copyTestdata(t, "testdata")))
+	v, err := NewViewAtRoot(vfs.MustNew(copyTestdata(t, "testdata")))
 	require.NoError(t, err)
 	testViewAtRoot(t, testView{t, v})
 }
@@ -125,20 +125,21 @@ func testViewAtA(t *testing.T, tv testView) {
 }
 
 func TestViewAInBricksRepo(t *testing.T) {
-	v, err := NewView(vfs.MustNew("./testdata/a"))
+	v, err := NewView(vfs.MustNew("."), vfs.MustNew("./testdata/a"))
 	require.NoError(t, err)
 	testViewAtA(t, testView{t, v})
 }
 
 func TestViewAInTempRepo(t *testing.T) {
-	v, err := NewView(vfs.MustNew(filepath.Join(createFakeRepo(t, "testdata"), "a")))
+	repo := createFakeRepo(t, "testdata")
+	v, err := NewView(vfs.MustNew(repo), vfs.MustNew(filepath.Join(repo, "a")))
 	require.NoError(t, err)
 	testViewAtA(t, testView{t, v})
 }
 
 func TestViewAInTempDir(t *testing.T) {
 	// Since this is not a fake repo it should not traverse up the tree.
-	v, err := NewView(vfs.MustNew(filepath.Join(copyTestdata(t, "testdata"), "a")))
+	v, err := NewViewAtRoot(vfs.MustNew(filepath.Join(copyTestdata(t, "testdata"), "a")))
 	require.NoError(t, err)
 	tv := testView{t, v}
 
@@ -175,20 +176,21 @@ func testViewAtAB(t *testing.T, tv testView) {
 }
 
 func TestViewABInBricksRepo(t *testing.T) {
-	v, err := NewView(vfs.MustNew("./testdata/a/b"))
+	v, err := NewView(vfs.MustNew("."), vfs.MustNew("./testdata/a/b"))
 	require.NoError(t, err)
 	testViewAtAB(t, testView{t, v})
 }
 
 func TestViewABInTempRepo(t *testing.T) {
-	v, err := NewView(vfs.MustNew(filepath.Join(createFakeRepo(t, "testdata"), "a", "b")))
+	repo := createFakeRepo(t, "testdata")
+	v, err := NewView(vfs.MustNew(repo), vfs.MustNew(filepath.Join(repo, "a", "b")))
 	require.NoError(t, err)
 	testViewAtAB(t, testView{t, v})
 }
 
 func TestViewABInTempDir(t *testing.T) {
 	// Since this is not a fake repo it should not traverse up the tree.
-	v, err := NewView(vfs.MustNew(filepath.Join(copyTestdata(t, "testdata"), "a", "b")))
+	v, err := NewViewAtRoot(vfs.MustNew(filepath.Join(copyTestdata(t, "testdata"), "a", "b")))
 	tv := testView{t, v}
 	require.NoError(t, err)
 
@@ -215,7 +217,7 @@ func TestViewDoesNotChangeGitignoreIfCacheDirAlreadyIgnoredAtRoot(t *testing.T) 
 
 	// Since root .gitignore already has .databricks, there should be no edits
 	// to root .gitignore
-	v, err := NewView(vfs.MustNew(repoPath))
+	v, err := NewViewAtRoot(vfs.MustNew(repoPath))
 	require.NoError(t, err)
 
 	err = v.EnsureValidGitIgnoreExists()
@@ -235,7 +237,7 @@ func TestViewDoesNotChangeGitignoreIfCacheDirAlreadyIgnoredInSubdir(t *testing.T
 
 	// Since root .gitignore already has .databricks, there should be no edits
 	// to a/.gitignore
-	v, err := NewView(vfs.MustNew(filepath.Join(repoPath, "a")))
+	v, err := NewView(vfs.MustNew(repoPath), vfs.MustNew(filepath.Join(repoPath, "a")))
 	require.NoError(t, err)
 
 	err = v.EnsureValidGitIgnoreExists()
@@ -253,7 +255,7 @@ func TestViewAddsGitignoreWithCacheDir(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Since root .gitignore was deleted, new view adds .databricks to root .gitignore
-	v, err := NewView(vfs.MustNew(repoPath))
+	v, err := NewViewAtRoot(vfs.MustNew(repoPath))
 	require.NoError(t, err)
 
 	err = v.EnsureValidGitIgnoreExists()
@@ -271,7 +273,7 @@ func TestViewAddsGitignoreWithCacheDirAtSubdir(t *testing.T) {
 	require.NoError(t, err)
 
 	// Since root .gitignore was deleted, new view adds .databricks to a/.gitignore
-	v, err := NewView(vfs.MustNew(filepath.Join(repoPath, "a")))
+	v, err := NewView(vfs.MustNew(repoPath), vfs.MustNew(filepath.Join(repoPath, "a")))
 	require.NoError(t, err)
 
 	err = v.EnsureValidGitIgnoreExists()
@@ -288,7 +290,7 @@ func TestViewAddsGitignoreWithCacheDirAtSubdir(t *testing.T) {
 func TestViewAlwaysIgnoresCacheDir(t *testing.T) {
 	repoPath := createFakeRepo(t, "testdata")
 
-	v, err := NewView(vfs.MustNew(repoPath))
+	v, err := NewViewAtRoot(vfs.MustNew(repoPath))
 	require.NoError(t, err)
 
 	err = v.EnsureValidGitIgnoreExists()

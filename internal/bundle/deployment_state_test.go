@@ -46,7 +46,7 @@ func TestAccFilesAreSyncedCorrectlyWhenNoSnapshot(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		destroyBundle(t, ctx, bundleRoot)
+		require.NoError(t, destroyBundle(t, ctx, bundleRoot))
 	})
 
 	remoteRoot := getBundleRemoteRootPath(w, t, uniqueId)

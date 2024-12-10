@@ -99,7 +99,8 @@ func TestAccAbortBind(t *testing.T) {
 	jobId := gt.createTestJob(ctx)
 	t.Cleanup(func() {
 		gt.destroyJob(ctx, jobId)
-		destroyBundle(t, ctx, bundleRoot)
+		err := destroyBundle(t, ctx, bundleRoot)
+		require.NoError(t, err)
 	})
 
 	// Bind should fail because prompting is not possible.

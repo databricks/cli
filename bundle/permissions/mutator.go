@@ -7,12 +7,17 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/convert"
 )
 
 const CAN_MANAGE = "CAN_MANAGE"
 const CAN_VIEW = "CAN_VIEW"
 const CAN_RUN = "CAN_RUN"
+
+var unsupportedResources = []string{"clusters", "volumes", "schemas", "quality_monitors", "registered_models"}
 
 var allowedLevels = []string{CAN_MANAGE, CAN_VIEW, CAN_RUN}
 var levelsMap = map[string](map[string]string){
@@ -26,11 +31,11 @@ var levelsMap = map[string](map[string]string){
 		CAN_VIEW:   "CAN_VIEW",
 		CAN_RUN:    "CAN_RUN",
 	},
-	"mlflow_experiments": {
+	"experiments": {
 		CAN_MANAGE: "CAN_MANAGE",
 		CAN_VIEW:   "CAN_READ",
 	},
-	"mlflow_models": {
+	"models": {
 		CAN_MANAGE: "CAN_MANAGE",
 		CAN_VIEW:   "CAN_READ",
 	},
@@ -57,11 +62,58 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 		return diag.FromErr(err)
 	}
 
-	applyForJobs(ctx, b)
-	applyForPipelines(ctx, b)
-	applyForMlModels(ctx, b)
-	applyForMlExperiments(ctx, b)
-	applyForModelServiceEndpoints(ctx, b)
+	patterns := make(map[string]dyn.Pattern, 0)
+	for key := range levelsMap {
+		patterns[key] = dyn.NewPattern(
+			dyn.Key("resources"),
+			dyn.Key(key),
+			dyn.AnyKey(),
+		)
+	}
+
+	err = b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		for key, pattern := range patterns {
+			v, err = dyn.MapByPattern(v, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
+				var permissions []resources.Permission
+				pv, err := dyn.Get(v, "permissions")
+
+				// If the permissions field is not found, we set to an empty array
+				if err != nil {
+					pv = dyn.V([]dyn.Value{})
+				}
+
+				err = convert.ToTyped(&permissions, pv)
+				if err != nil {
+					return dyn.InvalidValue, fmt.Errorf("failed to convert permissions: %w", err)
+				}
+
+				permissions = append(permissions, convertPermissions(
+					ctx,
+					b.Config.Permissions,
+					permissions,
+					key,
+					levelsMap[key],
+				)...)
+
+				pv, err = convert.FromTyped(permissions, dyn.NilValue)
+				if err != nil {
+					return dyn.InvalidValue, fmt.Errorf("failed to convert permissions: %w", err)
+				}
+
+				return dyn.Set(v, "permissions", pv)
+			})
+
+			if err != nil {
+				return dyn.InvalidValue, err
+			}
+		}
+
+		return v, nil
+	})
+
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	return nil
 }
@@ -74,66 +126,6 @@ func validate(b *bundle.Bundle) error {
 	}
 
 	return nil
-}
-
-func applyForJobs(ctx context.Context, b *bundle.Bundle) {
-	for key, job := range b.Config.Resources.Jobs {
-		job.Permissions = append(job.Permissions, convert(
-			ctx,
-			b.Config.Permissions,
-			job.Permissions,
-			key,
-			levelsMap["jobs"],
-		)...)
-	}
-}
-
-func applyForPipelines(ctx context.Context, b *bundle.Bundle) {
-	for key, pipeline := range b.Config.Resources.Pipelines {
-		pipeline.Permissions = append(pipeline.Permissions, convert(
-			ctx,
-			b.Config.Permissions,
-			pipeline.Permissions,
-			key,
-			levelsMap["pipelines"],
-		)...)
-	}
-}
-
-func applyForMlExperiments(ctx context.Context, b *bundle.Bundle) {
-	for key, experiment := range b.Config.Resources.Experiments {
-		experiment.Permissions = append(experiment.Permissions, convert(
-			ctx,
-			b.Config.Permissions,
-			experiment.Permissions,
-			key,
-			levelsMap["mlflow_experiments"],
-		)...)
-	}
-}
-
-func applyForMlModels(ctx context.Context, b *bundle.Bundle) {
-	for key, model := range b.Config.Resources.Models {
-		model.Permissions = append(model.Permissions, convert(
-			ctx,
-			b.Config.Permissions,
-			model.Permissions,
-			key,
-			levelsMap["mlflow_models"],
-		)...)
-	}
-}
-
-func applyForModelServiceEndpoints(ctx context.Context, b *bundle.Bundle) {
-	for key, model := range b.Config.Resources.ModelServingEndpoints {
-		model.Permissions = append(model.Permissions, convert(
-			ctx,
-			b.Config.Permissions,
-			model.Permissions,
-			key,
-			levelsMap["model_serving_endpoints"],
-		)...)
-	}
 }
 
 func (m *bundlePermissions) Name() string {

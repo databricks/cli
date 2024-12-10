@@ -47,7 +47,11 @@ func testTags(t *testing.T, tags map[string]string) error {
 
 	if resp != nil {
 		t.Cleanup(func() {
-			w.Jobs.DeleteByJobId(ctx, resp.JobId)
+			_ = w.Jobs.DeleteByJobId(ctx, resp.JobId)
+			// Cannot enable errchecking there, tests fail with:
+			//   Error: Received unexpected error:
+			//   Job 0 does not exist.
+			// require.NoError(t, err)
 		})
 	}
 
