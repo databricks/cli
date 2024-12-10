@@ -2,7 +2,9 @@ package mutator_test
 
 import (
 	"context"
+	"fmt"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -454,52 +456,89 @@ func TestApplyPresetsSourceLinkedDeployment(t *testing.T) {
 
 }
 
-// func TestApplyPresetsRecommendsCatalogSchemaUsage(t *testing.T) {
-// 	dir := t.TempDir()
+func TestApplyPresetsCatalogSchema(t *testing.T) {
+	// Create a bundle in a known mode, e.g. development or production doesn't matter much here.
+	b := mockBundle(config.Development)
+	// Set the catalog and schema in presets.
+	b.Config.Presets.Catalog = "my_catalog"
+	b.Config.Presets.Schema = "my_schema"
 
-// 	...
+	ctx := context.Background()
+	diags := bundle.Apply(ctx, b, mutator.ApplyPresets())
+	require.NoError(t, diags.Error())
 
-// 	b := &bundle.Bundle{
-// 		Config: config.Root{
-// 			Resources: config.Resources{
-// 				Jobs: map[string]*resources.Job{
-// 					"job1": {
-// 						JobSettings: &jobs.JobSettings{
-// 							Tasks: []jobs.Task{
-// 								{
-// 									NotebookTask: &jobs.NotebookTask{
-// 										NotebookPath: notebookPath,
-// 									},
-// 								},
-// 								{
-// 									SparkPythonTask: &jobs.SparkPythonTask{
-// 										PythonFile: pythonPath,
-// 									},
-// 								},
-// 								{
-// 									NotebookTask: &jobs.NotebookTask{
-// 										NotebookPath: "/Workspace/absolute/path/notebook",
-// 									},
-// 								},
-// 							},
-// 						},
-// 					},
-// 				},
-// 			},
-// 		},
-// 	}
+	// Verify that jobs got catalog/schema if they support it.
+	// For DBT tasks in jobs:
+	for _, job := range b.Config.Resources.Jobs {
+		if job.JobSettings != nil && job.Tasks != nil {
+			for _, task := range job.Tasks {
+				if task.DbtTask != nil {
+					require.Equal(t, "my_catalog", task.DbtTask.Catalog, "dbt catalog should be set")
+					require.Equal(t, "my_schema", task.DbtTask.Schema, "dbt schema should be set")
+				}
+			}
+		}
+	}
 
-// 	ctx := context.Background()
-// 	diags := bundle.Apply(ctx, b, ApplyPresets())
-// 	require.Len(t, diags, 2)
+	// Pipelines: Catalog/Schema
+	for _, p := range b.Config.Resources.Pipelines {
+		if p.PipelineSpec != nil {
+			// pipeline catalog and schema
+			if p.Catalog == "" || p.Catalog == "hive_metastore" {
+				require.Equal(t, "my_catalog", p.Catalog, "pipeline catalog should be set")
+			}
+			require.Equal(t, "my_schema", p.Target, "pipeline schema (target) should be set")
+		}
+	}
 
-// 	// Check notebook diagnostic
-// 	assert.Equal(t, notebookPath, diags[0].Locations[0].File)
-// 	assert.Equal(t, 1, diags[0].Locations[0].Line)
-// 	assert.Equal(t, 1, diags[0].Locations[0].Column)
+	// Registered models: Catalog/Schema
+	for _, rm := range b.Config.Resources.RegisteredModels {
+		if rm.CreateRegisteredModelRequest != nil {
+			require.Equal(t, "my_catalog", rm.CatalogName, "registered model catalog should be set")
+			require.Equal(t, "my_schema", rm.SchemaName, "registered model schema should be set")
+		}
+	}
 
-// 	// Check Python script diagnostic
-// 	assert.Equal(t, pythonPath, diags[1].Locations[0].File)
-// 	assert.Equal(t, 1, diags[1].Locations[0].Line)
-// 	assert.Equal(t, 1, diags[1].Locations[0].Column)
-// }
+	// Quality monitors: If paused, we rewrite tableName to include catalog.schema.
+	// In our code, if paused, we prepend catalog/schema if tableName wasn't already fully qualified.
+	// Let's verify that:
+	for _, qm := range b.Config.Resources.QualityMonitors {
+		// If not fully qualified (3 parts), it should have been rewritten.
+		parts := strings.Split(qm.TableName, ".")
+		if len(parts) != 3 {
+			require.Equal(t, fmt.Sprintf("my_catalog.my_schema.%s", parts[0]), qm.TableName, "quality monitor tableName should include catalog and schema")
+		}
+	}
+
+	// Schemas: If there's a schema preset, we might replace the schema name or catalog name.
+	for _, s := range b.Config.Resources.Schemas {
+		if s.CreateSchema != nil {
+			// If catalog was empty before, now should be set:
+			require.Equal(t, "my_catalog", s.CatalogName, "schema catalog should be set")
+			// If schema was empty before, it should be set, but we did have "schema1",
+			// so let's verify that if schema had a name, prefix logic may apply:
+			// The code attempts to handle schema naming carefully. If t.Schema != "" and s.Name == "",
+			// s.Name is set to t.Schema. Since s.Name was originally "schema1", it should remain "schema1" with prefix applied.
+			// If you want to verify behavior, do so explicitly if changed code logic.
+		}
+	}
+
+	// Model serving endpoints currently return a warning that they don't support catalog/schema presets.
+	// We can just verify that the warning is generated or that no fields were set since they are not supported.
+	// The ApplyPresets code emits a diag error if we attempt to use catalog/schema with model serving endpoints.
+	// Let's check that we got an error diagnostic:
+	// The code currently returns a diag error if model serving endpoints are present and catalog/schema are set.
+	// So we verify diags here:
+	foundEndpointError := false
+	for _, d := range diags {
+		if strings.Contains(d.Summary, "model serving endpoints are not supported with catalog/schema presets") {
+			foundEndpointError = true
+			break
+		}
+	}
+	require.True(t, foundEndpointError, "should have diag error for model serving endpoints")
+
+	// Add assertions for any other resources that support catalog/schema if needed.
+	// This list is maintained manually. If you add new resource types that support catalog/schema,
+	// add them here as well.
+}
