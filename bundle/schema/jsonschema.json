@@ -249,9 +249,11 @@
                     "type": "object",
                     "properties": {
                       "principal": {
+                        "description": "The name of the principal that will be granted privileges",
                         "$ref": "#/$defs/string"
                       },
                       "privileges": {
+                        "description": "The privileges to grant to the specified entity",
                         "$ref": "#/$defs/slice/string"
                       }
                     },
@@ -503,15 +505,19 @@
                     "type": "object",
                     "properties": {
                       "group_name": {
+                        "description": "The name of the group that has the permission set in level.",
                         "$ref": "#/$defs/string"
                       },
                       "level": {
+                        "description": "The allowed permission for user, group, service principal defined for this permission.",
                         "$ref": "#/$defs/string"
                       },
                       "service_principal_name": {
+                        "description": "The name of the service principal that has the permission set in level.",
                         "$ref": "#/$defs/string"
                       },
                       "user_name": {
+                        "description": "The name of the user that has the permission set in level.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -895,12 +901,15 @@
                         "$ref": "#/$defs/interface"
                       },
                       "description": {
+                        "description": "The description of the variable",
                         "$ref": "#/$defs/string"
                       },
                       "lookup": {
+                        "description": "The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.Lookup"
                       },
                       "type": {
+                        "description": "The type of the variable. Valid values are complex.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.VariableType"
                       }
                     },
@@ -916,12 +925,15 @@
                     "$ref": "#/$defs/interface"
                   },
                   "description": {
+                    "description": "The description of the variable",
                     "$ref": "#/$defs/string"
                   },
                   "lookup": {
+                    "description": "The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.",
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.Lookup"
                   },
                   "type": {
+                    "description": "The type of the variable. Valid values are complex.",
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.VariableType"
                   }
                 },
@@ -941,15 +953,20 @@
                       "$ref": "#/$defs/string"
                     },
                     "executable": {
+                      "description": "The executable type. Valid values are  ......",
                       "$ref": "#/$defs/github.com/databricks/cli/libs/exec.ExecutableType"
                     },
                     "files": {
-                      "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config.ArtifactFile"
+                      "description": "The source files for the artifact.",
+                      "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config.ArtifactFile",
+                      "markdownDescription": "The source files for the artifact, defined as an [_](#artifact_file)."
                     },
                     "path": {
+                      "description": "The location where the built artifact will be saved.",
                       "$ref": "#/$defs/string"
                     },
                     "type": {
+                      "description": "The type of the artifact. Valid values are wheel or jar.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.ArtifactType"
                     }
                   },
@@ -970,6 +987,7 @@
                   "type": "object",
                   "properties": {
                     "source": {
+                      "description": "The path of the files used to build the artifact.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -993,21 +1011,30 @@
                   "type": "object",
                   "properties": {
                     "cluster_id": {
-                      "$ref": "#/$defs/string"
+                      "description": "The ID of a cluster to use to run the bundle.",
+                      "$ref": "#/$defs/string",
+                      "markdownDescription": "The ID of a cluster to use to run the bundle. See [_](/dev-tools/bundles/settings.md#cluster_id)."
                     },
                     "compute_id": {
                       "$ref": "#/$defs/string"
                     },
                     "databricks_cli_version": {
-                      "$ref": "#/$defs/string"
+                      "description": "The Databricks CLI version to use for the bundle.",
+                      "$ref": "#/$defs/string",
+                      "markdownDescription": "The Databricks CLI version to use for the bundle. See [_](/dev-tools/bundles/settings.md#databricks_cli_version)."
                     },
                     "deployment": {
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Deployment"
+                      "description": "The definition of the bundle deployment",
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Deployment",
+                      "markdownDescription": "The definition of the bundle deployment. For supported attributes, see [_](#deployment) and [_](/dev-tools/bundles/deployment-modes.md)."
                     },
                     "git": {
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Git"
+                      "description": "The Git version control details that are associated with your bundle.",
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Git",
+                      "markdownDescription": "The Git version control details that are associated with your bundle. For supported attributes, see [_](#git) and [_](/dev-tools/bundles/settings.md#git)."
                     },
                     "name": {
+                      "description": "The name of the bundle.",
                       "$ref": "#/$defs/string"
                     },
                     "uuid": {
@@ -1034,10 +1061,13 @@
                   "type": "object",
                   "properties": {
                     "fail_on_active_runs": {
+                      "description": "Whether to fail on active runs. If this is set to true a deployment that is running can be interrupted.",
                       "$ref": "#/$defs/bool"
                     },
                     "lock": {
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Lock"
+                      "description": "The deployment lock attributes.",
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Lock",
+                      "markdownDescription": "The deployment lock attributes. See [_](#lock)."
                     }
                   },
                   "additionalProperties": false
@@ -1054,15 +1084,19 @@
                   "type": "object",
                   "properties": {
                     "pydabs": {
+                      "description": "The PyDABs configuration.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.PyDABs"
                     },
                     "python_wheel_wrapper": {
+                      "description": "Whether to use a Python wheel wrapper",
                       "$ref": "#/$defs/bool"
                     },
                     "scripts": {
+                      "description": "The commands to run",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Command"
                     },
                     "use_legacy_run_as": {
+                      "description": "Whether to use the legacy run_as behavior",
                       "$ref": "#/$defs/bool"
                     }
                   },
@@ -1080,10 +1114,14 @@
                   "type": "object",
                   "properties": {
                     "branch": {
-                      "$ref": "#/$defs/string"
+                      "description": "The Git branch name.",
+                      "$ref": "#/$defs/string",
+                      "markdownDescription": "The Git branch name. See [_](/dev-tools/bundles/settings.md#git)."
                     },
                     "origin_url": {
-                      "$ref": "#/$defs/string"
+                      "description": "The origin URL of the repository.",
+                      "$ref": "#/$defs/string",
+                      "markdownDescription": "The origin URL of the repository. See [_](/dev-tools/bundles/settings.md#git)."
                     }
                   },
                   "additionalProperties": false
@@ -1100,9 +1138,11 @@
                   "type": "object",
                   "properties": {
                     "enabled": {
+                      "description": "Whether this lock is enabled.",
                       "$ref": "#/$defs/bool"
                     },
                     "force": {
+                      "description": "Whether to force this lock if it is enabled.",
                       "$ref": "#/$defs/bool"
                     }
                   },
@@ -1123,21 +1163,27 @@
                   "type": "object",
                   "properties": {
                     "jobs_max_concurrent_runs": {
+                      "description": "The maximum concurrent runs for a job.",
                       "$ref": "#/$defs/int"
                     },
                     "name_prefix": {
+                      "description": "The prefix for job runs of the bundle.",
                       "$ref": "#/$defs/string"
                     },
                     "pipelines_development": {
+                      "description": "Whether pipeline deployments should be locked in development mode.",
                       "$ref": "#/$defs/bool"
                     },
                     "source_linked_deployment": {
+                      "description": "Whether to link the deployment to the bundle source.",
                       "$ref": "#/$defs/bool"
                     },
                     "tags": {
+                      "description": "The tags for the bundle deployment.",
                       "$ref": "#/$defs/map/string"
                     },
                     "trigger_pause_status": {
+                      "description": "A pause status to apply to all job triggers and schedules. Valid values are PAUSED or UNPAUSED.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -1155,12 +1201,15 @@
                   "type": "object",
                   "properties": {
                     "enabled": {
+                      "description": "Whether or not PyDABs (Private Preview) is enabled",
                       "$ref": "#/$defs/bool"
                     },
                     "import": {
+                      "description": "The PyDABs project to import to discover resources, resource generator and mutators",
                       "$ref": "#/$defs/slice/string"
                     },
                     "venv_path": {
+                      "description": "The Python virtual environment path",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -1178,34 +1227,54 @@
                   "type": "object",
                   "properties": {
                     "clusters": {
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Cluster"
+                      "description": "The cluster definitions for the bundle.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Cluster",
+                      "markdownDescription": "The cluster definitions for the bundle. See [_](/dev-tools/bundles/resources.md#cluster)"
                     },
                     "dashboards": {
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Dashboard"
+                      "description": "The dashboard definitions for the bundle.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Dashboard",
+                      "markdownDescription": "The dashboard definitions for the bundle. See [_](/dev-tools/bundles/resources.md#dashboard)"
                     },
                     "experiments": {
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.MlflowExperiment"
+                      "description": "The experiment definitions for the bundle.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.MlflowExperiment",
+                      "markdownDescription": "The experiment definitions for the bundle. See [_](/dev-tools/bundles/resources.md#experiment)"
                     },
                     "jobs": {
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Job"
+                      "description": "The job definitions for the bundle.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Job",
+                      "markdownDescription": "The job definitions for the bundle. See [_](/dev-tools/bundles/resources.md#job)"
                     },
                     "model_serving_endpoints": {
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint"
+                      "description": "The model serving endpoint definitions for the bundle.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint",
+                      "markdownDescription": "The model serving endpoint definitions for the bundle. See [_](/dev-tools/bundles/resources.md#model_serving_endpoint)"
                     },
                     "models": {
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.MlflowModel"
+                      "description": "The model definitions for the bundle.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.MlflowModel",
+                      "markdownDescription": "The model definitions for the bundle. See [_](/dev-tools/bundles/resources.md#model)"
                     },
                     "pipelines": {
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Pipeline"
+                      "description": "The pipeline definitions for the bundle.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Pipeline",
+                      "markdownDescription": "The pipeline definitions for the bundle. See [_](/dev-tools/bundles/resources.md#pipeline)"
                     },
                     "quality_monitors": {
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.QualityMonitor"
+                      "description": "The quality monitor definitions for the bundle.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.QualityMonitor",
+                      "markdownDescription": "The quality monitor definitions for the bundle. See [_](/dev-tools/bundles/resources.md#quality_monitor)"
                     },
                     "registered_models": {
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.RegisteredModel"
+                      "description": "The registered model definitions for the bundle.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.RegisteredModel",
+                      "markdownDescription": "The registered model definitions for the bundle. See [_](/dev-tools/bundles/resources.md#registered_model)"
                     },
                     "schemas": {
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Schema"
+                      "description": "The schema definitions for the bundle.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Schema",
+                      "markdownDescription": "The schema definitions for the bundle. See [_](/dev-tools/bundles/resources.md#schema)"
                     },
                     "volumes": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Volume"
@@ -1225,12 +1294,15 @@
                   "type": "object",
                   "properties": {
                     "exclude": {
+                      "description": "A list of files or folders to exclude from the bundle.",
                       "$ref": "#/$defs/slice/string"
                     },
                     "include": {
+                      "description": "A list of files or folders to include in the bundle.",
                       "$ref": "#/$defs/slice/string"
                     },
                     "paths": {
+                      "description": "The local folder paths, which can be outside the bundle root, to synchronize to the workspace when the bundle is deployed.",
                       "$ref": "#/$defs/slice/string"
                     }
                   },
@@ -1248,46 +1320,70 @@
                   "type": "object",
                   "properties": {
                     "artifacts": {
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Artifact"
+                      "description": "The artifacts to include in the target deployment.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Artifact",
+                      "markdownDescription": "The artifacts to include in the target deployment. See [_](#artifact)"
                     },
                     "bundle": {
+                      "description": "The name of the bundle when deploying to this target.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Bundle"
                     },
                     "cluster_id": {
+                      "description": "The ID of the cluster to use for this target.",
                       "$ref": "#/$defs/string"
                     },
                     "compute_id": {
+                      "description": "Deprecated. The ID of the compute to use for this target.",
                       "$ref": "#/$defs/string"
                     },
                     "default": {
+                      "description": "Whether this target is the default target.",
                       "$ref": "#/$defs/bool"
                     },
                     "git": {
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Git"
+                      "description": "The Git version control settings for the target.",
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Git",
+                      "markdownDescription": "The Git version control settings for the target. See [_](#git)."
                     },
                     "mode": {
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Mode"
+                      "description": "The deployment mode for the target. Valid values are development or production.",
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Mode",
+                      "markdownDescription": "The deployment mode for the target. Valid values are development or production. See [_](/dev-tools/bundles/deployment-modes.md)."
                     },
                     "permissions": {
-                      "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                      "description": "The permissions for deploying and running the bundle in the target.",
+                      "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
+                      "markdownDescription": "The permissions for deploying and running the bundle in the target. See [_](#permission)."
                     },
                     "presets": {
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Presets"
+                      "description": "The deployment presets for the target.",
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Presets",
+                      "markdownDescription": "The deployment presets for the target. See [_](#preset)."
                     },
                     "resources": {
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Resources"
+                      "description": "The resource definitions for the target.",
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Resources",
+                      "markdownDescription": "The resource definitions for the target. See [_](#resources)."
                     },
                     "run_as": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs"
+                      "description": "The identity to use to run the bundle.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs",
+                      "markdownDescription": "The identity to use to run the bundle. See [_](#job_run_as) and [_](/dev-tools/bundles/run_as.md)."
                     },
                     "sync": {
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Sync"
+                      "description": "The local paths to sync to the target workspace when a bundle is run or deployed.",
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Sync",
+                      "markdownDescription": "The local paths to sync to the target workspace when a bundle is run or deployed. See [_](#sync)."
                     },
                     "variables": {
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/variable.TargetVariable"
+                      "description": "The custom variable definitions for the target.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/variable.TargetVariable",
+                      "markdownDescription": "The custom variable definitions for the target. See [_](/dev-tools/bundles/settings.md#variables) and [_](/dev-tools/bundles/variables.md)."
                     },
                     "workspace": {
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Workspace"
+                      "description": "The Databricks workspace for the target. _.",
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Workspace",
+                      "markdownDescription": "The Databricks workspace for the target. [_](#workspace)"
                     }
                   },
                   "additionalProperties": false
@@ -1304,51 +1400,67 @@
                   "type": "object",
                   "properties": {
                     "artifact_path": {
+                      "description": "The artifact path to use within the workspace for both deployments and workflow runs",
                       "$ref": "#/$defs/string"
                     },
                     "auth_type": {
+                      "description": "The authentication type.",
                       "$ref": "#/$defs/string"
                     },
                     "azure_client_id": {
+                      "description": "The Azure client ID",
                       "$ref": "#/$defs/string"
                     },
                     "azure_environment": {
+                      "description": "The Azure environment",
                       "$ref": "#/$defs/string"
                     },
                     "azure_login_app_id": {
+                      "description": "The Azure login app ID",
                       "$ref": "#/$defs/string"
                     },
                     "azure_tenant_id": {
+                      "description": "The Azure tenant ID",
                       "$ref": "#/$defs/string"
                     },
                     "azure_use_msi": {
+                      "description": "Whether to use MSI for Azure",
                       "$ref": "#/$defs/bool"
                     },
                     "azure_workspace_resource_id": {
+                      "description": "The Azure workspace resource ID",
                       "$ref": "#/$defs/string"
                     },
                     "client_id": {
+                      "description": "The client ID for the workspace",
                       "$ref": "#/$defs/string"
                     },
                     "file_path": {
+                      "description": "The file path to use within the workspace for both deployments and workflow runs",
                       "$ref": "#/$defs/string"
                     },
                     "google_service_account": {
+                      "description": "The Google service account name",
                       "$ref": "#/$defs/string"
                     },
                     "host": {
+                      "description": "The Databricks workspace host URL",
                       "$ref": "#/$defs/string"
                     },
                     "profile": {
+                      "description": "The Databricks workspace profile name",
                       "$ref": "#/$defs/string"
                     },
                     "resource_path": {
+                      "description": "The workspace resource path",
                       "$ref": "#/$defs/string"
                     },
                     "root_path": {
+                      "description": "The Databricks workspace root path",
                       "$ref": "#/$defs/string"
                     },
                     "state_path": {
+                      "description": "The workspace state path",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -6161,36 +6273,49 @@
       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Artifact"
     },
     "bundle": {
-      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Bundle"
+      "description": "The attributes of the bundle.",
+      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Bundle",
+      "markdownDescription": "The attributes of the bundle. See [_](/dev-tools/bundles/settings.md#bundle)"
     },
     "experimental": {
+      "description": "Defines attributes for experimental features.",
       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Experimental"
     },
     "include": {
       "$ref": "#/$defs/slice/string"
     },
     "permissions": {
-      "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+      "description": "Defines the permissions to apply to experiments, jobs, pipelines, and models defined in the bundle",
+      "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
+      "markdownDescription": "Defines the permissions to apply to experiments, jobs, pipelines, and models defined in the bundle. See [_](/dev-tools/bundles/settings.md#permissions) and [_](/dev-tools/bundles/permissions.md)."
     },
     "presets": {
-      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Presets"
+      "description": "Defines bundle deployment presets.",
+      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Presets",
+      "markdownDescription": "Defines bundle deployment presets. See [_](/dev-tools/bundles/deployment-modes.md#presets)."
     },
     "resources": {
-      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Resources"
+      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Resources",
+      "markdownDescription": "See [_](/dev-tools/bundles/resources.md)."
     },
     "run_as": {
       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs"
     },
     "sync": {
-      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Sync"
+      "description": "The files and file paths to include or exclude in the bundle.",
+      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Sync",
+      "markdownDescription": "The files and file paths to include or exclude in the bundle. See [_](/dev-tools/bundles/)"
     },
     "targets": {
+      "description": "Defines deployment targets for the bundle.",
       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Target"
     },
     "variables": {
+      "description": "A Map that defines the custom variables for the bundle, where each key is the name of the variable, and the value is a Map that defines the variable.",
       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/variable.Variable"
     },
     "workspace": {
+      "description": "Defines the Databricks workspace for the bundle.",
       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Workspace"
     }
   },
