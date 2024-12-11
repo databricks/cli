@@ -7,12 +7,12 @@ fmt:
 	@gofmt -w $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
 lint: vendor
+	@echo "✓ Linting source code with https://golangci-lint.run/ (with --fix)..."
+	@golangci-lint run --fix ./...
+
+lintcheck: vendor
 	@echo "✓ Linting source code with https://golangci-lint.run/ ..."
 	@golangci-lint run ./...
-
-lintfix: vendor
-	@echo "✓ Linting source code with 'golangci-lint run --fix' ..."
-	@golangci-lint run --fix ./...
 
 test: lint testonly
 
@@ -39,4 +39,4 @@ vendor:
 integration:
 	gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./internal/..." -- -run "TestAcc.*" -parallel 4 -timeout=2h
 
-.PHONY: fmt lint lintfix test testonly coverage build snapshot vendor integration
+.PHONY: fmt lint lintcheck test testonly coverage build snapshot vendor integration
