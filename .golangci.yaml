@@ -10,6 +10,11 @@ linters:
     - unused
     - gofmt
 linters-settings:
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment
+      - shadow
   gofmt:
     rewrite-rules:
       - pattern: 'a[b:len(a)]'

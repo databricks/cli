@@ -203,7 +203,7 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 		logDebug(r)
 		logProgress(r)
 	}).GetWithTimeout(jobRunTimeout)
-	if err != nil && runId != nil {
+	if err != nil {
 		r.logFailedTasks(ctx, *runId)
 	}
 	if err != nil {
