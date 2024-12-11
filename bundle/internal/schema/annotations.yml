@@ -19,7 +19,9 @@ github.com/databricks/cli/bundle/config.Artifact:
       The location where the built artifact will be saved.
   "type":
     "description": |-
-      The type of the artifact. Valid values are wheel or jar.
+      The type of the artifact.
+    "markdown_description": |-
+      The type of the artifact. Valid values are `wheel` or `jar`
 github.com/databricks/cli/bundle/config.ArtifactFile:
   "source":
     "description": |-
@@ -259,9 +261,9 @@ github.com/databricks/cli/bundle/config.Target:
       The Git version control settings for the target. See [_](#git).
   "mode":
     "description": |-
-      The deployment mode for the target. Valid values are development or production.
+      The deployment mode for the target.
     "markdown_description": |-
-      The deployment mode for the target. Valid values are development or production. See [_](/dev-tools/bundles/deployment-modes.md).
+      The deployment mode for the target. Valid values are `development` or `production`. See [_](/dev-tools/bundles/deployment-modes.md).
   "permissions":
     "description": |-
       The permissions for deploying and running the bundle in the target.
@@ -294,7 +296,7 @@ github.com/databricks/cli/bundle/config.Target:
       The custom variable definitions for the target. See [_](/dev-tools/bundles/settings.md#variables) and [_](/dev-tools/bundles/variables.md).
   "workspace":
     "description": |-
-      The Databricks workspace for the target. _.
+      The Databricks workspace for the target.
     "markdown_description": |-
       The Databricks workspace for the target. [_](#workspace)
 github.com/databricks/cli/bundle/config.Workspace:
@@ -409,7 +411,7 @@ github.com/databricks/cli/bundle/config/variable.TargetVariable:
       PLACEHOLDER
   "description":
     "description": |-
-      The description of the variable
+      The description of the variable.
   "lookup":
     "description": |-
       The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
@@ -418,7 +420,7 @@ github.com/databricks/cli/bundle/config/variable.TargetVariable:
       The type of the variable.
   "markdown_description":
     "description": |-
-      The type of the variable. Valid values are `complex`.
+      The type of the variable.
 github.com/databricks/cli/bundle/config/variable.Variable:
   "default":
     "description": |-
@@ -429,9 +431,11 @@ github.com/databricks/cli/bundle/config/variable.Variable:
   "lookup":
     "description": |-
       The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
+    "markdown_description": |-
+      The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID."
   "type":
     "description": |-
-      The type of the variable. Valid values are complex.
+      The type of the variable.
 github.com/databricks/databricks-sdk-go/service/serving.Ai21LabsConfig:
   "ai21labs_api_key":
     "description": |-
