@@ -901,7 +901,7 @@
                         "$ref": "#/$defs/interface"
                       },
                       "description": {
-                        "description": "The description of the variable",
+                        "description": "The description of the variable.",
                         "$ref": "#/$defs/string"
                       },
                       "lookup": {
@@ -930,10 +930,11 @@
                   },
                   "lookup": {
                     "description": "The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.",
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.Lookup"
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.Lookup",
+                    "markdownDescription": "The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID.\""
                   },
                   "type": {
-                    "description": "The type of the variable. Valid values are complex.",
+                    "description": "The type of the variable.",
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.VariableType"
                   }
                 },
@@ -966,8 +967,9 @@
                       "$ref": "#/$defs/string"
                     },
                     "type": {
-                      "description": "The type of the artifact. Valid values are wheel or jar.",
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.ArtifactType"
+                      "description": "The type of the artifact.",
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.ArtifactType",
+                      "markdownDescription": "The type of the artifact. Valid values are `wheel` or `jar`"
                     }
                   },
                   "additionalProperties": false,
@@ -1346,9 +1348,9 @@
                       "markdownDescription": "The Git version control settings for the target. See [git](https://docs.databricks.com/dev-tools/bundles/reference.html#git)."
                     },
                     "mode": {
-                      "description": "The deployment mode for the target. Valid values are development or production.",
+                      "description": "The deployment mode for the target.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Mode",
-                      "markdownDescription": "The deployment mode for the target. Valid values are development or production. See [link](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html)."
+                      "markdownDescription": "The deployment mode for the target. Valid values are `development` or `production`. See [link](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html)."
                     },
                     "permissions": {
                       "description": "The permissions for deploying and running the bundle in the target.",
@@ -1381,7 +1383,7 @@
                       "markdownDescription": "The custom variable definitions for the target. See [variables](https://docs.databricks.com/dev-tools/bundles/settings.html#variables) and [link](https://docs.databricks.com/dev-tools/bundles/variables.html)."
                     },
                     "workspace": {
-                      "description": "The Databricks workspace for the target. _.",
+                      "description": "The Databricks workspace for the target.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Workspace",
                       "markdownDescription": "The Databricks workspace for the target. [workspace](https://docs.databricks.com/dev-tools/bundles/reference.html#workspace)"
                     }
