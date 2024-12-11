@@ -18,7 +18,7 @@ resources:
           - run
         env:
           - name: JOB_ID
-            valueFrom: "app-job"
+            value: ${resources.jobs.foo.id}
 
       resources:
         - name: "app-job"
