@@ -39,4 +39,8 @@ vendor:
 integration:
 	gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./internal/..." -- -run "TestAcc.*" -parallel 4 -timeout=2h
 
-.PHONY: fmt lint lintfix test testonly coverage build snapshot vendor integration
+schema:
+	@echo "✓ Generating json-schema ..."
+	@go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json
+
+.PHONY: fmt lint lintfix test testonly coverage build snapshot vendor integration schema
