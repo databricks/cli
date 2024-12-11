@@ -18,8 +18,9 @@ linters-settings:
         replacement: 'any'
   errcheck:
     exclude-functions:
-      - (*github.com/spf13/pflag.FlagSet).MarkHidden
-      - (*github.com/spf13/pflag.FlagSet).MarkDeprecated
       - (*github.com/spf13/cobra.Command).RegisterFlagCompletionFunc
+      - (*github.com/spf13/cobra.Command).MarkFlagRequired
+      - (*github.com/spf13/pflag.FlagSet).MarkDeprecated
+      - (*github.com/spf13/pflag.FlagSet).MarkHidden
 issues:
   exclude-dirs-use-default: false  # recommended by docs https://golangci-lint.run/usage/false-positives/
