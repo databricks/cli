@@ -48,6 +48,10 @@ var levelsMap = map[string](map[string]string){
 		CAN_MANAGE: "CAN_MANAGE",
 		CAN_VIEW:   "CAN_READ",
 	},
+	"apps": {
+		CAN_MANAGE: "CAN_MANAGE",
+		CAN_VIEW:   "CAN_USE",
+	},
 }
 
 type bundlePermissions struct{}

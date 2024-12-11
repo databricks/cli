@@ -1,0 +1,24 @@
+{
+    "properties": {
+        "unique_id": {
+            "type": "string",
+            "description": "Unique ID for job name"
+        },
+        "app_id": {
+            "type": "string",
+            "description": "Unique ID for app name"
+        },
+        "spark_version": {
+            "type": "string",
+            "description": "Spark version used for job cluster"
+        },
+        "node_type_id": {
+            "type": "string",
+            "description": "Node type id for job cluster"
+        },
+        "instance_pool_id": {
+            "type": "string",
+            "description": "Instance pool id for job cluster"
+        }
+    }
+}
