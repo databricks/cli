@@ -141,7 +141,10 @@ func render(ctx context.Context, cmd *cobra.Command, status *authStatus, templat
 		if err != nil {
 			return err
 		}
-		cmd.OutOrStdout().Write(buf)
+		_, err = cmd.OutOrStdout().Write(buf)
+		if err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("unknown output type %s", root.OutputType(cmd))
 	}

@@ -18,8 +18,8 @@ import (
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/folders"
 	"github.com/databricks/cli/libs/template"
-	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/require"
 )
@@ -144,15 +144,14 @@ func getBundleRemoteRootPath(w *databricks.WorkspaceClient, t *testing.T, unique
 }
 
 func blackBoxRun(t *testing.T, root string, args ...string) (stdout string, stderr string) {
-	cwd := vfs.MustNew(".")
-	gitRoot, err := vfs.FindLeafInTree(cwd, ".git")
+	gitRoot, err := folders.FindDirWithLeaf(".", ".git")
 	require.NoError(t, err)
 
 	t.Setenv("BUNDLE_ROOT", root)
 
 	// Create the command
 	cmd := exec.Command("go", append([]string{"run", "main.go"}, args...)...)
-	cmd.Dir = gitRoot.Native()
+	cmd.Dir = gitRoot
 
 	// Create buffers to capture output
 	var outBuffer, errBuffer bytes.Buffer
