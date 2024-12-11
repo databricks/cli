@@ -2,6 +2,7 @@ package bundle_test
 
 import (
 	"fmt"
+	"io"
 	"testing"
 
 	"github.com/databricks/cli/internal"
@@ -47,6 +48,29 @@ func TestAccDeployBundleWithApp(t *testing.T) {
 	app, err := wt.W.Apps.Get(ctx, apps.GetAppRequest{Name: appId})
 	require.NoError(t, err)
 	require.NotNil(t, app)
+
+	// Check app config
+	currentUser, err := wt.W.CurrentUser.Me(ctx)
+	require.NoError(t, err)
+
+	pathToAppYml := fmt.Sprintf("/Workspace/Users/%s/.bundle/%s/files/app/app.yml", currentUser.UserName, uniqueId)
+	reader, err := wt.W.Workspace.Download(ctx, pathToAppYml)
+	require.NoError(t, err)
+
+	data, err := io.ReadAll(reader)
+	require.NoError(t, err)
+
+	job, err := wt.W.Jobs.GetBySettingsName(ctx, fmt.Sprintf("test-job-with-cluster-%s", uniqueId))
+
+	content := string(data)
+	require.Contains(t, content, fmt.Sprintf(`command:
+  - flask
+  - --app
+  - app
+  - run
+env:
+  - name: JOB_ID
+    value: "%d"`, job.JobId))
 
 	// Try to run the app
 	_, out, err := runResourceWithStderr(t, ctx, root, "test_app")
