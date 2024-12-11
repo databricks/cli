@@ -138,7 +138,7 @@ func newEnvCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		cmd.OutOrStdout().Write(raw)
+		_, _ = cmd.OutOrStdout().Write(raw)
 		return nil
 	}
 
