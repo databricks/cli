@@ -190,9 +190,6 @@ func (e *Entrypoint) getLoginConfig(cmd *cobra.Command) (*loginConfig, *config.C
 	if isNoLoginConfig && !e.IsBundleAware {
 		return nil, nil, ErrNoLoginConfig
 	}
-	if !isNoLoginConfig && err != nil {
-		return nil, nil, fmt.Errorf("load: %w", err)
-	}
 	if e.IsAccountLevel {
 		log.Debugf(ctx, "Using account-level login profile: %s", lc.AccountProfile)
 		cfg, err := e.envAwareConfigWithProfile(ctx, lc.AccountProfile)

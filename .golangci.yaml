@@ -4,12 +4,17 @@ linters:
     - bodyclose
     - errcheck
     - gosimple
-    #- govet
+    - govet
     - ineffassign
     - staticcheck
     - unused
     - gofmt
 linters-settings:
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment
+      - shadow
   gofmt:
     rewrite-rules:
       - pattern: 'a[b:len(a)]'

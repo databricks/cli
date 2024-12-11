@@ -15,7 +15,8 @@ import (
 )
 
 func TestEmptyHttpRequest(t *testing.T) {
-	ctx, _ := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	req := emptyHttpRequest(ctx)
 	assert.Equal(t, req.Context(), ctx)
 }
