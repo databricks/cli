@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
@@ -173,6 +174,7 @@ func TestOverrideComputeModeProduction(t *testing.T) {
 	diags := bundle.Apply(context.Background(), b, m)
 	require.Len(t, diags, 1)
 	assert.Equal(t, "Setting a cluster override for a target that uses 'mode: production' is not recommended", diags[0].Summary)
+	assert.Equal(t, diag.Warning, diags[0].Severity)
 	assert.Equal(t, "newClusterID", b.Config.Resources.Jobs["job1"].Tasks[0].ExistingClusterId)
 }
 
