@@ -30,6 +30,16 @@ type Diagnostic struct {
 	ID ID
 }
 
+// Error creates a new error diagnostic.
+func Error_(msg string) Diagnostics {
+	return []Diagnostic{
+		{
+			Severity: Error,
+			Summary:  msg,
+		},
+	}
+}
+
 // Errorf creates a new error diagnostic.
 func Errorf(format string, args ...any) Diagnostics {
 	return []Diagnostic{

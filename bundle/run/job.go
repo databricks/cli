@@ -143,7 +143,7 @@ func logProgressCallback(ctx context.Context, progressLogger *cmdio.Logger) func
 		progressLogger.Log(event)
 
 		// log progress events in using the default logger
-		log.Infof(ctx, "%s", event.String())
+		log.Info(ctx, event.String())
 	}
 }
 

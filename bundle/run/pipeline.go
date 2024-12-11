@@ -132,7 +132,7 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 		}
 		for _, event := range events {
 			progressLogger.Log(&event)
-			log.Infof(ctx, "%s", event.String())
+			log.Info(ctx, event.String())
 		}
 
 		update, err := w.Pipelines.GetUpdateByPipelineIdAndUpdateId(ctx, pipelineID, updateID)
