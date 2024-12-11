@@ -28,7 +28,7 @@ func (m *expandWorkspaceRoot) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	}
 
 	currentUser := b.Config.Workspace.CurrentUser
-	if currentUser == nil || currentUser.UserName == "" {
+	if currentUser == nil || currentUser.User == nil || currentUser.UserName == "" {
 		return diag.Errorf("unable to expand workspace root: current user not set")
 	}
 
