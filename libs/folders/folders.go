@@ -9,6 +9,10 @@ import (
 // FindDirWithLeaf returns the first directory that holds `leaf`,
 // traversing up to the root of the filesystem, starting at `dir`.
 func FindDirWithLeaf(dir string, leaf string) (string, error) {
+	dir, err := filepath.Abs(dir)
+	if err != nil {
+		return "", err
+	}
 	for {
 		_, err := os.Stat(filepath.Join(dir, leaf))
 
