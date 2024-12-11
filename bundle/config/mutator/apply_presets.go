@@ -122,6 +122,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if t.TriggerPauseStatus == config.Paused {
 			p.Continuous = false
 		}
+		// TODO: add recommendation when catalog is already set?
 		if t.Catalog != "" && p.Catalog == "" && p.Catalog != "hive_metastore" {
 			p.Catalog = t.Catalog
 		}
