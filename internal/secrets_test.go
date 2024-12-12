@@ -68,7 +68,7 @@ func TestAccSecretsPutSecretStringValue(tt *testing.T) {
 	key := "test-key"
 	value := "test-value\nwith-newlines\n"
 
-	stdout, stderr := RequireSuccessfulRun(t.T, "secrets", "put-secret", scope, key, "--string-value", value)
+	stdout, stderr := RequireSuccessfulRun(t, "secrets", "put-secret", scope, key, "--string-value", value)
 	assert.Empty(t, stdout)
 	assert.Empty(t, stderr)
 
@@ -82,7 +82,7 @@ func TestAccSecretsPutSecretBytesValue(tt *testing.T) {
 	key := "test-key"
 	value := []byte{0x00, 0x01, 0x02, 0x03}
 
-	stdout, stderr := RequireSuccessfulRun(t.T, "secrets", "put-secret", scope, key, "--bytes-value", string(value))
+	stdout, stderr := RequireSuccessfulRun(t, "secrets", "put-secret", scope, key, "--bytes-value", string(value))
 	assert.Empty(t, stdout)
 	assert.Empty(t, stderr)
 

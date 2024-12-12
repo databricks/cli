@@ -62,8 +62,8 @@ func assertTargetDir(t *testing.T, ctx context.Context, f filer.Filer) {
 
 type cpTest struct {
 	name        string
-	setupSource func(*testing.T) (filer.Filer, string)
-	setupTarget func(*testing.T) (filer.Filer, string)
+	setupSource func(testutil.TestingT) (filer.Filer, string)
+	setupTarget func(testutil.TestingT) (filer.Filer, string)
 }
 
 func copyTests() []cpTest {

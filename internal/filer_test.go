@@ -122,7 +122,7 @@ func TestAccFilerRecursiveDelete(t *testing.T) {
 
 	for _, testCase := range []struct {
 		name string
-		f    func(t *testing.T) (filer.Filer, string)
+		f    func(t testutil.TestingT) (filer.Filer, string)
 	}{
 		{"local", setupLocalFiler},
 		{"workspace files", setupWsfsFiler},
@@ -233,7 +233,7 @@ func TestAccFilerReadWrite(t *testing.T) {
 
 	for _, testCase := range []struct {
 		name string
-		f    func(t *testing.T) (filer.Filer, string)
+		f    func(t testutil.TestingT) (filer.Filer, string)
 	}{
 		{"local", setupLocalFiler},
 		{"workspace files", setupWsfsFiler},
@@ -342,7 +342,7 @@ func TestAccFilerReadDir(t *testing.T) {
 
 	for _, testCase := range []struct {
 		name string
-		f    func(t *testing.T) (filer.Filer, string)
+		f    func(t testutil.TestingT) (filer.Filer, string)
 	}{
 		{"local", setupLocalFiler},
 		{"workspace files", setupWsfsFiler},

@@ -57,7 +57,7 @@ func TestAccPythonWheelTaskDeployAndRunWithWrapper(t *testing.T) {
 func TestAccPythonWheelTaskDeployAndRunOnInteractiveCluster(t *testing.T) {
 	_, wt := acc.WorkspaceTest(t)
 
-	if testutil.IsAWSCloud(wt.T) {
+	if testutil.IsAWSCloud(wt) {
 		t.Skip("Skipping test for AWS cloud because it is not permitted to create clusters")
 	}
 

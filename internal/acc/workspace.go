@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/databricks-sdk-go"
@@ -15,7 +14,7 @@ import (
 )
 
 type WorkspaceT struct {
-	*testing.T
+	testutil.TestingT
 
 	W *databricks.WorkspaceClient
 
@@ -24,7 +23,7 @@ type WorkspaceT struct {
 	exec *compute.CommandExecutorV2
 }
 
-func WorkspaceTest(t *testing.T) (context.Context, *WorkspaceT) {
+func WorkspaceTest(t testutil.TestingT) (context.Context, *WorkspaceT) {
 	loadDebugEnvIfRunFromIDE(t, "workspace")
 
 	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
@@ -33,7 +32,7 @@ func WorkspaceTest(t *testing.T) (context.Context, *WorkspaceT) {
 	require.NoError(t, err)
 
 	wt := &WorkspaceT{
-		T: t,
+		TestingT: t,
 
 		W: w,
 
@@ -44,7 +43,7 @@ func WorkspaceTest(t *testing.T) (context.Context, *WorkspaceT) {
 }
 
 // Run the workspace test only on UC workspaces.
-func UcWorkspaceTest(t *testing.T) (context.Context, *WorkspaceT) {
+func UcWorkspaceTest(t testutil.TestingT) (context.Context, *WorkspaceT) {
 	loadDebugEnvIfRunFromIDE(t, "workspace")
 
 	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
@@ -60,7 +59,7 @@ func UcWorkspaceTest(t *testing.T) (context.Context, *WorkspaceT) {
 	require.NoError(t, err)
 
 	wt := &WorkspaceT{
-		T: t,
+		TestingT: t,
 
 		W: w,
 
@@ -71,7 +70,7 @@ func UcWorkspaceTest(t *testing.T) (context.Context, *WorkspaceT) {
 }
 
 func (t *WorkspaceT) TestClusterID() string {
-	clusterID := testutil.GetEnvOrSkipTest(t.T, "TEST_BRICKS_CLUSTER_ID")
+	clusterID := testutil.GetEnvOrSkipTest(t, "TEST_BRICKS_CLUSTER_ID")
 	err := t.W.Clusters.EnsureClusterIsRunning(t.ctx, clusterID)
 	require.NoError(t, err)
 	return clusterID

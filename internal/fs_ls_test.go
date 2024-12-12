@@ -18,7 +18,7 @@ import (
 
 type fsTest struct {
 	name       string
-	setupFiler func(t *testing.T) (filer.Filer, string)
+	setupFiler func(t testutil.TestingT) (filer.Filer, string)
 }
 
 var fsTests = []fsTest{
