@@ -165,7 +165,7 @@ func TestAccLock(t *testing.T) {
 	assert.True(t, lockers[indexOfAnInactiveLocker].Active)
 }
 
-func setupLockerTest(ctx context.Context, t *testing.T) (*lockpkg.Locker, filer.Filer) {
+func setupLockerTest(t *testing.T) (context.Context, *lockpkg.Locker, filer.Filer) {
 	ctx, wt := acc.WorkspaceTest(t)
 	w := wt.W
 
@@ -178,12 +178,11 @@ func setupLockerTest(ctx context.Context, t *testing.T) (*lockpkg.Locker, filer.
 	locker, err := lockpkg.CreateLocker("redfoo@databricks.com", tmpDir, w)
 	require.NoError(t, err)
 
-	return locker, f
+	return ctx, locker, f
 }
 
 func TestAccLockUnlockWithoutAllowsLockFileNotExist(t *testing.T) {
-	ctx := context.Background()
-	locker, f := setupLockerTest(ctx, t)
+	ctx, locker, f := setupLockerTest(t)
 	var err error
 
 	// Acquire lock on tmp directory
@@ -204,8 +203,7 @@ func TestAccLockUnlockWithoutAllowsLockFileNotExist(t *testing.T) {
 }
 
 func TestAccLockUnlockWithAllowsLockFileNotExist(t *testing.T) {
-	ctx := context.Background()
-	locker, f := setupLockerTest(ctx, t)
+	ctx, locker, f := setupLockerTest(t)
 	var err error
 
 	// Acquire lock on tmp directory
