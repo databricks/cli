@@ -32,14 +32,14 @@ func TestAccFilesAreSyncedCorrectlyWhenNoSnapshot(t *testing.T) {
 	t.Setenv("BUNDLE_ROOT", bundleRoot)
 
 	// Add some test file to the bundle
-	err = os.WriteFile(filepath.Join(bundleRoot, "test.py"), []byte("print('Hello, World!')"), 0644)
+	err = os.WriteFile(filepath.Join(bundleRoot, "test.py"), []byte("print('Hello, World!')"), 0o644)
 	require.NoError(t, err)
 
-	err = os.WriteFile(filepath.Join(bundleRoot, "test_to_modify.py"), []byte("print('Hello, World!')"), 0644)
+	err = os.WriteFile(filepath.Join(bundleRoot, "test_to_modify.py"), []byte("print('Hello, World!')"), 0o644)
 	require.NoError(t, err)
 
 	// Add notebook to the bundle
-	err = os.WriteFile(filepath.Join(bundleRoot, "notebook.py"), []byte("# Databricks notebook source\nHello, World!"), 0644)
+	err = os.WriteFile(filepath.Join(bundleRoot, "notebook.py"), []byte("# Databricks notebook source\nHello, World!"), 0o644)
 	require.NoError(t, err)
 
 	err = deployBundle(t, ctx, bundleRoot)
@@ -79,7 +79,7 @@ func TestAccFilesAreSyncedCorrectlyWhenNoSnapshot(t *testing.T) {
 	require.NoError(t, err)
 
 	// Modify the content of another file
-	err = os.WriteFile(filepath.Join(bundleRoot, "test_to_modify.py"), []byte("print('Modified!')"), 0644)
+	err = os.WriteFile(filepath.Join(bundleRoot, "test_to_modify.py"), []byte("print('Modified!')"), 0o644)
 	require.NoError(t, err)
 
 	err = deployBundle(t, ctx, bundleRoot)

@@ -94,7 +94,7 @@ func (m *Mapping) GetByString(skey string) (Value, bool) {
 // If the key already exists, the value is updated.
 // If the key does not exist, a new key-value pair is added.
 // The key must be a string, otherwise an error is returned.
-func (m *Mapping) Set(key Value, value Value) error {
+func (m *Mapping) Set(key, value Value) error {
 	skey, ok := key.AsString()
 	if !ok {
 		return fmt.Errorf("key must be a string, got %s", key.Kind())

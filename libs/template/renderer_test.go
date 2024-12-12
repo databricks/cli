@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func assertFileContent(t *testing.T, path string, content string) {
+func assertFileContent(t *testing.T, path, content string) {
 	b, err := os.ReadFile(path)
 	require.NoError(t, err)
 	assert.Equal(t, content, string(b))
@@ -39,7 +39,7 @@ func assertFilePermissions(t *testing.T, path string, perm fs.FileMode) {
 	assert.Equal(t, perm, info.Mode().Perm())
 }
 
-func assertBuiltinTemplateValid(t *testing.T, template string, settings map[string]any, target string, isServicePrincipal bool, build bool, tempDir string) {
+func assertBuiltinTemplateValid(t *testing.T, template string, settings map[string]any, target string, isServicePrincipal, build bool, tempDir string) {
 	ctx := context.Background()
 
 	templateFS, err := fs.Sub(builtinTemplates, path.Join("templates", template))
@@ -200,8 +200,7 @@ func TestRendererWithAssociatedTemplateInLibrary(t *testing.T) {
 }
 
 func TestRendererExecuteTemplate(t *testing.T) {
-	templateText :=
-		`"{{.count}} items are made of {{.Material}}".
+	templateText := `"{{.count}} items are made of {{.Material}}".
 {{if eq .Animal "sheep" }}
 Sheep wool is the best!
 {{else}}
@@ -256,7 +255,6 @@ func TestRendererExecuteTemplateWithUnknownProperty(t *testing.T) {
 }
 
 func TestRendererIsSkipped(t *testing.T) {
-
 	skipPatterns := []string{"a*", "*yz", "def", "a/b/*"}
 
 	// skipped paths
@@ -319,22 +317,22 @@ func TestRendererPersistToDisk(t *testing.T) {
 		skipPatterns: []string{"a/b/c", "mn*"},
 		files: []file{
 			&inMemoryFile{
-				perm:    0444,
+				perm:    0o444,
 				relPath: "a/b/c",
 				content: nil,
 			},
 			&inMemoryFile{
-				perm:    0444,
+				perm:    0o444,
 				relPath: "mno",
 				content: nil,
 			},
 			&inMemoryFile{
-				perm:    0444,
+				perm:    0o444,
 				relPath: "a/b/d",
 				content: []byte("123"),
 			},
 			&inMemoryFile{
-				perm:    0444,
+				perm:    0o444,
 				relPath: "mmnn",
 				content: []byte("456"),
 			},
@@ -350,9 +348,9 @@ func TestRendererPersistToDisk(t *testing.T) {
 	assert.NoFileExists(t, filepath.Join(tmpDir, "mno"))
 
 	assertFileContent(t, filepath.Join(tmpDir, "a", "b", "d"), "123")
-	assertFilePermissions(t, filepath.Join(tmpDir, "a", "b", "d"), 0444)
+	assertFilePermissions(t, filepath.Join(tmpDir, "a", "b", "d"), 0o444)
 	assertFileContent(t, filepath.Join(tmpDir, "mmnn"), "456")
-	assertFilePermissions(t, filepath.Join(tmpDir, "mmnn"), 0444)
+	assertFilePermissions(t, filepath.Join(tmpDir, "mmnn"), 0o444)
 }
 
 func TestRendererWalk(t *testing.T) {
@@ -520,8 +518,8 @@ func TestRendererReadsPermissionsBits(t *testing.T) {
 	}
 
 	assert.Len(t, r.files, 2)
-	assert.Equal(t, getPermissions(r, "script.sh"), fs.FileMode(0755))
-	assert.Equal(t, getPermissions(r, "not-a-script"), fs.FileMode(0644))
+	assert.Equal(t, getPermissions(r, "script.sh"), fs.FileMode(0o755))
+	assert.Equal(t, getPermissions(r, "not-a-script"), fs.FileMode(0o644))
 }
 
 func TestRendererErrorOnConflictingFile(t *testing.T) {
@@ -537,7 +535,7 @@ func TestRendererErrorOnConflictingFile(t *testing.T) {
 		skipPatterns: []string{},
 		files: []file{
 			&inMemoryFile{
-				perm:    0444,
+				perm:    0o444,
 				relPath: "a",
 				content: []byte("123"),
 			},
@@ -563,7 +561,7 @@ func TestRendererNoErrorOnConflictingFileIfSkipped(t *testing.T) {
 		skipPatterns: []string{"a"},
 		files: []file{
 			&inMemoryFile{
-				perm:    0444,
+				perm:    0o444,
 				relPath: "a",
 				content: []byte("123"),
 			},

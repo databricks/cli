@@ -58,7 +58,7 @@ func TestAccBundleInitOnMlopsStacks(t *testing.T) {
 	}
 	b, err := json.Marshal(initConfig)
 	require.NoError(t, err)
-	err = os.WriteFile(filepath.Join(tmpDir1, "config.json"), b, 0644)
+	err = os.WriteFile(filepath.Join(tmpDir1, "config.json"), b, 0o644)
 	require.NoError(t, err)
 
 	// Run bundle init
@@ -151,11 +151,11 @@ func TestAccBundleInitHelpers(t *testing.T) {
 		tmpDir := t.TempDir()
 		tmpDir2 := t.TempDir()
 
-		err := os.Mkdir(filepath.Join(tmpDir, "template"), 0755)
+		err := os.Mkdir(filepath.Join(tmpDir, "template"), 0o755)
 		require.NoError(t, err)
-		err = os.WriteFile(filepath.Join(tmpDir, "template", "foo.txt.tmpl"), []byte(test.funcName), 0644)
+		err = os.WriteFile(filepath.Join(tmpDir, "template", "foo.txt.tmpl"), []byte(test.funcName), 0o644)
 		require.NoError(t, err)
-		err = os.WriteFile(filepath.Join(tmpDir, "databricks_template_schema.json"), []byte("{}"), 0644)
+		err = os.WriteFile(filepath.Join(tmpDir, "databricks_template_schema.json"), []byte("{}"), 0o644)
 		require.NoError(t, err)
 
 		// Run bundle init.

@@ -84,7 +84,7 @@ func TestAccountClientOrPrompt(t *testing.T) {
 			account_id = 1112
 			token = foobar
 			`),
-		0755)
+		0o755)
 	require.NoError(t, err)
 	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
 	t.Setenv("PATH", "/nothing")
@@ -150,7 +150,7 @@ func TestWorkspaceClientOrPrompt(t *testing.T) {
 			host = https://adb-1112.12.azuredatabricks.net/
 			token = foobar
 			`),
-		0755)
+		0o755)
 	require.NoError(t, err)
 	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
 	t.Setenv("PATH", "/nothing")
@@ -204,7 +204,7 @@ func TestMustAccountClientWorksWithDatabricksCfg(t *testing.T) {
 			account_id = 1111
 			token = foobar
 			`),
-		0755)
+		0o755)
 	require.NoError(t, err)
 
 	cmd := New(context.Background())
@@ -251,7 +251,7 @@ func TestMustAnyClientCanCreateWorkspaceClient(t *testing.T) {
 			host = https://adb-1111.11.azuredatabricks.net/
 			token = foobar
 			`),
-		0755)
+		0o755)
 	require.NoError(t, err)
 
 	ctx, tt := cmdio.SetupTest(context.Background())
@@ -280,7 +280,7 @@ func TestMustAnyClientCanCreateAccountClient(t *testing.T) {
 			account_id = 1111
 			token = foobar
 			`),
-		0755)
+		0o755)
 	require.NoError(t, err)
 
 	ctx, tt := cmdio.SetupTest(context.Background())
@@ -304,7 +304,7 @@ func TestMustAnyClientWithEmptyDatabricksCfg(t *testing.T) {
 	err := os.WriteFile(
 		configFile,
 		[]byte(""), // empty file
-		0755)
+		0o755)
 	require.NoError(t, err)
 
 	ctx, tt := cmdio.SetupTest(context.Background())

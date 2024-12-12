@@ -13,7 +13,7 @@ import (
 )
 
 func TestConvertGrants(t *testing.T) {
-	var src = resources.RegisteredModel{
+	src := resources.RegisteredModel{
 		Grants: []resources.Grant{
 			{
 				Privileges: []string{"EXECUTE", "FOO"},
@@ -45,7 +45,7 @@ func TestConvertGrants(t *testing.T) {
 }
 
 func TestConvertGrantsNil(t *testing.T) {
-	var src = resources.RegisteredModel{
+	src := resources.RegisteredModel{
 		Grants: nil,
 	}
 
@@ -58,7 +58,7 @@ func TestConvertGrantsNil(t *testing.T) {
 }
 
 func TestConvertGrantsEmpty(t *testing.T) {
-	var src = resources.RegisteredModel{
+	src := resources.RegisteredModel{
 		Grants: []resources.Grant{},
 	}
 

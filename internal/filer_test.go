@@ -22,7 +22,7 @@ type filerTest struct {
 	filer.Filer
 }
 
-func (f filerTest) assertContents(ctx context.Context, name string, contents string) {
+func (f filerTest) assertContents(ctx context.Context, name, contents string) {
 	reader, err := f.Read(ctx, name)
 	if !assert.NoError(f, err) {
 		return
@@ -39,7 +39,7 @@ func (f filerTest) assertContents(ctx context.Context, name string, contents str
 	assert.Equal(f, contents, body.String())
 }
 
-func (f filerTest) assertContentsJupyter(ctx context.Context, name string, language string) {
+func (f filerTest) assertContentsJupyter(ctx context.Context, name, language string) {
 	reader, err := f.Read(ctx, name)
 	if !assert.NoError(f, err) {
 		return
@@ -468,7 +468,6 @@ func TestAccFilerWorkspaceNotebook(t *testing.T) {
 			filerTest{t, f}.assertContents(ctx, tc.nameWithoutExt, tc.expected2)
 		})
 	}
-
 }
 
 func TestAccFilerWorkspaceFilesExtensionsReadDir(t *testing.T) {

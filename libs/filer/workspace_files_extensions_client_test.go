@@ -17,8 +17,9 @@ type mockApiClient struct {
 }
 
 func (m *mockApiClient) Do(ctx context.Context, method, path string,
-	headers map[string]string, request any, response any,
-	visitors ...func(*http.Request) error) error {
+	headers map[string]string, request, response any,
+	visitors ...func(*http.Request) error,
+) error {
 	args := m.Called(ctx, method, path, headers, request, response, visitors)
 
 	// Set the http response from a value provided in the mock call.

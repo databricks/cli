@@ -484,7 +484,7 @@ func createVisitor(opts visitorOpts) (*visitorState, OverrideVisitor) {
 	s := visitorState{}
 
 	return &s, OverrideVisitor{
-		VisitUpdate: func(valuePath dyn.Path, left dyn.Value, right dyn.Value) (dyn.Value, error) {
+		VisitUpdate: func(valuePath dyn.Path, left, right dyn.Value) (dyn.Value, error) {
 			s.updated = append(s.updated, valuePath.String())
 
 			if opts.error != nil {

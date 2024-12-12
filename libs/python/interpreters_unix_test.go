@@ -41,7 +41,7 @@ func TestFilteringInterpreters(t *testing.T) {
 	assert.NoError(t, err)
 
 	injectedBinary := filepath.Join(rogueBin, "python8.4")
-	err = os.WriteFile(injectedBinary, raw, 00777)
+	err = os.WriteFile(injectedBinary, raw, 0o0777)
 	assert.NoError(t, err)
 
 	t.Setenv("PATH", "testdata/other-binaries-filtered:"+rogueBin)

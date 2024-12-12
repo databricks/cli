@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func runSparkJarTestCommon(t *testing.T, ctx context.Context, sparkVersion string, artifactPath string) {
+func runSparkJarTestCommon(t *testing.T, ctx context.Context, sparkVersion, artifactPath string) {
 	cloudEnv := internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
 	nodeTypeId := internal.GetNodeTypeId(cloudEnv)
 	tmpDir := t.TempDir()

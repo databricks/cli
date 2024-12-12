@@ -59,7 +59,7 @@ func TestAccGenerateFromExistingPipelineAndDeploy(t *testing.T) {
 
 	// Replace pipeline name
 	generatedYaml = strings.ReplaceAll(generatedYaml, name, internal.RandomName("copy-generated-pipeline-"))
-	err = os.WriteFile(fileName, []byte(generatedYaml), 0644)
+	err = os.WriteFile(fileName, []byte(generatedYaml), 0o644)
 	require.NoError(t, err)
 
 	require.Contains(t, generatedYaml, "libraries:")

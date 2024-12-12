@@ -481,5 +481,4 @@ func TestApplyPresetsSourceLinkedDeployment(t *testing.T) {
 			require.Equal(t, tt.expectedValue, b.Config.Presets.SourceLinkedDeployment)
 		})
 	}
-
 }

@@ -10,8 +10,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 )
 
-type initializeURLs struct {
-}
+type initializeURLs struct{}
 
 // InitializeURLs makes sure the URL field of each resource is configured.
 // NOTE: since this depends on an extra API call, this mutator adds some extra
@@ -39,7 +38,7 @@ func (m *initializeURLs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	return nil
 }
 
-func initializeForWorkspace(b *bundle.Bundle, orgId string, host string) error {
+func initializeForWorkspace(b *bundle.Bundle, orgId, host string) error {
 	baseURL, err := url.Parse(host)
 	if err != nil {
 		return err

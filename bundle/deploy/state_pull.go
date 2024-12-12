@@ -44,7 +44,7 @@ func (s *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 		return diag.FromErr(err)
 	}
 
-	local, err := os.OpenFile(statePath, os.O_CREATE|os.O_RDWR, 0600)
+	local, err := os.OpenFile(statePath, os.O_CREATE|os.O_RDWR, 0o600)
 	if err != nil {
 		return diag.FromErr(err)
 	}

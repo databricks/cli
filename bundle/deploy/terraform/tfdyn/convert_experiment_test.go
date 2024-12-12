@@ -14,7 +14,7 @@ import (
 )
 
 func TestConvertExperiment(t *testing.T) {
-	var src = resources.MlflowExperiment{
+	src := resources.MlflowExperiment{
 		Experiment: &ml.Experiment{
 			Name: "name",
 		},

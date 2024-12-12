@@ -151,7 +151,7 @@ func (l *Logger) AskSelect(question string, choices []string) (string, error) {
 	return ans, nil
 }
 
-func (l *Logger) Ask(question string, defaultVal string) (string, error) {
+func (l *Logger) Ask(question, defaultVal string) (string, error) {
 	if l.Mode == flags.ModeJson {
 		return "", fmt.Errorf("question prompts are not supported in json mode")
 	}
@@ -234,5 +234,4 @@ func (l *Logger) Log(event Event) {
 		// jobs.RunNowAndWait
 		panic("unknown progress logger mode: " + l.Mode.String())
 	}
-
 }

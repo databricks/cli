@@ -47,8 +47,10 @@ type PyDABs struct {
 	Import []string `json:"import,omitempty"`
 }
 
-type Command string
-type ScriptHook string
+type (
+	Command    string
+	ScriptHook string
+)
 
 // These hook names are subject to change and currently experimental
 const (

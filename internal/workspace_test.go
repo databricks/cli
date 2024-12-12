@@ -71,14 +71,14 @@ func setupWorkspaceImportExportTest(t *testing.T) (context.Context, filer.Filer,
 	return ctx, f, tmpdir
 }
 
-func assertLocalFileContents(t *testing.T, path string, content string) {
+func assertLocalFileContents(t *testing.T, path, content string) {
 	require.FileExists(t, path)
 	b, err := os.ReadFile(path)
 	require.NoError(t, err)
 	assert.Contains(t, string(b), content)
 }
 
-func assertFilerFileContents(t *testing.T, ctx context.Context, f filer.Filer, path string, content string) {
+func assertFilerFileContents(t *testing.T, ctx context.Context, f filer.Filer, path, content string) {
 	r, err := f.Read(ctx, path)
 	require.NoError(t, err)
 	b, err := io.ReadAll(r)

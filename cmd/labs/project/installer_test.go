@@ -29,8 +29,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const ownerRWXworldRX = 0o755
-const ownerRW = 0o600
+const (
+	ownerRWXworldRX = 0o755
+	ownerRW         = 0o600
+)
 
 func zipballFromFolder(src string) ([]byte, error) {
 	var buf bytes.Buffer

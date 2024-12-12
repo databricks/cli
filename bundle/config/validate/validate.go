@@ -8,8 +8,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 )
 
-type validate struct {
-}
+type validate struct{}
 
 type location struct {
 	path string

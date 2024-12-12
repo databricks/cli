@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func runPythonWheelTest(t *testing.T, templateName string, sparkVersion string, pythonWheelWrapper bool) {
+func runPythonWheelTest(t *testing.T, templateName, sparkVersion string, pythonWheelWrapper bool) {
 	ctx, _ := acc.WorkspaceTest(t)
 
 	nodeTypeId := internal.GetNodeTypeId(env.Get(ctx, "CLOUD_ENV"))

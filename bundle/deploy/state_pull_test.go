@@ -99,7 +99,7 @@ func testStatePull(t *testing.T, opts statePullOpts) {
 		snapshotPath, err := sync.SnapshotPath(opts)
 		require.NoError(t, err)
 
-		err = os.WriteFile(snapshotPath, []byte("snapshot"), 0644)
+		err = os.WriteFile(snapshotPath, []byte("snapshot"), 0o644)
 		require.NoError(t, err)
 	}
 
@@ -110,7 +110,7 @@ func testStatePull(t *testing.T, opts statePullOpts) {
 		data, err := json.Marshal(opts.localState)
 		require.NoError(t, err)
 
-		err = os.WriteFile(statePath, data, 0644)
+		err = os.WriteFile(statePath, data, 0o644)
 		require.NoError(t, err)
 	}
 

@@ -52,7 +52,8 @@ func (w *workspaceFilesExtensionsClient) getNotebookStatByNameWithExt(ctx contex
 		notebook.ExtensionR,
 		notebook.ExtensionScala,
 		notebook.ExtensionSql,
-		notebook.ExtensionJupyter}, ext) {
+		notebook.ExtensionJupyter,
+	}, ext) {
 		return nil, nil
 	}
 
