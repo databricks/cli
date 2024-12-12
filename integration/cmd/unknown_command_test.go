@@ -1,4 +1,6 @@
-package internal
+//go:build integration
+
+package cmd_integration
 
 import (
 	"testing"

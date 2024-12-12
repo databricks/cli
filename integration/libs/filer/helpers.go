@@ -1,4 +1,4 @@
-package fs_integration
+package filer_integration
 
 import (
 	"errors"

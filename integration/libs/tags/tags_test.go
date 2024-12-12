@@ -1,4 +1,6 @@
-package internal
+//go:build integration
+
+package tags_integration
 
 import (
 	"strings"

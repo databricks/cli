@@ -1,6 +1,6 @@
 //go:build integration
 
-package fs
+package fs_integration
 
 import (
 	"context"

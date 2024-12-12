@@ -1,4 +1,6 @@
-package internal
+//go:build integration
+
+package git_integration
 
 import (
 	"os"
