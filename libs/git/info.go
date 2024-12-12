@@ -72,7 +72,6 @@ func fetchRepositoryInfoAPI(ctx context.Context, path string, w *databricks.Work
 		},
 		&response,
 	)
-
 	if err != nil {
 		return result, err
 	}

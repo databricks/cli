@@ -140,7 +140,7 @@ func (locker *Locker) Lock(ctx context.Context, isForced bool) error {
 		return err
 	}
 
-	var modes = []filer.WriteMode{
+	modes := []filer.WriteMode{
 		// Always create parent directory if it doesn't yet exist.
 		filer.CreateParentDirectories,
 	}

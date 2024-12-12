@@ -39,7 +39,6 @@ func TestAccDeployBundleWithCluster(t *testing.T) {
 		} else {
 			require.Contains(t, []compute.State{compute.StateTerminated, compute.StateTerminating}, cluster.State)
 		}
-
 	})
 
 	err = deployBundle(t, ctx, root)

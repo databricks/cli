@@ -30,10 +30,12 @@ type Entrypoint struct {
 	IsBundleAware         bool `yaml:"is_bundle_aware,omitempty"`
 }
 
-var ErrNoLoginConfig = errors.New("no login configuration found")
-var ErrMissingClusterID = errors.New("missing a cluster compatible with Databricks Connect")
-var ErrMissingWarehouseID = errors.New("missing a SQL warehouse")
-var ErrNotInTTY = errors.New("not in an interactive terminal")
+var (
+	ErrNoLoginConfig      = errors.New("no login configuration found")
+	ErrMissingClusterID   = errors.New("missing a cluster compatible with Databricks Connect")
+	ErrMissingWarehouseID = errors.New("missing a SQL warehouse")
+	ErrNotInTTY           = errors.New("not in an interactive terminal")
+)
 
 func (e *Entrypoint) NeedsCluster() bool {
 	if e.Installer == nil {

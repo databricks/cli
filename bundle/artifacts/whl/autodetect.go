@@ -15,8 +15,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-type detectPkg struct {
-}
+type detectPkg struct{}
 
 func DetectPackage() bundle.Mutator {
 	return &detectPkg{}

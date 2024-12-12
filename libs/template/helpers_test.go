@@ -158,7 +158,6 @@ func TestWorkspaceHost(t *testing.T) {
 	assert.Len(t, r.files, 1)
 	assert.Contains(t, string(r.files[0].(*inMemoryFile).content), "https://myhost.com")
 	assert.Contains(t, string(r.files[0].(*inMemoryFile).content), "i3.xlarge")
-
 }
 
 func TestWorkspaceHostNotConfigured(t *testing.T) {
@@ -178,5 +177,4 @@ func TestWorkspaceHostNotConfigured(t *testing.T) {
 
 	err = r.walk()
 	require.ErrorContains(t, err, "cannot determine target workspace")
-
 }

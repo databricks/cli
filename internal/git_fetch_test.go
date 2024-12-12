@@ -14,8 +14,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const examplesRepoUrl = "https://github.com/databricks/bundle-examples"
-const examplesRepoProvider = "gitHub"
+const (
+	examplesRepoUrl      = "https://github.com/databricks/bundle-examples"
+	examplesRepoProvider = "gitHub"
+)
 
 func assertFullGitInfo(t *testing.T, expectedRoot string, info git.RepositoryInfo) {
 	assert.Equal(t, "main", info.CurrentBranch)
@@ -140,7 +142,7 @@ func TestAccFetchRepositoryInfoDotGit_FromNonGitRepo(t *testing.T) {
 
 	tempDir := t.TempDir()
 	root := filepath.Join(tempDir, "repo")
-	require.NoError(t, os.MkdirAll(filepath.Join(root, "a/b/c"), 0700))
+	require.NoError(t, os.MkdirAll(filepath.Join(root, "a/b/c"), 0o700))
 
 	tests := []string{
 		filepath.Join(root, "a/b/c"),
@@ -163,8 +165,8 @@ func TestAccFetchRepositoryInfoDotGit_FromBrokenGitRepo(t *testing.T) {
 	tempDir := t.TempDir()
 	root := filepath.Join(tempDir, "repo")
 	path := filepath.Join(root, "a/b/c")
-	require.NoError(t, os.MkdirAll(path, 0700))
-	require.NoError(t, os.WriteFile(filepath.Join(root, ".git"), []byte(""), 0000))
+	require.NoError(t, os.MkdirAll(path, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(root, ".git"), []byte(""), 0o000))
 
 	info, err := git.FetchRepositoryInfo(ctx, path, wt.W)
 	assert.NoError(t, err)

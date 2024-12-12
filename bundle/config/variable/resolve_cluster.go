@@ -20,7 +20,6 @@ func (l resolveCluster) Resolve(ctx context.Context, w *databricks.WorkspaceClie
 			ClusterSources: []compute.ClusterSource{compute.ClusterSourceApi, compute.ClusterSourceUi},
 		},
 	})
-
 	if err != nil {
 		return "", err
 	}

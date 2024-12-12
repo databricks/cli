@@ -234,5 +234,4 @@ func (l *Logger) Log(event Event) {
 		// jobs.RunNowAndWait
 		panic("unknown progress logger mode: " + l.Mode.String())
 	}
-
 }

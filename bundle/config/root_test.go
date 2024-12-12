@@ -168,7 +168,6 @@ func TestRootMergeTargetOverridesWithVariables(t *testing.T) {
 		"key1": "value1",
 	}, root.Variables["complex"].Default)
 	assert.Equal(t, "complex var", root.Variables["complex"].Description)
-
 }
 
 func TestIsFullVariableOverrideDef(t *testing.T) {
@@ -252,5 +251,4 @@ func TestIsFullVariableOverrideDef(t *testing.T) {
 	for i, tc := range testCases {
 		assert.Equal(t, tc.expected, isFullVariableOverrideDef(tc.value), "test case %d", i)
 	}
-
 }

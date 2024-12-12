@@ -10,8 +10,7 @@ import (
 	"github.com/databricks/cli/libs/dyn/dynvar"
 )
 
-type interpolateMutator struct {
-}
+type interpolateMutator struct{}
 
 func Interpolate() bundle.Mutator {
 	return &interpolateMutator{}

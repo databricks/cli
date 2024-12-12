@@ -289,7 +289,6 @@ func (r *jobRunner) Cancel(ctx context.Context) error {
 		ActiveOnly: true,
 		JobId:      jobID,
 	})
-
 	if err != nil {
 		return err
 	}

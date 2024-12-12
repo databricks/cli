@@ -23,7 +23,7 @@ func (m *overrideCompute) Name() string {
 
 func overrideJobCompute(j *resources.Job, compute string) {
 	for i := range j.Tasks {
-		var task = &j.Tasks[i]
+		task := &j.Tasks[i]
 
 		if task.ForEachTask != nil {
 			task = &task.ForEachTask.Task

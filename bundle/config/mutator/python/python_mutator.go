@@ -9,11 +9,10 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/databricks/databricks-sdk-go/logger"
 	"github.com/fatih/color"
-
-	"strings"
 
 	"github.com/databricks/cli/libs/python"
 
@@ -94,11 +93,10 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 
 	// mutateDiags is used because Mutate returns 'error' instead of 'diag.Diagnostics'
 	var mutateDiags diag.Diagnostics
-	var mutateDiagsHasError = errors.New("unexpected error")
+	mutateDiagsHasError := errors.New("unexpected error")
 
 	err := b.Config.Mutate(func(leftRoot dyn.Value) (dyn.Value, error) {
 		pythonPath, err := detectExecutable(ctx, experimental.PyDABs.VEnvPath)
-
 		if err != nil {
 			return dyn.InvalidValue, fmt.Errorf("failed to get Python interpreter path: %w", err)
 		}
@@ -141,7 +139,7 @@ func createCacheDir(ctx context.Context) (string, error) {
 		// use 'default' as target name
 		cacheDir := filepath.Join(tempDir, "default", "pydabs")
 
-		err := os.MkdirAll(cacheDir, 0700)
+		err := os.MkdirAll(cacheDir, 0o700)
 		if err != nil {
 			return "", err
 		}
@@ -263,7 +261,7 @@ func writeInputFile(inputPath string, input dyn.Value) error {
 		return fmt.Errorf("failed to marshal input: %w", err)
 	}
 
-	return os.WriteFile(inputPath, rootConfigJson, 0600)
+	return os.WriteFile(inputPath, rootConfigJson, 0o600)
 }
 
 func loadOutputFile(rootPath string, outputPath string) (dyn.Value, diag.Diagnostics) {

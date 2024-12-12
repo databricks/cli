@@ -3,10 +3,9 @@ package log
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"runtime"
 	"time"
-
-	"log/slog"
 
 	sdk "github.com/databricks/databricks-sdk-go/logger"
 )

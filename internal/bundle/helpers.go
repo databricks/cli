@@ -59,7 +59,7 @@ func writeConfigFile(t *testing.T, config map[string]any) (string, error) {
 	filepath := filepath.Join(dir, "config.json")
 	t.Log("Configuration for template: ", string(bytes))
 
-	err = os.WriteFile(filepath, bytes, 0644)
+	err = os.WriteFile(filepath, bytes, 0o644)
 	return filepath, err
 }
 

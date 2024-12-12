@@ -22,7 +22,7 @@ func CopyDirectory(t *testing.T, src, dst string) {
 		require.NoError(t, err)
 
 		if d.IsDir() {
-			return os.MkdirAll(filepath.Join(dst, rel), 0755)
+			return os.MkdirAll(filepath.Join(dst, rel), 0o755)
 		}
 
 		// Copy the file to the temporary directory

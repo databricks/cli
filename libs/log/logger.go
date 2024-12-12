@@ -3,10 +3,9 @@ package log
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"runtime"
 	"time"
-
-	"log/slog"
 )
 
 // GetLogger returns either the logger configured on the context,

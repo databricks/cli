@@ -106,7 +106,6 @@ func TestPythonMutator_load(t *testing.T) {
 			Column: 5,
 		},
 	}, diags[0].Locations)
-
 }
 
 func TestPythonMutator_load_disallowed(t *testing.T) {
@@ -611,10 +610,10 @@ func withProcessStub(t *testing.T, args []string, output string, diagnostics str
 		assert.NoError(t, err)
 
 		if reflect.DeepEqual(actual.Args, args) {
-			err := os.WriteFile(outputPath, []byte(output), 0600)
+			err := os.WriteFile(outputPath, []byte(output), 0o600)
 			require.NoError(t, err)
 
-			err = os.WriteFile(diagnosticsPath, []byte(diagnostics), 0600)
+			err = os.WriteFile(diagnosticsPath, []byte(diagnostics), 0o600)
 			require.NoError(t, err)
 
 			return nil
@@ -650,17 +649,17 @@ func withFakeVEnv(t *testing.T, venvPath string) {
 
 	interpreterPath := interpreterPath(venvPath)
 
-	err = os.MkdirAll(filepath.Dir(interpreterPath), 0755)
+	err = os.MkdirAll(filepath.Dir(interpreterPath), 0o755)
 	if err != nil {
 		panic(err)
 	}
 
-	err = os.WriteFile(interpreterPath, []byte(""), 0755)
+	err = os.WriteFile(interpreterPath, []byte(""), 0o755)
 	if err != nil {
 		panic(err)
 	}
 
-	err = os.WriteFile(filepath.Join(venvPath, "pyvenv.cfg"), []byte(""), 0755)
+	err = os.WriteFile(filepath.Join(venvPath, "pyvenv.cfg"), []byte(""), 0o755)
 	if err != nil {
 		panic(err)
 	}

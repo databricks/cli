@@ -521,7 +521,6 @@ func TemporaryUcVolume(t *testing.T, w *databricks.WorkspaceClient) string {
 	})
 
 	return path.Join("/Volumes", "main", schema.Name, volume.Name)
-
 }
 
 func TemporaryRepo(t *testing.T, w *databricks.WorkspaceClient) string {

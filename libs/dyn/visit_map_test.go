@@ -71,7 +71,7 @@ func TestMapFuncOnMap(t *testing.T) {
 	}, vbar.AsAny())
 
 	// Return error from map function.
-	var ref = fmt.Errorf("error")
+	ref := fmt.Errorf("error")
 	verr, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Key("foo")), func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 		return dyn.InvalidValue, ref
 	})
@@ -137,7 +137,7 @@ func TestMapFuncOnSequence(t *testing.T) {
 	assert.Equal(t, []any{42, 45}, v1.AsAny())
 
 	// Return error from map function.
-	var ref = fmt.Errorf("error")
+	ref := fmt.Errorf("error")
 	verr, err := dyn.MapByPath(vin, dyn.NewPath(dyn.Index(0)), func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 		return dyn.InvalidValue, ref
 	})
@@ -211,7 +211,7 @@ func TestMapForeachOnMapError(t *testing.T) {
 	})
 
 	// Check that an error from the map function propagates.
-	var ref = fmt.Errorf("error")
+	ref := fmt.Errorf("error")
 	_, err := dyn.Map(vin, ".", dyn.Foreach(func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 		return dyn.InvalidValue, ref
 	}))
@@ -255,7 +255,7 @@ func TestMapForeachOnSequenceError(t *testing.T) {
 	})
 
 	// Check that an error from the map function propagates.
-	var ref = fmt.Errorf("error")
+	ref := fmt.Errorf("error")
 	_, err := dyn.Map(vin, ".", dyn.Foreach(func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 		return dyn.InvalidValue, ref
 	}))

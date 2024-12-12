@@ -14,8 +14,10 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-const userRW = 0o600
-const ownerRWXworldRX = 0o755
+const (
+	userRW          = 0o600
+	ownerRWXworldRX = 0o755
+)
 
 func NewLocalCache[T any](dir, name string, validity time.Duration) LocalCache[T] {
 	return LocalCache[T]{

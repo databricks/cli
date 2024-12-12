@@ -12,8 +12,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
-type setRunAs struct {
-}
+type setRunAs struct{}
 
 // This mutator does two things:
 //

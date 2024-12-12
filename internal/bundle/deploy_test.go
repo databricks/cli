@@ -174,7 +174,6 @@ restore the defined STs and MVs through full refresh. Note that recreation is ne
 properties such as the 'catalog' or 'storage' are changed:
   delete pipeline bar`)
 	assert.Contains(t, stdout.String(), "the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
-
 }
 
 func TestAccBundlePipelineRecreateWithoutAutoApprove(t *testing.T) {

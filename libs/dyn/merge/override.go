@@ -46,7 +46,6 @@ func override(basePath dyn.Path, left dyn.Value, right dyn.Value, visitor Overri
 	switch left.Kind() {
 	case dyn.KindMap:
 		merged, err := overrideMapping(basePath, left.MustMap(), right.MustMap(), visitor)
-
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
@@ -57,7 +56,6 @@ func override(basePath dyn.Path, left dyn.Value, right dyn.Value, visitor Overri
 		// some sequences are keyed, and we can detect which elements are added/removed/updated,
 		// but we don't have this information
 		merged, err := overrideSequence(basePath, left.MustSequence(), right.MustSequence(), visitor)
-
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
@@ -136,14 +134,12 @@ func overrideMapping(basePath dyn.Path, leftMapping dyn.Mapping, rightMapping dy
 		if leftPair, ok := leftMapping.GetPair(rightPair.Key); ok {
 			path := basePath.Append(dyn.Key(rightPair.Key.MustString()))
 			newValue, err := override(path, leftPair.Value, rightPair.Value, visitor)
-
 			if err != nil {
 				return dyn.NewMapping(), err
 			}
 
 			// key was there before, so keep its location
 			err = out.Set(leftPair.Key, newValue)
-
 			if err != nil {
 				return dyn.NewMapping(), err
 			}
@@ -151,13 +147,11 @@ func overrideMapping(basePath dyn.Path, leftMapping dyn.Mapping, rightMapping dy
 			path := basePath.Append(dyn.Key(rightPair.Key.MustString()))
 
 			newValue, err := visitor.VisitInsert(path, rightPair.Value)
-
 			if err != nil {
 				return dyn.NewMapping(), err
 			}
 
 			err = out.Set(rightPair.Key, newValue)
-
 			if err != nil {
 				return dyn.NewMapping(), err
 			}
@@ -174,7 +168,6 @@ func overrideSequence(basePath dyn.Path, left []dyn.Value, right []dyn.Value, vi
 	for i := 0; i < minLen; i++ {
 		path := basePath.Append(dyn.Index(i))
 		merged, err := override(path, left[i], right[i], visitor)
-
 		if err != nil {
 			return nil, err
 		}
@@ -186,7 +179,6 @@ func overrideSequence(basePath dyn.Path, left []dyn.Value, right []dyn.Value, vi
 		for i := minLen; i < len(right); i++ {
 			path := basePath.Append(dyn.Index(i))
 			newValue, err := visitor.VisitInsert(path, right[i])
-
 			if err != nil {
 				return nil, err
 			}

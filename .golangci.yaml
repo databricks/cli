@@ -9,6 +9,7 @@ linters:
     - staticcheck
     - unused
     - gofmt
+    - gofumpt
 linters-settings:
   govet:
     enable-all: true

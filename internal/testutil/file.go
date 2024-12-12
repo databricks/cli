@@ -10,17 +10,17 @@ import (
 
 func TouchNotebook(t *testing.T, elems ...string) string {
 	path := filepath.Join(elems...)
-	err := os.MkdirAll(filepath.Dir(path), 0755)
+	err := os.MkdirAll(filepath.Dir(path), 0o755)
 	require.NoError(t, err)
 
-	err = os.WriteFile(path, []byte("# Databricks notebook source"), 0644)
+	err = os.WriteFile(path, []byte("# Databricks notebook source"), 0o644)
 	require.NoError(t, err)
 	return path
 }
 
 func Touch(t *testing.T, elems ...string) string {
 	path := filepath.Join(elems...)
-	err := os.MkdirAll(filepath.Dir(path), 0755)
+	err := os.MkdirAll(filepath.Dir(path), 0o755)
 	require.NoError(t, err)
 
 	f, err := os.Create(path)
@@ -33,7 +33,7 @@ func Touch(t *testing.T, elems ...string) string {
 
 func WriteFile(t *testing.T, content string, elems ...string) string {
 	path := filepath.Join(elems...)
-	err := os.MkdirAll(filepath.Dir(path), 0755)
+	err := os.MkdirAll(filepath.Dir(path), 0o755)
 	require.NoError(t, err)
 
 	f, err := os.Create(path)

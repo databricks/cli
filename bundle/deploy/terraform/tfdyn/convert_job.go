@@ -83,7 +83,6 @@ func convertJobResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 				"libraries": "library",
 			})
 		})
-
 		if err != nil {
 			return dyn.InvalidValue, err
 		}

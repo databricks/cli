@@ -468,7 +468,6 @@ func TestAccFilerWorkspaceNotebook(t *testing.T) {
 			filerTest{t, f}.assertContents(ctx, tc.nameWithoutExt, tc.expected2)
 		})
 	}
-
 }
 
 func TestAccFilerWorkspaceFilesExtensionsReadDir(t *testing.T) {

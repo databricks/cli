@@ -10,8 +10,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 )
 
-type initializeURLs struct {
-}
+type initializeURLs struct{}
 
 // InitializeURLs makes sure the URL field of each resource is configured.
 // NOTE: since this depends on an extra API call, this mutator adds some extra

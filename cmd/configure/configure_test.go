@@ -75,7 +75,7 @@ func TestDefaultConfigureNoInteractive(t *testing.T) {
 }
 
 func TestConfigFileFromEnvNoInteractive(t *testing.T) {
-	//TODO: Replace with similar test code from go SDK, once we start using it directly
+	// TODO: Replace with similar test code from go SDK, once we start using it directly
 	ctx := context.Background()
 	tempHomeDir := setup(t)
 	defaultCfgPath := filepath.Join(tempHomeDir, ".databrickscfg")

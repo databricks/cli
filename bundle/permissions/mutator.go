@@ -13,42 +13,46 @@ import (
 	"github.com/databricks/cli/libs/dyn/convert"
 )
 
-const CAN_MANAGE = "CAN_MANAGE"
-const CAN_VIEW = "CAN_VIEW"
-const CAN_RUN = "CAN_RUN"
+const (
+	CAN_MANAGE = "CAN_MANAGE"
+	CAN_VIEW   = "CAN_VIEW"
+	CAN_RUN    = "CAN_RUN"
+)
 
 var unsupportedResources = []string{"clusters", "volumes", "schemas", "quality_monitors", "registered_models"}
 
-var allowedLevels = []string{CAN_MANAGE, CAN_VIEW, CAN_RUN}
-var levelsMap = map[string](map[string]string){
-	"jobs": {
-		CAN_MANAGE: "CAN_MANAGE",
-		CAN_VIEW:   "CAN_VIEW",
-		CAN_RUN:    "CAN_MANAGE_RUN",
-	},
-	"pipelines": {
-		CAN_MANAGE: "CAN_MANAGE",
-		CAN_VIEW:   "CAN_VIEW",
-		CAN_RUN:    "CAN_RUN",
-	},
-	"experiments": {
-		CAN_MANAGE: "CAN_MANAGE",
-		CAN_VIEW:   "CAN_READ",
-	},
-	"models": {
-		CAN_MANAGE: "CAN_MANAGE",
-		CAN_VIEW:   "CAN_READ",
-	},
-	"model_serving_endpoints": {
-		CAN_MANAGE: "CAN_MANAGE",
-		CAN_VIEW:   "CAN_VIEW",
-		CAN_RUN:    "CAN_QUERY",
-	},
-	"dashboards": {
-		CAN_MANAGE: "CAN_MANAGE",
-		CAN_VIEW:   "CAN_READ",
-	},
-}
+var (
+	allowedLevels = []string{CAN_MANAGE, CAN_VIEW, CAN_RUN}
+	levelsMap     = map[string](map[string]string){
+		"jobs": {
+			CAN_MANAGE: "CAN_MANAGE",
+			CAN_VIEW:   "CAN_VIEW",
+			CAN_RUN:    "CAN_MANAGE_RUN",
+		},
+		"pipelines": {
+			CAN_MANAGE: "CAN_MANAGE",
+			CAN_VIEW:   "CAN_VIEW",
+			CAN_RUN:    "CAN_RUN",
+		},
+		"experiments": {
+			CAN_MANAGE: "CAN_MANAGE",
+			CAN_VIEW:   "CAN_READ",
+		},
+		"models": {
+			CAN_MANAGE: "CAN_MANAGE",
+			CAN_VIEW:   "CAN_READ",
+		},
+		"model_serving_endpoints": {
+			CAN_MANAGE: "CAN_MANAGE",
+			CAN_VIEW:   "CAN_VIEW",
+			CAN_RUN:    "CAN_QUERY",
+		},
+		"dashboards": {
+			CAN_MANAGE: "CAN_MANAGE",
+			CAN_VIEW:   "CAN_READ",
+		},
+	}
+)
 
 type bundlePermissions struct{}
 
@@ -76,7 +80,6 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 			v, err = dyn.MapByPattern(v, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 				var permissions []resources.Permission
 				pv, err := dyn.Get(v, "permissions")
-
 				// If the permissions field is not found, we set to an empty array
 				if err != nil {
 					pv = dyn.V([]dyn.Value{})
@@ -102,7 +105,6 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 
 				return dyn.Set(v, "permissions", pv)
 			})
-
 			if err != nil {
 				return dyn.InvalidValue, err
 			}
@@ -110,7 +112,6 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 
 		return v, nil
 	})
-
 	if err != nil {
 		return diag.FromErr(err)
 	}

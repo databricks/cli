@@ -23,7 +23,7 @@ import (
 )
 
 func touchEmptyFile(t *testing.T, path string) {
-	err := os.MkdirAll(filepath.Dir(path), 0700)
+	err := os.MkdirAll(filepath.Dir(path), 0o700)
 	require.NoError(t, err)
 	f, err := os.Create(path)
 	require.NoError(t, err)

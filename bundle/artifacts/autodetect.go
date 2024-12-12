@@ -13,8 +13,7 @@ func DetectPackages() bundle.Mutator {
 	return &autodetect{}
 }
 
-type autodetect struct {
-}
+type autodetect struct{}
 
 func (m *autodetect) Name() string {
 	return "artifacts.DetectPackages"

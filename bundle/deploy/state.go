@@ -15,8 +15,10 @@ import (
 	"github.com/google/uuid"
 )
 
-const DeploymentStateFileName = "deployment.json"
-const DeploymentStateVersion = 1
+const (
+	DeploymentStateFileName = "deployment.json"
+	DeploymentStateVersion  = 1
+)
 
 type File struct {
 	LocalPath string `json:"local_path"`

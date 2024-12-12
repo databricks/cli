@@ -409,7 +409,7 @@ func createTempFile(t *testing.T, dest string, name string, executable bool) str
 		require.NoError(t, err)
 	}()
 	if executable {
-		err = f.Chmod(0777)
+		err = f.Chmod(0o777)
 		require.NoError(t, err)
 	}
 	return binPath
@@ -422,7 +422,7 @@ func TestGetEnvVarWithMatchingVersion(t *testing.T) {
 	tmp := t.TempDir()
 	file := testutil.Touch(t, tmp, "bar")
 
-	var tc = []struct {
+	tc := []struct {
 		envValue       string
 		versionValue   string
 		currentVersion string

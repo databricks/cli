@@ -87,7 +87,7 @@ func (n *downloader) markNotebookForDownload(ctx context.Context, notebookPath *
 }
 
 func (n *downloader) FlushToDisk(ctx context.Context, force bool) error {
-	err := os.MkdirAll(n.sourceDir, 0755)
+	err := os.MkdirAll(n.sourceDir, 0o755)
 	if err != nil {
 		return err
 	}

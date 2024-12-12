@@ -118,7 +118,6 @@ func TestAccFsRmForNonExistentFile(t *testing.T) {
 			assert.ErrorIs(t, err, fs.ErrNotExist)
 		})
 	}
-
 }
 
 func TestAccFsRmDirRecursively(t *testing.T) {

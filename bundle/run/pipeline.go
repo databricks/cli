@@ -85,7 +85,7 @@ func (r *pipelineRunner) Name() string {
 }
 
 func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, error) {
-	var pipelineID = r.pipeline.ID
+	pipelineID := r.pipeline.ID
 
 	// Include resource key in logger.
 	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("resource", r.Key()))
@@ -173,7 +173,6 @@ func (r *pipelineRunner) Cancel(ctx context.Context) error {
 	wait, err := w.Pipelines.Stop(ctx, pipelines.StopRequest{
 		PipelineId: r.pipeline.ID,
 	})
-
 	if err != nil {
 		return err
 	}
