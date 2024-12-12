@@ -134,7 +134,7 @@ func (n *downloader) FlushToDisk(ctx context.Context, force bool) error {
 	return errs.Wait()
 }
 
-func newDownloader(w *databricks.WorkspaceClient, sourceDir string, configDir string) *downloader {
+func newDownloader(w *databricks.WorkspaceClient, sourceDir, configDir string) *downloader {
 	return &downloader{
 		files:     make(map[string]string),
 		w:         w,

@@ -134,7 +134,7 @@ func (f Filelist) ToSlice(root vfs.Path) []fileset.File {
 	return files
 }
 
-func isLocalStateStale(local io.Reader, remote io.Reader) bool {
+func isLocalStateStale(local, remote io.Reader) bool {
 	localState, err := loadState(local)
 	if err != nil {
 		return true

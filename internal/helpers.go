@@ -279,7 +279,7 @@ func (t *cobraTestRunner) Run() (bytes.Buffer, bytes.Buffer, error) {
 }
 
 // Like [require.Eventually] but errors if the underlying command has failed.
-func (c *cobraTestRunner) Eventually(condition func() bool, waitFor time.Duration, tick time.Duration, msgAndArgs ...any) {
+func (c *cobraTestRunner) Eventually(condition func() bool, waitFor, tick time.Duration, msgAndArgs ...any) {
 	ch := make(chan bool, 1)
 
 	timer := time.NewTimer(waitFor)
@@ -362,7 +362,7 @@ func readFile(t *testing.T, name string) string {
 	return string(b)
 }
 
-func writeFile(t *testing.T, name string, body string) string {
+func writeFile(t *testing.T, name, body string) string {
 	f, err := os.Create(filepath.Join(t.TempDir(), name))
 	require.NoError(t, err)
 	_, err = f.WriteString(body)

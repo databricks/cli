@@ -587,7 +587,7 @@ or activate the environment before running CLI commands:
 	assert.Equal(t, expected, out)
 }
 
-func withProcessStub(t *testing.T, args []string, output string, diagnostics string) context.Context {
+func withProcessStub(t *testing.T, args []string, output, diagnostics string) context.Context {
 	ctx := context.Background()
 	ctx, stub := process.WithStub(ctx)
 
@@ -625,7 +625,7 @@ func withProcessStub(t *testing.T, args []string, output string, diagnostics str
 	return ctx
 }
 
-func loadYaml(name string, content string) *bundle.Bundle {
+func loadYaml(name, content string) *bundle.Bundle {
 	v, diag := config.LoadFromBytes(name, []byte(content))
 
 	if diag.Error() != nil {

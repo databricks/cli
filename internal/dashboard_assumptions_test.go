@@ -98,7 +98,7 @@ func TestAccDashboardAssumptions_WorkspaceImport(t *testing.T) {
 				assert.Fail(t, "unexpected insert operation")
 				return right, nil
 			},
-			VisitUpdate: func(basePath dyn.Path, left dyn.Value, right dyn.Value) (dyn.Value, error) {
+			VisitUpdate: func(basePath dyn.Path, left, right dyn.Value) (dyn.Value, error) {
 				updatedFieldPaths = append(updatedFieldPaths, basePath.String())
 				return right, nil
 			},

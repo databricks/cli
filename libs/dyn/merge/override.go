@@ -23,7 +23,7 @@ import (
 type OverrideVisitor struct {
 	VisitDelete func(valuePath dyn.Path, left dyn.Value) error
 	VisitInsert func(valuePath dyn.Path, right dyn.Value) (dyn.Value, error)
-	VisitUpdate func(valuePath dyn.Path, left dyn.Value, right dyn.Value) (dyn.Value, error)
+	VisitUpdate func(valuePath dyn.Path, left, right dyn.Value) (dyn.Value, error)
 }
 
 var ErrOverrideUndoDelete = errors.New("undo delete operation")
@@ -31,11 +31,11 @@ var ErrOverrideUndoDelete = errors.New("undo delete operation")
 // Override overrides value 'leftRoot' with 'rightRoot', keeping 'location' if values
 // haven't changed. Preserving 'location' is important to preserve the original source of the value
 // for error reporting.
-func Override(leftRoot dyn.Value, rightRoot dyn.Value, visitor OverrideVisitor) (dyn.Value, error) {
+func Override(leftRoot, rightRoot dyn.Value, visitor OverrideVisitor) (dyn.Value, error) {
 	return override(dyn.EmptyPath, leftRoot, rightRoot, visitor)
 }
 
-func override(basePath dyn.Path, left dyn.Value, right dyn.Value, visitor OverrideVisitor) (dyn.Value, error) {
+func override(basePath dyn.Path, left, right dyn.Value, visitor OverrideVisitor) (dyn.Value, error) {
 	if left.Kind() != right.Kind() {
 		return visitor.VisitUpdate(basePath, left, right)
 	}
@@ -105,7 +105,7 @@ func override(basePath dyn.Path, left dyn.Value, right dyn.Value, visitor Overri
 	return dyn.InvalidValue, fmt.Errorf("unexpected kind %s at %s", left.Kind(), basePath.String())
 }
 
-func overrideMapping(basePath dyn.Path, leftMapping dyn.Mapping, rightMapping dyn.Mapping, visitor OverrideVisitor) (dyn.Mapping, error) {
+func overrideMapping(basePath dyn.Path, leftMapping, rightMapping dyn.Mapping, visitor OverrideVisitor) (dyn.Mapping, error) {
 	out := dyn.NewMapping()
 
 	for _, leftPair := range leftMapping.Pairs() {
@@ -161,7 +161,7 @@ func overrideMapping(basePath dyn.Path, leftMapping dyn.Mapping, rightMapping dy
 	return out, nil
 }
 
-func overrideSequence(basePath dyn.Path, left []dyn.Value, right []dyn.Value, visitor OverrideVisitor) ([]dyn.Value, error) {
+func overrideSequence(basePath dyn.Path, left, right []dyn.Value, visitor OverrideVisitor) ([]dyn.Value, error) {
 	minLen := min(len(left), len(right))
 	var values []dyn.Value
 

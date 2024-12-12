@@ -31,7 +31,7 @@ func setup(t *testing.T) string {
 	return tempHomeDir
 }
 
-func getTempFileWithContent(t *testing.T, tempHomeDir string, content string) *os.File {
+func getTempFileWithContent(t *testing.T, tempHomeDir, content string) *os.File {
 	inp, err := os.CreateTemp(tempHomeDir, "input")
 	assert.NoError(t, err)
 	_, err = inp.WriteString(content)

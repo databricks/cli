@@ -41,7 +41,7 @@ func (r *pipelineRunner) logEvent(ctx context.Context, event pipelines.PipelineE
 	}
 }
 
-func (r *pipelineRunner) logErrorEvent(ctx context.Context, pipelineId string, updateId string) error {
+func (r *pipelineRunner) logErrorEvent(ctx context.Context, pipelineId, updateId string) error {
 	w := r.bundle.WorkspaceClient()
 
 	// Note: For a 100 percent correct and complete solution we should use the

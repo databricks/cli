@@ -196,7 +196,7 @@ func (locker *Locker) Unlock(ctx context.Context, opts ...UnlockOption) error {
 	return nil
 }
 
-func CreateLocker(user string, targetDir string, w *databricks.WorkspaceClient) (*Locker, error) {
+func CreateLocker(user, targetDir string, w *databricks.WorkspaceClient) (*Locker, error) {
 	filer, err := filer.NewWorkspaceFilesClient(w, targetDir)
 	if err != nil {
 		return nil, err

@@ -400,7 +400,7 @@ func TestFindExecPathFromEnvironmentWithCorrectVersionAndBinary(t *testing.T) {
 	require.Equal(t, tmpBinPath, b.Config.Bundle.Terraform.ExecPath)
 }
 
-func createTempFile(t *testing.T, dest string, name string, executable bool) string {
+func createTempFile(t *testing.T, dest, name string, executable bool) string {
 	binPath := filepath.Join(dest, name)
 	f, err := os.Create(binPath)
 	require.NoError(t, err)

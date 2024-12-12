@@ -38,7 +38,7 @@ func (m *initializeURLs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	return nil
 }
 
-func initializeForWorkspace(b *bundle.Bundle, orgId string, host string) error {
+func initializeForWorkspace(b *bundle.Bundle, orgId, host string) error {
 	baseURL, err := url.Parse(host)
 	if err != nil {
 		return err

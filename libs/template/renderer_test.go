@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func assertFileContent(t *testing.T, path string, content string) {
+func assertFileContent(t *testing.T, path, content string) {
 	b, err := os.ReadFile(path)
 	require.NoError(t, err)
 	assert.Equal(t, content, string(b))
@@ -39,7 +39,7 @@ func assertFilePermissions(t *testing.T, path string, perm fs.FileMode) {
 	assert.Equal(t, perm, info.Mode().Perm())
 }
 
-func assertBuiltinTemplateValid(t *testing.T, template string, settings map[string]any, target string, isServicePrincipal bool, build bool, tempDir string) {
+func assertBuiltinTemplateValid(t *testing.T, template string, settings map[string]any, target string, isServicePrincipal, build bool, tempDir string) {
 	ctx := context.Background()
 
 	templateFS, err := fs.Sub(builtinTemplates, path.Join("templates", template))

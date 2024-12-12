@@ -63,7 +63,7 @@ func (testRepo *testRepository) checkoutCommit(commitId string) {
 	require.NoError(testRepo.t, err)
 }
 
-func (testRepo *testRepository) addBranch(name string, latestCommit string) {
+func (testRepo *testRepository) addBranch(name, latestCommit string) {
 	// create dir for branch head reference
 	branchDir := filepath.Join(testRepo.r.Root(), ".git", "refs", "heads")
 	err := os.MkdirAll(branchDir, os.ModePerm)

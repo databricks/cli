@@ -107,7 +107,7 @@ func deployBundleWithFlags(t *testing.T, ctx context.Context, path string, flags
 	return err
 }
 
-func runResource(t *testing.T, ctx context.Context, path string, key string) (string, error) {
+func runResource(t *testing.T, ctx context.Context, path, key string) (string, error) {
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	ctx = cmdio.NewContext(ctx, cmdio.Default())
 
@@ -116,7 +116,7 @@ func runResource(t *testing.T, ctx context.Context, path string, key string) (st
 	return stdout.String(), err
 }
 
-func runResourceWithParams(t *testing.T, ctx context.Context, path string, key string, params ...string) (string, error) {
+func runResourceWithParams(t *testing.T, ctx context.Context, path, key string, params ...string) (string, error) {
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	ctx = cmdio.NewContext(ctx, cmdio.Default())
 
@@ -143,7 +143,7 @@ func getBundleRemoteRootPath(w *databricks.WorkspaceClient, t *testing.T, unique
 	return root
 }
 
-func blackBoxRun(t *testing.T, root string, args ...string) (stdout string, stderr string) {
+func blackBoxRun(t *testing.T, root string, args ...string) (stdout, stderr string) {
 	gitRoot, err := folders.FindDirWithLeaf(".", ".git")
 	require.NoError(t, err)
 

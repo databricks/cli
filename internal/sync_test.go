@@ -145,7 +145,7 @@ func (a *syncTest) remoteDirContent(ctx context.Context, relativeDir string, exp
 	}
 }
 
-func (a *syncTest) remoteFileContent(ctx context.Context, relativePath string, expectedContent string) {
+func (a *syncTest) remoteFileContent(ctx context.Context, relativePath, expectedContent string) {
 	filePath := path.Join(a.remoteRoot, relativePath)
 
 	// Remove leading "/" so we can use it in the URL.
@@ -181,7 +181,7 @@ func (a *syncTest) touchFile(ctx context.Context, path string) {
 	require.NoError(a.t, err)
 }
 
-func (a *syncTest) objectType(ctx context.Context, relativePath string, expected string) {
+func (a *syncTest) objectType(ctx context.Context, relativePath, expected string) {
 	path := path.Join(a.remoteRoot, relativePath)
 
 	a.c.Eventually(func() bool {
@@ -193,7 +193,7 @@ func (a *syncTest) objectType(ctx context.Context, relativePath string, expected
 	}, 30*time.Second, 5*time.Second)
 }
 
-func (a *syncTest) language(ctx context.Context, relativePath string, expected string) {
+func (a *syncTest) language(ctx context.Context, relativePath, expected string) {
 	path := path.Join(a.remoteRoot, relativePath)
 
 	a.c.Eventually(func() bool {

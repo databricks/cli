@@ -5,7 +5,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Equal(t assert.TestingT, expected any, actual any, msgAndArgs ...any) bool {
+func Equal(t assert.TestingT, expected, actual any, msgAndArgs ...any) bool {
 	ev, eok := expected.(dyn.Value)
 	av, aok := actual.(dyn.Value)
 	if eok && aok && ev.IsValid() && av.IsValid() {
@@ -36,7 +36,7 @@ func EqualValues(t assert.TestingT, expected, actual any, msgAndArgs ...any) boo
 	return assert.EqualValues(t, expected, actual, msgAndArgs...)
 }
 
-func NotEqual(t assert.TestingT, expected any, actual any, msgAndArgs ...any) bool {
+func NotEqual(t assert.TestingT, expected, actual any, msgAndArgs ...any) bool {
 	return assert.NotEqual(t, expected, actual, msgAndArgs...)
 }
 
@@ -84,11 +84,11 @@ func False(t assert.TestingT, value bool, msgAndArgs ...any) bool {
 	return assert.False(t, value, msgAndArgs...)
 }
 
-func Contains(t assert.TestingT, list any, element any, msgAndArgs ...any) bool {
+func Contains(t assert.TestingT, list, element any, msgAndArgs ...any) bool {
 	return assert.Contains(t, list, element, msgAndArgs...)
 }
 
-func NotContains(t assert.TestingT, list any, element any, msgAndArgs ...any) bool {
+func NotContains(t assert.TestingT, list, element any, msgAndArgs ...any) bool {
 	return assert.NotContains(t, list, element, msgAndArgs...)
 }
 
@@ -112,6 +112,6 @@ func NotPanics(t assert.TestingT, f func(), msgAndArgs ...any) bool {
 	return assert.NotPanics(t, f, msgAndArgs...)
 }
 
-func JSONEq(t assert.TestingT, expected string, actual string, msgAndArgs ...any) bool {
+func JSONEq(t assert.TestingT, expected, actual string, msgAndArgs ...any) bool {
 	return assert.JSONEq(t, expected, actual, msgAndArgs...)
 }
