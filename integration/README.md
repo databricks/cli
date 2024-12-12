@@ -9,6 +9,8 @@ Requirements for new files in this directory:
 * Every package **must** be named after its directory with `_integration` appended
   * Requiring a different package name for integration tests avoids aliasing with the main package.
 
+These requirements are enforced by a unit test in this directory.
+
 ## Running integration tests
 
 Integration tests require the following environment variables:
