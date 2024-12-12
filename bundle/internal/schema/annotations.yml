@@ -193,7 +193,9 @@ github.com/databricks/cli/bundle/config.Root:
       Defines attributes for experimental features.
   "include":
     "description": |-
-      PLACEHOLDER
+      Specifies a list of path globs that contain configuration files to include within the bundle.
+    "markdown_description": |-
+      Specifies a list of path globs that contain configuration files to include within the bundle. See [_](/dev-tools/bundles/settings.md#include)
   "permissions":
     "description": |-
       Defines the permissions to apply to experiments, jobs, pipelines, and models defined in the bundle
@@ -206,9 +208,9 @@ github.com/databricks/cli/bundle/config.Root:
       Defines bundle deployment presets. See [_](/dev-tools/bundles/deployment-modes.md#presets).
   "resources":
     "description": |-
-      PLACEHOLDER
+      Specifies information about the Databricks resources used by the bundle
     "markdown_description": |-
-      See [_](/dev-tools/bundles/resources.md).
+      Specifies information about the Databricks resources used by the bundle. See [_](/dev-tools/bundles/resources.md).
   "run_as":
     "description": |-
       The identity to use to run the bundle.

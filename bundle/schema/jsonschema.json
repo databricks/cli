@@ -6284,7 +6284,9 @@
       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Experimental"
     },
     "include": {
-      "$ref": "#/$defs/slice/string"
+      "description": "Specifies a list of path globs that contain configuration files to include within the bundle.",
+      "$ref": "#/$defs/slice/string",
+      "markdownDescription": "Specifies a list of path globs that contain configuration files to include within the bundle. See [include](https://docs.databricks.com/dev-tools/bundles/settings.html#include)"
     },
     "permissions": {
       "description": "Defines the permissions to apply to experiments, jobs, pipelines, and models defined in the bundle",
@@ -6297,8 +6299,9 @@
       "markdownDescription": "Defines bundle deployment presets. See [presets](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html#presets)."
     },
     "resources": {
+      "description": "Specifies information about the Databricks resources used by the bundle",
       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Resources",
-      "markdownDescription": "See [link](https://docs.databricks.com/dev-tools/bundles/resources.html)."
+      "markdownDescription": "Specifies information about the Databricks resources used by the bundle. See [link](https://docs.databricks.com/dev-tools/bundles/resources.html)."
     },
     "run_as": {
       "description": "The identity to use to run the bundle.",
