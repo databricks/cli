@@ -6,13 +6,14 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestAccCreateJob(t *testing.T) {
 	acc.WorkspaceTest(t)
-	env := GetEnvOrSkipTest(t, "CLOUD_ENV")
+	env := testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 	if env != "azure" {
 		t.Skipf("Not running test on cloud %s", env)
 	}

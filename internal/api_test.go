@@ -4,16 +4,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	_ "github.com/databricks/cli/cmd/api"
+	"github.com/databricks/cli/internal/testutil"
 )
 
 func TestAccApiGet(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	stdout, _ := RequireSuccessfulRun(t, "api", "get", "/api/2.0/preview/scim/v2/Me")
 
@@ -28,14 +30,15 @@ func TestAccApiGet(t *testing.T) {
 }
 
 func TestAccApiPost(t *testing.T) {
-	env := GetEnvOrSkipTest(t, "CLOUD_ENV")
+	env := testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 	t.Log(env)
 	if env == "gcp" {
 		t.Skip("DBFS REST API is disabled on gcp")
 	}
 
-	dbfsPath := path.Join("/tmp/databricks/integration", RandomName("api-post"))
-	requestPath := writeFile(t, "body.json", fmt.Sprintf(`{
+	dbfsPath := path.Join("/tmp/databricks/integration", testutil.RandomName("api-post"))
+	requestPath := filepath.Join(t.TempDir(), "body.json")
+	testutil.WriteFile(t, requestPath, fmt.Sprintf(`{
 		"path": "%s"
 	}`, dbfsPath))
 

@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -20,7 +21,7 @@ import (
 )
 
 func TestAccWorkspaceList(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	stdout, stderr := RequireSuccessfulRun(t, "workspace", "list", "/")
 	outStr := stdout.String()
@@ -42,7 +43,7 @@ func TestWorkpaceGetStatusErrorWhenNoArguments(t *testing.T) {
 }
 
 func TestAccWorkpaceExportPrintsContents(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
 	w := databricks.Must(databricks.NewWorkspaceClient())

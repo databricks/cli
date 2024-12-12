@@ -6,12 +6,13 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/git"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAccGitClone(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	tmpDir := t.TempDir()
 	ctx := context.Background()
@@ -33,7 +34,7 @@ func TestAccGitClone(t *testing.T) {
 }
 
 func TestAccGitCloneOnNonDefaultBranch(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	tmpDir := t.TempDir()
 	ctx := context.Background()
@@ -54,7 +55,7 @@ func TestAccGitCloneOnNonDefaultBranch(t *testing.T) {
 }
 
 func TestAccGitCloneErrorsWhenRepositoryDoesNotExist(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	tmpDir := t.TempDir()
 

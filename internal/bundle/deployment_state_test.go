@@ -9,12 +9,13 @@ import (
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
 func TestAccFilesAreSyncedCorrectlyWhenNoSnapshot(t *testing.T) {
-	env := internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
+	env := testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 	t.Log(env)
 
 	ctx, wt := acc.WorkspaceTest(t)

@@ -28,7 +28,7 @@ func testTags(t *testing.T, tags map[string]string) error {
 
 	ctx := context.Background()
 	resp, err := w.Jobs.Create(ctx, jobs.CreateJob{
-		Name: RandomName("test-tags-"),
+		Name: testutil.RandomName("test-tags-"),
 		Tasks: []jobs.Task{
 			{
 				TaskKey: "test",

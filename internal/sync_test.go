@@ -16,6 +16,7 @@ import (
 	"time"
 
 	_ "github.com/databricks/cli/cmd/sync"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/testfile"
@@ -36,7 +37,7 @@ var (
 func setupRepo(t *testing.T, wsc *databricks.WorkspaceClient, ctx context.Context) (localRoot, remoteRoot string) {
 	me, err := wsc.CurrentUser.Me(ctx)
 	require.NoError(t, err)
-	repoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, RandomName("empty-repo-sync-integration-"))
+	repoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, testutil.RandomName("empty-repo-sync-integration-"))
 
 	repoInfo, err := wsc.Repos.Create(ctx, workspace.CreateRepoRequest{
 		Path:     repoPath,
@@ -71,7 +72,7 @@ type syncTest struct {
 }
 
 func setupSyncTest(t *testing.T, args ...string) *syncTest {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	w := databricks.Must(databricks.NewWorkspaceClient())
 	localRoot := t.TempDir()
@@ -499,7 +500,7 @@ func TestAccSyncIncrementalSyncPythonNotebookDelete(t *testing.T) {
 }
 
 func TestAccSyncEnsureRemotePathIsUsableIfRepoDoesntExist(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	wsc := databricks.Must(databricks.NewWorkspaceClient())
 	ctx := context.Background()
@@ -508,7 +509,7 @@ func TestAccSyncEnsureRemotePathIsUsableIfRepoDoesntExist(t *testing.T) {
 	require.NoError(t, err)
 
 	// Hypothetical repo path doesn't exist.
-	nonExistingRepoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, RandomName("doesnt-exist-"))
+	nonExistingRepoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, testutil.RandomName("doesnt-exist-"))
 	err = sync.EnsureRemotePathIsUsable(ctx, wsc, nonExistingRepoPath, nil)
 	assert.ErrorContains(t, err, " does not exist; please create it first")
 
@@ -519,7 +520,7 @@ func TestAccSyncEnsureRemotePathIsUsableIfRepoDoesntExist(t *testing.T) {
 }
 
 func TestAccSyncEnsureRemotePathIsUsableIfRepoExists(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	wsc := databricks.Must(databricks.NewWorkspaceClient())
 	ctx := context.Background()
@@ -541,14 +542,14 @@ func TestAccSyncEnsureRemotePathIsUsableIfRepoExists(t *testing.T) {
 }
 
 func TestAccSyncEnsureRemotePathIsUsableInWorkspace(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	wsc := databricks.Must(databricks.NewWorkspaceClient())
 	ctx := context.Background()
 	me, err := wsc.CurrentUser.Me(ctx)
 	require.NoError(t, err)
 
-	remotePath := fmt.Sprintf("/Users/%s/%s", me.UserName, RandomName("ensure-path-exists-test-"))
+	remotePath := fmt.Sprintf("/Users/%s/%s", me.UserName, testutil.RandomName("ensure-path-exists-test-"))
 	err = sync.EnsureRemotePathIsUsable(ctx, wsc, remotePath, me)
 	assert.NoError(t, err)
 

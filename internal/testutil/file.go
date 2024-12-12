@@ -31,8 +31,8 @@ func Touch(t *testing.T, elems ...string) string {
 	return path
 }
 
-func WriteFile(t *testing.T, content string, elems ...string) string {
-	path := filepath.Join(elems...)
+// WriteFile writes content to a file.
+func WriteFile(t *testing.T, path, content string) {
 	err := os.MkdirAll(filepath.Dir(path), 0o755)
 	require.NoError(t, err)
 
@@ -44,5 +44,12 @@ func WriteFile(t *testing.T, content string, elems ...string) string {
 
 	err = f.Close()
 	require.NoError(t, err)
-	return path
+}
+
+// ReadFile reads a file and returns its content as a string.
+func ReadFile(t require.TestingT, path string) string {
+	b, err := os.ReadFile(path)
+	require.NoError(t, err)
+
+	return string(b)
 }

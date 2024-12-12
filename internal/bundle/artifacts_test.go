@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -234,7 +235,7 @@ func TestAccUploadArtifactFileToVolumeThatDoesNotExist(t *testing.T) {
 	ctx, wt := acc.UcWorkspaceTest(t)
 	w := wt.W
 
-	schemaName := internal.RandomName("schema-")
+	schemaName := testutil.RandomName("schema-")
 
 	_, err := w.Schemas.Create(ctx, catalog.CreateSchema{
 		CatalogName: "main",
@@ -271,7 +272,7 @@ func TestAccUploadArtifactToVolumeNotYetDeployed(t *testing.T) {
 	ctx, wt := acc.UcWorkspaceTest(t)
 	w := wt.W
 
-	schemaName := internal.RandomName("schema-")
+	schemaName := testutil.RandomName("schema-")
 
 	_, err := w.Schemas.Create(ctx, catalog.CreateSchema{
 		CatalogName: "main",

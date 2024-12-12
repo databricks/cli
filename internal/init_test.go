@@ -19,7 +19,7 @@ import (
 )
 
 func TestAccBundleInitErrorOnUnknownFields(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	tmpDir := t.TempDir()
 	_, _, err := RequireErrorRun(t, "bundle", "init", "./testdata/init/field-does-not-exist", "--output-dir", tmpDir)
@@ -47,7 +47,7 @@ func TestAccBundleInitOnMlopsStacks(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{})
 	require.NoError(t, err)
 
-	projectName := RandomName("project_name_")
+	projectName := testutil.RandomName("project_name_")
 
 	// Create a config file with the project name and root dir
 	initConfig := map[string]string{
@@ -101,7 +101,7 @@ func TestAccBundleInitOnMlopsStacks(t *testing.T) {
 }
 
 func TestAccBundleInitHelpers(t *testing.T) {
-	env := GetEnvOrSkipTest(t, "CLOUD_ENV")
+	env := testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 	t.Log(env)
 
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{})

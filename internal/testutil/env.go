@@ -39,15 +39,6 @@ func CleanupEnvironment(t *testing.T) {
 	}
 }
 
-// GetEnvOrSkipTest proceeds with test only with that env variable
-func GetEnvOrSkipTest(t *testing.T, name string) string {
-	value := os.Getenv(name)
-	if value == "" {
-		t.Skipf("Environment variable %s is missing", name)
-	}
-	return value
-}
-
 // Changes into specified directory for the duration of the test.
 // Returns the current working directory.
 func Chdir(t *testing.T, dir string) string {

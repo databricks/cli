@@ -95,7 +95,7 @@ func (gt *generateJobTest) createTestJob(ctx context.Context) int64 {
 	require.NoError(t, err)
 
 	resp, err := w.Jobs.Create(ctx, jobs.CreateJob{
-		Name: internal.RandomName("generated-job-"),
+		Name: testutil.RandomName("generated-job-"),
 		Tasks: []jobs.Task{
 			{
 				TaskKey: "test",

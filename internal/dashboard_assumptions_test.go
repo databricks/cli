@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/merge"
@@ -25,7 +26,7 @@ func TestAccDashboardAssumptions_WorkspaceImport(t *testing.T) {
 
 	dashboardName := "New Dashboard"
 	dashboardPayload := []byte(`{"pages":[{"name":"2506f97a","displayName":"New Page"}]}`)
-	warehouseId := acc.GetEnvOrSkipTest(t, "TEST_DEFAULT_WAREHOUSE_ID")
+	warehouseId := testutil.GetEnvOrSkipTest(t, "TEST_DEFAULT_WAREHOUSE_ID")
 
 	dir := wt.TemporaryWorkspaceDir("dashboard-assumptions-")
 

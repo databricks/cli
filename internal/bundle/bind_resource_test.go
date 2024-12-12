@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/google/uuid"
@@ -16,7 +17,7 @@ import (
 )
 
 func TestAccBindJobToExistingJob(t *testing.T) {
-	env := internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
+	env := testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 	t.Log(env)
 
 	ctx, wt := acc.WorkspaceTest(t)
@@ -81,7 +82,7 @@ func TestAccBindJobToExistingJob(t *testing.T) {
 }
 
 func TestAccAbortBind(t *testing.T) {
-	env := internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
+	env := testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 	t.Log(env)
 
 	ctx, wt := acc.WorkspaceTest(t)
@@ -130,7 +131,7 @@ func TestAccAbortBind(t *testing.T) {
 }
 
 func TestAccGenerateAndBind(t *testing.T) {
-	env := internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
+	env := testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 	t.Log(env)
 
 	ctx, wt := acc.WorkspaceTest(t)
