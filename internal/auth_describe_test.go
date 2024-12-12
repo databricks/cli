@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/require"
@@ -13,7 +14,7 @@ import (
 func TestAuthDescribeSuccess(t *testing.T) {
 	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
-	stdout, _ := RequireSuccessfulRun(t, "auth", "describe")
+	stdout, _ := testcli.RequireSuccessfulRun(t, "auth", "describe")
 	outStr := stdout.String()
 
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{})
@@ -34,7 +35,7 @@ func TestAuthDescribeSuccess(t *testing.T) {
 func TestAuthDescribeFailure(t *testing.T) {
 	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
-	stdout, _ := RequireSuccessfulRun(t, "auth", "describe", "--profile", "nonexistent")
+	stdout, _ := testcli.RequireSuccessfulRun(t, "auth", "describe", "--profile", "nonexistent")
 	outStr := stdout.String()
 
 	require.NotEmpty(t, outStr)

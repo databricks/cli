@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -31,7 +32,7 @@ func TestAccFsRmFile(t *testing.T) {
 			assert.NoError(t, err)
 
 			// Run rm command
-			stdout, stderr := RequireSuccessfulRun(t, "fs", "rm", path.Join(tmpDir, "hello.txt"))
+			stdout, stderr := testcli.RequireSuccessfulRun(t, "fs", "rm", path.Join(tmpDir, "hello.txt"))
 			assert.Equal(t, "", stderr.String())
 			assert.Equal(t, "", stdout.String())
 
@@ -61,7 +62,7 @@ func TestAccFsRmEmptyDir(t *testing.T) {
 			assert.NoError(t, err)
 
 			// Run rm command
-			stdout, stderr := RequireSuccessfulRun(t, "fs", "rm", path.Join(tmpDir, "a"))
+			stdout, stderr := testcli.RequireSuccessfulRun(t, "fs", "rm", path.Join(tmpDir, "a"))
 			assert.Equal(t, "", stderr.String())
 			assert.Equal(t, "", stdout.String())
 
@@ -95,7 +96,7 @@ func TestAccFsRmNonEmptyDirectory(t *testing.T) {
 			assert.NoError(t, err)
 
 			// Run rm command
-			_, _, err = RequireErrorRun(t, "fs", "rm", path.Join(tmpDir, "a"))
+			_, _, err = testcli.RequireErrorRun(t, "fs", "rm", path.Join(tmpDir, "a"))
 			assert.ErrorIs(t, err, fs.ErrInvalid)
 			assert.ErrorAs(t, err, &filer.DirectoryNotEmptyError{})
 		})
@@ -114,7 +115,7 @@ func TestAccFsRmForNonExistentFile(t *testing.T) {
 			_, tmpDir := tc.setupFiler(t)
 
 			// Expect error if file does not exist
-			_, _, err := RequireErrorRun(t, "fs", "rm", path.Join(tmpDir, "does-not-exist"))
+			_, _, err := testcli.RequireErrorRun(t, "fs", "rm", path.Join(tmpDir, "does-not-exist"))
 			assert.ErrorIs(t, err, fs.ErrNotExist)
 		})
 	}
@@ -144,7 +145,7 @@ func TestAccFsRmDirRecursively(t *testing.T) {
 			assert.NoError(t, err)
 
 			// Run rm command
-			stdout, stderr := RequireSuccessfulRun(t, "fs", "rm", path.Join(tmpDir, "a"), "--recursive")
+			stdout, stderr := testcli.RequireSuccessfulRun(t, "fs", "rm", path.Join(tmpDir, "a"), "--recursive")
 			assert.Equal(t, "", stderr.String())
 			assert.Equal(t, "", stdout.String())
 

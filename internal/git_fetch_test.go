@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/git"
@@ -44,9 +45,9 @@ func TestAccFetchRepositoryInfoAPI_FromRepo(t *testing.T) {
 	require.NoError(t, err)
 
 	targetPath := testutil.RandomName(path.Join("/Workspace/Users", me.UserName, "/testing-clone-bundle-examples-"))
-	stdout, stderr := RequireSuccessfulRun(t, "repos", "create", examplesRepoUrl, examplesRepoProvider, "--path", targetPath)
+	stdout, stderr := testcli.RequireSuccessfulRun(t, "repos", "create", examplesRepoUrl, examplesRepoProvider, "--path", targetPath)
 	t.Cleanup(func() {
-		RequireSuccessfulRun(t, "repos", "delete", targetPath)
+		testcli.RequireSuccessfulRun(t, "repos", "delete", targetPath)
 	})
 
 	assert.Empty(t, stderr.String())
@@ -71,9 +72,9 @@ func TestAccFetchRepositoryInfoAPI_FromNonRepo(t *testing.T) {
 	require.NoError(t, err)
 
 	rootPath := testutil.RandomName(path.Join("/Workspace/Users", me.UserName, "testing-nonrepo-"))
-	_, stderr := RequireSuccessfulRun(t, "workspace", "mkdirs", path.Join(rootPath, "a/b/c"))
+	_, stderr := testcli.RequireSuccessfulRun(t, "workspace", "mkdirs", path.Join(rootPath, "a/b/c"))
 	t.Cleanup(func() {
-		RequireSuccessfulRun(t, "workspace", "delete", "--recursive", rootPath)
+		testcli.RequireSuccessfulRun(t, "workspace", "delete", "--recursive", rootPath)
 	})
 
 	assert.Empty(t, stderr.String())

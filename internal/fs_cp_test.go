@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/stretchr/testify/assert"
@@ -134,7 +135,7 @@ func TestAccFsCpDir(t *testing.T) {
 			targetFiler, targetDir := tc.setupTarget(t)
 			setupSourceDir(t, context.Background(), sourceFiler)
 
-			RequireSuccessfulRun(t, "fs", "cp", sourceDir, targetDir, "--recursive")
+			testcli.RequireSuccessfulRun(t, "fs", "cp", sourceDir, targetDir, "--recursive")
 
 			assertTargetDir(t, context.Background(), targetFiler)
 		})
@@ -154,7 +155,7 @@ func TestAccFsCpFileToFile(t *testing.T) {
 			targetFiler, targetDir := tc.setupTarget(t)
 			setupSourceFile(t, context.Background(), sourceFiler)
 
-			RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "foo.txt"), path.Join(targetDir, "bar.txt"))
+			testcli.RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "foo.txt"), path.Join(targetDir, "bar.txt"))
 
 			assertTargetFile(t, context.Background(), targetFiler, "bar.txt")
 		})
@@ -174,7 +175,7 @@ func TestAccFsCpFileToDir(t *testing.T) {
 			targetFiler, targetDir := tc.setupTarget(t)
 			setupSourceFile(t, context.Background(), sourceFiler)
 
-			RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "foo.txt"), targetDir)
+			testcli.RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "foo.txt"), targetDir)
 
 			assertTargetFile(t, context.Background(), targetFiler, "foo.txt")
 		})
@@ -193,7 +194,7 @@ func TestAccFsCpFileToDirForWindowsPaths(t *testing.T) {
 
 	windowsPath := filepath.Join(filepath.FromSlash(sourceDir), "foo.txt")
 
-	RequireSuccessfulRun(t, "fs", "cp", windowsPath, targetDir)
+	testcli.RequireSuccessfulRun(t, "fs", "cp", windowsPath, targetDir)
 	assertTargetFile(t, ctx, targetFiler, "foo.txt")
 }
 
@@ -214,7 +215,7 @@ func TestAccFsCpDirToDirFileNotOverwritten(t *testing.T) {
 			err := targetFiler.Write(context.Background(), "a/b/c/hello.txt", strings.NewReader("this should not be overwritten"), filer.CreateParentDirectories)
 			require.NoError(t, err)
 
-			RequireSuccessfulRun(t, "fs", "cp", sourceDir, targetDir, "--recursive")
+			testcli.RequireSuccessfulRun(t, "fs", "cp", sourceDir, targetDir, "--recursive")
 			assertFileContent(t, context.Background(), targetFiler, "a/b/c/hello.txt", "this should not be overwritten")
 			assertFileContent(t, context.Background(), targetFiler, "query.sql", "SELECT 1")
 			assertFileContent(t, context.Background(), targetFiler, "pyNb.py", "# Databricks notebook source\nprint(123)")
@@ -239,7 +240,7 @@ func TestAccFsCpFileToDirFileNotOverwritten(t *testing.T) {
 			err := targetFiler.Write(context.Background(), "a/b/c/hello.txt", strings.NewReader("this should not be overwritten"), filer.CreateParentDirectories)
 			require.NoError(t, err)
 
-			RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "a/b/c/hello.txt"), path.Join(targetDir, "a/b/c"))
+			testcli.RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "a/b/c/hello.txt"), path.Join(targetDir, "a/b/c"))
 			assertFileContent(t, context.Background(), targetFiler, "a/b/c/hello.txt", "this should not be overwritten")
 		})
 	}
@@ -262,7 +263,7 @@ func TestAccFsCpFileToFileFileNotOverwritten(t *testing.T) {
 			err := targetFiler.Write(context.Background(), "a/b/c/dontoverwrite.txt", strings.NewReader("this should not be overwritten"), filer.CreateParentDirectories)
 			require.NoError(t, err)
 
-			RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "a/b/c/hello.txt"), path.Join(targetDir, "a/b/c/dontoverwrite.txt"))
+			testcli.RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "a/b/c/hello.txt"), path.Join(targetDir, "a/b/c/dontoverwrite.txt"))
 			assertFileContent(t, context.Background(), targetFiler, "a/b/c/dontoverwrite.txt", "this should not be overwritten")
 		})
 	}
@@ -285,7 +286,7 @@ func TestAccFsCpDirToDirWithOverwriteFlag(t *testing.T) {
 			err := targetFiler.Write(context.Background(), "a/b/c/hello.txt", strings.NewReader("this should be overwritten"), filer.CreateParentDirectories)
 			require.NoError(t, err)
 
-			RequireSuccessfulRun(t, "fs", "cp", sourceDir, targetDir, "--recursive", "--overwrite")
+			testcli.RequireSuccessfulRun(t, "fs", "cp", sourceDir, targetDir, "--recursive", "--overwrite")
 			assertTargetDir(t, context.Background(), targetFiler)
 		})
 	}
@@ -308,7 +309,7 @@ func TestAccFsCpFileToFileWithOverwriteFlag(t *testing.T) {
 			err := targetFiler.Write(context.Background(), "a/b/c/overwritten.txt", strings.NewReader("this should be overwritten"), filer.CreateParentDirectories)
 			require.NoError(t, err)
 
-			RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "a/b/c/hello.txt"), path.Join(targetDir, "a/b/c/overwritten.txt"), "--overwrite")
+			testcli.RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "a/b/c/hello.txt"), path.Join(targetDir, "a/b/c/overwritten.txt"), "--overwrite")
 			assertFileContent(t, context.Background(), targetFiler, "a/b/c/overwritten.txt", "hello, world\n")
 		})
 	}
@@ -331,7 +332,7 @@ func TestAccFsCpFileToDirWithOverwriteFlag(t *testing.T) {
 			err := targetFiler.Write(context.Background(), "a/b/c/hello.txt", strings.NewReader("this should be overwritten"), filer.CreateParentDirectories)
 			require.NoError(t, err)
 
-			RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "a/b/c/hello.txt"), path.Join(targetDir, "a/b/c"), "--overwrite")
+			testcli.RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "a/b/c/hello.txt"), path.Join(targetDir, "a/b/c"), "--overwrite")
 			assertFileContent(t, context.Background(), targetFiler, "a/b/c/hello.txt", "hello, world\n")
 		})
 	}
@@ -348,7 +349,7 @@ func TestAccFsCpErrorsWhenSourceIsDirWithoutRecursiveFlag(t *testing.T) {
 
 			_, tmpDir := tc.setupFiler(t)
 
-			_, _, err := RequireErrorRun(t, "fs", "cp", path.Join(tmpDir), path.Join(tmpDir, "foobar"))
+			_, _, err := testcli.RequireErrorRun(t, "fs", "cp", path.Join(tmpDir), path.Join(tmpDir, "foobar"))
 			r := regexp.MustCompile("source path .* is a directory. Please specify the --recursive flag")
 			assert.Regexp(t, r, err.Error())
 		})
@@ -358,7 +359,7 @@ func TestAccFsCpErrorsWhenSourceIsDirWithoutRecursiveFlag(t *testing.T) {
 func TestAccFsCpErrorsOnInvalidScheme(t *testing.T) {
 	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
-	_, _, err := RequireErrorRun(t, "fs", "cp", "dbfs:/a", "https:/b")
+	_, _, err := testcli.RequireErrorRun(t, "fs", "cp", "dbfs:/a", "https:/b")
 	assert.Equal(t, "invalid scheme: https", err.Error())
 }
 
@@ -379,7 +380,7 @@ func TestAccFsCpSourceIsDirectoryButTargetIsFile(t *testing.T) {
 			err := targetFiler.Write(context.Background(), "my_target", strings.NewReader("I'll block any attempts to recursively copy"), filer.CreateParentDirectories)
 			require.NoError(t, err)
 
-			_, _, err = RequireErrorRun(t, "fs", "cp", sourceDir, path.Join(targetDir, "my_target"), "--recursive")
+			_, _, err = testcli.RequireErrorRun(t, "fs", "cp", sourceDir, path.Join(targetDir, "my_target"), "--recursive")
 			assert.Error(t, err)
 		})
 	}

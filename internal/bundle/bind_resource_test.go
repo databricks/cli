@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -39,7 +40,7 @@ func TestAccBindJobToExistingJob(t *testing.T) {
 	})
 
 	t.Setenv("BUNDLE_ROOT", bundleRoot)
-	c := internal.NewCobraTestRunner(t, "bundle", "deployment", "bind", "foo", fmt.Sprint(jobId), "--auto-approve")
+	c := testcli.NewRunner(t, "bundle", "deployment", "bind", "foo", fmt.Sprint(jobId), "--auto-approve")
 	_, _, err = c.Run()
 	require.NoError(t, err)
 
@@ -61,7 +62,7 @@ func TestAccBindJobToExistingJob(t *testing.T) {
 	require.Equal(t, job.Settings.Name, fmt.Sprintf("test-job-basic-%s", uniqueId))
 	require.Contains(t, job.Settings.Tasks[0].SparkPythonTask.PythonFile, "hello_world.py")
 
-	c = internal.NewCobraTestRunner(t, "bundle", "deployment", "unbind", "foo")
+	c = testcli.NewRunner(t, "bundle", "deployment", "unbind", "foo")
 	_, _, err = c.Run()
 	require.NoError(t, err)
 
@@ -107,7 +108,7 @@ func TestAccAbortBind(t *testing.T) {
 	// Bind should fail because prompting is not possible.
 	t.Setenv("BUNDLE_ROOT", bundleRoot)
 	t.Setenv("TERM", "dumb")
-	c := internal.NewCobraTestRunner(t, "bundle", "deployment", "bind", "foo", fmt.Sprint(jobId))
+	c := testcli.NewRunner(t, "bundle", "deployment", "bind", "foo", fmt.Sprint(jobId))
 
 	// Expect error suggesting to use --auto-approve
 	_, _, err = c.Run()
@@ -157,7 +158,7 @@ func TestAccGenerateAndBind(t *testing.T) {
 	})
 
 	t.Setenv("BUNDLE_ROOT", bundleRoot)
-	c := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "generate", "job",
+	c := testcli.NewRunnerWithContext(t, ctx, "bundle", "generate", "job",
 		"--key", "test_job_key",
 		"--existing-job-id", fmt.Sprint(jobId),
 		"--config-dir", filepath.Join(bundleRoot, "resources"),
@@ -173,7 +174,7 @@ func TestAccGenerateAndBind(t *testing.T) {
 
 	require.Len(t, matches, 1)
 
-	c = internal.NewCobraTestRunner(t, "bundle", "deployment", "bind", "test_job_key", fmt.Sprint(jobId), "--auto-approve")
+	c = testcli.NewRunner(t, "bundle", "deployment", "bind", "test_job_key", fmt.Sprint(jobId), "--auto-approve")
 	_, _, err = c.Run()
 	require.NoError(t, err)
 

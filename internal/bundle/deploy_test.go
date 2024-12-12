@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -120,7 +121,7 @@ func TestAccBundleDeployUcSchemaFailsWithoutAutoApprove(t *testing.T) {
 	// Redeploy the bundle
 	t.Setenv("BUNDLE_ROOT", bundleRoot)
 	t.Setenv("TERM", "dumb")
-	c := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "deploy", "--force-lock")
+	c := testcli.NewRunnerWithContext(t, ctx, "bundle", "deploy", "--force-lock")
 	stdout, stderr, err := c.Run()
 
 	assert.EqualError(t, err, root.ErrAlreadyPrinted.Error())
@@ -164,7 +165,7 @@ func TestAccBundlePipelineDeleteWithoutAutoApprove(t *testing.T) {
 	// Redeploy the bundle. Expect it to fail because deleting the pipeline requires --auto-approve.
 	t.Setenv("BUNDLE_ROOT", bundleRoot)
 	t.Setenv("TERM", "dumb")
-	c := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "deploy", "--force-lock")
+	c := testcli.NewRunnerWithContext(t, ctx, "bundle", "deploy", "--force-lock")
 	stdout, stderr, err := c.Run()
 
 	assert.EqualError(t, err, root.ErrAlreadyPrinted.Error())
@@ -203,7 +204,7 @@ func TestAccBundlePipelineRecreateWithoutAutoApprove(t *testing.T) {
 	// Redeploy the bundle, pointing the DLT pipeline to a different UC catalog.
 	t.Setenv("BUNDLE_ROOT", bundleRoot)
 	t.Setenv("TERM", "dumb")
-	c := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "deploy", "--force-lock", "--var=\"catalog=whatever\"")
+	c := testcli.NewRunnerWithContext(t, ctx, "bundle", "deploy", "--force-lock", "--var=\"catalog=whatever\"")
 	stdout, stderr, err := c.Run()
 
 	assert.EqualError(t, err, root.ErrAlreadyPrinted.Error())
@@ -284,7 +285,7 @@ func TestAccDeployUcVolume(t *testing.T) {
 	// Recreation of the volume without --auto-approve should fail since prompting is not possible
 	t.Setenv("TERM", "dumb")
 	t.Setenv("BUNDLE_ROOT", bundleRoot)
-	stdout, stderr, err := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "deploy", "--var=schema_name=${resources.schemas.schema2.name}").Run()
+	stdout, stderr, err := testcli.NewRunnerWithContext(t, ctx, "bundle", "deploy", "--var=schema_name=${resources.schemas.schema2.name}").Run()
 	assert.Error(t, err)
 	assert.Contains(t, stderr.String(), `This action will result in the deletion or recreation of the following volumes.
 For managed volumes, the files stored in the volume are also deleted from your
@@ -296,7 +297,7 @@ is removed from the catalog, but the underlying files are not deleted:
 	// Successfully recreate the volume with --auto-approve
 	t.Setenv("TERM", "dumb")
 	t.Setenv("BUNDLE_ROOT", bundleRoot)
-	_, _, err = internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "deploy", "--var=schema_name=${resources.schemas.schema2.name}", "--auto-approve").Run()
+	_, _, err = testcli.NewRunnerWithContext(t, ctx, "bundle", "deploy", "--var=schema_name=${resources.schemas.schema2.name}", "--auto-approve").Run()
 	assert.NoError(t, err)
 
 	// Assert the volume is updated successfully

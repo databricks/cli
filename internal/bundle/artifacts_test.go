@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -257,7 +258,7 @@ func TestAccUploadArtifactFileToVolumeThatDoesNotExist(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Setenv("BUNDLE_ROOT", bundleRoot)
-	stdout, stderr, err := internal.RequireErrorRun(t, "bundle", "deploy")
+	stdout, stderr, err := testcli.RequireErrorRun(t, "bundle", "deploy")
 
 	assert.Error(t, err)
 	assert.Equal(t, fmt.Sprintf(`Error: volume /Volumes/main/%s/doesnotexist does not exist: Not Found
@@ -294,7 +295,7 @@ func TestAccUploadArtifactToVolumeNotYetDeployed(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Setenv("BUNDLE_ROOT", bundleRoot)
-	stdout, stderr, err := internal.RequireErrorRun(t, "bundle", "deploy")
+	stdout, stderr, err := testcli.RequireErrorRun(t, "bundle", "deploy")
 
 	assert.Error(t, err)
 	assert.Equal(t, fmt.Sprintf(`Error: volume /Volumes/main/%s/my_volume does not exist: Not Found

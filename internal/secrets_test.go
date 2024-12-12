@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
@@ -14,7 +15,7 @@ import (
 )
 
 func TestSecretsCreateScopeErrWhenNoArguments(t *testing.T) {
-	_, _, err := RequireErrorRun(t, "secrets", "create-scope")
+	_, _, err := testcli.RequireErrorRun(t, "secrets", "create-scope")
 	assert.Contains(t, err.Error(), "accepts 1 arg(s), received 0")
 }
 
@@ -68,7 +69,7 @@ func TestAccSecretsPutSecretStringValue(tt *testing.T) {
 	key := "test-key"
 	value := "test-value\nwith-newlines\n"
 
-	stdout, stderr := RequireSuccessfulRun(t, "secrets", "put-secret", scope, key, "--string-value", value)
+	stdout, stderr := testcli.RequireSuccessfulRun(t, "secrets", "put-secret", scope, key, "--string-value", value)
 	assert.Empty(t, stdout)
 	assert.Empty(t, stderr)
 
@@ -82,7 +83,7 @@ func TestAccSecretsPutSecretBytesValue(tt *testing.T) {
 	key := "test-key"
 	value := []byte{0x00, 0x01, 0x02, 0x03}
 
-	stdout, stderr := RequireSuccessfulRun(t, "secrets", "put-secret", scope, key, "--bytes-value", string(value))
+	stdout, stderr := testcli.RequireSuccessfulRun(t, "secrets", "put-secret", scope, key, "--bytes-value", string(value))
 	assert.Empty(t, stdout)
 	assert.Empty(t, stderr)
 

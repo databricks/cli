@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -52,7 +53,7 @@ func TestAccReposCreateWithProvider(t *testing.T) {
 	require.NoError(t, err)
 	repoPath := synthesizeTemporaryRepoPath(t, w, ctx)
 
-	_, stderr := RequireSuccessfulRun(t, "repos", "create", repoUrl, "gitHub", "--path", repoPath)
+	_, stderr := testcli.RequireSuccessfulRun(t, "repos", "create", repoUrl, "gitHub", "--path", repoPath)
 	assert.Equal(t, "", stderr.String())
 
 	// Confirm the repo was created.
@@ -69,7 +70,7 @@ func TestAccReposCreateWithoutProvider(t *testing.T) {
 	require.NoError(t, err)
 	repoPath := synthesizeTemporaryRepoPath(t, w, ctx)
 
-	_, stderr := RequireSuccessfulRun(t, "repos", "create", repoUrl, "--path", repoPath)
+	_, stderr := testcli.RequireSuccessfulRun(t, "repos", "create", repoUrl, "--path", repoPath)
 	assert.Equal(t, "", stderr.String())
 
 	// Confirm the repo was created.
@@ -88,22 +89,22 @@ func TestAccReposGet(t *testing.T) {
 	repoId, repoPath := createTemporaryRepo(t, w, ctx)
 
 	// Get by ID
-	byIdOutput, stderr := RequireSuccessfulRun(t, "repos", "get", strconv.FormatInt(repoId, 10), "--output=json")
+	byIdOutput, stderr := testcli.RequireSuccessfulRun(t, "repos", "get", strconv.FormatInt(repoId, 10), "--output=json")
 	assert.Equal(t, "", stderr.String())
 
 	// Get by path
-	byPathOutput, stderr := RequireSuccessfulRun(t, "repos", "get", repoPath, "--output=json")
+	byPathOutput, stderr := testcli.RequireSuccessfulRun(t, "repos", "get", repoPath, "--output=json")
 	assert.Equal(t, "", stderr.String())
 
 	// Output should be the same
 	assert.Equal(t, byIdOutput.String(), byPathOutput.String())
 
 	// Get by path fails
-	_, stderr, err = RequireErrorRun(t, "repos", "get", repoPath+"-doesntexist", "--output=json")
+	_, stderr, err = testcli.RequireErrorRun(t, "repos", "get", repoPath+"-doesntexist", "--output=json")
 	assert.ErrorContains(t, err, "failed to look up repo")
 
 	// Get by path resolves to something other than a repo
-	_, stderr, err = RequireErrorRun(t, "repos", "get", "/Repos", "--output=json")
+	_, stderr, err = testcli.RequireErrorRun(t, "repos", "get", "/Repos", "--output=json")
 	assert.ErrorContains(t, err, "is not a repo")
 }
 
@@ -117,11 +118,11 @@ func TestAccReposUpdate(t *testing.T) {
 	repoId, repoPath := createTemporaryRepo(t, w, ctx)
 
 	// Update by ID
-	byIdOutput, stderr := RequireSuccessfulRun(t, "repos", "update", strconv.FormatInt(repoId, 10), "--branch", "ide")
+	byIdOutput, stderr := testcli.RequireSuccessfulRun(t, "repos", "update", strconv.FormatInt(repoId, 10), "--branch", "ide")
 	assert.Equal(t, "", stderr.String())
 
 	// Update by path
-	byPathOutput, stderr := RequireSuccessfulRun(t, "repos", "update", repoPath, "--branch", "ide")
+	byPathOutput, stderr := testcli.RequireSuccessfulRun(t, "repos", "update", repoPath, "--branch", "ide")
 	assert.Equal(t, "", stderr.String())
 
 	// Output should be the same
@@ -138,7 +139,7 @@ func TestAccReposDeleteByID(t *testing.T) {
 	repoId, _ := createTemporaryRepo(t, w, ctx)
 
 	// Delete by ID
-	stdout, stderr := RequireSuccessfulRun(t, "repos", "delete", strconv.FormatInt(repoId, 10))
+	stdout, stderr := testcli.RequireSuccessfulRun(t, "repos", "delete", strconv.FormatInt(repoId, 10))
 	assert.Equal(t, "", stdout.String())
 	assert.Equal(t, "", stderr.String())
 
@@ -157,7 +158,7 @@ func TestAccReposDeleteByPath(t *testing.T) {
 	repoId, repoPath := createTemporaryRepo(t, w, ctx)
 
 	// Delete by path
-	stdout, stderr := RequireSuccessfulRun(t, "repos", "delete", repoPath)
+	stdout, stderr := testcli.RequireSuccessfulRun(t, "repos", "delete", repoPath)
 	assert.Equal(t, "", stdout.String())
 	assert.Equal(t, "", stderr.String())
 
