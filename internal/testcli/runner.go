@@ -100,7 +100,7 @@ func (r *Runner) registerFlagCleanup(c *cobra.Command) {
 	})
 }
 
-// Like [cobraTestRunner.Eventually], but more specific
+// Like [Runner.Eventually], but more specific
 func (r *Runner) WaitForTextPrinted(text string, timeout time.Duration) {
 	r.Eventually(func() bool {
 		currentStdout := r.stdout.String()
