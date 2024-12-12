@@ -1,4 +1,6 @@
-package internal
+//go:build integration
+
+package assumptions_integration
 
 import (
 	"encoding/base64"

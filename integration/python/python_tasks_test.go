@@ -1,4 +1,6 @@
-package python
+//go:build integration
+
+package python_integration
 
 import (
 	"bytes"
