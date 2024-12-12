@@ -15,7 +15,6 @@ import (
 	"reflect"
 	"strings"
 	"sync"
-	"testing"
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
@@ -45,7 +44,7 @@ import (
 // It ensures that the background goroutine terminates upon
 // test completion through cancelling the command context.
 type cobraTestRunner struct {
-	*testing.T
+	testutil.TestingT
 
 	args   []string
 	stdout bytes.Buffer
@@ -128,7 +127,7 @@ func (t *cobraTestRunner) WaitForTextPrinted(text string, timeout time.Duration)
 }
 
 func (t *cobraTestRunner) WaitForOutput(text string, timeout time.Duration) {
-	require.Eventually(t.T, func() bool {
+	require.Eventually(t, func() bool {
 		currentStdout := t.stdout.String()
 		currentErrout := t.stderr.String()
 		return strings.Contains(currentStdout, text) || strings.Contains(currentErrout, text)
@@ -300,23 +299,25 @@ func (t *cobraTestRunner) RunAndParseJSON(v any) {
 	require.NoError(t, err)
 }
 
-func NewCobraTestRunner(t *testing.T, args ...string) *cobraTestRunner {
+func NewCobraTestRunner(t testutil.TestingT, args ...string) *cobraTestRunner {
 	return &cobraTestRunner{
-		T:    t,
+		TestingT: t,
+
 		ctx:  context.Background(),
 		args: args,
 	}
 }
 
-func NewCobraTestRunnerWithContext(t *testing.T, ctx context.Context, args ...string) *cobraTestRunner {
+func NewCobraTestRunnerWithContext(t testutil.TestingT, ctx context.Context, args ...string) *cobraTestRunner {
 	return &cobraTestRunner{
-		T:    t,
+		TestingT: t,
+
 		ctx:  ctx,
 		args: args,
 	}
 }
 
-func RequireSuccessfulRun(t *testing.T, args ...string) (bytes.Buffer, bytes.Buffer) {
+func RequireSuccessfulRun(t testutil.TestingT, args ...string) (bytes.Buffer, bytes.Buffer) {
 	t.Logf("run args: [%s]", strings.Join(args, ", "))
 	c := NewCobraTestRunner(t, args...)
 	stdout, stderr, err := c.Run()
@@ -324,7 +325,7 @@ func RequireSuccessfulRun(t *testing.T, args ...string) (bytes.Buffer, bytes.Buf
 	return stdout, stderr
 }
 
-func RequireErrorRun(t *testing.T, args ...string) (bytes.Buffer, bytes.Buffer, error) {
+func RequireErrorRun(t testutil.TestingT, args ...string) (bytes.Buffer, bytes.Buffer, error) {
 	c := NewCobraTestRunner(t, args...)
 	stdout, stderr, err := c.Run()
 	require.Error(t, err)
@@ -398,7 +399,7 @@ func GenerateWheelTasks(wheelPath string, versions []string, nodeTypeId string) 
 	return tasks
 }
 
-func TemporaryWorkspaceDir(t *testing.T, w *databricks.WorkspaceClient) string {
+func TemporaryWorkspaceDir(t testutil.TestingT, w *databricks.WorkspaceClient) string {
 	ctx := context.Background()
 	me, err := w.CurrentUser.Me(ctx)
 	require.NoError(t, err)
@@ -425,7 +426,7 @@ func TemporaryWorkspaceDir(t *testing.T, w *databricks.WorkspaceClient) string {
 	return basePath
 }
 
-func TemporaryDbfsDir(t *testing.T, w *databricks.WorkspaceClient) string {
+func TemporaryDbfsDir(t testutil.TestingT, w *databricks.WorkspaceClient) string {
 	ctx := context.Background()
 	path := fmt.Sprintf("/tmp/%s", testutil.RandomName("integration-test-dbfs-"))
 
@@ -449,7 +450,7 @@ func TemporaryDbfsDir(t *testing.T, w *databricks.WorkspaceClient) string {
 }
 
 // Create a new UC volume in a catalog called "main" in the workspace.
-func TemporaryUcVolume(t *testing.T, w *databricks.WorkspaceClient) string {
+func TemporaryUcVolume(t testutil.TestingT, w *databricks.WorkspaceClient) string {
 	ctx := context.Background()
 
 	// Create a schema
@@ -483,7 +484,7 @@ func TemporaryUcVolume(t *testing.T, w *databricks.WorkspaceClient) string {
 	return path.Join("/Volumes", "main", schema.Name, volume.Name)
 }
 
-func TemporaryRepo(t *testing.T, w *databricks.WorkspaceClient) string {
+func TemporaryRepo(t testutil.TestingT, w *databricks.WorkspaceClient) string {
 	ctx := context.Background()
 	me, err := w.CurrentUser.Me(ctx)
 	require.NoError(t, err)
@@ -522,7 +523,7 @@ func GetNodeTypeId(env string) string {
 	return "Standard_DS4_v2"
 }
 
-func setupLocalFiler(t *testing.T) (filer.Filer, string) {
+func setupLocalFiler(t testutil.TestingT) (filer.Filer, string) {
 	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	tmp := t.TempDir()
@@ -532,7 +533,7 @@ func setupLocalFiler(t *testing.T) (filer.Filer, string) {
 	return f, path.Join(filepath.ToSlash(tmp))
 }
 
-func setupWsfsFiler(t *testing.T) (filer.Filer, string) {
+func setupWsfsFiler(t testutil.TestingT) (filer.Filer, string) {
 	ctx, wt := acc.WorkspaceTest(t)
 
 	tmpdir := TemporaryWorkspaceDir(t, wt.W)
@@ -549,7 +550,7 @@ func setupWsfsFiler(t *testing.T) (filer.Filer, string) {
 	return f, tmpdir
 }
 
-func setupWsfsExtensionsFiler(t *testing.T) (filer.Filer, string) {
+func setupWsfsExtensionsFiler(t testutil.TestingT) (filer.Filer, string) {
 	_, wt := acc.WorkspaceTest(t)
 
 	tmpdir := TemporaryWorkspaceDir(t, wt.W)
@@ -559,7 +560,7 @@ func setupWsfsExtensionsFiler(t *testing.T) (filer.Filer, string) {
 	return f, tmpdir
 }
 
-func setupDbfsFiler(t *testing.T) (filer.Filer, string) {
+func setupDbfsFiler(t testutil.TestingT) (filer.Filer, string) {
 	_, wt := acc.WorkspaceTest(t)
 
 	tmpDir := TemporaryDbfsDir(t, wt.W)
@@ -569,7 +570,7 @@ func setupDbfsFiler(t *testing.T) (filer.Filer, string) {
 	return f, path.Join("dbfs:/", tmpDir)
 }
 
-func setupUcVolumesFiler(t *testing.T) (filer.Filer, string) {
+func setupUcVolumesFiler(t testutil.TestingT) (filer.Filer, string) {
 	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	if os.Getenv("TEST_METASTORE_ID") == "" {

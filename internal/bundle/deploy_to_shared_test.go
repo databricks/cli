@@ -29,10 +29,10 @@ func TestAccDeployBasicToSharedWorkspacePath(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		err = destroyBundle(wt.T, ctx, bundleRoot)
-		require.NoError(wt.T, err)
+		err = destroyBundle(wt, ctx, bundleRoot)
+		require.NoError(wt, err)
 	})
 
-	err = deployBundle(wt.T, ctx, bundleRoot)
-	require.NoError(wt.T, err)
+	err = deployBundle(wt, ctx, bundleRoot)
+	require.NoError(wt, err)
 }

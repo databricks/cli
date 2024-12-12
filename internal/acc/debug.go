@@ -6,7 +6,8 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"testing"
+
+	"github.com/databricks/cli/internal/testutil"
 )
 
 // Detects if test is run from "debug test" feature in VS Code.
@@ -16,7 +17,7 @@ func isInDebug() bool {
 }
 
 // Loads debug environment from ~/.databricks/debug-env.json.
-func loadDebugEnvIfRunFromIDE(t *testing.T, key string) {
+func loadDebugEnvIfRunFromIDE(t testutil.TestingT, key string) {
 	if !isInDebug() {
 		return
 	}
