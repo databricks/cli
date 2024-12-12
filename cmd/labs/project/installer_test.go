@@ -19,7 +19,7 @@ import (
 
 	"github.com/databricks/cli/cmd/labs/github"
 	"github.com/databricks/cli/cmd/labs/project"
-	"github.com/databricks/cli/internal"
+	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/process"
 	"github.com/databricks/cli/libs/python"
@@ -236,7 +236,7 @@ func TestInstallerWorksForReleases(t *testing.T) {
 	//     │               │   │       └── site-packages
 	//     │               │   │           ├── ...
 	//     │               │   │           ├── distutils-precedence.pth
-	r := internal.NewCobraTestRunnerWithContext(t, ctx, "labs", "install", "blueprint", "--debug")
+	r := testcli.NewRunnerWithContext(t, ctx, "labs", "install", "blueprint", "--debug")
 	r.RunAndExpectOutput("setting up important infrastructure")
 }
 
@@ -356,7 +356,7 @@ account_id = abc
 	// 					└── databrickslabs-blueprint-releases.json
 
 	// `databricks labs install .` means "verify this installer i'm developing does work"
-	r := internal.NewCobraTestRunnerWithContext(t, ctx, "labs", "install", ".")
+	r := testcli.NewRunnerWithContext(t, ctx, "labs", "install", ".")
 	r.WithStdin()
 	defer r.CloseStdin()
 
@@ -426,7 +426,7 @@ func TestUpgraderWorksForReleases(t *testing.T) {
 	ctx = env.Set(ctx, "DATABRICKS_CLUSTER_ID", "installer-cluster")
 	ctx = env.Set(ctx, "DATABRICKS_WAREHOUSE_ID", "installer-warehouse")
 
-	r := internal.NewCobraTestRunnerWithContext(t, ctx, "labs", "upgrade", "blueprint")
+	r := testcli.NewRunnerWithContext(t, ctx, "labs", "upgrade", "blueprint")
 	r.RunAndExpectOutput("setting up important infrastructure")
 
 	// Check if the stub was called with the 'python -m pip install' command
