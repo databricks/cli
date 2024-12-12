@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
 	lockpkg "github.com/databricks/cli/libs/locker"
@@ -165,13 +166,11 @@ func TestAccLock(t *testing.T) {
 }
 
 func setupLockerTest(ctx context.Context, t *testing.T) (*lockpkg.Locker, filer.Filer) {
-	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
+	ctx, wt := acc.WorkspaceTest(t)
+	w := wt.W
 
 	// create temp wsfs dir
-	tmpDir := TemporaryWorkspaceDir(t, w)
+	tmpDir := acc.TemporaryWorkspaceDir(wt, "locker-")
 	f, err := filer.NewWorkspaceFilesClient(w, tmpDir)
 	require.NoError(t, err)
 

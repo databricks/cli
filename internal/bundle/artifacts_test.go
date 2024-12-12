@@ -12,7 +12,6 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/libraries"
-	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
@@ -34,12 +33,11 @@ func touchEmptyFile(t *testing.T, path string) {
 
 func TestAccUploadArtifactFileToCorrectRemotePath(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
-	w := wt.W
 	dir := t.TempDir()
 	whlPath := filepath.Join(dir, "dist", "test.whl")
 	touchEmptyFile(t, whlPath)
 
-	wsDir := internal.TemporaryWorkspaceDir(t, w)
+	wsDir := acc.TemporaryWorkspaceDir(wt, "artifact-")
 
 	b := &bundle.Bundle{
 		BundleRootPath: dir,
@@ -99,12 +97,11 @@ func TestAccUploadArtifactFileToCorrectRemotePath(t *testing.T) {
 
 func TestAccUploadArtifactFileToCorrectRemotePathWithEnvironments(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
-	w := wt.W
 	dir := t.TempDir()
 	whlPath := filepath.Join(dir, "dist", "test.whl")
 	touchEmptyFile(t, whlPath)
 
-	wsDir := internal.TemporaryWorkspaceDir(t, w)
+	wsDir := acc.TemporaryWorkspaceDir(wt, "artifact-")
 
 	b := &bundle.Bundle{
 		BundleRootPath: dir,
@@ -164,13 +161,12 @@ func TestAccUploadArtifactFileToCorrectRemotePathWithEnvironments(t *testing.T) 
 
 func TestAccUploadArtifactFileToCorrectRemotePathForVolumes(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
-	w := wt.W
 
 	if os.Getenv("TEST_METASTORE_ID") == "" {
 		t.Skip("Skipping tests that require a UC Volume when metastore id is not set.")
 	}
 
-	volumePath := internal.TemporaryUcVolume(t, w)
+	volumePath := acc.TemporaryVolume(wt)
 
 	dir := t.TempDir()
 	whlPath := filepath.Join(dir, "dist", "test.whl")

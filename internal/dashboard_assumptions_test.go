@@ -28,7 +28,7 @@ func TestAccDashboardAssumptions_WorkspaceImport(t *testing.T) {
 	dashboardPayload := []byte(`{"pages":[{"name":"2506f97a","displayName":"New Page"}]}`)
 	warehouseId := testutil.GetEnvOrSkipTest(t, "TEST_DEFAULT_WAREHOUSE_ID")
 
-	dir := wt.TemporaryWorkspaceDir("dashboard-assumptions-")
+	dir := acc.TemporaryWorkspaceDir(wt, "dashboard-assumptions-")
 
 	dashboard, err := wt.W.Lakeview.Create(ctx, dashboards.CreateDashboardRequest{
 		Dashboard: &dashboards.Dashboard{

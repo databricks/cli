@@ -9,7 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
@@ -23,7 +22,7 @@ import (
 
 func TestAccGenerateFromExistingJobAndDeploy(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
-	gt := &generateJobTest{T: t, w: wt.W}
+	gt := &generateJobTest{T: wt, w: wt.W}
 
 	uniqueId := uuid.New().String()
 	bundleRoot, err := initTestTemplate(t, ctx, "with_includes", map[string]any{
@@ -70,7 +69,7 @@ func TestAccGenerateFromExistingJobAndDeploy(t *testing.T) {
 }
 
 type generateJobTest struct {
-	T *testing.T
+	T *acc.WorkspaceT
 	w *databricks.WorkspaceClient
 }
 
@@ -88,7 +87,7 @@ func (gt *generateJobTest) createTestJob(ctx context.Context) int64 {
 		nodeTypeId = "n1-standard-4"
 	}
 
-	tmpdir := internal.TemporaryWorkspaceDir(t, w)
+	tmpdir := acc.TemporaryWorkspaceDir(t, "generate-job-")
 	f, err := filer.NewWorkspaceFilesClient(w, tmpdir)
 	require.NoError(t, err)
 

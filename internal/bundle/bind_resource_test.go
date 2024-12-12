@@ -22,7 +22,7 @@ func TestAccBindJobToExistingJob(t *testing.T) {
 	t.Log(env)
 
 	ctx, wt := acc.WorkspaceTest(t)
-	gt := &generateJobTest{T: t, w: wt.W}
+	gt := &generateJobTest{T: wt, w: wt.W}
 
 	nodeTypeId := internal.GetNodeTypeId(env)
 	uniqueId := uuid.New().String()
@@ -87,7 +87,7 @@ func TestAccAbortBind(t *testing.T) {
 	t.Log(env)
 
 	ctx, wt := acc.WorkspaceTest(t)
-	gt := &generateJobTest{T: t, w: wt.W}
+	gt := &generateJobTest{T: wt, w: wt.W}
 
 	nodeTypeId := internal.GetNodeTypeId(env)
 	uniqueId := uuid.New().String()
@@ -136,7 +136,7 @@ func TestAccGenerateAndBind(t *testing.T) {
 	t.Log(env)
 
 	ctx, wt := acc.WorkspaceTest(t)
-	gt := &generateJobTest{T: t, w: wt.W}
+	gt := &generateJobTest{T: wt, w: wt.W}
 
 	uniqueId := uuid.New().String()
 	bundleRoot, err := initTestTemplate(t, ctx, "with_includes", map[string]any{

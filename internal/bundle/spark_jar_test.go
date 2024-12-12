@@ -42,7 +42,7 @@ func runSparkJarTestCommon(t *testing.T, ctx context.Context, sparkVersion, arti
 
 func runSparkJarTestFromVolume(t *testing.T, sparkVersion string) {
 	ctx, wt := acc.UcWorkspaceTest(t)
-	volumePath := internal.TemporaryUcVolume(t, wt.W)
+	volumePath := acc.TemporaryVolume(wt)
 	ctx = env.Set(ctx, "DATABRICKS_BUNDLE_TARGET", "volume")
 	runSparkJarTestCommon(t, ctx, sparkVersion, volumePath)
 }

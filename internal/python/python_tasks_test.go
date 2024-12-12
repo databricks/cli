@@ -15,6 +15,7 @@ import (
 
 	"github.com/databricks/cli/bundle/run/output"
 	"github.com/databricks/cli/internal"
+	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
@@ -180,13 +181,13 @@ func runPythonTasks(t *testing.T, tw *testFiles, opts testOpts) {
 }
 
 func prepareWorkspaceFiles(t *testing.T) *testFiles {
-	ctx := context.Background()
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
+	var err error
+	ctx, wt := acc.WorkspaceTest(t)
+	w := wt.W
 
-	baseDir := internal.TemporaryWorkspaceDir(t, w)
+	baseDir := acc.TemporaryWorkspaceDir(wt, "python-tasks-")
+
 	pyNotebookPath := path.Join(baseDir, "test.py")
-
 	err = w.Workspace.Import(ctx, workspace.Import{
 		Path:      pyNotebookPath,
 		Overwrite: true,
@@ -226,11 +227,12 @@ func prepareWorkspaceFiles(t *testing.T) *testFiles {
 }
 
 func prepareDBFSFiles(t *testing.T) *testFiles {
-	ctx := context.Background()
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
+	var err error
+	ctx, wt := acc.WorkspaceTest(t)
+	w := wt.W
 
-	baseDir := internal.TemporaryDbfsDir(t, w)
+	baseDir := acc.TemporaryDbfsDir(wt, "python-tasks-")
+
 	f, err := filer.NewDbfsClient(w, baseDir)
 	require.NoError(t, err)
 
@@ -255,16 +257,17 @@ func prepareDBFSFiles(t *testing.T) *testFiles {
 }
 
 func prepareRepoFiles(t *testing.T) *testFiles {
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
+	_, wt := acc.WorkspaceTest(t)
+	w := wt.W
 
-	repo := internal.TemporaryRepo(t, w)
+	baseDir := acc.TemporaryRepo(wt, "https://github.com/databricks/cli")
+
 	packagePath := "internal/python/testdata"
 	return &testFiles{
 		w:               w,
-		pyNotebookPath:  path.Join(repo, packagePath, "test"),
-		sparkPythonPath: path.Join(repo, packagePath, "spark.py"),
-		wheelPath:       path.Join(repo, packagePath, "my_test_code-0.0.1-py3-none-any.whl"),
+		pyNotebookPath:  path.Join(baseDir, packagePath, "test"),
+		sparkPythonPath: path.Join(baseDir, packagePath, "spark.py"),
+		wheelPath:       path.Join(baseDir, packagePath, "my_test_code-0.0.1-py3-none-any.whl"),
 	}
 }
 
