@@ -67,8 +67,8 @@ func TestAccBundleInitOnMlopsStacks(t *testing.T) {
 	testcli.RequireSuccessfulRun(t, "bundle", "init", "mlops-stacks", "--output-dir", tmpDir2, "--config-file", filepath.Join(tmpDir1, "config.json"))
 
 	// Assert that the README.md file was created
-	assert.FileExists(t, filepath.Join(tmpDir2, "repo_name", projectName, "README.md"))
-	assertLocalFileContents(t, filepath.Join(tmpDir2, "repo_name", projectName, "README.md"), fmt.Sprintf("# %s", projectName))
+	contents := testutil.ReadFile(t, filepath.Join(tmpDir2, "repo_name", projectName, "README.md"))
+	assert.Contains(t, contents, fmt.Sprintf("# %s", projectName))
 
 	// Validate the stack
 	testutil.Chdir(t, filepath.Join(tmpDir2, "repo_name", projectName))
@@ -163,6 +163,7 @@ func TestAccBundleInitHelpers(t *testing.T) {
 		testcli.RequireSuccessfulRun(t, "bundle", "init", tmpDir, "--output-dir", tmpDir2)
 
 		// Assert that the helper function was correctly computed.
-		assertLocalFileContents(t, filepath.Join(tmpDir2, "foo.txt"), test.expected)
+		contents := testutil.ReadFile(t, filepath.Join(tmpDir2, "foo.txt"))
+		assert.Contains(t, contents, test.expected)
 	}
 }
