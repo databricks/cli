@@ -1,4 +1,6 @@
-package bundle
+//go:build integration
+
+package bundle_integration
 
 import (
 	"bytes"
