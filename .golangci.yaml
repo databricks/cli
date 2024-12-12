@@ -10,6 +10,7 @@ linters:
     - unused
     - gofmt
     - gofumpt
+    #- goimports
 linters-settings:
   govet:
     enable-all: true
@@ -28,5 +29,12 @@ linters-settings:
       - (*github.com/spf13/cobra.Command).MarkFlagRequired
       - (*github.com/spf13/pflag.FlagSet).MarkDeprecated
       - (*github.com/spf13/pflag.FlagSet).MarkHidden
+  gofumpt:
+    module-path: github.com/databricks/cli
+    # Choose whether to use the extra rules.
+    # Default: false
+    #extra-rules: true
+  goimports:
+    local-prefixes: github.com/databricks/cli
 issues:
   exclude-dirs-use-default: false  # recommended by docs https://golangci-lint.run/usage/false-positives/
