@@ -11,10 +11,9 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testcli"
-	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -133,7 +132,7 @@ func TestAccBundlePipelineDeleteWithoutAutoApprove(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	w := wt.W
 
-	nodeTypeId := internal.GetNodeTypeId(env.Get(ctx, "CLOUD_ENV"))
+	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	uniqueId := uuid.New().String()
 	bundleRoot, err := initTestTemplate(t, ctx, "deploy_then_remove_resources", map[string]any{
 		"unique_id":     uniqueId,
@@ -219,7 +218,7 @@ properties such as the 'catalog' or 'storage' are changed:
 func TestAccDeployBasicBundleLogs(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 
-	nodeTypeId := internal.GetNodeTypeId(env.Get(ctx, "CLOUD_ENV"))
+	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	uniqueId := uuid.New().String()
 	root, err := initTestTemplate(t, ctx, "basic", map[string]any{
 		"unique_id":     uniqueId,

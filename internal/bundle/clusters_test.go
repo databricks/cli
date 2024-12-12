@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testutil"
-	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -20,7 +18,7 @@ func TestAccDeployBundleWithCluster(t *testing.T) {
 		t.Skip("Skipping test for AWS cloud because it is not permitted to create clusters")
 	}
 
-	nodeTypeId := internal.GetNodeTypeId(env.Get(ctx, "CLOUD_ENV"))
+	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	uniqueId := uuid.New().String()
 	root, err := initTestTemplate(t, ctx, "clusters", map[string]any{
 		"unique_id":     uniqueId,

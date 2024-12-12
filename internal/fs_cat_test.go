@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -79,14 +79,10 @@ func TestAccFsCatForDbfsInvalidScheme(t *testing.T) {
 }
 
 func TestAccFsCatDoesNotSupportOutputModeJson(t *testing.T) {
-	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	ctx, wt := acc.WorkspaceTest(t)
+	w := wt.W
 
-	ctx := context.Background()
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
-
-	tmpDir := TemporaryDbfsDir(t, w)
-
+	tmpDir := acc.TemporaryDbfsDir(wt, "fs-cat-")
 	f, err := filer.NewDbfsClient(w, tmpDir)
 	require.NoError(t, err)
 

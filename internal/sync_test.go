@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
@@ -72,11 +73,11 @@ type syncTest struct {
 }
 
 func setupSyncTest(t *testing.T, args ...string) *syncTest {
-	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	_, wt := acc.WorkspaceTest(t)
+	w := wt.W
 
-	w := databricks.Must(databricks.NewWorkspaceClient())
 	localRoot := t.TempDir()
-	remoteRoot := TemporaryWorkspaceDir(t, w)
+	remoteRoot := acc.TemporaryWorkspaceDir(wt, "sync-")
 	f, err := filer.NewWorkspaceFilesClient(w, remoteRoot)
 	require.NoError(t, err)
 

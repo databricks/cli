@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -44,11 +43,10 @@ func TestWorkpaceGetStatusErrorWhenNoArguments(t *testing.T) {
 }
 
 func TestAccWorkpaceExportPrintsContents(t *testing.T) {
-	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	ctx, wt := acc.WorkspaceTest(t)
+	w := wt.W
 
-	ctx := context.Background()
-	w := databricks.Must(databricks.NewWorkspaceClient())
-	tmpdir := TemporaryWorkspaceDir(t, w)
+	tmpdir := acc.TemporaryWorkspaceDir(wt, "workspace-export-")
 	f, err := filer.NewWorkspaceFilesClient(w, tmpdir)
 	require.NoError(t, err)
 
@@ -65,9 +63,10 @@ func TestAccWorkpaceExportPrintsContents(t *testing.T) {
 
 func setupWorkspaceImportExportTest(t *testing.T) (context.Context, filer.Filer, string) {
 	ctx, wt := acc.WorkspaceTest(t)
+	w := wt.W
 
-	tmpdir := TemporaryWorkspaceDir(t, wt.W)
-	f, err := filer.NewWorkspaceFilesClient(wt.W, tmpdir)
+	tmpdir := acc.TemporaryWorkspaceDir(wt, "workspace-import-")
+	f, err := filer.NewWorkspaceFilesClient(w, tmpdir)
 	require.NoError(t, err)
 
 	return ctx, f, tmpdir

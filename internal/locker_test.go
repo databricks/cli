@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
 	lockpkg "github.com/databricks/cli/libs/locker"
@@ -164,14 +165,12 @@ func TestAccLock(t *testing.T) {
 	assert.True(t, lockers[indexOfAnInactiveLocker].Active)
 }
 
-func setupLockerTest(ctx context.Context, t *testing.T) (*lockpkg.Locker, filer.Filer) {
-	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
+func setupLockerTest(t *testing.T) (context.Context, *lockpkg.Locker, filer.Filer) {
+	ctx, wt := acc.WorkspaceTest(t)
+	w := wt.W
 
 	// create temp wsfs dir
-	tmpDir := TemporaryWorkspaceDir(t, w)
+	tmpDir := acc.TemporaryWorkspaceDir(wt, "locker-")
 	f, err := filer.NewWorkspaceFilesClient(w, tmpDir)
 	require.NoError(t, err)
 
@@ -179,12 +178,11 @@ func setupLockerTest(ctx context.Context, t *testing.T) (*lockpkg.Locker, filer.
 	locker, err := lockpkg.CreateLocker("redfoo@databricks.com", tmpDir, w)
 	require.NoError(t, err)
 
-	return locker, f
+	return ctx, locker, f
 }
 
 func TestAccLockUnlockWithoutAllowsLockFileNotExist(t *testing.T) {
-	ctx := context.Background()
-	locker, f := setupLockerTest(ctx, t)
+	ctx, locker, f := setupLockerTest(t)
 	var err error
 
 	// Acquire lock on tmp directory
@@ -205,8 +203,7 @@ func TestAccLockUnlockWithoutAllowsLockFileNotExist(t *testing.T) {
 }
 
 func TestAccLockUnlockWithAllowsLockFileNotExist(t *testing.T) {
-	ctx := context.Background()
-	locker, f := setupLockerTest(ctx, t)
+	ctx, locker, f := setupLockerTest(t)
 	var err error
 
 	// Acquire lock on tmp directory

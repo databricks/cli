@@ -3,7 +3,6 @@ package bundle
 import (
 	"testing"
 
-	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
@@ -14,7 +13,7 @@ import (
 func runPythonWheelTest(t *testing.T, templateName, sparkVersion string, pythonWheelWrapper bool) {
 	ctx, _ := acc.WorkspaceTest(t)
 
-	nodeTypeId := internal.GetNodeTypeId(env.Get(ctx, "CLOUD_ENV"))
+	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	instancePoolId := env.Get(ctx, "TEST_INSTANCE_POOL_ID")
 	bundleRoot, err := initTestTemplate(t, ctx, templateName, map[string]any{
 		"node_type_id":         nodeTypeId,

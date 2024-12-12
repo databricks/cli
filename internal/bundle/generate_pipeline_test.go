@@ -9,7 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
@@ -22,7 +21,7 @@ import (
 
 func TestAccGenerateFromExistingPipelineAndDeploy(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
-	gt := &generatePipelineTest{T: t, w: wt.W}
+	gt := &generatePipelineTest{T: wt, w: wt.W}
 
 	uniqueId := uuid.New().String()
 	bundleRoot, err := initTestTemplate(t, ctx, "with_includes", map[string]any{
@@ -78,7 +77,7 @@ func TestAccGenerateFromExistingPipelineAndDeploy(t *testing.T) {
 }
 
 type generatePipelineTest struct {
-	T *testing.T
+	T *acc.WorkspaceT
 	w *databricks.WorkspaceClient
 }
 
@@ -86,7 +85,7 @@ func (gt *generatePipelineTest) createTestPipeline(ctx context.Context) (string,
 	t := gt.T
 	w := gt.w
 
-	tmpdir := internal.TemporaryWorkspaceDir(t, w)
+	tmpdir := acc.TemporaryWorkspaceDir(t, "generate-pipeline-")
 	f, err := filer.NewWorkspaceFilesClient(w, tmpdir)
 	require.NoError(t, err)
 
@@ -96,8 +95,7 @@ func (gt *generatePipelineTest) createTestPipeline(ctx context.Context) (string,
 	err = f.Write(ctx, "test.py", strings.NewReader("print('Hello!')"))
 	require.NoError(t, err)
 
-	env := testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
-	nodeTypeId := internal.GetNodeTypeId(env)
+	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 
 	name := testutil.RandomName("generated-pipeline-")
 	resp, err := w.Pipelines.Create(ctx, pipelines.CreatePipeline{
