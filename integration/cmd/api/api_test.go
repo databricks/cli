@@ -1,4 +1,6 @@
-package internal
+//go:build integration
+
+package api_integration
 
 import (
 	"encoding/json"

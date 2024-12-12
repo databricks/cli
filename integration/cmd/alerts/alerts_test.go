@@ -1,4 +1,6 @@
-package internal
+//go:build integration
+
+package alerts_integration
 
 import (
 	"testing"

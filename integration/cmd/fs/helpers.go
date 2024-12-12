@@ -1,3 +1,5 @@
+//go:build integration
+
 package fs_integration
 
 import (

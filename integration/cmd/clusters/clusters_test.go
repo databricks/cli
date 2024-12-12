@@ -1,4 +1,6 @@
-package internal
+//go:build integration
+
+package clusters_integration
 
 import (
 	"fmt"

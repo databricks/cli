@@ -1,7 +1,8 @@
 package integration
 
 import (
-	"bufio"
+	"go/scanner"
+	"go/token"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,8 +12,50 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestVerifyBuildTags checks that all test files in the integration package specify the "integration" build tag.
-// This ensures that `go test ./...` doesn't run integration tests.
+func verifyIntegrationTest(t *testing.T, path string) {
+	var s scanner.Scanner
+	fset := token.NewFileSet()
+	src, err := os.ReadFile(path)
+	require.NoError(t, err)
+	file := fset.AddFile(path, fset.Base(), len(src))
+	s.Init(file, src, nil, scanner.ScanComments)
+
+	var buildTag string
+	var packageName string
+
+	var tok token.Token
+	var lit string
+
+	// Keep scanning until we find the package name and build tag.
+	for tok != token.EOF && (buildTag == "" || packageName == "") {
+		_, tok, lit = s.Scan()
+		switch tok {
+		case token.PACKAGE:
+			_, tok, lit = s.Scan()
+			if tok == token.IDENT {
+				packageName = lit
+			}
+		case token.COMMENT:
+			if strings.HasPrefix(lit, "//go:build ") {
+				buildTag = strings.TrimPrefix(lit, "//go:build ")
+			}
+		case token.EOF:
+			break
+		}
+	}
+
+	// Verify that the build tag is present.
+	assert.Equal(t, "integration", buildTag, "File %s does not specify the 'integration' build tag", path)
+
+	// Verify that the package name matches the expected format.
+	expected := filepath.Base(filepath.Dir(path)) + "_integration"
+	assert.Equal(t, expected, packageName, "File %s package name '%s' does not match directory name '%s'", path, packageName, expected)
+}
+
+// TestVerifyBuildTags checks that all test files in the integration package specify the "integration" build tag
+// and that the package name matches the basename of the containing directory with "_integration" appended.
+//
+// We enforce this package name to avoid package name aliasing.
 func TestVerifyBuildTags(t *testing.T) {
 	err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -34,14 +77,7 @@ func TestVerifyBuildTags(t *testing.T) {
 			return nil
 		}
 
-		f, err := os.Open(path)
-		require.NoError(t, err)
-		defer f.Close()
-
-		// Read the first line
-		scanner := bufio.NewScanner(f)
-		scanner.Scan()
-		assert.Equal(t, "//go:build integration", scanner.Text(), "File %s does not specify the 'integration' build tag", path)
+		verifyIntegrationTest(t, path)
 		return nil
 	})
 

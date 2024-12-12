@@ -1,4 +1,6 @@
-package internal
+//go:build integration
+
+package repos_integration
 
 import (
 	"context"
@@ -14,6 +16,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+const repoUrl = "https://github.com/databricks/databricks-empty-ide-project.git"
 
 func synthesizeTemporaryRepoPath(t *testing.T, w *databricks.WorkspaceClient, ctx context.Context) string {
 	me, err := w.CurrentUser.Me(ctx)

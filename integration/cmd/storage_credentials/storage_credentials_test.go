@@ -1,4 +1,6 @@
-package internal
+//go:build integration
+
+package storage_credentials_integration
 
 import (
 	"testing"

@@ -1,4 +1,6 @@
-package internal
+//go:build integration
+
+package secrets_integration
 
 import (
 	"context"
