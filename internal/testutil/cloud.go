@@ -1,9 +1,5 @@
 package testutil
 
-import (
-	"testing"
-)
-
 type Cloud int
 
 const (
@@ -13,7 +9,7 @@ const (
 )
 
 // Implement [Requirement].
-func (c Cloud) Verify(t *testing.T) {
+func (c Cloud) Verify(t TestingT) {
 	if c != GetCloud(t) {
 		t.Skipf("Skipping %s-specific test", c)
 	}
@@ -32,7 +28,7 @@ func (c Cloud) String() string {
 	}
 }
 
-func GetCloud(t *testing.T) Cloud {
+func GetCloud(t TestingT) Cloud {
 	env := GetEnvOrSkipTest(t, "CLOUD_ENV")
 	switch env {
 	case "aws":
@@ -50,6 +46,6 @@ func GetCloud(t *testing.T) Cloud {
 	return -1
 }
 
-func IsAWSCloud(t *testing.T) bool {
+func IsAWSCloud(t TestingT) bool {
 	return GetCloud(t) == AWS
 }

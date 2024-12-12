@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"testing"
 
 	"github.com/stretchr/testify/require"
 )
@@ -13,7 +12,7 @@ import (
 // CleanupEnvironment sets up a pristine environment containing only $PATH and $HOME.
 // The original environment is restored upon test completion.
 // Note: use of this function is incompatible with parallel execution.
-func CleanupEnvironment(t *testing.T) {
+func CleanupEnvironment(t TestingT) {
 	// Restore environment when test finishes.
 	environ := os.Environ()
 	t.Cleanup(func() {
@@ -41,7 +40,7 @@ func CleanupEnvironment(t *testing.T) {
 
 // Changes into specified directory for the duration of the test.
 // Returns the current working directory.
-func Chdir(t *testing.T, dir string) string {
+func Chdir(t TestingT, dir string) string {
 	// Prevent parallel execution when changing the working directory.
 	// t.Setenv automatically fails if t.Parallel is set.
 	t.Setenv("DO_NOT_RUN_IN_PARALLEL", "true")

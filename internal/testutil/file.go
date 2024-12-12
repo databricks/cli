@@ -3,12 +3,11 @@ package testutil
 import (
 	"os"
 	"path/filepath"
-	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-func TouchNotebook(t *testing.T, elems ...string) string {
+func TouchNotebook(t TestingT, elems ...string) string {
 	path := filepath.Join(elems...)
 	err := os.MkdirAll(filepath.Dir(path), 0o755)
 	require.NoError(t, err)
@@ -18,7 +17,7 @@ func TouchNotebook(t *testing.T, elems ...string) string {
 	return path
 }
 
-func Touch(t *testing.T, elems ...string) string {
+func Touch(t TestingT, elems ...string) string {
 	path := filepath.Join(elems...)
 	err := os.MkdirAll(filepath.Dir(path), 0o755)
 	require.NoError(t, err)
@@ -32,7 +31,7 @@ func Touch(t *testing.T, elems ...string) string {
 }
 
 // WriteFile writes content to a file.
-func WriteFile(t *testing.T, path, content string) {
+func WriteFile(t TestingT, path, content string) {
 	err := os.MkdirAll(filepath.Dir(path), 0o755)
 	require.NoError(t, err)
 
@@ -47,7 +46,7 @@ func WriteFile(t *testing.T, path, content string) {
 }
 
 // ReadFile reads a file and returns its content as a string.
-func ReadFile(t require.TestingT, path string) string {
+func ReadFile(t TestingT, path string) string {
 	b, err := os.ReadFile(path)
 	require.NoError(t, err)
 
