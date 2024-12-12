@@ -41,32 +41,32 @@ func TestJsonSchema(t *testing.T) {
 	resourceJob := walk(s.Definitions, "github.com", "databricks", "cli", "bundle", "config", "resources.Job")
 	fields := []string{"name", "continuous", "tasks", "trigger"}
 	for _, field := range fields {
-		assert.NotEmpty(t, resourceJob.AnyOf[0].Properties[field].Description)
+		assert.NotEmpty(t, resourceJob.OneOf[0].Properties[field].Description)
 	}
 
 	// Assert descriptions were also loaded for a job task definition.
 	jobTask := walk(s.Definitions, "github.com", "databricks", "databricks-sdk-go", "service", "jobs.Task")
 	fields = []string{"notebook_task", "spark_jar_task", "spark_python_task", "spark_submit_task", "description", "depends_on", "environment_key", "for_each_task", "existing_cluster_id"}
 	for _, field := range fields {
-		assert.NotEmpty(t, jobTask.AnyOf[0].Properties[field].Description)
+		assert.NotEmpty(t, jobTask.OneOf[0].Properties[field].Description)
 	}
 
 	// Assert descriptions are loaded for pipelines
 	pipeline := walk(s.Definitions, "github.com", "databricks", "cli", "bundle", "config", "resources.Pipeline")
 	fields = []string{"name", "catalog", "clusters", "channel", "continuous", "development"}
 	for _, field := range fields {
-		assert.NotEmpty(t, pipeline.AnyOf[0].Properties[field].Description)
+		assert.NotEmpty(t, pipeline.OneOf[0].Properties[field].Description)
 	}
 
 	// Assert enum values are loaded
 	schedule := walk(s.Definitions, "github.com", "databricks", "databricks-sdk-go", "service", "pipelines.RestartWindow")
-	assert.Contains(t, schedule.AnyOf[0].Properties["days_of_week"].Enum, "MONDAY")
-	assert.Contains(t, schedule.AnyOf[0].Properties["days_of_week"].Enum, "TUESDAY")
-	assert.Contains(t, schedule.AnyOf[0].Properties["days_of_week"].Enum, "WEDNESDAY")
-	assert.Contains(t, schedule.AnyOf[0].Properties["days_of_week"].Enum, "THURSDAY")
-	assert.Contains(t, schedule.AnyOf[0].Properties["days_of_week"].Enum, "FRIDAY")
-	assert.Contains(t, schedule.AnyOf[0].Properties["days_of_week"].Enum, "SATURDAY")
-	assert.Contains(t, schedule.AnyOf[0].Properties["days_of_week"].Enum, "SUNDAY")
+	assert.Contains(t, schedule.OneOf[0].Properties["days_of_week"].Enum, "MONDAY")
+	assert.Contains(t, schedule.OneOf[0].Properties["days_of_week"].Enum, "TUESDAY")
+	assert.Contains(t, schedule.OneOf[0].Properties["days_of_week"].Enum, "WEDNESDAY")
+	assert.Contains(t, schedule.OneOf[0].Properties["days_of_week"].Enum, "THURSDAY")
+	assert.Contains(t, schedule.OneOf[0].Properties["days_of_week"].Enum, "FRIDAY")
+	assert.Contains(t, schedule.OneOf[0].Properties["days_of_week"].Enum, "SATURDAY")
+	assert.Contains(t, schedule.OneOf[0].Properties["days_of_week"].Enum, "SUNDAY")
 
 	providers := walk(s.Definitions, "github.com", "databricks", "databricks-sdk-go", "service", "jobs.GitProvider")
 	assert.Contains(t, providers.Enum, "gitHub")

@@ -44,7 +44,8 @@ func addInterpolationPatterns(typ reflect.Type, s jsonschema.Schema) jsonschema.
 	case jsonschema.ArrayType, jsonschema.ObjectType:
 		// arrays and objects can have complex variable values specified.
 		return jsonschema.Schema{
-			AnyOf: []jsonschema.Schema{
+			// OneOf is used because we don't expect more than 1 match and schema-based auto-complete works better with OneOf
+			OneOf: []jsonschema.Schema{
 				s,
 				{
 					Type:    jsonschema.StringType,
@@ -55,7 +56,7 @@ func addInterpolationPatterns(typ reflect.Type, s jsonschema.Schema) jsonschema.
 		// primitives can have variable values, or references like ${bundle.xyz}
 		// or ${workspace.xyz}
 		return jsonschema.Schema{
-			AnyOf: []jsonschema.Schema{
+			OneOf: []jsonschema.Schema{
 				s,
 				{Type: jsonschema.StringType, Pattern: interpolationPattern("resources")},
 				{Type: jsonschema.StringType, Pattern: interpolationPattern("bundle")},

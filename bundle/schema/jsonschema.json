@@ -1,7 +1,7 @@
 {
   "$defs": {
     "bool": {
-      "anyOf": [
+      "oneOf": [
         {
           "type": "boolean"
         },
@@ -28,7 +28,7 @@
       ]
     },
     "float64": {
-      "anyOf": [
+      "oneOf": [
         {
           "type": "number"
         },
@@ -60,7 +60,7 @@
           "bundle": {
             "config": {
               "resources.Cluster": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "properties": {
@@ -181,7 +181,7 @@
                 ]
               },
               "resources.Dashboard": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "properties": {
@@ -244,7 +244,7 @@
                 ]
               },
               "resources.Grant": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "properties": {
@@ -270,7 +270,7 @@
                 ]
               },
               "resources.Job": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "properties": {
@@ -365,7 +365,7 @@
                 ]
               },
               "resources.MlflowExperiment": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "properties": {
@@ -410,7 +410,7 @@
                 ]
               },
               "resources.MlflowModel": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "properties": {
@@ -455,7 +455,7 @@
                 ]
               },
               "resources.ModelServingEndpoint": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "properties": {
@@ -500,7 +500,7 @@
                 ]
               },
               "resources.Permission": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "properties": {
@@ -533,7 +533,7 @@
                 ]
               },
               "resources.Pipeline": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "properties": {
@@ -642,7 +642,7 @@
                 ]
               },
               "resources.QualityMonitor": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "properties": {
@@ -716,7 +716,7 @@
                 ]
               },
               "resources.RegisteredModel": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "properties": {
@@ -758,7 +758,7 @@
                 ]
               },
               "resources.Schema": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "properties": {
@@ -798,7 +798,7 @@
                 ]
               },
               "resources.Volume": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "properties": {
@@ -843,7 +843,7 @@
                 ]
               },
               "variable.Lookup": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "properties": {
@@ -945,7 +945,7 @@
               }
             },
             "config.Artifact": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -984,7 +984,7 @@
               ]
             },
             "config.ArtifactFile": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1008,7 +1008,7 @@
               "type": "string"
             },
             "config.Bundle": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1058,7 +1058,7 @@
               "type": "string"
             },
             "config.Deployment": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1081,7 +1081,7 @@
               ]
             },
             "config.Experimental": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1111,7 +1111,7 @@
               ]
             },
             "config.Git": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1135,7 +1135,7 @@
               ]
             },
             "config.Lock": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1160,7 +1160,7 @@
               "type": "string"
             },
             "config.Presets": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1198,7 +1198,7 @@
               ]
             },
             "config.PyDABs": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1224,7 +1224,7 @@
               ]
             },
             "config.Resources": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1291,7 +1291,7 @@
               ]
             },
             "config.Sync": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1317,7 +1317,7 @@
               ]
             },
             "config.Target": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1397,7 +1397,7 @@
               ]
             },
             "config.Workspace": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1484,7 +1484,7 @@
         "databricks-sdk-go": {
           "service": {
             "catalog.MonitorCronSchedule": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1522,7 +1522,7 @@
               ]
             },
             "catalog.MonitorDataClassificationConfig": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1540,7 +1540,7 @@
               ]
             },
             "catalog.MonitorDestination": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1558,7 +1558,7 @@
               ]
             },
             "catalog.MonitorInferenceLog": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1615,7 +1615,7 @@
               ]
             },
             "catalog.MonitorMetric": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1665,7 +1665,7 @@
               ]
             },
             "catalog.MonitorNotifications": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1687,7 +1687,7 @@
               ]
             },
             "catalog.MonitorSnapshot": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "additionalProperties": false
@@ -1699,7 +1699,7 @@
               ]
             },
             "catalog.MonitorTimeSeries": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1732,7 +1732,7 @@
               ]
             },
             "compute.Adlsgen2Info": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1753,7 +1753,7 @@
               ]
             },
             "compute.AutoScale": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1775,7 +1775,7 @@
               ]
             },
             "compute.AwsAttributes": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1836,7 +1836,7 @@
               ]
             },
             "compute.AzureAttributes": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1874,7 +1874,7 @@
               ]
             },
             "compute.ClientsTypes": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1896,7 +1896,7 @@
               ]
             },
             "compute.ClusterLogConf": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1918,7 +1918,7 @@
               ]
             },
             "compute.ClusterSpec": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2049,7 +2049,7 @@
               ]
             },
             "compute.DbfsStorageInfo": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2070,7 +2070,7 @@
               ]
             },
             "compute.DockerBasicAuth": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2092,7 +2092,7 @@
               ]
             },
             "compute.DockerImage": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2121,7 +2121,7 @@
               ]
             },
             "compute.Environment": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "description": "The environment entity used to preserve serverless environment side panel and jobs' environment for non-notebook task.\nIn this minimal environment spec, only pip dependencies are supported.",
@@ -2147,7 +2147,7 @@
               ]
             },
             "compute.GcpAttributes": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2193,7 +2193,7 @@
               ]
             },
             "compute.GcsStorageInfo": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2214,7 +2214,7 @@
               ]
             },
             "compute.InitScriptInfo": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2256,7 +2256,7 @@
               ]
             },
             "compute.Library": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2298,7 +2298,7 @@
               ]
             },
             "compute.LocalFileInfo": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2319,7 +2319,7 @@
               ]
             },
             "compute.LogAnalyticsInfo": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2341,7 +2341,7 @@
               ]
             },
             "compute.MavenLibrary": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2370,7 +2370,7 @@
               ]
             },
             "compute.PythonPyPiLibrary": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2395,7 +2395,7 @@
               ]
             },
             "compute.RCranLibrary": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2429,7 +2429,7 @@
               ]
             },
             "compute.S3StorageInfo": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2474,7 +2474,7 @@
               ]
             },
             "compute.VolumesStorageInfo": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2495,7 +2495,7 @@
               ]
             },
             "compute.WorkloadType": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2516,7 +2516,7 @@
               ]
             },
             "compute.WorkspaceStorageInfo": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2551,7 +2551,7 @@
               ]
             },
             "jobs.ConditionTask": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2594,7 +2594,7 @@
               ]
             },
             "jobs.Continuous": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2612,7 +2612,7 @@
               ]
             },
             "jobs.CronSchedule": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2642,7 +2642,7 @@
               ]
             },
             "jobs.DbtTask": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2687,7 +2687,7 @@
               ]
             },
             "jobs.FileArrivalTriggerConfiguration": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2716,7 +2716,7 @@
               ]
             },
             "jobs.ForEachTask": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2766,7 +2766,7 @@
               ]
             },
             "jobs.GitSnapshot": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "description": "Read-only state of the remote repository at the time the job was run. This field is only included on job runs.",
@@ -2785,7 +2785,7 @@
               ]
             },
             "jobs.GitSource": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "description": "An optional specification for a remote Git repository containing the source code used by tasks. Version-controlled source code is supported by notebook, dbt, Python script, and SQL File tasks.\n\nIf `git_source` is set, these tasks retrieve the file from the remote repository by default. However, this behavior can be overridden by setting `source` to `WORKSPACE` on the task.\n\nNote: dbt and SQL File tasks support only version-controlled sources. If dbt or SQL File tasks are used, `git_source` must be defined on the job.",
@@ -2824,7 +2824,7 @@
               ]
             },
             "jobs.JobCluster": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2850,7 +2850,7 @@
               ]
             },
             "jobs.JobDeployment": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2890,7 +2890,7 @@
               ]
             },
             "jobs.JobEmailNotifications": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2928,7 +2928,7 @@
               ]
             },
             "jobs.JobEnvironment": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2952,7 +2952,7 @@
               ]
             },
             "jobs.JobNotificationSettings": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2974,7 +2974,7 @@
               ]
             },
             "jobs.JobParameterDefinition": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3000,7 +3000,7 @@
               ]
             },
             "jobs.JobRunAs": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "description": "Write-only setting. Specifies the user, service principal or group that the job/pipeline runs as. If not specified, the job/pipeline runs as the user who created the job/pipeline.\n\nEither `user_name` or `service_principal_name` should be specified. If not, an error is thrown.",
@@ -3023,7 +3023,7 @@
               ]
             },
             "jobs.JobSource": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "description": "The source of the job specification in the remote repository when the job is source controlled.",
@@ -3080,7 +3080,7 @@
               ]
             },
             "jobs.JobsHealthRule": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3109,7 +3109,7 @@
               ]
             },
             "jobs.JobsHealthRules": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "description": "An optional set of health rules that can be defined for this job.",
@@ -3127,7 +3127,7 @@
               ]
             },
             "jobs.NotebookTask": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3167,7 +3167,7 @@
               ]
             },
             "jobs.PeriodicTriggerConfiguration": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3201,7 +3201,7 @@
               ]
             },
             "jobs.PipelineParams": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3219,7 +3219,7 @@
               ]
             },
             "jobs.PipelineTask": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3244,7 +3244,7 @@
               ]
             },
             "jobs.PythonWheelTask": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3278,7 +3278,7 @@
               ]
             },
             "jobs.QueueSettings": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3311,7 +3311,7 @@
               ]
             },
             "jobs.RunJobTask": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3375,7 +3375,7 @@
               ]
             },
             "jobs.SparkJarTask": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3401,7 +3401,7 @@
               ]
             },
             "jobs.SparkPythonTask": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3430,7 +3430,7 @@
               ]
             },
             "jobs.SparkSubmitTask": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3448,7 +3448,7 @@
               ]
             },
             "jobs.SqlTask": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3489,7 +3489,7 @@
               ]
             },
             "jobs.SqlTaskAlert": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3518,7 +3518,7 @@
               ]
             },
             "jobs.SqlTaskDashboard": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3551,7 +3551,7 @@
               ]
             },
             "jobs.SqlTaskFile": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3576,7 +3576,7 @@
               ]
             },
             "jobs.SqlTaskQuery": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3597,7 +3597,7 @@
               ]
             },
             "jobs.SqlTaskSubscription": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3619,7 +3619,7 @@
               ]
             },
             "jobs.TableUpdateTriggerConfiguration": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3649,7 +3649,7 @@
               ]
             },
             "jobs.Task": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3781,7 +3781,7 @@
               ]
             },
             "jobs.TaskDependency": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3806,7 +3806,7 @@
               ]
             },
             "jobs.TaskEmailNotifications": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3844,7 +3844,7 @@
               ]
             },
             "jobs.TaskNotificationSettings": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3870,7 +3870,7 @@
               ]
             },
             "jobs.TriggerSettings": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3903,7 +3903,7 @@
               ]
             },
             "jobs.Webhook": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3923,7 +3923,7 @@
               ]
             },
             "jobs.WebhookNotifications": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3957,7 +3957,7 @@
               ]
             },
             "ml.ExperimentTag": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3979,7 +3979,7 @@
               ]
             },
             "ml.ModelTag": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4001,7 +4001,7 @@
               ]
             },
             "ml.ModelVersion": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4076,7 +4076,7 @@
               ]
             },
             "ml.ModelVersionTag": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4098,7 +4098,7 @@
               ]
             },
             "pipelines.CronTrigger": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4125,7 +4125,7 @@
               ]
             },
             "pipelines.FileLibrary": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4143,7 +4143,7 @@
               ]
             },
             "pipelines.Filters": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4165,7 +4165,7 @@
               ]
             },
             "pipelines.IngestionConfig": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4191,7 +4191,7 @@
               ]
             },
             "pipelines.IngestionGatewayPipelineDefinition": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4225,7 +4225,7 @@
               ]
             },
             "pipelines.IngestionPipelineDefinition": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4255,7 +4255,7 @@
               ]
             },
             "pipelines.ManualTrigger": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "additionalProperties": false
@@ -4267,7 +4267,7 @@
               ]
             },
             "pipelines.NotebookLibrary": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4285,7 +4285,7 @@
               ]
             },
             "pipelines.Notifications": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4307,7 +4307,7 @@
               ]
             },
             "pipelines.PipelineCluster": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4397,7 +4397,7 @@
               ]
             },
             "pipelines.PipelineClusterAutoscale": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4435,7 +4435,7 @@
               ]
             },
             "pipelines.PipelineDeployment": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4457,7 +4457,7 @@
               ]
             },
             "pipelines.PipelineLibrary": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4491,7 +4491,7 @@
               ]
             },
             "pipelines.PipelineTrigger": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4511,7 +4511,7 @@
               ]
             },
             "pipelines.ReportSpec": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4545,7 +4545,7 @@
               ]
             },
             "pipelines.RestartWindow": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4586,7 +4586,7 @@
               "type": "string"
             },
             "pipelines.SchemaSpec": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4620,7 +4620,7 @@
               ]
             },
             "pipelines.TableSpec": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4662,7 +4662,7 @@
               ]
             },
             "pipelines.TableSpecificConfig": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4700,7 +4700,7 @@
               ]
             },
             "serving.Ai21LabsConfig": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4720,7 +4720,7 @@
               ]
             },
             "serving.AiGatewayConfig": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4750,7 +4750,7 @@
               ]
             },
             "serving.AiGatewayGuardrailParameters": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4780,7 +4780,7 @@
               ]
             },
             "serving.AiGatewayGuardrailPiiBehavior": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4809,7 +4809,7 @@
               ]
             },
             "serving.AiGatewayGuardrails": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4831,7 +4831,7 @@
               ]
             },
             "serving.AiGatewayInferenceTableConfig": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4861,7 +4861,7 @@
               ]
             },
             "serving.AiGatewayRateLimit": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4906,7 +4906,7 @@
               ]
             },
             "serving.AiGatewayUsageTrackingConfig": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4924,7 +4924,7 @@
               ]
             },
             "serving.AmazonBedrockConfig": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4976,7 +4976,7 @@
               ]
             },
             "serving.AnthropicConfig": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4998,7 +4998,7 @@
               ]
             },
             "serving.AutoCaptureConfigInput": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -5028,7 +5028,7 @@
               ]
             },
             "serving.CohereConfig": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -5054,7 +5054,7 @@
               ]
             },
             "serving.DatabricksModelServingConfig": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -5083,7 +5083,7 @@
               ]
             },
             "serving.EndpointCoreConfigInput": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -5113,7 +5113,7 @@
               ]
             },
             "serving.EndpointTag": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -5138,7 +5138,7 @@
               ]
             },
             "serving.ExternalModel": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -5215,7 +5215,7 @@
               ]
             },
             "serving.GoogleCloudVertexAiConfig": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -5241,7 +5241,7 @@
               ]
             },
             "serving.OpenAiConfig": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -5288,7 +5288,7 @@
               ]
             },
             "serving.PaLmConfig": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -5308,7 +5308,7 @@
               ]
             },
             "serving.RateLimit": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -5353,7 +5353,7 @@
               ]
             },
             "serving.Route": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -5379,7 +5379,7 @@
               ]
             },
             "serving.ServedEntityInput": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -5437,7 +5437,7 @@
               ]
             },
             "serving.ServedModelInput": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -5516,7 +5516,7 @@
               ]
             },
             "serving.TrafficConfig": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -5538,7 +5538,7 @@
       }
     },
     "int": {
-      "anyOf": [
+      "oneOf": [
         {
           "type": "integer"
         },
@@ -5565,7 +5565,7 @@
       ]
     },
     "int64": {
-      "anyOf": [
+      "oneOf": [
         {
           "type": "integer"
         },
@@ -5599,7 +5599,7 @@
             "bundle": {
               "config": {
                 "resources.Cluster": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "type": "object",
                       "additionalProperties": {
@@ -5613,7 +5613,7 @@
                   ]
                 },
                 "resources.Dashboard": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "type": "object",
                       "additionalProperties": {
@@ -5627,7 +5627,7 @@
                   ]
                 },
                 "resources.Job": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "type": "object",
                       "additionalProperties": {
@@ -5641,7 +5641,7 @@
                   ]
                 },
                 "resources.MlflowExperiment": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "type": "object",
                       "additionalProperties": {
@@ -5655,7 +5655,7 @@
                   ]
                 },
                 "resources.MlflowModel": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "type": "object",
                       "additionalProperties": {
@@ -5669,7 +5669,7 @@
                   ]
                 },
                 "resources.ModelServingEndpoint": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "type": "object",
                       "additionalProperties": {
@@ -5683,7 +5683,7 @@
                   ]
                 },
                 "resources.Pipeline": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "type": "object",
                       "additionalProperties": {
@@ -5697,7 +5697,7 @@
                   ]
                 },
                 "resources.QualityMonitor": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "type": "object",
                       "additionalProperties": {
@@ -5711,7 +5711,7 @@
                   ]
                 },
                 "resources.RegisteredModel": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "type": "object",
                       "additionalProperties": {
@@ -5725,7 +5725,7 @@
                   ]
                 },
                 "resources.Schema": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "type": "object",
                       "additionalProperties": {
@@ -5739,7 +5739,7 @@
                   ]
                 },
                 "resources.Volume": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "type": "object",
                       "additionalProperties": {
@@ -5753,7 +5753,7 @@
                   ]
                 },
                 "variable.TargetVariable": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "type": "object",
                       "additionalProperties": {
@@ -5767,7 +5767,7 @@
                   ]
                 },
                 "variable.Variable": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "type": "object",
                       "additionalProperties": {
@@ -5782,7 +5782,7 @@
                 }
               },
               "config.Artifact": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "additionalProperties": {
@@ -5796,7 +5796,7 @@
                 ]
               },
               "config.Command": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "additionalProperties": {
@@ -5810,7 +5810,7 @@
                 ]
               },
               "config.Target": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "additionalProperties": {
@@ -5828,7 +5828,7 @@
         }
       },
       "string": {
-        "anyOf": [
+        "oneOf": [
           {
             "type": "object",
             "additionalProperties": {
@@ -5849,7 +5849,7 @@
             "bundle": {
               "config": {
                 "resources.Grant": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "type": "array",
                       "items": {
@@ -5863,7 +5863,7 @@
                   ]
                 },
                 "resources.Permission": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "type": "array",
                       "items": {
@@ -5878,7 +5878,7 @@
                 }
               },
               "config.ArtifactFile": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -5896,7 +5896,7 @@
           "databricks-sdk-go": {
             "service": {
               "catalog.MonitorMetric": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -5910,7 +5910,7 @@
                 ]
               },
               "compute.InitScriptInfo": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -5924,7 +5924,7 @@
                 ]
               },
               "compute.Library": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -5938,7 +5938,7 @@
                 ]
               },
               "jobs.JobCluster": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -5952,7 +5952,7 @@
                 ]
               },
               "jobs.JobEnvironment": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -5966,7 +5966,7 @@
                 ]
               },
               "jobs.JobParameterDefinition": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -5980,7 +5980,7 @@
                 ]
               },
               "jobs.JobsHealthRule": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -5994,7 +5994,7 @@
                 ]
               },
               "jobs.SqlTaskSubscription": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -6008,7 +6008,7 @@
                 ]
               },
               "jobs.Task": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -6022,7 +6022,7 @@
                 ]
               },
               "jobs.TaskDependency": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -6036,7 +6036,7 @@
                 ]
               },
               "jobs.Webhook": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -6050,7 +6050,7 @@
                 ]
               },
               "ml.ExperimentTag": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -6064,7 +6064,7 @@
                 ]
               },
               "ml.ModelTag": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -6078,7 +6078,7 @@
                 ]
               },
               "ml.ModelVersion": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -6092,7 +6092,7 @@
                 ]
               },
               "ml.ModelVersionTag": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -6106,7 +6106,7 @@
                 ]
               },
               "pipelines.IngestionConfig": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -6120,7 +6120,7 @@
                 ]
               },
               "pipelines.Notifications": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -6134,7 +6134,7 @@
                 ]
               },
               "pipelines.PipelineCluster": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -6148,7 +6148,7 @@
                 ]
               },
               "pipelines.PipelineLibrary": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -6162,7 +6162,7 @@
                 ]
               },
               "serving.AiGatewayRateLimit": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -6176,7 +6176,7 @@
                 ]
               },
               "serving.EndpointTag": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -6190,7 +6190,7 @@
                 ]
               },
               "serving.RateLimit": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -6204,7 +6204,7 @@
                 ]
               },
               "serving.Route": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -6218,7 +6218,7 @@
                 ]
               },
               "serving.ServedEntityInput": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -6232,7 +6232,7 @@
                 ]
               },
               "serving.ServedModelInput": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -6250,7 +6250,7 @@
         }
       },
       "string": {
-        "anyOf": [
+        "oneOf": [
           {
             "type": "array",
             "items": {

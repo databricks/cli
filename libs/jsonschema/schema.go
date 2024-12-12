@@ -70,6 +70,9 @@ type Schema struct {
 	// Schema that must match any of the schemas in the array
 	AnyOf []Schema `json:"anyOf,omitempty"`
 
+	// Schema that must match one of the schemas in the array
+	OneOf []Schema `json:"oneOf,omitempty"`
+
 	// Title of the object, rendered as inline documentation in the IDE.
 	// https://json-schema.org/understanding-json-schema/reference/annotations
 	Title string `json:"title,omitempty"`
