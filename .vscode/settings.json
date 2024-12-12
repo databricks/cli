@@ -9,7 +9,8 @@
     ],
     "go.useLanguageServer": true,
     "gopls": {
-         "formatting.gofumpt": true
+         "formatting.gofumpt": true,
+         "buildFlags": ["-tags=integration"]
     },
     "files.trimTrailingWhitespace": true,
     "files.insertFinalNewline": true,
