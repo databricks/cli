@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
@@ -24,7 +23,7 @@ func TestAccBindJobToExistingJob(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	gt := &generateJobTest{T: wt, w: wt.W}
 
-	nodeTypeId := internal.GetNodeTypeId(env)
+	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	uniqueId := uuid.New().String()
 	bundleRoot, err := initTestTemplate(t, ctx, "basic", map[string]any{
 		"unique_id":     uniqueId,
@@ -89,7 +88,7 @@ func TestAccAbortBind(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	gt := &generateJobTest{T: wt, w: wt.W}
 
-	nodeTypeId := internal.GetNodeTypeId(env)
+	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	uniqueId := uuid.New().String()
 	bundleRoot, err := initTestTemplate(t, ctx, "basic", map[string]any{
 		"unique_id":     uniqueId,

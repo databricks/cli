@@ -77,16 +77,6 @@ func (gt *generateJobTest) createTestJob(ctx context.Context) int64 {
 	t := gt.T
 	w := gt.w
 
-	var nodeTypeId string
-	switch testutil.GetCloud(t) {
-	case testutil.AWS:
-		nodeTypeId = "i3.xlarge"
-	case testutil.Azure:
-		nodeTypeId = "Standard_DS4_v2"
-	case testutil.GCP:
-		nodeTypeId = "n1-standard-4"
-	}
-
 	tmpdir := acc.TemporaryWorkspaceDir(t, "generate-job-")
 	f, err := filer.NewWorkspaceFilesClient(w, tmpdir)
 	require.NoError(t, err)
@@ -102,7 +92,7 @@ func (gt *generateJobTest) createTestJob(ctx context.Context) int64 {
 				NewCluster: &compute.ClusterSpec{
 					SparkVersion: "13.3.x-scala2.12",
 					NumWorkers:   1,
-					NodeTypeId:   nodeTypeId,
+					NodeTypeId:   testutil.GetCloud(t).NodeTypeID(),
 					SparkConf: map[string]string{
 						"spark.databricks.enableWsfs":                         "true",
 						"spark.databricks.hive.metastore.glueCatalog.enabled": "true",

@@ -10,9 +10,8 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/metadata"
-	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
-	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -23,7 +22,7 @@ func TestAccJobsMetadataFile(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	w := wt.W
 
-	nodeTypeId := internal.GetNodeTypeId(env.Get(ctx, "CLOUD_ENV"))
+	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	uniqueId := uuid.New().String()
 	bundleRoot, err := initTestTemplate(t, ctx, "job_metadata", map[string]any{
 		"unique_id":     uniqueId,

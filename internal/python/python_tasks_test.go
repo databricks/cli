@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle/run/output"
-	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
@@ -129,7 +128,7 @@ func runPythonTasks(t *testing.T, tw *testFiles, opts testOpts) {
 
 	w := tw.w
 
-	nodeTypeId := internal.GetNodeTypeId(env)
+	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	tasks := make([]jobs.SubmitTask, 0)
 	if opts.includeNotebookTasks {
 		tasks = append(tasks, GenerateNotebookTasks(tw.pyNotebookPath, sparkVersions, nodeTypeId)...)

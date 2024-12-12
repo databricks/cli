@@ -9,7 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
@@ -96,8 +95,7 @@ func (gt *generatePipelineTest) createTestPipeline(ctx context.Context) (string,
 	err = f.Write(ctx, "test.py", strings.NewReader("print('Hello!')"))
 	require.NoError(t, err)
 
-	env := testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
-	nodeTypeId := internal.GetNodeTypeId(env)
+	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 
 	name := testutil.RandomName("generated-pipeline-")
 	resp, err := w.Pipelines.Create(ctx, pipelines.CreatePipeline{

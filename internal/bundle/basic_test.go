@@ -5,9 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
-	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
@@ -15,7 +14,7 @@ import (
 func TestAccBasicBundleDeployWithFailOnActiveRuns(t *testing.T) {
 	ctx, _ := acc.WorkspaceTest(t)
 
-	nodeTypeId := internal.GetNodeTypeId(env.Get(ctx, "CLOUD_ENV"))
+	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	uniqueId := uuid.New().String()
 	root, err := initTestTemplate(t, ctx, "basic", map[string]any{
 		"unique_id":     uniqueId,

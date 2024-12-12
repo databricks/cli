@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/deploy"
-	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/google/uuid"
@@ -21,7 +20,7 @@ func TestAccFilesAreSyncedCorrectlyWhenNoSnapshot(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	w := wt.W
 
-	nodeTypeId := internal.GetNodeTypeId(env)
+	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	uniqueId := uuid.New().String()
 	bundleRoot, err := initTestTemplate(t, ctx, "basic", map[string]any{
 		"unique_id":     uniqueId,

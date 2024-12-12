@@ -28,6 +28,19 @@ func (c Cloud) String() string {
 	}
 }
 
+func (c Cloud) NodeTypeID() string {
+	switch c {
+	case AWS:
+		return "i3.xlarge"
+	case Azure:
+		return "Standard_DS4_v2"
+	case GCP:
+		return "n1-standard-4"
+	default:
+		return "unknown"
+	}
+}
+
 func GetCloud(t TestingT) Cloud {
 	env := GetEnvOrSkipTest(t, "CLOUD_ENV")
 	switch env {

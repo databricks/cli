@@ -4,9 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
-	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/google/uuid"
@@ -25,7 +24,7 @@ func TestAccLocalStateStaleness(t *testing.T) {
 	// Because of deploy (2), the locally cached state of bundle instance A should be stale.
 	// Then for deploy (3), it must use the remote state over the stale local state.
 
-	nodeTypeId := internal.GetNodeTypeId(env.Get(ctx, "CLOUD_ENV"))
+	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	uniqueId := uuid.New().String()
 	initialize := func() string {
 		root, err := initTestTemplate(t, ctx, "basic", map[string]any{

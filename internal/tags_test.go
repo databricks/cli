@@ -1,33 +1,19 @@
 package internal
 
 import (
-	"context"
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testutil"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
 )
 
 func testTags(t *testing.T, tags map[string]string) error {
-	var nodeTypeId string
-	switch testutil.GetCloud(t) {
-	case testutil.AWS:
-		nodeTypeId = "i3.xlarge"
-	case testutil.Azure:
-		nodeTypeId = "Standard_DS4_v2"
-	case testutil.GCP:
-		nodeTypeId = "n1-standard-4"
-	}
-
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
-
-	ctx := context.Background()
-	resp, err := w.Jobs.Create(ctx, jobs.CreateJob{
+	ctx, wt := acc.WorkspaceTest(t)
+	resp, err := wt.W.Jobs.Create(ctx, jobs.CreateJob{
 		Name: testutil.RandomName("test-tags-"),
 		Tasks: []jobs.Task{
 			{
@@ -35,7 +21,7 @@ func testTags(t *testing.T, tags map[string]string) error {
 				NewCluster: &compute.ClusterSpec{
 					SparkVersion: "13.3.x-scala2.12",
 					NumWorkers:   1,
-					NodeTypeId:   nodeTypeId,
+					NodeTypeId:   testutil.GetCloud(t).NodeTypeID(),
 				},
 				SparkPythonTask: &jobs.SparkPythonTask{
 					PythonFile: "/doesnt_exist.py",
@@ -47,7 +33,7 @@ func testTags(t *testing.T, tags map[string]string) error {
 
 	if resp != nil {
 		t.Cleanup(func() {
-			_ = w.Jobs.DeleteByJobId(ctx, resp.JobId)
+			_ = wt.W.Jobs.DeleteByJobId(ctx, resp.JobId)
 			// Cannot enable errchecking there, tests fail with:
 			//   Error: Received unexpected error:
 			//   Job 0 does not exist.

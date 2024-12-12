@@ -15,16 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func GetNodeTypeId(env string) string {
-	if env == "gcp" {
-		return "n1-standard-4"
-	} else if env == "aws" || env == "ucws" {
-		// aws-prod-ucws has CLOUD_ENV set to "ucws"
-		return "i3.xlarge"
-	}
-	return "Standard_DS4_v2"
-}
-
 func setupLocalFiler(t testutil.TestingT) (filer.Filer, string) {
 	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 

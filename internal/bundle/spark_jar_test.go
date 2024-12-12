@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
@@ -13,8 +12,7 @@ import (
 )
 
 func runSparkJarTestCommon(t *testing.T, ctx context.Context, sparkVersion, artifactPath string) {
-	cloudEnv := testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
-	nodeTypeId := internal.GetNodeTypeId(cloudEnv)
+	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	tmpDir := t.TempDir()
 	instancePoolId := env.Get(ctx, "TEST_INSTANCE_POOL_ID")
 	bundleRoot, err := initTestTemplateWithBundleRoot(t, ctx, "spark_jar_task", map[string]any{
