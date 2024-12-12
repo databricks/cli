@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	_ "github.com/databricks/cli/cmd/fs"
+	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/stretchr/testify/assert"
@@ -51,7 +52,7 @@ func TestAccFsLs(t *testing.T) {
 			f, tmpDir := tc.setupFiler(t)
 			setupLsFiles(t, f)
 
-			stdout, stderr := RequireSuccessfulRun(t, "fs", "ls", tmpDir, "--output=json")
+			stdout, stderr := testcli.RequireSuccessfulRun(t, "fs", "ls", tmpDir, "--output=json")
 			assert.Equal(t, "", stderr.String())
 
 			var parsedStdout []map[string]any
@@ -84,7 +85,7 @@ func TestAccFsLsWithAbsolutePaths(t *testing.T) {
 			f, tmpDir := tc.setupFiler(t)
 			setupLsFiles(t, f)
 
-			stdout, stderr := RequireSuccessfulRun(t, "fs", "ls", tmpDir, "--output=json", "--absolute")
+			stdout, stderr := testcli.RequireSuccessfulRun(t, "fs", "ls", tmpDir, "--output=json", "--absolute")
 			assert.Equal(t, "", stderr.String())
 
 			var parsedStdout []map[string]any
@@ -116,7 +117,7 @@ func TestAccFsLsOnFile(t *testing.T) {
 			f, tmpDir := tc.setupFiler(t)
 			setupLsFiles(t, f)
 
-			_, _, err := RequireErrorRun(t, "fs", "ls", path.Join(tmpDir, "a", "hello.txt"), "--output=json")
+			_, _, err := testcli.RequireErrorRun(t, "fs", "ls", path.Join(tmpDir, "a", "hello.txt"), "--output=json")
 			assert.Regexp(t, regexp.MustCompile("not a directory: .*/a/hello.txt"), err.Error())
 			assert.ErrorAs(t, err, &filer.NotADirectory{})
 		})
@@ -134,7 +135,7 @@ func TestAccFsLsOnEmptyDir(t *testing.T) {
 
 			_, tmpDir := tc.setupFiler(t)
 
-			stdout, stderr := RequireSuccessfulRun(t, "fs", "ls", tmpDir, "--output=json")
+			stdout, stderr := testcli.RequireSuccessfulRun(t, "fs", "ls", tmpDir, "--output=json")
 			assert.Equal(t, "", stderr.String())
 			var parsedStdout []map[string]any
 			err := json.Unmarshal(stdout.Bytes(), &parsedStdout)
@@ -157,7 +158,7 @@ func TestAccFsLsForNonexistingDir(t *testing.T) {
 
 			_, tmpDir := tc.setupFiler(t)
 
-			_, _, err := RequireErrorRun(t, "fs", "ls", path.Join(tmpDir, "nonexistent"), "--output=json")
+			_, _, err := testcli.RequireErrorRun(t, "fs", "ls", path.Join(tmpDir, "nonexistent"), "--output=json")
 			assert.ErrorIs(t, err, fs.ErrNotExist)
 			assert.Regexp(t, regexp.MustCompile("no such directory: .*/nonexistent"), err.Error())
 		})
@@ -169,6 +170,6 @@ func TestAccFsLsWithoutScheme(t *testing.T) {
 
 	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
-	_, _, err := RequireErrorRun(t, "fs", "ls", "/path-without-a-dbfs-scheme", "--output=json")
+	_, _, err := testcli.RequireErrorRun(t, "fs", "ls", "/path-without-a-dbfs-scheme", "--output=json")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }

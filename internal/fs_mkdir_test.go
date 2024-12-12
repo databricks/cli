@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,7 +25,7 @@ func TestAccFsMkdir(t *testing.T) {
 			f, tmpDir := tc.setupFiler(t)
 
 			// create directory "a"
-			stdout, stderr := RequireSuccessfulRun(t, "fs", "mkdir", path.Join(tmpDir, "a"))
+			stdout, stderr := testcli.RequireSuccessfulRun(t, "fs", "mkdir", path.Join(tmpDir, "a"))
 			assert.Equal(t, "", stderr.String())
 			assert.Equal(t, "", stdout.String())
 
@@ -49,7 +50,7 @@ func TestAccFsMkdirCreatesIntermediateDirectories(t *testing.T) {
 			f, tmpDir := tc.setupFiler(t)
 
 			// create directory "a/b/c"
-			stdout, stderr := RequireSuccessfulRun(t, "fs", "mkdir", path.Join(tmpDir, "a", "b", "c"))
+			stdout, stderr := testcli.RequireSuccessfulRun(t, "fs", "mkdir", path.Join(tmpDir, "a", "b", "c"))
 			assert.Equal(t, "", stderr.String())
 			assert.Equal(t, "", stdout.String())
 
@@ -90,7 +91,7 @@ func TestAccFsMkdirWhenDirectoryAlreadyExists(t *testing.T) {
 			require.NoError(t, err)
 
 			// assert run is successful without any errors
-			stdout, stderr := RequireSuccessfulRun(t, "fs", "mkdir", path.Join(tmpDir, "a"))
+			stdout, stderr := testcli.RequireSuccessfulRun(t, "fs", "mkdir", path.Join(tmpDir, "a"))
 			assert.Equal(t, "", stderr.String())
 			assert.Equal(t, "", stdout.String())
 		})
@@ -110,7 +111,7 @@ func TestAccFsMkdirWhenFileExistsAtPath(t *testing.T) {
 		require.NoError(t, err)
 
 		// assert mkdir fails
-		_, _, err = RequireErrorRun(t, "fs", "mkdir", path.Join(tmpDir, "hello"))
+		_, _, err = testcli.RequireErrorRun(t, "fs", "mkdir", path.Join(tmpDir, "hello"))
 
 		// Different cloud providers or cloud configurations return different errors.
 		regex := regexp.MustCompile(`(^|: )Path is a file: .*$|(^|: )Cannot create directory .* because .* is an existing file\.$|(^|: )mkdirs\(hadoopPath: .*, permission: rwxrwxrwx\): failed$|(^|: )"The specified path already exists.".*$`)
@@ -127,7 +128,7 @@ func TestAccFsMkdirWhenFileExistsAtPath(t *testing.T) {
 		require.NoError(t, err)
 
 		// assert mkdir fails
-		_, _, err = RequireErrorRun(t, "fs", "mkdir", path.Join(tmpDir, "hello"))
+		_, _, err = testcli.RequireErrorRun(t, "fs", "mkdir", path.Join(tmpDir, "hello"))
 
 		assert.ErrorAs(t, err, &filer.FileAlreadyExistsError{})
 	})

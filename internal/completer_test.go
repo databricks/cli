@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	_ "github.com/databricks/cli/cmd/fs"
+	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -21,7 +22,7 @@ func TestAccFsCompletion(t *testing.T) {
 	f, tmpDir := setupDbfsFiler(t)
 	setupCompletionFile(t, f)
 
-	stdout, _ := RequireSuccessfulRun(t, "__complete", "fs", "ls", tmpDir+"/")
+	stdout, _ := testcli.RequireSuccessfulRun(t, "__complete", "fs", "ls", tmpDir+"/")
 	expectedOutput := fmt.Sprintf("%s/dir1/\n:2\n", tmpDir)
 	assert.Equal(t, expectedOutput, stdout.String())
 }

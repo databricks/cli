@@ -11,13 +11,14 @@ import (
 	"github.com/stretchr/testify/require"
 
 	_ "github.com/databricks/cli/cmd/api"
+	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
 )
 
 func TestAccApiGet(t *testing.T) {
 	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
-	stdout, _ := RequireSuccessfulRun(t, "api", "get", "/api/2.0/preview/scim/v2/Me")
+	stdout, _ := testcli.RequireSuccessfulRun(t, "api", "get", "/api/2.0/preview/scim/v2/Me")
 
 	// Deserialize SCIM API response.
 	var out map[string]any
@@ -44,11 +45,11 @@ func TestAccApiPost(t *testing.T) {
 
 	// Post to mkdir
 	{
-		RequireSuccessfulRun(t, "api", "post", "--json=@"+requestPath, "/api/2.0/dbfs/mkdirs")
+		testcli.RequireSuccessfulRun(t, "api", "post", "--json=@"+requestPath, "/api/2.0/dbfs/mkdirs")
 	}
 
 	// Post to delete
 	{
-		RequireSuccessfulRun(t, "api", "post", "--json=@"+requestPath, "/api/2.0/dbfs/delete")
+		testcli.RequireSuccessfulRun(t, "api", "post", "--json=@"+requestPath, "/api/2.0/dbfs/delete")
 	}
 }

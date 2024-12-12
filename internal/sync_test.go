@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	_ "github.com/databricks/cli/cmd/sync"
+	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/sync"
@@ -64,7 +64,7 @@ func setupRepo(t *testing.T, wsc *databricks.WorkspaceClient, ctx context.Contex
 
 type syncTest struct {
 	t          *testing.T
-	c          *cobraTestRunner
+	c          *testcli.Runner
 	w          *databricks.WorkspaceClient
 	f          filer.Filer
 	localRoot  string
@@ -89,7 +89,7 @@ func setupSyncTest(t *testing.T, args ...string) *syncTest {
 		"json",
 	}, args...)
 
-	c := NewCobraTestRunner(t, args...)
+	c := testcli.NewRunner(t, args...)
 	c.RunBackground()
 
 	return &syncTest{
@@ -110,7 +110,7 @@ func (s *syncTest) waitForCompletionMarker() {
 		select {
 		case <-ctx.Done():
 			s.t.Fatal("timed out waiting for sync to complete")
-		case line := <-s.c.stdoutLines:
+		case line := <-s.c.StdoutLines:
 			var event sync.EventBase
 			err := json.Unmarshal([]byte(line), &event)
 			require.NoError(s.t, err)

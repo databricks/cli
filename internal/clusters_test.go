@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -16,7 +17,7 @@ import (
 func TestAccClustersList(t *testing.T) {
 	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
-	stdout, stderr := RequireSuccessfulRun(t, "clusters", "list")
+	stdout, stderr := testcli.RequireSuccessfulRun(t, "clusters", "list")
 	outStr := stdout.String()
 	assert.Contains(t, outStr, "ID")
 	assert.Contains(t, outStr, "Name")
@@ -32,14 +33,14 @@ func TestAccClustersGet(t *testing.T) {
 	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	clusterId := findValidClusterID(t)
-	stdout, stderr := RequireSuccessfulRun(t, "clusters", "get", clusterId)
+	stdout, stderr := testcli.RequireSuccessfulRun(t, "clusters", "get", clusterId)
 	outStr := stdout.String()
 	assert.Contains(t, outStr, fmt.Sprintf(`"cluster_id":"%s"`, clusterId))
 	assert.Equal(t, "", stderr.String())
 }
 
 func TestClusterCreateErrorWhenNoArguments(t *testing.T) {
-	_, _, err := RequireErrorRun(t, "clusters", "create")
+	_, _, err := testcli.RequireErrorRun(t, "clusters", "create")
 	assert.Contains(t, err.Error(), "accepts 1 arg(s), received 0")
 }
 

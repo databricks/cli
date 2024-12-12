@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
@@ -27,7 +28,7 @@ func TestAccFsCat(t *testing.T) {
 			err := f.Write(context.Background(), "hello.txt", strings.NewReader("abcd"), filer.CreateParentDirectories)
 			require.NoError(t, err)
 
-			stdout, stderr := RequireSuccessfulRun(t, "fs", "cat", path.Join(tmpDir, "hello.txt"))
+			stdout, stderr := testcli.RequireSuccessfulRun(t, "fs", "cat", path.Join(tmpDir, "hello.txt"))
 			assert.Equal(t, "", stderr.String())
 			assert.Equal(t, "abcd", stdout.String())
 		})
@@ -47,7 +48,7 @@ func TestAccFsCatOnADir(t *testing.T) {
 			err := f.Mkdir(context.Background(), "dir1")
 			require.NoError(t, err)
 
-			_, _, err = RequireErrorRun(t, "fs", "cat", path.Join(tmpDir, "dir1"))
+			_, _, err = testcli.RequireErrorRun(t, "fs", "cat", path.Join(tmpDir, "dir1"))
 			assert.ErrorAs(t, err, &filer.NotAFile{})
 		})
 	}
@@ -64,7 +65,7 @@ func TestAccFsCatOnNonExistentFile(t *testing.T) {
 
 			_, tmpDir := tc.setupFiler(t)
 
-			_, _, err := RequireErrorRun(t, "fs", "cat", path.Join(tmpDir, "non-existent-file"))
+			_, _, err := testcli.RequireErrorRun(t, "fs", "cat", path.Join(tmpDir, "non-existent-file"))
 			assert.ErrorIs(t, err, fs.ErrNotExist)
 		})
 	}
@@ -73,7 +74,7 @@ func TestAccFsCatOnNonExistentFile(t *testing.T) {
 func TestAccFsCatForDbfsInvalidScheme(t *testing.T) {
 	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
-	_, _, err := RequireErrorRun(t, "fs", "cat", "dab:/non-existent-file")
+	_, _, err := testcli.RequireErrorRun(t, "fs", "cat", "dab:/non-existent-file")
 	assert.ErrorContains(t, err, "invalid scheme: dab")
 }
 
@@ -92,6 +93,6 @@ func TestAccFsCatDoesNotSupportOutputModeJson(t *testing.T) {
 	err = f.Write(ctx, "hello.txt", strings.NewReader("abc"))
 	require.NoError(t, err)
 
-	_, _, err = RequireErrorRun(t, "fs", "cat", "dbfs:"+path.Join(tmpDir, "hello.txt"), "--output=json")
+	_, _, err = testcli.RequireErrorRun(t, "fs", "cat", "dbfs:"+path.Join(tmpDir, "hello.txt"), "--output=json")
 	assert.ErrorContains(t, err, "json output not supported")
 }

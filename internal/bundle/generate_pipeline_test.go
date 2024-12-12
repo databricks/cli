@@ -11,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
@@ -35,7 +36,7 @@ func TestAccGenerateFromExistingPipelineAndDeploy(t *testing.T) {
 	})
 
 	t.Setenv("BUNDLE_ROOT", bundleRoot)
-	c := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "generate", "pipeline",
+	c := testcli.NewRunnerWithContext(t, ctx, "bundle", "generate", "pipeline",
 		"--existing-pipeline-id", fmt.Sprint(pipelineId),
 		"--config-dir", filepath.Join(bundleRoot, "resources"),
 		"--source-dir", filepath.Join(bundleRoot, "src"))
