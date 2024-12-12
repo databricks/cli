@@ -355,22 +355,6 @@ func RequireErrorRun(t *testing.T, args ...string) (bytes.Buffer, bytes.Buffer, 
 	return stdout, stderr, err
 }
 
-func readFile(t *testing.T, name string) string {
-	b, err := os.ReadFile(name)
-	require.NoError(t, err)
-
-	return string(b)
-}
-
-func writeFile(t *testing.T, name, body string) string {
-	f, err := os.Create(filepath.Join(t.TempDir(), name))
-	require.NoError(t, err)
-	_, err = f.WriteString(body)
-	require.NoError(t, err)
-	f.Close()
-	return f.Name()
-}
-
 func GenerateNotebookTasks(notebookPath string, versions []string, nodeTypeId string) []jobs.SubmitTask {
 	tasks := make([]jobs.SubmitTask, 0)
 	for i := 0; i < len(versions); i++ {

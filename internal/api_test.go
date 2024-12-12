@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	_ "github.com/databricks/cli/cmd/api"
+	"github.com/databricks/cli/internal/testutil"
 )
 
 func TestAccApiGet(t *testing.T) {
@@ -35,7 +37,8 @@ func TestAccApiPost(t *testing.T) {
 	}
 
 	dbfsPath := path.Join("/tmp/databricks/integration", RandomName("api-post"))
-	requestPath := writeFile(t, "body.json", fmt.Sprintf(`{
+	requestPath := filepath.Join(t.TempDir(), "body.json")
+	testutil.WriteFile(t, requestPath, fmt.Sprintf(`{
 		"path": "%s"
 	}`, dbfsPath))
 

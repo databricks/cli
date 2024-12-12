@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -410,33 +411,33 @@ func TestAccFilerWorkspaceNotebook(t *testing.T) {
 		{
 			name:           "pythonJupyterNb.ipynb",
 			nameWithoutExt: "pythonJupyterNb",
-			content1:       readFile(t, "testdata/notebooks/py1.ipynb"),
+			content1:       testutil.ReadFile(t, "testdata/notebooks/py1.ipynb"),
 			expected1:      "# Databricks notebook source\nprint(1)",
-			content2:       readFile(t, "testdata/notebooks/py2.ipynb"),
+			content2:       testutil.ReadFile(t, "testdata/notebooks/py2.ipynb"),
 			expected2:      "# Databricks notebook source\nprint(2)",
 		},
 		{
 			name:           "rJupyterNb.ipynb",
 			nameWithoutExt: "rJupyterNb",
-			content1:       readFile(t, "testdata/notebooks/r1.ipynb"),
+			content1:       testutil.ReadFile(t, "testdata/notebooks/r1.ipynb"),
 			expected1:      "# Databricks notebook source\nprint(1)",
-			content2:       readFile(t, "testdata/notebooks/r2.ipynb"),
+			content2:       testutil.ReadFile(t, "testdata/notebooks/r2.ipynb"),
 			expected2:      "# Databricks notebook source\nprint(2)",
 		},
 		{
 			name:           "scalaJupyterNb.ipynb",
 			nameWithoutExt: "scalaJupyterNb",
-			content1:       readFile(t, "testdata/notebooks/scala1.ipynb"),
+			content1:       testutil.ReadFile(t, "testdata/notebooks/scala1.ipynb"),
 			expected1:      "// Databricks notebook source\nprintln(1)",
-			content2:       readFile(t, "testdata/notebooks/scala2.ipynb"),
+			content2:       testutil.ReadFile(t, "testdata/notebooks/scala2.ipynb"),
 			expected2:      "// Databricks notebook source\nprintln(2)",
 		},
 		{
 			name:           "sqlJupyterNotebook.ipynb",
 			nameWithoutExt: "sqlJupyterNotebook",
-			content1:       readFile(t, "testdata/notebooks/sql1.ipynb"),
+			content1:       testutil.ReadFile(t, "testdata/notebooks/sql1.ipynb"),
 			expected1:      "-- Databricks notebook source\nselect 1",
-			content2:       readFile(t, "testdata/notebooks/sql2.ipynb"),
+			content2:       testutil.ReadFile(t, "testdata/notebooks/sql2.ipynb"),
 			expected2:      "-- Databricks notebook source\nselect 2",
 		},
 	}
@@ -483,13 +484,13 @@ func TestAccFilerWorkspaceFilesExtensionsReadDir(t *testing.T) {
 		{"foo.r", "print('foo')"},
 		{"foo.scala", "println('foo')"},
 		{"foo.sql", "SELECT 'foo'"},
-		{"py1.ipynb", readFile(t, "testdata/notebooks/py1.ipynb")},
+		{"py1.ipynb", testutil.ReadFile(t, "testdata/notebooks/py1.ipynb")},
 		{"pyNb.py", "# Databricks notebook source\nprint('first upload'))"},
-		{"r1.ipynb", readFile(t, "testdata/notebooks/r1.ipynb")},
+		{"r1.ipynb", testutil.ReadFile(t, "testdata/notebooks/r1.ipynb")},
 		{"rNb.r", "# Databricks notebook source\nprint('first upload'))"},
-		{"scala1.ipynb", readFile(t, "testdata/notebooks/scala1.ipynb")},
+		{"scala1.ipynb", testutil.ReadFile(t, "testdata/notebooks/scala1.ipynb")},
 		{"scalaNb.scala", "// Databricks notebook source\n println(\"first upload\"))"},
-		{"sql1.ipynb", readFile(t, "testdata/notebooks/sql1.ipynb")},
+		{"sql1.ipynb", testutil.ReadFile(t, "testdata/notebooks/sql1.ipynb")},
 		{"sqlNb.sql", "-- Databricks notebook source\n SELECT \"first upload\""},
 	}
 
@@ -554,10 +555,10 @@ func setupFilerWithExtensionsTest(t *testing.T) filer.Filer {
 	}{
 		{"foo.py", "# Databricks notebook source\nprint('first upload'))"},
 		{"bar.py", "print('foo')"},
-		{"p1.ipynb", readFile(t, "testdata/notebooks/py1.ipynb")},
-		{"r1.ipynb", readFile(t, "testdata/notebooks/r1.ipynb")},
-		{"scala1.ipynb", readFile(t, "testdata/notebooks/scala1.ipynb")},
-		{"sql1.ipynb", readFile(t, "testdata/notebooks/sql1.ipynb")},
+		{"p1.ipynb", testutil.ReadFile(t, "testdata/notebooks/py1.ipynb")},
+		{"r1.ipynb", testutil.ReadFile(t, "testdata/notebooks/r1.ipynb")},
+		{"scala1.ipynb", testutil.ReadFile(t, "testdata/notebooks/scala1.ipynb")},
+		{"sql1.ipynb", testutil.ReadFile(t, "testdata/notebooks/sql1.ipynb")},
 		{"pretender", "not a notebook"},
 		{"dir/file.txt", "file content"},
 		{"scala-notebook.scala", "// Databricks notebook source\nprintln('first upload')"},
@@ -729,7 +730,7 @@ func TestAccWorkspaceFilesExtensionsNotebooksAreNotReadAsFiles(t *testing.T) {
 	wf, _ := setupWsfsExtensionsFiler(t)
 
 	// Create a notebook
-	err := wf.Write(ctx, "foo.ipynb", strings.NewReader(readFile(t, "testdata/notebooks/py1.ipynb")))
+	err := wf.Write(ctx, "foo.ipynb", strings.NewReader(testutil.ReadFile(t, "testdata/notebooks/py1.ipynb")))
 	require.NoError(t, err)
 
 	// Reading foo should fail. Even though the WSFS name for the notebook is foo
@@ -748,7 +749,7 @@ func TestAccWorkspaceFilesExtensionsNotebooksAreNotStatAsFiles(t *testing.T) {
 	wf, _ := setupWsfsExtensionsFiler(t)
 
 	// Create a notebook
-	err := wf.Write(ctx, "foo.ipynb", strings.NewReader(readFile(t, "testdata/notebooks/py1.ipynb")))
+	err := wf.Write(ctx, "foo.ipynb", strings.NewReader(testutil.ReadFile(t, "testdata/notebooks/py1.ipynb")))
 	require.NoError(t, err)
 
 	// Stating foo should fail. Even though the WSFS name for the notebook is foo
@@ -767,7 +768,7 @@ func TestAccWorkspaceFilesExtensionsNotebooksAreNotDeletedAsFiles(t *testing.T) 
 	wf, _ := setupWsfsExtensionsFiler(t)
 
 	// Create a notebook
-	err := wf.Write(ctx, "foo.ipynb", strings.NewReader(readFile(t, "testdata/notebooks/py1.ipynb")))
+	err := wf.Write(ctx, "foo.ipynb", strings.NewReader(testutil.ReadFile(t, "testdata/notebooks/py1.ipynb")))
 	require.NoError(t, err)
 
 	// Deleting foo should fail. Even though the WSFS name for the notebook is foo
@@ -849,25 +850,25 @@ func TestAccWorkspaceFilesExtensions_ExportFormatIsPreserved(t *testing.T) {
 			language:       "python",
 			sourceName:     "foo.py",
 			jupyterName:    "foo.ipynb",
-			jupyterContent: readFile(t, "testdata/notebooks/py1.ipynb"),
+			jupyterContent: testutil.ReadFile(t, "testdata/notebooks/py1.ipynb"),
 		},
 		{
 			language:       "r",
 			sourceName:     "foo.r",
 			jupyterName:    "foo.ipynb",
-			jupyterContent: readFile(t, "testdata/notebooks/r1.ipynb"),
+			jupyterContent: testutil.ReadFile(t, "testdata/notebooks/r1.ipynb"),
 		},
 		{
 			language:       "scala",
 			sourceName:     "foo.scala",
 			jupyterName:    "foo.ipynb",
-			jupyterContent: readFile(t, "testdata/notebooks/scala1.ipynb"),
+			jupyterContent: testutil.ReadFile(t, "testdata/notebooks/scala1.ipynb"),
 		},
 		{
 			language:       "sql",
 			sourceName:     "foo.sql",
 			jupyterName:    "foo.ipynb",
-			jupyterContent: readFile(t, "testdata/notebooks/sql1.ipynb"),
+			jupyterContent: testutil.ReadFile(t, "testdata/notebooks/sql1.ipynb"),
 		},
 	} {
 		t.Run("jupyter_"+tc.language, func(t *testing.T) {

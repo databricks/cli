@@ -3,6 +3,7 @@ package bundle
 import (
 	"context"
 	"encoding/json"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
@@ -16,7 +17,7 @@ func TestAccBundleValidate(t *testing.T) {
 	testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 
 	tmpDir := t.TempDir()
-	testutil.WriteFile(t,
+	testutil.WriteFile(t, filepath.Join(tmpDir, "databricks.yml"),
 		`
 bundle:
   name: "foobar"
@@ -33,7 +34,7 @@ resources:
     inner_loop:
       name: inner loop
 
-`, tmpDir, "databricks.yml")
+`)
 
 	ctx := context.Background()
 	stdout, err := validateBundle(t, ctx, tmpDir)
