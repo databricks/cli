@@ -1,4 +1,6 @@
-package internal
+//go:build integration
+
+package fs
 
 import (
 	"context"
