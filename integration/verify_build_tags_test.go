@@ -1,10 +1,7 @@
-//go:build !integration
-
 package integration
 
 import (
-	"go/parser"
-	"go/token"
+	"bufio"
 	"os"
 	"path/filepath"
 	"strings"
@@ -37,20 +34,14 @@ func TestVerifyBuildTags(t *testing.T) {
 			return nil
 		}
 
-		fset := token.NewFileSet()
-		file, err := parser.ParseFile(fset, path, nil, parser.ParseComments)
+		f, err := os.Open(path)
 		require.NoError(t, err)
+		defer f.Close()
 
-		// Check for the "integration" build tag in the file comments.
-		found := false
-		for _, comment := range file.Comments {
-			if strings.Contains(comment.Text(), "+build integration") {
-				found = true
-				break
-			}
-		}
-
-		assert.True(t, found, "File %s does not specify the 'integration' build tag", path)
+		// Read the first line
+		scanner := bufio.NewScanner(f)
+		scanner.Scan()
+		assert.Equal(t, "//go:build integration", scanner.Text(), "File %s does not specify the 'integration' build tag", path)
 		return nil
 	})
 
