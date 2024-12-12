@@ -170,32 +170,29 @@ func convertLinksToAbsoluteUrl(s string) string {
 	base := "https://docs.databricks.com"
 	referencePage := "/dev-tools/bundles/reference.html"
 
-	// Regular expression to match Markdown-style links
+	// Regular expression to match Markdown-style links like [_](link)
 	re := regexp.MustCompile(`\[_\]\(([^)]+)\)`)
 	result := re.ReplaceAllStringFunc(s, func(match string) string {
-		// Extract the URL inside parentheses
 		matches := re.FindStringSubmatch(match)
 		if len(matches) < 2 {
-			return match // Return original if no match found
+			return match
 		}
 		link := matches[1]
-
 		var text, absoluteURL string
 
 		if strings.HasPrefix(link, "#") {
 			text = strings.TrimPrefix(link, "#")
 			absoluteURL = fmt.Sprintf("%s%s%s", base, referencePage, link)
-		} else if strings.HasPrefix(link, "/") {
+
 			// Handle relative paths like /dev-tools/bundles/resources.html#dashboard
+		} else if strings.HasPrefix(link, "/") {
+			absoluteURL = strings.ReplaceAll(fmt.Sprintf("%s%s", base, link), ".md", ".html")
 			if strings.Contains(link, "#") {
 				parts := strings.Split(link, "#")
 				text = parts[1]
-				absoluteURL = fmt.Sprintf("%s%s", base, link)
 			} else {
 				text = "link"
-				absoluteURL = fmt.Sprintf("%s%s", base, link)
 			}
-			absoluteURL = strings.ReplaceAll(absoluteURL, ".md", ".html")
 		} else {
 			return match
 		}
