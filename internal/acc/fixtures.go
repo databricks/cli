@@ -18,7 +18,7 @@ func TemporaryWorkspaceDir(t *WorkspaceT, name ...string) string {
 
 	// Prefix the name with "integration-test-" to make it easier to identify.
 	name = append([]string{"integration-test-"}, name...)
-	basePath := fmt.Sprintf("/Workspace/Users/%s/%s", me.UserName, testutil.RandomName(name...))
+	basePath := fmt.Sprintf("/Users/%s/%s", me.UserName, testutil.RandomName(name...))
 
 	t.Logf("Creating workspace directory %s", basePath)
 	err = t.W.Workspace.MkdirsByPath(ctx, basePath)
@@ -72,7 +72,7 @@ func TemporaryRepo(t *WorkspaceT, url string) string {
 	require.NoError(t, err)
 
 	// Prefix the path with "integration-test-" to make it easier to identify.
-	path := fmt.Sprintf("/Workspace/Repos/%s/%s", me.UserName, testutil.RandomName("integration-test-"))
+	path := fmt.Sprintf("/Repos/%s/%s", me.UserName, testutil.RandomName("integration-test-"))
 
 	t.Logf("Creating repo: %s", path)
 	resp, err := t.W.Repos.Create(ctx, workspace.CreateRepoRequest{
