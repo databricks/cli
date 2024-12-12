@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -16,7 +17,7 @@ import (
 func synthesizeTemporaryRepoPath(t *testing.T, w *databricks.WorkspaceClient, ctx context.Context) string {
 	me, err := w.CurrentUser.Me(ctx)
 	require.NoError(t, err)
-	repoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, RandomName("empty-repo-integration-"))
+	repoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, testutil.RandomName("empty-repo-integration-"))
 
 	// Cleanup if repo was created at specified path.
 	t.Cleanup(func() {
@@ -44,7 +45,7 @@ func createTemporaryRepo(t *testing.T, w *databricks.WorkspaceClient, ctx contex
 }
 
 func TestAccReposCreateWithProvider(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
 	w, err := databricks.NewWorkspaceClient()
@@ -61,7 +62,7 @@ func TestAccReposCreateWithProvider(t *testing.T) {
 }
 
 func TestAccReposCreateWithoutProvider(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
 	w, err := databricks.NewWorkspaceClient()
@@ -78,7 +79,7 @@ func TestAccReposCreateWithoutProvider(t *testing.T) {
 }
 
 func TestAccReposGet(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
 	w, err := databricks.NewWorkspaceClient()
@@ -107,7 +108,7 @@ func TestAccReposGet(t *testing.T) {
 }
 
 func TestAccReposUpdate(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
 	w, err := databricks.NewWorkspaceClient()
@@ -128,7 +129,7 @@ func TestAccReposUpdate(t *testing.T) {
 }
 
 func TestAccReposDeleteByID(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
 	w, err := databricks.NewWorkspaceClient()
@@ -147,7 +148,7 @@ func TestAccReposDeleteByID(t *testing.T) {
 }
 
 func TestAccReposDeleteByPath(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
 	w, err := databricks.NewWorkspaceClient()

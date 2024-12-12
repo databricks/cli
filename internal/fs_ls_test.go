@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	_ "github.com/databricks/cli/cmd/fs"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -166,7 +167,7 @@ func TestAccFsLsForNonexistingDir(t *testing.T) {
 func TestAccFsLsWithoutScheme(t *testing.T) {
 	t.Parallel()
 
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	_, _, err := RequireErrorRun(t, "fs", "ls", "/path-without-a-dbfs-scheme", "--output=json")
 	assert.ErrorIs(t, err, fs.ErrNotExist)

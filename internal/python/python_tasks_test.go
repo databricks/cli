@@ -15,6 +15,7 @@ import (
 
 	"github.com/databricks/cli/bundle/run/output"
 	"github.com/databricks/cli/internal"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -75,8 +76,8 @@ var sparkVersions = []string{
 
 func TestAccRunPythonTaskWorkspace(t *testing.T) {
 	// TODO: remove RUN_PYTHON_TASKS_TEST when ready to be executed as part of nightly
-	internal.GetEnvOrSkipTest(t, "RUN_PYTHON_TASKS_TEST")
-	internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
+	testutil.GetEnvOrSkipTest(t, "RUN_PYTHON_TASKS_TEST")
+	testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 
 	unsupportedSparkVersionsForWheel := []string{
 		"11.3.x-scala2.12",
@@ -96,8 +97,8 @@ func TestAccRunPythonTaskWorkspace(t *testing.T) {
 
 func TestAccRunPythonTaskDBFS(t *testing.T) {
 	// TODO: remove RUN_PYTHON_TASKS_TEST when ready to be executed as part of nightly
-	internal.GetEnvOrSkipTest(t, "RUN_PYTHON_TASKS_TEST")
-	internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
+	testutil.GetEnvOrSkipTest(t, "RUN_PYTHON_TASKS_TEST")
+	testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 
 	runPythonTasks(t, prepareDBFSFiles(t), testOpts{
 		name:                    "Python tasks from DBFS",
@@ -109,8 +110,8 @@ func TestAccRunPythonTaskDBFS(t *testing.T) {
 
 func TestAccRunPythonTaskRepo(t *testing.T) {
 	// TODO: remove RUN_PYTHON_TASKS_TEST when ready to be executed as part of nightly
-	internal.GetEnvOrSkipTest(t, "RUN_PYTHON_TASKS_TEST")
-	internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
+	testutil.GetEnvOrSkipTest(t, "RUN_PYTHON_TASKS_TEST")
+	testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 
 	runPythonTasks(t, prepareRepoFiles(t), testOpts{
 		name:                    "Python tasks from Repo",
@@ -121,7 +122,7 @@ func TestAccRunPythonTaskRepo(t *testing.T) {
 }
 
 func runPythonTasks(t *testing.T, tw *testFiles, opts testOpts) {
-	env := internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
+	env := testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 	t.Log(env)
 
 	w := tw.w

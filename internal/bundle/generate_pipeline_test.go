@@ -11,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -58,7 +59,7 @@ func TestAccGenerateFromExistingPipelineAndDeploy(t *testing.T) {
 	generatedYaml := string(data)
 
 	// Replace pipeline name
-	generatedYaml = strings.ReplaceAll(generatedYaml, name, internal.RandomName("copy-generated-pipeline-"))
+	generatedYaml = strings.ReplaceAll(generatedYaml, name, testutil.RandomName("copy-generated-pipeline-"))
 	err = os.WriteFile(fileName, []byte(generatedYaml), 0o644)
 	require.NoError(t, err)
 
@@ -94,10 +95,10 @@ func (gt *generatePipelineTest) createTestPipeline(ctx context.Context) (string,
 	err = f.Write(ctx, "test.py", strings.NewReader("print('Hello!')"))
 	require.NoError(t, err)
 
-	env := internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
+	env := testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 	nodeTypeId := internal.GetNodeTypeId(env)
 
-	name := internal.RandomName("generated-pipeline-")
+	name := testutil.RandomName("generated-pipeline-")
 	resp, err := w.Pipelines.Create(ctx, pipelines.CreatePipeline{
 		Name: name,
 		Libraries: []pipelines.PipelineLibrary{

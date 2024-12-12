@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math/rand"
 	"net/http"
 	"os"
 	"path"
@@ -21,6 +20,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/flags"
 
 	"github.com/databricks/cli/cmd"
@@ -40,30 +40,6 @@ import (
 
 	_ "github.com/databricks/cli/cmd/workspace"
 )
-
-const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-// GetEnvOrSkipTest proceeds with test only with that env variable
-func GetEnvOrSkipTest(t *testing.T, name string) string {
-	value := os.Getenv(name)
-	if value == "" {
-		t.Skipf("Environment variable %s is missing", name)
-	}
-	return value
-}
-
-// RandomName gives random name with optional prefix. e.g. qa.RandomName("tf-")
-func RandomName(prefix ...string) string {
-	randLen := 12
-	b := make([]byte, randLen)
-	for i := range b {
-		b[i] = charset[rand.Intn(randLen)]
-	}
-	if len(prefix) > 0 {
-		return fmt.Sprintf("%s%s", strings.Join(prefix, ""), b)
-	}
-	return string(b)
-}
 
 // Helper for running the root command in the background.
 // It ensures that the background goroutine terminates upon
@@ -427,7 +403,7 @@ func TemporaryWorkspaceDir(t *testing.T, w *databricks.WorkspaceClient) string {
 	me, err := w.CurrentUser.Me(ctx)
 	require.NoError(t, err)
 
-	basePath := fmt.Sprintf("/Users/%s/%s", me.UserName, RandomName("integration-test-wsfs-"))
+	basePath := fmt.Sprintf("/Users/%s/%s", me.UserName, testutil.RandomName("integration-test-wsfs-"))
 
 	t.Logf("Creating %s", basePath)
 	err = w.Workspace.MkdirsByPath(ctx, basePath)
@@ -451,7 +427,7 @@ func TemporaryWorkspaceDir(t *testing.T, w *databricks.WorkspaceClient) string {
 
 func TemporaryDbfsDir(t *testing.T, w *databricks.WorkspaceClient) string {
 	ctx := context.Background()
-	path := fmt.Sprintf("/tmp/%s", RandomName("integration-test-dbfs-"))
+	path := fmt.Sprintf("/tmp/%s", testutil.RandomName("integration-test-dbfs-"))
 
 	t.Logf("Creating DBFS folder:%s", path)
 	err := w.Dbfs.MkdirsByPath(ctx, path)
@@ -479,7 +455,7 @@ func TemporaryUcVolume(t *testing.T, w *databricks.WorkspaceClient) string {
 	// Create a schema
 	schema, err := w.Schemas.Create(ctx, catalog.CreateSchema{
 		CatalogName: "main",
-		Name:        RandomName("test-schema-"),
+		Name:        testutil.RandomName("test-schema-"),
 	})
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -512,7 +488,7 @@ func TemporaryRepo(t *testing.T, w *databricks.WorkspaceClient) string {
 	me, err := w.CurrentUser.Me(ctx)
 	require.NoError(t, err)
 
-	repoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, RandomName("integration-test-repo-"))
+	repoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, testutil.RandomName("integration-test-repo-"))
 
 	t.Logf("Creating repo:%s", repoPath)
 	repoInfo, err := w.Repos.Create(ctx, workspace.CreateRepoRequest{
@@ -547,7 +523,7 @@ func GetNodeTypeId(env string) string {
 }
 
 func setupLocalFiler(t *testing.T) (filer.Filer, string) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	tmp := t.TempDir()
 	f, err := filer.NewLocalClient(tmp)
@@ -594,7 +570,7 @@ func setupDbfsFiler(t *testing.T) (filer.Filer, string) {
 }
 
 func setupUcVolumesFiler(t *testing.T) (filer.Filer, string) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	if os.Getenv("TEST_METASTORE_ID") == "" {
 		t.Skip("Skipping tests that require a UC Volume when metastore id is not set.")

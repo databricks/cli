@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
 	lockpkg "github.com/databricks/cli/libs/locker"
 	"github.com/databricks/databricks-sdk-go"
@@ -28,7 +29,7 @@ func createRemoteTestProject(t *testing.T, projectNamePrefix string, wsc *databr
 	me, err := wsc.CurrentUser.Me(ctx)
 	assert.NoError(t, err)
 
-	remoteProjectRoot := fmt.Sprintf("/Repos/%s/%s", me.UserName, RandomName(projectNamePrefix))
+	remoteProjectRoot := fmt.Sprintf("/Repos/%s/%s", me.UserName, testutil.RandomName(projectNamePrefix))
 	repoInfo, err := wsc.Repos.Create(ctx, workspace.CreateRepoRequest{
 		Path:     remoteProjectRoot,
 		Url:      EmptyRepoUrl,
@@ -44,7 +45,7 @@ func createRemoteTestProject(t *testing.T, projectNamePrefix string, wsc *databr
 }
 
 func TestAccLock(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 	ctx := context.TODO()
 	wsc, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
@@ -164,7 +165,7 @@ func TestAccLock(t *testing.T) {
 }
 
 func setupLockerTest(ctx context.Context, t *testing.T) (*lockpkg.Locker, filer.Filer) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)

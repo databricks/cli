@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -355,7 +356,7 @@ func TestAccFsCpErrorsWhenSourceIsDirWithoutRecursiveFlag(t *testing.T) {
 }
 
 func TestAccFsCpErrorsOnInvalidScheme(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	_, _, err := RequireErrorRun(t, "fs", "cp", "dbfs:/a", "https:/b")
 	assert.Equal(t, "invalid scheme: https", err.Error())

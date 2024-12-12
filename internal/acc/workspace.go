@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -26,7 +27,7 @@ type WorkspaceT struct {
 func WorkspaceTest(t *testing.T) (context.Context, *WorkspaceT) {
 	loadDebugEnvIfRunFromIDE(t, "workspace")
 
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
@@ -46,7 +47,7 @@ func WorkspaceTest(t *testing.T) (context.Context, *WorkspaceT) {
 func UcWorkspaceTest(t *testing.T) (context.Context, *WorkspaceT) {
 	loadDebugEnvIfRunFromIDE(t, "workspace")
 
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	if os.Getenv("TEST_METASTORE_ID") == "" {
 		t.Skipf("Skipping on non-UC workspaces")
@@ -70,7 +71,7 @@ func UcWorkspaceTest(t *testing.T) (context.Context, *WorkspaceT) {
 }
 
 func (t *WorkspaceT) TestClusterID() string {
-	clusterID := GetEnvOrSkipTest(t.T, "TEST_BRICKS_CLUSTER_ID")
+	clusterID := testutil.GetEnvOrSkipTest(t.T, "TEST_BRICKS_CLUSTER_ID")
 	err := t.W.Clusters.EnsureClusterIsRunning(t.ctx, clusterID)
 	require.NoError(t, err)
 	return clusterID
@@ -103,7 +104,7 @@ func (t *WorkspaceT) TemporaryWorkspaceDir(name ...string) string {
 	me, err := t.W.CurrentUser.Me(ctx)
 	require.NoError(t, err)
 
-	basePath := fmt.Sprintf("/Users/%s/%s", me.UserName, RandomName(name...))
+	basePath := fmt.Sprintf("/Users/%s/%s", me.UserName, testutil.RandomName(name...))
 
 	t.Logf("Creating %s", basePath)
 	err = t.W.Workspace.MkdirsByPath(ctx, basePath)

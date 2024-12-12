@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,7 +19,7 @@ func TestSecretsCreateScopeErrWhenNoArguments(t *testing.T) {
 }
 
 func temporarySecretScope(ctx context.Context, t *acc.WorkspaceT) string {
-	scope := acc.RandomName("cli-acc-")
+	scope := testutil.RandomName("cli-acc-")
 	err := t.W.Secrets.CreateScope(ctx, workspace.CreateScope{
 		Scope: scope,
 	})

@@ -13,7 +13,7 @@ import (
 )
 
 func runSparkJarTestCommon(t *testing.T, ctx context.Context, sparkVersion, artifactPath string) {
-	cloudEnv := internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
+	cloudEnv := testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 	nodeTypeId := internal.GetNodeTypeId(cloudEnv)
 	tmpDir := t.TempDir()
 	instancePoolId := env.Get(ctx, "TEST_INSTANCE_POOL_ID")
@@ -54,7 +54,7 @@ func runSparkJarTestFromWorkspace(t *testing.T, sparkVersion string) {
 }
 
 func TestAccSparkJarTaskDeployAndRunOnVolumes(t *testing.T) {
-	internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
+	testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 	testutil.RequireJDK(t, context.Background(), "1.8.0")
 
 	// Failure on earlier DBR versions:
@@ -78,7 +78,7 @@ func TestAccSparkJarTaskDeployAndRunOnVolumes(t *testing.T) {
 }
 
 func TestAccSparkJarTaskDeployAndRunOnWorkspace(t *testing.T) {
-	internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
+	testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 	testutil.RequireJDK(t, context.Background(), "1.8.0")
 
 	// Failure on earlier DBR versions:

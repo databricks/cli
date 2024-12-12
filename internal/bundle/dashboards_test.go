@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/google/uuid"
@@ -15,7 +16,7 @@ import (
 func TestAccDashboards(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 
-	warehouseID := acc.GetEnvOrSkipTest(t, "TEST_DEFAULT_WAREHOUSE_ID")
+	warehouseID := testutil.GetEnvOrSkipTest(t, "TEST_DEFAULT_WAREHOUSE_ID")
 	uniqueID := uuid.New().String()
 	root, err := initTestTemplate(t, ctx, "dashboards", map[string]any{
 		"unique_id":    uniqueID,

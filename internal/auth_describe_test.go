@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/require"
 )
 
 func TestAuthDescribeSuccess(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	stdout, _ := RequireSuccessfulRun(t, "auth", "describe")
 	outStr := stdout.String()
@@ -31,7 +32,7 @@ func TestAuthDescribeSuccess(t *testing.T) {
 }
 
 func TestAuthDescribeFailure(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	stdout, _ := RequireSuccessfulRun(t, "auth", "describe", "--profile", "nonexistent")
 	outStr := stdout.String()
