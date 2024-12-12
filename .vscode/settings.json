@@ -7,6 +7,10 @@
     "go.lintFlags": [
         "--fast"
     ],
+    "go.useLanguageServer": true,
+    "gopls": {
+         "formatting.gofumpt": true
+    },
     "files.trimTrailingWhitespace": true,
     "files.insertFinalNewline": true,
     "files.trimFinalNewlines": true,
