@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -253,7 +254,7 @@ func TestUploadArtifactFileToVolumeThatDoesNotExist(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	t.Setenv("BUNDLE_ROOT", bundleRoot)
+	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
 	stdout, stderr, err := testcli.RequireErrorRun(t, ctx, "bundle", "deploy")
 
 	assert.Error(t, err)
@@ -290,7 +291,7 @@ func TestUploadArtifactToVolumeNotYetDeployed(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	t.Setenv("BUNDLE_ROOT", bundleRoot)
+	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
 	stdout, stderr, err := testcli.RequireErrorRun(t, ctx, "bundle", "deploy")
 
 	assert.Error(t, err)

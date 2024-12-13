@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -34,7 +35,7 @@ func TestGenerateFromExistingPipelineAndDeploy(t *testing.T) {
 		gt.destroyPipeline(ctx, pipelineId)
 	})
 
-	t.Setenv("BUNDLE_ROOT", bundleRoot)
+	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
 	c := testcli.NewRunnerWithContext(t, ctx, "bundle", "generate", "pipeline",
 		"--existing-pipeline-id", fmt.Sprint(pipelineId),
 		"--config-dir", filepath.Join(bundleRoot, "resources"),

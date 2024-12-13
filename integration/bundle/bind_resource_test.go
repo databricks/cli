@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/google/uuid"
@@ -35,7 +36,7 @@ func TestBindJobToExistingJob(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Setenv("BUNDLE_ROOT", bundleRoot)
+	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
 	c := testcli.NewRunnerWithContext(t, ctx, "bundle", "deployment", "bind", "foo", fmt.Sprint(jobId), "--auto-approve")
 	_, _, err = c.Run()
 	require.NoError(t, err)
@@ -99,7 +100,7 @@ func TestAbortBind(t *testing.T) {
 	})
 
 	// Bind should fail because prompting is not possible.
-	t.Setenv("BUNDLE_ROOT", bundleRoot)
+	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
 	t.Setenv("TERM", "dumb")
 	c := testcli.NewRunnerWithContext(t, ctx, "bundle", "deployment", "bind", "foo", fmt.Sprint(jobId))
 
@@ -147,7 +148,7 @@ func TestGenerateAndBind(t *testing.T) {
 		}
 	})
 
-	t.Setenv("BUNDLE_ROOT", bundleRoot)
+	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
 	c := testcli.NewRunnerWithContext(t, ctx, "bundle", "generate", "job",
 		"--key", "test_job_key",
 		"--existing-job-id", fmt.Sprint(jobId),

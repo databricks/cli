@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -118,7 +119,7 @@ func TestBundleDeployUcSchemaFailsWithoutAutoApprove(t *testing.T) {
 	require.NoError(t, err)
 
 	// Redeploy the bundle
-	t.Setenv("BUNDLE_ROOT", bundleRoot)
+	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
 	t.Setenv("TERM", "dumb")
 	c := testcli.NewRunnerWithContext(t, ctx, "bundle", "deploy", "--force-lock")
 	stdout, stderr, err := c.Run()
@@ -162,7 +163,7 @@ func TestBundlePipelineDeleteWithoutAutoApprove(t *testing.T) {
 	require.NoError(t, err)
 
 	// Redeploy the bundle. Expect it to fail because deleting the pipeline requires --auto-approve.
-	t.Setenv("BUNDLE_ROOT", bundleRoot)
+	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
 	t.Setenv("TERM", "dumb")
 	c := testcli.NewRunnerWithContext(t, ctx, "bundle", "deploy", "--force-lock")
 	stdout, stderr, err := c.Run()
@@ -201,7 +202,7 @@ func TestBundlePipelineRecreateWithoutAutoApprove(t *testing.T) {
 	require.Equal(t, pipelineName, pipeline.Name)
 
 	// Redeploy the bundle, pointing the DLT pipeline to a different UC catalog.
-	t.Setenv("BUNDLE_ROOT", bundleRoot)
+	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
 	t.Setenv("TERM", "dumb")
 	c := testcli.NewRunnerWithContext(t, ctx, "bundle", "deploy", "--force-lock", "--var=\"catalog=whatever\"")
 	stdout, stderr, err := c.Run()
@@ -283,7 +284,7 @@ func TestDeployUcVolume(t *testing.T) {
 
 	// Recreation of the volume without --auto-approve should fail since prompting is not possible
 	t.Setenv("TERM", "dumb")
-	t.Setenv("BUNDLE_ROOT", bundleRoot)
+	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
 	stdout, stderr, err := testcli.NewRunnerWithContext(t, ctx, "bundle", "deploy", "--var=schema_name=${resources.schemas.schema2.name}").Run()
 	assert.Error(t, err)
 	assert.Contains(t, stderr.String(), `This action will result in the deletion or recreation of the following volumes.
@@ -295,7 +296,7 @@ is removed from the catalog, but the underlying files are not deleted:
 
 	// Successfully recreate the volume with --auto-approve
 	t.Setenv("TERM", "dumb")
-	t.Setenv("BUNDLE_ROOT", bundleRoot)
+	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
 	_, _, err = testcli.NewRunnerWithContext(t, ctx, "bundle", "deploy", "--var=schema_name=${resources.schemas.schema2.name}", "--auto-approve").Run()
 	assert.NoError(t, err)
 
