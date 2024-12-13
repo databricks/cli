@@ -29,8 +29,7 @@ func setupUcSchemaBundle(t *testing.T, ctx context.Context, w *databricks.Worksp
 		"unique_id": uniqueId,
 	})
 
-	err := deployBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleRoot)
 
 	t.Cleanup(func() {
 		err := destroyBundle(t, ctx, bundleRoot)
@@ -96,8 +95,7 @@ func TestBundleDeployUcSchema(t *testing.T) {
 	require.NoError(t, err)
 
 	// Redeploy the bundle
-	err = deployBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleRoot)
 
 	// Assert the schema is deleted
 	_, err = w.Schemas.GetByFullName(ctx, strings.Join([]string{catalogName, schemaName}, "."))
