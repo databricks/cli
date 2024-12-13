@@ -3,6 +3,7 @@
 package schema
 
 type DataSourceJobs struct {
-	Id  string            `json:"id,omitempty"`
-	Ids map[string]string `json:"ids,omitempty"`
+	Id              string            `json:"id,omitempty"`
+	Ids             map[string]string `json:"ids,omitempty"`
+	JobNameContains string            `json:"job_name_contains,omitempty"`
 }

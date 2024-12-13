@@ -21,13 +21,13 @@ type Root struct {
 
 const ProviderHost = "registry.terraform.io"
 const ProviderSource = "databricks/databricks"
-const ProviderVersion = "1.59.0"
+const ProviderVersion = "1.61.0"
 
 func NewRoot() *Root {
 	return &Root{
-		Terraform: map[string]any{
-			"required_providers": map[string]any{
-				"databricks": map[string]any{
+		Terraform: map[string]interface{}{
+			"required_providers": map[string]interface{}{
+				"databricks": map[string]interface{}{
 					"source":  ProviderSource,
 					"version": ProviderVersion,
 				},

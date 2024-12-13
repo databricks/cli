@@ -2,9 +2,8 @@ package generator
 
 import (
 	"fmt"
-	"strings"
-
 	"slices"
+	"strings"
 
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/iancoleman/strcase"
@@ -92,7 +91,12 @@ func (w *walker) walk(block *tfjson.SchemaBlock, name []string) error {
 
 		// Assert the attribute type is always set.
 		if v.AttributeType == cty.NilType {
-			return fmt.Errorf("unexpected nil type for attribute %s", k)
+			// If the attribute is a nested type, the type is an object.
+			if v.AttributeNestedType != nil {
+				v.AttributeType = cty.Object(map[string]cty.Type{})
+			} else {
+				return fmt.Errorf("unexpected nil type for attribute %s", k)
+			}
 		}
 
 		// Collect field properties.

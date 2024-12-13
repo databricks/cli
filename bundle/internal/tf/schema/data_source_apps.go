@@ -2,6 +2,6 @@
 
 package schema
 
-type DataSourceServingEndpoints struct {
-	Endpoints any `json:"endpoints,omitempty"`
+type DataSourceApps struct {
+	App any `json:"app,omitempty"`
 }
