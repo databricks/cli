@@ -26,18 +26,15 @@ import (
 
 const defaultSparkVersion = "13.3.x-snapshot-scala2.12"
 
-func initTestTemplate(t testutil.TestingT, ctx context.Context, templateName string, config map[string]any) (string, error) {
+func initTestTemplate(t testutil.TestingT, ctx context.Context, templateName string, config map[string]any) string {
 	bundleRoot := t.TempDir()
 	return initTestTemplateWithBundleRoot(t, ctx, templateName, config, bundleRoot)
 }
 
-func initTestTemplateWithBundleRoot(t testutil.TestingT, ctx context.Context, templateName string, config map[string]any, bundleRoot string) (string, error) {
+func initTestTemplateWithBundleRoot(t testutil.TestingT, ctx context.Context, templateName string, config map[string]any, bundleRoot string) string {
 	templateRoot := filepath.Join("bundles", templateName)
 
-	configFilePath, err := writeConfigFile(t, config)
-	if err != nil {
-		return "", err
-	}
+	configFilePath := writeConfigFile(t, config)
 
 	ctx = root.SetWorkspaceClient(ctx, nil)
 	cmd := cmdio.NewIO(ctx, flags.OutputJSON, strings.NewReader(""), os.Stdout, os.Stderr, "", "bundles")
@@ -46,21 +43,21 @@ func initTestTemplateWithBundleRoot(t testutil.TestingT, ctx context.Context, te
 	out, err := filer.NewLocalClient(bundleRoot)
 	require.NoError(t, err)
 	err = template.Materialize(ctx, configFilePath, os.DirFS(templateRoot), out)
-	return bundleRoot, err
+	require.NoError(t, err)
+	return bundleRoot
 }
 
-func writeConfigFile(t testutil.TestingT, config map[string]any) (string, error) {
+func writeConfigFile(t testutil.TestingT, config map[string]any) string {
 	bytes, err := json.Marshal(config)
-	if err != nil {
-		return "", err
-	}
+	require.NoError(t, err)
 
 	dir := t.TempDir()
 	filepath := filepath.Join(dir, "config.json")
 	t.Log("Configuration for template: ", string(bytes))
 
 	err = os.WriteFile(filepath, bytes, 0o644)
-	return filepath, err
+	require.NoError(t, err)
+	return filepath
 }
 
 func validateBundle(t testutil.TestingT, ctx context.Context, path string) ([]byte, error) {
