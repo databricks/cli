@@ -19,7 +19,7 @@ func TestDeployBasicToSharedWorkspacePath(t *testing.T) {
 	currentUser, err := wt.W.CurrentUser.Me(ctx)
 	require.NoError(t, err)
 
-	bundleRoot, err := initTestTemplate(t, ctx, "basic", map[string]any{
+	bundleRoot := initTestTemplate(t, ctx, "basic", map[string]any{
 		"unique_id":     uniqueId,
 		"node_type_id":  nodeTypeId,
 		"spark_version": defaultSparkVersion,

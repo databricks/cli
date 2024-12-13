@@ -20,7 +20,7 @@ func TestDeployBundleWithCluster(t *testing.T) {
 
 	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	uniqueId := uuid.New().String()
-	root, err := initTestTemplate(t, ctx, "clusters", map[string]any{
+	root := initTestTemplate(t, ctx, "clusters", map[string]any{
 		"unique_id":     uniqueId,
 		"node_type_id":  nodeTypeId,
 		"spark_version": defaultSparkVersion,

@@ -18,7 +18,7 @@ func TestBundleDeployThenRemoveResources(t *testing.T) {
 
 	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	uniqueId := uuid.New().String()
-	bundleRoot, err := initTestTemplate(t, ctx, "deploy_then_remove_resources", map[string]any{
+	bundleRoot := initTestTemplate(t, ctx, "deploy_then_remove_resources", map[string]any{
 		"unique_id":     uniqueId,
 		"node_type_id":  nodeTypeId,
 		"spark_version": defaultSparkVersion,

@@ -18,7 +18,7 @@ func TestDashboards(t *testing.T) {
 
 	warehouseID := testutil.GetEnvOrSkipTest(t, "TEST_DEFAULT_WAREHOUSE_ID")
 	uniqueID := uuid.New().String()
-	root, err := initTestTemplate(t, ctx, "dashboards", map[string]any{
+	root := initTestTemplate(t, ctx, "dashboards", map[string]any{
 		"unique_id":    uniqueID,
 		"warehouse_id": warehouseID,
 	})

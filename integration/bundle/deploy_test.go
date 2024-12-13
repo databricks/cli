@@ -25,7 +25,7 @@ import (
 )
 
 func setupUcSchemaBundle(t *testing.T, ctx context.Context, w *databricks.WorkspaceClient, uniqueId string) string {
-	bundleRoot, err := initTestTemplate(t, ctx, "uc_schema", map[string]any{
+	bundleRoot := initTestTemplate(t, ctx, "uc_schema", map[string]any{
 		"unique_id": uniqueId,
 	})
 	require.NoError(t, err)
