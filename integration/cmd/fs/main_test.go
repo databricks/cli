@@ -1,4 +1,4 @@
-package fs_integration
+package fs_test
 
 import (
 	"testing"

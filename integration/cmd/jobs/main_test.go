@@ -1,4 +1,4 @@
-package jobs_integration
+package jobs_test
 
 import (
 	"testing"

@@ -1,4 +1,4 @@
-package secrets_integration
+package secrets_test
 
 import (
 	"context"

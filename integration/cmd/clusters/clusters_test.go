@@ -1,4 +1,4 @@
-package clusters_integration
+package clusters_test
 
 import (
 	"fmt"

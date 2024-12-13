@@ -1,4 +1,4 @@
-package repos_integration
+package repos_test
 
 import (
 	"context"

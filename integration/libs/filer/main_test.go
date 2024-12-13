@@ -1,4 +1,4 @@
-package filer_integration
+package filer_test
 
 import (
 	"testing"

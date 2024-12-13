@@ -1,4 +1,4 @@
-package sync_integration
+package sync_test
 
 import (
 	"testing"

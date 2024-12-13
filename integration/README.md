@@ -5,7 +5,7 @@ This directory contains integration tests for the project.
 The tree structure generally mirrors the source code tree structure.
 
 Requirements for new files in this directory:
-* Every package **must** be named after its directory with `_integration` appended
+* Every package **must** be named after its directory with `_test` appended
   * Requiring a different package name for integration tests avoids aliasing with the main package.
 * Every integration test package **must** include a `main_test.go` file.
 

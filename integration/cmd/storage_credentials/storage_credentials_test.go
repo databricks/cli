@@ -1,4 +1,4 @@
-package storage_credentials_integration
+package storage_credentials_test
 
 import (
 	"testing"

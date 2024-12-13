@@ -1,4 +1,4 @@
-package auth_integration
+package auth_test
 
 import (
 	"context"

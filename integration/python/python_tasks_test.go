@@ -1,4 +1,4 @@
-package python_integration
+package python_test
 
 import (
 	"bytes"

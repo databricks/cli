@@ -59,12 +59,12 @@ func enumeratePackages(t *testing.T) map[string]packageInfo {
 	return pkgmap
 }
 
-// TestEnforcePackageNames checks that all integration test package names use the "_integration" suffix.
+// TestEnforcePackageNames checks that all integration test package names use the "_test" suffix.
 // We enforce this package name to avoid package name aliasing.
 func TestEnforcePackageNames(t *testing.T) {
 	pkgmap := enumeratePackages(t)
 	for _, pkg := range pkgmap {
-		assert.True(t, strings.HasSuffix(pkg.Name, "_integration"), "Package name %s does not end with _integration", pkg.Name)
+		assert.True(t, strings.HasSuffix(pkg.Name, "_test"), "Package name %s does not end with _test", pkg.Name)
 	}
 }
 

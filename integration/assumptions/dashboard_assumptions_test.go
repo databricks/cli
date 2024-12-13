@@ -1,4 +1,4 @@
-package assumptions_integration
+package assumptions_test
 
 import (
 	"encoding/base64"

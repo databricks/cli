@@ -1,4 +1,4 @@
-package locker_integration
+package locker_test
 
 import (
 	"testing"

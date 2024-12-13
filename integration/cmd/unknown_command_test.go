@@ -1,4 +1,4 @@
-package cmd_integration
+package cmd_test
 
 import (
 	"testing"

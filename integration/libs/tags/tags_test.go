@@ -1,4 +1,4 @@
-package tags_integration
+package tags_test
 
 import (
 	"strings"

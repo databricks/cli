@@ -1,4 +1,4 @@
-package version_integration
+package version_test
 
 import (
 	"encoding/json"

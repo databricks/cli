@@ -1,4 +1,4 @@
-package alerts_integration
+package alerts_test
 
 import (
 	"testing"

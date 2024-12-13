@@ -1,4 +1,4 @@
-package git_integration
+package git_test
 
 import (
 	"context"
