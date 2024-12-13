@@ -14,6 +14,8 @@ import (
 func TestAuthDescribeSuccess(t *testing.T) {
 	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
+	t.Skipf("Skipping because of https://github.com/databricks/cli/issues/2010")
+
 	stdout, _ := testcli.RequireSuccessfulRun(t, "auth", "describe")
 	outStr := stdout.String()
 
