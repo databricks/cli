@@ -32,7 +32,6 @@ func TestBindJobToExistingJob(t *testing.T) {
 	jobId := gt.createTestJob(ctx)
 	t.Cleanup(func() {
 		gt.destroyJob(ctx, jobId)
-		require.NoError(t, err)
 	})
 
 	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
@@ -93,8 +92,9 @@ func TestAbortBind(t *testing.T) {
 	jobId := gt.createTestJob(ctx)
 	t.Cleanup(func() {
 		gt.destroyJob(ctx, jobId)
-		err := destroyBundle(t, ctx, bundleRoot)
-		require.NoError(t, err)
+		if err := destroyBundle(t, ctx, bundleRoot); err != nil {
+			t.Error(err)
+		}
 	})
 
 	// Bind should fail because prompting is not possible.
