@@ -1,5 +1,3 @@
-//go:build integration
-
 package sync_integration
 
 import (

@@ -1,5 +1,3 @@
-//go:build integration
-
 package alerts_integration
 
 import (

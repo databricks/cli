@@ -1,5 +1,3 @@
-//go:build integration
-
 package workspace_integration
 
 import (
