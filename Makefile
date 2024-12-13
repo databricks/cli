@@ -37,6 +37,6 @@ vendor:
 	@go mod vendor
 
 integration:
-	gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./integration/..." -- -tags integration -parallel 4 -timeout=2h
+	gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./integration/..." -- -parallel 4 -timeout=2h
 
 .PHONY: fmt lint lintcheck test testonly coverage build snapshot vendor integration
