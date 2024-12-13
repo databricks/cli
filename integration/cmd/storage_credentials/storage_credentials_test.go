@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccStorageCredentialsListRendersResponse(t *testing.T) {
+func TestStorageCredentialsListRendersResponse(t *testing.T) {
 	_, _ = acc.WorkspaceTest(t)
 
 	// Check if metastore is assigned for the workspace, otherwise test will fail

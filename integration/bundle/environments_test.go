@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAccPythonWheelTaskWithEnvironmentsDeployAndRun(t *testing.T) {
+func TestPythonWheelTaskWithEnvironmentsDeployAndRun(t *testing.T) {
 	t.Skip("Skipping test until serveless is enabled")
 
 	ctx, _ := acc.WorkspaceTest(t)

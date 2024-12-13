@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAccGenerateFromExistingPipelineAndDeploy(t *testing.T) {
+func TestGenerateFromExistingPipelineAndDeploy(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	gt := &generatePipelineTest{T: wt, w: wt.W}
 

@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAccEmptyBundleDeploy(t *testing.T) {
+func TestEmptyBundleDeploy(t *testing.T) {
 	ctx, _ := acc.WorkspaceTest(t)
 
 	// create empty bundle

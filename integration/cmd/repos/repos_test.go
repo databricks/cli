@@ -47,7 +47,7 @@ func createTemporaryRepo(t *testing.T, w *databricks.WorkspaceClient, ctx contex
 	return repoInfo.Id, repoPath
 }
 
-func TestAccReposCreateWithProvider(t *testing.T) {
+func TestReposCreateWithProvider(t *testing.T) {
 	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
@@ -64,7 +64,7 @@ func TestAccReposCreateWithProvider(t *testing.T) {
 	assert.Equal(t, workspace.ObjectTypeRepo, oi.ObjectType)
 }
 
-func TestAccReposCreateWithoutProvider(t *testing.T) {
+func TestReposCreateWithoutProvider(t *testing.T) {
 	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
@@ -81,7 +81,7 @@ func TestAccReposCreateWithoutProvider(t *testing.T) {
 	assert.Equal(t, workspace.ObjectTypeRepo, oi.ObjectType)
 }
 
-func TestAccReposGet(t *testing.T) {
+func TestReposGet(t *testing.T) {
 	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
@@ -110,7 +110,7 @@ func TestAccReposGet(t *testing.T) {
 	assert.ErrorContains(t, err, "is not a repo")
 }
 
-func TestAccReposUpdate(t *testing.T) {
+func TestReposUpdate(t *testing.T) {
 	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
@@ -131,7 +131,7 @@ func TestAccReposUpdate(t *testing.T) {
 	assert.Equal(t, byIdOutput.String(), byPathOutput.String())
 }
 
-func TestAccReposDeleteByID(t *testing.T) {
+func TestReposDeleteByID(t *testing.T) {
 	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
@@ -150,7 +150,7 @@ func TestAccReposDeleteByID(t *testing.T) {
 	assert.True(t, apierr.IsMissing(err), err)
 }
 
-func TestAccReposDeleteByPath(t *testing.T) {
+func TestReposDeleteByPath(t *testing.T) {
 	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()

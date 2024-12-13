@@ -75,7 +75,7 @@ var sparkVersions = []string{
 	"14.1.x-scala2.12",
 }
 
-func TestAccRunPythonTaskWorkspace(t *testing.T) {
+func TestRunPythonTaskWorkspace(t *testing.T) {
 	// TODO: remove RUN_PYTHON_TASKS_TEST when ready to be executed as part of nightly
 	testutil.GetEnvOrSkipTest(t, "RUN_PYTHON_TASKS_TEST")
 	testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
@@ -96,7 +96,7 @@ func TestAccRunPythonTaskWorkspace(t *testing.T) {
 	})
 }
 
-func TestAccRunPythonTaskDBFS(t *testing.T) {
+func TestRunPythonTaskDBFS(t *testing.T) {
 	// TODO: remove RUN_PYTHON_TASKS_TEST when ready to be executed as part of nightly
 	testutil.GetEnvOrSkipTest(t, "RUN_PYTHON_TASKS_TEST")
 	testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
@@ -109,7 +109,7 @@ func TestAccRunPythonTaskDBFS(t *testing.T) {
 	})
 }
 
-func TestAccRunPythonTaskRepo(t *testing.T) {
+func TestRunPythonTaskRepo(t *testing.T) {
 	// TODO: remove RUN_PYTHON_TASKS_TEST when ready to be executed as part of nightly
 	testutil.GetEnvOrSkipTest(t, "RUN_PYTHON_TASKS_TEST")
 	testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")

@@ -81,7 +81,7 @@ func setupUcSchemaBundle(t *testing.T, ctx context.Context, w *databricks.Worksp
 	return bundleRoot
 }
 
-func TestAccBundleDeployUcSchema(t *testing.T) {
+func TestBundleDeployUcSchema(t *testing.T) {
 	ctx, wt := acc.UcWorkspaceTest(t)
 	w := wt.W
 
@@ -106,7 +106,7 @@ func TestAccBundleDeployUcSchema(t *testing.T) {
 	assert.Equal(t, "SCHEMA_DOES_NOT_EXIST", apiErr.ErrorCode)
 }
 
-func TestAccBundleDeployUcSchemaFailsWithoutAutoApprove(t *testing.T) {
+func TestBundleDeployUcSchemaFailsWithoutAutoApprove(t *testing.T) {
 	ctx, wt := acc.UcWorkspaceTest(t)
 	w := wt.W
 
@@ -128,7 +128,7 @@ func TestAccBundleDeployUcSchemaFailsWithoutAutoApprove(t *testing.T) {
 	assert.Contains(t, stdout.String(), "the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
 }
 
-func TestAccBundlePipelineDeleteWithoutAutoApprove(t *testing.T) {
+func TestBundlePipelineDeleteWithoutAutoApprove(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	w := wt.W
 
@@ -176,7 +176,7 @@ properties such as the 'catalog' or 'storage' are changed:
 	assert.Contains(t, stdout.String(), "the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
 }
 
-func TestAccBundlePipelineRecreateWithoutAutoApprove(t *testing.T) {
+func TestBundlePipelineRecreateWithoutAutoApprove(t *testing.T) {
 	ctx, wt := acc.UcWorkspaceTest(t)
 	w := wt.W
 	uniqueId := uuid.New().String()
@@ -215,7 +215,7 @@ properties such as the 'catalog' or 'storage' are changed:
 	assert.Contains(t, stdout.String(), "the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
 }
 
-func TestAccDeployBasicBundleLogs(t *testing.T) {
+func TestDeployBasicBundleLogs(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 
 	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
@@ -245,7 +245,7 @@ func TestAccDeployBasicBundleLogs(t *testing.T) {
 	assert.Equal(t, "", stdout)
 }
 
-func TestAccDeployUcVolume(t *testing.T) {
+func TestDeployUcVolume(t *testing.T) {
 	ctx, wt := acc.UcWorkspaceTest(t)
 	w := wt.W
 

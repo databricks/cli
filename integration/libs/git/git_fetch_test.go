@@ -39,7 +39,7 @@ func assertSparseGitInfo(t *testing.T, expectedRoot string, info git.RepositoryI
 	assert.Equal(t, expectedRoot, info.WorktreeRoot)
 }
 
-func TestAccFetchRepositoryInfoAPI_FromRepo(t *testing.T) {
+func TestFetchRepositoryInfoAPI_FromRepo(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	me, err := wt.W.CurrentUser.Me(ctx)
 	require.NoError(t, err)
@@ -66,7 +66,7 @@ func TestAccFetchRepositoryInfoAPI_FromRepo(t *testing.T) {
 	}
 }
 
-func TestAccFetchRepositoryInfoAPI_FromNonRepo(t *testing.T) {
+func TestFetchRepositoryInfoAPI_FromNonRepo(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	me, err := wt.W.CurrentUser.Me(ctx)
 	require.NoError(t, err)
@@ -112,7 +112,7 @@ func TestAccFetchRepositoryInfoAPI_FromNonRepo(t *testing.T) {
 	}
 }
 
-func TestAccFetchRepositoryInfoDotGit_FromGitRepo(t *testing.T) {
+func TestFetchRepositoryInfoDotGit_FromGitRepo(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 
 	repo := cloneRepoLocally(t, examplesRepoUrl)
@@ -139,7 +139,7 @@ func cloneRepoLocally(t *testing.T, repoUrl string) string {
 	return localRoot
 }
 
-func TestAccFetchRepositoryInfoDotGit_FromNonGitRepo(t *testing.T) {
+func TestFetchRepositoryInfoDotGit_FromNonGitRepo(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 
 	tempDir := t.TempDir()
@@ -161,7 +161,7 @@ func TestAccFetchRepositoryInfoDotGit_FromNonGitRepo(t *testing.T) {
 	}
 }
 
-func TestAccFetchRepositoryInfoDotGit_FromBrokenGitRepo(t *testing.T) {
+func TestFetchRepositoryInfoDotGit_FromBrokenGitRepo(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 
 	tempDir := t.TempDir()

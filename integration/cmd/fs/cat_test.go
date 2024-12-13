@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAccFsCat(t *testing.T) {
+func TestFsCat(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range fsTests {
@@ -35,7 +35,7 @@ func TestAccFsCat(t *testing.T) {
 	}
 }
 
-func TestAccFsCatOnADir(t *testing.T) {
+func TestFsCatOnADir(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range fsTests {
@@ -54,7 +54,7 @@ func TestAccFsCatOnADir(t *testing.T) {
 	}
 }
 
-func TestAccFsCatOnNonExistentFile(t *testing.T) {
+func TestFsCatOnNonExistentFile(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range fsTests {
@@ -71,14 +71,14 @@ func TestAccFsCatOnNonExistentFile(t *testing.T) {
 	}
 }
 
-func TestAccFsCatForDbfsInvalidScheme(t *testing.T) {
+func TestFsCatForDbfsInvalidScheme(t *testing.T) {
 	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	_, _, err := testcli.RequireErrorRun(t, "fs", "cat", "dab:/non-existent-file")
 	assert.ErrorContains(t, err, "invalid scheme: dab")
 }
 
-func TestAccFsCatDoesNotSupportOutputModeJson(t *testing.T) {
+func TestFsCatDoesNotSupportOutputModeJson(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	w := wt.W
 

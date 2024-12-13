@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAccBundleDeployThenRemoveResources(t *testing.T) {
+func TestBundleDeployThenRemoveResources(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	w := wt.W
 

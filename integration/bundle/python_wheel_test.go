@@ -45,15 +45,15 @@ func runPythonWheelTest(t *testing.T, templateName, sparkVersion string, pythonW
 	require.Contains(t, out, "['my_test_code', 'param1', 'param2']")
 }
 
-func TestAccPythonWheelTaskDeployAndRunWithoutWrapper(t *testing.T) {
+func TestPythonWheelTaskDeployAndRunWithoutWrapper(t *testing.T) {
 	runPythonWheelTest(t, "python_wheel_task", "13.3.x-snapshot-scala2.12", false)
 }
 
-func TestAccPythonWheelTaskDeployAndRunWithWrapper(t *testing.T) {
+func TestPythonWheelTaskDeployAndRunWithWrapper(t *testing.T) {
 	runPythonWheelTest(t, "python_wheel_task", "12.2.x-scala2.12", true)
 }
 
-func TestAccPythonWheelTaskDeployAndRunOnInteractiveCluster(t *testing.T) {
+func TestPythonWheelTaskDeployAndRunOnInteractiveCluster(t *testing.T) {
 	_, wt := acc.WorkspaceTest(t)
 
 	if testutil.IsAWSCloud(wt) {
