@@ -283,12 +283,11 @@ func TestUploadArtifactToVolumeNotYetDeployed(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	bundleRoot, err := initTestTemplate(t, ctx, "artifact_path_with_volume", map[string]any{
+	bundleRoot := initTestTemplate(t, ctx, "artifact_path_with_volume", map[string]any{
 		"unique_id":   uuid.New().String(),
 		"schema_name": schemaName,
 		"volume_name": "my_volume",
 	})
-	require.NoError(t, err)
 
 	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
 	stdout, stderr, err := testcli.RequireErrorRun(t, ctx, "bundle", "deploy")

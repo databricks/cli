@@ -84,12 +84,11 @@ func TestAbortBind(t *testing.T) {
 
 	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	uniqueId := uuid.New().String()
-	bundleRoot, err := initTestTemplate(t, ctx, "basic", map[string]any{
+	bundleRoot := initTestTemplate(t, ctx, "basic", map[string]any{
 		"unique_id":     uniqueId,
 		"spark_version": "13.3.x-scala2.12",
 		"node_type_id":  nodeTypeId,
 	})
-	require.NoError(t, err)
 
 	jobId := gt.createTestJob(ctx)
 	t.Cleanup(func() {
