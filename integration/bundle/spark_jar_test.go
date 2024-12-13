@@ -52,7 +52,6 @@ func runSparkJarTestFromWorkspace(t *testing.T, sparkVersion string) {
 }
 
 func TestSparkJarTaskDeployAndRunOnVolumes(t *testing.T) {
-	testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 	testutil.RequireJDK(t, context.Background(), "1.8.0")
 
 	// Failure on earlier DBR versions:
@@ -76,7 +75,6 @@ func TestSparkJarTaskDeployAndRunOnVolumes(t *testing.T) {
 }
 
 func TestSparkJarTaskDeployAndRunOnWorkspace(t *testing.T) {
-	testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 	testutil.RequireJDK(t, context.Background(), "1.8.0")
 
 	// Failure on earlier DBR versions:

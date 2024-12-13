@@ -14,8 +14,6 @@ import (
 )
 
 func TestBundleValidate(t *testing.T) {
-	testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
-
 	tmpDir := t.TempDir()
 	testutil.WriteFile(t, filepath.Join(tmpDir, "databricks.yml"),
 		`

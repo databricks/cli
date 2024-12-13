@@ -501,10 +501,8 @@ func TestSyncIncrementalSyncPythonNotebookDelete(t *testing.T) {
 }
 
 func TestSyncEnsureRemotePathIsUsableIfRepoDoesntExist(t *testing.T) {
-	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
-	wsc := databricks.Must(databricks.NewWorkspaceClient())
-	ctx := context.Background()
+	ctx, wt := acc.WorkspaceTest(t)
+	wsc := wt.W
 
 	me, err := wsc.CurrentUser.Me(ctx)
 	require.NoError(t, err)
@@ -521,10 +519,9 @@ func TestSyncEnsureRemotePathIsUsableIfRepoDoesntExist(t *testing.T) {
 }
 
 func TestSyncEnsureRemotePathIsUsableIfRepoExists(t *testing.T) {
-	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	ctx, wt := acc.WorkspaceTest(t)
+	wsc := wt.W
 
-	wsc := databricks.Must(databricks.NewWorkspaceClient())
-	ctx := context.Background()
 	_, remoteRepoPath := setupRepo(t, wsc, ctx)
 
 	// Repo itself is usable.
@@ -543,10 +540,9 @@ func TestSyncEnsureRemotePathIsUsableIfRepoExists(t *testing.T) {
 }
 
 func TestSyncEnsureRemotePathIsUsableInWorkspace(t *testing.T) {
-	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	ctx, wt := acc.WorkspaceTest(t)
+	wsc := wt.W
 
-	wsc := databricks.Must(databricks.NewWorkspaceClient())
-	ctx := context.Background()
 	me, err := wsc.CurrentUser.Me(ctx)
 	require.NoError(t, err)
 

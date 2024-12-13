@@ -11,17 +11,15 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/iamutil"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestBundleInitErrorOnUnknownFields(t *testing.T) {
-	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
 	tmpDir := t.TempDir()
 	_, _, err := testcli.RequireErrorRun(t, "bundle", "init", "./testdata/init/field-does-not-exist", "--output-dir", tmpDir)
 	assert.EqualError(t, err, "failed to compute file content for bar.tmpl. variable \"does_not_exist\" not defined")
@@ -40,15 +38,14 @@ func TestBundleInitErrorOnUnknownFields(t *testing.T) {
 //     make changes that can break the MLOps Stacks DAB. In which case we should
 //     skip this test until the MLOps Stacks DAB is updated to work again.
 func TestBundleInitOnMlopsStacks(t *testing.T) {
-	env := testutil.GetCloud(t).String()
+	_, wt := acc.WorkspaceTest(t)
+	w := wt.W
 
 	tmpDir1 := t.TempDir()
 	tmpDir2 := t.TempDir()
 
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{})
-	require.NoError(t, err)
-
 	projectName := testutil.RandomName("project_name_")
+	env := testutil.GetCloud(t).String()
 
 	// Create a config file with the project name and root dir
 	initConfig := map[string]string{
@@ -102,23 +99,22 @@ func TestBundleInitOnMlopsStacks(t *testing.T) {
 }
 
 func TestBundleInitHelpers(t *testing.T) {
-	env := testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
-	t.Log(env)
+	ctx, wt := acc.WorkspaceTest(t)
+	w := wt.W
 
-	w, err := databricks.NewWorkspaceClient(&databricks.Config{})
-	require.NoError(t, err)
-
-	me, err := w.CurrentUser.Me(context.Background())
+	me, err := w.CurrentUser.Me(ctx)
 	require.NoError(t, err)
 
 	var smallestNode string
-	switch env {
-	case "azure":
+	switch testutil.GetCloud(t) {
+	case testutil.Azure:
 		smallestNode = "Standard_D3_v2"
-	case "gcp":
+	case testutil.GCP:
 		smallestNode = "n1-standard-4"
-	default:
+	case testutil.AWS:
 		smallestNode = "i3.xlarge"
+	default:
+		t.Fatal("Unknown cloud environment")
 	}
 
 	tests := []struct {

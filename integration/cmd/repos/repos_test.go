@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/databricks-sdk-go"
@@ -48,11 +49,8 @@ func createTemporaryRepo(t *testing.T, w *databricks.WorkspaceClient, ctx contex
 }
 
 func TestReposCreateWithProvider(t *testing.T) {
-	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
-	ctx := context.Background()
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
+	ctx, wt := acc.WorkspaceTest(t)
+	w := wt.W
 	repoPath := synthesizeTemporaryRepoPath(t, w, ctx)
 
 	_, stderr := testcli.RequireSuccessfulRun(t, "repos", "create", repoUrl, "gitHub", "--path", repoPath)
@@ -65,11 +63,8 @@ func TestReposCreateWithProvider(t *testing.T) {
 }
 
 func TestReposCreateWithoutProvider(t *testing.T) {
-	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
-	ctx := context.Background()
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
+	ctx, wt := acc.WorkspaceTest(t)
+	w := wt.W
 	repoPath := synthesizeTemporaryRepoPath(t, w, ctx)
 
 	_, stderr := testcli.RequireSuccessfulRun(t, "repos", "create", repoUrl, "--path", repoPath)
@@ -82,11 +77,8 @@ func TestReposCreateWithoutProvider(t *testing.T) {
 }
 
 func TestReposGet(t *testing.T) {
-	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
-	ctx := context.Background()
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
+	ctx, wt := acc.WorkspaceTest(t)
+	w := wt.W
 
 	repoId, repoPath := createTemporaryRepo(t, w, ctx)
 
@@ -102,7 +94,7 @@ func TestReposGet(t *testing.T) {
 	assert.Equal(t, byIdOutput.String(), byPathOutput.String())
 
 	// Get by path fails
-	_, stderr, err = testcli.RequireErrorRun(t, "repos", "get", repoPath+"-doesntexist", "--output=json")
+	_, stderr, err := testcli.RequireErrorRun(t, "repos", "get", repoPath+"-doesntexist", "--output=json")
 	assert.ErrorContains(t, err, "failed to look up repo")
 
 	// Get by path resolves to something other than a repo
@@ -111,11 +103,8 @@ func TestReposGet(t *testing.T) {
 }
 
 func TestReposUpdate(t *testing.T) {
-	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
-	ctx := context.Background()
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
+	ctx, wt := acc.WorkspaceTest(t)
+	w := wt.W
 
 	repoId, repoPath := createTemporaryRepo(t, w, ctx)
 
@@ -132,11 +121,8 @@ func TestReposUpdate(t *testing.T) {
 }
 
 func TestReposDeleteByID(t *testing.T) {
-	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
-	ctx := context.Background()
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
+	ctx, wt := acc.WorkspaceTest(t)
+	w := wt.W
 
 	repoId, _ := createTemporaryRepo(t, w, ctx)
 
@@ -146,16 +132,13 @@ func TestReposDeleteByID(t *testing.T) {
 	assert.Equal(t, "", stderr.String())
 
 	// Check it was actually deleted
-	_, err = w.Repos.GetByRepoId(ctx, repoId)
+	_, err := w.Repos.GetByRepoId(ctx, repoId)
 	assert.True(t, apierr.IsMissing(err), err)
 }
 
 func TestReposDeleteByPath(t *testing.T) {
-	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
-	ctx := context.Background()
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
+	ctx, wt := acc.WorkspaceTest(t)
+	w := wt.W
 
 	repoId, repoPath := createTemporaryRepo(t, w, ctx)
 
@@ -165,6 +148,6 @@ func TestReposDeleteByPath(t *testing.T) {
 	assert.Equal(t, "", stderr.String())
 
 	// Check it was actually deleted
-	_, err = w.Repos.GetByRepoId(ctx, repoId)
+	_, err := w.Repos.GetByRepoId(ctx, repoId)
 	assert.True(t, apierr.IsMissing(err), err)
 }

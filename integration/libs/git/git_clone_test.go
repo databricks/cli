@@ -6,14 +6,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/git"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestGitClone(t *testing.T) {
-	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
 	tmpDir := t.TempDir()
 	ctx := context.Background()
 	var err error
@@ -34,8 +31,6 @@ func TestGitClone(t *testing.T) {
 }
 
 func TestGitCloneOnNonDefaultBranch(t *testing.T) {
-	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
 	tmpDir := t.TempDir()
 	ctx := context.Background()
 	var err error
@@ -55,8 +50,6 @@ func TestGitCloneOnNonDefaultBranch(t *testing.T) {
 }
 
 func TestGitCloneErrorsWhenRepositoryDoesNotExist(t *testing.T) {
-	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
 	tmpDir := t.TempDir()
 
 	err := git.Clone(context.Background(), "https://github.com/monalisa/doesnot-exist.git", "", tmpDir)

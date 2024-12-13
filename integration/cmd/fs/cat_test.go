@@ -9,7 +9,6 @@ import (
 
 	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testcli"
-	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -72,8 +71,6 @@ func TestFsCatOnNonExistentFile(t *testing.T) {
 }
 
 func TestFsCatForDbfsInvalidScheme(t *testing.T) {
-	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
 	_, _, err := testcli.RequireErrorRun(t, "fs", "cat", "dab:/non-existent-file")
 	assert.ErrorContains(t, err, "invalid scheme: dab")
 }

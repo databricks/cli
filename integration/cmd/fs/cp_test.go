@@ -357,8 +357,6 @@ func TestFsCpErrorsWhenSourceIsDirWithoutRecursiveFlag(t *testing.T) {
 }
 
 func TestFsCpErrorsOnInvalidScheme(t *testing.T) {
-	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
 	_, _, err := testcli.RequireErrorRun(t, "fs", "cp", "dbfs:/a", "https:/b")
 	assert.Equal(t, "invalid scheme: https", err.Error())
 }

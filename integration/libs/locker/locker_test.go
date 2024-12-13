@@ -46,10 +46,8 @@ func createRemoteTestProject(t *testing.T, projectNamePrefix string, wsc *databr
 }
 
 func TestLock(t *testing.T) {
-	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
-	ctx := context.TODO()
-	wsc, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
+	ctx, wt := acc.WorkspaceTest(t)
+	wsc := wt.W
 	remoteProjectRoot := createRemoteTestProject(t, "lock-acc-", wsc)
 
 	// 5 lockers try to acquire a lock at the same time

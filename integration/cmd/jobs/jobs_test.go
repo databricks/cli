@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/stretchr/testify/assert"
@@ -13,11 +12,7 @@ import (
 )
 
 func TestCreateJob(t *testing.T) {
-	acc.WorkspaceTest(t)
-	env := testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
-	if env != "azure" {
-		t.Skipf("Not running test on cloud %s", env)
-	}
+	testutil.Require(t, testutil.Azure)
 	stdout, stderr := testcli.RequireSuccessfulRun(t, "jobs", "create", "--json", "@testdata/create_job_without_workers.json", "--log-level=debug")
 	assert.Empty(t, stderr.String())
 	var output map[string]int
