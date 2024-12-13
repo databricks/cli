@@ -8,9 +8,9 @@ type DataSourceServingEndpointsEndpointsAiGatewayGuardrailsInputPii struct {
 
 type DataSourceServingEndpointsEndpointsAiGatewayGuardrailsInput struct {
 	InvalidKeywords []string                                                         `json:"invalid_keywords,omitempty"`
+	Pii             []DataSourceServingEndpointsEndpointsAiGatewayGuardrailsInputPii `json:"pii,omitempty"`
 	Safety          bool                                                             `json:"safety,omitempty"`
 	ValidTopics     []string                                                         `json:"valid_topics,omitempty"`
-	Pii             []DataSourceServingEndpointsEndpointsAiGatewayGuardrailsInputPii `json:"pii,omitempty"`
 }
 
 type DataSourceServingEndpointsEndpointsAiGatewayGuardrailsOutputPii struct {
@@ -19,9 +19,9 @@ type DataSourceServingEndpointsEndpointsAiGatewayGuardrailsOutputPii struct {
 
 type DataSourceServingEndpointsEndpointsAiGatewayGuardrailsOutput struct {
 	InvalidKeywords []string                                                          `json:"invalid_keywords,omitempty"`
+	Pii             []DataSourceServingEndpointsEndpointsAiGatewayGuardrailsOutputPii `json:"pii,omitempty"`
 	Safety          bool                                                              `json:"safety,omitempty"`
 	ValidTopics     []string                                                          `json:"valid_topics,omitempty"`
-	Pii             []DataSourceServingEndpointsEndpointsAiGatewayGuardrailsOutputPii `json:"pii,omitempty"`
 }
 
 type DataSourceServingEndpointsEndpointsAiGatewayGuardrails struct {
@@ -111,17 +111,17 @@ type DataSourceServingEndpointsEndpointsConfigServedEntitiesExternalModelPalmCon
 }
 
 type DataSourceServingEndpointsEndpointsConfigServedEntitiesExternalModel struct {
-	Name                         string                                                                                             `json:"name"`
-	Provider                     string                                                                                             `json:"provider"`
-	Task                         string                                                                                             `json:"task"`
 	Ai21LabsConfig               []DataSourceServingEndpointsEndpointsConfigServedEntitiesExternalModelAi21LabsConfig               `json:"ai21labs_config,omitempty"`
 	AmazonBedrockConfig          []DataSourceServingEndpointsEndpointsConfigServedEntitiesExternalModelAmazonBedrockConfig          `json:"amazon_bedrock_config,omitempty"`
 	AnthropicConfig              []DataSourceServingEndpointsEndpointsConfigServedEntitiesExternalModelAnthropicConfig              `json:"anthropic_config,omitempty"`
 	CohereConfig                 []DataSourceServingEndpointsEndpointsConfigServedEntitiesExternalModelCohereConfig                 `json:"cohere_config,omitempty"`
 	DatabricksModelServingConfig []DataSourceServingEndpointsEndpointsConfigServedEntitiesExternalModelDatabricksModelServingConfig `json:"databricks_model_serving_config,omitempty"`
 	GoogleCloudVertexAiConfig    []DataSourceServingEndpointsEndpointsConfigServedEntitiesExternalModelGoogleCloudVertexAiConfig    `json:"google_cloud_vertex_ai_config,omitempty"`
+	Name                         string                                                                                             `json:"name"`
 	OpenaiConfig                 []DataSourceServingEndpointsEndpointsConfigServedEntitiesExternalModelOpenaiConfig                 `json:"openai_config,omitempty"`
 	PalmConfig                   []DataSourceServingEndpointsEndpointsConfigServedEntitiesExternalModelPalmConfig                   `json:"palm_config,omitempty"`
+	Provider                     string                                                                                             `json:"provider"`
+	Task                         string                                                                                             `json:"task"`
 }
 
 type DataSourceServingEndpointsEndpointsConfigServedEntitiesFoundationModel struct {
@@ -134,9 +134,9 @@ type DataSourceServingEndpointsEndpointsConfigServedEntitiesFoundationModel stru
 type DataSourceServingEndpointsEndpointsConfigServedEntities struct {
 	EntityName      string                                                                   `json:"entity_name,omitempty"`
 	EntityVersion   string                                                                   `json:"entity_version,omitempty"`
-	Name            string                                                                   `json:"name,omitempty"`
 	ExternalModel   []DataSourceServingEndpointsEndpointsConfigServedEntitiesExternalModel   `json:"external_model,omitempty"`
 	FoundationModel []DataSourceServingEndpointsEndpointsConfigServedEntitiesFoundationModel `json:"foundation_model,omitempty"`
+	Name            string                                                                   `json:"name,omitempty"`
 }
 
 type DataSourceServingEndpointsEndpointsConfigServedModels struct {
@@ -161,16 +161,16 @@ type DataSourceServingEndpointsEndpointsTags struct {
 }
 
 type DataSourceServingEndpointsEndpoints struct {
+	AiGateway            []DataSourceServingEndpointsEndpointsAiGateway `json:"ai_gateway,omitempty"`
+	Config               []DataSourceServingEndpointsEndpointsConfig    `json:"config,omitempty"`
 	CreationTimestamp    int                                            `json:"creation_timestamp,omitempty"`
 	Creator              string                                         `json:"creator,omitempty"`
 	Id                   string                                         `json:"id,omitempty"`
 	LastUpdatedTimestamp int                                            `json:"last_updated_timestamp,omitempty"`
 	Name                 string                                         `json:"name,omitempty"`
-	Task                 string                                         `json:"task,omitempty"`
-	AiGateway            []DataSourceServingEndpointsEndpointsAiGateway `json:"ai_gateway,omitempty"`
-	Config               []DataSourceServingEndpointsEndpointsConfig    `json:"config,omitempty"`
 	State                []DataSourceServingEndpointsEndpointsState     `json:"state,omitempty"`
 	Tags                 []DataSourceServingEndpointsEndpointsTags      `json:"tags,omitempty"`
+	Task                 string                                         `json:"task,omitempty"`
 }
 
 type DataSourceServingEndpoints struct {

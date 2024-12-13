@@ -3,6 +3,8 @@
 package schema
 
 type DataSources struct {
+	App                             map[string]any `json:"databricks_app,omitempty"`
+	Apps                            map[string]any `json:"databricks_apps,omitempty"`
 	AwsAssumeRolePolicy             map[string]any `json:"databricks_aws_assume_role_policy,omitempty"`
 	AwsBucketPolicy                 map[string]any `json:"databricks_aws_bucket_policy,omitempty"`
 	AwsCrossaccountPolicy           map[string]any `json:"databricks_aws_crossaccount_policy,omitempty"`
@@ -66,6 +68,8 @@ type DataSources struct {
 
 func NewDataSources() *DataSources {
 	return &DataSources{
+		App:                             make(map[string]any),
+		Apps:                            make(map[string]any),
 		AwsAssumeRolePolicy:             make(map[string]any),
 		AwsBucketPolicy:                 make(map[string]any),
 		AwsCrossaccountPolicy:           make(map[string]any),

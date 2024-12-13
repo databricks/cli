@@ -25,6 +25,7 @@ type DataSourceRegisteredModelVersionsModelVersionsModelVersionDependencies stru
 }
 
 type DataSourceRegisteredModelVersionsModelVersions struct {
+	Aliases                  []DataSourceRegisteredModelVersionsModelVersionsAliases                  `json:"aliases,omitempty"`
 	BrowseOnly               bool                                                                     `json:"browse_only,omitempty"`
 	CatalogName              string                                                                   `json:"catalog_name,omitempty"`
 	Comment                  string                                                                   `json:"comment,omitempty"`
@@ -33,6 +34,7 @@ type DataSourceRegisteredModelVersionsModelVersions struct {
 	Id                       string                                                                   `json:"id,omitempty"`
 	MetastoreId              string                                                                   `json:"metastore_id,omitempty"`
 	ModelName                string                                                                   `json:"model_name,omitempty"`
+	ModelVersionDependencies []DataSourceRegisteredModelVersionsModelVersionsModelVersionDependencies `json:"model_version_dependencies,omitempty"`
 	RunId                    string                                                                   `json:"run_id,omitempty"`
 	RunWorkspaceId           int                                                                      `json:"run_workspace_id,omitempty"`
 	SchemaName               string                                                                   `json:"schema_name,omitempty"`
@@ -42,8 +44,6 @@ type DataSourceRegisteredModelVersionsModelVersions struct {
 	UpdatedAt                int                                                                      `json:"updated_at,omitempty"`
 	UpdatedBy                string                                                                   `json:"updated_by,omitempty"`
 	Version                  int                                                                      `json:"version,omitempty"`
-	Aliases                  []DataSourceRegisteredModelVersionsModelVersionsAliases                  `json:"aliases,omitempty"`
-	ModelVersionDependencies []DataSourceRegisteredModelVersionsModelVersionsModelVersionDependencies `json:"model_version_dependencies,omitempty"`
 }
 
 type DataSourceRegisteredModelVersions struct {
