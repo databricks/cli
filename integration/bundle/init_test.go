@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAccBundleInitErrorOnUnknownFields(t *testing.T) {
+func TestBundleInitErrorOnUnknownFields(t *testing.T) {
 	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	tmpDir := t.TempDir()
@@ -39,7 +39,7 @@ func TestAccBundleInitErrorOnUnknownFields(t *testing.T) {
 //  2. While rare and to be avoided if possible, the CLI reserves the right to
 //     make changes that can break the MLOps Stacks DAB. In which case we should
 //     skip this test until the MLOps Stacks DAB is updated to work again.
-func TestAccBundleInitOnMlopsStacks(t *testing.T) {
+func TestBundleInitOnMlopsStacks(t *testing.T) {
 	env := testutil.GetCloud(t).String()
 
 	tmpDir1 := t.TempDir()
@@ -101,7 +101,7 @@ func TestAccBundleInitOnMlopsStacks(t *testing.T) {
 	assert.Contains(t, job.Settings.Name, fmt.Sprintf("dev-%s-batch-inference-job", projectName))
 }
 
-func TestAccBundleInitHelpers(t *testing.T) {
+func TestBundleInitHelpers(t *testing.T) {
 	env := testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 	t.Log(env)
 

@@ -51,7 +51,7 @@ func runSparkJarTestFromWorkspace(t *testing.T, sparkVersion string) {
 	runSparkJarTestCommon(t, ctx, sparkVersion, "n/a")
 }
 
-func TestAccSparkJarTaskDeployAndRunOnVolumes(t *testing.T) {
+func TestSparkJarTaskDeployAndRunOnVolumes(t *testing.T) {
 	testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 	testutil.RequireJDK(t, context.Background(), "1.8.0")
 
@@ -75,7 +75,7 @@ func TestAccSparkJarTaskDeployAndRunOnVolumes(t *testing.T) {
 	}
 }
 
-func TestAccSparkJarTaskDeployAndRunOnWorkspace(t *testing.T) {
+func TestSparkJarTaskDeployAndRunOnWorkspace(t *testing.T) {
 	testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 	testutil.RequireJDK(t, context.Background(), "1.8.0")
 

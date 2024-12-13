@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAccFsRmFile(t *testing.T) {
+func TestFsRmFile(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range fsTests {
@@ -43,7 +43,7 @@ func TestAccFsRmFile(t *testing.T) {
 	}
 }
 
-func TestAccFsRmEmptyDir(t *testing.T) {
+func TestFsRmEmptyDir(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range fsTests {
@@ -73,7 +73,7 @@ func TestAccFsRmEmptyDir(t *testing.T) {
 	}
 }
 
-func TestAccFsRmNonEmptyDirectory(t *testing.T) {
+func TestFsRmNonEmptyDirectory(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range fsTests {
@@ -103,7 +103,7 @@ func TestAccFsRmNonEmptyDirectory(t *testing.T) {
 	}
 }
 
-func TestAccFsRmForNonExistentFile(t *testing.T) {
+func TestFsRmForNonExistentFile(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range fsTests {
@@ -121,7 +121,7 @@ func TestAccFsRmForNonExistentFile(t *testing.T) {
 	}
 }
 
-func TestAccFsRmDirRecursively(t *testing.T) {
+func TestFsRmDirRecursively(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range fsTests {

@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAccBasicBundleDeployWithFailOnActiveRuns(t *testing.T) {
+func TestBasicBundleDeployWithFailOnActiveRuns(t *testing.T) {
 	ctx, _ := acc.WorkspaceTest(t)
 
 	nodeTypeId := testutil.GetCloud(t).NodeTypeID()

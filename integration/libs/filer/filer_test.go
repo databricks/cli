@@ -117,7 +117,7 @@ func commonFilerRecursiveDeleteTest(t *testing.T, ctx context.Context, f filer.F
 	assert.ErrorAs(t, err, &filer.NoSuchDirectoryError{})
 }
 
-func TestAccFilerRecursiveDelete(t *testing.T) {
+func TestFilerRecursiveDelete(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range []struct {
@@ -228,7 +228,7 @@ func commonFilerReadWriteTests(t *testing.T, ctx context.Context, f filer.Filer)
 	assert.True(t, errors.Is(err, fs.ErrInvalid))
 }
 
-func TestAccFilerReadWrite(t *testing.T) {
+func TestFilerReadWrite(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range []struct {
@@ -337,7 +337,7 @@ func commonFilerReadDirTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	assert.False(t, entries[0].IsDir())
 }
 
-func TestAccFilerReadDir(t *testing.T) {
+func TestFilerReadDir(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range []struct {
@@ -362,7 +362,7 @@ func TestAccFilerReadDir(t *testing.T) {
 	}
 }
 
-func TestAccFilerWorkspaceNotebook(t *testing.T) {
+func TestFilerWorkspaceNotebook(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -471,7 +471,7 @@ func TestAccFilerWorkspaceNotebook(t *testing.T) {
 	}
 }
 
-func TestAccFilerWorkspaceFilesExtensionsReadDir(t *testing.T) {
+func TestFilerWorkspaceFilesExtensionsReadDir(t *testing.T) {
 	t.Parallel()
 
 	files := []struct {
@@ -575,7 +575,7 @@ func setupFilerWithExtensionsTest(t *testing.T) filer.Filer {
 	return wf
 }
 
-func TestAccFilerWorkspaceFilesExtensionsRead(t *testing.T) {
+func TestFilerWorkspaceFilesExtensionsRead(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -612,7 +612,7 @@ func TestAccFilerWorkspaceFilesExtensionsRead(t *testing.T) {
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
-func TestAccFilerWorkspaceFilesExtensionsDelete(t *testing.T) {
+func TestFilerWorkspaceFilesExtensionsDelete(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -661,7 +661,7 @@ func TestAccFilerWorkspaceFilesExtensionsDelete(t *testing.T) {
 	filerTest{t, wf}.assertNotExists(ctx, "dir")
 }
 
-func TestAccFilerWorkspaceFilesExtensionsStat(t *testing.T) {
+func TestFilerWorkspaceFilesExtensionsStat(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -708,7 +708,7 @@ func TestAccFilerWorkspaceFilesExtensionsStat(t *testing.T) {
 	}
 }
 
-func TestAccWorkspaceFilesExtensionsDirectoriesAreNotNotebooks(t *testing.T) {
+func TestWorkspaceFilesExtensionsDirectoriesAreNotNotebooks(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -723,7 +723,7 @@ func TestAccWorkspaceFilesExtensionsDirectoriesAreNotNotebooks(t *testing.T) {
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
-func TestAccWorkspaceFilesExtensionsNotebooksAreNotReadAsFiles(t *testing.T) {
+func TestWorkspaceFilesExtensionsNotebooksAreNotReadAsFiles(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -742,7 +742,7 @@ func TestAccWorkspaceFilesExtensionsNotebooksAreNotReadAsFiles(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestAccWorkspaceFilesExtensionsNotebooksAreNotStatAsFiles(t *testing.T) {
+func TestWorkspaceFilesExtensionsNotebooksAreNotStatAsFiles(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -761,7 +761,7 @@ func TestAccWorkspaceFilesExtensionsNotebooksAreNotStatAsFiles(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestAccWorkspaceFilesExtensionsNotebooksAreNotDeletedAsFiles(t *testing.T) {
+func TestWorkspaceFilesExtensionsNotebooksAreNotDeletedAsFiles(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -780,7 +780,7 @@ func TestAccWorkspaceFilesExtensionsNotebooksAreNotDeletedAsFiles(t *testing.T) 
 	assert.NoError(t, err)
 }
 
-func TestAccWorkspaceFilesExtensions_ExportFormatIsPreserved(t *testing.T) {
+func TestWorkspaceFilesExtensions_ExportFormatIsPreserved(t *testing.T) {
 	t.Parallel()
 
 	// Case 1: Writing source notebooks.

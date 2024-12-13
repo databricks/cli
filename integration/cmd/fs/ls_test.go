@@ -40,7 +40,7 @@ func setupLsFiles(t *testing.T, f filer.Filer) {
 	require.NoError(t, err)
 }
 
-func TestAccFsLs(t *testing.T) {
+func TestFsLs(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range fsTests {
@@ -73,7 +73,7 @@ func TestAccFsLs(t *testing.T) {
 	}
 }
 
-func TestAccFsLsWithAbsolutePaths(t *testing.T) {
+func TestFsLsWithAbsolutePaths(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range fsTests {
@@ -106,7 +106,7 @@ func TestAccFsLsWithAbsolutePaths(t *testing.T) {
 	}
 }
 
-func TestAccFsLsOnFile(t *testing.T) {
+func TestFsLsOnFile(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range fsTests {
@@ -124,7 +124,7 @@ func TestAccFsLsOnFile(t *testing.T) {
 	}
 }
 
-func TestAccFsLsOnEmptyDir(t *testing.T) {
+func TestFsLsOnEmptyDir(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range fsTests {
@@ -147,7 +147,7 @@ func TestAccFsLsOnEmptyDir(t *testing.T) {
 	}
 }
 
-func TestAccFsLsForNonexistingDir(t *testing.T) {
+func TestFsLsForNonexistingDir(t *testing.T) {
 	t.Parallel()
 
 	for _, testCase := range fsTests {
@@ -165,7 +165,7 @@ func TestAccFsLsForNonexistingDir(t *testing.T) {
 	}
 }
 
-func TestAccFsLsWithoutScheme(t *testing.T) {
+func TestFsLsWithoutScheme(t *testing.T) {
 	t.Parallel()
 
 	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))

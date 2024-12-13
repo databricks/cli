@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAccDeployBundleWithCluster(t *testing.T) {
+func TestDeployBundleWithCluster(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 
 	if testutil.IsAWSCloud(wt) {

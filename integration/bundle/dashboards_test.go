@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAccDashboards(t *testing.T) {
+func TestDashboards(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 
 	warehouseID := testutil.GetEnvOrSkipTest(t, "TEST_DEFAULT_WAREHOUSE_ID")

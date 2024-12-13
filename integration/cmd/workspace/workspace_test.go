@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAccWorkspaceList(t *testing.T) {
+func TestWorkspaceList(t *testing.T) {
 	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	stdout, stderr := testcli.RequireSuccessfulRun(t, "workspace", "list", "/")
@@ -42,7 +42,7 @@ func TestWorkpaceGetStatusErrorWhenNoArguments(t *testing.T) {
 	assert.Contains(t, err.Error(), "accepts 1 arg(s), received 0")
 }
 
-func TestAccWorkpaceExportPrintsContents(t *testing.T) {
+func TestWorkpaceExportPrintsContents(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	w := wt.W
 
@@ -93,7 +93,7 @@ func assertWorkspaceFileType(t *testing.T, ctx context.Context, f filer.Filer, p
 	assert.Equal(t, fileType, info.Sys().(workspace.ObjectInfo).ObjectType)
 }
 
-func TestAccExportDir(t *testing.T) {
+func TestExportDir(t *testing.T) {
 	ctx, f, sourceDir := setupWorkspaceImportExportTest(t)
 	targetDir := t.TempDir()
 
@@ -138,7 +138,7 @@ func TestAccExportDir(t *testing.T) {
 	assertLocalFileContents(t, filepath.Join(targetDir, "a/b/c/file-b"), "def")
 }
 
-func TestAccExportDirDoesNotOverwrite(t *testing.T) {
+func TestExportDirDoesNotOverwrite(t *testing.T) {
 	ctx, f, sourceDir := setupWorkspaceImportExportTest(t)
 	targetDir := t.TempDir()
 
@@ -159,7 +159,7 @@ func TestAccExportDirDoesNotOverwrite(t *testing.T) {
 	assertLocalFileContents(t, filepath.Join(targetDir, "file-a"), "local content")
 }
 
-func TestAccExportDirWithOverwriteFlag(t *testing.T) {
+func TestExportDirWithOverwriteFlag(t *testing.T) {
 	ctx, f, sourceDir := setupWorkspaceImportExportTest(t)
 	targetDir := t.TempDir()
 
@@ -180,7 +180,7 @@ func TestAccExportDirWithOverwriteFlag(t *testing.T) {
 	assertLocalFileContents(t, filepath.Join(targetDir, "file-a"), "content from workspace")
 }
 
-func TestAccImportDir(t *testing.T) {
+func TestImportDir(t *testing.T) {
 	ctx, workspaceFiler, targetDir := setupWorkspaceImportExportTest(t)
 	stdout, stderr := testcli.RequireSuccessfulRun(t, "workspace", "import-dir", "./testdata/import_dir", targetDir, "--log-level=debug")
 
@@ -209,7 +209,7 @@ func TestAccImportDir(t *testing.T) {
 	assertFilerFileContents(t, ctx, workspaceFiler, "jupyterNotebook", "# Databricks notebook source\nprint(\"jupyter\")")
 }
 
-func TestAccImportDirDoesNotOverwrite(t *testing.T) {
+func TestImportDirDoesNotOverwrite(t *testing.T) {
 	ctx, workspaceFiler, targetDir := setupWorkspaceImportExportTest(t)
 	var err error
 
@@ -237,7 +237,7 @@ func TestAccImportDirDoesNotOverwrite(t *testing.T) {
 	assertFilerFileContents(t, ctx, workspaceFiler, "pyNotebook", "# Databricks notebook source\nprint(\"old notebook\")")
 }
 
-func TestAccImportDirWithOverwriteFlag(t *testing.T) {
+func TestImportDirWithOverwriteFlag(t *testing.T) {
 	ctx, workspaceFiler, targetDir := setupWorkspaceImportExportTest(t)
 	var err error
 
@@ -265,7 +265,7 @@ func TestAccImportDirWithOverwriteFlag(t *testing.T) {
 	assertFilerFileContents(t, ctx, workspaceFiler, "pyNotebook", "# Databricks notebook source\nprint(\"python\")")
 }
 
-func TestAccExport(t *testing.T) {
+func TestExport(t *testing.T) {
 	ctx, f, sourceDir := setupWorkspaceImportExportTest(t)
 
 	var err error
@@ -294,7 +294,7 @@ func TestAccExport(t *testing.T) {
 	assert.Contains(t, string(b), `"metadata":`, "jupyter notebooks contain the metadata field")
 }
 
-func TestAccExportWithFileFlag(t *testing.T) {
+func TestExportWithFileFlag(t *testing.T) {
 	ctx, f, sourceDir := setupWorkspaceImportExportTest(t)
 	localTmpDir := t.TempDir()
 
@@ -328,7 +328,7 @@ func TestAccExportWithFileFlag(t *testing.T) {
 	assertLocalFileContents(t, filepath.Join(localTmpDir, "jupyterNb.ipynb"), `"metadata":`)
 }
 
-func TestAccImportFileUsingContentFormatSource(t *testing.T) {
+func TestImportFileUsingContentFormatSource(t *testing.T) {
 	ctx, workspaceFiler, targetDir := setupWorkspaceImportExportTest(t)
 
 	//  Content = `print(1)`. Uploaded as a notebook by default
@@ -345,7 +345,7 @@ func TestAccImportFileUsingContentFormatSource(t *testing.T) {
 	assertWorkspaceFileType(t, ctx, workspaceFiler, "pyNb", workspace.ObjectTypeNotebook)
 }
 
-func TestAccImportFileUsingContentFormatAuto(t *testing.T) {
+func TestImportFileUsingContentFormatAuto(t *testing.T) {
 	ctx, workspaceFiler, targetDir := setupWorkspaceImportExportTest(t)
 
 	//  Content = `# Databricks notebook source\nprint(1)`. Upload as file if path has no extension.
@@ -367,7 +367,7 @@ func TestAccImportFileUsingContentFormatAuto(t *testing.T) {
 	assertWorkspaceFileType(t, ctx, workspaceFiler, "not-a-notebook.py", workspace.ObjectTypeFile)
 }
 
-func TestAccImportFileFormatSource(t *testing.T) {
+func TestImportFileFormatSource(t *testing.T) {
 	ctx, workspaceFiler, targetDir := setupWorkspaceImportExportTest(t)
 	testcli.RequireSuccessfulRun(t, "workspace", "import", path.Join(targetDir, "pyNotebook"), "--file", "./testdata/import_dir/pyNotebook.py", "--language=PYTHON")
 	assertFilerFileContents(t, ctx, workspaceFiler, "pyNotebook", "# Databricks notebook source\nprint(\"python\")")
@@ -381,7 +381,7 @@ func TestAccImportFileFormatSource(t *testing.T) {
 	assert.ErrorContains(t, err, "The zip file may not be valid or may be an unsupported version. Hint: Objects imported using format=SOURCE are expected to be zip encoded databricks source notebook(s) by default. Please specify a language using the --language flag if you are trying to import a single uncompressed notebook")
 }
 
-func TestAccImportFileFormatAuto(t *testing.T) {
+func TestImportFileFormatAuto(t *testing.T) {
 	ctx, workspaceFiler, targetDir := setupWorkspaceImportExportTest(t)
 
 	// Upload as file if path has no extension

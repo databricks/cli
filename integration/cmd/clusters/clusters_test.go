@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAccClustersList(t *testing.T) {
+func TestClustersList(t *testing.T) {
 	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	stdout, stderr := testcli.RequireSuccessfulRun(t, "clusters", "list")
@@ -29,7 +29,7 @@ func TestAccClustersList(t *testing.T) {
 	assert.NotEmpty(t, clusterId)
 }
 
-func TestAccClustersGet(t *testing.T) {
+func TestClustersGet(t *testing.T) {
 	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	clusterId := findValidClusterID(t)
