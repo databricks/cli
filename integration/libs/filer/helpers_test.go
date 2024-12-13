@@ -16,8 +16,6 @@ import (
 )
 
 func setupLocalFiler(t testutil.TestingT) (filer.Filer, string) {
-	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
 	tmp := t.TempDir()
 	f, err := filer.NewLocalClient(tmp)
 	require.NoError(t, err)

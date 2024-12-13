@@ -17,9 +17,6 @@ import (
 )
 
 func TestBindJobToExistingJob(t *testing.T) {
-	env := testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
-	t.Log(env)
-
 	ctx, wt := acc.WorkspaceTest(t)
 	gt := &generateJobTest{T: wt, w: wt.W}
 
@@ -82,9 +79,6 @@ func TestBindJobToExistingJob(t *testing.T) {
 }
 
 func TestAbortBind(t *testing.T) {
-	env := testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
-	t.Log(env)
-
 	ctx, wt := acc.WorkspaceTest(t)
 	gt := &generateJobTest{T: wt, w: wt.W}
 
@@ -131,9 +125,6 @@ func TestAbortBind(t *testing.T) {
 }
 
 func TestGenerateAndBind(t *testing.T) {
-	env := testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
-	t.Log(env)
-
 	ctx, wt := acc.WorkspaceTest(t)
 	gt := &generateJobTest{T: wt, w: wt.W}
 

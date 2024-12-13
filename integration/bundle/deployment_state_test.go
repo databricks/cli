@@ -14,9 +14,6 @@ import (
 )
 
 func TestFilesAreSyncedCorrectlyWhenNoSnapshot(t *testing.T) {
-	env := testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
-	t.Log(env)
-
 	ctx, wt := acc.WorkspaceTest(t)
 	w := wt.W
 

@@ -13,7 +13,6 @@ import (
 
 	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testcli"
-	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
@@ -21,8 +20,6 @@ import (
 )
 
 func TestWorkspaceList(t *testing.T) {
-	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
 	stdout, stderr := testcli.RequireSuccessfulRun(t, "workspace", "list", "/")
 	outStr := stdout.String()
 	assert.Contains(t, outStr, "ID")

@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testcli"
-	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/stretchr/testify/assert"
@@ -15,8 +14,6 @@ import (
 )
 
 func TestClustersList(t *testing.T) {
-	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
 	stdout, stderr := testcli.RequireSuccessfulRun(t, "clusters", "list")
 	outStr := stdout.String()
 	assert.Contains(t, outStr, "ID")
@@ -30,8 +27,6 @@ func TestClustersList(t *testing.T) {
 }
 
 func TestClustersGet(t *testing.T) {
-	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
 	clusterId := findValidClusterID(t)
 	stdout, stderr := testcli.RequireSuccessfulRun(t, "clusters", "get", clusterId)
 	outStr := stdout.String()

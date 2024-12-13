@@ -78,7 +78,6 @@ var sparkVersions = []string{
 func TestRunPythonTaskWorkspace(t *testing.T) {
 	// TODO: remove RUN_PYTHON_TASKS_TEST when ready to be executed as part of nightly
 	testutil.GetEnvOrSkipTest(t, "RUN_PYTHON_TASKS_TEST")
-	testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 
 	unsupportedSparkVersionsForWheel := []string{
 		"11.3.x-scala2.12",
@@ -99,7 +98,6 @@ func TestRunPythonTaskWorkspace(t *testing.T) {
 func TestRunPythonTaskDBFS(t *testing.T) {
 	// TODO: remove RUN_PYTHON_TASKS_TEST when ready to be executed as part of nightly
 	testutil.GetEnvOrSkipTest(t, "RUN_PYTHON_TASKS_TEST")
-	testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 
 	runPythonTasks(t, prepareDBFSFiles(t), testOpts{
 		name:                    "Python tasks from DBFS",
@@ -112,7 +110,6 @@ func TestRunPythonTaskDBFS(t *testing.T) {
 func TestRunPythonTaskRepo(t *testing.T) {
 	// TODO: remove RUN_PYTHON_TASKS_TEST when ready to be executed as part of nightly
 	testutil.GetEnvOrSkipTest(t, "RUN_PYTHON_TASKS_TEST")
-	testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
 
 	runPythonTasks(t, prepareRepoFiles(t), testOpts{
 		name:                    "Python tasks from Repo",
@@ -123,9 +120,6 @@ func TestRunPythonTaskRepo(t *testing.T) {
 }
 
 func runPythonTasks(t *testing.T, tw *testFiles, opts testOpts) {
-	env := testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
-	t.Log(env)
-
 	w := tw.w
 
 	nodeTypeId := testutil.GetCloud(t).NodeTypeID()

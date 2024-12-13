@@ -16,8 +16,6 @@ import (
 )
 
 func TestApiGet(t *testing.T) {
-	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
 	stdout, _ := testcli.RequireSuccessfulRun(t, "api", "get", "/api/2.0/preview/scim/v2/Me")
 
 	// Deserialize SCIM API response.
@@ -31,9 +29,7 @@ func TestApiGet(t *testing.T) {
 }
 
 func TestApiPost(t *testing.T) {
-	env := testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
-	t.Log(env)
-	if env == "gcp" {
+	if testutil.GetCloud(t) == testutil.GCP {
 		t.Skip("DBFS REST API is disabled on gcp")
 	}
 

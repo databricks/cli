@@ -168,8 +168,6 @@ func TestFsLsForNonexistingDir(t *testing.T) {
 func TestFsLsWithoutScheme(t *testing.T) {
 	t.Parallel()
 
-	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
 	_, _, err := testcli.RequireErrorRun(t, "fs", "ls", "/path-without-a-dbfs-scheme", "--output=json")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
