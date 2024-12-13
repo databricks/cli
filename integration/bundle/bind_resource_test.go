@@ -103,7 +103,7 @@ func TestAbortBind(t *testing.T) {
 	c := testcli.NewRunner(t, ctx, "bundle", "deployment", "bind", "foo", fmt.Sprint(jobId))
 
 	// Expect error suggesting to use --auto-approve
-	_, _, err = c.Run()
+	_, _, err := c.Run()
 	assert.ErrorContains(t, err, "failed to bind the resource")
 	assert.ErrorContains(t, err, "This bind operation requires user confirmation, but the current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
 
