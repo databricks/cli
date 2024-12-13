@@ -81,7 +81,6 @@ func nestedField(name []string, k string, isRef bool) field {
 	fieldType := fmt.Sprintf("%s%s", fieldTypePrefix, strings.Join(append(name, strcase.ToCamel(k)), ""))
 	fieldTag := fmt.Sprintf("%s,omitempty", k)
 
-	// Append to list of fields for type.
 	return field{
 		Name: fieldName,
 		Type: fieldType,

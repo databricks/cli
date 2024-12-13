@@ -25,9 +25,9 @@ const ProviderVersion = "1.61.0"
 
 func NewRoot() *Root {
 	return &Root{
-		Terraform: map[string]interface{}{
-			"required_providers": map[string]interface{}{
-				"databricks": map[string]interface{}{
+		Terraform: map[string]any{
+			"required_providers": map[string]any{
+				"databricks": map[string]any{
 					"source":  ProviderSource,
 					"version": ProviderVersion,
 				},
