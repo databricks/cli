@@ -120,7 +120,7 @@ func TestBundleDeployUcSchemaFailsWithoutAutoApprove(t *testing.T) {
 
 	// Redeploy the bundle
 	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
-	t.Setenv("TERM", "dumb")
+	ctx = env.Set(ctx, "TERM", "dumb")
 	c := testcli.NewRunnerWithContext(t, ctx, "bundle", "deploy", "--force-lock")
 	stdout, stderr, err := c.Run()
 
@@ -164,7 +164,7 @@ func TestBundlePipelineDeleteWithoutAutoApprove(t *testing.T) {
 
 	// Redeploy the bundle. Expect it to fail because deleting the pipeline requires --auto-approve.
 	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
-	t.Setenv("TERM", "dumb")
+	ctx = env.Set(ctx, "TERM", "dumb")
 	c := testcli.NewRunnerWithContext(t, ctx, "bundle", "deploy", "--force-lock")
 	stdout, stderr, err := c.Run()
 
@@ -203,7 +203,7 @@ func TestBundlePipelineRecreateWithoutAutoApprove(t *testing.T) {
 
 	// Redeploy the bundle, pointing the DLT pipeline to a different UC catalog.
 	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
-	t.Setenv("TERM", "dumb")
+	ctx = env.Set(ctx, "TERM", "dumb")
 	c := testcli.NewRunnerWithContext(t, ctx, "bundle", "deploy", "--force-lock", "--var=\"catalog=whatever\"")
 	stdout, stderr, err := c.Run()
 
@@ -283,8 +283,8 @@ func TestDeployUcVolume(t *testing.T) {
 	assert.Equal(t, []catalog.Privilege{catalog.PrivilegeWriteVolume}, grants.PrivilegeAssignments[0].Privileges)
 
 	// Recreation of the volume without --auto-approve should fail since prompting is not possible
-	t.Setenv("TERM", "dumb")
 	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
+	ctx = env.Set(ctx, "TERM", "dumb")
 	stdout, stderr, err := testcli.NewRunnerWithContext(t, ctx, "bundle", "deploy", "--var=schema_name=${resources.schemas.schema2.name}").Run()
 	assert.Error(t, err)
 	assert.Contains(t, stderr.String(), `This action will result in the deletion or recreation of the following volumes.
@@ -295,8 +295,8 @@ is removed from the catalog, but the underlying files are not deleted:
 	assert.Contains(t, stdout.String(), "the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
 
 	// Successfully recreate the volume with --auto-approve
-	t.Setenv("TERM", "dumb")
 	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
+	ctx = env.Set(ctx, "TERM", "dumb")
 	_, _, err = testcli.NewRunnerWithContext(t, ctx, "bundle", "deploy", "--var=schema_name=${resources.schemas.schema2.name}", "--auto-approve").Run()
 	assert.NoError(t, err)
 

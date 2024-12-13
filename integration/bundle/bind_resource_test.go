@@ -101,7 +101,7 @@ func TestAbortBind(t *testing.T) {
 
 	// Bind should fail because prompting is not possible.
 	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
-	t.Setenv("TERM", "dumb")
+	ctx = env.Set(ctx, "TERM", "dumb")
 	c := testcli.NewRunnerWithContext(t, ctx, "bundle", "deployment", "bind", "foo", fmt.Sprint(jobId))
 
 	// Expect error suggesting to use --auto-approve
