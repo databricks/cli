@@ -25,10 +25,9 @@ func TestGenerateFromExistingPipelineAndDeploy(t *testing.T) {
 	gt := &generatePipelineTest{T: wt, w: wt.W}
 
 	uniqueId := uuid.New().String()
-	bundleRoot, err := initTestTemplate(t, ctx, "with_includes", map[string]any{
+	bundleRoot := initTestTemplate(t, ctx, "with_includes", map[string]any{
 		"unique_id": uniqueId,
 	})
-	require.NoError(t, err)
 
 	pipelineId, name := gt.createTestPipeline(ctx)
 	t.Cleanup(func() {
@@ -40,7 +39,7 @@ func TestGenerateFromExistingPipelineAndDeploy(t *testing.T) {
 		"--existing-pipeline-id", fmt.Sprint(pipelineId),
 		"--config-dir", filepath.Join(bundleRoot, "resources"),
 		"--source-dir", filepath.Join(bundleRoot, "src"))
-	_, _, err = c.Run()
+	_, _, err := c.Run()
 	require.NoError(t, err)
 
 	_, err = os.Stat(filepath.Join(bundleRoot, "src", "notebook.py"))

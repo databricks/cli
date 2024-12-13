@@ -23,10 +23,9 @@ func TestBundleDeployThenRemoveResources(t *testing.T) {
 		"node_type_id":  nodeTypeId,
 		"spark_version": defaultSparkVersion,
 	})
-	require.NoError(t, err)
 
 	// deploy pipeline
-	err = deployBundle(t, ctx, bundleRoot)
+	err := deployBundle(t, ctx, bundleRoot)
 	require.NoError(t, err)
 
 	// assert pipeline is created

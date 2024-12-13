@@ -27,15 +27,14 @@ func TestLocalStateStaleness(t *testing.T) {
 	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	uniqueId := uuid.New().String()
 	initialize := func() string {
-		root, err := initTestTemplate(t, ctx, "basic", map[string]any{
+		root := initTestTemplate(t, ctx, "basic", map[string]any{
 			"unique_id":     uniqueId,
 			"node_type_id":  nodeTypeId,
 			"spark_version": defaultSparkVersion,
 		})
-		require.NoError(t, err)
 
 		t.Cleanup(func() {
-			err = destroyBundle(t, ctx, root)
+			err := destroyBundle(t, ctx, root)
 			require.NoError(t, err)
 		})
 

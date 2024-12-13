@@ -26,10 +26,9 @@ func TestGenerateFromExistingJobAndDeploy(t *testing.T) {
 	gt := &generateJobTest{T: wt, w: wt.W}
 
 	uniqueId := uuid.New().String()
-	bundleRoot, err := initTestTemplate(t, ctx, "with_includes", map[string]any{
+	bundleRoot := initTestTemplate(t, ctx, "with_includes", map[string]any{
 		"unique_id": uniqueId,
 	})
-	require.NoError(t, err)
 
 	jobId := gt.createTestJob(ctx)
 	t.Cleanup(func() {
@@ -41,7 +40,7 @@ func TestGenerateFromExistingJobAndDeploy(t *testing.T) {
 		"--existing-job-id", fmt.Sprint(jobId),
 		"--config-dir", filepath.Join(bundleRoot, "resources"),
 		"--source-dir", filepath.Join(bundleRoot, "src"))
-	_, _, err = c.Run()
+	_, _, err := c.Run()
 	require.NoError(t, err)
 
 	_, err = os.Stat(filepath.Join(bundleRoot, "src", "test.py"))

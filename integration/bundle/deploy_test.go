@@ -247,12 +247,11 @@ func TestDeployUcVolume(t *testing.T) {
 	w := wt.W
 
 	uniqueId := uuid.New().String()
-	bundleRoot, err := initTestTemplate(t, ctx, "volume", map[string]any{
+	bundleRoot := initTestTemplate(t, ctx, "volume", map[string]any{
 		"unique_id": uniqueId,
 	})
-	require.NoError(t, err)
 
-	err = deployBundle(t, ctx, bundleRoot)
+	err := deployBundle(t, ctx, bundleRoot)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {

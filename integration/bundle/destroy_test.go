@@ -20,17 +20,16 @@ func TestBundleDestroy(t *testing.T) {
 
 	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	uniqueId := uuid.New().String()
-	bundleRoot, err := initTestTemplate(t, ctx, "deploy_then_remove_resources", map[string]any{
+	bundleRoot := initTestTemplate(t, ctx, "deploy_then_remove_resources", map[string]any{
 		"unique_id":     uniqueId,
 		"node_type_id":  nodeTypeId,
 		"spark_version": defaultSparkVersion,
 	})
-	require.NoError(t, err)
 
 	snapshotsDir := filepath.Join(bundleRoot, ".databricks", "bundle", "default", "sync-snapshots")
 
 	// Assert the snapshot file does not exist
-	_, err = os.ReadDir(snapshotsDir)
+	_, err := os.ReadDir(snapshotsDir)
 	assert.ErrorIs(t, err, os.ErrNotExist)
 
 	// deploy resources
