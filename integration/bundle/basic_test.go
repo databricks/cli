@@ -32,7 +32,7 @@ func TestBasicBundleDeployWithFailOnActiveRuns(t *testing.T) {
 	require.NoError(t, err)
 
 	// Remove .databricks directory to simulate a fresh deployment
-	err := os.RemoveAll(filepath.Join(root, ".databricks"))
+	err = os.RemoveAll(filepath.Join(root, ".databricks"))
 	require.NoError(t, err)
 
 	// deploy empty bundle again
