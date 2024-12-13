@@ -22,10 +22,11 @@ func TestFsMkdir(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
+			ctx := context.Background()
 			f, tmpDir := tc.setupFiler(t)
 
 			// create directory "a"
-			stdout, stderr := testcli.RequireSuccessfulRun(t, "fs", "mkdir", path.Join(tmpDir, "a"))
+			stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "fs", "mkdir", path.Join(tmpDir, "a"))
 			assert.Equal(t, "", stderr.String())
 			assert.Equal(t, "", stdout.String())
 
@@ -47,10 +48,11 @@ func TestFsMkdirCreatesIntermediateDirectories(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
+			ctx := context.Background()
 			f, tmpDir := tc.setupFiler(t)
 
 			// create directory "a/b/c"
-			stdout, stderr := testcli.RequireSuccessfulRun(t, "fs", "mkdir", path.Join(tmpDir, "a", "b", "c"))
+			stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "fs", "mkdir", path.Join(tmpDir, "a", "b", "c"))
 			assert.Equal(t, "", stderr.String())
 			assert.Equal(t, "", stdout.String())
 
@@ -84,6 +86,7 @@ func TestFsMkdirWhenDirectoryAlreadyExists(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
+			ctx := context.Background()
 			f, tmpDir := tc.setupFiler(t)
 
 			// create directory "a"
@@ -91,7 +94,7 @@ func TestFsMkdirWhenDirectoryAlreadyExists(t *testing.T) {
 			require.NoError(t, err)
 
 			// assert run is successful without any errors
-			stdout, stderr := testcli.RequireSuccessfulRun(t, "fs", "mkdir", path.Join(tmpDir, "a"))
+			stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "fs", "mkdir", path.Join(tmpDir, "a"))
 			assert.Equal(t, "", stderr.String())
 			assert.Equal(t, "", stdout.String())
 		})
@@ -104,6 +107,7 @@ func TestFsMkdirWhenFileExistsAtPath(t *testing.T) {
 	t.Run("dbfs", func(t *testing.T) {
 		t.Parallel()
 
+		ctx := context.Background()
 		f, tmpDir := setupDbfsFiler(t)
 
 		// create file "hello"
@@ -121,6 +125,7 @@ func TestFsMkdirWhenFileExistsAtPath(t *testing.T) {
 	t.Run("uc-volumes", func(t *testing.T) {
 		t.Parallel()
 
+		ctx := context.Background()
 		f, tmpDir := setupUcVolumesFiler(t)
 
 		// create file "hello"

@@ -23,6 +23,7 @@ func TestFsRmFile(t *testing.T) {
 			t.Parallel()
 
 			// Create a file
+			ctx := context.Background()
 			f, tmpDir := tc.setupFiler(t)
 			err := f.Write(context.Background(), "hello.txt", strings.NewReader("abcd"), filer.CreateParentDirectories)
 			require.NoError(t, err)
@@ -32,7 +33,7 @@ func TestFsRmFile(t *testing.T) {
 			assert.NoError(t, err)
 
 			// Run rm command
-			stdout, stderr := testcli.RequireSuccessfulRun(t, "fs", "rm", path.Join(tmpDir, "hello.txt"))
+			stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "fs", "rm", path.Join(tmpDir, "hello.txt"))
 			assert.Equal(t, "", stderr.String())
 			assert.Equal(t, "", stdout.String())
 
@@ -53,6 +54,7 @@ func TestFsRmEmptyDir(t *testing.T) {
 			t.Parallel()
 
 			// Create a directory
+			ctx := context.Background()
 			f, tmpDir := tc.setupFiler(t)
 			err := f.Mkdir(context.Background(), "a")
 			require.NoError(t, err)
@@ -62,7 +64,7 @@ func TestFsRmEmptyDir(t *testing.T) {
 			assert.NoError(t, err)
 
 			// Run rm command
-			stdout, stderr := testcli.RequireSuccessfulRun(t, "fs", "rm", path.Join(tmpDir, "a"))
+			stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "fs", "rm", path.Join(tmpDir, "a"))
 			assert.Equal(t, "", stderr.String())
 			assert.Equal(t, "", stdout.String())
 
@@ -83,6 +85,7 @@ func TestFsRmNonEmptyDirectory(t *testing.T) {
 			t.Parallel()
 
 			// Create a directory
+			ctx := context.Background()
 			f, tmpDir := tc.setupFiler(t)
 			err := f.Mkdir(context.Background(), "a")
 			require.NoError(t, err)
@@ -112,6 +115,7 @@ func TestFsRmForNonExistentFile(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
+			ctx := context.Background()
 			_, tmpDir := tc.setupFiler(t)
 
 			// Expect error if file does not exist
@@ -130,6 +134,7 @@ func TestFsRmDirRecursively(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
+			ctx := context.Background()
 			f, tmpDir := tc.setupFiler(t)
 
 			// Create a directory
@@ -145,7 +150,7 @@ func TestFsRmDirRecursively(t *testing.T) {
 			assert.NoError(t, err)
 
 			// Run rm command
-			stdout, stderr := testcli.RequireSuccessfulRun(t, "fs", "rm", path.Join(tmpDir, "a"), "--recursive")
+			stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "fs", "rm", path.Join(tmpDir, "a"), "--recursive")
 			assert.Equal(t, "", stderr.String())
 			assert.Equal(t, "", stdout.String())
 

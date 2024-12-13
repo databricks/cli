@@ -13,7 +13,8 @@ import (
 func TestAuthDescribeSuccess(t *testing.T) {
 	t.Skipf("Skipping because of https://github.com/databricks/cli/issues/2010")
 
-	stdout, _ := testcli.RequireSuccessfulRun(t, "auth", "describe")
+	ctx := context.Background()
+	stdout, _ := testcli.RequireSuccessfulRun(t, ctx, "auth", "describe")
 	outStr := stdout.String()
 
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{})
@@ -34,7 +35,8 @@ func TestAuthDescribeSuccess(t *testing.T) {
 func TestAuthDescribeFailure(t *testing.T) {
 	t.Skipf("Skipping because of https://github.com/databricks/cli/issues/2010")
 
-	stdout, _ := testcli.RequireSuccessfulRun(t, "auth", "describe", "--profile", "nonexistent")
+	ctx := context.Background()
+	stdout, _ := testcli.RequireSuccessfulRun(t, ctx, "auth", "describe", "--profile", "nonexistent")
 	outStr := stdout.String()
 
 	require.NotEmpty(t, outStr)

@@ -13,25 +13,25 @@ import (
 var expectedVersion = fmt.Sprintf("Databricks CLI v%s\n", build.GetInfo().Version)
 
 func TestVersionFlagShort(t *testing.T) {
-	stdout, stderr := testcli.RequireSuccessfulRun(t, "-v")
+	stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "-v")
 	assert.Equal(t, expectedVersion, stdout.String())
 	assert.Equal(t, "", stderr.String())
 }
 
 func TestVersionFlagLong(t *testing.T) {
-	stdout, stderr := testcli.RequireSuccessfulRun(t, "--version")
+	stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "--version")
 	assert.Equal(t, expectedVersion, stdout.String())
 	assert.Equal(t, "", stderr.String())
 }
 
 func TestVersionCommand(t *testing.T) {
-	stdout, stderr := testcli.RequireSuccessfulRun(t, "version")
+	stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "version")
 	assert.Equal(t, expectedVersion, stdout.String())
 	assert.Equal(t, "", stderr.String())
 }
 
 func TestVersionCommandWithJSONOutput(t *testing.T) {
-	stdout, stderr := testcli.RequireSuccessfulRun(t, "version", "--output", "json")
+	stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "version", "--output", "json")
 	assert.NotEmpty(t, stdout.String())
 	assert.Equal(t, "", stderr.String())
 

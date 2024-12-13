@@ -23,11 +23,13 @@ func TestFsCat(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
+			ctx := context.Background()
 			f, tmpDir := tc.setupFiler(t)
+
 			err := f.Write(context.Background(), "hello.txt", strings.NewReader("abcd"), filer.CreateParentDirectories)
 			require.NoError(t, err)
 
-			stdout, stderr := testcli.RequireSuccessfulRun(t, "fs", "cat", path.Join(tmpDir, "hello.txt"))
+			stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "fs", "cat", path.Join(tmpDir, "hello.txt"))
 			assert.Equal(t, "", stderr.String())
 			assert.Equal(t, "abcd", stdout.String())
 		})
@@ -43,7 +45,9 @@ func TestFsCatOnADir(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
+			ctx := context.Background()
 			f, tmpDir := tc.setupFiler(t)
+
 			err := f.Mkdir(context.Background(), "dir1")
 			require.NoError(t, err)
 
@@ -62,6 +66,7 @@ func TestFsCatOnNonExistentFile(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
+			ctx := context.Background()
 			_, tmpDir := tc.setupFiler(t)
 
 			_, _, err := testcli.RequireErrorRun(t, "fs", "cat", path.Join(tmpDir, "non-existent-file"))

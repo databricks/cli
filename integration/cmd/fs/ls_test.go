@@ -49,10 +49,11 @@ func TestFsLs(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
+			ctx := context.Background()
 			f, tmpDir := tc.setupFiler(t)
 			setupLsFiles(t, f)
 
-			stdout, stderr := testcli.RequireSuccessfulRun(t, "fs", "ls", tmpDir, "--output=json")
+			stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "fs", "ls", tmpDir, "--output=json")
 			assert.Equal(t, "", stderr.String())
 
 			var parsedStdout []map[string]any
@@ -82,10 +83,11 @@ func TestFsLsWithAbsolutePaths(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
+			ctx := context.Background()
 			f, tmpDir := tc.setupFiler(t)
 			setupLsFiles(t, f)
 
-			stdout, stderr := testcli.RequireSuccessfulRun(t, "fs", "ls", tmpDir, "--output=json", "--absolute")
+			stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "fs", "ls", tmpDir, "--output=json", "--absolute")
 			assert.Equal(t, "", stderr.String())
 
 			var parsedStdout []map[string]any
@@ -114,6 +116,8 @@ func TestFsLsOnFile(t *testing.T) {
 
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+
+			ctx := context.Background()
 			f, tmpDir := tc.setupFiler(t)
 			setupLsFiles(t, f)
 
@@ -133,9 +137,10 @@ func TestFsLsOnEmptyDir(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
+			ctx := context.Background()
 			_, tmpDir := tc.setupFiler(t)
 
-			stdout, stderr := testcli.RequireSuccessfulRun(t, "fs", "ls", tmpDir, "--output=json")
+			stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "fs", "ls", tmpDir, "--output=json")
 			assert.Equal(t, "", stderr.String())
 			var parsedStdout []map[string]any
 			err := json.Unmarshal(stdout.Bytes(), &parsedStdout)
@@ -156,6 +161,7 @@ func TestFsLsForNonexistingDir(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
+			ctx := context.Background()
 			_, tmpDir := tc.setupFiler(t)
 
 			_, _, err := testcli.RequireErrorRun(t, "fs", "ls", path.Join(tmpDir, "nonexistent"), "--output=json")
@@ -168,6 +174,7 @@ func TestFsLsForNonexistingDir(t *testing.T) {
 func TestFsLsWithoutScheme(t *testing.T) {
 	t.Parallel()
 
+	ctx := context.Background()
 	_, _, err := testcli.RequireErrorRun(t, "fs", "ls", "/path-without-a-dbfs-scheme", "--output=json")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }

@@ -45,9 +45,9 @@ func TestFetchRepositoryInfoAPI_FromRepo(t *testing.T) {
 	require.NoError(t, err)
 
 	targetPath := testutil.RandomName(path.Join("/Workspace/Users", me.UserName, "/testing-clone-bundle-examples-"))
-	stdout, stderr := testcli.RequireSuccessfulRun(t, "repos", "create", examplesRepoUrl, examplesRepoProvider, "--path", targetPath)
+	stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "repos", "create", examplesRepoUrl, examplesRepoProvider, "--path", targetPath)
 	t.Cleanup(func() {
-		testcli.RequireSuccessfulRun(t, "repos", "delete", targetPath)
+		testcli.RequireSuccessfulRun(t, ctx, "repos", "delete", targetPath)
 	})
 
 	assert.Empty(t, stderr.String())
@@ -72,9 +72,9 @@ func TestFetchRepositoryInfoAPI_FromNonRepo(t *testing.T) {
 	require.NoError(t, err)
 
 	rootPath := testutil.RandomName(path.Join("/Workspace/Users", me.UserName, "testing-nonrepo-"))
-	_, stderr := testcli.RequireSuccessfulRun(t, "workspace", "mkdirs", path.Join(rootPath, "a/b/c"))
+	_, stderr := testcli.RequireSuccessfulRun(t, ctx, "workspace", "mkdirs", path.Join(rootPath, "a/b/c"))
 	t.Cleanup(func() {
-		testcli.RequireSuccessfulRun(t, "workspace", "delete", "--recursive", rootPath)
+		testcli.RequireSuccessfulRun(t, ctx, "workspace", "delete", "--recursive", rootPath)
 	})
 
 	assert.Empty(t, stderr.String())

@@ -299,9 +299,9 @@ func NewRunnerWithContext(t testutil.TestingT, ctx context.Context, args ...stri
 	}
 }
 
-func RequireSuccessfulRun(t testutil.TestingT, args ...string) (bytes.Buffer, bytes.Buffer) {
+func RequireSuccessfulRun(t testutil.TestingT, ctx context.Context, args ...string) (bytes.Buffer, bytes.Buffer) {
 	t.Logf("run args: [%s]", strings.Join(args, ", "))
-	r := newRunner(t, args...)
+	r := NewRunnerWithContext(t, ctx, args...)
 	stdout, stderr, err := r.Run()
 	require.NoError(t, err)
 	return stdout, stderr
