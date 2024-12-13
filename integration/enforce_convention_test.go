@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"go/ast"
 	"go/parser"
 	"go/token"
 	"os"
@@ -16,8 +15,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func enumeratePackages(t *testing.T) map[string]*ast.Package {
-	pkgmap := make(map[string]*ast.Package)
+type packageInfo struct {
+	Name  string
+	Files []string
+}
+
+func enumeratePackages(t *testing.T) map[string]packageInfo {
+	pkgmap := make(map[string]packageInfo)
 	err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -33,18 +37,22 @@ func enumeratePackages(t *testing.T) map[string]*ast.Package {
 			return nil
 		}
 
-		// Parse the package
 		fset := token.NewFileSet()
-		pkgs, err := parser.ParseDir(fset, path, nil, parser.AllErrors)
+		pkgs, err := parser.ParseDir(fset, path, nil, parser.ParseComments)
 		require.NoError(t, err)
 		if len(pkgs) == 0 {
 			return nil
 		}
 
 		// Expect one package per directory.
-		vs := maps.Values(pkgs)
-		require.Len(t, vs, 1, "Directory %s contains more than one package", path)
-		pkgmap[path] = vs[0]
+		require.Len(t, pkgs, 1, "Directory %s contains more than one package", path)
+		v := maps.Values(pkgs)[0]
+
+		// Record the package.
+		pkgmap[path] = packageInfo{
+			Name:  v.Name,
+			Files: maps.Keys(v.Files),
+		}
 		return nil
 	})
 	require.NoError(t, err)
@@ -80,7 +88,7 @@ func TestEnforceMainTest(t *testing.T) {
 	pkgmap := enumeratePackages(t)
 	for dir, pkg := range pkgmap {
 		found := false
-		for _, file := range maps.Keys(pkg.Files) {
+		for _, file := range pkg.Files {
 			if filepath.Base(file) == "main_test.go" {
 				found = true
 				break
