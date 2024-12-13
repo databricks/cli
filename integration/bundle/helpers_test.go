@@ -40,7 +40,7 @@ func initTestTemplateWithBundleRoot(t testutil.TestingT, ctx context.Context, te
 	}
 
 	ctx = root.SetWorkspaceClient(ctx, nil)
-	cmd := cmdio.NewIO(flags.OutputJSON, strings.NewReader(""), os.Stdout, os.Stderr, "", "bundles")
+	cmd := cmdio.NewIO(ctx, flags.OutputJSON, strings.NewReader(""), os.Stdout, os.Stderr, "", "bundles")
 	ctx = cmdio.InContext(ctx, cmd)
 
 	out, err := filer.NewLocalClient(bundleRoot)

@@ -162,7 +162,7 @@ func TestWorkspaceHost(t *testing.T) {
 
 func TestWorkspaceHostNotConfigured(t *testing.T) {
 	ctx := context.Background()
-	cmd := cmdio.NewIO(flags.OutputJSON, strings.NewReader(""), os.Stdout, os.Stderr, "", "template")
+	cmd := cmdio.NewIO(ctx, flags.OutputJSON, strings.NewReader(""), os.Stdout, os.Stderr, "", "template")
 	ctx = cmdio.InContext(ctx, cmd)
 
 	w := &databricks.WorkspaceClient{
