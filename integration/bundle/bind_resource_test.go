@@ -43,8 +43,7 @@ func TestBindJobToExistingJob(t *testing.T) {
 	err = os.RemoveAll(filepath.Join(bundleRoot, ".databricks"))
 	require.NoError(t, err)
 
-	err = deployBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleRoot)
 
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)

@@ -61,8 +61,7 @@ func TestGenerateFromExistingJobAndDeploy(t *testing.T) {
 	require.Contains(t, generatedYaml, "spark_version: 13.3.x-scala2.12")
 	require.Contains(t, generatedYaml, "num_workers: 1")
 
-	err = deployBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleRoot)
 
 	err = destroyBundle(t, ctx, bundleRoot)
 	require.NoError(t, err)

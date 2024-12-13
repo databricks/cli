@@ -23,8 +23,7 @@ func runPythonWheelTest(t *testing.T, templateName, sparkVersion string, pythonW
 		"instance_pool_id":     instancePoolId,
 	})
 
-	err := deployBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleRoot)
 
 	t.Cleanup(func() {
 		err := destroyBundle(t, ctx, bundleRoot)

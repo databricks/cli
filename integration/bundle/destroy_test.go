@@ -33,8 +33,7 @@ func TestBundleDestroy(t *testing.T) {
 	assert.ErrorIs(t, err, os.ErrNotExist)
 
 	// deploy resources
-	err = deployBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleRoot)
 
 	// Assert the snapshot file exists
 	entries, err := os.ReadDir(snapshotsDir)

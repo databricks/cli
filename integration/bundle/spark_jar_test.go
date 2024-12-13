@@ -24,8 +24,7 @@ func runSparkJarTestCommon(t *testing.T, ctx context.Context, sparkVersion, arti
 		"instance_pool_id": instancePoolId,
 	}, tmpDir)
 
-	err := deployBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleRoot)
 
 	t.Cleanup(func() {
 		err := destroyBundle(t, ctx, bundleRoot)

@@ -69,8 +69,7 @@ func TestGenerateFromExistingPipelineAndDeploy(t *testing.T) {
 	require.Contains(t, generatedYaml, "- file:")
 	require.Contains(t, generatedYaml, fmt.Sprintf("path: %s", filepath.Join("..", "src", "test.py")))
 
-	err = deployBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleRoot)
 
 	err = destroyBundle(t, ctx, bundleRoot)
 	require.NoError(t, err)

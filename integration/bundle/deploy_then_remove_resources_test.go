@@ -25,8 +25,7 @@ func TestBundleDeployThenRemoveResources(t *testing.T) {
 	})
 
 	// deploy pipeline
-	err := deployBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleRoot)
 
 	// assert pipeline is created
 	pipelineName := "test-bundle-pipeline-" + uniqueId
@@ -45,8 +44,7 @@ func TestBundleDeployThenRemoveResources(t *testing.T) {
 	require.NoError(t, err)
 
 	// deploy again
-	err = deployBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleRoot)
 
 	// assert pipeline is deleted
 	_, err = w.Pipelines.GetByName(ctx, pipelineName)

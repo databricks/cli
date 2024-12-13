@@ -28,8 +28,7 @@ func TestDashboards(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	err := deployBundle(t, ctx, root)
-	require.NoError(t, err)
+	deployBundle(t, ctx, root)
 
 	// Load bundle configuration by running the validate command.
 	b := unmarshalConfig(t, mustValidateBundle(t, ctx, root))

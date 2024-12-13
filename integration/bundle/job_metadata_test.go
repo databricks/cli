@@ -31,8 +31,7 @@ func TestJobsMetadataFile(t *testing.T) {
 	})
 
 	// deploy bundle
-	err := deployBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleRoot)
 
 	// Cleanup the deployed bundle
 	t.Cleanup(func() {

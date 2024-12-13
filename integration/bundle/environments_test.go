@@ -17,8 +17,7 @@ func TestPythonWheelTaskWithEnvironmentsDeployAndRun(t *testing.T) {
 		"unique_id": uuid.New().String(),
 	})
 
-	err := deployBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleRoot)
 
 	t.Cleanup(func() {
 		err := destroyBundle(t, ctx, bundleRoot)

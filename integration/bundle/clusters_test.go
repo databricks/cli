@@ -38,8 +38,7 @@ func TestDeployBundleWithCluster(t *testing.T) {
 		}
 	})
 
-	err := deployBundle(t, ctx, root)
-	require.NoError(t, err)
+	deployBundle(t, ctx, root)
 
 	// Cluster should exists after bundle deployment
 	cluster, err := wt.W.Clusters.GetByClusterName(ctx, fmt.Sprintf("test-cluster-%s", uniqueId))

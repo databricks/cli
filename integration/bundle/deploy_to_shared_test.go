@@ -32,6 +32,5 @@ func TestDeployBasicToSharedWorkspacePath(t *testing.T) {
 		require.NoError(wt, err)
 	})
 
-	err = deployBundle(wt, ctx, bundleRoot)
-	require.NoError(wt, err)
+	deployBundle(wt, ctx, bundleRoot)
 }

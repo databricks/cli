@@ -47,16 +47,13 @@ func TestLocalStateStaleness(t *testing.T) {
 	bundleB := initialize()
 
 	// 1) Deploy bundle A
-	err = deployBundle(t, ctx, bundleA)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleA)
 
 	// 2) Deploy bundle B
-	err = deployBundle(t, ctx, bundleB)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleB)
 
 	// 3) Deploy bundle A again
-	err = deployBundle(t, ctx, bundleA)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleA)
 
 	// Assert that there is only a single job in the workspace corresponding to this bundle.
 	iter := w.Jobs.List(context.Background(), jobs.ListJobsRequest{
