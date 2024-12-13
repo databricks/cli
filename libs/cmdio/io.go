@@ -33,7 +33,7 @@ type cmdIO struct {
 
 func NewIO(ctx context.Context, outputFormat flags.Output, in io.Reader, out, err io.Writer, headerTemplate, template string) *cmdIO {
 	// The check below is similar to color.NoColor but uses the specified err writer.
-	dumb := os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb"
+	dumb := env.Get(ctx, "NO_COLOR") != "" || env.Get(ctx, "TERM") == "dumb"
 	if f, ok := err.(*os.File); ok && !dumb {
 		dumb = !isatty.IsTerminal(f.Fd()) && !isatty.IsCygwinTerminal(f.Fd())
 	}
