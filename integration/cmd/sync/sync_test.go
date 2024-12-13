@@ -72,8 +72,8 @@ type syncTest struct {
 	remoteRoot string
 }
 
-func setupSyncTest(t *testing.T, args ...string) *syncTest {
-	_, wt := acc.WorkspaceTest(t)
+func setupSyncTest(t *testing.T, args ...string) (context.Context, *syncTest) {
+	ctx, wt := acc.WorkspaceTest(t)
 	w := wt.W
 
 	localRoot := t.TempDir()
@@ -90,10 +90,10 @@ func setupSyncTest(t *testing.T, args ...string) *syncTest {
 		"json",
 	}, args...)
 
-	c := testcli.NewRunner(t, args...)
+	c := testcli.NewRunnerWithContext(t, ctx, args...)
 	c.RunBackground()
 
-	return &syncTest{
+	return ctx, &syncTest{
 		t:          t,
 		c:          c,
 		w:          w,
@@ -231,8 +231,7 @@ func (a *syncTest) snapshotContains(files []string) {
 }
 
 func TestSyncFullFileSync(t *testing.T) {
-	ctx := context.Background()
-	assertSync := setupSyncTest(t, "--full", "--watch")
+	ctx, assertSync := setupSyncTest(t, "--full", "--watch")
 
 	// .gitignore is created by the sync process to enforce .databricks is not synced
 	assertSync.waitForCompletionMarker()
@@ -263,8 +262,7 @@ func TestSyncFullFileSync(t *testing.T) {
 }
 
 func TestSyncIncrementalFileSync(t *testing.T) {
-	ctx := context.Background()
-	assertSync := setupSyncTest(t, "--watch")
+	ctx, assertSync := setupSyncTest(t, "--watch")
 
 	// .gitignore is created by the sync process to enforce .databricks is not synced
 	assertSync.waitForCompletionMarker()
@@ -297,8 +295,7 @@ func TestSyncIncrementalFileSync(t *testing.T) {
 }
 
 func TestSyncNestedFolderSync(t *testing.T) {
-	ctx := context.Background()
-	assertSync := setupSyncTest(t, "--watch")
+	ctx, assertSync := setupSyncTest(t, "--watch")
 
 	// .gitignore is created by the sync process to enforce .databricks is not synced
 	assertSync.waitForCompletionMarker()
@@ -325,8 +322,7 @@ func TestSyncNestedFolderSync(t *testing.T) {
 }
 
 func TestSyncNestedFolderDoesntFailOnNonEmptyDirectory(t *testing.T) {
-	ctx := context.Background()
-	assertSync := setupSyncTest(t, "--watch")
+	ctx, assertSync := setupSyncTest(t, "--watch")
 
 	// .gitignore is created by the sync process to enforce .databricks is not synced
 	assertSync.waitForCompletionMarker()
@@ -358,8 +354,7 @@ func TestSyncNestedFolderDoesntFailOnNonEmptyDirectory(t *testing.T) {
 }
 
 func TestSyncNestedSpacePlusAndHashAreEscapedSync(t *testing.T) {
-	ctx := context.Background()
-	assertSync := setupSyncTest(t, "--watch")
+	ctx, assertSync := setupSyncTest(t, "--watch")
 
 	// .gitignore is created by the sync process to enforce .databricks is not synced
 	assertSync.waitForCompletionMarker()
@@ -394,8 +389,7 @@ func TestSyncNestedSpacePlusAndHashAreEscapedSync(t *testing.T) {
 // In the above scenario sync should delete the empty folder and add foo to the remote
 // file system
 func TestSyncIncrementalFileOverwritesFolder(t *testing.T) {
-	ctx := context.Background()
-	assertSync := setupSyncTest(t, "--watch")
+	ctx, assertSync := setupSyncTest(t, "--watch")
 
 	// create foo/bar.txt
 	localFilePath := filepath.Join(assertSync.localRoot, "foo/bar.txt")
@@ -424,8 +418,7 @@ func TestSyncIncrementalFileOverwritesFolder(t *testing.T) {
 }
 
 func TestSyncIncrementalSyncPythonNotebookToFile(t *testing.T) {
-	ctx := context.Background()
-	assertSync := setupSyncTest(t, "--watch")
+	ctx, assertSync := setupSyncTest(t, "--watch")
 
 	// create python notebook
 	localFilePath := filepath.Join(assertSync.localRoot, "foo.py")
@@ -455,8 +448,7 @@ func TestSyncIncrementalSyncPythonNotebookToFile(t *testing.T) {
 }
 
 func TestSyncIncrementalSyncFileToPythonNotebook(t *testing.T) {
-	ctx := context.Background()
-	assertSync := setupSyncTest(t, "--watch")
+	ctx, assertSync := setupSyncTest(t, "--watch")
 
 	// create vanilla python file
 	localFilePath := filepath.Join(assertSync.localRoot, "foo.py")
@@ -479,8 +471,7 @@ func TestSyncIncrementalSyncFileToPythonNotebook(t *testing.T) {
 }
 
 func TestSyncIncrementalSyncPythonNotebookDelete(t *testing.T) {
-	ctx := context.Background()
-	assertSync := setupSyncTest(t, "--watch")
+	ctx, assertSync := setupSyncTest(t, "--watch")
 
 	// create python notebook
 	localFilePath := filepath.Join(assertSync.localRoot, "foo.py")
