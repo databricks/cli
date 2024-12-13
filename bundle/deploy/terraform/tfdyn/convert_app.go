@@ -29,11 +29,6 @@ func (appConverter) Convert(ctx context.Context, key string, vin dyn.Value, out 
 		return err
 	}
 
-	// Modify top-level keys.
-	vout, err = renameKeys(vout, map[string]string{
-		"resources": "resource",
-	})
-
 	if err != nil {
 		return err
 	}
