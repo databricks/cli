@@ -359,7 +359,7 @@ func TestFsCpErrorsWhenSourceIsDirWithoutRecursiveFlag(t *testing.T) {
 			ctx := context.Background()
 			_, tmpDir := tc.setupFiler(t)
 
-			_, _, err := testcli.RequireErrorRun(t, "fs", "cp", path.Join(tmpDir), path.Join(tmpDir, "foobar"))
+			_, _, err := testcli.RequireErrorRun(t, ctx, "fs", "cp", path.Join(tmpDir), path.Join(tmpDir, "foobar"))
 			r := regexp.MustCompile("source path .* is a directory. Please specify the --recursive flag")
 			assert.Regexp(t, r, err.Error())
 		})
@@ -367,7 +367,8 @@ func TestFsCpErrorsWhenSourceIsDirWithoutRecursiveFlag(t *testing.T) {
 }
 
 func TestFsCpErrorsOnInvalidScheme(t *testing.T) {
-	_, _, err := testcli.RequireErrorRun(t, "fs", "cp", "dbfs:/a", "https:/b")
+	ctx := context.Background()
+	_, _, err := testcli.RequireErrorRun(t, ctx, "fs", "cp", "dbfs:/a", "https:/b")
 	assert.Equal(t, "invalid scheme: https", err.Error())
 }
 
@@ -389,7 +390,7 @@ func TestFsCpSourceIsDirectoryButTargetIsFile(t *testing.T) {
 			err := targetFiler.Write(context.Background(), "my_target", strings.NewReader("I'll block any attempts to recursively copy"), filer.CreateParentDirectories)
 			require.NoError(t, err)
 
-			_, _, err = testcli.RequireErrorRun(t, "fs", "cp", sourceDir, path.Join(targetDir, "my_target"), "--recursive")
+			_, _, err = testcli.RequireErrorRun(t, ctx, "fs", "cp", sourceDir, path.Join(targetDir, "my_target"), "--recursive")
 			assert.Error(t, err)
 		})
 	}

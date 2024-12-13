@@ -20,8 +20,9 @@ import (
 )
 
 func TestBundleInitErrorOnUnknownFields(t *testing.T) {
+	ctx := context.Background()
 	tmpDir := t.TempDir()
-	_, _, err := testcli.RequireErrorRun(t, "bundle", "init", "./testdata/init/field-does-not-exist", "--output-dir", tmpDir)
+	_, _, err := testcli.RequireErrorRun(t, ctx, "bundle", "init", "./testdata/init/field-does-not-exist", "--output-dir", tmpDir)
 	assert.EqualError(t, err, "failed to compute file content for bar.tmpl. variable \"does_not_exist\" not defined")
 }
 

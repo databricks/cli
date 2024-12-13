@@ -38,7 +38,8 @@ func TestClustersGet(t *testing.T) {
 }
 
 func TestClusterCreateErrorWhenNoArguments(t *testing.T) {
-	_, _, err := testcli.RequireErrorRun(t, "clusters", "create")
+	ctx := context.Background()
+	_, _, err := testcli.RequireErrorRun(t, ctx, "clusters", "create")
 	assert.Contains(t, err.Error(), "accepts 1 arg(s), received 0")
 }
 

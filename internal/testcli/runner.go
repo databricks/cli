@@ -281,15 +281,6 @@ func (r *Runner) RunAndParseJSON(v any) {
 	require.NoError(r, err)
 }
 
-func newRunner(t testutil.TestingT, args ...string) *Runner {
-	return &Runner{
-		TestingT: t,
-
-		ctx:  context.Background(),
-		args: args,
-	}
-}
-
 func NewRunnerWithContext(t testutil.TestingT, ctx context.Context, args ...string) *Runner {
 	return &Runner{
 		TestingT: t,
@@ -307,8 +298,8 @@ func RequireSuccessfulRun(t testutil.TestingT, ctx context.Context, args ...stri
 	return stdout, stderr
 }
 
-func RequireErrorRun(t testutil.TestingT, args ...string) (bytes.Buffer, bytes.Buffer, error) {
-	r := newRunner(t, args...)
+func RequireErrorRun(t testutil.TestingT, ctx context.Context, args ...string) (bytes.Buffer, bytes.Buffer, error) {
+	r := NewRunnerWithContext(t, ctx, args...)
 	stdout, stderr, err := r.Run()
 	require.Error(t, err)
 	return stdout, stderr, err

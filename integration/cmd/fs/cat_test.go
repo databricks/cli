@@ -51,7 +51,7 @@ func TestFsCatOnADir(t *testing.T) {
 			err := f.Mkdir(context.Background(), "dir1")
 			require.NoError(t, err)
 
-			_, _, err = testcli.RequireErrorRun(t, "fs", "cat", path.Join(tmpDir, "dir1"))
+			_, _, err = testcli.RequireErrorRun(t, ctx, "fs", "cat", path.Join(tmpDir, "dir1"))
 			assert.ErrorAs(t, err, &filer.NotAFile{})
 		})
 	}
@@ -69,14 +69,15 @@ func TestFsCatOnNonExistentFile(t *testing.T) {
 			ctx := context.Background()
 			_, tmpDir := tc.setupFiler(t)
 
-			_, _, err := testcli.RequireErrorRun(t, "fs", "cat", path.Join(tmpDir, "non-existent-file"))
+			_, _, err := testcli.RequireErrorRun(t, ctx, "fs", "cat", path.Join(tmpDir, "non-existent-file"))
 			assert.ErrorIs(t, err, fs.ErrNotExist)
 		})
 	}
 }
 
 func TestFsCatForDbfsInvalidScheme(t *testing.T) {
-	_, _, err := testcli.RequireErrorRun(t, "fs", "cat", "dab:/non-existent-file")
+	ctx := context.Background()
+	_, _, err := testcli.RequireErrorRun(t, ctx, "fs", "cat", "dab:/non-existent-file")
 	assert.ErrorContains(t, err, "invalid scheme: dab")
 }
 
@@ -91,6 +92,6 @@ func TestFsCatDoesNotSupportOutputModeJson(t *testing.T) {
 	err = f.Write(ctx, "hello.txt", strings.NewReader("abc"))
 	require.NoError(t, err)
 
-	_, _, err = testcli.RequireErrorRun(t, "fs", "cat", "dbfs:"+path.Join(tmpDir, "hello.txt"), "--output=json")
+	_, _, err = testcli.RequireErrorRun(t, ctx, "fs", "cat", "dbfs:"+path.Join(tmpDir, "hello.txt"), "--output=json")
 	assert.ErrorContains(t, err, "json output not supported")
 }

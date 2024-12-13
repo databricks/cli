@@ -115,7 +115,7 @@ func TestFsMkdirWhenFileExistsAtPath(t *testing.T) {
 		require.NoError(t, err)
 
 		// assert mkdir fails
-		_, _, err = testcli.RequireErrorRun(t, "fs", "mkdir", path.Join(tmpDir, "hello"))
+		_, _, err = testcli.RequireErrorRun(t, ctx, "fs", "mkdir", path.Join(tmpDir, "hello"))
 
 		// Different cloud providers or cloud configurations return different errors.
 		regex := regexp.MustCompile(`(^|: )Path is a file: .*$|(^|: )Cannot create directory .* because .* is an existing file\.$|(^|: )mkdirs\(hadoopPath: .*, permission: rwxrwxrwx\): failed$|(^|: )"The specified path already exists.".*$`)
@@ -133,7 +133,7 @@ func TestFsMkdirWhenFileExistsAtPath(t *testing.T) {
 		require.NoError(t, err)
 
 		// assert mkdir fails
-		_, _, err = testcli.RequireErrorRun(t, "fs", "mkdir", path.Join(tmpDir, "hello"))
+		_, _, err = testcli.RequireErrorRun(t, ctx, "fs", "mkdir", path.Join(tmpDir, "hello"))
 
 		assert.ErrorAs(t, err, &filer.FileAlreadyExistsError{})
 	})

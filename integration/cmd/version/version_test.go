@@ -1,6 +1,7 @@
 package version_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -13,24 +14,28 @@ import (
 var expectedVersion = fmt.Sprintf("Databricks CLI v%s\n", build.GetInfo().Version)
 
 func TestVersionFlagShort(t *testing.T) {
+	ctx := context.Background()
 	stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "-v")
 	assert.Equal(t, expectedVersion, stdout.String())
 	assert.Equal(t, "", stderr.String())
 }
 
 func TestVersionFlagLong(t *testing.T) {
+	ctx := context.Background()
 	stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "--version")
 	assert.Equal(t, expectedVersion, stdout.String())
 	assert.Equal(t, "", stderr.String())
 }
 
 func TestVersionCommand(t *testing.T) {
+	ctx := context.Background()
 	stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "version")
 	assert.Equal(t, expectedVersion, stdout.String())
 	assert.Equal(t, "", stderr.String())
 }
 
 func TestVersionCommandWithJSONOutput(t *testing.T) {
+	ctx := context.Background()
 	stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "version", "--output", "json")
 	assert.NotEmpty(t, stdout.String())
 	assert.Equal(t, "", stderr.String())

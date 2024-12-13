@@ -99,7 +99,7 @@ func TestFsRmNonEmptyDirectory(t *testing.T) {
 			assert.NoError(t, err)
 
 			// Run rm command
-			_, _, err = testcli.RequireErrorRun(t, "fs", "rm", path.Join(tmpDir, "a"))
+			_, _, err = testcli.RequireErrorRun(t, ctx, "fs", "rm", path.Join(tmpDir, "a"))
 			assert.ErrorIs(t, err, fs.ErrInvalid)
 			assert.ErrorAs(t, err, &filer.DirectoryNotEmptyError{})
 		})
@@ -119,7 +119,7 @@ func TestFsRmForNonExistentFile(t *testing.T) {
 			_, tmpDir := tc.setupFiler(t)
 
 			// Expect error if file does not exist
-			_, _, err := testcli.RequireErrorRun(t, "fs", "rm", path.Join(tmpDir, "does-not-exist"))
+			_, _, err := testcli.RequireErrorRun(t, ctx, "fs", "rm", path.Join(tmpDir, "does-not-exist"))
 			assert.ErrorIs(t, err, fs.ErrNotExist)
 		})
 	}
