@@ -28,9 +28,8 @@ func setupUcSchemaBundle(t *testing.T, ctx context.Context, w *databricks.Worksp
 	bundleRoot := initTestTemplate(t, ctx, "uc_schema", map[string]any{
 		"unique_id": uniqueId,
 	})
-	require.NoError(t, err)
 
-	err = deployBundle(t, ctx, bundleRoot)
+	err := deployBundle(t, ctx, bundleRoot)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -135,7 +134,7 @@ func TestBundlePipelineDeleteWithoutAutoApprove(t *testing.T) {
 
 	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	uniqueId := uuid.New().String()
-	bundleRoot, err := initTestTemplate(t, ctx, "deploy_then_remove_resources", map[string]any{
+	bundleRoot := initTestTemplate(t, ctx, "deploy_then_remove_resources", map[string]any{
 		"unique_id":     uniqueId,
 		"node_type_id":  nodeTypeId,
 		"spark_version": defaultSparkVersion,
@@ -182,7 +181,7 @@ func TestBundlePipelineRecreateWithoutAutoApprove(t *testing.T) {
 	w := wt.W
 	uniqueId := uuid.New().String()
 
-	bundleRoot, err := initTestTemplate(t, ctx, "recreate_pipeline", map[string]any{
+	bundleRoot := initTestTemplate(t, ctx, "recreate_pipeline", map[string]any{
 		"unique_id": uniqueId,
 	})
 	require.NoError(t, err)
@@ -221,7 +220,7 @@ func TestDeployBasicBundleLogs(t *testing.T) {
 
 	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	uniqueId := uuid.New().String()
-	root, err := initTestTemplate(t, ctx, "basic", map[string]any{
+	root := initTestTemplate(t, ctx, "basic", map[string]any{
 		"unique_id":     uniqueId,
 		"node_type_id":  nodeTypeId,
 		"spark_version": defaultSparkVersion,
