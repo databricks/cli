@@ -22,14 +22,13 @@ func TestDashboards(t *testing.T) {
 		"unique_id":    uniqueID,
 		"warehouse_id": warehouseID,
 	})
-	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		err = destroyBundle(t, ctx, root)
+		err := destroyBundle(t, ctx, root)
 		require.NoError(t, err)
 	})
 
-	err = deployBundle(t, ctx, root)
+	err := deployBundle(t, ctx, root)
 	require.NoError(t, err)
 
 	// Load bundle configuration by running the validate command.

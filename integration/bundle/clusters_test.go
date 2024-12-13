@@ -25,10 +25,9 @@ func TestDeployBundleWithCluster(t *testing.T) {
 		"node_type_id":  nodeTypeId,
 		"spark_version": defaultSparkVersion,
 	})
-	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		err = destroyBundle(t, ctx, root)
+		err := destroyBundle(t, ctx, root)
 		require.NoError(t, err)
 
 		cluster, err := wt.W.Clusters.GetByClusterName(ctx, fmt.Sprintf("test-cluster-%s", uniqueId))
@@ -39,7 +38,7 @@ func TestDeployBundleWithCluster(t *testing.T) {
 		}
 	})
 
-	err = deployBundle(t, ctx, root)
+	err := deployBundle(t, ctx, root)
 	require.NoError(t, err)
 
 	// Cluster should exists after bundle deployment
