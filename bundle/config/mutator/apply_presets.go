@@ -190,16 +190,38 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		e.Name = normalizePrefix(prefix) + e.Name
 
 		if t.Catalog != "" || t.Schema != "" {
-			// TODO:
-			// - e.AiGateway.InferenceTableConfig.CatalogName
-			// - e.AiGateway.InferenceTableConfig.SchemaName
-			// - e.Config.AutoCaptureConfig.SchemaName
-			// - e.Config.AutoCaptureConfig.CatalogName
-			// - e.Config.ServedEntities[0].EntityName (__catalog_name__.__schema_name__.__model_name__.)
-			// - e.Config.ServedModels[0].ModelName (__catalog_name__.__schema_name__.__model_name__.)
-			diags = diags.Extend(diag.Errorf("model serving endpoints are not supported with catalog/schema presets"))
-		}
+			// Apply catalog & schema to inference table config if not set
+			if e.CreateServingEndpoint.AiGateway != nil && e.CreateServingEndpoint.AiGateway.InferenceTableConfig != nil {
+				if t.Catalog != "" && e.CreateServingEndpoint.AiGateway.InferenceTableConfig.CatalogName == "" {
+					e.CreateServingEndpoint.AiGateway.InferenceTableConfig.CatalogName = t.Catalog
+				}
+				if t.Schema != "" && e.CreateServingEndpoint.AiGateway.InferenceTableConfig.SchemaName == "" {
+					e.CreateServingEndpoint.AiGateway.InferenceTableConfig.SchemaName = t.Schema
+				}
+			}
 
+			// Apply catalog & schema to auto capture config if not set
+			if e.CreateServingEndpoint.Config.AutoCaptureConfig != nil {
+				if t.Catalog != "" && e.CreateServingEndpoint.Config.AutoCaptureConfig.CatalogName == "" {
+					e.CreateServingEndpoint.Config.AutoCaptureConfig.CatalogName = t.Catalog
+				}
+				if t.Schema != "" && e.CreateServingEndpoint.Config.AutoCaptureConfig.SchemaName == "" {
+					e.CreateServingEndpoint.Config.AutoCaptureConfig.SchemaName = t.Schema
+				}
+			}
+
+			// Fully qualify served entities and models if they are not already qualified
+			for i := range e.CreateServingEndpoint.Config.ServedEntities {
+				e.CreateServingEndpoint.Config.ServedEntities[i].EntityName = fullyQualifyName(
+					e.CreateServingEndpoint.Config.ServedEntities[i].EntityName, t.Catalog, t.Schema,
+				)
+			}
+			for i := range e.CreateServingEndpoint.Config.ServedModels {
+				e.CreateServingEndpoint.Config.ServedModels[i].ModelName = fullyQualifyName(
+					e.CreateServingEndpoint.Config.ServedModels[i].ModelName, t.Catalog, t.Schema,
+				)
+			}
+		}
 	}
 
 	// Registered models presets
@@ -484,6 +506,24 @@ func recommendCatalogSchemaUsage(b *bundle.Bundle, ctx context.Context, key stri
 	}
 
 	return diags
+
+}
+
+// fullyQualifyName checks if the given name is already qualified with a catalog and schema.
+// If not, and both catalog and schema are available, it prefixes the name with catalog.schema.
+// If name is empty, returns name as-is.
+func fullyQualifyName(name, catalog, schema string) string {
+	if name == "" || catalog == "" || schema == "" {
+		return name
+	}
+	// If it's already qualified (contains at least two '.'), we assume it's fully qualified.
+	parts := strings.Split(name, ".")
+	if len(parts) >= 3 {
+		// Already fully qualified
+		return name
+	}
+	// Otherwise, fully qualify it
+	return fmt.Sprintf("%s.%s.%s", catalog, schema, name)
 }
 
 func fileIncludesPattern(ctx context.Context, filePath string, expected string) bool {
