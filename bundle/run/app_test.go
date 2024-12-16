@@ -76,7 +76,7 @@ func setupBundle(t *testing.T) (context.Context, *bundle.Bundle, *mocks.MockWork
 	bundletest.SetLocation(b, "resources.apps.my_app", []dyn.Location{{File: "./databricks.yml"}})
 
 	ctx := context.Background()
-	ctx = cmdio.InContext(ctx, cmdio.NewIO(flags.OutputText, &bytes.Buffer{}, &bytes.Buffer{}, &bytes.Buffer{}, "", "..."))
+	ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputText, &bytes.Buffer{}, &bytes.Buffer{}, &bytes.Buffer{}, "", "..."))
 	ctx = cmdio.NewContext(ctx, cmdio.NewLogger(flags.ModeAppend))
 
 	diags := bundle.Apply(ctx, b, bundle.Seq(
