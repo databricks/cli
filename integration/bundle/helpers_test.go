@@ -123,7 +123,7 @@ func runResourceWithStderr(t testutil.TestingT, ctx context.Context, path string
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	ctx = cmdio.NewContext(ctx, cmdio.Default())
 
-	c := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "run", key)
+	c := testcli.NewRunnerWithContext(t, ctx, "bundle", "run", key)
 	stdout, stderr, err := c.Run()
 	return stdout.String(), stderr.String(), err
 }
