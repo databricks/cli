@@ -122,12 +122,61 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		if t.TriggerPauseStatus == config.Paused {
 			p.Continuous = false
 		}
-		// TODO: add recommendation when catalog is already set?
-		if t.Catalog != "" && p.Catalog == "" && p.Catalog != "hive_metastore" {
-			p.Catalog = t.Catalog
-		}
-		if t.Schema != "" && p.Target == "" {
-			p.Target = t.Schema
+		if t.Catalog != "" && t.Schema != "" {
+			if p.Catalog == "" {
+				p.Catalog = t.Catalog
+			}
+			if p.Target == "" {
+				p.Target = t.Schema
+			}
+			if p.GatewayDefinition != nil {
+				if p.GatewayDefinition.GatewayStorageCatalog == "" {
+					p.GatewayDefinition.GatewayStorageCatalog = t.Catalog
+				}
+				if p.GatewayDefinition.GatewayStorageSchema == "" {
+					p.GatewayDefinition.GatewayStorageSchema = t.Schema
+				}
+			}
+			if p.IngestionDefinition != nil {
+				for _, obj := range p.IngestionDefinition.Objects {
+					if obj.Report != nil {
+						if obj.Report.DestinationCatalog == "" {
+							obj.Report.DestinationCatalog = t.Catalog
+						}
+						if obj.Report.DestinationSchema == "" {
+							obj.Report.DestinationSchema = t.Schema
+						}
+					}
+					if obj.Schema != nil {
+						if obj.Schema.SourceCatalog == "" {
+							obj.Schema.SourceCatalog = t.Catalog
+						}
+						if obj.Schema.SourceSchema == "" {
+							obj.Schema.SourceSchema = t.Schema
+						}
+						if obj.Schema.DestinationCatalog == "" {
+							obj.Schema.DestinationCatalog = t.Catalog
+						}
+						if obj.Schema.DestinationSchema == "" {
+							obj.Schema.DestinationSchema = t.Schema
+						}
+					}
+					if obj.Table != nil {
+						if obj.Table.SourceCatalog == "" {
+							obj.Table.SourceCatalog = t.Catalog
+						}
+						if obj.Table.SourceSchema == "" {
+							obj.Table.SourceSchema = t.Schema
+						}
+						if obj.Table.DestinationCatalog == "" {
+							obj.Table.DestinationCatalog = t.Catalog
+						}
+						if obj.Table.DestinationSchema == "" {
+							obj.Table.DestinationSchema = t.Schema
+						}
+					}
+				}
+			}
 		}
 	}
 
@@ -493,8 +542,7 @@ func recommendCatalogSchemaUsage(b *bundle.Bundle, ctx context.Context, key stri
 
 		if !fileIncludesPattern(ctx, localPath, expected) {
 			diags = diags.Extend(diag.Diagnostics{{
-				Summary: fmt.Sprintf("Use the 'catalog' and 'schema' parameters provided via 'presets.catalog' and 'presets.schema' using\n\n" +
-					fix),
+				Summary:  "Use the 'catalog' and 'schema' parameters provided via 'presets.catalog' and 'presets.schema' using\n\n" + fix,
 				Severity: diag.Recommendation,
 				Locations: []dyn.Location{{
 					File:   localPath,

@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/serving"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -465,8 +466,8 @@ func TestApplyPresetsSourceLinkedDeployment(t *testing.T) {
 
 }
 
-func TestApplyPresetsCatalogSchema(t *testing.T) {
-	b := &bundle.Bundle{
+func PresetsMock() *bundle.Bundle {
+	return &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -477,6 +478,24 @@ func TestApplyPresetsCatalogSchema(t *testing.T) {
 								{Name: "catalog", Default: "<catalog>"},
 								{Name: "schema", Default: "<schema>"},
 							},
+							Tasks: []jobs.Task{
+								{
+									DbtTask: &jobs.DbtTask{
+										Catalog: "<catalog>",
+										Schema:  "<schema>",
+									},
+								},
+								{
+									SparkPythonTask: &jobs.SparkPythonTask{
+										PythonFile: "/file",
+									},
+								},
+								{
+									NotebookTask: &jobs.NotebookTask{
+										NotebookPath: "/notebook",
+									},
+								},
+							},
 						},
 					},
 				},
@@ -486,6 +505,32 @@ func TestApplyPresetsCatalogSchema(t *testing.T) {
 							Name:    "pipeline",
 							Catalog: "<catalog>",
 							Target:  "<schema>",
+							GatewayDefinition: &pipelines.IngestionGatewayPipelineDefinition{
+								GatewayStorageCatalog: "<catalog>",
+								GatewayStorageSchema:  "<schema>",
+							},
+							IngestionDefinition: &pipelines.IngestionPipelineDefinition{
+								Objects: []pipelines.IngestionConfig{
+									{
+										Report: &pipelines.ReportSpec{
+											DestinationCatalog: "<catalog>",
+											DestinationSchema:  "<schema>",
+										},
+										Schema: &pipelines.SchemaSpec{
+											SourceCatalog:      "<catalog>",
+											SourceSchema:       "<schema>",
+											DestinationCatalog: "<catalog>",
+											DestinationSchema:  "<schema>",
+										},
+										Table: &pipelines.TableSpec{
+											SourceCatalog:      "<catalog>",
+											SourceSchema:       "<schema>",
+											DestinationCatalog: "<catalog>",
+											DestinationSchema:  "<schema>",
+										},
+									},
+								},
+							},
 						},
 					},
 				},
@@ -542,6 +587,17 @@ func TestApplyPresetsCatalogSchema(t *testing.T) {
 			},
 		},
 	}
+}
+
+var PresetsIgnoredFields = map[string]string{
+	// Any fields that should be ignored in the completeness check
+	// Example:
+	// "resources.jobs.object.schema_something": "this property doesn't relate to the catalog/schema",
+	"resources.pipelines.key.schema": "schema is still in private preview",
+}
+
+func TestApplyPresetsCatalogSchema(t *testing.T) {
+	b := PresetsMock()
 	b.Config.Presets = config.Presets{
 		Catalog: "my_catalog",
 		Schema:  "my_schema",
@@ -603,16 +659,11 @@ func TestApplyPresetsCatalogSchema(t *testing.T) {
 	for _, f := range recordedFields {
 		val, err := dyn.GetByPath(config, f.Path)
 		require.NoError(t, err, "failed to get path %s", f.Path)
-		require.Equal(t, f.Expected, val.MustString(), "preset value expected for %s based on placeholder %s", f.Path, f.Placeholder)
+		assert.Equal(t, f.Expected, val.MustString(), "preset value expected for %s based on placeholder %s", f.Path, f.Placeholder)
 	}
 
 	// Stage 4: Check completeness
-	ignoredFields := map[string]string{
-		// Any fields that should be ignored in the completeness check
-		// Example:
-		// "resources.jobs.object.schema_something": "this property doesn't relate to the catalog/schema",
-	}
-	checkCompleteness(t, recordedFields, ignoredFields)
+	checkCompleteness(t, recordedFields)
 }
 
 func verifyNoChangesBeforeCleanup(t *testing.T, rootVal dyn.Value, recordedFields []recordedField) {
@@ -626,7 +677,7 @@ func verifyNoChangesBeforeCleanup(t *testing.T, rootVal dyn.Value, recordedField
 	}
 }
 
-func checkCompleteness(t *testing.T, recordedFields []recordedField, ignoredFields map[string]string) {
+func checkCompleteness(t *testing.T, recordedFields []recordedField) {
 	t.Helper()
 
 	// Build a set for recorded fields
@@ -700,7 +751,7 @@ func checkCompleteness(t *testing.T, recordedFields []recordedField, ignoredFiel
 					// Only check if the field is a string
 					if ft.Type.Kind() == reflect.String {
 						if _, recorded := recordedSet[fieldPath]; !recorded {
-							if _, ignored := ignoredFields[fieldPath]; !ignored {
+							if _, ignored := PresetsIgnoredFields[fieldPath]; !ignored {
 								missingFields = append(missingFields, fieldPath)
 							}
 						}
@@ -719,7 +770,7 @@ func checkCompleteness(t *testing.T, recordedFields []recordedField, ignoredFiel
 
 	// Report all missing fields
 	for _, field := range missingFields {
-		t.Errorf("Field %s was not included in the test (should be covered in 'recordedFields' or 'ignoredFields')", field)
+		t.Errorf("Field %s was not included in the catalog/schema presets test. If this is a new field, please add it to PresetsMock or PresetsIgnoredFields and add support for it as appropriate.", field)
 	}
 
 	// Fail the test if there were any missing fields
