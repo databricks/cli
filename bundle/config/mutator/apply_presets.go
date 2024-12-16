@@ -244,23 +244,23 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	// Quality monitors presets
 	// Supported: Schedule, Catalog, Schema
 	// Not supported: Tags (not in API as of 2024-10)
-	if t.TriggerPauseStatus == config.Paused {
-		for key, q := range r.QualityMonitors {
-			if q.CreateMonitor == nil {
-				diags = diags.Extend(diag.Errorf("quality monitor %s is not defined", key))
-				continue
-			}
-			// Remove all schedules from monitors, since they don't support pausing/unpausing.
-			// Quality monitors might support the "pause" property in the future, so at the
-			// CLI level we do respect that property if it is set to "unpaused."
+	for key, q := range r.QualityMonitors {
+		if q.CreateMonitor == nil {
+			diags = diags.Extend(diag.Errorf("quality monitor %s is not defined", key))
+			continue
+		}
+		// Remove all schedules from monitors, since they don't support pausing/unpausing.
+		// Quality monitors might support the "pause" property in the future, so at the
+		// CLI level we do respect that property if it is set to "unpaused."
+		if t.TriggerPauseStatus == config.Paused {
 			if q.Schedule != nil && q.Schedule.PauseStatus != catalog.MonitorCronSchedulePauseStatusUnpaused {
 				q.Schedule = nil
 			}
-			if t.Catalog != "" && t.Schema != "" {
-				parts := strings.Split(q.TableName, ".")
-				if len(parts) != 3 {
-					q.TableName = fmt.Sprintf("%s.%s.%s", t.Catalog, t.Schema, q.TableName)
-				}
+		}
+		if t.Catalog != "" && t.Schema != "" {
+			q.TableName = fullyQualifyName(q.TableName, t.Catalog, t.Schema)
+			if q.OutputSchemaName == "" {
+				q.OutputSchemaName = t.Catalog + "." + t.Schema
 			}
 		}
 	}
