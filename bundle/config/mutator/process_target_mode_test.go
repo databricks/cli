@@ -426,6 +426,7 @@ func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 			for _, key := range field.MapKeys() {
 				resource := field.MapIndex(key)
 				nameField := resource.Elem().FieldByName("Name")
+				resourceType := resources.Type().Field(i).Name
 
 				// Skip apps, as they are not renamed
 				if resourceType == "Apps" {
