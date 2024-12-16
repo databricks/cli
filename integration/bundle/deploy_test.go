@@ -25,17 +25,14 @@ import (
 )
 
 func setupUcSchemaBundle(t *testing.T, ctx context.Context, w *databricks.WorkspaceClient, uniqueId string) string {
-	bundleRoot, err := initTestTemplate(t, ctx, "uc_schema", map[string]any{
+	bundleRoot := initTestTemplate(t, ctx, "uc_schema", map[string]any{
 		"unique_id": uniqueId,
 	})
-	require.NoError(t, err)
 
-	err = deployBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleRoot)
 
 	t.Cleanup(func() {
-		err := destroyBundle(t, ctx, bundleRoot)
-		require.NoError(t, err)
+		destroyBundle(t, ctx, bundleRoot)
 	})
 
 	// Assert the schema is created
@@ -97,8 +94,7 @@ func TestBundleDeployUcSchema(t *testing.T) {
 	require.NoError(t, err)
 
 	// Redeploy the bundle
-	err = deployBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleRoot)
 
 	// Assert the schema is deleted
 	_, err = w.Schemas.GetByFullName(ctx, strings.Join([]string{catalogName, schemaName}, "."))
@@ -135,16 +131,14 @@ func TestBundlePipelineDeleteWithoutAutoApprove(t *testing.T) {
 
 	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	uniqueId := uuid.New().String()
-	bundleRoot, err := initTestTemplate(t, ctx, "deploy_then_remove_resources", map[string]any{
+	bundleRoot := initTestTemplate(t, ctx, "deploy_then_remove_resources", map[string]any{
 		"unique_id":     uniqueId,
 		"node_type_id":  nodeTypeId,
 		"spark_version": defaultSparkVersion,
 	})
-	require.NoError(t, err)
 
 	// deploy pipeline
-	err = deployBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleRoot)
 
 	// assert pipeline is created
 	pipelineName := "test-bundle-pipeline-" + uniqueId
@@ -182,17 +176,14 @@ func TestBundlePipelineRecreateWithoutAutoApprove(t *testing.T) {
 	w := wt.W
 	uniqueId := uuid.New().String()
 
-	bundleRoot, err := initTestTemplate(t, ctx, "recreate_pipeline", map[string]any{
+	bundleRoot := initTestTemplate(t, ctx, "recreate_pipeline", map[string]any{
 		"unique_id": uniqueId,
 	})
-	require.NoError(t, err)
 
-	err = deployBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleRoot)
 
 	t.Cleanup(func() {
-		err := destroyBundle(t, ctx, bundleRoot)
-		require.NoError(t, err)
+		destroyBundle(t, ctx, bundleRoot)
 	})
 
 	// Assert the pipeline is created
@@ -221,16 +212,14 @@ func TestDeployBasicBundleLogs(t *testing.T) {
 
 	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	uniqueId := uuid.New().String()
-	root, err := initTestTemplate(t, ctx, "basic", map[string]any{
+	root := initTestTemplate(t, ctx, "basic", map[string]any{
 		"unique_id":     uniqueId,
 		"node_type_id":  nodeTypeId,
 		"spark_version": defaultSparkVersion,
 	})
-	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		err = destroyBundle(t, ctx, root)
-		require.NoError(t, err)
+		destroyBundle(t, ctx, root)
 	})
 
 	currentUser, err := wt.W.CurrentUser.Me(ctx)
@@ -251,17 +240,14 @@ func TestDeployUcVolume(t *testing.T) {
 	w := wt.W
 
 	uniqueId := uuid.New().String()
-	bundleRoot, err := initTestTemplate(t, ctx, "volume", map[string]any{
+	bundleRoot := initTestTemplate(t, ctx, "volume", map[string]any{
 		"unique_id": uniqueId,
 	})
-	require.NoError(t, err)
 
-	err = deployBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleRoot)
 
 	t.Cleanup(func() {
-		err := destroyBundle(t, ctx, bundleRoot)
-		require.NoError(t, err)
+		destroyBundle(t, ctx, bundleRoot)
 	})
 
 	// Assert the volume is created successfully

@@ -20,17 +20,16 @@ func TestFilesAreSyncedCorrectlyWhenNoSnapshot(t *testing.T) {
 
 	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	uniqueId := uuid.New().String()
-	bundleRoot, err := initTestTemplate(t, ctx, "basic", map[string]any{
+	bundleRoot := initTestTemplate(t, ctx, "basic", map[string]any{
 		"unique_id":     uniqueId,
 		"spark_version": "13.3.x-scala2.12",
 		"node_type_id":  nodeTypeId,
 	})
-	require.NoError(t, err)
 
 	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
 
 	// Add some test file to the bundle
-	err = os.WriteFile(filepath.Join(bundleRoot, "test.py"), []byte("print('Hello, World!')"), 0o644)
+	err := os.WriteFile(filepath.Join(bundleRoot, "test.py"), []byte("print('Hello, World!')"), 0o644)
 	require.NoError(t, err)
 
 	err = os.WriteFile(filepath.Join(bundleRoot, "test_to_modify.py"), []byte("print('Hello, World!')"), 0o644)
@@ -40,11 +39,10 @@ func TestFilesAreSyncedCorrectlyWhenNoSnapshot(t *testing.T) {
 	err = os.WriteFile(filepath.Join(bundleRoot, "notebook.py"), []byte("# Databricks notebook source\nHello, World!"), 0o644)
 	require.NoError(t, err)
 
-	err = deployBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleRoot)
 
 	t.Cleanup(func() {
-		require.NoError(t, destroyBundle(t, ctx, bundleRoot))
+		destroyBundle(t, ctx, bundleRoot)
 	})
 
 	remoteRoot := getBundleRemoteRootPath(w, t, uniqueId)
@@ -80,8 +78,7 @@ func TestFilesAreSyncedCorrectlyWhenNoSnapshot(t *testing.T) {
 	err = os.WriteFile(filepath.Join(bundleRoot, "test_to_modify.py"), []byte("print('Modified!')"), 0o644)
 	require.NoError(t, err)
 
-	err = deployBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleRoot)
 
 	// Check that removed file is not in workspace anymore
 	_, err = w.Workspace.GetStatusByPath(ctx, path.Join(remoteRoot, "files", "test.py"))

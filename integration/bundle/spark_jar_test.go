@@ -15,7 +15,7 @@ func runSparkJarTestCommon(t *testing.T, ctx context.Context, sparkVersion, arti
 	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	tmpDir := t.TempDir()
 	instancePoolId := env.Get(ctx, "TEST_INSTANCE_POOL_ID")
-	bundleRoot, err := initTestTemplateWithBundleRoot(t, ctx, "spark_jar_task", map[string]any{
+	bundleRoot := initTestTemplateWithBundleRoot(t, ctx, "spark_jar_task", map[string]any{
 		"node_type_id":     nodeTypeId,
 		"unique_id":        uuid.New().String(),
 		"spark_version":    sparkVersion,
@@ -23,14 +23,11 @@ func runSparkJarTestCommon(t *testing.T, ctx context.Context, sparkVersion, arti
 		"artifact_path":    artifactPath,
 		"instance_pool_id": instancePoolId,
 	}, tmpDir)
-	require.NoError(t, err)
 
-	err = deployBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleRoot)
 
 	t.Cleanup(func() {
-		err := destroyBundle(t, ctx, bundleRoot)
-		require.NoError(t, err)
+		destroyBundle(t, ctx, bundleRoot)
 	})
 
 	out, err := runResource(t, ctx, bundleRoot, "jar_job")

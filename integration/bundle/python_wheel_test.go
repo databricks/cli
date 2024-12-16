@@ -15,21 +15,18 @@ func runPythonWheelTest(t *testing.T, templateName, sparkVersion string, pythonW
 
 	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	instancePoolId := env.Get(ctx, "TEST_INSTANCE_POOL_ID")
-	bundleRoot, err := initTestTemplate(t, ctx, templateName, map[string]any{
+	bundleRoot := initTestTemplate(t, ctx, templateName, map[string]any{
 		"node_type_id":         nodeTypeId,
 		"unique_id":            uuid.New().String(),
 		"spark_version":        sparkVersion,
 		"python_wheel_wrapper": pythonWheelWrapper,
 		"instance_pool_id":     instancePoolId,
 	})
-	require.NoError(t, err)
 
-	err = deployBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleRoot)
 
 	t.Cleanup(func() {
-		err := destroyBundle(t, ctx, bundleRoot)
-		require.NoError(t, err)
+		destroyBundle(t, ctx, bundleRoot)
 	})
 
 	out, err := runResource(t, ctx, bundleRoot, "some_other_job")

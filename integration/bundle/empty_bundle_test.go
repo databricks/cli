@@ -26,11 +26,9 @@ func TestEmptyBundleDeploy(t *testing.T) {
 	f.Close()
 
 	// deploy empty bundle
-	err = deployBundle(t, ctx, tmpDir)
-	require.NoError(t, err)
+	deployBundle(t, ctx, tmpDir)
 
 	t.Cleanup(func() {
-		err = destroyBundle(t, ctx, tmpDir)
-		require.NoError(t, err)
+		destroyBundle(t, ctx, tmpDir)
 	})
 }

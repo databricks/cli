@@ -23,30 +23,27 @@ func TestBindJobToExistingJob(t *testing.T) {
 
 	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	uniqueId := uuid.New().String()
-	bundleRoot, err := initTestTemplate(t, ctx, "basic", map[string]any{
+	bundleRoot := initTestTemplate(t, ctx, "basic", map[string]any{
 		"unique_id":     uniqueId,
 		"spark_version": "13.3.x-scala2.12",
 		"node_type_id":  nodeTypeId,
 	})
-	require.NoError(t, err)
 
 	jobId := gt.createTestJob(ctx)
 	t.Cleanup(func() {
 		gt.destroyJob(ctx, jobId)
-		require.NoError(t, err)
 	})
 
 	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
 	c := testcli.NewRunner(t, ctx, "bundle", "deployment", "bind", "foo", fmt.Sprint(jobId), "--auto-approve")
-	_, _, err = c.Run()
+	_, _, err := c.Run()
 	require.NoError(t, err)
 
 	// Remove .databricks directory to simulate a fresh deployment
 	err = os.RemoveAll(filepath.Join(bundleRoot, ".databricks"))
 	require.NoError(t, err)
 
-	err = deployBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleRoot)
 
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
@@ -67,8 +64,7 @@ func TestBindJobToExistingJob(t *testing.T) {
 	err = os.RemoveAll(filepath.Join(bundleRoot, ".databricks"))
 	require.NoError(t, err)
 
-	err = destroyBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	destroyBundle(t, ctx, bundleRoot)
 
 	// Check that job is unbound and exists after bundle is destroyed
 	job, err = w.Jobs.Get(ctx, jobs.GetJobRequest{
@@ -85,18 +81,16 @@ func TestAbortBind(t *testing.T) {
 
 	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	uniqueId := uuid.New().String()
-	bundleRoot, err := initTestTemplate(t, ctx, "basic", map[string]any{
+	bundleRoot := initTestTemplate(t, ctx, "basic", map[string]any{
 		"unique_id":     uniqueId,
 		"spark_version": "13.3.x-scala2.12",
 		"node_type_id":  nodeTypeId,
 	})
-	require.NoError(t, err)
 
 	jobId := gt.createTestJob(ctx)
 	t.Cleanup(func() {
 		gt.destroyJob(ctx, jobId)
-		err := destroyBundle(t, ctx, bundleRoot)
-		require.NoError(t, err)
+		destroyBundle(t, ctx, bundleRoot)
 	})
 
 	// Bind should fail because prompting is not possible.
@@ -105,12 +99,11 @@ func TestAbortBind(t *testing.T) {
 	c := testcli.NewRunner(t, ctx, "bundle", "deployment", "bind", "foo", fmt.Sprint(jobId))
 
 	// Expect error suggesting to use --auto-approve
-	_, _, err = c.Run()
+	_, _, err := c.Run()
 	assert.ErrorContains(t, err, "failed to bind the resource")
 	assert.ErrorContains(t, err, "This bind operation requires user confirmation, but the current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
 
-	err = deployBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleRoot)
 
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
@@ -130,10 +123,9 @@ func TestGenerateAndBind(t *testing.T) {
 	gt := &generateJobTest{T: wt, w: wt.W}
 
 	uniqueId := uuid.New().String()
-	bundleRoot, err := initTestTemplate(t, ctx, "with_includes", map[string]any{
+	bundleRoot := initTestTemplate(t, ctx, "with_includes", map[string]any{
 		"unique_id": uniqueId,
 	})
-	require.NoError(t, err)
 
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
@@ -169,11 +161,9 @@ func TestGenerateAndBind(t *testing.T) {
 	_, _, err = c.Run()
 	require.NoError(t, err)
 
-	err = deployBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleRoot)
 
-	err = destroyBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	destroyBundle(t, ctx, bundleRoot)
 
 	// Check that job is bound and does not extsts after bundle is destroyed
 	_, err = w.Jobs.Get(ctx, jobs.GetJobRequest{

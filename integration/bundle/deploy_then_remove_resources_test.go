@@ -18,16 +18,14 @@ func TestBundleDeployThenRemoveResources(t *testing.T) {
 
 	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	uniqueId := uuid.New().String()
-	bundleRoot, err := initTestTemplate(t, ctx, "deploy_then_remove_resources", map[string]any{
+	bundleRoot := initTestTemplate(t, ctx, "deploy_then_remove_resources", map[string]any{
 		"unique_id":     uniqueId,
 		"node_type_id":  nodeTypeId,
 		"spark_version": defaultSparkVersion,
 	})
-	require.NoError(t, err)
 
 	// deploy pipeline
-	err = deployBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleRoot)
 
 	// assert pipeline is created
 	pipelineName := "test-bundle-pipeline-" + uniqueId
@@ -46,8 +44,7 @@ func TestBundleDeployThenRemoveResources(t *testing.T) {
 	require.NoError(t, err)
 
 	// deploy again
-	err = deployBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleRoot)
 
 	// assert pipeline is deleted
 	_, err = w.Pipelines.GetByName(ctx, pipelineName)
@@ -58,7 +55,6 @@ func TestBundleDeployThenRemoveResources(t *testing.T) {
 	assert.ErrorContains(t, err, "does not exist")
 
 	t.Cleanup(func() {
-		err = destroyBundle(t, ctx, bundleRoot)
-		require.NoError(t, err)
+		destroyBundle(t, ctx, bundleRoot)
 	})
 }

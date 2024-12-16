@@ -16,27 +16,22 @@ func TestBasicBundleDeployWithFailOnActiveRuns(t *testing.T) {
 
 	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	uniqueId := uuid.New().String()
-	root, err := initTestTemplate(t, ctx, "basic", map[string]any{
+	root := initTestTemplate(t, ctx, "basic", map[string]any{
 		"unique_id":     uniqueId,
 		"node_type_id":  nodeTypeId,
 		"spark_version": defaultSparkVersion,
 	})
-	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		err = destroyBundle(t, ctx, root)
-		require.NoError(t, err)
+		destroyBundle(t, ctx, root)
 	})
 
 	// deploy empty bundle
-	err = deployBundleWithFlags(t, ctx, root, []string{"--fail-on-active-runs"})
-	require.NoError(t, err)
+	deployBundleWithFlags(t, ctx, root, []string{"--fail-on-active-runs"})
 
 	// Remove .databricks directory to simulate a fresh deployment
-	err = os.RemoveAll(filepath.Join(root, ".databricks"))
-	require.NoError(t, err)
+	require.NoError(t, os.RemoveAll(filepath.Join(root, ".databricks")))
 
 	// deploy empty bundle again
-	err = deployBundleWithFlags(t, ctx, root, []string{"--fail-on-active-runs"})
-	require.NoError(t, err)
+	deployBundleWithFlags(t, ctx, root, []string{"--fail-on-active-runs"})
 }

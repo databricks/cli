@@ -26,18 +26,15 @@ import (
 
 const defaultSparkVersion = "13.3.x-snapshot-scala2.12"
 
-func initTestTemplate(t testutil.TestingT, ctx context.Context, templateName string, config map[string]any) (string, error) {
+func initTestTemplate(t testutil.TestingT, ctx context.Context, templateName string, config map[string]any) string {
 	bundleRoot := t.TempDir()
 	return initTestTemplateWithBundleRoot(t, ctx, templateName, config, bundleRoot)
 }
 
-func initTestTemplateWithBundleRoot(t testutil.TestingT, ctx context.Context, templateName string, config map[string]any, bundleRoot string) (string, error) {
+func initTestTemplateWithBundleRoot(t testutil.TestingT, ctx context.Context, templateName string, config map[string]any, bundleRoot string) string {
 	templateRoot := filepath.Join("bundles", templateName)
 
-	configFilePath, err := writeConfigFile(t, config)
-	if err != nil {
-		return "", err
-	}
+	configFilePath := writeConfigFile(t, config)
 
 	ctx = root.SetWorkspaceClient(ctx, nil)
 	cmd := cmdio.NewIO(ctx, flags.OutputJSON, strings.NewReader(""), os.Stdout, os.Stderr, "", "bundles")
@@ -46,21 +43,21 @@ func initTestTemplateWithBundleRoot(t testutil.TestingT, ctx context.Context, te
 	out, err := filer.NewLocalClient(bundleRoot)
 	require.NoError(t, err)
 	err = template.Materialize(ctx, configFilePath, os.DirFS(templateRoot), out)
-	return bundleRoot, err
+	require.NoError(t, err)
+	return bundleRoot
 }
 
-func writeConfigFile(t testutil.TestingT, config map[string]any) (string, error) {
+func writeConfigFile(t testutil.TestingT, config map[string]any) string {
 	bytes, err := json.Marshal(config)
-	if err != nil {
-		return "", err
-	}
+	require.NoError(t, err)
 
 	dir := t.TempDir()
 	filepath := filepath.Join(dir, "config.json")
 	t.Log("Configuration for template: ", string(bytes))
 
 	err = os.WriteFile(filepath, bytes, 0o644)
-	return filepath, err
+	require.NoError(t, err)
+	return filepath
 }
 
 func validateBundle(t testutil.TestingT, ctx context.Context, path string) ([]byte, error) {
@@ -83,14 +80,14 @@ func unmarshalConfig(t testutil.TestingT, data []byte) *bundle.Bundle {
 	return bundle
 }
 
-func deployBundle(t testutil.TestingT, ctx context.Context, path string) error {
+func deployBundle(t testutil.TestingT, ctx context.Context, path string) {
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	c := testcli.NewRunner(t, ctx, "bundle", "deploy", "--force-lock", "--auto-approve")
 	_, _, err := c.Run()
-	return err
+	require.NoError(t, err)
 }
 
-func deployBundleWithArgs(t testutil.TestingT, ctx context.Context, path string, args ...string) (string, string, error) {
+func deployBundleWithArgsErr(t testutil.TestingT, ctx context.Context, path string, args ...string) (string, string, error) {
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	args = append([]string{"bundle", "deploy"}, args...)
 	c := testcli.NewRunner(t, ctx, args...)
@@ -98,13 +95,19 @@ func deployBundleWithArgs(t testutil.TestingT, ctx context.Context, path string,
 	return stdout.String(), stderr.String(), err
 }
 
-func deployBundleWithFlags(t testutil.TestingT, ctx context.Context, path string, flags []string) error {
+func deployBundleWithArgs(t testutil.TestingT, ctx context.Context, path string, args ...string) (string, string) {
+	stdout, stderr, err := deployBundleWithArgsErr(t, ctx, path, args...)
+	require.NoError(t, err)
+	return stdout, stderr
+}
+
+func deployBundleWithFlags(t testutil.TestingT, ctx context.Context, path string, flags []string) {
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	args := []string{"bundle", "deploy", "--force-lock"}
 	args = append(args, flags...)
 	c := testcli.NewRunner(t, ctx, args...)
 	_, _, err := c.Run()
-	return err
+	require.NoError(t, err)
 }
 
 func runResource(t testutil.TestingT, ctx context.Context, path, key string) (string, error) {
@@ -128,11 +131,11 @@ func runResourceWithParams(t testutil.TestingT, ctx context.Context, path, key s
 	return stdout.String(), err
 }
 
-func destroyBundle(t testutil.TestingT, ctx context.Context, path string) error {
+func destroyBundle(t testutil.TestingT, ctx context.Context, path string) {
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	c := testcli.NewRunner(t, ctx, "bundle", "destroy", "--auto-approve")
 	_, _, err := c.Run()
-	return err
+	require.NoError(t, err)
 }
 
 func getBundleRemoteRootPath(w *databricks.WorkspaceClient, t testutil.TestingT, uniqueId string) string {

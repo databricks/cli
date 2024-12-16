@@ -18,19 +18,16 @@ func TestDashboards(t *testing.T) {
 
 	warehouseID := testutil.GetEnvOrSkipTest(t, "TEST_DEFAULT_WAREHOUSE_ID")
 	uniqueID := uuid.New().String()
-	root, err := initTestTemplate(t, ctx, "dashboards", map[string]any{
+	root := initTestTemplate(t, ctx, "dashboards", map[string]any{
 		"unique_id":    uniqueID,
 		"warehouse_id": warehouseID,
 	})
-	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		err = destroyBundle(t, ctx, root)
-		require.NoError(t, err)
+		destroyBundle(t, ctx, root)
 	})
 
-	err = deployBundle(t, ctx, root)
-	require.NoError(t, err)
+	deployBundle(t, ctx, root)
 
 	// Load bundle configuration by running the validate command.
 	b := unmarshalConfig(t, mustValidateBundle(t, ctx, root))
@@ -55,12 +52,11 @@ func TestDashboards(t *testing.T) {
 	require.NoError(t, err)
 
 	// Try to redeploy the bundle and confirm that the out of band modification is detected.
-	stdout, _, err := deployBundleWithArgs(t, ctx, root)
+	stdout, _, err := deployBundleWithArgsErr(t, ctx, root)
 	require.Error(t, err)
 	assert.Contains(t, stdout, `Error: dashboard "file_reference" has been modified remotely`+"\n")
 
 	// Redeploy the bundle with the --force flag and confirm that the out of band modification is ignored.
-	_, stderr, err := deployBundleWithArgs(t, ctx, root, "--force")
-	require.NoError(t, err)
+	_, stderr := deployBundleWithArgs(t, ctx, root, "--force")
 	assert.Contains(t, stderr, `Deployment complete!`+"\n")
 }

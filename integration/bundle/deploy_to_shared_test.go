@@ -19,19 +19,16 @@ func TestDeployBasicToSharedWorkspacePath(t *testing.T) {
 	currentUser, err := wt.W.CurrentUser.Me(ctx)
 	require.NoError(t, err)
 
-	bundleRoot, err := initTestTemplate(t, ctx, "basic", map[string]any{
+	bundleRoot := initTestTemplate(t, ctx, "basic", map[string]any{
 		"unique_id":     uniqueId,
 		"node_type_id":  nodeTypeId,
 		"spark_version": defaultSparkVersion,
 		"root_path":     fmt.Sprintf("/Shared/%s", currentUser.UserName),
 	})
-	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		err = destroyBundle(wt, ctx, bundleRoot)
-		require.NoError(wt, err)
+		destroyBundle(wt, ctx, bundleRoot)
 	})
 
-	err = deployBundle(wt, ctx, bundleRoot)
-	require.NoError(wt, err)
+	deployBundle(wt, ctx, bundleRoot)
 }

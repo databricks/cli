@@ -20,16 +20,14 @@ func TestDeployBundleWithCluster(t *testing.T) {
 
 	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	uniqueId := uuid.New().String()
-	root, err := initTestTemplate(t, ctx, "clusters", map[string]any{
+	root := initTestTemplate(t, ctx, "clusters", map[string]any{
 		"unique_id":     uniqueId,
 		"node_type_id":  nodeTypeId,
 		"spark_version": defaultSparkVersion,
 	})
-	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		err = destroyBundle(t, ctx, root)
-		require.NoError(t, err)
+		destroyBundle(t, ctx, root)
 
 		cluster, err := wt.W.Clusters.GetByClusterName(ctx, fmt.Sprintf("test-cluster-%s", uniqueId))
 		if err != nil {
@@ -39,8 +37,7 @@ func TestDeployBundleWithCluster(t *testing.T) {
 		}
 	})
 
-	err = deployBundle(t, ctx, root)
-	require.NoError(t, err)
+	deployBundle(t, ctx, root)
 
 	// Cluster should exists after bundle deployment
 	cluster, err := wt.W.Clusters.GetByClusterName(ctx, fmt.Sprintf("test-cluster-%s", uniqueId))

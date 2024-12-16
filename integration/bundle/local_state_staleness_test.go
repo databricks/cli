@@ -27,16 +27,14 @@ func TestLocalStateStaleness(t *testing.T) {
 	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	uniqueId := uuid.New().String()
 	initialize := func() string {
-		root, err := initTestTemplate(t, ctx, "basic", map[string]any{
+		root := initTestTemplate(t, ctx, "basic", map[string]any{
 			"unique_id":     uniqueId,
 			"node_type_id":  nodeTypeId,
 			"spark_version": defaultSparkVersion,
 		})
-		require.NoError(t, err)
 
 		t.Cleanup(func() {
-			err = destroyBundle(t, ctx, root)
-			require.NoError(t, err)
+			destroyBundle(t, ctx, root)
 		})
 
 		return root
@@ -48,16 +46,13 @@ func TestLocalStateStaleness(t *testing.T) {
 	bundleB := initialize()
 
 	// 1) Deploy bundle A
-	err = deployBundle(t, ctx, bundleA)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleA)
 
 	// 2) Deploy bundle B
-	err = deployBundle(t, ctx, bundleB)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleB)
 
 	// 3) Deploy bundle A again
-	err = deployBundle(t, ctx, bundleA)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleA)
 
 	// Assert that there is only a single job in the workspace corresponding to this bundle.
 	iter := w.Jobs.List(context.Background(), jobs.ListJobsRequest{

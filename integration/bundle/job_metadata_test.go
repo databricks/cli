@@ -24,21 +24,18 @@ func TestJobsMetadataFile(t *testing.T) {
 
 	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	uniqueId := uuid.New().String()
-	bundleRoot, err := initTestTemplate(t, ctx, "job_metadata", map[string]any{
+	bundleRoot := initTestTemplate(t, ctx, "job_metadata", map[string]any{
 		"unique_id":     uniqueId,
 		"node_type_id":  nodeTypeId,
 		"spark_version": defaultSparkVersion,
 	})
-	require.NoError(t, err)
 
 	// deploy bundle
-	err = deployBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleRoot)
 
 	// Cleanup the deployed bundle
 	t.Cleanup(func() {
-		err = destroyBundle(t, ctx, bundleRoot)
-		require.NoError(t, err)
+		destroyBundle(t, ctx, bundleRoot)
 	})
 
 	// assert job 1 is created

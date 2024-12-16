@@ -13,17 +13,14 @@ func TestPythonWheelTaskWithEnvironmentsDeployAndRun(t *testing.T) {
 
 	ctx, _ := acc.WorkspaceTest(t)
 
-	bundleRoot, err := initTestTemplate(t, ctx, "python_wheel_task_with_environments", map[string]any{
+	bundleRoot := initTestTemplate(t, ctx, "python_wheel_task_with_environments", map[string]any{
 		"unique_id": uuid.New().String(),
 	})
-	require.NoError(t, err)
 
-	err = deployBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleRoot)
 
 	t.Cleanup(func() {
-		err := destroyBundle(t, ctx, bundleRoot)
-		require.NoError(t, err)
+		destroyBundle(t, ctx, bundleRoot)
 	})
 
 	out, err := runResource(t, ctx, bundleRoot, "some_other_job")
