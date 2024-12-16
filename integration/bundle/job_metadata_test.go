@@ -31,12 +31,11 @@ func TestJobsMetadataFile(t *testing.T) {
 	})
 
 	// deploy bundle
-	deployBundle(t, ctx, bundleRoot)
+	require.NoError(t, deployBundle(t, ctx, bundleRoot))
 
 	// Cleanup the deployed bundle
 	t.Cleanup(func() {
-		err = destroyBundle(t, ctx, bundleRoot)
-		require.NoError(t, err)
+		require.NoError(t, destroyBundle(t, ctx, bundleRoot))
 	})
 
 	// assert job 1 is created

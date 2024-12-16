@@ -29,7 +29,7 @@ func setupUcSchemaBundle(t *testing.T, ctx context.Context, w *databricks.Worksp
 		"unique_id": uniqueId,
 	})
 
-	deployBundle(t, ctx, bundleRoot)
+	require.NoError(t, deployBundle(t, ctx, bundleRoot))
 
 	t.Cleanup(func() {
 		err := destroyBundle(t, ctx, bundleRoot)

@@ -57,6 +57,6 @@ func TestDashboards(t *testing.T) {
 	assert.Contains(t, stdout, `Error: dashboard "file_reference" has been modified remotely`+"\n")
 
 	// Redeploy the bundle with the --force flag and confirm that the out of band modification is ignored.
-	_, stderr = deployBundleWithArgs(t, ctx, root, "--force")
+	_, stderr := deployBundleWithArgs(t, ctx, root, "--force")
 	assert.Contains(t, stderr, `Deployment complete!`+"\n")
 }

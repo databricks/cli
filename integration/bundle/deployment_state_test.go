@@ -39,7 +39,7 @@ func TestFilesAreSyncedCorrectlyWhenNoSnapshot(t *testing.T) {
 	err = os.WriteFile(filepath.Join(bundleRoot, "notebook.py"), []byte("# Databricks notebook source\nHello, World!"), 0o644)
 	require.NoError(t, err)
 
-	deployBundle(t, ctx, bundleRoot)
+	require.NoError(t, deployBundle(t, ctx, bundleRoot))
 
 	t.Cleanup(func() {
 		require.NoError(t, destroyBundle(t, ctx, bundleRoot))
