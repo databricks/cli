@@ -20,8 +20,7 @@ func TestPythonWheelTaskWithEnvironmentsDeployAndRun(t *testing.T) {
 	deployBundle(t, ctx, bundleRoot)
 
 	t.Cleanup(func() {
-		err := destroyBundle(t, ctx, bundleRoot)
-		require.NoError(t, err)
+		destroyBundle(t, ctx, bundleRoot)
 	})
 
 	out, err := runResource(t, ctx, bundleRoot, "some_other_job")

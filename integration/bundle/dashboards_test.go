@@ -24,8 +24,7 @@ func TestDashboards(t *testing.T) {
 	})
 
 	t.Cleanup(func() {
-		err := destroyBundle(t, ctx, root)
-		require.NoError(t, err)
+		destroyBundle(t, ctx, root)
 	})
 
 	deployBundle(t, ctx, root)

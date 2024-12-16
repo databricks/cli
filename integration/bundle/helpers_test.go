@@ -132,11 +132,11 @@ func runResourceWithParams(t testutil.TestingT, ctx context.Context, path, key s
 	return stdout.String(), err
 }
 
-func destroyBundle(t testutil.TestingT, ctx context.Context, path string) error {
+func destroyBundle(t testutil.TestingT, ctx context.Context, path string) {
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	c := testcli.NewRunner(t, ctx, "bundle", "destroy", "--auto-approve")
 	_, _, err := c.Run()
-	return err
+	require.NoError(t, err)
 }
 
 func getBundleRemoteRootPath(w *databricks.WorkspaceClient, t testutil.TestingT, uniqueId string) string {

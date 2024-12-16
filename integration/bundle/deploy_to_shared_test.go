@@ -28,8 +28,7 @@ func TestDeployBasicToSharedWorkspacePath(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		err = destroyBundle(wt, ctx, bundleRoot)
-		require.NoError(wt, err)
+		destroyBundle(wt, ctx, bundleRoot)
 	})
 
 	deployBundle(wt, ctx, bundleRoot)

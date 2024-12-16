@@ -55,7 +55,6 @@ func TestBundleDeployThenRemoveResources(t *testing.T) {
 	assert.ErrorContains(t, err, "does not exist")
 
 	t.Cleanup(func() {
-		err = destroyBundle(t, ctx, bundleRoot)
-		require.NoError(t, err)
+		destroyBundle(t, ctx, bundleRoot)
 	})
 }

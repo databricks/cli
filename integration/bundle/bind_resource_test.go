@@ -64,8 +64,7 @@ func TestBindJobToExistingJob(t *testing.T) {
 	err = os.RemoveAll(filepath.Join(bundleRoot, ".databricks"))
 	require.NoError(t, err)
 
-	err = destroyBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	destroyBundle(t, ctx, bundleRoot)
 
 	// Check that job is unbound and exists after bundle is destroyed
 	job, err = w.Jobs.Get(ctx, jobs.GetJobRequest{
@@ -91,9 +90,7 @@ func TestAbortBind(t *testing.T) {
 	jobId := gt.createTestJob(ctx)
 	t.Cleanup(func() {
 		gt.destroyJob(ctx, jobId)
-		if err := destroyBundle(t, ctx, bundleRoot); err != nil {
-			t.Error(err)
-		}
+		destroyBundle(t, ctx, bundleRoot)
 	})
 
 	// Bind should fail because prompting is not possible.

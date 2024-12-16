@@ -23,7 +23,7 @@ func TestBasicBundleDeployWithFailOnActiveRuns(t *testing.T) {
 	})
 
 	t.Cleanup(func() {
-		require.NoError(t, destroyBundle(t, ctx, root))
+		destroyBundle(t, ctx, root)
 	})
 
 	// deploy empty bundle

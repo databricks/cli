@@ -71,8 +71,7 @@ func TestGenerateFromExistingPipelineAndDeploy(t *testing.T) {
 
 	deployBundle(t, ctx, bundleRoot)
 
-	err = destroyBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	destroyBundle(t, ctx, bundleRoot)
 }
 
 type generatePipelineTest struct {

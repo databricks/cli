@@ -35,7 +35,7 @@ func TestJobsMetadataFile(t *testing.T) {
 
 	// Cleanup the deployed bundle
 	t.Cleanup(func() {
-		require.NoError(t, destroyBundle(t, ctx, bundleRoot))
+		destroyBundle(t, ctx, bundleRoot)
 	})
 
 	// assert job 1 is created

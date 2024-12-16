@@ -32,8 +32,7 @@ func setupUcSchemaBundle(t *testing.T, ctx context.Context, w *databricks.Worksp
 	deployBundle(t, ctx, bundleRoot)
 
 	t.Cleanup(func() {
-		err := destroyBundle(t, ctx, bundleRoot)
-		require.NoError(t, err)
+		destroyBundle(t, ctx, bundleRoot)
 	})
 
 	// Assert the schema is created

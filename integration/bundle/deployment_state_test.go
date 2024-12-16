@@ -42,7 +42,7 @@ func TestFilesAreSyncedCorrectlyWhenNoSnapshot(t *testing.T) {
 	deployBundle(t, ctx, bundleRoot)
 
 	t.Cleanup(func() {
-		require.NoError(t, destroyBundle(t, ctx, bundleRoot))
+		destroyBundle(t, ctx, bundleRoot)
 	})
 
 	remoteRoot := getBundleRemoteRootPath(w, t, uniqueId)

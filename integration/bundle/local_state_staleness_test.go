@@ -34,8 +34,7 @@ func TestLocalStateStaleness(t *testing.T) {
 		})
 
 		t.Cleanup(func() {
-			err := destroyBundle(t, ctx, root)
-			require.NoError(t, err)
+			destroyBundle(t, ctx, root)
 		})
 
 		return root

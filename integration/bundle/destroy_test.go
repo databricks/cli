@@ -58,8 +58,7 @@ func TestBundleDestroy(t *testing.T) {
 	assert.Equal(t, job.Settings.Name, jobName)
 
 	// destroy bundle
-	err = destroyBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	destroyBundle(t, ctx, bundleRoot)
 
 	// assert pipeline is deleted
 	_, err = w.Pipelines.GetByName(ctx, pipelineName)
