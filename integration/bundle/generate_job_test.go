@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -35,8 +36,8 @@ func TestGenerateFromExistingJobAndDeploy(t *testing.T) {
 		gt.destroyJob(ctx, jobId)
 	})
 
-	t.Setenv("BUNDLE_ROOT", bundleRoot)
-	c := testcli.NewRunnerWithContext(t, ctx, "bundle", "generate", "job",
+	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
+	c := testcli.NewRunner(t, ctx, "bundle", "generate", "job",
 		"--existing-job-id", fmt.Sprint(jobId),
 		"--config-dir", filepath.Join(bundleRoot, "resources"),
 		"--source-dir", filepath.Join(bundleRoot, "src"))

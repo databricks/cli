@@ -15,7 +15,8 @@ import (
 )
 
 func TestSecretsCreateScopeErrWhenNoArguments(t *testing.T) {
-	_, _, err := testcli.RequireErrorRun(t, "secrets", "create-scope")
+	ctx := context.Background()
+	_, _, err := testcli.RequireErrorRun(t, ctx, "secrets", "create-scope")
 	assert.Contains(t, err.Error(), "accepts 1 arg(s), received 0")
 }
 
@@ -69,7 +70,7 @@ func TestSecretsPutSecretStringValue(tt *testing.T) {
 	key := "test-key"
 	value := "test-value\nwith-newlines\n"
 
-	stdout, stderr := testcli.RequireSuccessfulRun(t, "secrets", "put-secret", scope, key, "--string-value", value)
+	stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "secrets", "put-secret", scope, key, "--string-value", value)
 	assert.Empty(t, stdout)
 	assert.Empty(t, stderr)
 
@@ -83,7 +84,7 @@ func TestSecretsPutSecretBytesValue(tt *testing.T) {
 	key := "test-key"
 	value := []byte{0x00, 0x01, 0x02, 0x03}
 
-	stdout, stderr := testcli.RequireSuccessfulRun(t, "secrets", "put-secret", scope, key, "--bytes-value", string(value))
+	stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "secrets", "put-secret", scope, key, "--bytes-value", string(value))
 	assert.Empty(t, stdout)
 	assert.Empty(t, stderr)
 

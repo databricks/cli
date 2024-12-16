@@ -236,7 +236,7 @@ func TestInstallerWorksForReleases(t *testing.T) {
 	//     │               │   │       └── site-packages
 	//     │               │   │           ├── ...
 	//     │               │   │           ├── distutils-precedence.pth
-	r := testcli.NewRunnerWithContext(t, ctx, "labs", "install", "blueprint", "--debug")
+	r := testcli.NewRunner(t, ctx, "labs", "install", "blueprint", "--debug")
 	r.RunAndExpectOutput("setting up important infrastructure")
 }
 
@@ -356,7 +356,7 @@ account_id = abc
 	// 					└── databrickslabs-blueprint-releases.json
 
 	// `databricks labs install .` means "verify this installer i'm developing does work"
-	r := testcli.NewRunnerWithContext(t, ctx, "labs", "install", ".")
+	r := testcli.NewRunner(t, ctx, "labs", "install", ".")
 	r.WithStdin()
 	defer r.CloseStdin()
 
@@ -426,7 +426,7 @@ func TestUpgraderWorksForReleases(t *testing.T) {
 	ctx = env.Set(ctx, "DATABRICKS_CLUSTER_ID", "installer-cluster")
 	ctx = env.Set(ctx, "DATABRICKS_WAREHOUSE_ID", "installer-warehouse")
 
-	r := testcli.NewRunnerWithContext(t, ctx, "labs", "upgrade", "blueprint")
+	r := testcli.NewRunner(t, ctx, "labs", "upgrade", "blueprint")
 	r.RunAndExpectOutput("setting up important infrastructure")
 
 	// Check if the stub was called with the 'python -m pip install' command

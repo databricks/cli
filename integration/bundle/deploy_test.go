@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -118,9 +119,9 @@ func TestBundleDeployUcSchemaFailsWithoutAutoApprove(t *testing.T) {
 	require.NoError(t, err)
 
 	// Redeploy the bundle
-	t.Setenv("BUNDLE_ROOT", bundleRoot)
-	t.Setenv("TERM", "dumb")
-	c := testcli.NewRunnerWithContext(t, ctx, "bundle", "deploy", "--force-lock")
+	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
+	ctx = env.Set(ctx, "TERM", "dumb")
+	c := testcli.NewRunner(t, ctx, "bundle", "deploy", "--force-lock")
 	stdout, stderr, err := c.Run()
 
 	assert.EqualError(t, err, root.ErrAlreadyPrinted.Error())
@@ -162,9 +163,9 @@ func TestBundlePipelineDeleteWithoutAutoApprove(t *testing.T) {
 	require.NoError(t, err)
 
 	// Redeploy the bundle. Expect it to fail because deleting the pipeline requires --auto-approve.
-	t.Setenv("BUNDLE_ROOT", bundleRoot)
-	t.Setenv("TERM", "dumb")
-	c := testcli.NewRunnerWithContext(t, ctx, "bundle", "deploy", "--force-lock")
+	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
+	ctx = env.Set(ctx, "TERM", "dumb")
+	c := testcli.NewRunner(t, ctx, "bundle", "deploy", "--force-lock")
 	stdout, stderr, err := c.Run()
 
 	assert.EqualError(t, err, root.ErrAlreadyPrinted.Error())
@@ -201,9 +202,9 @@ func TestBundlePipelineRecreateWithoutAutoApprove(t *testing.T) {
 	require.Equal(t, pipelineName, pipeline.Name)
 
 	// Redeploy the bundle, pointing the DLT pipeline to a different UC catalog.
-	t.Setenv("BUNDLE_ROOT", bundleRoot)
-	t.Setenv("TERM", "dumb")
-	c := testcli.NewRunnerWithContext(t, ctx, "bundle", "deploy", "--force-lock", "--var=\"catalog=whatever\"")
+	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
+	ctx = env.Set(ctx, "TERM", "dumb")
+	c := testcli.NewRunner(t, ctx, "bundle", "deploy", "--force-lock", "--var=\"catalog=whatever\"")
 	stdout, stderr, err := c.Run()
 
 	assert.EqualError(t, err, root.ErrAlreadyPrinted.Error())
@@ -235,7 +236,7 @@ func TestDeployBasicBundleLogs(t *testing.T) {
 	currentUser, err := wt.W.CurrentUser.Me(ctx)
 	require.NoError(t, err)
 
-	stdout, stderr := blackBoxRun(t, root, "bundle", "deploy")
+	stdout, stderr := blackBoxRun(t, ctx, root, "bundle", "deploy")
 	assert.Equal(t, strings.Join([]string{
 		fmt.Sprintf("Uploading bundle files to /Workspace/Users/%s/.bundle/%s/files...", currentUser.UserName, uniqueId),
 		"Deploying resources...",
@@ -282,9 +283,9 @@ func TestDeployUcVolume(t *testing.T) {
 	assert.Equal(t, []catalog.Privilege{catalog.PrivilegeWriteVolume}, grants.PrivilegeAssignments[0].Privileges)
 
 	// Recreation of the volume without --auto-approve should fail since prompting is not possible
-	t.Setenv("TERM", "dumb")
-	t.Setenv("BUNDLE_ROOT", bundleRoot)
-	stdout, stderr, err := testcli.NewRunnerWithContext(t, ctx, "bundle", "deploy", "--var=schema_name=${resources.schemas.schema2.name}").Run()
+	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
+	ctx = env.Set(ctx, "TERM", "dumb")
+	stdout, stderr, err := testcli.NewRunner(t, ctx, "bundle", "deploy", "--var=schema_name=${resources.schemas.schema2.name}").Run()
 	assert.Error(t, err)
 	assert.Contains(t, stderr.String(), `This action will result in the deletion or recreation of the following volumes.
 For managed volumes, the files stored in the volume are also deleted from your
@@ -294,9 +295,9 @@ is removed from the catalog, but the underlying files are not deleted:
 	assert.Contains(t, stdout.String(), "the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
 
 	// Successfully recreate the volume with --auto-approve
-	t.Setenv("TERM", "dumb")
-	t.Setenv("BUNDLE_ROOT", bundleRoot)
-	_, _, err = testcli.NewRunnerWithContext(t, ctx, "bundle", "deploy", "--var=schema_name=${resources.schemas.schema2.name}", "--auto-approve").Run()
+	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
+	ctx = env.Set(ctx, "TERM", "dumb")
+	_, _, err = testcli.NewRunner(t, ctx, "bundle", "deploy", "--var=schema_name=${resources.schemas.schema2.name}", "--auto-approve").Run()
 	assert.NoError(t, err)
 
 	// Assert the volume is updated successfully

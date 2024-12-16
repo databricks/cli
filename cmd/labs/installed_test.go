@@ -11,7 +11,7 @@ import (
 func TestListsInstalledProjects(t *testing.T) {
 	ctx := context.Background()
 	ctx = env.WithUserHomeDir(ctx, "project/testdata/installed-in-home")
-	r := testcli.NewRunnerWithContext(t, ctx, "labs", "installed")
+	r := testcli.NewRunner(t, ctx, "labs", "installed")
 	r.RunAndExpectOutput(`
 	Name       Description        Version
 	blueprint  Blueprint Project  v0.3.15

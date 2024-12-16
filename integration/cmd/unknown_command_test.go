@@ -1,6 +1,7 @@
 package cmd_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/databricks/cli/internal/testcli"
@@ -8,7 +9,8 @@ import (
 )
 
 func TestUnknownCommand(t *testing.T) {
-	stdout, stderr, err := testcli.RequireErrorRun(t, "unknown-command")
+	ctx := context.Background()
+	stdout, stderr, err := testcli.RequireErrorRun(t, ctx, "unknown-command")
 
 	assert.Error(t, err, "unknown command", `unknown command "unknown-command" for "databricks"`)
 	assert.Equal(t, "", stdout.String())

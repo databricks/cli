@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"path"
@@ -16,7 +17,9 @@ import (
 )
 
 func TestApiGet(t *testing.T) {
-	stdout, _ := testcli.RequireSuccessfulRun(t, "api", "get", "/api/2.0/preview/scim/v2/Me")
+	ctx := context.Background()
+
+	stdout, _ := testcli.RequireSuccessfulRun(t, ctx, "api", "get", "/api/2.0/preview/scim/v2/Me")
 
 	// Deserialize SCIM API response.
 	var out map[string]any
@@ -29,6 +32,8 @@ func TestApiGet(t *testing.T) {
 }
 
 func TestApiPost(t *testing.T) {
+	ctx := context.Background()
+
 	if testutil.GetCloud(t) == testutil.GCP {
 		t.Skip("DBFS REST API is disabled on gcp")
 	}
@@ -41,11 +46,11 @@ func TestApiPost(t *testing.T) {
 
 	// Post to mkdir
 	{
-		testcli.RequireSuccessfulRun(t, "api", "post", "--json=@"+requestPath, "/api/2.0/dbfs/mkdirs")
+		testcli.RequireSuccessfulRun(t, ctx, "api", "post", "--json=@"+requestPath, "/api/2.0/dbfs/mkdirs")
 	}
 
 	// Post to delete
 	{
-		testcli.RequireSuccessfulRun(t, "api", "post", "--json=@"+requestPath, "/api/2.0/dbfs/delete")
+		testcli.RequireSuccessfulRun(t, ctx, "api", "post", "--json=@"+requestPath, "/api/2.0/dbfs/delete")
 	}
 }

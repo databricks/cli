@@ -20,8 +20,9 @@ import (
 )
 
 func TestBundleInitErrorOnUnknownFields(t *testing.T) {
+	ctx := context.Background()
 	tmpDir := t.TempDir()
-	_, _, err := testcli.RequireErrorRun(t, "bundle", "init", "./testdata/init/field-does-not-exist", "--output-dir", tmpDir)
+	_, _, err := testcli.RequireErrorRun(t, ctx, "bundle", "init", "./testdata/init/field-does-not-exist", "--output-dir", tmpDir)
 	assert.EqualError(t, err, "failed to compute file content for bar.tmpl. variable \"does_not_exist\" not defined")
 }
 
@@ -38,7 +39,7 @@ func TestBundleInitErrorOnUnknownFields(t *testing.T) {
 //     make changes that can break the MLOps Stacks DAB. In which case we should
 //     skip this test until the MLOps Stacks DAB is updated to work again.
 func TestBundleInitOnMlopsStacks(t *testing.T) {
-	_, wt := acc.WorkspaceTest(t)
+	ctx, wt := acc.WorkspaceTest(t)
 	w := wt.W
 
 	tmpDir1 := t.TempDir()
@@ -61,7 +62,7 @@ func TestBundleInitOnMlopsStacks(t *testing.T) {
 
 	// Run bundle init
 	assert.NoFileExists(t, filepath.Join(tmpDir2, "repo_name", projectName, "README.md"))
-	testcli.RequireSuccessfulRun(t, "bundle", "init", "mlops-stacks", "--output-dir", tmpDir2, "--config-file", filepath.Join(tmpDir1, "config.json"))
+	testcli.RequireSuccessfulRun(t, ctx, "bundle", "init", "mlops-stacks", "--output-dir", tmpDir2, "--config-file", filepath.Join(tmpDir1, "config.json"))
 
 	// Assert that the README.md file was created
 	contents := testutil.ReadFile(t, filepath.Join(tmpDir2, "repo_name", projectName, "README.md"))
@@ -69,17 +70,17 @@ func TestBundleInitOnMlopsStacks(t *testing.T) {
 
 	// Validate the stack
 	testutil.Chdir(t, filepath.Join(tmpDir2, "repo_name", projectName))
-	testcli.RequireSuccessfulRun(t, "bundle", "validate")
+	testcli.RequireSuccessfulRun(t, ctx, "bundle", "validate")
 
 	// Deploy the stack
-	testcli.RequireSuccessfulRun(t, "bundle", "deploy")
+	testcli.RequireSuccessfulRun(t, ctx, "bundle", "deploy")
 	t.Cleanup(func() {
 		// Delete the stack
-		testcli.RequireSuccessfulRun(t, "bundle", "destroy", "--auto-approve")
+		testcli.RequireSuccessfulRun(t, ctx, "bundle", "destroy", "--auto-approve")
 	})
 
 	// Get summary of the bundle deployment
-	stdout, _ := testcli.RequireSuccessfulRun(t, "bundle", "summary", "--output", "json")
+	stdout, _ := testcli.RequireSuccessfulRun(t, ctx, "bundle", "summary", "--output", "json")
 	summary := &config.Root{}
 	err = json.Unmarshal(stdout.Bytes(), summary)
 	require.NoError(t, err)
@@ -156,7 +157,7 @@ func TestBundleInitHelpers(t *testing.T) {
 		require.NoError(t, err)
 
 		// Run bundle init.
-		testcli.RequireSuccessfulRun(t, "bundle", "init", tmpDir, "--output-dir", tmpDir2)
+		testcli.RequireSuccessfulRun(t, ctx, "bundle", "init", tmpDir, "--output-dir", tmpDir2)
 
 		// Assert that the helper function was correctly computed.
 		contents := testutil.ReadFile(t, filepath.Join(tmpDir2, "foo.txt"))

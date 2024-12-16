@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/internal/acc"
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/env"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
@@ -26,7 +27,7 @@ func TestFilesAreSyncedCorrectlyWhenNoSnapshot(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	t.Setenv("BUNDLE_ROOT", bundleRoot)
+	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
 
 	// Add some test file to the bundle
 	err = os.WriteFile(filepath.Join(bundleRoot, "test.py"), []byte("print('Hello, World!')"), 0o644)

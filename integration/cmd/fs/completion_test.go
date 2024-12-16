@@ -19,10 +19,11 @@ func setupCompletionFile(t *testing.T, f filer.Filer) {
 }
 
 func TestFsCompletion(t *testing.T) {
+	ctx := context.Background()
 	f, tmpDir := setupDbfsFiler(t)
 	setupCompletionFile(t, f)
 
-	stdout, _ := testcli.RequireSuccessfulRun(t, "__complete", "fs", "ls", tmpDir+"/")
+	stdout, _ := testcli.RequireSuccessfulRun(t, ctx, "__complete", "fs", "ls", tmpDir+"/")
 	expectedOutput := fmt.Sprintf("%s/dir1/\n:2\n", tmpDir)
 	assert.Equal(t, expectedOutput, stdout.String())
 }
