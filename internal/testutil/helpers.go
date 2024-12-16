@@ -23,7 +23,7 @@ func RandomName(prefix ...string) string {
 	randLen := 12
 	b := make([]byte, randLen)
 	for i := range b {
-		b[i] = charset[rand.Intn(randLen)]
+		b[i] = charset[rand.Intn(len(charset))]
 	}
 	if len(prefix) > 0 {
 		return fmt.Sprintf("%s%s", strings.Join(prefix, ""), b)
