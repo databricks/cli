@@ -247,8 +247,7 @@ func TestDeployUcVolume(t *testing.T) {
 	deployBundle(t, ctx, bundleRoot)
 
 	t.Cleanup(func() {
-		err := destroyBundle(t, ctx, bundleRoot)
-		require.NoError(t, err)
+		destroyBundle(t, ctx, bundleRoot)
 	})
 
 	// Assert the volume is created successfully
