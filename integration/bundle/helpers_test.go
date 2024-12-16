@@ -87,13 +87,18 @@ func deployBundle(t testutil.TestingT, ctx context.Context, path string) {
 	require.NoError(t, err)
 }
 
-func deployBundleWithArgs(t testutil.TestingT, ctx context.Context, path string, args ...string) (string, string) {
+func deployBundleWithArgsErr(t testutil.TestingT, ctx context.Context, path string, args ...string) (string, string, error) {
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	args = append([]string{"bundle", "deploy"}, args...)
 	c := testcli.NewRunner(t, ctx, args...)
 	stdout, stderr, err := c.Run()
+	return stdout.String(), stderr.String(), err
+}
+
+func deployBundleWithArgs(t testutil.TestingT, ctx context.Context, path string, args ...string) (string, string) {
+	stdout, stderr, err := deployBundleWithArgsErr(t, ctx, path, args...)
 	require.NoError(t, err)
-	return stdout.String(), stderr.String()
+	return stdout, stderr
 }
 
 func deployBundleWithFlags(t testutil.TestingT, ctx context.Context, path string, flags []string) {

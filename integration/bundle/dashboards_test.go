@@ -52,7 +52,8 @@ func TestDashboards(t *testing.T) {
 	require.NoError(t, err)
 
 	// Try to redeploy the bundle and confirm that the out of band modification is detected.
-	stdout, _ := deployBundleWithArgs(t, ctx, root)
+	stdout, _, err := deployBundleWithArgsErr(t, ctx, root)
+	require.Error(t, err)
 	assert.Contains(t, stdout, `Error: dashboard "file_reference" has been modified remotely`+"\n")
 
 	// Redeploy the bundle with the --force flag and confirm that the out of band modification is ignored.
