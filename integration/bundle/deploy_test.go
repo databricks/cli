@@ -29,7 +29,7 @@ func setupUcSchemaBundle(t *testing.T, ctx context.Context, w *databricks.Worksp
 		"unique_id": uniqueId,
 	})
 
-	require.NoError(t, deployBundle(t, ctx, bundleRoot))
+	deployBundle(t, ctx, bundleRoot)
 
 	t.Cleanup(func() {
 		err := destroyBundle(t, ctx, bundleRoot)
@@ -181,8 +181,7 @@ func TestBundlePipelineRecreateWithoutAutoApprove(t *testing.T) {
 		"unique_id": uniqueId,
 	})
 
-	require.NoError(t, deployBundle(t, ctx, bundleRoot))
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleRoot)
 
 	t.Cleanup(func() {
 		err := destroyBundle(t, ctx, bundleRoot)
@@ -248,7 +247,7 @@ func TestDeployUcVolume(t *testing.T) {
 		"unique_id": uniqueId,
 	})
 
-	require.NoError(t, deployBundle(t, ctx, bundleRoot))
+	deployBundle(t, ctx, bundleRoot)
 
 	t.Cleanup(func() {
 		err := destroyBundle(t, ctx, bundleRoot)

@@ -39,7 +39,7 @@ func TestFilesAreSyncedCorrectlyWhenNoSnapshot(t *testing.T) {
 	err = os.WriteFile(filepath.Join(bundleRoot, "notebook.py"), []byte("# Databricks notebook source\nHello, World!"), 0o644)
 	require.NoError(t, err)
 
-	require.NoError(t, deployBundle(t, ctx, bundleRoot))
+	deployBundle(t, ctx, bundleRoot)
 
 	t.Cleanup(func() {
 		require.NoError(t, destroyBundle(t, ctx, bundleRoot))
@@ -78,7 +78,7 @@ func TestFilesAreSyncedCorrectlyWhenNoSnapshot(t *testing.T) {
 	err = os.WriteFile(filepath.Join(bundleRoot, "test_to_modify.py"), []byte("print('Modified!')"), 0o644)
 	require.NoError(t, err)
 
-	require.NoError(t, deployBundle(t, ctx, bundleRoot))
+	deployBundle(t, ctx, bundleRoot)
 
 	// Check that removed file is not in workspace anymore
 	_, err = w.Workspace.GetStatusByPath(ctx, path.Join(remoteRoot, "files", "test.py"))

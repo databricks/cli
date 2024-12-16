@@ -80,28 +80,35 @@ func unmarshalConfig(t testutil.TestingT, data []byte) *bundle.Bundle {
 	return bundle
 }
 
-func deployBundle(t testutil.TestingT, ctx context.Context, path string) error {
+func deployBundle(t testutil.TestingT, ctx context.Context, path string) {
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	c := testcli.NewRunner(t, ctx, "bundle", "deploy", "--force-lock", "--auto-approve")
 	_, _, err := c.Run()
-	return err
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
-func deployBundleWithArgs(t testutil.TestingT, ctx context.Context, path string, args ...string) (string, string, error) {
+func deployBundleWithArgs(t testutil.TestingT, ctx context.Context, path string, args ...string) (string, string) {
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	args = append([]string{"bundle", "deploy"}, args...)
 	c := testcli.NewRunner(t, ctx, args...)
 	stdout, stderr, err := c.Run()
-	return stdout.String(), stderr.String(), err
+	if err != nil {
+		t.Fatal(err)
+	}
+	return stdout.String(), stderr.String()
 }
 
-func deployBundleWithFlags(t testutil.TestingT, ctx context.Context, path string, flags []string) error {
+func deployBundleWithFlags(t testutil.TestingT, ctx context.Context, path string, flags []string) {
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	args := []string{"bundle", "deploy", "--force-lock"}
 	args = append(args, flags...)
 	c := testcli.NewRunner(t, ctx, args...)
 	_, _, err := c.Run()
-	return err
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func runResource(t testutil.TestingT, ctx context.Context, path, key string) (string, error) {
