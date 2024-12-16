@@ -37,7 +37,7 @@ func TestBindJobToExistingJob(t *testing.T) {
 	})
 
 	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
-	c := testcli.NewRunnerWithContext(t, ctx, "bundle", "deployment", "bind", "foo", fmt.Sprint(jobId), "--auto-approve")
+	c := testcli.NewRunner(t, ctx, "bundle", "deployment", "bind", "foo", fmt.Sprint(jobId), "--auto-approve")
 	_, _, err = c.Run()
 	require.NoError(t, err)
 
@@ -59,7 +59,7 @@ func TestBindJobToExistingJob(t *testing.T) {
 	require.Equal(t, job.Settings.Name, fmt.Sprintf("test-job-basic-%s", uniqueId))
 	require.Contains(t, job.Settings.Tasks[0].SparkPythonTask.PythonFile, "hello_world.py")
 
-	c = testcli.NewRunnerWithContext(t, ctx, "bundle", "deployment", "unbind", "foo")
+	c = testcli.NewRunner(t, ctx, "bundle", "deployment", "unbind", "foo")
 	_, _, err = c.Run()
 	require.NoError(t, err)
 
@@ -102,7 +102,7 @@ func TestAbortBind(t *testing.T) {
 	// Bind should fail because prompting is not possible.
 	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
 	ctx = env.Set(ctx, "TERM", "dumb")
-	c := testcli.NewRunnerWithContext(t, ctx, "bundle", "deployment", "bind", "foo", fmt.Sprint(jobId))
+	c := testcli.NewRunner(t, ctx, "bundle", "deployment", "bind", "foo", fmt.Sprint(jobId))
 
 	// Expect error suggesting to use --auto-approve
 	_, _, err = c.Run()
@@ -149,7 +149,7 @@ func TestGenerateAndBind(t *testing.T) {
 	})
 
 	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
-	c := testcli.NewRunnerWithContext(t, ctx, "bundle", "generate", "job",
+	c := testcli.NewRunner(t, ctx, "bundle", "generate", "job",
 		"--key", "test_job_key",
 		"--existing-job-id", fmt.Sprint(jobId),
 		"--config-dir", filepath.Join(bundleRoot, "resources"),
@@ -165,7 +165,7 @@ func TestGenerateAndBind(t *testing.T) {
 
 	require.Len(t, matches, 1)
 
-	c = testcli.NewRunnerWithContext(t, ctx, "bundle", "deployment", "bind", "test_job_key", fmt.Sprint(jobId), "--auto-approve")
+	c = testcli.NewRunner(t, ctx, "bundle", "deployment", "bind", "test_job_key", fmt.Sprint(jobId), "--auto-approve")
 	_, _, err = c.Run()
 	require.NoError(t, err)
 

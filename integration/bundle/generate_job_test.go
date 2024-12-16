@@ -37,7 +37,7 @@ func TestGenerateFromExistingJobAndDeploy(t *testing.T) {
 	})
 
 	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
-	c := testcli.NewRunnerWithContext(t, ctx, "bundle", "generate", "job",
+	c := testcli.NewRunner(t, ctx, "bundle", "generate", "job",
 		"--existing-job-id", fmt.Sprint(jobId),
 		"--config-dir", filepath.Join(bundleRoot, "resources"),
 		"--source-dir", filepath.Join(bundleRoot, "src"))

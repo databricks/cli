@@ -36,7 +36,7 @@ func TestGenerateFromExistingPipelineAndDeploy(t *testing.T) {
 	})
 
 	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
-	c := testcli.NewRunnerWithContext(t, ctx, "bundle", "generate", "pipeline",
+	c := testcli.NewRunner(t, ctx, "bundle", "generate", "pipeline",
 		"--existing-pipeline-id", fmt.Sprint(pipelineId),
 		"--config-dir", filepath.Join(bundleRoot, "resources"),
 		"--source-dir", filepath.Join(bundleRoot, "src"))

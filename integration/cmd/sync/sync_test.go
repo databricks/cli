@@ -90,7 +90,7 @@ func setupSyncTest(t *testing.T, args ...string) (context.Context, *syncTest) {
 		"json",
 	}, args...)
 
-	c := testcli.NewRunnerWithContext(t, ctx, args...)
+	c := testcli.NewRunner(t, ctx, args...)
 	c.RunBackground()
 
 	return ctx, &syncTest{

@@ -65,7 +65,7 @@ func writeConfigFile(t testutil.TestingT, config map[string]any) (string, error)
 
 func validateBundle(t testutil.TestingT, ctx context.Context, path string) ([]byte, error) {
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
-	c := testcli.NewRunnerWithContext(t, ctx, "bundle", "validate", "--output", "json")
+	c := testcli.NewRunner(t, ctx, "bundle", "validate", "--output", "json")
 	stdout, _, err := c.Run()
 	return stdout.Bytes(), err
 }
@@ -85,7 +85,7 @@ func unmarshalConfig(t testutil.TestingT, data []byte) *bundle.Bundle {
 
 func deployBundle(t testutil.TestingT, ctx context.Context, path string) error {
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
-	c := testcli.NewRunnerWithContext(t, ctx, "bundle", "deploy", "--force-lock", "--auto-approve")
+	c := testcli.NewRunner(t, ctx, "bundle", "deploy", "--force-lock", "--auto-approve")
 	_, _, err := c.Run()
 	return err
 }
@@ -93,7 +93,7 @@ func deployBundle(t testutil.TestingT, ctx context.Context, path string) error {
 func deployBundleWithArgs(t testutil.TestingT, ctx context.Context, path string, args ...string) (string, string, error) {
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	args = append([]string{"bundle", "deploy"}, args...)
-	c := testcli.NewRunnerWithContext(t, ctx, args...)
+	c := testcli.NewRunner(t, ctx, args...)
 	stdout, stderr, err := c.Run()
 	return stdout.String(), stderr.String(), err
 }
@@ -102,7 +102,7 @@ func deployBundleWithFlags(t testutil.TestingT, ctx context.Context, path string
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	args := []string{"bundle", "deploy", "--force-lock"}
 	args = append(args, flags...)
-	c := testcli.NewRunnerWithContext(t, ctx, args...)
+	c := testcli.NewRunner(t, ctx, args...)
 	_, _, err := c.Run()
 	return err
 }
@@ -111,7 +111,7 @@ func runResource(t testutil.TestingT, ctx context.Context, path, key string) (st
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	ctx = cmdio.NewContext(ctx, cmdio.Default())
 
-	c := testcli.NewRunnerWithContext(t, ctx, "bundle", "run", key)
+	c := testcli.NewRunner(t, ctx, "bundle", "run", key)
 	stdout, _, err := c.Run()
 	return stdout.String(), err
 }
@@ -123,14 +123,14 @@ func runResourceWithParams(t testutil.TestingT, ctx context.Context, path, key s
 	args := make([]string, 0)
 	args = append(args, "bundle", "run", key)
 	args = append(args, params...)
-	c := testcli.NewRunnerWithContext(t, ctx, args...)
+	c := testcli.NewRunner(t, ctx, args...)
 	stdout, _, err := c.Run()
 	return stdout.String(), err
 }
 
 func destroyBundle(t testutil.TestingT, ctx context.Context, path string) error {
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
-	c := testcli.NewRunnerWithContext(t, ctx, "bundle", "destroy", "--auto-approve")
+	c := testcli.NewRunner(t, ctx, "bundle", "destroy", "--auto-approve")
 	_, _, err := c.Run()
 	return err
 }
