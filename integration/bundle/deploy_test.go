@@ -139,8 +139,7 @@ func TestBundlePipelineDeleteWithoutAutoApprove(t *testing.T) {
 	})
 
 	// deploy pipeline
-	err := deployBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	deployBundle(t, ctx, bundleRoot)
 
 	// assert pipeline is created
 	pipelineName := "test-bundle-pipeline-" + uniqueId
