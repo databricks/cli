@@ -84,9 +84,7 @@ func deployBundle(t testutil.TestingT, ctx context.Context, path string) {
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	c := testcli.NewRunner(t, ctx, "bundle", "deploy", "--force-lock", "--auto-approve")
 	_, _, err := c.Run()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 }
 
 func deployBundleWithArgs(t testutil.TestingT, ctx context.Context, path string, args ...string) (string, string) {
@@ -94,9 +92,7 @@ func deployBundleWithArgs(t testutil.TestingT, ctx context.Context, path string,
 	args = append([]string{"bundle", "deploy"}, args...)
 	c := testcli.NewRunner(t, ctx, args...)
 	stdout, stderr, err := c.Run()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	return stdout.String(), stderr.String()
 }
 
@@ -106,9 +102,7 @@ func deployBundleWithFlags(t testutil.TestingT, ctx context.Context, path string
 	args = append(args, flags...)
 	c := testcli.NewRunner(t, ctx, args...)
 	_, _, err := c.Run()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 }
 
 func runResource(t testutil.TestingT, ctx context.Context, path, key string) (string, error) {

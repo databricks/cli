@@ -25,7 +25,6 @@ func TestDeployBasicToSharedWorkspacePath(t *testing.T) {
 		"spark_version": defaultSparkVersion,
 		"root_path":     fmt.Sprintf("/Shared/%s", currentUser.UserName),
 	})
-	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		destroyBundle(wt, ctx, bundleRoot)
