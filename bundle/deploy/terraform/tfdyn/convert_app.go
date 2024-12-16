@@ -29,10 +29,6 @@ func (appConverter) Convert(ctx context.Context, key string, vin dyn.Value, out 
 		return err
 	}
 
-	if err != nil {
-		return err
-	}
-
 	// Add the converted resource to the output.
 	out.App[key] = vout.AsAny()
 

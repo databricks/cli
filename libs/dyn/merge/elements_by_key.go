@@ -7,7 +7,7 @@ type elementsByKey struct {
 	keyFunc func(dyn.Value) string
 }
 
-func (e elementsByKey) doMap(_ dyn.Path, v dyn.Value, mergeFunc func(a dyn.Value, b dyn.Value) (dyn.Value, error)) (dyn.Value, error) {
+func (e elementsByKey) doMap(_ dyn.Path, v dyn.Value, mergeFunc func(a, b dyn.Value) (dyn.Value, error)) (dyn.Value, error) {
 	// We know the type of this value is a sequence.
 	// For additional defence, return self if it is not.
 	elements, ok := v.AsSequence()
@@ -60,7 +60,7 @@ func (e elementsByKey) Map(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 }
 
 func (e elementsByKey) MapWithOverride(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-	return e.doMap(nil, v, func(a dyn.Value, b dyn.Value) (dyn.Value, error) {
+	return e.doMap(nil, v, func(a, b dyn.Value) (dyn.Value, error) {
 		return Override(a, b, OverrideVisitor{
 			VisitInsert: func(_ dyn.Path, v dyn.Value) (dyn.Value, error) {
 				return v, nil
@@ -68,7 +68,7 @@ func (e elementsByKey) MapWithOverride(p dyn.Path, v dyn.Value) (dyn.Value, erro
 			VisitDelete: func(valuePath dyn.Path, left dyn.Value) error {
 				return nil
 			},
-			VisitUpdate: func(_ dyn.Path, a dyn.Value, b dyn.Value) (dyn.Value, error) {
+			VisitUpdate: func(_ dyn.Path, a, b dyn.Value) (dyn.Value, error) {
 				return b, nil
 			},
 		})

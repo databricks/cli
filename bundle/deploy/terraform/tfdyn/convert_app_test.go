@@ -14,7 +14,7 @@ import (
 )
 
 func TestConvertApp(t *testing.T) {
-	var src = resources.App{
+	src := resources.App{
 		SourceCodePath: "./app",
 		Config: map[string]any{
 			"command": []string{"python", "app.py"},
@@ -95,5 +95,4 @@ func TestConvertApp(t *testing.T) {
 			},
 		},
 	}, out.Permissions["app_my_app"])
-
 }

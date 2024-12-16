@@ -9,8 +9,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 )
 
-type validate struct {
-}
+type validate struct{}
 
 func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
