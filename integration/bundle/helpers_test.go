@@ -143,15 +143,19 @@ func getBundleRemoteRootPath(w *databricks.WorkspaceClient, t testutil.TestingT,
 	return root
 }
 
-func blackBoxRun(t testutil.TestingT, root string, args ...string) (stdout, stderr string) {
+func blackBoxRun(t testutil.TestingT, ctx context.Context, root string, args ...string) (stdout, stderr string) {
 	gitRoot, err := folders.FindDirWithLeaf(".", ".git")
 	require.NoError(t, err)
-
-	t.Setenv("BUNDLE_ROOT", root)
 
 	// Create the command
 	cmd := exec.Command("go", append([]string{"run", "main.go"}, args...)...)
 	cmd.Dir = gitRoot
+
+	// Configure the environment
+	ctx = env.Set(ctx, "BUNDLE_ROOT", root)
+	for key, value := range env.All(ctx) {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", key, value))
+	}
 
 	// Create buffers to capture output
 	var outBuffer, errBuffer bytes.Buffer

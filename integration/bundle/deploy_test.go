@@ -236,7 +236,7 @@ func TestDeployBasicBundleLogs(t *testing.T) {
 	currentUser, err := wt.W.CurrentUser.Me(ctx)
 	require.NoError(t, err)
 
-	stdout, stderr := blackBoxRun(t, root, "bundle", "deploy")
+	stdout, stderr := blackBoxRun(t, ctx, root, "bundle", "deploy")
 	assert.Equal(t, strings.Join([]string{
 		fmt.Sprintf("Uploading bundle files to /Workspace/Users/%s/.bundle/%s/files...", currentUser.UserName, uniqueId),
 		"Deploying resources...",
