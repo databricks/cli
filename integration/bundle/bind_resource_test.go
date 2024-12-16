@@ -36,7 +36,7 @@ func TestBindJobToExistingJob(t *testing.T) {
 
 	ctx = env.Set(ctx, "BUNDLE_ROOT", bundleRoot)
 	c := testcli.NewRunner(t, ctx, "bundle", "deployment", "bind", "foo", fmt.Sprint(jobId), "--auto-approve")
-	_, _, err = c.Run()
+	_, _, err := c.Run()
 	require.NoError(t, err)
 
 	// Remove .databricks directory to simulate a fresh deployment
