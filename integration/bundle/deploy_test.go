@@ -248,8 +248,7 @@ func TestDeployUcVolume(t *testing.T) {
 		"unique_id": uniqueId,
 	})
 
-	err := deployBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	require.NoError(t, deployBundle(t, ctx, bundleRoot))
 
 	t.Cleanup(func() {
 		err := destroyBundle(t, ctx, bundleRoot)
