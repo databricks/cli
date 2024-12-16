@@ -5,8 +5,8 @@ import (
 	"io"
 	"testing"
 
-	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/google/uuid"
@@ -17,7 +17,7 @@ func TestAccDeployBundleWithApp(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	uniqueId := uuid.New().String()
 	appId := fmt.Sprintf("app-%s", uuid.New().String()[0:8])
-	nodeTypeId := internal.GetNodeTypeId(env.Get(ctx, "CLOUD_ENV"))
+	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	instancePoolId := env.Get(ctx, "TEST_INSTANCE_POOL_ID")
 
 	root, err := initTestTemplate(t, ctx, "apps", map[string]any{
