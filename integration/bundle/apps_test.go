@@ -20,19 +20,16 @@ func TestAccDeployBundleWithApp(t *testing.T) {
 	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	instancePoolId := env.Get(ctx, "TEST_INSTANCE_POOL_ID")
 
-	root, err := initTestTemplate(t, ctx, "apps", map[string]any{
+	root := initTestTemplate(t, ctx, "apps", map[string]any{
 		"unique_id":        uniqueId,
 		"app_id":           appId,
 		"node_type_id":     nodeTypeId,
 		"spark_version":    defaultSparkVersion,
 		"instance_pool_id": instancePoolId,
 	})
-	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		err = destroyBundle(t, ctx, root)
-		require.NoError(t, err)
-
+		destroyBundle(t, ctx, root)
 		app, err := wt.W.Apps.Get(ctx, apps.GetAppRequest{Name: "test-app"})
 		if err != nil {
 			require.ErrorContains(t, err, "does not exist")
@@ -41,8 +38,7 @@ func TestAccDeployBundleWithApp(t *testing.T) {
 		}
 	})
 
-	err = deployBundle(t, ctx, root)
-	require.NoError(t, err)
+	deployBundle(t, ctx, root)
 
 	// App should exists after bundle deployment
 	app, err := wt.W.Apps.Get(ctx, apps.GetAppRequest{Name: appId})
@@ -61,6 +57,7 @@ func TestAccDeployBundleWithApp(t *testing.T) {
 	require.NoError(t, err)
 
 	job, err := wt.W.Jobs.GetBySettingsName(ctx, fmt.Sprintf("test-job-with-cluster-%s", uniqueId))
+	require.NoError(t, err)
 
 	content := string(data)
 	require.Contains(t, content, fmt.Sprintf(`command:
