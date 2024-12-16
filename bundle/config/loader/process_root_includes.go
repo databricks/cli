@@ -27,7 +27,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	var out []bundle.Mutator
 
 	// Map with files we've already seen to avoid loading them twice.
-	var seen = map[string]bool{}
+	seen := map[string]bool{}
 
 	for _, file := range config.FileNames {
 		seen[file] = true

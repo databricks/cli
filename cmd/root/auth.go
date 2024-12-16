@@ -15,9 +15,11 @@ import (
 )
 
 // Placeholders to use as unique keys in context.Context.
-var workspaceClient int
-var accountClient int
-var configUsed int
+var (
+	workspaceClient int
+	accountClient   int
+	configUsed      int
+)
 
 type ErrNoWorkspaceProfiles struct {
 	path string

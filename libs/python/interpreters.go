@@ -18,8 +18,10 @@ import (
 
 var ErrNoPythonInterpreters = errors.New("no python3 interpreters found")
 
-const officialMswinPython = "(Python Official) https://python.org/downloads/windows"
-const microsoftStorePython = "(Microsoft Store) https://apps.microsoft.com/store/search?publisher=Python%20Software%20Foundation"
+const (
+	officialMswinPython  = "(Python Official) https://python.org/downloads/windows"
+	microsoftStorePython = "(Microsoft Store) https://apps.microsoft.com/store/search?publisher=Python%20Software%20Foundation"
+)
 
 const worldWriteable = 0o002
 

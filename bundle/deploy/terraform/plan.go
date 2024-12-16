@@ -2,7 +2,6 @@ package terraform
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
@@ -57,7 +56,7 @@ func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		IsEmpty: !notEmpty,
 	}
 
-	log.Debugf(ctx, fmt.Sprintf("Planning complete and persisted at %s\n", planPath))
+	log.Debugf(ctx, "Planning complete and persisted at %s\n", planPath)
 	return nil
 }
 

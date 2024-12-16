@@ -35,7 +35,7 @@ func (m *syncInferRoot) Name() string {
 // If the path does not exist, it returns an empty string.
 //
 // See "sync_infer_root_internal_test.go" for examples.
-func (m *syncInferRoot) computeRoot(path string, root string) string {
+func (m *syncInferRoot) computeRoot(path, root string) string {
 	for !filepath.IsLocal(path) {
 		// Break if we have reached the root of the filesystem.
 		dir := filepath.Dir(root)

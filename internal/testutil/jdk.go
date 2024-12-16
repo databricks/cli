@@ -5,12 +5,11 @@ import (
 	"context"
 	"os/exec"
 	"strings"
-	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-func RequireJDK(t *testing.T, ctx context.Context, version string) {
+func RequireJDK(t TestingT, ctx context.Context, version string) {
 	var stderr bytes.Buffer
 
 	cmd := exec.Command("javac", "-version")

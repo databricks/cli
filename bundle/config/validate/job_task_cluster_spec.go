@@ -17,8 +17,7 @@ func JobTaskClusterSpec() bundle.ReadOnlyMutator {
 	return &jobTaskClusterSpec{}
 }
 
-type jobTaskClusterSpec struct {
-}
+type jobTaskClusterSpec struct{}
 
 func (v *jobTaskClusterSpec) Name() string {
 	return "validate:job_task_cluster_spec"

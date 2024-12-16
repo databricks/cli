@@ -13,8 +13,7 @@ func FilesToSync() bundle.ReadOnlyMutator {
 	return &filesToSync{}
 }
 
-type filesToSync struct {
-}
+type filesToSync struct{}
 
 func (v *filesToSync) Name() string {
 	return "validate:files_to_sync"

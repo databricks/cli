@@ -12,12 +12,16 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-const gitHubAPI = "https://api.github.com"
-const gitHubUserContent = "https://raw.githubusercontent.com"
+const (
+	gitHubAPI         = "https://api.github.com"
+	gitHubUserContent = "https://raw.githubusercontent.com"
+)
 
 // Placeholders to use as unique keys in context.Context.
-var apiOverride int
-var userContentOverride int
+var (
+	apiOverride         int
+	userContentOverride int
+)
 
 func WithApiOverride(ctx context.Context, override string) context.Context {
 	return context.WithValue(ctx, &apiOverride, override)

@@ -81,5 +81,4 @@ func TestNoWorkspacePrefixUsed(t *testing.T) {
 	require.Equal(t, "${workspace.artifact_path}/jar1.jar", b.Config.Resources.Jobs["test_job"].JobSettings.Tasks[1].Libraries[0].Jar)
 	require.Equal(t, "${workspace.file_path}/notebook2", b.Config.Resources.Jobs["test_job"].JobSettings.Tasks[2].NotebookTask.NotebookPath)
 	require.Equal(t, "${workspace.artifact_path}/jar2.jar", b.Config.Resources.Jobs["test_job"].JobSettings.Tasks[2].Libraries[0].Jar)
-
 }

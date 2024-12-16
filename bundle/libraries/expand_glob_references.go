@@ -11,8 +11,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 )
 
-type expand struct {
-}
+type expand struct{}
 
 func matchError(p dyn.Path, l []dyn.Location, message string) diag.Diagnostic {
 	return diag.Diagnostic{
@@ -189,7 +188,6 @@ func (e *expand) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 				diags = diags.Extend(d)
 				return dyn.V(output), nil
 			})
-
 			if err != nil {
 				return dyn.InvalidValue, err
 			}
@@ -197,7 +195,6 @@ func (e *expand) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 		return v, nil
 	})
-
 	if err != nil {
 		diags = diags.Extend(diag.FromErr(err))
 	}

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/internal"
+	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/python"
 	"github.com/databricks/databricks-sdk-go"
@@ -30,7 +30,7 @@ func devEnvContext(t *testing.T) context.Context {
 
 func TestRunningBlueprintEcho(t *testing.T) {
 	ctx := devEnvContext(t)
-	r := internal.NewCobraTestRunnerWithContext(t, ctx, "labs", "blueprint", "echo")
+	r := testcli.NewRunner(t, ctx, "labs", "blueprint", "echo")
 	var out echoOut
 	r.RunAndParseJSON(&out)
 	assert.Equal(t, "echo", out.Command)
@@ -41,14 +41,14 @@ func TestRunningBlueprintEcho(t *testing.T) {
 
 func TestRunningBlueprintEchoProfileWrongOverride(t *testing.T) {
 	ctx := devEnvContext(t)
-	r := internal.NewCobraTestRunnerWithContext(t, ctx, "labs", "blueprint", "echo", "--profile", "workspace-profile")
+	r := testcli.NewRunner(t, ctx, "labs", "blueprint", "echo", "--profile", "workspace-profile")
 	_, _, err := r.Run()
 	assert.ErrorIs(t, err, databricks.ErrNotAccountClient)
 }
 
 func TestRunningCommand(t *testing.T) {
 	ctx := devEnvContext(t)
-	r := internal.NewCobraTestRunnerWithContext(t, ctx, "labs", "blueprint", "foo")
+	r := testcli.NewRunner(t, ctx, "labs", "blueprint", "foo")
 	r.WithStdin()
 	defer r.CloseStdin()
 
@@ -60,7 +60,7 @@ func TestRunningCommand(t *testing.T) {
 
 func TestRenderingTable(t *testing.T) {
 	ctx := devEnvContext(t)
-	r := internal.NewCobraTestRunnerWithContext(t, ctx, "labs", "blueprint", "table")
+	r := testcli.NewRunner(t, ctx, "labs", "blueprint", "table")
 	r.RunAndExpectOutput(`
 	Key    Value
 	First  Second

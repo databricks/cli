@@ -37,11 +37,11 @@ func (r *pipelineRunner) logEvent(ctx context.Context, event pipelines.PipelineE
 		}
 	}
 	if logString != "" {
-		log.Errorf(ctx, fmt.Sprintf("[%s] %s", event.EventType, logString))
+		log.Errorf(ctx, "[%s] %s", event.EventType, logString)
 	}
 }
 
-func (r *pipelineRunner) logErrorEvent(ctx context.Context, pipelineId string, updateId string) error {
+func (r *pipelineRunner) logErrorEvent(ctx context.Context, pipelineId, updateId string) error {
 	w := r.bundle.WorkspaceClient()
 
 	// Note: For a 100 percent correct and complete solution we should use the
@@ -85,7 +85,7 @@ func (r *pipelineRunner) Name() string {
 }
 
 func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, error) {
-	var pipelineID = r.pipeline.ID
+	pipelineID := r.pipeline.ID
 
 	// Include resource key in logger.
 	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("resource", r.Key()))
@@ -132,7 +132,7 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 		}
 		for _, event := range events {
 			progressLogger.Log(&event)
-			log.Infof(ctx, event.String())
+			log.Info(ctx, event.String())
 		}
 
 		update, err := w.Pipelines.GetUpdateByPipelineIdAndUpdateId(ctx, pipelineID, updateID)
@@ -173,7 +173,6 @@ func (r *pipelineRunner) Cancel(ctx context.Context) error {
 	wait, err := w.Pipelines.Stop(ctx, pipelines.StopRequest{
 		PipelineId: r.pipeline.ID,
 	})
-
 	if err != nil {
 		return err
 	}

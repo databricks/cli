@@ -30,7 +30,6 @@ type parsePythonDiagnosticsTest struct {
 }
 
 func TestParsePythonDiagnostics(t *testing.T) {
-
 	testCases := []parsePythonDiagnosticsTest{
 		{
 			name:  "short error with location",

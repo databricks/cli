@@ -8,6 +8,7 @@ type DataSourceRegisteredModelModelInfoAliases struct {
 }
 
 type DataSourceRegisteredModelModelInfo struct {
+	Aliases         []DataSourceRegisteredModelModelInfoAliases `json:"aliases,omitempty"`
 	BrowseOnly      bool                                        `json:"browse_only,omitempty"`
 	CatalogName     string                                      `json:"catalog_name,omitempty"`
 	Comment         string                                      `json:"comment,omitempty"`
@@ -21,7 +22,6 @@ type DataSourceRegisteredModelModelInfo struct {
 	StorageLocation string                                      `json:"storage_location,omitempty"`
 	UpdatedAt       int                                         `json:"updated_at,omitempty"`
 	UpdatedBy       string                                      `json:"updated_by,omitempty"`
-	Aliases         []DataSourceRegisteredModelModelInfoAliases `json:"aliases,omitempty"`
 }
 
 type DataSourceRegisteredModel struct {

@@ -2,19 +2,16 @@ package acc
 
 import (
 	"context"
-	"fmt"
 	"os"
-	"testing"
 
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/require"
 )
 
 type WorkspaceT struct {
-	*testing.T
+	testutil.TestingT
 
 	W *databricks.WorkspaceClient
 
@@ -23,16 +20,16 @@ type WorkspaceT struct {
 	exec *compute.CommandExecutorV2
 }
 
-func WorkspaceTest(t *testing.T) (context.Context, *WorkspaceT) {
+func WorkspaceTest(t testutil.TestingT) (context.Context, *WorkspaceT) {
 	loadDebugEnvIfRunFromIDE(t, "workspace")
 
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
 	wt := &WorkspaceT{
-		T: t,
+		TestingT: t,
 
 		W: w,
 
@@ -43,10 +40,10 @@ func WorkspaceTest(t *testing.T) (context.Context, *WorkspaceT) {
 }
 
 // Run the workspace test only on UC workspaces.
-func UcWorkspaceTest(t *testing.T) (context.Context, *WorkspaceT) {
+func UcWorkspaceTest(t testutil.TestingT) (context.Context, *WorkspaceT) {
 	loadDebugEnvIfRunFromIDE(t, "workspace")
 
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	if os.Getenv("TEST_METASTORE_ID") == "" {
 		t.Skipf("Skipping on non-UC workspaces")
@@ -59,7 +56,7 @@ func UcWorkspaceTest(t *testing.T) (context.Context, *WorkspaceT) {
 	require.NoError(t, err)
 
 	wt := &WorkspaceT{
-		T: t,
+		TestingT: t,
 
 		W: w,
 
@@ -70,7 +67,7 @@ func UcWorkspaceTest(t *testing.T) (context.Context, *WorkspaceT) {
 }
 
 func (t *WorkspaceT) TestClusterID() string {
-	clusterID := GetEnvOrSkipTest(t.T, "TEST_BRICKS_CLUSTER_ID")
+	clusterID := testutil.GetEnvOrSkipTest(t, "TEST_BRICKS_CLUSTER_ID")
 	err := t.W.Clusters.EnsureClusterIsRunning(t.ctx, clusterID)
 	require.NoError(t, err)
 	return clusterID
@@ -96,31 +93,4 @@ func (t *WorkspaceT) RunPython(code string) (string, error) {
 	output, ok := results.Data.(string)
 	require.True(t, ok, "unexpected type %T", results.Data)
 	return output, nil
-}
-
-func (t *WorkspaceT) TemporaryWorkspaceDir(name ...string) string {
-	ctx := context.Background()
-	me, err := t.W.CurrentUser.Me(ctx)
-	require.NoError(t, err)
-
-	basePath := fmt.Sprintf("/Users/%s/%s", me.UserName, RandomName(name...))
-
-	t.Logf("Creating %s", basePath)
-	err = t.W.Workspace.MkdirsByPath(ctx, basePath)
-	require.NoError(t, err)
-
-	// Remove test directory on test completion.
-	t.Cleanup(func() {
-		t.Logf("Removing %s", basePath)
-		err := t.W.Workspace.Delete(ctx, workspace.Delete{
-			Path:      basePath,
-			Recursive: true,
-		})
-		if err == nil || apierr.IsMissing(err) {
-			return
-		}
-		t.Logf("Unable to remove temporary workspace directory %s: %#v", basePath, err)
-	})
-
-	return basePath
 }

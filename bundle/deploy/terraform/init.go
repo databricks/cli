@@ -145,7 +145,7 @@ func inheritEnvVars(ctx context.Context, environ map[string]string) error {
 // This function is used for env vars set by the Databricks VSCode extension. The variables are intended to be used by the CLI
 // bundled with the Databricks VSCode extension, but users can use different CLI versions in the VSCode terminals, in which case we want to ignore
 // the variables if that CLI uses different versions of the dependencies.
-func getEnvVarWithMatchingVersion(ctx context.Context, envVarName string, versionVarName string, currentVersion string) (string, error) {
+func getEnvVarWithMatchingVersion(ctx context.Context, envVarName, versionVarName, currentVersion string) (string, error) {
 	envValue := env.Get(ctx, envVarName)
 	versionValue := env.Get(ctx, versionVarName)
 

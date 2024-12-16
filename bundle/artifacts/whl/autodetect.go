@@ -15,8 +15,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-type detectPkg struct {
-}
+type detectPkg struct{}
 
 func DetectPackage() bundle.Mutator {
 	return &detectPkg{}
@@ -42,7 +41,7 @@ func (m *detectPkg) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 		return nil
 	}
 
-	log.Infof(ctx, fmt.Sprintf("Found Python wheel project at %s", b.BundleRootPath))
+	log.Infof(ctx, "Found Python wheel project at %s", b.BundleRootPath)
 	module := extractModuleName(setupPy)
 
 	if b.Config.Artifacts == nil {

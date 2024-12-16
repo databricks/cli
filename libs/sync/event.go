@@ -73,7 +73,7 @@ func (e *EventStart) String() string {
 	return fmt.Sprintf("Action: %s", e.EventChanges.String())
 }
 
-func newEventStart(seq int, put []string, delete []string) Event {
+func newEventStart(seq int, put, delete []string) Event {
 	return &EventStart{
 		EventBase:    newEventBase(seq, EventTypeStart),
 		EventChanges: &EventChanges{Put: put, Delete: delete},
@@ -133,7 +133,7 @@ func (e *EventSyncComplete) String() string {
 	return "Complete"
 }
 
-func newEventComplete(seq int, put []string, delete []string) Event {
+func newEventComplete(seq int, put, delete []string) Event {
 	return &EventSyncComplete{
 		EventBase:    newEventBase(seq, EventTypeComplete),
 		EventChanges: &EventChanges{Put: put, Delete: delete},

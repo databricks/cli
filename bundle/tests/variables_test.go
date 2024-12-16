@@ -151,7 +151,7 @@ func TestVariablesWithTargetLookupOverrides(t *testing.T) {
 }
 
 func TestVariableTargetOverrides(t *testing.T) {
-	var tcases = []struct {
+	tcases := []struct {
 		targetName         string
 		pipelineName       string
 		pipelineContinuous bool

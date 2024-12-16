@@ -28,12 +28,13 @@ import (
 func touchNotebookFile(t *testing.T, path string) {
 	f, err := os.Create(path)
 	require.NoError(t, err)
-	f.WriteString("# Databricks notebook source\n")
+	_, err = f.WriteString("# Databricks notebook source\n")
+	require.NoError(t, err)
 	f.Close()
 }
 
 func touchEmptyFile(t *testing.T, path string) {
-	err := os.MkdirAll(filepath.Dir(path), 0700)
+	err := os.MkdirAll(filepath.Dir(path), 0o700)
 	require.NoError(t, err)
 	f, err := os.Create(path)
 	require.NoError(t, err)

@@ -39,9 +39,11 @@ func validateNumber(v any) error {
 }
 
 func validateInteger(v any) error {
-	if !slices.Contains([]reflect.Kind{reflect.Int, reflect.Int8, reflect.Int16,
+	if !slices.Contains([]reflect.Kind{
+		reflect.Int, reflect.Int8, reflect.Int16,
 		reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16,
-		reflect.Uint32, reflect.Uint64},
+		reflect.Uint32, reflect.Uint64,
+	},
 		reflect.TypeOf(v).Kind()) {
 		return fmt.Errorf("expected type integer, but value is %#v", v)
 	}

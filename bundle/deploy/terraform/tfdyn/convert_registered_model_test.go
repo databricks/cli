@@ -14,7 +14,7 @@ import (
 )
 
 func TestConvertRegisteredModel(t *testing.T) {
-	var src = resources.RegisteredModel{
+	src := resources.RegisteredModel{
 		CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{
 			Name:        "name",
 			CatalogName: "catalog",

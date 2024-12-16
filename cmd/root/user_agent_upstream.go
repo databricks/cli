@@ -8,12 +8,16 @@ import (
 )
 
 // Environment variables that caller can set to convey what is upstream to this CLI.
-const upstreamEnvVar = "DATABRICKS_CLI_UPSTREAM"
-const upstreamVersionEnvVar = "DATABRICKS_CLI_UPSTREAM_VERSION"
+const (
+	upstreamEnvVar        = "DATABRICKS_CLI_UPSTREAM"
+	upstreamVersionEnvVar = "DATABRICKS_CLI_UPSTREAM_VERSION"
+)
 
 // Keys in the user agent.
-const upstreamKey = "upstream"
-const upstreamVersionKey = "upstream-version"
+const (
+	upstreamKey        = "upstream"
+	upstreamVersionKey = "upstream-version"
+)
 
 func withUpstreamInUserAgent(ctx context.Context) context.Context {
 	value := env.Get(ctx, upstreamEnvVar)

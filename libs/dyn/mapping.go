@@ -41,7 +41,7 @@ func newMappingWithSize(size int) Mapping {
 func newMappingFromGoMap(vin map[string]Value) Mapping {
 	m := newMappingWithSize(len(vin))
 	for k, v := range vin {
-		m.Set(V(k), v)
+		m.Set(V(k), v) //nolint:errcheck
 	}
 	return m
 }
@@ -94,7 +94,7 @@ func (m *Mapping) GetByString(skey string) (Value, bool) {
 // If the key already exists, the value is updated.
 // If the key does not exist, a new key-value pair is added.
 // The key must be a string, otherwise an error is returned.
-func (m *Mapping) Set(key Value, value Value) error {
+func (m *Mapping) Set(key, value Value) error {
 	skey, ok := key.AsString()
 	if !ok {
 		return fmt.Errorf("key must be a string, got %s", key.Kind())
@@ -144,6 +144,6 @@ func (m Mapping) Clone() Mapping {
 // Merge merges the key-value pairs from another Mapping into the current Mapping.
 func (m *Mapping) Merge(n Mapping) {
 	for _, p := range n.pairs {
-		m.Set(p.Key, p.Value)
+		m.Set(p.Key, p.Value) //nolint:errcheck
 	}
 }

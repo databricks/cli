@@ -62,7 +62,7 @@ func (m *trampoline) generateNotebookWrapper(ctx context.Context, b *bundle.Bund
 	notebookName := fmt.Sprintf("notebook_%s_%s", task.JobKey, task.Task.TaskKey)
 	localNotebookPath := filepath.Join(internalDir, notebookName+".py")
 
-	err = os.MkdirAll(filepath.Dir(localNotebookPath), 0755)
+	err = os.MkdirAll(filepath.Dir(localNotebookPath), 0o755)
 	if err != nil {
 		return err
 	}

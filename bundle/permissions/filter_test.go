@@ -90,7 +90,6 @@ func testFixture(userName string) *bundle.Bundle {
 			},
 		},
 	}
-
 }
 
 func TestFilterCurrentUser(t *testing.T) {

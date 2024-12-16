@@ -1,22 +1,22 @@
 package config_tests
 
 import (
-	"path/filepath"
+	"context"
 	"testing"
 
-	"github.com/databricks/cli/cmd/root"
-	assert "github.com/databricks/cli/libs/dyn/dynassert"
-
-	"github.com/databricks/cli/internal"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSuggestTargetIfWrongPassed(t *testing.T) {
-	t.Setenv("BUNDLE_ROOT", filepath.Join("target_overrides", "workspace"))
-	stdoutBytes, _, err := internal.RequireErrorRun(t, "bundle", "validate", "-e", "incorrect")
-	stdout := stdoutBytes.String()
+	b := load(t, "target_overrides/workspace")
 
-	assert.Error(t, root.ErrAlreadyPrinted, err)
-	assert.Contains(t, stdout, "Available targets:")
-	assert.Contains(t, stdout, "development")
-	assert.Contains(t, stdout, "staging")
+	ctx := context.Background()
+	diags := bundle.Apply(ctx, b, mutator.SelectTarget("incorrect"))
+	err := diags.Error()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "Available targets:")
+	require.Contains(t, err.Error(), "development")
+	require.Contains(t, err.Error(), "staging")
 }

@@ -4,6 +4,7 @@ package schema
 
 type ResourceGrant struct {
 	Catalog           string   `json:"catalog,omitempty"`
+	Credential        string   `json:"credential,omitempty"`
 	ExternalLocation  string   `json:"external_location,omitempty"`
 	ForeignConnection string   `json:"foreign_connection,omitempty"`
 	Function          string   `json:"function,omitempty"`

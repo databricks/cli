@@ -14,7 +14,7 @@ import (
 )
 
 func TestConvertSchema(t *testing.T) {
-	var src = resources.Schema{
+	src := resources.Schema{
 		CreateSchema: &catalog.CreateSchema{
 			Name:        "name",
 			CatalogName: "catalog",

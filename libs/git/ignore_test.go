@@ -48,7 +48,7 @@ func TestIgnoreFileTaint(t *testing.T) {
 	assert.False(t, ign)
 
 	// Now create the .gitignore file.
-	err = os.WriteFile(gitIgnorePath, []byte("hello"), 0644)
+	err = os.WriteFile(gitIgnorePath, []byte("hello"), 0o644)
 	require.NoError(t, err)
 
 	// Verify that the match still doesn't happen (no spontaneous reload).

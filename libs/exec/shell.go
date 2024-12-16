@@ -36,7 +36,7 @@ func findShell() (shell, error) {
 	return nil, errors.New("no shell found")
 }
 
-func createTempScript(command string, extension string) (string, error) {
+func createTempScript(command, extension string) (string, error) {
 	file, err := os.CreateTemp(os.TempDir(), "cli-exec*"+extension)
 	if err != nil {
 		return "", err

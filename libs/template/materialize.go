@@ -10,9 +10,11 @@ import (
 	"github.com/databricks/cli/libs/filer"
 )
 
-const libraryDirName = "library"
-const templateDirName = "template"
-const schemaFileName = "databricks_template_schema.json"
+const (
+	libraryDirName  = "library"
+	templateDirName = "template"
+	schemaFileName  = "databricks_template_schema.json"
+)
 
 // This function materializes the input templates as a project, using user defined
 // configurations.

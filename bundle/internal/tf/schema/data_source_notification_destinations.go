@@ -10,6 +10,6 @@ type DataSourceNotificationDestinationsNotificationDestinations struct {
 
 type DataSourceNotificationDestinations struct {
 	DisplayNameContains      string                                                       `json:"display_name_contains,omitempty"`
-	Type                     string                                                       `json:"type,omitempty"`
 	NotificationDestinations []DataSourceNotificationDestinationsNotificationDestinations `json:"notification_destinations,omitempty"`
+	Type                     string                                                       `json:"type,omitempty"`
 }

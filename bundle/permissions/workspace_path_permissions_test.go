@@ -117,5 +117,4 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 		diags := wp.Compare(tc.perms)
 		require.Equal(t, tc.expected, diags)
 	}
-
 }

@@ -1,0 +1,8 @@
+# Enable gofumpt and goimports in golangci-lint (#1999)
+2e018cfaec200a02ee2bd5b389e7da3c6f15f460
+
+# Enable errcheck everywhere and fix or silent remaining issues (#1987)
+8d5351c1c3d7befda4baae5d6adb99367aa50b3c
+
+# Add error checking in tests and enable errcheck there (#1980)
+1b2be1b2cb4b7909df2a8ad4cb6a0f43e8fcf0c6

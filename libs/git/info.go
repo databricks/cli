@@ -2,15 +2,12 @@ package git
 
 import (
 	"context"
-	"errors"
-	"io/fs"
 	"net/http"
-	"os"
 	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/databricks/cli/libs/dbr"
+	"github.com/databricks/cli/libs/folders"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
@@ -75,7 +72,6 @@ func fetchRepositoryInfoAPI(ctx context.Context, path string, w *databricks.Work
 		},
 		&response,
 	)
-
 	if err != nil {
 		return result, err
 	}
@@ -105,7 +101,7 @@ func ensureWorkspacePrefix(p string) string {
 func fetchRepositoryInfoDotGit(ctx context.Context, path string) (RepositoryInfo, error) {
 	result := RepositoryInfo{}
 
-	rootDir, err := findLeafInTree(path, GitDirectoryName)
+	rootDir, err := folders.FindDirWithLeaf(path, GitDirectoryName)
 	if rootDir == "" {
 		return result, err
 	}
@@ -133,29 +129,4 @@ func fetchRepositoryInfoDotGit(ctx context.Context, path string) (RepositoryInfo
 	}
 
 	return result, nil
-}
-
-func findLeafInTree(p string, leafName string) (string, error) {
-	var err error
-	for i := 0; i < 10000; i++ {
-		_, err = os.Stat(filepath.Join(p, leafName))
-
-		if err == nil {
-			// Found [leafName] in p
-			return p, nil
-		}
-
-		// ErrNotExist means we continue traversal up the tree.
-		if errors.Is(err, fs.ErrNotExist) {
-			parent := filepath.Dir(p)
-			if parent == p {
-				return "", nil
-			}
-			p = parent
-			continue
-		}
-		break
-	}
-
-	return "", err
 }

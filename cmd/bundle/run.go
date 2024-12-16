@@ -159,13 +159,19 @@ task or a Python wheel task, the second example applies.
 				if err != nil {
 					return err
 				}
-				cmd.OutOrStdout().Write([]byte(resultString))
+				_, err = cmd.OutOrStdout().Write([]byte(resultString))
+				if err != nil {
+					return err
+				}
 			case flags.OutputJSON:
 				b, err := json.MarshalIndent(output, "", "  ")
 				if err != nil {
 					return err
 				}
-				cmd.OutOrStdout().Write(b)
+				_, err = cmd.OutOrStdout().Write(b)
+				if err != nil {
+					return err
+				}
 			default:
 				return fmt.Errorf("unknown output type %s", root.OutputType(cmd))
 			}

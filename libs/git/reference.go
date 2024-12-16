@@ -12,8 +12,10 @@ import (
 
 type ReferenceType string
 
-var ErrNotAReferencePointer = fmt.Errorf("HEAD does not point to another reference")
-var ErrNotABranch = fmt.Errorf("HEAD is not a reference to a git branch")
+var (
+	ErrNotAReferencePointer = fmt.Errorf("HEAD does not point to another reference")
+	ErrNotABranch           = fmt.Errorf("HEAD is not a reference to a git branch")
+)
 
 const (
 	// pointer to a secondary reference file path containing sha-1 object ID.
@@ -30,8 +32,10 @@ type Reference struct {
 	Content string
 }
 
-const ReferencePrefix = "ref: "
-const HeadPathPrefix = "refs/heads/"
+const (
+	ReferencePrefix = "ref: "
+	HeadPathPrefix  = "refs/heads/"
+)
 
 // asserts if a string is a 40 character hexadecimal encoded string
 func isSHA1(s string) bool {

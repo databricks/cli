@@ -27,7 +27,7 @@ func New() *cobra.Command {
   
   To create credentials, you must be a Databricks account admin or have the
   CREATE SERVICE CREDENTIAL privilege. The user who creates the credential can
-  delegate ownership to another user or group to manage permissions on it`,
+  delegate ownership to another user or group to manage permissions on it.`,
 		GroupID: "catalog",
 		Annotations: map[string]string{
 			"package": "catalog",
@@ -73,7 +73,7 @@ func newCreateCredential() *cobra.Command {
 	// TODO: complex arg: azure_managed_identity
 	// TODO: complex arg: azure_service_principal
 	cmd.Flags().StringVar(&createCredentialReq.Comment, "comment", createCredentialReq.Comment, `Comment associated with the credential.`)
-	// TODO: complex arg: gcp_service_account_key
+	// TODO: complex arg: databricks_gcp_service_account
 	cmd.Flags().Var(&createCredentialReq.Purpose, "purpose", `Indicates the purpose of the credential. Supported values: [SERVICE, STORAGE]`)
 	cmd.Flags().BoolVar(&createCredentialReq.ReadOnly, "read-only", createCredentialReq.ReadOnly, `Whether the credential is usable only for read operations.`)
 	cmd.Flags().BoolVar(&createCredentialReq.SkipValidation, "skip-validation", createCredentialReq.SkipValidation, `Optional.`)
@@ -227,6 +227,7 @@ func newGenerateTemporaryServiceCredential() *cobra.Command {
 	cmd.Flags().Var(&generateTemporaryServiceCredentialJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: azure_options
+	// TODO: complex arg: gcp_options
 
 	cmd.Use = "generate-temporary-service-credential CREDENTIAL_NAME"
 	cmd.Short = `Generate a temporary service credential.`
@@ -434,6 +435,7 @@ func newUpdateCredential() *cobra.Command {
 	// TODO: complex arg: azure_managed_identity
 	// TODO: complex arg: azure_service_principal
 	cmd.Flags().StringVar(&updateCredentialReq.Comment, "comment", updateCredentialReq.Comment, `Comment associated with the credential.`)
+	// TODO: complex arg: databricks_gcp_service_account
 	cmd.Flags().BoolVar(&updateCredentialReq.Force, "force", updateCredentialReq.Force, `Force an update even if there are dependent services (when purpose is **SERVICE**) or dependent external locations and external tables (when purpose is **STORAGE**).`)
 	cmd.Flags().Var(&updateCredentialReq.IsolationMode, "isolation-mode", `Whether the current securable is accessible from all workspaces or a specific set of workspaces. Supported values: [ISOLATION_MODE_ISOLATED, ISOLATION_MODE_OPEN]`)
 	cmd.Flags().StringVar(&updateCredentialReq.NewName, "new-name", updateCredentialReq.NewName, `New name of credential.`)

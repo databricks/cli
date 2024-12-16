@@ -59,7 +59,6 @@ func newDescribeCommand() *cobra.Command {
 			isAccount, err := root.MustAnyClient(cmd, args)
 			return root.ConfigUsed(cmd.Context()), isAccount, err
 		})
-
 		if err != nil {
 			return err
 		}
@@ -141,7 +140,10 @@ func render(ctx context.Context, cmd *cobra.Command, status *authStatus, templat
 		if err != nil {
 			return err
 		}
-		cmd.OutOrStdout().Write(buf)
+		_, err = cmd.OutOrStdout().Write(buf)
+		if err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("unknown output type %s", root.OutputType(cmd))
 	}

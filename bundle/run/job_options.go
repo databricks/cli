@@ -80,7 +80,7 @@ func (o *JobOptions) validatePipelineParams() (*jobs.PipelineParams, error) {
 		return nil, nil
 	}
 
-	var defaultErr = fmt.Errorf("job run argument --pipeline-params only supports `full_refresh=<bool>`")
+	defaultErr := fmt.Errorf("job run argument --pipeline-params only supports `full_refresh=<bool>`")
 	v, ok := o.pipelineParams["full_refresh"]
 	if !ok {
 		return nil, defaultErr

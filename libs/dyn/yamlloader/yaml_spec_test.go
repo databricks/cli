@@ -777,7 +777,8 @@ func TestYAMLSpecExample_2_27(t *testing.T) {
 							),
 						},
 						[]dyn.Location{{File: file, Line: 22, Column: 3}},
-					)},
+					),
+				},
 				[]dyn.Location{{File: file, Line: 18, Column: 1}},
 			),
 			"tax": dyn.NewValue(

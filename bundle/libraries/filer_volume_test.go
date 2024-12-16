@@ -110,7 +110,8 @@ func TestFilerForVolumeForErrorFromAPI(t *testing.T) {
 			Summary:   "unable to determine if volume at /Volumes/main/my_schema/my_volume exists: error from API",
 			Locations: []dyn.Location{{File: "config.yml", Line: 1, Column: 2}},
 			Paths:     []dyn.Path{dyn.MustPathFromString("workspace.artifact_path")},
-		}}, diags)
+		},
+	}, diags)
 }
 
 func TestFilerForVolumeWithVolumeNotFound(t *testing.T) {
@@ -136,7 +137,8 @@ func TestFilerForVolumeWithVolumeNotFound(t *testing.T) {
 			Summary:   "volume /Volumes/main/my_schema/doesnotexist does not exist: some error message",
 			Locations: []dyn.Location{{File: "config.yml", Line: 1, Column: 2}},
 			Paths:     []dyn.Path{dyn.MustPathFromString("workspace.artifact_path")},
-		}}, diags)
+		},
+	}, diags)
 }
 
 func TestFilerForVolumeNotFoundAndInBundle(t *testing.T) {
@@ -173,7 +175,7 @@ func TestFilerForVolumeNotFoundAndInBundle(t *testing.T) {
 		{
 			Severity:  diag.Error,
 			Summary:   "volume /Volumes/main/my_schema/my_volume does not exist: error from API",
-			Locations: []dyn.Location{{"config.yml", 1, 2}, {"volume.yml", 1, 2}},
+			Locations: []dyn.Location{{File: "config.yml", Line: 1, Column: 2}, {File: "volume.yml", Line: 1, Column: 2}},
 			Paths:     []dyn.Path{dyn.MustPathFromString("workspace.artifact_path"), dyn.MustPathFromString("resources.volumes.foo")},
 			Detail: `You are using a volume in your artifact_path that is managed by
 this bundle but which has not been deployed yet. Please first deploy

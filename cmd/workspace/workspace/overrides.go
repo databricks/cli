@@ -52,7 +52,7 @@ func exportOverride(exportCmd *cobra.Command, exportReq *workspace.ExportRequest
 		if err != nil {
 			return err
 		}
-		return os.WriteFile(filePath, b, 0755)
+		return os.WriteFile(filePath, b, 0o755)
 	}
 }
 
@@ -88,7 +88,6 @@ func importOverride(importCmd *cobra.Command, importReq *workspace.Import) {
 		err := originalRunE(cmd, args)
 		return wrapImportAPIErrors(err, importReq)
 	}
-
 }
 
 func init() {

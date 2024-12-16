@@ -42,7 +42,6 @@ func TestLookup_Empty(t *testing.T) {
 
 	// No string representation for an invalid lookup
 	assert.Empty(t, lookup.String())
-
 }
 
 func TestLookup_Multiple(t *testing.T) {

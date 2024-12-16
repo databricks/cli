@@ -25,11 +25,11 @@ func TestValueAsMap(t *testing.T) {
 	_, ok := zeroValue.AsMap()
 	assert.False(t, ok)
 
-	var intValue = dyn.V(1)
+	intValue := dyn.V(1)
 	_, ok = intValue.AsMap()
 	assert.False(t, ok)
 
-	var mapValue = dyn.NewValue(
+	mapValue := dyn.NewValue(
 		map[string]dyn.Value{
 			"key": dyn.NewValue(
 				"value",
@@ -46,6 +46,6 @@ func TestValueAsMap(t *testing.T) {
 func TestValueIsValid(t *testing.T) {
 	var zeroValue dyn.Value
 	assert.False(t, zeroValue.IsValid())
-	var intValue = dyn.V(1)
+	intValue := dyn.V(1)
 	assert.True(t, intValue.IsValid())
 }

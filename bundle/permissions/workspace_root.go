@@ -12,8 +12,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type workspaceRootPermissions struct {
-}
+type workspaceRootPermissions struct{}
 
 func ApplyWorkspaceRootPermissions() bundle.Mutator {
 	return &workspaceRootPermissions{}

@@ -38,7 +38,6 @@ func TestGcpNormalizeKey(t *testing.T) {
 	assert.Equal(t, "test", gcpTag.NormalizeKey("test"))
 	assert.Equal(t, "cafe", gcpTag.NormalizeKey("café 🍎?"))
 	assert.Equal(t, "cafe_foo", gcpTag.NormalizeKey("__café_foo__"))
-
 }
 
 func TestGcpNormalizeValue(t *testing.T) {

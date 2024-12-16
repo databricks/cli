@@ -158,7 +158,7 @@ func (d *dashboard) saveSerializedDashboard(_ context.Context, b *bundle.Bundle,
 	}
 
 	// Make sure the output directory exists.
-	if err := os.MkdirAll(filepath.Dir(filename), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(filename), 0o755); err != nil {
 		return err
 	}
 
@@ -183,7 +183,7 @@ func (d *dashboard) saveSerializedDashboard(_ context.Context, b *bundle.Bundle,
 	}
 
 	fmt.Printf("Writing dashboard to %q\n", rel)
-	return os.WriteFile(filename, data, 0644)
+	return os.WriteFile(filename, data, 0o644)
 }
 
 func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, dashboard *dashboards.Dashboard, key string) error {
@@ -210,7 +210,7 @@ func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, das
 	}
 
 	// Make sure the output directory exists.
-	if err := os.MkdirAll(d.resourceDir, 0755); err != nil {
+	if err := os.MkdirAll(d.resourceDir, 0o755); err != nil {
 		return err
 	}
 

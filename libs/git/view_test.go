@@ -20,7 +20,7 @@ func copyTestdata(t *testing.T, name string) string {
 		require.NoError(t, err)
 
 		if d.IsDir() {
-			err := os.MkdirAll(filepath.Join(tempDir, path), 0755)
+			err := os.MkdirAll(filepath.Join(tempDir, path), 0o755)
 			require.NoError(t, err)
 			return nil
 		}
@@ -46,7 +46,7 @@ func createFakeRepo(t *testing.T, testdataName string) string {
 	absPath := copyTestdata(t, testdataName)
 
 	// Add .git directory to make it look like a Git repository.
-	err := os.Mkdir(filepath.Join(absPath, ".git"), 0755)
+	err := os.Mkdir(filepath.Join(absPath, ".git"), 0o755)
 	require.NoError(t, err)
 	return absPath
 }

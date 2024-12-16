@@ -14,7 +14,7 @@ import (
 )
 
 func TestConvertVolume(t *testing.T) {
-	var src = resources.Volume{
+	src := resources.Volume{
 		CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
 			CatalogName:     "catalog",
 			Comment:         "comment",

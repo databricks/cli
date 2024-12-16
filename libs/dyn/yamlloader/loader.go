@@ -129,7 +129,7 @@ func (d *loader) loadMapping(node *yaml.Node, loc dyn.Location) (dyn.Value, erro
 			return dyn.InvalidValue, err
 		}
 
-		acc.Set(k, v)
+		acc.Set(k, v) //nolint:errcheck
 	}
 
 	if merge == nil {
@@ -137,8 +137,8 @@ func (d *loader) loadMapping(node *yaml.Node, loc dyn.Location) (dyn.Value, erro
 	}
 
 	// Build location for the merge node.
-	var mloc = d.location(merge)
-	var merr = errorf(mloc, "map merge requires map or sequence of maps as the value")
+	mloc := d.location(merge)
+	merr := errorf(mloc, "map merge requires map or sequence of maps as the value")
 
 	// Flatten the merge node into a slice of nodes.
 	// It can be either a single node or a sequence of nodes.

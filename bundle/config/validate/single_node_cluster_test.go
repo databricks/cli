@@ -175,7 +175,6 @@ func TestValidateSingleNodeClusterFailForJobClusters(t *testing.T) {
 					Paths:     []dyn.Path{dyn.MustPathFromString("resources.jobs.foo.job_clusters[0].new_cluster")},
 				},
 			}, diags)
-
 		})
 	}
 }

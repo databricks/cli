@@ -14,7 +14,7 @@ import (
 )
 
 func TestConvertCluster(t *testing.T) {
-	var src = resources.Cluster{
+	src := resources.Cluster{
 		ClusterSpec: &compute.ClusterSpec{
 			NumWorkers:   3,
 			SparkVersion: "13.3.x-scala2.12",
@@ -93,5 +93,4 @@ func TestConvertCluster(t *testing.T) {
 			},
 		},
 	}, out.Permissions["cluster_my_cluster"])
-
 }

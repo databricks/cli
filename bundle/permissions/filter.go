@@ -56,7 +56,6 @@ func filter(currentUser string) dyn.WalkValueFunc {
 		}
 
 		return v, nil
-
 	}
 }
 

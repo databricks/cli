@@ -44,7 +44,7 @@ func TestToTypedStructOverwrite(t *testing.T) {
 		Qux string `json:"-"`
 	}
 
-	var out = Tmp{
+	out := Tmp{
 		Foo: "baz",
 		Bar: "qux",
 	}
@@ -66,7 +66,7 @@ func TestToTypedStructClearFields(t *testing.T) {
 	}
 
 	// Struct value with non-empty fields.
-	var out = Tmp{
+	out := Tmp{
 		Foo: "baz",
 		Bar: "qux",
 	}
@@ -137,7 +137,7 @@ func TestToTypedStructNil(t *testing.T) {
 		Foo string `json:"foo"`
 	}
 
-	var out = Tmp{}
+	out := Tmp{}
 	err := ToTyped(&out, dyn.NilValue)
 	require.NoError(t, err)
 	assert.Equal(t, Tmp{}, out)
@@ -148,7 +148,7 @@ func TestToTypedStructNilOverwrite(t *testing.T) {
 		Foo string `json:"foo"`
 	}
 
-	var out = Tmp{"bar"}
+	out := Tmp{"bar"}
 	err := ToTyped(&out, dyn.NilValue)
 	require.NoError(t, err)
 	assert.Equal(t, Tmp{}, out)
@@ -173,7 +173,7 @@ func TestToTypedStructWithValueField(t *testing.T) {
 }
 
 func TestToTypedMap(t *testing.T) {
-	var out = map[string]string{}
+	out := map[string]string{}
 
 	v := dyn.V(map[string]dyn.Value{
 		"key": dyn.V("value"),
@@ -186,7 +186,7 @@ func TestToTypedMap(t *testing.T) {
 }
 
 func TestToTypedMapOverwrite(t *testing.T) {
-	var out = map[string]string{
+	out := map[string]string{
 		"foo": "bar",
 	}
 
@@ -214,14 +214,14 @@ func TestToTypedMapWithPointerElement(t *testing.T) {
 }
 
 func TestToTypedMapNil(t *testing.T) {
-	var out = map[string]string{}
+	out := map[string]string{}
 	err := ToTyped(&out, dyn.NilValue)
 	require.NoError(t, err)
 	assert.Nil(t, out)
 }
 
 func TestToTypedMapNilOverwrite(t *testing.T) {
-	var out = map[string]string{
+	out := map[string]string{
 		"foo": "bar",
 	}
 	err := ToTyped(&out, dyn.NilValue)
@@ -245,7 +245,7 @@ func TestToTypedSlice(t *testing.T) {
 }
 
 func TestToTypedSliceOverwrite(t *testing.T) {
-	var out = []string{"qux"}
+	out := []string{"qux"}
 
 	v := dyn.V([]dyn.Value{
 		dyn.V("foo"),
@@ -282,7 +282,7 @@ func TestToTypedSliceNil(t *testing.T) {
 }
 
 func TestToTypedSliceNilOverwrite(t *testing.T) {
-	var out = []string{"foo"}
+	out := []string{"foo"}
 	err := ToTyped(&out, dyn.NilValue)
 	require.NoError(t, err)
 	assert.Nil(t, out)

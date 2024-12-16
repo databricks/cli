@@ -46,7 +46,7 @@ func (f file) close() error {
 
 func (f file) readHeader() (string, error) {
 	// Scan header line with some padding.
-	var buf = make([]byte, headerLength)
+	buf := make([]byte, headerLength)
 	n, err := f.f.Read([]byte(buf))
 	if err != nil && err != io.EOF {
 		return "", err

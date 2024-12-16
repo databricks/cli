@@ -131,7 +131,7 @@ func (r *jobRunner) posArgsHandler() argsHandler {
 	}
 
 	// Handle task parameters otherwise.
-	var seen = make(map[jobTaskType]bool)
+	seen := make(map[jobTaskType]bool)
 	for _, t := range job.Tasks {
 		if t.NotebookTask != nil {
 			seen[jobTaskTypeNotebook] = true

@@ -43,8 +43,14 @@ func TestStubCallback(t *testing.T) {
 	ctx := context.Background()
 	ctx, stub := process.WithStub(ctx)
 	stub.WithCallback(func(cmd *exec.Cmd) error {
-		cmd.Stderr.Write([]byte("something..."))
-		cmd.Stdout.Write([]byte("else..."))
+		_, err := cmd.Stderr.Write([]byte("something..."))
+		if err != nil {
+			return err
+		}
+		_, err = cmd.Stdout.Write([]byte("else..."))
+		if err != nil {
+			return err
+		}
 		return fmt.Errorf("yep")
 	})
 

@@ -42,7 +42,6 @@ func rewriteComputeIdToClusterId(v dyn.Value, p dyn.Path) (dyn.Value, diag.Diagn
 	var diags diag.Diagnostics
 	computeIdPath := p.Append(dyn.Key("compute_id"))
 	computeId, err := dyn.GetByPath(v, computeIdPath)
-
 	// If the "compute_id" key is not set, we don't need to do anything.
 	if err != nil {
 		return v, nil

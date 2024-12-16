@@ -104,7 +104,7 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	localState, err := l.localState(ctx, b)
 	if errors.Is(err, fs.ErrNotExist) {
 		log.Infof(ctx, "Local state file does not exist. Using remote Terraform state.")
-		err := os.WriteFile(localStatePath, remoteContent, 0600)
+		err := os.WriteFile(localStatePath, remoteContent, 0o600)
 		return diag.FromErr(err)
 	}
 	if err != nil {
@@ -114,14 +114,14 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	// If the lineage does not match, the Terraform state files do not correspond to the same deployment.
 	if localState.Lineage != remoteState.Lineage {
 		log.Infof(ctx, "Remote and local state lineages do not match. Using remote Terraform state. Invalidating local Terraform state.")
-		err := os.WriteFile(localStatePath, remoteContent, 0600)
+		err := os.WriteFile(localStatePath, remoteContent, 0o600)
 		return diag.FromErr(err)
 	}
 
 	// If the remote state is newer than the local state, we should use the remote state.
 	if remoteState.Serial > localState.Serial {
 		log.Infof(ctx, "Remote state is newer than local state. Using remote Terraform state.")
-		err := os.WriteFile(localStatePath, remoteContent, 0600)
+		err := os.WriteFile(localStatePath, remoteContent, 0o600)
 		return diag.FromErr(err)
 	}
 

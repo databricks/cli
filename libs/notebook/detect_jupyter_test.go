@@ -41,7 +41,7 @@ func TestDetectJupyterInvalidJSON(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "file.ipynb")
 	buf := make([]byte, 128)
-	err := os.WriteFile(path, buf, 0644)
+	err := os.WriteFile(path, buf, 0o644)
 	require.NoError(t, err)
 
 	// Garbage contents means not a notebook.
@@ -55,7 +55,7 @@ func TestDetectJupyterNoCells(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "file.ipynb")
 	buf := []byte("{}")
-	err := os.WriteFile(path, buf, 0644)
+	err := os.WriteFile(path, buf, 0o644)
 	require.NoError(t, err)
 
 	// Garbage contents means not a notebook.
@@ -69,7 +69,7 @@ func TestDetectJupyterOldVersion(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "file.ipynb")
 	buf := []byte(`{ "cells": [], "metadata": {}, "nbformat": 3 }`)
-	err := os.WriteFile(path, buf, 0644)
+	err := os.WriteFile(path, buf, 0o644)
 	require.NoError(t, err)
 
 	// Garbage contents means not a notebook.

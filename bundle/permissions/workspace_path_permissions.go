@@ -52,7 +52,7 @@ func (p WorkspacePathPermissions) Compare(perms []resources.Permission) diag.Dia
 }
 
 // containsAll checks if permA contains all permissions in permB.
-func containsAll(permA []resources.Permission, permB []resources.Permission) (bool, []resources.Permission) {
+func containsAll(permA, permB []resources.Permission) (bool, []resources.Permission) {
 	missing := make([]resources.Permission, 0)
 	for _, a := range permA {
 		found := false

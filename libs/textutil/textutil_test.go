@@ -50,7 +50,8 @@ func TestNormalizeString(t *testing.T) {
 		{
 			input:    ".test//test..test",
 			expected: "test_test_test",
-		}}
+		},
+	}
 
 	for _, c := range cases {
 		assert.Equal(t, c.expected, NormalizeString(c.input))

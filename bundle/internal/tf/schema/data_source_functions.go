@@ -69,6 +69,7 @@ type DataSourceFunctionsFunctions struct {
 	FullDataType        string                                            `json:"full_data_type,omitempty"`
 	FullName            string                                            `json:"full_name,omitempty"`
 	FunctionId          string                                            `json:"function_id,omitempty"`
+	InputParams         []DataSourceFunctionsFunctionsInputParams         `json:"input_params,omitempty"`
 	IsDeterministic     bool                                              `json:"is_deterministic,omitempty"`
 	IsNullCall          bool                                              `json:"is_null_call,omitempty"`
 	MetastoreId         string                                            `json:"metastore_id,omitempty"`
@@ -76,8 +77,10 @@ type DataSourceFunctionsFunctions struct {
 	Owner               string                                            `json:"owner,omitempty"`
 	ParameterStyle      string                                            `json:"parameter_style,omitempty"`
 	Properties          string                                            `json:"properties,omitempty"`
+	ReturnParams        []DataSourceFunctionsFunctionsReturnParams        `json:"return_params,omitempty"`
 	RoutineBody         string                                            `json:"routine_body,omitempty"`
 	RoutineDefinition   string                                            `json:"routine_definition,omitempty"`
+	RoutineDependencies []DataSourceFunctionsFunctionsRoutineDependencies `json:"routine_dependencies,omitempty"`
 	SchemaName          string                                            `json:"schema_name,omitempty"`
 	SecurityType        string                                            `json:"security_type,omitempty"`
 	SpecificName        string                                            `json:"specific_name,omitempty"`
@@ -85,14 +88,11 @@ type DataSourceFunctionsFunctions struct {
 	SqlPath             string                                            `json:"sql_path,omitempty"`
 	UpdatedAt           int                                               `json:"updated_at,omitempty"`
 	UpdatedBy           string                                            `json:"updated_by,omitempty"`
-	InputParams         []DataSourceFunctionsFunctionsInputParams         `json:"input_params,omitempty"`
-	ReturnParams        []DataSourceFunctionsFunctionsReturnParams        `json:"return_params,omitempty"`
-	RoutineDependencies []DataSourceFunctionsFunctionsRoutineDependencies `json:"routine_dependencies,omitempty"`
 }
 
 type DataSourceFunctions struct {
 	CatalogName   string                         `json:"catalog_name"`
+	Functions     []DataSourceFunctionsFunctions `json:"functions,omitempty"`
 	IncludeBrowse bool                           `json:"include_browse,omitempty"`
 	SchemaName    string                         `json:"schema_name"`
-	Functions     []DataSourceFunctionsFunctions `json:"functions,omitempty"`
 }

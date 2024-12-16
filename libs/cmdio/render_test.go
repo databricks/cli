@@ -171,8 +171,9 @@ func TestRender(t *testing.T) {
 	for _, c := range testCases {
 		t.Run(c.name, func(t *testing.T) {
 			output := &bytes.Buffer{}
-			cmdIO := NewIO(c.outputFormat, nil, output, output, c.headerTemplate, c.template)
-			ctx := InContext(context.Background(), cmdIO)
+			ctx := context.Background()
+			cmdIO := NewIO(ctx, c.outputFormat, nil, output, output, c.headerTemplate, c.template)
+			ctx = InContext(ctx, cmdIO)
 			var err error
 			if vv, ok := c.v.(listing.Iterator[*provisioning.Workspace]); ok {
 				err = RenderIterator(ctx, vv)

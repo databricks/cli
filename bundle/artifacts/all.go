@@ -3,7 +3,6 @@ package artifacts
 import (
 	"context"
 	"fmt"
-
 	"slices"
 
 	"github.com/databricks/cli/bundle"

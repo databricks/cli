@@ -11,7 +11,7 @@ import (
 
 func TestMarshalNilValue(t *testing.T) {
 	s := NewSaver()
-	var nilValue = dyn.NilValue
+	nilValue := dyn.NilValue
 	v, err := s.toYamlNode(nilValue)
 	assert.NoError(t, err)
 	assert.Equal(t, "null", v.Value)
@@ -19,7 +19,7 @@ func TestMarshalNilValue(t *testing.T) {
 
 func TestMarshalIntValue(t *testing.T) {
 	s := NewSaver()
-	var intValue = dyn.V(1)
+	intValue := dyn.V(1)
 	v, err := s.toYamlNode(intValue)
 	assert.NoError(t, err)
 	assert.Equal(t, "1", v.Value)
@@ -28,7 +28,7 @@ func TestMarshalIntValue(t *testing.T) {
 
 func TestMarshalFloatValue(t *testing.T) {
 	s := NewSaver()
-	var floatValue = dyn.V(1.0)
+	floatValue := dyn.V(1.0)
 	v, err := s.toYamlNode(floatValue)
 	assert.NoError(t, err)
 	assert.Equal(t, "1", v.Value)
@@ -37,7 +37,7 @@ func TestMarshalFloatValue(t *testing.T) {
 
 func TestMarshalBoolValue(t *testing.T) {
 	s := NewSaver()
-	var boolValue = dyn.V(true)
+	boolValue := dyn.V(true)
 	v, err := s.toYamlNode(boolValue)
 	assert.NoError(t, err)
 	assert.Equal(t, "true", v.Value)
@@ -49,7 +49,7 @@ func TestMarshalTimeValue(t *testing.T) {
 	require.NoError(t, err)
 
 	s := NewSaver()
-	var timeValue = dyn.V(tm)
+	timeValue := dyn.V(tm)
 	v, err := s.toYamlNode(timeValue)
 	assert.NoError(t, err)
 	assert.Equal(t, "1970-01-01", v.Value)
@@ -58,7 +58,7 @@ func TestMarshalTimeValue(t *testing.T) {
 
 func TestMarshalSequenceValue(t *testing.T) {
 	s := NewSaver()
-	var sequenceValue = dyn.NewValue(
+	sequenceValue := dyn.NewValue(
 		[]dyn.Value{
 			dyn.NewValue("value1", []dyn.Location{{File: "file", Line: 1, Column: 2}}),
 			dyn.NewValue("value2", []dyn.Location{{File: "file", Line: 2, Column: 2}}),
@@ -74,7 +74,7 @@ func TestMarshalSequenceValue(t *testing.T) {
 
 func TestMarshalStringValue(t *testing.T) {
 	s := NewSaver()
-	var stringValue = dyn.V("value")
+	stringValue := dyn.V("value")
 	v, err := s.toYamlNode(stringValue)
 	assert.NoError(t, err)
 	assert.Equal(t, "value", v.Value)
@@ -83,7 +83,7 @@ func TestMarshalStringValue(t *testing.T) {
 
 func TestMarshalMapValue(t *testing.T) {
 	s := NewSaver()
-	var mapValue = dyn.NewValue(
+	mapValue := dyn.NewValue(
 		map[string]dyn.Value{
 			"key3": dyn.NewValue("value3", []dyn.Location{{File: "file", Line: 3, Column: 2}}),
 			"key2": dyn.NewValue("value2", []dyn.Location{{File: "file", Line: 2, Column: 2}}),
@@ -107,7 +107,7 @@ func TestMarshalMapValue(t *testing.T) {
 
 func TestMarshalNestedValues(t *testing.T) {
 	s := NewSaver()
-	var mapValue = dyn.NewValue(
+	mapValue := dyn.NewValue(
 		map[string]dyn.Value{
 			"key1": dyn.NewValue(
 				map[string]dyn.Value{
@@ -129,14 +129,14 @@ func TestMarshalNestedValues(t *testing.T) {
 
 func TestMarshalHexadecimalValueIsQuoted(t *testing.T) {
 	s := NewSaver()
-	var hexValue = dyn.V(0x123)
+	hexValue := dyn.V(0x123)
 	v, err := s.toYamlNode(hexValue)
 	assert.NoError(t, err)
 	assert.Equal(t, "291", v.Value)
 	assert.Equal(t, yaml.Style(0), v.Style)
 	assert.Equal(t, yaml.ScalarNode, v.Kind)
 
-	var stringValue = dyn.V("0x123")
+	stringValue := dyn.V("0x123")
 	v, err = s.toYamlNode(stringValue)
 	assert.NoError(t, err)
 	assert.Equal(t, "0x123", v.Value)
@@ -146,14 +146,14 @@ func TestMarshalHexadecimalValueIsQuoted(t *testing.T) {
 
 func TestMarshalBinaryValueIsQuoted(t *testing.T) {
 	s := NewSaver()
-	var binaryValue = dyn.V(0b101)
+	binaryValue := dyn.V(0b101)
 	v, err := s.toYamlNode(binaryValue)
 	assert.NoError(t, err)
 	assert.Equal(t, "5", v.Value)
 	assert.Equal(t, yaml.Style(0), v.Style)
 	assert.Equal(t, yaml.ScalarNode, v.Kind)
 
-	var stringValue = dyn.V("0b101")
+	stringValue := dyn.V("0b101")
 	v, err = s.toYamlNode(stringValue)
 	assert.NoError(t, err)
 	assert.Equal(t, "0b101", v.Value)
@@ -163,14 +163,14 @@ func TestMarshalBinaryValueIsQuoted(t *testing.T) {
 
 func TestMarshalOctalValueIsQuoted(t *testing.T) {
 	s := NewSaver()
-	var octalValue = dyn.V(0123)
+	octalValue := dyn.V(0o123)
 	v, err := s.toYamlNode(octalValue)
 	assert.NoError(t, err)
 	assert.Equal(t, "83", v.Value)
 	assert.Equal(t, yaml.Style(0), v.Style)
 	assert.Equal(t, yaml.ScalarNode, v.Kind)
 
-	var stringValue = dyn.V("0123")
+	stringValue := dyn.V("0123")
 	v, err = s.toYamlNode(stringValue)
 	assert.NoError(t, err)
 	assert.Equal(t, "0123", v.Value)
@@ -180,14 +180,14 @@ func TestMarshalOctalValueIsQuoted(t *testing.T) {
 
 func TestMarshalFloatValueIsQuoted(t *testing.T) {
 	s := NewSaver()
-	var floatValue = dyn.V(1.0)
+	floatValue := dyn.V(1.0)
 	v, err := s.toYamlNode(floatValue)
 	assert.NoError(t, err)
 	assert.Equal(t, "1", v.Value)
 	assert.Equal(t, yaml.Style(0), v.Style)
 	assert.Equal(t, yaml.ScalarNode, v.Kind)
 
-	var stringValue = dyn.V("1.0")
+	stringValue := dyn.V("1.0")
 	v, err = s.toYamlNode(stringValue)
 	assert.NoError(t, err)
 	assert.Equal(t, "1.0", v.Value)
@@ -197,14 +197,14 @@ func TestMarshalFloatValueIsQuoted(t *testing.T) {
 
 func TestMarshalBoolValueIsQuoted(t *testing.T) {
 	s := NewSaver()
-	var boolValue = dyn.V(true)
+	boolValue := dyn.V(true)
 	v, err := s.toYamlNode(boolValue)
 	assert.NoError(t, err)
 	assert.Equal(t, "true", v.Value)
 	assert.Equal(t, yaml.Style(0), v.Style)
 	assert.Equal(t, yaml.ScalarNode, v.Kind)
 
-	var stringValue = dyn.V("true")
+	stringValue := dyn.V("true")
 	v, err = s.toYamlNode(stringValue)
 	assert.NoError(t, err)
 	assert.Equal(t, "true", v.Value)
@@ -217,7 +217,7 @@ func TestCustomStylingWithNestedMap(t *testing.T) {
 		"styled": yaml.DoubleQuotedStyle,
 	})
 
-	var styledMap = dyn.NewValue(
+	styledMap := dyn.NewValue(
 		map[string]dyn.Value{
 			"key1": dyn.NewValue("value1", []dyn.Location{{File: "file", Line: 1, Column: 2}}),
 			"key2": dyn.NewValue("value2", []dyn.Location{{File: "file", Line: 2, Column: 2}}),
@@ -225,7 +225,7 @@ func TestCustomStylingWithNestedMap(t *testing.T) {
 		[]dyn.Location{{File: "file", Line: -2, Column: 2}},
 	)
 
-	var unstyledMap = dyn.NewValue(
+	unstyledMap := dyn.NewValue(
 		map[string]dyn.Value{
 			"key3": dyn.NewValue("value3", []dyn.Location{{File: "file", Line: 1, Column: 2}}),
 			"key4": dyn.NewValue("value4", []dyn.Location{{File: "file", Line: 2, Column: 2}}),
@@ -233,7 +233,7 @@ func TestCustomStylingWithNestedMap(t *testing.T) {
 		[]dyn.Location{{File: "file", Line: -1, Column: 2}},
 	)
 
-	var val = dyn.NewValue(
+	val := dyn.NewValue(
 		map[string]dyn.Value{
 			"styled":   styledMap,
 			"unstyled": unstyledMap,

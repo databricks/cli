@@ -48,7 +48,7 @@ func (f *realLogFile) Writer() io.Writer {
 }
 
 func (f *realLogFile) Open() error {
-	file, err := os.OpenFile(f.s, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+	file, err := os.OpenFile(f.s, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
 	if err != nil {
 		return err
 	}

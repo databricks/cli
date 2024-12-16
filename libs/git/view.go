@@ -113,7 +113,7 @@ func (v *View) EnsureValidGitIgnoreExists() error {
 
 	// Create .gitignore with .databricks entry
 	gitIgnorePath := filepath.Join(v.repo.Root(), v.targetPath, ".gitignore")
-	file, err := os.OpenFile(gitIgnorePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	file, err := os.OpenFile(gitIgnorePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o644)
 	if err != nil {
 		return err
 	}

@@ -51,7 +51,7 @@ type UpdateTracker struct {
 	w                    *databricks.WorkspaceClient
 }
 
-func NewUpdateTracker(pipelineId string, updateId string, w *databricks.WorkspaceClient) *UpdateTracker {
+func NewUpdateTracker(pipelineId, updateId string, w *databricks.WorkspaceClient) *UpdateTracker {
 	return &UpdateTracker{
 		w:                    w,
 		PipelineId:           pipelineId,

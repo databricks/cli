@@ -78,7 +78,7 @@ func TestDetectEmptyFile(t *testing.T) {
 	// Create empty file.
 	dir := t.TempDir()
 	path := filepath.Join(dir, "file.py")
-	err := os.WriteFile(path, nil, 0644)
+	err := os.WriteFile(path, nil, 0o644)
 	require.NoError(t, err)
 
 	// No contents means not a notebook.
@@ -92,7 +92,7 @@ func TestDetectFileWithLongHeader(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "file.py")
 	buf := make([]byte, 128*1024)
-	err := os.WriteFile(path, buf, 0644)
+	err := os.WriteFile(path, buf, 0o644)
 	require.NoError(t, err)
 
 	// Garbage contents means not a notebook.
