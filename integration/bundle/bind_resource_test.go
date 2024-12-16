@@ -163,8 +163,7 @@ func TestGenerateAndBind(t *testing.T) {
 
 	deployBundle(t, ctx, bundleRoot)
 
-	err = destroyBundle(t, ctx, bundleRoot)
-	require.NoError(t, err)
+	destroyBundle(t, ctx, bundleRoot)
 
 	// Check that job is bound and does not extsts after bundle is destroyed
 	_, err = w.Jobs.Get(ctx, jobs.GetJobRequest{

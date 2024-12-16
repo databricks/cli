@@ -183,8 +183,7 @@ func TestBundlePipelineRecreateWithoutAutoApprove(t *testing.T) {
 	deployBundle(t, ctx, bundleRoot)
 
 	t.Cleanup(func() {
-		err := destroyBundle(t, ctx, bundleRoot)
-		require.NoError(t, err)
+		destroyBundle(t, ctx, bundleRoot)
 	})
 
 	// Assert the pipeline is created
@@ -220,8 +219,7 @@ func TestDeployBasicBundleLogs(t *testing.T) {
 	})
 
 	t.Cleanup(func() {
-		err := destroyBundle(t, ctx, root)
-		require.NoError(t, err)
+		destroyBundle(t, ctx, root)
 	})
 
 	currentUser, err := wt.W.CurrentUser.Me(ctx)
