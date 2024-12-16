@@ -20,7 +20,7 @@ import (
 
 func TestAppUploadConfig(t *testing.T) {
 	root := t.TempDir()
-	err := os.MkdirAll(filepath.Join(root, "my_app"), 0700)
+	err := os.MkdirAll(filepath.Join(root, "my_app"), 0o700)
 	require.NoError(t, err)
 
 	b := &bundle.Bundle{

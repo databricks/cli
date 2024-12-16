@@ -57,5 +57,4 @@ func TestAppsOverride(t *testing.T) {
 	assert.Equal(t, "key", app.Resources[2].Secret.Key)
 	assert.Equal(t, "scope", app.Resources[2].Secret.Scope)
 	assert.Equal(t, "CAN_USE", string(app.Resources[2].Secret.Permission))
-
 }

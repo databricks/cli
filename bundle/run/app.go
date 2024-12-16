@@ -102,7 +102,6 @@ func (a *appRunner) start(ctx context.Context) error {
 		}
 		logProgress(ctx, "App is starting...")
 	}).Get()
-
 	if err != nil {
 		return err
 	}
@@ -149,7 +148,6 @@ func (a *appRunner) deploy(ctx context.Context) error {
 			SourceCodePath: app.SourceCodePath,
 		},
 	})
-
 	// If deploy returns an error, then there's an active deployment in progress, wait for it to complete.
 	if err != nil {
 		return err
@@ -161,7 +159,6 @@ func (a *appRunner) deploy(ctx context.Context) error {
 		}
 		logProgress(ctx, ad.Status.Message)
 	}).Get()
-
 	if err != nil {
 		return err
 	}
