@@ -181,7 +181,7 @@ func TestBundlePipelineRecreateWithoutAutoApprove(t *testing.T) {
 		"unique_id": uniqueId,
 	})
 
-	err := deployBundle(t, ctx, bundleRoot)
+	require.NoError(t, deployBundle(t, ctx, bundleRoot))
 	require.NoError(t, err)
 
 	t.Cleanup(func() {

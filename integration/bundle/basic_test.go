@@ -30,9 +30,8 @@ func TestBasicBundleDeployWithFailOnActiveRuns(t *testing.T) {
 	deployBundleWithFlags(t, ctx, root, []string{"--fail-on-active-runs"})
 
 	// Remove .databricks directory to simulate a fresh deployment
-	err = os.RemoveAll(filepath.Join(root, ".databricks"))
-	require.NoError(t, err)
+	require.NoError(t, os.RemoveAll(filepath.Join(root, ".databricks")))
 
 	// deploy empty bundle again
-	deployBundleWithFlags(t, ctx, root, []string{"--fail-on-active-runs"})
+	require.NoError(t, deployBundleWithFlags(t, ctx, root, []string{"--fail-on-active-runs"}))
 }

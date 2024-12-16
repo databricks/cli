@@ -106,7 +106,7 @@ func TestAbortBind(t *testing.T) {
 	assert.ErrorContains(t, err, "failed to bind the resource")
 	assert.ErrorContains(t, err, "This bind operation requires user confirmation, but the current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed")
 
-	deployBundle(t, ctx, bundleRoot)
+	require.NoError(t, deployBundle(t, ctx, bundleRoot))
 
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
