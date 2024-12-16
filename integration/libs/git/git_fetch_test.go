@@ -5,11 +5,10 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/internal/acc"
-	"github.com/databricks/cli/internal/testcli"
-	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/git"
 	"github.com/stretchr/testify/assert"
@@ -39,19 +38,18 @@ func assertSparseGitInfo(t *testing.T, expectedRoot string, info git.RepositoryI
 	assert.Equal(t, expectedRoot, info.WorktreeRoot)
 }
 
+func ensureWorkspacePrefix(root string) string {
+	// The fixture helper doesn't include /Workspace, so include it here.
+	if !strings.HasPrefix(root, "/Workspace/") {
+		return path.Join("/Workspace", root)
+	}
+	return root
+}
+
 func TestFetchRepositoryInfoAPI_FromRepo(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
-	me, err := wt.W.CurrentUser.Me(ctx)
-	require.NoError(t, err)
+	targetPath := ensureWorkspacePrefix(acc.TemporaryRepo(wt, examplesRepoUrl))
 
-	targetPath := testutil.RandomName(path.Join("/Workspace/Users", me.UserName, "/testing-clone-bundle-examples-"))
-	stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "repos", "create", examplesRepoUrl, examplesRepoProvider, "--path", targetPath)
-	t.Cleanup(func() {
-		testcli.RequireSuccessfulRun(t, ctx, "repos", "delete", targetPath)
-	})
-
-	assert.Empty(t, stderr.String())
-	assert.NotEmpty(t, stdout.String())
 	ctx = dbr.MockRuntime(ctx, true)
 
 	for _, inputPath := range []string{
@@ -68,16 +66,12 @@ func TestFetchRepositoryInfoAPI_FromRepo(t *testing.T) {
 
 func TestFetchRepositoryInfoAPI_FromNonRepo(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
-	me, err := wt.W.CurrentUser.Me(ctx)
+	rootPath := ensureWorkspacePrefix(acc.TemporaryWorkspaceDir(wt, "testing-nonrepo-"))
+
+	// Create directory inside this root path (this is cleaned up as part of the root path).
+	err := wt.W.Workspace.MkdirsByPath(ctx, path.Join(rootPath, "a/b/c"))
 	require.NoError(t, err)
 
-	rootPath := testutil.RandomName(path.Join("/Workspace/Users", me.UserName, "testing-nonrepo-"))
-	_, stderr := testcli.RequireSuccessfulRun(t, ctx, "workspace", "mkdirs", path.Join(rootPath, "a/b/c"))
-	t.Cleanup(func() {
-		testcli.RequireSuccessfulRun(t, ctx, "workspace", "delete", "--recursive", rootPath)
-	})
-
-	assert.Empty(t, stderr.String())
 	ctx = dbr.MockRuntime(ctx, true)
 
 	tests := []struct {
