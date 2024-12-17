@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path"
+	"path/filepath"
 	"reflect"
 
 	"github.com/databricks/cli/bundle/config"
@@ -129,9 +129,9 @@ func main() {
 }
 
 func generateSchema(workdir, outputFile string) {
-	annotationsPath := path.Join(workdir, "annotations.yml")
-	annotationsOpenApiPath := path.Join(workdir, "annotations_openapi.yml")
-	annotationsOpenApiOverridesPath := path.Join(workdir, "annotations_openapi_overrides.yml")
+	annotationsPath := filepath.Join(workdir, "annotations.yml")
+	annotationsOpenApiPath := filepath.Join(workdir, "annotations_openapi.yml")
+	annotationsOpenApiOverridesPath := filepath.Join(workdir, "annotations_openapi_overrides.yml")
 
 	// Input file, the databricks openapi spec.
 	inputFile := os.Getenv("DATABRICKS_OPENAPI_SPEC")
