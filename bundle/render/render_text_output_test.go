@@ -376,7 +376,8 @@ func TestRenderDiagnostics(t *testing.T) {
 					Locations: []dyn.Location{{
 						File:   "foo.yaml",
 						Line:   1,
-						Column: 2}},
+						Column: 2,
+					}},
 				},
 			},
 			expected: "Error: failed to load xxx\n" +

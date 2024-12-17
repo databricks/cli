@@ -23,7 +23,7 @@ func (m *overrideCompute) Name() string {
 
 func overrideJobCompute(j *resources.Job, compute string) {
 	for i := range j.Tasks {
-		var task = &j.Tasks[i]
+		task := &j.Tasks[i]
 
 		if task.ForEachTask != nil {
 			task = &task.ForEachTask.Task
@@ -45,8 +45,9 @@ func (m *overrideCompute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 		if b.Config.Bundle.ClusterId != "" {
 			// Overriding compute via a command-line flag for production works, but is not recommended.
 			diags = diags.Extend(diag.Diagnostics{{
-				Summary: "Setting a cluster override for a target that uses 'mode: production' is not recommended",
-				Detail:  "It is recommended to always use the same compute for production target for consistency.",
+				Summary:  "Setting a cluster override for a target that uses 'mode: production' is not recommended",
+				Detail:   "It is recommended to always use the same compute for production target for consistency.",
+				Severity: diag.Warning,
 			}})
 		}
 	}

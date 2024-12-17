@@ -9,8 +9,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 )
 
-type validateSharedRootPermissions struct {
-}
+type validateSharedRootPermissions struct{}
 
 func ValidateSharedRootPermissions() bundle.Mutator {
 	return &validateSharedRootPermissions{}

@@ -110,7 +110,7 @@ func renderSummaryHeaderTemplate(out io.Writer, b *bundle.Bundle) error {
 		return renderSummaryHeaderTemplate(out, &bundle.Bundle{})
 	}
 
-	var currentUser = &iam.User{}
+	currentUser := &iam.User{}
 
 	if b.Config.Workspace.CurrentUser != nil {
 		if b.Config.Workspace.CurrentUser.User != nil {

@@ -50,7 +50,8 @@ func addInterpolationPatterns(typ reflect.Type, s jsonschema.Schema) jsonschema.
 				{
 					Type:    jsonschema.StringType,
 					Pattern: interpolationPattern("var"),
-				}},
+				},
+			},
 		}
 	case jsonschema.IntegerType, jsonschema.NumberType, jsonschema.BooleanType:
 		// primitives can have variable values, or references like ${bundle.xyz}
@@ -173,7 +174,7 @@ func generateSchema(workdir, outputFile string) {
 	}
 
 	// Write the schema descriptions to the output file.
-	err = os.WriteFile(outputFile, b, 0644)
+	err = os.WriteFile(outputFile, b, 0o644)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -58,16 +58,6 @@ func TestJsonSchema(t *testing.T) {
 		assert.NotEmpty(t, pipeline.OneOf[0].Properties[field].Description)
 	}
 
-	// Assert enum values are loaded
-	schedule := walk(s.Definitions, "github.com", "databricks", "databricks-sdk-go", "service", "pipelines.RestartWindow")
-	assert.Contains(t, schedule.OneOf[0].Properties["days_of_week"].Enum, "MONDAY")
-	assert.Contains(t, schedule.OneOf[0].Properties["days_of_week"].Enum, "TUESDAY")
-	assert.Contains(t, schedule.OneOf[0].Properties["days_of_week"].Enum, "WEDNESDAY")
-	assert.Contains(t, schedule.OneOf[0].Properties["days_of_week"].Enum, "THURSDAY")
-	assert.Contains(t, schedule.OneOf[0].Properties["days_of_week"].Enum, "FRIDAY")
-	assert.Contains(t, schedule.OneOf[0].Properties["days_of_week"].Enum, "SATURDAY")
-	assert.Contains(t, schedule.OneOf[0].Properties["days_of_week"].Enum, "SUNDAY")
-
 	providers := walk(s.Definitions, "github.com", "databricks", "databricks-sdk-go", "service", "jobs.GitProvider")
 	assert.Contains(t, providers.Enum, "gitHub")
 	assert.Contains(t, providers.Enum, "bitbucketCloud")

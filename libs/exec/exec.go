@@ -10,9 +10,11 @@ import (
 
 type ExecutableType string
 
-const BashExecutable ExecutableType = `bash`
-const ShExecutable ExecutableType = `sh`
-const CmdExecutable ExecutableType = `cmd`
+const (
+	BashExecutable ExecutableType = `bash`
+	ShExecutable   ExecutableType = `sh`
+	CmdExecutable  ExecutableType = `cmd`
+)
 
 var finders map[ExecutableType](func() (shell, error)) = map[ExecutableType](func() (shell, error)){
 	BashExecutable: newBashShell,

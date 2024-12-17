@@ -13,7 +13,7 @@ import (
 )
 
 func TestThatThisTestPackageIsUsed(t *testing.T) {
-	var base = ".."
+	base := ".."
 	var files []string
 	err := fs.WalkDir(os.DirFS(base), ".", func(path string, d fs.DirEntry, err error) error {
 		if d.IsDir() {

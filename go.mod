@@ -7,7 +7,7 @@ toolchain go1.23.2
 require (
 	github.com/Masterminds/semver/v3 v3.3.1 // MIT
 	github.com/briandowns/spinner v1.23.1 // Apache 2.0
-	github.com/databricks/databricks-sdk-go v0.52.0 // Apache 2.0
+	github.com/databricks/databricks-sdk-go v0.53.0 // Apache 2.0
 	github.com/fatih/color v1.18.0 // MIT
 	github.com/ghodss/yaml v1.0.0 // MIT + NOTICE
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
@@ -28,7 +28,7 @@ require (
 	golang.org/x/oauth2 v0.24.0
 	golang.org/x/sync v0.10.0
 	golang.org/x/term v0.27.0
-	golang.org/x/text v0.20.0
+	golang.org/x/text v0.21.0
 	gopkg.in/ini.v1 v1.67.0 // Apache 2.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -62,7 +62,7 @@ require (
 	go.opentelemetry.io/otel v1.24.0 // indirect
 	go.opentelemetry.io/otel/metric v1.24.0 // indirect
 	go.opentelemetry.io/otel/trace v1.24.0 // indirect
-	golang.org/x/crypto v0.24.0 // indirect
+	golang.org/x/crypto v0.31.0 // indirect
 	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/time v0.5.0 // indirect

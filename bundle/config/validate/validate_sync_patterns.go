@@ -17,8 +17,7 @@ func ValidateSyncPatterns() bundle.ReadOnlyMutator {
 	return &validateSyncPatterns{}
 }
 
-type validateSyncPatterns struct {
-}
+type validateSyncPatterns struct{}
 
 func (v *validateSyncPatterns) Name() string {
 	return "validate:validate_sync_patterns"

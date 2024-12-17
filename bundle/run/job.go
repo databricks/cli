@@ -143,7 +143,7 @@ func logProgressCallback(ctx context.Context, progressLogger *cmdio.Logger) func
 		progressLogger.Log(event)
 
 		// log progress events in using the default logger
-		log.Infof(ctx, event.String())
+		log.Info(ctx, event.String())
 	}
 }
 
@@ -203,7 +203,7 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 		logDebug(r)
 		logProgress(r)
 	}).GetWithTimeout(jobRunTimeout)
-	if err != nil && runId != nil {
+	if err != nil {
 		r.logFailedTasks(ctx, *runId)
 	}
 	if err != nil {
@@ -289,7 +289,6 @@ func (r *jobRunner) Cancel(ctx context.Context) error {
 		ActiveOnly: true,
 		JobId:      jobID,
 	})
-
 	if err != nil {
 		return err
 	}

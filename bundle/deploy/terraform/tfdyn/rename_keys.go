@@ -11,7 +11,7 @@ import (
 // definition uses the plural name. This function can convert between the two.
 func renameKeys(v dyn.Value, rename map[string]string) (dyn.Value, error) {
 	var err error
-	var acc = dyn.V(map[string]dyn.Value{})
+	acc := dyn.V(map[string]dyn.Value{})
 
 	nv, err := dyn.Walk(v, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 		if len(p) == 0 {
@@ -36,7 +36,6 @@ func renameKeys(v dyn.Value, rename map[string]string) (dyn.Value, error) {
 		// Pass through all other values.
 		return v, dyn.ErrSkip
 	})
-
 	if err != nil {
 		return dyn.InvalidValue, err
 	}

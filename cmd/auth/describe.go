@@ -59,7 +59,6 @@ func newDescribeCommand() *cobra.Command {
 			isAccount, err := root.MustAnyClient(cmd, args)
 			return root.ConfigUsed(cmd.Context()), isAccount, err
 		})
-
 		if err != nil {
 			return err
 		}

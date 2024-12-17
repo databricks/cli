@@ -45,8 +45,9 @@ func (f *outputFlag) initializeIO(cmd *cobra.Command) error {
 		headerTemplate = cmd.Annotations["headerTemplate"]
 	}
 
-	cmdIO := cmdio.NewIO(f.output, cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr(), headerTemplate, template)
-	ctx := cmdio.InContext(cmd.Context(), cmdIO)
+	ctx := cmd.Context()
+	cmdIO := cmdio.NewIO(ctx, f.output, cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr(), headerTemplate, template)
+	ctx = cmdio.InContext(ctx, cmdIO)
 	cmd.SetContext(ctx)
 	return nil
 }

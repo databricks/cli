@@ -39,7 +39,7 @@ func (opts exportDirOptions) callback(ctx context.Context, workspaceFiler filer.
 
 		// create directory and return early
 		if d.IsDir() {
-			return os.MkdirAll(targetPath, 0755)
+			return os.MkdirAll(targetPath, 0o755)
 		}
 
 		// Add extension to local file path if the file is a notebook

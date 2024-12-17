@@ -160,9 +160,6 @@ func newCreateSchedule() *cobra.Command {
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -242,9 +239,6 @@ func newCreateSubscription() *cobra.Command {
     DASHBOARD_ID: UUID identifying the dashboard to which the subscription belongs.
     SCHEDULE_ID: UUID identifying the schedule to which the subscription belongs.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -322,9 +316,6 @@ func newDeleteSchedule() *cobra.Command {
     DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.
     SCHEDULE_ID: UUID identifying the schedule.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -383,9 +374,6 @@ func newDeleteSubscription() *cobra.Command {
     DASHBOARD_ID: UUID identifying the dashboard which the subscription belongs.
     SCHEDULE_ID: UUID identifying the schedule which the subscription belongs.
     SUBSCRIPTION_ID: UUID identifying the subscription.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -562,9 +550,6 @@ func newGetSchedule() *cobra.Command {
     DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.
     SCHEDULE_ID: UUID identifying the schedule.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -623,9 +608,6 @@ func newGetSubscription() *cobra.Command {
     DASHBOARD_ID: UUID identifying the dashboard which the subscription belongs.
     SCHEDULE_ID: UUID identifying the schedule which the subscription belongs.
     SUBSCRIPTION_ID: UUID identifying the subscription.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -739,9 +721,6 @@ func newListSchedules() *cobra.Command {
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard to which the schedules belongs.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -797,9 +776,6 @@ func newListSubscriptions() *cobra.Command {
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard which the subscriptions belongs.
     SCHEDULE_ID: UUID identifying the schedule which the subscriptions belongs.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1214,9 +1190,6 @@ func newUpdateSchedule() *cobra.Command {
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.
     SCHEDULE_ID: UUID identifying the schedule.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
