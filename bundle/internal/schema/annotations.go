@@ -87,7 +87,7 @@ func (d *annotationHandler) addAnnotations(typ reflect.Type, s jsonschema.Schema
 
 	rootTypeAnnotation, ok := annotations[RootTypeKey]
 	if ok {
-		assingAnnotation(&s, rootTypeAnnotation)
+		assignAnnotation(&s, rootTypeAnnotation)
 	}
 
 	for k, v := range s.Properties {
@@ -105,7 +105,7 @@ func (d *annotationHandler) addAnnotations(typ reflect.Type, s jsonschema.Schema
 			}
 			emptyAnnotations[k] = item
 		}
-		assingAnnotation(v, item)
+		assignAnnotation(v, item)
 	}
 	return s
 }
@@ -141,7 +141,7 @@ func getPath(typ reflect.Type) string {
 	return typ.PkgPath() + "." + typ.Name()
 }
 
-func assingAnnotation(s *jsonschema.Schema, a annotation) {
+func assignAnnotation(s *jsonschema.Schema, a annotation) {
 	if a.Description != Placeholder {
 		s.Description = a.Description
 	}
