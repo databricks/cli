@@ -1,13 +1,19 @@
 package main
 
 import (
+	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"path"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/merge"
+	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
@@ -55,11 +61,25 @@ func TestRequiredAnnotationsForNewFields(t *testing.T) {
 
 	generateSchema(workdir, path.Join(t.TempDir(), "schema.json"))
 
-	original, err := os.ReadFile("annotations.yml")
+	originalFile, err := os.ReadFile("annotations.yml")
 	assert.NoError(t, err)
-	copied, err := os.ReadFile(annotationsPath)
+	currentFile, err := os.ReadFile(annotationsPath)
 	assert.NoError(t, err)
-	assert.Equal(t, string(original), string(copied), "Missing JSON-schema descriptions for new config fields in bundle/internal/schema/annotations.yml")
+	original, err := yamlloader.LoadYAML("", bytes.NewBuffer(originalFile))
+	assert.NoError(t, err)
+	current, err := yamlloader.LoadYAML("", bytes.NewBuffer(currentFile))
+	assert.NoError(t, err)
+
+	// Collect added paths.
+	var updatedFieldPaths []string
+	_, err = merge.Override(original, current, merge.OverrideVisitor{
+		VisitInsert: func(basePath dyn.Path, right dyn.Value) (dyn.Value, error) {
+			updatedFieldPaths = append(updatedFieldPaths, basePath.String())
+			return right, nil
+		},
+	})
+	assert.NoError(t, err)
+	assert.Empty(t, updatedFieldPaths, fmt.Sprintf("Missing JSON-schema descriptions for new config fields in bundle/internal/schema/annotations.yml:\n%s", strings.Join(updatedFieldPaths, "\n")))
 }
 
 // Checks whether types in annotation files are still present in Config type
