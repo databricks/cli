@@ -109,8 +109,8 @@ func (d *annotationHandler) addAnnotations(typ reflect.Type, s jsonschema.Schema
 	return s
 }
 
-// Adds empty annotations with placeholders to the annotation file
-func (d *annotationHandler) sync(outputPath string) error {
+// Writes missing annotations with placeholder values back to the annotation file
+func (d *annotationHandler) syncWithMissingAnnotations(outputPath string) error {
 	existingFile, err := os.ReadFile(outputPath)
 	if err != nil {
 		return err

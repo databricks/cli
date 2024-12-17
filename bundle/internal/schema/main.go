@@ -163,7 +163,8 @@ func generateSchema(workdir, outputFile string) {
 		log.Fatal(err)
 	}
 
-	err = a.sync(annotationsPath)
+	// Overwrite the input annotation file, adding missing annotations
+	err = a.syncWithMissingAnnotations(annotationsPath)
 	if err != nil {
 		log.Fatal(err)
 	}
