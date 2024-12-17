@@ -1,11 +1,5 @@
 default: build
 
-fmt:
-	@echo "✓ Formatting source code with goimports ..."
-	@goimports -w $(shell find . -type f -name '*.go' -not -path "./vendor/*")
-	@echo "✓ Formatting source code with gofmt ..."
-	@gofmt -w $(shell find . -type f -name '*.go' -not -path "./vendor/*")
-
 lint: vendor
 	@echo "✓ Linting source code with https://golangci-lint.run/ (with --fix)..."
 	@golangci-lint run --fix ./...
@@ -44,4 +38,4 @@ integration:
 integration-short:
 	$(INTEGRATION) -short
 
-.PHONY: fmt lint lintcheck test testonly coverage build snapshot vendor integration integration-short
+.PHONY: lint lintcheck test testonly coverage build snapshot vendor integration integration-short
