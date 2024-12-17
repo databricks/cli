@@ -36,7 +36,12 @@ vendor:
 	@echo "✓ Filling vendor folder with library code ..."
 	@go mod vendor
 
-integration:
-	gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./integration/..." -- -parallel 4 -timeout=2h -short
+INTEGRATION = gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./integration/..." -- -parallel 4 -timeout=2h
 
-.PHONY: fmt lint lintcheck test testonly coverage build snapshot vendor integration
+integration:
+	$(INTEGRATION)
+
+integration-short:
+	$(INTEGRATION) -short
+
+.PHONY: fmt lint lintcheck test testonly coverage build snapshot vendor integration integration-short
