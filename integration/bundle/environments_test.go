@@ -3,7 +3,7 @@ package bundle_test
 import (
 	"testing"
 
-	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/integration/internal/acc"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
