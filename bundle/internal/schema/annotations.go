@@ -91,10 +91,7 @@ func (d *annotationHandler) addAnnotations(typ reflect.Type, s jsonschema.Schema
 	}
 
 	for k, v := range s.Properties {
-		item, ok := annotations[k]
-		if !ok {
-			item = annotation{}
-		}
+		item := annotations[k]
 		if item.Description == "" {
 			item.Description = Placeholder
 
