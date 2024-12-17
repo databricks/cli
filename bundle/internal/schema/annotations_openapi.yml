@@ -1304,7 +1304,7 @@ github.com/databricks/databricks-sdk-go/service/jobs.JobParameterDefinition:
 github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs:
   _:
     description: |-
-      Write-only setting. Specifies the user, service principal or group that the job/pipeline runs as. If not specified, the job/pipeline runs as the user who created the job/pipeline.
+      Write-only setting. Specifies the user or service principal that the job runs as. If not specified, the job runs as the user who created the job.
 
       Either `user_name` or `service_principal_name` should be specified. If not, an error is thrown.
   service_principal_name:
@@ -2136,14 +2136,6 @@ github.com/databricks/databricks-sdk-go/service/pipelines.RestartWindow:
     description: |-
       Days of week in which the restart is allowed to happen (within a five-hour window starting at start_hour).
       If not specified all days of the week will be used.
-    enum:
-    - MONDAY
-    - TUESDAY
-    - WEDNESDAY
-    - THURSDAY
-    - FRIDAY
-    - SATURDAY
-    - SUNDAY
   start_hour:
     description: |-
       An integer between 0 and 23 denoting the start hour for the restart window in the 24-hour day.
@@ -2152,6 +2144,19 @@ github.com/databricks/databricks-sdk-go/service/pipelines.RestartWindow:
     description: |-
       Time zone id of restart window. See https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html for details.
       If not specified, UTC will be used.
+github.com/databricks/databricks-sdk-go/service/pipelines.RestartWindowDaysOfWeek:
+  _:
+    description: |-
+      Days of week in which the restart is allowed to happen (within a five-hour window starting at start_hour).
+      If not specified all days of the week will be used.
+    enum:
+    - MONDAY
+    - TUESDAY
+    - WEDNESDAY
+    - THURSDAY
+    - FRIDAY
+    - SATURDAY
+    - SUNDAY
 github.com/databricks/databricks-sdk-go/service/pipelines.SchemaSpec:
   destination_catalog:
     description: Required. Destination catalog to store tables.
