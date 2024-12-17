@@ -29,6 +29,11 @@ func runPythonWheelTest(t *testing.T, templateName, sparkVersion string, pythonW
 		destroyBundle(t, ctx, bundleRoot)
 	})
 
+	if testing.Short() {
+		t.Log("Skip the job run in short mode")
+		return
+	}
+
 	out, err := runResource(t, ctx, bundleRoot, "some_other_job")
 	require.NoError(t, err)
 	require.Contains(t, out, "Hello from my func")
