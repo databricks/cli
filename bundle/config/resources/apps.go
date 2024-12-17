@@ -12,11 +12,6 @@ import (
 )
 
 type App struct {
-	// This represents the id which is the name of the app that can be used
-	// as a reference in other resources. This value is returned by terraform.
-	// This equals to app name and added for symmetry with other resources.
-	ID string `json:"id,omitempty" bundle:"readonly"`
-
 	// SourceCodePath is a required field used by DABs to point to Databricks app source code
 	// on local disk and to the corresponding workspace path during app deployment.
 	SourceCodePath string `json:"source_code_path"`
@@ -56,10 +51,10 @@ func (a *App) TerraformResourceName() string {
 }
 
 func (a *App) InitializeURL(baseURL url.URL) {
-	if a.ID == "" {
+	if a.Name == "" {
 		return
 	}
-	baseURL.Path = fmt.Sprintf("apps/%s", a.ID)
+	baseURL.Path = fmt.Sprintf("apps/%s", a.Name)
 	a.URL = baseURL.String()
 }
 

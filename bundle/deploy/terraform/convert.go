@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform/tfdyn"
 	"github.com/databricks/cli/bundle/internal/tf/schema"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/databricks-sdk-go/service/apps"
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
@@ -202,9 +203,9 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 				}
 				cur := config.Resources.Apps[resource.Name]
 				if cur == nil {
-					cur = &resources.App{ModifiedStatus: resources.ModifiedStatusDeleted}
+					cur = &resources.App{ModifiedStatus: resources.ModifiedStatusDeleted, App: &apps.App{}}
 				}
-				cur.ID = instance.Attributes.ID
+				cur.Name = instance.Attributes.Name
 				config.Resources.Apps[resource.Name] = cur
 			case "databricks_permissions":
 			case "databricks_grants":
@@ -271,7 +272,7 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 		}
 	}
 	for _, src := range config.Resources.Apps {
-		if src.ModifiedStatus == "" && src.ID == "" {
+		if src.ModifiedStatus == "" && src.Name == "" {
 			src.ModifiedStatus = resources.ModifiedStatusCreated
 		}
 	}

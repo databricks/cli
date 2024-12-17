@@ -700,7 +700,7 @@ func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
 				Mode: "managed",
 				Name: "test_app",
 				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "1"}},
+					{Attributes: stateInstanceAttributes{Name: "app1"}},
 				},
 			},
 		},
@@ -741,7 +741,7 @@ func TestTerraformToBundleEmptyLocalResources(t *testing.T) {
 	assert.Equal(t, "1", config.Resources.Dashboards["test_dashboard"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Dashboards["test_dashboard"].ModifiedStatus)
 
-	assert.Equal(t, "1", config.Resources.Apps["test_app"].ID)
+	assert.Equal(t, "app1", config.Resources.Apps["test_app"].Name)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Apps["test_app"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
@@ -830,7 +830,7 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 			Apps: map[string]*resources.App{
 				"test_app": {
 					App: &apps.App{
-						Name: "test_app",
+						Description: "test_app",
 					},
 				},
 			},
@@ -875,7 +875,7 @@ func TestTerraformToBundleEmptyRemoteResources(t *testing.T) {
 	assert.Equal(t, "", config.Resources.Dashboards["test_dashboard"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Dashboards["test_dashboard"].ModifiedStatus)
 
-	assert.Equal(t, "", config.Resources.Apps["test_app"].ID)
+	assert.Equal(t, "", config.Resources.Apps["test_app"].Name)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Apps["test_app"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
@@ -1019,12 +1019,12 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 			Apps: map[string]*resources.App{
 				"test_app": {
 					App: &apps.App{
-						Name: "test_app",
+						Description: "test_app",
 					},
 				},
 				"test_app_new": {
 					App: &apps.App{
-						Name: "test_app_new",
+						Description: "test_app_new",
 					},
 				},
 			},
@@ -1213,7 +1213,7 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 				Mode: "managed",
 				Name: "test_app",
 				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "1"}},
+					{Attributes: stateInstanceAttributes{Name: "app1"}},
 				},
 			},
 			{
@@ -1221,7 +1221,7 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 				Mode: "managed",
 				Name: "test_app_old",
 				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "2"}},
+					{Attributes: stateInstanceAttributes{Name: "app2"}},
 				},
 			},
 		},
@@ -1306,11 +1306,11 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, "", config.Resources.Dashboards["test_dashboard_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Dashboards["test_dashboard_new"].ModifiedStatus)
 
-	assert.Equal(t, "1", config.Resources.Apps["test_app"].ID)
+	assert.Equal(t, "app1", config.Resources.Apps["test_app"].Name)
 	assert.Equal(t, "", config.Resources.Apps["test_app"].ModifiedStatus)
-	assert.Equal(t, "2", config.Resources.Apps["test_app_old"].ID)
+	assert.Equal(t, "app2", config.Resources.Apps["test_app_old"].Name)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Apps["test_app_old"].ModifiedStatus)
-	assert.Equal(t, "", config.Resources.Apps["test_app_new"].ID)
+	assert.Equal(t, "", config.Resources.Apps["test_app_new"].Name)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Apps["test_app_new"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
