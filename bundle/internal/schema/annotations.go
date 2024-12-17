@@ -31,6 +31,12 @@ type annotationHandler struct {
 	empty annotationFile
 }
 
+/**
+ * Parsed file with annotations, expected format:
+ * github.com/databricks/cli/bundle/config.Bundle:
+ *  	cluster_id:
+ *      description: "Description"
+ */
 type annotationFile map[string]map[string]annotation
 
 const Placeholder = "PLACEHOLDER"
