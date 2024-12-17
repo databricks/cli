@@ -12,11 +12,11 @@ import (
 )
 
 func TestDeployBundleWithCluster(t *testing.T) {
-	ctx, wt := acc.WorkspaceTest(t)
-
-	if testutil.IsAWSCloud(wt) {
+	if testutil.GetCloud(t) == testutil.AWS {
 		t.Skip("Skipping test for AWS cloud because it is not permitted to create clusters")
 	}
+
+	ctx, wt := acc.WorkspaceTest(t)
 
 	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
 	uniqueId := uuid.New().String()
