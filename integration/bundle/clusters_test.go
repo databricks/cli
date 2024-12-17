@@ -44,6 +44,11 @@ func TestDeployBundleWithCluster(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cluster)
 
+	if testing.Short() {
+		t.Log("Skip the job run in short mode")
+		return
+	}
+
 	out, err := runResource(t, ctx, root, "foo")
 	require.NoError(t, err)
 	require.Contains(t, out, "Hello World!")
