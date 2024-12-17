@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/integration/internal/acc"
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/stretchr/testify/assert"

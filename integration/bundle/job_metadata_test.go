@@ -10,7 +10,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/metadata"
-	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/integration/internal/acc"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/google/uuid"

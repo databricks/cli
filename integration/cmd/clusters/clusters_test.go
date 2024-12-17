@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/integration/internal/acc"
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/databricks/databricks-sdk-go/service/compute"

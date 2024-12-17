@@ -1,11 +1,5 @@
 default: build
 
-fmt:
-	@echo "✓ Formatting source code with goimports ..."
-	@goimports -w $(shell find . -type f -name '*.go' -not -path "./vendor/*")
-	@echo "✓ Formatting source code with gofmt ..."
-	@gofmt -w $(shell find . -type f -name '*.go' -not -path "./vendor/*")
-
 lint: vendor
 	@echo "✓ Linting source code with https://golangci-lint.run/ (with --fix)..."
 	@golangci-lint run --fix ./...
@@ -36,7 +30,12 @@ vendor:
 	@echo "✓ Filling vendor folder with library code ..."
 	@go mod vendor
 
-integration:
-	gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./integration/..." -- -p 8 -parallel 8 -timeout=2h
+INTEGRATION = gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./integration/..." -- -p 8 -parallel 8 -timeout=2h
 
-.PHONY: fmt lint lintcheck test testonly coverage build snapshot vendor integration
+integration:
+	$(INTEGRATION)
+
+integration-short:
+	$(INTEGRATION) -short
+
+.PHONY: lint lintcheck test testonly coverage build snapshot vendor integration integration-short

@@ -31,7 +31,7 @@ function cli_snapshot_directory() {
         dir="${dir}_386"
         ;;
     arm64|aarch64)
-        dir="${dir}_arm64"
+        dir="${dir}_arm64_v8.0"
         ;;
     armv7l|armv8l)
         dir="${dir}_arm_6"

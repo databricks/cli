@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/integration/internal/acc"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
 	"github.com/google/uuid"
@@ -29,6 +29,11 @@ func runSparkJarTestCommon(t *testing.T, ctx context.Context, sparkVersion, arti
 	t.Cleanup(func() {
 		destroyBundle(t, ctx, bundleRoot)
 	})
+
+	if testing.Short() {
+		t.Log("Skip the job run in short mode")
+		return
+	}
 
 	out, err := runResource(t, ctx, bundleRoot, "jar_job")
 	require.NoError(t, err)
