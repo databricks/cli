@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAccDeployBundleWithApp(t *testing.T) {
+func TestDeployBundleWithApp(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
 	uniqueId := uuid.New().String()
 	appId := fmt.Sprintf("app-%s", uuid.New().String()[0:8])
