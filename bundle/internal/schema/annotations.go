@@ -27,8 +27,10 @@ type annotation struct {
 }
 
 type annotationHandler struct {
-	ref   annotationFile
-	empty annotationFile
+	// Annotations read from all annotation files including all overrides
+	parsedAnnotations annotationFile
+	// Missing annotations for fields that are found in config that need to be added to the annotation file
+	missingAnnotations annotationFile
 }
 
 /**
@@ -68,8 +70,8 @@ func newAnnotationHandler(sources []string) (*annotationHandler, error) {
 	}
 
 	d := &annotationHandler{}
-	d.ref = data
-	d.empty = annotationFile{}
+	d.parsedAnnotations = data
+	d.missingAnnotations = annotationFile{}
 	return d, nil
 }
 
@@ -80,7 +82,7 @@ func (d *annotationHandler) addAnnotations(typ reflect.Type, s jsonschema.Schema
 		return s
 	}
 
-	annotations := d.ref[refPath]
+	annotations := d.parsedAnnotations[refPath]
 	if annotations == nil {
 		annotations = map[string]annotation{}
 	}
@@ -95,10 +97,10 @@ func (d *annotationHandler) addAnnotations(typ reflect.Type, s jsonschema.Schema
 		if item.Description == "" {
 			item.Description = Placeholder
 
-			emptyAnnotations := d.empty[refPath]
+			emptyAnnotations := d.missingAnnotations[refPath]
 			if emptyAnnotations == nil {
 				emptyAnnotations = map[string]annotation{}
-				d.empty[refPath] = emptyAnnotations
+				d.missingAnnotations[refPath] = emptyAnnotations
 			}
 			emptyAnnotations[k] = item
 		}
@@ -117,7 +119,7 @@ func (d *annotationHandler) sync(outputPath string) error {
 	if err != nil {
 		return err
 	}
-	missingAnnotations, err := convert.FromTyped(&d.empty, dyn.NilValue)
+	missingAnnotations, err := convert.FromTyped(&d.missingAnnotations, dyn.NilValue)
 	if err != nil {
 		return err
 	}
