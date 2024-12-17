@@ -139,7 +139,6 @@ func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overrid
 			return s
 		},
 	})
-
 	if err != nil {
 		return err
 	}
@@ -161,7 +160,7 @@ func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overrid
 		return err
 	}
 	b = bytes.Join([][]byte{[]byte("# This file is auto-generated. DO NOT EDIT."), b}, []byte("\n"))
-	err = os.WriteFile(outputPath, b, 0644)
+	err = os.WriteFile(outputPath, b, 0o644)
 	if err != nil {
 		return err
 	}
