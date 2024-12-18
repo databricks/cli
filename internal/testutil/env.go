@@ -61,3 +61,25 @@ func Chdir(t TestingT, dir string) string {
 
 	return wd
 }
+
+func InsertPathEntry(t TestingT, path string) {
+	var separator string
+	if runtime.GOOS == "windows" {
+		separator = ";"
+	} else {
+		separator = ":"
+	}
+
+	t.Setenv("PATH", path+separator+os.Getenv("PATH"))
+}
+
+func InsertVirtualenvInPath(t TestingT, venvPath string) {
+	if runtime.GOOS == "windows" {
+		// https://github.com/pypa/virtualenv/commit/993ba1316a83b760370f5a3872b3f5ef4dd904c1
+		venvPath = filepath.Join(venvPath, "Scripts")
+	} else {
+		venvPath = filepath.Join(venvPath, "bin")
+	}
+
+	InsertPathEntry(t, venvPath)
+}

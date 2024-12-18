@@ -25,15 +25,32 @@ func DetectExecutable(ctx context.Context) (string, error) {
 	// the parent directory tree.
 	//
 	// See https://github.com/pyenv/pyenv#understanding-python-version-selection
+
+	// On Windows when virtualenv is created, the <env>/Scripts directory
+	// contains python.exe but no python3.exe. However, system python does have python3 entry
+	// and it is also added to PATH, so it is found first.
+	if runtime.GOOS == "windows" {
+		out, err := exec.LookPath("python.exe")
+		if err == nil && out != "" {
+			return out, nil
+		}
+		if err != nil && !errors.Is(err, exec.ErrNotFound) {
+			return "", err
+		}
+	}
+
 	out, err := exec.LookPath("python3")
+
 	// most of the OS'es have python3 in $PATH, but for those which don't,
 	// we perform the latest version lookup
 	if err != nil && !errors.Is(err, exec.ErrNotFound) {
 		return "", err
 	}
+
 	if out != "" {
 		return out, nil
 	}
+
 	// otherwise, detect all interpreters and pick the least that satisfies
 	// minimal version requirements
 	all, err := DetectInterpreters(ctx)
