@@ -111,6 +111,10 @@ func FromType(typ reflect.Type, fns []func(typ reflect.Type, s Schema) Schema) (
 	return res, nil
 }
 
+func TypePath(typ reflect.Type) string {
+	return typePath(typ)
+}
+
 // typePath computes a unique string representation of the type. $ref in the generated
 // JSON schema will refer to this path. See TestTypePath for examples outputs.
 func typePath(typ reflect.Type) string {
