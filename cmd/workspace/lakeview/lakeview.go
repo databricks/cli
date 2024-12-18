@@ -828,6 +828,7 @@ func newMigrate() *cobra.Command {
 
 	cmd.Flags().StringVar(&migrateReq.DisplayName, "display-name", migrateReq.DisplayName, `Display name for the new Lakeview dashboard.`)
 	cmd.Flags().StringVar(&migrateReq.ParentPath, "parent-path", migrateReq.ParentPath, `The workspace path of the folder to contain the migrated Lakeview dashboard.`)
+	cmd.Flags().BoolVar(&migrateReq.UpdateParameterSyntax, "update-parameter-syntax", migrateReq.UpdateParameterSyntax, `Flag to indicate if mustache parameter syntax ({{ param }}) should be auto-updated to named syntax (:param) when converting datasets in the dashboard.`)
 
 	cmd.Use = "migrate SOURCE_DASHBOARD_ID"
 	cmd.Short = `Migrate dashboard.`

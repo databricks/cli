@@ -5,6 +5,9 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
   "docker_image":
     "description": |-
       PLACEHOLDER
+  "kind":
+    "description": |-
+      PLACEHOLDER
   "permissions":
     "description": |-
       PLACEHOLDER
@@ -88,6 +91,9 @@ github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
     "description": |-
       PLACEHOLDER
   "docker_image":
+    "description": |-
+      PLACEHOLDER
+  "kind":
     "description": |-
       PLACEHOLDER
   "runtime_engine":
