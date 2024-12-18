@@ -9,10 +9,9 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/ghodss/yaml"
-
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/jsonschema"
+	"gopkg.in/yaml.v3"
 )
 
 type Components struct {
