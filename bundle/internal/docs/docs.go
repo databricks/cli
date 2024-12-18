@@ -34,7 +34,7 @@ type rootProp struct {
 	topLevel bool
 }
 
-func getNodes(s jsonschema.Schema, refs map[string]jsonschema.Schema, a annotationFile) []rootNode {
+func getNodes(s jsonschema.Schema, refs map[string]jsonschema.Schema, customFields map[string]bool) []rootNode {
 	rootProps := []rootProp{}
 	for k, v := range s.Properties {
 		rootProps = append(rootProps, rootProp{k, v, true})
@@ -42,23 +42,24 @@ func getNodes(s jsonschema.Schema, refs map[string]jsonschema.Schema, a annotati
 	nodes := make([]rootNode, 0, len(rootProps))
 
 	for i := 0; i < len(rootProps); i++ {
-		k := rootProps[i].k
-		v := rootProps[i].v
+		item := rootProps[i]
+		k := item.k
+		v := item.v
 		v = resolveRefs(v, refs)
 		node := rootNode{
 			Title:       k,
-			Description: getDescription(v),
-			TopLevel:    rootProps[i].topLevel,
+			Description: getDescription(v, item.topLevel),
+			TopLevel:    item.topLevel,
 		}
 
 		node.Attributes = getAttributes(v.Properties, refs)
-		rootProps = append(rootProps, extractNodes(k, v.Properties, refs, a)...)
+		rootProps = append(rootProps, extractNodes(k, v.Properties, refs, customFields)...)
 
 		additionalProps, ok := v.AdditionalProperties.(*jsonschema.Schema)
 		if ok {
 			objectKeyType := resolveRefs(additionalProps, refs)
 			node.ObjectKeyAttributes = getAttributes(objectKeyType.Properties, refs)
-			rootProps = append(rootProps, extractNodes(k, objectKeyType.Properties, refs, a)...)
+			rootProps = append(rootProps, extractNodes(k, objectKeyType.Properties, refs, customFields)...)
 		}
 
 		if v.Items != nil {
@@ -181,7 +182,7 @@ func getAttributes(props map[string]*jsonschema.Schema, refs map[string]jsonsche
 		attributes = append(attributes, attributeNode{
 			Title:       k,
 			Type:        typeString,
-			Description: getDescription(v),
+			Description: getDescription(v, true),
 		})
 	}
 	sort.Slice(attributes, func(i, j int) bool {
@@ -190,8 +191,8 @@ func getAttributes(props map[string]*jsonschema.Schema, refs map[string]jsonsche
 	return attributes
 }
 
-func getDescription(s *jsonschema.Schema) string {
-	if s.MarkdownDescription != "" {
+func getDescription(s *jsonschema.Schema, allowMarkdown bool) string {
+	if allowMarkdown && s.MarkdownDescription != "" {
 		return s.MarkdownDescription
 	}
 	return s.Description
@@ -226,14 +227,22 @@ func resolveRefs(s *jsonschema.Schema, schemas map[string]jsonschema.Schema) *js
 	return node
 }
 
-func extractNodes(prefix string, props map[string]*jsonschema.Schema, refs map[string]jsonschema.Schema, a annotationFile) []rootProp {
+func shouldExtract(ref string, customFields map[string]bool) bool {
+	refKey := strings.TrimPrefix(ref, "#/$defs/")
+	_, isCustomField := customFields[refKey]
+	return isCustomField
+}
+
+func extractNodes(prefix string, props map[string]*jsonschema.Schema, refs map[string]jsonschema.Schema, customFields map[string]bool) []rootProp {
 	nodes := []rootProp{}
 	for k, v := range props {
+		if !shouldExtract(*v.Reference, customFields) {
+			continue
+		}
 		v = resolveRefs(v, refs)
 		if v.Type == "object" {
 			nodes = append(nodes, rootProp{prefix + "." + k, v, false})
 		}
-		v.MarkdownDescription = ""
 	}
 	return nodes
 }

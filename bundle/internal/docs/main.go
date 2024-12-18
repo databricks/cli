@@ -91,21 +91,24 @@ type annotation struct {
 
 func generateDocs(workdir, outputPath string) error {
 	annotationsPath := filepath.Join(workdir, "annotations.yml")
-	annotationsOpenApiPath := filepath.Join(workdir, "annotations_openapi.yml")
-	annotationsOpenApiOverridesPath := filepath.Join(workdir, "annotations_openapi_overrides.yml")
 
-	annotations, err := LoadAndMergeAnnotations([]string{annotationsPath, annotationsOpenApiPath, annotationsOpenApiOverridesPath})
+	annotations, err := LoadAndMergeAnnotations([]string{annotationsPath})
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	schemas := map[string]jsonschema.Schema{}
+	customFields := map[string]bool{}
 
 	s, err := jsonschema.FromType(reflect.TypeOf(config.Root{}), []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
 		removeJobsFields,
 		makeVolumeTypeOptional,
 
 		func(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
+			_, isCustomField := annotations[jsonschema.TypePath(typ)]
+			if isCustomField {
+				customFields[jsonschema.TypePath(typ)] = true
+			}
 			schemas[jsonschema.TypePath(typ)] = s
 
 			refPath := getPath(typ)
@@ -135,7 +138,7 @@ func generateDocs(workdir, outputPath string) error {
 		log.Fatal(err)
 	}
 
-	nodes := getNodes(s, schemas, annotations)
+	nodes := getNodes(s, schemas, customFields)
 	err = buildMarkdown(nodes, outputPath)
 	if err != nil {
 		log.Fatal(err)
