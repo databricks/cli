@@ -1,5 +1,6 @@
   
 ## artifacts
+  
 Defines the attributes to build an artifact
   
   
@@ -46,9 +47,9 @@ Each item has the following attributes:
   
   
 ## bundle
+  
 The attributes of the bundle. See [_](/dev-tools/bundles/settings.md#bundle)
   
-#### Attributes
   
   
 .. list-table::
@@ -88,9 +89,9 @@ The attributes of the bundle. See [_](/dev-tools/bundles/settings.md#bundle)
   
   
 ### bundle.deployment
+  
 The definition of the bundle deployment
   
-#### Attributes
   
   
 .. list-table::
@@ -110,9 +111,9 @@ The definition of the bundle deployment
   
   
 ### bundle.deployment.lock
+  
 The deployment lock attributes.
   
-#### Attributes
   
   
 .. list-table::
@@ -132,9 +133,9 @@ The deployment lock attributes.
   
   
 ### bundle.git
+  
 The Git version control details that are associated with your bundle.
   
-#### Attributes
   
   
 .. list-table::
@@ -154,9 +155,9 @@ The Git version control details that are associated with your bundle.
   
   
 ## experimental
+  
 Defines attributes for experimental features.
   
-#### Attributes
   
   
 .. list-table::
@@ -184,9 +185,9 @@ Defines attributes for experimental features.
   
   
 ### experimental.pydabs
+  
 The PyDABs configuration.
   
-#### Attributes
   
   
 .. list-table::
@@ -210,10 +211,12 @@ The PyDABs configuration.
   
   
 ## include
+  
 Specifies a list of path globs that contain configuration files to include within the bundle. See [_](/dev-tools/bundles/settings.md#include)
   
   
 ## permissions
+  
 Defines the permissions to apply to experiments, jobs, pipelines, and models defined in the bundle. See [_](/dev-tools/bundles/settings.md#permissions) and [_](/dev-tools/bundles/permissions.md).
   
 Each item of `permissions` has the following attributes:
@@ -244,9 +247,9 @@ Each item of `permissions` has the following attributes:
   
   
 ## presets
+  
 Defines bundle deployment presets. See [_](/dev-tools/bundles/deployment-modes.md#presets).
   
-#### Attributes
   
   
 .. list-table::
@@ -282,9 +285,9 @@ Defines bundle deployment presets. See [_](/dev-tools/bundles/deployment-modes.m
   
   
 ## resources
+  
 Specifies information about the Databricks resources used by the bundle. See [_](/dev-tools/bundles/resources.md).
   
-#### Attributes
   
   
 .. list-table::
@@ -340,9 +343,9 @@ Specifies information about the Databricks resources used by the bundle. See [_]
   
   
 ## run_as
+  
 The identity to use to run the bundle.
   
-#### Attributes
   
   
 .. list-table::
@@ -362,9 +365,9 @@ The identity to use to run the bundle.
   
   
 ## sync
+  
 The files and file paths to include or exclude in the bundle. See [_](/dev-tools/bundles/)
   
-#### Attributes
   
   
 .. list-table::
@@ -388,6 +391,7 @@ The files and file paths to include or exclude in the bundle. See [_](/dev-tools
   
   
 ## targets
+  
 Defines deployment targets for the bundle.
   
   
@@ -470,9 +474,9 @@ Each item has the following attributes:
   
   
 ### targets.bundle
+  
 The name of the bundle when deploying to this target.
   
-#### Attributes
   
   
 .. list-table::
@@ -512,9 +516,9 @@ The name of the bundle when deploying to this target.
   
   
 ### targets.bundle.deployment
+  
 The definition of the bundle deployment
   
-#### Attributes
   
   
 .. list-table::
@@ -534,9 +538,9 @@ The definition of the bundle deployment
   
   
 ### targets.bundle.deployment.lock
+  
 The deployment lock attributes.
   
-#### Attributes
   
   
 .. list-table::
@@ -556,9 +560,9 @@ The deployment lock attributes.
   
   
 ### targets.bundle.git
+  
 The Git version control details that are associated with your bundle.
   
-#### Attributes
   
   
 .. list-table::
@@ -578,9 +582,9 @@ The Git version control details that are associated with your bundle.
   
   
 ### targets.git
+  
 The Git version control settings for the target.
   
-#### Attributes
   
   
 .. list-table::
@@ -600,9 +604,9 @@ The Git version control settings for the target.
   
   
 ### targets.presets
+  
 The deployment presets for the target.
   
-#### Attributes
   
   
 .. list-table::
@@ -638,9 +642,9 @@ The deployment presets for the target.
   
   
 ### targets.resources
+  
 The resource definitions for the target.
   
-#### Attributes
   
   
 .. list-table::
@@ -696,9 +700,9 @@ The resource definitions for the target.
   
   
 ### targets.sync
+  
 The local paths to sync to the target workspace when a bundle is run or deployed.
   
-#### Attributes
   
   
 .. list-table::
@@ -722,9 +726,9 @@ The local paths to sync to the target workspace when a bundle is run or deployed
   
   
 ### targets.workspace
+  
 The Databricks workspace for the target.
   
-#### Attributes
   
   
 .. list-table::
@@ -800,6 +804,7 @@ The Databricks workspace for the target.
   
   
 ## variables
+  
 A Map that defines the custom variables for the bundle, where each key is the name of the variable, and the value is a Map that defines the variable.
   
   
@@ -842,9 +847,9 @@ Each item has the following attributes:
   
   
 ### variables.lookup
+  
 The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
   
-#### Attributes
   
   
 .. list-table::
@@ -904,9 +909,9 @@ The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, m
   
   
 ## workspace
+  
 Defines the Databricks workspace for the bundle.
   
-#### Attributes
   
   
 .. list-table::

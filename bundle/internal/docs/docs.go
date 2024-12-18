@@ -95,6 +95,7 @@ func buildMarkdown(nodes []rootNode, outputFile string) error {
 		} else {
 			m = m.H3(node.Title)
 		}
+		m = m.LF()
 		m = m.PlainText(node.Description)
 		m = m.LF()
 
@@ -110,7 +111,7 @@ func buildMarkdown(nodes []rootNode, outputFile string) error {
 			m = m.LF()
 			m = buildAttributeTable(m, node.ArrayItemAttributes)
 		} else if len(node.Attributes) > 0 {
-			m = m.H4("Attributes")
+			// m = m.H4("Attributes")
 			m = m.LF()
 			m = buildAttributeTable(m, node.Attributes)
 		}
