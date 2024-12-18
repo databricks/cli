@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"os"
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle/config/generate"
@@ -37,13 +36,8 @@ func NewGenerateAppCommand() *cobra.Command {
 	cmd.Flags().StringVar(&appName, "existing-app-name", "", `App name to generate config for`)
 	cmd.MarkFlagRequired("existing-app-name")
 
-	wd, err := os.Getwd()
-	if err != nil {
-		wd = "."
-	}
-
-	cmd.Flags().StringVarP(&configDir, "config-dir", "d", filepath.Join(wd, "resources"), `Directory path where the output bundle config will be stored`)
-	cmd.Flags().StringVarP(&sourceDir, "source-dir", "s", filepath.Join(wd, "src", "app"), `Directory path where the app files will be stored`)
+	cmd.Flags().StringVarP(&configDir, "config-dir", "d", filepath.Join("resources"), `Directory path where the output bundle config will be stored`)
+	cmd.Flags().StringVarP(&sourceDir, "source-dir", "s", filepath.Join("src", "app"), `Directory path where the app files will be stored`)
 	cmd.Flags().BoolVarP(&force, "force", "f", false, `Force overwrite existing files in the output directory`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -60,17 +54,35 @@ func NewGenerateAppCommand() *cobra.Command {
 			return err
 		}
 
+		// Making sure the config directory and source directory are absolute paths.
+		if !filepath.IsAbs(configDir) {
+			configDir = filepath.Join(b.BundleRootPath, configDir)
+		}
+
+		if !filepath.IsAbs(sourceDir) {
+			sourceDir = filepath.Join(b.BundleRootPath, sourceDir)
+		}
+
 		downloader := newDownloader(w, sourceDir, configDir)
 
 		sourceCodePath := app.DefaultSourceCodePath
-		downloader.markDirectoryForDownload(ctx, &sourceCodePath)
+		err = downloader.markDirectoryForDownload(ctx, &sourceCodePath)
+		if err != nil {
+			return err
+		}
 
 		appConfig, err := getAppConfig(ctx, app, w)
 		if err != nil {
 			return fmt.Errorf("failed to get app config: %w", err)
 		}
 
-		v, err := generate.ConvertAppToValue(app, sourceCodePath, appConfig)
+		// Making sure the source code path is relative to the config directory.
+		rel, err := filepath.Rel(configDir, sourceDir)
+		if err != nil {
+			return err
+		}
+
+		v, err := generate.ConvertAppToValue(app, filepath.ToSlash(rel), appConfig)
 		if err != nil {
 			return err
 		}
