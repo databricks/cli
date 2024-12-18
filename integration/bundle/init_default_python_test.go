@@ -60,10 +60,10 @@ func testDefaultPython(t *testing.T, pythonVersion string) {
 		testcli.PrepareReplacementsUser(t, replacements, *user)
 	}
 
-	tmpDir1 := pythontest.RequirePythonVENV(t, ctx, pythonVersion, true)
+	tmpDir1, pythonExe := pythontest.RequirePythonVENV(t, ctx, pythonVersion, true)
 	extras, ok := extraInstalls[pythonVersion]
 	if ok {
-		args := append([]string{"pip", "install"}, extras...)
+		args := append([]string{"pip", "install", "--python", pythonExe}, extras...)
 		testutil.RunCommand(t, "uv", args...)
 	}
 
