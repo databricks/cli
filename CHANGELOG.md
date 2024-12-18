@@ -6,8 +6,6 @@ Bundles:
  * Allow overriding compute for non-development mode targets ([#1899](https://github.com/databricks/cli/pull/1899)).
  * Show an error when using a cluster override with 'mode: production' ([#1994](https://github.com/databricks/cli/pull/1994)).
 
-Internal:
-
 API Changes:
  * Added `databricks account federation-policy` command group.
  * Added `databricks account service-principal-federation-policy` command group.
