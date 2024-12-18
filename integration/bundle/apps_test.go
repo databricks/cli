@@ -15,6 +15,11 @@ import (
 
 func TestDeployBundleWithApp(t *testing.T) {
 	ctx, wt := acc.WorkspaceTest(t)
+
+	if testutil.GetCloud(t) == testutil.GCP {
+		t.Skip("Skipping test for GCP cloud because /api/2.0/apps is temporarily unavailable there.")
+	}
+
 	uniqueId := uuid.New().String()
 	appId := fmt.Sprintf("app-%s", uuid.New().String()[0:8])
 	nodeTypeId := testutil.GetCloud(t).NodeTypeID()
