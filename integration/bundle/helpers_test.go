@@ -119,13 +119,15 @@ func runResource(t testutil.TestingT, ctx context.Context, path, key string) (st
 	return stdout.String(), err
 }
 
-func runResourceWithStderr(t testutil.TestingT, ctx context.Context, path, key string) (string, string, error) {
+func runResourceWithStderr(t testutil.TestingT, ctx context.Context, path, key string) (string, string) {
 	ctx = env.Set(ctx, "BUNDLE_ROOT", path)
 	ctx = cmdio.NewContext(ctx, cmdio.Default())
 
 	c := testcli.NewRunner(t, ctx, "bundle", "run", key)
 	stdout, stderr, err := c.Run()
-	return stdout.String(), stderr.String(), err
+	require.NoError(t, err)
+
+	return stdout.String(), stderr.String()
 }
 
 func runResourceWithParams(t testutil.TestingT, ctx context.Context, path, key string, params ...string) (string, error) {

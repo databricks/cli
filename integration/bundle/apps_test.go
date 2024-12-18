@@ -70,8 +70,7 @@ env:
     value: "%d"`, job.JobId))
 
 	// Try to run the app
-	_, out, err := runResourceWithStderr(t, ctx, root, "test_app")
-	require.NoError(t, err)
+	_, out := runResourceWithStderr(t, ctx, root, "test_app")
 	require.Contains(t, out, app.Url)
 
 	// App should be in the running state
@@ -89,8 +88,7 @@ env:
 	require.Equal(t, apps.ApplicationStateUnavailable, app.AppStatus.State)
 
 	// Try to run the app again
-	_, out, err = runResourceWithStderr(t, ctx, root, "test_app")
-	require.NoError(t, err)
+	_, out = runResourceWithStderr(t, ctx, root, "test_app")
 	require.Contains(t, out, app.Url)
 
 	// App should be in the running state

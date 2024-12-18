@@ -19,37 +19,27 @@ func (i *interpolateVariables) Apply(ctx context.Context, b *bundle.Bundle) diag
 		dyn.Key("config"),
 	)
 
+	tfToConfigMap := map[string]string{
+		"databricks_pipeline":          "pipelines",
+		"databricks_job":               "jobs",
+		"databricks_mlflow_model":      "models",
+		"databricks_mlflow_experiment": "experiments",
+		"databricks_model_serving":     "model_serving_endpoints",
+		"databricks_registered_model":  "registered_models",
+		"databricks_quality_monitor":   "quality_monitors",
+		"databricks_schema":            "schemas",
+		"databricks_volume":            "volumes",
+		"databricks_cluster":           "clusters",
+		"databricks_dashboard":         "dashboards",
+		"databricks_app":               "apps",
+	}
+
 	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		return dyn.MapByPattern(root, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
 			return dynvar.Resolve(v, func(path dyn.Path) (dyn.Value, error) {
-				switch path[0] {
-				case dyn.Key("databricks_pipeline"):
-					path = dyn.NewPath(dyn.Key("resources"), dyn.Key("pipelines")).Append(path[1:]...)
-				case dyn.Key("databricks_job"):
-					path = dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs")).Append(path[1:]...)
-				case dyn.Key("databricks_mlflow_model"):
-					path = dyn.NewPath(dyn.Key("resources"), dyn.Key("models")).Append(path[1:]...)
-				case dyn.Key("databricks_mlflow_experiment"):
-					path = dyn.NewPath(dyn.Key("resources"), dyn.Key("experiments")).Append(path[1:]...)
-				case dyn.Key("databricks_model_serving"):
-					path = dyn.NewPath(dyn.Key("resources"), dyn.Key("model_serving_endpoints")).Append(path[1:]...)
-				case dyn.Key("databricks_registered_model"):
-					path = dyn.NewPath(dyn.Key("resources"), dyn.Key("registered_models")).Append(path[1:]...)
-				case dyn.Key("databricks_quality_monitor"):
-					path = dyn.NewPath(dyn.Key("resources"), dyn.Key("quality_monitors")).Append(path[1:]...)
-				case dyn.Key("databricks_schema"):
-					path = dyn.NewPath(dyn.Key("resources"), dyn.Key("schemas")).Append(path[1:]...)
-				case dyn.Key("databricks_volume"):
-					path = dyn.NewPath(dyn.Key("resources"), dyn.Key("volumes")).Append(path[1:]...)
-				case dyn.Key("databricks_cluster"):
-					path = dyn.NewPath(dyn.Key("resources"), dyn.Key("clusters")).Append(path[1:]...)
-				case dyn.Key("databricks_dashboard"):
-					path = dyn.NewPath(dyn.Key("resources"), dyn.Key("dashboards")).Append(path[1:]...)
-				case dyn.Key("databricks_app"):
-					path = dyn.NewPath(dyn.Key("resources"), dyn.Key("apps")).Append(path[1:]...)
-				default:
-					// Trigger "key not found" for unknown resource types.
-					return dyn.GetByPath(root, path)
+				key, ok := tfToConfigMap[path[0].Key()]
+				if ok {
+					path = dyn.NewPath(dyn.Key("resources"), dyn.Key(key)).Append(path[1:]...)
 				}
 
 				return dyn.GetByPath(root, path)
