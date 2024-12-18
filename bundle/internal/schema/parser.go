@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -8,6 +9,9 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/ghodss/yaml"
+
+	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/jsonschema"
 )
 
@@ -22,6 +26,8 @@ type Specification struct {
 type openapiParser struct {
 	ref map[string]jsonschema.Schema
 }
+
+const RootTypeKey = "_"
 
 func newParser(path string) (*openapiParser, error) {
 	b, err := os.ReadFile(path)
@@ -89,35 +95,95 @@ func (p *openapiParser) findRef(typ reflect.Type) (jsonschema.Schema, bool) {
 }
 
 // Use the OpenAPI spec to load descriptions for the given type.
-func (p *openapiParser) addDescriptions(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
-	ref, ok := p.findRef(typ)
-	if !ok {
-		return s
+func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overridesPath string) error {
+	annotations := annotationFile{}
+	overrides := annotationFile{}
+
+	b, err := os.ReadFile(overridesPath)
+	if err != nil {
+		return err
+	}
+	err = yaml.Unmarshal(b, &overrides)
+	if err != nil {
+		return err
+	}
+	if overrides == nil {
+		overrides = annotationFile{}
 	}
 
-	s.Description = ref.Description
-	for k, v := range s.Properties {
-		if refProp, ok := ref.Properties[k]; ok {
-			v.Description = refProp.Description
-		}
+	_, err = jsonschema.FromType(typ, []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
+		func(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
+			ref, ok := p.findRef(typ)
+			if !ok {
+				return s
+			}
+
+			basePath := getPath(typ)
+			pkg := map[string]annotation{}
+			annotations[basePath] = pkg
+
+			if ref.Description != "" || ref.Enum != nil {
+				pkg[RootTypeKey] = annotation{Description: ref.Description, Enum: ref.Enum}
+			}
+
+			for k := range s.Properties {
+				if refProp, ok := ref.Properties[k]; ok {
+					pkg[k] = annotation{Description: refProp.Description, Enum: refProp.Enum}
+					if refProp.Description == "" {
+						addEmptyOverride(k, basePath, overrides)
+					}
+				} else {
+					addEmptyOverride(k, basePath, overrides)
+				}
+			}
+			return s
+		},
+	})
+	if err != nil {
+		return err
 	}
 
-	return s
+	b, err = yaml.Marshal(overrides)
+	if err != nil {
+		return err
+	}
+	o, err := yamlloader.LoadYAML("", bytes.NewBuffer(b))
+	if err != nil {
+		return err
+	}
+	err = saveYamlWithStyle(overridesPath, o)
+	if err != nil {
+		return err
+	}
+	b, err = yaml.Marshal(annotations)
+	if err != nil {
+		return err
+	}
+	b = bytes.Join([][]byte{[]byte("# This file is auto-generated. DO NOT EDIT."), b}, []byte("\n"))
+	err = os.WriteFile(outputPath, b, 0o644)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-// Use the OpenAPI spec add enum values for the given type.
-func (p *openapiParser) addEnums(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
-	ref, ok := p.findRef(typ)
+func addEmptyOverride(key, pkg string, overridesFile annotationFile) {
+	if overridesFile[pkg] == nil {
+		overridesFile[pkg] = map[string]annotation{}
+	}
+
+	overrides := overridesFile[pkg]
+	if overrides[key].Description == "" {
+		overrides[key] = annotation{Description: Placeholder}
+	}
+
+	a, ok := overrides[key]
 	if !ok {
-		return s
+		a = annotation{}
 	}
-
-	s.Enum = append(s.Enum, ref.Enum...)
-	for k, v := range s.Properties {
-		if refProp, ok := ref.Properties[k]; ok {
-			v.Enum = append(v.Enum, refProp.Enum...)
-		}
+	if a.Description == "" {
+		a.Description = Placeholder
 	}
-
-	return s
+	overrides[key] = a
 }

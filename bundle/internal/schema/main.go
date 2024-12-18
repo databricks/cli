@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"reflect"
 
 	"github.com/databricks/cli/bundle/config"
@@ -43,7 +44,8 @@ func addInterpolationPatterns(typ reflect.Type, s jsonschema.Schema) jsonschema.
 	case jsonschema.ArrayType, jsonschema.ObjectType:
 		// arrays and objects can have complex variable values specified.
 		return jsonschema.Schema{
-			AnyOf: []jsonschema.Schema{
+			// OneOf is used because we don't expect more than 1 match and schema-based auto-complete works better with OneOf
+			OneOf: []jsonschema.Schema{
 				s,
 				{
 					Type:    jsonschema.StringType,
@@ -55,7 +57,7 @@ func addInterpolationPatterns(typ reflect.Type, s jsonschema.Schema) jsonschema.
 		// primitives can have variable values, or references like ${bundle.xyz}
 		// or ${workspace.xyz}
 		return jsonschema.Schema{
-			AnyOf: []jsonschema.Schema{
+			OneOf: []jsonschema.Schema{
 				s,
 				{Type: jsonschema.StringType, Pattern: interpolationPattern("resources")},
 				{Type: jsonschema.StringType, Pattern: interpolationPattern("bundle")},
@@ -113,33 +115,56 @@ func makeVolumeTypeOptional(typ reflect.Type, s jsonschema.Schema) jsonschema.Sc
 }
 
 func main() {
-	if len(os.Args) != 2 {
-		fmt.Println("Usage: go run main.go <output-file>")
+	if len(os.Args) != 3 {
+		fmt.Println("Usage: go run main.go <work-dir> <output-file>")
 		os.Exit(1)
 	}
 
+	// Directory with annotation files
+	workdir := os.Args[1]
 	// Output file, where the generated JSON schema will be written to.
-	outputFile := os.Args[1]
+	outputFile := os.Args[2]
+
+	generateSchema(workdir, outputFile)
+}
+
+func generateSchema(workdir, outputFile string) {
+	annotationsPath := filepath.Join(workdir, "annotations.yml")
+	annotationsOpenApiPath := filepath.Join(workdir, "annotations_openapi.yml")
+	annotationsOpenApiOverridesPath := filepath.Join(workdir, "annotations_openapi_overrides.yml")
 
 	// Input file, the databricks openapi spec.
 	inputFile := os.Getenv("DATABRICKS_OPENAPI_SPEC")
-	if inputFile == "" {
-		log.Fatal("DATABRICKS_OPENAPI_SPEC environment variable not set")
+	if inputFile != "" {
+		p, err := newParser(inputFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("Writing OpenAPI annotations to %s\n", annotationsOpenApiPath)
+		err = p.extractAnnotations(reflect.TypeOf(config.Root{}), annotationsOpenApiPath, annotationsOpenApiOverridesPath)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
-	p, err := newParser(inputFile)
+	a, err := newAnnotationHandler([]string{annotationsOpenApiPath, annotationsOpenApiOverridesPath, annotationsPath})
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Generate the JSON schema from the bundle Go struct.
 	s, err := jsonschema.FromType(reflect.TypeOf(config.Root{}), []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
-		p.addDescriptions,
-		p.addEnums,
 		removeJobsFields,
 		makeVolumeTypeOptional,
+		a.addAnnotations,
 		addInterpolationPatterns,
 	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Overwrite the input annotation file, adding missing annotations
+	err = a.syncWithMissingAnnotations(annotationsPath)
 	if err != nil {
 		log.Fatal(err)
 	}
