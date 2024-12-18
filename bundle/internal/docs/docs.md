@@ -10,9 +10,9 @@ Defines the attributes to build an artifact
      - Type
      - Description
   
-   * - <name>
+   * - <artifacts-entry-name>
      - Map
-     - The definition of the item
+     - Item of the `artifacts` map
   
 Each item has the following attributes:
   
@@ -209,10 +209,6 @@ The PyDABs configuration.
      - The Python virtual environment path
   
   
-### experimental.scripts
-The commands to run
-  
-  
 ## include
 Specifies a list of path globs that contain configuration files to include within the bundle. See [_](/dev-tools/bundles/settings.md#include)
   
@@ -285,10 +281,6 @@ Defines bundle deployment presets. See [_](/dev-tools/bundles/deployment-modes.m
      - A pause status to apply to all job triggers and schedules. Valid values are PAUSED or UNPAUSED.
   
   
-### presets.tags
-The tags for the bundle deployment.
-  
-  
 ## resources
 Specifies information about the Databricks resources used by the bundle. See [_](/dev-tools/bundles/resources.md).
   
@@ -358,9 +350,9 @@ The cluster definitions for the bundle.
      - Type
      - Description
   
-   * - <name>
+   * - <resources.clusters-entry-name>
      - Map
-     - The definition of the item
+     - Item of the `resources.clusters` map
   
 Each item has the following attributes:
   
@@ -706,15 +698,6 @@ Cluster iam role is used to access s3, please make sure the cluster iam role in
      - S3 region, e.g. `us-west-2`. Either region or endpoint needs to be set. If both are set, endpoint will be used.
   
   
-### resources.clusters.custom_tags
-Additional tags for cluster resources. Databricks will tag all cluster resources (e.g., AWS
-instances and EBS volumes) with these tags in addition to `default_tags`. Notes:
-
-- Currently, Databricks allows at most 45 custom tags
-
-- Clusters can only reuse cloud resources if the resources' tags are a subset of the cluster tags
-  
-  
 ### resources.clusters.docker_image
 
   
@@ -798,27 +781,6 @@ If not specified at cluster creation, a set of default values will be used.
      - Identifier for the availability zone in which the cluster resides. This can be one of the following: - "HA" => High availability, spread nodes across availability zones for a Databricks deployment region [default] - "AUTO" => Databricks picks an availability zone to schedule the cluster on. - A GCP availability zone => Pick One of the available zones for (machine type + region) from https://cloud.google.com/compute/docs/regions-zones.
   
   
-### resources.clusters.spark_conf
-An object containing a set of optional, user-specified Spark configuration key-value pairs.
-Users can also pass in a string of extra JVM options to the driver and the executors via
-`spark.driver.extraJavaOptions` and `spark.executor.extraJavaOptions` respectively.
-
-  
-  
-### resources.clusters.spark_env_vars
-An object containing a set of optional, user-specified environment variable key-value pairs.
-Please note that key-value pair of the form (X,Y) will be exported as is (i.e.,
-`export X='Y'`) while launching the driver and workers.
-
-In order to specify an additional set of `SPARK_DAEMON_JAVA_OPTS`, we recommend appending
-them to `$SPARK_DAEMON_JAVA_OPTS` as shown in the example below. This ensures that all
-default databricks managed environmental variables are included as well.
-
-Example Spark environment variables:
-`{"SPARK_WORKER_MEMORY": "28000m", "SPARK_LOCAL_DIRS": "/local_disk0"}` or
-`{"SPARK_DAEMON_JAVA_OPTS": "$SPARK_DAEMON_JAVA_OPTS -Dspark.shuffle.service.enabled=true"}`
-  
-  
 ### resources.clusters.workload_type
 
   
@@ -870,9 +832,9 @@ The dashboard definitions for the bundle.
      - Type
      - Description
   
-   * - <name>
+   * - <resources.dashboards-entry-name>
      - Map
-     - The definition of the item
+     - Item of the `resources.dashboards` map
   
 Each item has the following attributes:
   
@@ -948,9 +910,9 @@ The experiment definitions for the bundle.
      - Type
      - Description
   
-   * - <name>
+   * - <resources.experiments-entry-name>
      - Map
-     - The definition of the item
+     - Item of the `resources.experiments` map
   
 Each item has the following attributes:
   
@@ -1006,9 +968,9 @@ The job definitions for the bundle.
      - Type
      - Description
   
-   * - <name>
+   * - <resources.jobs-entry-name>
      - Map
-     - The definition of the item
+     - Item of the `resources.jobs` map
   
 Each item has the following attributes:
   
@@ -1305,10 +1267,6 @@ An optional periodic schedule for this job. The default behavior is that the job
      - A Java timezone ID. The schedule for a job is resolved with respect to this timezone. See [Java TimeZone](https://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html) for details. This field is required.
   
   
-### resources.jobs.tags
-A map of tags associated with the job. These are forwarded to the cluster as cluster tags for jobs clusters, and are subject to the same limitations as cluster tags. A maximum of 25 tags can be added to the job.
-  
-  
 ### resources.jobs.trigger
 A configuration to trigger a run when certain conditions are met. The default behavior is that the job runs only when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.
   
@@ -1496,9 +1454,9 @@ The model serving endpoint definitions for the bundle.
      - Type
      - Description
   
-   * - <name>
+   * - <resources.model_serving_endpoints-entry-name>
      - Map
-     - The definition of the item
+     - Item of the `resources.model_serving_endpoints` map
   
 Each item has the following attributes:
   
@@ -1824,9 +1782,9 @@ The model definitions for the bundle.
      - Type
      - Description
   
-   * - <name>
+   * - <resources.models-entry-name>
      - Map
-     - The definition of the item
+     - Item of the `resources.models` map
   
 Each item has the following attributes:
   
@@ -1882,9 +1840,9 @@ The pipeline definitions for the bundle.
      - Type
      - Description
   
-   * - <name>
+   * - <resources.pipelines-entry-name>
      - Map
-     - The definition of the item
+     - Item of the `resources.pipelines` map
   
 Each item has the following attributes:
   
@@ -1991,10 +1949,6 @@ Each item has the following attributes:
    * - trigger
      - Map
      - Which pipeline trigger to use. Deprecated: Use `continuous` instead.
-  
-  
-### resources.pipelines.configuration
-String-String configuration for this pipeline execution.
   
   
 ### resources.pipelines.deployment
@@ -2205,10 +2159,6 @@ Which pipeline trigger to use. Deprecated: Use `continuous` instead.
      - 
   
   
-### resources.pipelines.trigger.manual
-
-  
-  
 ### resources.quality_monitors
 The quality monitor definitions for the bundle.
   
@@ -2220,9 +2170,9 @@ The quality monitor definitions for the bundle.
      - Type
      - Description
   
-   * - <name>
+   * - <resources.quality_monitors-entry-name>
      - Map
-     - The definition of the item
+     - Item of the `resources.quality_monitors` map
   
 Each item has the following attributes:
   
@@ -2435,10 +2385,6 @@ The schedule for automatically updating and refreshing metric tables.
      - The timezone id (e.g., ``"PST"``) in which to evaluate the quartz expression. 
   
   
-### resources.quality_monitors.snapshot
-Configuration for monitoring snapshot tables.
-  
-  
 ### resources.quality_monitors.time_series
 Configuration for monitoring time series tables.
   
@@ -2472,9 +2418,9 @@ The registered model definitions for the bundle.
      - Type
      - Description
   
-   * - <name>
+   * - <resources.registered_models-entry-name>
      - Map
-     - The definition of the item
+     - Item of the `resources.registered_models` map
   
 Each item has the following attributes:
   
@@ -2522,9 +2468,9 @@ The schema definitions for the bundle.
      - Type
      - Description
   
-   * - <name>
+   * - <resources.schemas-entry-name>
      - Map
-     - The definition of the item
+     - Item of the `resources.schemas` map
   
 Each item has the following attributes:
   
@@ -2561,10 +2507,6 @@ Each item has the following attributes:
      - Storage root URL for managed tables within schema.
   
   
-### resources.schemas.properties
-
-  
-  
 ### resources.volumes
 
   
@@ -2576,9 +2518,9 @@ Each item has the following attributes:
      - Type
      - Description
   
-   * - <name>
+   * - <resources.volumes-entry-name>
      - Map
-     - The definition of the item
+     - Item of the `resources.volumes` map
   
 Each item has the following attributes:
   
@@ -2678,9 +2620,9 @@ Defines deployment targets for the bundle.
      - Type
      - Description
   
-   * - <name>
+   * - <targets-entry-name>
      - Map
-     - The definition of the item
+     - Item of the `targets` map
   
 Each item has the following attributes:
   
@@ -2760,9 +2702,9 @@ The artifacts to include in the target deployment.
      - Type
      - Description
   
-   * - <name>
+   * - <targets.artifacts-entry-name>
      - Map
-     - The definition of the item
+     - Item of the `targets.artifacts` map
   
 Each item has the following attributes:
   
@@ -2963,10 +2905,6 @@ The deployment presets for the target.
      - A pause status to apply to all job triggers and schedules. Valid values are PAUSED or UNPAUSED.
   
   
-### targets.presets.tags
-The tags for the bundle deployment.
-  
-  
 ### targets.resources
 The resource definitions for the target.
   
@@ -3036,9 +2974,9 @@ The cluster definitions for the bundle.
      - Type
      - Description
   
-   * - <name>
+   * - <targets.resources.clusters-entry-name>
      - Map
-     - The definition of the item
+     - Item of the `targets.resources.clusters` map
   
 Each item has the following attributes:
   
@@ -3384,15 +3322,6 @@ Cluster iam role is used to access s3, please make sure the cluster iam role in
      - S3 region, e.g. `us-west-2`. Either region or endpoint needs to be set. If both are set, endpoint will be used.
   
   
-### targets.resources.clusters.custom_tags
-Additional tags for cluster resources. Databricks will tag all cluster resources (e.g., AWS
-instances and EBS volumes) with these tags in addition to `default_tags`. Notes:
-
-- Currently, Databricks allows at most 45 custom tags
-
-- Clusters can only reuse cloud resources if the resources' tags are a subset of the cluster tags
-  
-  
 ### targets.resources.clusters.docker_image
 
   
@@ -3476,27 +3405,6 @@ If not specified at cluster creation, a set of default values will be used.
      - Identifier for the availability zone in which the cluster resides. This can be one of the following: - "HA" => High availability, spread nodes across availability zones for a Databricks deployment region [default] - "AUTO" => Databricks picks an availability zone to schedule the cluster on. - A GCP availability zone => Pick One of the available zones for (machine type + region) from https://cloud.google.com/compute/docs/regions-zones.
   
   
-### targets.resources.clusters.spark_conf
-An object containing a set of optional, user-specified Spark configuration key-value pairs.
-Users can also pass in a string of extra JVM options to the driver and the executors via
-`spark.driver.extraJavaOptions` and `spark.executor.extraJavaOptions` respectively.
-
-  
-  
-### targets.resources.clusters.spark_env_vars
-An object containing a set of optional, user-specified environment variable key-value pairs.
-Please note that key-value pair of the form (X,Y) will be exported as is (i.e.,
-`export X='Y'`) while launching the driver and workers.
-
-In order to specify an additional set of `SPARK_DAEMON_JAVA_OPTS`, we recommend appending
-them to `$SPARK_DAEMON_JAVA_OPTS` as shown in the example below. This ensures that all
-default databricks managed environmental variables are included as well.
-
-Example Spark environment variables:
-`{"SPARK_WORKER_MEMORY": "28000m", "SPARK_LOCAL_DIRS": "/local_disk0"}` or
-`{"SPARK_DAEMON_JAVA_OPTS": "$SPARK_DAEMON_JAVA_OPTS -Dspark.shuffle.service.enabled=true"}`
-  
-  
 ### targets.resources.clusters.workload_type
 
   
@@ -3548,9 +3456,9 @@ The dashboard definitions for the bundle.
      - Type
      - Description
   
-   * - <name>
+   * - <targets.resources.dashboards-entry-name>
      - Map
-     - The definition of the item
+     - Item of the `targets.resources.dashboards` map
   
 Each item has the following attributes:
   
@@ -3626,9 +3534,9 @@ The experiment definitions for the bundle.
      - Type
      - Description
   
-   * - <name>
+   * - <targets.resources.experiments-entry-name>
      - Map
-     - The definition of the item
+     - Item of the `targets.resources.experiments` map
   
 Each item has the following attributes:
   
@@ -3684,9 +3592,9 @@ The job definitions for the bundle.
      - Type
      - Description
   
-   * - <name>
+   * - <targets.resources.jobs-entry-name>
      - Map
-     - The definition of the item
+     - Item of the `targets.resources.jobs` map
   
 Each item has the following attributes:
   
@@ -3983,10 +3891,6 @@ An optional periodic schedule for this job. The default behavior is that the job
      - A Java timezone ID. The schedule for a job is resolved with respect to this timezone. See [Java TimeZone](https://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html) for details. This field is required.
   
   
-### targets.resources.jobs.tags
-A map of tags associated with the job. These are forwarded to the cluster as cluster tags for jobs clusters, and are subject to the same limitations as cluster tags. A maximum of 25 tags can be added to the job.
-  
-  
 ### targets.resources.jobs.trigger
 A configuration to trigger a run when certain conditions are met. The default behavior is that the job runs only when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.
   
@@ -4174,9 +4078,9 @@ The model serving endpoint definitions for the bundle.
      - Type
      - Description
   
-   * - <name>
+   * - <targets.resources.model_serving_endpoints-entry-name>
      - Map
-     - The definition of the item
+     - Item of the `targets.resources.model_serving_endpoints` map
   
 Each item has the following attributes:
   
@@ -4502,9 +4406,9 @@ The model definitions for the bundle.
      - Type
      - Description
   
-   * - <name>
+   * - <targets.resources.models-entry-name>
      - Map
-     - The definition of the item
+     - Item of the `targets.resources.models` map
   
 Each item has the following attributes:
   
@@ -4560,9 +4464,9 @@ The pipeline definitions for the bundle.
      - Type
      - Description
   
-   * - <name>
+   * - <targets.resources.pipelines-entry-name>
      - Map
-     - The definition of the item
+     - Item of the `targets.resources.pipelines` map
   
 Each item has the following attributes:
   
@@ -4669,10 +4573,6 @@ Each item has the following attributes:
    * - trigger
      - Map
      - Which pipeline trigger to use. Deprecated: Use `continuous` instead.
-  
-  
-### targets.resources.pipelines.configuration
-String-String configuration for this pipeline execution.
   
   
 ### targets.resources.pipelines.deployment
@@ -4883,10 +4783,6 @@ Which pipeline trigger to use. Deprecated: Use `continuous` instead.
      - 
   
   
-### targets.resources.pipelines.trigger.manual
-
-  
-  
 ### targets.resources.quality_monitors
 The quality monitor definitions for the bundle.
   
@@ -4898,9 +4794,9 @@ The quality monitor definitions for the bundle.
      - Type
      - Description
   
-   * - <name>
+   * - <targets.resources.quality_monitors-entry-name>
      - Map
-     - The definition of the item
+     - Item of the `targets.resources.quality_monitors` map
   
 Each item has the following attributes:
   
@@ -5113,10 +5009,6 @@ The schedule for automatically updating and refreshing metric tables.
      - The timezone id (e.g., ``"PST"``) in which to evaluate the quartz expression. 
   
   
-### targets.resources.quality_monitors.snapshot
-Configuration for monitoring snapshot tables.
-  
-  
 ### targets.resources.quality_monitors.time_series
 Configuration for monitoring time series tables.
   
@@ -5150,9 +5042,9 @@ The registered model definitions for the bundle.
      - Type
      - Description
   
-   * - <name>
+   * - <targets.resources.registered_models-entry-name>
      - Map
-     - The definition of the item
+     - Item of the `targets.resources.registered_models` map
   
 Each item has the following attributes:
   
@@ -5200,9 +5092,9 @@ The schema definitions for the bundle.
      - Type
      - Description
   
-   * - <name>
+   * - <targets.resources.schemas-entry-name>
      - Map
-     - The definition of the item
+     - Item of the `targets.resources.schemas` map
   
 Each item has the following attributes:
   
@@ -5239,10 +5131,6 @@ Each item has the following attributes:
      - Storage root URL for managed tables within schema.
   
   
-### targets.resources.schemas.properties
-
-  
-  
 ### targets.resources.volumes
 
   
@@ -5254,9 +5142,9 @@ Each item has the following attributes:
      - Type
      - Description
   
-   * - <name>
+   * - <targets.resources.volumes-entry-name>
      - Map
-     - The definition of the item
+     - Item of the `targets.resources.volumes` map
   
 Each item has the following attributes:
   
@@ -5356,9 +5244,9 @@ The custom variable definitions for the target.
      - Type
      - Description
   
-   * - <name>
+   * - <targets.variables-entry-name>
      - Map
-     - The definition of the item
+     - Item of the `targets.variables` map
   
 Each item has the following attributes:
   
@@ -5538,9 +5426,9 @@ A Map that defines the custom variables for the bundle, where each key is the na
      - Type
      - Description
   
-   * - <name>
+   * - <variables-entry-name>
      - Map
-     - The definition of the item
+     - Item of the `variables` map
   
 Each item has the following attributes:
   

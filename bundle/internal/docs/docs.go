@@ -34,12 +34,6 @@ type rootProp struct {
 	topLevel bool
 }
 
-const (
-	AdditionalPropertiesMessage              = "Each item has the following attributes:"
-	AdditionalPropertiesAttributeTitle       = "<name>"
-	AdditionalPropertiesAttributeDescription = "The definition of the item"
-)
-
 func getNodes(s jsonschema.Schema, refs map[string]jsonschema.Schema, a annotationFile) []rootNode {
 	rootProps := []rootProp{}
 	for k, v := range s.Properties {
@@ -72,7 +66,11 @@ func getNodes(s jsonschema.Schema, refs map[string]jsonschema.Schema, a annotati
 			node.ArrayItemAttributes = getAttributes(arrayItemType.Properties, refs)
 		}
 
-		nodes = append(nodes, node)
+		isEmpty := len(node.Attributes) == 0 && len(node.ObjectKeyAttributes) == 0 && len(node.ArrayItemAttributes) == 0
+		shouldAddNode := !isEmpty || node.TopLevel
+		if shouldAddNode {
+			nodes = append(nodes, node)
+		}
 	}
 
 	sort.Slice(nodes, func(i, j int) bool {
@@ -101,7 +99,7 @@ func buildMarkdown(nodes []rootNode, outputFile string) error {
 
 		if len(node.ObjectKeyAttributes) > 0 {
 			m = buildAttributeTable(m, []attributeNode{
-				{Title: AdditionalPropertiesAttributeTitle, Type: "Map", Description: AdditionalPropertiesAttributeDescription},
+				{Title: fmt.Sprintf("<%s-entry-name>", node.Title), Type: "Map", Description: fmt.Sprintf("Item of the `%s` map", node.Title)},
 			})
 			m = m.PlainText("Each item has the following attributes:")
 			m = m.LF()
