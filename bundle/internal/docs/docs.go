@@ -90,25 +90,29 @@ func buildMarkdown(nodes []rootNode, outputFile string) error {
 
 	m := md.NewMarkdown(f)
 	for _, node := range nodes {
+		m = m.LF()
 		if node.TopLevel {
 			m = m.H2(node.Title)
 		} else {
 			m = m.H3(node.Title)
 		}
 		m = m.PlainText(node.Description)
+		m = m.LF()
 
 		if len(node.ObjectKeyAttributes) > 0 {
 			m = buildAttributeTable(m, []attributeNode{
 				{Title: AdditionalPropertiesAttributeTitle, Type: "Map", Description: AdditionalPropertiesAttributeDescription},
 			})
 			m = m.PlainText("Each item has the following attributes:")
+			m = m.LF()
 			m = buildAttributeTable(m, node.ObjectKeyAttributes)
-
 		} else if len(node.ArrayItemAttributes) > 0 {
-			m = m.PlainText(fmt.Sprintf("Each item of `%s` has the following attributes:", node.Title))
+			m = m.PlainTextf("Each item of `%s` has the following attributes:", node.Title)
+			m = m.LF()
 			m = buildAttributeTable(m, node.ArrayItemAttributes)
 		} else if len(node.Attributes) > 0 {
 			m = m.H4("Attributes")
+			m = m.LF()
 			m = buildAttributeTable(m, node.Attributes)
 		}
 	}
@@ -122,6 +126,7 @@ func buildMarkdown(nodes []rootNode, outputFile string) error {
 }
 
 func buildAttributeTable(m *md.Markdown, attributes []attributeNode) *md.Markdown {
+	return buildCustomAttributeTable(m, attributes)
 	rows := [][]string{}
 	for _, n := range attributes {
 		rows = append(rows, []string{fmt.Sprintf("`%s`", n.Title), n.Type, formatDescription(n.Description)})
@@ -135,25 +140,26 @@ func buildAttributeTable(m *md.Markdown, attributes []attributeNode) *md.Markdow
 }
 
 func formatDescription(s string) string {
-	if s == "" {
-		return "-"
-	}
 	return strings.ReplaceAll(s, "\n", " ")
 }
 
 // Build a custom table which we use in Databricks website
 func buildCustomAttributeTable(m *md.Markdown, attributes []attributeNode) *md.Markdown {
+	m = m.LF()
 	m = m.PlainText(".. list-table::")
 	m = m.PlainText("   :header-rows: 1")
+	m = m.LF()
 
 	m = m.PlainText("   * - Key")
 	m = m.PlainText("     - Type")
 	m = m.PlainText("     - Description")
+	m = m.LF()
 
 	for _, a := range attributes {
 		m = m.PlainText("   * - " + a.Title)
 		m = m.PlainText("     - " + a.Type)
-		m = m.PlainText("     - " + a.Description)
+		m = m.PlainText("     - " + formatDescription(a.Description))
+		m = m.LF()
 	}
 	return m
 }
