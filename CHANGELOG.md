@@ -4,7 +4,6 @@
 
 Bundles:
  * Allow overriding compute for non-development mode targets ([#1899](https://github.com/databricks/cli/pull/1899)).
- * Avoid panic if Config.Workspace.CurrentUser.User is not set ([#1993](https://github.com/databricks/cli/pull/1993)).
  * Show an error when using a cluster override with 'mode: production' ([#1994](https://github.com/databricks/cli/pull/1994)).
 
 Internal:
