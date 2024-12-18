@@ -30,6 +30,11 @@ func runSparkJarTestCommon(t *testing.T, ctx context.Context, sparkVersion, arti
 		destroyBundle(t, ctx, bundleRoot)
 	})
 
+	if testing.Short() {
+		t.Log("Skip the job run in short mode")
+		return
+	}
+
 	out, err := runResource(t, ctx, bundleRoot, "jar_job")
 	require.NoError(t, err)
 	require.Contains(t, out, "Hello from Jar!")
