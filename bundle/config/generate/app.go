@@ -6,7 +6,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/apps"
 )
 
-func ConvertAppToValue(app *apps.App, sourceCodePath string, appConfig map[string]interface{}) (dyn.Value, error) {
+func ConvertAppToValue(app *apps.App, sourceCodePath string, appConfig map[string]any) (dyn.Value, error) {
 	ac, err := convert.FromTyped(appConfig, dyn.NilValue)
 	if err != nil {
 		return dyn.NilValue, err

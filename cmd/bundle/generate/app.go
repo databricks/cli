@@ -126,7 +126,7 @@ func NewGenerateAppCommand() *cobra.Command {
 	return cmd
 }
 
-func getAppConfig(ctx context.Context, app *apps.App, w *databricks.WorkspaceClient) (map[string]interface{}, error) {
+func getAppConfig(ctx context.Context, app *apps.App, w *databricks.WorkspaceClient) (map[string]any, error) {
 	sourceCodePath := app.DefaultSourceCodePath
 
 	f, err := filer.NewWorkspaceFilesClient(w, sourceCodePath)
@@ -152,7 +152,7 @@ func getAppConfig(ctx context.Context, app *apps.App, w *databricks.WorkspaceCli
 			return nil, err
 		}
 
-		var appConfig map[string]interface{}
+		var appConfig map[string]any
 		err = yaml.Unmarshal(content, &appConfig)
 		if err != nil {
 			cmdio.LogString(ctx, fmt.Sprintf("Failed to parse app configuration:\n%s\nerr: %v", string(content), err))
