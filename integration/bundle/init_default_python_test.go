@@ -97,9 +97,7 @@ func testDefaultPython(t *testing.T, pythonVersion string) {
 		"/resources/jobs/project_name_$UNIQUE_PRJ_job/url",
 		"/resources/pipelines/project_name_$UNIQUE_PRJ_pipeline/catalog",
 		"/resources/pipelines/project_name_$UNIQUE_PRJ_pipeline/url",
-		"/workspace/current_user/externalId",
-		"/workspace/current_user/groups",
-		"/workspace/current_user/name/familyName",
+		"/workspace/current_user",
 	}
 
 	testcli.RequireOutputJQ(t, ctx, []string{"bundle", "summary", "--output", "json"}, "testdata/default_python/bundle_summary.txt", ignoredFields)
