@@ -30,7 +30,7 @@ func DetectExecutable(ctx context.Context) (string, error) {
 	// contains python.exe but no python3.exe. However, system python does have python3 entry
 	// and it is also added to PATH, so it is found first.
 	if runtime.GOOS == "windows" {
-		out, err := exec.LookPath("python.exe")
+		out, err := exec.LookPath("python")
 		if err == nil && out != "" {
 			return out, nil
 		}
