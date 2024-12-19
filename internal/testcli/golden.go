@@ -75,7 +75,7 @@ func RequireOutputJQ(t testutil.TestingT, ctx context.Context, args []string, ex
 
 	if out != expected {
 		actual := fmt.Sprintf("Output from %v", args)
-		testdiff.AssertEqualJSONs(t.(*testing.T), expectedFilename, actual, expected, out, ignorePaths)
+		testdiff.AssertEqualJQ(t.(*testing.T), expectedFilename, actual, expected, out, ignorePaths)
 
 		if OverwriteMode {
 			WriteFile(t, expectedPath, out)
