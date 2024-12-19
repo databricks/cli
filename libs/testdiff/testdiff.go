@@ -37,22 +37,45 @@ func AssertEqualJQ(t *testing.T, expectedName, outName, expected, out string, ig
 	} else {
 		diff := UnifiedDiff(expectedName, outName, expected, out)
 		t.Logf("Diff:\n%s", diff)
-		ignoredDiffs := []string{}
+		allowedDiffs := []string{}
 		erroredDiffs := []string{}
 		for _, op := range patch {
-			if matchesPrefixes(ignorePaths, op.Path) {
-				ignoredDiffs = append(ignoredDiffs, fmt.Sprintf("%7s %s %v", op.Type, op.Path, op.Value))
+			if allowDifference(ignorePaths, op) {
+				allowedDiffs = append(allowedDiffs, fmt.Sprintf("%7s %s %v old=%v", op.Type, op.Path, op.Value, op.OldValue))
 			} else {
-				erroredDiffs = append(erroredDiffs, fmt.Sprintf("%7s %s %v", op.Type, op.Path, op.Value))
+				erroredDiffs = append(erroredDiffs, fmt.Sprintf("%7s %s %v old=%v", op.Type, op.Path, op.Value, op.OldValue))
 			}
 		}
-		if len(ignoredDiffs) > 0 {
-			t.Logf("Ignored differences between %s and %s:\n ==> %s", expectedName, outName, strings.Join(ignoredDiffs, "\n ==> "))
+		if len(allowedDiffs) > 0 {
+			t.Logf("Allowed differences between %s and %s:\n ==> %s", expectedName, outName, strings.Join(allowedDiffs, "\n ==> "))
 		}
 		if len(erroredDiffs) > 0 {
 			t.Errorf("Unexpected differences between %s and %s:\n ==> %s", expectedName, outName, strings.Join(erroredDiffs, "\n ==> "))
 		}
 	}
+}
+
+func allowDifference(ignorePaths []string, op jsondiff.Operation) bool {
+	if matchesPrefixes(ignorePaths, op.Path) {
+		return true
+	}
+	if op.Type == "replace" && almostSameStrings(op.OldValue, op.Value) {
+		return true
+	}
+	return false
+}
+
+// compare strings and ignore forward vs backward slashes
+func almostSameStrings(v1, v2 any) bool {
+	s1, ok := v1.(string)
+	if !ok {
+		return false
+	}
+	s2, ok := v2.(string)
+	if !ok {
+		return false
+	}
+	return strings.ReplaceAll(s1, "\\", "/") == strings.ReplaceAll(s2, "\\", "/")
 }
 
 func matchesPrefixes(prefixes []string, path string) bool {
