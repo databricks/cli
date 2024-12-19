@@ -62,6 +62,7 @@ func testDefaultPython(t *testing.T, pythonVersion string) {
 	}
 
 	tmpDir := t.TempDir()
+	testutil.Chdir(t, tmpDir)
 
 	opts := pythontest.VenvOpts{
 		PythonVersion: pythonVersion,
