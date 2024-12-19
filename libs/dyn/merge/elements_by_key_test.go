@@ -50,3 +50,42 @@ func TestElementByKey(t *testing.T) {
 		},
 	)
 }
+
+func TestElementByKeyWithOverride(t *testing.T) {
+	vin := dyn.V([]dyn.Value{
+		dyn.V(map[string]dyn.Value{
+			"key":   dyn.V("foo"),
+			"value": dyn.V(42),
+		}),
+		dyn.V(map[string]dyn.Value{
+			"key":   dyn.V("bar"),
+			"value": dyn.V(43),
+		}),
+		dyn.V(map[string]dyn.Value{
+			"key":        dyn.V("foo"),
+			"othervalue": dyn.V(44),
+		}),
+	})
+
+	keyFunc := func(v dyn.Value) string {
+		return strings.ToLower(v.MustString())
+	}
+
+	vout, err := dyn.MapByPath(vin, dyn.EmptyPath, ElementsByKeyWithOverride("key", keyFunc))
+	require.NoError(t, err)
+	assert.Len(t, vout.MustSequence(), 2)
+	assert.Equal(t,
+		vout.Index(0).AsAny(),
+		map[string]any{
+			"key":        "foo",
+			"othervalue": 44,
+		},
+	)
+	assert.Equal(t,
+		vout.Index(1).AsAny(),
+		map[string]any{
+			"key":   "bar",
+			"value": 43,
+		},
+	)
+}

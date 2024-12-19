@@ -1,3 +1,161 @@
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceJob:
+  "id":
+    "description": |-
+      PLACEHOLDER
+  "permission":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.ComputeStatus:
+  "message":
+    "description": |-
+      PLACEHOLDER
+  "state":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentArtifacts:
+  "source_code_path":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceSqlWarehouse:
+  "id":
+    "description": |-
+      PLACEHOLDER
+  "permission":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.App:
+  "create_time":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "resources":
+    "description": |-
+      PLACEHOLDER
+  "url":
+    "description": |-
+      PLACEHOLDER
+  "active_deployment":
+    "description": |-
+      PLACEHOLDER
+  "description":
+    "description": |-
+      PLACEHOLDER
+  "default_source_code_path":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_client_id":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "config":
+    "description": |-
+      PLACEHOLDER
+  "source_code_path":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_id":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "compute_status":
+    "description": |-
+      PLACEHOLDER
+  "creator":
+    "description": |-
+      PLACEHOLDER
+  "app_status":
+    "description": |-
+      PLACEHOLDER
+  "pending_deployment":
+    "description": |-
+      PLACEHOLDER
+  "update_time":
+    "description": |-
+      PLACEHOLDER
+  "updater":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.AppResource:
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "secret":
+    "description": |-
+      PLACEHOLDER
+  "serving_endpoint":
+    "description": |-
+      PLACEHOLDER
+  "sql_warehouse":
+    "description": |-
+      PLACEHOLDER
+  "description":
+    "description": |-
+      PLACEHOLDER
+  "job":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.AppDeployment:
+  "create_time":
+    "description": |-
+      PLACEHOLDER
+  "creator":
+    "description": |-
+      PLACEHOLDER
+  "deployment_artifacts":
+    "description": |-
+      PLACEHOLDER
+  "deployment_id":
+    "description": |-
+      PLACEHOLDER
+  "mode":
+    "description": |-
+      PLACEHOLDER
+  "source_code_path":
+    "description": |-
+      PLACEHOLDER
+  "status":
+    "description": |-
+      PLACEHOLDER
+  "update_time":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.ApplicationStatus:
+  "state":
+    "description": |-
+      PLACEHOLDER
+  "message":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentStatus:
+  "message":
+    "description": |-
+      PLACEHOLDER
+  "state":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceSecret:
+  "key":
+    "description": |-
+      PLACEHOLDER
+  "permission":
+    "description": |-
+      PLACEHOLDER
+  "scope":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceServingEndpoint:
+  "permission":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config.Artifact:
   "build":
     "description": |-
@@ -126,6 +284,9 @@ github.com/databricks/cli/bundle/config.PyDABs:
     "description": |-
       The Python virtual environment path
 github.com/databricks/cli/bundle/config.Resources:
+  "apps":
+    "description": |-
+      PLACEHOLDER
   "clusters":
     "description": |-
       The cluster definitions for the bundle.

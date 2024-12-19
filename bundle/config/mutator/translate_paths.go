@@ -262,6 +262,7 @@ func (m *translatePaths) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 			t.applyPipelineTranslations,
 			t.applyArtifactTranslations,
 			t.applyDashboardTranslations,
+			t.applyAppsTranslations,
 		} {
 			v, err = fn(v)
 			if err != nil {
