@@ -12,8 +12,8 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
-	"github.com/databricks/cli/libs/golden"
 	"github.com/databricks/cli/libs/iamutil"
+	"github.com/databricks/cli/libs/testdiff"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/elliotchance/orderedmap/v3"
@@ -57,7 +57,7 @@ func RequireOutput(t testutil.TestingT, ctx context.Context, args []string, expe
 
 	if out != expected {
 		actual := fmt.Sprintf("Output from %v", args)
-		golden.AssertEqualTexts(t, expectedFilename, actual, expected, out)
+		testdiff.AssertEqualTexts(t, expectedFilename, actual, expected, out)
 
 		if OverwriteMode {
 			WriteFile(t, expectedPath, out)
@@ -75,7 +75,7 @@ func RequireOutputJQ(t testutil.TestingT, ctx context.Context, args []string, ex
 
 	if out != expected {
 		actual := fmt.Sprintf("Output from %v", args)
-		golden.AssertEqualJSONs(t.(*testing.T), expectedFilename, actual, expected, out, ignorePaths)
+		testdiff.AssertEqualJSONs(t.(*testing.T), expectedFilename, actual, expected, out, ignorePaths)
 
 		if OverwriteMode {
 			WriteFile(t, expectedPath, out)
