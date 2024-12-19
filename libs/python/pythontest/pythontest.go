@@ -106,7 +106,8 @@ func RequireActivatedPythonEnv(t *testing.T, ctx context.Context, opts *VenvOpts
 	require.NoError(t, err)
 	require.DirExists(t, opts.BinPath)
 
-	testutil.InsertPathEntry(t, opts.BinPath)
+	newPath := fmt.Sprintf("%s%c%s", opts.BinPath, os.PathListSeparator, os.Getenv("PATH"))
+	t.Setenv("PATH", newPath)
 
 	pythonExe, err := python.DetectExecutable(ctx)
 	require.NoError(t, err)
