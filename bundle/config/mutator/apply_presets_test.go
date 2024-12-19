@@ -589,11 +589,26 @@ func PresetsMock() *bundle.Bundle {
 	}
 }
 
+// Any fields that should be ignored in the completeness check
 var PresetsIgnoredFields = map[string]string{
-	// Any fields that should be ignored in the completeness check
-	// Example:
-	// "resources.jobs.object.schema_something": "this property doesn't relate to the catalog/schema",
-	"resources.pipelines.key.schema": "schema is still in private preview",
+	"resources.pipelines.key.schema":                                 "schema is still in private preview",
+	"resources.jobs.key.tasks[0].notebook_task.base_parameters":      "catalog/schema are passed via job parameters",
+	"resources.jobs.key.tasks[0].python_wheel_task.named_parameters": "catalog/schema are passed via job parameters",
+	"resources.jobs.key.tasks[0].python_wheel_task.parameters":       "catalog/schema are passed via job parameters",
+	"resources.jobs.key.tasks[0].run_job_task.job_parameters":        "catalog/schema are passed via job parameters",
+	"resources.jobs.key.tasks[0].spark_jar_task.parameters":          "catalog/schema are passed via job parameters",
+	"resources.jobs.key.tasks[0].spark_python_task.parameters":       "catalog/schema are passed via job parameters",
+	"resources.jobs.key.tasks[0].spark_submit_task.parameters":       "catalog/schema are passed via job parameters",
+	"resources.jobs.key.tasks[0].sql_task.parameters":                "catalog/schema are passed via job parameters",
+	"resources.jobs.key.tasks[0].run_job_task.jar_params":            "catalog/schema are passed via job parameters",
+	"resources.jobs.key.tasks[0].run_job_task.notebook_params":       "catalog/schema are passed via job parameters",
+	"resources.jobs.key.tasks[0].run_job_task.pipeline_params":       "catalog/schema are passed via job parameters",
+	"resources.jobs.key.tasks[0].run_job_task.python_named_params":   "catalog/schema are passed via job parameters",
+	"resources.jobs.key.tasks[0].run_job_task.python_params":         "catalog/schema are passed via job parameters",
+	"resources.jobs.key.tasks[0].run_job_task.spark_submit_params":   "catalog/schema are passed via job parameters",
+	"resources.jobs.key.tasks[0].run_job_task.sql_params":            "catalog/schema are passed via job parameters",
+	"resources.pipelines.key.ingestion_definition.objects[0].schema": "schema name is under schema.source_schema/destination_schema",
+	"resources.schemas": "schema name of schemas is under resources.schemas.key.Name",
 }
 
 func TestApplyPresetsCatalogSchema(t *testing.T) {
@@ -626,6 +641,16 @@ func TestApplyPresetsCatalogSchema(t *testing.T) {
 		})
 		return root, err
 	}))
+
+	// Convert the recordedFields to a set for easier lookup
+	recordedSet := make(map[string]struct{})
+	for _, field := range recordedFields {
+		recordedSet[field.PathString] = struct{}{}
+		if i := strings.Index(field.PathString, "["); i >= 0 {
+			// For entries like resources.jobs.key.parameters[1].default, just add resources.jobs.key.parameters
+			recordedSet[field.PathString[:i]] = struct{}{}
+		}
+	}
 
 	// Stage 1: Apply presets before cleanup, should be no-op.
 	diags := bundle.Apply(ctx, b, mutator.ApplyPresets())
@@ -663,7 +688,15 @@ func TestApplyPresetsCatalogSchema(t *testing.T) {
 	}
 
 	// Stage 4: Check completeness
-	checkCompleteness(t, recordedFields)
+	expectedFields := findCatalogSchemaFields()
+	assert.GreaterOrEqual(t, len(expectedFields), 42, "expected at least 42 catalog/schema fields, but got %d", len(expectedFields))
+	for _, field := range expectedFields {
+		if _, recorded := recordedSet[field]; !recorded {
+			if _, ignored := PresetsIgnoredFields[field]; !ignored {
+				t.Errorf("Field %s was not included in the catalog/schema presets test. If this is a new field, please add it to PresetsMock or PresetsIgnoredFields and add support for it as appropriate.", field)
+			}
+		}
+	}
 }
 
 func verifyNoChangesBeforeCleanup(t *testing.T, rootVal dyn.Value, recordedFields []recordedField) {
@@ -677,70 +710,34 @@ func verifyNoChangesBeforeCleanup(t *testing.T, rootVal dyn.Value, recordedField
 	}
 }
 
-func checkCompleteness(t *testing.T, recordedFields []recordedField) {
-	t.Helper()
-
-	// Build a set for recorded fields
-	recordedSet := make(map[string]struct{})
-	for _, field := range recordedFields {
-		recordedSet[field.PathString] = struct{}{}
-	}
-
-	// Obtain the type of config.Resources
-	var r config.Resources
-	resourcesType := reflect.TypeOf(r)
-
-	// Track missing fields
-	var missingFields []string
-
-	// Keep track of visited types to prevent infinite loops (cycles)
+// findCatalogSchemaFields finds all fields in config.Resources that might refer
+// to a catalog or schema. Returns a slice of field paths.
+func findCatalogSchemaFields() []string {
 	visited := make(map[reflect.Type]struct{})
+	var results []string
 
-	// Helper function to handle maps, slices, arrays, and nested pointers/interfaces
-	verifyFieldType := func(fieldType reflect.Type, path string, fn func(reflect.Type, string)) {
-		switch fieldType.Kind() {
-		case reflect.Slice, reflect.Array:
-			// For arrays/slices, inspect the element type
-			fn(fieldType.Elem(), path+"[0]")
-		case reflect.Map:
-			// For maps, inspect the value type
-			fn(fieldType.Elem(), path+".key")
-		case reflect.Ptr, reflect.Interface:
-			// For pointers/interfaces, inspect the element if it's a pointer
-			if fieldType.Kind() == reflect.Ptr {
-				fn(fieldType.Elem(), path)
-			}
-		case reflect.Struct:
-			// For structs, directly recurse into their fields
-			fn(fieldType, path)
-		default:
-			// For basic or unknown kinds, do nothing
-		}
-	}
-
-	// Recursive function to verify the fields of a given type.
-	var verifyTypeFields func(rt reflect.Type, path string)
-	verifyTypeFields = func(rt reflect.Type, path string) {
-		// Avoid cycles by skipping already visited types
+	// verifyTypeFields is a recursive function to verify the fields of a given type
+	var walkTypeFields func(rt reflect.Type, path string)
+	walkTypeFields = func(rt reflect.Type, path string) {
 		if _, seen := visited[rt]; seen {
 			return
 		}
 		visited[rt] = struct{}{}
 
 		switch rt.Kind() {
-		case reflect.Ptr, reflect.Interface:
-			// For pointers/interfaces, inspect the element type if available
-			if rt.Kind() == reflect.Ptr {
-				verifyTypeFields(rt.Elem(), path)
-			}
+		case reflect.Slice, reflect.Array:
+			walkTypeFields(rt.Elem(), path+"[0]")
+		case reflect.Map:
+			walkTypeFields(rt.Elem(), path+".key")
+		case reflect.Ptr:
+			walkTypeFields(rt.Elem(), path)
 		case reflect.Struct:
 			for i := 0; i < rt.NumField(); i++ {
 				ft := rt.Field(i)
 				jsonTag := ft.Tag.Get("json")
 				if jsonTag == "" || jsonTag == "-" {
-					// Ignore field names when there's no JSON tag,
-					// e.g. for Jobs.JobSettings
-					verifyFieldType(ft.Type, path, verifyTypeFields)
+					// Ignore field names when there's no JSON tag, e.g. for Jobs.JobSettings
+					walkTypeFields(ft.Type, path)
 					continue
 				}
 
@@ -748,40 +745,25 @@ func checkCompleteness(t *testing.T, recordedFields []recordedField) {
 				fieldPath := path + "." + fieldName
 
 				if isCatalogOrSchemaField(fieldName) {
-					// Only check if the field is a string
-					if ft.Type.Kind() == reflect.String {
-						if _, recorded := recordedSet[fieldPath]; !recorded {
-							if _, ignored := PresetsIgnoredFields[fieldPath]; !ignored {
-								missingFields = append(missingFields, fieldPath)
-							}
-						}
-					}
+					results = append(results, fieldPath)
 				}
 
-				verifyFieldType(ft.Type, fieldPath, verifyTypeFields)
+				walkTypeFields(ft.Type, fieldPath)
 			}
-		default:
-			// For other kinds at this level, do nothing
 		}
 	}
 
-	// Start from "resources"
-	verifyTypeFields(resourcesType, "resources")
-
-	// Report all missing fields
-	for _, field := range missingFields {
-		t.Errorf("Field %s was not included in the catalog/schema presets test. If this is a new field, please add it to PresetsMock or PresetsIgnoredFields and add support for it as appropriate.", field)
-	}
-
-	// Fail the test if there were any missing fields
-	if len(missingFields) > 0 {
-		t.FailNow()
-	}
+	var r config.Resources
+	walkTypeFields(reflect.TypeOf(r), "resources")
+	return results
 }
 
 // isCatalogOrSchemaField returns true for a field names in config.Resources that we suspect could contain a catalog or schema name
 func isCatalogOrSchemaField(name string) bool {
-	return strings.Contains(name, "catalog") || strings.Contains(name, "schema")
+	return strings.Contains(name, "catalog") ||
+		strings.Contains(name, "schema") ||
+		strings.Contains(name, "parameters") ||
+		strings.Contains(name, "params")
 }
 
 func removePlaceholders(value string) string {
