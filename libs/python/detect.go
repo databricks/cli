@@ -69,7 +69,7 @@ func DetectExecutable(ctx context.Context) (string, error) {
 func DetectVEnvExecutable(venvPath string) (string, error) {
 	interpreterPath := filepath.Join(venvPath, "bin", "python3")
 	if runtime.GOOS == "windows" {
-		interpreterPath = filepath.Join(venvPath, "Scripts", "python3.exe")
+		interpreterPath = filepath.Join(venvPath, "Scripts", "python.exe")
 	}
 
 	if _, err := os.Stat(interpreterPath); err != nil {
