@@ -3,6 +3,7 @@ package bundle_test
 import (
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -60,11 +61,19 @@ func testDefaultPython(t *testing.T, pythonVersion string) {
 		testcli.PrepareReplacementsUser(t, replacements, *user)
 	}
 
-	tmpDir1, pythonExe := pythontest.RequirePythonVENV(t, ctx, pythonVersion, true)
+	tmpDir := t.TempDir()
+
+	opts := pythontest.VenvOpts{
+		PythonVersion: pythonVersion,
+		Dir:           tmpDir,
+	}
+
+	pythontest.RequireActivatedPythonEnv(t, ctx, &opts)
 	extras, ok := extraInstalls[pythonVersion]
 	if ok {
-		args := append([]string{"pip", "install", "--python", pythonExe}, extras...)
-		testutil.RunCommand(t, "uv", args...)
+		args := append([]string{"pip", "install", "--python", opts.PythonExe}, extras...)
+		cmd := exec.Command("uv", args...)
+		require.NoError(t, cmd.Run())
 	}
 
 	projectName := "project_name_" + uniqueProjectId
@@ -77,7 +86,7 @@ func testDefaultPython(t *testing.T, pythonVersion string) {
 	}
 	b, err := json.Marshal(initConfig)
 	require.NoError(t, err)
-	err = os.WriteFile(filepath.Join(tmpDir1, "config.json"), b, 0o644)
+	err = os.WriteFile(filepath.Join(tmpDir, "config.json"), b, 0o644)
 	require.NoError(t, err)
 
 	testcli.RequireOutput(t, ctx, []string{"bundle", "init", "default-python", "--config-file", "config.json"}, "testdata/default_python/bundle_init.txt")

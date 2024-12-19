@@ -9,16 +9,18 @@ import (
 	"runtime"
 	"slices"
 	"strings"
+	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/golden"
 	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/elliotchance/orderedmap/v3"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/wI2L/jsondiff"
 )
+
+var OverwriteMode = os.Getenv("TESTS_OUTPUT") == "OVERWRITE"
 
 func ReadFile(t testutil.TestingT, ctx context.Context, filename string) string {
 	data, err := os.ReadFile(filename)
@@ -30,12 +32,6 @@ func ReadFile(t testutil.TestingT, ctx context.Context, filename string) string 
 	return NormalizeNewlines(string(data))
 }
 
-func WriteFile(t testutil.TestingT, ctx context.Context, filename, data string) {
-	t.Logf("Overwriting %s", filename)
-	err := os.WriteFile(filename, []byte(data), 0o644)
-	require.NoError(t, err)
-}
-
 func captureOutput(t testutil.TestingT, ctx context.Context, args []string) string {
 	t.Logf("run args: [%s]", strings.Join(args, ", "))
 	r := NewRunner(t, ctx, args...)
@@ -45,20 +41,10 @@ func captureOutput(t testutil.TestingT, ctx context.Context, args []string) stri
 	return ReplaceOutput(t, ctx, out)
 }
 
-func assertEqualTexts(t testutil.TestingT, filename1, filename2, expected, out string) {
-	if len(out) < 1000 && len(expected) < 1000 {
-		// This shows full strings + diff which could be useful when debugging newlines
-		assert.Equal(t, expected, out)
-	} else {
-		// only show diff for large texts
-		diff := testutil.Diff(filename1, filename2, expected, out)
-		t.Errorf("Diff:\n" + diff)
-	}
-}
-
-func logDiff(t testutil.TestingT, filename1, filename2, expected, out string) {
-	diff := testutil.Diff(filename1, filename2, expected, out)
-	t.Logf("Diff:\n" + diff)
+func WriteFile(t testutil.TestingT, filename, data string) {
+	t.Logf("Overwriting %s", filename)
+	err := os.WriteFile(filename, []byte(data), 0o644)
+	require.NoError(t, err)
 }
 
 func RequireOutput(t testutil.TestingT, ctx context.Context, args []string, expectedFilename string) {
@@ -71,10 +57,10 @@ func RequireOutput(t testutil.TestingT, ctx context.Context, args []string, expe
 
 	if out != expected {
 		actual := fmt.Sprintf("Output from %v", args)
-		assertEqualTexts(t, expectedFilename, actual, expected, out)
+		golden.AssertEqualTexts(t, expectedFilename, actual, expected, out)
 
-		if os.Getenv("TESTS_OUTPUT") == "OVERWRITE" {
-			WriteFile(t, ctx, expectedPath, out)
+		if OverwriteMode {
+			WriteFile(t, expectedPath, out)
 		}
 	}
 }
@@ -88,46 +74,13 @@ func RequireOutputJQ(t testutil.TestingT, ctx context.Context, args []string, ex
 	out := captureOutput(t, ctx, args)
 
 	if out != expected {
-		patch, err := jsondiff.CompareJSON([]byte(expected), []byte(out))
 		actual := fmt.Sprintf("Output from %v", args)
-		if err != nil {
-			t.Logf("CompareJSON error for %s vs %s: %s (fallback to textual comparison)", args, expectedFilename, err)
-			assertEqualTexts(t, expectedFilename, actual, expected, out)
-		} else {
-			logDiff(t, expectedFilename, actual, expected, out)
-			ignoredDiffs := []string{}
-			erroredDiffs := []string{}
-			for _, op := range patch {
-				if matchesPrefixes(ignorePaths, op.Path) {
-					ignoredDiffs = append(ignoredDiffs, fmt.Sprintf("%7s %s %v", op.Type, op.Path, op.Value))
-				} else {
-					erroredDiffs = append(erroredDiffs, fmt.Sprintf("%7s %s %v", op.Type, op.Path, op.Value))
-				}
-			}
-			if len(ignoredDiffs) > 0 {
-				t.Logf("Ignored differences between %s and %s:\n ==> %s", expectedFilename, args, strings.Join(ignoredDiffs, "\n ==> "))
-			}
-			if len(erroredDiffs) > 0 {
-				t.Errorf("Unexpected differences between %s and %s:\n ==> %s", expectedFilename, args, strings.Join(erroredDiffs, "\n ==> "))
-			}
-		}
+		golden.AssertEqualJSONs(t.(*testing.T), expectedFilename, actual, expected, out, ignorePaths)
 
-		if os.Getenv("TESTS_OUTPUT") == "OVERWRITE" {
-			WriteFile(t, ctx, filepath.Join(dir, expectedFilename), out)
+		if OverwriteMode {
+			WriteFile(t, expectedPath, out)
 		}
 	}
-}
-
-func matchesPrefixes(prefixes []string, path string) bool {
-	for _, p := range prefixes {
-		if p == path {
-			return true
-		}
-		if strings.HasPrefix(path, p+"/") {
-			return true
-		}
-	}
-	return false
 }
 
 var (
