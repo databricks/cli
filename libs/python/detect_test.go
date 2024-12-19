@@ -39,7 +39,7 @@ func TestDetectVEnvExecutable_badLayout(t *testing.T) {
 
 func interpreterPath(venvPath string) string {
 	if runtime.GOOS == "windows" {
-		return filepath.Join(venvPath, "Scripts", "python3.exe")
+		return filepath.Join(venvPath, "Scripts", "python.exe")
 	} else {
 		return filepath.Join(venvPath, "bin", "python3")
 	}
