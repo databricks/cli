@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Mark Check
+      - name: Auto-approve squashed commit
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
