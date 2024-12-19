@@ -14,9 +14,7 @@ import (
 // GetExecutable gets appropriate python binary name for the platform
 func GetExecutable() string {
 	// On Windows when virtualenv is created, the <env>/Scripts directory
-	// contains python.exe but no python3.exe. However, system python does have python3 entry
-	// and it is also added to PATH, so it is found first.
-
+	// contains python.exe but no python3.exe.
 	// Most installers (e.g. the ones from python.org) only install python.exe and not python3.exe
 
 	if runtime.GOOS == "windows" {
