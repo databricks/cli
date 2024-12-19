@@ -9,7 +9,6 @@ require (
 	github.com/briandowns/spinner v1.23.1 // Apache 2.0
 	github.com/databricks/databricks-sdk-go v0.54.0 // Apache 2.0
 	github.com/fatih/color v1.18.0 // MIT
-	github.com/ghodss/yaml v1.0.0 // MIT + NOTICE
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/hashicorp/go-version v1.7.0 // MPL 2.0
 	github.com/hashicorp/hc-install v0.9.0 // MPL 2.0
@@ -70,5 +69,4 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240521202816-d264139d666e // indirect
 	google.golang.org/grpc v1.64.1 // indirect
 	google.golang.org/protobuf v1.34.1 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
