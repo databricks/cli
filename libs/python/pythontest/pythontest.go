@@ -12,7 +12,6 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
-	"github.com/databricks/cli/libs/python"
 	"github.com/stretchr/testify/require"
 )
 
@@ -108,8 +107,4 @@ func RequireActivatedPythonEnv(t *testing.T, ctx context.Context, opts *VenvOpts
 
 	newPath := fmt.Sprintf("%s%c%s", opts.BinPath, os.PathListSeparator, os.Getenv("PATH"))
 	t.Setenv("PATH", newPath)
-
-	pythonExe, err := python.DetectExecutable(ctx)
-	require.NoError(t, err)
-	require.Equal(t, filepath.Dir(pythonExe), filepath.Dir(opts.PythonExe))
 }

@@ -2,8 +2,11 @@ package pythontest
 
 import (
 	"context"
+	"os/exec"
+	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/libs/python"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,6 +20,11 @@ func TestVenvSuccess(t *testing.T) {
 			require.DirExists(t, opts.EnvPath)
 			require.DirExists(t, opts.BinPath)
 			require.FileExists(t, opts.PythonExe)
+
+			pythonExe, err := exec.LookPath(python.GetExecutable())
+			require.NoError(t, err)
+			require.Equal(t, filepath.Dir(pythonExe), filepath.Dir(opts.PythonExe))
+			require.FileExists(t, pythonExe)
 		})
 	}
 }
