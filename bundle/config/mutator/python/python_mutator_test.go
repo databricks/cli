@@ -541,7 +541,7 @@ func TestLoadDiagnosticsFile_nonExistent(t *testing.T) {
 
 func TestInterpreterPath(t *testing.T) {
 	if runtime.GOOS == "windows" {
-		assert.Equal(t, "venv\\Scripts\\python3.exe", interpreterPath("venv"))
+		assert.Equal(t, "venv\\Scripts\\python.exe", interpreterPath("venv"))
 	} else {
 		assert.Equal(t, "venv/bin/python3", interpreterPath("venv"))
 	}
@@ -673,7 +673,7 @@ func withFakeVEnv(t *testing.T, venvPath string) {
 
 func interpreterPath(venvPath string) string {
 	if runtime.GOOS == "windows" {
-		return filepath.Join(venvPath, "Scripts", "python3.exe")
+		return filepath.Join(venvPath, "Scripts", "python.exe")
 	} else {
 		return filepath.Join(venvPath, "bin", "python3")
 	}
