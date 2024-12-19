@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path"
 	"strings"
+	"sync"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
@@ -25,8 +26,7 @@ func (u *uploadConfig) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	var diags diag.Diagnostics
 	errGroup, ctx := errgroup.WithContext(ctx)
 
-	diagsPerApp := make(map[string]diag.Diagnostic)
-
+	mu := &sync.Mutex{}
 	for key, app := range b.Config.Resources.Apps {
 		// If the app has a config, we need to deploy it first.
 		// It means we need to write app.yml file with the content of the config field
@@ -59,12 +59,14 @@ func (u *uploadConfig) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 			errGroup.Go(func() error {
 				err = f.Write(ctx, path.Join(appPath, "app.yml"), buf, filer.OverwriteIfExists)
 				if err != nil {
-					diagsPerApp[key] = diag.Diagnostic{
+					mu.Lock()
+					diags = append(diags, diag.Diagnostic{
 						Severity:  diag.Error,
 						Summary:   "Failed to save config",
 						Detail:    fmt.Sprintf("Failed to write %s file: %s", path.Join(app.SourceCodePath, "app.yml"), err),
 						Locations: b.Config.GetLocations(fmt.Sprintf("resources.apps.%s", key)),
-					}
+					})
+					mu.Unlock()
 				}
 				return nil
 			})
@@ -73,10 +75,6 @@ func (u *uploadConfig) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 
 	if err := errGroup.Wait(); err != nil {
 		return diags.Extend(diag.FromErr(err))
-	}
-
-	for _, diag := range diagsPerApp {
-		diags = append(diags, diag)
 	}
 
 	return diags

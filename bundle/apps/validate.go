@@ -14,8 +14,19 @@ type validate struct{}
 func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
 	possibleConfigFiles := []string{"app.yml", "app.yaml"}
+	usedSourceCodePaths := make(map[string]string)
 
-	for _, app := range b.Config.Resources.Apps {
+	for key, app := range b.Config.Resources.Apps {
+		if _, ok := usedSourceCodePaths[app.SourceCodePath]; ok {
+			diags = append(diags, diag.Diagnostic{
+				Severity:  diag.Error,
+				Summary:   "Duplicate app source code path",
+				Detail:    fmt.Sprintf("app resource '%s' has the same source code path as app resource '%s'", key, usedSourceCodePaths[app.SourceCodePath]),
+				Locations: b.Config.GetLocations(fmt.Sprintf("resources.apps.%s.source_code_path", key)),
+			})
+		}
+		usedSourceCodePaths[app.SourceCodePath] = key
+
 		for _, configFile := range possibleConfigFiles {
 			cf := path.Join(app.SourceCodePath, configFile)
 			if _, err := b.SyncRoot.Stat(cf); err == nil {
