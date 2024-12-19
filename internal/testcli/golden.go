@@ -26,7 +26,8 @@ func ReadFile(t testutil.TestingT, ctx context.Context, filename string) string 
 		return ""
 	}
 	require.NoError(t, err)
-	return string(data)
+	// On CI, on Windows \n in the file somehow end up as \r\n
+	return NormalizeNewlines(string(data))
 }
 
 func WriteFile(t testutil.TestingT, ctx context.Context, filename, data string) {
