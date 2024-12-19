@@ -42,9 +42,6 @@ func CreatePythonEnv(opts *VenvOpts) error {
 	if opts.Name == "" {
 		opts.Name = testutil.RandomName("test-venv-")
 	}
-	if opts.Dir != "" {
-		opts.Dir = "."
-	}
 
 	cmd := exec.Command("uv", "venv", opts.Name, "--python", opts.PythonVersion, "--seed", "-q")
 	cmd.Stdout = os.Stdout

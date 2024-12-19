@@ -15,7 +15,11 @@ func TestVenvSuccess(t *testing.T) {
 	for _, pythonVersion := range []string{"3.11", "3.12"} {
 		t.Run(pythonVersion, func(t *testing.T) {
 			ctx := context.Background()
-			opts := VenvOpts{PythonVersion: pythonVersion}
+			dir := t.TempDir()
+			opts := VenvOpts{
+				PythonVersion: pythonVersion,
+				Dir:           dir,
+			}
 			RequireActivatedPythonEnv(t, ctx, &opts)
 			require.DirExists(t, opts.EnvPath)
 			require.DirExists(t, opts.BinPath)
