@@ -46,11 +46,9 @@ func DetectExecutable(ctx context.Context) (string, error) {
 	if err != nil && !errors.Is(err, exec.ErrNotFound) {
 		return "", err
 	}
-
 	if out != "" {
 		return out, nil
 	}
-
 	// otherwise, detect all interpreters and pick the least that satisfies
 	// minimal version requirements
 	all, err := DetectInterpreters(ctx)
