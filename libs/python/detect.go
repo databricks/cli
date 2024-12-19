@@ -11,6 +11,21 @@ import (
 	"runtime"
 )
 
+// GetExecutable gets appropriate python binary name for the platform
+func GetExecutable() string {
+	// On Windows when virtualenv is created, the <env>/Scripts directory
+	// contains python.exe but no python3.exe. However, system python does have python3 entry
+	// and it is also added to PATH, so it is found first.
+
+	// Most installers (e.g. the ones from python.org) only install python.exe and not python3.exe
+
+	if runtime.GOOS == "windows" {
+		return "python"
+	} else {
+		return "python3"
+	}
+}
+
 // DetectExecutable looks up the path to the python3 executable from the PATH
 // environment variable.
 //
@@ -26,20 +41,7 @@ func DetectExecutable(ctx context.Context) (string, error) {
 	//
 	// See https://github.com/pyenv/pyenv#understanding-python-version-selection
 
-	// On Windows when virtualenv is created, the <env>/Scripts directory
-	// contains python.exe but no python3.exe. However, system python does have python3 entry
-	// and it is also added to PATH, so it is found first.
-	if runtime.GOOS == "windows" {
-		out, err := exec.LookPath("python")
-		if err == nil && out != "" {
-			return out, nil
-		}
-		if err != nil && !errors.Is(err, exec.ErrNotFound) {
-			return "", err
-		}
-	}
-
-	out, err := exec.LookPath("python3")
+	out, err := exec.LookPath(GetExecutable())
 
 	// most of the OS'es have python3 in $PATH, but for those which don't,
 	// we perform the latest version lookup
