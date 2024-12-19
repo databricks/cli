@@ -54,9 +54,6 @@ jobs:
       - name: Run tests
         run: make testonly
 
-      - name: Publish test coverage
-        uses: codecov/codecov-action@v4
-
   golangci:
     name: lint
     runs-on: ubuntu-latest
