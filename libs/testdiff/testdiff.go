@@ -29,7 +29,7 @@ func AssertEqualTexts(t testutil.TestingT, filename1, filename2, expected, out s
 	}
 }
 
-func AssertEqualJSONs(t *testing.T, expectedName, outName, expected, out string, ignorePaths []string) {
+func AssertEqualJQ(t *testing.T, expectedName, outName, expected, out string, ignorePaths []string) {
 	patch, err := jsondiff.CompareJSON([]byte(expected), []byte(out))
 	if err != nil {
 		t.Logf("CompareJSON error for %s vs %s: %s (fallback to textual comparison)", outName, expectedName, err)
