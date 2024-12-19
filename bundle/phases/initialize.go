@@ -70,6 +70,7 @@ func Initialize() bundle.Mutator {
 			mutator.ConfigureDashboardDefaults(),
 			mutator.ProcessTargetMode(),
 			mutator.ApplyPresets(),
+			mutator.ApplyPresetsCatalogSchema(),
 			mutator.DefaultQueueing(),
 			mutator.ExpandPipelineGlobPaths(),
 

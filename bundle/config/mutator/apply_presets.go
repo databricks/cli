@@ -2,21 +2,16 @@ package mutator
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"path"
-	"regexp"
 	"slices"
 	"sort"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -27,6 +22,7 @@ type applyPresets struct{}
 
 // Apply all presets, e.g. the prefix presets that
 // adds a prefix to all names of all resources.
+// Note the catalog/schema presets are applied in ApplyPresetsCatalogSchema.
 func ApplyPresets() *applyPresets {
 	return &applyPresets{}
 }
@@ -43,9 +39,6 @@ func (m *applyPresets) Name() string {
 func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	if d := validateCatalogAndSchema(b); d != nil {
-		return d // fast fail since code below would fail
-	}
 	if d := validatePauseStatus(b); d != nil {
 		diags = diags.Extend(d)
 	}
@@ -56,7 +49,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	tags := toTagArray(t.Tags)
 
 	// Jobs presets.
-	// Supported: Prefix, Tags, JobsMaxConcurrentRuns, TriggerPauseStatus, Catalog, Schema
+	// Supported: Prefix, Tags, JobsMaxConcurrentRuns, TriggerPauseStatus
 	for key, j := range r.Jobs {
 		if j.JobSettings == nil {
 			diags = diags.Extend(diag.Errorf("job %s is not defined", key))
@@ -90,25 +83,10 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 				j.Trigger.PauseStatus = paused
 			}
 		}
-		if t.Catalog != "" || t.Schema != "" {
-			for _, task := range j.Tasks {
-				if task.DbtTask != nil {
-					if task.DbtTask.Catalog == "" {
-						task.DbtTask.Catalog = t.Catalog
-					}
-					if task.DbtTask.Schema == "" {
-						task.DbtTask.Schema = t.Schema
-					}
-				}
-			}
-
-			diags = diags.Extend(addCatalogSchemaParameters(b, key, j, t))
-			diags = diags.Extend(recommendCatalogSchemaUsage(b, ctx, key, j))
-		}
 	}
 
 	// Pipelines presets.
-	// Supported: Prefix, PipelinesDevelopment, Catalog, Schema
+	// Supported: Prefix, PipelinesDevelopment
 	// Not supported: Tags (as of 2024-10 not in pipelines API)
 	for key, p := range r.Pipelines {
 		if p.PipelineSpec == nil {
@@ -121,62 +99,6 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 		if t.TriggerPauseStatus == config.Paused {
 			p.Continuous = false
-		}
-		if t.Catalog != "" && t.Schema != "" {
-			if p.Catalog == "" {
-				p.Catalog = t.Catalog
-			}
-			if p.Target == "" {
-				p.Target = t.Schema
-			}
-			if p.GatewayDefinition != nil {
-				if p.GatewayDefinition.GatewayStorageCatalog == "" {
-					p.GatewayDefinition.GatewayStorageCatalog = t.Catalog
-				}
-				if p.GatewayDefinition.GatewayStorageSchema == "" {
-					p.GatewayDefinition.GatewayStorageSchema = t.Schema
-				}
-			}
-			if p.IngestionDefinition != nil {
-				for _, obj := range p.IngestionDefinition.Objects {
-					if obj.Report != nil {
-						if obj.Report.DestinationCatalog == "" {
-							obj.Report.DestinationCatalog = t.Catalog
-						}
-						if obj.Report.DestinationSchema == "" {
-							obj.Report.DestinationSchema = t.Schema
-						}
-					}
-					if obj.Schema != nil {
-						if obj.Schema.SourceCatalog == "" {
-							obj.Schema.SourceCatalog = t.Catalog
-						}
-						if obj.Schema.SourceSchema == "" {
-							obj.Schema.SourceSchema = t.Schema
-						}
-						if obj.Schema.DestinationCatalog == "" {
-							obj.Schema.DestinationCatalog = t.Catalog
-						}
-						if obj.Schema.DestinationSchema == "" {
-							obj.Schema.DestinationSchema = t.Schema
-						}
-					}
-					if obj.Table != nil {
-						if obj.Table.SourceCatalog == "" {
-							obj.Table.SourceCatalog = t.Catalog
-						}
-						if obj.Table.SourceSchema == "" {
-							obj.Table.SourceSchema = t.Schema
-						}
-						if obj.Table.DestinationCatalog == "" {
-							obj.Table.DestinationCatalog = t.Catalog
-						}
-						if obj.Table.DestinationSchema == "" {
-							obj.Table.DestinationSchema = t.Schema
-						}
-					}
-				}
-			}
 		}
 	}
 
@@ -229,7 +151,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	}
 
 	// Model serving endpoint presets
-	// Supported: Prefix, Catalog, Schema
+	// Supported: Prefix
 	// Not supported: Tags (not in API as of 2024-10)
 	for key, e := range r.ModelServingEndpoints {
 		if e.CreateServingEndpoint == nil {
@@ -237,44 +159,10 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 			continue
 		}
 		e.Name = normalizePrefix(prefix) + e.Name
-
-		if t.Catalog != "" || t.Schema != "" {
-			// Apply catalog & schema to inference table config if not set
-			if e.CreateServingEndpoint.AiGateway != nil && e.CreateServingEndpoint.AiGateway.InferenceTableConfig != nil {
-				if t.Catalog != "" && e.CreateServingEndpoint.AiGateway.InferenceTableConfig.CatalogName == "" {
-					e.CreateServingEndpoint.AiGateway.InferenceTableConfig.CatalogName = t.Catalog
-				}
-				if t.Schema != "" && e.CreateServingEndpoint.AiGateway.InferenceTableConfig.SchemaName == "" {
-					e.CreateServingEndpoint.AiGateway.InferenceTableConfig.SchemaName = t.Schema
-				}
-			}
-
-			// Apply catalog & schema to auto capture config if not set
-			if e.CreateServingEndpoint.Config.AutoCaptureConfig != nil {
-				if t.Catalog != "" && e.CreateServingEndpoint.Config.AutoCaptureConfig.CatalogName == "" {
-					e.CreateServingEndpoint.Config.AutoCaptureConfig.CatalogName = t.Catalog
-				}
-				if t.Schema != "" && e.CreateServingEndpoint.Config.AutoCaptureConfig.SchemaName == "" {
-					e.CreateServingEndpoint.Config.AutoCaptureConfig.SchemaName = t.Schema
-				}
-			}
-
-			// Fully qualify served entities and models if they are not already qualified
-			for i := range e.CreateServingEndpoint.Config.ServedEntities {
-				e.CreateServingEndpoint.Config.ServedEntities[i].EntityName = fullyQualifyName(
-					e.CreateServingEndpoint.Config.ServedEntities[i].EntityName, t.Catalog, t.Schema,
-				)
-			}
-			for i := range e.CreateServingEndpoint.Config.ServedModels {
-				e.CreateServingEndpoint.Config.ServedModels[i].ModelName = fullyQualifyName(
-					e.CreateServingEndpoint.Config.ServedModels[i].ModelName, t.Catalog, t.Schema,
-				)
-			}
-		}
 	}
 
 	// Registered models presets
-	// Supported: Prefix, Catalog, Schema
+	// Supported: Prefix
 	// Not supported: Tags (not in API as of 2024-10)
 	for key, m := range r.RegisteredModels {
 		if m.CreateRegisteredModelRequest == nil {
@@ -282,16 +170,10 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 			continue
 		}
 		m.Name = normalizePrefix(prefix) + m.Name
-		if t.Catalog != "" && m.CatalogName == "" {
-			m.CatalogName = t.Catalog
-		}
-		if t.Schema != "" && m.SchemaName == "" {
-			m.SchemaName = t.Schema
-		}
 	}
 
 	// Quality monitors presets
-	// Supported: Schedule, Catalog, Schema
+	// Supported: Schedule
 	// Not supported: Tags (not in API as of 2024-10)
 	for key, q := range r.QualityMonitors {
 		if q.CreateMonitor == nil {
@@ -306,15 +188,9 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 				q.Schedule = nil
 			}
 		}
-		if t.Catalog != "" && t.Schema != "" {
-			q.TableName = fullyQualifyName(q.TableName, t.Catalog, t.Schema)
-			if q.OutputSchemaName == "" {
-				q.OutputSchemaName = t.Catalog + "." + t.Schema
-			}
-		}
 	}
 
-	// Schemas: Prefix, Catalog, Schema
+	// Schemas: Prefix only
 	// Not supported: Tags (as of 2024-10, only supported in Databricks UI / SQL API)
 	for key, s := range r.Schemas {
 		if s.CreateSchema == nil {
@@ -322,18 +198,9 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 			continue
 		}
 		s.Name = normalizePrefix(prefix) + s.Name
-		if t.Catalog != "" && s.CatalogName == "" {
-			s.CatalogName = t.Catalog
-		}
-		if t.Schema != "" && s.Name == "" {
-			// If there is a schema preset such as 'dev', we directly
-			// use that name and don't add any prefix (which might result in dev_dev).
-			s.Name = t.Schema
-		}
 	}
 
 	// Clusters: Prefix, Tags
-	// Not supported: Catalog / Schema (not applicable)
 	for key, c := range r.Clusters {
 		if c.ClusterSpec == nil {
 			diags = diags.Extend(diag.Errorf("cluster %s is not defined", key))
@@ -385,6 +252,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	return diags
 }
 
+// validatePauseStatus checks the user-provided pause status is valid.
 func validatePauseStatus(b *bundle.Bundle) diag.Diagnostics {
 	p := b.Config.Presets.TriggerPauseStatus
 	if p == "" || p == config.Paused || p == config.Unpaused {
@@ -397,20 +265,8 @@ func validatePauseStatus(b *bundle.Bundle) diag.Diagnostics {
 	}}
 }
 
-func validateCatalogAndSchema(b *bundle.Bundle) diag.Diagnostics {
-	p := b.Config.Presets
-	if (p.Catalog != "" && p.Schema == "") || (p.Catalog == "" && p.Schema != "") {
-		return diag.Diagnostics{{
-			Summary:   "presets.catalog and presets.schema must always be set together",
-			Severity:  diag.Error,
-			Locations: []dyn.Location{b.Config.GetLocation("presets")},
-		}}
-	}
-	return nil
-}
-
 // toTagArray converts a map of tags to an array of tags.
-// We sort tags so ensure stable ordering.
+// We sort tags to ensure stable ordering.
 func toTagArray(tags map[string]string) []Tag {
 	var tagArray []Tag
 	if tags == nil {
@@ -439,152 +295,4 @@ func normalizePrefix(prefix string) string {
 	}
 
 	return textutil.NormalizeString(prefix) + suffix
-}
-
-// addCatalogSchemaParameters adds catalog and schema parameters to a job if they don't already exist.
-// Returns any warning diagnostics for existing parameters.
-func addCatalogSchemaParameters(b *bundle.Bundle, key string, job *resources.Job, t config.Presets) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	// Check for existing catalog/schema parameters
-	hasCatalog := false
-	hasSchema := false
-	if job.Parameters != nil {
-		for _, param := range job.Parameters {
-			if param.Name == "catalog" {
-				hasCatalog = true
-				diags = diags.Extend(diag.Diagnostics{{
-					Summary:   fmt.Sprintf("job %s already has 'catalog' parameter defined; ignoring preset value", key),
-					Severity:  diag.Warning,
-					Locations: []dyn.Location{b.Config.GetLocation("resources.jobs." + key)},
-				}})
-			}
-			if param.Name == "schema" {
-				hasSchema = true
-				diags = diags.Extend(diag.Diagnostics{{
-					Summary:   fmt.Sprintf("job %s already has 'schema' parameter defined; ignoring preset value", key),
-					Severity:  diag.Warning,
-					Locations: []dyn.Location{b.Config.GetLocation("resources.jobs." + key)},
-				}})
-			}
-		}
-	}
-
-	// Initialize parameters if nil
-	if job.Parameters == nil {
-		job.Parameters = []jobs.JobParameterDefinition{}
-	}
-
-	// Add catalog parameter if not already present
-	if !hasCatalog && t.Catalog != "" {
-		job.Parameters = append(job.Parameters, jobs.JobParameterDefinition{
-			Name:    "catalog",
-			Default: t.Catalog,
-		})
-	}
-
-	// Add schema parameter if not already present
-	if !hasSchema && t.Schema != "" {
-		job.Parameters = append(job.Parameters, jobs.JobParameterDefinition{
-			Name:    "schema",
-			Default: t.Schema,
-		})
-	}
-
-	return diags
-}
-
-func recommendCatalogSchemaUsage(b *bundle.Bundle, ctx context.Context, key string, job *resources.Job) diag.Diagnostics {
-	var diags diag.Diagnostics
-	for _, t := range job.Tasks {
-		var relPath string
-		var expected string
-		var fix string
-		if t.NotebookTask != nil {
-			relPath = t.NotebookTask.NotebookPath
-			expected = `dbutils.widgets.text\(['"]schema|` +
-				`USE[^)]+schema`
-			fix = "  dbutils.widgets.text('catalog')\n" +
-				"  dbutils.widgets.text('schema')\n" +
-				"  catalog = dbutils.widgets.get('catalog')\n" +
-				"  schema = dbutils.widgets.get('schema')\n" +
-				"  spark.sql(f'USE {catalog}.{schema}')\n"
-		} else if t.SparkPythonTask != nil {
-			relPath = t.SparkPythonTask.PythonFile
-			expected = `add_argument\(['"]--catalog'|` +
-				`USE[^)]+catalog`
-			fix = "  def main():\n" +
-				"    parser = argparse.ArgumentParser()\n" +
-				"    parser.add_argument('--catalog', required=True)\n" +
-				"    parser.add_argument('--schema', '-s', required=True)\n" +
-				"    args, unknown = parser.parse_known_args()\n" +
-				"    spark.sql(f\"USE {args.catalog}.{args.schema}\")\n"
-		} else if t.SqlTask != nil && t.SqlTask.File != nil {
-			relPath = t.SqlTask.File.Path
-			expected = `:schema|\{\{schema\}\}`
-			fix = "  USE CATALOG {{catalog}};\n" +
-				"  USE IDENTIFIER({schema});\n"
-		} else {
-			continue
-		}
-
-		sourceDir, err := b.Config.GetLocation("resources.jobs." + key).Directory()
-		if err != nil {
-			continue
-		}
-
-		localPath, _, err := GetLocalPath(ctx, b, sourceDir, relPath)
-		if err != nil || localPath == "" {
-			// We ignore errors (they're reported by another mutator)
-			// and ignore empty local paths (which means we'd have to download the file)
-			continue
-		}
-
-		if !fileIncludesPattern(ctx, localPath, expected) {
-			diags = diags.Extend(diag.Diagnostics{{
-				Summary:  "Use the 'catalog' and 'schema' parameters provided via 'presets.catalog' and 'presets.schema' using\n\n" + fix,
-				Severity: diag.Recommendation,
-				Locations: []dyn.Location{{
-					File:   localPath,
-					Line:   1,
-					Column: 1,
-				}},
-			}})
-		}
-	}
-
-	return diags
-
-}
-
-// fullyQualifyName checks if the given name is already qualified with a catalog and schema.
-// If not, and both catalog and schema are available, it prefixes the name with catalog.schema.
-// If name is empty, returns name as-is.
-func fullyQualifyName(name, catalog, schema string) string {
-	if name == "" || catalog == "" || schema == "" {
-		return name
-	}
-	// If it's already qualified (contains at least two '.'), we assume it's fully qualified.
-	parts := strings.Split(name, ".")
-	if len(parts) >= 3 {
-		// Already fully qualified
-		return name
-	}
-	// Otherwise, fully qualify it
-	return fmt.Sprintf("%s.%s.%s", catalog, schema, name)
-}
-
-func fileIncludesPattern(ctx context.Context, filePath string, expected string) bool {
-	content, err := os.ReadFile(filePath)
-	if err != nil {
-		log.Warnf(ctx, "failed to check file %s: %v", filePath, err)
-		return true
-	}
-
-	matched, err := regexp.MatchString(expected, string(content))
-	if err != nil {
-		log.Warnf(ctx, "failed to check pattern in %s: %v", filePath, err)
-		return true
-	}
-	return matched
 }
