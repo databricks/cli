@@ -102,6 +102,7 @@ func testDefaultPython(t *testing.T, pythonVersion string) {
 	})
 
 	ignoredFields := []string{
+		"/bundle/terraform/exec_path",
 		"/resources/jobs/project_name_$UNIQUE_PRJ_job/email_notifications",
 		"/resources/jobs/project_name_$UNIQUE_PRJ_job/job_clusters/0/new_cluster/node_type_id",
 		"/resources/jobs/project_name_$UNIQUE_PRJ_job/url",
