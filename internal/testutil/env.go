@@ -65,8 +65,9 @@ func Chdir(t TestingT, dir string) string {
 	return wd
 }
 
-// Helper to get absolute path to testdata file.
-// It only able to helps if case Chdir() above was called or directory was not changed at all.
+// Return filename ff testutil.Chdir was not called.
+// Return absolute path to filename testutil.Chdir() was called.
 func TestData(filename string) string {
+	// Note, if TESTS_ORIG_WD is not set, Getenv return "" and Join returns filename
 	return filepath.Join(os.Getenv("TESTS_ORIG_WD"), filename)
 }
