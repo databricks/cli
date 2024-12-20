@@ -118,6 +118,7 @@ type ReplacementsContext struct {
 }
 
 func (r *ReplacementsContext) Replace(s string) string {
+	// QQQ Should probably only replace whole words
 	for _, repl := range r.Repls {
 		s = strings.ReplaceAll(s, repl.Old, repl.New)
 	}
@@ -181,7 +182,8 @@ func PrepareReplacements(t testutil.TestingT, r *ReplacementsContext, w *databri
 	r.Set(w.Config.ClientID, "$DATABRICKS_CLIENT_ID")
 	r.Set(w.Config.ClientSecret, "$DATABRICKS_CLIENT_SECRET")
 	r.Set(w.Config.DatabricksCliPath, "$DATABRICKS_CLI_PATH")
-	r.Set(w.Config.AuthType, "$DATABRICKS_AUTH_TYPE")
+	// This is set to words like "path" that happen too frequently
+	//r.Set(w.Config.AuthType, "$DATABRICKS_AUTH_TYPE")
 }
 
 func PrepareReplacementsUser(t testutil.TestingT, r *ReplacementsContext, u iam.User) {
