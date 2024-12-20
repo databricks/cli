@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/internal/acc"
+	"github.com/databricks/cli/integration/internal/acc"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/stretchr/testify/assert"
@@ -22,14 +22,14 @@ type apiClientWrapper struct {
 
 func (wrapper *apiClientWrapper) Do(ctx context.Context, method, path string,
 	headers map[string]string, request, response any,
-	visitors ...func(*http.Request) error) error {
-
+	visitors ...func(*http.Request) error,
+) error {
 	err := wrapper.apiClient.Do(ctx, method, path, headers, request, response, visitors...)
 	wrapper.response = response.(*telemetry.ResponseBody)
 	return err
 }
 
-func TestAccTelemetryLogger(t *testing.T) {
+func TestTelemetryLogger(t *testing.T) {
 	ctx, w := acc.WorkspaceTest(t)
 	ctx = telemetry.NewContext(ctx)
 
