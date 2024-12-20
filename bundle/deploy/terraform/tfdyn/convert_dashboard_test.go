@@ -14,7 +14,7 @@ import (
 )
 
 func TestConvertDashboard(t *testing.T) {
-	var src = resources.Dashboard{
+	src := resources.Dashboard{
 		Dashboard: &dashboards.Dashboard{
 			DisplayName: "my dashboard",
 			WarehouseId: "f00dcafe",
@@ -60,7 +60,7 @@ func TestConvertDashboard(t *testing.T) {
 }
 
 func TestConvertDashboardFilePath(t *testing.T) {
-	var src = resources.Dashboard{
+	src := resources.Dashboard{
 		FilePath: "some/path",
 	}
 
@@ -84,7 +84,7 @@ func TestConvertDashboardFilePath(t *testing.T) {
 }
 
 func TestConvertDashboardFilePathQuoted(t *testing.T) {
-	var src = resources.Dashboard{
+	src := resources.Dashboard{
 		FilePath: `C:\foo\bar\baz\dashboard.lvdash.json`,
 	}
 
@@ -108,7 +108,7 @@ func TestConvertDashboardFilePathQuoted(t *testing.T) {
 }
 
 func TestConvertDashboardSerializedDashboardString(t *testing.T) {
-	var src = resources.Dashboard{
+	src := resources.Dashboard{
 		SerializedDashboard: `{ "json": true }`,
 	}
 
@@ -127,7 +127,7 @@ func TestConvertDashboardSerializedDashboardString(t *testing.T) {
 }
 
 func TestConvertDashboardSerializedDashboardAny(t *testing.T) {
-	var src = resources.Dashboard{
+	src := resources.Dashboard{
 		SerializedDashboard: map[string]any{
 			"pages": []map[string]any{
 				{

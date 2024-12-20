@@ -103,8 +103,7 @@ func (err DirectoryNotEmptyError) Is(other error) bool {
 	return other == fs.ErrInvalid
 }
 
-type CannotDeleteRootError struct {
-}
+type CannotDeleteRootError struct{}
 
 func (err CannotDeleteRootError) Error() string {
 	return "unable to delete filer root"

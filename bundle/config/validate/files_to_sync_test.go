@@ -2,6 +2,7 @@ package validate
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -44,6 +45,7 @@ func setupBundleForFilesToSyncTest(t *testing.T) *bundle.Bundle {
 		BundleRoot:     vfs.MustNew(dir),
 		SyncRootPath:   dir,
 		SyncRoot:       vfs.MustNew(dir),
+		WorktreeRoot:   vfs.MustNew(dir),
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Target: "default",
@@ -80,7 +82,7 @@ func TestFilesToSync_EverythingIgnored(t *testing.T) {
 	b := setupBundleForFilesToSyncTest(t)
 
 	// Ignore all files.
-	testutil.WriteFile(t, "*\n.*\n", b.BundleRootPath, ".gitignore")
+	testutil.WriteFile(t, filepath.Join(b.BundleRootPath, ".gitignore"), "*\n.*\n")
 
 	ctx := context.Background()
 	rb := bundle.ReadOnly(b)

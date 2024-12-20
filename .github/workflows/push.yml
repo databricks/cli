@@ -44,8 +44,7 @@ jobs:
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-          go install gotest.tools/gotestsum@latest
-          go install honnef.co/go/tools/cmd/staticcheck@latest
+          go install gotest.tools/gotestsum@v1.12.0
 
       - name: Pull external libraries
         run: |
@@ -53,42 +52,28 @@ jobs:
           pip3 install wheel
 
       - name: Run tests
-        run: make test
+        run: make testonly
 
-      - name: Publish test coverage
-        uses: codecov/codecov-action@v4
-
-  fmt:
+  golangci:
+    name: lint
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: 1.23.2
-
-          # No need to download cached dependencies when running gofmt.
-          cache: false
-
-      - name: Install goimports
-        run: |
-          go install golang.org/x/tools/cmd/goimports@latest
-
-      - name: Run make fmt
-        run: |
-          make fmt
-
       - name: Run go mod tidy
         run: |
           go mod tidy
-
       - name: Fail on differences
         run: |
           # Exit with status code 1 if there are differences (i.e. unformatted files)
           git diff --exit-code
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.62.2
+          args: --timeout=15m
 
   validate-bundle-schema:
     runs-on: ubuntu-latest
@@ -111,14 +96,19 @@ jobs:
       # By default the ajv-cli runs in strict mode which will fail if the schema
       # itself is not valid. Strict mode is more strict than the JSON schema
       # specification. See for details: https://ajv.js.org/options.html#strict-mode-options
+      # The ajv-cli is configured to use the markdownDescription keyword which is not part of the JSON schema specification,
+      # but is used in editors like VSCode to render markdown in the description field
       - name: Validate bundle schema
         run: |
           go run main.go bundle schema > schema.json
 
+          # Add markdownDescription keyword to ajv
+          echo "module.exports=function(a){a.addKeyword('markdownDescription')}" >> keywords.js
+
           for file in ./bundle/internal/schema/testdata/pass/*.yml; do
-            ajv test -s schema.json -d $file --valid
+            ajv test -s schema.json -d $file --valid -c=./keywords.js
           done
 
           for file in ./bundle/internal/schema/testdata/fail/*.yml; do
-            ajv test -s schema.json -d $file --invalid
+            ajv test -s schema.json -d $file --invalid -c=./keywords.js
           done

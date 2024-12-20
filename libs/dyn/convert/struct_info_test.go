@@ -95,7 +95,7 @@ func TestStructInfoFieldValues(t *testing.T) {
 		Bar string `json:"bar"`
 	}
 
-	var src = Tmp{
+	src := Tmp{
 		Foo: "foo",
 		Bar: "bar",
 	}
@@ -121,7 +121,7 @@ func TestStructInfoFieldValuesAnonymousByValue(t *testing.T) {
 		Foo
 	}
 
-	var src = Tmp{
+	src := Tmp{
 		Foo: Foo{
 			Foo: "foo",
 			Bar: Bar{

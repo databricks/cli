@@ -16,8 +16,6 @@ import (
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 
-	"github.com/databricks/databricks-sdk-go"
-
 	"golang.org/x/sync/errgroup"
 )
 
@@ -83,7 +81,6 @@ func collectLocalLibraries(b *bundle.Bundle) (map[string][]configLocation, error
 				return v, nil
 			})
 		})
-
 		if err != nil {
 			return nil, err
 		}
@@ -121,7 +118,6 @@ func collectLocalLibraries(b *bundle.Bundle) (map[string][]configLocation, error
 			return v, nil
 		})
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -130,23 +126,16 @@ func collectLocalLibraries(b *bundle.Bundle) (map[string][]configLocation, error
 }
 
 func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	uploadPath, err := GetUploadBasePath(b)
-	if err != nil {
-		return diag.FromErr(err)
+	client, uploadPath, diags := GetFilerForLibraries(ctx, b)
+	if diags.HasError() {
+		return diags
 	}
 
-	// If the client is not initialized, initialize it
-	// We use client field in mutator to allow for mocking client in testing
+	// Only set the filer client if it's not already set. We use the client field
+	// in the mutator to mock the filer client in testing
 	if u.client == nil {
-		filer, err := GetFilerForLibraries(b.WorkspaceClient(), uploadPath)
-		if err != nil {
-			return diag.FromErr(err)
-		}
-
-		u.client = filer
+		u.client = client
 	}
-
-	var diags diag.Diagnostics
 
 	libs, err := collectLocalLibraries(b)
 	if err != nil {
@@ -184,7 +173,6 @@ func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 			return v, nil
 		})
-
 		if err != nil {
 			diags = diags.Extend(diag.FromErr(err))
 		}
@@ -195,17 +183,6 @@ func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 func (u *upload) Name() string {
 	return "libraries.Upload"
-}
-
-func GetFilerForLibraries(w *databricks.WorkspaceClient, uploadPath string) (filer.Filer, error) {
-	if isVolumesPath(uploadPath) {
-		return filer.NewFilesClient(w, uploadPath)
-	}
-	return filer.NewWorkspaceFilesClient(w, uploadPath)
-}
-
-func isVolumesPath(path string) bool {
-	return strings.HasPrefix(path, "/Volumes/")
 }
 
 // Function to upload file (a library, artifact and etc) to Workspace or UC volume
@@ -226,13 +203,4 @@ func UploadFile(ctx context.Context, file string, client filer.Filer) error {
 
 	log.Infof(ctx, "Upload succeeded")
 	return nil
-}
-
-func GetUploadBasePath(b *bundle.Bundle) (string, error) {
-	artifactPath := b.Config.Workspace.ArtifactPath
-	if artifactPath == "" {
-		return "", fmt.Errorf("remote artifact path not configured")
-	}
-
-	return path.Join(artifactPath, ".internal"), nil
 }

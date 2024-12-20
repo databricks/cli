@@ -15,8 +15,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type folderPermissions struct {
-}
+type folderPermissions struct{}
 
 // Apply implements bundle.ReadOnlyMutator.
 func (f *folderPermissions) Apply(ctx context.Context, b bundle.ReadOnlyBundle) diag.Diagnostics {

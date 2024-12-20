@@ -43,7 +43,7 @@ func getStructInfo(typ reflect.Type) structInfo {
 
 // buildStructInfo populates a new [structInfo] for the given type.
 func buildStructInfo(typ reflect.Type) structInfo {
-	var out = structInfo{
+	out := structInfo{
 		Fields: make(map[string][]int),
 	}
 
@@ -102,7 +102,7 @@ func buildStructInfo(typ reflect.Type) structInfo {
 }
 
 func (s *structInfo) FieldValues(v reflect.Value) map[string]reflect.Value {
-	var out = make(map[string]reflect.Value)
+	out := make(map[string]reflect.Value)
 
 	for k, index := range s.Fields {
 		fv := v

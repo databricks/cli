@@ -160,9 +160,6 @@ func newCreateSchedule() *cobra.Command {
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -242,9 +239,6 @@ func newCreateSubscription() *cobra.Command {
     DASHBOARD_ID: UUID identifying the dashboard to which the subscription belongs.
     SCHEDULE_ID: UUID identifying the schedule to which the subscription belongs.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -322,9 +316,6 @@ func newDeleteSchedule() *cobra.Command {
     DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.
     SCHEDULE_ID: UUID identifying the schedule.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -383,9 +374,6 @@ func newDeleteSubscription() *cobra.Command {
     DASHBOARD_ID: UUID identifying the dashboard which the subscription belongs.
     SCHEDULE_ID: UUID identifying the schedule which the subscription belongs.
     SUBSCRIPTION_ID: UUID identifying the subscription.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -503,7 +491,7 @@ func newGetPublished() *cobra.Command {
   Get the current published dashboard.
 
   Arguments:
-    DASHBOARD_ID: UUID identifying the dashboard to be published.`
+    DASHBOARD_ID: UUID identifying the published dashboard.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -561,9 +549,6 @@ func newGetSchedule() *cobra.Command {
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.
     SCHEDULE_ID: UUID identifying the schedule.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -623,9 +608,6 @@ func newGetSubscription() *cobra.Command {
     DASHBOARD_ID: UUID identifying the dashboard which the subscription belongs.
     SCHEDULE_ID: UUID identifying the schedule which the subscription belongs.
     SUBSCRIPTION_ID: UUID identifying the subscription.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -737,10 +719,7 @@ func newListSchedules() *cobra.Command {
 	cmd.Long = `List dashboard schedules.
 
   Arguments:
-    DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
+    DASHBOARD_ID: UUID identifying the dashboard to which the schedules belongs.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -795,11 +774,8 @@ func newListSubscriptions() *cobra.Command {
 	cmd.Long = `List schedule subscriptions.
 
   Arguments:
-    DASHBOARD_ID: UUID identifying the dashboard to which the subscription belongs.
-    SCHEDULE_ID: UUID identifying the schedule to which the subscription belongs.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
+    DASHBOARD_ID: UUID identifying the dashboard which the subscriptions belongs.
+    SCHEDULE_ID: UUID identifying the schedule which the subscriptions belongs.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -852,6 +828,7 @@ func newMigrate() *cobra.Command {
 
 	cmd.Flags().StringVar(&migrateReq.DisplayName, "display-name", migrateReq.DisplayName, `Display name for the new Lakeview dashboard.`)
 	cmd.Flags().StringVar(&migrateReq.ParentPath, "parent-path", migrateReq.ParentPath, `The workspace path of the folder to contain the migrated Lakeview dashboard.`)
+	cmd.Flags().BoolVar(&migrateReq.UpdateParameterSyntax, "update-parameter-syntax", migrateReq.UpdateParameterSyntax, `Flag to indicate if mustache parameter syntax ({{ param }}) should be auto-updated to named syntax (:param) when converting datasets in the dashboard.`)
 
 	cmd.Use = "migrate SOURCE_DASHBOARD_ID"
 	cmd.Short = `Migrate dashboard.`
@@ -1072,7 +1049,7 @@ func newUnpublish() *cobra.Command {
   Unpublish the dashboard.
 
   Arguments:
-    DASHBOARD_ID: UUID identifying the dashboard to be published.`
+    DASHBOARD_ID: UUID identifying the published dashboard.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1214,9 +1191,6 @@ func newUpdateSchedule() *cobra.Command {
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard to which the schedule belongs.
     SCHEDULE_ID: UUID identifying the schedule.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 

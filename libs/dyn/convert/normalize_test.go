@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	assert "github.com/databricks/cli/libs/dyn/dynassert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNormalizeStruct(t *testing.T) {
@@ -20,8 +21,8 @@ func TestNormalizeStruct(t *testing.T) {
 		"bar": dyn.V("baz"),
 	})
 
-	vout, err := Normalize(typ, vin)
-	assert.Empty(t, err)
+	vout, diags := Normalize(typ, vin)
+	assert.Empty(t, diags)
 	assert.Equal(t, vin, vout)
 }
 
@@ -37,14 +38,14 @@ func TestNormalizeStructElementDiagnostic(t *testing.T) {
 		"bar": dyn.V(map[string]dyn.Value{"an": dyn.V("error")}),
 	})
 
-	vout, err := Normalize(typ, vin)
-	assert.Len(t, err, 1)
+	vout, diags := Normalize(typ, vin)
+	assert.Len(t, diags, 1)
 	assert.Equal(t, diag.Diagnostic{
 		Severity:  diag.Warning,
 		Summary:   `expected string, found map`,
 		Locations: []dyn.Location{{}},
 		Paths:     []dyn.Path{dyn.NewPath(dyn.Key("bar"))},
-	}, err[0])
+	}, diags[0])
 
 	// Elements that encounter an error during normalization are dropped.
 	assert.Equal(t, map[string]any{
@@ -60,17 +61,20 @@ func TestNormalizeStructUnknownField(t *testing.T) {
 	var typ Tmp
 
 	m := dyn.NewMapping()
-	m.Set(dyn.V("foo"), dyn.V("val-foo"))
+	err := m.Set(dyn.V("foo"), dyn.V("val-foo"))
+	require.NoError(t, err)
+
 	// Set the unknown field, with location information.
-	m.Set(dyn.NewValue("bar", []dyn.Location{
+	err = m.Set(dyn.NewValue("bar", []dyn.Location{
 		{File: "hello.yaml", Line: 1, Column: 1},
 		{File: "world.yaml", Line: 2, Column: 2},
 	}), dyn.V("var-bar"))
+	require.NoError(t, err)
 
 	vin := dyn.V(m)
 
-	vout, err := Normalize(typ, vin)
-	assert.Len(t, err, 1)
+	vout, diags := Normalize(typ, vin)
+	assert.Len(t, diags, 1)
 	assert.Equal(t, diag.Diagnostic{
 		Severity: diag.Warning,
 		Summary:  `unknown field: bar`,
@@ -80,7 +84,7 @@ func TestNormalizeStructUnknownField(t *testing.T) {
 			{File: "world.yaml", Line: 2, Column: 2},
 		},
 		Paths: []dyn.Path{dyn.EmptyPath},
-	}, err[0])
+	}, diags[0])
 
 	// The field that can be mapped to the struct field is retained.
 	assert.Equal(t, map[string]any{

@@ -39,7 +39,7 @@ func makeCommand(method string) *cobra.Command {
 		Args:  root.ExactArgs(1),
 		Short: fmt.Sprintf("Perform %s request", method),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			var path = args[0]
+			path := args[0]
 
 			var request any
 			diags := payload.Unmarshal(&request)

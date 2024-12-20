@@ -13,10 +13,10 @@ type FileSet struct {
 	view    *View
 }
 
-// NewFileSet returns [FileSet] for the Git repository located at `root`.
-func NewFileSet(root vfs.Path, paths ...[]string) (*FileSet, error) {
+// NewFileSet returns [FileSet] for the directory `root` which is contained within Git worktree located at `worktreeRoot`.
+func NewFileSet(worktreeRoot, root vfs.Path, paths ...[]string) (*FileSet, error) {
 	fs := fileset.New(root, paths...)
-	v, err := NewView(root)
+	v, err := NewView(worktreeRoot, root)
 	if err != nil {
 		return nil, err
 	}
@@ -25,6 +25,10 @@ func NewFileSet(root vfs.Path, paths ...[]string) (*FileSet, error) {
 		fileset: fs,
 		view:    v,
 	}, nil
+}
+
+func NewFileSetAtRoot(root vfs.Path, paths ...[]string) (*FileSet, error) {
+	return NewFileSet(root, root, paths...)
 }
 
 func (f *FileSet) IgnoreFile(file string) (bool, error) {

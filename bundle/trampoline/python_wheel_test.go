@@ -127,7 +127,8 @@ func TestNoPanicWithNoPythonWheelTasks(t *testing.T) {
 							Tasks: []jobs.Task{
 								{
 									TaskKey:      "notebook_task",
-									NotebookTask: &jobs.NotebookTask{}},
+									NotebookTask: &jobs.NotebookTask{},
+								},
 							},
 						},
 					},
