@@ -34,7 +34,8 @@ func findSchemaInBundle(rb bundle.ReadOnlyBundle, catalogName, schemaName string
 func (v *schemaReferences) Apply(ctx context.Context, rb bundle.ReadOnlyBundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 	for k, p := range rb.Config().Resources.Pipelines {
-		// Skip if the pipeline uses hive metastore.
+		// Skip if the pipeline uses hive metastore. The DLT API allows creating
+		// a pipeline without a schema or target when using hive metastore.
 		if p.Catalog == "" {
 			continue
 		}
@@ -44,6 +45,8 @@ func (v *schemaReferences) Apply(ctx context.Context, rb bundle.ReadOnlyBundle) 
 		schemaLocation := []dyn.Location{}
 		switch {
 		case p.Schema == "" && p.Target == "":
+			// The error message is identical to the one DLT backend returns when
+			// a schema is not defined for a UC DLT pipeline (date: 20 Dec 2024).
 			diags = append(diags, diag.Diagnostic{
 				Severity: diag.Error,
 				Summary:  "Unity Catalog pipeline should have a schema or target defined",
@@ -62,6 +65,9 @@ TABLE statement if you do not wish to publish your dataset.`,
 			locations := rb.Config().GetLocations("resources.pipelines." + k + ".schema")
 			locations = append(locations, rb.Config().GetLocations("resources.pipelines."+k+".target")...)
 
+			// The Databricks Terraform provider already has client side validation
+			// that does not allow this today. Having this here allows us to float
+			// this validation on `bundle validate` and provide location information.
 			diags = append(diags, diag.Diagnostic{
 				Severity:  diag.Error,
 				Summary:   "Both schema and target are defined in a Unity Catalog pipeline. Only one of them should be defined.",
