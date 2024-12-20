@@ -1,5 +1,7 @@
 package telemetry
 
+import "github.com/databricks/cli/libs/telemetry/events"
+
 // This corresponds to the FrontendLog lumberjack proto in universe.
 // FrontendLog is the top-level struct for any client-side logs at Databricks
 // regardless of whether they are generated from the CLI or the web UI.
@@ -15,19 +17,6 @@ type FrontendLogEntry struct {
 }
 
 type DatabricksCliLog struct {
-	CliTestEvent CliTestEvent `json:"cli_test_event,omitempty"`
+	CliTestEvent    events.CliTestEvent    `json:"cli_test_event,omitempty"`
+	BundleInitEvent events.BundleInitEvent `json:"bundle_init_event,omitempty"`
 }
-
-// dummy event for testing the telemetry pipeline
-type CliTestEvent struct {
-	Name DummyCliEnum `json:"name,omitempty"`
-}
-
-type DummyCliEnum string
-
-const (
-	DummyCliEnumUnspecified DummyCliEnum = "DUMMY_CLI_ENUM_UNSPECIFIED"
-	DummyCliEnumValue1      DummyCliEnum = "VALUE1"
-	DummyCliEnumValue2      DummyCliEnum = "VALUE2"
-	DummyCliEnumValue3      DummyCliEnum = "VALUE3"
-)
