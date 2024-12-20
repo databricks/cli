@@ -53,6 +53,19 @@ func FromErr(err error) Diagnostics {
 	}
 }
 
+// FromErr returns a new warning diagnostic from the specified error, if any.
+func WarningFromErr(err error) Diagnostics {
+	if err == nil {
+		return nil
+	}
+	return []Diagnostic{
+		{
+			Severity: Warning,
+			Summary:  err.Error(),
+		},
+	}
+}
+
 // Warningf creates a new warning diagnostic.
 func Warningf(format string, args ...any) Diagnostics {
 	return []Diagnostic{

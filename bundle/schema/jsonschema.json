@@ -1,7 +1,7 @@
 {
   "$defs": {
     "bool": {
-      "anyOf": [
+      "oneOf": [
         {
           "type": "boolean"
         },
@@ -28,7 +28,7 @@
       ]
     },
     "float64": {
-      "anyOf": [
+      "oneOf": [
         {
           "type": "number"
         },
@@ -60,7 +60,7 @@
           "bundle": {
             "config": {
               "resources.Cluster": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "properties": {
@@ -130,6 +130,13 @@
                         "description": "The optional ID of the instance pool to which the cluster belongs.",
                         "$ref": "#/$defs/string"
                       },
+                      "is_single_node": {
+                        "description": "This field can only be used with `kind`.\n\nWhen set to true, Databricks will automatically set single node related `custom_tags`, `spark_conf`, and `num_workers`\n",
+                        "$ref": "#/$defs/bool"
+                      },
+                      "kind": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.Kind"
+                      },
                       "node_type_id": {
                         "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.\n",
                         "$ref": "#/$defs/string"
@@ -168,6 +175,10 @@
                         "description": "SSH public key contents that will be added to each Spark node in this cluster. The\ncorresponding private keys can be used to login with the user name `ubuntu` on port `2200`.\nUp to 10 keys can be specified.",
                         "$ref": "#/$defs/slice/string"
                       },
+                      "use_ml_runtime": {
+                        "description": "This field can only be used with `kind`.\n\n`effective_spark_version` is determined by `spark_version` (DBR release), this field `use_ml_runtime`, and whether `node_type_id` is gpu node or not.\n",
+                        "$ref": "#/$defs/bool"
+                      },
                       "workload_type": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.WorkloadType"
                       }
@@ -181,7 +192,7 @@
                 ]
               },
               "resources.Dashboard": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "properties": {
@@ -244,14 +255,16 @@
                 ]
               },
               "resources.Grant": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "properties": {
                       "principal": {
+                        "description": "The name of the principal that will be granted privileges",
                         "$ref": "#/$defs/string"
                       },
                       "privileges": {
+                        "description": "The privileges to grant to the specified entity",
                         "$ref": "#/$defs/slice/string"
                       }
                     },
@@ -268,7 +281,7 @@
                 ]
               },
               "resources.Job": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "properties": {
@@ -363,7 +376,7 @@
                 ]
               },
               "resources.MlflowExperiment": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "properties": {
@@ -408,7 +421,7 @@
                 ]
               },
               "resources.MlflowModel": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "properties": {
@@ -453,7 +466,7 @@
                 ]
               },
               "resources.ModelServingEndpoint": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "properties": {
@@ -498,20 +511,24 @@
                 ]
               },
               "resources.Permission": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "properties": {
                       "group_name": {
+                        "description": "The name of the group that has the permission set in level.",
                         "$ref": "#/$defs/string"
                       },
                       "level": {
+                        "description": "The allowed permission for user, group, service principal defined for this permission.",
                         "$ref": "#/$defs/string"
                       },
                       "service_principal_name": {
+                        "description": "The name of the service principal that has the permission set in level.",
                         "$ref": "#/$defs/string"
                       },
                       "user_name": {
+                        "description": "The name of the user that has the permission set in level.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -527,7 +544,7 @@
                 ]
               },
               "resources.Pipeline": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "properties": {
@@ -636,7 +653,7 @@
                 ]
               },
               "resources.QualityMonitor": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "properties": {
@@ -710,7 +727,7 @@
                 ]
               },
               "resources.RegisteredModel": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "properties": {
@@ -752,7 +769,7 @@
                 ]
               },
               "resources.Schema": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "properties": {
@@ -791,8 +808,53 @@
                   }
                 ]
               },
+              "resources.Volume": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "catalog_name": {
+                        "description": "The name of the catalog where the schema and the volume are",
+                        "$ref": "#/$defs/string"
+                      },
+                      "comment": {
+                        "description": "The comment attached to the volume",
+                        "$ref": "#/$defs/string"
+                      },
+                      "grants": {
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Grant"
+                      },
+                      "name": {
+                        "description": "The name of the volume",
+                        "$ref": "#/$defs/string"
+                      },
+                      "schema_name": {
+                        "description": "The name of the schema where the volume is",
+                        "$ref": "#/$defs/string"
+                      },
+                      "storage_location": {
+                        "description": "The storage location on the cloud",
+                        "$ref": "#/$defs/string"
+                      },
+                      "volume_type": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.VolumeType"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "catalog_name",
+                      "name",
+                      "schema_name"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "variable.Lookup": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "properties": {
@@ -850,12 +912,15 @@
                         "$ref": "#/$defs/interface"
                       },
                       "description": {
+                        "description": "The description of the variable.",
                         "$ref": "#/$defs/string"
                       },
                       "lookup": {
+                        "description": "The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.Lookup"
                       },
                       "type": {
+                        "description": "The type of the variable.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.VariableType"
                       }
                     },
@@ -871,12 +936,16 @@
                     "$ref": "#/$defs/interface"
                   },
                   "description": {
+                    "description": "The description of the variable",
                     "$ref": "#/$defs/string"
                   },
                   "lookup": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.Lookup"
+                    "description": "The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.",
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.Lookup",
+                    "markdownDescription": "The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID.\""
                   },
                   "type": {
+                    "description": "The type of the variable.",
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.VariableType"
                   }
                 },
@@ -887,24 +956,31 @@
               }
             },
             "config.Artifact": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
                     "build": {
+                      "description": "An optional set of non-default build commands that you want to run locally before deployment.\n\nFor Python wheel builds, the Databricks CLI assumes that it can find a local install of the Python wheel package to run builds, and it runs the command python setup.py bdist_wheel by default during each bundle deployment.\n\nTo specify multiple build commands, separate each command with double-ampersand (\u0026\u0026) characters.",
                       "$ref": "#/$defs/string"
                     },
                     "executable": {
+                      "description": "The executable type.",
                       "$ref": "#/$defs/github.com/databricks/cli/libs/exec.ExecutableType"
                     },
                     "files": {
-                      "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config.ArtifactFile"
+                      "description": "The source files for the artifact.",
+                      "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config.ArtifactFile",
+                      "markdownDescription": "The source files for the artifact, defined as an [artifact_file](https://docs.databricks.com/dev-tools/bundles/reference.html#artifact_file)."
                     },
                     "path": {
+                      "description": "The location where the built artifact will be saved.",
                       "$ref": "#/$defs/string"
                     },
                     "type": {
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.ArtifactType"
+                      "description": "The type of the artifact.",
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.ArtifactType",
+                      "markdownDescription": "The type of the artifact. Valid values are `wheel` or `jar`"
                     }
                   },
                   "additionalProperties": false,
@@ -919,11 +995,12 @@
               ]
             },
             "config.ArtifactFile": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
                     "source": {
+                      "description": "The path of the files used to build the artifact.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -942,26 +1019,38 @@
               "type": "string"
             },
             "config.Bundle": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
                     "cluster_id": {
-                      "$ref": "#/$defs/string"
+                      "description": "The ID of a cluster to use to run the bundle.",
+                      "$ref": "#/$defs/string",
+                      "markdownDescription": "The ID of a cluster to use to run the bundle. See [cluster_id](https://docs.databricks.com/dev-tools/bundles/settings.html#cluster_id)."
                     },
                     "compute_id": {
                       "$ref": "#/$defs/string"
                     },
                     "databricks_cli_version": {
-                      "$ref": "#/$defs/string"
+                      "description": "The Databricks CLI version to use for the bundle.",
+                      "$ref": "#/$defs/string",
+                      "markdownDescription": "The Databricks CLI version to use for the bundle. See [databricks_cli_version](https://docs.databricks.com/dev-tools/bundles/settings.html#databricks_cli_version)."
                     },
                     "deployment": {
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Deployment"
+                      "description": "The definition of the bundle deployment",
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Deployment",
+                      "markdownDescription": "The definition of the bundle deployment. For supported attributes, see [deployment](https://docs.databricks.com/dev-tools/bundles/reference.html#deployment) and [link](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html)."
                     },
                     "git": {
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Git"
+                      "description": "The Git version control details that are associated with your bundle.",
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Git",
+                      "markdownDescription": "The Git version control details that are associated with your bundle. For supported attributes, see [git](https://docs.databricks.com/dev-tools/bundles/reference.html#git) and [git](https://docs.databricks.com/dev-tools/bundles/settings.html#git)."
                     },
                     "name": {
+                      "description": "The name of the bundle.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "uuid": {
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -980,15 +1069,18 @@
               "type": "string"
             },
             "config.Deployment": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
                     "fail_on_active_runs": {
+                      "description": "Whether to fail on active runs. If this is set to true a deployment that is running can be interrupted.",
                       "$ref": "#/$defs/bool"
                     },
                     "lock": {
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Lock"
+                      "description": "The deployment lock attributes.",
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Lock",
+                      "markdownDescription": "The deployment lock attributes. See [lock](https://docs.databricks.com/dev-tools/bundles/reference.html#lock)."
                     }
                   },
                   "additionalProperties": false
@@ -1000,20 +1092,24 @@
               ]
             },
             "config.Experimental": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
                     "pydabs": {
+                      "description": "The PyDABs configuration.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.PyDABs"
                     },
                     "python_wheel_wrapper": {
+                      "description": "Whether to use a Python wheel wrapper",
                       "$ref": "#/$defs/bool"
                     },
                     "scripts": {
+                      "description": "The commands to run",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Command"
                     },
                     "use_legacy_run_as": {
+                      "description": "Whether to use the legacy run_as behavior",
                       "$ref": "#/$defs/bool"
                     }
                   },
@@ -1026,15 +1122,19 @@
               ]
             },
             "config.Git": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
                     "branch": {
-                      "$ref": "#/$defs/string"
+                      "description": "The Git branch name.",
+                      "$ref": "#/$defs/string",
+                      "markdownDescription": "The Git branch name. See [git](https://docs.databricks.com/dev-tools/bundles/settings.html#git)."
                     },
                     "origin_url": {
-                      "$ref": "#/$defs/string"
+                      "description": "The origin URL of the repository.",
+                      "$ref": "#/$defs/string",
+                      "markdownDescription": "The origin URL of the repository. See [git](https://docs.databricks.com/dev-tools/bundles/settings.html#git)."
                     }
                   },
                   "additionalProperties": false
@@ -1046,14 +1146,16 @@
               ]
             },
             "config.Lock": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
                     "enabled": {
+                      "description": "Whether this lock is enabled.",
                       "$ref": "#/$defs/bool"
                     },
                     "force": {
+                      "description": "Whether to force this lock if it is enabled.",
                       "$ref": "#/$defs/bool"
                     }
                   },
@@ -1069,26 +1171,32 @@
               "type": "string"
             },
             "config.Presets": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
                     "jobs_max_concurrent_runs": {
+                      "description": "The maximum concurrent runs for a job.",
                       "$ref": "#/$defs/int"
                     },
                     "name_prefix": {
+                      "description": "The prefix for job runs of the bundle.",
                       "$ref": "#/$defs/string"
                     },
                     "pipelines_development": {
+                      "description": "Whether pipeline deployments should be locked in development mode.",
                       "$ref": "#/$defs/bool"
                     },
                     "source_linked_deployment": {
+                      "description": "Whether to link the deployment to the bundle source.",
                       "$ref": "#/$defs/bool"
                     },
                     "tags": {
+                      "description": "The tags for the bundle deployment.",
                       "$ref": "#/$defs/map/string"
                     },
                     "trigger_pause_status": {
+                      "description": "A pause status to apply to all job triggers and schedules. Valid values are PAUSED or UNPAUSED.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -1101,17 +1209,20 @@
               ]
             },
             "config.PyDABs": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
                     "enabled": {
+                      "description": "Whether or not PyDABs (Private Preview) is enabled",
                       "$ref": "#/$defs/bool"
                     },
                     "import": {
+                      "description": "The PyDABs project to import to discover resources, resource generator and mutators",
                       "$ref": "#/$defs/slice/string"
                     },
                     "venv_path": {
+                      "description": "The Python virtual environment path",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -1124,39 +1235,62 @@
               ]
             },
             "config.Resources": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
                     "clusters": {
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Cluster"
+                      "description": "The cluster definitions for the bundle.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Cluster",
+                      "markdownDescription": "The cluster definitions for the bundle. See [cluster](https://docs.databricks.com/dev-tools/bundles/resources.html#cluster)"
                     },
                     "dashboards": {
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Dashboard"
+                      "description": "The dashboard definitions for the bundle.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Dashboard",
+                      "markdownDescription": "The dashboard definitions for the bundle. See [dashboard](https://docs.databricks.com/dev-tools/bundles/resources.html#dashboard)"
                     },
                     "experiments": {
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.MlflowExperiment"
+                      "description": "The experiment definitions for the bundle.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.MlflowExperiment",
+                      "markdownDescription": "The experiment definitions for the bundle. See [experiment](https://docs.databricks.com/dev-tools/bundles/resources.html#experiment)"
                     },
                     "jobs": {
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Job"
+                      "description": "The job definitions for the bundle.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Job",
+                      "markdownDescription": "The job definitions for the bundle. See [job](https://docs.databricks.com/dev-tools/bundles/resources.html#job)"
                     },
                     "model_serving_endpoints": {
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint"
+                      "description": "The model serving endpoint definitions for the bundle.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint",
+                      "markdownDescription": "The model serving endpoint definitions for the bundle. See [model_serving_endpoint](https://docs.databricks.com/dev-tools/bundles/resources.html#model_serving_endpoint)"
                     },
                     "models": {
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.MlflowModel"
+                      "description": "The model definitions for the bundle.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.MlflowModel",
+                      "markdownDescription": "The model definitions for the bundle. See [model](https://docs.databricks.com/dev-tools/bundles/resources.html#model)"
                     },
                     "pipelines": {
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Pipeline"
+                      "description": "The pipeline definitions for the bundle.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Pipeline",
+                      "markdownDescription": "The pipeline definitions for the bundle. See [pipeline](https://docs.databricks.com/dev-tools/bundles/resources.html#pipeline)"
                     },
                     "quality_monitors": {
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.QualityMonitor"
+                      "description": "The quality monitor definitions for the bundle.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.QualityMonitor",
+                      "markdownDescription": "The quality monitor definitions for the bundle. See [quality_monitor](https://docs.databricks.com/dev-tools/bundles/resources.html#quality_monitor)"
                     },
                     "registered_models": {
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.RegisteredModel"
+                      "description": "The registered model definitions for the bundle.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.RegisteredModel",
+                      "markdownDescription": "The registered model definitions for the bundle. See [registered_model](https://docs.databricks.com/dev-tools/bundles/resources.html#registered_model)"
                     },
                     "schemas": {
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Schema"
+                      "description": "The schema definitions for the bundle.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Schema",
+                      "markdownDescription": "The schema definitions for the bundle. See [schema](https://docs.databricks.com/dev-tools/bundles/resources.html#schema)"
+                    },
+                    "volumes": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Volume"
                     }
                   },
                   "additionalProperties": false
@@ -1168,17 +1302,20 @@
               ]
             },
             "config.Sync": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
                     "exclude": {
+                      "description": "A list of files or folders to exclude from the bundle.",
                       "$ref": "#/$defs/slice/string"
                     },
                     "include": {
+                      "description": "A list of files or folders to include in the bundle.",
                       "$ref": "#/$defs/slice/string"
                     },
                     "paths": {
+                      "description": "The local folder paths, which can be outside the bundle root, to synchronize to the workspace when the bundle is deployed.",
                       "$ref": "#/$defs/slice/string"
                     }
                   },
@@ -1191,51 +1328,75 @@
               ]
             },
             "config.Target": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
                     "artifacts": {
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Artifact"
+                      "description": "The artifacts to include in the target deployment.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Artifact",
+                      "markdownDescription": "The artifacts to include in the target deployment. See [artifact](https://docs.databricks.com/dev-tools/bundles/reference.html#artifact)"
                     },
                     "bundle": {
+                      "description": "The name of the bundle when deploying to this target.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Bundle"
                     },
                     "cluster_id": {
+                      "description": "The ID of the cluster to use for this target.",
                       "$ref": "#/$defs/string"
                     },
                     "compute_id": {
+                      "description": "Deprecated. The ID of the compute to use for this target.",
                       "$ref": "#/$defs/string"
                     },
                     "default": {
+                      "description": "Whether this target is the default target.",
                       "$ref": "#/$defs/bool"
                     },
                     "git": {
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Git"
+                      "description": "The Git version control settings for the target.",
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Git",
+                      "markdownDescription": "The Git version control settings for the target. See [git](https://docs.databricks.com/dev-tools/bundles/reference.html#git)."
                     },
                     "mode": {
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Mode"
+                      "description": "The deployment mode for the target.",
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Mode",
+                      "markdownDescription": "The deployment mode for the target. Valid values are `development` or `production`. See [link](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html)."
                     },
                     "permissions": {
-                      "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+                      "description": "The permissions for deploying and running the bundle in the target.",
+                      "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
+                      "markdownDescription": "The permissions for deploying and running the bundle in the target. See [permission](https://docs.databricks.com/dev-tools/bundles/reference.html#permission)."
                     },
                     "presets": {
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Presets"
+                      "description": "The deployment presets for the target.",
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Presets",
+                      "markdownDescription": "The deployment presets for the target. See [preset](https://docs.databricks.com/dev-tools/bundles/reference.html#preset)."
                     },
                     "resources": {
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Resources"
+                      "description": "The resource definitions for the target.",
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Resources",
+                      "markdownDescription": "The resource definitions for the target. See [resources](https://docs.databricks.com/dev-tools/bundles/reference.html#resources)."
                     },
                     "run_as": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs"
+                      "description": "The identity to use to run the bundle.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs",
+                      "markdownDescription": "The identity to use to run the bundle. See [job_run_as](https://docs.databricks.com/dev-tools/bundles/reference.html#job_run_as) and [link](https://docs.databricks.com/dev-tools/bundles/run_as.html)."
                     },
                     "sync": {
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Sync"
+                      "description": "The local paths to sync to the target workspace when a bundle is run or deployed.",
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Sync",
+                      "markdownDescription": "The local paths to sync to the target workspace when a bundle is run or deployed. See [sync](https://docs.databricks.com/dev-tools/bundles/reference.html#sync)."
                     },
                     "variables": {
-                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/variable.TargetVariable"
+                      "description": "The custom variable definitions for the target.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/variable.TargetVariable",
+                      "markdownDescription": "The custom variable definitions for the target. See [variables](https://docs.databricks.com/dev-tools/bundles/settings.html#variables) and [link](https://docs.databricks.com/dev-tools/bundles/variables.html)."
                     },
                     "workspace": {
-                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Workspace"
+                      "description": "The Databricks workspace for the target.",
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Workspace",
+                      "markdownDescription": "The Databricks workspace for the target. [workspace](https://docs.databricks.com/dev-tools/bundles/reference.html#workspace)"
                     }
                   },
                   "additionalProperties": false
@@ -1247,56 +1408,72 @@
               ]
             },
             "config.Workspace": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
                     "artifact_path": {
+                      "description": "The artifact path to use within the workspace for both deployments and workflow runs",
                       "$ref": "#/$defs/string"
                     },
                     "auth_type": {
+                      "description": "The authentication type.",
                       "$ref": "#/$defs/string"
                     },
                     "azure_client_id": {
+                      "description": "The Azure client ID",
                       "$ref": "#/$defs/string"
                     },
                     "azure_environment": {
+                      "description": "The Azure environment",
                       "$ref": "#/$defs/string"
                     },
                     "azure_login_app_id": {
+                      "description": "The Azure login app ID",
                       "$ref": "#/$defs/string"
                     },
                     "azure_tenant_id": {
+                      "description": "The Azure tenant ID",
                       "$ref": "#/$defs/string"
                     },
                     "azure_use_msi": {
+                      "description": "Whether to use MSI for Azure",
                       "$ref": "#/$defs/bool"
                     },
                     "azure_workspace_resource_id": {
+                      "description": "The Azure workspace resource ID",
                       "$ref": "#/$defs/string"
                     },
                     "client_id": {
+                      "description": "The client ID for the workspace",
                       "$ref": "#/$defs/string"
                     },
                     "file_path": {
+                      "description": "The file path to use within the workspace for both deployments and workflow runs",
                       "$ref": "#/$defs/string"
                     },
                     "google_service_account": {
+                      "description": "The Google service account name",
                       "$ref": "#/$defs/string"
                     },
                     "host": {
+                      "description": "The Databricks workspace host URL",
                       "$ref": "#/$defs/string"
                     },
                     "profile": {
+                      "description": "The Databricks workspace profile name",
                       "$ref": "#/$defs/string"
                     },
                     "resource_path": {
+                      "description": "The workspace resource path",
                       "$ref": "#/$defs/string"
                     },
                     "root_path": {
+                      "description": "The Databricks workspace root path",
                       "$ref": "#/$defs/string"
                     },
                     "state_path": {
+                      "description": "The workspace state path",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -1318,7 +1495,7 @@
         "databricks-sdk-go": {
           "service": {
             "catalog.MonitorCronSchedule": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1356,7 +1533,7 @@
               ]
             },
             "catalog.MonitorDataClassificationConfig": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1374,7 +1551,7 @@
               ]
             },
             "catalog.MonitorDestination": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1392,7 +1569,7 @@
               ]
             },
             "catalog.MonitorInferenceLog": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1449,7 +1626,7 @@
               ]
             },
             "catalog.MonitorMetric": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1499,7 +1676,7 @@
               ]
             },
             "catalog.MonitorNotifications": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1521,7 +1698,7 @@
               ]
             },
             "catalog.MonitorSnapshot": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "additionalProperties": false
@@ -1533,7 +1710,7 @@
               ]
             },
             "catalog.MonitorTimeSeries": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1558,8 +1735,15 @@
                 }
               ]
             },
+            "catalog.VolumeType": {
+              "type": "string",
+              "enum": [
+                "EXTERNAL",
+                "MANAGED"
+              ]
+            },
             "compute.Adlsgen2Info": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1580,7 +1764,7 @@
               ]
             },
             "compute.AutoScale": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1602,7 +1786,7 @@
               ]
             },
             "compute.AwsAttributes": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1663,7 +1847,7 @@
               ]
             },
             "compute.AzureAttributes": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1701,7 +1885,7 @@
               ]
             },
             "compute.ClientsTypes": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1723,7 +1907,7 @@
               ]
             },
             "compute.ClusterLogConf": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1745,7 +1929,7 @@
               ]
             },
             "compute.ClusterSpec": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1815,6 +1999,13 @@
                       "description": "The optional ID of the instance pool to which the cluster belongs.",
                       "$ref": "#/$defs/string"
                     },
+                    "is_single_node": {
+                      "description": "This field can only be used with `kind`.\n\nWhen set to true, Databricks will automatically set single node related `custom_tags`, `spark_conf`, and `num_workers`\n",
+                      "$ref": "#/$defs/bool"
+                    },
+                    "kind": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.Kind"
+                    },
                     "node_type_id": {
                       "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.\n",
                       "$ref": "#/$defs/string"
@@ -1850,6 +2041,10 @@
                       "description": "SSH public key contents that will be added to each Spark node in this cluster. The\ncorresponding private keys can be used to login with the user name `ubuntu` on port `2200`.\nUp to 10 keys can be specified.",
                       "$ref": "#/$defs/slice/string"
                     },
+                    "use_ml_runtime": {
+                      "description": "This field can only be used with `kind`.\n\n`effective_spark_version` is determined by `spark_version` (DBR release), this field `use_ml_runtime`, and whether `node_type_id` is gpu node or not.\n",
+                      "$ref": "#/$defs/bool"
+                    },
                     "workload_type": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.WorkloadType"
                     }
@@ -1864,8 +2059,11 @@
             },
             "compute.DataSecurityMode": {
               "type": "string",
-              "description": "Data security mode decides what data governance model to use when accessing data\nfrom a cluster.\n\n* `NONE`: No security isolation for multiple users sharing the cluster. Data governance features are not available in this mode.\n* `SINGLE_USER`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.\n* `USER_ISOLATION`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other's data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.\n\nThe following modes are deprecated starting with Databricks Runtime 15.0 and\nwill be removed for future Databricks Runtime versions:\n\n* `LEGACY_TABLE_ACL`: This mode is for users migrating from legacy Table ACL clusters.\n* `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.\n* `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.\n* `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.\n",
+              "description": "Data security mode decides what data governance model to use when accessing data\nfrom a cluster.\n\nThe following modes can only be used with `kind`.\n* `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.\n* `DATA_SECURITY_MODE_STANDARD`: Alias for `USER_ISOLATION`.\n* `DATA_SECURITY_MODE_DEDICATED`: Alias for `SINGLE_USER`.\n\nThe following modes can be used regardless of `kind`.\n* `NONE`: No security isolation for multiple users sharing the cluster. Data governance features are not available in this mode.\n* `SINGLE_USER`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.\n* `USER_ISOLATION`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other's data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.\n\nThe following modes are deprecated starting with Databricks Runtime 15.0 and\nwill be removed for future Databricks Runtime versions:\n\n* `LEGACY_TABLE_ACL`: This mode is for users migrating from legacy Table ACL clusters.\n* `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.\n* `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.\n* `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.\n",
               "enum": [
+                "DATA_SECURITY_MODE_AUTO",
+                "DATA_SECURITY_MODE_STANDARD",
+                "DATA_SECURITY_MODE_DEDICATED",
                 "NONE",
                 "SINGLE_USER",
                 "USER_ISOLATION",
@@ -1876,7 +2074,7 @@
               ]
             },
             "compute.DbfsStorageInfo": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1897,7 +2095,7 @@
               ]
             },
             "compute.DockerBasicAuth": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1919,7 +2117,7 @@
               ]
             },
             "compute.DockerImage": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -1948,7 +2146,7 @@
               ]
             },
             "compute.Environment": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "description": "The environment entity used to preserve serverless environment side panel and jobs' environment for non-notebook task.\nIn this minimal environment spec, only pip dependencies are supported.",
@@ -1974,7 +2172,7 @@
               ]
             },
             "compute.GcpAttributes": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2020,7 +2218,7 @@
               ]
             },
             "compute.GcsStorageInfo": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2041,7 +2239,7 @@
               ]
             },
             "compute.InitScriptInfo": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2082,8 +2280,11 @@
                 }
               ]
             },
+            "compute.Kind": {
+              "type": "string"
+            },
             "compute.Library": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2125,7 +2326,7 @@
               ]
             },
             "compute.LocalFileInfo": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2146,7 +2347,7 @@
               ]
             },
             "compute.LogAnalyticsInfo": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2168,7 +2369,7 @@
               ]
             },
             "compute.MavenLibrary": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2197,7 +2398,7 @@
               ]
             },
             "compute.PythonPyPiLibrary": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2222,7 +2423,7 @@
               ]
             },
             "compute.RCranLibrary": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2256,7 +2457,7 @@
               ]
             },
             "compute.S3StorageInfo": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2301,7 +2502,7 @@
               ]
             },
             "compute.VolumesStorageInfo": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2322,7 +2523,7 @@
               ]
             },
             "compute.WorkloadType": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2343,7 +2544,7 @@
               ]
             },
             "compute.WorkspaceStorageInfo": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2370,6 +2571,40 @@
                 "TRASHED"
               ]
             },
+            "jobs.CleanRoomsNotebookTask": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "clean_room_name": {
+                      "description": "The clean room that the notebook belongs to.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "etag": {
+                      "description": "Checksum to validate the freshness of the notebook resource (i.e. the notebook being run is the latest version).\nIt can be fetched by calling the :method:cleanroomassets/get API.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "notebook_base_parameters": {
+                      "description": "Base parameters to be used for the clean room notebook job.",
+                      "$ref": "#/$defs/map/string"
+                    },
+                    "notebook_name": {
+                      "description": "Name of the notebook being run.",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "clean_room_name",
+                    "notebook_name"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "jobs.Condition": {
               "type": "string",
               "enum": [
@@ -2378,7 +2613,7 @@
               ]
             },
             "jobs.ConditionTask": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2421,7 +2656,7 @@
               ]
             },
             "jobs.Continuous": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2439,7 +2674,7 @@
               ]
             },
             "jobs.CronSchedule": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2469,7 +2704,7 @@
               ]
             },
             "jobs.DbtTask": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2514,7 +2749,7 @@
               ]
             },
             "jobs.FileArrivalTriggerConfiguration": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2543,7 +2778,7 @@
               ]
             },
             "jobs.ForEachTask": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2593,7 +2828,7 @@
               ]
             },
             "jobs.GitSnapshot": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "description": "Read-only state of the remote repository at the time the job was run. This field is only included on job runs.",
@@ -2612,7 +2847,7 @@
               ]
             },
             "jobs.GitSource": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "description": "An optional specification for a remote Git repository containing the source code used by tasks. Version-controlled source code is supported by notebook, dbt, Python script, and SQL File tasks.\n\nIf `git_source` is set, these tasks retrieve the file from the remote repository by default. However, this behavior can be overridden by setting `source` to `WORKSPACE` on the task.\n\nNote: dbt and SQL File tasks support only version-controlled sources. If dbt or SQL File tasks are used, `git_source` must be defined on the job.",
@@ -2651,7 +2886,7 @@
               ]
             },
             "jobs.JobCluster": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2677,7 +2912,7 @@
               ]
             },
             "jobs.JobDeployment": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2717,7 +2952,7 @@
               ]
             },
             "jobs.JobEmailNotifications": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2755,7 +2990,7 @@
               ]
             },
             "jobs.JobEnvironment": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2779,7 +3014,7 @@
               ]
             },
             "jobs.JobNotificationSettings": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2801,7 +3036,7 @@
               ]
             },
             "jobs.JobParameterDefinition": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2827,10 +3062,10 @@
               ]
             },
             "jobs.JobRunAs": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
-                  "description": "Write-only setting. Specifies the user, service principal or group that the job/pipeline runs as. If not specified, the job/pipeline runs as the user who created the job/pipeline.\n\nEither `user_name` or `service_principal_name` should be specified. If not, an error is thrown.",
+                  "description": "Write-only setting. Specifies the user or service principal that the job runs as. If not specified, the job runs as the user who created the job.\n\nEither `user_name` or `service_principal_name` should be specified. If not, an error is thrown.",
                   "properties": {
                     "service_principal_name": {
                       "description": "Application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.",
@@ -2850,7 +3085,7 @@
               ]
             },
             "jobs.JobSource": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "description": "The source of the job specification in the remote repository when the job is source controlled.",
@@ -2890,7 +3125,7 @@
             },
             "jobs.JobsHealthMetric": {
               "type": "string",
-              "description": "Specifies the health metric that is being evaluated for a particular health rule.\n\n* `RUN_DURATION_SECONDS`: Expected total time for a run in seconds.\n* `STREAMING_BACKLOG_BYTES`: An estimate of the maximum bytes of data waiting to be consumed across all streams. This metric is in Private Preview.\n* `STREAMING_BACKLOG_RECORDS`: An estimate of the maximum offset lag across all streams. This metric is in Private Preview.\n* `STREAMING_BACKLOG_SECONDS`: An estimate of the maximum consumer delay across all streams. This metric is in Private Preview.\n* `STREAMING_BACKLOG_FILES`: An estimate of the maximum number of outstanding files across all streams. This metric is in Private Preview.",
+              "description": "Specifies the health metric that is being evaluated for a particular health rule.\n\n* `RUN_DURATION_SECONDS`: Expected total time for a run in seconds.\n* `STREAMING_BACKLOG_BYTES`: An estimate of the maximum bytes of data waiting to be consumed across all streams. This metric is in Public Preview.\n* `STREAMING_BACKLOG_RECORDS`: An estimate of the maximum offset lag across all streams. This metric is in Public Preview.\n* `STREAMING_BACKLOG_SECONDS`: An estimate of the maximum consumer delay across all streams. This metric is in Public Preview.\n* `STREAMING_BACKLOG_FILES`: An estimate of the maximum number of outstanding files across all streams. This metric is in Public Preview.",
               "enum": [
                 "RUN_DURATION_SECONDS",
                 "STREAMING_BACKLOG_BYTES",
@@ -2907,7 +3142,7 @@
               ]
             },
             "jobs.JobsHealthRule": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2936,7 +3171,7 @@
               ]
             },
             "jobs.JobsHealthRules": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "description": "An optional set of health rules that can be defined for this job.",
@@ -2954,7 +3189,7 @@
               ]
             },
             "jobs.NotebookTask": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -2994,7 +3229,7 @@
               ]
             },
             "jobs.PeriodicTriggerConfiguration": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3028,7 +3263,7 @@
               ]
             },
             "jobs.PipelineParams": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3046,7 +3281,7 @@
               ]
             },
             "jobs.PipelineTask": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3071,7 +3306,7 @@
               ]
             },
             "jobs.PythonWheelTask": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3105,7 +3340,7 @@
               ]
             },
             "jobs.QueueSettings": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3138,7 +3373,7 @@
               ]
             },
             "jobs.RunJobTask": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3202,7 +3437,7 @@
               ]
             },
             "jobs.SparkJarTask": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3228,7 +3463,7 @@
               ]
             },
             "jobs.SparkPythonTask": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3257,7 +3492,7 @@
               ]
             },
             "jobs.SparkSubmitTask": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3275,7 +3510,7 @@
               ]
             },
             "jobs.SqlTask": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3316,7 +3551,7 @@
               ]
             },
             "jobs.SqlTaskAlert": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3345,7 +3580,7 @@
               ]
             },
             "jobs.SqlTaskDashboard": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3378,7 +3613,7 @@
               ]
             },
             "jobs.SqlTaskFile": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3403,7 +3638,7 @@
               ]
             },
             "jobs.SqlTaskQuery": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3424,7 +3659,7 @@
               ]
             },
             "jobs.SqlTaskSubscription": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3446,7 +3681,7 @@
               ]
             },
             "jobs.TableUpdateTriggerConfiguration": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3476,10 +3711,14 @@
               ]
             },
             "jobs.Task": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
+                    "clean_rooms_notebook_task": {
+                      "description": "The task runs a [clean rooms](https://docs.databricks.com/en/clean-rooms/index.html) notebook\nwhen the `clean_rooms_notebook_task` field is present.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.CleanRoomsNotebookTask"
+                    },
                     "condition_task": {
                       "description": "The task evaluates a condition that can be used to control the execution of other tasks when the `condition_task` field is present.\nThe condition task does not require a cluster to execute and does not support retries or notifications.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ConditionTask"
@@ -3608,7 +3847,7 @@
               ]
             },
             "jobs.TaskDependency": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3633,7 +3872,7 @@
               ]
             },
             "jobs.TaskEmailNotifications": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3671,7 +3910,7 @@
               ]
             },
             "jobs.TaskNotificationSettings": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3697,7 +3936,7 @@
               ]
             },
             "jobs.TriggerSettings": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3730,7 +3969,7 @@
               ]
             },
             "jobs.Webhook": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3750,7 +3989,7 @@
               ]
             },
             "jobs.WebhookNotifications": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3784,7 +4023,7 @@
               ]
             },
             "ml.ExperimentTag": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3806,7 +4045,7 @@
               ]
             },
             "ml.ModelTag": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3828,7 +4067,7 @@
               ]
             },
             "ml.ModelVersion": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3903,7 +4142,7 @@
               ]
             },
             "ml.ModelVersionTag": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3925,7 +4164,7 @@
               ]
             },
             "pipelines.CronTrigger": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3952,7 +4191,7 @@
               ]
             },
             "pipelines.FileLibrary": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3970,7 +4209,7 @@
               ]
             },
             "pipelines.Filters": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -3992,7 +4231,7 @@
               ]
             },
             "pipelines.IngestionConfig": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4018,7 +4257,7 @@
               ]
             },
             "pipelines.IngestionGatewayPipelineDefinition": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4052,7 +4291,7 @@
               ]
             },
             "pipelines.IngestionPipelineDefinition": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4082,7 +4321,7 @@
               ]
             },
             "pipelines.ManualTrigger": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "additionalProperties": false
@@ -4094,7 +4333,7 @@
               ]
             },
             "pipelines.NotebookLibrary": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4112,7 +4351,7 @@
               ]
             },
             "pipelines.Notifications": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4134,7 +4373,7 @@
               ]
             },
             "pipelines.PipelineCluster": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4224,7 +4463,7 @@
               ]
             },
             "pipelines.PipelineClusterAutoscale": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4262,7 +4501,7 @@
               ]
             },
             "pipelines.PipelineDeployment": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4284,7 +4523,7 @@
               ]
             },
             "pipelines.PipelineLibrary": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4318,7 +4557,7 @@
               ]
             },
             "pipelines.PipelineTrigger": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4338,7 +4577,7 @@
               ]
             },
             "pipelines.ReportSpec": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4372,22 +4611,13 @@
               ]
             },
             "pipelines.RestartWindow": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
                     "days_of_week": {
                       "description": "Days of week in which the restart is allowed to happen (within a five-hour window starting at start_hour).\nIf not specified all days of the week will be used.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RestartWindowDaysOfWeek",
-                      "enum": [
-                        "MONDAY",
-                        "TUESDAY",
-                        "WEDNESDAY",
-                        "THURSDAY",
-                        "FRIDAY",
-                        "SATURDAY",
-                        "SUNDAY"
-                      ]
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.RestartWindowDaysOfWeek"
                     },
                     "start_hour": {
                       "description": "An integer between 0 and 23 denoting the start hour for the restart window in the 24-hour day.\nContinuous pipeline restart is triggered only within a five-hour window starting at this hour.",
@@ -4410,10 +4640,20 @@
               ]
             },
             "pipelines.RestartWindowDaysOfWeek": {
-              "type": "string"
+              "type": "string",
+              "description": "Days of week in which the restart is allowed to happen (within a five-hour window starting at start_hour).\nIf not specified all days of the week will be used.",
+              "enum": [
+                "MONDAY",
+                "TUESDAY",
+                "WEDNESDAY",
+                "THURSDAY",
+                "FRIDAY",
+                "SATURDAY",
+                "SUNDAY"
+              ]
             },
             "pipelines.SchemaSpec": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4447,7 +4687,7 @@
               ]
             },
             "pipelines.TableSpec": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4489,7 +4729,7 @@
               ]
             },
             "pipelines.TableSpecificConfig": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4527,7 +4767,7 @@
               ]
             },
             "serving.Ai21LabsConfig": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4547,7 +4787,7 @@
               ]
             },
             "serving.AiGatewayConfig": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4577,7 +4817,7 @@
               ]
             },
             "serving.AiGatewayGuardrailParameters": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4607,7 +4847,7 @@
               ]
             },
             "serving.AiGatewayGuardrailPiiBehavior": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4636,7 +4876,7 @@
               ]
             },
             "serving.AiGatewayGuardrails": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4658,7 +4898,7 @@
               ]
             },
             "serving.AiGatewayInferenceTableConfig": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4688,7 +4928,7 @@
               ]
             },
             "serving.AiGatewayRateLimit": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4733,7 +4973,7 @@
               ]
             },
             "serving.AiGatewayUsageTrackingConfig": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4751,7 +4991,7 @@
               ]
             },
             "serving.AmazonBedrockConfig": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4803,7 +5043,7 @@
               ]
             },
             "serving.AnthropicConfig": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4825,7 +5065,7 @@
               ]
             },
             "serving.AutoCaptureConfigInput": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4855,7 +5095,7 @@
               ]
             },
             "serving.CohereConfig": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4881,7 +5121,7 @@
               ]
             },
             "serving.DatabricksModelServingConfig": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4910,7 +5150,7 @@
               ]
             },
             "serving.EndpointCoreConfigInput": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4940,7 +5180,7 @@
               ]
             },
             "serving.EndpointTag": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -4965,7 +5205,7 @@
               ]
             },
             "serving.ExternalModel": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -5042,7 +5282,7 @@
               ]
             },
             "serving.GoogleCloudVertexAiConfig": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -5068,7 +5308,7 @@
               ]
             },
             "serving.OpenAiConfig": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -5115,7 +5355,7 @@
               ]
             },
             "serving.PaLmConfig": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -5135,7 +5375,7 @@
               ]
             },
             "serving.RateLimit": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -5180,7 +5420,7 @@
               ]
             },
             "serving.Route": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -5206,7 +5446,7 @@
               ]
             },
             "serving.ServedEntityInput": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -5264,7 +5504,7 @@
               ]
             },
             "serving.ServedModelInput": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -5343,7 +5583,7 @@
               ]
             },
             "serving.TrafficConfig": {
-              "anyOf": [
+              "oneOf": [
                 {
                   "type": "object",
                   "properties": {
@@ -5365,7 +5605,7 @@
       }
     },
     "int": {
-      "anyOf": [
+      "oneOf": [
         {
           "type": "integer"
         },
@@ -5392,7 +5632,7 @@
       ]
     },
     "int64": {
-      "anyOf": [
+      "oneOf": [
         {
           "type": "integer"
         },
@@ -5426,7 +5666,7 @@
             "bundle": {
               "config": {
                 "resources.Cluster": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "type": "object",
                       "additionalProperties": {
@@ -5440,7 +5680,7 @@
                   ]
                 },
                 "resources.Dashboard": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "type": "object",
                       "additionalProperties": {
@@ -5454,7 +5694,7 @@
                   ]
                 },
                 "resources.Job": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "type": "object",
                       "additionalProperties": {
@@ -5468,7 +5708,7 @@
                   ]
                 },
                 "resources.MlflowExperiment": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "type": "object",
                       "additionalProperties": {
@@ -5482,7 +5722,7 @@
                   ]
                 },
                 "resources.MlflowModel": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "type": "object",
                       "additionalProperties": {
@@ -5496,7 +5736,7 @@
                   ]
                 },
                 "resources.ModelServingEndpoint": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "type": "object",
                       "additionalProperties": {
@@ -5510,7 +5750,7 @@
                   ]
                 },
                 "resources.Pipeline": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "type": "object",
                       "additionalProperties": {
@@ -5524,7 +5764,7 @@
                   ]
                 },
                 "resources.QualityMonitor": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "type": "object",
                       "additionalProperties": {
@@ -5538,7 +5778,7 @@
                   ]
                 },
                 "resources.RegisteredModel": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "type": "object",
                       "additionalProperties": {
@@ -5552,7 +5792,7 @@
                   ]
                 },
                 "resources.Schema": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "type": "object",
                       "additionalProperties": {
@@ -5565,8 +5805,22 @@
                     }
                   ]
                 },
+                "resources.Volume": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Volume"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "variable.TargetVariable": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "type": "object",
                       "additionalProperties": {
@@ -5580,7 +5834,7 @@
                   ]
                 },
                 "variable.Variable": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "type": "object",
                       "additionalProperties": {
@@ -5595,7 +5849,7 @@
                 }
               },
               "config.Artifact": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "additionalProperties": {
@@ -5609,7 +5863,7 @@
                 ]
               },
               "config.Command": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "additionalProperties": {
@@ -5623,7 +5877,7 @@
                 ]
               },
               "config.Target": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "object",
                     "additionalProperties": {
@@ -5641,7 +5895,7 @@
         }
       },
       "string": {
-        "anyOf": [
+        "oneOf": [
           {
             "type": "object",
             "additionalProperties": {
@@ -5662,7 +5916,7 @@
             "bundle": {
               "config": {
                 "resources.Grant": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "type": "array",
                       "items": {
@@ -5676,7 +5930,7 @@
                   ]
                 },
                 "resources.Permission": {
-                  "anyOf": [
+                  "oneOf": [
                     {
                       "type": "array",
                       "items": {
@@ -5691,7 +5945,7 @@
                 }
               },
               "config.ArtifactFile": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -5709,7 +5963,7 @@
           "databricks-sdk-go": {
             "service": {
               "catalog.MonitorMetric": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -5723,7 +5977,7 @@
                 ]
               },
               "compute.InitScriptInfo": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -5737,7 +5991,7 @@
                 ]
               },
               "compute.Library": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -5751,7 +6005,7 @@
                 ]
               },
               "jobs.JobCluster": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -5765,7 +6019,7 @@
                 ]
               },
               "jobs.JobEnvironment": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -5779,7 +6033,7 @@
                 ]
               },
               "jobs.JobParameterDefinition": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -5793,7 +6047,7 @@
                 ]
               },
               "jobs.JobsHealthRule": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -5807,7 +6061,7 @@
                 ]
               },
               "jobs.SqlTaskSubscription": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -5821,7 +6075,7 @@
                 ]
               },
               "jobs.Task": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -5835,7 +6089,7 @@
                 ]
               },
               "jobs.TaskDependency": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -5849,7 +6103,7 @@
                 ]
               },
               "jobs.Webhook": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -5863,7 +6117,7 @@
                 ]
               },
               "ml.ExperimentTag": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -5877,7 +6131,7 @@
                 ]
               },
               "ml.ModelTag": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -5891,7 +6145,7 @@
                 ]
               },
               "ml.ModelVersion": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -5905,7 +6159,7 @@
                 ]
               },
               "ml.ModelVersionTag": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -5919,7 +6173,7 @@
                 ]
               },
               "pipelines.IngestionConfig": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -5933,7 +6187,7 @@
                 ]
               },
               "pipelines.Notifications": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -5947,7 +6201,7 @@
                 ]
               },
               "pipelines.PipelineCluster": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -5961,7 +6215,7 @@
                 ]
               },
               "pipelines.PipelineLibrary": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -5974,8 +6228,22 @@
                   }
                 ]
               },
+              "pipelines.RestartWindowDaysOfWeek": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RestartWindowDaysOfWeek"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "serving.AiGatewayRateLimit": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -5989,7 +6257,7 @@
                 ]
               },
               "serving.EndpointTag": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -6003,7 +6271,7 @@
                 ]
               },
               "serving.RateLimit": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -6017,7 +6285,7 @@
                 ]
               },
               "serving.Route": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -6031,7 +6299,7 @@
                 ]
               },
               "serving.ServedEntityInput": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -6045,7 +6313,7 @@
                 ]
               },
               "serving.ServedModelInput": {
-                "anyOf": [
+                "oneOf": [
                   {
                     "type": "array",
                     "items": {
@@ -6063,7 +6331,7 @@
         }
       },
       "string": {
-        "anyOf": [
+        "oneOf": [
           {
             "type": "array",
             "items": {
@@ -6084,39 +6352,57 @@
   "type": "object",
   "properties": {
     "artifacts": {
+      "description": "Defines the attributes to build an artifact",
       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Artifact"
     },
     "bundle": {
-      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Bundle"
+      "description": "The attributes of the bundle.",
+      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Bundle",
+      "markdownDescription": "The attributes of the bundle. See [bundle](https://docs.databricks.com/dev-tools/bundles/settings.html#bundle)"
     },
     "experimental": {
+      "description": "Defines attributes for experimental features.",
       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Experimental"
     },
     "include": {
-      "$ref": "#/$defs/slice/string"
+      "description": "Specifies a list of path globs that contain configuration files to include within the bundle.",
+      "$ref": "#/$defs/slice/string",
+      "markdownDescription": "Specifies a list of path globs that contain configuration files to include within the bundle. See [include](https://docs.databricks.com/dev-tools/bundles/settings.html#include)"
     },
     "permissions": {
-      "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission"
+      "description": "Defines the permissions to apply to experiments, jobs, pipelines, and models defined in the bundle",
+      "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
+      "markdownDescription": "Defines the permissions to apply to experiments, jobs, pipelines, and models defined in the bundle. See [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html)."
     },
     "presets": {
-      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Presets"
+      "description": "Defines bundle deployment presets.",
+      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Presets",
+      "markdownDescription": "Defines bundle deployment presets. See [presets](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html#presets)."
     },
     "resources": {
-      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Resources"
+      "description": "Specifies information about the Databricks resources used by the bundle",
+      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Resources",
+      "markdownDescription": "Specifies information about the Databricks resources used by the bundle. See [link](https://docs.databricks.com/dev-tools/bundles/resources.html)."
     },
     "run_as": {
+      "description": "The identity to use to run the bundle.",
       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs"
     },
     "sync": {
-      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Sync"
+      "description": "The files and file paths to include or exclude in the bundle.",
+      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Sync",
+      "markdownDescription": "The files and file paths to include or exclude in the bundle. See [link](https://docs.databricks.com/dev-tools/bundles/)"
     },
     "targets": {
+      "description": "Defines deployment targets for the bundle.",
       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Target"
     },
     "variables": {
+      "description": "A Map that defines the custom variables for the bundle, where each key is the name of the variable, and the value is a Map that defines the variable.",
       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/variable.Variable"
     },
     "workspace": {
+      "description": "Defines the Databricks workspace for the bundle.",
       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Workspace"
     }
   },

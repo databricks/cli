@@ -151,7 +151,7 @@ func (l *Logger) AskSelect(question string, choices []string) (string, error) {
 	return ans, nil
 }
 
-func (l *Logger) Ask(question string, defaultVal string) (string, error) {
+func (l *Logger) Ask(question, defaultVal string) (string, error) {
 	if l.Mode == flags.ModeJson {
 		return "", fmt.Errorf("question prompts are not supported in json mode")
 	}
@@ -188,29 +188,29 @@ func (l *Logger) writeJson(event Event) {
 		// we panic because there we cannot catch this in jobs.RunNowAndWait
 		panic(err)
 	}
-	l.Writer.Write([]byte(b))
-	l.Writer.Write([]byte("\n"))
+	_, _ = l.Writer.Write([]byte(b))
+	_, _ = l.Writer.Write([]byte("\n"))
 }
 
 func (l *Logger) writeAppend(event Event) {
-	l.Writer.Write([]byte(event.String()))
-	l.Writer.Write([]byte("\n"))
+	_, _ = l.Writer.Write([]byte(event.String()))
+	_, _ = l.Writer.Write([]byte("\n"))
 }
 
 func (l *Logger) writeInplace(event Event) {
 	if l.isFirstEvent {
 		// save cursor location
-		l.Writer.Write([]byte("\033[s"))
+		_, _ = l.Writer.Write([]byte("\033[s"))
 	}
 
 	// move cursor to saved location
-	l.Writer.Write([]byte("\033[u"))
+	_, _ = l.Writer.Write([]byte("\033[u"))
 
 	// clear from cursor to end of screen
-	l.Writer.Write([]byte("\033[0J"))
+	_, _ = l.Writer.Write([]byte("\033[0J"))
 
-	l.Writer.Write([]byte(event.String()))
-	l.Writer.Write([]byte("\n"))
+	_, _ = l.Writer.Write([]byte(event.String()))
+	_, _ = l.Writer.Write([]byte("\n"))
 	l.isFirstEvent = false
 }
 
@@ -234,5 +234,4 @@ func (l *Logger) Log(event Event) {
 		// jobs.RunNowAndWait
 		panic("unknown progress logger mode: " + l.Mode.String())
 	}
-
 }

@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func downloadAndChecksum(t *testing.T, url string, expectedChecksum string) {
+func downloadAndChecksum(t *testing.T, url, expectedChecksum string) {
 	resp, err := http.Get(url)
 	require.NoError(t, err)
 	defer resp.Body.Close()

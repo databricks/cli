@@ -300,8 +300,8 @@ func (m *translatePaths) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 }
 
 func gatherFallbackPaths(v dyn.Value, typ string) (map[string]string, error) {
-	var fallback = make(map[string]string)
-	var pattern = dyn.NewPattern(dyn.Key("resources"), dyn.Key(typ), dyn.AnyKey())
+	fallback := make(map[string]string)
+	pattern := dyn.NewPattern(dyn.Key("resources"), dyn.Key(typ), dyn.AnyKey())
 
 	// Previous behavior was to use a resource's location as the base path to resolve
 	// relative paths in its definition. With the introduction of [dyn.Value] throughout,

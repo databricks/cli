@@ -37,7 +37,7 @@ func TestGetFileSet(t *testing.T) {
 
 	dir := setupFiles(t)
 	root := vfs.MustNew(dir)
-	fileSet, err := git.NewFileSet(root)
+	fileSet, err := git.NewFileSetAtRoot(root)
 	require.NoError(t, err)
 
 	err = fileSet.EnsureValidGitIgnoreExists()
@@ -103,7 +103,7 @@ func TestRecursiveExclude(t *testing.T) {
 
 	dir := setupFiles(t)
 	root := vfs.MustNew(dir)
-	fileSet, err := git.NewFileSet(root)
+	fileSet, err := git.NewFileSetAtRoot(root)
 	require.NoError(t, err)
 
 	err = fileSet.EnsureValidGitIgnoreExists()
@@ -133,7 +133,7 @@ func TestNegateExclude(t *testing.T) {
 
 	dir := setupFiles(t)
 	root := vfs.MustNew(dir)
-	fileSet, err := git.NewFileSet(root)
+	fileSet, err := git.NewFileSetAtRoot(root)
 	require.NoError(t, err)
 
 	err = fileSet.EnsureValidGitIgnoreExists()

@@ -7,15 +7,17 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
-type NotebookOutput jobs.NotebookOutput
-type DbtOutput jobs.DbtOutput
-type SqlOutput jobs.SqlOutput
-type LogsOutput struct {
-	Logs          string `json:"logs"`
-	LogsTruncated bool   `json:"logs_truncated"`
-}
+type (
+	NotebookOutput jobs.NotebookOutput
+	DbtOutput      jobs.DbtOutput
+	SqlOutput      jobs.SqlOutput
+	LogsOutput     struct {
+		Logs          string `json:"logs"`
+		LogsTruncated bool   `json:"logs_truncated"`
+	}
+)
 
-func structToString(val interface{}) (string, error) {
+func structToString(val any) (string, error) {
 	b, err := json.MarshalIndent(val, "", "  ")
 	if err != nil {
 		return "", err

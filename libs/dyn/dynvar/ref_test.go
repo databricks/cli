@@ -51,3 +51,34 @@ func TestIsPureVariableReference(t *testing.T) {
 	assert.False(t, IsPureVariableReference("prefix ${foo.bar}"))
 	assert.True(t, IsPureVariableReference("${foo.bar}"))
 }
+
+func TestPureReferenceToPath(t *testing.T) {
+	for _, tc := range []struct {
+		in  string
+		out string
+		ok  bool
+	}{
+		{"${foo.bar}", "foo.bar", true},
+		{"${foo.bar.baz}", "foo.bar.baz", true},
+		{"${foo.bar.baz[0]}", "foo.bar.baz[0]", true},
+		{"${foo.bar.baz[0][1]}", "foo.bar.baz[0][1]", true},
+		{"${foo.bar.baz[0][1].qux}", "foo.bar.baz[0][1].qux", true},
+
+		{"${foo.one}${foo.two}", "", false},
+		{"prefix ${foo.bar}", "", false},
+		{"${foo.bar} suffix", "", false},
+		{"${foo.bar", "", false},
+		{"foo.bar}", "", false},
+		{"foo.bar", "", false},
+		{"{foo.bar}", "", false},
+		{"", "", false},
+	} {
+		path, ok := PureReferenceToPath(tc.in)
+		if tc.ok {
+			assert.True(t, ok)
+			assert.Equal(t, dyn.MustPathFromString(tc.out), path)
+		} else {
+			assert.False(t, ok)
+		}
+	}
+}

@@ -9,6 +9,7 @@ type ResourceAzureAdlsGen2Mount struct {
 	ClusterId            string `json:"cluster_id,omitempty"`
 	ContainerName        string `json:"container_name"`
 	Directory            string `json:"directory,omitempty"`
+	Environment          string `json:"environment,omitempty"`
 	Id                   string `json:"id,omitempty"`
 	InitializeFileSystem bool   `json:"initialize_file_system"`
 	MountName            string `json:"mount_name"`

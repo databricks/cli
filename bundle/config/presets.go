@@ -1,7 +1,9 @@
 package config
 
-const Paused = "PAUSED"
-const Unpaused = "UNPAUSED"
+const (
+	Paused   = "PAUSED"
+	Unpaused = "UNPAUSED"
+)
 
 type Presets struct {
 	// NamePrefix to prepend to all resource names.

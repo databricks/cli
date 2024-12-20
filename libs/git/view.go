@@ -72,8 +72,8 @@ func (v *View) IgnoreDirectory(dir string) (bool, error) {
 	return v.Ignore(dir + "/")
 }
 
-func NewView(root vfs.Path) (*View, error) {
-	repo, err := NewRepository(root)
+func NewView(worktreeRoot, root vfs.Path) (*View, error) {
+	repo, err := NewRepository(worktreeRoot)
 	if err != nil {
 		return nil, err
 	}
@@ -96,6 +96,10 @@ func NewView(root vfs.Path) (*View, error) {
 	}, nil
 }
 
+func NewViewAtRoot(root vfs.Path) (*View, error) {
+	return NewView(root, root)
+}
+
 func (v *View) EnsureValidGitIgnoreExists() error {
 	ign, err := v.IgnoreDirectory(".databricks")
 	if err != nil {
@@ -109,7 +113,7 @@ func (v *View) EnsureValidGitIgnoreExists() error {
 
 	// Create .gitignore with .databricks entry
 	gitIgnorePath := filepath.Join(v.repo.Root(), v.targetPath, ".gitignore")
-	file, err := os.OpenFile(gitIgnorePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	file, err := os.OpenFile(gitIgnorePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o644)
 	if err != nil {
 		return err
 	}

@@ -140,7 +140,7 @@ func (locker *Locker) Lock(ctx context.Context, isForced bool) error {
 		return err
 	}
 
-	var modes = []filer.WriteMode{
+	modes := []filer.WriteMode{
 		// Always create parent directory if it doesn't yet exist.
 		filer.CreateParentDirectories,
 	}
@@ -196,7 +196,7 @@ func (locker *Locker) Unlock(ctx context.Context, opts ...UnlockOption) error {
 	return nil
 }
 
-func CreateLocker(user string, targetDir string, w *databricks.WorkspaceClient) (*Locker, error) {
+func CreateLocker(user, targetDir string, w *databricks.WorkspaceClient) (*Locker, error) {
 	filer, err := filer.NewWorkspaceFilesClient(w, targetDir)
 	if err != nil {
 		return nil, err

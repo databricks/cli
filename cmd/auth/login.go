@@ -29,8 +29,10 @@ func promptForProfile(ctx context.Context, defaultValue string) (string, error) 
 	return prompt.Run()
 }
 
-const minimalDbConnectVersion = "13.1"
-const defaultTimeout = 1 * time.Hour
+const (
+	minimalDbConnectVersion = "13.1"
+	defaultTimeout          = 1 * time.Hour
+)
 
 func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 	defaultConfigPath := "~/.databrickscfg"
