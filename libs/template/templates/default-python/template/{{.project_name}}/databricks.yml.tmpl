@@ -6,13 +6,6 @@ bundle:
 include:
   - resources/*.yml
 
-{{- $dev_schema := .shared_schema }}
-{{- $prod_schema := .shared_schema }}
-{{- if (regexp "^yes").MatchString .personal_schemas}}
-  {{- $dev_schema = "${workspace.current_user.short_name}"}}
-  {{- $prod_schema = "default"}}
-{{- end}}
-
 targets:
   dev:
     # The default target uses 'mode: development' to create a development copy.
@@ -23,9 +16,6 @@ targets:
     default: true
     workspace:
       host: {{workspace_host}}
-    presets:
-      catalog: {{.default_catalog}}
-      schema: {{$dev_schema}}
 
   prod:
     mode: production
@@ -36,6 +26,5 @@ targets:
     permissions:
       - {{if is_service_principal}}service_principal{{else}}user{{end}}_name: {{user_name}}
         level: CAN_MANAGE
-    presets:
-      catalog: {{.default_catalog}}
-      schema: {{$prod_schema}}
+    run_as:
+      {{if is_service_principal}}service_principal{{else}}user{{end}}_name: {{user_name}}

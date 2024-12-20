@@ -1,39 +1,21 @@
 from pyspark.sql import SparkSession, DataFrame
-import argparse
 
+def get_taxis(spark: SparkSession) -> DataFrame:
+  return spark.read.table("samples.nyctaxi.trips")
+
+
+# Create a new Databricks Connect session. If this fails,
+# check that you have configured Databricks Connect correctly.
+# See https://docs.databricks.com/dev-tools/databricks-connect.html.
 def get_spark() -> SparkSession:
-  """
-  Create a new Databricks Connect session. If this fails,
-  check that you have configured Databricks Connect correctly.
-  See https://docs.databricks.com/dev-tools/databricks-connect.html.
-  """
   try:
     from databricks.connect import DatabricksSession
     return DatabricksSession.builder.getOrCreate()
   except ImportError:
     return SparkSession.builder.getOrCreate()
 
-def get_taxis(spark: SparkSession) -> DataFrame:
-  return spark.read.table("samples.nyctaxi.trips")
-
-def create_example_table():
-  """
-  Create a table called 'example' in the default catalog and schema.
-  """
-  get_spark().sql("CREATE OR REPLACE TABLE example AS SELECT 'example table' AS text_column")
-
 def main():
-  # Set the catalog and schema for the current session.
-  # In the default template, these parameters are set
-  # using the 'catalog' and 'schema' presets in databricks.yml.
-  parser = argparse.ArgumentParser()
-  parser.add_argument('--catalog', required=True)
-  parser.add_argument('--schema', required=True)
-  args, unknown = parser.parse_known_args()
-  spark = get_spark()
-  spark.sql(f"USE {args.catalog}.{args.schema}")
-
-  create_example_table()
+  get_taxis(get_spark()).show(5)
 
 if __name__ == '__main__':
   main()

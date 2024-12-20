@@ -45,7 +45,7 @@
             "default": "default",
             "pattern": "^\\w+$",
             "pattern_match_failure_message": "Invalid schema name.",
-            "description": "\nPlease provide a default schema during development.\ndefault_schema",
+            "description": "\nPlease provide an initial schema during development.\ndefault_schema",
             "order": 5
         }
     },
