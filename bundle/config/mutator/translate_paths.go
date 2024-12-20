@@ -71,7 +71,7 @@ type translateContext struct {
 //
 //	localPath - the full local file system path.
 //	localRelPath  - the relative path from the base directory.
-func GetLocalPath(ctx context.Context, b *bundle.Bundle, sourceDir string, p string) (string, string, error) {
+func GetLocalPath(ctx context.Context, b *bundle.Bundle, sourceDir, p string) (string, string, error) {
 	if p == "" {
 		return "", "", fmt.Errorf("path cannot be empty")
 	}
