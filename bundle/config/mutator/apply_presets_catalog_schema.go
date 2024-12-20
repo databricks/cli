@@ -65,12 +65,23 @@ func (m *applyPresetsCatalogSchema) Apply(ctx context.Context, b *bundle.Bundle)
 	}
 
 	// Pipelines
-	for _, pl := range r.Pipelines {
+	allSameCatalog := allPipelinesSameCatalog(&r)
+	for key, pl := range r.Pipelines {
 		if pl.PipelineSpec == nil {
 			continue
 		}
 		if pl.Catalog == "" {
 			pl.Catalog = p.Catalog
+		}
+		if allSameCatalog && pl.Catalog == p.Catalog {
+			// Just for the common case where all pipelines have the same catalog,
+			// we show a recommendation to leave it out and rely on presets.
+			// This can happen when using the original default template.
+			diags = diags.Extend(diag.Diagnostics{{
+				Summary:   "Omit the catalog field since it will be automatically populated from presets.catalog",
+				Severity:  diag.Recommendation,
+				Locations: b.Config.GetLocations("resources.pipelines." + key + ".catalog"),
+			}})
 		}
 		if pl.GatewayDefinition != nil {
 			if pl.GatewayDefinition.GatewayStorageCatalog == "" {
@@ -346,4 +357,20 @@ func fileIncludesPattern(ctx context.Context, filePath string, expected string) 
 		return true
 	}
 	return matched
+}
+
+func allPipelinesSameCatalog(r *config.Resources) bool {
+	var firstCatalog string
+
+	for _, pl := range r.Pipelines {
+		if pl.PipelineSpec == nil || pl.PipelineSpec.Catalog == "" {
+			return false
+		}
+		if firstCatalog == "" {
+			firstCatalog = pl.PipelineSpec.Catalog
+		} else if pl.PipelineSpec.Catalog != firstCatalog {
+			return false
+		}
+	}
+	return firstCatalog != ""
 }

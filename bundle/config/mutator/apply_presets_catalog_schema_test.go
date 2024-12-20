@@ -179,7 +179,7 @@ func TestApplyPresetsCatalogSchemaWhenAlreadySet(t *testing.T) {
 	b := mockPresetsCatalogSchema()
 	recordedFields := recordPlaceholderFields(t, b)
 
-	diags := bundle.Apply(context.Background(), b, mutator.ApplyPresets())
+	diags := bundle.Apply(context.Background(), b, mutator.ApplyPresetsCatalogSchema())
 	require.NoError(t, diags.Error())
 
 	for _, f := range recordedFields {
@@ -188,6 +188,16 @@ func TestApplyPresetsCatalogSchemaWhenAlreadySet(t *testing.T) {
 		require.Equal(t, f.Placeholder, val.MustString(),
 			"expected placeholder '%s' at %s to remain unchanged before cleanup", f.Placeholder, f.Path)
 	}
+}
+
+func TestApplyPresetsCatalogSchemaRecommmendRemovingCatalog(t *testing.T) {
+	b := mockPresetsCatalogSchema()
+	b.Config.Resources.Jobs["key"].Parameters = nil // avoid warnings about the job parameters
+	b.Config.Resources.Pipelines["key"].Catalog = "my_catalog"
+
+	diags := bundle.Apply(context.Background(), b, mutator.ApplyPresetsCatalogSchema())
+	require.Equal(t, 1, len(diags))
+	require.Equal(t, "Omit the catalog field since it will be automatically populated from presets.catalog", diags[0].Summary)
 }
 
 func TestApplyPresetsCatalogSchemaWhenNotSet(t *testing.T) {
