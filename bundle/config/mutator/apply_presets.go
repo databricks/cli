@@ -48,8 +48,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	prefix := t.NamePrefix
 	tags := toTagArray(t.Tags)
 
-	// Jobs presets.
-	// Supported: Prefix, Tags, JobsMaxConcurrentRuns, TriggerPauseStatus
+	// Jobs presets: Prefix, Tags, JobsMaxConcurrentRuns, TriggerPauseStatus
 	for key, j := range r.Jobs {
 		if j.JobSettings == nil {
 			diags = diags.Extend(diag.Errorf("job %s is not defined", key))
@@ -85,9 +84,8 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 	}
 
-	// Pipelines presets.
-	// Supported: Prefix, PipelinesDevelopment
-	// Not supported: Tags (as of 2024-10 not in pipelines API)
+	// Pipelines presets: Prefix, PipelinesDevelopment
+	// Not supported: Tags (not in API as of 2024-12)
 	for key, p := range r.Pipelines {
 		if p.PipelineSpec == nil {
 			diags = diags.Extend(diag.Errorf("pipeline %s is not defined", key))
@@ -102,8 +100,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 	}
 
-	// Models presets
-	// Supported: Prefix, Tags
+	// Models presets: Prefix, Tags
 	for key, m := range r.Models {
 		if m.Model == nil {
 			diags = diags.Extend(diag.Errorf("model %s is not defined", key))
@@ -121,8 +118,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 	}
 
-	// Experiments presets
-	// Supported: Prefix, Tags
+	// Experiments presets: Prefix, Tags
 	for key, e := range r.Experiments {
 		if e.Experiment == nil {
 			diags = diags.Extend(diag.Errorf("experiment %s is not defined", key))
@@ -150,9 +146,8 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 	}
 
-	// Model serving endpoint presets
-	// Supported: Prefix
-	// Not supported: Tags (not in API as of 2024-10)
+	// Model serving endpoint presets: Prefix
+	// Not supported: Tags (not in API as of 2024-12)
 	for key, e := range r.ModelServingEndpoints {
 		if e.CreateServingEndpoint == nil {
 			diags = diags.Extend(diag.Errorf("model serving endpoint %s is not defined", key))
@@ -161,9 +156,8 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		e.Name = normalizePrefix(prefix) + e.Name
 	}
 
-	// Registered models presets
-	// Supported: Prefix
-	// Not supported: Tags (not in API as of 2024-10)
+	// Registered models presets: Prefix
+	// Not supported: Tags (not in API as of 2024-12)
 	for key, m := range r.RegisteredModels {
 		if m.CreateRegisteredModelRequest == nil {
 			diags = diags.Extend(diag.Errorf("registered model %s is not defined", key))
@@ -172,9 +166,8 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		m.Name = normalizePrefix(prefix) + m.Name
 	}
 
-	// Quality monitors presets
-	// Supported: Schedule
-	// Not supported: Tags (not in API as of 2024-10)
+	// Quality monitors presets: Schedule
+	// Not supported: Tags (not in API as of 2024-12)
 	for key, q := range r.QualityMonitors {
 		if q.CreateMonitor == nil {
 			diags = diags.Extend(diag.Errorf("quality monitor %s is not defined", key))
@@ -190,8 +183,8 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 	}
 
-	// Schemas: Prefix only
-	// Not supported: Tags (as of 2024-10, only supported in Databricks UI / SQL API)
+	// Schemas: Prefix
+	// Not supported: Tags (only supported in Databricks UI / SQL API as of 2024-12)
 	for key, s := range r.Schemas {
 		if s.CreateSchema == nil {
 			diags = diags.Extend(diag.Errorf("schema %s is not defined", key))
