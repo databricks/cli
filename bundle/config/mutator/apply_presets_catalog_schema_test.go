@@ -3,6 +3,7 @@ package mutator_test
 import (
 	"context"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -144,6 +145,14 @@ func mockPresetsCatalogSchema() *bundle.Bundle {
 						},
 					},
 				},
+				Volumes: map[string]*resources.Volume{
+					"key": {
+						CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+							CatalogName: "<catalog>",
+							SchemaName:  "<schema>",
+						},
+					},
+				},
 			},
 			Presets: config.Presets{
 				Catalog: "my_catalog",
@@ -155,23 +164,24 @@ func mockPresetsCatalogSchema() *bundle.Bundle {
 
 // ignoredFields are fields that should be ignored in the completeness check
 var ignoredFields = map[string]string{
-	"resources.pipelines.key.schema":                                 "schema is still in private preview",
-	"resources.jobs.key.tasks[0].notebook_task.base_parameters":      "catalog/schema are passed via job parameters",
-	"resources.jobs.key.tasks[0].python_wheel_task.named_parameters": "catalog/schema are passed via job parameters",
-	"resources.jobs.key.tasks[0].python_wheel_task.parameters":       "catalog/schema are passed via job parameters",
-	"resources.jobs.key.tasks[0].run_job_task.job_parameters":        "catalog/schema are passed via job parameters",
-	"resources.jobs.key.tasks[0].spark_jar_task.parameters":          "catalog/schema are passed via job parameters",
-	"resources.jobs.key.tasks[0].spark_python_task.parameters":       "catalog/schema are passed via job parameters",
-	"resources.jobs.key.tasks[0].spark_submit_task.parameters":       "catalog/schema are passed via job parameters",
-	"resources.jobs.key.tasks[0].sql_task.parameters":                "catalog/schema are passed via job parameters",
-	"resources.jobs.key.tasks[0].run_job_task.jar_params":            "catalog/schema are passed via job parameters",
-	"resources.jobs.key.tasks[0].run_job_task.notebook_params":       "catalog/schema are passed via job parameters",
-	"resources.jobs.key.tasks[0].run_job_task.pipeline_params":       "catalog/schema are passed via job parameters",
-	"resources.jobs.key.tasks[0].run_job_task.python_named_params":   "catalog/schema are passed via job parameters",
-	"resources.jobs.key.tasks[0].run_job_task.python_params":         "catalog/schema are passed via job parameters",
-	"resources.jobs.key.tasks[0].run_job_task.spark_submit_params":   "catalog/schema are passed via job parameters",
-	"resources.jobs.key.tasks[0].run_job_task.sql_params":            "catalog/schema are passed via job parameters",
-	"resources.pipelines.key.ingestion_definition.objects[0].schema": "schema name is under schema.source_schema/destination_schema",
+	"resources.pipelines.key.schema":                                                 "schema is still in private preview",
+	"resources.jobs.key.tasks[0].notebook_task.base_parameters":                      "catalog/schema are passed via job parameters",
+	"resources.jobs.key.tasks[0].python_wheel_task.named_parameters":                 "catalog/schema are passed via job parameters",
+	"resources.jobs.key.tasks[0].python_wheel_task.parameters":                       "catalog/schema are passed via job parameters",
+	"resources.jobs.key.tasks[0].run_job_task.job_parameters":                        "catalog/schema are passed via job parameters",
+	"resources.jobs.key.tasks[0].spark_jar_task.parameters":                          "catalog/schema are passed via job parameters",
+	"resources.jobs.key.tasks[0].spark_python_task.parameters":                       "catalog/schema are passed via job parameters",
+	"resources.jobs.key.tasks[0].spark_submit_task.parameters":                       "catalog/schema are passed via job parameters",
+	"resources.jobs.key.tasks[0].sql_task.parameters":                                "catalog/schema are passed via job parameters",
+	"resources.jobs.key.tasks[0].run_job_task.jar_params":                            "catalog/schema are passed via job parameters",
+	"resources.jobs.key.tasks[0].run_job_task.notebook_params":                       "catalog/schema are passed via job parameters",
+	"resources.jobs.key.tasks[0].run_job_task.pipeline_params":                       "catalog/schema are passed via job parameters",
+	"resources.jobs.key.tasks[0].run_job_task.python_named_params":                   "catalog/schema are passed via job parameters",
+	"resources.jobs.key.tasks[0].run_job_task.python_params":                         "catalog/schema are passed via job parameters",
+	"resources.jobs.key.tasks[0].run_job_task.spark_submit_params":                   "catalog/schema are passed via job parameters",
+	"resources.jobs.key.tasks[0].run_job_task.sql_params":                            "catalog/schema are passed via job parameters",
+	"resources.jobs.key.tasks[0].clean_rooms_notebook_task.notebook_base_parameters": "catalog/schema are properties inside this struct",
+	"resources.pipelines.key.ingestion_definition.objects[0].schema":                 "schema name is under schema.source_schema/destination_schema",
 	"resources.schemas": "schema name of schemas is under resources.schemas.key.Name",
 }
 
@@ -236,11 +246,21 @@ func TestApplyPresetsCatalogSchemaCompleteness(t *testing.T) {
 
 	// Convert the recordedFields to a set for easier lookup
 	recordedPaths := make(map[string]struct{})
+	arrayIndexPattern := regexp.MustCompile(`\[\d+\]`)
 	for _, field := range recordedFields {
 		recordedPaths[field.PathString] = struct{}{}
-		if i := strings.Index(field.PathString, "["); i >= 0 {
-			// For entries like resources.jobs.key.parameters[1].default, just add resources.jobs.key.parameters
-			recordedPaths[field.PathString[:i]] = struct{}{}
+
+		// Add base paths for any array indices in the path.
+		// For example, for resources.jobs.key.parameters[0].default we add "resources.jobs.key.parameters
+		path := field.PathString
+		path = arrayIndexPattern.ReplaceAllString(path, "[0]")
+		for {
+			i := strings.Index(path, "[")
+			if i < 0 {
+				break
+			}
+			recordedPaths[path[:i]] = struct{}{}
+			path = path[i+1:]
 		}
 	}
 

@@ -211,6 +211,19 @@ func (m *applyPresetsCatalogSchema) Apply(ctx context.Context, b *bundle.Bundle)
 		}
 	}
 
+	// Volumes
+	for _, v := range r.Volumes {
+		if v.CreateVolumeRequestContent == nil {
+			continue
+		}
+		if v.CatalogName == "" {
+			v.CatalogName = p.Catalog
+		}
+		if v.SchemaName == "" {
+			v.SchemaName = p.Schema
+		}
+	}
+
 	return diags
 }
 
