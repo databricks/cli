@@ -40,20 +40,22 @@ func TestTelemetryLogger(t *testing.T) {
 	})
 
 	// Log some events.
-	telemetry.Log(ctx, telemetry.FrontendLogEntry{
+	err := telemetry.Log(ctx, telemetry.FrontendLogEntry{
 		DatabricksCliLog: telemetry.DatabricksCliLog{
 			CliTestEvent: telemetry.CliTestEvent{
 				Name: telemetry.DummyCliEnumValue1,
 			},
 		},
 	})
-	telemetry.Log(ctx, telemetry.FrontendLogEntry{
+	require.NoError(t, err)
+	err = telemetry.Log(ctx, telemetry.FrontendLogEntry{
 		DatabricksCliLog: telemetry.DatabricksCliLog{
 			CliTestEvent: telemetry.CliTestEvent{
 				Name: telemetry.DummyCliEnumValue2,
 			},
 		},
 	})
+	require.NoError(t, err)
 
 	apiClient, err := client.New(w.W.Config)
 	require.NoError(t, err)

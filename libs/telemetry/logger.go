@@ -54,7 +54,8 @@ var MaxAdditionalWaitTime = 2 * time.Second
 // batching the logs across multiple API calls.
 func Flush(ctx context.Context, apiClient DatabricksApiClient) {
 	// Set a maximum time to wait for the telemetry event to flush.
-	ctx, _ = context.WithTimeout(ctx, MaxAdditionalWaitTime)
+	ctx, cancel := context.WithTimeout(ctx, MaxAdditionalWaitTime)
+	defer cancel()
 	l := fromContext(ctx)
 
 	// We pass the API client as an arg to mock it in unit tests.
