@@ -88,7 +88,12 @@ func testDefaultPython(t *testing.T, pythonVersion string) {
 	err = os.WriteFile(filepath.Join(tmpDir, "config.json"), b, 0o644)
 	require.NoError(t, err)
 
-	testcli.AssertOutput(t, ctx, []string{"bundle", "init", "default-python", "--config-file", "config.json"}, "testdata/default_python/bundle_init.txt")
+	testcli.AssertOutput(
+		t,
+		ctx,
+		[]string{"bundle", "init", "default-python", "--config-file", "config.json"},
+		testutil.TestData("testdata/default_python/bundle_init.txt"),
+	)
 	testutil.Chdir(t, projectName)
 
 	t.Cleanup(func() {
@@ -96,17 +101,32 @@ func testDefaultPython(t *testing.T, pythonVersion string) {
 		testcli.RequireSuccessfulRun(t, ctx, "bundle", "destroy", "--auto-approve")
 	})
 
-	testcli.AssertOutput(t, ctx, []string{"bundle", "validate"}, "testdata/default_python/bundle_validate.txt")
-	testcli.AssertOutput(t, ctx, []string{"bundle", "deploy"}, "testdata/default_python/bundle_deploy.txt")
+	testcli.AssertOutput(
+		t,
+		ctx,
+		[]string{"bundle", "validate"},
+		testutil.TestData("testdata/default_python/bundle_validate.txt"),
+	)
+	testcli.AssertOutput(
+		t,
+		ctx,
+		[]string{"bundle", "deploy"},
+		testutil.TestData("testdata/default_python/bundle_deploy.txt"),
+	)
 
-	ignoredFields := []string{
-		"/bundle/terraform/exec_path",
-		"/resources/jobs/project_name_$UNIQUE_PRJ_job/email_notifications",
-		"/resources/jobs/project_name_$UNIQUE_PRJ_job/job_clusters/0/new_cluster/node_type_id",
-		"/resources/jobs/project_name_$UNIQUE_PRJ_job/url",
-		"/resources/pipelines/project_name_$UNIQUE_PRJ_pipeline/catalog",
-		"/resources/pipelines/project_name_$UNIQUE_PRJ_pipeline/url",
-		"/workspace/current_user",
-	}
-	testcli.AssertOutputJQ(t, ctx, []string{"bundle", "summary", "--output", "json"}, "testdata/default_python/bundle_summary.txt", ignoredFields)
+	testcli.AssertOutputJQ(
+		t,
+		ctx,
+		[]string{"bundle", "summary", "--output", "json"},
+		testutil.TestData("testdata/default_python/bundle_summary.txt"),
+		[]string{
+			"/bundle/terraform/exec_path",
+			"/resources/jobs/project_name_$UNIQUE_PRJ_job/email_notifications",
+			"/resources/jobs/project_name_$UNIQUE_PRJ_job/job_clusters/0/new_cluster/node_type_id",
+			"/resources/jobs/project_name_$UNIQUE_PRJ_job/url",
+			"/resources/pipelines/project_name_$UNIQUE_PRJ_pipeline/catalog",
+			"/resources/pipelines/project_name_$UNIQUE_PRJ_pipeline/url",
+			"/workspace/current_user",
+		},
+	)
 }

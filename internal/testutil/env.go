@@ -47,6 +47,9 @@ func Chdir(t TestingT, dir string) string {
 
 	wd, err := os.Getwd()
 	require.NoError(t, err)
+	if os.Getenv("TESTS_ORIG_WD") == "" {
+		t.Setenv("TESTS_ORIG_WD", wd)
+	}
 
 	abs, err := filepath.Abs(dir)
 	require.NoError(t, err)
@@ -60,4 +63,10 @@ func Chdir(t TestingT, dir string) string {
 	})
 
 	return wd
+}
+
+// Helper to get absolute path to testdata file.
+// It only able to helps if case Chdir() above was called or directory was not changed at all.
+func TestData(filename string) string {
+	return filepath.Join(os.Getenv("TESTS_ORIG_WD"), filename)
 }

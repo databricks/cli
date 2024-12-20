@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"regexp"
-	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -46,17 +44,14 @@ func WriteFile(t testutil.TestingT, filename, data string) {
 	assert.NoError(t, err)
 }
 
-func AssertOutput(t testutil.TestingT, ctx context.Context, args []string, expectedFilename string) {
-	_, filename, _, _ := runtime.Caller(1)
-	dir := filepath.Dir(filename)
-	expectedPath := filepath.Join(dir, expectedFilename)
+func AssertOutput(t testutil.TestingT, ctx context.Context, args []string, expectedPath string) {
 	expected := ReadFile(t, ctx, expectedPath)
 
 	out := captureOutput(t, ctx, args)
 
 	if out != expected {
 		actual := fmt.Sprintf("Output from %v", args)
-		testdiff.AssertEqualTexts(t, expectedFilename, actual, expected, out)
+		testdiff.AssertEqualTexts(t, expectedPath, actual, expected, out)
 
 		if OverwriteMode {
 			WriteFile(t, expectedPath, out)
@@ -64,17 +59,14 @@ func AssertOutput(t testutil.TestingT, ctx context.Context, args []string, expec
 	}
 }
 
-func AssertOutputJQ(t testutil.TestingT, ctx context.Context, args []string, expectedFilename string, ignorePaths []string) {
-	_, filename, _, _ := runtime.Caller(1)
-	dir := filepath.Dir(filename)
-	expectedPath := filepath.Join(dir, expectedFilename)
+func AssertOutputJQ(t testutil.TestingT, ctx context.Context, args []string, expectedPath string, ignorePaths []string) {
 	expected := ReadFile(t, ctx, expectedPath)
 
 	out := captureOutput(t, ctx, args)
 
 	if out != expected {
 		actual := fmt.Sprintf("Output from %v", args)
-		testdiff.AssertEqualJQ(t.(*testing.T), expectedFilename, actual, expected, out, ignorePaths)
+		testdiff.AssertEqualJQ(t.(*testing.T), expectedPath, actual, expected, out, ignorePaths)
 
 		if OverwriteMode {
 			WriteFile(t, expectedPath, out)
