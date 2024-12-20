@@ -57,9 +57,8 @@ func testDefaultPython(t *testing.T, pythonVersion string) {
 
 	user, err := wt.W.CurrentUser.Me(ctx)
 	require.NoError(t, err)
-	if user != nil {
-		testcli.PrepareReplacementsUser(t, replacements, *user)
-	}
+	require.NotNil(t, user)
+	testcli.PrepareReplacementsUser(t, replacements, *user)
 
 	tmpDir := t.TempDir()
 	testutil.Chdir(t, tmpDir)

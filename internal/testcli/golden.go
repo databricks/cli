@@ -204,8 +204,6 @@ func PrepareReplacementsUser(t testutil.TestingT, replacements *orderedmap.Order
 	for ind, val := range u.Roles {
 		setKV(replacements, val.Value, fmt.Sprintf("$USER.Roles[%d]", ind))
 	}
-
-	// Schemas []UserSchema `json:"schemas,omitempty"`
 }
 
 func stableSortReverseLength(strs []string) {
