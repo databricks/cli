@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
 )
@@ -40,6 +41,15 @@ func Materialize(ctx context.Context, configFilePath string, templateFS fs.FS, o
 		if err != nil {
 			return err
 		}
+	}
+
+	// Assert that the user is authenticated when materializing a template. We restrict
+	// usage of templates to authenticated users to log telemetry, even if the template
+	// does not require any authenticated functionality.
+	w := root.WorkspaceClient(ctx)
+	cachedUser, err = w.CurrentUser.Me(ctx)
+	if err != nil {
+		return fmt.Errorf("could not fetch information about the current user: %w", err)
 	}
 
 	helpers := loadHelpers(ctx)

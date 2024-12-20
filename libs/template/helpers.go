@@ -110,13 +110,6 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			return w.Config.Host, nil
 		},
 		"user_name": func() (string, error) {
-			if cachedUser == nil {
-				var err error
-				cachedUser, err = w.CurrentUser.Me(ctx)
-				if err != nil {
-					return "", err
-				}
-			}
 			result := cachedUser.UserName
 			if result == "" {
 				result = cachedUser.Id
@@ -124,13 +117,6 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			return result, nil
 		},
 		"short_name": func() (string, error) {
-			if cachedUser == nil {
-				var err error
-				cachedUser, err = w.CurrentUser.Me(ctx)
-				if err != nil {
-					return "", err
-				}
-			}
 			return iamutil.GetShortUserName(cachedUser), nil
 		},
 		// Get the default workspace catalog. If there is no default, or if
@@ -155,13 +141,6 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 		"is_service_principal": func() (bool, error) {
 			if cachedIsServicePrincipal != nil {
 				return *cachedIsServicePrincipal, nil
-			}
-			if cachedUser == nil {
-				var err error
-				cachedUser, err = w.CurrentUser.Me(ctx)
-				if err != nil {
-					return false, err
-				}
 			}
 			result := iamutil.IsServicePrincipal(cachedUser)
 			cachedIsServicePrincipal = &result
