@@ -22,7 +22,8 @@ type applyPresets struct{}
 
 // Apply all presets, e.g. the prefix presets that
 // adds a prefix to all names of all resources.
-// Note the catalog/schema presets are applied in ApplyPresetsCatalogSchema.
+//
+// Note that the catalog/schema presets are applied in ApplyPresetsCatalogSchema.
 func ApplyPresets() *applyPresets {
 	return &applyPresets{}
 }

@@ -35,7 +35,7 @@ func (m *applyPresetsCatalogSchema) Apply(ctx context.Context, b *bundle.Bundle)
 	if p.Catalog == "" && p.Schema == "" {
 		return diags
 	}
-	if (p.Schema == "") || (p.Catalog == "" && p.Schema != "") {
+	if (p.Schema == "" && p.Catalog != "") || (p.Catalog == "" && p.Schema != "") {
 		return diag.Diagnostics{{
 			Summary:   "presets.catalog and presets.schema must always be set together",
 			Severity:  diag.Error,
@@ -164,12 +164,12 @@ func (m *applyPresetsCatalogSchema) Apply(ctx context.Context, b *bundle.Bundle)
 
 		for i := range e.CreateServingEndpoint.Config.ServedEntities {
 			e.CreateServingEndpoint.Config.ServedEntities[i].EntityName = fullyQualifyName(
-				e.CreateServingEndpoint.Config.ServedEntities[i].EntityName, p.Catalog, p.Schema,
+				e.CreateServingEndpoint.Config.ServedEntities[i].EntityName, p,
 			)
 		}
 		for i := range e.CreateServingEndpoint.Config.ServedModels {
 			e.CreateServingEndpoint.Config.ServedModels[i].ModelName = fullyQualifyName(
-				e.CreateServingEndpoint.Config.ServedModels[i].ModelName, p.Catalog, p.Schema,
+				e.CreateServingEndpoint.Config.ServedModels[i].ModelName, p,
 			)
 		}
 	}
@@ -192,7 +192,7 @@ func (m *applyPresetsCatalogSchema) Apply(ctx context.Context, b *bundle.Bundle)
 		if q.CreateMonitor == nil {
 			continue
 		}
-		q.TableName = fullyQualifyName(q.TableName, p.Catalog, p.Schema)
+		q.TableName = fullyQualifyName(q.TableName, p)
 		if q.OutputSchemaName == "" {
 			q.OutputSchemaName = p.Catalog + "." + p.Schema
 		}
@@ -207,8 +207,6 @@ func (m *applyPresetsCatalogSchema) Apply(ctx context.Context, b *bundle.Bundle)
 			s.CatalogName = p.Catalog
 		}
 		if s.Name == "" {
-			// If there is a schema preset such as 'dev', we directly
-			// use that name and don't add any prefix (which might result in dev_dev).
 			s.Name = p.Schema
 		}
 	}
@@ -239,26 +237,19 @@ func addCatalogSchemaParameters(b *bundle.Bundle, key string, job *resources.Job
 				diags = diags.Extend(diag.Diagnostics{{
 					Summary:   fmt.Sprintf("job %s already has 'schema' parameter defined; ignoring preset value", key),
 					Severity:  diag.Warning,
-					Locations: []dyn.Location{b.Config.GetLocation("resources.jobs." + key)},
+					Locations: []dyn.Location{b.Config.GetLocation("resources.jobs." + key + ".parameters")},
 				}})
 			}
 		}
 	}
 
-	// Initialize parameters if nil
-	if job.Parameters == nil {
-		job.Parameters = []jobs.JobParameterDefinition{}
-	}
-
-	// Add catalog parameter if not already present
+	// Add catalog/schema parameters
 	if !hasCatalog {
 		job.Parameters = append(job.Parameters, jobs.JobParameterDefinition{
 			Name:    "catalog",
 			Default: p.Catalog,
 		})
 	}
-
-	// Add schema parameter if not already present
 	if !hasSchema {
 		job.Parameters = append(job.Parameters, jobs.JobParameterDefinition{
 			Name:    "schema",
@@ -329,14 +320,13 @@ func recommendCatalogSchemaUsage(b *bundle.Bundle, ctx context.Context, key stri
 	}
 
 	return diags
-
 }
 
 // fullyQualifyName checks if the given name is already qualified with a catalog and schema.
 // If not, and both catalog and schema are available, it prefixes the name with catalog.schema.
 // If name is empty, returns name as-is.
-func fullyQualifyName(name, catalog, schema string) string {
-	if name == "" || catalog == "" || schema == "" {
+func fullyQualifyName(name string, p config.Presets) string {
+	if name == "" || p.Catalog == "" || p.Schema == "" {
 		return name
 	}
 	// If it's already qualified (contains at least two '.'), we assume it's fully qualified.
@@ -346,10 +336,10 @@ func fullyQualifyName(name, catalog, schema string) string {
 		return name
 	}
 	// Otherwise, fully qualify it
-	return fmt.Sprintf("%s.%s.%s", catalog, schema, name)
+	return fmt.Sprintf("%s.%s.%s", p.Catalog, p.Schema, name)
 }
 
-func fileIncludesPattern(ctx context.Context, filePath string, expected string) bool {
+func fileIncludesPattern(ctx context.Context, filePath, expected string) bool {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		log.Warnf(ctx, "failed to check file %s: %v", filePath, err)
