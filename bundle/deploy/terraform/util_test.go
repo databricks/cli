@@ -97,7 +97,7 @@ func TestParseResourcesStateWithExistingStateFile(t *testing.T) {
 				Type: "databricks_pipeline",
 				Name: "test_pipeline",
 				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{ID: "123"}},
+					{Attributes: stateInstanceAttributes{ID: "123", Name: "test_pipeline"}},
 				},
 			},
 		},
