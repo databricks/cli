@@ -28,34 +28,40 @@ func (m *applyPresetsCatalogSchema) Name() string {
 }
 
 func (m *applyPresetsCatalogSchema) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	diags := validateCatalogAndSchema(b)
-	if diags.HasError() {
+	diags := diag.Diagnostics{}
+	p := b.Config.Presets
+	r := b.Config.Resources
+
+	if p.Catalog == "" && p.Schema == "" {
 		return diags
 	}
-
-	r := b.Config.Resources
-	p := b.Config.Presets
+	if (p.Schema == "") || (p.Catalog == "" && p.Schema != "") {
+		return diag.Diagnostics{{
+			Summary:   "presets.catalog and presets.schema must always be set together",
+			Severity:  diag.Error,
+			Locations: []dyn.Location{b.Config.GetLocation("presets")},
+		}}
+	}
 
 	// Jobs
 	for key, j := range r.Jobs {
 		if j.JobSettings == nil {
 			continue
 		}
-		if p.Catalog != "" || p.Schema != "" {
-			for _, task := range j.Tasks {
-				if task.DbtTask != nil {
-					if task.DbtTask.Catalog == "" {
-						task.DbtTask.Catalog = p.Catalog
-					}
-					if task.DbtTask.Schema == "" {
-						task.DbtTask.Schema = p.Schema
-					}
+
+		for _, task := range j.Tasks {
+			if task.DbtTask != nil {
+				if task.DbtTask.Catalog == "" {
+					task.DbtTask.Catalog = p.Catalog
+				}
+				if task.DbtTask.Schema == "" {
+					task.DbtTask.Schema = p.Schema
 				}
 			}
-
-			diags = diags.Extend(addCatalogSchemaParameters(b, key, j, p))
-			diags = diags.Extend(recommendCatalogSchemaUsage(b, ctx, key, j))
 		}
+
+		diags = diags.Extend(addCatalogSchemaParameters(b, key, j, p))
+		diags = diags.Extend(recommendCatalogSchemaUsage(b, ctx, key, j))
 	}
 
 	// Pipelines
@@ -63,58 +69,53 @@ func (m *applyPresetsCatalogSchema) Apply(ctx context.Context, b *bundle.Bundle)
 		if pl.PipelineSpec == nil {
 			continue
 		}
-		if p.Catalog != "" && p.Schema != "" {
-			if pl.Catalog == "" {
-				pl.Catalog = p.Catalog
+		if pl.Catalog == "" {
+			pl.Catalog = p.Catalog
+		}
+		if pl.GatewayDefinition != nil {
+			if pl.GatewayDefinition.GatewayStorageCatalog == "" {
+				pl.GatewayDefinition.GatewayStorageCatalog = p.Catalog
 			}
-			if pl.Target == "" {
-				pl.Target = p.Schema
+			if pl.GatewayDefinition.GatewayStorageSchema == "" {
+				pl.GatewayDefinition.GatewayStorageSchema = p.Schema
 			}
-			if pl.GatewayDefinition != nil {
-				if pl.GatewayDefinition.GatewayStorageCatalog == "" {
-					pl.GatewayDefinition.GatewayStorageCatalog = p.Catalog
-				}
-				if pl.GatewayDefinition.GatewayStorageSchema == "" {
-					pl.GatewayDefinition.GatewayStorageSchema = p.Schema
-				}
-			}
-			if pl.IngestionDefinition != nil {
-				for _, obj := range pl.IngestionDefinition.Objects {
-					if obj.Report != nil {
-						if obj.Report.DestinationCatalog == "" {
-							obj.Report.DestinationCatalog = p.Catalog
-						}
-						if obj.Report.DestinationSchema == "" {
-							obj.Report.DestinationSchema = p.Schema
-						}
+		}
+		if pl.IngestionDefinition != nil {
+			for _, obj := range pl.IngestionDefinition.Objects {
+				if obj.Report != nil {
+					if obj.Report.DestinationCatalog == "" {
+						obj.Report.DestinationCatalog = p.Catalog
 					}
-					if obj.Schema != nil {
-						if obj.Schema.SourceCatalog == "" {
-							obj.Schema.SourceCatalog = p.Catalog
-						}
-						if obj.Schema.SourceSchema == "" {
-							obj.Schema.SourceSchema = p.Schema
-						}
-						if obj.Schema.DestinationCatalog == "" {
-							obj.Schema.DestinationCatalog = p.Catalog
-						}
-						if obj.Schema.DestinationSchema == "" {
-							obj.Schema.DestinationSchema = p.Schema
-						}
+					if obj.Report.DestinationSchema == "" {
+						obj.Report.DestinationSchema = p.Schema
 					}
-					if obj.Table != nil {
-						if obj.Table.SourceCatalog == "" {
-							obj.Table.SourceCatalog = p.Catalog
-						}
-						if obj.Table.SourceSchema == "" {
-							obj.Table.SourceSchema = p.Schema
-						}
-						if obj.Table.DestinationCatalog == "" {
-							obj.Table.DestinationCatalog = p.Catalog
-						}
-						if obj.Table.DestinationSchema == "" {
-							obj.Table.DestinationSchema = p.Schema
-						}
+				}
+				if obj.Schema != nil {
+					if obj.Schema.SourceCatalog == "" {
+						obj.Schema.SourceCatalog = p.Catalog
+					}
+					if obj.Schema.SourceSchema == "" {
+						obj.Schema.SourceSchema = p.Schema
+					}
+					if obj.Schema.DestinationCatalog == "" {
+						obj.Schema.DestinationCatalog = p.Catalog
+					}
+					if obj.Schema.DestinationSchema == "" {
+						obj.Schema.DestinationSchema = p.Schema
+					}
+				}
+				if obj.Table != nil {
+					if obj.Table.SourceCatalog == "" {
+						obj.Table.SourceCatalog = p.Catalog
+					}
+					if obj.Table.SourceSchema == "" {
+						obj.Table.SourceSchema = p.Schema
+					}
+					if obj.Table.DestinationCatalog == "" {
+						obj.Table.DestinationCatalog = p.Catalog
+					}
+					if obj.Table.DestinationSchema == "" {
+						obj.Table.DestinationSchema = p.Schema
 					}
 				}
 			}
@@ -127,35 +128,33 @@ func (m *applyPresetsCatalogSchema) Apply(ctx context.Context, b *bundle.Bundle)
 			continue
 		}
 
-		if p.Catalog != "" || p.Schema != "" {
-			if e.CreateServingEndpoint.AiGateway != nil && e.CreateServingEndpoint.AiGateway.InferenceTableConfig != nil {
-				if p.Catalog != "" && e.CreateServingEndpoint.AiGateway.InferenceTableConfig.CatalogName == "" {
-					e.CreateServingEndpoint.AiGateway.InferenceTableConfig.CatalogName = p.Catalog
-				}
-				if p.Schema != "" && e.CreateServingEndpoint.AiGateway.InferenceTableConfig.SchemaName == "" {
-					e.CreateServingEndpoint.AiGateway.InferenceTableConfig.SchemaName = p.Schema
-				}
+		if e.CreateServingEndpoint.AiGateway != nil && e.CreateServingEndpoint.AiGateway.InferenceTableConfig != nil {
+			if e.CreateServingEndpoint.AiGateway.InferenceTableConfig.CatalogName == "" {
+				e.CreateServingEndpoint.AiGateway.InferenceTableConfig.CatalogName = p.Catalog
 			}
+			if e.CreateServingEndpoint.AiGateway.InferenceTableConfig.SchemaName == "" {
+				e.CreateServingEndpoint.AiGateway.InferenceTableConfig.SchemaName = p.Schema
+			}
+		}
 
-			if e.CreateServingEndpoint.Config.AutoCaptureConfig != nil {
-				if p.Catalog != "" && e.CreateServingEndpoint.Config.AutoCaptureConfig.CatalogName == "" {
-					e.CreateServingEndpoint.Config.AutoCaptureConfig.CatalogName = p.Catalog
-				}
-				if p.Schema != "" && e.CreateServingEndpoint.Config.AutoCaptureConfig.SchemaName == "" {
-					e.CreateServingEndpoint.Config.AutoCaptureConfig.SchemaName = p.Schema
-				}
+		if e.CreateServingEndpoint.Config.AutoCaptureConfig != nil {
+			if e.CreateServingEndpoint.Config.AutoCaptureConfig.CatalogName == "" {
+				e.CreateServingEndpoint.Config.AutoCaptureConfig.CatalogName = p.Catalog
 			}
+			if e.CreateServingEndpoint.Config.AutoCaptureConfig.SchemaName == "" {
+				e.CreateServingEndpoint.Config.AutoCaptureConfig.SchemaName = p.Schema
+			}
+		}
 
-			for i := range e.CreateServingEndpoint.Config.ServedEntities {
-				e.CreateServingEndpoint.Config.ServedEntities[i].EntityName = fullyQualifyName(
-					e.CreateServingEndpoint.Config.ServedEntities[i].EntityName, p.Catalog, p.Schema,
-				)
-			}
-			for i := range e.CreateServingEndpoint.Config.ServedModels {
-				e.CreateServingEndpoint.Config.ServedModels[i].ModelName = fullyQualifyName(
-					e.CreateServingEndpoint.Config.ServedModels[i].ModelName, p.Catalog, p.Schema,
-				)
-			}
+		for i := range e.CreateServingEndpoint.Config.ServedEntities {
+			e.CreateServingEndpoint.Config.ServedEntities[i].EntityName = fullyQualifyName(
+				e.CreateServingEndpoint.Config.ServedEntities[i].EntityName, p.Catalog, p.Schema,
+			)
+		}
+		for i := range e.CreateServingEndpoint.Config.ServedModels {
+			e.CreateServingEndpoint.Config.ServedModels[i].ModelName = fullyQualifyName(
+				e.CreateServingEndpoint.Config.ServedModels[i].ModelName, p.Catalog, p.Schema,
+			)
 		}
 	}
 
@@ -164,10 +163,10 @@ func (m *applyPresetsCatalogSchema) Apply(ctx context.Context, b *bundle.Bundle)
 		if m.CreateRegisteredModelRequest == nil {
 			continue
 		}
-		if p.Catalog != "" && m.CatalogName == "" {
+		if m.CatalogName == "" {
 			m.CatalogName = p.Catalog
 		}
-		if p.Schema != "" && m.SchemaName == "" {
+		if m.SchemaName == "" {
 			m.SchemaName = p.Schema
 		}
 	}
@@ -177,11 +176,9 @@ func (m *applyPresetsCatalogSchema) Apply(ctx context.Context, b *bundle.Bundle)
 		if q.CreateMonitor == nil {
 			continue
 		}
-		if p.Catalog != "" && p.Schema != "" {
-			q.TableName = fullyQualifyName(q.TableName, p.Catalog, p.Schema)
-			if q.OutputSchemaName == "" {
-				q.OutputSchemaName = p.Catalog + "." + p.Schema
-			}
+		q.TableName = fullyQualifyName(q.TableName, p.Catalog, p.Schema)
+		if q.OutputSchemaName == "" {
+			q.OutputSchemaName = p.Catalog + "." + p.Schema
 		}
 	}
 
@@ -190,10 +187,10 @@ func (m *applyPresetsCatalogSchema) Apply(ctx context.Context, b *bundle.Bundle)
 		if s.CreateSchema == nil {
 			continue
 		}
-		if p.Catalog != "" && s.CatalogName == "" {
+		if s.CatalogName == "" {
 			s.CatalogName = p.Catalog
 		}
-		if p.Schema != "" && s.Name == "" {
+		if s.Name == "" {
 			// If there is a schema preset such as 'dev', we directly
 			// use that name and don't add any prefix (which might result in dev_dev).
 			s.Name = p.Schema
@@ -203,21 +200,9 @@ func (m *applyPresetsCatalogSchema) Apply(ctx context.Context, b *bundle.Bundle)
 	return diags
 }
 
-func validateCatalogAndSchema(b *bundle.Bundle) diag.Diagnostics {
-	p := b.Config.Presets
-	if (p.Catalog != "" && p.Schema == "") || (p.Catalog == "" && p.Schema != "") {
-		return diag.Diagnostics{{
-			Summary:   "presets.catalog and presets.schema must always be set together",
-			Severity:  diag.Error,
-			Locations: []dyn.Location{b.Config.GetLocation("presets")},
-		}}
-	}
-	return diag.Diagnostics{}
-}
-
 // addCatalogSchemaParameters adds catalog and schema parameters to a job if they don't already exist.
 // Returns any warning diagnostics for existing parameters.
-func addCatalogSchemaParameters(b *bundle.Bundle, key string, job *resources.Job, t config.Presets) diag.Diagnostics {
+func addCatalogSchemaParameters(b *bundle.Bundle, key string, job *resources.Job, p config.Presets) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Check for existing catalog/schema parameters
@@ -250,18 +235,18 @@ func addCatalogSchemaParameters(b *bundle.Bundle, key string, job *resources.Job
 	}
 
 	// Add catalog parameter if not already present
-	if !hasCatalog && t.Catalog != "" {
+	if !hasCatalog {
 		job.Parameters = append(job.Parameters, jobs.JobParameterDefinition{
 			Name:    "catalog",
-			Default: t.Catalog,
+			Default: p.Catalog,
 		})
 	}
 
 	// Add schema parameter if not already present
-	if !hasSchema && t.Schema != "" {
+	if !hasSchema {
 		job.Parameters = append(job.Parameters, jobs.JobParameterDefinition{
 			Name:    "schema",
-			Default: t.Schema,
+			Default: p.Schema,
 		})
 	}
 
