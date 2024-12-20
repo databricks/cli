@@ -16,7 +16,7 @@ import (
 	"github.com/databricks/cli/libs/testdiff"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 )
 
 var OverwriteMode = os.Getenv("TESTS_OUTPUT") == "OVERWRITE"
@@ -26,7 +26,7 @@ func ReadFile(t testutil.TestingT, ctx context.Context, filename string) string 
 	if os.IsNotExist(err) {
 		return ""
 	}
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	// On CI, on Windows \n in the file somehow end up as \r\n
 	return NormalizeNewlines(string(data))
 }
@@ -35,7 +35,7 @@ func captureOutput(t testutil.TestingT, ctx context.Context, args []string) stri
 	t.Logf("run args: [%s]", strings.Join(args, ", "))
 	r := NewRunner(t, ctx, args...)
 	stdout, stderr, err := r.Run()
-	require.NoError(t, err)
+	assert.NoError(t, err)
 	out := stderr.String() + stdout.String()
 	return ReplaceOutput(t, ctx, out)
 }
@@ -43,10 +43,10 @@ func captureOutput(t testutil.TestingT, ctx context.Context, args []string) stri
 func WriteFile(t testutil.TestingT, filename, data string) {
 	t.Logf("Overwriting %s", filename)
 	err := os.WriteFile(filename, []byte(data), 0o644)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 }
 
-func RequireOutput(t testutil.TestingT, ctx context.Context, args []string, expectedFilename string) {
+func AssertOutput(t testutil.TestingT, ctx context.Context, args []string, expectedFilename string) {
 	_, filename, _, _ := runtime.Caller(1)
 	dir := filepath.Dir(filename)
 	expectedPath := filepath.Join(dir, expectedFilename)
@@ -64,7 +64,7 @@ func RequireOutput(t testutil.TestingT, ctx context.Context, args []string, expe
 	}
 }
 
-func RequireOutputJQ(t testutil.TestingT, ctx context.Context, args []string, expectedFilename string, ignorePaths []string) {
+func AssertOutputJQ(t testutil.TestingT, ctx context.Context, args []string, expectedFilename string, ignorePaths []string) {
 	_, filename, _, _ := runtime.Caller(1)
 	dir := filepath.Dir(filename)
 	expectedPath := filepath.Join(dir, expectedFilename)

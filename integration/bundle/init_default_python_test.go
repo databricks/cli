@@ -88,16 +88,16 @@ func testDefaultPython(t *testing.T, pythonVersion string) {
 	err = os.WriteFile(filepath.Join(tmpDir, "config.json"), b, 0o644)
 	require.NoError(t, err)
 
-	testcli.RequireOutput(t, ctx, []string{"bundle", "init", "default-python", "--config-file", "config.json"}, "testdata/default_python/bundle_init.txt")
+	testcli.AssertOutput(t, ctx, []string{"bundle", "init", "default-python", "--config-file", "config.json"}, "testdata/default_python/bundle_init.txt")
 	testutil.Chdir(t, projectName)
 
-	testcli.RequireOutput(t, ctx, []string{"bundle", "validate"}, "testdata/default_python/bundle_validate.txt")
-
-	testcli.RequireOutput(t, ctx, []string{"bundle", "deploy"}, "testdata/default_python/bundle_deploy.txt")
 	t.Cleanup(func() {
 		// Delete the stack
 		testcli.RequireSuccessfulRun(t, ctx, "bundle", "destroy", "--auto-approve")
 	})
+
+	testcli.AssertOutput(t, ctx, []string{"bundle", "validate"}, "testdata/default_python/bundle_validate.txt")
+	testcli.AssertOutput(t, ctx, []string{"bundle", "deploy"}, "testdata/default_python/bundle_deploy.txt")
 
 	ignoredFields := []string{
 		"/bundle/terraform/exec_path",
@@ -108,6 +108,5 @@ func testDefaultPython(t *testing.T, pythonVersion string) {
 		"/resources/pipelines/project_name_$UNIQUE_PRJ_pipeline/url",
 		"/workspace/current_user",
 	}
-
-	testcli.RequireOutputJQ(t, ctx, []string{"bundle", "summary", "--output", "json"}, "testdata/default_python/bundle_summary.txt", ignoredFields)
+	testcli.AssertOutputJQ(t, ctx, []string{"bundle", "summary", "--output", "json"}, "testdata/default_python/bundle_summary.txt", ignoredFields)
 }
