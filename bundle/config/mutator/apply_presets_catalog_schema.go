@@ -73,6 +73,11 @@ func (m *applyPresetsCatalogSchema) Apply(ctx context.Context, b *bundle.Bundle)
 		if pl.Catalog == "" {
 			pl.Catalog = p.Catalog
 		}
+		if pl.Schema == "" && pl.Target == "" {
+			// As of 2024-12, the Schema field isn't broadly supported yet in the pipelines API.
+			// Until it is, we set the Target field.
+			pl.Target = p.Schema
+		}
 		if allSameCatalog && pl.Catalog == p.Catalog {
 			// Just for the common case where all pipelines have the same catalog,
 			// we show a recommendation to leave it out and rely on presets.
