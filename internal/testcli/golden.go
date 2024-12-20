@@ -183,7 +183,7 @@ func PrepareReplacements(t testutil.TestingT, r *ReplacementsContext, w *databri
 	r.Set(w.Config.ClientSecret, "$DATABRICKS_CLIENT_SECRET")
 	r.Set(w.Config.DatabricksCliPath, "$DATABRICKS_CLI_PATH")
 	// This is set to words like "path" that happen too frequently
-	//r.Set(w.Config.AuthType, "$DATABRICKS_AUTH_TYPE")
+	// r.Set(w.Config.AuthType, "$DATABRICKS_AUTH_TYPE")
 }
 
 func PrepareReplacementsUser(t testutil.TestingT, r *ReplacementsContext, u iam.User) {
