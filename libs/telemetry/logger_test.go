@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/telemetry/events"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -66,9 +67,9 @@ func TestTelemetryLoggerFlushesEvents(t *testing.T) {
 
 	ctx := NewContext(context.Background())
 
-	for _, v := range []DummyCliEnum{DummyCliEnumValue1, DummyCliEnumValue2, DummyCliEnumValue2, DummyCliEnumValue3} {
+	for _, v := range []events.DummyCliEnum{events.DummyCliEnumValue1, events.DummyCliEnumValue2, events.DummyCliEnumValue2, events.DummyCliEnumValue3} {
 		err := Log(ctx, FrontendLogEntry{DatabricksCliLog: DatabricksCliLog{
-			CliTestEvent: CliTestEvent{Name: v},
+			CliTestEvent: events.CliTestEvent{Name: v},
 		}})
 		require.NoError(t, err)
 	}
@@ -100,9 +101,9 @@ func TestTelemetryLoggerFlushExitsOnTimeout(t *testing.T) {
 
 	ctx := NewContext(context.Background())
 
-	for _, v := range []DummyCliEnum{DummyCliEnumValue1, DummyCliEnumValue2, DummyCliEnumValue2, DummyCliEnumValue3} {
+	for _, v := range []events.DummyCliEnum{events.DummyCliEnumValue1, events.DummyCliEnumValue2, events.DummyCliEnumValue2, events.DummyCliEnumValue3} {
 		err := Log(ctx, FrontendLogEntry{DatabricksCliLog: DatabricksCliLog{
-			CliTestEvent: CliTestEvent{Name: v},
+			CliTestEvent: events.CliTestEvent{Name: v},
 		}})
 		require.NoError(t, err)
 	}

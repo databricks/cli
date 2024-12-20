@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/integration/internal/acc"
 	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/telemetry/events"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -42,16 +43,16 @@ func TestTelemetryLogger(t *testing.T) {
 	// Log some events.
 	err := telemetry.Log(ctx, telemetry.FrontendLogEntry{
 		DatabricksCliLog: telemetry.DatabricksCliLog{
-			CliTestEvent: telemetry.CliTestEvent{
-				Name: telemetry.DummyCliEnumValue1,
+			CliTestEvent: events.CliTestEvent{
+				Name: events.DummyCliEnumValue1,
 			},
 		},
 	})
 	require.NoError(t, err)
 	err = telemetry.Log(ctx, telemetry.FrontendLogEntry{
 		DatabricksCliLog: telemetry.DatabricksCliLog{
-			CliTestEvent: telemetry.CliTestEvent{
-				Name: telemetry.DummyCliEnumValue2,
+			CliTestEvent: events.CliTestEvent{
+				Name: events.DummyCliEnumValue2,
 			},
 		},
 	})
