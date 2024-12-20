@@ -100,7 +100,7 @@ func Flush(ctx context.Context, apiClient DatabricksApiClient) {
 		//
 		// Note: This will result in server side duplications but that's fine since
 		// we can always deduplicate in the data pipeline itself.
-		if resp != nil && len(l.protoLogs) > int(resp.NumProtoSuccess) {
+		if len(l.protoLogs) > int(resp.NumProtoSuccess) {
 			log.Debugf(ctx, "Not all logs were successfully sent. Retrying...")
 			continue
 		}
