@@ -53,12 +53,11 @@ func testDefaultPython(t *testing.T, pythonVersion string) {
 	ctx, replacements := testcli.WithReplacementsMap(ctx)
 	replacements.Set(uniqueProjectId, "$UNIQUE_PRJ")
 
-	testcli.PrepareReplacements(t, replacements, wt.W)
-
 	user, err := wt.W.CurrentUser.Me(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, user)
 	testcli.PrepareReplacementsUser(t, replacements, *user)
+	testcli.PrepareReplacements(t, replacements, wt.W)
 
 	tmpDir := t.TempDir()
 	testutil.Chdir(t, tmpDir)
