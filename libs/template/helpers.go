@@ -109,15 +109,15 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			}
 			return w.Config.Host, nil
 		},
-		"user_name": func() (string, error) {
+		"user_name": func() string {
 			result := cachedUser.UserName
 			if result == "" {
 				result = cachedUser.Id
 			}
-			return result, nil
+			return result
 		},
-		"short_name": func() (string, error) {
-			return iamutil.GetShortUserName(cachedUser), nil
+		"short_name": func() string {
+			return iamutil.GetShortUserName(cachedUser)
 		},
 		// Get the default workspace catalog. If there is no default, or if
 		// Unity Catalog is not enabled, return an empty string.
@@ -138,13 +138,13 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			}
 			return *cachedCatalog, nil
 		},
-		"is_service_principal": func() (bool, error) {
+		"is_service_principal": func() bool {
 			if cachedIsServicePrincipal != nil {
-				return *cachedIsServicePrincipal, nil
+				return *cachedIsServicePrincipal
 			}
 			result := iamutil.IsServicePrincipal(cachedUser)
 			cachedIsServicePrincipal = &result
-			return result, nil
+			return result
 		},
 	}
 }
