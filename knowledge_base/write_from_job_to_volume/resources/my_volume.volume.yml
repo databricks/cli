@@ -1,0 +1,9 @@
+resources: 
+  volumes: 
+    my_volume:
+      catalog_name: main
+      # We use the ${resources.schemas...} interpolation syntax to force the creation
+      # of the schema before the volume. Usage of the ${resources.schemas...} syntax 
+      # allows Databricks Asset Bundles to form a dependency graph between resources.
+      schema_name: ${resources.schemas.hello_world_schema.name}
+      name: my_volume

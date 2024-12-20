@@ -1,0 +1,16 @@
+resources:
+  jobs:
+    hello_world_job:
+      name: hello_world_job
+
+      # No job cluster is configured. The job will run on serverless compute. 
+      # You can explicitly configure job compute here if your workspace does
+      # not have serverless compute enabled.
+      tasks:
+        - task_key: hello_world_job_task
+          notebook_task: 
+            notebook_path: ../src/hello.ipynb
+
+      parameters: 
+        - name: file_path
+          default: /Volumes/main/${resources.schemas.hello_world_schema.name}/${resources.volumes.my_volume.name}/hello_world.txt

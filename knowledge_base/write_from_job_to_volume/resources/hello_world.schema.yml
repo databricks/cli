@@ -1,0 +1,5 @@
+resources: 
+  schemas: 
+    hello_world_schema:
+      catalog_name: main
+      name: ${workspace.current_user.short_name}_hello_world

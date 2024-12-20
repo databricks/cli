@@ -1,0 +1,12 @@
+bundle:
+  name: write_from_job_to_volume
+
+include:
+  - resources/*.yml
+
+workspace:
+  host: https://e2-dogfood.staging.cloud.databricks.com
+
+targets:
+  dev:
+    default: true
