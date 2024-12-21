@@ -119,7 +119,15 @@ func (d *annotationHandler) syncWithMissingAnnotations(outputPath string) error 
 	if err != nil {
 		return err
 	}
-	missingAnnotations, err := convert.FromTyped(&d.missingAnnotations, dyn.NilValue)
+
+	for k := range d.missingAnnotations {
+		if !isCliPath(k) {
+			delete(d.missingAnnotations, k)
+			fmt.Printf("Missing annotations for `%s` that are not in CLI package, try to fetch latest OpenAPI spec and regenerate annotations", k)
+		}
+	}
+
+	missingAnnotations, err := convert.FromTyped(d.missingAnnotations, dyn.NilValue)
 	if err != nil {
 		return err
 	}
@@ -206,4 +214,8 @@ func convertLinksToAbsoluteUrl(s string) string {
 	})
 
 	return result
+}
+
+func isCliPath(path string) bool {
+	return !strings.HasPrefix(path, "github.com/databricks/databricks-sdk-go")
 }
