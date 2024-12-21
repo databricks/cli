@@ -1,6 +1,7 @@
 package mutator
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/databricks/cli/libs/dyn"
@@ -34,7 +35,7 @@ func (t *translateContext) pipelineRewritePatterns() []pipelineRewritePattern {
 	}
 }
 
-func (t *translateContext) applyPipelineTranslations(v dyn.Value) (dyn.Value, error) {
+func (t *translateContext) applyPipelineTranslations(ctx context.Context, v dyn.Value) (dyn.Value, error) {
 	var err error
 
 	fallback, err := gatherFallbackPaths(v, "pipelines")
@@ -50,7 +51,7 @@ func (t *translateContext) applyPipelineTranslations(v dyn.Value) (dyn.Value, er
 				return dyn.InvalidValue, fmt.Errorf("unable to determine directory for pipeline %s: %w", key, err)
 			}
 
-			return t.rewriteRelativeTo(p, v, rewritePattern.fn, dir, fallback[key])
+			return t.rewriteRelativeTo(ctx, p, v, rewritePattern.fn, dir, fallback[key])
 		})
 		if err != nil {
 			return dyn.InvalidValue, err

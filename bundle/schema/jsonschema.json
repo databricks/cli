@@ -1175,6 +1175,10 @@
                 {
                   "type": "object",
                   "properties": {
+                    "catalog": {
+                      "description": "The default catalog to use for all resources.",
+                      "$ref": "#/$defs/string"
+                    },
                     "jobs_max_concurrent_runs": {
                       "description": "The maximum concurrent runs for a job.",
                       "$ref": "#/$defs/int"
@@ -1186,6 +1190,10 @@
                     "pipelines_development": {
                       "description": "Whether pipeline deployments should be locked in development mode.",
                       "$ref": "#/$defs/bool"
+                    },
+                    "schema": {
+                      "description": "The default schema to use for all resources.",
+                      "$ref": "#/$defs/string"
                     },
                     "source_linked_deployment": {
                       "description": "Whether to link the deployment to the bundle source.",
