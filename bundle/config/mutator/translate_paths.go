@@ -59,7 +59,7 @@ type translateContext struct {
 	seen map[string]string
 }
 
-// GetLocalPath returns the local file system paths for a path referenced from a resource..
+// GetLocalPath returns the local file system paths for a path referenced from a resource.
 // If it's an absolute path, we treat it as a workspace path and return "".
 //
 // Arguments:

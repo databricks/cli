@@ -240,7 +240,7 @@ func addCatalogSchemaParameters(b *bundle.Bundle, key string, job *resources.Job
 			if param.Name == "catalog" {
 				hasCatalog = true
 				diags = diags.Extend(diag.Diagnostics{{
-					Summary:   fmt.Sprintf("job %s already has 'catalog' parameter defined; ignoring preset value", key),
+					Summary:   fmt.Sprintf("job '%s' already has 'catalog' parameter defined; ignoring preset value", key),
 					Severity:  diag.Warning,
 					Locations: b.Config.GetLocations("resources.jobs." + key + ".parameters"),
 				}})
@@ -248,7 +248,7 @@ func addCatalogSchemaParameters(b *bundle.Bundle, key string, job *resources.Job
 			if param.Name == "schema" {
 				hasSchema = true
 				diags = diags.Extend(diag.Diagnostics{{
-					Summary:   fmt.Sprintf("job %s already has 'schema' parameter defined; ignoring preset value", key),
+					Summary:   fmt.Sprintf("job '%s' already has 'schema' parameter defined; ignoring preset value", key),
 					Severity:  diag.Warning,
 					Locations: []dyn.Location{b.Config.GetLocation("resources.jobs." + key + ".parameters")},
 				}})

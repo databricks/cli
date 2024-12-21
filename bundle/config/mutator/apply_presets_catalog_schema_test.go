@@ -27,6 +27,8 @@ type recordedField struct {
 	Expected    string
 }
 
+// mockPresetsCatalogSchema returns a mock bundle with all known resources
+// that have catalog/schema fields, with those fields filled in as placeholders.
 func mockPresetsCatalogSchema() *bundle.Bundle {
 	return &bundle.Bundle{
 		Config: config.Root{
@@ -162,7 +164,8 @@ func mockPresetsCatalogSchema() *bundle.Bundle {
 	}
 }
 
-// ignoredFields are fields that should be ignored in the completeness check
+// ignoredFields are all paths to fields in resources where we don't want to
+// apply the catalog/schema presets.
 var ignoredFields = map[string]string{
 	"resources.pipelines.key.schema":                                                 "schema is still in private preview",
 	"resources.jobs.key.tasks[0].notebook_task.base_parameters":                      "catalog/schema are passed via job parameters",
@@ -266,7 +269,7 @@ func TestApplyPresetsCatalogSchemaCompleteness(t *testing.T) {
 
 	// Find all catalog/schema fields that we think should be covered based
 	// on all properties in config.Resources.
-	expectedFields := findCatalogSchemaFields()
+	expectedFields := findAllPossibleCatalogSchemaFields()
 	assert.GreaterOrEqual(t, len(expectedFields), 42, "expected at least 42 catalog/schema fields, but got %d", len(expectedFields))
 
 	// Verify that all expected fields are there
@@ -307,9 +310,10 @@ func recordPlaceholderFields(t *testing.T, b *bundle.Bundle) []recordedField {
 	return recordedFields
 }
 
-// findCatalogSchemaFields finds all fields in config.Resources that might refer
-// to a catalog or schema. Returns a slice of field paths.
-func findCatalogSchemaFields() []string {
+// findAllPossibleCatalogSchemaFields finds all fields in config.Resources that might refer
+// to a catalog or schema. Returns a slice of field paths like
+// "resources.pipelines.key.catalog".
+func findAllPossibleCatalogSchemaFields() []string {
 	visited := make(map[reflect.Type]struct{})
 	var results []string
 
