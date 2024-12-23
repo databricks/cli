@@ -8,8 +8,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/jsonschema"
 	"gopkg.in/yaml.v3"
 )
@@ -163,19 +161,11 @@ func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overrid
 		return err
 	}
 
-	overridesDyn, err := convert.FromTyped(overrides, dyn.NilValue)
+	err = saveYamlWithStyle(overridesPath, overrides)
 	if err != nil {
 		return err
 	}
-	err = saveYamlWithStyle(overridesPath, overridesDyn)
-	if err != nil {
-		return err
-	}
-	annotationsDyn, err := convert.FromTyped(annotations, dyn.NilValue)
-	if err != nil {
-		return err
-	}
-	err = saveYamlWithStyle(outputPath, annotationsDyn)
+	err = saveYamlWithStyle(outputPath, annotations)
 	if err != nil {
 		return err
 	}

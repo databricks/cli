@@ -417,10 +417,10 @@ github.com/databricks/cli/bundle/config/variable.TargetVariable:
   "lookup":
     "description": |-
       The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
-  "type":
+  "markdown_description":
     "description": |-
       The type of the variable.
-  "markdown_description":
+  "type":
     "description": |-
       The type of the variable.
 github.com/databricks/cli/bundle/config/variable.Variable:
