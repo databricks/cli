@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
@@ -125,6 +126,19 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 	varPath := dyn.NewPath(dyn.Key("var"))
 
 	var diags diag.Diagnostics
+
+	if config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
+		revertWorkspacePath, err := updateWorkspacePathForSourceLinkedDeployment(b)
+		if err != nil {
+			diags = diags.Extend(diag.FromErr(err))
+		} else {
+			defer func() {
+				err := revertWorkspacePath()
+				diags = diags.Extend(diag.FromErr(err))
+			}()
+		}
+	}
+
 	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		// Synthesize a copy of the root that has all fields that are present in the type
 		// but not set in the dynamic value set to their corresponding empty value.
@@ -188,4 +202,29 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 		diags = diags.Extend(diag.FromErr(err))
 	}
 	return diags
+}
+
+type cleanup func() error
+
+func updateWorkspacePathForSourceLinkedDeployment(b *bundle.Bundle) (cleanup, error) {
+	originalWorkspacePath := dyn.NilValue
+	fieldName := "workspace.file_path"
+
+	// If source-linked deployment is enabled, update the workspace path to the sync root path so variables will have correct path.
+	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		path, err := dyn.Get(v, fieldName)
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+		originalWorkspacePath = path
+		return dyn.Set(v, fieldName, dyn.V(b.SyncRootPath))
+	})
+	if err != nil {
+		return nil, err
+	}
+	return func() error {
+		return b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+			return dyn.Set(v, fieldName, originalWorkspacePath)
+		})
+	}, nil
 }

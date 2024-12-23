@@ -241,6 +241,8 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 			disabled := false
 			b.Config.Presets.SourceLinkedDeployment = &disabled
 		}
+		enabled := true
+		b.Config.Presets.SourceLinkedDeployment = &enabled
 	}
 
 	return diags
