@@ -23,6 +23,7 @@ type Resources struct {
 	Volumes               map[string]*resources.Volume               `json:"volumes,omitempty"`
 	Clusters              map[string]*resources.Cluster              `json:"clusters,omitempty"`
 	Dashboards            map[string]*resources.Dashboard            `json:"dashboards,omitempty"`
+	Apps                  map[string]*resources.App                  `json:"apps,omitempty"`
 }
 
 type ConfigResource interface {
@@ -87,6 +88,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["clusters"], r.Clusters),
 		collectResourceMap(descriptions["dashboards"], r.Dashboards),
 		collectResourceMap(descriptions["volumes"], r.Volumes),
+		collectResourceMap(descriptions["apps"], r.Apps),
 	}
 }
 
@@ -97,9 +99,16 @@ func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) 
 			found = append(found, r.Jobs[k])
 		}
 	}
+
 	for k := range r.Pipelines {
 		if k == key {
 			found = append(found, r.Pipelines[k])
+		}
+	}
+
+	for k := range r.Apps {
+		if k == key {
+			found = append(found, r.Apps[k])
 		}
 	}
 
@@ -196,6 +205,12 @@ func SupportedResources() map[string]ResourceDescription {
 			PluralName:    "volumes",
 			SingularTitle: "Volume",
 			PluralTitle:   "Volumes",
+		},
+		"apps": {
+			SingularName:  "app",
+			PluralName:    "apps",
+			SingularTitle: "App",
+			PluralTitle:   "Apps",
 		},
 	}
 }
