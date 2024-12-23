@@ -1,5 +1,28 @@
 # Version changelog
 
+## [Release] Release v0.237.0
+
+Bundles:
+ * Allow overriding compute for non-development mode targets ([#1899](https://github.com/databricks/cli/pull/1899)).
+ * Show an error when using a cluster override with 'mode: production' ([#1994](https://github.com/databricks/cli/pull/1994)).
+
+API Changes:
+ * Added `databricks account federation-policy` command group.
+ * Added `databricks account service-principal-federation-policy` command group.
+ * Added `databricks aibi-dashboard-embedding-access-policy delete` command.
+ * Added `databricks aibi-dashboard-embedding-approved-domains delete` command.
+
+OpenAPI commit a6a317df8327c9b1e5cb59a03a42ffa2aabeef6d (2024-12-16)
+Dependency updates:
+ * Upgrade TF provider to 1.62.0 ([#2030](https://github.com/databricks/cli/pull/2030)).
+ * Upgrade Go SDK to 0.54.0 ([#2029](https://github.com/databricks/cli/pull/2029)).
+ * Bump TF codegen dependencies to latest ([#1961](https://github.com/databricks/cli/pull/1961)).
+ * Bump golang.org/x/term from 0.26.0 to 0.27.0 ([#1983](https://github.com/databricks/cli/pull/1983)).
+ * Bump golang.org/x/sync from 0.9.0 to 0.10.0 ([#1984](https://github.com/databricks/cli/pull/1984)).
+ * Bump github.com/databricks/databricks-sdk-go from 0.52.0 to 0.53.0 ([#1985](https://github.com/databricks/cli/pull/1985)).
+ * Bump golang.org/x/crypto from 0.24.0 to 0.31.0 ([#2006](https://github.com/databricks/cli/pull/2006)).
+ * Bump golang.org/x/crypto from 0.30.0 to 0.31.0 in /bundle/internal/tf/codegen ([#2005](https://github.com/databricks/cli/pull/2005)).
+
 ## [Release] Release v0.236.0
 
 **New features for Databricks Asset Bundles:**
