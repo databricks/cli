@@ -51,7 +51,7 @@ func (a *App) TerraformResourceName() string {
 }
 
 func (a *App) InitializeURL(baseURL url.URL) {
-	if a.Name == "" {
+	if a.ModifiedStatus == "" || a.ModifiedStatus == ModifiedStatusCreated {
 		return
 	}
 	baseURL.Path = fmt.Sprintf("apps/%s", a.Name)

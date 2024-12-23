@@ -23,7 +23,7 @@ func TestAppInterpolateVariables(t *testing.T) {
 						Config: map[string]any{
 							"command": []string{"echo", "hello"},
 							"env": []map[string]string{
-								{"name": "JOB_ID", "value": "${resources.jobs.my_job.id}"},
+								{"name": "JOB_ID", "value": "${databricks_job.my_job.id}"},
 							},
 						},
 					},

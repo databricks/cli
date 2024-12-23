@@ -1019,12 +1019,12 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 			Apps: map[string]*resources.App{
 				"test_app": {
 					App: &apps.App{
-						Description: "test_app",
+						Name: "test_app",
 					},
 				},
 				"test_app_new": {
 					App: &apps.App{
-						Description: "test_app_new",
+						Name: "test_app_new",
 					},
 				},
 			},
@@ -1213,7 +1213,7 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 				Mode: "managed",
 				Name: "test_app",
 				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{Name: "app1"}},
+					{Attributes: stateInstanceAttributes{Name: "test_app"}},
 				},
 			},
 			{
@@ -1221,7 +1221,7 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 				Mode: "managed",
 				Name: "test_app_old",
 				Instances: []stateResourceInstance{
-					{Attributes: stateInstanceAttributes{Name: "app2"}},
+					{Attributes: stateInstanceAttributes{Name: "test_app_old"}},
 				},
 			},
 		},
@@ -1306,11 +1306,11 @@ func TestTerraformToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, "", config.Resources.Dashboards["test_dashboard_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Dashboards["test_dashboard_new"].ModifiedStatus)
 
-	assert.Equal(t, "app1", config.Resources.Apps["test_app"].Name)
-	assert.Equal(t, "", config.Resources.Apps["test_app"].ModifiedStatus)
-	assert.Equal(t, "app2", config.Resources.Apps["test_app_old"].Name)
+	assert.Equal(t, "test_app", config.Resources.Apps["test_app"].Name)
+	assert.Equal(t, resources.ModifiedStatusUpdated, config.Resources.Apps["test_app"].ModifiedStatus)
+	assert.Equal(t, "test_app_old", config.Resources.Apps["test_app_old"].Name)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Apps["test_app_old"].ModifiedStatus)
-	assert.Equal(t, "", config.Resources.Apps["test_app_new"].Name)
+	assert.Equal(t, "test_app_new", config.Resources.Apps["test_app_new"].Name)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Apps["test_app_new"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)

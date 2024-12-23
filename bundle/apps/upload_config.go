@@ -26,23 +26,12 @@ func (u *uploadConfig) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	var diags diag.Diagnostics
 	errGroup, ctx := errgroup.WithContext(ctx)
 
-	mu := &sync.Mutex{}
+	mu := sync.Mutex{}
 	for key, app := range b.Config.Resources.Apps {
 		// If the app has a config, we need to deploy it first.
 		// It means we need to write app.yml file with the content of the config field
 		// to the remote source code path of the app.
 		if app.Config != nil {
-			if !strings.HasPrefix(app.SourceCodePath, b.Config.Workspace.FilePath) {
-				diags = append(diags, diag.Diagnostic{
-					Severity:  diag.Error,
-					Summary:   "App source code invalid",
-					Detail:    fmt.Sprintf("App source code path %s is not within file path %s", app.SourceCodePath, b.Config.Workspace.FilePath),
-					Locations: b.Config.GetLocations(fmt.Sprintf("resources.apps.%s.source_code_path", key)),
-				})
-
-				continue
-			}
-
 			appPath := strings.TrimPrefix(app.SourceCodePath, b.Config.Workspace.FilePath)
 
 			buf, err := configToYaml(app)
@@ -50,7 +39,6 @@ func (u *uploadConfig) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 				return diag.FromErr(err)
 			}
 
-			// When the app is started, create a new app deployment and wait for it to complete.
 			f, err := u.filerFactory(b)
 			if err != nil {
 				return diag.FromErr(err)

@@ -34,7 +34,7 @@ type stateResourceInstance struct {
 
 type stateInstanceAttributes struct {
 	ID   string `json:"id"`
-	Name string `json:"name,omitempty"`
+	Name string `json:"name,omitempty"` // Some resources such as Apps do not have an ID, so we use the name instead.
 	ETag string `json:"etag,omitempty"`
 }
 

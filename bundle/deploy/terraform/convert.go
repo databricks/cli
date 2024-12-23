@@ -204,6 +204,10 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 				cur := config.Resources.Apps[resource.Name]
 				if cur == nil {
 					cur = &resources.App{ModifiedStatus: resources.ModifiedStatusDeleted, App: &apps.App{}}
+				} else {
+					// If the app exists in terraform and bundle, we always set modified status to updated
+					// because we don't really know if the app source code was updated or not.
+					cur.ModifiedStatus = resources.ModifiedStatusUpdated
 				}
 				cur.Name = instance.Attributes.Name
 				config.Resources.Apps[resource.Name] = cur
@@ -272,7 +276,7 @@ func TerraformToBundle(state *resourcesState, config *config.Root) error {
 		}
 	}
 	for _, src := range config.Resources.Apps {
-		if src.ModifiedStatus == "" && src.Name == "" {
+		if src.ModifiedStatus == "" {
 			src.ModifiedStatus = resources.ModifiedStatusCreated
 		}
 	}
