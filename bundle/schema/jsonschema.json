@@ -130,6 +130,13 @@
                         "description": "The optional ID of the instance pool to which the cluster belongs.",
                         "$ref": "#/$defs/string"
                       },
+                      "is_single_node": {
+                        "description": "This field can only be used with `kind`.\n\nWhen set to true, Databricks will automatically set single node related `custom_tags`, `spark_conf`, and `num_workers`\n",
+                        "$ref": "#/$defs/bool"
+                      },
+                      "kind": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.Kind"
+                      },
                       "node_type_id": {
                         "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.\n",
                         "$ref": "#/$defs/string"
@@ -167,6 +174,10 @@
                       "ssh_public_keys": {
                         "description": "SSH public key contents that will be added to each Spark node in this cluster. The\ncorresponding private keys can be used to login with the user name `ubuntu` on port `2200`.\nUp to 10 keys can be specified.",
                         "$ref": "#/$defs/slice/string"
+                      },
+                      "use_ml_runtime": {
+                        "description": "This field can only be used with `kind`.\n\n`effective_spark_version` is determined by `spark_version` (DBR release), this field `use_ml_runtime`, and whether `node_type_id` is gpu node or not.\n",
+                        "$ref": "#/$defs/bool"
                       },
                       "workload_type": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.WorkloadType"
@@ -1988,6 +1999,13 @@
                       "description": "The optional ID of the instance pool to which the cluster belongs.",
                       "$ref": "#/$defs/string"
                     },
+                    "is_single_node": {
+                      "description": "This field can only be used with `kind`.\n\nWhen set to true, Databricks will automatically set single node related `custom_tags`, `spark_conf`, and `num_workers`\n",
+                      "$ref": "#/$defs/bool"
+                    },
+                    "kind": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.Kind"
+                    },
                     "node_type_id": {
                       "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.\n",
                       "$ref": "#/$defs/string"
@@ -2023,6 +2041,10 @@
                       "description": "SSH public key contents that will be added to each Spark node in this cluster. The\ncorresponding private keys can be used to login with the user name `ubuntu` on port `2200`.\nUp to 10 keys can be specified.",
                       "$ref": "#/$defs/slice/string"
                     },
+                    "use_ml_runtime": {
+                      "description": "This field can only be used with `kind`.\n\n`effective_spark_version` is determined by `spark_version` (DBR release), this field `use_ml_runtime`, and whether `node_type_id` is gpu node or not.\n",
+                      "$ref": "#/$defs/bool"
+                    },
                     "workload_type": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.WorkloadType"
                     }
@@ -2037,8 +2059,11 @@
             },
             "compute.DataSecurityMode": {
               "type": "string",
-              "description": "Data security mode decides what data governance model to use when accessing data\nfrom a cluster.\n\n* `NONE`: No security isolation for multiple users sharing the cluster. Data governance features are not available in this mode.\n* `SINGLE_USER`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.\n* `USER_ISOLATION`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other's data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.\n\nThe following modes are deprecated starting with Databricks Runtime 15.0 and\nwill be removed for future Databricks Runtime versions:\n\n* `LEGACY_TABLE_ACL`: This mode is for users migrating from legacy Table ACL clusters.\n* `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.\n* `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.\n* `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.\n",
+              "description": "Data security mode decides what data governance model to use when accessing data\nfrom a cluster.\n\nThe following modes can only be used with `kind`.\n* `DATA_SECURITY_MODE_AUTO`: Databricks will choose the most appropriate access mode depending on your compute configuration.\n* `DATA_SECURITY_MODE_STANDARD`: Alias for `USER_ISOLATION`.\n* `DATA_SECURITY_MODE_DEDICATED`: Alias for `SINGLE_USER`.\n\nThe following modes can be used regardless of `kind`.\n* `NONE`: No security isolation for multiple users sharing the cluster. Data governance features are not available in this mode.\n* `SINGLE_USER`: A secure cluster that can only be exclusively used by a single user specified in `single_user_name`. Most programming languages, cluster features and data governance features are available in this mode.\n* `USER_ISOLATION`: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other's data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.\n\nThe following modes are deprecated starting with Databricks Runtime 15.0 and\nwill be removed for future Databricks Runtime versions:\n\n* `LEGACY_TABLE_ACL`: This mode is for users migrating from legacy Table ACL clusters.\n* `LEGACY_PASSTHROUGH`: This mode is for users migrating from legacy Passthrough on high concurrency clusters.\n* `LEGACY_SINGLE_USER`: This mode is for users migrating from legacy Passthrough on standard clusters.\n* `LEGACY_SINGLE_USER_STANDARD`: This mode provides a way that doesn’t have UC nor passthrough enabled.\n",
               "enum": [
+                "DATA_SECURITY_MODE_AUTO",
+                "DATA_SECURITY_MODE_STANDARD",
+                "DATA_SECURITY_MODE_DEDICATED",
                 "NONE",
                 "SINGLE_USER",
                 "USER_ISOLATION",
@@ -2254,6 +2279,9 @@
                   "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
                 }
               ]
+            },
+            "compute.Kind": {
+              "type": "string"
             },
             "compute.Library": {
               "oneOf": [
@@ -2541,6 +2569,40 @@
               "enum": [
                 "ACTIVE",
                 "TRASHED"
+              ]
+            },
+            "jobs.CleanRoomsNotebookTask": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "clean_room_name": {
+                      "description": "The clean room that the notebook belongs to.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "etag": {
+                      "description": "Checksum to validate the freshness of the notebook resource (i.e. the notebook being run is the latest version).\nIt can be fetched by calling the :method:cleanroomassets/get API.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "notebook_base_parameters": {
+                      "description": "Base parameters to be used for the clean room notebook job.",
+                      "$ref": "#/$defs/map/string"
+                    },
+                    "notebook_name": {
+                      "description": "Name of the notebook being run.",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "clean_room_name",
+                    "notebook_name"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
               ]
             },
             "jobs.Condition": {
@@ -3063,7 +3125,7 @@
             },
             "jobs.JobsHealthMetric": {
               "type": "string",
-              "description": "Specifies the health metric that is being evaluated for a particular health rule.\n\n* `RUN_DURATION_SECONDS`: Expected total time for a run in seconds.\n* `STREAMING_BACKLOG_BYTES`: An estimate of the maximum bytes of data waiting to be consumed across all streams. This metric is in Private Preview.\n* `STREAMING_BACKLOG_RECORDS`: An estimate of the maximum offset lag across all streams. This metric is in Private Preview.\n* `STREAMING_BACKLOG_SECONDS`: An estimate of the maximum consumer delay across all streams. This metric is in Private Preview.\n* `STREAMING_BACKLOG_FILES`: An estimate of the maximum number of outstanding files across all streams. This metric is in Private Preview.",
+              "description": "Specifies the health metric that is being evaluated for a particular health rule.\n\n* `RUN_DURATION_SECONDS`: Expected total time for a run in seconds.\n* `STREAMING_BACKLOG_BYTES`: An estimate of the maximum bytes of data waiting to be consumed across all streams. This metric is in Public Preview.\n* `STREAMING_BACKLOG_RECORDS`: An estimate of the maximum offset lag across all streams. This metric is in Public Preview.\n* `STREAMING_BACKLOG_SECONDS`: An estimate of the maximum consumer delay across all streams. This metric is in Public Preview.\n* `STREAMING_BACKLOG_FILES`: An estimate of the maximum number of outstanding files across all streams. This metric is in Public Preview.",
               "enum": [
                 "RUN_DURATION_SECONDS",
                 "STREAMING_BACKLOG_BYTES",
@@ -3653,6 +3715,10 @@
                 {
                   "type": "object",
                   "properties": {
+                    "clean_rooms_notebook_task": {
+                      "description": "The task runs a [clean rooms](https://docs.databricks.com/en/clean-rooms/index.html) notebook\nwhen the `clean_rooms_notebook_task` field is present.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.CleanRoomsNotebookTask"
+                    },
                     "condition_task": {
                       "description": "The task evaluates a condition that can be used to control the execution of other tasks when the `condition_task` field is present.\nThe condition task does not require a cluster to execute and does not support retries or notifications.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ConditionTask"
@@ -4551,7 +4617,7 @@
                   "properties": {
                     "days_of_week": {
                       "description": "Days of week in which the restart is allowed to happen (within a five-hour window starting at start_hour).\nIf not specified all days of the week will be used.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RestartWindowDaysOfWeek"
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.RestartWindowDaysOfWeek"
                     },
                     "start_hour": {
                       "description": "An integer between 0 and 23 denoting the start hour for the restart window in the 24-hour day.\nContinuous pipeline restart is triggered only within a five-hour window starting at this hour.",
@@ -4706,9 +4772,11 @@
                   "type": "object",
                   "properties": {
                     "ai21labs_api_key": {
+                      "description": "The Databricks secret key reference for an AI21 Labs API key. If you prefer to paste your API key directly, see `ai21labs_api_key_plaintext`. You must provide an API key using one of the following fields: `ai21labs_api_key` or `ai21labs_api_key_plaintext`.",
                       "$ref": "#/$defs/string"
                     },
                     "ai21labs_api_key_plaintext": {
+                      "description": "An AI21 Labs API key provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `ai21labs_api_key`. You must provide an API key using one of the following fields: `ai21labs_api_key` or `ai21labs_api_key_plaintext`.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -5221,15 +5289,19 @@
                   "type": "object",
                   "properties": {
                     "private_key": {
+                      "description": "The Databricks secret key reference for a private key for the service account which has access to the Google Cloud Vertex AI Service. See [Best practices for managing service account keys](https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys). If you prefer to paste your API key directly, see `private_key_plaintext`. You must provide an API key using one of the following fields: `private_key` or `private_key_plaintext`",
                       "$ref": "#/$defs/string"
                     },
                     "private_key_plaintext": {
+                      "description": "The private key for the service account which has access to the Google Cloud Vertex AI Service provided as a plaintext secret. See [Best practices for managing service account keys](https://cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys). If you prefer to reference your key using Databricks Secrets, see `private_key`. You must provide an API key using one of the following fields: `private_key` or `private_key_plaintext`.",
                       "$ref": "#/$defs/string"
                     },
                     "project_id": {
+                      "description": "This is the Google Cloud project id that the service account is associated with.",
                       "$ref": "#/$defs/string"
                     },
                     "region": {
+                      "description": "This is the region for the Google Cloud Vertex AI Service. See [supported regions](https://cloud.google.com/vertex-ai/docs/general/locations) for more details. Some models are only available in specific regions.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -5247,36 +5319,47 @@
                   "type": "object",
                   "properties": {
                     "microsoft_entra_client_id": {
+                      "description": "This field is only required for Azure AD OpenAI and is the Microsoft Entra Client ID.\n",
                       "$ref": "#/$defs/string"
                     },
                     "microsoft_entra_client_secret": {
+                      "description": "The Databricks secret key reference for a client secret used for Microsoft Entra ID authentication.\nIf you prefer to paste your client secret directly, see `microsoft_entra_client_secret_plaintext`.\nYou must provide an API key using one of the following fields: `microsoft_entra_client_secret` or `microsoft_entra_client_secret_plaintext`.\n",
                       "$ref": "#/$defs/string"
                     },
                     "microsoft_entra_client_secret_plaintext": {
+                      "description": "The client secret used for Microsoft Entra ID authentication provided as a plaintext string.\nIf you prefer to reference your key using Databricks Secrets, see `microsoft_entra_client_secret`.\nYou must provide an API key using one of the following fields: `microsoft_entra_client_secret` or `microsoft_entra_client_secret_plaintext`.\n",
                       "$ref": "#/$defs/string"
                     },
                     "microsoft_entra_tenant_id": {
+                      "description": "This field is only required for Azure AD OpenAI and is the Microsoft Entra Tenant ID.\n",
                       "$ref": "#/$defs/string"
                     },
                     "openai_api_base": {
+                      "description": "This is a field to provide a customized base URl for the OpenAI API.\nFor Azure OpenAI, this field is required, and is the base URL for the Azure OpenAI API service\nprovided by Azure.\nFor other OpenAI API types, this field is optional, and if left unspecified, the standard OpenAI base URL is used.\n",
                       "$ref": "#/$defs/string"
                     },
                     "openai_api_key": {
+                      "description": "The Databricks secret key reference for an OpenAI API key using the OpenAI or Azure service. If you prefer to paste your API key directly, see `openai_api_key_plaintext`. You must provide an API key using one of the following fields: `openai_api_key` or `openai_api_key_plaintext`.",
                       "$ref": "#/$defs/string"
                     },
                     "openai_api_key_plaintext": {
+                      "description": "The OpenAI API key using the OpenAI or Azure service provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `openai_api_key`. You must provide an API key using one of the following fields: `openai_api_key` or `openai_api_key_plaintext`.",
                       "$ref": "#/$defs/string"
                     },
                     "openai_api_type": {
+                      "description": "This is an optional field to specify the type of OpenAI API to use.\nFor Azure OpenAI, this field is required, and adjust this parameter to represent the preferred security\naccess validation protocol. For access token validation, use azure. For authentication using Azure Active\nDirectory (Azure AD) use, azuread.\n",
                       "$ref": "#/$defs/string"
                     },
                     "openai_api_version": {
+                      "description": "This is an optional field to specify the OpenAI API version.\nFor Azure OpenAI, this field is required, and is the version of the Azure OpenAI service to\nutilize, specified by a date.\n",
                       "$ref": "#/$defs/string"
                     },
                     "openai_deployment_name": {
+                      "description": "This field is only required for Azure OpenAI and is the name of the deployment resource for the\nAzure OpenAI service.\n",
                       "$ref": "#/$defs/string"
                     },
                     "openai_organization": {
+                      "description": "This is an optional field to specify the organization in OpenAI or Azure OpenAI.\n",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -5294,9 +5377,11 @@
                   "type": "object",
                   "properties": {
                     "palm_api_key": {
+                      "description": "The Databricks secret key reference for a PaLM API key. If you prefer to paste your API key directly, see `palm_api_key_plaintext`. You must provide an API key using one of the following fields: `palm_api_key` or `palm_api_key_plaintext`.",
                       "$ref": "#/$defs/string"
                     },
                     "palm_api_key_plaintext": {
+                      "description": "The PaLM API key provided as a plaintext string. If you prefer to reference your key using Databricks Secrets, see `palm_api_key`. You must provide an API key using one of the following fields: `palm_api_key` or `palm_api_key_plaintext`.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -6154,6 +6239,20 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PipelineLibrary"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "pipelines.RestartWindowDaysOfWeek": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.RestartWindowDaysOfWeek"
                     }
                   },
                   {
