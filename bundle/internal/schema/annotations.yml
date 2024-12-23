@@ -97,6 +97,12 @@ github.com/databricks/cli/bundle/config.Lock:
     "description": |-
       Whether to force this lock if it is enabled.
 github.com/databricks/cli/bundle/config.Presets:
+  "catalog":
+    "description": |-
+      The default catalog to use for all resources.
+  "schema":
+    "description": |-
+      The default schema to use for all resources.
   "jobs_max_concurrent_runs":
     "description": |-
       The maximum concurrent runs for a job.
