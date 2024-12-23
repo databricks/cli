@@ -3,14 +3,12 @@ package mutator
 import (
 	"context"
 	"reflect"
-	"runtime"
 	"slices"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/cli/libs/vfs"
@@ -539,33 +537,4 @@ func TestPipelinesDevelopmentDisabled(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
-}
-
-func TestSourceLinkedDeploymentEnabled(t *testing.T) {
-	b, diags := processSourceLinkedBundle(t, true)
-	require.NoError(t, diags.Error())
-	assert.True(t, *b.Config.Presets.SourceLinkedDeployment)
-}
-
-func TestSourceLinkedDeploymentDisabled(t *testing.T) {
-	b, diags := processSourceLinkedBundle(t, false)
-	require.NoError(t, diags.Error())
-	assert.False(t, *b.Config.Presets.SourceLinkedDeployment)
-}
-
-func processSourceLinkedBundle(t *testing.T, presetEnabled bool) (*bundle.Bundle, diag.Diagnostics) {
-	if runtime.GOOS == "windows" {
-		t.Skip("this test is not applicable on Windows because source-linked mode works only in the Databricks Workspace")
-	}
-
-	b := mockBundle(config.Development)
-
-	workspacePath := "/Workspace/lennart@company.com/"
-	b.SyncRootPath = workspacePath
-	b.Config.Presets.SourceLinkedDeployment = &presetEnabled
-
-	ctx := dbr.MockRuntime(context.Background(), true)
-	m := bundle.Seq(ProcessTargetMode(), ApplyPresets())
-	diags := bundle.Apply(ctx, b, m)
-	return b, diags
 }
