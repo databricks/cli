@@ -16,7 +16,7 @@ import (
 type resolveVariableReferences struct {
 	prefixes []string
 	pattern  dyn.Pattern
-	lookupFn func(dyn.Value, dyn.Path) (dyn.Value, error)
+	lookupFn func(dyn.Value, dyn.Path, *bundle.Bundle) (dyn.Value, error)
 	skipFn   func(dyn.Value) bool
 }
 
@@ -45,16 +45,21 @@ func ResolveVariableReferencesInComplexVariables() bundle.Mutator {
 	}
 }
 
-func lookup(v dyn.Value, path dyn.Path) (dyn.Value, error) {
+func lookup(v dyn.Value, path dyn.Path, b *bundle.Bundle) (dyn.Value, error) {
+	if config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
+		if path.String() == "workspace.file_path" {
+			return dyn.V(b.SyncRootPath), nil
+		}
+	}
 	// Future opportunity: if we lookup this path in both the given root
 	// and the synthesized root, we know if it was explicitly set or implied to be empty.
 	// Then we can emit a warning if it was not explicitly set.
 	return dyn.GetByPath(v, path)
 }
 
-func lookupForComplexVariables(v dyn.Value, path dyn.Path) (dyn.Value, error) {
+func lookupForComplexVariables(v dyn.Value, path dyn.Path, b *bundle.Bundle) (dyn.Value, error) {
 	if path[0].Key() != "variables" {
-		return lookup(v, path)
+		return lookup(v, path, b)
 	}
 
 	varV, err := dyn.GetByPath(v, path[:len(path)-1])
@@ -72,7 +77,7 @@ func lookupForComplexVariables(v dyn.Value, path dyn.Path) (dyn.Value, error) {
 		return dyn.InvalidValue, fmt.Errorf("complex variables cannot contain references to another complex variables")
 	}
 
-	return lookup(v, path)
+	return lookup(v, path, b)
 }
 
 func skipResolvingInNonComplexVariables(v dyn.Value) bool {
@@ -84,9 +89,9 @@ func skipResolvingInNonComplexVariables(v dyn.Value) bool {
 	}
 }
 
-func lookupForVariables(v dyn.Value, path dyn.Path) (dyn.Value, error) {
+func lookupForVariables(v dyn.Value, path dyn.Path, b *bundle.Bundle) (dyn.Value, error) {
 	if path[0].Key() != "variables" {
-		return lookup(v, path)
+		return lookup(v, path, b)
 	}
 
 	varV, err := dyn.GetByPath(v, path[:len(path)-1])
@@ -104,7 +109,7 @@ func lookupForVariables(v dyn.Value, path dyn.Path) (dyn.Value, error) {
 		return dyn.InvalidValue, fmt.Errorf("lookup variables cannot contain references to another lookup variables")
 	}
 
-	return lookup(v, path)
+	return lookup(v, path, b)
 }
 
 func (*resolveVariableReferences) Name() string {
@@ -126,18 +131,6 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 	varPath := dyn.NewPath(dyn.Key("var"))
 
 	var diags diag.Diagnostics
-
-	if config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
-		revertWorkspacePath, err := updateWorkspacePathForSourceLinkedDeployment(b)
-		if err != nil {
-			diags = diags.Extend(diag.FromErr(err))
-		} else {
-			defer func() {
-				err := revertWorkspacePath()
-				diags = diags.Extend(diag.FromErr(err))
-			}()
-		}
-	}
 
 	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		// Synthesize a copy of the root that has all fields that are present in the type
@@ -181,7 +174,7 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 						if m.skipFn != nil && m.skipFn(v) {
 							return dyn.InvalidValue, dynvar.ErrSkipResolution
 						}
-						return m.lookupFn(normalized, path)
+						return m.lookupFn(normalized, path, b)
 					}
 				}
 
@@ -202,29 +195,4 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 		diags = diags.Extend(diag.FromErr(err))
 	}
 	return diags
-}
-
-type cleanup func() error
-
-func updateWorkspacePathForSourceLinkedDeployment(b *bundle.Bundle) (cleanup, error) {
-	originalWorkspacePath := dyn.NilValue
-	fieldName := "workspace.file_path"
-
-	// If source-linked deployment is enabled, update the workspace path to the sync root path so variables will have correct path.
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		path, err := dyn.Get(v, fieldName)
-		if err != nil {
-			return dyn.InvalidValue, err
-		}
-		originalWorkspacePath = path
-		return dyn.Set(v, fieldName, dyn.V(b.SyncRootPath))
-	})
-	if err != nil {
-		return nil, err
-	}
-	return func() error {
-		return b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-			return dyn.Set(v, fieldName, originalWorkspacePath)
-		})
-	}, nil
 }
