@@ -17,6 +17,6 @@ type FrontendLogEntry struct {
 }
 
 type DatabricksCliLog struct {
-	CliTestEvent    events.CliTestEvent    `json:"cli_test_event,omitempty"`
-	BundleInitEvent events.BundleInitEvent `json:"bundle_init_event,omitempty"`
+	CliTestEvent    *events.CliTestEvent     `json:"cli_test_event,omitempty"`
+	BundleInitEvent *events.BundleInitEvent `json:"bundle_init_event,omitempty"`
 }
