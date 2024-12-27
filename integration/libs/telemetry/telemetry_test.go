@@ -32,7 +32,7 @@ func (wrapper *apiClientWrapper) Do(ctx context.Context, method, path string,
 
 func TestTelemetryLogger(t *testing.T) {
 	ctx, w := acc.WorkspaceTest(t)
-	ctx = telemetry.NewContext(ctx)
+	ctx = telemetry.ContextWithLogger(ctx)
 
 	// Extend the maximum wait time for the telemetry flush just for this test.
 	telemetry.MaxAdditionalWaitTime = 1 * time.Hour

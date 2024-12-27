@@ -110,7 +110,7 @@ func (t *Template) logTelemetry(ctx context.Context) error {
 	// Only log telemetry input for Databricks owned templates. This is to prevent
 	// accidentally collecting PUII from custom user templates.
 	templateEnumArgs := map[string]string{}
-	if !t.IsDatabricksOwned {
+	if t.IsDatabricksOwned {
 		templateEnumArgs = t.config.enumValues()
 	}
 

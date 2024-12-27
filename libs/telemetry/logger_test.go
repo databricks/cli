@@ -65,7 +65,7 @@ func TestTelemetryLoggerFlushesEvents(t *testing.T) {
 		uuid.SetRand(nil)
 	})
 
-	ctx := NewContext(context.Background())
+	ctx := ContextWithLogger(context.Background())
 
 	for _, v := range []events.DummyCliEnum{events.DummyCliEnumValue1, events.DummyCliEnumValue2, events.DummyCliEnumValue2, events.DummyCliEnumValue3} {
 		err := Log(ctx, FrontendLogEntry{DatabricksCliLog: DatabricksCliLog{
@@ -99,7 +99,7 @@ func TestTelemetryLoggerFlushExitsOnTimeout(t *testing.T) {
 		uuid.SetRand(nil)
 	})
 
-	ctx := NewContext(context.Background())
+	ctx := ContextWithLogger(context.Background())
 
 	for _, v := range []events.DummyCliEnum{events.DummyCliEnumValue1, events.DummyCliEnumValue2, events.DummyCliEnumValue2, events.DummyCliEnumValue3} {
 		err := Log(ctx, FrontendLogEntry{DatabricksCliLog: DatabricksCliLog{

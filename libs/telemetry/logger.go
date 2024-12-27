@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"slices"
 	"time"
 
 	"github.com/databricks/cli/libs/log"
@@ -40,6 +39,23 @@ func Log(ctx context.Context, event FrontendLogEntry) error {
 
 type logger struct {
 	protoLogs []string
+}
+
+// Only to be used in tests to introspect the telemetry logs that are queued
+// to be flushed.
+func GetLogs(ctx context.Context) ([]FrontendLog, error) {
+	l := fromContext(ctx)
+	res := []FrontendLog{}
+
+	for _, log := range l.protoLogs {
+		frontendLog := FrontendLog{}
+		err := json.Unmarshal([]byte(log), &frontendLog)
+		if err != nil {
+			return nil, fmt.Errorf("error unmarshalling the telemetry event: %v", err)
+		}
+		res = append(res, frontendLog)
+	}
+	return res, nil
 }
 
 // Maximum additional time to wait for the telemetry event to flush. We expect the flush

@@ -10,10 +10,12 @@ type telemetryLogger int
 // Key to store the telemetry logger in the context
 var telemetryLoggerKey telemetryLogger
 
-func NewContext(ctx context.Context) context.Context {
+func ContextWithLogger(ctx context.Context) context.Context {
 	_, ok := ctx.Value(telemetryLoggerKey).(*logger)
 	if ok {
-		panic("telemetry logger already exists in the context")
+		// If a logger is already configured in the context, do not set a new one.
+		// This is useful for testing.
+		return ctx
 	}
 
 	return context.WithValue(ctx, telemetryLoggerKey, &logger{protoLogs: []string{}})
