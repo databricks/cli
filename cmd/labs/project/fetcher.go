@@ -15,7 +15,7 @@ import (
 )
 
 type installable interface {
-	Install(ctx context.Context, offlineInstall bool) error
+	Install(ctx context.Context) error
 }
 
 type devInstallation struct {
@@ -23,7 +23,7 @@ type devInstallation struct {
 	*cobra.Command
 }
 
-func (d *devInstallation) Install(ctx context.Context, offlineInstall bool) error {
+func (d *devInstallation) Install(ctx context.Context) error {
 	if d.Installer == nil {
 		return nil
 	}
@@ -87,9 +87,10 @@ func NewInstaller(cmd *cobra.Command, name string, offlineInstall bool) (install
 	}
 
 	return &installer{
-		Project: prj,
-		version: version,
-		cmd:     cmd,
+		Project:        prj,
+		version:        version,
+		cmd:            cmd,
+		offlineInstall: offlineInstall,
 	}, nil
 }
 

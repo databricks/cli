@@ -20,7 +20,7 @@ func newInstallCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return inst.Install(cmd.Context(), offlineInstall)
+		return inst.Install(cmd.Context())
 	}
 	return cmd
 }

@@ -76,10 +76,11 @@ type installer struct {
 	// command instance is used for:
 	// - auth profile flag override
 	// - standard input, output, and error streams
-	cmd *cobra.Command
+	cmd            *cobra.Command
+	offlineInstall bool
 }
 
-func (i *installer) Install(ctx context.Context, offlineInstall bool) error {
+func (i *installer) Install(ctx context.Context) error {
 	err := i.EnsureFoldersExist()
 	if err != nil {
 		return fmt.Errorf("folders: %w", err)
@@ -101,7 +102,7 @@ func (i *installer) Install(ctx context.Context, offlineInstall bool) error {
 	} else if err != nil {
 		return fmt.Errorf("login: %w", err)
 	}
-	if !offlineInstall {
+	if !i.offlineInstall {
 		err = i.downloadLibrary(ctx)
 		if err != nil {
 			return fmt.Errorf("lib: %w", err)
