@@ -240,7 +240,7 @@ func TestBundleInitTelemetryForCustomTemplates(t *testing.T) {
 	testcli.RequireSuccessfulRun(t, ctx, "bundle", "init", tmpDir1, "--output-dir", tmpDir2, "--config-file", filepath.Join(tmpDir3, "config.json"))
 
 	// Assert the telemetry payload is correctly logged. For custom templates we should
-	//
+	// never set template_enum_args.
 	logs, err := telemetry.GetLogs(ctx)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(logs))

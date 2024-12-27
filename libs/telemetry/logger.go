@@ -41,8 +41,8 @@ type logger struct {
 	protoLogs []string
 }
 
-// Only to be used in tests to introspect the telemetry logs that are queued
-// to be flushed.
+// This function is meant to be only to be used in tests to introspect the telemetry logs
+// that have been logged so far.
 func GetLogs(ctx context.Context) ([]FrontendLog, error) {
 	l := fromContext(ctx)
 	res := []FrontendLog{}

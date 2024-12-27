@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/folders"
+	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/template"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/require"
@@ -28,6 +29,7 @@ const defaultSparkVersion = "13.3.x-snapshot-scala2.12"
 
 func initTestTemplate(t testutil.TestingT, ctx context.Context, templateName string, config map[string]any) string {
 	bundleRoot := t.TempDir()
+	ctx = telemetry.ContextWithLogger(ctx)
 	return initTestTemplateWithBundleRoot(t, ctx, templateName, config, bundleRoot)
 }
 
