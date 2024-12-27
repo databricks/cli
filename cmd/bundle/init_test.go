@@ -49,6 +49,10 @@ func TestNativeTemplateHelpDescriptions(t *testing.T) {
 func TestGetNativeTemplateByName(t *testing.T) {
 	assert.Equal(t, "https://github.com/databricks/mlops-stacks", getNativeTemplateByName("mlops-stacks").gitUrl)
 	assert.Equal(t, "https://github.com/databricks/mlops-stacks", getNativeTemplateByName("mlops-stack").gitUrl)
+
+	assert.Equal(t, "default-python", getNativeTemplateByName("default-python").name)
+	assert.Equal(t, "The default Python template for Notebooks / Delta Live Tables / Workflows", getNativeTemplateByName("default-python").description)
 	assert.Equal(t, "", getNativeTemplateByName("default-python").gitUrl)
+
 	assert.Nil(t, nil, getNativeTemplateByName("invalid"))
 }
