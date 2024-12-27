@@ -16,22 +16,27 @@ const cacheTTL = 1 * time.Hour
 func NewReleaseCache(org, repo, cacheDir string) *ReleaseCache {
 	pattern := fmt.Sprintf("%s-%s-releases", org, repo)
 	return &ReleaseCache{
-		cache: localcache.NewLocalCache[Versions](cacheDir, pattern, cacheTTL),
+		Cache: localcache.NewLocalCache[Versions](cacheDir, pattern, cacheTTL),
 		Org:   org,
 		Repo:  repo,
 	}
 }
 
 type ReleaseCache struct {
-	cache localcache.LocalCache[Versions]
+	Cache localcache.LocalCache[Versions]
 	Org   string
 	Repo  string
 }
 
 func (r *ReleaseCache) Load(ctx context.Context) (Versions, error) {
-	return r.cache.Load(ctx, func() (Versions, error) {
+	return r.Cache.Load(ctx, func() (Versions, error) {
 		return getVersions(ctx, r.Org, r.Repo)
 	})
+}
+
+func (r *ReleaseCache) LoadCache(ctx context.Context) (Versions, error) {
+	cached, err := r.Cache.LoadCache()
+	return cached.Data, err
 }
 
 // getVersions is considered to be a private API, as we want the usage go through a cache
