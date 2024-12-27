@@ -204,7 +204,7 @@ func TestBundleInitTelemetryForCustomTemplates(t *testing.T) {
 
 	err := os.Mkdir(filepath.Join(tmpDir1, "template"), 0o755)
 	require.NoError(t, err)
-	err = os.WriteFile(filepath.Join(tmpDir1, "template", "foo.txt.tmpl"), []byte("doesnotmatter"), 0o644)
+	err = os.WriteFile(filepath.Join(tmpDir1, "template", "foo.txt.tmpl"), []byte("{{bundle_uuid}}"), 0o644)
 	require.NoError(t, err)
 	err = os.WriteFile(filepath.Join(tmpDir1, "databricks_template_schema.json"), []byte(`
 {
@@ -247,6 +247,11 @@ func TestBundleInitTelemetryForCustomTemplates(t *testing.T) {
 	event := logs[0].Entry.DatabricksCliLog.BundleInitEvent
 	assert.Equal(t, event.TemplateName, "custom")
 	assert.Nil(t, event.TemplateEnumArgs)
+
+	// Ensure that the UUID returned by the `bundle_uuid` helper is the same UUID
+	// that's logged in the telemetry event.
+	fileC := testutil.ReadFile(t, filepath.Join(tmpDir2, "foo.txt"))
+	assert.Equal(t, event.Uuid, fileC)
 }
 
 func TestBundleInitHelpers(t *testing.T) {

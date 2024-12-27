@@ -25,10 +25,10 @@ type TemplateOpts struct {
 	TemplateFS fs.FS
 	// filer to use for writing the initialized template
 	OutputFiler filer.Filer
-	// If true, we'll include the enum template args in the telemetry payload..
+	// If true, we'll include the enum template args in the telemetry payload.
 	IsDatabricksOwned bool
 	// Name of the template. For non-Databricks owned templates, this is set to
-	// custom.
+	// "custom".
 	Name string
 }
 
@@ -108,10 +108,12 @@ func (t *Template) printSuccessMessage(ctx context.Context) error {
 
 func (t *Template) logTelemetry(ctx context.Context) error {
 	// Only log telemetry input for Databricks owned templates. This is to prevent
-	// accidentally collecting PUII from custom user templates.
+	// accidentally collecting PII from custom user templates.
 	templateEnumArgs := map[string]string{}
 	if t.IsDatabricksOwned {
 		templateEnumArgs = t.config.enumValues()
+	} else {
+		t.Name = "custom"
 	}
 
 	event := telemetry.DatabricksCliLog{

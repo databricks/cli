@@ -257,10 +257,11 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 		}
 
 		nt := getNativeTemplateByName(templatePath)
-		templateName := "custom"
+		var templateName string
 		isTemplateDatabricksOwned := false
 		if nt != nil {
-			// If the template is a native template, set it's value.
+			// If the template is a native template, templatePath is the name of the template.
+			// Eg: templatePath = "default-python".
 			templateName = templatePath
 
 			// if we have a Git URL for the native template, expand templatePath
