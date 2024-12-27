@@ -3,6 +3,7 @@ package telemetry_test
 import (
 	"context"
 	"net/http"
+	"reflect"
 	"testing"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/events"
 	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -31,6 +33,31 @@ func (wrapper *apiClientWrapper) Do(ctx context.Context, method, path string,
 }
 
 func TestTelemetryLogger(t *testing.T) {
+	events := []telemetry.FrontendLogEntry{
+		{
+			DatabricksCliLog: telemetry.DatabricksCliLog{
+				CliTestEvent: &events.CliTestEvent{
+					Name: events.DummyCliEnumValue1,
+				},
+			},
+		},
+		{
+			DatabricksCliLog: telemetry.DatabricksCliLog{
+				BundleInitEvent: &events.BundleInitEvent{
+					Uuid:         uuid.New().String(),
+					TemplateName: "abc",
+					TemplateEnumArgs: map[string]string{
+						"a": "b",
+						"c": "d",
+					},
+				},
+			},
+		},
+	}
+
+	assert.Equal(t, reflect.TypeOf(telemetry.DatabricksCliLog{}).NumField(), len(events),
+		"Number of events should match the number of fields in DatabricksCliLog. Please add a new event to this test.")
+
 	ctx, w := acc.WorkspaceTest(t)
 	ctx = telemetry.ContextWithLogger(ctx)
 
@@ -40,23 +67,10 @@ func TestTelemetryLogger(t *testing.T) {
 		telemetry.MaxAdditionalWaitTime = 2 * time.Second
 	})
 
-	// Log some events.
-	err := telemetry.Log(ctx, telemetry.FrontendLogEntry{
-		DatabricksCliLog: telemetry.DatabricksCliLog{
-			CliTestEvent: &events.CliTestEvent{
-				Name: events.DummyCliEnumValue1,
-			},
-		},
-	})
-	require.NoError(t, err)
-	err = telemetry.Log(ctx, telemetry.FrontendLogEntry{
-		DatabricksCliLog: telemetry.DatabricksCliLog{
-			CliTestEvent: &events.CliTestEvent{
-				Name: events.DummyCliEnumValue2,
-			},
-		},
-	})
-	require.NoError(t, err)
+	for _, event := range events {
+		err := telemetry.Log(ctx, event)
+		require.NoError(t, err)
+	}
 
 	apiClient, err := client.New(w.W.Config)
 	require.NoError(t, err)
@@ -69,7 +83,7 @@ func TestTelemetryLogger(t *testing.T) {
 
 	// Assert that the events were logged.
 	assert.Equal(t, telemetry.ResponseBody{
-		NumProtoSuccess: 2,
+		NumProtoSuccess: int64(len(events)),
 		Errors:          []telemetry.LogError{},
 	}, *wrapper.response)
 }
