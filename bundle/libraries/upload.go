@@ -81,7 +81,6 @@ func collectLocalLibraries(b *bundle.Bundle) (map[string][]configLocation, error
 				return v, nil
 			})
 		})
-
 		if err != nil {
 			return nil, err
 		}
@@ -119,7 +118,6 @@ func collectLocalLibraries(b *bundle.Bundle) (map[string][]configLocation, error
 			return v, nil
 		})
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +173,6 @@ func (u *upload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 			return v, nil
 		})
-
 		if err != nil {
 			diags = diags.Extend(diag.FromErr(err))
 		}

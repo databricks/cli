@@ -51,7 +51,6 @@ func NewSnapshotState(localFiles []fileset.File) (*SnapshotState, error) {
 		// Compute the remote name the file will have in WSFS
 		remoteName := f.Relative
 		isNotebook, err := f.IsNotebook()
-
 		if err != nil {
 			// Ignore this file if we're unable to determine the notebook type.
 			// Trying to upload such a file to the workspace would fail anyway.

@@ -15,8 +15,7 @@ func VerifyCliVersion() bundle.Mutator {
 	return &verifyCliVersion{}
 }
 
-type verifyCliVersion struct {
-}
+type verifyCliVersion struct{}
 
 func (v *verifyCliVersion) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// No constraints specified, skip the check.

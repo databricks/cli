@@ -49,7 +49,8 @@ func TestCustomMarshallerIsImplemented(t *testing.T) {
 		// Eg: resource.Job implements MarshalJSON
 		v := reflect.Zero(vt.Elem()).Interface()
 		assert.NotPanics(t, func() {
-			json.Marshal(v)
+			_, err := json.Marshal(v)
+			assert.NoError(t, err)
 		}, "Resource %s does not have a custom marshaller", field.Name)
 
 		// Unmarshalling a *resourceStruct will panic if the resource does not have a custom unmarshaller
@@ -58,7 +59,8 @@ func TestCustomMarshallerIsImplemented(t *testing.T) {
 		// Eg: *resource.Job implements UnmarshalJSON
 		v = reflect.New(vt.Elem()).Interface()
 		assert.NotPanics(t, func() {
-			json.Unmarshal([]byte("{}"), v)
+			err := json.Unmarshal([]byte("{}"), v)
+			assert.NoError(t, err)
 		}, "Resource %s does not have a custom unmarshaller", field.Name)
 	}
 }

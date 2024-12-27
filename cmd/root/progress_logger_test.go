@@ -33,27 +33,27 @@ func initializeProgressLoggerTest(t *testing.T) (
 
 func TestInitializeErrorOnIncompatibleConfig(t *testing.T) {
 	plt, logLevel, logFile, progressFormat := initializeProgressLoggerTest(t)
-	logLevel.Set("info")
-	logFile.Set("stderr")
-	progressFormat.Set("inplace")
+	require.NoError(t, logLevel.Set("info"))
+	require.NoError(t, logFile.Set("stderr"))
+	require.NoError(t, progressFormat.Set("inplace"))
 	_, err := plt.progressLoggerFlag.initializeContext(context.Background())
 	assert.ErrorContains(t, err, "inplace progress logging cannot be used when log-file is stderr")
 }
 
 func TestNoErrorOnDisabledLogLevel(t *testing.T) {
 	plt, logLevel, logFile, progressFormat := initializeProgressLoggerTest(t)
-	logLevel.Set("disabled")
-	logFile.Set("stderr")
-	progressFormat.Set("inplace")
+	require.NoError(t, logLevel.Set("disabled"))
+	require.NoError(t, logFile.Set("stderr"))
+	require.NoError(t, progressFormat.Set("inplace"))
 	_, err := plt.progressLoggerFlag.initializeContext(context.Background())
 	assert.NoError(t, err)
 }
 
 func TestNoErrorOnNonStderrLogFile(t *testing.T) {
 	plt, logLevel, logFile, progressFormat := initializeProgressLoggerTest(t)
-	logLevel.Set("info")
-	logFile.Set("stdout")
-	progressFormat.Set("inplace")
+	require.NoError(t, logLevel.Set("info"))
+	require.NoError(t, logFile.Set("stdout"))
+	require.NoError(t, progressFormat.Set("inplace"))
 	_, err := plt.progressLoggerFlag.initializeContext(context.Background())
 	assert.NoError(t, err)
 }

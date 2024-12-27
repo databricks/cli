@@ -78,13 +78,13 @@ func TestGeneratePipelineCommand(t *testing.T) {
 	workspaceApi.EXPECT().Download(mock.Anything, "/test/file.py", mock.Anything).Return(pyContent, nil)
 
 	cmd.SetContext(bundle.Context(context.Background(), b))
-	cmd.Flag("existing-pipeline-id").Value.Set("test-pipeline")
+	require.NoError(t, cmd.Flag("existing-pipeline-id").Value.Set("test-pipeline"))
 
 	configDir := filepath.Join(root, "resources")
-	cmd.Flag("config-dir").Value.Set(configDir)
+	require.NoError(t, cmd.Flag("config-dir").Value.Set(configDir))
 
 	srcDir := filepath.Join(root, "src")
-	cmd.Flag("source-dir").Value.Set(srcDir)
+	require.NoError(t, cmd.Flag("source-dir").Value.Set(srcDir))
 
 	var key string
 	cmd.Flags().StringVar(&key, "key", "test_pipeline", "")
@@ -174,13 +174,13 @@ func TestGenerateJobCommand(t *testing.T) {
 	workspaceApi.EXPECT().Download(mock.Anything, "/test/notebook", mock.Anything).Return(notebookContent, nil)
 
 	cmd.SetContext(bundle.Context(context.Background(), b))
-	cmd.Flag("existing-job-id").Value.Set("1234")
+	require.NoError(t, cmd.Flag("existing-job-id").Value.Set("1234"))
 
 	configDir := filepath.Join(root, "resources")
-	cmd.Flag("config-dir").Value.Set(configDir)
+	require.NoError(t, cmd.Flag("config-dir").Value.Set(configDir))
 
 	srcDir := filepath.Join(root, "src")
-	cmd.Flag("source-dir").Value.Set(srcDir)
+	require.NoError(t, cmd.Flag("source-dir").Value.Set(srcDir))
 
 	var key string
 	cmd.Flags().StringVar(&key, "key", "test_job", "")
@@ -217,7 +217,7 @@ func TestGenerateJobCommand(t *testing.T) {
 }
 
 func touchEmptyFile(t *testing.T, path string) {
-	err := os.MkdirAll(filepath.Dir(path), 0700)
+	err := os.MkdirAll(filepath.Dir(path), 0o700)
 	require.NoError(t, err)
 	f, err := os.Create(path)
 	require.NoError(t, err)
@@ -279,13 +279,13 @@ func TestGenerateJobCommandOldFileRename(t *testing.T) {
 	workspaceApi.EXPECT().Download(mock.Anything, "/test/notebook", mock.Anything).Return(notebookContent, nil)
 
 	cmd.SetContext(bundle.Context(context.Background(), b))
-	cmd.Flag("existing-job-id").Value.Set("1234")
+	require.NoError(t, cmd.Flag("existing-job-id").Value.Set("1234"))
 
 	configDir := filepath.Join(root, "resources")
-	cmd.Flag("config-dir").Value.Set(configDir)
+	require.NoError(t, cmd.Flag("config-dir").Value.Set(configDir))
 
 	srcDir := filepath.Join(root, "src")
-	cmd.Flag("source-dir").Value.Set(srcDir)
+	require.NoError(t, cmd.Flag("source-dir").Value.Set(srcDir))
 
 	var key string
 	cmd.Flags().StringVar(&key, "key", "test_job", "")
@@ -295,7 +295,7 @@ func TestGenerateJobCommandOldFileRename(t *testing.T) {
 	touchEmptyFile(t, oldFilename)
 
 	// Having an existing files require --force flag to regenerate them
-	cmd.Flag("force").Value.Set("true")
+	require.NoError(t, cmd.Flag("force").Value.Set("true"))
 
 	err := cmd.RunE(cmd, []string{})
 	require.NoError(t, err)

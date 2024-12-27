@@ -14,13 +14,13 @@ func TestDetectVEnvExecutable(t *testing.T) {
 	dir := t.TempDir()
 	interpreterPath := interpreterPath(dir)
 
-	err := os.Mkdir(filepath.Dir(interpreterPath), 0755)
+	err := os.Mkdir(filepath.Dir(interpreterPath), 0o755)
 	require.NoError(t, err)
 
-	err = os.WriteFile(interpreterPath, []byte(""), 0755)
+	err = os.WriteFile(interpreterPath, []byte(""), 0o755)
 	require.NoError(t, err)
 
-	err = os.WriteFile(filepath.Join(dir, "pyvenv.cfg"), []byte(""), 0755)
+	err = os.WriteFile(filepath.Join(dir, "pyvenv.cfg"), []byte(""), 0o755)
 	require.NoError(t, err)
 
 	executable, err := DetectVEnvExecutable(dir)
@@ -39,7 +39,7 @@ func TestDetectVEnvExecutable_badLayout(t *testing.T) {
 
 func interpreterPath(venvPath string) string {
 	if runtime.GOOS == "windows" {
-		return filepath.Join(venvPath, "Scripts", "python3.exe")
+		return filepath.Join(venvPath, "Scripts", "python.exe")
 	} else {
 		return filepath.Join(venvPath, "bin", "python3")
 	}

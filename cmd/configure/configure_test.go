@@ -31,7 +31,7 @@ func setup(t *testing.T) string {
 	return tempHomeDir
 }
 
-func getTempFileWithContent(t *testing.T, tempHomeDir string, content string) *os.File {
+func getTempFileWithContent(t *testing.T, tempHomeDir, content string) *os.File {
 	inp, err := os.CreateTemp(tempHomeDir, "input")
 	assert.NoError(t, err)
 	_, err = inp.WriteString(content)
@@ -75,7 +75,7 @@ func TestDefaultConfigureNoInteractive(t *testing.T) {
 }
 
 func TestConfigFileFromEnvNoInteractive(t *testing.T) {
-	//TODO: Replace with similar test code from go SDK, once we start using it directly
+	// TODO: Replace with similar test code from go SDK, once we start using it directly
 	ctx := context.Background()
 	tempHomeDir := setup(t)
 	defaultCfgPath := filepath.Join(tempHomeDir, ".databrickscfg")

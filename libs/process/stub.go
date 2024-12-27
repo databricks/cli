@@ -148,13 +148,20 @@ func (s *processStub) run(cmd *exec.Cmd) error {
 		if !re.MatchString(norm) {
 			continue
 		}
+		err := resp.err
 		if resp.stdout != "" {
-			cmd.Stdout.Write([]byte(resp.stdout))
+			_, err1 := cmd.Stdout.Write([]byte(resp.stdout))
+			if err == nil {
+				err = err1
+			}
 		}
 		if resp.stderr != "" {
-			cmd.Stderr.Write([]byte(resp.stderr))
+			_, err1 := cmd.Stderr.Write([]byte(resp.stderr))
+			if err == nil {
+				err = err1
+			}
 		}
-		return resp.err
+		return err
 	}
 	if s.callback != nil {
 		return s.callback(cmd)
@@ -163,8 +170,12 @@ func (s *processStub) run(cmd *exec.Cmd) error {
 	if s.reponseStub == zeroStub {
 		return fmt.Errorf("no default process stub")
 	}
+	err := s.reponseStub.err
 	if s.reponseStub.stdout != "" {
-		cmd.Stdout.Write([]byte(s.reponseStub.stdout))
+		_, err1 := cmd.Stdout.Write([]byte(s.reponseStub.stdout))
+		if err == nil {
+			err = err1
+		}
 	}
-	return s.reponseStub.err
+	return err
 }

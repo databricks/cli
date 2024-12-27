@@ -10,6 +10,7 @@ type ResourcePermissionsAccessControl struct {
 }
 
 type ResourcePermissions struct {
+	AppName                string                             `json:"app_name,omitempty"`
 	Authorization          string                             `json:"authorization,omitempty"`
 	ClusterId              string                             `json:"cluster_id,omitempty"`
 	ClusterPolicyId        string                             `json:"cluster_policy_id,omitempty"`

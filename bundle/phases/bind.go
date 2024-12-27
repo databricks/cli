@@ -25,7 +25,7 @@ func Bind(opts *terraform.BindOptions) bundle.Mutator {
 	)
 }
 
-func Unbind(resourceType string, resourceKey string) bundle.Mutator {
+func Unbind(resourceType, resourceKey string) bundle.Mutator {
 	return newPhase(
 		"unbind",
 		[]bundle.Mutator{

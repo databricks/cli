@@ -13,7 +13,7 @@ import (
 )
 
 func TestConvertPermissions(t *testing.T) {
-	var src = resources.Job{
+	src := resources.Job{
 		Permissions: []resources.Permission{
 			{
 				Level:    "CAN_VIEW",
@@ -59,7 +59,7 @@ func TestConvertPermissions(t *testing.T) {
 }
 
 func TestConvertPermissionsNil(t *testing.T) {
-	var src = resources.Job{
+	src := resources.Job{
 		Permissions: nil,
 	}
 
@@ -72,7 +72,7 @@ func TestConvertPermissionsNil(t *testing.T) {
 }
 
 func TestConvertPermissionsEmpty(t *testing.T) {
-	var src = resources.Job{
+	src := resources.Job{
 		Permissions: []resources.Permission{},
 	}
 
