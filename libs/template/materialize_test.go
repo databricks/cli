@@ -18,7 +18,15 @@ func TestMaterializeForNonTemplateDirectory(t *testing.T) {
 	require.NoError(t, err)
 	ctx := root.SetWorkspaceClient(context.Background(), w)
 
+	tmpl := Template{
+		TemplateOpts: TemplateOpts{
+			ConfigFilePath: "",
+			TemplateFS:     os.DirFS(tmpDir),
+			OutputFiler:    nil,
+		},
+	}
+
 	// Try to materialize a non-template directory.
-	err = Materialize(ctx, "", os.DirFS(tmpDir), nil)
+	err = tmpl.Materialize(ctx)
 	assert.EqualError(t, err, fmt.Sprintf("not a bundle template: expected to find a template schema file at %s", schemaFileName))
 }

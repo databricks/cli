@@ -42,7 +42,15 @@ func initTestTemplateWithBundleRoot(t testutil.TestingT, ctx context.Context, te
 
 	out, err := filer.NewLocalClient(bundleRoot)
 	require.NoError(t, err)
-	err = template.Materialize(ctx, configFilePath, os.DirFS(templateRoot), out)
+	tmpl := template.Template{
+		TemplateOpts: template.TemplateOpts{
+			ConfigFilePath: configFilePath,
+			TemplateFS:     os.DirFS(templateRoot),
+			OutputFiler:    out,
+		},
+	}
+
+	err = tmpl.Materialize(ctx)
 	require.NoError(t, err)
 	return bundleRoot
 }

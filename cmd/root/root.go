@@ -12,6 +12,8 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/spf13/cobra"
 )
 
@@ -52,6 +54,9 @@ func New(ctx context.Context) *cobra.Command {
 			return err
 		}
 
+		// Configure the logger to send telemetry to Databricks.
+		ctx = telemetry.NewContext(ctx)
+
 		logger := log.GetLogger(ctx)
 		logger.Info("start",
 			slog.String("version", build.GetInfo().Version),
@@ -82,6 +87,18 @@ func New(ctx context.Context) *cobra.Command {
 		ctx = withUpstreamInUserAgent(ctx)
 		cmd.SetContext(ctx)
 		return nil
+	}
+
+	cmd.PersistentPostRun = func(cmd *cobra.Command, args []string) {
+		ctx := cmd.Context()
+		w := WorkspaceClient(ctx)
+		apiClient, err := client.New(w.Config)
+		if err != nil {
+			// Uploading telemetry is best effort. Do not error.
+			return
+		}
+
+		telemetry.Flush(cmd.Context(), apiClient)
 	}
 
 	cmd.SetFlagErrorFunc(flagErrorFunc)

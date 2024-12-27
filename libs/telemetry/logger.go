@@ -7,9 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/google/uuid"
 )
 
@@ -58,17 +56,23 @@ func Flush(ctx context.Context, apiClient DatabricksApiClient) {
 	defer cancel()
 	l := fromContext(ctx)
 
-	// We pass the API client as an arg to mock it in unit tests.
-	if apiClient == nil {
-		var err error
-
-		// Create API client to make the the telemetry API call.
-		apiClient, err = client.New(root.WorkspaceClient(ctx).Config)
-		if err != nil {
-			log.Debugf(ctx, "error creating API client for telemetry: %v", err)
-			return
-		}
+	if len(l.protoLogs) == 0 {
+		log.Debugf(ctx, "No telemetry events to flush")
+		return
 	}
+
+	// We pass the API client as an arg to mock it in unit tests.
+	// TODO: Cleanup and remove this section.
+	// if apiClient == nil {
+	// 	var err error
+
+	// 	// Create API client to make the the telemetry API call.
+	// 	apiClient, err = client.New(root.WorkspaceClient(ctx).Config)
+	// 	if err != nil {
+	// 		log.Debugf(ctx, "error creating API client for telemetry: %v", err)
+	// 		return
+	// 	}
+	// }
 
 	resp := &ResponseBody{}
 	for {

@@ -46,9 +46,9 @@ func TestNativeTemplateHelpDescriptions(t *testing.T) {
 	assert.Equal(t, expected, nativeTemplateHelpDescriptions())
 }
 
-func TestGetUrlForNativeTemplate(t *testing.T) {
-	assert.Equal(t, "https://github.com/databricks/mlops-stacks", getUrlForNativeTemplate("mlops-stacks"))
-	assert.Equal(t, "https://github.com/databricks/mlops-stacks", getUrlForNativeTemplate("mlops-stack"))
-	assert.Equal(t, "", getUrlForNativeTemplate("default-python"))
-	assert.Equal(t, "", getUrlForNativeTemplate("invalid"))
+func TestGetNativeTemplateByName(t *testing.T) {
+	assert.Equal(t, "https://github.com/databricks/mlops-stacks", getNativeTemplateByName("mlops-stacks").gitUrl)
+	assert.Equal(t, "https://github.com/databricks/mlops-stacks", getNativeTemplateByName("mlops-stack").gitUrl)
+	assert.Equal(t, "", getNativeTemplateByName("default-python").gitUrl)
+	assert.Nil(t, nil, getNativeTemplateByName("invalid"))
 }

@@ -101,16 +101,16 @@ func getNativeTemplateByDescription(description string) string {
 	return ""
 }
 
-func getUrlForNativeTemplate(name string) string {
+func getNativeTemplateByName(name string) *nativeTemplate {
 	for _, template := range nativeTemplates {
 		if template.name == name {
-			return template.gitUrl
+			return &template
 		}
 		if slices.Contains(template.aliases, name) {
-			return template.gitUrl
+			return &template
 		}
 	}
-	return ""
+	return nil
 }
 
 func getFsForNativeTemplate(name string) (fs.FS, error) {
@@ -235,10 +235,21 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 			return nil
 		}
 
-		// Expand templatePath to a git URL if it's an alias for a known native template
-		// and we know it's git URL.
-		if gitUrl := getUrlForNativeTemplate(templatePath); gitUrl != "" {
-			templatePath = gitUrl
+		// If templatePath refers to a native template, store it's name in a new
+		// variable.
+		nt := getNativeTemplateByName(templatePath)
+		templateName := "custom"
+		isTemplateDatabricksOwned := false
+		if nt != nil {
+			templateName = templatePath
+
+			// if we have a Git URL for the native template, expand templatePath
+			// to the full URL.
+			if nt.gitUrl != "" {
+				templatePath = nt.gitUrl
+			}
+
+			isTemplateDatabricksOwned = true
 		}
 
 		if !isRepoUrl(templatePath) {
@@ -256,9 +267,19 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 				templateFS = os.DirFS(templatePath)
 			}
 
+			t := template.Template{
+				TemplateOpts: template.TemplateOpts{
+					ConfigFilePath:    configFile,
+					TemplateFS:        templateFS,
+					OutputFiler:       outputFiler,
+					IsDatabricksOwned: isTemplateDatabricksOwned,
+					Name:              templateName,
+				},
+			}
+
 			// skip downloading the repo because input arg is not a URL. We assume
 			// it's a path on the local file system in that case
-			return template.Materialize(ctx, configFile, templateFS, outputFiler)
+			return t.Materialize(ctx)
 		}
 
 		// Create a temporary directory with the name of the repository.  The '*'
@@ -283,7 +304,16 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 		// Clean up downloaded repository once the template is materialized.
 		defer os.RemoveAll(repoDir)
 		templateFS := os.DirFS(filepath.Join(repoDir, templateDir))
-		return template.Materialize(ctx, configFile, templateFS, outputFiler)
+		t := template.Template{
+			TemplateOpts: template.TemplateOpts{
+				ConfigFilePath:    configFile,
+				TemplateFS:        templateFS,
+				OutputFiler:       outputFiler,
+				IsDatabricksOwned: isTemplateDatabricksOwned,
+				Name:              templateName,
+			},
+		}
+		return t.Materialize(ctx)
 	}
 	return cmd
 }

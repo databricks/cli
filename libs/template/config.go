@@ -273,3 +273,16 @@ func (c *config) validate() error {
 	}
 	return nil
 }
+
+// Return enum values selected by the user during template initialization. These
+// values are safe to send over in telemetry events due to their limited cardinality.
+func (c *config) enumValues() map[string]string {
+	res := map[string]string{}
+	for k, p := range c.schema.Properties {
+		if p.Enum == nil {
+			continue
+		}
+		res[k] = c.values[k].(string)
+	}
+	return res
+}

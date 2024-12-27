@@ -11,7 +11,7 @@ type BundleInitEvent struct {
 	// Name of the template initialized when the user ran `databricks bundle init`
 	// This is only populated when the template is a first party template like
 	// mlops-stacks or default-python.
-	TemplateName BundleTemplate `json:"template_name,omitempty"`
+	TemplateName string `json:"template_name,omitempty"`
 
 	// Arguments used by the user to initialize the template. Only enum
 	// values will be set here by the Databricks CLI.
@@ -21,13 +21,3 @@ type BundleInitEvent struct {
 	// will be untenable in the long term.
 	TemplateEnumArgs map[string]string `json:"template_enum_args,omitempty"`
 }
-
-type BundleTemplate string
-
-const (
-	BundleTemplateMlopsStacks   BundleTemplate = "mlops-stacks"
-	BundleTemplateDefaultPython BundleTemplate = "default-python"
-	BundleTemplateDefaultSql    BundleTemplate = "default-sql"
-	BundleTemplateDbtSql        BundleTemplate = "dbt-sql"
-	BundleTemplateCustom        BundleTemplate = "custom"
-)
