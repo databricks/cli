@@ -51,7 +51,7 @@ func resolveVolume(v *resources.Volume, b *bundle.Bundle) {
 func resolvePipeline(p *resources.Pipeline, b *bundle.Bundle) {
 	// schema and target have the same semantics in the DLT API but are mutually
 	// exclusive. If schema is set, the pipeline is in direct publishing mode
-	// and can write tables to multiple schemas (vs target which is a single schema).
+	// and can write tables to multiple schemas (vs target which is limited to a single schema).
 	schemaName := p.Schema
 	if schemaName == "" {
 		schemaName = p.Target
