@@ -38,6 +38,7 @@ func initTestTemplateWithBundleRoot(t testutil.TestingT, ctx context.Context, te
 
 	configFilePath := writeConfigFile(t, config)
 
+	ctx = telemetry.ContextWithLogger(ctx)
 	ctx = root.SetWorkspaceClient(ctx, nil)
 	cmd := cmdio.NewIO(ctx, flags.OutputJSON, strings.NewReader(""), os.Stdout, os.Stderr, "", "bundles")
 	ctx = cmdio.InContext(ctx, cmd)
