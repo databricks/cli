@@ -29,7 +29,6 @@ type TemplateOpts struct {
 	IsDatabricksOwned bool
 	// Name of the template. For non-Databricks owned templates, this is set to
 	// custom.
-	// TODO: move this enum to the template package.
 	Name string
 }
 

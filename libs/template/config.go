@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"slices"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/jsonschema"
@@ -279,10 +280,17 @@ func (c *config) validate() error {
 func (c *config) enumValues() map[string]string {
 	res := map[string]string{}
 	for k, p := range c.schema.Properties {
+		if p.Type != jsonschema.StringType {
+			continue
+		}
 		if p.Enum == nil {
 			continue
 		}
-		res[k] = c.values[k].(string)
+		v := c.values[k]
+
+		if slices.Contains(p.Enum, v) {
+			res[k] = v.(string)
+		}
 	}
 	return res
 }
