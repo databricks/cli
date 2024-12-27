@@ -47,6 +47,9 @@ func Chdir(t TestingT, dir string) string {
 
 	wd, err := os.Getwd()
 	require.NoError(t, err)
+	if os.Getenv("TESTS_ORIG_WD") == "" {
+		t.Setenv("TESTS_ORIG_WD", wd)
+	}
 
 	abs, err := filepath.Abs(dir)
 	require.NoError(t, err)
@@ -60,4 +63,11 @@ func Chdir(t TestingT, dir string) string {
 	})
 
 	return wd
+}
+
+// Return filename ff testutil.Chdir was not called.
+// Return absolute path to filename testutil.Chdir() was called.
+func TestData(filename string) string {
+	// Note, if TESTS_ORIG_WD is not set, Getenv return "" and Join returns filename
+	return filepath.Join(os.Getenv("TESTS_ORIG_WD"), filename)
 }
