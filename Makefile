@@ -2,7 +2,7 @@ default: build
 
 lint: vendor
 	@echo "✓ Linting source code with https://golangci-lint.run/ (with --fix)..."
-	@golangci-lint run --fix ./...
+	@./lint.sh ./...
 
 lintcheck: vendor
 	@echo "✓ Linting source code with https://golangci-lint.run/ ..."

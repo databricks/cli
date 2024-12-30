@@ -1,4 +1,4 @@
-package testcli
+package testdiff
 
 import (
 	"testing"
