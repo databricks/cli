@@ -547,9 +547,9 @@ func createInitOverrideVisitor(ctx context.Context, mode insertResourceMode) mer
 }
 
 func isOmitemptyDelete(left dyn.Value) bool {
-	// Python can omit empty sequences/mappings in output, because we don't track them as optional,
+	// Python output can omit empty sequences/mappings, because we don't track them as optional,
 	// there is no semantic difference between empty and missing, so we keep them as they were before
-	// Python deleted them.
+	// Python mutator deleted them.
 
 	switch left.Kind() {
 	case dyn.KindMap:
