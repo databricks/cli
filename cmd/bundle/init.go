@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/git"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/template"
 	"github.com/databricks/databricks-sdk-go/client"
@@ -212,6 +213,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 		apiClient, err := client.New(w.Config)
 		if err != nil {
 			// Uploading telemetry is best effort. Do not error.
+			log.Debugf(ctx, "Could not create API client to send telemetry using: %v", err)
 			return
 		}
 
