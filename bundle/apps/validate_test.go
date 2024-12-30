@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/internal/testutil"
-	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -28,6 +27,9 @@ func TestAppsValidate(t *testing.T) {
 		SyncRootPath:   tmpDir,
 		SyncRoot:       vfs.MustNew(tmpDir),
 		Config: config.Root{
+			Workspace: config.Workspace{
+				FilePath: "/foo/bar/",
+			},
 			Resources: config.Resources{
 				Apps: map[string]*resources.App{
 					"app1": {
@@ -64,6 +66,9 @@ func TestAppsValidateSameSourcePath(t *testing.T) {
 		SyncRootPath:   tmpDir,
 		SyncRoot:       vfs.MustNew(tmpDir),
 		Config: config.Root{
+			Workspace: config.Workspace{
+				FilePath: "/foo/bar/",
+			},
 			Resources: config.Resources{
 				Apps: map[string]*resources.App{
 					"app1": {
@@ -89,37 +94,4 @@ func TestAppsValidateSameSourcePath(t *testing.T) {
 	require.Len(t, diags, 1)
 	require.Equal(t, "Duplicate app source code path", diags[0].Summary)
 	require.Contains(t, diags[0].Detail, "has the same source code path as app resource")
-}
-
-func TestAppsValidateIncorrectSourceCodePath(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	b := &bundle.Bundle{
-		BundleRootPath: tmpDir,
-		SyncRootPath:   tmpDir,
-		SyncRoot:       vfs.MustNew(tmpDir),
-		Config: config.Root{
-			Workspace: config.Workspace{
-				FilePath: "/Workspace/Users/foo@bar.com/files",
-			},
-			Resources: config.Resources{
-				Apps: map[string]*resources.App{
-					"app1": {
-						App: &apps.App{
-							Name: "app1",
-						},
-						SourceCodePath: "/Workspace/Random/app1",
-					},
-				},
-			},
-		},
-	}
-
-	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(tmpDir, "databricks.yml")}})
-
-	diags := bundle.Apply(context.Background(), b, bundle.Seq(Validate()))
-	require.Len(t, diags, 1)
-	require.Equal(t, diag.Error, diags[0].Severity)
-	require.Equal(t, "App source code invalid", diags[0].Summary)
-	require.Contains(t, diags[0].Detail, "App source code path /Workspace/Random/app1 is not within file path /Workspace/Users/foo@bar.com/files")
 }

@@ -9,8 +9,11 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/internal/bundletest"
 	mockfiler "github.com/databricks/cli/internal/mocks/libs/filer"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -25,6 +28,7 @@ func TestAppUploadConfig(t *testing.T) {
 
 	b := &bundle.Bundle{
 		BundleRootPath: root,
+		SyncRootPath:   root,
 		SyncRoot:       vfs.MustNew(root),
 		Config: config.Root{
 			Workspace: config.Workspace{
@@ -64,6 +68,8 @@ env:
 		},
 	}
 
-	diags := bundle.Apply(context.Background(), b, &u)
+	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(root, "databricks.yml")}})
+
+	diags := bundle.Apply(context.Background(), b, bundle.Seq(mutator.TranslatePaths(), &u))
 	require.NoError(t, diags.Error())
 }

@@ -107,4 +107,7 @@ env:
 	require.NoError(t, err)
 	require.NotNil(t, app)
 	require.Equal(t, apps.ApplicationStateRunning, app.AppStatus.State)
+
+	// Redeploy it again just to check that it can be redeployed
+	deployBundle(t, ctx, root)
 }

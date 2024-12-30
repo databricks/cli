@@ -29,7 +29,8 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 		usedSourceCodePaths[app.SourceCodePath] = key
 
 		for _, configFile := range possibleConfigFiles {
-			cf := path.Join(app.SourceCodePath, configFile)
+			appPath := strings.TrimPrefix(app.SourceCodePath, b.Config.Workspace.FilePath)
+			cf := path.Join(appPath, configFile)
 			if _, err := b.SyncRoot.Stat(cf); err == nil {
 				diags = append(diags, diag.Diagnostic{
 					Severity: diag.Error,
@@ -37,15 +38,6 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 					Detail:   fmt.Sprintf("remove %s and use 'config' property for app resource '%s' instead", cf, app.Name),
 				})
 			}
-		}
-
-		if !strings.HasPrefix(app.SourceCodePath, b.Config.Workspace.FilePath) {
-			diags = append(diags, diag.Diagnostic{
-				Severity:  diag.Error,
-				Summary:   "App source code invalid",
-				Detail:    fmt.Sprintf("App source code path %s is not within file path %s", app.SourceCodePath, b.Config.Workspace.FilePath),
-				Locations: b.Config.GetLocations(fmt.Sprintf("resources.apps.%s.source_code_path", key)),
-			})
 		}
 	}
 

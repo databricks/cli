@@ -45,7 +45,7 @@ func (u *uploadConfig) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 			}
 
 			errGroup.Go(func() error {
-				err = f.Write(ctx, path.Join(appPath, "app.yml"), buf, filer.OverwriteIfExists)
+				err := f.Write(ctx, path.Join(appPath, "app.yml"), buf, filer.OverwriteIfExists)
 				if err != nil {
 					mu.Lock()
 					diags = append(diags, diag.Diagnostic{

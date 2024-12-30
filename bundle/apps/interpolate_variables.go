@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
@@ -19,19 +20,9 @@ func (i *interpolateVariables) Apply(ctx context.Context, b *bundle.Bundle) diag
 		dyn.Key("config"),
 	)
 
-	tfToConfigMap := map[string]string{
-		"databricks_pipeline":          "pipelines",
-		"databricks_job":               "jobs",
-		"databricks_mlflow_model":      "models",
-		"databricks_mlflow_experiment": "experiments",
-		"databricks_model_serving":     "model_serving_endpoints",
-		"databricks_registered_model":  "registered_models",
-		"databricks_quality_monitor":   "quality_monitors",
-		"databricks_schema":            "schemas",
-		"databricks_volume":            "volumes",
-		"databricks_cluster":           "clusters",
-		"databricks_dashboard":         "dashboards",
-		"databricks_app":               "apps",
+	tfToConfigMap := map[string]string{}
+	for k, r := range config.SupportedResources() {
+		tfToConfigMap[r.TerraformResourceName] = k
 	}
 
 	err := b.Config.Mutate(func(root dyn.Value) (dyn.Value, error) {
