@@ -7,7 +7,7 @@ import (
 )
 
 // TestMain is the entrypoint executed by the test runner.
-// See [internal.Main] for prerequisites for running integration tests.
+// See [internal.WorkspaceMain] for prerequisites for running integration tests.
 func TestMain(m *testing.M) {
-	internal.Main(m)
+	internal.WorkspaceMain(m)
 }

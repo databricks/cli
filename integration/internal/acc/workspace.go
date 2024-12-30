@@ -21,19 +21,13 @@ type WorkspaceT struct {
 }
 
 func WorkspaceTest(t testutil.TestingT) (context.Context, *WorkspaceT) {
-	loadDebugEnvIfRunFromIDE(t, "workspace")
-
-	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
 	wt := &WorkspaceT{
 		TestingT: t,
-
-		W: w,
-
-		ctx: context.Background(),
+		W:        w,
+		ctx:      context.Background(),
 	}
 
 	return wt.ctx, wt
@@ -41,10 +35,6 @@ func WorkspaceTest(t testutil.TestingT) (context.Context, *WorkspaceT) {
 
 // Run the workspace test only on UC workspaces.
 func UcWorkspaceTest(t testutil.TestingT) (context.Context, *WorkspaceT) {
-	loadDebugEnvIfRunFromIDE(t, "workspace")
-
-	t.Log(testutil.GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
 	if os.Getenv("TEST_METASTORE_ID") == "" {
 		t.Skipf("Skipping on non-UC workspaces")
 	}
@@ -57,10 +47,8 @@ func UcWorkspaceTest(t testutil.TestingT) (context.Context, *WorkspaceT) {
 
 	wt := &WorkspaceT{
 		TestingT: t,
-
-		W: w,
-
-		ctx: context.Background(),
+		W:        w,
+		ctx:      context.Background(),
 	}
 
 	return wt.ctx, wt
