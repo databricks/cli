@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/diag"
@@ -17,7 +18,56 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestVali
+func TestValidateArtifactPathWithVolumeInBundle(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Workspace: config.Workspace{
+				ArtifactPath: "/Volumes/catalogN/schemaN/volumeN/abc",
+			},
+			Resources: config.Resources{
+				Volumes: map[string]*resources.Volume{
+					"foo": {
+						CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+							CatalogName: "catalogN",
+							Name:        "volumeN",
+							VolumeType:  "MANAGED",
+							SchemaName:  "schemaN",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	bundletest.SetLocation(b, "workspace.artifact_path", []dyn.Location{{File: "file", Line: 1, Column: 1}})
+	bundletest.SetLocation(b, "resources.volumes.foo", []dyn.Location{{File: "file", Line: 2, Column: 2}})
+
+	ctx := context.Background()
+	m := mocks.NewMockWorkspaceClient(t)
+	api := m.GetMockGrantsAPI()
+	api.EXPECT().GetEffectiveBySecurableTypeAndFullName(mock.Anything, catalog.SecurableTypeVolume, "catalogN.schemaN.volumeN").Return(nil, &apierr.APIError{
+		StatusCode: 404,
+	})
+	b.SetWorkpaceClient(m.WorkspaceClient)
+
+	diags := bundle.ApplyReadOnly(ctx, bundle.ReadOnly(b), validate.ValidateArtifactPath())
+	assert.Equal(t, diag.Diagnostics{{
+		Severity: diag.Error,
+		Summary:  "volume catalogN.schemaN.volumeN does not exist",
+		Locations: []dyn.Location{
+			{File: "file", Line: 1, Column: 1},
+			{File: "file", Line: 2, Column: 2},
+		},
+		Paths: []dyn.Path{
+			dyn.MustPathFromString("workspace.artifact_path"),
+			dyn.MustPathFromString("resources.volumes.foo"),
+		},
+		Detail: `You are using a volume in your artifact_path that is managed by
+this bundle but which has not been deployed yet. Please first deploy
+the volume using 'bundle deploy' and then switch over to using it in
+the artifact_path.`,
+	}}, diags)
+}
 
 func TestValidateArtifactPath(t *testing.T) {
 	b := &bundle.Bundle{

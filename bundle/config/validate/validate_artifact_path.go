@@ -26,7 +26,6 @@ func (v *validateArtifactPath) Name() string {
 
 func (v *validateArtifactPath) Apply(ctx context.Context, rb bundle.ReadOnlyBundle) diag.Diagnostics {
 	// We only validate UC Volumes paths right now.
-	// TODO?
 	if !libraries.IsVolumesPath(rb.Config().Workspace.ArtifactPath) {
 		return nil
 	}
