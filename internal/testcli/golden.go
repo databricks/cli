@@ -25,5 +25,5 @@ func AssertOutput(t testutil.TestingT, ctx context.Context, args []string, expec
 
 func AssertOutputJQ(t testutil.TestingT, ctx context.Context, args []string, expectedPath string, ignorePaths []string) {
 	out := captureOutput(t, ctx, args)
-	testdiff.AssertOutputJQ(t, ctx, fmt.Sprintf("Output from %v", args), out, expectedPath, ignorePaths)
+	testdiff.AssertOutputJQ(t, ctx, out, fmt.Sprintf("Output from %v", args), expectedPath, ignorePaths)
 }
