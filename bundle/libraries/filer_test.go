@@ -7,10 +7,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/filer"
-	sdkconfig "github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -38,11 +35,6 @@ func TestGetFilerForLibrariesValidUcVolume(t *testing.T) {
 			},
 		},
 	}
-
-	m := mocks.NewMockWorkspaceClient(t)
-	m.WorkspaceClient.Config = &sdkconfig.Config{}
-	m.GetMockFilesAPI().EXPECT().GetDirectoryMetadataByDirectoryPath(mock.Anything, "/Volumes/main/my_schema/my_volume").Return(nil)
-	b.SetWorkpaceClient(m.WorkspaceClient)
 
 	client, uploadPath, diags := GetFilerForLibraries(context.Background(), b)
 	require.NoError(t, diags.Error())
