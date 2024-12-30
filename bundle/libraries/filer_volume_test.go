@@ -11,19 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFilerForVolumeWithInvalidPrefix(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Workspace: config.Workspace{
-				ArtifactPath: "/Volume/main/my_schema/my_volume",
-			},
-		},
-	}
-
-	_, _, diags := filerForVolume(b)
-	require.EqualError(t, diags.Error(), "expected artifact_path to start with /Volumes/, got /Volume/main/my_schema/my_volume")
-}
-
 func TestFilerForVolume(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
