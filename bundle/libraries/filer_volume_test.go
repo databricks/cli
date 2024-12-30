@@ -38,7 +38,7 @@ func TestFilerForVolumeForErrorFromAPI(t *testing.T) {
 	m.GetMockFilesAPI().EXPECT().GetDirectoryMetadataByDirectoryPath(mock.Anything, "/Volumes/main/my_schema/my_volume").Return(fmt.Errorf("error from API"))
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
-	_, _, diags := filerForVolume(context.Background(), b)
+	_, _, diags := filerForVolume(b)
 	assert.Equal(t, diag.Diagnostics{
 		{
 			Severity:  diag.Error,
@@ -65,7 +65,7 @@ func TestFilerForVolumeWithVolumeNotFound(t *testing.T) {
 	m.GetMockFilesAPI().EXPECT().GetDirectoryMetadataByDirectoryPath(mock.Anything, "/Volumes/main/my_schema/doesnotexist").Return(apierr.NotFound("some error message"))
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
-	_, _, diags := filerForVolume(context.Background(), b)
+	_, _, diags := filerForVolume(b)
 	assert.Equal(t, diag.Diagnostics{
 		{
 			Severity:  diag.Error,
@@ -129,7 +129,7 @@ func TestFilerForVolumeWithInvalidPrefix(t *testing.T) {
 		},
 	}
 
-	_, _, diags := filerForVolume(context.Background(), b)
+	_, _, diags := filerForVolume(b)
 	require.EqualError(t, diags.Error(), "expected artifact_path to start with /Volumes/, got /Volume/main/my_schema/my_volume")
 }
 
@@ -155,7 +155,7 @@ func TestFilerForVolumeWithValidVolumePaths(t *testing.T) {
 		m.GetMockFilesAPI().EXPECT().GetDirectoryMetadataByDirectoryPath(mock.Anything, "/Volumes/main/my_schema/my_volume").Return(nil)
 		b.SetWorkpaceClient(m.WorkspaceClient)
 
-		client, uploadPath, diags := filerForVolume(context.Background(), b)
+		client, uploadPath, diags := filerForVolume(b)
 		require.NoError(t, diags.Error())
 		assert.Equal(t, path.Join(p, ".internal"), uploadPath)
 		assert.IsType(t, &filer.FilesClient{}, client)

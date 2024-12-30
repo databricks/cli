@@ -1,7 +1,6 @@
 package libraries
 
 import (
-	"context"
 	"path"
 
 	"github.com/databricks/cli/bundle"
@@ -9,7 +8,7 @@ import (
 	"github.com/databricks/cli/libs/filer"
 )
 
-func filerForVolume(ctx context.Context, b *bundle.Bundle) (filer.Filer, string, diag.Diagnostics) {
+func filerForVolume(b *bundle.Bundle) (filer.Filer, string, diag.Diagnostics) {
 	w := b.WorkspaceClient()
 	uploadPath := path.Join(b.Config.Workspace.ArtifactPath, InternalDirName)
 	f, err := filer.NewFilesClient(w, uploadPath)
