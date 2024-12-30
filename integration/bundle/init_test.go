@@ -246,7 +246,7 @@ func TestBundleInitTelemetryForCustomTemplates(t *testing.T) {
 	require.Equal(t, 1, len(logs))
 	event := logs[0].Entry.DatabricksCliLog.BundleInitEvent
 	assert.Equal(t, event.TemplateName, "custom")
-	assert.Nil(t, event.TemplateEnumArgs)
+	assert.Empty(t, event.TemplateEnumArgs)
 
 	// Ensure that the UUID returned by the `bundle_uuid` helper is the same UUID
 	// that's logged in the telemetry event.
