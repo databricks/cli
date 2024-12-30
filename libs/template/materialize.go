@@ -124,9 +124,7 @@ func (t *Template) logTelemetry(ctx context.Context) error {
 		},
 	}
 
-	return telemetry.Log(ctx, telemetry.FrontendLogEntry{
-		DatabricksCliLog: event,
-	})
+	return telemetry.Log(ctx, event)
 }
 
 // This function materializes the input templates as a project, using user defined

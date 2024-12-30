@@ -33,23 +33,19 @@ func (wrapper *apiClientWrapper) Do(ctx context.Context, method, path string,
 }
 
 func TestTelemetryLogger(t *testing.T) {
-	events := []telemetry.FrontendLogEntry{
+	events := []telemetry.DatabricksCliLog{
 		{
-			DatabricksCliLog: telemetry.DatabricksCliLog{
-				CliTestEvent: &events.CliTestEvent{
-					Name: events.DummyCliEnumValue1,
-				},
+			CliTestEvent: &events.CliTestEvent{
+				Name: events.DummyCliEnumValue1,
 			},
 		},
 		{
-			DatabricksCliLog: telemetry.DatabricksCliLog{
-				BundleInitEvent: &events.BundleInitEvent{
-					Uuid:         uuid.New().String(),
-					TemplateName: "abc",
-					TemplateEnumArgs: map[string]string{
-						"a": "b",
-						"c": "d",
-					},
+			BundleInitEvent: &events.BundleInitEvent{
+				Uuid:         uuid.New().String(),
+				TemplateName: "abc",
+				TemplateEnumArgs: map[string]string{
+					"a": "b",
+					"c": "d",
 				},
 			},
 		},

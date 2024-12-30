@@ -18,14 +18,16 @@ type DatabricksApiClient interface {
 		visitors ...func(*http.Request) error) error
 }
 
-func Log(ctx context.Context, event FrontendLogEntry) error {
+func Log(ctx context.Context, event DatabricksCliLog) error {
 	l := fromContext(ctx)
 
 	FrontendLog := FrontendLog{
 		// The telemetry endpoint deduplicates logs based on the FrontendLogEventID.
 		// This it's important to generate a unique ID for each log event.
 		FrontendLogEventID: uuid.New().String(),
-		Entry:              event,
+		Entry: FrontendLogEntry{
+			DatabricksCliLog: event,
+		},
 	}
 
 	protoLog, err := json.Marshal(FrontendLog)

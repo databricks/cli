@@ -68,9 +68,9 @@ func TestTelemetryLoggerFlushesEvents(t *testing.T) {
 	ctx := ContextWithLogger(context.Background())
 
 	for _, v := range []events.DummyCliEnum{events.DummyCliEnumValue1, events.DummyCliEnumValue2, events.DummyCliEnumValue2, events.DummyCliEnumValue3} {
-		err := Log(ctx, FrontendLogEntry{DatabricksCliLog: DatabricksCliLog{
+		err := Log(ctx, DatabricksCliLog{
 			CliTestEvent: &events.CliTestEvent{Name: v},
-		}})
+		})
 		require.NoError(t, err)
 	}
 
@@ -102,9 +102,9 @@ func TestTelemetryLoggerFlushExitsOnTimeout(t *testing.T) {
 	ctx := ContextWithLogger(context.Background())
 
 	for _, v := range []events.DummyCliEnum{events.DummyCliEnumValue1, events.DummyCliEnumValue2, events.DummyCliEnumValue2, events.DummyCliEnumValue3} {
-		err := Log(ctx, FrontendLogEntry{DatabricksCliLog: DatabricksCliLog{
+		err := Log(ctx, DatabricksCliLog{
 			CliTestEvent: &events.CliTestEvent{Name: v},
-		}})
+		})
 		require.NoError(t, err)
 	}
 
