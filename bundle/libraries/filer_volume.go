@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"path"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -13,31 +12,6 @@ import (
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/filer"
 )
-
-func ExtractVolumeFromPath(artifactPath string) (string, string, string, error) {
-	if !IsVolumesPath(artifactPath) {
-		return "", "", "", fmt.Errorf("expected artifact_path to start with /Volumes/, got %s", artifactPath)
-	}
-
-	parts := strings.Split(artifactPath, "/")
-	volumeFormatErr := fmt.Errorf("expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got %s", artifactPath)
-
-	// Incorrect format.
-	if len(parts) < 5 {
-		return "", "", "", volumeFormatErr
-	}
-
-	catalogName := parts[2]
-	schemaName := parts[3]
-	volumeName := parts[4]
-
-	// Incorrect format.
-	if catalogName == "" || schemaName == "" || volumeName == "" {
-		return "", "", "", volumeFormatErr
-	}
-
-	return catalogName, schemaName, volumeName, nil
-}
 
 func filerForVolume(ctx context.Context, b *bundle.Bundle) (filer.Filer, string, diag.Diagnostics) {
 	w := b.WorkspaceClient()

@@ -1,13 +1,13 @@
-package validate_test
+package validate
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValidateArtifactPathWithVolumeInBundle(t *testing.T) {
@@ -50,7 +51,7 @@ func TestValidateArtifactPathWithVolumeInBundle(t *testing.T) {
 	})
 	b.SetWorkpaceClient(m.WorkspaceClient)
 
-	diags := bundle.ApplyReadOnly(ctx, bundle.ReadOnly(b), validate.ValidateArtifactPath())
+	diags := bundle.ApplyReadOnly(ctx, bundle.ReadOnly(b), ValidateArtifactPath())
 	assert.Equal(t, diag.Diagnostics{{
 		Severity: diag.Error,
 		Summary:  "volume catalogN.schemaN.volumeN does not exist",
@@ -149,11 +150,60 @@ func TestValidateArtifactPath(t *testing.T) {
 		api.EXPECT().GetEffectiveBySecurableTypeAndFullName(mock.Anything, catalog.SecurableTypeVolume, "catalogN.schemaN.volumeN").Return(tc.permissions, tc.err)
 		b.SetWorkpaceClient(m.WorkspaceClient)
 
-		diags := bundle.ApplyReadOnly(ctx, rb, validate.ValidateArtifactPath())
+		diags := bundle.ApplyReadOnly(ctx, rb, ValidateArtifactPath())
 		if tc.expectedSummary != "" {
 			assertDiags(t, diags, tc.expectedSummary)
 		} else {
 			assert.Len(t, diags, 0)
 		}
+	}
+}
+
+func invalidVolumePaths() []string {
+	return []string{
+		"/Volumes/",
+		"/Volumes/main",
+		"/Volumes/main/",
+		"/Volumes/main//",
+		"/Volumes/main//my_schema",
+		"/Volumes/main/my_schema",
+		"/Volumes/main/my_schema/",
+		"/Volumes/main/my_schema//",
+		"/Volumes//my_schema/my_volume",
+	}
+}
+
+func TestExtractVolumeFromPath(t *testing.T) {
+	catalogName, schemaName, volumeName, err := extractVolumeFromPath("/Volumes/main/my_schema/my_volume")
+	require.NoError(t, err)
+	assert.Equal(t, "main", catalogName)
+	assert.Equal(t, "my_schema", schemaName)
+	assert.Equal(t, "my_volume", volumeName)
+
+	for _, p := range invalidVolumePaths() {
+		_, _, _, err := extractVolumeFromPath(p)
+		assert.EqualError(t, err, fmt.Sprintf("expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got %s", p))
+	}
+}
+
+func TestValidateArtifactPathWithInvalidPaths(t *testing.T) {
+	for _, p := range invalidVolumePaths() {
+		b := &bundle.Bundle{
+			Config: config.Root{
+				Workspace: config.Workspace{
+					ArtifactPath: p,
+				},
+			},
+		}
+
+		bundletest.SetLocation(b, "workspace.artifact_path", []dyn.Location{{File: "config.yml", Line: 1, Column: 2}})
+
+		diags := bundle.ApplyReadOnly(context.Background(), bundle.ReadOnly(b), ValidateArtifactPath())
+		require.Equal(t, diags, diag.Diagnostics{{
+			Severity:  diag.Error,
+			Summary:   fmt.Sprintf("expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got %s", p),
+			Locations: []dyn.Location{{File: "config.yml", Line: 1, Column: 2}},
+			Paths:     []dyn.Path{dyn.MustPathFromString("workspace.artifact_path")},
+		}})
 	}
 }

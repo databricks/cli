@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/libraries"
@@ -24,19 +25,36 @@ func (v *validateArtifactPath) Name() string {
 	return "validate:artifact_paths"
 }
 
+func extractVolumeFromPath(artifactPath string) (string, string, string, error) {
+	if !libraries.IsVolumesPath(artifactPath) {
+		return "", "", "", fmt.Errorf("expected artifact_path to start with /Volumes/, got %s", artifactPath)
+	}
+
+	parts := strings.Split(artifactPath, "/")
+	volumeFormatErr := fmt.Errorf("expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got %s", artifactPath)
+
+	// Incorrect format.
+	if len(parts) < 5 {
+		return "", "", "", volumeFormatErr
+	}
+
+	catalogName := parts[2]
+	schemaName := parts[3]
+	volumeName := parts[4]
+
+	// Incorrect format.
+	if catalogName == "" || schemaName == "" || volumeName == "" {
+		return "", "", "", volumeFormatErr
+	}
+
+	return catalogName, schemaName, volumeName, nil
+}
+
 func (v *validateArtifactPath) Apply(ctx context.Context, rb bundle.ReadOnlyBundle) diag.Diagnostics {
 	// We only validate UC Volumes paths right now.
 	if !libraries.IsVolumesPath(rb.Config().Workspace.ArtifactPath) {
 		return nil
 	}
-
-	catalogName, schemaName, volumeName, err := libraries.ExtractVolumeFromPath(rb.Config().Workspace.ArtifactPath)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	volumeFullName := fmt.Sprintf("%s.%s.%s", catalogName, schemaName, volumeName)
-	w := rb.WorkspaceClient()
-	p, err := w.Grants.GetEffectiveBySecurableTypeAndFullName(ctx, catalog.SecurableTypeVolume, volumeFullName)
 
 	wrapErrorMsg := func(s string) diag.Diagnostics {
 		return diag.Diagnostics{
@@ -48,6 +66,15 @@ func (v *validateArtifactPath) Apply(ctx context.Context, rb bundle.ReadOnlyBund
 			},
 		}
 	}
+
+	catalogName, schemaName, volumeName, err := extractVolumeFromPath(rb.Config().Workspace.ArtifactPath)
+	if err != nil {
+		return wrapErrorMsg(err.Error())
+	}
+	volumeFullName := fmt.Sprintf("%s.%s.%s", catalogName, schemaName, volumeName)
+	w := rb.WorkspaceClient()
+	p, err := w.Grants.GetEffectiveBySecurableTypeAndFullName(ctx, catalog.SecurableTypeVolume, volumeFullName)
+
 	if errors.Is(err, apierr.ErrPermissionDenied) {
 		return wrapErrorMsg(fmt.Sprintf("cannot access volume %s: %s", volumeFullName, err))
 	}

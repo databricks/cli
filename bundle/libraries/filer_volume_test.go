@@ -185,42 +185,6 @@ the artifact_path.`,
 	}, diags)
 }
 
-func invalidVolumePaths() []string {
-	return []string{
-		"/Volumes/",
-		"/Volumes/main",
-		"/Volumes/main/",
-		"/Volumes/main//",
-		"/Volumes/main//my_schema",
-		"/Volumes/main/my_schema",
-		"/Volumes/main/my_schema/",
-		"/Volumes/main/my_schema//",
-		"/Volumes//my_schema/my_volume",
-	}
-}
-
-func TestFilerForVolumeWithInvalidVolumePaths(t *testing.T) {
-	for _, p := range invalidVolumePaths() {
-		b := &bundle.Bundle{
-			Config: config.Root{
-				Workspace: config.Workspace{
-					ArtifactPath: p,
-				},
-			},
-		}
-
-		bundletest.SetLocation(b, "workspace.artifact_path", []dyn.Location{{File: "config.yml", Line: 1, Column: 2}})
-
-		_, _, diags := GetFilerForLibraries(context.Background(), b)
-		require.Equal(t, diags, diag.Diagnostics{{
-			Severity:  diag.Error,
-			Summary:   fmt.Sprintf("expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got %s", p),
-			Locations: []dyn.Location{{File: "config.yml", Line: 1, Column: 2}},
-			Paths:     []dyn.Path{dyn.MustPathFromString("workspace.artifact_path")},
-		}})
-	}
-}
-
 func TestFilerForVolumeWithInvalidPrefix(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
@@ -260,18 +224,5 @@ func TestFilerForVolumeWithValidVolumePaths(t *testing.T) {
 		require.NoError(t, diags.Error())
 		assert.Equal(t, path.Join(p, ".internal"), uploadPath)
 		assert.IsType(t, &filer.FilesClient{}, client)
-	}
-}
-
-func TestExtractVolumeFromPath(t *testing.T) {
-	catalogName, schemaName, volumeName, err := ExtractVolumeFromPath("/Volumes/main/my_schema/my_volume")
-	require.NoError(t, err)
-	assert.Equal(t, "main", catalogName)
-	assert.Equal(t, "my_schema", schemaName)
-	assert.Equal(t, "my_volume", volumeName)
-
-	for _, p := range invalidVolumePaths() {
-		_, _, _, err := ExtractVolumeFromPath(p)
-		assert.EqualError(t, err, fmt.Sprintf("expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got %s", p))
 	}
 }
