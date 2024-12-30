@@ -124,7 +124,8 @@ func (t *Template) logTelemetry(ctx context.Context) error {
 		},
 	}
 
-	return telemetry.Log(ctx, event)
+	telemetry.Log(ctx, event)
+	return nil
 }
 
 // This function materializes the input templates as a project, using user defined

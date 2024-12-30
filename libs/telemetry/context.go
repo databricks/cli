@@ -18,7 +18,7 @@ func ContextWithLogger(ctx context.Context) context.Context {
 		return ctx
 	}
 
-	return context.WithValue(ctx, telemetryLoggerKey, &logger{protoLogs: []string{}})
+	return context.WithValue(ctx, telemetryLoggerKey, &logger{logs: []FrontendLog{}})
 }
 
 func fromContext(ctx context.Context) *logger {

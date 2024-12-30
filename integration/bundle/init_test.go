@@ -69,7 +69,7 @@ func TestBundleInitOnMlopsStacks(t *testing.T) {
 	testcli.RequireSuccessfulRun(t, ctx, "bundle", "init", "mlops-stacks", "--output-dir", tmpDir2, "--config-file", filepath.Join(tmpDir1, "config.json"))
 
 	// Assert the telemetry payload is correctly logged.
-	logs, err := telemetry.GetLogs(ctx)
+	logs := telemetry.GetLogs(ctx)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(logs))
 	event := logs[0].Entry.DatabricksCliLog.BundleInitEvent
@@ -186,7 +186,7 @@ func TestBundleInitTelemetryForDefaultTemplates(t *testing.T) {
 		assert.DirExists(t, filepath.Join(tmpDir2, tc.args["project_name"]))
 
 		// Assert the telemetry payload is correctly logged.
-		logs, err := telemetry.GetLogs(ctx)
+		logs := telemetry.GetLogs(ctx)
 		require.NoError(t, err)
 		require.Equal(t, 1, len(logs))
 		event := logs[0].Entry.DatabricksCliLog.BundleInitEvent
@@ -241,7 +241,7 @@ func TestBundleInitTelemetryForCustomTemplates(t *testing.T) {
 
 	// Assert the telemetry payload is correctly logged. For custom templates we should
 	// never set template_enum_args.
-	logs, err := telemetry.GetLogs(ctx)
+	logs := telemetry.GetLogs(ctx)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(logs))
 	event := logs[0].Entry.DatabricksCliLog.BundleInitEvent

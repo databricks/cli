@@ -3,7 +3,6 @@ package telemetry
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -18,46 +17,28 @@ type DatabricksApiClient interface {
 		visitors ...func(*http.Request) error) error
 }
 
-func Log(ctx context.Context, event DatabricksCliLog) error {
+func Log(ctx context.Context, event DatabricksCliLog) {
 	l := fromContext(ctx)
 
-	FrontendLog := FrontendLog{
+	l.logs = append(l.logs, FrontendLog{
 		// The telemetry endpoint deduplicates logs based on the FrontendLogEventID.
 		// This it's important to generate a unique ID for each log event.
 		FrontendLogEventID: uuid.New().String(),
 		Entry: FrontendLogEntry{
 			DatabricksCliLog: event,
 		},
-	}
-
-	protoLog, err := json.Marshal(FrontendLog)
-	if err != nil {
-		return fmt.Errorf("error marshalling the telemetry event: %v", err)
-	}
-
-	l.protoLogs = append(l.protoLogs, string(protoLog))
-	return nil
+	})
 }
 
 type logger struct {
-	protoLogs []string
+	logs []FrontendLog
 }
 
 // This function is meant to be only to be used in tests to introspect the telemetry logs
 // that have been logged so far.
-func GetLogs(ctx context.Context) ([]FrontendLog, error) {
+func GetLogs(ctx context.Context) []FrontendLog {
 	l := fromContext(ctx)
-	res := []FrontendLog{}
-
-	for _, log := range l.protoLogs {
-		frontendLog := FrontendLog{}
-		err := json.Unmarshal([]byte(log), &frontendLog)
-		if err != nil {
-			return nil, fmt.Errorf("error unmarshalling the telemetry event: %v", err)
-		}
-		res = append(res, frontendLog)
-	}
-	return res, nil
+	return l.logs
 }
 
 // Maximum additional time to wait for the telemetry event to flush. We expect the flush
@@ -75,9 +56,20 @@ func Flush(ctx context.Context, apiClient DatabricksApiClient) {
 	defer cancel()
 	l := fromContext(ctx)
 
-	if len(l.protoLogs) == 0 {
+	if len(l.logs) == 0 {
 		log.Debugf(ctx, "No telemetry events to flush")
 		return
+	}
+
+	var protoLogs []string
+	for _, event := range l.logs {
+		s, err := json.Marshal(event)
+		if err != nil {
+			log.Debugf(ctx, "Error marshalling the telemetry event %v: %v", event, err)
+			continue
+		}
+
+		protoLogs = append(protoLogs, string(s))
 	}
 
 	resp := &ResponseBody{}
@@ -93,7 +85,7 @@ func Flush(ctx context.Context, apiClient DatabricksApiClient) {
 		// Log the CLI telemetry events.
 		err := apiClient.Do(ctx, http.MethodPost, "/telemetry-ext", nil, RequestBody{
 			UploadTime: time.Now().Unix(),
-			ProtoLogs:  l.protoLogs,
+			ProtoLogs:  protoLogs,
 
 			// A bug in the telemetry API requires us to send an empty items array.
 			// Otherwise we get an opaque 500 internal server error.
@@ -110,7 +102,7 @@ func Flush(ctx context.Context, apiClient DatabricksApiClient) {
 		//
 		// Note: This will result in server side duplications but that's fine since
 		// we can always deduplicate in the data pipeline itself.
-		if len(l.protoLogs) > int(resp.NumProtoSuccess) {
+		if len(l.logs) > int(resp.NumProtoSuccess) {
 			log.Debugf(ctx, "Not all logs were successfully sent. Retrying...")
 			continue
 		}

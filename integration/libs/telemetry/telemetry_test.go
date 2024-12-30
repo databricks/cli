@@ -64,8 +64,7 @@ func TestTelemetryLogger(t *testing.T) {
 	})
 
 	for _, event := range events {
-		err := telemetry.Log(ctx, event)
-		require.NoError(t, err)
+		telemetry.Log(ctx, event)
 	}
 
 	apiClient, err := client.New(w.W.Config)

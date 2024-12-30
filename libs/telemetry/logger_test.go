@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/cli/libs/telemetry/events"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 type mockDatabricksClient struct {
@@ -68,10 +67,9 @@ func TestTelemetryLoggerFlushesEvents(t *testing.T) {
 	ctx := ContextWithLogger(context.Background())
 
 	for _, v := range []events.DummyCliEnum{events.DummyCliEnumValue1, events.DummyCliEnumValue2, events.DummyCliEnumValue2, events.DummyCliEnumValue3} {
-		err := Log(ctx, DatabricksCliLog{
+		Log(ctx, DatabricksCliLog{
 			CliTestEvent: &events.CliTestEvent{Name: v},
 		})
-		require.NoError(t, err)
 	}
 
 	// Flush the events.
@@ -102,10 +100,9 @@ func TestTelemetryLoggerFlushExitsOnTimeout(t *testing.T) {
 	ctx := ContextWithLogger(context.Background())
 
 	for _, v := range []events.DummyCliEnum{events.DummyCliEnumValue1, events.DummyCliEnumValue2, events.DummyCliEnumValue2, events.DummyCliEnumValue3} {
-		err := Log(ctx, DatabricksCliLog{
+		Log(ctx, DatabricksCliLog{
 			CliTestEvent: &events.CliTestEvent{Name: v},
 		})
-		require.NoError(t, err)
 	}
 
 	// Flush the events.
