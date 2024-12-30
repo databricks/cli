@@ -28,8 +28,31 @@ type Experimental struct {
 	//
 	// PyDABs allows to define bundle configuration using Python.
 	PyDABs PyDABs `json:"pydabs,omitempty"`
+
+	// Python configures loading of Python code defined with 'databricks-bundles' package.
+	Python Python `json:"python,omitempty"`
 }
 
+type Python struct {
+	// Resources contains a list of fully qualified function paths to load resources
+	// defined in Python code.
+	//
+	// Example: ["my_project.resources:load_resources"]
+	Resources []string `json:"resources"`
+
+	// Mutators contains a list of fully qualified function paths to mutator functions.
+	//
+	// Example: ["my_project.mutators:add_default_cluster"]
+	Mutators []string `json:"mutators"`
+
+	// VEnvPath is path to the virtual environment.
+	//
+	// If enabled, Python code will execute within this environment. If disabled,
+	// it defaults to using the Python interpreter available in the current shell.
+	VEnvPath string `json:"venv_path,omitempty"`
+}
+
+// PyDABs is deprecated use Python instead
 type PyDABs struct {
 	// Enabled is a flag to enable the feature.
 	Enabled bool `json:"enabled,omitempty"`

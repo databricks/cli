@@ -55,6 +55,8 @@ func Initialize() bundle.Mutator {
 			// ResolveVariableReferencesInComplexVariables and ResolveVariableReferences.
 			// See what is expected in PythonMutatorPhaseInit doc
 			pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseInit),
+			pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseLoadResources),
+			pythonmutator.PythonMutator(pythonmutator.PythonMutatorPhaseApplyMutators),
 			mutator.ResolveVariableReferencesInLookup(),
 			mutator.ResolveResourceReferences(),
 			mutator.ResolveVariableReferencesInComplexVariables(),
