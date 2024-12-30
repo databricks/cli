@@ -1100,6 +1100,9 @@
                       "description": "The PyDABs configuration.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.PyDABs"
                     },
+                    "python": {
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Python"
+                    },
                     "python_wheel_wrapper": {
                       "description": "Whether to use a Python wheel wrapper",
                       "$ref": "#/$defs/bool"
@@ -1227,6 +1230,33 @@
                     }
                   },
                   "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "config.Python": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "mutators": {
+                      "$ref": "#/$defs/slice/string"
+                    },
+                    "resources": {
+                      "$ref": "#/$defs/slice/string"
+                    },
+                    "venv_path": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "resources",
+                    "mutators"
+                  ]
                 },
                 {
                   "type": "string",
