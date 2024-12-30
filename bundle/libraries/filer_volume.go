@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
@@ -15,7 +16,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
-func extractVolumeFromPath(artifactPath string) (string, string, string, error) {
+func ExtractVolumeFromPath(artifactPath string) (string, string, string, error) {
 	if !IsVolumesPath(artifactPath) {
 		return "", "", "", fmt.Errorf("expected artifact_path to start with /Volumes/, got %s", artifactPath)
 	}
@@ -55,7 +56,7 @@ func filerForVolume(ctx context.Context, b *bundle.Bundle) (filer.Filer, string,
 	artifactPath := b.Config.Workspace.ArtifactPath
 	w := b.WorkspaceClient()
 
-	catalogName, schemaName, volumeName, err := extractVolumeFromPath(artifactPath)
+	catalogName, schemaName, volumeName, err := ExtractVolumeFromPath(artifactPath)
 	if err != nil {
 		return nil, "", diag.Diagnostics{
 			{
@@ -68,8 +69,8 @@ func filerForVolume(ctx context.Context, b *bundle.Bundle) (filer.Filer, string,
 	}
 
 	// Check if the UC volume exists in the workspace.
-	volumePath := fmt.Sprintf("/Volumes/%s/%s/%s", catalogName, schemaName, volumeName)
-	err = w.Files.GetDirectoryMetadataByDirectoryPath(ctx, volumePath)
+	volumeFullName := fmt.Sprintf("%s.%s.%s", catalogName, schemaName, volumeName)
+	_, err = w.Volumes.ReadByName(ctx, volumeName)
 
 	// If the volume exists already, directly return the filer for the path to
 	// upload the artifacts to.
@@ -81,19 +82,24 @@ func filerForVolume(ctx context.Context, b *bundle.Bundle) (filer.Filer, string,
 
 	baseErr := diag.Diagnostic{
 		Severity:  diag.Error,
-		Summary:   fmt.Sprintf("unable to determine if volume at %s exists: %s", volumePath, err),
+		Summary:   fmt.Sprintf("unable to determine if volume at %s exists: %s", volumeFullName, err),
 		Locations: b.Config.GetLocations("workspace.artifact_path"),
 		Paths:     []dyn.Path{dyn.MustPathFromString("workspace.artifact_path")},
 	}
 
+	if errors.Is(err, apierr.ErrPermissionDenied) {
+		// If the API returned a 403, the user does not have permission to access the volume.
+		// Modify the error message to provide more context.
+		baseErr.Summary = fmt.Sprintf("cannot access volume %s: %s", volumeFullName, err)
+	}
 	if errors.Is(err, apierr.ErrNotFound) {
 		// Since the API returned a 404, the volume does not exist.
 		// Modify the error message to provide more context.
-		baseErr.Summary = fmt.Sprintf("volume %s does not exist: %s", volumePath, err)
+		baseErr.Summary = fmt.Sprintf("volume %s does not exist", volumeFullName)
 
 		// If the volume is defined in the bundle, provide a more helpful error diagnostic,
 		// with more details and location information.
-		path, locations, ok := findVolumeInBundle(b, catalogName, schemaName, volumeName)
+		path, locations, ok := FindVolumeInBundle(b.Config, catalogName, schemaName, volumeName)
 		if !ok {
 			return nil, "", diag.Diagnostics{baseErr}
 		}
@@ -108,8 +114,8 @@ the artifact_path.`
 	return nil, "", diag.Diagnostics{baseErr}
 }
 
-func findVolumeInBundle(b *bundle.Bundle, catalogName, schemaName, volumeName string) (dyn.Path, []dyn.Location, bool) {
-	volumes := b.Config.Resources.Volumes
+func FindVolumeInBundle(r config.Root, catalogName, schemaName, volumeName string) (dyn.Path, []dyn.Location, bool) {
+	volumes := r.Resources.Volumes
 	for k, v := range volumes {
 		if v.CatalogName != catalogName || v.Name != volumeName {
 			continue
@@ -126,7 +132,7 @@ func findVolumeInBundle(b *bundle.Bundle, catalogName, schemaName, volumeName st
 			continue
 		}
 		pathString := fmt.Sprintf("resources.volumes.%s", k)
-		return dyn.MustPathFromString(pathString), b.Config.GetLocations(pathString), true
+		return dyn.MustPathFromString(pathString), r.GetLocations(pathString), true
 	}
 	return nil, nil, false
 }

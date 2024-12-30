@@ -48,7 +48,7 @@ func TestFindVolumeInBundle(t *testing.T) {
 	})
 
 	// volume is in DAB.
-	path, locations, ok := findVolumeInBundle(b, "main", "my_schema", "my_volume")
+	path, locations, ok := FindVolumeInBundle(b.Config, "main", "my_schema", "my_volume")
 	assert.True(t, ok)
 	assert.Equal(t, []dyn.Location{{
 		File:   "volume.yml",
@@ -58,26 +58,26 @@ func TestFindVolumeInBundle(t *testing.T) {
 	assert.Equal(t, dyn.MustPathFromString("resources.volumes.foo"), path)
 
 	// wrong volume name
-	_, _, ok = findVolumeInBundle(b, "main", "my_schema", "doesnotexist")
+	_, _, ok = FindVolumeInBundle(b.Config, "main", "my_schema", "doesnotexist")
 	assert.False(t, ok)
 
 	// wrong schema name
-	_, _, ok = findVolumeInBundle(b, "main", "doesnotexist", "my_volume")
+	_, _, ok = FindVolumeInBundle(b.Config, "main", "doesnotexist", "my_volume")
 	assert.False(t, ok)
 
 	// wrong catalog name
-	_, _, ok = findVolumeInBundle(b, "doesnotexist", "my_schema", "my_volume")
+	_, _, ok = FindVolumeInBundle(b.Config, "doesnotexist", "my_schema", "my_volume")
 	assert.False(t, ok)
 
 	// schema name is interpolated but does not have the right prefix. In this case
 	// we should not match the volume.
 	b.Config.Resources.Volumes["foo"].SchemaName = "${foo.bar.baz}"
-	_, _, ok = findVolumeInBundle(b, "main", "my_schema", "my_volume")
+	_, _, ok = FindVolumeInBundle(b.Config, "main", "my_schema", "my_volume")
 	assert.False(t, ok)
 
 	// schema name is interpolated.
 	b.Config.Resources.Volumes["foo"].SchemaName = "${resources.schemas.my_schema.name}"
-	path, locations, ok = findVolumeInBundle(b, "main", "valuedoesnotmatter", "my_volume")
+	path, locations, ok = FindVolumeInBundle(b.Config, "main", "valuedoesnotmatter", "my_volume")
 	assert.True(t, ok)
 	assert.Equal(t, []dyn.Location{{
 		File:   "volume.yml",
@@ -264,14 +264,14 @@ func TestFilerForVolumeWithValidVolumePaths(t *testing.T) {
 }
 
 func TestExtractVolumeFromPath(t *testing.T) {
-	catalogName, schemaName, volumeName, err := extractVolumeFromPath("/Volumes/main/my_schema/my_volume")
+	catalogName, schemaName, volumeName, err := ExtractVolumeFromPath("/Volumes/main/my_schema/my_volume")
 	require.NoError(t, err)
 	assert.Equal(t, "main", catalogName)
 	assert.Equal(t, "my_schema", schemaName)
 	assert.Equal(t, "my_volume", volumeName)
 
 	for _, p := range invalidVolumePaths() {
-		_, _, _, err := extractVolumeFromPath(p)
+		_, _, _, err := ExtractVolumeFromPath(p)
 		assert.EqualError(t, err, fmt.Sprintf("expected UC volume path to be in the format /Volumes/<catalog>/<schema>/<volume>/..., got %s", p))
 	}
 }

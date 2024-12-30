@@ -36,6 +36,7 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 		JobTaskClusterSpec(),
 		ValidateFolderPermissions(),
 		SingleNodeCluster(),
+		ValidateArtifactPath(),
 	))
 }
 
