@@ -8,9 +8,11 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -50,6 +52,29 @@ func extractVolumeFromPath(artifactPath string) (string, string, string, error) 
 	return catalogName, schemaName, volumeName, nil
 }
 
+func findVolumeInBundle(r config.Root, catalogName, schemaName, volumeName string) (dyn.Path, []dyn.Location, bool) {
+	volumes := r.Resources.Volumes
+	for k, v := range volumes {
+		if v.CatalogName != catalogName || v.Name != volumeName {
+			continue
+		}
+		// UC schemas can be defined in the bundle itself, and thus might be interpolated
+		// at runtime via the ${resources.schemas.<name>} syntax. Thus we match the volume
+		// definition if the schema name is the same as the one in the bundle, or if the
+		// schema name is interpolated.
+		// We only have to check for ${resources.schemas...} references because any
+		// other valid reference (like ${var.foo}) would have been interpolated by this point.
+		p, ok := dynvar.PureReferenceToPath(v.SchemaName)
+		isSchemaDefinedInBundle := ok && p.HasPrefix(dyn.Path{dyn.Key("resources"), dyn.Key("schemas")})
+		if v.SchemaName != schemaName && !isSchemaDefinedInBundle {
+			continue
+		}
+		pathString := fmt.Sprintf("resources.volumes.%s", k)
+		return dyn.MustPathFromString(pathString), r.GetLocations(pathString), true
+	}
+	return nil, nil, false
+}
+
 func (v *validateArtifactPath) Apply(ctx context.Context, rb bundle.ReadOnlyBundle) diag.Diagnostics {
 	// We only validate UC Volumes paths right now.
 	if !libraries.IsVolumesPath(rb.Config().Workspace.ArtifactPath) {
@@ -79,7 +104,7 @@ func (v *validateArtifactPath) Apply(ctx context.Context, rb bundle.ReadOnlyBund
 		return wrapErrorMsg(fmt.Sprintf("cannot access volume %s: %s", volumeFullName, err))
 	}
 	if errors.Is(err, apierr.ErrNotFound) {
-		path, locations, ok := libraries.FindVolumeInBundle(rb.Config(), catalogName, schemaName, volumeName)
+		path, locations, ok := findVolumeInBundle(rb.Config(), catalogName, schemaName, volumeName)
 		if !ok {
 			return wrapErrorMsg(fmt.Sprintf("volume %s does not exist", volumeFullName))
 		}

@@ -207,3 +207,68 @@ func TestValidateArtifactPathWithInvalidPaths(t *testing.T) {
 		}})
 	}
 }
+
+func TestFindVolumeInBundle(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Volumes: map[string]*resources.Volume{
+					"foo": {
+						CreateVolumeRequestContent: &catalog.CreateVolumeRequestContent{
+							CatalogName: "main",
+							Name:        "my_volume",
+							SchemaName:  "my_schema",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	bundletest.SetLocation(b, "resources.volumes.foo", []dyn.Location{
+		{
+			File:   "volume.yml",
+			Line:   1,
+			Column: 2,
+		},
+	})
+
+	// volume is in DAB.
+	path, locations, ok := findVolumeInBundle(b.Config, "main", "my_schema", "my_volume")
+	assert.True(t, ok)
+	assert.Equal(t, []dyn.Location{{
+		File:   "volume.yml",
+		Line:   1,
+		Column: 2,
+	}}, locations)
+	assert.Equal(t, dyn.MustPathFromString("resources.volumes.foo"), path)
+
+	// wrong volume name
+	_, _, ok = findVolumeInBundle(b.Config, "main", "my_schema", "doesnotexist")
+	assert.False(t, ok)
+
+	// wrong schema name
+	_, _, ok = findVolumeInBundle(b.Config, "main", "doesnotexist", "my_volume")
+	assert.False(t, ok)
+
+	// wrong catalog name
+	_, _, ok = findVolumeInBundle(b.Config, "doesnotexist", "my_schema", "my_volume")
+	assert.False(t, ok)
+
+	// schema name is interpolated but does not have the right prefix. In this case
+	// we should not match the volume.
+	b.Config.Resources.Volumes["foo"].SchemaName = "${foo.bar.baz}"
+	_, _, ok = findVolumeInBundle(b.Config, "main", "my_schema", "my_volume")
+	assert.False(t, ok)
+
+	// schema name is interpolated.
+	b.Config.Resources.Volumes["foo"].SchemaName = "${resources.schemas.my_schema.name}"
+	path, locations, ok = findVolumeInBundle(b.Config, "main", "valuedoesnotmatter", "my_volume")
+	assert.True(t, ok)
+	assert.Equal(t, []dyn.Location{{
+		File:   "volume.yml",
+		Line:   1,
+		Column: 2,
+	}}, locations)
+	assert.Equal(t, dyn.MustPathFromString("resources.volumes.foo"), path)
+}
