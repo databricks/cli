@@ -44,7 +44,7 @@ func GetLogs(ctx context.Context) []FrontendLog {
 // Maximum additional time to wait for the telemetry event to flush. We expect the flush
 // method to be called when the CLI command is about to exist, so this caps the maximum
 // additional time the user will experience because of us logging CLI telemetry.
-var MaxAdditionalWaitTime = 2 * time.Second
+var MaxAdditionalWaitTime = 5 * time.Second
 
 // We make the API call to the /telemetry-ext endpoint to log the CLI telemetry events
 // right about as the CLI command is about to exit. The API endpoint can handle
