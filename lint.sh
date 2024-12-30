@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 # With golangci-lint, if there are any compliation issues, they formatters autofix won't be applied.
 # https://github.com/golangci/golangci-lint/issues/5257
 # However, running goimports first alone will actually fix some of the compilation issues.
