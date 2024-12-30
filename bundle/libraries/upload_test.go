@@ -11,8 +11,6 @@ import (
 	mockfiler "github.com/databricks/cli/internal/mocks/libs/filer"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/filer"
-	sdkconfig "github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/mock"
@@ -182,11 +180,6 @@ func TestArtifactUploadForVolumes(t *testing.T) {
 		filer.OverwriteIfExists,
 		filer.CreateParentDirectories,
 	).Return(nil)
-
-	m := mocks.NewMockWorkspaceClient(t)
-	m.WorkspaceClient.Config = &sdkconfig.Config{}
-	m.GetMockFilesAPI().EXPECT().GetDirectoryMetadataByDirectoryPath(mock.Anything, "/Volumes/foo/bar/artifacts").Return(nil)
-	b.SetWorkpaceClient(m.WorkspaceClient)
 
 	diags := bundle.Apply(context.Background(), b, bundle.Seq(ExpandGlobReferences(), UploadWithClient(mockFiler)))
 	require.NoError(t, diags.Error())
