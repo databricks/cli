@@ -31,9 +31,11 @@ type pair struct {
 	v any
 }
 
-var cachedUser *iam.User
-var cachedIsServicePrincipal *bool
-var cachedCatalog *string
+var (
+	cachedUser               *iam.User
+	cachedIsServicePrincipal *bool
+	cachedCatalog            *string
+)
 
 // UUID that is stable for the duration of the template execution. This can be used
 // to populate the `bundle.uuid` field in databricks.yml by template authors.

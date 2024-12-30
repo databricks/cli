@@ -42,7 +42,8 @@ func TestCommandFlagGrouping(t *testing.T) {
 
 	buf := bytes.NewBuffer(nil)
 	cmd.SetOutput(buf)
-	cmd.Usage()
+	err := cmd.Usage()
+	require.NoError(t, err)
 
 	expected := `Usage:
   parent test [flags]

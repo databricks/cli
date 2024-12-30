@@ -88,10 +88,10 @@ func mergeMap(a, b dyn.Value) (dyn.Value, error) {
 			if err != nil {
 				return dyn.InvalidValue, err
 			}
-			out.Set(pk, merged)
+			out.Set(pk, merged) //nolint:errcheck
 		} else {
 			// Otherwise, just set the value.
-			out.Set(pk, pv)
+			out.Set(pk, pv) //nolint:errcheck
 		}
 	}
 
@@ -111,6 +111,7 @@ func mergeSequence(a, b dyn.Value) (dyn.Value, error) {
 	// Preserve the location of the first value. Accumulate the locations of the second value.
 	return dyn.NewValue(out, a.Locations()).AppendLocationsFromValue(b), nil
 }
+
 func mergePrimitive(a, b dyn.Value) (dyn.Value, error) {
 	// Merging primitive values means using the incoming value.
 	return b.AppendLocationsFromValue(a), nil

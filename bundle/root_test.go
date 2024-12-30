@@ -71,7 +71,7 @@ func TestRootLookup(t *testing.T) {
 	defer f.Close()
 
 	// Create directory tree.
-	err = os.MkdirAll("./a/b/c", 0755)
+	err = os.MkdirAll("./a/b/c", 0o755)
 	require.NoError(t, err)
 
 	// It should find the project root from $PWD.

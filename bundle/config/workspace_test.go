@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func setupWorkspaceTest(t *testing.T) string {
@@ -42,11 +43,12 @@ func TestWorkspaceResolveProfileFromHost(t *testing.T) {
 		setupWorkspaceTest(t)
 
 		// This works if there is a config file with a matching profile.
-		databrickscfg.SaveToProfile(context.Background(), &config.Config{
+		err := databrickscfg.SaveToProfile(context.Background(), &config.Config{
 			Profile: "default",
 			Host:    "https://abc.cloud.databricks.com",
 			Token:   "123",
 		})
+		require.NoError(t, err)
 
 		client, err := w.Client()
 		assert.NoError(t, err)
@@ -57,12 +59,13 @@ func TestWorkspaceResolveProfileFromHost(t *testing.T) {
 		home := setupWorkspaceTest(t)
 
 		// This works if there is a config file with a matching profile.
-		databrickscfg.SaveToProfile(context.Background(), &config.Config{
+		err := databrickscfg.SaveToProfile(context.Background(), &config.Config{
 			ConfigFile: filepath.Join(home, "customcfg"),
 			Profile:    "custom",
 			Host:       "https://abc.cloud.databricks.com",
 			Token:      "123",
 		})
+		require.NoError(t, err)
 
 		t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(home, "customcfg"))
 		client, err := w.Client()
@@ -90,12 +93,13 @@ func TestWorkspaceVerifyProfileForHost(t *testing.T) {
 		setupWorkspaceTest(t)
 
 		// This works if there is a config file with a matching profile.
-		databrickscfg.SaveToProfile(context.Background(), &config.Config{
+		err := databrickscfg.SaveToProfile(context.Background(), &config.Config{
 			Profile: "abc",
 			Host:    "https://abc.cloud.databricks.com",
 		})
+		require.NoError(t, err)
 
-		_, err := w.Client()
+		_, err = w.Client()
 		assert.NoError(t, err)
 	})
 
@@ -103,12 +107,13 @@ func TestWorkspaceVerifyProfileForHost(t *testing.T) {
 		setupWorkspaceTest(t)
 
 		// This works if there is a config file with a matching profile.
-		databrickscfg.SaveToProfile(context.Background(), &config.Config{
+		err := databrickscfg.SaveToProfile(context.Background(), &config.Config{
 			Profile: "abc",
 			Host:    "https://def.cloud.databricks.com",
 		})
+		require.NoError(t, err)
 
-		_, err := w.Client()
+		_, err = w.Client()
 		assert.ErrorContains(t, err, "config host mismatch")
 	})
 
@@ -116,14 +121,15 @@ func TestWorkspaceVerifyProfileForHost(t *testing.T) {
 		home := setupWorkspaceTest(t)
 
 		// This works if there is a config file with a matching profile.
-		databrickscfg.SaveToProfile(context.Background(), &config.Config{
+		err := databrickscfg.SaveToProfile(context.Background(), &config.Config{
 			ConfigFile: filepath.Join(home, "customcfg"),
 			Profile:    "abc",
 			Host:       "https://abc.cloud.databricks.com",
 		})
+		require.NoError(t, err)
 
 		t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(home, "customcfg"))
-		_, err := w.Client()
+		_, err = w.Client()
 		assert.NoError(t, err)
 	})
 
@@ -131,14 +137,15 @@ func TestWorkspaceVerifyProfileForHost(t *testing.T) {
 		home := setupWorkspaceTest(t)
 
 		// This works if there is a config file with a matching profile.
-		databrickscfg.SaveToProfile(context.Background(), &config.Config{
+		err := databrickscfg.SaveToProfile(context.Background(), &config.Config{
 			ConfigFile: filepath.Join(home, "customcfg"),
 			Profile:    "abc",
 			Host:       "https://def.cloud.databricks.com",
 		})
+		require.NoError(t, err)
 
 		t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(home, "customcfg"))
-		_, err := w.Client()
+		_, err = w.Client()
 		assert.ErrorContains(t, err, "config host mismatch")
 	})
 }

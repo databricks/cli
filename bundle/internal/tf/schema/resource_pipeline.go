@@ -244,9 +244,9 @@ type ResourcePipelineNotification struct {
 }
 
 type ResourcePipelineRestartWindow struct {
-	DaysOfWeek string `json:"days_of_week,omitempty"`
-	StartHour  int    `json:"start_hour"`
-	TimeZoneId string `json:"time_zone_id,omitempty"`
+	DaysOfWeek []string `json:"days_of_week,omitempty"`
+	StartHour  int      `json:"start_hour"`
+	TimeZoneId string   `json:"time_zone_id,omitempty"`
 }
 
 type ResourcePipelineTriggerCron struct {

@@ -27,7 +27,7 @@ func NewSaverWithStyle(nodesWithStyle map[string]yaml.Style) *saver {
 }
 
 func (s *saver) SaveAsYAML(data any, filename string, force bool) error {
-	err := os.MkdirAll(filepath.Dir(filename), 0755)
+	err := os.MkdirAll(filepath.Dir(filename), 0o755)
 	if err != nil {
 		return err
 	}

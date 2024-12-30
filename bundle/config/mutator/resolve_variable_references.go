@@ -32,11 +32,12 @@ func ResolveVariableReferencesInLookup() bundle.Mutator {
 }
 
 func ResolveVariableReferencesInComplexVariables() bundle.Mutator {
-	return &resolveVariableReferences{prefixes: []string{
-		"bundle",
-		"workspace",
-		"variables",
-	},
+	return &resolveVariableReferences{
+		prefixes: []string{
+			"bundle",
+			"workspace",
+			"variables",
+		},
 		pattern:  dyn.NewPattern(dyn.Key("variables"), dyn.AnyKey(), dyn.Key("value")),
 		lookupFn: lookupForComplexVariables,
 		skipFn:   skipResolvingInNonComplexVariables,
@@ -173,7 +174,6 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 				return dyn.InvalidValue, dynvar.ErrSkipResolution
 			})
 		})
-
 		if err != nil {
 			return dyn.InvalidValue, err
 		}
@@ -184,7 +184,6 @@ func (m *resolveVariableReferences) Apply(ctx context.Context, b *bundle.Bundle)
 		diags = diags.Extend(normaliseDiags)
 		return root, nil
 	})
-
 	if err != nil {
 		diags = diags.Extend(diag.FromErr(err))
 	}

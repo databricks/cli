@@ -176,6 +176,8 @@ type ResourceCluster struct {
 	IdempotencyToken          string                            `json:"idempotency_token,omitempty"`
 	InstancePoolId            string                            `json:"instance_pool_id,omitempty"`
 	IsPinned                  bool                              `json:"is_pinned,omitempty"`
+	IsSingleNode              bool                              `json:"is_single_node,omitempty"`
+	Kind                      string                            `json:"kind,omitempty"`
 	NoWait                    bool                              `json:"no_wait,omitempty"`
 	NodeTypeId                string                            `json:"node_type_id,omitempty"`
 	NumWorkers                int                               `json:"num_workers,omitempty"`
@@ -188,6 +190,7 @@ type ResourceCluster struct {
 	SshPublicKeys             []string                          `json:"ssh_public_keys,omitempty"`
 	State                     string                            `json:"state,omitempty"`
 	Url                       string                            `json:"url,omitempty"`
+	UseMlRuntime              bool                              `json:"use_ml_runtime,omitempty"`
 	Autoscale                 *ResourceClusterAutoscale         `json:"autoscale,omitempty"`
 	AwsAttributes             *ResourceClusterAwsAttributes     `json:"aws_attributes,omitempty"`
 	AzureAttributes           *ResourceClusterAzureAttributes   `json:"azure_attributes,omitempty"`

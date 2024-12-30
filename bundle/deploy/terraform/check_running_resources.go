@@ -23,8 +23,7 @@ func (e ErrResourceIsRunning) Error() string {
 	return fmt.Sprintf("%s %s is running", e.resourceType, e.resourceId)
 }
 
-type checkRunningResources struct {
-}
+type checkRunningResources struct{}
 
 func (l *checkRunningResources) Name() string {
 	return "check-running-resources"

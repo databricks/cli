@@ -15,8 +15,10 @@ import (
 	"github.com/google/uuid"
 )
 
-const DeploymentStateFileName = "deployment.json"
-const DeploymentStateVersion = 1
+const (
+	DeploymentStateFileName = "deployment.json"
+	DeploymentStateVersion  = 1
+)
 
 type File struct {
 	LocalPath string `json:"local_path"`
@@ -132,7 +134,7 @@ func (f Filelist) ToSlice(root vfs.Path) []fileset.File {
 	return files
 }
 
-func isLocalStateStale(local io.Reader, remote io.Reader) bool {
+func isLocalStateStale(local, remote io.Reader) bool {
 	localState, err := loadState(local)
 	if err != nil {
 		return true
