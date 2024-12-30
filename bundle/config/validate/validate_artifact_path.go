@@ -139,7 +139,7 @@ the artifact_path.`,
 	// The user needs to have either WRITE_VOLUME or ALL_PRIVILEGES to write to the volume.
 	canWrite := slices.Contains(allPrivileges, catalog.PrivilegeWriteVolume) || slices.Contains(allPrivileges, catalog.PrivilegeAllPrivileges)
 	if !canWrite {
-		log.Infof(ctx, "Current privileges on Volume at artifact_path: %v", allPrivileges)
+		log.Debugf(ctx, "Current privileges on Volume at artifact_path: %v", allPrivileges)
 		return wrapErrorMsg(fmt.Sprintf("user does not have WRITE_VOLUME grant on volume %s", volumeFullName))
 	}
 
@@ -147,7 +147,7 @@ the artifact_path.`,
 	// We still add this explicit check out of caution incase the API behavior changes in the future.
 	canRead := slices.Contains(allPrivileges, catalog.PrivilegeReadVolume) || slices.Contains(allPrivileges, catalog.PrivilegeAllPrivileges)
 	if !canRead {
-		log.Infof(ctx, "Current privileges on Volume at artifact_path: %v", allPrivileges)
+		log.Debugf(ctx, "Current privileges on Volume at artifact_path: %v", allPrivileges)
 		return wrapErrorMsg(fmt.Sprintf("user does not have READ_VOLUME grant on volume %s", volumeFullName))
 	}
 
