@@ -148,37 +148,6 @@ func (w *DbfsClient) putFile(ctx context.Context, path string, overwrite bool, f
 // API (/dbfs/create and /dbfs/add-block) will be used instead.
 var MaxDbfsPutFileSize int64 = 2 * 1024 * 1024 * 1024
 
-func (w *DbfsClient) streamFile(ctx context.Context, path string, overwrite bool, reader io.Reader) error {
-	fileMode := files.FileModeWrite
-	if overwrite {
-		fileMode |= files.FileModeOverwrite
-	}
-
-	handle, err := w.workspaceClient.Dbfs.Open(ctx, path, fileMode)
-	if err != nil {
-		var aerr *apierr.APIError
-		if !errors.As(err, &aerr) {
-			return err
-		}
-
-		// This API returns a 400 if the file already exists.
-		if aerr.StatusCode == http.StatusBadRequest {
-			if aerr.ErrorCode == "RESOURCE_ALREADY_EXISTS" {
-				return FileAlreadyExistsError{path}
-			}
-		}
-
-		return err
-	}
-
-	_, err = io.Copy(handle, reader)
-	cerr := handle.Close()
-	if err == nil {
-		err = cerr
-	}
-	return err
-}
-
 func (w *DbfsClient) Write(ctx context.Context, name string, reader io.Reader, mode ...WriteMode) error {
 	absPath, err := w.root.Join(name)
 	if err != nil {
@@ -230,6 +199,37 @@ func (w *DbfsClient) Write(ctx context.Context, name string, reader io.Reader, m
 	// and is small enough. This is the most common case when users use the
 	// `databricks fs cp` command.
 	return w.putFile(ctx, absPath, slices.Contains(mode, OverwriteIfExists), localFile)
+}
+
+func (w *DbfsClient) streamFile(ctx context.Context, path string, overwrite bool, reader io.Reader) error {
+	fileMode := files.FileModeWrite
+	if overwrite {
+		fileMode |= files.FileModeOverwrite
+	}
+
+	handle, err := w.workspaceClient.Dbfs.Open(ctx, path, fileMode)
+	if err != nil {
+		var aerr *apierr.APIError
+		if !errors.As(err, &aerr) {
+			return err
+		}
+
+		// This API returns a 400 if the file already exists.
+		if aerr.StatusCode == http.StatusBadRequest {
+			if aerr.ErrorCode == "RESOURCE_ALREADY_EXISTS" {
+				return FileAlreadyExistsError{path}
+			}
+		}
+
+		return err
+	}
+
+	_, err = io.Copy(handle, reader)
+	cerr := handle.Close()
+	if err == nil {
+		err = cerr
+	}
+	return err
 }
 
 func (w *DbfsClient) Read(ctx context.Context, name string) (io.ReadCloser, error) {
